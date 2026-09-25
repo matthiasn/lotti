@@ -112,6 +112,9 @@ class AgentRepository {
 
   Future<AgentDomainEntity?> getEntity(String id) => _core.getEntity(id);
 
+  Future<AgentDomainEntity?> getEntityIncludingDeleted(String id) =>
+      _core.getEntityIncludingDeleted(id);
+
   Future<Map<String, AgentDomainEntity>> getEntitiesByIds(
     Iterable<String> ids,
   ) => _core.getEntitiesByIds(ids);

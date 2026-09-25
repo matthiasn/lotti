@@ -560,7 +560,8 @@ class BackfillResponseHandler {
                 counter: response.counter,
                 payloadId: payloadId,
                 payloadType: payloadType,
-                loadPayload: () => agentRepository!.getEntity(payloadId),
+                loadPayload: () =>
+                    agentRepository!.getEntityIncludingDeleted(payloadId),
                 getVectorClock: (entity) => entity.vectorClock,
                 payloadTypeName: 'agentEntity',
               );
@@ -952,7 +953,8 @@ class BackfillResponseHandler {
           originatingHostId: originatingHostId,
           sentPayloads: sentPayloads,
           durable: durable,
-          loadPayload: () => agentRepository!.getEntity(payloadId),
+          loadPayload: () =>
+              agentRepository!.getEntityIncludingDeleted(payloadId),
           getVectorClock: (entity) => entity.vectorClock,
           buildSyncMessage: (entity) => SyncMessage.agentEntity(
             status: SyncEntryStatus.update,

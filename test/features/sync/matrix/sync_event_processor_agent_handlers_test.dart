@@ -203,7 +203,7 @@ void main() {
         ).called(1);
       });
 
-      test('a set not stored yet takes the generic path', () async {
+      test('a set not stored yet is written as received', () async {
         storeChangeSet(null);
         final incoming = changeSet([estimate], {'peer': 1});
         receive(incoming);
@@ -290,6 +290,161 @@ void main() {
             ChangeItemStatus.confirmed,
             ChangeItemStatus.rejected,
           ]);
+        },
+      );
+    });
+
+    group('removals and the one-transaction receive (ADR 0081 addendum)', () {
+      late Map<String, AgentDomainEntity> rows;
+
+      AgentDomainEntity reportHead(
+        Map<String, int> clock, {
+        required DateTime at,
+        DateTime? deletedAt,
+        String reportId = 'report-1',
+      }) => AgentDomainEntity.agentReportHead(
+        id: 'head-removed',
+        agentId: 'agent-1',
+        scope: 'current',
+        reportId: reportId,
+        updatedAt: at,
+        vectorClock: VectorClock(clock),
+        deletedAt: deletedAt,
+      );
+
+      /// The repository as storage with Drift-like serialized transactions.
+      /// `getEntity` hides a tombstone, as the real query does; the read
+      /// with the tombstone can be held at [gate].
+      void store(AgentDomainEntity initial, {Completer<void>? gate}) {
+        rows = {initial.id: initial};
+        var gated = gate != null;
+        var tail = Future<void>.value();
+        mockAgentRepo.transactionDelegate = <T>(action) {
+          if (Zone.current[#agentTx] == true) return action();
+          final run = tail.then(
+            (_) => runZoned(action, zoneValues: {#agentTx: true}),
+          );
+          tail = run.then<void>((_) {}, onError: (_) {});
+          return run;
+        };
+        when(() => mockAgentRepo.getEntity(any())).thenAnswer((
+          invocation,
+        ) async {
+          final row = rows[invocation.positionalArguments.single as String];
+          return row?.deletedAt == null ? row : null;
+        });
+        when(() => mockAgentRepo.getEntityIncludingDeleted(any())).thenAnswer((
+          invocation,
+        ) async {
+          final snapshot = rows[invocation.positionalArguments.single];
+          if (gated) {
+            gated = false;
+            await gate!.future;
+          }
+          return snapshot;
+        });
+        when(() => mockAgentRepo.upsertEntity(any())).thenAnswer((
+          invocation,
+        ) async {
+          final entity =
+              invocation.positionalArguments.single as AgentDomainEntity;
+          rows[entity.id] = entity;
+        });
+      }
+
+      void receive(AgentDomainEntity incoming) {
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.agentEntity(
+              agentEntity: incoming,
+              status: SyncEntryStatus.update,
+            ),
+          ),
+        );
+      }
+
+      test(
+        'a late copy of the live version does not bring a removed entity '
+        'back',
+        () async {
+          // The receive read the stored row with `getEntity`, which filters
+          // `deleted_at IS NULL`: the removal read as no row, and the late
+          // copy of the version it removed was written over it.
+          final removal = reportHead(
+            {'host-A': 2},
+            at: DateTime(2026, 9, 25, 9),
+            deletedAt: DateTime(2026, 9, 25, 10),
+          );
+          store(removal);
+          receive(reportHead({'host-A': 1}, at: DateTime(2026, 9, 25, 9)));
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          expect(rows['head-removed'], same(removal));
+          verifyNever(() => mockAgentRepo.upsertEntity(any()));
+          verify(
+            () => loggingService.log(
+              LogDomain.sync,
+              any<String>(that: contains('skippedLocalWins id=head-removed')),
+              subDomain: 'processor.apply',
+            ),
+          ).called(1);
+        },
+      );
+
+      test('a removal replaces the live version it succeeds', () async {
+        store(reportHead({'host-A': 1}, at: DateTime(2026, 9, 25, 9)));
+        final removal = reportHead(
+          {'host-A': 1, 'host-B': 1},
+          at: DateTime(2026, 9, 25, 9),
+          deletedAt: DateTime(2026, 9, 25, 10),
+        );
+        receive(removal);
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        expect(rows['head-removed'], removal);
+      });
+
+      test(
+        'a local write that commits during the receive of a report head is '
+        'not overwritten',
+        () async {
+          // Only agent state, change sets and evolution sessions were read
+          // and written in one transaction. For every other type a local
+          // write could commit between the read and the write, and the
+          // receive then wrote the peer's version over it.
+          final gate = Completer<void>();
+          store(
+            reportHead({'host-A': 1}, at: DateTime(2026, 9, 25, 9)),
+            gate: gate,
+          );
+          receive(
+            reportHead(
+              {'host-B': 1},
+              at: DateTime(2026, 9, 25, 10),
+              reportId: 'report-peer',
+            ),
+          );
+
+          final received = processor.process(
+            event: event,
+            journalDb: journalDb,
+          );
+          await pumpEventQueue();
+          final local = reportHead(
+            {'host-A': 2},
+            at: DateTime(2026, 9, 25, 11),
+            reportId: 'report-local',
+          );
+          final write = mockAgentRepo.runInTransaction(
+            () => mockAgentRepo.upsertEntity(local),
+          );
+          await pumpEventQueue();
+          gate.complete();
+          await Future.wait([received, write]);
+
+          expect(rows['head-removed'], local);
         },
       );
     });
@@ -1731,220 +1886,102 @@ void main() {
     );
 
     test(
-      'prefetches local agent entities once for outbox bundle dominance checks',
+      'reads each agent entity of an outbox bundle afresh, tombstone '
+      'included, inside its own receive transaction',
       () async {
         const localVc = VectorClock({'host-A': 2});
         const incomingVc = VectorClock({'host-A': 1});
-        final localOne = AgentDomainEntity.agentReportHead(
-          id: 'state-bulk-1',
-          agentId: 'agent-1',
-          scope: 'current',
-          reportId: 'report-1',
-          updatedAt: DateTime(2024, 3, 16),
-          vectorClock: localVc,
-        );
-        final localTwo = AgentDomainEntity.agentReportHead(
-          id: 'state-bulk-2',
-          agentId: 'agent-2',
-          scope: 'current',
-          reportId: 'report-1',
-          updatedAt: DateTime(2024, 3, 16),
-          vectorClock: localVc,
-        );
-        final incomingOne = AgentDomainEntity.agentReportHead(
-          id: 'state-bulk-1',
-          agentId: 'agent-1',
-          scope: 'current',
-          reportId: 'report-1',
-          updatedAt: DateTime(2024, 3, 15),
-          vectorClock: incomingVc,
-        );
-        final incomingTwo = AgentDomainEntity.agentReportHead(
-          id: 'state-bulk-2',
-          agentId: 'agent-2',
-          scope: 'current',
-          reportId: 'report-1',
-          updatedAt: DateTime(2024, 3, 15),
-          vectorClock: incomingVc,
-        );
-        when(
-          () => mockAgentRepo.getEntitiesByIds(any()),
-        ).thenAnswer((invocation) async {
-          final ids = invocation.positionalArguments.single as Iterable<String>;
-          expect(ids.toSet(), {'state-bulk-1', 'state-bulk-2'});
-          return {
-            'state-bulk-1': localOne,
-            'state-bulk-2': localTwo,
-          };
+        AgentDomainEntity head(String id, VectorClock clock, int day) =>
+            AgentDomainEntity.agentReportHead(
+              id: id,
+              agentId: 'agent-$id',
+              scope: 'current',
+              reportId: 'report-1',
+              updatedAt: DateTime(2024, 3, day),
+              vectorClock: clock,
+            );
+        final stored = {
+          'state-bulk-1': head('state-bulk-1', localVc, 16),
+          'state-bulk-2': head('state-bulk-2', localVc, 16),
+        };
+        mockAgentRepo.transactionDelegate = <T>(action) =>
+            runZoned(action, zoneValues: {#agentTx: true});
+        final readsInTransaction = <String, bool>{};
+        when(() => mockAgentRepo.getEntityIncludingDeleted(any())).thenAnswer((
+          invocation,
+        ) async {
+          final id = invocation.positionalArguments.single as String;
+          readsInTransaction[id] = Zone.current[#agentTx] == true;
+          return stored[id];
         });
 
-        final message = SyncMessage.outboxBundle(
-          children: [
-            SyncMessage.agentEntity(
-              agentEntity: incomingOne,
-              status: SyncEntryStatus.update,
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.outboxBundle(
+              children: [
+                for (final id in stored.keys)
+                  SyncMessage.agentEntity(
+                    agentEntity: head(id, incomingVc, 15),
+                    status: SyncEntryStatus.update,
+                  ),
+              ],
             ),
-            SyncMessage.agentEntity(
-              agentEntity: incomingTwo,
-              status: SyncEntryStatus.update,
-            ),
-          ],
+          ),
         );
-        when(() => event.text).thenReturn(encodeMessage(message));
 
         await processor.process(event: event, journalDb: journalDb);
 
-        verify(() => mockAgentRepo.getEntitiesByIds(any())).called(1);
-        verifyNever(() => mockAgentRepo.getEntity(any()));
+        expect(readsInTransaction, {
+          'state-bulk-1': true,
+          'state-bulk-2': true,
+        });
+        verifyNever(() => mockAgentRepo.getEntitiesByIds(any()));
         verifyNever(() => mockAgentRepo.upsertEntity(any()));
       },
     );
 
     test(
-      'refreshes prefetched agent entity cache after same-bundle upsert',
+      'a later child of a bundle resolves against the row an earlier child '
+      'wrote',
       () async {
-        final localInitial = AgentDomainEntity.agentReportHead(
-          id: 'state-cache-refresh',
-          agentId: 'agent-cache-refresh',
-          scope: 'current',
-          reportId: 'report-1',
-          updatedAt: DateTime(2024, 3, 15),
-          vectorClock: const VectorClock({'host-A': 1}),
-        );
-        final incomingNewer = AgentDomainEntity.agentReportHead(
-          id: 'state-cache-refresh',
-          agentId: 'agent-cache-refresh',
-          scope: 'current',
-          reportId: 'report-1',
-          updatedAt: DateTime(2024, 3, 17),
-          vectorClock: const VectorClock({'host-A': 3}),
-        );
-        final incomingOlder = AgentDomainEntity.agentReportHead(
-          id: 'state-cache-refresh',
-          agentId: 'agent-cache-refresh',
-          scope: 'current',
-          reportId: 'report-1',
-          updatedAt: DateTime(2024, 3, 16),
-          vectorClock: const VectorClock({'host-A': 2}),
-        );
+        AgentDomainEntity head(int counter, int day) =>
+            AgentDomainEntity.agentReportHead(
+              id: 'state-cache-refresh',
+              agentId: 'agent-cache-refresh',
+              scope: 'current',
+              reportId: 'report-1',
+              updatedAt: DateTime(2024, 3, day),
+              vectorClock: VectorClock({'host-A': counter}),
+            );
+        final incomingNewer = head(3, 17);
+        final incomingOlder = head(2, 16);
+        final rows = <String, AgentDomainEntity>{
+          'state-cache-refresh': head(1, 15),
+        };
         when(
-          () => mockAgentRepo.getEntitiesByIds(any()),
-        ).thenAnswer((_) async => {'state-cache-refresh': localInitial});
-
-        final message = SyncMessage.outboxBundle(
-          children: [
-            SyncMessage.agentEntity(
-              agentEntity: incomingNewer,
-              status: SyncEntryStatus.update,
-            ),
-            SyncMessage.agentEntity(
-              agentEntity: incomingOlder,
-              status: SyncEntryStatus.update,
-            ),
-          ],
+          () => mockAgentRepo.getEntityIncludingDeleted(any()),
+        ).thenAnswer(
+          (invocation) async =>
+              rows[invocation.positionalArguments.single as String],
         );
-        when(() => event.text).thenReturn(encodeMessage(message));
-
-        await processor.process(event: event, journalDb: journalDb);
-
-        verify(() => mockAgentRepo.getEntitiesByIds(any())).called(1);
-        verify(() => mockAgentRepo.upsertEntity(incomingNewer)).called(1);
-        verifyNever(() => mockAgentRepo.upsertEntity(incomingOlder));
-      },
-    );
-
-    test(
-      'keeps outbox bundle agent prefetch caches isolated across overlaps',
-      () async {
-        final dominantLocal = AgentDomainEntity.agentReportHead(
-          id: 'shared-state',
-          agentId: 'agent-shared',
-          scope: 'current',
-          reportId: 'report-1',
-          updatedAt: DateTime(2024, 3, 19),
-          vectorClock: const VectorClock({'host-A': 5}),
-        );
-        final staleShared = AgentDomainEntity.agentReportHead(
-          id: 'shared-state',
-          agentId: 'agent-shared',
-          scope: 'current',
-          reportId: 'report-1',
-          updatedAt: DateTime(2024, 3, 15),
-          vectorClock: const VectorClock({'host-A': 1}),
-        );
-        final otherShared = AgentDomainEntity.agentReportHead(
-          id: 'shared-state',
-          agentId: 'agent-shared',
-          scope: 'current',
-          reportId: 'report-1',
-          updatedAt: DateTime(2024, 3, 16),
-          vectorClock: const VectorClock({'host-A': 2}),
-        );
-        final blockerOne = AgentDomainEntity.agentReportHead(
-          id: 'bundle-one-blocker',
-          agentId: 'agent-blocker',
-          scope: 'current',
-          reportId: 'report-1',
-          updatedAt: DateTime(2024, 3, 15),
-          vectorClock: null,
-        );
-        final blockerTwo = AgentDomainEntity.agentReportHead(
-          id: 'bundle-two-blocker',
-          agentId: 'agent-blocker',
-          scope: 'current',
-          reportId: 'report-1',
-          updatedAt: DateTime(2024, 3, 15),
-          vectorClock: null,
-        );
-        var prefetchCall = 0;
-        when(
-          () => mockAgentRepo.getEntitiesByIds(any()),
-        ).thenAnswer((invocation) async {
-          final ids = invocation.positionalArguments.single as Iterable<String>;
-          expect(ids.toSet(), {'shared-state'});
-          prefetchCall += 1;
-          if (prefetchCall == 1) {
-            return {'shared-state': dominantLocal};
-          }
-          return const <String, AgentDomainEntity>{};
-        });
-
-        final blockerOneStarted = Completer<void>();
-        final blockerOneRelease = Completer<void>();
-        final blockerTwoStarted = Completer<void>();
-        final blockerTwoRelease = Completer<void>();
         when(() => mockAgentRepo.upsertEntity(any())).thenAnswer((
           invocation,
         ) async {
           final entity =
               invocation.positionalArguments.single as AgentDomainEntity;
-          if (entity.id == blockerOne.id) {
-            if (!blockerOneStarted.isCompleted) {
-              blockerOneStarted.complete();
-            }
-            await blockerOneRelease.future;
-          }
-          if (entity.id == blockerTwo.id) {
-            if (!blockerTwoStarted.isCompleted) {
-              blockerTwoStarted.complete();
-            }
-            await blockerTwoRelease.future;
-          }
+          rows[entity.id] = entity;
         });
 
-        final eventOne = MockEvent();
-        when(() => eventOne.eventId).thenReturn('event-one');
-        when(() => eventOne.originServerTs).thenReturn(DateTime(2024));
-        when(() => eventOne.text).thenReturn(
+        when(() => event.text).thenReturn(
           encodeMessage(
             SyncMessage.outboxBundle(
               children: [
                 SyncMessage.agentEntity(
-                  agentEntity: blockerOne,
+                  agentEntity: incomingNewer,
                   status: SyncEntryStatus.update,
                 ),
                 SyncMessage.agentEntity(
-                  agentEntity: staleShared,
+                  agentEntity: incomingOlder,
                   status: SyncEntryStatus.update,
                 ),
               ],
@@ -1952,47 +1989,11 @@ void main() {
           ),
         );
 
-        final eventTwo = MockEvent();
-        when(() => eventTwo.eventId).thenReturn('event-two');
-        when(() => eventTwo.originServerTs).thenReturn(DateTime(2024));
-        when(() => eventTwo.text).thenReturn(
-          encodeMessage(
-            SyncMessage.outboxBundle(
-              children: [
-                SyncMessage.agentEntity(
-                  agentEntity: blockerTwo,
-                  status: SyncEntryStatus.update,
-                ),
-                SyncMessage.agentEntity(
-                  agentEntity: otherShared,
-                  status: SyncEntryStatus.update,
-                ),
-              ],
-            ),
-          ),
-        );
+        await processor.process(event: event, journalDb: journalDb);
 
-        final processOne = processor.process(
-          event: eventOne,
-          journalDb: journalDb,
-        );
-        await blockerOneStarted.future;
-
-        final processTwo = processor.process(
-          event: eventTwo,
-          journalDb: journalDb,
-        );
-        await blockerTwoStarted.future;
-
-        blockerOneRelease.complete();
-        await processOne;
-
-        blockerTwoRelease.complete();
-        await processTwo;
-
-        verify(() => mockAgentRepo.getEntitiesByIds(any())).called(2);
-        verifyNever(() => mockAgentRepo.upsertEntity(staleShared));
-        verify(() => mockAgentRepo.upsertEntity(otherShared)).called(1);
+        expect(rows['state-cache-refresh'], incomingNewer);
+        verify(() => mockAgentRepo.upsertEntity(incomingNewer)).called(1);
+        verifyNever(() => mockAgentRepo.upsertEntity(incomingOlder));
       },
     );
 
@@ -2129,7 +2130,7 @@ void main() {
 
     test(
       'an older-client identity rewrite inside a bundle overlays the '
-      'prefetched local setup, or passes through when there is no local row',
+      'stored local setup, or passes through when there is no local row',
       () async {
         AgentIdentityEntity identity(
           String id, {
@@ -2174,8 +2175,8 @@ void main() {
           counter: 2,
         );
         when(
-          () => mockAgentRepo.getEntitiesByIds(any()),
-        ).thenAnswer((_) async => {'agent-known': local});
+          () => mockAgentRepo.getEntityIncludingDeleted('agent-known'),
+        ).thenAnswer((_) async => local);
         when(() => event.text).thenReturn(
           encodeMessage(
             SyncMessage.outboxBundle(
@@ -2203,8 +2204,6 @@ void main() {
         };
         expect(applied['agent-known']!.config, localConfig);
         expect(applied['agent-new']!.config, const AgentConfig());
-        // The prefetch answered for both ids, so neither needs a lookup.
-        verifyNever(() => mockAgentRepo.getEntity(any()));
       },
     );
 
@@ -3016,6 +3015,83 @@ void main() {
               fromSync: any<bool>(named: 'fromSync'),
             ),
           );
+        },
+      );
+
+      test(
+        'proves an exact payload against the stored removal, not against no '
+        'row',
+        () async {
+          // The sequence log repairs a counter against the version this
+          // device holds. Read through `getEntity`, a removal gave no clock,
+          // and the late copy's receipt could not be proven against it.
+          const removalVc = VectorClock({'host-A': 2});
+          const lateVc = VectorClock({'host-A': 1});
+          AgentDomainEntity head(VectorClock clock, {DateTime? deletedAt}) =>
+              AgentDomainEntity.agentReportHead(
+                id: 'head-removed',
+                agentId: 'agent-1',
+                scope: 'current',
+                reportId: 'report-1',
+                updatedAt: DateTime(2024, 3, 15),
+                vectorClock: clock,
+                deletedAt: deletedAt,
+              );
+          when(
+            () => mockAgentRepoSeq.getEntityIncludingDeleted('head-removed'),
+          ).thenAnswer(
+            (_) async => head(removalVc, deletedAt: DateTime(2024, 3, 16)),
+          );
+          when(
+            () => mockSeqService.recordReceivedEntry(
+              entryId: any(named: 'entryId'),
+              vectorClock: any(named: 'vectorClock'),
+              originatingHostId: any(named: 'originatingHostId'),
+              coveredVectorClocks: any(named: 'coveredVectorClocks'),
+              payloadType: any(named: 'payloadType'),
+              jsonPath: any(named: 'jsonPath'),
+              payloadVectorClock: any(named: 'payloadVectorClock'),
+              canonicalPayloadVectorClock: any(
+                named: 'canonicalPayloadVectorClock',
+              ),
+            ),
+          ).thenAnswer((_) async => []);
+
+          final proc = SyncEventProcessor(
+            loggingService: loggingService,
+            updateNotifications: updateNotifications,
+            aiConfigRepository: aiConfigRepository,
+            savedTaskFiltersRepository: savedTaskFiltersRepository,
+            settingsDb: settingsDb,
+            journalEntityLoader: journalEntityLoader,
+            sequenceLogService: mockSeqService,
+          )..agentRepository = mockAgentRepoSeq;
+          when(() => event.text).thenReturn(
+            encodeMessage(
+              SyncMessage.agentEntity(
+                agentEntity: head(lateVc),
+                status: SyncEntryStatus.update,
+                originatingHostId: 'host-A',
+                attachmentEventId: 'late-copy-event',
+              ),
+            ),
+          );
+
+          await proc.process(event: event, journalDb: journalDb);
+
+          verifyNever(() => mockAgentRepoSeq.upsertEntity(any()));
+          verify(
+            () => mockSeqService.recordReceivedEntry(
+              entryId: 'head-removed',
+              vectorClock: lateVc,
+              originatingHostId: 'host-A',
+              coveredVectorClocks: null,
+              payloadType: SyncSequencePayloadType.agentEntity,
+              jsonPath: any(named: 'jsonPath'),
+              payloadVectorClock: lateVc,
+              canonicalPayloadVectorClock: removalVc,
+            ),
+          ).called(1);
         },
       );
 

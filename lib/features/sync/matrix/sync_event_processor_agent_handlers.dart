@@ -11,34 +11,6 @@ String _buildAgentIndexKey(String rawPath) =>
 /// messages, plus the shared descriptor-fetch infrastructure (also consumed
 /// by [_OutboxBundleHandler._resolveOutboxBundleManifest]).
 extension _AgentHandlers on SyncEventProcessor {
-  Future<T> _withPrefetchedAgentEntities<T>({
-    required PreparedOutboxSyncBundle bundle,
-    required Future<T> Function(
-      Map<String, AgentDomainEntity?> prefetchedAgentEntitiesById,
-    )
-    apply,
-  }) async {
-    final repository = agentRepository;
-    if (repository == null) return apply(const <String, AgentDomainEntity?>{});
-
-    final ids = <String>{};
-    for (final child in bundle.children) {
-      final entity = child.resolvedAgentEntity;
-      // An agent-state row is read afresh inside its own receive transaction
-      // (_resolveAndPersistAgentEntity), so a snapshot of it is never used.
-      if (entity?.vectorClock != null && entity is! AgentStateEntity) {
-        ids.add(entity!.id);
-      }
-    }
-    if (ids.isEmpty) return apply(const <String, AgentDomainEntity?>{});
-
-    final localEntities = await repository.getEntitiesByIds(ids);
-    final prefetchedAgentEntitiesById = <String, AgentDomainEntity?>{
-      for (final id in ids) id: localEntities[id],
-    };
-    return apply(prefetchedAgentEntitiesById);
-  }
-
   /// Resolves an agent payload from a sync message: inline first, then
   /// fetches from [AttachmentIndex] descriptor (like [SmartJournalEntityLoader]
   /// does for journal entities). Envelopes carrying an [attachmentEventId]
@@ -195,58 +167,42 @@ extension _AgentHandlers on SyncEventProcessor {
     required SyncAgentEntity msg,
     required AgentDomainEntity? resolvedEntity,
     bool? pendingProjectActivityAtWasPresent,
-    Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
   }) async {
     if (resolvedEntity == null) {
       return;
     }
     if (agentRepository != null) {
-      if (resolvedEntity is ChangeSetEntity &&
-          await _applyChangeSetMessage(msg: msg, incoming: resolvedEntity)) {
-        return;
-      }
-      // One pure decision (ADR 0068): keep the local row, or the row to write
-      // — the incoming version, or a merge that joins agent-state G-counters,
-      // head and nudge accumulators so neither side's progress is lost.
+      // One pure decision (ADR 0068): keep the stored row, or the row to
+      // write — the incoming version, or a merge that joins agent-state
+      // G-counters, head, nudge accumulators and change-set items so neither
+      // side's progress is lost.
       //
-      // An agent-state row is read, resolved and written in one transaction
-      // (ADR 0076). A local append that committed between the read and the
-      // write would be overwritten, and the head moved back past it; the
-      // append's own transaction now waits instead. An evolution session is
-      // read and written the same way (ADR 0081): an approval that completed
-      // it between the read and the write would otherwise be overwritten by
-      // a peer's abandonment, leaving this device alone with the session
-      // abandoned. The bundle prefetch is a snapshot from before the
-      // transaction, so it is not used for the row or its identity.
-      final applied =
-          resolvedEntity is AgentStateEntity ||
-              resolvedEntity is EvolutionSessionEntity
-          ? await agentRepository!.runInTransaction(
-              () => _resolveAndPersistAgentEntity(
-                incoming: resolvedEntity,
-                jsonPath: msg.jsonPath,
-                pendingProjectActivityAtWasPresent:
-                    pendingProjectActivityAtWasPresent,
-              ),
-            )
-          : await _resolveAndPersistAgentEntity(
-              incoming: resolvedEntity,
-              jsonPath: msg.jsonPath,
-              pendingProjectActivityAtWasPresent:
-                  pendingProjectActivityAtWasPresent,
-              prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
-            );
-
-      if (applied == null) {
+      // Every entity is read, resolved and written in one transaction. A
+      // local write that committed between the read and the write would be
+      // overwritten: an append moving the head (ADR 0076), a claim on a
+      // change set (`ChangeSetLifecycle.tla`), an approval completing an
+      // evolution session (ADR 0081), and any other local write, which is
+      // the case ADR 0081's addendum closes for the remaining types. The
+      // stored row is read with its tombstone, so a removal is never
+      // replaced by a late copy of the live entity it removed.
+      final outcome = await agentRepository!.runInTransaction(
+        () => _resolveAndPersistAgentEntity(
+          incoming: resolvedEntity,
+          jsonPath: msg.jsonPath,
+          pendingProjectActivityAtWasPresent:
+              pendingProjectActivityAtWasPresent,
+        ),
+      );
+      final entityToApply = outcome.written;
+      if (entityToApply == null) {
         AgentIdentityEntity? projectIdentity;
         if (wakeOrchestrator != null) {
           if (resolvedEntity is AgentIdentityEntity &&
               resolvedEntity.kind == AgentKinds.projectAgent) {
             projectIdentity = resolvedEntity;
           } else if (resolvedEntity is AgentStateEntity) {
-            final identity = await _localAgentEntityFor(
+            final identity = await agentRepository!.getEntity(
               resolvedEntity.agentId,
-              prefetchedAgentEntitiesById,
             );
             if (identity is AgentIdentityEntity &&
                 identity.kind == AgentKinds.projectAgent) {
@@ -270,16 +226,12 @@ extension _AgentHandlers on SyncEventProcessor {
         return;
       }
 
-      final entityToApply = applied.entity;
-      if (applied.projectActivityWasConsumed) {
+      if (outcome.projectActivityWasConsumed) {
         wakeOrchestrator?.cancelPendingAutomaticWakes(
           entityToApply.agentId,
         );
       }
       await _projectAgentAttribution(entityToApply);
-      if (prefetchedAgentEntitiesById?.containsKey(entityToApply.id) ?? false) {
-        prefetchedAgentEntitiesById![entityToApply.id] = entityToApply;
-      }
       // Mirror runtime subscriptions after a remote identity update. Task
       // agents retain observation when automation is off, while project agents
       // restore their direct-project subscription. This also closes the
@@ -335,9 +287,8 @@ extension _AgentHandlers on SyncEventProcessor {
       // notifications do not enter the local project-update stream, so repair
       // the device-local fallback here instead of waiting for a restart.
       if (wakeOrchestrator != null && entityToApply is AgentStateEntity) {
-        final identity = await _localAgentEntityFor(
+        final identity = await agentRepository!.getEntity(
           entityToApply.agentId,
-          prefetchedAgentEntitiesById,
         );
         if (identity is AgentIdentityEntity &&
             identity.kind == AgentKinds.projectAgent) {
@@ -411,70 +362,6 @@ extension _AgentHandlers on SyncEventProcessor {
     }
   }
 
-  /// Applies a received change set against a change set stored locally:
-  /// the local row is read, compared and written in one transaction by the
-  /// shared receive decision ([resolveAgentEntityVersions]), which merges
-  /// concurrent change sets item by item ([mergeConcurrentChangeSets]). Returns `false` — nothing done — when no
-  /// change set is stored under the id yet; the generic path applies it.
-  ///
-  /// The transaction matters as much as the merge. A local claim that
-  /// commits between a read of the local row and the write of the received
-  /// one would be overwritten, and with it the only record that the change
-  /// was applied (`specs/tla/ChangeSetLifecycle.tla`, `AtomicReceive`). The
-  /// prefetched bundle snapshot is neither read nor needed for the same
-  /// reason: every change set of a bundle is read fresh here.
-  Future<bool> _applyChangeSetMessage({
-    required SyncAgentEntity msg,
-    required ChangeSetEntity incoming,
-  }) async {
-    final outcome = await agentRepository!.runInTransaction(() async {
-      final local = await agentRepository!.getEntity(incoming.id);
-      if (local is! ChangeSetEntity) return null;
-      AgentDomainEntity resolved;
-      try {
-        resolved = resolveAgentEntityVersions(local: local, incoming: incoming);
-      } catch (e, st) {
-        _loggingService.error(
-          LogDomain.sync,
-          e,
-          stackTrace: st,
-          subDomain: 'apply.agentEntity.vectorClockCompare',
-        );
-        resolved = incoming;
-      }
-      final toWrite = identical(resolved, local) ? null : resolved;
-      if (toWrite != null) await agentRepository!.upsertEntity(toWrite);
-      return (local: local, written: toWrite);
-    });
-    if (outcome == null) return false;
-
-    final written = outcome.written;
-    if (written == null) {
-      await _restoreDominantAgentCache(
-        jsonPath: msg.jsonPath,
-        kind: 'agentEntity',
-        id: incoming.id,
-        jsonString: jsonEncode(outcome.local.toJson()),
-      );
-      _trace(
-        'apply.agentEntity.skippedLocalWins id=${incoming.id}',
-        subDomain: 'processor.apply',
-      );
-    } else {
-      _updateNotifications.notify(
-        {written.agentId, agentNotification},
-        fromSync: true,
-      );
-      _trace(
-        'apply agentEntity id=${written.id}',
-        subDomain: 'processor.apply',
-      );
-    }
-    await _projectAgentAttribution(written ?? incoming);
-    await _recordReceivedAgentEntity(msg: msg, entity: incoming);
-    return true;
-  }
-
   Future<void> _projectAgentAttribution(AgentDomainEntity entity) async {
     final repository = consumptionRepository;
     if (repository == null) return;
@@ -486,28 +373,25 @@ extension _AgentHandlers on SyncEventProcessor {
   ///
   /// Explicit incoming true/false and configured/disabled values always win;
   /// only null (field absent in old JSON) is overlaid from the local row.
-  Future<AgentIdentityEntity> _preserveLocalAgentConfigFields({
+  ///
+  /// [local] is the version stored under the identity's id, as the receive
+  /// read it.
+  AgentIdentityEntity _preserveLocalAgentConfigFields({
     required AgentIdentityEntity incoming,
-    Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
-  }) async {
+    required AgentDomainEntity? local,
+  }) {
     if ((incoming.kind != 'task_agent' && incoming.kind != 'project_agent') ||
         (incoming.config.automaticUpdatesEnabled != null &&
             incoming.config.inferenceSetup != null)) {
       return incoming;
     }
-    final prefetched = prefetchedAgentEntitiesById?[incoming.id];
-    final localEntity =
-        prefetched ??
-        (prefetchedAgentEntitiesById?.containsKey(incoming.id) ?? false
-            ? null
-            : await agentRepository!.getEntity(incoming.id));
-    if (localEntity is! AgentIdentityEntity) return incoming;
+    if (local is! AgentIdentityEntity) return incoming;
 
     final automaticUpdatesEnabled =
         incoming.config.automaticUpdatesEnabled ??
-        localEntity.config.automaticUpdatesEnabled;
+        local.config.automaticUpdatesEnabled;
     final inferenceSetup =
-        incoming.config.inferenceSetup ?? localEntity.config.inferenceSetup;
+        incoming.config.inferenceSetup ?? local.config.inferenceSetup;
     if (automaticUpdatesEnabled == incoming.config.automaticUpdatesEnabled &&
         inferenceSetup == incoming.config.inferenceSetup) {
       return incoming;
@@ -718,34 +602,56 @@ extension _AgentHandlers on SyncEventProcessor {
     }
   }
 
-  /// Local counterpart of an incoming entity: the prefetched bundle map
-  /// when the id was bulk-loaded (including a cached null), the repository
-  /// otherwise. One helper because five call sites carried this branch.
-  Future<AgentDomainEntity?> _localAgentEntityFor(
-    String id,
-    Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
-  ) async => (prefetchedAgentEntitiesById?.containsKey(id) ?? false)
-      ? prefetchedAgentEntitiesById![id]
-      : await agentRepository!.getEntity(id);
-
-  /// Resolves [incoming] against the local row and persists the result: the
-  /// resolved row with this device's scheduling fields ([_preserveLocalScheduling])
-  /// or agent config ([_preserveLocalAgentConfigFields]) laid over it. Returns
-  /// the row written, or null when the local row stands.
-  Future<({AgentDomainEntity entity, bool projectActivityWasConsumed})?>
+  /// Resolves [incoming] against the stored version of its id
+  /// ([resolveReceivedAgentEntity], tombstone included) and persists the
+  /// result: the resolved row with this device's scheduling fields
+  /// ([_preserveLocalScheduling]) or agent config
+  /// ([_preserveLocalAgentConfigFields]) laid over it. Returns the stored
+  /// version and the row written, or no row when the stored version stands —
+  /// in which case its payload is restored over the attachment cache that the
+  /// incoming descriptor may have overwritten. Called inside the receive's
+  /// transaction.
+  Future<
+    ({
+      AgentDomainEntity? stored,
+      AgentDomainEntity? written,
+      bool projectActivityWasConsumed,
+    })
+  >
   _resolveAndPersistAgentEntity({
     required AgentDomainEntity incoming,
     required String? jsonPath,
     required bool? pendingProjectActivityAtWasPresent,
-    Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
   }) async {
-    final resolved = await _resolveIncomingAgentEntity(
-      incoming: incoming,
-      jsonPath: jsonPath,
-      prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
+    final receipt = await resolveReceivedAgentEntity(
+      agentRepository!,
+      incoming,
+      onMalformedClock: (error, stackTrace) => _loggingService.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'apply.agentEntity.vectorClockCompare',
+      ),
     );
-    if (resolved == null) return null;
-    var entityToApply = resolved;
+    final stored = receipt.stored;
+    var entityToApply = receipt.toWrite;
+    if (entityToApply == null) {
+      await _restoreDominantAgentCache(
+        jsonPath: jsonPath,
+        kind: 'agentEntity',
+        id: incoming.id,
+        jsonString: jsonEncode(stored!.toJson()),
+      );
+      _trace(
+        'apply.agentEntity.skippedLocalWins id=${incoming.id}',
+        subDomain: 'processor.apply',
+      );
+      return (
+        stored: stored,
+        written: null,
+        projectActivityWasConsumed: false,
+      );
+    }
     // Scheduling is device-local (PR 4 B4): each device schedules its own
     // wakes, so a remote AgentStateEntity must never overwrite this device's
     // nextWakeAt / sleepUntil / scheduledWakeAt. Overlay the local values onto
@@ -754,78 +660,23 @@ extension _AgentHandlers on SyncEventProcessor {
     if (entityToApply is AgentStateEntity) {
       final preserved = await _preserveLocalScheduling(
         incoming: entityToApply,
+        local: stored,
         pendingProjectActivityAtWasPresent: pendingProjectActivityAtWasPresent,
-        prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
       );
       entityToApply = preserved.entity;
       projectActivityWasConsumed = preserved.projectActivityWasConsumed;
     } else if (entityToApply is AgentIdentityEntity) {
-      entityToApply = await _preserveLocalAgentConfigFields(
+      entityToApply = _preserveLocalAgentConfigFields(
         incoming: entityToApply,
-        prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
+        local: stored,
       );
     }
     await agentRepository!.upsertEntity(entityToApply);
     return (
-      entity: entityToApply,
+      stored: stored,
+      written: entityToApply,
       projectActivityWasConsumed: projectActivityWasConsumed,
     );
-  }
-
-  /// The row to persist for an [incoming] agent entity, or null when the
-  /// local row stands — in which case the local payload is restored over the
-  /// attachment cache that the incoming descriptor may have overwritten.
-  ///
-  /// The decision is [resolveAgentEntityVersions], the same pure function the
-  /// local write path resolves against (ADR 0068). For two agent-state rows
-  /// whose heads differ, the order of the heads in the local message DAG is
-  /// read first ([AgentMessageDag.ancestryOf]), so the merge keeps the head
-  /// that descends from the other (ADR 0076). A malformed clock is logged and
-  /// applies [incoming].
-  Future<AgentDomainEntity?> _resolveIncomingAgentEntity({
-    required AgentDomainEntity incoming,
-    required String? jsonPath,
-    Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
-  }) async {
-    final local = await _localAgentEntityFor(
-      incoming.id,
-      prefetchedAgentEntitiesById,
-    );
-    if (local == null) return incoming;
-    final isAncestor = local is AgentStateEntity && incoming is AgentStateEntity
-        ? await AgentMessageDag(agentRepository!).ancestryOf(
-            local.recentHeadMessageId,
-            incoming.recentHeadMessageId,
-          )
-        : noKnownAncestry;
-    final AgentDomainEntity resolved;
-    try {
-      resolved = resolveAgentEntityVersions(
-        local: local,
-        incoming: incoming,
-        isAncestor: isAncestor,
-      );
-    } catch (e, st) {
-      _loggingService.error(
-        LogDomain.sync,
-        e,
-        stackTrace: st,
-        subDomain: 'apply.agentEntity.vectorClockCompare',
-      );
-      return incoming;
-    }
-    if (!identical(resolved, local)) return resolved;
-    await _restoreDominantAgentCache(
-      jsonPath: jsonPath,
-      kind: 'agentEntity',
-      id: incoming.id,
-      jsonString: jsonEncode(local.toJson()),
-    );
-    _trace(
-      'apply.agentEntity.skippedLocalWins id=${incoming.id}',
-      subDomain: 'processor.apply',
-    );
-    return null;
   }
 
   /// Overlays this device's local scheduling fields onto an [incoming]
@@ -835,20 +686,15 @@ extension _AgentHandlers on SyncEventProcessor {
   /// (a brand-new agent on this device), non-project agents keep the incoming
   /// bootstrap schedule. Project fallback deadlines are instead cleared and
   /// rebuilt below from this device's automation policy and local clock.
+  /// [local] is the version stored under the row's id, as the receive read
+  /// it.
   Future<({AgentStateEntity entity, bool projectActivityWasConsumed})>
   _preserveLocalScheduling({
     required AgentStateEntity incoming,
+    required AgentDomainEntity? local,
     bool? pendingProjectActivityAtWasPresent,
-    Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
   }) async {
-    final local = await _localAgentEntityFor(
-      incoming.id,
-      prefetchedAgentEntitiesById,
-    );
-    final identity = await _localAgentEntityFor(
-      incoming.agentId,
-      prefetchedAgentEntitiesById,
-    );
+    final identity = await agentRepository!.getEntity(incoming.agentId);
     if (local is! AgentStateEntity) {
       final isProjectState =
           (identity is AgentIdentityEntity &&
@@ -975,7 +821,9 @@ extension _AgentHandlers on SyncEventProcessor {
     try {
       final isExact = msg.attachmentEventId != null;
       final canonicalVectorClock = isExact
-          ? (await agentRepository!.getEntity(entity.id))?.vectorClock
+          ? (await agentRepository!.getEntityIncludingDeleted(
+              entity.id,
+            ))?.vectorClock
           : null;
       final gaps = await _sequenceLogService.recordReceivedEntry(
         entryId: entity.id,

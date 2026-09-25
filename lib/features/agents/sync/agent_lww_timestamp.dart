@@ -5,7 +5,13 @@ extension AgentDomainEntityLwwTimestamp on AgentDomainEntity {
   /// The timestamp used for last-writer-wins comparison: the variant's
   /// `updatedAt` when it has one, otherwise its `createdAt` (append-only
   /// variants — messages, payloads, reports, observations — carry only
-  /// `createdAt`).
+  /// `createdAt`), or the removal's `deletedAt` when that is later.
+  ///
+  /// A removal is a write at `deletedAt`. Several removers set `deletedAt`
+  /// alone, and an append-only variant has no other timestamp to move, so
+  /// without it a removal would tie with — or sort before — a concurrent
+  /// edit it happened after, and the canonical clock tiebreak could bring
+  /// the entity back on every device (ADR 0081, addendum).
   ///
   /// Implemented with freezed's generated, **exhaustive** `map` rather than a
   /// serialized form: **zero allocations, no serialization, no string parsing**,
@@ -14,8 +20,14 @@ extension AgentDomainEntityLwwTimestamp on AgentDomainEntity {
   /// can't slip through to a runtime failure on the sync hot path. The fields
   /// are typed, non-nullable `DateTime`s deserialized by the model, so there is
   /// nothing to cast or fail-to-parse.
-  DateTime get effectiveUpdatedAt => map(
-    queryChatEvent: (e) => e.deletedAt ?? e.createdAt,
+  DateTime get effectiveUpdatedAt {
+    final stamp = _writeStamp;
+    final removedAt = deletedAt;
+    return removedAt != null && removedAt.isAfter(stamp) ? removedAt : stamp;
+  }
+
+  DateTime get _writeStamp => map(
+    queryChatEvent: (e) => e.createdAt,
     agent: (e) => e.updatedAt,
     agentState: (e) => e.updatedAt,
     agentMessage: (e) => e.createdAt,
@@ -67,7 +79,7 @@ extension AgentDomainEntityLwwTimestamp on AgentDomainEntity {
   /// ordered by `createdAt` come back unchanged.
   AgentDomainEntity withUpdatedAtNotBefore(DateTime floor) {
     final setUpdatedAt = _updatedAtSetter;
-    if (setUpdatedAt == null || !effectiveUpdatedAt.isBefore(floor)) {
+    if (setUpdatedAt == null || !_writeStamp.isBefore(floor)) {
       return this;
     }
     return setUpdatedAt(floor);

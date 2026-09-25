@@ -83,6 +83,10 @@ on:
       - "lib/features/agents/database/agent_repo_links.dart"
       - "lib/features/agents/model/agent_link.dart"
       - "lib/features/agents/service/soul_template_ops.dart"
+      - "lib/features/agents/sync/agent_entity_receive.dart"
+      - "lib/features/agents/database/agent_repo_core.dart"
+      - "lib/features/sync/matrix/sync_event_processor_apply.dart"
+      - "lib/features/agents/service/project_recommendation_service.dart"
       - ".github/workflows/tla-model-check.yml"
 
 concurrency:

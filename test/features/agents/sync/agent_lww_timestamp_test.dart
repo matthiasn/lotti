@@ -458,6 +458,54 @@ void main() {
     });
   });
 
+  group('a removal ranks at its deletedAt (ADR 0081, addendum)', () {
+    final removedAt = DateTime(2024, 9, 1);
+
+    test('an append-only variant, which has no other timestamp to move, is '
+        'ordered by its removal', () {
+      // Ordered by createdAt, a removal tied with every concurrent edit, and
+      // the canonical clock tiebreak could bring the entity back.
+      final removed = makeTestReport(
+        createdAt: _created,
+      ).copyWith(deletedAt: removedAt);
+
+      expect(removed.effectiveUpdatedAt, removedAt);
+      expect(makeTestReport(createdAt: _created).effectiveUpdatedAt, _created);
+    });
+
+    test('a removal that left updatedAt alone is ordered by its removal', () {
+      // Soul, soul-head and version removals set deletedAt alone: ordered by
+      // the old updatedAt, a concurrent edit made before the removal won.
+      final removed = makeTestReportHead(
+        updatedAt: _updated,
+      ).copyWith(deletedAt: removedAt);
+
+      expect(removed.effectiveUpdatedAt, removedAt);
+    });
+
+    test('a later updatedAt still wins over an earlier removal instant', () {
+      final removed = makeTestReportHead(
+        updatedAt: _updated,
+      ).copyWith(deletedAt: _created);
+
+      expect(removed.effectiveUpdatedAt, _updated);
+    });
+
+    test('the floor lifts updatedAt itself, whatever the removal instant', () {
+      // A successor's updatedAt never moves back, even when its removal
+      // instant already sorts it after the floor.
+      final floor = DateTime(2024, 7, 1);
+      final removed = makeTestReportHead(
+        updatedAt: _updated,
+      ).copyWith(deletedAt: removedAt);
+
+      final lifted = removed.withUpdatedAtNotBefore(floor);
+
+      expect((lifted as AgentReportHeadEntity).updatedAt, floor);
+      expect(lifted.effectiveUpdatedAt, removedAt);
+    });
+  });
+
   group('AgentDomainEntity.withUpdatedAtNotBefore', () {
     final later = DateTime(2025, 1, 1);
     final earlier = DateTime(2023, 1, 1);

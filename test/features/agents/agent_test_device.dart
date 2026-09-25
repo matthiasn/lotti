@@ -4,7 +4,7 @@ import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
-import 'package:lotti/features/agents/sync/agent_message_dag.dart';
+import 'package:lotti/features/agents/sync/agent_entity_receive.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -111,29 +111,20 @@ class AgentTestDevice {
   ];
 
   /// Receives [incoming] the way `SyncEventProcessor` applies an agent
-  /// entity: the stored row, read and written in one transaction, resolved
-  /// by [resolveAgentEntityVersions] — for two agent-state rows, with the
-  /// order of their heads in the local message DAG.
+  /// entity: through [resolveReceivedAgentEntity] — the stored row, a
+  /// tombstone included, resolved by [resolveAgentEntityVersions] (for two
+  /// agent-state rows, with the order of their heads in the local message
+  /// DAG) — and written in the same transaction. A malformed clock fails the
+  /// test rather than being logged.
   Future<void> receiveEntity(AgentDomainEntity incoming) =>
       repository.runInTransaction(() async {
-        final local = await repository.getEntity(incoming.id);
-        final isAncestor =
-            local is AgentStateEntity && incoming is AgentStateEntity
-            ? await AgentMessageDag(repository).ancestryOf(
-                local.recentHeadMessageId,
-                incoming.recentHeadMessageId,
-              )
-            : noKnownAncestry;
-        final resolved = local == null
-            ? incoming
-            : resolveAgentEntityVersions(
-                local: local,
-                incoming: incoming,
-                isAncestor: isAncestor,
-              );
-        if (!identical(resolved, local)) {
-          await repository.upsertEntity(resolved);
-        }
+        final receipt = await resolveReceivedAgentEntity(
+          repository,
+          incoming,
+          onMalformedClock: Error.throwWithStackTrace,
+        );
+        final toWrite = receipt.toWrite;
+        if (toWrite != null) await repository.upsertEntity(toWrite);
       });
 
   /// Receives [incoming] the way `SyncEventProcessor` applies an agent link:

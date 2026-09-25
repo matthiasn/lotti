@@ -241,7 +241,7 @@ Deliver(r) ==
         /\ delivered' = [delivered EXCEPT ![r] = @ \cup {m}]
     /\ UNCHANGED <<snap, sent, now, hc, made, mem, pend, cache, rd>>
 
-\* Before: _resolveIncomingAgentEntity reads the row, and the resolved row
+\* Before: the receive read the row, and the resolved row
 \* is written after an await, where a local write can commit.
 ReceiveRead(r) ==
     /\ ~AtomicReceive

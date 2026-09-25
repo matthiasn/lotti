@@ -723,16 +723,25 @@ A trace that drives real code through the interleavings of a TLA+ model in
 multi-device benches rather than building its own:
 
 - `features/agents/agent_test_device.dart` (`AgentTestDevice`) — one device's
-  real in-memory agent database, repository and `AgentSyncService`, with the
-  receive decision the sync processor applies. Pass `background: false` under
-  `fakeAsync`; `reboot()` is a process restart over the same database.
+  real in-memory agent database, repository and `AgentSyncService`. Its
+  entity receive is the sync processor's own, `resolveReceivedAgentEntity`,
+  so reverting a receive fix fails a trace built on it. Pass
+  `background: false` under `fakeAsync`; `reboot()` is a process restart over
+  the same database.
 - `features/agents/sync/agent_replica_bench.dart` — a network of
   `AgentTestDevice`s that delivers every committed write as its own message,
-  in whatever order the trace chooses.
+  in whatever order the trace chooses. A lost delivery is an index marked
+  received without being applied; `causallyBefore` is the models' causal
+  order, independent of `VectorClock.compare`.
 - `features/agents/wake/wake_device_bench.dart` — adds a process per device: a
   real `WakeOrchestrator`, `WakeIntentStore` and `ScheduledWakeManager`, with
   the lease's host lookup and the intent write held until the trace releases
   them, crash as the next process over the same stores.
+
+`MockAgentRepository` answers `getEntityIncludingDeleted` — the read sync
+orders versions by — with whatever `getEntity` is stubbed to answer, so a
+test about a live row stubs one read; a test about a tombstone stubs
+`getEntityIncludingDeleted` itself, and the later stub wins.
 
 Run them under `fakeAsync` with an explicit `settle()` (microtasks plus
 `elapse(Duration.zero)`), close the databases in a `finally`, and never order
