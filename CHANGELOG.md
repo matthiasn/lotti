@@ -166,6 +166,107 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   status, priority, estimate, due date or language is also applied only while
   that field still holds the value the agent saw, so a late confirmation on
   another device no longer overwrites an edit you made in the meantime.
+- **The first edit of an entry on a newly set up or reinstalled device was
+  lost.** A fresh device's first change to each entry, link or agent record
+  it had synced from elsewhere looked identical to the version it replaced.
+  The device itself discarded the edit to an entry, and other devices ignored
+  it, with no error and no conflict. Such an edit is now saved and syncs to
+  your other devices. When another device changed the same entry at the same
+  time, the two versions now show up as a conflict you can resolve, instead
+  of one of them being dropped silently.
+- **A task, AI response or person created under a fixed id could stay off
+  your other devices after the app was closed at the wrong moment.** Tasks an
+  agent creates for a person, AI responses from skills, and people added from
+  your contacts are saved under an id chosen in advance. The sync bookkeeping
+  for that save recorded a different id. If the app quit after saving but
+  before the item was queued for sync, the next start looked for the wrong
+  item, found nothing, and told your other devices the save never happened.
+  The bookkeeping now records the id the item is saved under. On the next
+  start after such a quit, the item is sent to your other devices.
+- **Recovering a damaged database could throw away the changes its backup
+  was missing.** When the app finds a database it can no longer read, it
+  restores the latest backup and sets the damaged file aside, together with
+  the log of changes made since that backup, so those changes are not lost.
+  The check that found the damage could delete that log while the restore was
+  running. It no longer touches the log, so it is kept with the damaged file.
+- **A task you took out of a project could reappear in it after syncing.**
+  The same went for a linked entry you collapsed, hid or retyped. Each device
+  kept whichever copy of the link reached it last. A copy sent before your
+  change, but delivered after it, undid the change, on your other devices or
+  on the one where you made it. Devices could also disagree for good about
+  whether the link was there. Every device now keeps the latest version of a
+  link, whatever order the copies arrive in and even when another device's
+  clock is off.
+- **A link you removed came back.** Unlinking an entry, removing a
+  relationship between two tasks, or undoing a link you had just made only
+  removed the link on the device you used. Your other devices kept it, and the
+  next time one of them synced that entry the link reappeared on this device
+  too. A removal now reaches all your devices and stays removed. Linking the
+  same two entries again afterwards brings the link back everywhere.
+- **Things you removed could come back from another of your devices.** A
+  deleted day plan, template or soul, a capture item replaced by a re-parse,
+  a cleared chat — when an older copy of it arrived late from another
+  device, the removal was overwritten and the item returned. A device that
+  missed the removal entirely never caught up on it either. A removal is now
+  kept on every device, and one that went missing is recovered like any
+  other change. An edit made on another device after the removal still
+  brings the item back, and a plan you draft again for a day whose plan you
+  deleted shows up everywhere.
+- **A 1-on-1 whose proposal you approved could show as abandoned.** If another
+  device started a 1-on-1 for the same agent shortly after you approved one,
+  its cleanup of "stale" sessions could win on every device. The approved
+  session then counted as abandoned in the history and in the approval rate,
+  and fed a negative signal into the next ritual. An approved 1-on-1 now stays
+  approved on every device.
+- **A failed approval could leave the new directives in effect, or create a
+  second personality version on retry.** The new version was saved before the
+  rest of the approval. If a later step failed, the change was already in use
+  while the 1-on-1 still looked open, and retrying a personality approval
+  saved it again. An approval now saves everything together or nothing.
+- **A removed agent link could come back on another device.** When a device
+  received a removal before the link it removed, or lost the removal and
+  asked for it again, it kept the link. Linking a capture item to a task again
+  after another device had unlinked it could also leave the devices
+  disagreeing. Removed links now stay removed, and a new link wins everywhere.
+- **A message to a goal could be answered twice, by two of your devices.**
+  When you write to a goal, the device you typed on answers, and your other
+  devices only step in if no answer arrives within half an hour. Outside the
+  UTC time zone, that half hour was read wrongly: east of Greenwich — most of
+  Europe, Asia and Australia — another device could step in as soon as the
+  message reached it, while the first one was still answering. West of it,
+  in the Americas, goal and relationship check-ins that were meant to run
+  right away could wait hours. Every scheduled wake is now due at the moment
+  it names, in any time zone.
+- **A goal's report no longer keeps an old status after your devices catch up
+  with each other.** When the device that wrote the report had not yet
+  received your latest check-off, the report could say "behind" all day while
+  the goal showed on track everywhere. A report that contradicts the day's
+  status is now refreshed.
+- **A check-off can no longer vanish from a goal's day.** Two evaluations of
+  the same goal on one device could overlap, and the one that started first
+  could finish last, dropping evidence the other had counted.
+- **Status changes reach the goal's report promptly and are not lost when a
+  device goes away.** A change of status is now handed to your other devices
+  at once instead of waiting two minutes on the device that noticed it;
+  "Skip once" still holds back refreshes for new evidence that leaves the
+  status alone.
+- **Decimal amounts now meet a target they add up to exactly.** Ten entries of
+  0.1 l, or 0.7 plus 0.1, were stored as a hair under 1 l and 0.8, so "at least
+  1 l" habits did not check themselves off and goals read the day as missed.
+  Totals and averages are now compared the way you would add them up yourself.
+- **A skip you recorded is no longer overwritten by an automatic check-off from
+  another device.** If a second device auto-completed the habit from synced
+  data before your skip reached it, the check-off won everywhere once both
+  synced. Anything you record for a day now always outranks the automatic one.
+- **"Successful days needed to recover" counts today while it is still open.**
+  A rolling-window goal could ask for three more days when completing the habit
+  today was enough.
+- **A goal with an "either" part that is already met is no longer marked Behind
+  just because the other option ran out of days.** The goal now looks at what
+  is still left to do.
+- **Goals can no longer be set to a quota the window cannot hold**, such as 10
+  successes in a rolling 7 days or 8 in a calendar week, which could never be
+  met. Existing goals keep working unchanged.
 
 ## [1.1.25]
 
