@@ -150,6 +150,53 @@ extension _CatchUpClaimCases on _QueueCoordinatorTestSetup {
       );
     }
 
+    test('SDK batch retries a failed claim before the live insert', () async {
+      await seedMarker(ts: 0, eventId: r'$legacy-anchor');
+      when(
+        () => settingsDb.itemByKey('LAST_READ_MATRIX_EVENT_TS'),
+      ).thenAnswer((_) async => '100');
+      final realQueue = InboundQueue(db: syncDb, logging: logging);
+      addTearDown(realQueue.dispose);
+      final coordinator = buildReal(realQueue);
+      await coordinator.start();
+      addTearDown(coordinator.stop);
+      await realQueue.completeResumeWalk(
+        roomId: roomId,
+        walkStartedAtFloorRevision: realQueue.resumeFloorRevision(roomId),
+        unresolvedFloorTs: null,
+      );
+      var reads = 0;
+      when(
+        () => settingsDb.itemByKey('LAST_READ_MATRIX_EVENT_TS'),
+      ).thenAnswer((_) async {
+        if (++reads == 1) throw StateError('marker read failed');
+        return '100';
+      });
+      syncStatusCtl.add(const SyncStatusUpdate(SyncStatus.processing));
+      timelineCtl.add(syncPayload(r'$after-failed-claim', 900));
+      await pumpEventQueue();
+      expect(await syncDb.select(syncDb.inboundEventQueue).get(), isEmpty);
+      syncStatusCtl.add(const SyncStatusUpdate(SyncStatus.error));
+      await _waitForQueueStats(realQueue, (stats) => stats.total == 1);
+      final ready = await realQueue.peekBatchReady(maxBatch: 1);
+      await realQueue.commitApplied(ready.single);
+      final marker = await readMarkerRow();
+      expect(marker.lastAppliedTs, 900);
+      expect(marker.resumeFloorTs, 101);
+      expect(reads, 2);
+      verify(
+        () => logging.error(
+          LogDomain.sync,
+          any<Object>(that: isA<StateError>()),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: any<String>(
+            named: 'subDomain',
+            that: endsWith('.syncBatch.claim'),
+          ),
+        ),
+      ).called(1);
+    });
+
     test('SDK batch admission waits across overlapping responses', () async {
       final coordinator = build();
       await coordinator.start();
