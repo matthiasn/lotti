@@ -1,5 +1,8 @@
 // ignore_for_file: avoid_redundant_argument_values, unnecessary_lambdas, cascade_invocations
 
+import 'package:drift/drift.dart' show Value;
+import 'package:lotti/features/sync/outbox/outbox_repository.dart';
+
 import 'outbox_service_test_harness.dart';
 
 void main() {
@@ -50,6 +53,124 @@ void main() {
 
   tearDown(() async {
     await harness.tearDown();
+  });
+
+  group('orphaned claims (ADR 0085, Outbox.tla NewestLandsLast) -', () {
+    // TLC's trace: the previous process claimed version 2 of an agent, sent
+    // it and died before markSent; version 3 was enqueued as a fresh row
+    // after the restart. While version 2's lease ran, the drain sent 3, and
+    // once the lease ran out it sent 2 — the older payload landed last.
+    SyncMessage agentAt(int counter) => SyncMessage.agentEntity(
+      agentEntity: AgentDomainEntity.agent(
+        id: 'agent-1',
+        agentId: 'agent-1',
+        kind: 'task_agent',
+        displayName: 'Agent',
+        lifecycle: AgentLifecycle.active,
+        mode: AgentInteractionMode.autonomous,
+        allowedCategoryIds: const {},
+        currentStateId: 'state-1',
+        config: const AgentConfig(),
+        createdAt: DateTime(2026, 9, 25),
+        updatedAt: DateTime(2026, 9, 25),
+        vectorClock: VectorClock({'host': counter}),
+      ),
+      status: SyncEntryStatus.update,
+    );
+
+    int counterOf(SyncMessage message) =>
+        (message as SyncAgentEntity).agentEntity!.vectorClock!.vclock['host']!;
+
+    test(
+      'a claim orphaned between send and mark goes out before the newer row',
+      () async {
+        final db = SyncDatabase(inMemoryDatabase: true);
+        addTearDown(db.close);
+        final now = DateTime(2026, 9, 25, 12);
+        OutboxCompanion rowFor(int counter, OutboxStatus status) =>
+            OutboxCompanion(
+              status: Value(status.index),
+              subject: Value('agentEntity:agent-1:$counter'),
+              message: Value(jsonEncode(agentAt(counter).toJson())),
+              outboxEntryId: const Value('agent-1'),
+              createdAt: Value(now),
+              updatedAt: Value(now),
+            );
+        final orphan = await db.addOutboxItem(
+          rowFor(2, OutboxStatus.sending),
+        );
+        final newer = await db.addOutboxItem(rowFor(3, OutboxStatus.pending));
+
+        when(
+          () => journalDb.getConfigFlag(enableMatrixFlag),
+        ).thenAnswer((_) async => true);
+        final wire = <int>[];
+        when(() => messageSender.send(any())).thenAnswer((invocation) async {
+          final message = invocation.positionalArguments.single as SyncMessage;
+          wire.addAll(
+            message is SyncOutboxBundle
+                ? message.children.map(counterOf)
+                : [counterOf(message)],
+          );
+          return true;
+        });
+
+        final svc = TestableOutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: DatabaseOutboxRepository(db),
+          messageSender: messageSender,
+          activityGate: createGate(),
+          ownsActivityGate: false,
+        );
+        addTearDown(svc.dispose);
+
+        // Seconds after the restart: the orphan's one-minute lease still runs.
+        await withClock(
+          Clock.fixed(now.add(const Duration(seconds: 5))),
+          svc.sendNext,
+        );
+
+        expect(wire, [2, 3]);
+        final statuses = {
+          for (final item in await db.getOutboxItems()) item.id: item.status,
+        };
+        expect(statuses, {
+          orphan: OutboxStatus.sent.index,
+          newer: OutboxStatus.sent.index,
+        });
+      },
+    );
+
+    test('sendNext releases orphaned claims before it claims', () async {
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => true);
+      when(
+        () => processor.processQueue(),
+      ).thenAnswer((_) async => OutboxProcessingResult.none);
+      when(() => repository.releaseOrphanedClaims()).thenAnswer((_) async => 2);
+
+      final svc = buildService(activityGate: createGate());
+      await svc.sendNext();
+
+      verifyInOrder([
+        () => repository.releaseOrphanedClaims(),
+        () => processor.processQueue(),
+      ]);
+      verify(
+        () => loggingService.log(
+          LogDomain.sync,
+          'released orphaned claims count=2',
+          subDomain: 'sendNext.release',
+        ),
+      ).called(1);
+      await svc.dispose();
+    });
   });
 
   group('sendNext', () {

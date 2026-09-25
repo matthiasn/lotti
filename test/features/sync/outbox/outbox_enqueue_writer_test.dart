@@ -1,8 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
+
+import 'package:clock/clock.dart';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -10,6 +14,8 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_enqueue_writer.dart';
+import 'package:lotti/features/sync/outbox/outbox_processor.dart';
+import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -19,6 +25,8 @@ import 'package:path/path.dart' as p;
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../ai_consumption/test_utils.dart';
+
+part 'outbox_model_conformance.dart';
 
 /// Shared collaborators for constructing an [OutboxEnqueueWriter] with the
 /// central mocks: recorded `saveJson` writes, recorded `enqueueNextSendRequest`
@@ -249,6 +257,8 @@ OutboxItem _pendingItem({
 
 void main() {
   setUpAll(registerAllFallbackValues);
+
+  _registerOutboxModelConformance();
 
   group('enqueueEntryLink', () {
     test(
@@ -1021,5 +1031,176 @@ void main() {
         expect(prepared.coveredVectorClocks!.single.vclock, {'host-A': 7});
       },
     );
+  });
+
+  // The holes TLC found in specs/tla/Outbox.tla (ADR 0085), replayed against
+  // a real SyncDatabase outbox so the merge's read and write interleave the
+  // way they do in the app.
+  group('merge under concurrent and out-of-order enqueues (ADR 0085)', () {
+    late SyncDatabase db;
+
+    setUp(() => db = SyncDatabase(inMemoryDatabase: true));
+    tearDown(() async => db.close());
+
+    OutboxEnqueueWriter realWriter({
+      MockSyncSequenceLogService? sequenceLogService,
+    }) => OutboxEnqueueWriter(
+      journalDb: MockJournalDb(),
+      loggingService: MockDomainLogger(),
+      syncDatabase: db,
+      documentsDirectory: Directory(p.join(p.separator, 'outbox-writer-docs')),
+      saveJson: (_, _) async {},
+      safePayloadFullPath: (_) => null,
+      enqueueNextSendRequest:
+          ({Duration delay = const Duration(milliseconds: 1)}) async {},
+      sequenceLogService: sequenceLogService,
+    );
+
+    Future<bool> enqueueAgentAt(OutboxEnqueueWriter writer, int counter) {
+      final msg =
+          SyncMessage.agentEntity(
+                agentEntity: _agentEntity(
+                  vectorClock: VectorClock({'host-A': counter}),
+                ),
+                status: SyncEntryStatus.update,
+              )
+              as SyncAgentEntity;
+      return writer.enqueueAgentEntity(
+        msg: msg,
+        commonFields: _commonFields(msg),
+      );
+    }
+
+    Future<bool> enqueueLinkAt(OutboxEnqueueWriter writer, int counter) {
+      final msg = _entryLinkMessage(
+        vectorClock: VectorClock({'host-A': counter}),
+      );
+      return writer.enqueueEntryLink(
+        msg: msg,
+        commonFields: _commonFields(msg),
+        host: 'host-A',
+        hostHash: 'hash',
+      );
+    }
+
+    /// Every live row as (payload counter, covered counters).
+    Future<List<({int payload, Set<int> covered})>> liveRows() async {
+      final items = await db.getOutboxItems(
+        statuses: const [OutboxStatus.pending, OutboxStatus.sending],
+      );
+      return [
+        for (final item in items.reversed)
+          switch (_decode(item.message)) {
+            final SyncAgentEntity m => (
+              payload: m.agentEntity!.vectorClock!.vclock['host-A']!,
+              covered: {
+                for (final vc in m.coveredVectorClocks ?? <VectorClock>[])
+                  vc.vclock['host-A']!,
+              },
+            ),
+            final SyncEntryLink m => (
+              payload: m.entryLink.vectorClock!.vclock['host-A']!,
+              covered: {
+                for (final vc in m.coveredVectorClocks ?? <VectorClock>[])
+                  vc.vclock['host-A']!,
+              },
+            ),
+            final other => throw StateError('unexpected $other'),
+          },
+      ];
+    }
+
+    test('two concurrent enqueues of one agent keep every counter '
+        '(NoLostCounter)', () async {
+      // TLC: v1 is pending; the enqueues of v2 and v3 both read it, v2
+      // writes {v2, covers v1}, then v3 writes {v3, covers v1} over it and
+      // counter 2 is in no row at all.
+      final writer = realWriter();
+      await enqueueAgentAt(writer, 1);
+
+      await Future.wait([enqueueAgentAt(writer, 2), enqueueAgentAt(writer, 3)]);
+
+      final rows = await liveRows();
+      expect(rows, hasLength(1));
+      expect(rows.single.payload, 3);
+      expect(rows.single.covered, containsAll(<int>[1, 2]));
+    });
+
+    test('an agent enqueue arriving after a newer one keeps the newer '
+        'payload (MergeNeverRegresses)', () async {
+      final writer = realWriter();
+      await enqueueAgentAt(writer, 3);
+      await enqueueAgentAt(writer, 2);
+
+      final rows = await liveRows();
+      expect(rows, hasLength(1));
+      expect(rows.single.payload, 3);
+      expect(rows.single.covered, contains(2));
+    });
+
+    test('an entry-link enqueue arriving after a newer one keeps the newer '
+        'link and its subject (MergeNeverRegresses)', () async {
+      final writer = realWriter();
+      await enqueueLinkAt(writer, 3);
+      await enqueueLinkAt(writer, 2);
+
+      final rows = await liveRows();
+      expect(rows, hasLength(1));
+      expect(rows.single.payload, 3);
+      expect(rows.single.covered, contains(2));
+      final items = await db.getOutboxItems();
+      expect(items.single.subject, 'hash:link:3');
+    });
+
+    test('an invalid pending clock never outranks the incoming link', () async {
+      // VectorClock.compare throws on a negative counter; the merge then
+      // takes the incoming link, as it did before newest-wins.
+      final writer = realWriter();
+      await enqueueLinkAt(writer, -1);
+      await enqueueLinkAt(writer, 2);
+
+      final rows = await liveRows();
+      expect(rows.single.payload, 2);
+      expect(rows.single.covered, containsAll(<int>[-1, 2]));
+    });
+
+    test('a fresh inline row covers the last sent counter only when its '
+        'payload is newer (CoversOnlyOlder)', () async {
+      // TLC: version 3 is recorded and in flight when a late enqueue of
+      // version 2 inserts a fresh row; enriched with counter 3, it would let
+      // a peer mark 3 received while holding only version 2.
+      final sequenceLog = MockSyncSequenceLogService();
+      when(
+        () => sequenceLog.getLastSentVectorClockForEntry(any()),
+      ).thenAnswer((_) async => const VectorClock({'host-A': 3}));
+      when(
+        () => sequenceLog.recordSentEntry(
+          entryId: any(named: 'entryId'),
+          vectorClock: any(named: 'vectorClock'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => sequenceLog.recordSentEntryLink(
+          linkId: any(named: 'linkId'),
+          vectorClock: any(named: 'vectorClock'),
+        ),
+      ).thenAnswer((_) async {});
+      final writer = realWriter(sequenceLogService: sequenceLog);
+
+      await enqueueAgentAt(writer, 2);
+      await enqueueLinkAt(writer, 2);
+      final stale = await liveRows();
+      expect(stale.map((row) => row.payload), [2, 2]);
+      expect(stale.map((row) => row.covered), everyElement(isEmpty));
+
+      // A newer payload still picks up the predecessor, as before.
+      await db.delete(db.outbox).go();
+      await enqueueAgentAt(writer, 4);
+      await enqueueLinkAt(writer, 4);
+      final fresh = await liveRows();
+      expect(fresh.map((row) => row.payload), [4, 4]);
+      expect(fresh.map((row) => row.covered), everyElement(equals({3})));
+    });
   });
 }

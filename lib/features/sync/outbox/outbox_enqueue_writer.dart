@@ -61,6 +61,53 @@ class OutboxEnqueueWriter {
   final Future<void> Function({Duration delay}) _enqueueNextSendRequest;
   final SyncSequenceLogService? _sequenceLogService;
 
+  /// The last enqueue queued per outbox entry id; see [_serializedByKey].
+  final Map<String, Completer<void>> _keyTails = <String, Completer<void>>{};
+
+  /// Runs [body] after every earlier enqueue of [key] has finished.
+  ///
+  /// The merge paths read the pending row with `findPendingByEntryId` and
+  /// write it back after further awaits. Two enqueues of one entity that
+  /// interleave there both merge into the row as they read it, and the second
+  /// write drops the counter the first one added — and, for an inline payload,
+  /// can put the older payload back (ADR 0085, `NoLostCounter`). Keyed by the
+  /// outbox entry id, so different entities still enqueue concurrently. The
+  /// processor is not excluded: the update's compare-and-set on `pending`
+  /// already turns a claim in between into a fresh row.
+  Future<T> _serializedByKey<T>(String key, Future<T> Function() body) async {
+    final previous = _keyTails[key];
+    final done = Completer<void>();
+    _keyTails[key] = done;
+    try {
+      if (previous != null) await previous.future;
+      return await body();
+    } finally {
+      done.complete();
+      if (identical(_keyTails[key], done)) {
+        _keyTails.remove(key);
+      }
+    }
+  }
+
+  /// Whether the payload already pending, at [pending], is strictly newer
+  /// than the incoming one at [incoming]. A merge then keeps the pending
+  /// payload and only folds the incoming clock into the covered ones, so an
+  /// enqueue that arrives out of order never replaces a newer inline payload
+  /// with an older one (ADR 0085, `MergeNeverRegresses`).
+  bool _pendingSupersedes(VectorClock? pending, VectorClock? incoming) {
+    if (pending == null || incoming == null) return false;
+    try {
+      return VectorClock.compare(pending, incoming) == VclockStatus.a_gt_b;
+    } on VclockException {
+      return false;
+    }
+  }
+
+  /// Whether [clock] has reached every counter of [other]: each host in
+  /// [other] is at least as far along in [clock].
+  bool _reaches(VectorClock clock, VectorClock other) =>
+      other.vclock.entries.every((e) => (clock.vclock[e.key] ?? -1) >= e.value);
+
   void _logEnqueueSample(
     String message, {
     required String sampleKey,
@@ -287,7 +334,23 @@ class OutboxEnqueueWriter {
   /// Enqueues a SyncJournalEntity. Returns true if merge happened (caller
   /// should not schedule another send request). Descriptor refresh failures
   /// propagate so recovery cannot settle a counter against a stale sidecar.
+  /// Enqueues of one entry run one at a time ([_serializedByKey]).
   Future<bool> enqueueJournalEntity({
+    required SyncJournalEntity msg,
+    required OutboxCompanion commonFields,
+    required String? host,
+    required String? hostHash,
+  }) => _serializedByKey(
+    msg.id,
+    () => _enqueueJournalEntity(
+      msg: msg,
+      commonFields: commonFields,
+      host: host,
+      hostHash: hostHash,
+    ),
+  );
+
+  Future<bool> _enqueueJournalEntity({
     required SyncJournalEntity msg,
     required OutboxCompanion commonFields,
     required String? host,
@@ -561,15 +624,27 @@ class OutboxEnqueueWriter {
   /// Looks up the last sent vector clock for [entryId] from the sequence log
   /// and merges it into [existingCovered].  Returns [existingCovered] unchanged
   /// when no previous send is found or the sequence log service is absent.
+  ///
+  /// [payloadClock] is the clock of an inline payload the row will carry.
+  /// When given, the last sent clock is folded in only if the payload is at
+  /// least that new: a peer marks every covered counter received, so a row
+  /// carrying an older payload must not cover a newer counter, or the peer
+  /// would never ask for the newer version (ADR 0085, `CoversOnlyOlder`). A
+  /// journal row omits it, because its sender reads the entry's current
+  /// version at send time.
   Future<List<VectorClock>?> enrichCoveredVcsFromSequenceLog(
     String entryId,
-    List<VectorClock>? existingCovered,
-  ) async {
+    List<VectorClock>? existingCovered, {
+    VectorClock? payloadClock,
+  }) async {
     if (_sequenceLogService == null) return existingCovered;
     try {
       final lastSentVc = await _sequenceLogService
           .getLastSentVectorClockForEntry(entryId);
       if (lastSentVc == null) return existingCovered;
+      if (payloadClock != null && !_reaches(payloadClock, lastSentVc)) {
+        return existingCovered;
+      }
       return VectorClock.mergeUniqueClocks([
         ...?existingCovered,
         lastSentVc,
@@ -586,18 +661,30 @@ class OutboxEnqueueWriter {
   }
 
   /// Enqueues a SyncEntryLink. Returns true if merge happened (caller should
-  /// not schedule another send request).
+  /// not schedule another send request). Enqueues of one link run one at a
+  /// time ([_serializedByKey]).
   Future<bool> enqueueEntryLink({
+    required SyncEntryLink msg,
+    required OutboxCompanion commonFields,
+    required String? host,
+    required String? hostHash,
+  }) => _serializedByKey(
+    msg.entryLink.id,
+    () => _enqueueEntryLink(
+      msg: msg,
+      commonFields: commonFields,
+      host: host,
+      hostHash: hostHash,
+    ),
+  );
+
+  Future<bool> _enqueueEntryLink({
     required SyncEntryLink msg,
     required OutboxCompanion commonFields,
     required String? host,
     required String? hostHash,
   }) async {
     final linkId = msg.entryLink.id;
-    final localCounter = msg.entryLink.vectorClock?.vclock[host];
-    final subject = localCounter == null
-        ? '$hostHash:link'
-        : '$hostHash:link:$localCounter';
 
     // Check for existing pending outbox item for this entry link (merge logic)
     final existingItem = await _syncDatabase.findPendingByEntryId(linkId);
@@ -617,13 +704,20 @@ class OutboxEnqueueWriter {
             msg.entryLink.vectorClock,
           ]);
 
-          // Create merged message with covered clocks
-          // Note: Unlike journal entities, entry links don't refresh from DB,
-          // so each enqueue's VC is captured correctly when oldMessage.VC
-          // is added to coveredClocks in subsequent merges.
-          final mergedMessage = msg.copyWith(
+          // Create merged message with covered clocks. The link rides inline,
+          // so the merge keeps whichever version is newer: an enqueue that
+          // arrives after a newer one of the same link only adds its clock.
+          final base =
+              _pendingSupersedes(
+                oldMessage.entryLink.vectorClock,
+                msg.entryLink.vectorClock,
+              )
+              ? oldMessage
+              : msg;
+          final mergedMessage = base.copyWith(
             coveredVectorClocks: coveredClocks,
           );
+          final subject = _entryLinkSubject(base, host, hostHash);
           logVectorClockAssignment(
             _loggingService,
             subDomain: 'enqueue.merge',
@@ -632,7 +726,7 @@ class OutboxEnqueueWriter {
             entryId: linkId,
             reason: 'pending_merge_cover',
             previous: msg.entryLink.vectorClock,
-            assigned: msg.entryLink.vectorClock,
+            assigned: base.entryLink.vectorClock,
             coveredVectorClocks: coveredClocks,
             extras: {'oldVc': oldMessage.entryLink.vectorClock?.vclock},
           );
@@ -670,7 +764,7 @@ class OutboxEnqueueWriter {
             );
           }
 
-          final latestVcStr = msg.entryLink.vectorClock?.vclock;
+          final latestVcStr = base.entryLink.vectorClock?.vclock;
           _logEnqueueSample(
             'enqueue MERGED type=SyncEntryLink id=$linkId '
             'coveredClocks=${coveredClocks?.length ?? 0} '
@@ -714,9 +808,12 @@ class OutboxEnqueueWriter {
 
     // No existing item or merge failed - create new outbox item with entryId.
     // Enrich covered VCs from the sequence log for already-sent predecessors.
+    // The link rides inline, so only a predecessor it is newer than.
+    final subject = _entryLinkSubject(msg, host, hostHash);
     final enrichedLinkCovered = await enrichCoveredVcsFromSequenceLog(
       linkId,
       msg.coveredVectorClocks,
+      payloadClock: msg.entryLink.vectorClock,
     );
     var outboxLinkMsg = msg;
     if (enrichedLinkCovered != msg.coveredVectorClocks) {
@@ -756,5 +853,14 @@ class OutboxEnqueueWriter {
     }
 
     return false; // No merge - caller should schedule the next send request
+  }
+
+  /// The outbox subject of an entry-link row: this host's counter in the
+  /// link's clock, when it has one.
+  String _entryLinkSubject(SyncEntryLink msg, String? host, String? hostHash) {
+    final localCounter = msg.entryLink.vectorClock?.vclock[host];
+    return localCounter == null
+        ? '$hostHash:link'
+        : '$hostHash:link:$localCounter';
   }
 }

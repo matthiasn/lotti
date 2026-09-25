@@ -313,6 +313,20 @@ mixin _OutboxSend on _OutboxServiceBase {
         _backoffScheduledAt = null;
       }
 
+      // The runner runs one callback at a time and only this method claims,
+      // so no claim of ours is in flight: a `sending` row is an orphan of a
+      // claim that ended without a mark. Release it before claiming, so it
+      // goes out in its turn instead of after newer rows of the same entity
+      // once its lease runs out (ADR 0085).
+      final released = await _repository.releaseOrphanedClaims();
+      if (released > 0) {
+        _loggingService.log(
+          LogDomain.sync,
+          'released orphaned claims count=$released',
+          subDomain: 'sendNext.release',
+        );
+      }
+
       // Drain the outbox in a single runner callback to avoid leaving the
       // latest item unsent (which can manifest as receivers being one behind).
       final firstDrained = await _drainOutbox();
