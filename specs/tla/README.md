@@ -28,6 +28,125 @@ counted at a pessimistic five minutes until its runtime is added to
 aggregate `TLC` check passes only when planning and every shard succeed; local
 `make tla_check` still runs all configurations sequentially.
 
+## `SyncPipeline` — the composed sync protocol
+
+This is a bounded end-to-end **protocol model**: local reservation and commit,
+durable staging, claim/collapse, attachment upload, room send, send completion,
+inbound delivery, attachment download, domain apply, receipt, gap discovery and
+repair share one state. Backfill requests, payload resends, hints and burns
+traverse those same queues. A response cannot directly insert peer data, and a
+sequence receipt cannot stand in for applying its payload.
+
+```mermaid
+flowchart LR
+    Write[Reserve and commit] --> Outbox[Durable outbox]
+    Recovery[Release or startup recovery] --> Outbox
+    Outbox --> Claim[Claim and causal collapse]
+    Claim --> Upload[Prepare attachment]
+    Upload --> Room[Send to retained room history]
+    Room --> Inbound[Durable inbound queue]
+    Inbound --> Apply[Download and typed apply]
+    Apply --> Receipt[Record sequence receipt]
+    Receipt --> Gap[Observed gap]
+    Gap --> Request[Queue backfill request]
+    Request --> Outbox
+    Inbound --> Answer[Origin answers request]
+    Answer --> Outbox
+    Inbound --> Hint[Verify hint against stored payload]
+    Hint --> Receipt
+```
+
+The model has one causal chain or a two-origin fork, at most two writes, and
+one or two receiving devices. Fork writes have independent clocks even though
+the bounded source-write scheduler opens one reservation at a time; their
+outbox, transport and receive operations interleave freely. Origins retain
+their own payload; each peer tracks a separate sequence head per origin.
+Origins do not also act as receiving peers in these configurations.
+
+| Action/state | Implementation boundary |
+|---|---|
+| `Reserve`, `Commit`, `Stage`, `Bind` | `VectorClockService`, domain persistence, `OutboxEnqueueWriter` and `SyncSequenceLogService` |
+| `RecoverStage`, `RecoverBind`, `BurnStage`, `BurnBind` | `BackfillResponseHandler` settlement and its response builders; durable enqueue must precede settlement |
+| `Claim`, `Upload`, `Send`, `MarkSent` | `OutboxMessageProcessor`, `MatrixPayloadSender`; successful claim CAS is abstracted |
+| `Deliver`, `Download`, `Crash` | retained room/inbound queue contract; `InboundQueue` checks cursor and floor mechanics separately |
+| `Apply`, `Record`, `RecordFail` | typed `SyncEventProcessor` handlers and sequence-log persistence |
+| `QueueRequest`, `Answer`, `AnswerHint`, `VerifyHint` | backfill request service, response handler, retained payload lookup and clock verification |
+
+Family-specific application retains journal conflicts, selects the deterministic
+whole-version winner for entry/agent links and agent entities, joins a notification
+lifecycle mark only after its base exists, or inserts an immutable consumption
+event. File-backed families require an uploaded and downloaded generation.
+Journal sidecar metadata is separate from the retained row. Detailed domain
+rules (CRDT fields, timestamps, tombstones, projection, three-version forks) remain
+in `JournalReplication`, `AgentReplication`, `AgentLinks`,
+`NotificationReplication` and `OutboxCausality`; this composition does not replace
+their richer state spaces.
+
+| Checks | Guarantee within the configured bounds |
+|---|---|
+| `NoFalseBurn`, `BurnHasDurableMarker` | committed counters are never burned; terminal own burns have a durably queued marker |
+| `BoundHasDurablePayload`, `StagedHasDurablePayload` | settled/staged writes retain a queued or sent causal representative |
+| `NoFalseReceipt`, `CausalCoverage` | receipts have an applied causal witness; announced coverage belongs to the actual payload |
+| `NoContentlessState`, `AcknowledgedPayload`, `SettledPeersAgree` | receipts correspond to domain state, lifecycle patches have a base, and fully acknowledged peers agree on the winner/conflict set |
+| `CommittedReachesRoom`, `CommittedReachesPeer` | committed data eventually reaches transport/peer under the stated delivery obligations |
+| `VisibleGapHeals`, `VisiblePayloadsConverge` | observed gaps settle; observing every modeled counter eventually yields the retained payloads |
+| `BurnReachesPeer` | durable burns eventually settle at peers under reliable delivery |
+
+Every configuration checks all safety invariants. `Consumption` and `Lossy`
+check conditional gap repair and room delivery; the others also require delivery
+to peers and burn propagation. Profiles deliberately vary one stress dimension
+at a time; they are not the Cartesian product of all faults and families.
+
+| Configuration suffix | Payload and stress |
+|---|---|
+| (none) | entry-link causal chain; collapse and out-of-order receipt |
+| `Journal` | two concurrent journal writers, two peers, attachments and retained conflicts |
+| `AgentEntity` | concurrent inline writers and one independent process crash |
+| `AgentLink` | one write; one staging, send or apply failure |
+| `Notification` | full base plus lifecycle patch, either receive order |
+| `Consumption` | two immutable events; one abandoned delivery or failed receipt |
+| `Burn` | one aborted reservation, one enqueue/send failure and one process crash |
+| `Lossy` | two distinct entry links; one abandoned delivery or failed receipt |
+
+The liveness obligations are explicit:
+
+- Fair workers and retained room history eventually expose each sent message.
+  Upload/download generations remain available; there is no purge or permanent
+  partition. Encryption, Matrix server behavior and media bytes are interfaces,
+  not verified implementations.
+- Failures and crashes are bounded. A crash preserves durable stores, releases
+  that process's claims and replays its interrupted application. Repeated
+  identical enqueues retain one extra in-flight copy; duplicate transport IDs
+  are compressed, and resend re-arms an abandoned attempt only after a send.
+  `folded` rows retain their claimed representative rather than becoming sent
+  before transmission. Physical row deletion and retry counters are abstracted.
+- Fair **recovery opportunities** are an environment requirement. Production
+  retries own settlement on release, startup, store wiring or request, not with
+  an endless timer. Backfill request fairness also assumes retry opportunities
+  continue (including operator retry), beyond automatic retry exhaustion.
+- Lossy profiles do not promise recovery of an unobserved final counter. A
+  swallowed sequence-write error can likewise leave no receipt and no visible
+  gap. Notification state alone cannot repair a permanently lost base.
+- Named reservations, available stores and causal payload clocks are required.
+  Legacy clockless/counter-zero traffic, settings/config flags, cross-family
+  dependencies, unbounded devices/writes and arbitrary overlapping local
+  transactions are outside this model.
+
+`python3 specs/tla/check_sync_pipeline.py` runs in CI alongside positive model
+checks. Each guard has a passing control and must fail with only that guard
+removed: durable burn staging, bind-after-enqueue, apply-before-receipt,
+hint verification and exact journal payload preparation. It also requires
+counterexamples to unconditional lost-tail delivery/receipt and a reachable
+request/answer/hint/receipt path, guarding against a vacuous repair claim.
+
+The burn mutation exposed a production bug: best-effort enqueue swallowed a
+persistence failure before the counter became terminal. The Dart conformance
+suite reproduces it with real reservation/sequence databases, then verifies a
+fresh service stack retries after enqueue recovers. Its mock outbox distinguishes
+the actual APIs' swallowed and propagated errors. The regression failed in CI
+on #4493 before the runtime fix; it supplements model checking, not a machine-
+checked refinement proof from Dart to TLA+.
+
 ## `SyncSequence` — the sync sequence log and backfill
 
 One originating device and its peers: counter reservation, the payload write,

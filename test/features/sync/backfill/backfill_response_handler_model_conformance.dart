@@ -2,8 +2,8 @@ part of 'backfill_response_handler_test.dart';
 
 // Model conformance: the real reservation, sequence-log and settlement code,
 // driven through generated operation traces, must keep the invariants that
-// `specs/tla/SyncSequence.tla` model-checks. TLC proves the design; these
-// traces check that the Dart code behaves like the design, over in-memory
+// `specs/tla/SyncSequence.tla` and `SyncPipeline.tla` model-check within their
+// configured bounds. These traces exercise the implementation over in-memory
 // databases, with a crash being a fresh service stack over the same stores.
 
 /// One step of a generated trace. `arg` picks among live reservations or
@@ -285,6 +285,8 @@ class _ConformanceBench {
 void _registerModelConformance() {
   group('model conformance with specs/tla/SyncSequence.tla', () {
     test('failed burn enqueue stays retryable across restart', () async {
+      // SyncPipeline's Reserve -> Abort -> FailBurnStage counterexample.
+      // Recovery must retain the pending intent until the marker is durable.
       final bench = await _ConformanceBench.create();
       try {
         await bench.run(const _TraceStep(_TraceOp.reserveA, 0));

@@ -5,13 +5,17 @@ description: Causal accounting over (hostId, counter) pairs, bounded initial-onb
 resource: ../../../lib/features/sync/sequence
 tags: [sync, sequence-log, backfill, gap-detection]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-25T20:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-25T21:00:00Z }
 stale_after: 2026-12-25
 sources:
   - id: tla-spec
     resource: ../../../specs/tla/SyncSequence.tla
     title: TLA+ model of the sequence log and backfill protocol
     last_modified: 2026-09-23
+  - id: pipeline-spec
+    resource: ../../../specs/tla/SyncPipeline.tla
+    title: Composed sync pipeline, payload application and sequence repair
+    last_modified: 2026-09-25
   - id: settlement-spec
     resource: ../../../specs/tla/OwnCounterSettlement.tla
     title: TLA+ model of settlement reads and durable resends
@@ -239,8 +243,12 @@ it:
    Wiring the store settles the orphans that waited for it.
 3. Otherwise, if a `reserved` row names no payload, nothing can prove it
    either way and it is deferred until the requester gives up.
-4. Otherwise no payload carries the counter, and it is burned
-   authoritatively.
+4. Otherwise no payload carries the counter. The authoritative burn marker
+   must reach the durable outbox through `enqueueMessageOrThrow` before the
+   sequence row becomes `burned`. The ordinary enqueue API logs and swallows
+   persistence failures, so it cannot establish this precondition. A failure
+   leaves the reservation retryable by a later request or startup; there is
+   no continuous orphan-settlement retry loop.
 
 If both the sequence-row lookup and the settings fallback lookup miss,
 settlement re-reads the sequence log before deciding. Migration inserts that
@@ -289,6 +297,13 @@ outbox enqueue and binding. It checks migration races and earlier batch answers
 that silently fail or contain an older payload version. These bounded models
 check the design, not all executions of the Dart implementation; deterministic
 handler regressions exercise those same interleavings in the code.
+`SyncPipeline` adds a shared state machine spanning reservation, durable outbox,
+attachments, room history, typed application, sequence receipts and backfill.
+Requests, resends, hints and burns use the same queues as ordinary traffic.
+Its [scope and environment obligations](../../../specs/tla/README.md#syncpipeline--the-composed-sync-protocol)
+separate bounded end-to-end model checks from implementation conformance and
+from unconditional delivery claims; in particular, a lost unobserved tail
+cannot be repaired by sequence gaps alone.
 [`specs/tla/README.md`](../../../specs/tla/README.md) lists each configuration's
 scope, assumptions and mutation checks.
 

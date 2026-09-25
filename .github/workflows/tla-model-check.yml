@@ -15,6 +15,7 @@ on:
       - "lib/database/notifications_db.dart"
       - "lib/features/notifications/model/notification_merge.dart"
       - "lib/features/sync/matrix/sync_event_processor_notification_handlers.dart"
+      - "lib/features/sync/matrix/sync_event_processor_consumption_handlers.dart"
       - "lib/database/settings_db.dart"
       - "lib/database/sync_db_outbox.dart"
       - "lib/database/sync_db_outbox_dedup.dart"
@@ -199,6 +200,10 @@ jobs:
             echo "Failed: ${failed[*]}" >&2
             exit 1
           fi
+
+      - name: Check pipeline mutations, reachability and known limits
+        if: matrix.shard == 1
+        run: python3 specs/tla/check_sync_pipeline.py
 
   tlc:
     # Keep the stable aggregate check for branch protection. A failed,

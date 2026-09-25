@@ -21,6 +21,15 @@ SHARDS = 8
 # when a configuration is added or its state space changes by an order of
 # magnitude, not for run-to-run noise.
 SECONDS = {
+    # Pipeline profiles: local measurements/budgets; refresh from CI.
+    "SyncPipeline": 180,
+    "SyncPipelineJournal": 240,
+    "SyncPipelineAgentEntity": 5,
+    "SyncPipelineAgentLink": 1,
+    "SyncPipelineNotification": 180,
+    "SyncPipelineConsumption": 180,
+    "SyncPipelineLossy": 180,
+    "SyncPipelineBurn": 5,
     "AgentReplicationIntent": 646,
     "AgentReplicationLegacyCounter": 642,
     "SyncSequence": 640,

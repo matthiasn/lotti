@@ -61,6 +61,13 @@ properties and 28,451 distinct states to the configurations present at
 `5ad1095618`. These are incremental figures; the historical snapshot above
 does not include the intervening outbox, inbound-queue and journal models.
 
+The `SyncPipeline` follow-up (#4493) adds one composed spec and eight
+configurations spanning six payload families. Its bounded pipeline found one
+additional burn-staging bug; guarded mutations, repair reachability and two
+known lost-tail limitations are executable CI checks. These additions are not
+included in the historical totals above; configuration results live in the
+[composed model section](README.md#syncpipeline--the-composed-sync-protocol).
+
 ## Timeline
 
 ```mermaid
@@ -91,6 +98,7 @@ counterexamples found. "Severity" grades each of those bugs; see
 
 | PR | Merged | Area | Specs added | Configs added | Bugs (TLC) | Severity | ADR | What it caught |
 |----|--------|------|-------------|--------------:|-----------:|----------|-----|----------------|
+| [#4493](https://github.com/matthiasn/lotti/pull/4493) | pending | sync | `SyncPipeline` | 8 | 1 (1) | P2 | — | A swallowed burn-marker enqueue failure terminalized the own counter, preventing startup retry; CI reproduced the model trace before the fix |
 | [#4445](https://github.com/matthiasn/lotti/pull/4445) | 09-23 | sync | `SyncSequence` | 5 | 6 (3) | P1×2 P2 P3×3 | [0065](../../docs/adr/0065-model-checked-sync-sequence-reservations.md) | A crash between saving and queuing left a counter reserved forever, and the change never reached other devices. Also added the TLC workflow and a checksummed `tlc.sh` |
 | [#4446](https://github.com/matthiasn/lotti/pull/4446) | 09-24 | agents | `WakeRuntime`, `ChangeSetConfirm` | 4 | 4 (4) | P1×2 P2×2 | [0066](../../docs/adr/0066-model-checked-agent-wakes-and-confirmations.md) | "Confirm all" racing a tap applied one suggestion twice. A conformance trace also rejected the first design of the wake fix before it shipped |
 | [#4447](https://github.com/matthiasn/lotti/pull/4447) | 09-23 | sync | `OwnCounterSettlement` | 1 | 2 (–) | P3×2 | — | Counter settlement could discard durable evidence (both bugs came from #4445 and never shipped) |
