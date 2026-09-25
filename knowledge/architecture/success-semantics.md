@@ -76,9 +76,12 @@ flowchart LR
 
 ## Values
 
-Every aggregate is **canonical** before it meets a threshold:
-`canonicalSignalValue(x)` rounds a double to 12 significant digits. Integers and
-non-finite values are left as they are. Binary doubles cannot represent the
+Every aggregate is **canonical** before it meets a threshold. Sums are exact:
+`canonicalSignalSum` takes each value to whole billionths and adds them as
+integers, so a total depends only on which values there are, never on their
+order, and cancellation (`0.1 + 0.2 − 0.3`, or `1e20 − 1e20 + 0.001`) leaves no
+residue. `canonicalSignalValue(x)` then rounds the result, and any mean, to 12
+significant digits. Integers and non-finite values are left as they are. Binary doubles cannot represent the
 decimals people log: ten entries of 0.1 l sum to `0.9999999999999999`, which
 would miss "at least 1 l" by one bit, and the same values summed in a different
 order can differ in the last bit. Twelve digits is far finer than anything a
@@ -208,7 +211,7 @@ The checks use three methods:
 | `anyOf ≡ atLeastCount(1)` on satisfaction, ratio and pace; `allOf ≡ atLeastCount(n)` on satisfaction and dead pace; `anyOf` and `atLeastCount` do not depend on child order | property | evaluator test |
 | At every node `ratio ∈ [0, 1]` and `ratio = 1 ⇔ satisfied`; results do not depend on the order signals were recorded in — for integer and decimal inputs | property + directed rounding witness | evaluator test |
 | A total logged in tenths meets a target of exactly that total, in both directions, and for day and rolling windows | property | evaluator test |
-| A canonical sum of 3-decimal values is the exact decimal total, in any order. Canonicalisation is idempotent and moves a value by at most half a unit in the twelfth digit. Daily measurement totals are exact and independent of order | property | [bucket test](../../test/logic/signals/signal_day_buckets_test.dart) |
+| A canonical sum of 3-decimal values of either sign, cancelling pairs included, is the exact decimal total, in any order; cancellation leaves no order-dependent residue. Canonicalisation is idempotent and moves a value by at most half a unit in the twelfth digit. Daily measurement totals are exact and independent of order | property | [bucket test](../../test/logic/signals/signal_day_buckets_test.dart) |
 | A habit bound equal to the exact decimal amount is met, whether the basis is today, the seven-day mean, or either | property | [habit rule test](../../test/logic/signals/habit_rule_evaluator_test.dart) |
 | The completion collapse settles each habit/day on the person's latest entry, else the latest automatic one, under any arrival order, and is idempotent under re-delivery — so replicas converge | property | [resolution test](../../test/logic/habits/habit_completion_resolution_test.dart) |
 | Across devices, with the engine filling empty days and sync delivering in any order: replicas converge, no automatic success ever replaces a person's entry, the person's last entry stands, and every device eventually records the day | model check (TLC), 2 and 3 devices | [`HabitDaySettlement.tla`](../../specs/tla/HabitDaySettlement.tla) |

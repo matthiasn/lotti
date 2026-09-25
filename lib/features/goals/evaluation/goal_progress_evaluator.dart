@@ -785,9 +785,10 @@ class GoalProgressEvaluator {
     return null;
   }
 
-  /// The canonical ([canonicalSignalValue]) aggregate the target is compared
-  /// against — independent of the series' iteration order, and exact for the
-  /// decimals people log.
+  /// The canonical aggregate the target is compared against: sums are exact
+  /// ([canonicalSignalSum]) and the result is canonical
+  /// ([canonicalSignalValue]) — independent of the series' iteration order,
+  /// and exact for the decimals people log.
   num _aggregate(
     Map<DateTime, num> series,
     GoalAggregation aggregation, {
@@ -796,8 +797,8 @@ class GoalProgressEvaluator {
     if (series.isEmpty) return 0;
     final raw = switch (aggregation) {
       GoalAggregation.dailySumThenAverage =>
-        series.values.reduce((a, b) => a + b) / series.length,
-      GoalAggregation.sum => series.values.reduce((a, b) => a + b),
+        canonicalSignalSum(series.values) / series.length,
+      GoalAggregation.sum => canonicalSignalSum(series.values),
       GoalAggregation.count =>
         countPositiveValues
             ? series.values.where((value) => value > 0).length

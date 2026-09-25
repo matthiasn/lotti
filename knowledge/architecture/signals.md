@@ -45,7 +45,7 @@ flowchart LR
 
 | File | Role |
 |------|------|
-| `signal_day_buckets.dart` | Pure functions: `signalDayKey`, `canonicalSignalValue`, `trailingAverageOn`, `bucketQuantitativeByDay`, `bucketMeasurableTotalsByDay`, `bucketWorkoutsByDay`, `workoutSignalValue`, `habitSuccessDays`. No I/O, no feature imports. |
+| `signal_day_buckets.dart` | Pure functions: `signalDayKey`, `canonicalSignalValue`, `canonicalSignalSum`, `trailingAverageOn`, `bucketQuantitativeByDay`, `bucketMeasurableTotalsByDay`, `bucketWorkoutsByDay`, `workoutSignalValue`, `habitSuccessDays`. No I/O, no feature imports. |
 | `signal_window.dart` | `SignalWindow` — an immutable value of day-keyed series with deep equality, so providers and tests compare by content. |
 | `signal_needs.dart` | `SignalNeeds.of(rule)` — the distinct series an `AutoCompleteRule` tree references, so each is queried once. |
 | `signal_reader.dart` | `SignalReader` — the only thing here that touches `JournalDb`. |
@@ -85,8 +85,9 @@ Per-series semantics, all inherited from the surfaces the user already sees:
 - **Habit completions** count only `success` days from the
   latest-completion-per-day collapse the query already performs.
 
-Daily measurable totals and the trailing mean come out **canonical** — rounded
-to twelve significant digits by `canonicalSignalValue` — and the evaluator
+Daily measurable totals and the trailing mean come out **canonical** — summed
+exactly and order-independently by `canonicalSignalSum`, then rounded to twelve
+significant digits by `canonicalSignalValue` — and the evaluator
 canonicalises a leaf's day value before comparing it with a bound, so ten
 0.1 l entries meet "at least 1 l" and every replica agrees whatever order it
 summed in. The definitions and what is proven about them are in

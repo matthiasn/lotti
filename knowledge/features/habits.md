@@ -317,14 +317,16 @@ stateDiagram-v2
   [*] --> Empty: day has no completion
   Empty --> Auto: rule satisfied<br/>(engine writes success, source auto)
   Empty --> Manual: user records success / skip / missed
-  Auto --> Manual: user records anything<br/>(last write wins)
-  Manual --> Manual: user records again
+  Auto --> Manual: user records anything<br/>(a person's entry outranks auto)
+  Manual --> Manual: user records again (newest wins),<br/>or another device's auto success syncs in<br/>(settles below the person's entry)
   note right of Manual
-    The engine never writes into a day that
-    already has any completion, so a manual
-    entry, an explicit skip, or its own earlier
-    write all stop it. That is the whole
-    "manual beats auto" rule.
+    On one device the engine never writes into
+    a day that already has any completion.
+    Across devices a day can look empty while
+    the person's entry is still in flight, so
+    the settlement order ranks any manual entry
+    above any automatic one; together they make
+    "manual beats auto" hold everywhere.
   end note
 ```
 

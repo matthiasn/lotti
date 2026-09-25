@@ -1125,10 +1125,10 @@ void main() {
 
     test('an unmet composite never reads as fully attained, whatever the '
         'rounding', () {
-      // 1.99999999999 against the next double above it misses by one unit in
+      // 1.999999999 against the next double above it misses by one unit in
       // the last place: ratio 1 - 2^-53. Averaged with a met leg, the binary
       // mean rounds to exactly 1.0 — full attainment for an unmet goal.
-      const actual = 1.99999999999;
+      const actual = 1.999999999;
       final bits = ByteData(8)..setFloat64(0, actual);
       bits.setInt64(0, bits.getInt64(0) + 1);
       final target = bits.getFloat64(0);

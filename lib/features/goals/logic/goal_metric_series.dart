@@ -43,10 +43,10 @@ bool goalMetricShowsSevenDayAverage(GoalMetricProgressView metric) =>
 /// One pass: the series is already sorted, so the window bounds advance
 /// instead of re-scanning the observations for every day — the re-scan made a
 /// 90-day chart quadratic in the middle of `build`. Each mean is summed afresh
-/// over its (at most seven) observations and made canonical
-/// ([canonicalSignalValue]) rather than kept as a running sum, whose drift
-/// over a long history would make the chart quote a different last digit
-/// than [goalMetricSevenDayAverageOn] for the same day.
+/// over its (at most seven) observations with [canonicalSignalSum] rather
+/// than kept as a running sum, whose drift over a long history would make the
+/// chart quote a different last digit than [goalMetricSevenDayAverageOn] for
+/// the same day.
 List<Observation> goalMetricSevenDayAverage(
   GoalMetricProgressView metric, {
   required DateTime today,
@@ -95,10 +95,9 @@ List<Observation> goalMetricSevenDayAverage(
     }
     final count = entered - left;
     if (count == 0) continue;
-    num sum = 0;
-    for (var i = left; i < entered; i++) {
-      sum += observed[i].value;
-    }
+    final sum = canonicalSignalSum([
+      for (var i = left; i < entered; i++) observed[i].value,
+    ]);
     averages.add(Observation(day.day, canonicalSignalValue(sum / count)));
   }
   return averages;

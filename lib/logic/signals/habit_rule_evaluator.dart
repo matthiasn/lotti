@@ -221,9 +221,11 @@ class HabitRuleEvaluator {
           for (final entry
               in (window.workoutsByDay[dataType] ?? const {}).entries)
             if (entry.value.isNotEmpty)
-              entry.key: entry.value
-                  .map((workout) => workoutSignalValue(workout, valueType))
-                  .fold<num>(0, (sum, value) => sum + value),
+              entry.key: canonicalSignalSum(
+                entry.value.map(
+                  (workout) => workoutSignalValue(workout, valueType),
+                ),
+              ),
         };
         return _numericLeaf(
           rule,

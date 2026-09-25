@@ -132,8 +132,9 @@ const int maxGoalRollingDays = 3650;
 
 /// The most habit successes [window] can credit in every one of its periods.
 ///
-/// The journal keeps one completion per habit and local day (last write
-/// wins), so each day of a period is worth at most one success. A calendar
+/// Each habit and local day settles to one completion (a person's entry
+/// first, then the newest write), so each day of a period is worth at most one
+/// success. A calendar
 /// month counts its guaranteed minimum: a monthly quota recurs every month,
 /// and a 29th success is out of reach every February. A quota above this can
 /// never be met, so authoring refuses it.

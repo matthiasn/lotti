@@ -273,22 +273,49 @@ void main() {
     ).test(
       'a canonical sum of decimals is the exact decimal total, in any order',
       (thousandths, rotation) {
-        // What people log: values with at most three decimals. Their binary
-        // sum depends on the order and misses the decimal total; the
-        // canonical value is the total itself.
-        final exact = thousandths.fold<int>(0, (sum, v) => sum + v) / 1000;
-        num sumOf(Iterable<int> values) =>
-            values.fold<num>(0, (sum, v) => sum + v / 1000);
+        // What people log: values with at most three decimals, of either
+        // sign. Their binary sum depends on the order and misses the decimal
+        // total; the canonical sum is the total itself. Cancelling pairs are
+        // appended so a zero or near-zero total is always exercised.
+        final values = [...thousandths, for (final v in thousandths) -v, 1];
+        final exact = values.fold<int>(0, (sum, v) => sum + v) / 1000;
         for (final order in [
-          thousandths,
-          thousandths.reversed,
-          _rotated(thousandths, rotation),
+          values,
+          values.reversed,
+          _rotated(values, rotation),
         ]) {
-          expect(canonicalSignalValue(sumOf(order)), exact, reason: '$order');
+          expect(
+            canonicalSignalSum([for (final v in order) v / 1000]),
+            exact,
+            reason: '$order',
+          );
         }
       },
       tags: 'glados',
     );
+
+    test('cancellation cannot leave an order-dependent residue', () {
+      // Binary sums: 0.1 + 0.2 - 0.3 is 5.55e-17, and 1e20 - 1e20 + 0.001
+      // keeps or loses the thousandth depending on the order.
+      for (final values in [
+        [0.1, 0.2, -0.3],
+        [1e20, -1e20, 0.001],
+      ]) {
+        final expected = values.last == 0.001 ? 0.001 : 0;
+        for (final order in [
+          values,
+          values.reversed.toList(),
+          [values[0], values[2], values[1]],
+        ]) {
+          expect(canonicalSignalSum(order), expected, reason: '$order');
+        }
+      }
+      // Integers stay integers; values too large to scale fall back.
+      expect(canonicalSignalSum([2, 3]), isA<int>());
+      expect(canonicalSignalSum([2, 3]), 5);
+      expect(canonicalSignalSum([1e300, 1e300]), 2e300);
+      expect(canonicalSignalSum(<num>[]), 0);
+    });
 
     glados.Glados(
       glados.any.doubleInRange(-1000000000, 1000000000),
