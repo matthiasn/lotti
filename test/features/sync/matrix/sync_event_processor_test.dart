@@ -377,6 +377,7 @@ void main() {
           originatingHostId: any(named: 'originatingHostId'),
           coveredVectorClocks: any(named: 'coveredVectorClocks'),
           payloadType: any(named: 'payloadType'),
+          jsonPath: any(named: 'jsonPath'),
         ),
       ).thenAnswer((_) async => <({int counter, String hostId})>[]);
 

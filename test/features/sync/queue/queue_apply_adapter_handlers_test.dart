@@ -381,7 +381,7 @@ void main() {
       expect(wraps(message), isFalse);
     });
 
-    test('SyncEntryLink wraps — writes to linked_entries (JournalDb)', () {
+    test('SyncEntryLink owns its transaction before recording receipt', () {
       final link = EntryLink.basic(
         id: 'link-id',
         fromId: 'from',
@@ -394,7 +394,7 @@ void main() {
         entryLink: link,
         status: SyncEntryStatus.initial,
       );
-      expect(wraps(message), isTrue);
+      expect(wraps(message), isFalse);
     });
 
     test(
@@ -531,11 +531,11 @@ void main() {
       },
     );
 
-    test('SyncOutboxBundle wraps — unpacks into journal/linked_entries', () {
+    test('SyncOutboxBundle leaves transaction ownership to each child', () {
       const message = SyncMessage.outboxBundle(
         children: <SyncMessage>[],
       );
-      expect(wraps(message), isTrue);
+      expect(wraps(message), isFalse);
     });
 
     test(
