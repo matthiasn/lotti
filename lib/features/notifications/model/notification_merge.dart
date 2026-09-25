@@ -8,7 +8,8 @@ import 'package:lotti/features/sync/vector_clock.dart';
 /// Notifications replicate across devices via Matrix sync, so two hosts can
 /// edit the same row before they exchange events. These pure static helpers
 /// resolve those conflicts deterministically so every device converges on the
-/// same row regardless of event-arrival order:
+/// same content, lifecycle and clock regardless of event-arrival order.
+/// The last state sender's `originatingHostId` is arrival-dependent metadata:
 /// - **Content** (title/body/kind) follows last-writer-wins on
 ///   `meta.updatedAt`, broken by a canonical-JSON comparison so identical
 ///   timestamps still pick a stable winner on every host.
@@ -123,20 +124,35 @@ abstract final class NotificationMerge {
 
     final existingJson = jsonEncode(_canonicalTieBreakJson(existing));
     final incomingJson = jsonEncode(_canonicalTieBreakJson(incoming));
-    return incomingJson.compareTo(existingJson) > 0 ? incoming : existing;
+    final contentComparison = incomingJson.compareTo(existingJson);
+    if (contentComparison != 0) {
+      return contentComparison > 0 ? incoming : existing;
+    }
+
+    // Equal content still needs a stable metadata winner for full snapshots.
+    // A state patch can change the owner, so it must never rank *different*
+    // content ahead of the canonical content key.
+    return incoming.meta.originatingHostId.compareTo(
+              existing.meta.originatingHostId,
+            ) >
+            0
+        ? incoming
+        : existing;
   }
 
   // Builds a canonical map for deterministic tie-breaking when two devices
   // produce edits with identical updatedAt. Sorting keys recursively makes
   // the comparison stable across app versions that may differ in JSON key
   // insertion order. Meta state fields that converge via earliest-non-null
-  // merging are stripped so they never participate in the tie-break.
+  // merging, and the owner overwritten by state patches, are stripped so
+  // they never participate in the content tie-break.
   static Map<String, dynamic> _canonicalTieBreakJson(NotificationEntity e) {
     final json = Map<String, dynamic>.from(e.toJson());
     final meta = Map<String, dynamic>.from(e.meta.toJson())
       ..remove('seenAt')
       ..remove('actedOnAt')
       ..remove('deletedAt')
+      ..remove('originatingHostId')
       ..remove('vectorClock');
     json['meta'] = meta;
     return _canonicalize(json)! as Map<String, dynamic>;

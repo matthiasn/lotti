@@ -12,7 +12,7 @@ exposed. Then update the [totals](#totals) from the README's tables.
 
 ## Totals
 
-As of `main` at `ed4ef4340` (2026-09-25):
+Historical snapshot of `main` at `ed4ef4340` (2026-09-25):
 
 | Measure | Value |
 |---------|------:|
@@ -50,6 +50,11 @@ How the figures are counted:
 - **Source paths** counts the distinct Dart files and globs in the workflow's
   `paths:` filter (some are listed twice). A change to `specs/tla/` or to the
   workflow file itself also triggers it.
+
+The notification/settings follow-up adds two specs, four configurations, ten
+named properties and 180,826 distinct states to `8428b0a479`. These are
+incremental figures; the historical snapshot above excludes the intervening
+outbox, inbound-queue and journal models.
 
 ## Timeline
 
@@ -111,6 +116,8 @@ counterexamples found. "Severity" grades each of those bugs; see
 | [#4478](https://github.com/matthiasn/lotti/pull/4478) | 09-25 | sync | — | — | 3 (–) | P1×3 | [0078](../../docs/adr/0078-entry-link-versions-are-ordered.md) addendum | Removing an entry link deleted the row locally and sent nothing, so peers kept it and their next update restored it. Removals are now synced tombstones, and linking again revives the same id. Closed the residual ADR 0078 left open |
 | [#4479](https://github.com/matthiasn/lotti/pull/4479) | 09-25 | goals, habits | `GoalRegister` | 4 | 8 (5) | P1×3 P2 P3×4 | [0082](../../docs/adr/0082-model-checked-goal-registers.md) | A device whose journal was behind could win the lease and report "behind" all day while every device showed the goal on track, with no fault at all. Overlapping evaluations dropped a synced check-off, and an escalation died with the device that noticed the change. Review found three more in the fix itself |
 | [#4480](https://github.com/matthiasn/lotti/pull/4480) | 09-25 | agents | — | 2 | 8 (5) | P1×7 P2 | [0081](../../docs/adr/0081-model-checked-evolution-sessions-and-agent-links.md) addendum | A removed agent entity came back from a late copy or a backfill, and a write or re-creation over a removal lost. `AgentReplication` gained a removal kind, lossy delivery and a split receive; an audit of every soft-delete writer found three more |
+
+| [#4491](https://github.com/matthiasn/lotti/pull/4491) | pending | sync | `NotificationReplication`, `SyncSettings` | 4 | 1 (1) | P1 | — | A lifecycle patch changed the content tie-break, so peers retained different same-time notification text. Also models typed recovery and documents untracked settings limits |
 
 ## Severity
 

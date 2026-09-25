@@ -7,6 +7,59 @@ import 'notification_merge_test_helpers.dart';
 
 void main() {
   group('NotificationMerge', () {
+    test('identical content keeps a stable full-snapshot owner', () {
+      final first = buildNotification(
+        id: 'same-content',
+        originatingHostId: 'host-a',
+      );
+      final second = first.copyWithMeta(
+        first.meta.copyWith(originatingHostId: 'host-z'),
+      );
+      expect(NotificationMerge.mergeFull(first, second), second);
+      expect(NotificationMerge.mergeFull(second, first), second);
+    });
+
+    test('a lifecycle patch cannot change the equal-time content winner '
+        '(NotificationReplication ContentConverged)', () {
+      final first = buildNotification(
+        id: 'content-state-fork',
+        title: 'A reminder',
+        originatingHostId: 'host-a',
+        vectorClock: const VectorClock({'host-a': 1}),
+      );
+      final second = buildNotification(
+        id: first.id,
+        title: 'Z reminder',
+        originatingHostId: 'host-b',
+        vectorClock: const VectorClock({'host-b': 1}),
+      );
+      final seenAt = DateTime.utc(2026, 5, 17, 10);
+      NotificationEntity markSeen(NotificationEntity row) =>
+          NotificationMerge.mergeState(
+            row,
+            seenAt: seenAt,
+            originatingHostId: 'host-z',
+            vectorClock: const VectorClock({'host-z': 1}),
+          );
+      final stateThenContent = NotificationMerge.mergeFull(
+        markSeen(first),
+        second,
+      );
+      final contentThenState = markSeen(
+        NotificationMerge.mergeFull(first, second),
+      );
+      for (final row in [stateThenContent, contentThenState]) {
+        expectContentMatches(row, second);
+        expect(row.meta.seenAt, seenAt);
+        expect(
+          row.meta.vectorClock,
+          const VectorClock({'host-a': 1, 'host-b': 1, 'host-z': 1}),
+        );
+        expectContentMatches(NotificationMerge.mergeFull(row, first), second);
+        expectContentMatches(markSeen(row), second);
+      }
+    });
+
     test(
       'mergeFull breaks an equal-updatedAt tie on list content the same way '
       'on both devices',
