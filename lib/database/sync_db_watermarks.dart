@@ -62,6 +62,11 @@ mixin _SyncDbSequenceWatermarks on _$SyncDatabase {
     // One-time compatibility path for existing rows that predate the
     // persisted watermark. Normal operation advances from the stored value
     // with [_advanceSequenceWatermarkForHost] instead of re-running this CTE.
+    //
+    // The prefix starts at counter 1. Hosts that older builds created handed
+    // out counter 0 first (ADR 0080); numbering a counter-0 row as the first
+    // of the prefix would shift every later row by one, so a contiguous run
+    // read as 0 and a run with one hole read past the hole.
     final row = await customSelect(
       '''
       WITH resolved_prefix AS (
@@ -70,6 +75,7 @@ mixin _SyncDbSequenceWatermarks on _$SyncDatabase {
           ROW_NUMBER() OVER (ORDER BY counter) AS rn
         FROM sync_sequence_log
         WHERE host_id = ?
+          AND counter >= 1
           AND status IN (0, 3, 4, 5, 8)
       )
       SELECT CASE
@@ -192,6 +198,26 @@ mixin _SyncDbSequenceWatermarks on _$SyncDatabase {
         await _advanceSequenceWatermarkForHost(hostId, current);
       }
     }
+  }
+
+  /// Schema v30 (ADR 0080): drops the persisted watermark of every host
+  /// with a counter-0 row, so the next [getLastCounterForHost] rebuilds it
+  /// with the prefix counted from 1. The rebuild before v30 numbered that
+  /// row as the first of the prefix, and the row it cached may read past a
+  /// hole. Only such hosts are affected; sequence rows are never deleted, so
+  /// a host that ever had one still has it. One primary-key probe per
+  /// watermark row, run in the migration before the database is used.
+  Future<void> _dropWatermarksCachedAcrossCounterZero() async {
+    final tables = await customSelect(
+      "SELECT COUNT(*) AS n FROM sqlite_master WHERE type = 'table' "
+      "AND name IN ('sync_sequence_watermarks', 'sync_sequence_log')",
+    ).getSingle();
+    if (tables.read<int>('n') < 2) return;
+    await customStatement(
+      'DELETE FROM sync_sequence_watermarks WHERE EXISTS ( '
+      'SELECT 1 FROM sync_sequence_log l '
+      'WHERE l.host_id = sync_sequence_watermarks.host_id AND l.counter = 0)',
+    );
   }
 
   Future<void> _rebuildSequenceWatermarksForHosts(

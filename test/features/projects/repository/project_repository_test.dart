@@ -2603,7 +2603,10 @@ void main() {
         final host = (await vectorClockService.getHost())!;
         // The tombstone extends the clock of the link it deletes, and is not
         // stamped earlier than that link; the deletion time is this device's.
-        expect(tombstone.vectorClock?.vclock, {'device-a': 5, host: 0});
+        expect(tombstone.vectorClock?.vclock, {
+          'device-a': 5,
+          host: firstVectorClockCounter,
+        });
         expect(tombstone.updatedAt, DateTime(2100));
         expect(tombstone.deletedAt!.isBefore(DateTime(2100)), isTrue);
 

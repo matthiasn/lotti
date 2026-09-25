@@ -100,7 +100,7 @@ class SyncDatabase extends _$SyncDatabase
 
   /// The schema this build writes. A restored backup may carry an
   /// older schema, which Drift migrates, but never a newer one.
-  static const int currentSchemaVersion = 29;
+  static const int currentSchemaVersion = 30;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -634,6 +634,9 @@ class SyncDatabase extends _$SyncDatabase
         }
         if (from < 29) {
           await m.createTable(onboardingSyncRounds);
+        }
+        if (from < 30) {
+          await _dropWatermarksCachedAcrossCounterZero();
         }
       },
     );

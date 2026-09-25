@@ -101,7 +101,10 @@ on the parameter. It only suggested a way to choose the id that did not exist.
   (the resolver and the dominance pre-check keep local on `equal`) read a new
   host's first update of an existing row as equal to that row and keep the
   row. That is a separate fix, in `VectorClockService` or in
-  `VectorClock.compare`, and it is left open here.
+  `VectorClock.compare`, and it is left open here. It was made in
+  [ADR 0080](./0080-a-present-counter-ranks-above-an-absent-host.md), in
+  both places: `compare` ranks an absent host below 0, and new hosts start
+  at 1. The link order now uses the shared `VectorClock.compareCanonically`.
 - Residual, not addressed here: `JournalRepository.removeLink` and
   `removeTypedLink` hard-delete the row on this device and send nothing. Peers
   keep the link, and the next journal-entity message from a peer that embeds

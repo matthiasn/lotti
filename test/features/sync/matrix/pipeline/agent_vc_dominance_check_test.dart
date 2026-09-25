@@ -200,6 +200,22 @@ void main() {
     );
 
     test(
+      "returns false for a new host's first write, which extends the local "
+      'clock by counter 0 — it is newer, not equal (ADR 0080)',
+      () async {
+        await insertEntityWithVc(id: 'e5', vc: {'device-a': 1});
+        final c = AgentVcDominanceCheck(agentDb: db);
+        expect(
+          await c.check(
+            '/agent_entities/e5.json',
+            const VectorClock({'device-a': 1, 'device-b': 0}),
+          ),
+          isFalse,
+        );
+      },
+    );
+
+    test(
       'agent_links path resolves through the link table (symmetric to '
       'agent_entities) — proves both caches are wired',
       () async {

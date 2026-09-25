@@ -391,8 +391,8 @@ mixin _JournalDbLinksRatings
 ///
 /// One total order, the same on every device, so every device keeps the same
 /// version whatever order the versions arrive in: the later `updatedAt`, then
-/// the larger clock under [_compareLinkClocks], then the larger serialized
-/// version. A single lexicographic key is transitive for any mix of versions,
+/// the larger clock under [VectorClock.compareCanonically] (a clockless
+/// version as an empty clock), then the larger serialized version. A single lexicographic key is transitive for any mix of versions,
 /// clockless legacy copies included, which a dominance check followed by a
 /// timestamp fallback is not.
 ///
@@ -406,32 +406,17 @@ bool _entryLinkIsStale(EntryLink incoming, {required EntryLink than}) {
   if (incoming.updatedAt != than.updatedAt) {
     return incoming.updatedAt.isBefore(than.updatedAt);
   }
-  final byClock = _compareLinkClocks(incoming.vectorClock, than.vectorClock);
+  final byClock = VectorClock.compareCanonically(
+    incoming.vectorClock ?? _noClock,
+    than.vectorClock ?? _noClock,
+  );
   if (byClock != 0) return byClock < 0;
   // Nothing orders the two — the same clock, or none, at the same instant —
   // so pick by content: arbitrary, but the same on every device.
   return jsonEncode(incoming).compareTo(jsonEncode(than)) < 0;
 }
 
-/// Orders two link clocks host by host, in sorted host order, by the first
-/// counter that differs. A host absent from a clock ranks below every counter
-/// it could carry, 0 included.
-///
-/// That is where this differs from [VectorClock.compare], which reads an
-/// absent host as 0: a new host's first counter is 0, so an edit made there
-/// extends its predecessor's clock by `host: 0`, and must still rank above
-/// it.
-int _compareLinkClocks(VectorClock? a, VectorClock? b) {
-  final countersA = a?.vclock ?? const <String, int>{};
-  final countersB = b?.vclock ?? const <String, int>{};
-  final hosts = <String>{...countersA.keys, ...countersB.keys}.toList()..sort();
-  for (final host in hosts) {
-    final counterA = countersA[host] ?? -1;
-    final counterB = countersB[host] ?? -1;
-    if (counterA != counterB) return counterA > counterB ? 1 : -1;
-  }
-  return 0;
-}
+const _noClock = VectorClock(<String, int>{});
 
 /// In-flight coalescing wave for `basicLinksForEntryIds`. Concurrent callers
 /// within the same microtask merge their id sets; the wave fires one

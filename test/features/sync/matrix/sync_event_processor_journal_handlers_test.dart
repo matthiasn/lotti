@@ -792,6 +792,92 @@ void main() {
     );
   });
 
+  group("SyncEventProcessor - a new host's first edit (ADR 0080)", () {
+    late JournalDb realJournalDb;
+    late Directory documentsDirectory;
+
+    JournalEntry version(String text, Map<String, int> clock) =>
+        testTextEntry.copyWith(
+          meta: testTextEntry.meta.copyWith(vectorClock: VectorClock(clock)),
+          entryText: EntryText(plainText: text),
+        );
+
+    Future<void> receive(JournalEntry incoming) async {
+      when(
+        () => journalEntityLoader.load(
+          jsonPath: '/entry.json',
+          incomingVectorClock: any(named: 'incomingVectorClock'),
+          attachmentEventId: any(named: 'attachmentEventId'),
+        ),
+      ).thenAnswer((_) async => incoming);
+      when(() => event.text).thenReturn(
+        encodeMessage(
+          SyncMessage.journalEntity(
+            id: incoming.meta.id,
+            jsonPath: '/entry.json',
+            vectorClock: incoming.meta.vectorClock,
+            status: SyncEntryStatus.update,
+          ),
+        ),
+      );
+      await processor.process(event: event, journalDb: realJournalDb);
+    }
+
+    Future<JournalEntry> stored() async =>
+        (await realJournalDb.journalEntityById(testTextEntry.meta.id))!
+            as JournalEntry;
+
+    setUp(() async {
+      documentsDirectory = Directory.systemTemp.createTempSync('lotti_test_');
+      getIt.registerSingleton<Directory>(documentsDirectory);
+      realJournalDb = JournalDb(inMemoryDatabase: true);
+    });
+
+    tearDown(() async {
+      await realJournalDb.close();
+      getIt.unregister<Directory>();
+      documentsDirectory.deleteSync(recursive: true);
+    });
+
+    test(
+      'an edit from a host whose first counter is 0 replaces the version it '
+      'extends',
+      () async {
+        // Device B was set up by a build that started counters at 0; its
+        // first edit extends A's version by `device-b: 0`.
+        await realJournalDb.updateJournalEntity(
+          version('written on A', {'device-a': 1}),
+        );
+
+        final edit = version('edited on B', {'device-a': 1, 'device-b': 0});
+        await receive(edit);
+
+        final row = await stored();
+        expect(row.entryText?.plainText, 'edited on B');
+        expect(row.meta.vectorClock, edit.meta.vectorClock);
+      },
+    );
+
+    test(
+      "a concurrent edit that lacks only the new host's counter 0 is a "
+      'conflict, not an older version',
+      () async {
+        // A edited again before B's first edit arrived.
+        final onA = version('edited again on A', {'device-a': 2});
+        await realJournalDb.updateJournalEntity(onA);
+
+        await receive(
+          version('edited on B', {'device-a': 1, 'device-b': 0}),
+        );
+
+        expect((await stored()).entryText?.plainText, 'edited again on A');
+        final conflict = await realJournalDb.conflictById(onA.meta.id);
+        expect(conflict, isNotNull);
+        expect(conflict!.serialized, contains('edited on B'));
+      },
+    );
+  });
+
   group('EntryLink sequence log recording -', () {
     late MockSyncSequenceLogService mockSequenceService;
 

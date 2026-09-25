@@ -251,6 +251,42 @@ void main() {
       },
     );
 
+    for (final (label, counters, expected) in [
+      ('a contiguous run', [0, 1, 2, 3], 3),
+      ('a run with a hole at 4', [0, 1, 2, 3, 5], 3),
+    ]) {
+      test(
+        'rebuilding the watermark of a host that handed out counter 0 counts '
+        'the prefix from 1 ($label; ADR 0080)',
+        () async {
+          final database = db!;
+          const hostId = 'zero-host';
+
+          for (final counter in counters) {
+            await database.customUpdate(
+              'INSERT INTO sync_sequence_log '
+              '(host_id, counter, status, created_at, updated_at) '
+              'VALUES (?, ?, ?, ?, ?)',
+              variables: [
+                Variable.withString(hostId),
+                Variable.withInt(counter),
+                Variable.withInt(SyncSequenceStatus.received.index),
+                Variable.withDateTime(DateTime(2024, 1, counter + 1)),
+                Variable.withDateTime(DateTime(2024, 1, counter + 1)),
+              ],
+              updates: {database.syncSequenceLog},
+            );
+          }
+
+          // No persisted watermark yet, so the read rebuilds it from the log.
+          // Read with counter 0 in the prefix, the contiguous run gave 0 and
+          // the run with a hole gave 5: past counter 4, which gap detection
+          // would then never mark missing.
+          expect(await database.getLastCounterForHost(hostId), expected);
+        },
+      );
+    }
+
     test('getLastCounterForHost stops at first unresolved gap', () async {
       final database = db!;
       const hostId = 'host-1';
@@ -399,6 +435,7 @@ void main() {
                   ROW_NUMBER() OVER (ORDER BY counter) AS rn
                 FROM sync_sequence_log
                 WHERE host_id = ?
+                  AND counter >= 1
                   AND status IN (0, 3, 4, 5, 8)
               )
               SELECT CASE

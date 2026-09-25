@@ -295,7 +295,7 @@ PutItem(d, i, rec, base) ==
 Leq(a, b) == \A e \in Devices : a[e] <= b[e]
 Join(a, b) == [e \in Devices |-> IF a[e] >= b[e] THEN a[e] ELSE b[e]]
 
-\* compareClocksCanonically: the first host, in host order, whose counters
+\* VectorClock.compareCanonically: the first host, in host order, whose counters
 \* differ decides.
 CanonGreater(a, b) ==
     LET diff == {e \in Devices : a[e] # b[e]} IN

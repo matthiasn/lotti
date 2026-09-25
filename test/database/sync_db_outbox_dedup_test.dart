@@ -805,7 +805,7 @@ void main() {
     });
 
     test('schema version is 29', () {
-      expect(db.schemaVersion, 29);
+      expect(db.schemaVersion, 30);
     });
 
     test('OutboxStatus indices used by the partial-index annotation '
