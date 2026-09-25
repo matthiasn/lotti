@@ -124,6 +124,7 @@ counterexamples found. "Severity" grades each of those bugs; see
 
 | [#4491](https://github.com/matthiasn/lotti/pull/4491) | pending | sync | `NotificationReplication`, `SyncSettings` | 4 | 1 (1) | P1 | — | A lifecycle patch changed the content tie-break, so peers retained different same-time notification text. Also models typed recovery and documents untracked settings limits |
 | [#4490](https://github.com/matthiasn/lotti/pull/4490) | pending | sync | `OutboxCausality` | 1 | 1 (0) | P1 | — | Checks concurrent inline versions through append, collapse and receipt after #4489; fixes missing/empty-clock snapshots being folded at send time. A deliberately unsound collapse violates causal coverage. Also restores TLC triggers for startup and profile teardown |
+| [#4494](https://github.com/matthiasn/lotti/pull/4494) | pending | sync | — | −2 | 0 | — | [0087](../../docs/adr/0087-journal-row-is-the-only-copy.md) | Removed the journal JSON sidecar, and with it `SidecarMatchesRow` and the `JournalReplicationSidecar` and `JournalReplicationSidecarRollback` configurations; the four other `JournalReplication` configurations pass with unchanged state counts |
 
 ## Severity
 
