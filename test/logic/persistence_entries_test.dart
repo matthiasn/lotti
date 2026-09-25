@@ -2,7 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_update_result.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_entries.dart';
@@ -487,5 +489,93 @@ void main() {
         ).called(1);
       },
     );
+  });
+
+  group('createLink after a removal -', () {
+    // Removed on another device, whose wall clock ran ahead of this one.
+    final removed = EntryLink.basic(
+      id: 'removed-link',
+      fromId: 'a',
+      toId: 'b',
+      createdAt: DateTime(2024),
+      updatedAt: DateTime(2100),
+      vectorClock: const VectorClock({'peer': 3}),
+      hidden: true,
+      deletedAt: DateTime(2100),
+    );
+
+    setUp(() {
+      when(
+        () => vectorClockService.getNextVectorClock(
+          previous: any(named: 'previous'),
+          payload: any(named: 'payload'),
+        ),
+      ).thenAnswer((_) async => const VectorClock({'peer': 3, 'host': 1}));
+      when(
+        () => mocks.journalDb.upsertEntryLink(any()),
+      ).thenAnswer((_) async => 1);
+    });
+
+    test(
+      'revives the tombstone as its next version instead of minting a '
+      'second link for the same relationship',
+      () async {
+        when(
+          () => mocks.journalDb.linksBetween('a', 'b', type: 'BasicLink'),
+        ).thenAnswer((_) async => [removed]);
+
+        expect(await entries.createLink(fromId: 'a', toId: 'b'), isTrue);
+
+        final revived =
+            verify(
+                  () => mocks.journalDb.upsertEntryLink(captureAny()),
+                ).captured.single
+                as EntryLink;
+        expect(revived.id, 'removed-link');
+        expect(revived.deletedAt, isNull);
+        expect(revived.hidden, isFalse);
+        // Succeeds the tombstone: extends its clock, never stamped earlier.
+        expect(revived.updatedAt, DateTime(2100));
+        verify(
+          () => vectorClockService.getNextVectorClock(
+            previous: const VectorClock({'peer': 3}),
+            payload: (
+              id: 'removed-link',
+              type: SyncSequencePayloadType.entryLink,
+            ),
+          ),
+        ).called(1);
+        final sent =
+            verify(
+                  () => outboxService.enqueueMessage(captureAny()),
+                ).captured.single
+                as SyncEntryLink;
+        expect(sent.entryLink, revived);
+        expect(sent.status, SyncEntryStatus.update);
+      },
+    );
+
+    test('a live link of the same type is not revived', () async {
+      when(
+        () => mocks.journalDb.linksBetween('a', 'b', type: 'BasicLink'),
+      ).thenAnswer(
+        (_) async => [removed.copyWith(deletedAt: null, hidden: false)],
+      );
+
+      await entries.createLink(fromId: 'a', toId: 'b');
+
+      final written =
+          verify(
+                () => mocks.journalDb.upsertEntryLink(captureAny()),
+              ).captured.single
+              as EntryLink;
+      // A fresh id: the upsert refuses it as a duplicate of the live link.
+      expect(written.id, isNot('removed-link'));
+      verify(
+        () => vectorClockService.getNextVectorClock(
+          payload: any(named: 'payload'),
+        ),
+      ).called(1);
+    });
   });
 }

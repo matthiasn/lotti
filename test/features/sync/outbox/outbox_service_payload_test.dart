@@ -65,18 +65,25 @@ void main() {
         updatedAt: DateTime(2025, 1, 1),
         vectorClock: null,
       );
+      // A removed link travels with the entry as its tombstone, so a peer
+      // applying this snapshot learns of the removal instead of keeping the
+      // link it still holds.
       final link2 = EntryLink.basic(
         id: 'link-2',
         fromId: 'category-2',
         toId: entryId,
         createdAt: DateTime(2025, 1, 1),
-        updatedAt: DateTime(2025, 1, 1),
+        updatedAt: DateTime(2025, 1, 2),
         vectorClock: null,
+        hidden: true,
+        deletedAt: DateTime(2025, 1, 2),
       );
 
       // Mock journalDb to return links for this entry (both directions)
       when(
-        () => journalDb.linksForEntryIdsBidirectional(const {entryId}),
+        () => journalDb.linksForEntryIdsBidirectionalIncludingRemoved(const {
+          entryId,
+        }),
       ).thenAnswer((_) async => [link1, link2]);
 
       final journalEntity = JournalEntity.journalEntry(
@@ -112,7 +119,9 @@ void main() {
 
       // Verify links were fetched
       verify(
-        () => journalDb.linksForEntryIdsBidirectional(const {entryId}),
+        () => journalDb.linksForEntryIdsBidirectionalIncludingRemoved(const {
+          entryId,
+        }),
       ).called(1);
 
       // Verify logging shows embedded links count
@@ -154,14 +163,22 @@ void main() {
           .map((entry) => (entry as Map<String, dynamic>)['id'])
           .toList();
       expect(entryLinkIds, containsAll([link1.id, link2.id]));
+      expect(
+        entryLinks.map(
+          (entry) => EntryLink.fromJson(entry as Map<String, dynamic>),
+        ),
+        containsAll([link1, link2]),
+      );
     });
 
     test('continues without links when linksForEntryIds fails', () async {
       const entryId = 'entry-456';
 
-      // Mock journalDb.linksForEntryIdsBidirectional to throw an error
+      // Mock journalDb.linksForEntryIdsBidirectionalIncludingRemoved to throw an error
       when(
-        () => journalDb.linksForEntryIdsBidirectional(const {entryId}),
+        () => journalDb.linksForEntryIdsBidirectionalIncludingRemoved(const {
+          entryId,
+        }),
       ).thenThrow(Exception('Database error'));
 
       final journalEntity = JournalEntity.journalEntry(
@@ -221,7 +238,9 @@ void main() {
 
       // Mock journalDb to return empty list
       when(
-        () => journalDb.linksForEntryIdsBidirectional(const {entryId}),
+        () => journalDb.linksForEntryIdsBidirectionalIncludingRemoved(const {
+          entryId,
+        }),
       ).thenAnswer((_) async => []);
 
       final journalEntity = JournalEntity.journalEntry(
@@ -257,7 +276,9 @@ void main() {
 
       // Verify links were fetched
       verify(
-        () => journalDb.linksForEntryIdsBidirectional(const {entryId}),
+        () => journalDb.linksForEntryIdsBidirectionalIncludingRemoved(const {
+          entryId,
+        }),
       ).called(1);
 
       // Verify attachedLinks log was NOT called (no links to attach)
@@ -1685,7 +1706,9 @@ void main() {
       ];
 
       when(
-        () => journalDb.linksForEntryIdsBidirectional(const {entryId}),
+        () => journalDb.linksForEntryIdsBidirectionalIncludingRemoved(const {
+          entryId,
+        }),
       ).thenAnswer((_) async => tooManyLinks);
 
       final journalEntity = JournalEntity.journalEntry(

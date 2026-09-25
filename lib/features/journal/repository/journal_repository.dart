@@ -484,30 +484,49 @@ class JournalRepository {
         entryLinkTypeName(existing) != entryLinkTypeName(incoming);
   }
 
-  /// Deletes the link from `fromId` to `toId` and notifies both endpoints so
-  /// their linked-entries lists refresh.
-  Future<int> removeLink({required String fromId, required String toId}) async {
-    final res = getIt<JournalDb>().deleteLink(fromId, toId);
-    getIt<UpdateNotifications>().notify({fromId, toId, linkNotification});
-    return res;
-  }
+  /// Removes every link from `fromId` to `toId`, whatever its type, and
+  /// returns how many were removed.
+  ///
+  /// See [removeTypedLink] for how a removal reaches the other devices.
+  Future<int> removeLink({required String fromId, required String toId}) =>
+      _removeLinks(fromId: fromId, toId: toId);
 
-  /// Deletes only the link of [linkType] between `fromId` and `toId`, leaving
+  /// Removes only the link of [linkType] between `fromId` and `toId`, leaving
   /// any other type coexisting between the same pair intact (ADR 0042 allows
   /// e.g. a `BasicLink` and a `BlocksLink` between the same two tasks
   /// simultaneously — unlike [removeLink], this never touches the other one).
+  /// Returns how many links were removed: 1, or 0 when none was live.
+  ///
+  /// A removal is a synced tombstone, not a local delete: the link's next
+  /// version, with `deletedAt` set and `hidden` true, written through
+  /// [updateLink]. So it extends the removed version's clock, is never
+  /// stamped earlier than it, and is sent to the other devices — where it
+  /// outranks every copy of the live link, including the snapshot a peer's
+  /// journal-entity message embeds. Creating the same link again revives the
+  /// tombstone (`PersistenceLogic.createLink`).
   Future<int> removeTypedLink({
     required String fromId,
     required String toId,
     required String linkType,
+  }) => _removeLinks(fromId: fromId, toId: toId, type: linkType);
+
+  Future<int> _removeLinks({
+    required String fromId,
+    required String toId,
+    String? type,
   }) async {
-    final res = await getIt<JournalDb>().deleteTypedLink(
+    final links = await getIt<JournalDb>().linksBetween(
       fromId,
       toId,
-      linkType,
+      type: type,
     );
-    getIt<UpdateNotifications>().notify({fromId, toId, linkNotification});
-    return res;
+    var removed = 0;
+    for (final link in links) {
+      if (link.deletedAt != null) continue;
+      final tombstone = link.copyWith(deletedAt: DateTime.now(), hidden: true);
+      if (await updateLink(tombstone)) removed++;
+    }
+    return removed;
   }
 
   /// Retypes and/or flips the direction of an existing typed relationship

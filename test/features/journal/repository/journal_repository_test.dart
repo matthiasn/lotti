@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_redundant_argument_values
 
 import 'dart:convert';
+import 'dart:io';
 
 // Get the getIt instance to inject our mocks
 import 'package:flutter_test/flutter_test.dart';
@@ -19,6 +20,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart' show getIt;
+import 'package:lotti/logic/persistence_entries.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -31,6 +33,8 @@ import '../../../helpers/commit_evaluating_vector_clock_service.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../../sync/matrix/sync_event_processor_test_helpers.dart'
+    as sync_harness;
 
 /// Base metadata fixture for repository tests — every field defaults to the
 /// shared 2023 timestamps; pass only what differs.
@@ -1063,125 +1067,6 @@ void main() {
         verifyNever(() => mockJournalDb.upsertEntryLink(any()));
         verifyNever(() => mockUpdateNotifications.notify(any()));
         verifyNever(() => mockOutboxService.enqueueMessage(any()));
-      });
-    });
-
-    group('removeLink', () {
-      test(
-        'returns 0 when the link did not exist and still notifies',
-        () async {
-          when(
-            () => mockJournalDb.deleteLink('from-id', 'to-id'),
-          ).thenAnswer((_) async => 0);
-          when(
-            () => mockUpdateNotifications.notify(any()),
-          ).thenAnswer((_) async {});
-
-          final result = await repository.removeLink(
-            fromId: 'from-id',
-            toId: 'to-id',
-          );
-
-          expect(result, 0);
-          // Notification fires unconditionally — by design.
-          verify(
-            () => mockUpdateNotifications.notify({
-              'from-id',
-              'to-id',
-              linkNotification,
-            }),
-          ).called(1);
-        },
-      );
-
-      test('successfully removes a link and returns the result', () async {
-        // Arrange
-        const fromId = 'from-id';
-        const toId = 'to-id';
-
-        // Mock JournalDb
-        when(
-          () => mockJournalDb.deleteLink(fromId, toId),
-        ).thenAnswer((_) async => 1);
-
-        // Mock UpdateNotifications
-        when(
-          () => mockUpdateNotifications.notify(any()),
-        ).thenAnswer((_) async {});
-
-        // Act
-        final result = await repository.removeLink(
-          fromId: fromId,
-          toId: toId,
-        );
-
-        // Assert
-        expect(result, equals(1));
-        verify(() => mockJournalDb.deleteLink(fromId, toId)).called(1);
-        verify(
-          () => mockUpdateNotifications.notify({
-            fromId,
-            toId,
-            linkNotification,
-          }),
-        ).called(1);
-      });
-    });
-
-    group('removeTypedLink', () {
-      test(
-        'deletes only the given type and notifies both endpoints',
-        () async {
-          when(
-            () => mockJournalDb.deleteTypedLink(
-              'from-id',
-              'to-id',
-              'BlocksLink',
-            ),
-          ).thenAnswer((_) async => 1);
-          when(
-            () => mockUpdateNotifications.notify(any()),
-          ).thenAnswer((_) async {});
-
-          final result = await repository.removeTypedLink(
-            fromId: 'from-id',
-            toId: 'to-id',
-            linkType: 'BlocksLink',
-          );
-
-          expect(result, 1);
-          verify(
-            () => mockJournalDb.deleteTypedLink(
-              'from-id',
-              'to-id',
-              'BlocksLink',
-            ),
-          ).called(1);
-          verify(
-            () => mockUpdateNotifications.notify({
-              'from-id',
-              'to-id',
-              linkNotification,
-            }),
-          ).called(1);
-        },
-      );
-
-      test('returns 0 when no link of that type exists', () async {
-        when(
-          () => mockJournalDb.deleteTypedLink('from-id', 'to-id', 'BlocksLink'),
-        ).thenAnswer((_) async => 0);
-        when(
-          () => mockUpdateNotifications.notify(any()),
-        ).thenAnswer((_) async {});
-
-        final result = await repository.removeTypedLink(
-          fromId: 'from-id',
-          toId: 'to-id',
-          linkType: 'BlocksLink',
-        );
-
-        expect(result, 0);
       });
     });
 
@@ -3725,4 +3610,382 @@ void main() {
       },
     );
   });
+
+  group('link removal', () {
+    late JournalDb db;
+    late MockOutboxService outboxService;
+    late TestGetItMocks mocks;
+    late String host;
+
+    setUpAll(registerAllFallbackValues);
+
+    setUp(() async {
+      db = JournalDb(inMemoryDatabase: true);
+      outboxService = MockOutboxService();
+      when(() => outboxService.enqueueMessage(any())).thenAnswer((_) async {});
+      mocks = await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..unregister<JournalDb>()
+            ..registerSingleton<JournalDb>(db)
+            ..registerSingleton<OutboxService>(outboxService)
+            ..registerSingleton<VectorClockService>(VectorClockService());
+        },
+      );
+      await getIt<VectorClockService>().initialized;
+      host = (await getIt<VectorClockService>().getHost())!;
+    });
+
+    tearDown(() async {
+      await tearDownTestGetIt();
+      await db.close();
+    });
+
+    EntryLink stored(String id, EntryLinkType type, {DateTime? deletedAt}) =>
+        type.buildLink(
+          id: id,
+          fromId: 'task-a',
+          toId: 'task-b',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          vectorClock: const VectorClock({'peer': 2}),
+          hidden: deletedAt != null,
+          deletedAt: deletedAt,
+        );
+
+    List<SyncEntryLink> sentLinks() => verify(
+      () => outboxService.enqueueMessage(captureAny()),
+    ).captured.cast<SyncEntryLink>();
+
+    test(
+      'removeTypedLink replaces only that type with a tombstone that '
+      'succeeds it, and sends the tombstone',
+      () async {
+        await db.upsertEntryLink(stored('basic', EntryLinkType.basic));
+        await db.upsertEntryLink(stored('blocks', EntryLinkType.blocks));
+
+        final removed = await JournalRepository().removeTypedLink(
+          fromId: 'task-a',
+          toId: 'task-b',
+          linkType: 'BlocksLink',
+        );
+
+        expect(removed, 1);
+        final tombstone = (await db.entryLinkById('blocks'))!;
+        expect(tombstone.deletedAt, isNotNull);
+        expect(tombstone.hidden, isTrue);
+        // Extends the removed version's clock, so it outranks every copy of
+        // it on every device.
+        expect(tombstone.vectorClock?.vclock, {
+          'peer': 2,
+          host: firstVectorClockCounter,
+        });
+        expect(
+          await db.entryLinkById('basic'),
+          stored('basic', EntryLinkType.basic),
+        );
+        final live = await db.typedLinksForTaskIds(
+          {'task-b'},
+          types: {'BasicLink', 'BlocksLink'},
+        );
+        expect(live.map((link) => link.id), ['basic']);
+
+        final sent = sentLinks().single;
+        expect(sent.entryLink, tombstone);
+        expect(sent.status, SyncEntryStatus.update);
+        verify(
+          () => mocks.updateNotifications.notify({
+            'task-a',
+            'task-b',
+            linkNotification,
+          }),
+        ).called(1);
+      },
+    );
+
+    test(
+      'removeLink removes every live link between the pair, hidden ones '
+      'included, and leaves an earlier removal alone',
+      () async {
+        await db.upsertEntryLink(
+          stored('basic', EntryLinkType.basic).copyWith(hidden: true),
+        );
+        await db.upsertEntryLink(stored('blocks', EntryLinkType.blocks));
+        final earlier = stored(
+          'follows-up',
+          EntryLinkType.followsUp,
+          deletedAt: DateTime(2024, 2),
+        );
+        await db.upsertEntryLink(earlier);
+
+        final removed = await JournalRepository().removeLink(
+          fromId: 'task-a',
+          toId: 'task-b',
+        );
+
+        expect(removed, 2);
+        final versions = await db.linksBetween('task-a', 'task-b');
+        expect(versions, hasLength(3));
+        expect(versions.every((link) => link.deletedAt != null), isTrue);
+        expect(await db.entryLinkById('follows-up'), earlier);
+        expect(sentLinks().map((message) => message.entryLink.id).toSet(), {
+          'basic',
+          'blocks',
+        });
+      },
+    );
+
+    test(
+      'returns 0 and sends nothing when no live link matches',
+      () async {
+        await db.upsertEntryLink(
+          stored('blocks', EntryLinkType.blocks, deletedAt: DateTime(2024, 2)),
+        );
+
+        final removed = await JournalRepository().removeTypedLink(
+          fromId: 'task-a',
+          toId: 'task-b',
+          linkType: 'BlocksLink',
+        );
+
+        expect(removed, 0);
+        verifyNever(() => outboxService.enqueueMessage(any()));
+      },
+    );
+  });
+
+  group('link removal across devices', () {
+    late _Device deviceA;
+    late _Device deviceB;
+    late Directory documentsDirectory;
+
+    final entryId = fallbackJournalEntity.meta.id;
+
+    setUpAll(sync_harness.registerSyncProcessorFallbacks);
+
+    setUp(() async {
+      sync_harness.setUpProcessorMocks();
+      when(
+        () => sync_harness.journalEntityLoader.load(
+          jsonPath: _Device.snapshotPath,
+        ),
+      ).thenAnswer((_) async => fallbackJournalEntity);
+      // Applying a journal entity writes its JSON sidecar.
+      documentsDirectory = Directory.systemTemp.createTempSync('lotti_test_');
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..unregister<JournalDb>()
+            ..registerSingleton<Directory>(documentsDirectory);
+        },
+      );
+      deviceA = await _Device.boot();
+      deviceB = await _Device.boot();
+    });
+
+    tearDown(() async {
+      await tearDownTestGetIt();
+      await deviceA.db.close();
+      await deviceB.db.close();
+      documentsDirectory.deleteSync(recursive: true);
+    });
+
+    Future<bool> link(_Device device) => device.act(
+      () => PersistenceEntries(
+        MockPersistenceLogic(),
+      ).createLink(fromId: entryId, toId: 'note-id'),
+    );
+
+    Future<int> unlink(_Device device) => device.act(
+      () => JournalRepository().removeTypedLink(
+        fromId: entryId,
+        toId: 'note-id',
+        linkType: 'BasicLink',
+      ),
+    );
+
+    Future<void> expectConverged({required bool live}) async {
+      final onA = await deviceA.db.linksBetween(entryId, 'note-id');
+      final onB = await deviceB.db.linksBetween(entryId, 'note-id');
+      expect(onA, hasLength(1));
+      expect(onB, onA);
+      expect(onA.single.deletedAt == null, live);
+      for (final device in [deviceA, deviceB]) {
+        expect(
+          await device.db.linksForEntryIdsBidirectional({entryId}),
+          live ? onA : isEmpty,
+        );
+      }
+    }
+
+    test('a removal on one device reaches the other', () async {
+      expect(await link(deviceA), isTrue);
+      await deviceB.receiveAll(deviceA.takeOutgoing());
+
+      expect(await unlink(deviceA), 1);
+      await deviceB.receiveAll(deviceA.takeOutgoing());
+
+      await expectConverged(live: false);
+    });
+
+    test(
+      "the other device's late snapshot does not bring the removed link back",
+      () async {
+        expect(await link(deviceA), isTrue);
+        await deviceB.receiveAll(deviceA.takeOutgoing());
+        expect(await unlink(deviceA), 1);
+
+        // B has not heard of the removal yet; its next journal-entity message
+        // embeds the link as B holds it — live.
+        await deviceA.receive(await deviceB.journalEntityMessage(entryId));
+        // The entity itself was applied — only the stale link was refused.
+        expect(await deviceA.db.journalEntityById(entryId), isNotNull);
+        expect(
+          await deviceA.db.linksForEntryIdsBidirectional({entryId}),
+          isEmpty,
+        );
+
+        await deviceB.receiveAll(deviceA.takeOutgoing());
+        await expectConverged(live: false);
+      },
+    );
+
+    test(
+      'linking again after a removal converges, whatever order the versions '
+      'arrive in',
+      () async {
+        expect(await link(deviceA), isTrue);
+        await deviceB.receiveAll(deviceA.takeOutgoing());
+        expect(await unlink(deviceA), 1);
+        expect(await link(deviceA), isTrue);
+
+        // The re-link arrives first, the removal it succeeds after it.
+        await deviceB.receiveAll(deviceA.takeOutgoing().reversed);
+        await expectConverged(live: true);
+
+        // And B's snapshot of the result changes nothing on A.
+        await deviceA.receive(await deviceB.journalEntityMessage(entryId));
+        await expectConverged(live: true);
+      },
+    );
+
+    test(
+      'undoing a new link and redoing it converges on the other device, '
+      'whatever order the versions arrive in',
+      () async {
+        expect(await link(deviceA), isTrue);
+        // The undo of the "link created" message is local and instant: the
+        // link is gone here before anything is delivered.
+        expect(await unlink(deviceA), 1);
+        expect(
+          await deviceA.db.linksForEntryIdsBidirectional({entryId}),
+          isEmpty,
+        );
+        expect(await link(deviceA), isTrue);
+
+        final sent = deviceA.takeOutgoing();
+        expect(sent, hasLength(3));
+        // The redo overtakes the undo on its way to B.
+        await deviceB.receiveAll([sent[0], sent[2], sent[1]]);
+        await expectConverged(live: true);
+      },
+    );
+
+    test(
+      'a removal on the device that did not create the link reaches the '
+      'creator, and linking again there brings it back on both',
+      () async {
+        expect(await link(deviceA), isTrue);
+        await deviceB.receiveAll(deviceA.takeOutgoing());
+
+        expect(await unlink(deviceB), 1);
+        await deviceA.receiveAll(deviceB.takeOutgoing());
+        await expectConverged(live: false);
+
+        expect(await link(deviceA), isTrue);
+        await deviceB.receiveAll(deviceA.takeOutgoing());
+        await expectConverged(live: true);
+      },
+    );
+  });
+}
+
+/// One simulated device for the cross-device link tests: its own database,
+/// its own vector-clock host and an outbox that keeps what it would send.
+class _Device {
+  _Device._(this.db, this.clock, this._outbox);
+
+  /// Where the journal-entity messages below say their entity lives; the
+  /// shared loader stub answers it with `fallbackJournalEntity`.
+  static const snapshotPath = '/entry.json';
+
+  static Future<_Device> boot() async {
+    final outbox = MockOutboxService();
+    final device = _Device._(
+      JournalDb(inMemoryDatabase: true),
+      VectorClockService(),
+      outbox,
+    );
+    when(() => outbox.enqueueMessage(any())).thenAnswer((invocation) async {
+      device._outgoing.add(invocation.positionalArguments.first as SyncMessage);
+    });
+    await device.clock.initialized;
+    return device;
+  }
+
+  final JournalDb db;
+  final VectorClockService clock;
+  final MockOutboxService _outbox;
+  final List<SyncMessage> _outgoing = [];
+
+  /// Runs [action] as this device: the app's singletons resolve to this
+  /// device's database, clock and outbox while it runs.
+  Future<T> act<T>(Future<T> Function() action) {
+    _register<JournalDb>(db);
+    _register<VectorClockService>(clock);
+    _register<OutboxService>(_outbox);
+    return action();
+  }
+
+  static void _register<T extends Object>(T instance) {
+    if (getIt.isRegistered<T>()) getIt.unregister<T>();
+    getIt.registerSingleton<T>(instance);
+  }
+
+  /// The messages this device has sent since the last call, oldest first.
+  List<SyncMessage> takeOutgoing() {
+    final sent = [..._outgoing];
+    _outgoing.clear();
+    return sent;
+  }
+
+  /// Applies [message] here through the real sync receive path.
+  Future<void> receive(SyncMessage message) async {
+    when(
+      () => sync_harness.event.text,
+    ).thenReturn(sync_harness.encodeMessage(message));
+    await sync_harness.processor.process(
+      event: sync_harness.event,
+      journalDb: db,
+    );
+  }
+
+  Future<void> receiveAll(Iterable<SyncMessage> messages) async {
+    for (final message in messages) {
+      await receive(message);
+    }
+  }
+
+  /// The journal-entity message this device sends for [entryId]: like the
+  /// outbox writer, it embeds this device's snapshot of the entry's links.
+  Future<SyncMessage> journalEntityMessage(String entryId) async =>
+      SyncMessage.journalEntity(
+        id: entryId,
+        jsonPath: snapshotPath,
+        vectorClock: null,
+        status: SyncEntryStatus.update,
+        entryLinks: await db.linksForEntryIdsBidirectionalIncludingRemoved({
+          entryId,
+        }),
+      );
 }

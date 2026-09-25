@@ -1183,7 +1183,6 @@ void main() {
       expect(tombstones.map((item) => item.id), ['forward', 'reverse']);
       expect(tombstones.every((item) => item.deletedAt != null), isTrue);
       expect(tombstones.every((item) => item.hidden == true), isTrue);
-      verifyNever(() => mockDb.deleteTypedLink(any(), any(), any()));
     });
 
     test(

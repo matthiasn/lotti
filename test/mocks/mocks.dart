@@ -301,6 +301,29 @@ class MockJournalDb extends Mock implements JournalDb {
     return Future<bool>.value(false);
   }
 
+  /// Unstubbed, no version of the link is stored — so every
+  /// `PersistenceLogic.createLink` behind a mocked database (and every entry
+  /// created with a `linkedId`) mints a fresh link instead of failing on a
+  /// null `Future`, and a removal finds nothing to tombstone.
+  @override
+  Future<List<EntryLink>> linksBetween(
+    String fromId,
+    String toId, {
+    String? type,
+  }) {
+    try {
+      final result = super.noSuchMethod(
+        Invocation.method(#linksBetween, [fromId, toId], {#type: type}),
+      );
+      if (result is Future<List<EntryLink>>) {
+        return result;
+      }
+    } catch (_) {
+      // ignore and fall back
+    }
+    return Future<List<EntryLink>>.value(const <EntryLink>[]);
+  }
+
   @override
   Stream<bool> watchConfigFlag(String flagName) {
     try {

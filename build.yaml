@@ -19,3 +19,4 @@ targets:
             options:
               modules:
                 - fts5
+                - json1

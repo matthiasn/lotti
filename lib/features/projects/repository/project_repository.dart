@@ -397,17 +397,10 @@ class ProjectRepository {
     // burn silently and receivers would only converge via reactive backfill.
     return _vectorClockService.withVcScope<bool>(
       () async {
-        final now = DateTime.now();
-        final linkId = uuid.v1();
-        final link = EntryLink.project(
-          id: linkId,
-          fromId: projectId,
-          toId: taskId,
-          createdAt: now,
-          updatedAt: now,
-          vectorClock: await _vectorClockService.getNextVectorClock(
-            payload: (id: linkId, type: SyncSequencePayloadType.entryLink),
-          ),
+        final (:link, :revived) = await _newProjectLink(
+          projectId: projectId,
+          taskId: taskId,
+          now: DateTime.now(),
         );
 
         final committed = await _journalDb.transaction(() async {
@@ -437,7 +430,7 @@ class ProjectRepository {
           propagatedNotification(projectEntityUpdateNotification(projectId)),
         });
         try {
-          await _enqueueLinkSync(link, SyncEntryStatus.initial);
+          await _enqueueLinkSync(link, _creationStatus(revived: revived));
         } catch (error, stackTrace) {
           // Commit-on-write invariant: the link row is already persisted, so
           // the VC counter is claimed on disk — an outbox failure must not
@@ -579,16 +572,10 @@ class ProjectRepository {
       () async {
         final now = DateTime.now();
         final deletedLink = await _prepareDeletedLink(oldLink, now);
-        final newLinkId = uuid.v1();
-        final newLink = EntryLink.project(
-          id: newLinkId,
-          fromId: projectId,
-          toId: taskId,
-          createdAt: now,
-          updatedAt: now,
-          vectorClock: await _vectorClockService.getNextVectorClock(
-            payload: (id: newLinkId, type: SyncSequencePayloadType.entryLink),
-          ),
+        final (link: newLink, :revived) = await _newProjectLink(
+          projectId: projectId,
+          taskId: taskId,
+          now: now,
         );
 
         // The final invariant reads and both writes share one transaction. If
@@ -637,7 +624,7 @@ class ProjectRepository {
         });
         try {
           await _enqueueLinkSync(deletedLink, SyncEntryStatus.update);
-          await _enqueueLinkSync(newLink, SyncEntryStatus.initial);
+          await _enqueueLinkSync(newLink, _creationStatus(revived: revived));
         } catch (error, stackTrace) {
           getIt<DomainLogger>().error(
             LogDomain.sync,
@@ -708,6 +695,40 @@ class ProjectRepository {
       commitWhen: (ok) => ok,
     );
   }
+
+  /// The link that puts [taskId] in [projectId], reserved inside the
+  /// caller's [VectorClockService.withVcScope]. When the task was in that
+  /// project before, it revives the removed link rather than minting a
+  /// second one for the same pair (see [removedVersion]).
+  Future<({EntryLink link, bool revived})> _newProjectLink({
+    required String projectId,
+    required String taskId,
+    required DateTime now,
+  }) async {
+    final removed = removedVersion(
+      await _journalDb.linksBetween(
+        projectId,
+        taskId,
+        type: entryLinkTypeDbName(EntryLinkType.project),
+      ),
+    );
+    final linkId = removed?.id ?? uuid.v1();
+    final link = EntryLink.project(
+      id: linkId,
+      fromId: projectId,
+      toId: taskId,
+      createdAt: now,
+      updatedAt: linkEditTimestamp(removed, now),
+      vectorClock: await _vectorClockService.getNextVectorClock(
+        previous: removed?.vectorClock,
+        payload: (id: linkId, type: SyncSequencePayloadType.entryLink),
+      ),
+    );
+    return (link: link, revived: removed != null);
+  }
+
+  static SyncEntryStatus _creationStatus({required bool revived}) =>
+      revived ? SyncEntryStatus.update : SyncEntryStatus.initial;
 
   /// Reserves a VC for the soft-deleted link. Callers invoke this inside a
   /// [VectorClockService.withVcScope] so the reservation is bound to the
