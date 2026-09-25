@@ -461,6 +461,23 @@ void main() {
         await realDb.close();
       });
 
+      test('releaseOrphanedClaims puts orphaned sending rows back in the '
+          'queue', () async {
+        final orphan = await insertRow(status: OutboxStatus.sending);
+        final sent = await insertRow(status: OutboxStatus.sent);
+
+        expect(await realRepo.releaseOrphanedClaims(), 1);
+
+        final statuses = {
+          for (final item in await realDb.getOutboxItems())
+            item.id: item.status,
+        };
+        expect(statuses, {
+          orphan: OutboxStatus.pending.index,
+          sent: OutboxStatus.sent.index,
+        });
+      });
+
       test(
         'markRetryBatch issues one batched statement set, not one per row',
         () async {

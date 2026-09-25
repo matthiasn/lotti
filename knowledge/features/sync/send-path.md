@@ -5,13 +5,25 @@ description: Outbox staging, the CAS claim that makes merges safe, dequeue-time 
 resource: ../../../lib/features/sync/outbox
 tags: [sync, outbox, bundling, retries]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-05T15:44:17+00:00 }
-stale_after: 2026-11-02
+generated: { by: claude-code/opus-5.5, at: 2026-09-25T18:00:00+00:00 }
+stale_after: 2026-12-25
 sources:
   - id: outbox
     resource: ../../../lib/features/sync/outbox
     title: Outbox service, processor, repository
-    last_modified: 2026-09-05
+    last_modified: 2026-09-25
+  - id: outbox-db
+    resource: ../../../lib/database/sync_db_outbox.dart
+    title: SyncDatabase outbox queue — claim, release, mark
+    last_modified: 2026-09-25
+  - id: outbox-spec
+    resource: ../../../specs/tla/Outbox.tla
+    title: TLA+ model of the outbox — merge, claim, send, prune
+    last_modified: 2026-09-25
+  - id: adr-0085
+    resource: ../../../docs/adr/0085-model-checked-outbox.md
+    title: ADR 0085 — model-checked outbox
+    last_modified: 2026-09-25
   - id: payload-sender
     resource: ../../../lib/features/sync/matrix/matrix_payload_sender.dart
     title: MatrixPayloadSender — wire encoding
@@ -181,6 +193,32 @@ Without this, the pre-merge Matrix event would still go out while the new
 `coveredVectorClocks` list sat in a row that would never be sent — producing
 scattered single-counter holes on receivers that only backfill could repair.
 
+## One enqueue per entity at a time
+
+The CAS guards the merge against the processor, not against another enqueue.
+The merge reads the pending row, awaits more work, and writes it back, so two
+enqueues of one entity that interleave both merge into the row as they read
+it, and the second write drops the counter the first added.
+`OutboxEnqueueWriter._serializedByKey` therefore chains the journal-entity,
+entry-link, agent-payload and config-flag enqueues per outbox entry id;
+different entities still enqueue concurrently.
+
+Two more rules keep a row from promising a version it does not carry, since a
+peer marks every covered counter received:
+
+- A merge keeps the **newer inline payload**. When the pending entry link or
+  agent payload's clock dominates the incoming one (an enqueue that arrived
+  out of order), the pending payload stays and only the incoming clock is
+  folded into the covered ones. A journal row takes the entry's current clock
+  from the database anyway.
+- A fresh inline row is enriched from the sequence log only with a counter its
+  payload has reached (`enrichCoveredVcsFromSequenceLog(payloadClock: …)`).
+  Journal rows keep the unconditional enrichment, because their sender reads
+  the entry's current version at send time.
+
+`specs/tla/Outbox.tla` model-checks these rules
+([ADR 0085](../../../docs/adr/0085-model-checked-outbox.md)).
+
 # File payload identity follows the claimed generation
 
 Every JSON-backed send records the successful Matrix file-event id in the text
@@ -210,11 +248,13 @@ item retryable; none acknowledges an unsent generation.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> pending: enqueued
+    [*] --> pending: enqueued (or merged into)
     pending --> sending: claimed by OutboxProcessor
-    sending --> sent: delivered
-    sending --> pending: recoverable failure (markRetry, retries++)
-    pending --> error: retries reach maxRetries (10)
+    sending --> sent: delivered (markSent)
+    sending --> pending: failure below the cap (markRetry, retries++)
+    sending --> error: failure at the cap (retries reach maxRetries)
+    sending --> pending: orphaned claim released before the next drain
+    sending --> sending: expired lease reclaimed
     error --> pending: manual Retry / Retry all (re-queue)
     sent --> [*]: pruned after 7 days
     error --> [*]: Remove (won't sync)
@@ -222,7 +262,34 @@ stateDiagram-v2
 
 `DatabaseOutboxRepository.maxRetries` defaults to **10**. Retry delay is 5 s,
 error delay 15 s, send timeout 20 s, claim lease 1 minute
-(`SyncTuning`).
+(`SyncTuning`). A failed send (the sender returns `false`, throws, or times
+out) and a throwing `markSent` both take the `markRetry` path, so a delivered
+row can be sent again: a duplicate, never a loss.
+
+A claim can end without any mark: the process dies between the send and
+`markSent`, or `markSent` and `markRetry` both throw. Its rows stay `sending`.
+`sendNext` releases every `sending` row to `pending`
+(`OutboxRepository.releaseOrphanedClaims`) before it claims. `sendNext`
+chains its calls, whoever makes them, so each drain starts only after the one
+before it finished, and only a drain claims: no claim of this service is in
+flight there. The orphan is resent in its turn, before newer
+rows of its entity. Left to its one-minute lease, it would go out after them
+and an older payload would land last. The lease stays as a second guard.
+
+The release is sound only because no other drain can still be running, and a
+profile switch or closed-generation restart brings the same profile back
+within the same process. So `sendNext` returns at once once the service is
+disposed, and `dispose` awaits the tail of its chain — every drain queued so
+far, each stopping after its current pass — before it cancels anything else. Otherwise the old
+generation's send could land after the new generation released and resent its
+row together with a newer version. The old generation's late marks cannot
+touch the new one's rows: `ServiceDisposer` closes its `SyncDatabase` first.
+
+Two orderings are **not** guaranteed (ADR 0085 residuals): a send the
+processor abandoned at its timeout can still land after a newer version, and
+the monitor's Retry on an old `error` row sends it after the versions that
+superseded it. Receivers that order by vector clock drop the stale copy; a
+config flag or an AI configuration is applied in arrival order.
 
 # Dequeue-time bundling
 

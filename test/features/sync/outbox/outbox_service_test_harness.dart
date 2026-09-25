@@ -299,6 +299,10 @@ class OutboxServiceTestHarness {
     when(
       () => repository.pruneSentOutboxItems(retention: any(named: 'retention')),
     ).thenAnswer((_) async => 0);
+    when(() => repository.releaseOrphanedClaims()).thenAnswer((_) async => 0);
+    when(
+      () => syncDatabase.releaseSendingOutboxItems(),
+    ).thenAnswer((_) async => 0);
     when(
       () => repository.pruneSentOutboxItemsChunked(
         retention: any(named: 'retention'),

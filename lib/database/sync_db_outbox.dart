@@ -163,6 +163,28 @@ mixin _SyncDbOutbox on _$SyncDatabase {
     });
   }
 
+  /// Return every `sending` row to `pending`, whatever the age of its lease,
+  /// and return how many rows moved.
+  ///
+  /// Only for a caller that knows no claim of its own is in flight: the
+  /// outbox runner, before it drains. Rows still `sending` then belong to a
+  /// claim that ended without a mark — the process died between the send and
+  /// markSent, or both markSent and markRetry threw. Left to their lease,
+  /// newer rows of the same entity would be claimed and sent first and the
+  /// older payload would land last (ADR 0085). `retries` is left alone: the
+  /// send may well have landed, and resending it is a duplicate.
+  Future<int> releaseSendingOutboxItems({DateTime? now}) {
+    return (update(outbox)..where(
+          (t) => t.status.equals(_outboxSendingStatus),
+        ))
+        .write(
+          OutboxCompanion(
+            status: Value(OutboxStatus.pending.index),
+            updatedAt: Value(now ?? clock.now()),
+          ),
+        );
+  }
+
   /// Bulk-set every row whose id is in [ids] to `sent`, stamping
   /// `updatedAt = now`. Single SQL `UPDATE … WHERE id IN (…)` instead of N
   /// per-row writes — used by `OutboxRepository.markSentBatch` after a

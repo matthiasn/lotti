@@ -88,8 +88,18 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
   /// place (keeping the higher priority) so only the latest value ships.
   /// Returns `true` when it merged into an existing row, `false` when it
   /// inserted a fresh one. The in-place update only matches `status=pending`,
-  /// so a row already being sent falls through to a new insert.
+  /// so a row already being sent falls through to a new insert. Enqueues of
+  /// one flag run one at a time ([OutboxEnqueueWriter._serializedByKey]), so
+  /// the value that ships is the one enqueued last.
   Future<bool> enqueueConfigFlag({
+    required SyncConfigFlag msg,
+    required OutboxCompanion commonFields,
+  }) => _serializedByKey(
+    'configFlag:${msg.name}',
+    () => _enqueueConfigFlag(msg: msg, commonFields: commonFields),
+  );
+
+  Future<bool> _enqueueConfigFlag({
     required SyncConfigFlag msg,
     required OutboxCompanion commonFields,
   }) async {

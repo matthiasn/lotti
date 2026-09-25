@@ -714,6 +714,64 @@ void main() {
       expect(claimed?.status, OutboxStatus.sending.index);
     });
 
+    test(
+      'releaseSendingOutboxItems returns every sending row to pending, '
+      'lease or not, and leaves the rest and the retry counts alone',
+      () async {
+        final now = DateTime(2024, 1, 1, 12);
+        final database = db!;
+        Future<int> row(OutboxStatus status, DateTime updatedAt) =>
+            database.addOutboxItem(
+              OutboxCompanion(
+                status: Value(status.index),
+                subject: Value(status.name),
+                message: const Value('{}'),
+                createdAt: Value(DateTime(2024)),
+                updatedAt: Value(updatedAt),
+                retries: const Value(2),
+              ),
+            );
+        // A lease that is still live and one that ran out: both orphans.
+        final live = await row(OutboxStatus.sending, now);
+        final stale = await row(
+          OutboxStatus.sending,
+          now.subtract(const Duration(minutes: 10)),
+        );
+        final pending = await row(OutboxStatus.pending, now);
+        final sent = await row(OutboxStatus.sent, now);
+        final error = await row(OutboxStatus.error, now);
+
+        final released = await database.releaseSendingOutboxItems(
+          now: now.add(const Duration(seconds: 1)),
+        );
+
+        expect(released, 2);
+        final byId = {
+          for (final item in await database.getOutboxItems()) item.id: item,
+        };
+        expect(
+          {
+            for (final id in [live, stale, pending, sent, error])
+              id: byId[id]!.status,
+          },
+          {
+            live: OutboxStatus.pending.index,
+            stale: OutboxStatus.pending.index,
+            pending: OutboxStatus.pending.index,
+            sent: OutboxStatus.sent.index,
+            error: OutboxStatus.error.index,
+          },
+        );
+        expect(byId.values.map((item) => item.retries).toSet(), {2});
+        // The released rows are claimable at once, in their original order.
+        final claimed = await database.claimNextOutboxBatch(
+          maxSize: 5,
+          now: now.add(const Duration(seconds: 2)),
+        );
+        expect(claimed.map((item) => item.id), [live, stale, pending]);
+      },
+    );
+
     group('claimNextOutboxBatch', () {
       test('returns [] for an empty queue', () async {
         final database = db!;

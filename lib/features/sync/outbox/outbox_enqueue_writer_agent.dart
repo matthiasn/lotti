@@ -72,8 +72,34 @@ extension OutboxEnqueueAgent on OutboxEnqueueWriter {
   /// Saves [payloadJson] to disk, builds an enriched outbox message from
   /// [enrichedMessage], and either merges into an existing pending item or
   /// creates a new one. Records sent entries in the sequence log when a
-  /// [vectorClock] is provided.
+  /// [vectorClock] is provided. Enqueues of one id run one at a time
+  /// ([OutboxEnqueueWriter._serializedByKey]).
   Future<bool> enqueueAgentPayload({
+    required String id,
+    required String payloadJson,
+    required String relativePath,
+    required SyncMessage enrichedMessage,
+    required String subjectPrefix,
+    required String typeName,
+    required OutboxCompanion commonFields,
+    required VectorClock? vectorClock,
+    required SyncSequencePayloadType payloadType,
+  }) => _serializedByKey(
+    id,
+    () => _enqueueAgentPayload(
+      id: id,
+      payloadJson: payloadJson,
+      relativePath: relativePath,
+      enrichedMessage: enrichedMessage,
+      subjectPrefix: subjectPrefix,
+      typeName: typeName,
+      commonFields: commonFields,
+      vectorClock: vectorClock,
+      payloadType: payloadType,
+    ),
+  );
+
+  Future<bool> _enqueueAgentPayload({
     required String id,
     required String payloadJson,
     required String relativePath,
@@ -159,6 +185,16 @@ extension OutboxEnqueueAgent on OutboxEnqueueWriter {
           oldVc,
           vectorClock,
         ]);
+
+        // The payload rides inline. When the pending one is newer (this
+        // enqueue arrived out of order), keep it and only add this clock.
+        final sameKind =
+            (oldMessage is SyncAgentEntity &&
+                mergedMessage is SyncAgentEntity) ||
+            (oldMessage is SyncAgentLink && mergedMessage is SyncAgentLink);
+        if (sameKind && _pendingSupersedes(oldVc, vectorClock)) {
+          mergedMessage = oldMessage;
+        }
 
         if (mergedMessage case final SyncAgentEntity entity) {
           mergedMessage = entity.copyWith(
@@ -268,6 +304,7 @@ extension OutboxEnqueueAgent on OutboxEnqueueWriter {
     final enrichedAgentCovered = await enrichCoveredVcsFromSequenceLog(
       id,
       initialCovered,
+      payloadClock: vectorClock,
     );
     var outboxAgentMsg = enrichedMessage;
     if (enrichedAgentCovered != initialCovered) {

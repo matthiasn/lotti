@@ -1,5 +1,8 @@
 // ignore_for_file: avoid_redundant_argument_values, unnecessary_lambdas, cascade_invocations
 
+import 'package:drift/drift.dart' show Value;
+import 'package:lotti/features/sync/outbox/outbox_repository.dart';
+
 import 'outbox_service_test_harness.dart';
 
 void main() {
@@ -50,6 +53,230 @@ void main() {
 
   tearDown(() async {
     await harness.tearDown();
+  });
+
+  group('orphaned claims (ADR 0085, Outbox.tla NewestLandsLast) -', () {
+    // TLC's trace: the previous process claimed version 2 of an agent, sent
+    // it and died before markSent; version 3 was enqueued as a fresh row
+    // after the restart. While version 2's lease ran, the drain sent 3, and
+    // once the lease ran out it sent 2 — the older payload landed last.
+    SyncMessage agentAt(int counter) => SyncMessage.agentEntity(
+      agentEntity: AgentDomainEntity.agent(
+        id: 'agent-1',
+        agentId: 'agent-1',
+        kind: 'task_agent',
+        displayName: 'Agent',
+        lifecycle: AgentLifecycle.active,
+        mode: AgentInteractionMode.autonomous,
+        allowedCategoryIds: const {},
+        currentStateId: 'state-1',
+        config: const AgentConfig(),
+        createdAt: DateTime(2026, 9, 25),
+        updatedAt: DateTime(2026, 9, 25),
+        vectorClock: VectorClock({'host': counter}),
+      ),
+      status: SyncEntryStatus.update,
+    );
+
+    int counterOf(SyncMessage message) =>
+        (message as SyncAgentEntity).agentEntity!.vectorClock!.vclock['host']!;
+
+    test(
+      'a claim orphaned between send and mark goes out before the newer row',
+      () async {
+        final db = SyncDatabase(inMemoryDatabase: true);
+        addTearDown(db.close);
+        final now = DateTime(2026, 9, 25, 12);
+        OutboxCompanion rowFor(int counter, OutboxStatus status) =>
+            OutboxCompanion(
+              status: Value(status.index),
+              subject: Value('agentEntity:agent-1:$counter'),
+              message: Value(jsonEncode(agentAt(counter).toJson())),
+              outboxEntryId: const Value('agent-1'),
+              createdAt: Value(now),
+              updatedAt: Value(now),
+            );
+        final orphan = await db.addOutboxItem(
+          rowFor(2, OutboxStatus.sending),
+        );
+        final newer = await db.addOutboxItem(rowFor(3, OutboxStatus.pending));
+
+        when(
+          () => journalDb.getConfigFlag(enableMatrixFlag),
+        ).thenAnswer((_) async => true);
+        final wire = <int>[];
+        when(() => messageSender.send(any())).thenAnswer((invocation) async {
+          final message = invocation.positionalArguments.single as SyncMessage;
+          wire.addAll(
+            message is SyncOutboxBundle
+                ? message.children.map(counterOf)
+                : [counterOf(message)],
+          );
+          return true;
+        });
+
+        final svc = TestableOutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: DatabaseOutboxRepository(db),
+          messageSender: messageSender,
+          activityGate: createGate(),
+          ownsActivityGate: false,
+        );
+        addTearDown(svc.dispose);
+
+        // Seconds after the restart: the orphan's one-minute lease still runs.
+        await withClock(
+          Clock.fixed(now.add(const Duration(seconds: 5))),
+          svc.sendNext,
+        );
+
+        expect(wire, [2, 3]);
+        final statuses = {
+          for (final item in await db.getOutboxItems()) item.id: item.status,
+        };
+        expect(statuses, {
+          orphan: OutboxStatus.sent.index,
+          newer: OutboxStatus.sent.index,
+        });
+      },
+    );
+
+    test(
+      'dispose waits for the drain in flight (Outbox.tla Teardown)',
+      () async {
+        // TLC's trace: the generation is disposed while its drain awaits a
+        // send; the same profile restarts, releases that row and sends it with
+        // a newer one, and then the old send lands last. Dispose must not tear
+        // the service down while its own drain can still send.
+        when(
+          () => journalDb.getConfigFlag(enableMatrixFlag),
+        ).thenAnswer((_) async => true);
+        final claimed = Completer<void>();
+        final inFlight = Completer<OutboxProcessingResult>();
+        when(() => processor.processQueue()).thenAnswer((_) {
+          if (!claimed.isCompleted) claimed.complete();
+          return inFlight.future;
+        });
+        var drainDone = false;
+        bool? drainDoneAtTeardown;
+        // The first thing dispose tears down after the quiesce: record whether
+        // the drain had finished by then.
+        final connectivity = StreamController<List<ConnectivityResult>>(
+          onCancel: () => drainDoneAtTeardown = drainDone,
+        );
+        addTearDown(connectivity.close);
+
+        final svc = MatrixOutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          activityGate: createGate(),
+          ownsActivityGate: false,
+          connectivityStream: connectivity.stream,
+          postDrainSettle: Duration.zero,
+        );
+        final drain = svc.sendNext().then((_) => drainDone = true);
+        await claimed.future;
+
+        final disposing = svc.dispose();
+        inFlight.complete(OutboxProcessingResult.none);
+        await disposing;
+        await drain;
+
+        expect(drainDoneAtTeardown, isTrue);
+        // The drain stopped at the disposal: no second pass after the settle.
+        verify(() => processor.processQueue()).called(1);
+      },
+    );
+
+    test('direct sendNext calls run one at a time, and dispose awaits them '
+        'all', () async {
+      // Two callers of the public sendNext: the second must not release the
+      // first one's claim while that send is still in flight.
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => true);
+      final events = <String>[];
+      when(() => repository.releaseOrphanedClaims()).thenAnswer((_) async {
+        events.add('release');
+        return 0;
+      });
+      final firstClaimed = Completer<void>();
+      final firstSend = Completer<OutboxProcessingResult>();
+      var passes = 0;
+      when(() => processor.processQueue()).thenAnswer((_) {
+        passes++;
+        events.add('claim$passes');
+        if (passes == 1) {
+          firstClaimed.complete();
+          return firstSend.future.whenComplete(() => events.add('sent1'));
+        }
+        return Future.value(OutboxProcessingResult.none);
+      });
+
+      final svc = buildService(activityGate: createGate());
+      final first = svc.sendNext();
+      await firstClaimed.future;
+      final second = svc.sendNext();
+      final disposing = svc.dispose().then((_) => events.add('disposed'));
+
+      firstSend.complete(OutboxProcessingResult.none);
+      await Future.wait([first, second, disposing]);
+
+      // The second call started only after the first finished, and was then
+      // dropped because the service had been disposed; dispose waited for it.
+      expect(events, ['release', 'claim1', 'sent1', 'disposed']);
+    });
+
+    test('sendNext does nothing once the service is disposed', () async {
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => true);
+      final svc = buildService(activityGate: createGate());
+      await svc.dispose();
+
+      await svc.sendNext();
+
+      verifyNever(() => repository.releaseOrphanedClaims());
+      verifyNever(() => processor.processQueue());
+    });
+
+    test('sendNext releases orphaned claims before it claims', () async {
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => true);
+      when(
+        () => processor.processQueue(),
+      ).thenAnswer((_) async => OutboxProcessingResult.none);
+      when(() => repository.releaseOrphanedClaims()).thenAnswer((_) async => 2);
+
+      final svc = buildService(activityGate: createGate());
+      await svc.sendNext();
+
+      verifyInOrder([
+        () => repository.releaseOrphanedClaims(),
+        () => processor.processQueue(),
+      ]);
+      verify(
+        () => loggingService.log(
+          LogDomain.sync,
+          'released orphaned claims count=2',
+          subDomain: 'sendNext.release',
+        ),
+      ).called(1);
+      await svc.dispose();
+    });
   });
 
   group('sendNext', () {

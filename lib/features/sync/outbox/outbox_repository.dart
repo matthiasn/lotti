@@ -47,6 +47,15 @@ abstract class OutboxRepository {
     Duration? leaseDuration,
   });
 
+  /// Return every `sending` row to `pending` and report how many moved.
+  ///
+  /// The outbox runner calls this before each drain, when no claim of this
+  /// process can be in flight, so every `sending` row is an orphan of a claim
+  /// that ended without a mark (a crash after the send, or a mark that threw).
+  /// Waiting out the claim lease instead lets newer rows of the same entity go
+  /// first and the orphan's older payload land last.
+  Future<int> releaseOrphanedClaims();
+
   /// Peek whether at least one pending row remains, without transitioning
   /// status. Used to decide whether the processor should schedule another
   /// drain pass after a successful send.
@@ -140,6 +149,11 @@ class DatabaseOutboxRepository implements OutboxRepository {
       maxSize: maxSize,
       leaseDuration: leaseDuration ?? SyncTuning.outboxClaimLease,
     );
+  }
+
+  @override
+  Future<int> releaseOrphanedClaims() {
+    return _database.releaseSendingOutboxItems();
   }
 
   @override

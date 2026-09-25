@@ -607,18 +607,25 @@ class MatrixOutboxService extends _OutboxServiceBase
   final Duration _postDrainSettle;
 
   /// Tears the service down: marks it disposed (so in-flight callbacks
-  /// short-circuit), closes the runner, cancels every subscription/timer, and
-  /// disposes the activity gate if this service owns it. Idempotent in effect.
+  /// short-circuit), closes the runner, cancels every subscription/timer,
+  /// waits for the drain in flight to finish its current pass, and disposes
+  /// the activity gate if this service owns it. Idempotent in effect.
   @override
   Future<void> dispose() async {
     _isDisposed = true;
     _clientRunner.close();
-    await _connectivitySubscription?.cancel();
-    await _loginSubscription?.cancel();
-    await _outboxCountSubscription?.cancel();
     _watchdogTimer?.cancel();
     _startupPruneTimer?.cancel();
     _pruneTimer?.cancel();
+    // A drain in flight stops after its current pass. Wait for it before
+    // anything else is torn down, so no send of this generation is still
+    // running when the next one (the same profile, restarted) releases its
+    // claims and resends them (ADR 0085). Nudges arriving meanwhile are
+    // dropped: enqueueNextSendRequest and sendNext return once disposed.
+    await _quiesceActiveSend();
+    await _connectivitySubscription?.cancel();
+    await _loginSubscription?.cancel();
+    await _outboxCountSubscription?.cancel();
     if (_ownsActivityGate) {
       await _activityGate.dispose();
     }

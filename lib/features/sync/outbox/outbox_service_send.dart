@@ -228,7 +228,44 @@ mixin _OutboxSend on _OutboxServiceBase {
   /// path it drains via [_drainOutbox], waits a short settle window so bursty
   /// enqueues coalesce into the next bundle, then drains once more. Never
   /// throws: any failure is logged and converted into a 15s backoff.
-  Future<void> sendNext() async {
+  ///
+  /// Calls run one at a time, whoever makes them: each waits for the one
+  /// before it. The release of orphaned claims at the start of a drain is
+  /// only sound with no other drain of this service in flight, so this is
+  /// enforced here rather than left to the ClientRunner. Does nothing once the
+  /// service is disposed; [_activeSend] is the tail of the chain, which
+  /// dispose awaits (ADR 0085).
+  Future<void> sendNext() {
+    if (_isDisposed) return Future<void>.value();
+    final previous = _activeSend;
+    late final Future<void> tracked;
+    tracked = _sendNextAfter(previous).whenComplete(() {
+      if (identical(_activeSend, tracked)) _activeSend = null;
+    });
+    _activeSend = tracked;
+    return tracked;
+  }
+
+  Future<void> _sendNextAfter(Future<void>? previous) async {
+    if (previous != null) await previous;
+    if (_isDisposed) return;
+    await _sendNext();
+  }
+
+  /// The last drain [sendNext] queued, if it has not finished. Every earlier
+  /// one finishes before it, so awaiting it waits for them all. Dispose
+  /// awaits it: a drain that outlived its service could still land a send
+  /// after the next generation released that row and sent newer ones.
+  Future<void>? _activeSend;
+
+  /// Waits for every drain queued so far; each stops after its current pass
+  /// once the service is disposed.
+  Future<void> _quiesceActiveSend() async {
+    final active = _activeSend;
+    if (active != null) await active;
+  }
+
+  Future<void> _sendNext() async {
     try {
       final enableMatrix = await _journalDb.getConfigFlag(
         enableMatrixFlag,
@@ -311,6 +348,20 @@ mixin _OutboxSend on _OutboxServiceBase {
         }
         _nextSendAllowedAt = null;
         _backoffScheduledAt = null;
+      }
+
+      // sendNext runs one drain at a time and only a drain claims, so no
+      // claim of ours is in flight: a `sending` row is an orphan of a
+      // claim that ended without a mark. Release it before claiming, so it
+      // goes out in its turn instead of after newer rows of the same entity
+      // once its lease runs out (ADR 0085).
+      final released = await _repository.releaseOrphanedClaims();
+      if (released > 0) {
+        _loggingService.log(
+          LogDomain.sync,
+          'released orphaned claims count=$released',
+          subDomain: 'sendNext.release',
+        );
       }
 
       // Drain the outbox in a single runner callback to avoid leaving the
