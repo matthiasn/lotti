@@ -12,22 +12,22 @@ exposed. Then update the [totals](#totals) from the README's tables.
 
 ## Totals
 
-As of `main` at `5e09d448e` (2026-09-25):
+As of `main` at `ed4ef4340` (2026-09-25):
 
 | Measure | Value |
 |---------|------:|
-| TLA+ specs | 19 |
-| TLC configurations | 49 |
+| TLA+ specs | 20 |
+| TLC configurations | 55 |
 | CI shards they run in | 8 |
-| Distinct states explored | 152,766,553 |
+| Distinct states explored | 172,228,076 |
 | States generated (at `b551bf587`, 42 configurations) | 927,744,398 |
 | Deepest counterexample-free trace (same run) | 53 steps |
-| Named safety and liveness properties | 80 |
-| Bugs fixed | 85 |
-| of which TLC produced the counterexample | 50 |
-| [By severity](#severity), P0 / P1 / P2 / P3 | 2 / 32 / 22 / 29 |
-| Architecture decision records | 13 (ADR 0065–0071, 0075–0078, 0080, 0081) |
-| Source paths the specs model, each re-triggering the TLC workflow | 73 |
+| Named safety and liveness properties | 85 |
+| Bugs fixed | 101 |
+| of which TLC produced the counterexample | 60 |
+| [By severity](#severity), P0 / P1 / P2 / P3 | 2 / 42 / 24 / 33 |
+| Architecture decision records | 14 (ADR 0065–0071, 0075–0078, 0080–0082) |
+| Source paths the specs model, each re-triggering the TLC workflow | 81 |
 
 How the figures are counted:
 
@@ -45,10 +45,10 @@ How the figures are counted:
   conformance traces (#4476 among them), exhaustive tests and a CI shard failure.
 - **Properties** counts named invariants and temporal properties, excluding
   `TypeOK`, once per spec that checks it in any of its configurations. The
-  same name can appear in several specs (`Converged` is in nine), and each of
-  those is counted; there are 67 distinct names.
+  same name can appear in several specs (`Converged` is in ten), and each of
+  those is counted; there are 71 distinct names.
 - **Source paths** counts the distinct Dart files and globs in the workflow's
-  `paths:` filter (two are listed twice). A change to `specs/tla/` or to the
+  `paths:` filter (some are listed twice). A change to `specs/tla/` or to the
   workflow file itself also triggers it.
 
 ## Timeline
@@ -69,6 +69,8 @@ timeline
                : #4476 conformance traces for three more models find a time-zone bug
                : #4477 shards rebalanced on measured times
                : #4478 entry-link removals sync as tombstones
+               : #4479 GoalRegister, goal Phase A across devices
+               : #4480 agent entity removals stick on every device
 ```
 
 ## Pull request ledger
@@ -107,6 +109,8 @@ counterexamples found. "Severity" grades each of those bugs; see
 | [#4476](https://github.com/matthiasn/lotti/pull/4476) | 09-25 | agents | — | — | 1 (–) | P1 | — | A generated conformance trace found the due-wake query comparing a UTC timestamp with local time as strings: east of UTC a peer answered a goal chat message beside its author, west of UTC recovery waited hours. Traces now drive `ScheduledWakeLease`, `GoalChatReply` and `VersionHeads` |
 | [#4477](https://github.com/matthiasn/lotti/pull/4477) | 09-25 | ci | — | — | 0 | — | — | Rebalanced the eight shards on per-configuration TLC times measured in the first sharded runs |
 | [#4478](https://github.com/matthiasn/lotti/pull/4478) | 09-25 | sync | — | — | 3 (–) | P1×3 | [0078](../../docs/adr/0078-entry-link-versions-are-ordered.md) addendum | Removing an entry link deleted the row locally and sent nothing, so peers kept it and their next update restored it. Removals are now synced tombstones, and linking again revives the same id. Closed the residual ADR 0078 left open |
+| [#4479](https://github.com/matthiasn/lotti/pull/4479) | 09-25 | goals, habits | `GoalRegister` | 4 | 8 (5) | P1×3 P2 P3×4 | [0082](../../docs/adr/0082-model-checked-goal-registers.md) | A device whose journal was behind could win the lease and report "behind" all day while every device showed the goal on track, with no fault at all. Overlapping evaluations dropped a synced check-off, and an escalation died with the device that noticed the change. Review found three more in the fix itself |
+| [#4480](https://github.com/matthiasn/lotti/pull/4480) | 09-25 | agents | — | 2 | 8 (5) | P1×7 P2 | [0081](../../docs/adr/0081-model-checked-evolution-sessions-and-agent-links.md) addendum | A removed agent entity came back from a late copy or a backfill, and a write or re-creation over a removal lost. `AgentReplication` gained a removal kind, lossy delivery and a split receive; an audit of every soft-delete writer found three more |
 
 ## Severity
 
@@ -130,14 +134,14 @@ effect.
 | Level | Bugs | TLC-found | sync | agents | daily-os | goals, habits |
 |-------|-----:|----------:|-----:|-------:|---------:|--------------:|
 | P0 | 2 | 0 | 2 | 0 | 0 | 0 |
-| P1 | 32 | 23 | 8 | 21 | 1 | 2 |
-| P2 | 22 | 16 | 1 | 16 | 2 | 3 |
-| P3 | 29 | 11 | 7 | 16 | 3 | 3 |
-| **Total** | **85** | **50** | 18 | 53 | 6 | 8 |
+| P1 | 42 | 30 | 8 | 28 | 1 | 5 |
+| P2 | 24 | 18 | 1 | 17 | 2 | 4 |
+| P3 | 33 | 12 | 7 | 16 | 3 | 7 |
+| **Total** | **101** | **60** | 18 | 61 | 6 | 16 |
 
 Neither P0 came from a TLC trace: the WAL deletion surfaced as a CI shard
 failure (#4464), and the discarded first edit on a new device in the review of
-#4467 (#4470). TLC found 23 of the 32 P1s.
+#4467 (#4470). TLC found 30 of the 42 P1s.
 
 The P0 and P1 bugs:
 
@@ -177,9 +181,19 @@ The P0 and P1 bugs:
 | [#4478](https://github.com/matthiasn/lotti/pull/4478) | P1 | no | Removing a link on one device never reached the others |
 | [#4478](https://github.com/matthiasn/lotti/pull/4478) | P1 | no | A removed link came back from a peer's next entry update |
 | [#4478](https://github.com/matthiasn/lotti/pull/4478) | P1 | no | Re-linking after a removal left devices disagreeing on the link |
+| [#4479](https://github.com/matthiasn/lotti/pull/4479) | P1 | yes | Overlapping goal evaluations dropped a synced check-off |
+| [#4479](https://github.com/matthiasn/lotti/pull/4479) | P1 | yes | A goal evaluation committed over a peer's row it never read |
+| [#4479](https://github.com/matthiasn/lotti/pull/4479) | P1 | yes | A goal report said "behind" all day while every device showed on track |
+| [#4480](https://github.com/matthiasn/lotti/pull/4480) | P1 | yes | A late copy of an agent entity brought its removal back |
+| [#4480](https://github.com/matthiasn/lotti/pull/4480) | P1 | yes | A write over a peer's removal lost to that peer's older version |
+| [#4480](https://github.com/matthiasn/lotti/pull/4480) | P1 | yes | Drafting a removed day plan again handed the removal back |
+| [#4480](https://github.com/matthiasn/lotti/pull/4480) | P1 | yes | Receiving most agent entity types overwrote a local write made meanwhile |
+| [#4480](https://github.com/matthiasn/lotti/pull/4480) | P1 | no | A removal sorted before the concurrent edit it followed, so the entity returned |
+| [#4480](https://github.com/matthiasn/lotti/pull/4480) | P1 | no | Removing parsed items, versions or change sets used a stale snapshot clock |
+| [#4480](https://github.com/matthiasn/lotti/pull/4480) | P1 | no | A project recommendation recorded again after an undo stayed removed on peers |
 
 <details>
-<summary>All 85 bugs</summary>
+<summary>All 101 bugs</summary>
 
 | PR | Level | TLC | Bug |
 |----|-------|-----|-----|
@@ -268,6 +282,22 @@ The P0 and P1 bugs:
 | [#4478](https://github.com/matthiasn/lotti/pull/4478) | P1 | no | Removing a link on one device never reached the others |
 | [#4478](https://github.com/matthiasn/lotti/pull/4478) | P1 | no | A removed link came back from a peer's next entry update |
 | [#4478](https://github.com/matthiasn/lotti/pull/4478) | P1 | no | Re-linking after a removal left devices disagreeing on the link |
+| [#4479](https://github.com/matthiasn/lotti/pull/4479) | P1 | yes | Overlapping goal evaluations dropped a synced check-off |
+| [#4479](https://github.com/matthiasn/lotti/pull/4479) | P1 | yes | A goal evaluation committed over a peer's row it never read |
+| [#4479](https://github.com/matthiasn/lotti/pull/4479) | P1 | yes | A goal report said "behind" all day while every device showed on track |
+| [#4479](https://github.com/matthiasn/lotti/pull/4479) | P2 | yes | A restart lost a synced goal row from the dispatcher's queue |
+| [#4479](https://github.com/matthiasn/lotti/pull/4479) | P3 | yes | A goal status change never escalated if its device died in the countdown |
+| [#4479](https://github.com/matthiasn/lotti/pull/4479) | P3 | no | The new startup recompute dropped a restored report refresh |
+| [#4479](https://github.com/matthiasn/lotti/pull/4479) | P3 | no | The new stale check ignored a report published mid-evaluation |
+| [#4479](https://github.com/matthiasn/lotti/pull/4479) | P3 | no | A refresh published from a snapshot every commit had rejected |
+| [#4480](https://github.com/matthiasn/lotti/pull/4480) | P1 | yes | A late copy of an agent entity brought its removal back |
+| [#4480](https://github.com/matthiasn/lotti/pull/4480) | P2 | yes | Backfill answered "deleted" for a removed agent entity, so the peer kept it |
+| [#4480](https://github.com/matthiasn/lotti/pull/4480) | P1 | yes | A write over a peer's removal lost to that peer's older version |
+| [#4480](https://github.com/matthiasn/lotti/pull/4480) | P1 | yes | Drafting a removed day plan again handed the removal back |
+| [#4480](https://github.com/matthiasn/lotti/pull/4480) | P1 | yes | Receiving most agent entity types overwrote a local write made meanwhile |
+| [#4480](https://github.com/matthiasn/lotti/pull/4480) | P1 | no | A removal sorted before the concurrent edit it followed, so the entity returned |
+| [#4480](https://github.com/matthiasn/lotti/pull/4480) | P1 | no | Removing parsed items, versions or change sets used a stale snapshot clock |
+| [#4480](https://github.com/matthiasn/lotti/pull/4480) | P1 | no | A project recommendation recorded again after an undo stayed removed on peers |
 </details>
 
 ## Specs
@@ -282,7 +312,7 @@ The P0 and P1 bugs:
 | `ChangeSetConfirm` | #4446 | 2 | 337 |
 | `ChangeSetLifecycle` | #4449 | 9 | 2,421,196 |
 | `ChangeSetDependency` | #4455 | 1 | 14 |
-| `AgentReplication` | #4450 | 6 | 88,676,037 |
+| `AgentReplication` | #4450 | 8 | 104,495,395 |
 | `AgentStateWrites` | #4450 | 1 | 604 |
 | `VersionHeads` | #4450 | 2 | 9,468,242 |
 | `ScheduledWakeLease` | #4451 | 4 | 11,450,359 |
@@ -295,7 +325,8 @@ The P0 and P1 bugs:
 | `HabitDaySettlement` | #4471 | 2 | 174,119 |
 | `EvolutionSession` | #4473 | 1 | 243,264 |
 | `AgentLinks` | #4473 | 2 | 11,110,469 |
-| **Total** | | **49** | **152,766,553** |
+| `GoalRegister` | #4479 | 4 | 3,642,165 |
+| **Total** | | **55** | **172,228,076** |
 
 ## How the specs earn their keep
 
