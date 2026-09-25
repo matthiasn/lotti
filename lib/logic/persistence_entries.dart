@@ -181,16 +181,26 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
       () async {
         final now = DateTime.now();
 
-        final linkId = uuid.v1();
+        // Re-creating a removed link revives it (see [removedVersion]).
+        final removed = removedVersion(
+          await journalDb.linksBetween(
+            fromId,
+            toId,
+            type: entryLinkTypeDbName(linkType),
+          ),
+        );
+
+        final linkId = removed?.id ?? uuid.v1();
         final link = linkType.buildLink(
           id: linkId,
           fromId: fromId,
           toId: toId,
           createdAt: now,
-          updatedAt: now,
+          updatedAt: linkEditTimestamp(removed, now),
           hidden: hidden,
           collapsed: collapsed,
           vectorClock: await vectorClockService.getNextVectorClock(
+            previous: removed?.vectorClock,
             payload: (id: linkId, type: SyncSequencePayloadType.entryLink),
           ),
         );
@@ -207,7 +217,9 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
           await outboxService.enqueueMessage(
             SyncMessage.entryLink(
               entryLink: link,
-              status: SyncEntryStatus.initial,
+              status: removed == null
+                  ? SyncEntryStatus.initial
+                  : SyncEntryStatus.update,
             ),
           );
         } catch (exception, stackTrace) {

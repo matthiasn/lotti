@@ -93,9 +93,10 @@ class OutboxEnqueueWriter {
 
     // Attach entry links if available
     try {
-      final links = await _journalDb.linksForEntryIdsBidirectional({
-        journalMsg.id,
-      });
+      final links = await _journalDb
+          .linksForEntryIdsBidirectionalIncludingRemoved({
+            journalMsg.id,
+          });
       if (links.isNotEmpty) {
         final fromCount = links
             .where((link) => link.fromId == journalMsg.id)

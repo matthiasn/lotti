@@ -601,7 +601,11 @@ What the model leaves out, deliberately or as a residual:
   `previous`) and `ClampTimestamp` (`linkEditTimestamp`), which is what makes
   the key agree with causality (`NoLostSuccessor`). Before that change the
   receive applied whatever arrived last, and an edit's clock held only its own
-  host's counter.
+  host's counter. A removal is an edit too: a tombstone with `deletedAt` set,
+  written and synced like any other version, and linking the same pair again
+  revives it under the same id. A tombstone is not terminal, so a link stays
+  one last-writer-wins register and nothing new is checked (ADR 0078,
+  2026-09-25 addendum).
 
 ## `AgentStateWrites` — the writers of one agent-state row
 

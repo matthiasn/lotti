@@ -334,3 +334,18 @@ DateTime linkEditTimestamp(EntryLink? replaced, DateTime now) {
   final stamp = replaced?.updatedAt;
   return stamp != null && stamp.isAfter(now) ? stamp : now;
 }
+
+/// The removed version among [versions] — the stored versions of one
+/// relationship, as `JournalDb.linksBetween` returns them for a
+/// `(fromId, toId, type)` — or null when it is live or was never stored.
+///
+/// Creating that relationship again revives this version instead of minting
+/// a second id: the new link takes its id, reserves its clock with this
+/// version's as `previous` and is stamped by [linkEditTimestamp]. It is then
+/// the next version of the same link and outranks the removal on every
+/// device, whatever order the two arrive in. A fresh id would be a second row
+/// for the same triple, which a peer still holding the live version refuses
+/// as a duplicate until the removal reaches it — after which the link is gone
+/// there and live here.
+EntryLink? removedVersion(Iterable<EntryLink> versions) =>
+    versions.where((link) => link.deletedAt != null).firstOrNull;

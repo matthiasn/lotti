@@ -308,7 +308,7 @@ class OutboxServiceTestHarness {
       ),
     ).thenAnswer((_) async => 0);
     when(
-      () => journalDb.linksForEntryIdsBidirectional(any()),
+      () => journalDb.linksForEntryIdsBidirectionalIncludingRemoved(any()),
     ).thenAnswer((_) async => <EntryLink>[]);
     when(
       () => journalDb.getConfigFlag(resendAttachments),

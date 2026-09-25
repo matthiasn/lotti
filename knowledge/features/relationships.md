@@ -5,7 +5,7 @@ description: A personal CRM carried by two journal variants — why check-ins ar
 resource: ../../lib/features/relationships
 tags: [relationships, check-ins, journal-entity, privacy]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-09-19T05:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-25T18:00:00Z }
 stale_after: 2027-03-01
 sources:
   - id: sync-runtime
@@ -745,11 +745,11 @@ additionally remembers the ids of the tasks its last build saw, so a title or
 status edit **on the task side** refreshes the section without a relationship
 write.
 
-`unlinkTask` is the one place that notifies by hand, because
-`JournalDb.deleteTypedLink` is a raw row delete with no entity write behind it.
-It is not routed through `JournalRepository.removeTypedLink`, which notifies
-unconditionally per call: the two-direction removal here would emit two
-notifications even for a no-op unlink.
+`unlinkTask` removes every live `RelationshipLink` between the person and the
+task, in either direction, as a synced tombstone through
+`JournalRepository.updateLink`. That notifies both endpoints per removed link,
+and a no-op unlink writes and notifies nothing
+([entry links](../domain/entry-links.md#a-removal-is-a-synced-tombstone)).
 
 # The deterministic agent tier (plan v2 phase 4)
 

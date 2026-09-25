@@ -207,7 +207,10 @@ mixin _JournalDbLinksRatings
   Future<List<EntryLink>> runBasicLinksQueryForIds(Set<String> ids) async {
     final rows =
         await (select(linkedEntries)..where(
-              (t) => t.toId.isIn(ids.toList()) & t.type.equals('BasicLink'),
+              (t) =>
+                  t.toId.isIn(ids.toList()) &
+                  t.type.equals('BasicLink') &
+                  _linkIsLive,
             ))
             .get();
     return rows.map(entryLinkFromLinkedDbEntry).toList();
@@ -256,12 +259,13 @@ mixin _JournalDbLinksRatings
 
     final toRows =
         await (select(linkedEntries)..where(
-              (t) => t.toId.isIn(idList) & t.type.isIn(typeList),
+              (t) => t.toId.isIn(idList) & t.type.isIn(typeList) & _linkIsLive,
             ))
             .get();
     final fromRows =
         await (select(linkedEntries)..where(
-              (t) => t.fromId.isIn(idList) & t.type.isIn(typeList),
+              (t) =>
+                  t.fromId.isIn(idList) & t.type.isIn(typeList) & _linkIsLive,
             ))
             .get();
 
@@ -275,28 +279,52 @@ mixin _JournalDbLinksRatings
     return result;
   }
 
-  /// Deletes only the [type]-typed link between [fromId] and [toId], leaving
-  /// any other type coexisting between the same pair intact. Unlike the
-  /// generic `deleteLink` (which deletes every type for the pair), this is
-  /// needed once a pair can hold both a `BasicLink` and e.g. a `BlocksLink`
-  /// simultaneously (ADR 0042) — unlinking one must not silently remove the
-  /// other.
-  Future<int> deleteTypedLink(String fromId, String toId, String type) {
-    return (delete(linkedEntries)..where(
-          (t) =>
-              t.fromId.equals(fromId) &
-              t.toId.equals(toId) &
-              t.type.equals(type),
-        ))
-        .go();
+  /// Every stored version of a link from [fromId] to [toId] — of [type]
+  /// only, when given — removed links included.
+  ///
+  /// The write paths need the removed ones: removing a link tombstones the
+  /// live rows it finds here, and re-creating a removed link revives its
+  /// tombstone rather than minting a second id for the same relationship.
+  Future<List<EntryLink>> linksBetween(
+    String fromId,
+    String toId, {
+    String? type,
+  }) async {
+    final rows =
+        await (select(linkedEntries)..where(
+              (t) =>
+                  t.fromId.equals(fromId) &
+                  t.toId.equals(toId) &
+                  (type == null ? const Constant(true) : t.type.equals(type)),
+            ))
+            .get();
+    return rows.map(entryLinkFromLinkedDbEntry).toList();
   }
 
-  Future<List<EntryLink>> linksForEntryIdsBidirectional(Set<String> ids) async {
+  /// The live links touching any of [ids], in either direction. Removed
+  /// links are excluded; see [linksForEntryIdsBidirectionalIncludingRemoved]
+  /// for the replication view that keeps them.
+  Future<List<EntryLink>> linksForEntryIdsBidirectional(Set<String> ids) =>
+      _linksForEntryIdsBidirectional(ids, includeRemoved: false);
+
+  /// Every link touching any of [ids], removed ones included. A journal-entity
+  /// sync message embeds this snapshot, so a removal travels with the entry
+  /// instead of the link silently dropping out of it.
+  Future<List<EntryLink>> linksForEntryIdsBidirectionalIncludingRemoved(
+    Set<String> ids,
+  ) => _linksForEntryIdsBidirectional(ids, includeRemoved: true);
+
+  Future<List<EntryLink>> _linksForEntryIdsBidirectional(
+    Set<String> ids, {
+    required bool includeRemoved,
+  }) async {
     if (ids.isEmpty) return <EntryLink>[];
     final idList = ids.toList();
     final entryLinks =
         await (select(linkedEntries)..where(
-              (t) => t.fromId.isIn(idList) | t.toId.isIn(idList),
+              (t) =>
+                  (t.fromId.isIn(idList) | t.toId.isIn(idList)) &
+                  (includeRemoved ? const Constant(true) : _linkIsLive),
             ))
             .get();
     return entryLinks.map(entryLinkFromLinkedDbEntry).toList();
@@ -417,6 +445,18 @@ bool _entryLinkIsStale(EntryLink incoming, {required EntryLink than}) {
 }
 
 const _noClock = VectorClock(<String, int>{});
+
+/// True for a link that has not been removed.
+///
+/// A removal is a tombstone — the link's next version with `deletedAt` set
+/// and `hidden` true — kept in the table so it replicates and outranks late
+/// copies of the live version. `deletedAt` lives only in `serialized`, so a
+/// read of live links that does not already require `hidden = false` has to
+/// test it there. The same predicate guards the live-link queries in
+/// `database.drift`.
+const Expression<bool> _linkIsLive = CustomExpression<bool>(
+  r"json_extract(serialized, '$.deletedAt') IS NULL",
+);
 
 /// In-flight coalescing wave for `basicLinksForEntryIds`. Concurrent callers
 /// within the same microtask merge their id sets; the wave fires one

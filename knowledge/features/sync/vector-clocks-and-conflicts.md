@@ -5,7 +5,7 @@ description: How causal order is represented, why coveredVectorClocks is separat
 resource: ../../../lib/features/sync/vector_clock.dart
 tags: [sync, vector-clock, conflicts, causality]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-25T09:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-25T18:00:00Z }
 stale_after: 2026-12-25
 sources:
   - id: vector-clock
@@ -78,16 +78,20 @@ sources:
     last_modified: 2026-09-25
   - id: link-edit
     resource: ../../../lib/features/journal/repository/journal_repository.dart
-    title: JournalRepository.updateLink — a link edit succeeds its predecessor
-    last_modified: 2026-09-24
+    title: JournalRepository — updateLink, and removeLink / removeTypedLink as synced tombstones
+    last_modified: 2026-09-25
   - id: link-tombstone
     resource: ../../../lib/features/projects/repository/project_repository.dart
-    title: ProjectRepository — the project-link tombstone
-    last_modified: 2026-09-24
+    title: ProjectRepository — the project-link tombstone and its revival
+    last_modified: 2026-09-25
+  - id: link-revive
+    resource: ../../../lib/logic/persistence_entries.dart
+    title: PersistenceEntries.createLink — linking again revives a removed link
+    last_modified: 2026-09-25
   - id: adr-0078
     resource: ../../../docs/adr/0078-entry-link-versions-are-ordered.md
-    title: ADR 0078 — entry-link versions are ordered, and an edit succeeds its predecessor
-    last_modified: 2026-09-24
+    title: ADR 0078 — entry-link versions are ordered, and an edit succeeds its predecessor; 2026-09-25 addendum on removals
+    last_modified: 2026-09-25
   - id: adr-0080
     resource: ../../../docs/adr/0080-a-present-counter-ranks-above-an-absent-host.md
     title: ADR 0080 — a present counter ranks above an absent host, and new hosts start at 1
@@ -382,10 +386,14 @@ counter.
 
 Links written before ADR 0078 have clocks without their predecessor's entries.
 Pairs of those are concurrent and ordered by `updatedAt` until the link's next
-edit. Unlinking through `JournalRepository.removeLink` or `removeTypedLink`
-hard-deletes the row locally and syncs nothing. A peer's next embedded snapshot
-puts the link back, so that removal does not reach other devices. It is the
-open residual in ADR 0078.
+edit. A removal is an edit too: `removeLink`, `removeTypedLink`, the project
+unlink and the relationship unlink write the link's next version with
+`deletedAt` set and send it. A peer's late snapshot of the live link ranks
+below it. Linking the same pair and type again revives that version under
+the same id rather than minting a second row, so a re-link is ordered against
+the removal like any other edit
+([entry links](../../domain/entry-links.md#a-removal-is-a-synced-tombstone),
+ADR 0078 addendum).
 
 # Agent state converges without user involvement
 

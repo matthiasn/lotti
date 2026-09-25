@@ -727,6 +727,27 @@ void main() {
       },
     );
   });
+
+  group('removedVersion', () {
+    final live = EntryLink.basic(
+      id: 'link',
+      fromId: 'from',
+      toId: 'to',
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+      vectorClock: null,
+    );
+    final removed = live.copyWith(deletedAt: DateTime(2026, 2), hidden: true);
+
+    test('is the removed version, which a new link revives', () {
+      expect(removedVersion([removed]), removed);
+    });
+
+    test('is null for a live link — hidden or not — and for none', () {
+      expect(removedVersion([live, live.copyWith(hidden: true)]), isNull);
+      expect(removedVersion(const []), isNull);
+    });
+  });
 }
 
 enum _GeneratedEntryLinkKind {

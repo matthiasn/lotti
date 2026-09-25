@@ -7234,7 +7234,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedtoIds = $expandVar($arrayStartIndex, toIds.length);
     $arrayStartIndex += toIds.length;
     return customSelect(
-      'SELECT * FROM linked_entries WHERE to_id IN ($expandedtoIds)',
+      'SELECT * FROM linked_entries WHERE to_id IN ($expandedtoIds) AND json_extract(serialized, \'\$.deletedAt\') IS NULL',
       variables: [for (var $ in toIds) Variable<String>($)],
       readsFrom: {linkedEntries},
     ).asyncMap(linkedEntries.mapFromRow);
@@ -7299,7 +7299,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
 
   Selectable<String> parentLinkedEntityIds(String toId) {
     return customSelect(
-      'SELECT from_id FROM linked_entries WHERE to_id = ?1',
+      'SELECT from_id FROM linked_entries WHERE to_id = ?1 AND json_extract(serialized, \'\$.deletedAt\') IS NULL',
       variables: [Variable<String>(toId)],
       readsFrom: {linkedEntries},
     ).map((QueryRow row) => row.read<String>('from_id'));
@@ -7310,7 +7310,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedhidden = $expandVar($arrayStartIndex, hidden.length);
     $arrayStartIndex += hidden.length;
     return customSelect(
-      'SELECT * FROM linked_entries WHERE from_id = ?1 AND hidden IN ($expandedhidden) ORDER BY created_at DESC',
+      'SELECT * FROM linked_entries WHERE from_id = ?1 AND hidden IN ($expandedhidden) AND json_extract(serialized, \'\$.deletedAt\') IS NULL ORDER BY created_at DESC',
       variables: [
         Variable<String>(fromId),
         for (var $ in hidden) Variable<bool>($),
@@ -7321,7 +7321,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
 
   Selectable<JournalDbEntity> linkedToJournalEntities(String toId) {
     return customSelect(
-      'SELECT journal.* FROM linked_entries INNER JOIN journal ON journal.id = linked_entries.from_id WHERE linked_entries.to_id = ?1 AND journal.deleted = FALSE ORDER BY journal.date_from DESC',
+      'SELECT journal.* FROM linked_entries INNER JOIN journal ON journal.id = linked_entries.from_id WHERE linked_entries.to_id = ?1 AND json_extract(linked_entries.serialized, \'\$.deletedAt\') IS NULL AND journal.deleted = FALSE ORDER BY journal.date_from DESC',
       variables: [Variable<String>(toId)],
       readsFrom: {linkedEntries, journal},
     ).asyncMap(journal.mapFromRow);
@@ -7338,22 +7338,13 @@ abstract class _$JournalDb extends GeneratedDatabase {
     );
     $arrayStartIndex += privateStatuses.length;
     return customSelect(
-      'SELECT journal.* FROM linked_entries INNER JOIN journal ON journal.id = linked_entries.from_id WHERE linked_entries.to_id = ?1 AND journal.deleted = FALSE AND journal.private IN ($expandedprivateStatuses) ORDER BY journal.date_from DESC',
+      'SELECT journal.* FROM linked_entries INNER JOIN journal ON journal.id = linked_entries.from_id WHERE linked_entries.to_id = ?1 AND json_extract(linked_entries.serialized, \'\$.deletedAt\') IS NULL AND journal.deleted = FALSE AND journal.private IN ($expandedprivateStatuses) ORDER BY journal.date_from DESC',
       variables: [
         Variable<String>(toId),
         for (var $ in privateStatuses) Variable<bool>($),
       ],
       readsFrom: {linkedEntries, journal},
     ).asyncMap(journal.mapFromRow);
-  }
-
-  Future<int> deleteLink(String fromId, String toId) {
-    return customUpdate(
-      'DELETE FROM linked_entries WHERE from_id = ?1 AND to_id = ?2',
-      variables: [Variable<String>(fromId), Variable<String>(toId)],
-      updates: {linkedEntries},
-      updateKind: UpdateKind.delete,
-    );
   }
 
   Selectable<JournalDbEntity> workEntriesInDateRange(

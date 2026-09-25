@@ -925,82 +925,142 @@ void main() {
       });
 
       test(
-        'excludes links removed via deleteLink (tombstone exclusion)',
+        'excludes a removed link and keeps a hidden one',
         () async {
+          final removed = buildBlocksLink(
+            id: 'typed-removed',
+            fromId: 'blocker-d',
+            toId: 'blocked-d',
+            timestamp: DateTime(2024, 10, 6),
+          );
+          await db!.upsertEntryLink(removed);
+          final hidden = buildBlocksLink(
+            id: 'typed-hidden',
+            fromId: 'other-blocker-d',
+            toId: 'blocked-d',
+            timestamp: DateTime(2024, 10, 6),
+          ).copyWith(hidden: true);
+          await db!.upsertEntryLink(hidden);
+
+          // The removal is the link's next version: a synced tombstone.
           await db!.upsertEntryLink(
-            buildBlocksLink(
-              id: 'typed-removed',
-              fromId: 'blocker-d',
-              toId: 'blocked-d',
-              timestamp: DateTime(2024, 10, 6),
+            removed.copyWith(
+              updatedAt: DateTime(2024, 10, 7),
+              deletedAt: DateTime(2024, 10, 7),
+              hidden: true,
             ),
           );
 
-          final beforeDelete = await db!.typedLinksForTaskIds(
-            {'blocked-d'},
+          final links = await db!.typedLinksForTaskIds(
+            {'blocked-d', 'blocker-d'},
             types: {'BlocksLink'},
           );
-          expect(beforeDelete, hasLength(1));
-
-          await db!.deleteLink('blocker-d', 'blocked-d');
-
-          final afterDelete = await db!.typedLinksForTaskIds(
-            {'blocked-d'},
-            types: {'BlocksLink'},
-          );
-          expect(afterDelete, isEmpty);
+          expect(links.map((l) => l.id), ['typed-hidden']);
         },
       );
     });
 
-    group('deleteTypedLink -', () {
+    group('Removed links -', () {
+      final at = DateTime(2024, 10, 8);
+
+      // `target` is linked from `live-source` (live), `hidden-source`
+      // (hidden by the user, still a link) and `removed-source` (removed).
+      final live = buildEntryLink(
+        id: 'live',
+        fromId: 'live-source',
+        toId: 'target',
+        timestamp: at,
+      );
+      final hidden = buildEntryLink(
+        id: 'hidden',
+        fromId: 'hidden-source',
+        toId: 'target',
+        timestamp: at,
+      ).copyWith(hidden: true);
+      final removed = buildEntryLink(
+        id: 'removed',
+        fromId: 'removed-source',
+        toId: 'target',
+        timestamp: at,
+      ).copyWith(hidden: true, deletedAt: at);
+
+      setUp(() async {
+        for (final id in [
+          'live-source',
+          'hidden-source',
+          'removed-source',
+          'target',
+        ]) {
+          await db!.upsertJournalDbEntity(
+            toDbEntity(buildJournalEntry(id: id, timestamp: at, text: id)),
+          );
+        }
+        for (final link in [live, hidden, removed]) {
+          expect(await db!.upsertEntryLink(link), isNot(0));
+        }
+      });
+
+      test('linksForEntryIds excludes a removed link', () async {
+        final links = await db!.linksForEntryIds({'target'});
+        expect(links.map((l) => l.id).toSet(), {'live', 'hidden'});
+      });
+
+      test('parentLinkedEntityIds excludes a removed link', () async {
+        final parents = await db!.parentLinkedEntityIds('target').get();
+        expect(parents.toSet(), {'live-source', 'hidden-source'});
+      });
+
+      test('getLinkedToEntities (backlinks) excludes a removed link', () async {
+        final sources = await db!.getLinkedToEntities('target');
+        expect(sources.map((row) => row.id).toSet(), {
+          'live-source',
+          'hidden-source',
+        });
+      });
+
+      test('basicLinksForEntryIds excludes a removed link', () async {
+        final links = await db!.basicLinksForEntryIds({'target'});
+        expect(links.map((l) => l.id).toSet(), {'live', 'hidden'});
+      });
+
       test(
-        'deletes only the matching type, leaving a coexisting '
-        'different-typed link between the same pair intact',
+        'linksFromId shows a hidden link on request, never a removed one',
         () async {
-          await db!.upsertEntryLink(
-            buildEntryLink(
-              id: 'basic-e',
-              fromId: 'blocker-e',
-              toId: 'blocked-e',
-              timestamp: DateTime(2024, 10, 7),
-            ),
-          );
-          await db!.upsertEntryLink(
-            EntryLink.blocks(
-              id: 'blocks-e',
-              fromId: 'blocker-e',
-              toId: 'blocked-e',
-              createdAt: DateTime(2024, 10, 7),
-              updatedAt: DateTime(2024, 10, 7),
-              vectorClock: const VectorClock({'db': 1}),
-            ),
-          );
-
-          final deletedCount = await db!.deleteTypedLink(
-            'blocker-e',
-            'blocked-e',
-            'BlocksLink',
-          );
-          expect(deletedCount, 1);
-
-          final remaining = await db!.typedLinksForTaskIds(
-            {'blocked-e'},
-            types: {'BasicLink', 'BlocksLink'},
-          );
-          expect(remaining.map((l) => l.id), ['basic-e']);
+          for (final (source, id) in [
+            ('hidden-source', 'hidden'),
+            ('removed-source', null),
+          ]) {
+            final links = await db!.linksFromId(source, [false, true]).get();
+            expect(links.map((row) => row.id), [?id]);
+          }
         },
       );
 
       test(
-        'is a no-op when no link of that type exists for the pair',
+        'linksForEntryIdsBidirectional excludes a removed link; the '
+        'replication view keeps it',
         () async {
-          final deletedCount = await db!.deleteTypedLink(
-            'no-such-from',
-            'no-such-to',
-            'BlocksLink',
+          final liveView = await db!.linksForEntryIdsBidirectional({'target'});
+          expect(liveView.map((l) => l.id).toSet(), {'live', 'hidden'});
+
+          final replicated = await db!
+              .linksForEntryIdsBidirectionalIncludingRemoved({'target'});
+          expect(replicated.toSet(), {live, hidden, removed});
+        },
+      );
+
+      test(
+        'linksBetween returns every version, removed ones included',
+        () async {
+          expect(await db!.linksBetween('removed-source', 'target'), [removed]);
+          expect(
+            await db!.linksBetween('live-source', 'target', type: 'BasicLink'),
+            [live],
           );
-          expect(deletedCount, 0);
+          expect(
+            await db!.linksBetween('live-source', 'target', type: 'BlocksLink'),
+            isEmpty,
+          );
         },
       );
     });

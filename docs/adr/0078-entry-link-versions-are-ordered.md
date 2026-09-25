@@ -110,7 +110,76 @@ on the parameter. It only suggested a way to choose the id that did not exist.
   keep the link, and the next journal-entity message from a peer that embeds
   it re-inserts it here. Unlinking an entry or removing a task relationship
   therefore does not reach other devices. Fixing it means turning those
-  deletions into synced tombstones, like the project unlink.
+  deletions into synced tombstones, like the project unlink. Closed by the
+  2026-09-25 addendum below.
+
+## Addendum (2026-09-25): a removal is a synced tombstone
+
+The residual above is closed. The decision was that link tombstones must
+sync. Found in PR #4467: `JournalRepository.removeLink` and `removeTypedLink`
+deleted the row on this device and sent nothing. They back unlinking an entry
+in the linked-entries list, removing a task relationship (the row in manage
+mode), and the Undo on the "link created" message. The peers kept the link.
+Every journal-entity message a peer sends embeds its snapshot of the entry's
+links. So the next one put the link back on the device that removed it.
+
+1. **Every removal writes the link's next version.** `removeLink` (every type
+   between the pair) and `removeTypedLink` (one type) write each live link
+   again with `deletedAt` set and `hidden` true, through `updateLink`. So a
+   tombstone follows Decision 2 like any other edit: it reserves its clock
+   with the stored link's as `previous`, is stamped by `linkEditTimestamp`,
+   is upserted under Decision 1, and is sent as an `entryLink` update. The
+   project unlink and `RelationshipRepository.unlinkTask` already did this.
+   `JournalDb.deleteLink` and `deleteTypedLink` are removed. Nothing deletes
+   a link row now except `upsertEntryLink`: it drops a hidden row when a
+   version with a different id arrives for the same `(from_id, to_id, type)`.
+   Entries are soft-deleted, so deleting an entry does not delete its links.
+2. **Linking a removed link again revives its tombstone.**
+   `PersistenceLogic.createLink` and `ProjectRepository.linkTaskToProject`
+   look for a removed version of the same `(fromId, toId, type)`
+   (`JournalDb.linksBetween`, `removedVersion`). If one exists, the new link
+   takes its id, extends its clock and is stamped by `linkEditTimestamp`.
+   Re-linking is then one more version of the same link, ordered by
+   Decision 1 whatever the arrival order. A fresh id would be a second row
+   for the same triple. A peer that still holds the live link refuses that
+   row as a duplicate. When the tombstone arrives later, the peer has no link
+   while this device keeps its new one.
+3. **Reads of live links exclude removed ones.** Every tombstone is hidden,
+   so queries that already require `hidden = false` exclude it. The
+   queries that also return user-hidden links now test
+   `json_extract(serialized, '$.deletedAt') IS NULL`: backlinks, parent ids,
+   `linksForIds`, the "show hidden" linked-entries list, basic links,
+   typed-relationship links and the bidirectional neighbourhood. Drift's
+   analyzer gets the `json1` module for this. Reads that serve replication
+   keep tombstones: `entryLinkById`, `linkRowsFromIdsIncludingHidden`,
+   the sequence-log stream, and
+   `linksForEntryIdsBidirectionalIncludingRemoved`. The last one is the
+   snapshot a journal-entity message embeds, so a removal travels with the
+   entry.
+4. **No new model.** A tombstone is not terminal, since linking again
+   revives it. A link therefore stays one last-writer-wins register under
+   the Decision 1 order, and the writer-side rules that `AgentReplication.tla`
+   checks cover it. Nothing new is checked.
+
+Consequences:
+
+- A removal reaches every device and stays removed there. A late copy of the
+  live version, including a peer's embedded snapshot, cannot bring it back.
+  Removing a link and linking it again converges on every device, whatever
+  order the versions arrive in. So does an undo followed by a redo.
+- Undo stays local and instant. The link is gone on this device before
+  anything is sent. It is now a synced removal like any other.
+- `linked_entries` keeps one tombstone per removed link. Linking the same
+  pair and type again reuses that row. Nothing purges tombstones.
+- A link removed before this change is still on the peers. Their snapshots
+  can bring it back once more. Removing it again now reaches every device.
+- Residual: two devices that create the same link offline, at the same time,
+  mint two ids for one triple. Each device refuses the other's as a
+  duplicate. A removal on one device is then refused on the other, where the
+  triple is live under the other id. That device's next snapshot replaces
+  the tombstone with its live row. The fix would make the triple the link's
+  identity, for example with a deterministic id. That changes the data model
+  and is left open.
 
 ## Related
 

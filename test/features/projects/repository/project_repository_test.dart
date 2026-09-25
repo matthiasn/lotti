@@ -2617,5 +2617,92 @@ void main() {
         expect(await db.entryLinkById('project-link'), tombstone);
       },
     );
+
+    test(
+      'putting a task back into a project it left revives the removed link, '
+      'which outranks the removal whatever order a peer receives them in',
+      () async {
+        await db.upsertJournalDbEntity(toDbEntity(projectEntry));
+        await db.upsertJournalDbEntity(toDbEntity(taskEntry));
+
+        expect(
+          await repository.linkTaskToProject(
+            projectId: 'project-001',
+            taskId: 'task-001',
+          ),
+          isTrue,
+        );
+        final original = (await db.getProjectLinkForTask('task-001'))!;
+        expect(await repository.unlinkTaskFromProject('task-001'), isTrue);
+        final removal = (await db.entryLinkById(original.id))!;
+        expect(
+          await repository.linkTaskToProject(
+            projectId: 'project-001',
+            taskId: 'task-001',
+          ),
+          isTrue,
+        );
+
+        final revived = (await db.getProjectLinkForTask('task-001'))!;
+        expect(revived.id, original.id);
+        expect(revived.deletedAt, isNull);
+
+        // A peer that gets the revival before the removal keeps the revival.
+        final peer = JournalDb(inMemoryDatabase: true);
+        addTearDown(peer.close);
+        for (final version in [original, revived, removal]) {
+          await peer.upsertEntryLink(version);
+        }
+        expect(await peer.getProjectLinkForTask('task-001'), revived);
+      },
+    );
+
+    test(
+      'moving a task away and back revives its link to the first project',
+      () async {
+        final otherProject = projectEntry.copyWith(
+          meta: projectMeta.copyWith(id: 'project-002'),
+        );
+        for (final entity in [projectEntry, otherProject, taskEntry]) {
+          await db.upsertJournalDbEntity(toDbEntity(entity));
+        }
+
+        for (final projectId in ['project-001', 'project-002']) {
+          expect(
+            await repository.linkTaskToProject(
+              projectId: projectId,
+              taskId: 'task-001',
+            ),
+            isTrue,
+          );
+        }
+        final removed = (await db.linksBetween(
+          'project-001',
+          'task-001',
+        )).single;
+        expect(removed.deletedAt, isNotNull);
+
+        expect(
+          await repository.linkTaskToProject(
+            projectId: 'project-001',
+            taskId: 'task-001',
+          ),
+          isTrue,
+        );
+        final current = (await db.getProjectLinkForTask('task-001'))!;
+        expect(current.id, removed.id);
+        expect(current.fromId, 'project-001');
+        final host = (await vectorClockService.getHost())!;
+        // The revival extends the removal's clock.
+        expect(
+          current.vectorClock!.vclock[host],
+          greaterThan(removed.vectorClock!.vclock[host]!),
+        );
+        expect(
+          (await db.linksBetween('project-002', 'task-001')).single.deletedAt,
+          isNotNull,
+        );
+      },
+    );
   });
 }

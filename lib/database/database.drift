@@ -1123,9 +1123,13 @@ SELECT id FROM journal
   AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   ORDER BY date_from DESC;
 
+-- Every live-link read below excludes removed links: a removal is a synced
+-- tombstone (`deletedAt` set, `hidden` true) that stays in the table so it
+-- can replicate and order against late copies of the live version.
 linksForIds:
 SELECT * FROM linked_entries
-  WHERE to_id IN :to_ids;
+  WHERE to_id IN :to_ids
+  AND json_extract(serialized, '$.deletedAt') IS NULL;
 
 linksFromIds:
 SELECT * FROM linked_entries
@@ -1148,18 +1152,22 @@ SELECT * FROM journal
   AND id IN :ids;
 
 parentLinkedEntityIds:
-SELECT from_id FROM linked_entries WHERE to_id = :to_id;
+SELECT from_id FROM linked_entries
+  WHERE to_id = :to_id
+  AND json_extract(serialized, '$.deletedAt') IS NULL;
 
 linksFromId:
 SELECT * FROM linked_entries
   WHERE from_id = :from_id
   AND hidden IN :hidden
+  AND json_extract(serialized, '$.deletedAt') IS NULL
   ORDER BY created_at DESC;
 
 linkedToJournalEntities:
 SELECT journal.* FROM linked_entries
   INNER JOIN journal ON journal.id = linked_entries.from_id
   WHERE linked_entries.to_id = :to_id
+  AND json_extract(linked_entries.serialized, '$.deletedAt') IS NULL
   AND journal.deleted = false
   ORDER BY journal.date_from DESC;
 
@@ -1167,14 +1175,10 @@ linkedToJournalEntitiesByPrivateStatuses:
 SELECT journal.* FROM linked_entries
   INNER JOIN journal ON journal.id = linked_entries.from_id
   WHERE linked_entries.to_id = :to_id
+  AND json_extract(linked_entries.serialized, '$.deletedAt') IS NULL
   AND journal.deleted = false
   AND journal.private IN :privateStatuses
   ORDER BY journal.date_from DESC;
-
-deleteLink:
-DELETE FROM linked_entries
-  WHERE from_id = :from_id
-  AND to_id = :to_id;
 
 workEntriesInDateRange:
 SELECT * FROM journal
