@@ -24,9 +24,14 @@ import '../../mocks/mocks.dart';
 /// outbox refuse messages: a transaction that commits and then fails
 /// flushing, which `AgentSyncService.runInTransaction` reports by throwing.
 ///
+/// `firstCounter` is the first counter the host issues: 1 for a host this
+/// build creates (`firstVectorClockCounter`), 0 for one an older build
+/// created (ADR 0080).
+///
 /// Callers close the database with [close] (in `addTearDown`).
 class AgentTestDevice {
-  AgentTestDevice(this.host) {
+  AgentTestDevice(this.host, {int firstCounter = firstVectorClockCounter})
+    : _counter = firstCounter - 1 {
     when(
       () => clocks.getNextVectorClock(
         previous: any(named: 'previous'),
@@ -40,8 +45,8 @@ class AgentTestDevice {
       // This host's next counter, caught up past whatever the previous
       // clock already holds for it.
       final previous = invocation.namedArguments[#previous] as VectorClock?;
-      final own = previous?.vclock[host] ?? 0;
-      _counter = (own > _counter ? own : _counter) + 1;
+      final own = previous?.vclock[host];
+      _counter = (own != null && own > _counter ? own : _counter) + 1;
       return VectorClock({...?previous?.vclock, host: _counter});
     });
     when(() => outbox.enqueueMessage(any())).thenAnswer((invocation) async {
@@ -70,7 +75,7 @@ class AgentTestDevice {
   /// Whether the outbox refuses messages.
   bool outboxFails = false;
 
-  int _counter = 0;
+  int _counter;
 
   /// The agent entities this device sent, in order.
   List<AgentDomainEntity> get sentEntities => [

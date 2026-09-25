@@ -127,11 +127,15 @@ repeats.
 - Links written before this change can still carry clocks that do not cover
   their predecessors. Such pairs are ordered by `updatedAt` until the next
   write.
-- `VectorClock.compare` reads an absent host as counter 0. A new host's
-  first write over a row can compare *equal* to it, and the receive keeps the
-  stored version. That is `fix/vector-clock-counter-zero` (ADR 0080), which
-  fixes it globally. This change relies on its successor clocks being
-  strictly greater and does not work around it.
+- A successor must *strictly* dominate the version it replaces. A host an
+  older build created starts at counter 0, and its first write extends the
+  stored clock by `host: 0`. That compared *equal* until
+  [ADR 0080](./0080-a-present-counter-ranks-above-an-absent-host.md) ranked
+  an absent host below 0, and the receive kept the stored version. This
+  change relies on ADR 0080 and does not work around it. A regression in
+  `agent_sync_service_test.dart` covers a host's first relink and first
+  removal over a synced link, for first counters 0 and 1. With ADR 0080's
+  compare reverted, the counter-0 case fails.
 - Residuals, documented in `specs/tla/README.md`:
   - **Two devices that reassign a template's soul (or an improver's target)
     concurrently swap the assignments.** `AgentRepoLinks.upsertLink` keeps

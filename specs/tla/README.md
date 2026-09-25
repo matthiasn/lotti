@@ -904,9 +904,12 @@ What the model leaves out, deliberately or as a residual:
   tombstones for the entity receive and its backfill, so a soft-deleted
   entity can come back when a late copy arrives. It is left for its own
   change.
-- `VectorClock.compare` reads an absent host as counter 0, so a new host's
-  first write can compare *equal* to the version it succeeds. ADR 0080
-  fixes that globally. The model's clocks have no absent hosts.
+- The model's clocks have no absent hosts. A host's first write at counter 0
+  strictly dominates the version it extends only because `VectorClock.compare`
+  ranks an absent host below 0
+  ([ADR 0080](../../docs/adr/0080-a-present-counter-ranks-above-an-absent-host.md)).
+  The regression for a host's first relink and removal is in the
+  `AgentSyncService` suite.
 
 ## From the model to the code
 

@@ -16,6 +16,7 @@ import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -2934,6 +2935,54 @@ void main() {
         );
       },
     );
+
+    for (final firstCounter in [0, firstVectorClockCounter]) {
+      test(
+        "a host's first relink and first removal over a synced link win on "
+        'every replica (first counter $firstCounter, ADR 0080)',
+        () async {
+          // A host an older build created starts at counter 0. Its first
+          // write extends the stored clock by `host: 0`, which a compare
+          // reading an absent host as 0 took for the stored version itself:
+          // every receiver kept the predecessor.
+          final c = AgentTestDevice('host-c', firstCounter: firstCounter);
+          addTearDown(c.close);
+          Future<void> expectEverywhere({required bool live}) async {
+            for (final device in [a, b, c]) {
+              final stored = await device.repository
+                  .getLinkByIdIncludingDeleted(id);
+              expect(
+                stored!.deletedAt == null,
+                live,
+                reason: '${device.host} holds $stored',
+              );
+            }
+          }
+
+          // A removes the link B made; C holds both versions.
+          await b.sync.upsertLink(fresh());
+          await a.receiveLink(b.sentLinks.last);
+          await c.receiveLink(b.sentLinks.last);
+          final live = (await a.repository.getLinkById(id))!;
+          await a.sync.upsertLink(live.softDeleted(at));
+          await b.receiveLink(a.sentLinks.last);
+          await c.receiveLink(a.sentLinks.last);
+
+          // C's first write: the relink.
+          await c.sync.upsertLink(fresh());
+          await a.receiveLink(c.sentLinks.last);
+          await b.receiveLink(c.sentLinks.last);
+          await expectEverywhere(live: true);
+
+          // And C's removal of it.
+          final relinked = (await c.repository.getLinkById(id))!;
+          await c.sync.upsertLink(relinked.softDeleted(at));
+          await a.receiveLink(c.sentLinks.last);
+          await b.receiveLink(c.sentLinks.last);
+          await expectEverywhere(live: false);
+        },
+      );
+    }
 
     test(
       "a write stamped before the version it replaces keeps that version's "
