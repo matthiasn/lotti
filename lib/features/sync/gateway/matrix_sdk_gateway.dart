@@ -3,14 +3,16 @@ import 'dart:async';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 
 /// Production [MatrixSyncGateway] backed by the `matrix` SDK [Client].
 ///
 /// Thin adapter: each method delegates to the SDK and adds only the
-/// sync-specific glue — stamping created rooms with the `m.lotti.sync_room`
-/// and encryption state events, and registering every event id it sends in the
+/// sync-specific glue — creating sync rooms non-federated and stamped with the
+/// `m.lotti.sync_room`, encryption and retention state events, and registering
+/// every event id it sends in the
 /// [SentEventRegistry] so the inbound pipeline can recognise and skip its own
 /// echoes. Owns the [Client] lifecycle and disposes it in [dispose].
 class MatrixSdkGateway implements MatrixSyncGateway {
@@ -28,6 +30,13 @@ class MatrixSdkGateway implements MatrixSyncGateway {
 
   static const _roomEncryptionType = 'm.room.encryption';
   static const _syncRoomStateType = 'm.lotti.sync_room';
+  static const _roomRetentionType = 'm.room.retention';
+
+  /// The sync room's retention policy: a homeserver with retention enabled
+  /// purges events older than [SyncTuning.syncRoomRetention].
+  static final Map<String, Object?> _retentionPolicy = <String, Object?>{
+    'max_lifetime': SyncTuning.syncRoomRetention.inMilliseconds,
+  };
 
   final Client _client;
   final SentEventRegistry _sentEventRegistry;
@@ -81,6 +90,9 @@ class MatrixSdkGateway implements MatrixSyncGateway {
       name: name,
       invite: inviteUserIds,
       preset: CreateRoomPreset.trustedPrivateChat,
+      // Every event stays local to the homeserver, which is what lets its
+      // purge reclaim them.
+      creationContent: const <String, Object?>{'m.federate': false},
       initialState: [
         StateEvent(
           type: _roomEncryptionType,
@@ -96,6 +108,11 @@ class MatrixSdkGateway implements MatrixSyncGateway {
             'version': 1,
           },
         ),
+        StateEvent(
+          type: _roomRetentionType,
+          stateKey: '',
+          content: _retentionPolicy,
+        ),
       ],
     );
 
@@ -103,14 +120,12 @@ class MatrixSdkGateway implements MatrixSyncGateway {
     return roomId;
   }
 
+  /// Some homeservers ignore parts of `initial_state`, so what a sync room
+  /// needs is checked on the created room and sent when missing.
   Future<void> _ensureRequiredRoomState(String roomId) async {
     final stateEvents = await _client.getRoomState(roomId);
-    final hasEncryptionState = stateEvents.any(
-      (event) => event.type == _roomEncryptionType && event.stateKey == '',
-    );
-    final hasSyncMarkerState = stateEvents.any(
-      (event) => event.type == _syncRoomStateType && event.stateKey == '',
-    );
+    final hasEncryptionState = _hasState(stateEvents, _roomEncryptionType);
+    final hasSyncMarkerState = _hasState(stateEvents, _syncRoomStateType);
 
     if (!hasEncryptionState) {
       await _client.setRoomStateWithKey(
@@ -133,7 +148,30 @@ class MatrixSdkGateway implements MatrixSyncGateway {
         },
       );
     }
+
+    await _setRetentionUnlessPresent(roomId, stateEvents);
   }
+
+  @override
+  Future<bool> ensureRoomRetention(String roomId) async =>
+      _setRetentionUnlessPresent(roomId, await _client.getRoomState(roomId));
+
+  Future<bool> _setRetentionUnlessPresent(
+    String roomId,
+    List<MatrixEvent> stateEvents,
+  ) async {
+    if (_hasState(stateEvents, _roomRetentionType)) return false;
+    await _client.setRoomStateWithKey(
+      roomId,
+      _roomRetentionType,
+      '',
+      _retentionPolicy,
+    );
+    return true;
+  }
+
+  static bool _hasState(List<MatrixEvent> stateEvents, String type) =>
+      stateEvents.any((event) => event.type == type && event.stateKey == '');
 
   @override
   Future<void> joinRoom(String roomId) async {

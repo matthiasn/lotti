@@ -32,6 +32,7 @@ from .core import (
 logger = logging.getLogger(__name__)
 
 __all__ = [
+    "SYNC_ROOM_RETENTION_DAYS",
     "AdminCredentials",
     "ProvisionResult",
     "ProvisioningError",
@@ -53,6 +54,16 @@ SYNC_ROOM_STATE_TYPE = "m.lotti.sync_room"
 SYNC_ROOM_STATE_VERSION = 1
 
 MEGOLM_ALGORITHM = "m.megolm.v1.aes-sha2"
+
+#: How long the homeserver keeps sync-room history. The room states it as
+#: its ``m.room.retention`` ``max_lifetime``, which a homeserver with
+#: retention enabled enforces by purging older events itself. The app's
+#: ``SyncTuning.syncRoomRetention`` gives rooms it creates the same TTL.
+SYNC_ROOM_RETENTION_DAYS = 30
+ROOM_RETENTION_STATE_TYPE = "m.room.retention"
+SYNC_ROOM_RETENTION_POLICY = {
+    "max_lifetime": SYNC_ROOM_RETENTION_DAYS * 24 * 60 * 60 * 1000,
+}
 
 
 @dataclass(frozen=True)
@@ -315,6 +326,11 @@ class SynapseProvisioner(SynapseClientBase):
                         "state_key": "",
                         "content": {"version": SYNC_ROOM_STATE_VERSION},
                     },
+                    {
+                        "type": ROOM_RETENTION_STATE_TYPE,
+                        "state_key": "",
+                        "content": SYNC_ROOM_RETENTION_POLICY,
+                    },
                 ],
             },
         )
@@ -347,6 +363,14 @@ class SynapseProvisioner(SynapseClientBase):
             f"/_matrix/client/v3/rooms/{encoded_room_id}/state/{SYNC_ROOM_STATE_TYPE}",
             headers=user_headers,
             json={"version": SYNC_ROOM_STATE_VERSION},
+        )
+        resp.raise_for_status()
+
+        self._log("Setting room retention policy...")
+        resp = await client.put(
+            f"/_matrix/client/v3/rooms/{encoded_room_id}/state/{ROOM_RETENTION_STATE_TYPE}",
+            headers=user_headers,
+            json=SYNC_ROOM_RETENTION_POLICY,
         )
         resp.raise_for_status()
 

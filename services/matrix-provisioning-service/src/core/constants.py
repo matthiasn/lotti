@@ -1,5 +1,7 @@
 """Core constants for the matrix provisioning service"""
 
+from shared.matrix import SYNC_ROOM_RETENTION_DAYS
+
 # Service names for dependency injection
 SERVICE_PROVISIONING_REPOSITORY = "provisioning_repository"
 SERVICE_PROVISIONER = "provisioner"
@@ -79,7 +81,9 @@ BUNDLE_CLAIM_REAPER_STARTUP_DELAY_SECONDS = 60.0
 # backfill. So this window is the bound on how long a device can be offline and
 # still resynchronise from the room alone; beyond it, repair depends on a peer
 # still holding the payload.
-DEFAULT_RETENTION_DAYS = 30
+# The same window the sync room states as its own m.room.retention, so the
+# sweep and a homeserver enforcing the room's policy agree by default.
+DEFAULT_RETENTION_DAYS = SYNC_ROOM_RETENTION_DAYS
 
 # The sweep runs daily and is ON by default, so disk does not grow until an
 # admin remembers to press a button. The startup delay means a misconfigured

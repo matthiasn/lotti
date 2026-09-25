@@ -72,6 +72,15 @@ class BackfillStats {
 /// future adjustments. Values are chosen to balance responsiveness and UI
 /// smoothness while preventing redundant work under bursty conditions.
 class SyncTuning {
+  // Sync room
+  /// How long the homeserver keeps sync-room history, stated on the room as
+  /// its `m.room.retention` `max_lifetime`. A homeserver with retention
+  /// enabled purges older events itself. The window bounds how long a device
+  /// may be offline and still catch up from the room alone; past it, missing
+  /// counters are repaired by peer backfill. It matches the provisioning
+  /// service's default `RETENTION_DAYS`.
+  static const Duration syncRoomRetention = Duration(days: 30);
+
   // Outbox
   /// Maximum number of text-only outbox rows packed into a single
   /// `SyncOutboxBundle` by `OutboxProcessor`. Tuneable up to 100.

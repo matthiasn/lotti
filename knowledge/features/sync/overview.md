@@ -351,8 +351,12 @@ where the user types a homeserver, a full Matrix ID and a password
 the account's first device when nobody runs the provisioning CLI: the user has
 a Matrix account, on their own homeserver or a public one, and no code.
 `ProvisioningController.configureFromCredentials` signs in, **creates** the
-encrypted sync room through `SyncRoomManager.createRoom` (the gateway stamps the
-`m.lotti.sync_room` marker and megolm encryption at creation) and ends in
+encrypted sync room through `SyncRoomManager.createRoom` (the gateway creates it
+non-federated and stamps the `m.lotti.sync_room` marker, megolm encryption and
+an `m.room.retention` policy of `SyncTuning.syncRoomRetention`, 30 days, at
+creation; a room created before that gets the policy the next time
+`hydrateRoomSnapshot` or `joinRoom` resolves it, and a policy already on the
+room is left alone) and ends in
 `ready`, exactly where a CLI bundle ends. The password is the user's own and is
 **never rotated** — rotation exists to spend a one-time bundle, and rotating a
 credential the user manages would lock them out of their own account. Because

@@ -521,6 +521,114 @@ void main() {
     });
   });
 
+  group('retention', () {
+    late MockMatrixClient client;
+
+    setUp(() {
+      client = MockMatrixClient();
+      when(
+        () => client.sync(),
+      ).thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
+      when(
+        () => settingsDb.itemByKey(matrixRoomKey),
+      ).thenAnswer((_) async => '!room:server');
+      when(() => gateway.getRoomById('!room:server')).thenReturn(MockRoom());
+    });
+
+    test(
+      'a hydrated room without a policy is given one, and it is logged',
+      () async {
+        when(
+          () => gateway.ensureRoomRetention('!room:server'),
+        ).thenAnswer((_) async => true);
+
+        await manager.hydrateRoomSnapshot(client: client);
+
+        verify(() => gateway.ensureRoomRetention('!room:server')).called(1);
+        verify(
+          () => loggingService.log(
+            LogDomain.sync,
+            'Set the retention policy on sync room !room:server.',
+            subDomain: 'retention',
+          ),
+        ).called(1);
+      },
+    );
+
+    test('repeated hydrations check the room once', () async {
+      when(
+        () => gateway.ensureRoomRetention('!room:server'),
+      ).thenAnswer((_) async => false);
+
+      await manager.hydrateRoomSnapshot(client: client);
+      await manager.hydrateRoomSnapshot(client: client);
+
+      verify(() => gateway.ensureRoomRetention('!room:server')).called(1);
+      verifyNever(
+        () => loggingService.log(
+          any<LogDomain>(),
+          any<String>(),
+          subDomain: 'retention',
+        ),
+      );
+    });
+
+    test(
+      'a failure is logged, does not fail the hydration, and is retried',
+      () async {
+        final error = Exception('forbidden');
+        var fail = true;
+        when(
+          () => gateway.ensureRoomRetention('!room:server'),
+        ).thenAnswer((_) async {
+          if (fail) throw error;
+          return true;
+        });
+
+        await manager.hydrateRoomSnapshot(client: client);
+
+        expect(manager.currentRoomId, '!room:server');
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            error,
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'retention',
+          ),
+        ).called(1);
+
+        fail = false;
+        await manager.hydrateRoomSnapshot(client: client);
+
+        verify(() => gateway.ensureRoomRetention('!room:server')).called(2);
+      },
+    );
+
+    test('joining a room ensures its policy', () async {
+      when(() => gateway.joinRoom('!room:server')).thenAnswer((_) async {});
+      when(
+        () => gateway.ensureRoomRetention('!room:server'),
+      ).thenAnswer((_) async => false);
+
+      await manager.joinRoom('!room:server');
+
+      verify(() => gateway.ensureRoomRetention('!room:server')).called(1);
+    });
+
+    test('a failed join never reaches the policy', () async {
+      when(
+        () => gateway.joinRoom('!room:server'),
+      ).thenThrow(Exception('forbidden'));
+
+      await expectLater(
+        manager.joinRoom('!room:server'),
+        throwsA(isA<Exception>()),
+      );
+
+      verifyNever(() => gateway.ensureRoomRetention(any()));
+    });
+  });
+
   group('roomIdChanges', () {
     test('emits on join and on clear, so UI can gate on configured', () async {
       // `currentRoomId` is a plain field. Without this stream the device

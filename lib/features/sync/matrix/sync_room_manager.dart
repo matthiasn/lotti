@@ -42,6 +42,10 @@ class SyncRoomManager {
   Room? _currentRoom;
   String? _currentRoomId;
 
+  /// Rooms whose retention policy this process has already ensured, so
+  /// the repeated hydrations of one start check the room once.
+  final Set<String> _retentionEnsured = <String>{};
+
   /// The currently joined sync room, if any.
   Room? get currentRoom => _currentRoom;
 
@@ -97,7 +101,9 @@ class SyncRoomManager {
   Future<Room?> joinRoom(String roomId) async {
     await _gateway.joinRoom(roomId);
     await _settingsDb.saveSettingsItem(matrixRoomKey, roomId);
-    return _updateCurrentRoom(roomId);
+    final room = _updateCurrentRoom(roomId);
+    await _ensureRetention(roomId);
+    return room;
   }
 
   /// Clears any persisted sync room locally without contacting the server.
@@ -149,6 +155,7 @@ class SyncRoomManager {
         subDomain: 'hydrate',
       );
       if (room != null) {
+        await _ensureRetention(savedRoomId);
         return;
       }
 
@@ -174,6 +181,30 @@ class SyncRoomManager {
       'acceptance pending.',
       subDomain: 'hydrate',
     );
+  }
+
+  /// Gives a room created before sync rooms carried a retention policy its
+  /// TTL, once per room and process. It never blocks sync: a failure is
+  /// logged and the next hydration tries again.
+  Future<void> _ensureRetention(String roomId) async {
+    if (!_retentionEnsured.add(roomId)) return;
+    try {
+      if (await _gateway.ensureRoomRetention(roomId)) {
+        _loggingService.log(
+          LogDomain.sync,
+          'Set the retention policy on sync room $roomId.',
+          subDomain: 'retention',
+        );
+      }
+    } catch (error, stackTrace) {
+      _retentionEnsured.remove(roomId);
+      _loggingService.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'retention',
+      );
+    }
   }
 
   /// Disposes resources owned by the manager.
