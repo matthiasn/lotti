@@ -200,6 +200,45 @@ void main() {
       },
     );
 
+    test('direct sendNext calls run one at a time, and dispose awaits them '
+        'all', () async {
+      // Two callers of the public sendNext: the second must not release the
+      // first one's claim while that send is still in flight.
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => true);
+      final events = <String>[];
+      when(() => repository.releaseOrphanedClaims()).thenAnswer((_) async {
+        events.add('release');
+        return 0;
+      });
+      final firstClaimed = Completer<void>();
+      final firstSend = Completer<OutboxProcessingResult>();
+      var passes = 0;
+      when(() => processor.processQueue()).thenAnswer((_) {
+        passes++;
+        events.add('claim$passes');
+        if (passes == 1) {
+          firstClaimed.complete();
+          return firstSend.future.whenComplete(() => events.add('sent1'));
+        }
+        return Future.value(OutboxProcessingResult.none);
+      });
+
+      final svc = buildService(activityGate: createGate());
+      final first = svc.sendNext();
+      await firstClaimed.future;
+      final second = svc.sendNext();
+      final disposing = svc.dispose().then((_) => events.add('disposed'));
+
+      firstSend.complete(OutboxProcessingResult.none);
+      await Future.wait([first, second, disposing]);
+
+      // The second call started only after the first finished, and was then
+      // dropped because the service had been disposed; dispose waited for it.
+      expect(events, ['release', 'claim1', 'sent1', 'disposed']);
+    });
+
     test('sendNext does nothing once the service is disposed', () async {
       when(
         () => journalDb.getConfigFlag(enableMatrixFlag),

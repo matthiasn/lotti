@@ -72,9 +72,10 @@ failed for good) held already.
    time, so the enrichment stays as it was for them.
 4. **A drain first returns orphaned claims to the queue.**
    `MatrixOutboxService.sendNext` calls `OutboxRepository.releaseOrphanedClaims`
-   (`SyncDatabase.releaseSendingOutboxItems`) before it claims. The runner
-   runs one callback at a time and only `sendNext` claims, so no claim of this
-   process is in flight there and every `sending` row is an orphan. It goes
+   (`SyncDatabase.releaseSendingOutboxItems`) before it claims. Only a drain
+   claims, and `sendNext` chains its calls — the ClientRunner's and any direct
+   caller's — so each drain starts after the previous one finished. No claim
+   of this service is in flight there and every `sending` row is an orphan. It goes
    back to `pending` with its retry count untouched and is sent in its turn,
    before newer rows of its entity. The send may have landed, so this is a
    duplicate, never a loss.
@@ -84,10 +85,10 @@ failed for good) held already.
    does): `dispose` closed the runner but returned while its drain still
    awaited a send. The next generation released that row (decision 4) and
    sent it and a newer version; then the old send landed last
-   (`NewestLandsLast`, eleven steps). `sendNext` now records its run in
-   `_activeSend` and returns at once when disposed, and `dispose` awaits the
-   run before it tears anything else down; the drain stops after its current
-   pass. The old generation cannot overwrite the new one's statuses:
+   (`NewestLandsLast`, eleven steps). `sendNext` now keeps the tail of its
+   chain in `_activeSend` and returns at once when disposed, and `dispose`
+   awaits that tail — every drain queued so far — before it tears anything
+   else down; a drain stops after its current pass. The old generation cannot overwrite the new one's statuses:
    `ServiceDisposer` closes its `SyncDatabase` before the next generation
    opens the file, so its late marks throw. A per-instance claim token was
    rejected as unnecessary for that reason, and it would need a schema change.

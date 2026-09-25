@@ -269,17 +269,18 @@ row can be sent again: a duplicate, never a loss.
 A claim can end without any mark: the process dies between the send and
 `markSent`, or `markSent` and `markRetry` both throw. Its rows stay `sending`.
 `sendNext` releases every `sending` row to `pending`
-(`OutboxRepository.releaseOrphanedClaims`) before it claims — the runner runs
-one callback at a time and only `sendNext` claims, so no claim of this
-process is in flight there. The orphan is resent in its turn, before newer
+(`OutboxRepository.releaseOrphanedClaims`) before it claims. `sendNext`
+chains its calls, whoever makes them, so each drain starts only after the one
+before it finished, and only a drain claims: no claim of this service is in
+flight there. The orphan is resent in its turn, before newer
 rows of its entity. Left to its one-minute lease, it would go out after them
 and an older payload would land last. The lease stays as a second guard.
 
 The release is sound only because no other drain can still be running, and a
 profile switch or closed-generation restart brings the same profile back
-within the same process. So `sendNext` records its run and returns at once
-once the service is disposed, and `dispose` awaits that run — the drain stops
-after its current pass — before it cancels anything else. Otherwise the old
+within the same process. So `sendNext` returns at once once the service is
+disposed, and `dispose` awaits the tail of its chain — every drain queued so
+far, each stopping after its current pass — before it cancels anything else. Otherwise the old
 generation's send could land after the new generation released and resent its
 row together with a newer version. The old generation's late marks cannot
 touch the new one's rows: `ServiceDisposer` closes its `SyncDatabase` first.
