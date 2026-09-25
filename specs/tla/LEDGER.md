@@ -69,6 +69,13 @@ known lost-tail limitations are executable CI checks. These additions are not
 included in the historical totals above; configuration results live in the
 [composed model section](README.md#syncpipeline--the-composed-sync-protocol).
 
+The `EnvelopeChain` design model (#4501) adds one spec, two configurations, six
+named properties and 145,926 distinct states. It models record provenance's
+signed chains before they are built, so it caught no shipped bug; its four
+design switches each have a counterexample, and it surfaced two open design
+questions (orphaned envelopes, where a revocation cuts). Not included in the
+historical totals above.
+
 ## Timeline
 
 ```mermaid
@@ -134,6 +141,7 @@ counterexamples found. "Severity" grades each of those bugs; see
 | [#4491](https://github.com/matthiasn/lotti/pull/4491) | pending | sync | `NotificationReplication`, `SyncSettings` | 4 | 1 (1) | P1 | — | A lifecycle patch changed the content tie-break, so peers retained different same-time notification text. Also models typed recovery and documents untracked settings limits |
 | [#4490](https://github.com/matthiasn/lotti/pull/4490) | pending | sync | `OutboxCausality` | 1 | 1 (0) | P1 | — | Checks concurrent inline versions through append, collapse and receipt after #4489; fixes missing/empty-clock snapshots being folded at send time. A deliberately unsound collapse violates causal coverage. Also restores TLC triggers for startup and profile teardown |
 | [#4494](https://github.com/matthiasn/lotti/pull/4494) | pending | sync | — | −2 | 0 | — | [0087](../../docs/adr/0087-journal-row-is-the-only-copy.md) | Removed the journal JSON sidecar, and with it `SidecarMatchesRow` and the `JournalReplicationSidecar` and `JournalReplicationSidecarRollback` configurations; the four other `JournalReplication` configurations pass with unchanged state counts |
+| [#4501](https://github.com/matthiasn/lotti/pull/4501) | pending | provenance | `EnvelopeChain` | 2 | 0 | — | — | A design model written before the code: per-store signed chains under crashes, restores, retention and revocation. Each of its four design switches has a counterexample, and it raised two open questions — envelopes orphaned by a restore, and where a revocation cuts |
 
 ## Severity
 
