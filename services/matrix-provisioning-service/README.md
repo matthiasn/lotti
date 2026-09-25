@@ -408,7 +408,7 @@ is switched on in `homeserver.yaml`:
 retention:
   enabled: true
   allowed_lifetime_min: 7d   # MIN_RETENTION_DAYS: the offline catch-up floor
-  allowed_lifetime_max: 90d
+  allowed_lifetime_max: 30d   # no room may keep history longer than the default
   purge_jobs:
     - interval: 12h
 media_retention:
