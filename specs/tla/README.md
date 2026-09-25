@@ -1263,6 +1263,105 @@ What the model leaves out, deliberately or as a residual:
   attachment deadline are outside it; abandoning is one nondeterministic
   outcome, and a resurrected row is queued again.
 
+## `JournalReplication` — a journal entry on every device
+
+One journal entry — a task, a note, a habit completion, a checklist item — on
+two or three devices. Local writes edit or soft-delete the entry the live read
+returns (`journalEntityById`), or an entry a screen read earlier; a writer that
+reads the deletion brings the entry back; label writes race the versions that
+sync in; and the user resolves the conflicts the devices raise. Every version
+is delivered to every device in any order and any number of times, and in the
+lossy configuration a delivery can be lost and recovered by backfill from the
+writer's stored row. The write decision for local writes and the receive alike
+is `JournalDb.updateJournalEntity` with `detectConflict`
+(`database_entity_ops.dart`): newer applies, equal or older is refused, and a
+concurrent version is stored as the entry's single `Conflict` row for the user
+to decide. Journal entries never merge on their own, so the question is not
+only convergence but whether a divergence is ever silent. The sidecar
+configurations add the JSON sidecar — the payload a device sends — with a
+receive from an older peer, which names only a path, the outbox's refresh, and
+a receive rolled back by a failed embedded link. The decision is
+[ADR 0083](../../docs/adr/0083-model-checked-journal-replication.md).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `Converged` | invariant | once every version has reached every device, directly or by backfill, the devices hold the same entry — or all hold a deletion, or one shows the user a conflict: divergence is never silent |
+| `NoLostSuccessor` | invariant | a row is never a version that a version the device received or wrote causally replaced: a deletion is not undone by a late copy |
+| `NothingDropped` | invariant | every version a device received or wrote is kept by its row or by its open conflict — nothing is dropped without the user choosing so (except a conflict displaced from the one-row table, below) |
+| `ConflictNotStale` | invariant | an open conflict never holds a version its row, or a version the device has seen, replaced: a stale copy neither re-opens a resolved conflict nor regresses an open one |
+| `ConflictResolvable` | invariant | an open conflict can be opened and resolved, a deletion made here included |
+| `SidecarMatchesRow` | invariant | once writes and receives have settled, every sidecar describes its device's stored row |
+
+| Configuration | Devices | Writes | Adds | Checks | Distinct states |
+|---------------|---------|--------|------|--------|-----------------|
+| `JournalReplication` | 3 | 3 | stale reads, restores, resolutions | all but `SidecarMatchesRow` | 768,439 |
+| `JournalReplicationLossy` | 2 | 3 | any delivery lost and recovered by backfill | the same | 98,283 |
+| `JournalReplicationLabels` | 2 | 4 | `setLabels` and `suppressLabelOnTask` | the same | 168,713 |
+| `JournalReplicationLegacy` | 2 | 3 | an entry created before clocks, a late copy of it in flight | the same | 35,444 |
+| `JournalReplicationSidecar` | 2 | 3 | path-only receives, the sidecar queue, the outbox refresh; two queued sidecar writes at most | all six | 6,794,107 |
+| `JournalReplicationSidecarRollback` | 2 | 2 | one receive rolled back and retried | all six | 439,585 |
+
+The properties judge the code's decisions, which read clocks, against a ghost
+history of the versions each one causally follows. On one device the last
+save supersedes an earlier one it did not read whenever its clock covers it —
+a screen saving an entry read before another save on the same device — which
+is the design, and the ghost history says so too. With `N = 3` and four writes
+(27 million states, fifteen minutes) every property holds as well; that run is
+not checked in.
+
+The design switches are the fixes, and each has a counterexample when set to
+`FALSE` (run a copy of the configuration outside this directory):
+
+| Switch | Old behaviour | Counterexample |
+|--------|---------------|----------------|
+| `ReceiveSeesTombstones` | the write decision read the stored row with `entityById`, which filters `deleted = false`: a deletion read as no row, and anything replaced it | `NoLostSuccessor`, six steps: A edits the entry and deletes it; B deletes it too and receives A's deletion; A's edit arrives late and brings the entry back on B, while A keeps it deleted. `NothingDropped`, five steps: A deletes, B edits concurrently, and B's edit replaces A's deletion on A without a conflict |
+| `BackfillServesTombstones` | the backfill responder read with `journalEntityById` and answered `deleted` for a deleted entry | `Converged`, four steps: A deletes, B's delivery is lost, backfill answers `deleted`, and B keeps the entry |
+| `ConflictSeesTombstone` | the conflict page read the local side with `journalEntityById` | `ConflictResolvable`, four steps: B edits, A deletes concurrently and receives B's edit — a delete-versus-edit conflict the page could not open ("entry not found") |
+| `ResolveOnlyCovered` | any applied write marked the entry's conflict resolved | `NothingDropped`, five steps: B's concurrent edit is A's open conflict; A edits again, and the conflict is marked resolved though A's edit never included B's. B's edit is gone from A without the user choosing; `Converged` still holds, because B raises the conflict again when A's edit arrives |
+| `KeepNewerConflict` | a concurrent version always replaced the conflict row | `ConflictNotStale`, seven steps: A edits twice; B receives the second as a conflict, then the first, late, which replaces it |
+| `LabelsRebuild` | `setLabels` forced a refused write with `overrideComparison`; `suppressLabelOnTask` wrote under the stored row's own clock, and then forced it | `NothingDropped`, four steps: A receives B's edit while its label editor holds the version before; the label write is refused as concurrent, then forced over B's edit. `Converged`, three steps: A suppresses a label, B refuses the write as equal to what it holds, and the devices differ for good |
+| `RefuseNullClock` | a version without a clock was newer than any row | `NoLostSuccessor`, three steps: A deletes an entry created before clocks, and a late copy of that clockless version replaces the deletion |
+| `RestoreSidecar` | a refused path-only receive left the incoming JSON in the sidecar | `SidecarMatchesRow`: the loader saves A's version over B's sidecar, B refuses it as concurrent, and B's sidecar describes a version B does not hold |
+| `RefreshThroughQueue` | the outbox refreshed the sidecar with `journalEntityById` and saved it beside the sidecar queue | `SidecarMatchesRow`: A's refresh reads v1, A deletes the entry and writes its sidecar, the refresh then saves v1 over it, and the next refresh, finding no live row, saves nothing |
+
+What the model leaves out, deliberately or as a residual:
+
+- **One conflict row per entry.** `detectConflict` stores the incoming
+  version under the entry's id. A second concurrent version — from a third
+  device, or this device's own save refused while a conflict is open —
+  displaces the first on this device (the ghost `displaced`; `NothingDropped`
+  and `ConflictNotStale` are claimed except for it). A displaced version from
+  another device stays that device's row, and the next version it receives
+  from here raises the conflict there again. A displaced save of this device's
+  own was never sent and is gone. The options: a conflict table keyed by entry
+  and version, with the page listing every open version; folding a second
+  version into the open conflict as a three-way choice; or refusing a local
+  save while its entry has an open conflict. Each changes what the user sees,
+  so it is a product decision.
+- **Concurrent edits never merge on their own.** Every concurrent pair is a
+  conflict for the user, however disjoint the fields. Auto-merging disjoint
+  fields, or last-writer-wins as agent entities do, is a product decision.
+- **Two concurrent deletions merge without the user**: each device keeps the
+  canonically greater one's fields under the join of both clocks. A deletion
+  displaced from the conflict table on a third device may never meet the
+  other, and the devices then hold different deletions — all deleted, which
+  `Converged` accepts.
+- **A creation under a reused id replaces a deleted row** (`overwrite:
+  false`), as before, under a clock that does not cover the deletion. Peers
+  then see an edit concurrent with the deletion, and the user decides. Whether
+  a re-creation should win, lose, or ask is a product decision.
+- **The sidecar is written before the receive commits.** `updateJournalEntity`
+  runs nested in the receive's transaction with the embedded links, so a
+  rolled-back receive can leave the sidecar describing a version that is not
+  stored until the event is retried. The rollback configuration shows the retry
+  heals it; a failed `persistEntityJson` is not modelled.
+- **Hard deletes** (`purgeDeleted`) remove rows, and backfill then answers
+  `deleted`; a device that never received the deletion keeps the entry.
+- **Clockless versions** come only from builds that predate vector clocks;
+  `RefuseNullClock` assumes no build writes without one today.
+- Embedded entry links are ordered by `JournalDb.upsertEntryLink`, the entry
+  links of [ADR 0078](../../docs/adr/0078-entry-link-versions-are-ordered.md).
+
 ## From the model to the code
 
 TLC checks the design, not the Dart that implements it. The gap is narrowed by
@@ -1574,6 +1673,29 @@ The coordinator's wiring — the claims on start, on a limited sync and at
 every walk, the checkpoint and the failed-enqueue floor — has regressions
 in the coordinator's and the bridge's suites, each failing with its fix
 reverted.
+
+Journal entries have theirs. In
+`test/database/journal_replication_model_conformance.dart` (a part of the
+`JournalDb` entity-ops suite), one entry on three devices — each a real
+in-memory `JournalDb` — is edited, deleted, edited from an entry a screen read
+earlier, restored after a deletion, and resolved by the user through the real
+`resolveToSide`, and the versions are delivered in generated orders through
+`JournalDb.updateJournalEntity`, repeated, late, or lost and recovered from the
+writer's stored row. Every version carries the model's ghost history. After
+every step `NoLostSuccessor`, `NothingDropped` and `ConflictNotStale` must
+hold, and after everything, `Converged`. Reading the stored row with
+`entityById` in the write decision, settling any conflict on an applied write,
+not merging two concurrent deletions, or letting a late copy replace an open
+conflict each fails it; the last needs the trace's four hundred runs. The
+two-device regressions of every switch — the late copy refused, the edit
+concurrent with a deletion, the clockless copy, the restored sidecar, the
+label writes built again on the stored row, the soft-deleted entry served by
+backfill, the conflict page over a deletion — are examples in the suites of
+`database_entity_ops.dart`, `labels_repository.dart`,
+`backfill_response_handler.dart`, `sync_event_processor.dart`,
+`outbox_enqueue_writer.dart` (through `OutboxService`),
+`persistence_updates.dart` and `conflict_detail_route.dart`, and each fails
+with its fix reverted.
 
 ## Changing a spec
 

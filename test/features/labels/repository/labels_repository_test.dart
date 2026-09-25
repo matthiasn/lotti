@@ -587,8 +587,7 @@ void main() {
     when(
       () => persistenceLogic.updateDbEntity(
         any(),
-        linkedId: any(named: 'linkedId'),
-        enqueueSync: any(named: 'enqueueSync'),
+        precondition: any(named: 'precondition'),
       ),
     ).thenAnswer((invocation) async {
       captured = invocation.positionalArguments.first as JournalEntity;
@@ -603,9 +602,9 @@ void main() {
     expect(captured?.meta.labelIds, isNull);
   });
 
-  test('setLabels logs an asynchronous fallback write failure', () async {
+  test('setLabels logs a failed write and returns false', () async {
     final entry = buildEntry(labelIds: const ['a']);
-    final expectedError = StateError('fallback write failed');
+    final expectedError = StateError('write failed');
     when(
       () => journalDb.journalEntityById(entry.meta.id),
     ).thenAnswer((_) async => entry);
@@ -619,12 +618,9 @@ void main() {
       (invocation) async => invocation.positionalArguments.first as Metadata,
     );
     when(
-      () => persistenceLogic.updateDbEntity(any()),
-    ).thenAnswer((_) async => false);
-    when(
       () => persistenceLogic.updateDbEntity(
         any(),
-        overrideComparison: true,
+        precondition: any(named: 'precondition'),
       ),
     ).thenAnswer((_) => Future<bool?>.error(expectedError));
 
@@ -642,12 +638,128 @@ void main() {
         subDomain: 'setLabels',
       ),
     ).called(1);
+  });
+
+  // ADR 0083: a label write that loses a race with a version syncing in is
+  // built again on that version -- never forced over it.
+  test(
+    'setLabels builds again on a version stored while it was written',
+    () async {
+      final entry = buildEntry(labelIds: const ['a']);
+      final synced = JournalEntity.journalEntry(
+        meta: buildMetadata(labelIds: const ['a']).copyWith(
+          vectorClock: const VectorClock({'peer': 1}),
+        ),
+        entryText: const EntryText(plainText: 'edited on the peer'),
+      );
+      var reads = 0;
+      when(
+        () => journalDb.journalEntityById(entry.meta.id),
+      ).thenAnswer((_) async => ++reads == 1 ? entry : synced);
+      when(() => cacheService.getLabelById('b')).thenReturn(
+        LabelDefinition(
+          id: 'b',
+          name: 'b',
+          color: '#000000',
+          createdAt: baseTime,
+          updatedAt: baseTime,
+          vectorClock: null,
+        ),
+      );
+      when(
+        () => persistenceLogic.updateMetadata(
+          any(),
+          labelIds: any(named: 'labelIds'),
+          clearLabelIds: any(named: 'clearLabelIds'),
+        ),
+      ).thenAnswer(
+        (invocation) async => invocation.positionalArguments.first as Metadata,
+      );
+      final written = <JournalEntity>[];
+      final preconditions = <Future<bool> Function()?>[];
+      when(
+        () => persistenceLogic.updateDbEntity(
+          any(),
+          precondition: any(named: 'precondition'),
+        ),
+      ).thenAnswer((invocation) async {
+        written.add(invocation.positionalArguments.first as JournalEntity);
+        preconditions.add(
+          invocation.namedArguments[#precondition] as Future<bool> Function()?,
+        );
+        // The first write finds the peer's version stored.
+        return written.length > 1;
+      });
+      when(
+        () => journalDb.isStoredVersion(entry.meta.id, any()),
+      ).thenAnswer((_) async => true);
+
+      final result = await repository.setLabels(
+        journalEntityId: entry.meta.id,
+        labelIds: const ['b'],
+      );
+
+      expect(result, isTrue);
+      expect(written, hasLength(2));
+      expect(written.last.entryText?.plainText, 'edited on the peer');
+      expect(written.last.meta.labelIds, ['b']);
+      // Each attempt is conditional on the row it was built on.
+      await preconditions.last!();
+      verify(
+        () => journalDb.isStoredVersion(
+          entry.meta.id,
+          const VectorClock({'peer': 1}),
+        ),
+      ).called(1);
+    },
+  );
+
+  test('setLabels gives up after three refused attempts', () async {
+    final entry = buildEntry(labelIds: const ['a']);
+    when(
+      () => journalDb.journalEntityById(entry.meta.id),
+    ).thenAnswer((_) async => entry);
+    when(
+      () => persistenceLogic.updateMetadata(
+        any(),
+        labelIds: any(named: 'labelIds'),
+        clearLabelIds: any(named: 'clearLabelIds'),
+      ),
+    ).thenAnswer(
+      (invocation) async => invocation.positionalArguments.first as Metadata,
+    );
+    when(
+      () => persistenceLogic.updateDbEntity(
+        any(),
+        precondition: any(named: 'precondition'),
+      ),
+    ).thenAnswer((_) async => false);
+
+    final result = await repository.setLabels(
+      journalEntityId: entry.meta.id,
+      labelIds: const [],
+    );
+
+    expect(result, isFalse);
     verify(
       () => persistenceLogic.updateDbEntity(
         any(),
-        overrideComparison: true,
+        precondition: any(named: 'precondition'),
       ),
-    ).called(1);
+    ).called(3);
+  });
+
+  test('setLabels returns false when the entry is missing', () async {
+    when(
+      () => journalDb.journalEntityById('missing'),
+    ).thenAnswer((_) async => null);
+
+    final result = await repository.setLabels(
+      journalEntityId: 'missing',
+      labelIds: const [],
+    );
+
+    expect(result, isFalse);
   });
 
   test(
@@ -705,8 +817,7 @@ void main() {
       when(
         () => persistenceLogic.updateDbEntity(
           any(),
-          linkedId: any(named: 'linkedId'),
-          enqueueSync: any(named: 'enqueueSync'),
+          precondition: any(named: 'precondition'),
         ),
       ).thenAnswer((invocation) async {
         captured = invocation.positionalArguments.first as JournalEntity;
@@ -913,14 +1024,39 @@ void main() {
   });
 
   group('suppressLabelOnTask', () {
-    test('adds label ID to aiSuppressedLabelIds', () async {
+    const newClock = VectorClock({'host': 7});
+
+    setUp(() {
+      // updateMetadata reserves the write's clock.
+      when(() => persistenceLogic.updateMetadata(any())).thenAnswer(
+        (invocation) async => (invocation.positionalArguments.first as Metadata)
+            .copyWith(vectorClock: newClock),
+      );
+    });
+
+    void stubWrites(bool Function(int attempt) applied) {
+      var attempt = 0;
+      when(
+        () => persistenceLogic.updateDbEntity(
+          any(),
+          precondition: any(named: 'precondition'),
+        ),
+      ).thenAnswer((_) async => applied(++attempt));
+    }
+
+    List<Task> writtenTasks() => verify(
+      () => persistenceLogic.updateDbEntity(
+        captureAny(),
+        precondition: any(named: 'precondition'),
+      ),
+    ).captured.cast<Task>();
+
+    test('adds label ID to aiSuppressedLabelIds under a new clock', () async {
       final task = buildTask();
       when(
         () => journalDb.journalEntityById('task-001'),
       ).thenAnswer((_) async => task);
-      when(
-        () => persistenceLogic.updateDbEntity(any()),
-      ).thenAnswer((_) async => true);
+      stubWrites((_) => true);
 
       final result = await repository.suppressLabelOnTask(
         taskId: 'task-001',
@@ -928,15 +1064,10 @@ void main() {
       );
 
       expect(result, isTrue);
-
-      final captured = verify(
-        () => persistenceLogic.updateDbEntity(captureAny()),
-      ).captured;
-      final updatedTask = captured.first as Task;
-      expect(
-        updatedTask.data.aiSuppressedLabelIds,
-        contains('label-bug'),
-      );
+      final updatedTask = writtenTasks().single;
+      expect(updatedTask.data.aiSuppressedLabelIds, contains('label-bug'));
+      // ADR 0083: under the stored clock the suppression never synced.
+      expect(updatedTask.meta.vectorClock, newClock);
     });
 
     test('returns true when label is already suppressed', () async {
@@ -951,7 +1082,12 @@ void main() {
       );
 
       expect(result, isTrue);
-      verifyNever(() => persistenceLogic.updateDbEntity(any()));
+      verifyNever(
+        () => persistenceLogic.updateDbEntity(
+          any(),
+          precondition: any(named: 'precondition'),
+        ),
+      );
     });
 
     test('returns false when entity is not a Task', () async {
@@ -981,7 +1117,7 @@ void main() {
       expect(result, isFalse);
     });
 
-    test('retries with override on write conflict', () async {
+    test('builds again on a version stored while it was written', () async {
       final task = buildTask();
       final taskAfterConflict = buildTask(
         aiSuppressedLabelIds: {'other-label'},
@@ -992,20 +1128,10 @@ void main() {
         () => journalDb.journalEntityById('task-001'),
       ).thenAnswer((_) async {
         readCount++;
-        return readCount == 1 ? task : taskAfterConflict;
+        return readCount <= 2 ? task : taskAfterConflict;
       });
-
-      var writeCount = 0;
-      when(
-        () => persistenceLogic.updateDbEntity(
-          any(),
-          overrideComparison: any(named: 'overrideComparison'),
-        ),
-      ).thenAnswer((_) async {
-        writeCount++;
-        // First write fails (conflict), retry succeeds.
-        return writeCount > 1;
-      });
+      // First write finds another version stored; the retry succeeds.
+      stubWrites((attempt) => attempt > 1);
 
       final result = await repository.suppressLabelOnTask(
         taskId: 'task-001',
@@ -1013,18 +1139,10 @@ void main() {
       );
 
       expect(result, isTrue);
-      // Two writes: initial attempt + retry.
-      expect(writeCount, 2);
-
-      final captured = verify(
-        () => persistenceLogic.updateDbEntity(
-          captureAny(),
-          overrideComparison: any(named: 'overrideComparison'),
-        ),
-      ).captured;
-      final retriedTask = captured.last as Task;
+      final written = writtenTasks();
+      expect(written, hasLength(2));
       expect(
-        retriedTask.data.aiSuppressedLabelIds,
+        written.last.data.aiSuppressedLabelIds,
         containsAll(['other-label', 'label-bug']),
       );
     });
@@ -1040,12 +1158,9 @@ void main() {
         () => journalDb.journalEntityById('task-001'),
       ).thenAnswer((_) async {
         readCount++;
-        return readCount == 1 ? task : taskAlreadySuppressed;
+        return readCount <= 2 ? task : taskAlreadySuppressed;
       });
-
-      when(
-        () => persistenceLogic.updateDbEntity(any()),
-      ).thenAnswer((_) async => false); // First write fails.
+      stubWrites((_) => false);
 
       final result = await repository.suppressLabelOnTask(
         taskId: 'task-001',
@@ -1054,7 +1169,7 @@ void main() {
 
       expect(result, isTrue);
       // Only one write — the retry discovers label already suppressed.
-      verify(() => persistenceLogic.updateDbEntity(any())).called(1);
+      expect(writtenTasks(), hasLength(1));
     });
 
     test('returns false and logs on exception', () async {

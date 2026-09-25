@@ -14,6 +14,8 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_shared.dart';
+import 'package:lotti/features/sync/ui/widgets/conflicts/conflict_merge.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
@@ -27,6 +29,8 @@ import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
 import 'test_utils.dart';
+
+part 'journal_replication_model_conformance.dart';
 
 /// Holds the first sidecar write until released so a later write for the
 /// same entity can overtake it on disk.
@@ -55,7 +59,6 @@ enum _ConflictClockRelation {
 class _ConflictMergeScenario {
   const _ConflictMergeScenario({
     required this.relation,
-    required this.overrideComparison,
     required this.preExistingConflict,
     required this.baseA,
     required this.baseB,
@@ -64,7 +67,6 @@ class _ConflictMergeScenario {
   });
 
   final _ConflictClockRelation relation;
-  final bool overrideComparison;
   final bool preExistingConflict;
   final int baseA;
   final int baseB;
@@ -126,7 +128,6 @@ class _ConflictMergeScenario {
   String toString() {
     return '_ConflictMergeScenario('
         'relation: $relation, '
-        'overrideComparison: $overrideComparison, '
         'preExistingConflict: $preExistingConflict, '
         'baseA: $baseA, '
         'baseB: $baseB, '
@@ -141,9 +142,8 @@ extension _AnyConflictMergeScenario on glados.Any {
       glados.AnyUtils(this).choose(_ConflictClockRelation.values);
 
   glados.Generator<_ConflictMergeScenario> get conflictMergeScenario =>
-      glados.CombinableAny(this).combine7(
+      glados.CombinableAny(this).combine6(
         conflictClockRelation,
-        glados.BoolAny(this).bool,
         glados.BoolAny(this).bool,
         glados.IntAnys(this).intInRange(0, 5),
         glados.IntAnys(this).intInRange(0, 5),
@@ -151,7 +151,6 @@ extension _AnyConflictMergeScenario on glados.Any {
         glados.IntAnys(this).intInRange(0, 3),
         (
           _ConflictClockRelation relation,
-          bool overrideComparison,
           bool preExistingConflict,
           int baseA,
           int baseB,
@@ -159,7 +158,6 @@ extension _AnyConflictMergeScenario on glados.Any {
           int bumpB,
         ) => _ConflictMergeScenario(
           relation: relation,
-          overrideComparison: overrideComparison,
           preExistingConflict: preExistingConflict,
           baseA: baseA,
           baseB: baseB,
@@ -1090,18 +1088,7 @@ void main() {
 
         // Retrieve - should still be B
         final stillB = await db?.journalEntityById(entryA.meta.id);
-        expect(stillB?.meta.id, entryA.meta.id);
-
-        // We can override with overrideComparison
-        final result3 = await db!.updateJournalEntity(
-          entryA,
-          overrideComparison: true,
-        );
-        expect(result3.applied, isTrue);
-
-        // Now it should be A
-        final nowA = await db?.journalEntityById(entryA.meta.id);
-        expect(nowA?.meta.id, entryA.meta.id);
+        expect(stillB?.meta.vectorClock, vclockB);
       });
 
       glados.Glados(
@@ -1146,13 +1133,8 @@ void main() {
             );
           }
 
-          final result = await db!.updateJournalEntity(
-            incomingEntry,
-            overrideComparison: scenario.overrideComparison,
-          );
-          final shouldApply =
-              scenario.expectedStatus == VclockStatus.b_gt_a ||
-              scenario.overrideComparison;
+          final result = await db!.updateJournalEntity(incomingEntry);
+          final shouldApply = scenario.expectedStatus == VclockStatus.b_gt_a;
 
           expect(result.applied, shouldApply);
           if (!shouldApply) {
@@ -1177,8 +1159,9 @@ void main() {
 
           final conflict = await db!.conflictById(id);
           if (shouldApply) {
-            if (scenario.preExistingConflict ||
-                scenario.expectedStatus == VclockStatus.concurrent) {
+            // The pre-existing conflict holds the version the incoming one
+            // succeeds, so the write settles it.
+            if (scenario.preExistingConflict) {
               expect(conflict, isNotNull);
               expect(conflict?.status, ConflictStatus.resolved.index);
             } else {
@@ -1269,6 +1252,275 @@ void main() {
         expect(unresolved, isNotNull);
         expect(unresolved?.status, ConflictStatus.unresolved.index);
       });
+    });
+
+    // Regressions for the holes specs/tla/JournalReplication.tla found
+    // (ADR 0083). Each mirrors the model's counterexample on one device.
+    group('Replication model conformance -', () {
+      final devices = <JournalDb>[];
+      final directories = <Directory>[];
+
+      setUpAll(() {
+        for (var d = 0; d < 3; d++) {
+          final directory = setupTestDirectory();
+          directories.add(directory);
+          devices.add(
+            JournalDb(inMemoryDatabase: true, documentsDirectory: directory),
+          );
+        }
+      });
+
+      tearDownAll(() async {
+        for (final device in devices) {
+          await device.close();
+        }
+        for (final directory in directories) {
+          directory.deleteSync(recursive: true);
+        }
+      });
+
+      registerJournalReplicationConformance(() => devices);
+    });
+
+    group('Replication -', () {
+      const id = 'replicated-entry';
+
+      JournalEntity version(
+        Map<String, int>? clock,
+        String text, {
+        bool deleted = false,
+      }) {
+        final base = createJournalEntryWithVclock(
+          VectorClock(clock ?? const <String, int>{}),
+          id: id,
+        );
+        return base.copyWith(
+          meta: base.meta.copyWith(
+            vectorClock: clock == null ? null : VectorClock(clock),
+            deletedAt: deleted ? testDate : null,
+          ),
+          entryText: EntryText(plainText: text),
+        );
+      }
+
+      Future<JournalEntity?> stored() =>
+          db!.journalEntityByIdIncludingDeleted(id);
+
+      Future<String?> conflictText() async {
+        final conflict = await db!.conflictById(id);
+        if (conflict == null ||
+            conflict.status != ConflictStatus.unresolved.index) {
+          return null;
+        }
+        return JournalEntity.fromJson(
+          jsonDecode(conflict.serialized) as Map<String, dynamic>,
+        ).entryText?.plainText;
+      }
+
+      test(
+        'a late copy of the version a deletion replaced is refused',
+        () async {
+          await db!.updateJournalEntity(version({'a': 1}, 'v1'));
+          await db!.updateJournalEntity(
+            version({'a': 2}, 'v2', deleted: true),
+          );
+
+          final late = await db!.updateJournalEntity(version({'a': 1}, 'v1'));
+
+          expect(late.applied, isFalse);
+          expect(late.skipReason, JournalUpdateSkipReason.olderOrEqual);
+          expect((await stored())?.meta.deletedAt, isNotNull);
+          expect(await db!.journalEntityById(id), isNull);
+        },
+      );
+
+      test('an edit concurrent with a stored deletion is a conflict', () async {
+        await db!.updateJournalEntity(version({'a': 1}, 'v1'));
+        await db!.updateJournalEntity(
+          version({'a': 2}, 'deleted here', deleted: true),
+        );
+
+        final edit = await db!.updateJournalEntity(
+          version({'a': 1, 'b': 1}, 'edited there'),
+        );
+
+        expect(edit.applied, isFalse);
+        expect(edit.skipReason, JournalUpdateSkipReason.conflict);
+        expect((await stored())?.meta.deletedAt, isNotNull);
+        expect(await conflictText(), 'edited there');
+      });
+
+      test(
+        'two concurrent deletions merge to the same row in either order',
+        () async {
+          final onA = version({'a': 2, 'b': 1}, 'A', deleted: true);
+          final onB = version({'a': 1, 'b': 2}, 'B', deleted: true);
+
+          Future<JournalEntity?> receive(
+            JournalEntity first,
+            JournalEntity second,
+          ) async {
+            await clearAllTables(db!);
+            await db!.updateJournalEntity(first);
+            final result = await db!.updateJournalEntity(second);
+            expect(result.applied, isTrue);
+            expect(await db!.conflictById(id), isNull);
+            return stored();
+          }
+
+          final aThenB = await receive(onA, onB);
+          final bThenA = await receive(onB, onA);
+
+          const joined = VectorClock({'a': 2, 'b': 2});
+          expect(aThenB?.meta.vectorClock, joined);
+          expect(bThenA?.meta.vectorClock, joined);
+          // The canonically greater deletion's fields: `a` decides, 2 > 1.
+          expect(aThenB?.entryText?.plainText, 'A');
+          expect(bThenA?.entryText?.plainText, 'A');
+          expect(aThenB?.meta.deletedAt, isNotNull);
+        },
+      );
+
+      test(
+        'an applied write that does not include the open conflict leaves it '
+        'open; the resolution settles it',
+        () async {
+          await db!.updateJournalEntity(version({'a': 2}, 'mine'));
+          await db!.updateJournalEntity(version({'a': 1, 'b': 1}, 'other'));
+          expect(await conflictText(), 'other');
+
+          final later = await db!.updateJournalEntity(
+            version({'a': 3}, 'mine again'),
+          );
+          expect(later.applied, isTrue);
+          expect(await conflictText(), 'other');
+
+          final resolution = await db!.updateJournalEntity(
+            version({'a': 4, 'b': 1}, 'resolved'),
+          );
+          expect(resolution.applied, isTrue);
+          expect(await conflictText(), isNull);
+        },
+      );
+
+      test(
+        'an unreadable conflict row is settled by the next applied write',
+        () async {
+          await db!.updateJournalEntity(version({'a': 1}, 'v1'));
+          await db!.addConflict(
+            Conflict(
+              id: id,
+              createdAt: testDate,
+              updatedAt: testDate,
+              serialized: 'not json',
+              schemaVersion: db!.schemaVersion,
+              status: ConflictStatus.unresolved.index,
+            ),
+          );
+
+          await db!.updateJournalEntity(version({'a': 2}, 'v2'));
+
+          expect(
+            (await db!.conflictById(id))?.status,
+            ConflictStatus.resolved.index,
+          );
+          verify(
+            () => mockLoggingService.error(
+              LogDomain.database,
+              any<Object>(),
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              subDomain: 'conflictClock',
+            ),
+          ).called(1);
+        },
+      );
+
+      test('a late copy does not replace a newer open conflict', () async {
+        await db!.updateJournalEntity(version({'a': 2}, 'mine'));
+        await db!.updateJournalEntity(version({'a': 1, 'b': 2}, 'theirs v2'));
+        expect(await conflictText(), 'theirs v2');
+
+        final late = await db!.updateJournalEntity(
+          version({'a': 1, 'b': 1}, 'theirs v1'),
+        );
+
+        expect(late.skipReason, JournalUpdateSkipReason.conflict);
+        expect(await conflictText(), 'theirs v2');
+      });
+
+      test('a clockless version never replaces a clocked row', () async {
+        await db!.updateJournalEntity(version({'a': 1}, 'clocked'));
+
+        final legacy = await db!.updateJournalEntity(version(null, 'legacy'));
+
+        expect(legacy.applied, isFalse);
+        expect(legacy.skipReason, JournalUpdateSkipReason.olderOrEqual);
+        expect((await stored())?.entryText?.plainText, 'clocked');
+      });
+
+      test('a clocked or clockless version replaces a clockless row', () async {
+        await db!.updateJournalEntity(version(null, 'legacy'));
+        final again = await db!.updateJournalEntity(version(null, 'legacy 2'));
+        expect(again.applied, isTrue);
+
+        final clocked = await db!.updateJournalEntity(
+          version({'a': 1}, 'clocked'),
+        );
+
+        expect(clocked.applied, isTrue);
+        expect((await stored())?.entryText?.plainText, 'clocked');
+      });
+
+      test('a creation still replaces a deleted row', () async {
+        await db!.updateJournalEntity(
+          version({'a': 1}, 'deleted', deleted: true),
+        );
+
+        final created = await db!.updateJournalEntity(
+          version({'b': 1}, 'created'),
+          overwrite: false,
+        );
+
+        expect(created.applied, isTrue);
+        expect((await stored())?.meta.deletedAt, isNull);
+      });
+
+      test(
+        'restoreSidecar writes the stored row back to its sidecar',
+        () async {
+          final entry = version({'a': 1}, 'stored');
+          await db!.updateJournalEntity(entry);
+          final file = File(entityPath(entry, getIt<Directory>()))
+            ..writeAsStringSync(
+              jsonEncode(version({'b': 1}, 'a refused copy')),
+            );
+
+          expect(await db!.restoreSidecar(id), isTrue);
+
+          final onDisk = JournalEntity.fromJson(
+            jsonDecode(file.readAsStringSync()) as Map<String, dynamic>,
+          );
+          expect(onDisk.entryText?.plainText, 'stored');
+          expect(await db!.restoreSidecar('never-stored'), isFalse);
+        },
+      );
+
+      test(
+        'a refused precondition writes neither the row nor a conflict',
+        () async {
+          await db!.updateJournalEntity(version({'a': 1}, 'v1'));
+
+          final result = await db!.updateJournalEntity(
+            version({'b': 1}, 'built on a row no longer stored'),
+            precondition: () =>
+                db!.isStoredVersion(id, const VectorClock({'a': 0})),
+          );
+
+          expect(result.applied, isFalse);
+          expect(await db!.conflictById(id), isNull);
+          expect((await stored())?.entryText?.plainText, 'v1');
+        },
+      );
     });
   });
 }

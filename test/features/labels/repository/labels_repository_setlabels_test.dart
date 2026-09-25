@@ -129,9 +129,7 @@ void main() {
         when(
           () => mockPl.updateDbEntity(
             any(),
-            linkedId: any<String?>(named: 'linkedId'),
-            enqueueSync: any<bool>(named: 'enqueueSync'),
-            overrideComparison: any<bool>(named: 'overrideComparison'),
+            precondition: any(named: 'precondition'),
           ),
         ).thenAnswer((inv) async {
           current = inv.positionalArguments.first as Task;
@@ -192,22 +190,28 @@ void main() {
             clearLabelIds: any<bool>(named: 'clearLabelIds'),
           ),
         ).thenAnswer((inv) async => inv.positionalArguments.first as Metadata);
+        when(() => mockPl.updateDbEntity(any())).thenAnswer((_) async => true);
         when(
           () => mockPl.updateDbEntity(
             any(),
-            linkedId: any<String?>(named: 'linkedId'),
-            enqueueSync: any<bool>(named: 'enqueueSync'),
-            overrideComparison: any<bool>(named: 'overrideComparison'),
+            precondition: any(named: 'precondition'),
           ),
         ).thenAnswer((_) async => true);
-        // Also handle calls without named args
-        when(() => mockPl.updateDbEntity(any())).thenAnswer((_) async => true);
         when(() => mockCache.getLabelById('a')).thenReturn(def('a'));
 
-        // Both assignment write paths call updateDbEntity without named args.
         await repo.addLabels(journalEntityId: 'img1', addedLabelIds: ['a']);
         await repo.setLabels(journalEntityId: 'img1', labelIds: const ['a']);
-        verify(() => mockPl.updateDbEntity(any())).called(2);
+        final written = [
+          ...verify(() => mockPl.updateDbEntity(captureAny())).captured,
+          ...verify(
+            () => mockPl.updateDbEntity(
+              captureAny(),
+              precondition: any(named: 'precondition'),
+            ),
+          ).captured,
+        ];
+        expect(written, hasLength(2));
+        expect(written, everyElement(isA<JournalImage>()));
       },
     );
 
@@ -240,62 +244,5 @@ void main() {
         ),
       ).called(greaterThanOrEqualTo(1));
     });
-
-    test(
-      'setLabels retries with overrideComparison when first update fails',
-      () async {
-        final current = Task(
-          meta: Metadata(
-            id: 't4',
-            createdAt: DateTime(2024, 3, 15),
-            updatedAt: DateTime(2024, 3, 15),
-            dateFrom: DateTime(2024, 3, 15),
-            dateTo: DateTime(2024, 3, 15),
-          ),
-          data: TaskData(
-            status: TaskStatus.open(
-              id: 's',
-              createdAt: DateTime(2024, 3, 15),
-              utcOffset: 0,
-            ),
-            dateFrom: DateTime(2024, 3, 15),
-            dateTo: DateTime(2024, 3, 15),
-            statusHistory: const [],
-            title: 't',
-          ),
-        );
-        when(
-          () => mockDb.journalEntityById('t4'),
-        ).thenAnswer((_) async => current);
-        when(() => mockCache.getLabelById(any())).thenReturn(def('a'));
-        when(
-          () => mockPl.updateMetadata(
-            any(),
-            dateFrom: any(named: 'dateFrom'),
-            dateTo: any(named: 'dateTo'),
-            categoryId: any(named: 'categoryId'),
-            clearCategoryId: any(named: 'clearCategoryId'),
-            deletedAt: any(named: 'deletedAt'),
-            labelIds: any<List<String>?>(named: 'labelIds'),
-            clearLabelIds: any<bool>(named: 'clearLabelIds'),
-          ),
-        ).thenAnswer((inv) async => inv.positionalArguments.first as Metadata);
-
-        // First attempt without override -> false to trigger fallback
-        when(() => mockPl.updateDbEntity(any())).thenAnswer((_) async => false);
-        // First normal update (without named args) should fail to trigger fallback
-        when(() => mockPl.updateDbEntity(any())).thenAnswer((_) async => false);
-
-        await repo.setLabels(
-          journalEntityId: 't4',
-          labelIds: const ['a'],
-        );
-        // Verify: first normal call and then fallback with overrideComparison
-        verify(() => mockPl.updateDbEntity(any())).called(1);
-        verify(
-          () => mockPl.updateDbEntity(any(), overrideComparison: true),
-        ).called(1);
-      },
-    );
   });
 }

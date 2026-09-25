@@ -106,6 +106,15 @@ on:
       - "lib/features/agents/database/agent_repo_core.dart"
       - "lib/features/sync/matrix/sync_event_processor_apply.dart"
       - "lib/features/agents/service/project_recommendation_service.dart"
+      - "lib/database/database_journal_queries.dart"
+      - "lib/features/sync/matrix/sync_event_processor_journal_handlers.dart"
+      - "lib/features/sync/matrix/smart_journal_entity_loader.dart"
+      - "lib/features/sync/ui/widgets/conflicts/conflict_merge.dart"
+      - "lib/features/sync/state/conflict_resolution_service.dart"
+      - "lib/features/sync/ui/pages/conflicts/conflict_detail_route.dart"
+      - "lib/features/labels/repository/labels_repository.dart"
+      - "lib/features/journal/repository/journal_repository.dart"
+      - "lib/logic/persistence_updates.dart"
       - ".github/workflows/tla-model-check.yml"
 
 concurrency:

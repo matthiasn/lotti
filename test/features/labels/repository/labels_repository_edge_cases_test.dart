@@ -154,7 +154,10 @@ void main() {
       return entry.meta.copyWith(labelIds: ids);
     });
     when(
-      () => persistenceLogic.updateDbEntity(any()),
+      () => persistenceLogic.updateDbEntity(
+        any(),
+        precondition: any(named: 'precondition'),
+      ),
     ).thenAnswer((_) async => true);
 
     final result = await repository.setLabels(
@@ -171,6 +174,7 @@ void main() {
             return labels[0] == 'label-a' && labels[1] == 'label-b';
           }),
         ),
+        precondition: any(named: 'precondition'),
       ),
     ).called(1);
   });
@@ -344,7 +348,10 @@ void main() {
       return entry.meta.copyWith(labelIds: ids);
     });
     when(
-      () => persistenceLogic.updateDbEntity(any()),
+      () => persistenceLogic.updateDbEntity(
+        any(),
+        precondition: any(named: 'precondition'),
+      ),
     ).thenAnswer((_) async => true);
 
     final result = await repository.setLabels(
@@ -391,7 +398,10 @@ void main() {
       return entry.meta.copyWith(labelIds: ids);
     });
     when(
-      () => persistenceLogic.updateDbEntity(any()),
+      () => persistenceLogic.updateDbEntity(
+        any(),
+        precondition: any(named: 'precondition'),
+      ),
     ).thenAnswer((_) async => true);
 
     final result = await repository.setLabels(

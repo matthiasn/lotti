@@ -62,6 +62,15 @@ mixin _JournalDbEntityOps
     return into(conflicts).insertOnConflictUpdate(conflict);
   }
 
+  /// Compares the stored [existing] version with the incoming [updated] one
+  /// and records a concurrent pair as the entry's [Conflict].
+  ///
+  /// A version without a vector clock carries no causal information. It
+  /// replaces a stored row that has none either, but never a clocked one: a
+  /// late copy from before clocks existed would otherwise undo every edit
+  /// made since (ADR 0083). Two concurrent deletions are not a conflict:
+  /// there is nothing for the user to choose, and [updateJournalEntity]
+  /// merges them.
   Future<VclockStatus> detectConflict(
     JournalEntity existing,
     JournalEntity updated,
@@ -72,27 +81,105 @@ mixin _JournalDbEntityOps
     if (vcA != null && vcB != null) {
       final status = VectorClock.compare(vcA, vcB);
 
-      if (status == VclockStatus.concurrent) {
+      if (status == VclockStatus.concurrent &&
+          !_bothDeleted(existing, updated)) {
         DevLogger.warning(
           name: 'JournalDb',
           message: 'Conflicting vector clocks: $status',
         );
-        final now = clock.now();
-        await addConflict(
-          Conflict(
-            id: updated.meta.id,
-            createdAt: now,
-            updatedAt: now,
-            serialized: jsonEncode(updated),
-            schemaVersion: schemaVersion,
-            status: ConflictStatus.unresolved.index,
-          ),
-        );
+        await _recordConflict(updated);
       }
 
       return status;
     }
-    return VclockStatus.b_gt_a;
+    return vcA != null ? VclockStatus.a_gt_b : VclockStatus.b_gt_a;
+  }
+
+  static bool _bothDeleted(JournalEntity a, JournalEntity b) =>
+      a.meta.deletedAt != null && b.meta.deletedAt != null;
+
+  /// Stores [incoming] as the entry's conflict row, unless the unresolved
+  /// conflict already stored is the same version or a newer one: a late copy
+  /// of an older version must not replace the version the user is shown.
+  Future<void> _recordConflict(JournalEntity incoming) async {
+    final open = await conflictById(incoming.meta.id);
+    if (open != null &&
+        open.status == ConflictStatus.unresolved.index &&
+        _covers(incoming.meta.vectorClock, _conflictClock(open))) {
+      return;
+    }
+    final now = clock.now();
+    await addConflict(
+      Conflict(
+        id: incoming.meta.id,
+        createdAt: now,
+        updatedAt: now,
+        serialized: jsonEncode(incoming),
+        schemaVersion: schemaVersion,
+        status: ConflictStatus.unresolved.index,
+      ),
+    );
+  }
+
+  /// Marks the entry's unresolved conflict resolved when the version just
+  /// written, [written], is the conflict's version or a successor of it —
+  /// the user's resolution, or any later version that includes it. A write
+  /// that does not include it leaves the conflict open: marking it resolved
+  /// would drop the other device's edit without the user choosing so.
+  Future<void> _settleConflictCoveredBy(JournalEntity written) async {
+    final open = await conflictById(written.meta.id);
+    if (open == null || open.status != ConflictStatus.unresolved.index) {
+      return;
+    }
+    final conflictClock = _conflictClock(open);
+    if (conflictClock == null ||
+        _covers(conflictClock, written.meta.vectorClock)) {
+      await resolveConflict(open);
+    }
+  }
+
+  /// The vector clock of the version stored in [conflict], or null when it
+  /// has none or cannot be read.
+  VectorClock? _conflictClock(Conflict conflict) {
+    try {
+      return JournalEntity.fromJson(
+        jsonDecode(conflict.serialized) as Map<String, dynamic>,
+      ).meta.vectorClock;
+    } catch (error, stackTrace) {
+      _captureException(
+        error,
+        subDomain: 'conflictClock',
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+  }
+
+  /// Whether [b] is the version [a] names or a successor of it.
+  static bool _covers(VectorClock? a, VectorClock? b) {
+    if (a == null || b == null) return false;
+    final status = VectorClock.compare(a, b);
+    return status == VclockStatus.b_gt_a || status == VclockStatus.equal;
+  }
+
+  /// Two concurrent deletions of one entry, merged the same way on every
+  /// device: the canonically greater one's fields under the join of both
+  /// clocks, so the row covers both deletions and every device holds it.
+  static JournalEntity _mergeDeletions(
+    JournalEntity stored,
+    JournalEntity incoming,
+  ) {
+    final storedClock = stored.meta.vectorClock!;
+    final incomingClock = incoming.meta.vectorClock!;
+    final winner =
+        VectorClock.compareCanonically(incomingClock, storedClock) > 0
+        ? incoming
+        : stored;
+    return winner.copyWith(
+      meta: winner.meta.copyWith(
+        vectorClock: VectorClock.merge(storedClock, incomingClock),
+      ),
+    );
   }
 
   /// Applies [updated] to the journal after a vector-clock comparison with
@@ -111,6 +198,15 @@ mixin _JournalDbEntityOps
   /// or external awaits. Use direct queries, not readers that coalesce calls
   /// across transaction zones. Returning false leaves the row and sidecar untouched.
   ///
+  /// The stored row is read with its soft deletion
+  /// ([entityByIdIncludingDeleted]): a deletion is a version like any other,
+  /// so a late copy of the version it replaced is refused, and an edit made
+  /// concurrently with it is a conflict. Only a creation ([overwrite] false)
+  /// replaces a deleted row outright, as it always has. Two concurrent
+  /// deletions are merged ([_mergeDeletions]). An applied write marks the
+  /// entry's conflict resolved only when it includes the conflict's version
+  /// (ADR 0083).
+  ///
   /// The JSON sidecar is written **after** the transaction commits: it is
   /// the sync payload, so it must never describe a row that rolled back,
   /// and writing it inside the transaction would hold the journal writer
@@ -118,15 +214,11 @@ mixin _JournalDbEntityOps
   /// commit order (see [_publishSidecar]).
   Future<JournalUpdateResult> updateJournalEntity(
     JournalEntity updated, {
-    bool overrideComparison = false,
     bool overwrite = true,
     Future<bool> Function()? precondition,
   }) async {
-    final dbEntity = toDbEntity(updated).copyWith(
-      updatedAt: clock.now(),
-    );
-
     var ticket = 0;
+    var written = updated;
     final result = await transaction(() async {
       var applied = false;
       JournalUpdateSkipReason? skipReason;
@@ -137,7 +229,10 @@ mixin _JournalDbEntityOps
           reason: JournalUpdateSkipReason.overwritePrevented,
         );
       }
-      final existingDbEntity = await entityById(dbEntity.id);
+      final stored = await entityByIdIncludingDeleted(updated.meta.id);
+      final existingDbEntity = stored != null && stored.deleted && !overwrite
+          ? null
+          : stored;
 
       if (existingDbEntity != null && !overwrite) {
         skipReason = JournalUpdateSkipReason.overwritePrevented;
@@ -155,18 +250,15 @@ mixin _JournalDbEntityOps
           skipReason = JournalUpdateSkipReason.conflict;
         }
 
-        final canApply =
-            status == VclockStatus.b_gt_a ||
-            (overrideComparison && status != null);
+        if (status == VclockStatus.concurrent &&
+            _bothDeleted(existing, updated)) {
+          written = _mergeDeletions(existing, updated);
+        }
 
-        if (canApply) {
-          rowsWritten = await upsertJournalDbEntity(dbEntity);
+        if (status == VclockStatus.b_gt_a || !identical(written, updated)) {
+          rowsWritten = await upsertJournalDbEntity(_toRow(written));
           applied = true;
-          final existingConflict = await conflictById(dbEntity.id);
-
-          if (existingConflict != null) {
-            await resolveConflict(existingConflict);
-          }
+          await _settleConflictCoveredBy(written);
         } else if (status != null) {
           _captureEvent(
             EnumToString.convertToString(status),
@@ -179,14 +271,13 @@ mixin _JournalDbEntityOps
           skipReason ??= JournalUpdateSkipReason.conflict;
         }
       } else {
-        rowsWritten = await upsertJournalDbEntity(dbEntity);
+        rowsWritten = await upsertJournalDbEntity(_toRow(updated));
         applied = true;
       }
 
       if (applied) {
-        await addLabeled(updated);
-        ticket = (_sidecarIssued[dbEntity.id] ?? 0) + 1;
-        _sidecarIssued[dbEntity.id] = ticket;
+        await addLabeled(written);
+        ticket = _issueSidecarTicket(written.meta.id);
         return JournalUpdateResult.applied(rowsWritten: rowsWritten);
       }
 
@@ -196,9 +287,42 @@ mixin _JournalDbEntityOps
     });
 
     if (result.applied) {
-      await _publishSidecar(updated, ticket);
+      await _publishSidecar(written, ticket);
     }
     return result;
+  }
+
+  JournalDbEntity _toRow(JournalEntity entity) =>
+      toDbEntity(entity).copyWith(updatedAt: clock.now());
+
+  /// The next sidecar ticket for [id]. Called inside the transaction that
+  /// commits the version the sidecar will describe.
+  int _issueSidecarTicket(String id) {
+    final ticket = (_sidecarIssued[id] ?? 0) + 1;
+    _sidecarIssued[id] = ticket;
+    return ticket;
+  }
+
+  /// Writes the stored row's sidecar for [id] again, in commit order with
+  /// every other sidecar write for it, and returns whether a row is stored.
+  ///
+  /// The sidecar is the payload this device sends for the entry, and two
+  /// writers besides [updateJournalEntity] touch it: a receive from an older
+  /// peer, which names only a path and has the loader save the incoming JSON
+  /// there before the write decision, and the outbox, which refreshes it
+  /// before it reads the payload. Both go through here, so neither can leave
+  /// it describing a version other than the stored row (ADR 0083).
+  Future<bool> restoreSidecar(String id) async {
+    var ticket = 0;
+    final stored = await transaction(() async {
+      final row = await entityByIdIncludingDeleted(id);
+      if (row == null) return null;
+      ticket = _issueSidecarTicket(id);
+      return fromDbEntity(row);
+    });
+    if (stored == null) return false;
+    await _publishSidecar(stored, ticket);
+    return true;
   }
 
   /// Writes the sidecar for [entity] after the sidecar writes queued before

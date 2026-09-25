@@ -257,7 +257,6 @@ class TestPersistenceLogic extends PersistenceLogic {
     JournalEntity entity, {
     String? linkedId,
     bool enqueueSync,
-    bool overrideComparison,
     Future<void> Function()? beforeNotify,
   })?
   updateDbEntityHandler;
@@ -293,7 +292,6 @@ class TestPersistenceLogic extends PersistenceLogic {
     JournalEntity journalEntity, {
     String? linkedId,
     bool enqueueSync = true,
-    bool overrideComparison = false,
     Future<void> Function()? beforeNotify,
     Future<bool> Function()? precondition,
   }) async {
@@ -303,7 +301,6 @@ class TestPersistenceLogic extends PersistenceLogic {
         journalEntity,
         linkedId: linkedId,
         enqueueSync: enqueueSync,
-        overrideComparison: overrideComparison,
         beforeNotify: beforeNotify,
       );
     }
@@ -311,7 +308,6 @@ class TestPersistenceLogic extends PersistenceLogic {
       journalEntity,
       linkedId: linkedId,
       enqueueSync: enqueueSync,
-      overrideComparison: overrideComparison,
       beforeNotify: beforeNotify,
       precondition: precondition,
     );
@@ -2251,7 +2247,6 @@ void main() {
       when(
         () => journalDb.updateJournalEntity(
           any<JournalEntity>(),
-          overrideComparison: any<bool>(named: 'overrideComparison'),
           overwrite: any<bool>(named: 'overwrite'),
         ),
       ).thenThrow(StateError(boom));
@@ -2359,7 +2354,6 @@ void main() {
       when(
         () => journalDb.updateJournalEntity(
           any<JournalEntity>(),
-          overrideComparison: any<bool>(named: 'overrideComparison'),
           overwrite: any<bool>(named: 'overwrite'),
         ),
       ).thenThrow(StateError(boom));
@@ -2378,7 +2372,6 @@ void main() {
         when(
           () => journalDb.updateJournalEntity(
             any<JournalEntity>(),
-            overrideComparison: any<bool>(named: 'overrideComparison'),
             overwrite: any<bool>(named: 'overwrite'),
           ),
         ).thenAnswer((_) async => JournalUpdateResult.applied());
@@ -2512,7 +2505,6 @@ void main() {
         when(
           () => journalDb.updateJournalEntity(
             any<JournalEntity>(),
-            overrideComparison: any<bool>(named: 'overrideComparison'),
             overwrite: any<bool>(named: 'overwrite'),
           ),
         ).thenAnswer((_) async => JournalUpdateResult.applied());
@@ -2545,7 +2537,6 @@ void main() {
         when(
           () => journalDb.updateJournalEntity(
             any<JournalEntity>(),
-            overrideComparison: any<bool>(named: 'overrideComparison'),
             overwrite: any<bool>(named: 'overwrite'),
           ),
         ).thenAnswer((_) async => JournalUpdateResult.applied());
@@ -2580,7 +2571,6 @@ void main() {
         when(
           () => journalDb.updateJournalEntity(
             any<JournalEntity>(),
-            overrideComparison: any<bool>(named: 'overrideComparison'),
             overwrite: any<bool>(named: 'overwrite'),
           ),
         ).thenAnswer(
@@ -2789,7 +2779,6 @@ void main() {
       when(
         () => journalDb.updateJournalEntity(
           any<JournalEntity>(),
-          overrideComparison: any<bool>(named: 'overrideComparison'),
           overwrite: any<bool>(named: 'overwrite'),
         ),
       ).thenAnswer((_) async => result);
@@ -2934,8 +2923,6 @@ void main() {
         when(
           () => journalDb.updateJournalEntity(
             entry,
-            // ignore: avoid_redundant_argument_values
-            overrideComparison: false,
             precondition: precondition,
           ),
         ).thenAnswer(
@@ -2957,8 +2944,6 @@ void main() {
         verify(
           () => journalDb.updateJournalEntity(
             entry,
-            // ignore: avoid_redundant_argument_values
-            overrideComparison: false,
             precondition: precondition,
           ),
         ).called(1);
@@ -3021,7 +3006,6 @@ void main() {
       when(
         () => journalDb.updateJournalEntity(
           any<JournalEntity>(),
-          overrideComparison: any<bool>(named: 'overrideComparison'),
           overwrite: any<bool>(named: 'overwrite'),
         ),
       ).thenThrow(Exception('db down'));
@@ -3154,7 +3138,6 @@ void main() {
         when(
           () => journalDb.updateJournalEntity(
             any<JournalEntity>(),
-            overrideComparison: any<bool>(named: 'overrideComparison'),
             overwrite: any<bool>(named: 'overwrite'),
           ),
         ).thenAnswer((invocation) async {
@@ -3245,7 +3228,6 @@ void main() {
                   entity, {
                   linkedId,
                   enqueueSync = true,
-                  overrideComparison = false,
                   beforeNotify,
                 }) async => true,
           );
@@ -3274,7 +3256,6 @@ void main() {
                   entity, {
                   linkedId,
                   enqueueSync = true,
-                  overrideComparison = false,
                   beforeNotify,
                 }) async => false,
           );
@@ -3319,7 +3300,7 @@ void main() {
           );
 
           when(
-            () => journalDb.journalEntityById('task-id'),
+            () => journalDb.journalEntityByIdIncludingDeleted('task-id'),
           ).thenAnswer((_) async => task);
           stubUpdateResult(JournalUpdateResult.applied());
           when(
@@ -3382,7 +3363,7 @@ void main() {
         );
 
         when(
-          () => journalDb.journalEntityById('task-id'),
+          () => journalDb.journalEntityByIdIncludingDeleted('task-id'),
         ).thenAnswer((_) async => task);
         stubUpdateResult(JournalUpdateResult.applied());
 
@@ -3516,7 +3497,6 @@ void main() {
                 entity, {
                 linkedId,
                 enqueueSync = true,
-                overrideComparison = false,
                 beforeNotify,
               }) async => true,
         );
@@ -3566,7 +3546,6 @@ void main() {
                 entity, {
                 linkedId,
                 enqueueSync = true,
-                overrideComparison = false,
                 beforeNotify,
               }) async => true,
         );
@@ -3638,7 +3617,6 @@ void main() {
                 entity, {
                 linkedId,
                 enqueueSync = true,
-                overrideComparison = false,
                 beforeNotify,
               }) async => true,
         );
@@ -3671,7 +3649,6 @@ void main() {
                 entity, {
                 linkedId,
                 enqueueSync = true,
-                overrideComparison = false,
                 beforeNotify,
               }) async => true,
         );

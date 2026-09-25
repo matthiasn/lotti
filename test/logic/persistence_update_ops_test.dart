@@ -48,7 +48,6 @@ void main() {
         any(),
         linkedId: any(named: 'linkedId'),
         enqueueSync: any(named: 'enqueueSync'),
-        overrideComparison: any(named: 'overrideComparison'),
         beforeNotify: any(named: 'beforeNotify'),
       ),
     ).thenAnswer((_) async => true);
@@ -137,7 +136,6 @@ void main() {
         any(),
         linkedId: any(named: 'linkedId'),
         enqueueSync: any(named: 'enqueueSync'),
-        overrideComparison: any(named: 'overrideComparison'),
         beforeNotify: any(named: 'beforeNotify'),
       ),
     );
@@ -203,7 +201,6 @@ void main() {
         any(),
         linkedId: any(named: 'linkedId'),
         enqueueSync: any(named: 'enqueueSync'),
-        overrideComparison: any(named: 'overrideComparison'),
         beforeNotify: any(named: 'beforeNotify'),
       ),
     );

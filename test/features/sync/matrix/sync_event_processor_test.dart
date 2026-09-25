@@ -460,7 +460,9 @@ void main() {
 
       // DB lookup for prediction throws to exercise logging + default status
       when(
-        () => journalDb.journalEntityById(fallbackJournalEntity.meta.id),
+        () => journalDb.journalEntityByIdIncludingDeleted(
+          fallbackJournalEntity.meta.id,
+        ),
       ).thenThrow(Exception('db unavailable'));
 
       SyncApplyDiagnostics? capturedDiag;
@@ -1337,7 +1339,7 @@ void main() {
       const FileSystemException('stale attachment json after refresh'),
     );
     when(
-      () => journalDb.journalEntityById(entryId),
+      () => journalDb.journalEntityByIdIncludingDeleted(entryId),
     ).thenAnswer((_) async => fallbackJournalEntity);
 
     SyncApplyDiagnostics? captured;
@@ -1348,6 +1350,49 @@ void main() {
     expect(captured, isNotNull);
     expect(captured!.skipReason, JournalUpdateSkipReason.olderOrEqual);
     expect(captured!.conflictStatus, contains('a_gt_b'));
+    verifyNever(() => journalDb.updateJournalEntity(any()));
+  });
+
+  // ADR 0083: a stored deletion supersedes the versions before it too, so a
+  // stale descriptor for one of them is skipped rather than retried forever.
+  test('stale descriptor is skipped when a newer deletion is stored', () async {
+    final entryId = fallbackJournalEntity.meta.id;
+    final message = SyncMessage.journalEntity(
+      id: entryId,
+      jsonPath: '/entity.json',
+      vectorClock: const VectorClock({'a': 10}),
+      status: SyncEntryStatus.initial,
+    );
+    when(() => event.text).thenReturn(encodeMessage(message));
+    when(
+      () => journalEntityLoader.load(
+        jsonPath: '/entity.json',
+        incomingVectorClock: any(named: 'incomingVectorClock'),
+      ),
+    ).thenThrow(
+      const FileSystemException('stale attachment json after refresh'),
+    );
+    when(
+      () => journalDb.journalEntityById(entryId),
+    ).thenAnswer((_) async => null);
+    when(
+      () => journalDb.journalEntityByIdIncludingDeleted(entryId),
+    ).thenAnswer(
+      (_) async => fallbackJournalEntity.copyWith(
+        meta: fallbackJournalEntity.meta.copyWith(
+          vectorClock: const VectorClock({'a': 12}),
+          deletedAt: DateTime(2024, 3, 15),
+        ),
+      ),
+    );
+
+    SyncApplyDiagnostics? captured;
+    processor.applyObserver = (diag) => captured = diag;
+
+    await processor.process(event: event, journalDb: journalDb);
+
+    expect(captured?.skipReason, JournalUpdateSkipReason.olderOrEqual);
+    expect(captured?.conflictStatus, contains('a_gt_b'));
     verifyNever(() => journalDb.updateJournalEntity(any()));
   });
 
@@ -1384,7 +1429,7 @@ void main() {
         const FileSystemException('stale attachment json after refresh'),
       );
       when(
-        () => journalDb.journalEntityById(entryId),
+        () => journalDb.journalEntityByIdIncludingDeleted(entryId),
       ).thenAnswer((_) async => fallbackJournalEntity);
       when(
         () => mockSequenceService.recordReceivedEntry(

@@ -198,9 +198,12 @@ class LabelsRepository {
   /// Programmatically adds a label ID to the task's `aiSuppressedLabelIds`.
   ///
   /// Used when a user rejects an agent-proposed label so the agent learns
-  /// not to re-propose it. Does not modify the task's assigned labels.
+  /// not to re-propose it. Does not modify the task's assigned labels. The
+  /// suppression is a new version of the task, under a new clock, so it
+  /// syncs; see [_writeOnStored].
   ///
-  /// Returns `true` if the suppression was applied, `false` on failure.
+  /// Returns `true` if the suppression was applied or already present,
+  /// `false` on failure.
   Future<bool> suppressLabelOnTask({
     required String taskId,
     required String labelId,
@@ -209,44 +212,21 @@ class LabelsRepository {
       final entity = await _journalDb.journalEntityById(taskId);
       if (entity is! Task) return false;
 
-      final currentSuppressed =
-          entity.data.aiSuppressedLabelIds ?? const <String>{};
-      if (currentSuppressed.contains(labelId)) return true; // Already done.
-
-      final nextSuppressed = _mergeSuppressed(
-        current: currentSuppressed,
-        add: {labelId},
-      );
-      final updated = entity.copyWith(
-        data: entity.data.copyWith(
-          aiSuppressedLabelIds: nextSuppressed,
-        ),
-      );
-      final applied = await _persistenceLogic.updateDbEntity(updated);
-      if (applied ?? false) return true;
-
-      // Write conflict — re-read and retry with override, matching the
-      // mergeable-update pattern used by setLabels().
-      final latest = await _journalDb.journalEntityById(taskId);
-      if (latest is! Task) return false;
-
-      final latestSuppressed =
-          latest.data.aiSuppressedLabelIds ?? const <String>{};
-      if (latestSuppressed.contains(labelId)) return true;
-
-      final retried = latest.copyWith(
-        data: latest.data.copyWith(
-          aiSuppressedLabelIds: _mergeSuppressed(
-            current: latestSuppressed,
-            add: {labelId},
+      return await _writeOnStored(taskId, (stored) async {
+        if (stored is! Task) return null;
+        final currentSuppressed =
+            stored.data.aiSuppressedLabelIds ?? const <String>{};
+        if (currentSuppressed.contains(labelId)) return null; // Already done.
+        return stored.copyWith(
+          meta: await _persistenceLogic.updateMetadata(stored.meta),
+          data: stored.data.copyWith(
+            aiSuppressedLabelIds: _mergeSuppressed(
+              current: currentSuppressed,
+              add: {labelId},
+            ),
           ),
-        ),
-      );
-      return await _persistenceLogic.updateDbEntity(
-            retried,
-            overrideComparison: true,
-          ) ??
-          false;
+        );
+      });
     } catch (error, stackTrace) {
       _domainLogger.error(
         LogDomain.labels,
@@ -321,19 +301,15 @@ class LabelsRepository {
   /// Dedupes, drops unknown/soft-deleted IDs (cache-first, DB fallback), and
   /// sorts by label name. For tasks, diffs against the previous set: removed
   /// labels are suppressed and (re-)added labels are unsuppressed in one update.
-  /// Falls back to an override write if the first attempt loses to a concurrent
-  /// vector clock — safe here because the `labeled` table merges. Returns the
-  /// write result; `false` if the entry is missing or on error (logged).
+  /// The change is built on the stored entry and, when another version syncs
+  /// in while it is written, built again on that one ([_writeOnStored]) —
+  /// never forced over it. Returns whether the labels were written; `false`
+  /// if the entry is missing or on error (logged).
   Future<bool?> setLabels({
     required String journalEntityId,
     required List<String> labelIds,
   }) async {
     try {
-      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
-      if (journalEntity == null) {
-        return false;
-      }
-
       final normalized = LinkedHashSet<String>.from(
         labelIds.where((id) => id.isNotEmpty),
       );
@@ -360,53 +336,9 @@ class LabelsRepository {
           (a, b) => (nameLookup[a] ?? a).compareTo(nameLookup[b] ?? b),
         );
 
-      final updatedMetadata = await _persistenceLogic.updateMetadata(
-        journalEntity.meta,
-        labelIds: sorted,
-        clearLabelIds: sorted.isEmpty,
-      );
-
-      JournalEntity updatedEntity;
-      if (journalEntity is Task) {
-        final prev = journalEntity.meta.labelIds ?? const <String>[];
-        final prevSet = prev.toSet();
-        final nextSet = sorted.toSet();
-        final removed = prevSet.difference(nextSet);
-        final added = nextSet.difference(prevSet);
-
-        final currentSuppressed =
-            journalEntity.data.aiSuppressedLabelIds ?? const <String>{};
-        final nextSuppressed = _mergeSuppressed(
-          current: currentSuppressed,
-          add: removed,
-          remove: added,
-        );
-
-        updatedEntity = journalEntity.copyWith(
-          meta: updatedMetadata.copyWith(
-            labelIds: sorted.isEmpty ? null : sorted,
-          ),
-          data: journalEntity.data.copyWith(
-            aiSuppressedLabelIds: nextSuppressed,
-          ),
-        );
-      } else {
-        updatedEntity = journalEntity.copyWith(
-          meta: updatedMetadata.copyWith(
-            labelIds: sorted.isEmpty ? null : sorted,
-          ),
-        );
-      }
-
-      // First attempt: normal update (keeps test/mocks simple and fast)
-      final applied = await _persistenceLogic.updateDbEntity(updatedEntity);
-      if (applied ?? false) return applied;
-
-      // Fallback: allow override when vector clocks are concurrent.
-      // Safe for labels since the labeled table merges the set.
-      return await _persistenceLogic.updateDbEntity(
-        updatedEntity,
-        overrideComparison: true,
+      return await _writeOnStored(
+        journalEntityId,
+        (stored) => _withLabels(stored, sorted),
       );
     } catch (error, stackTrace) {
       _domainLogger.error(
@@ -418,6 +350,65 @@ class LabelsRepository {
       return false;
     }
   }
+
+  /// [stored] with its labels set to [sorted] under a new clock. For a task,
+  /// removed labels are suppressed and (re-)added ones unsuppressed, against
+  /// the labels [stored] carries.
+  Future<JournalEntity> _withLabels(
+    JournalEntity stored,
+    List<String> sorted,
+  ) async {
+    final updatedMetadata = await _persistenceLogic.updateMetadata(
+      stored.meta,
+      labelIds: sorted,
+      clearLabelIds: sorted.isEmpty,
+    );
+    final meta = updatedMetadata.copyWith(
+      labelIds: sorted.isEmpty ? null : sorted,
+    );
+    if (stored is! Task) return stored.copyWith(meta: meta);
+
+    final prevSet = (stored.meta.labelIds ?? const <String>[]).toSet();
+    final nextSet = sorted.toSet();
+    return stored.copyWith(
+      meta: meta,
+      data: stored.data.copyWith(
+        aiSuppressedLabelIds: _mergeSuppressed(
+          current: stored.data.aiSuppressedLabelIds ?? const <String>{},
+          add: prevSet.difference(nextSet),
+          remove: nextSet.difference(prevSet),
+        ),
+      ),
+    );
+  }
+
+  /// Writes the version [build] makes of the stored entry [id] — null when
+  /// there is nothing to write — and applies it only while the stored row is
+  /// still the one it was built on. A version that synced in meanwhile is
+  /// never overwritten: the change is built again on it, under a new clock,
+  /// up to [_storedWriteAttempts] times (ADR 0083).
+  Future<bool> _writeOnStored(
+    String id,
+    Future<JournalEntity?> Function(JournalEntity stored) build,
+  ) async {
+    for (var attempt = 0; attempt < _storedWriteAttempts; attempt++) {
+      final stored = await _journalDb.journalEntityById(id);
+      if (stored == null) return false;
+      final updated = await build(stored);
+      if (updated == null) return true;
+      final applied = await _persistenceLogic.updateDbEntity(
+        updated,
+        precondition: () =>
+            _journalDb.isStoredVersion(id, stored.meta.vectorClock),
+      );
+      if (applied ?? false) return true;
+    }
+    return false;
+  }
+
+  /// How often a label write is built again on a version that synced in
+  /// while it was being written.
+  static const _storedWriteAttempts = 3;
 }
 
 Set<String>? _mergeSuppressed({

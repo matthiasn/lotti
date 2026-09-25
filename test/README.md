@@ -298,6 +298,16 @@ does (`container.listen(...)` + `addTearDown(subscription.close)`, then
 `false` through its `watchConfigFlags` fallback, so a test that needs the
 flag on stubs `watchConfigFlag(enableEventsFlag)` with `Stream.value(true)`.
 
+Such a fallback in `test/mocks/mocks.dart` must answer a constant and never
+call another member of the mock: `when` and `verify` record the last mock
+call their closure makes, so a fallback that delegates (say,
+`journalEntityByIdIncludingDeleted` answering whatever `journalEntityById` is
+stubbed to) records the wrong call and breaks every stub of the method — and
+it swallows a `thenThrow`, so stub a failure as
+`thenAnswer((_) => Future.error(...))`. Code that now reads the stored row
+with its deletion (`journalEntityByIdIncludingDeleted`, ADR 0083) is stubbed
+on that method directly; unstubbed, `restoreSidecar` answers `true`.
+
 ## Native drag-and-drop wrappers
 
 Production pages may include `MediaDropTarget`, which registers

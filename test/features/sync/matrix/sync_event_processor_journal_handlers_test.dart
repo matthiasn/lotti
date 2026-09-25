@@ -208,7 +208,7 @@ void main() {
           ),
         );
         when(
-          () => journalDb.journalEntityById('exact-missing-vc'),
+          () => journalDb.journalEntityByIdIncludingDeleted('exact-missing-vc'),
         ).thenAnswer((_) async => payload);
         final exactProcessor = SyncEventProcessor(
           loggingService: loggingService,
@@ -1307,7 +1307,7 @@ void main() {
           ),
         );
         when(
-          () => journalDb.journalEntityById(entryId),
+          () => journalDb.journalEntityByIdIncludingDeleted(entryId),
         ).thenAnswer((_) async => fallbackJournalEntity);
 
         await expectLater(
@@ -1326,8 +1326,8 @@ void main() {
     );
 
     test(
-      'logs and returns null when journalEntityById throws during stale-skip '
-      'lookup',
+      'logs and returns null when the stored-row lookup throws during '
+      'stale-skip lookup',
       () async {
         // Arrange: stale descriptor error + lookup throws → must log and
         // return null (no skip, no rethrow).
@@ -1347,9 +1347,9 @@ void main() {
         ).thenThrow(
           const FileSystemException('stale attachment json after refresh'),
         );
-        // journalEntityById throws — this is the path that hits line 75.
+        // The tombstone-aware lookup throws.
         when(
-          () => journalDb.journalEntityById(entryId),
+          () => journalDb.journalEntityByIdIncludingDeleted(entryId),
         ).thenThrow(Exception('db lookup error'));
 
         // Act: because the lookup threw and returned null, the stale path
@@ -1408,7 +1408,7 @@ void main() {
         );
         // Local entity has equal vector clock → skip applies.
         when(
-          () => journalDb.journalEntityById(entryId),
+          () => journalDb.journalEntityByIdIncludingDeleted(entryId),
         ).thenAnswer((_) async => fallbackJournalEntity);
         // recordReceivedEntry throws → must be caught and logged.
         when(
@@ -1552,7 +1552,7 @@ void main() {
     );
 
     test(
-      'sequence log entryExistsInJournal fallback: checks journalEntityById '
+      'sequence log entryExistsInJournal fallback: checks the stored row '
       'when updateResult.applied is false (line 423)',
       () async {
         // When the update is skipped but the entity exists locally, the
@@ -1615,9 +1615,9 @@ void main() {
             reason: JournalUpdateSkipReason.olderOrEqual,
           ),
         );
-        // journalEntityById returns the existing entity (entity exists locally).
+        // the stored-row read returns the existing entity (entity exists locally).
         when(
-          () => journalDb.journalEntityById('skipped-entry'),
+          () => journalDb.journalEntityByIdIncludingDeleted('skipped-entry'),
         ).thenAnswer((_) async => existingEntity);
         when(
           () => mockSequenceService.recordReceivedEntry(
@@ -1632,7 +1632,7 @@ void main() {
 
         await processorWithSeq.process(event: event, journalDb: journalDb);
 
-        // The fallback journalEntityById check ran and found the entity, so
+        // The fallback stored-row check ran and found the entity, so
         // recordReceivedEntry must have been called.
         verify(
           () => mockSequenceService.recordReceivedEntry(
@@ -1646,6 +1646,197 @@ void main() {
         ).called(1);
       },
     );
+
+    // ADR 0083: a stored deletion is a version like any other.
+    group('a refused version over a stored row', () {
+      const vc = VectorClock({'host-P': 3});
+      final incoming = JournalEntry(
+        meta: Metadata(
+          id: 'refused-entry',
+          createdAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: vc,
+        ),
+        entryText: const EntryText(plainText: 'late copy'),
+      );
+      final deletion = incoming.copyWith(
+        meta: incoming.meta.copyWith(
+          vectorClock: const VectorClock({'host-P': 5}),
+          deletedAt: DateTime(2024, 3, 16),
+        ),
+      );
+
+      Future<MockSyncSequenceLogService> receive({
+        required bool applied,
+        String? attachmentEventId,
+        bool restoreFails = false,
+      }) async {
+        final sequenceLog = MockSyncSequenceLogService();
+        final message = SyncMessage.journalEntity(
+          id: 'refused-entry',
+          jsonPath: '/refused.json',
+          vectorClock: vc,
+          status: SyncEntryStatus.update,
+          originatingHostId: 'host-P',
+          attachmentEventId: attachmentEventId,
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+        when(
+          () => journalEntityLoader.load(
+            jsonPath: '/refused.json',
+            incomingVectorClock: vc,
+            attachmentEventId: attachmentEventId,
+          ),
+        ).thenAnswer((_) async => incoming);
+        when(
+          () => journalEntityLoader.load(
+            jsonPath: '/refused.json',
+            incomingVectorClock: vc,
+          ),
+        ).thenAnswer((_) async => incoming);
+        when(() => journalDb.updateJournalEntity(incoming)).thenAnswer(
+          (_) async => applied
+              ? JournalUpdateResult.applied()
+              : JournalUpdateResult.skipped(
+                  reason: JournalUpdateSkipReason.olderOrEqual,
+                ),
+        );
+        // The live read hides the deletion; the stored row is the tombstone.
+        when(
+          () => journalDb.journalEntityById('refused-entry'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => journalDb.journalEntityByIdIncludingDeleted('refused-entry'),
+        ).thenAnswer((_) async => deletion);
+        if (restoreFails) {
+          when(
+            () => journalDb.restoreSidecar('refused-entry'),
+          ).thenAnswer(
+            (_) => Future<bool>.error(const FileSystemException('disk full')),
+          );
+        } else {
+          when(
+            () => journalDb.restoreSidecar('refused-entry'),
+          ).thenAnswer((_) async => true);
+        }
+        when(
+          () => sequenceLog.recordReceivedEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+            originatingHostId: any(named: 'originatingHostId'),
+            coveredVectorClocks: any(named: 'coveredVectorClocks'),
+            payloadType: any(named: 'payloadType'),
+            jsonPath: any(named: 'jsonPath'),
+            payloadVectorClock: any(named: 'payloadVectorClock'),
+            canonicalPayloadVectorClock: any(
+              named: 'canonicalPayloadVectorClock',
+            ),
+          ),
+        ).thenAnswer((_) async => []);
+        await SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          savedTaskFiltersRepository: savedTaskFiltersRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          sequenceLogService: sequenceLog,
+        ).process(event: event, journalDb: journalDb);
+        return sequenceLog;
+      }
+
+      test('is recorded as received when the stored row is deleted', () async {
+        final sequenceLog = await receive(applied: false);
+
+        verify(
+          () => sequenceLog.recordReceivedEntry(
+            entryId: 'refused-entry',
+            vectorClock: vc,
+            originatingHostId: 'host-P',
+            coveredVectorClocks: any(named: 'coveredVectorClocks'),
+            payloadType: any(named: 'payloadType'),
+            jsonPath: '/refused.json',
+            payloadVectorClock: any(named: 'payloadVectorClock'),
+            canonicalPayloadVectorClock: any(
+              named: 'canonicalPayloadVectorClock',
+            ),
+          ),
+        ).called(1);
+      });
+
+      test('names the stored deletion as the canonical version', () async {
+        final sequenceLog = await receive(
+          applied: false,
+          attachmentEventId: r'$attachment',
+        );
+
+        verify(
+          () => sequenceLog.recordReceivedEntry(
+            entryId: 'refused-entry',
+            vectorClock: vc,
+            originatingHostId: 'host-P',
+            coveredVectorClocks: any(named: 'coveredVectorClocks'),
+            payloadType: any(named: 'payloadType'),
+            jsonPath: '/refused.json',
+            payloadVectorClock: vc,
+            canonicalPayloadVectorClock: const VectorClock({'host-P': 5}),
+          ),
+        ).called(1);
+      });
+
+      test(
+        'restores the sidecar when the envelope named only a path',
+        () async {
+          await receive(applied: false);
+
+          verify(() => journalDb.restoreSidecar('refused-entry')).called(1);
+        },
+      );
+
+      test(
+        'leaves the sidecar to the write when the version applied',
+        () async {
+          await receive(applied: true);
+
+          verifyNever(() => journalDb.restoreSidecar(any()));
+        },
+      );
+
+      test('leaves the sidecar alone for an exact envelope', () async {
+        await receive(applied: false, attachmentEventId: r'$attachment');
+
+        verifyNever(() => journalDb.restoreSidecar(any()));
+      });
+
+      test('logs a failed restore and still records the receipt', () async {
+        final sequenceLog = await receive(applied: false, restoreFails: true);
+
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'apply.restoreSidecar',
+          ),
+        ).called(1);
+        verify(
+          () => sequenceLog.recordReceivedEntry(
+            entryId: 'refused-entry',
+            vectorClock: vc,
+            originatingHostId: 'host-P',
+            coveredVectorClocks: any(named: 'coveredVectorClocks'),
+            payloadType: any(named: 'payloadType'),
+            jsonPath: '/refused.json',
+            payloadVectorClock: any(named: 'payloadVectorClock'),
+            canonicalPayloadVectorClock: any(
+              named: 'canonicalPayloadVectorClock',
+            ),
+          ),
+        ).called(1);
+      });
+    });
 
     test(
       'logs gap detection trace when recordReceivedEntry returns gaps in '

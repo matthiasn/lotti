@@ -100,7 +100,9 @@ class _ConformanceBench {
       ..registerSingleton<SettingsDb>(bench.settings)
       ..registerSingleton<SyncDatabase>(bench.syncDb)
       ..registerSingleton<DomainLogger>(bench.logger);
-    when(() => bench.journalDb.journalEntityById(any())).thenAnswer((call) {
+    when(
+      () => bench.journalDb.journalEntityByIdIncludingDeleted(any()),
+    ).thenAnswer((call) {
       final id = call.positionalArguments.first as String;
       final counter = bench.payloads[id] ?? 0;
       return Future.value(
