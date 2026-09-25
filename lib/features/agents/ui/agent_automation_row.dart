@@ -84,9 +84,9 @@ class AgentAutomationRow extends StatefulWidget {
   /// four was how the previous callers of `compact: true` read.
   ///
   /// [nextWakeAt] is the one piece of the schedule the pair does carry: while
-  /// the summary reads out of date and an automatic update is pending, a
-  /// short "in 1:30" follows the word, so an out-of-date summary also says
-  /// that it is about to fix itself. It never latches a layout or reports an
+  /// the summary reads out of date and an automatic update is pending,
+  /// "Next update in 1:30" follows the word, so an out-of-date summary also
+  /// says that it is about to fix itself. It never latches a layout or reports an
   /// expiry — the readout simply leaves once it reaches zero.
   const AgentAutomationRow.compact({
     required this.inferenceAvailable,
@@ -571,7 +571,8 @@ class _FreshnessCluster extends StatelessWidget {
   final String? tooltip;
   final bool isStale;
 
-  /// Follows the word on the same line — the compact form's countdown.
+  /// Follows the word — the compact form's countdown — on the same line
+  /// while both fit, and on the next one otherwise.
   final Widget? trailing;
 
   @override
@@ -580,8 +581,9 @@ class _FreshnessCluster extends StatelessWidget {
     if (text == null) return const SizedBox.shrink();
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
-    return Row(
-      key: const ValueKey('taskAgentStatusCluster'),
+    final trailing = this.trailing;
+    final state = Row(
+      key: trailing == null ? const ValueKey('taskAgentStatusCluster') : null,
       mainAxisSize: MainAxisSize.min,
       children: [
         Tooltip(
@@ -620,18 +622,25 @@ class _FreshnessCluster extends StatelessWidget {
             ),
           ),
         ),
-        if (trailing case final trailing?) ...[
-          SizedBox(width: tokens.spacing.step2),
-          trailing,
-        ],
       ],
+    );
+    if (trailing == null) return state;
+    // A run, not a row: where the word and the countdown cannot share a line
+    // — German on a narrow phone — the countdown takes the next one rather
+    // than squeezing the word to an ellipsis or clipping its own digits.
+    return Wrap(
+      key: const ValueKey('taskAgentStatusCluster'),
+      spacing: tokens.spacing.step3,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [state, trailing],
     );
   }
 }
 
-/// The compact form's "in 1:30": when the out-of-date summary refreshes
-/// itself. Shares the full band's wording ladder and schedule register, and
-/// takes no space once the deadline has passed.
+/// The compact form's "Next update in 1:30": when the out-of-date summary
+/// refreshes itself. Always the full sentence — the bare "in 1:30" beside
+/// "Out of date" reads as "will be out of date in 1:30". Shares the full
+/// band's schedule register, and takes no space once the deadline has passed.
 class _CompactCountdown extends StatefulWidget {
   const _CompactCountdown({required this.nextWakeAt});
 
@@ -661,7 +670,7 @@ class _CompactCountdownState extends State<_CompactCountdown>
   Widget build(BuildContext context) {
     if (countdownSeconds <= 0) return const SizedBox.shrink();
     return Text(
-      context.messages.taskAgentNextUpdateInShort(
+      context.messages.taskAgentNextUpdateIn(
         formatCountdown(countdownSeconds),
       ),
       key: const ValueKey('taskAgentCompactCountdown'),

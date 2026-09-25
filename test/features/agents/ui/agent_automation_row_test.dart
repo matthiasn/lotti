@@ -142,7 +142,7 @@ void main() {
           );
 
           expect(find.text('Out of date'), findsOneWidget);
-          expect(tester.widget<Text>(countdown()).data, 'in 1:30');
+          expect(tester.widget<Text>(countdown()).data, 'Next update in 1:30');
           // The schedule register the full band's countdown uses.
           expect(
             tester.widget<Text>(countdown()).style,
@@ -151,7 +151,7 @@ void main() {
 
           current = current.add(const Duration(seconds: 1));
           await tester.pump(const Duration(seconds: 1));
-          expect(tester.widget<Text>(countdown()).data, 'in 1:29');
+          expect(tester.widget<Text>(countdown()).data, 'Next update in 1:29');
 
           current = now.add(const Duration(seconds: 90));
           await tester.pump(const Duration(seconds: 1));
@@ -159,6 +159,38 @@ void main() {
           expect(countdown(), findsNothing);
           // The word stays until the caller learns the summary is current.
           expect(find.text('Out of date'), findsOneWidget);
+        });
+      },
+    );
+
+    testWidgets(
+      'wraps under the word rather than truncating either on a narrow phone',
+      (tester) async {
+        await withClock(Clock.fixed(now), () async {
+          await pumpRow(
+            tester,
+            compactRow(nextWakeAt: now.add(const Duration(seconds: 90))),
+            width: 320,
+            locale: const Locale('de'),
+            textScaler: const TextScaler.linear(1.3),
+          );
+
+          expect(tester.takeException(), isNull);
+          expect(
+            tester.widget<Text>(countdown()).data,
+            'Nächste Aktualisierung in 1:30',
+          );
+          final word = find.byKey(const ValueKey('taskAgentFreshnessLabel'));
+          // The whole word, not an ellipsis, and the countdown on its own
+          // line below it.
+          expect(
+            tester.renderObject<RenderParagraph>(word).didExceedMaxLines,
+            isFalse,
+          );
+          expect(
+            tester.getTopLeft(countdown()).dy,
+            greaterThanOrEqualTo(tester.getBottomLeft(word).dy),
+          );
         });
       },
     );

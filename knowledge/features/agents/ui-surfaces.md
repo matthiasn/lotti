@@ -139,8 +139,12 @@ watermark alone left the card silent — looking current — for the whole
 countdown.
 
 The task card also hands the compact row that `nextWakeAt`, and while the
-strip reads *Out of date* and no run is in flight, a short ticking *in 1:30*
-follows the word in the schedule register (`scheduleLabelStyle`). *Out of
+strip reads *Out of date* and no run is in flight, a ticking *Next update in
+1:30* follows the word in the schedule register (`scheduleLabelStyle`). It is
+always the full sentence: the bare *in 1:30* beside *Out of date* read as "will
+be out of date in 1:30". The word and the countdown form a `Wrap`, so where
+both do not fit one line the countdown takes the next rather than truncating
+either. *Out of
 date* alone looked like a summary left to rot; the readout says it is about to
 refresh itself. It takes no space once the deadline passes, and never appears
 beside a current summary or beside *Thinking…*. The full schedule sentence,
