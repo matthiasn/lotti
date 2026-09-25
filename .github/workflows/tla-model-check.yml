@@ -119,6 +119,7 @@ on:
       - "lib/features/agents/sync/agent_entity_receive.dart"
       - "lib/features/agents/database/agent_repo_core.dart"
       - "lib/features/sync/matrix/sync_event_processor_apply.dart"
+      - "lib/features/sync/matrix/outbox_bundle_unpacker.dart"
       - "lib/features/agents/service/project_recommendation_service.dart"
       - "lib/database/database_journal_queries.dart"
       - "lib/features/sync/matrix/sync_event_processor_journal_handlers.dart"

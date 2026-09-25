@@ -29,8 +29,9 @@ bool _containsOnboardingSnapshotEnd(SyncMessage message) {
 /// The queue keeps events as JSON and hands the worker an
 /// [InboundQueueEntry]. This adapter materialises the Event against the
 /// current Room, runs prepare outside a write transaction, and runs
-/// apply inside a short `journalDb.transaction` — mirroring the P1
-/// freeze fix the legacy pipeline already shipped (PR #2981).
+/// apply inside a short `journalDb.transaction` for families without their
+/// own transaction boundary. Sequenced payloads commit their domain store
+/// before writing a receipt to the separate sync database.
 ///
 /// Per-batch parallel prepare: [bindPrepareBatch] returns a hook that
 /// `InboundWorker._runBatch` calls with the whole batch before its
@@ -38,8 +39,8 @@ bool _containsOnboardingSnapshotEnd(SyncMessage message) {
 /// gzip decode, JSON decode) with no shared state, so fanning it out
 /// via `Future.wait` collapses the prepare latency of the slowest
 /// entry down to the batch's critical path. Apply still runs
-/// sequentially inside `journalDb.transaction` to preserve the M1
-/// writer-lock discipline. Prepared results are cached by `eventId`
+/// sequentially, with each writer owning its transaction boundary.
+/// Prepared results are cached by `eventId`
 /// so the subsequent per-entry apply call reuses them instead of
 /// preparing a second time.
 class QueueApplyAdapter {
@@ -227,8 +228,10 @@ class QueueApplyAdapter {
     }
 
     // Step 3 — apply. Wrap in a JournalDb writer transaction ONLY for
-    // payload families that actually write to JournalDb tables (entity
-    // upserts, entry-link upserts, entity-definition upserts). Other
+    // payload families that need an outer transaction (entity-definition
+    // upserts and config flags). Journal entities and entry links own their
+    // transactions: their cross-database receipt must follow the real commit,
+    // not a nested savepoint that a later outer rollback could undo. Other
     // families (theming, ai-config, agent entity/link/bundle, outbox
     // bundle, backfill request/response) write to other databases
     // (settings_db, ai_config_db, agent_db, outbox via sync_db) and
@@ -345,13 +348,9 @@ class QueueApplyAdapter {
     return false;
   }
 
-  /// True for payload families whose `apply` path writes to JournalDb
-  /// tables (`journal`, `linked_entries`, `*_definitions`). Other
-  /// families resolve their writes against other databases and do not
-  /// need the journal writer lock; wrapping them in a JournalDb
-  /// transaction is pure overhead and serialises every concurrent
-  /// reader. Errs conservatively: any new payload type defaults to
-  /// `true` so we keep the old behaviour until explicitly opted out.
+  /// Whether the apply path needs an outer JournalDb transaction.
+  /// Sequenced payloads own their transaction so the domain commit precedes
+  /// the receipt in SyncDatabase. Other databases need no journal lock.
   static bool writesJournalDb(SyncMessage message) {
     return message.map(
       // SyncJournalEntity owns its own narrow tx inside
@@ -363,8 +362,8 @@ class QueueApplyAdapter {
       // readers; the narrow inner tx still keeps the journal upsert +
       // embedded entry-link writes in one atomic step.
       journalEntity: (_) => false,
-      // linked_entries upsert — JournalDb.
-      entryLink: (_) => true,
+      // upsertEntryLink owns its transaction. Its receipt must follow commit.
+      entryLink: (_) => false,
       // category/habit/dashboard/measurable/label _definitions —
       // JournalDb.
       entityDefinition: (_) => true,
@@ -400,9 +399,9 @@ class QueueApplyAdapter {
       agentEntity: (_) => false,
       agentLink: (_) => false,
       agentBundle: (_) => false,
-      // OutboxBundle unpacks into journal/linked_entries via
-      // _outboxBundleUnpacker.apply — keep wrapped.
-      outboxBundle: (_) => true,
+      // Each child owns its persistence boundary. A journal-only outer
+      // transaction cannot atomically encompass receipts or other stores.
+      outboxBundle: (_) => false,
       // settings_db (directory map keyed by hostId).
       syncNodeProfile: (_) => false,
     );

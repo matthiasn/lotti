@@ -849,6 +849,7 @@ extension _AgentHandlers on SyncEventProcessor {
         stackTrace: st,
         subDomain: 'recordReceived',
       );
+      rethrow;
     }
   }
 
@@ -892,6 +893,7 @@ extension _AgentHandlers on SyncEventProcessor {
         stackTrace: st,
         subDomain: 'recordReceived',
       );
+      rethrow;
     }
   }
 }

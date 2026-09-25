@@ -3342,7 +3342,7 @@ void main() {
         ).called(1);
       });
 
-      test('handles recordReceivedEntry exception for agent entity', () async {
+      test('rethrows receipt failures for agent entity', () async {
         const vc = VectorClock({'host-C': 5});
         final entity = AgentDomainEntity.agent(
           id: 'agent-err-1',
@@ -3386,7 +3386,10 @@ void main() {
         )..agentRepository = mockAgentRepoSeq;
 
         when(() => event.text).thenReturn(encodeMessage(message));
-        await proc.process(event: event, journalDb: journalDb);
+        await expectLater(
+          proc.process(event: event, journalDb: journalDb),
+          throwsA(isA<Exception>()),
+        );
 
         // Entity should still be upserted despite seq log error
         verify(() => mockAgentRepoSeq.upsertEntity(entity)).called(1);
@@ -3506,7 +3509,7 @@ void main() {
         ).called(1);
       });
 
-      test('handles recordReceivedEntry exception for agent link', () async {
+      test('rethrows receipt failures for agent link', () async {
         const vc = VectorClock({'host-E': 7});
         final link = AgentLink.basic(
           id: 'link-err-1',
@@ -3544,7 +3547,10 @@ void main() {
         )..agentRepository = mockAgentRepoSeq;
 
         when(() => event.text).thenReturn(encodeMessage(message));
-        await proc.process(event: event, journalDb: journalDb);
+        await expectLater(
+          proc.process(event: event, journalDb: journalDb),
+          throwsA(isA<Exception>()),
+        );
 
         // Link should still be upserted despite seq log error.
         verify(() => mockAgentRepoSeq.upsertLink(link)).called(1);

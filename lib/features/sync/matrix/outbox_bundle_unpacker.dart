@@ -182,12 +182,10 @@ class OutboxBundleUnpacker {
   /// Iterates the bundle's children and dispatches each through [applyChild]
   /// in order.
   ///
-  /// Per-child fault isolation mirrors [prepare]:
-  /// - Any [IOException] is rethrown so the parent pipeline can retry the
-  ///   whole bundle. Already-applied children are idempotent under
-  ///   vector-clock dedup, so a redelivery is safe.
-  /// - All other exceptions on a single child are logged and skipped; the
-  ///   bundle's net effect is the union of successfully-applied children.
+  /// Every apply failure is rethrown so the queue retries the bundle. Database
+  /// failures need not be IOExceptions; swallowing one would acknowledge an
+  /// unapplied child. Earlier children remain committed and tolerate replay.
+  /// Stop at the failed child so later ordering barriers cannot pass it.
   Future<void> apply({
     required PreparedOutboxSyncBundle bundle,
     required OutboxBundleChildApplier applyChild,
@@ -207,6 +205,7 @@ class OutboxBundleUnpacker {
           stackTrace: stackTrace,
           subDomain: 'processor.apply.outboxBundle.child',
         );
+        rethrow;
       }
     }
   }

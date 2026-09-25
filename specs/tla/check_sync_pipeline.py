@@ -70,10 +70,13 @@ def main():
         check(name + "-mutated", {**constants, switch: "FALSE"}, assertion)
     check("lost-unobserved-tail", {"MaxCounter": "1", "MaxFaults": "1",
           "FaultKinds": '{"receive"}'}, "CommittedReachesPeer", temporal=True)
-    check("lost-tail-receipt", {"MaxCounter": "1", "MaxFaults": "1",
-          "FaultKinds": '{"receipt"}'}, "EveryCommitReceipted", temporal=True,
-          extension='\nEveryCommitReceipted == \\A p \\in Peers, c \\in Counters :\n'
-                    '    c \\in s.committed ~> c \\in s.received[p]\n')
+    for retry, fails in (("TRUE", False), ("FALSE", True)):
+        check("tail-receipt-retry-" + retry, {
+            "MaxCounter": "1", "MaxFaults": "1",
+            "FaultKinds": '{"receipt"}', "RetryReceipts": retry,
+        }, "EveryCommitReceipted", temporal=True, fails=fails,
+            extension='\nEveryCommitReceipted == \\A p \\in Peers, c \\in Counters :\n'
+                      '    c \\in s.committed ~> c \\in s.received[p]\n')
     # The conditional gap claim must exercise the repair channel; forbidding
     # successful request/answer/hint receipt must have a reachable violation.
     check("repair-is-reachable", {"SeparateEntities": "TRUE"}, "NoRepairWitness",

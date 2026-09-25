@@ -989,37 +989,52 @@ void main() {
       },
     );
 
-    test('a flag inside an outbox bundle parks its effects too', () async {
-      // The bundle's children apply in the same transaction as the bundle.
-      when(() => event.text).thenReturn(
-        encodeMessage(
-          SyncOutboxBundle(
-            children: [flipped(status: false)],
-            originatingHostId: 'host-peer',
-          ),
-        ),
+    for (final failLaterChild in [false, true]) {
+      test(
+        'a bundled flag completes its effects before the next child '
+        '(failure=$failLaterChild)',
+        () async {
+          when(() => event.text).thenReturn(
+            encodeMessage(
+              SyncOutboxBundle(
+                children: [
+                  flipped(status: false),
+                  const SyncMessage.aiConfigDelete(id: 'later-child'),
+                ],
+                originatingHostId: 'host-peer',
+              ),
+            ),
+          );
+          when(
+            () => aiConfigRepository.deleteConfig(
+              'later-child',
+              fromSync: true,
+            ),
+          ).thenAnswer((_) async {
+            verify(
+              () => effects.apply(stored.copyWith(status: false)),
+            ).called(1);
+            if (failLaterChild) throw StateError('later child failed');
+          });
+          final parked = <Future<void> Function()>[];
+          final prepared = await processor.prepare(event: event);
+          final applying = processor.apply(
+            prepared: prepared!,
+            journalDb: journalDb,
+            afterCommit: parked.add,
+          );
+          if (failLaterChild) {
+            await expectLater(applying, throwsA(isA<StateError>()));
+          } else {
+            await applying;
+          }
+          verify(
+            () => journalDb.upsertConfigFlag(stored.copyWith(status: false)),
+          ).called(1);
+          expect(parked, isEmpty);
+        },
       );
-      final parked = <Future<void> Function()>[];
-      final prepared = await processor.prepare(event: event);
-
-      await processor.apply(
-        prepared: prepared!,
-        journalDb: journalDb,
-        afterCommit: parked.add,
-      );
-
-      verify(
-        () => journalDb.upsertConfigFlag(stored.copyWith(status: false)),
-      );
-      verifyNever(() => effects.apply(any()));
-      expect(parked, hasLength(1));
-
-      await parked.single();
-
-      verify(
-        () => effects.apply(stored.copyWith(status: false)),
-      ).called(1);
-    });
+    }
 
     test('an unchanged flag parks nothing either', () async {
       when(() => event.text).thenReturn(encodeMessage(flipped(status: true)));

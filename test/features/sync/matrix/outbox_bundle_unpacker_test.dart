@@ -84,7 +84,7 @@ class _GeneratedBundleScenario {
     return ids;
   }
 
-  List<String> expectedApplyIdsBeforeIo() {
+  List<String> expectedApplyIdsBeforeFailure() {
     final ids = <String>[];
     for (final child in children) {
       switch (child.outcome) {
@@ -92,7 +92,6 @@ class _GeneratedBundleScenario {
         case _GeneratedBundleChildOutcome.nested:
           ids.add(child.id);
         case _GeneratedBundleChildOutcome.nonIoThrow:
-          break;
         case _GeneratedBundleChildOutcome.ioThrow:
           return ids;
       }
@@ -459,8 +458,7 @@ void main() {
     );
 
     test(
-      'a child that throws is logged and skipped; the rest of the bundle '
-      'still applies — no rollback, no rethrow',
+      'a child that throws is logged and rethrown before later children',
       () async {
         final bundle = PreparedOutboxSyncBundle(
           children: [
@@ -471,7 +469,7 @@ void main() {
         );
 
         final applied = <String>[];
-        await unpacker.apply(
+        final applyFuture = unpacker.apply(
           bundle: bundle,
           applyChild: (child) async {
             final id = (child.syncMessage as SyncAiConfigDelete).id;
@@ -480,7 +478,8 @@ void main() {
           },
         );
 
-        expect(applied, ['before', 'after']);
+        await expectLater(applyFuture, throwsA(isA<StateError>()));
+        expect(applied, ['before']);
         verify(
           () => logging.error(
             LogDomain.sync,
@@ -562,7 +561,7 @@ void main() {
       glados.any.outboxBundleScenario,
       glados.ExploreConfig(numRuns: 120),
     ).test(
-      'generated child outcomes preserve apply order and IO rethrow',
+      'generated child outcomes stop and retry on the first apply failure',
       (scenario) async {
         final children = [
           for (final child in scenario.children)
@@ -588,12 +587,24 @@ void main() {
           },
         );
 
-        if (scenario.throwsIo) {
-          await expectLater(applyFuture, throwsA(isA<FileSystemException>()));
+        final failures = scenario.children.where(
+          (child) =>
+              child.outcome == _GeneratedBundleChildOutcome.ioThrow ||
+              child.outcome == _GeneratedBundleChildOutcome.nonIoThrow,
+        );
+        if (failures.isNotEmpty) {
+          await expectLater(
+            applyFuture,
+            throwsA(
+              failures.first.outcome == _GeneratedBundleChildOutcome.ioThrow
+                  ? isA<FileSystemException>()
+                  : isA<StateError>(),
+            ),
+          );
         } else {
           await applyFuture;
         }
-        expect(applied, scenario.expectedApplyIdsBeforeIo());
+        expect(applied, scenario.expectedApplyIdsBeforeFailure());
       },
       tags: 'glados',
     );
