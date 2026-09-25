@@ -114,9 +114,9 @@ Keep mutation configurations outside this directory: CI runs every checked-in
 configuration and expects each to pass. The handler suite has deterministic
 regressions for both races, newer payload versions, migrated unnamed/already
 settled rows, and a failed sequence-log recheck. Reverting the Dart guards makes
-those regressions fail. The outbox enqueue suite also checks that descriptor
-refresh failure prevents both ordinary and durable enqueue, then verifies a
-successful retry queues the refreshed version.
+those regressions fail. The outbox enqueue suite also checks that a failed
+read of the stored row prevents both ordinary and durable enqueue, then
+verifies a successful retry queues the stored version.
 
 ## `WakeRuntime` — agent wakes
 
