@@ -418,6 +418,9 @@ retry cooldown and pending/leased request deduplication. The durable outbox
 insert comes before a guarded status update that cannot overwrite a concurrent
 receipt, burn or deletion. Reopening a retired gap also shortens its cached
 resolved watermark. Without a fresh origin, normal age and retry limits apply.
+Head repairs and eligible ordinary gaps share each batch by alternating unique
+candidates. The first source rotates across competing passes, so even a batch
+limit of one gives both sources capacity.
 
 Bridge walking, onboarding preflight and active snapshot coverage still suppress
 automatic requests. Promised snapshot ranges do not advance the scan cursor:

@@ -127,6 +127,7 @@ class BackfillRequestService {
 
   Timer? _timer;
   bool _isProcessing = false;
+  bool _headRepairsFirst = true;
   Completer<void>? _processingDone;
   bool _pendingDrainNudge = false;
   bool _isDisposed = false;
@@ -485,13 +486,7 @@ class BackfillRequestService {
         bypassDebounce: bypassDebounce,
       );
       if (headRepairs.isNotEmpty) {
-        final selected = <({String hostId, int counter})>{};
-        missing = [...headRepairs, ...missing]
-            .where(
-              (row) => selected.add((hostId: row.hostId, counter: row.counter)),
-            )
-            .take(_maxBatchSize)
-            .toList();
+        missing = _shareRepairCapacity(headRepairs, missing);
       }
 
       if (missing.isEmpty) {
@@ -618,6 +613,36 @@ class BackfillRequestService {
 
   Future<bool> _hasActiveInboundPreflight() async {
     return await _onboardingSyncService?.hasActiveInboundPreflight() ?? false;
+  }
+
+  /// Shares bounded request capacity without starving either candidate source.
+  List<SyncSequenceLogItem> _shareRepairCapacity(
+    List<SyncSequenceLogItem> headRepairs,
+    List<SyncSequenceLogItem> ordinary,
+  ) {
+    final sources = _headRepairsFirst
+        ? [headRepairs.iterator, ordinary.iterator]
+        : [ordinary.iterator, headRepairs.iterator];
+    // Rotate the first slot so both sources progress even at a limit of one.
+    if (ordinary.isNotEmpty) _headRepairsFirst = !_headRepairsFirst;
+    final selected = <({String hostId, int counter})>{};
+    final batch = <SyncSequenceLogItem>[];
+    while (batch.length < _maxBatchSize) {
+      final previousLength = batch.length;
+      for (final source in sources) {
+        // Overlapping candidates must not consume the other source's turn.
+        while (source.moveNext()) {
+          final row = source.current;
+          if (selected.add((hostId: row.hostId, counter: row.counter))) {
+            batch.add(row);
+            break;
+          }
+        }
+        if (batch.length == _maxBatchSize) break;
+      }
+      if (batch.length == previousLength) break;
+    }
+    return batch;
   }
 
   /// Deletes local files for entries that are about to be re-requested.

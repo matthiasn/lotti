@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:clock/clock.dart';
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/database/database.dart';
@@ -28,7 +29,7 @@ import '../queue/queue_apply_adapter_test_helpers.dart' show hBuildEntry;
 /// repair services and receive adapter. Only the outbox facade's scheduling and
 /// dispatch are replaced; no Matrix SDK/network or attachment loader is exercised.
 class _HeadReplica {
-  _HeadReplica(this.host) {
+  _HeadReplica(this.host, {int? maxBatchSize}) {
     when(vc.getHost).thenAnswer((_) async => host);
     when(() => vc.initialized).thenAnswer((_) async {});
     sequence = SyncSequenceLogService(
@@ -60,6 +61,7 @@ class _HeadReplica {
       vectorClockService: vc,
       loggingService: logging,
       requestRetryCooldown: Duration.zero,
+      maxBatchSize: maxBatchSize,
     );
     responses = BackfillResponseHandler(
       journalDb: journal,
@@ -164,6 +166,103 @@ void registerSyncHeadConformanceTests() {
   group('lost-tail composed conformance', () {
     setUpAll(processor_harness.registerSyncProcessorFallbacks);
     setUp(processor_harness.setUpProcessorMocks);
+
+    for (final batchSize in [1, 2, 3, 8]) {
+      test(
+        'ordinary gaps share capacity with head repairs at limit $batchSize',
+        () async {
+          final now = DateTime.utc(2026, 9, 26);
+          await withClock(Clock.fixed(now), () async {
+            final replica = _HeadReplica('receiver', maxBatchSize: batchSize);
+            addTearDown(replica.close);
+            for (final host in ['announcing', 'ordinary']) {
+              for (var counter = 1; counter <= batchSize * 3; counter++) {
+                final old = host == 'announcing';
+                final created = old
+                    ? DateTime.utc(2024)
+                    : now.subtract(const Duration(minutes: 20));
+                await replica.database.recordSequenceEntry(
+                  SyncSequenceLogCompanion(
+                    hostId: Value(host),
+                    counter: Value(counter),
+                    status: Value(
+                      old
+                          ? SyncSequenceStatus.unresolvable.index
+                          : SyncSequenceStatus.missing.index,
+                    ),
+                    createdAt: Value(created),
+                    updatedAt: Value(created),
+                    requestCount: Value(old ? 99 : 0),
+                  ),
+                );
+              }
+            }
+            replica.requests.noteSequenceHead('announcing', batchSize * 3);
+            final requestedHosts = <String>{};
+            for (var pass = 0; pass < 2; pass++) {
+              expect(
+                await replica.requests.processAutomaticBackfill(),
+                batchSize,
+              );
+              final request =
+                  (await replica.drain()).single as SyncBackfillRequest;
+              expect(request.entries, hasLength(batchSize));
+              expect(
+                request.entries
+                    .map((entry) => (entry.hostId, entry.counter))
+                    .toSet(),
+                hasLength(batchSize),
+              );
+              final hosts = request.entries
+                  .map((entry) => entry.hostId)
+                  .toSet();
+              requestedHosts.addAll(hosts);
+              if (batchSize > 1) expect(hosts, {'announcing', 'ordinary'});
+            }
+            expect(requestedHosts, {'announcing', 'ordinary'});
+          });
+        },
+      );
+    }
+
+    test('overlapping candidates retain the ordinary request slot', () async {
+      final now = DateTime.utc(2026, 9, 26);
+      await withClock(Clock.fixed(now), () async {
+        final replica = _HeadReplica('receiver', maxBatchSize: 2);
+        addTearDown(replica.close);
+        for (final row in [
+          (host: 'announcing', counter: 1, old: false),
+          (host: 'announcing', counter: 2, old: true),
+          (host: 'ordinary', counter: 1, old: false),
+        ]) {
+          final created = row.old
+              ? DateTime.utc(2024)
+              : now.subtract(
+                  Duration(minutes: row.host == 'announcing' ? 30 : 20),
+                );
+          await replica.database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: Value(row.host),
+              counter: Value(row.counter),
+              status: Value(
+                row.old
+                    ? SyncSequenceStatus.unresolvable.index
+                    : SyncSequenceStatus.missing.index,
+              ),
+              createdAt: Value(created),
+              updatedAt: Value(created),
+            ),
+          );
+        }
+        replica.requests.noteSequenceHead('announcing', 2);
+        expect(await replica.requests.processAutomaticBackfill(), 2);
+        final request = (await replica.drain()).single as SyncBackfillRequest;
+        expect(
+          request.entries.map((entry) => (entry.hostId, entry.counter)),
+          [('announcing', 1), ('ordinary', 1)],
+        );
+      });
+    });
 
     for (final replicas in [2, 3]) {
       test(
