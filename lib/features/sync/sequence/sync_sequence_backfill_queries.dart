@@ -27,6 +27,17 @@ class SyncSequenceBackfillQueries {
   final SyncSequenceReceiver _receiver;
   final SyncSequenceTracer _tracer;
 
+  /// Records queued head-driven repair and invalidates caches that may have
+  /// counted a retired row as part of a resolved prefix.
+  Future<void> markAnnouncedHeadRequests(
+    List<({String hostId, int counter})> entries,
+  ) async {
+    await _syncDatabase.markAnnouncedHeadRequests(entries);
+    _cache
+      ..clearLastCounterCache()
+      ..clearMaterializedUpperBound();
+  }
+
   /// Retires `requested` rows that have hit the request-count cap to
   /// `unresolvable`, so a counter no peer can satisfy stops being re-requested
   /// forever and stops blocking the watermark. Only rows past the [grace]

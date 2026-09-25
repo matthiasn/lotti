@@ -12,6 +12,33 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'sync_message_test_helpers.dart';
 
 void main() {
+  group('SyncMessage.backfillRequest', () {
+    test('preserves an announced sequence head without inventing entries', () {
+      final wire = <String, dynamic>{
+        'runtimeType': 'backfillRequest',
+        'entries': <dynamic>[],
+        'requesterId': 'origin-a',
+        'requesterSequenceHead': 42,
+      };
+
+      final decoded = SyncMessage.fromJson(wire) as SyncBackfillRequest;
+
+      expect(decoded.entries, isEmpty);
+      expect(decoded.requesterId, 'origin-a');
+      expect(decoded.toJson(), wire);
+    });
+
+    test('legacy requests keep their wire shape without an optional head', () {
+      final wire = <String, dynamic>{
+        'runtimeType': 'backfillRequest',
+        'entries': <dynamic>[],
+        'requesterId': 'origin-a',
+      };
+
+      expect(SyncMessage.fromJson(wire).toJson(), wire);
+    });
+  });
+
   group('SyncMessage.configFlag', () {
     test('round-trips a config flag through JSON', () {
       const flag = ConfigFlag(

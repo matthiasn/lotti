@@ -5,6 +5,57 @@ part of 'sync_db.dart';
 /// (so the watermark can advance) and the user-initiated resets that
 /// reopen them for another backfill sweep.
 mixin _SyncDbSequenceLifecycle on _$SyncDatabase, _SyncDbSequenceWatermarks {
+  /// Record durably queued repair requests justified by a fresh origin head.
+  /// Reopens retired rows, but never downgrades a receipt, deletion or burn
+  /// that arrived after selection. Preserve creation dates for diagnostics.
+  Future<void> markAnnouncedHeadRequests(
+    List<({String hostId, int counter})> entries,
+  ) async {
+    if (entries.isEmpty) return;
+    final nowSeconds = clock.now().millisecondsSinceEpoch ~/ 1000;
+    await transaction(() async {
+      await batch((b) {
+        for (final entry in entries) {
+          b.customStatement(
+            'UPDATE sync_sequence_log '
+            'SET status = ?, request_count = request_count + 1, '
+            'updated_at = ?, last_requested_at = ? '
+            'WHERE host_id = ? AND counter = ? AND status IN (?, ?, ?)',
+            [
+              SyncSequenceStatus.requested.index,
+              nowSeconds,
+              nowSeconds,
+              entry.hostId,
+              entry.counter,
+              SyncSequenceStatus.missing.index,
+              SyncSequenceStatus.requested.index,
+              SyncSequenceStatus.unresolvable.index,
+            ],
+            [TableUpdate.onTable(syncSequenceLog, kind: UpdateKind.update)],
+          );
+        }
+      });
+      for (final hostId in entries.map((e) => e.hostId).toSet()) {
+        // Only shortening is possible. Find the first unresolved row rather
+        // than rebuilding the whole historical resolved prefix with a CTE.
+        // A cold watermark remains cold and is rebuilt on its next read.
+        await customUpdate(
+          'UPDATE sync_sequence_watermarks '
+          'SET last_counter = MIN(last_counter, COALESCE(( '
+          'SELECT MIN(counter) - 1 FROM sync_sequence_log '
+          'WHERE host_id = ? AND counter >= 1 AND status IN (1, 2) '
+          '), last_counter)), updated_at = ? WHERE host_id = ?',
+          variables: [
+            Variable.withString(hostId),
+            Variable.withInt(nowSeconds),
+            Variable.withString(hostId),
+          ],
+          updates: {syncSequenceLog},
+        );
+      }
+    });
+  }
+
   /// Retire missing/requested rows whose request_count has reached the cap
   /// by flipping their status to `unresolvable`. Rows in `missing`/`requested`
   /// block the contiguous-prefix watermark in [getLastCounterForHost]; once

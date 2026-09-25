@@ -960,6 +960,51 @@ void main() {
   const requesterId = 'requester-uuid';
   const entryId = 'test-entry-id';
 
+  test(
+    'sequence heads are observations and ignore disabled and self echoes',
+    () async {
+      final observations = <(String, int)>[];
+      handler.onSequenceHead = (host, counter) =>
+          observations.add((host, counter));
+      for (final request in [
+        const SyncBackfillRequest(
+          entries: [],
+          requesterId: aliceHostId,
+          requesterSequenceHead: 9,
+        ),
+        const SyncBackfillRequest(
+          entries: [],
+          requesterId: bobHostId,
+          requesterSequenceHead: 0,
+        ),
+        const SyncBackfillRequest(
+          entries: [],
+          requesterId: '',
+          requesterSequenceHead: 9,
+        ),
+        const SyncBackfillRequest(
+          entries: [],
+          requesterId: bobHostId,
+          requesterSequenceHead: 9,
+        ),
+      ]) {
+        await handler.handleBackfillRequest(request);
+      }
+      expect(observations, [(bobHostId, 9)]);
+      SharedPreferences.setMockInitialValues({'backfill_enabled': false});
+      await handler.handleBackfillRequest(
+        const SyncBackfillRequest(
+          entries: [],
+          requesterId: bobHostId,
+          requesterSequenceHead: 10,
+        ),
+      );
+      expect(observations, [(bobHostId, 9)]);
+      verifyZeroInteractions(mockSequenceService);
+      verifyZeroInteractions(mockOutboxService);
+    },
+  );
+
   setUpAll(() {
     registerAllFallbackValues();
     registerFallbackValue(

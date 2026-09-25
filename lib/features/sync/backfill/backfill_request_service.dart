@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/backfill/sync_sequence_head_tracker.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -20,7 +21,9 @@ import 'package:path/path.dart' as p;
 /// for missing entries detected in the sync sequence log.
 ///
 /// By default, automatic backfill is bounded to recent entries (last day,
-/// max 250 per host). For full historical backfill, use [processFullBackfill].
+/// max 250 per host). A recent origin head also enables bounded retries of
+/// older or exhausted gaps, retaining cooldown and queued-request deduplication.
+/// For full historical backfill, use [processFullBackfill].
 class BackfillRequestService {
   BackfillRequestService({
     required this._sequenceLogService,
@@ -50,7 +53,13 @@ class BackfillRequestService {
        _requestRetryCooldown =
            requestRetryCooldown ?? SyncTuning.backfillRequestRetryCooldown,
        _maxPerHost = maxPerHost ?? SyncTuning.defaultBackfillMaxEntriesPerHost,
-       _amnestyWindow = amnestyWindow ?? SyncTuning.backfillAmnestyWindow;
+       _amnestyWindow = amnestyWindow ?? SyncTuning.backfillAmnestyWindow {
+    _headTracker = SyncSequenceHeadTracker(
+      database: _syncDatabase,
+      sequenceLog: _sequenceLogService,
+      freshness: _requestInterval * 3,
+    );
+  }
 
   /// The documents directory for resolving local attachment paths.
   /// When provided, re-requests will sweep (delete) local zombie files
@@ -89,9 +98,37 @@ class BackfillRequestService {
   final Duration _requestRetryCooldown;
   final int _maxPerHost;
   final Duration _amnestyWindow;
+  late final SyncSequenceHeadTracker _headTracker;
+
+  /// Retains an observation for the next periodic pass; does not nudge the
+  /// queue, so receiving a heartbeat cannot create a heartbeat feedback loop.
+  void noteSequenceHead(String hostId, int counter) {
+    if (_isDisposed) return;
+    _headTracker.observe(hostId, counter);
+  }
+
+  /// Advertises only durable settled own counters, after local recovery has
+  /// run. The enqueue writer coalesces queued and leased announcements.
+  Future<void> announceOwnSequenceHead() async {
+    if (_isDisposed || !await isBackfillEnabled()) return;
+    await _vectorClockService.initialized;
+    final hostId = await _vectorClockService.getHost();
+    if (hostId == null) return;
+    final head = await _syncDatabase.highestSettledCounterForHost(hostId) ?? 0;
+    if (head < 1 || _isDisposed) return;
+    await _outboxService.enqueueMessageOrThrow(
+      SyncMessage.backfillRequest(
+        entries: const [],
+        requesterId: hostId,
+        requesterSequenceHead: head,
+      ),
+    );
+  }
 
   Timer? _timer;
   bool _isProcessing = false;
+  bool _headRepairsFirst = true;
+  Completer<void>? _processingDone;
   bool _pendingDrainNudge = false;
   bool _isDisposed = false;
 
@@ -134,7 +171,7 @@ class BackfillRequestService {
     _timer?.cancel();
     _timer = Timer.periodic(
       _requestInterval,
-      (_) => _processBackfillRequests(useLimits: true),
+      (_) => unawaited(processAutomaticBackfill()),
     );
 
     // Subscribe to the inbound queue's depth signal so the moment the
@@ -175,12 +212,16 @@ class BackfillRequestService {
     return _processBackfillRequests(useLimits: false, ignoreEnabledFlag: true);
   }
 
+  /// Runs one automatic pass with the configured gates, quotas and cooldowns.
+  Future<int> processAutomaticBackfill() =>
+      _processBackfillRequests(useLimits: true);
+
   /// Trigger an immediate automatic backfill pass instead of waiting for the
   /// next periodic timer tick.
   void nudge() {
     if (_isDisposed) return;
     _trace('nudge immediate automatic pass', subDomain: 'backfill.nudge');
-    unawaited(_processBackfillRequests(useLimits: true));
+    unawaited(processAutomaticBackfill());
   }
 
   /// Like [nudge], but bypasses the [SyncTuning.backfillMissingDebounce]
@@ -217,6 +258,7 @@ class BackfillRequestService {
     if (_isDisposed || _isProcessing) return 0;
 
     _isProcessing = true;
+    _processingDone = Completer<void>();
     var totalProcessed = 0;
 
     try {
@@ -336,6 +378,7 @@ class BackfillRequestService {
     // checks. This closes the preflight race where two nudges could both pass
     // the guard and then enter the request pipeline concurrently.
     _isProcessing = true;
+    _processingDone = Completer<void>();
 
     try {
       // Check if backfill is enabled (skip check for manual triggers)
@@ -363,6 +406,26 @@ class BackfillRequestService {
         return 0;
       }
 
+      var headRepairs = <SyncSequenceLogItem>[];
+      if (_headTracker.hasFreshHeads) {
+        if (!ignoreEnabledFlag && await _hasActiveInboundPreflight()) return 0;
+        final coverage = ignoreEnabledFlag
+            ? const <String, int>{}
+            : await _onboardingSyncService?.activeInboundCoverage() ??
+                  const <String, int>{};
+        await _headTracker.materialize(
+          limit: _maxBatchSize,
+          perHost: _maxPerHost,
+          suppressedCoverage: coverage,
+        );
+        headRepairs = await _headTracker.loadRepairBatch(
+          limit: _maxBatchSize,
+          perHost: _maxPerHost,
+          retryCooldown: _requestRetryCooldown,
+          suppressedCoverage: coverage,
+        );
+      }
+
       // Cheap actionable-existence probe: when the sync_sequence_log has no
       // rows in `missing`/`requested`, both retire passes and the load
       // batch below would each touch sync_db while producing nothing. The
@@ -373,7 +436,7 @@ class BackfillRequestService {
       // (`WHERE status IN (1, 2)`) with `LIMIT 1`, so it is O(log n) on
       // that index regardless of the historical log size.
       final hasActionable = await _sequenceLogService.hasActionableEntries();
-      if (!hasActionable) {
+      if (!hasActionable && headRepairs.isEmpty) {
         _traceSampled(
           'processBackfillRequests: no actionable entries '
           '(useLimits=$useLimits bypassDebounce=$bypassDebounce)',
@@ -422,6 +485,9 @@ class BackfillRequestService {
         useLimits: useLimits,
         bypassDebounce: bypassDebounce,
       );
+      if (headRepairs.isNotEmpty) {
+        missing = _shareRepairCapacity(headRepairs, missing);
+      }
 
       if (missing.isEmpty) {
         _traceSampled(
@@ -506,9 +572,14 @@ class BackfillRequestService {
       }
 
       // Mark all as requested (increments request count and sets lastRequestedAt)
-      await _sequenceLogService.markAsRequested(
-        missing.map((m) => (hostId: m.hostId, counter: m.counter)).toList(),
-      );
+      final requested = missing
+          .map((m) => (hostId: m.hostId, counter: m.counter))
+          .toList();
+      if (headRepairs.isEmpty) {
+        await _sequenceLogService.markAsRequested(requested);
+      } else {
+        await _sequenceLogService.markAnnouncedHeadRequests(requested);
+      }
 
       _trace(
         'processBackfillRequests: sent ${missing.length} requests '
@@ -532,6 +603,8 @@ class BackfillRequestService {
 
   void _finishProcessing() {
     _isProcessing = false;
+    _processingDone?.complete();
+    _processingDone = null;
     if (_isDisposed || !_pendingDrainNudge) return;
 
     _pendingDrainNudge = false;
@@ -540,6 +613,36 @@ class BackfillRequestService {
 
   Future<bool> _hasActiveInboundPreflight() async {
     return await _onboardingSyncService?.hasActiveInboundPreflight() ?? false;
+  }
+
+  /// Shares bounded request capacity without starving either candidate source.
+  List<SyncSequenceLogItem> _shareRepairCapacity(
+    List<SyncSequenceLogItem> headRepairs,
+    List<SyncSequenceLogItem> ordinary,
+  ) {
+    final sources = _headRepairsFirst
+        ? [headRepairs.iterator, ordinary.iterator]
+        : [ordinary.iterator, headRepairs.iterator];
+    // Rotate the first slot so both sources progress even at a limit of one.
+    if (ordinary.isNotEmpty) _headRepairsFirst = !_headRepairsFirst;
+    final selected = <({String hostId, int counter})>{};
+    final batch = <SyncSequenceLogItem>[];
+    while (batch.length < _maxBatchSize) {
+      final previousLength = batch.length;
+      for (final source in sources) {
+        // Overlapping candidates must not consume the other source's turn.
+        while (source.moveNext()) {
+          final row = source.current;
+          if (selected.add((hostId: row.hostId, counter: row.counter))) {
+            batch.add(row);
+            break;
+          }
+        }
+        if (batch.length == _maxBatchSize) break;
+      }
+      if (batch.length == previousLength) break;
+    }
+    return batch;
   }
 
   /// Deletes local files for entries that are about to be re-requested.
@@ -726,6 +829,7 @@ class BackfillRequestService {
   }
 
   /// Dispose of the service and cancel the timer.
+  /// Owners closing the backing stores must await [stopAndDrain] instead.
   void dispose() {
     _isDisposed = true;
     _pendingDrainNudge = false;
@@ -733,5 +837,12 @@ class BackfillRequestService {
     _timer = null;
     unawaited(_depthSubscription?.cancel());
     _depthSubscription = null;
+  }
+
+  /// Stops new requests and waits until the active database/outbox pass ends.
+  /// This must finish before its dependencies are closed during teardown.
+  Future<void> stopAndDrain() async {
+    dispose();
+    await _processingDone?.future;
   }
 }

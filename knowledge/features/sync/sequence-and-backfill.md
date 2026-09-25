@@ -5,9 +5,13 @@ description: Causal accounting over (hostId, counter) pairs, bounded initial-onb
 resource: ../../../lib/features/sync/sequence
 tags: [sync, sequence-log, backfill, gap-detection]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-25T21:50:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-26T00:30:00Z }
 stale_after: 2026-12-25
 sources:
+  - id: sequence-heads
+    resource: ../../../lib/features/sync/backfill/sync_sequence_head_tracker.dart
+    title: Volatile origin heads and bounded automatic repair
+    last_modified: 2026-09-26
   - id: periodic-recovery
     resource: ../../../lib/features/sync/backfill/sync_recovery_service.dart
     title: Periodic durable-intent recovery and awaited shutdown
@@ -263,7 +267,9 @@ enabled. Active writes and unavailable stores remain protected by the settlement
 guards above. The unnamed-reservation audit runs once after a successful pass.
 
 Startup tracks the first pass, and `ServiceDisposer` drains active recovery
-before closing the outbox or databases. This drain has no timeout: abandoning
+before closing the outbox or databases. Automatic backfill also stops its timer
+and drains its active request pass before those dependencies close. These drains
+have no timeout: abandoning
 the await would leave the same pass using stores that teardown had closed.
 A slow pass therefore delays shutdown or a profile switch until it finishes;
 the later GetIt disposal hook then observes an already-drained service.
@@ -339,8 +345,8 @@ Like a voided number in a monotonic invoice sequence. Terminal, never reopened.
 **`unresolvable` is the receiver's give-up.** A `missing` or `requested` row
 exhausted backfill retries (`retireExhaustedRequestedEntries`) or aged past the
 7-day amnesty (`retireAgedOutRequestedEntries`). The payload may still be
-recoverable from some peer, so it stays reopenable by a later hint or the "ask
-peers again" action.
+recoverable from some peer, so it stays reopenable by a fresh origin head, a
+later hint or the "ask peers again" action.
 
 Both count as resolved for the contiguous-prefix watermark
 (`SyncSequenceStatusX.isResolved` — the single source of truth mirrored by the
@@ -389,6 +395,63 @@ events use this proof-and-repair path. Legacy path-only envelopes retain the
 historical behavior for mixed-version peers because they cannot prove which
 generation a mutable sidecar path returned.
 
+# Discovering a lost final update
+
+After own-counter settlement, each recovery pass queues the highest settled own
+counter in the optional `requesterSequenceHead` field of an empty
+`backfillRequest`. Old peers accept the existing message shape and ignore the
+extra field. The outbox coalesces pending and leased announcements by host;
+a later tick publishes a newer head after that immutable row drains. Receiving
+an announcement never nudges another announcement.
+
+`SyncSequenceHeadTracker` retains the greatest observed head for each origin
+for three request intervals. This is volatile discovery state, never a receipt.
+The next automatic pass materializes absent counters **through the head itself**
+in bounded slices. Its scan cursor progresses independently of unresolved old
+gaps, and rotates hosts when the pass budget cannot cover everyone. A failed
+slice does not advance the cursor. Expiration or a restart forgets the cursor;
+a later announcement reconstructs discovery from durable sequence rows.
+
+While an origin keeps announcing, bounded repair can revisit old, exhausted or
+`unresolvable` gaps. The oldest attempts are selected first, with the existing
+retry cooldown and pending/leased request deduplication. The durable outbox
+insert comes before a guarded status update that cannot overwrite a concurrent
+receipt, burn or deletion. Reopening a retired gap also shortens its cached
+resolved watermark. Without a fresh origin, normal age and retry limits apply.
+Head repairs and eligible ordinary gaps share each batch by alternating unique
+candidates. The first source rotates across competing passes, so even a batch
+limit of one gives both sources capacity.
+
+Bridge walking, onboarding preflight and active snapshot coverage still suppress
+automatic requests. Promised snapshot ranges do not advance the scan cursor:
+an aborted transfer must leave the missing range discoverable. A serialized
+onboarding check at enqueue prevents a newly adopted range from racing dispatch.
+
+```mermaid
+sequenceDiagram
+  participant Origin as Origin recovery
+  participant Outbox as Durable outbox and room
+  participant Tracker as Receiver head tracker
+  participant Repair as Automatic backfill
+  participant DB as Receiver sequence log
+  Origin->>Outbox: enqueue settled own head
+  Outbox->>Tracker: observe head, refresh expiry
+  Repair->>Tracker: materialize bounded slice
+  Tracker->>DB: insert absent counters through head
+  Repair->>Tracker: load eligible repair batch
+  Tracker->>DB: read gaps and queued requests
+  Repair->>Outbox: durably enqueue requests
+  Repair->>DB: guarded requested update
+  Note over Tracker,DB: Announcements never create receipts
+```
+
+The source must eventually run and reannounce, automatic backfill must be
+enabled, and the receiver must get processing opportunities while heads are
+fresh. Named payloads or their authoritative deletion/burn records must remain
+available. This does not promise repair after permanent source loss or purging
+all copies. The composed model's exact bounds and clock abstraction are listed
+in the [formal model scope](../../../specs/tla/README.md#syncpipeline--the-composed-sync-protocol).
+
 # Requesting
 
 `BackfillRequestService` sends bounded batches of missing counters on a
@@ -396,7 +459,8 @@ generation a mutable sidecar path returned.
 = 10 per batch), supports a manual full historical backfill, and can re-request
 entries previously requested but never resolved.
 
-Fresh `missing` rows retain the 10-minute ordering debounce. A queue-drain
+Ordinary `missing` rows retain the 10-minute ordering debounce. Fresh origin
+heads use the bounded discovery path above without that debounce. A queue-drain
 nudge bypasses only that debounce: a row already marked `requested` must be at
 least one hour past `lastRequestedAt` before another automatic request. Rows
 that entered `requested` without that timestamp use `updatedAt` as the retry

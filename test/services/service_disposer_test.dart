@@ -46,6 +46,30 @@ void main() {
   });
 
   group('ServiceDisposer', () {
+    test('drains automatic backfill before closing its stores', () {
+      fakeAsync((async) {
+        final pending = Completer<void>();
+        final backfill = MockBackfillRequestService();
+        when(backfill.stopAndDrain).thenAnswer((_) => pending.future);
+        var databaseClosed = false;
+        final database = MockSyncDatabase();
+        when(database.close).thenAnswer((_) async => databaseClosed = true);
+        testGetIt
+          ..registerSingleton<BackfillRequestService>(backfill)
+          ..registerSingleton<SyncDatabase>(database);
+        var disposed = false;
+        unawaited(disposer.disposeAll().then((_) => disposed = true));
+        async.elapse(const Duration(seconds: 4));
+        expect(databaseClosed, isFalse);
+        expect(disposed, isFalse);
+        pending.complete();
+        async.flushMicrotasks();
+        expect(databaseClosed, isTrue);
+        expect(disposed, isTrue);
+        expect(loggedErrors, isEmpty);
+      });
+    });
+
     for (final recoveryFails in [false, true]) {
       test(
         'drains slow recovery before closing stores (failure=$recoveryFails)',

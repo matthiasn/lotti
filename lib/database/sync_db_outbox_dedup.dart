@@ -4,6 +4,19 @@ part of 'sync_db.dart';
 /// ([collapsibleOutboxRows] / [claimOutboxRows]) and pending backfill request
 /// extraction.
 mixin _SyncDbOutboxDedup on _$SyncDatabase {
+  /// Whether an origin already has a pending or leased head announcement.
+  /// The sender leaves that immutable row alone and announces a newer head
+  /// on a later tick after it has drained.
+  Future<bool> hasPendingSequenceHeadAnnouncement(String hostId) async {
+    final row = await customSelect(
+      'SELECT 1 FROM outbox INDEXED BY idx_outbox_actionable_subject '
+      'WHERE status IN (0, 3) AND subject = ? LIMIT 1',
+      variables: [Variable.withString('backfillRequest:head:$hostId')],
+      readsFrom: {outbox},
+    ).getSingleOrNull();
+    return row != null;
+  }
+
   /// Get (hostId, counter) pairs from queued or in-flight backfill request
   /// messages in outbox.
   ///

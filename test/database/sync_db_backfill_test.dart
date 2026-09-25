@@ -181,7 +181,114 @@ Future<void> _insertSequenceRow(
 }
 
 void main() {
+  test(
+    'highest settled head excludes reservations and receiver give-up',
+    () async {
+      final database = SyncDatabase(inMemoryDatabase: true);
+      addTearDown(database.close);
+      final now = DateTime.utc(2026, 9, 26);
+      for (final status in SyncSequenceStatus.values) {
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: Value(status.name),
+            counter: const Value(1),
+            status: Value(status.index),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+          ),
+        );
+        final settled = {
+          SyncSequenceStatus.received,
+          SyncSequenceStatus.backfilled,
+          SyncSequenceStatus.deleted,
+          SyncSequenceStatus.burned,
+        }.contains(status);
+        expect(
+          await database.highestSettledCounterForHost(status.name),
+          settled ? 1 : isNull,
+        );
+      }
+      expect(await database.highestSettledCounterForHost('absent'), isNull);
+      for (var counter = 2; counter <= 4; counter++) {
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('received'),
+            counter: Value(counter),
+            status: Value(counter + 3),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+          ),
+        );
+      }
+      expect(await database.highestSettledCounterForHost('received'), 1);
+    },
+  );
+
   SyncDatabase? db;
+
+  test(
+    'announced heads select retired gaps fairly and respect cooldown',
+    () async {
+      final database = SyncDatabase(inMemoryDatabase: true);
+      addTearDown(database.close);
+      final now = DateTime.utc(2026, 9, 26, 12);
+      final old = DateTime.utc(2024);
+      final statuses = [
+        SyncSequenceStatus.unresolvable,
+        SyncSequenceStatus.missing,
+        SyncSequenceStatus.requested,
+        SyncSequenceStatus.received,
+        SyncSequenceStatus.backfilled,
+        SyncSequenceStatus.deleted,
+        SyncSequenceStatus.burned,
+        SyncSequenceStatus.reserved,
+        SyncSequenceStatus.burnPending,
+        SyncSequenceStatus.missing,
+      ];
+      for (var i = 0; i < statuses.length; i++) {
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('origin'),
+            counter: Value(i + 1),
+            status: Value(statuses[i].index),
+            createdAt: Value(old),
+            updatedAt: Value(old),
+            requestCount: const Value(99),
+            lastRequestedAt: Value(
+              i == 0
+                  ? old
+                  : i == 2
+                  ? now
+                  : null,
+            ),
+          ),
+        );
+      }
+      Future<List<SyncSequenceLogItem>> page(int offset) =>
+          database.getAnnouncedHeadRepairEntries(
+            hostId: 'origin',
+            head: 9,
+            limit: 1,
+            offset: offset,
+            retryCooldown: const Duration(hours: 1),
+            now: now,
+          );
+
+      expect((await page(0)).map((e) => e.counter), [2]);
+      expect((await page(1)).map((e) => e.counter), [1]);
+      expect(await page(2), isEmpty);
+      expect(
+        await database.getAnnouncedHeadRepairEntries(
+          hostId: 'other',
+          head: 9,
+          limit: 10,
+          retryCooldown: Duration.zero,
+          now: now,
+        ),
+        isEmpty,
+      );
+    },
+  );
 
   group('getBackfillStats Tests', () {
     setUpAll(() async {

@@ -5,6 +5,59 @@ part of 'sync_db.dart';
 /// limits), request-count bookkeeping, the actionable-row probe, and
 /// per-host status aggregation.
 mixin _SyncDbBackfill on _$SyncDatabase {
+  /// Highest durable payload, deletion or authoritative burn for one origin.
+  /// Receiver give-up rows and unsettled reservations are not settlement proof.
+  /// The literal resolved predicate selects the existing partial index;
+  /// scanning it backwards avoids grouping the entire history every heartbeat.
+  Future<int?> highestSettledCounterForHost(String hostId) async {
+    final row = await customSelect(
+      'SELECT counter FROM sync_sequence_log '
+      'INDEXED BY idx_sync_sequence_log_resolved_host_counter '
+      'WHERE host_id = ? AND status IN (0, 3, 4, 5, 8) AND status != 5 '
+      'AND counter >= 1 ORDER BY counter DESC LIMIT 1',
+      variables: [Variable.withString(hostId)],
+      readsFrom: {syncSequenceLog},
+    ).getSingleOrNull();
+    return row?.read<int>('counter');
+  }
+
+  /// Unresolved counters below a recently announced origin head, including
+  /// rows previously retired by age or retry limits. An active origin can
+  /// make those counters repairable again. Oldest attempts go first so a
+  /// permanently unavailable counter cannot starve later ones.
+  Future<List<SyncSequenceLogItem>> getAnnouncedHeadRepairEntries({
+    required String hostId,
+    required int head,
+    required int limit,
+    required Duration retryCooldown,
+    int offset = 0,
+    int afterCounter = 0,
+    DateTime? now,
+  }) {
+    final cutoff = (now ?? clock.now()).subtract(retryCooldown);
+    return (select(syncSequenceLog)
+          ..where(
+            (t) =>
+                t.hostId.equals(hostId) &
+                t.counter.isBiggerOrEqualValue(1) &
+                t.counter.isBiggerThanValue(afterCounter) &
+                t.counter.isSmallerOrEqualValue(head) &
+                t.status.isIn([
+                  SyncSequenceStatus.missing.index,
+                  SyncSequenceStatus.requested.index,
+                  SyncSequenceStatus.unresolvable.index,
+                ]) &
+                (t.lastRequestedAt.isNull() |
+                    t.lastRequestedAt.isSmallerOrEqualValue(cutoff)),
+          )
+          ..orderBy([
+            (t) => OrderingTerm(expression: t.lastRequestedAt),
+            (t) => OrderingTerm(expression: t.counter),
+          ])
+          ..limit(limit, offset: offset))
+        .get();
+  }
+
   /// Watch the number of sequence-log rows that are still genuinely missing.
   ///
   /// This is intentionally narrower than [getBackfillStats]: the Backfill

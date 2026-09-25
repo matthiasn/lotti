@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:clock/clock.dart';
 import 'package:drift/drift.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_cache.dart';
@@ -20,6 +21,36 @@ class SyncSequenceGapMaterializer {
   final SyncDatabase _syncDatabase;
   final SyncSequenceCache _cache;
   final SyncSequenceTracer _tracer;
+
+  /// Materializes one bounded, inclusive slice of an origin's announced
+  /// sequence head. The scan cursor is independent of the resolved watermark:
+  /// an old unresolvable counter must not prevent discovering a newer tail.
+  /// Existing receipts and terminal rows are never changed by this scan.
+  Future<int> materializeAnnouncedHead({
+    required String hostId,
+    required int head,
+    required int limit,
+    int afterCounter = 0,
+  }) async {
+    final watermark = await _syncDatabase.getLastCounterForHost(hostId) ?? 0;
+    final start = math.max(watermark, afterCounter) + 1;
+    final end = math.min(head, start + limit - 1);
+    final now = clock.now();
+    await _syncDatabase.updateHostActivity(hostId, now);
+    _cache.setHostActivity(hostId, now);
+    if (start > end) return math.min(head, start - 1);
+
+    await materializeLargeGap(
+      hostId: hostId,
+      startCounter: start,
+      endCounter: end,
+      gapSize: end - start + 1,
+      originatingHostId: hostId,
+      now: now,
+    );
+    _cache.invalidateCacheForHost(hostId);
+    return end;
+  }
 
   /// Inserts `missing`-status sequence-log rows for every counter in
   /// `[startCounter, endCounter]` that the DB does not already have, so the

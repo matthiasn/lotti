@@ -372,6 +372,63 @@ extension _AnySequenceLifecycleScenario on Any {
 }
 
 void main() {
+  test(
+    'announced head requests reopen only unresolved rows and lower watermark',
+    () async {
+      final database = SyncDatabase(inMemoryDatabase: true);
+      addTearDown(database.close);
+      final old = DateTime.utc(2024);
+      final statuses = [
+        SyncSequenceStatus.received,
+        SyncSequenceStatus.unresolvable,
+        SyncSequenceStatus.backfilled,
+        SyncSequenceStatus.deleted,
+        SyncSequenceStatus.burned,
+        SyncSequenceStatus.missing,
+        SyncSequenceStatus.requested,
+        SyncSequenceStatus.reserved,
+        SyncSequenceStatus.burnPending,
+      ];
+      for (var i = 0; i < statuses.length; i++) {
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('origin'),
+            counter: Value(i + 1),
+            status: Value(statuses[i].index),
+            createdAt: Value(old),
+            updatedAt: Value(old),
+            requestCount: const Value(99),
+          ),
+        );
+      }
+      expect(await database.getLastCounterForHost('origin'), 5);
+      await database.markAnnouncedHeadRequests([
+        for (var i = 1; i <= statuses.length + 1; i++)
+          (hostId: 'origin', counter: i),
+      ]);
+
+      expect(await database.getLastCounterForHost('origin'), 1);
+      for (var i = 0; i < statuses.length; i++) {
+        final row = (await database.getEntryByHostAndCounter('origin', i + 1))!;
+        final reopened = [
+          SyncSequenceStatus.missing,
+          SyncSequenceStatus.requested,
+          SyncSequenceStatus.unresolvable,
+        ].contains(statuses[i]);
+        expect(
+          row.status,
+          reopened ? SyncSequenceStatus.requested.index : statuses[i].index,
+        );
+        expect(row.requestCount, reopened ? 100 : 99);
+        expect(row.createdAt.toUtc(), old);
+        expect(row.lastRequestedAt, reopened ? isNotNull : isNull);
+      }
+      expect(await database.getEntryByHostAndCounter('origin', 10), isNull);
+      await database.markAnnouncedHeadRequests([]);
+      expect(await database.getLastCounterForHost('origin'), 1);
+    },
+  );
+
   group('resetUnresolvableWithKnownPayload', () {
     late SyncDatabase database;
 

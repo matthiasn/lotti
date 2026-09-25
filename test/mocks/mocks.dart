@@ -1482,7 +1482,11 @@ class MockSyncDatabase extends Mock implements SyncDatabase {}
 class MockAgentDatabase extends Mock implements AgentDatabase {}
 
 class MockBackfillRequestService extends Mock
-    implements BackfillRequestService {}
+    implements BackfillRequestService {
+  MockBackfillRequestService() {
+    when(stopAndDrain).thenAnswer((_) async => dispose());
+  }
+}
 
 class MockSyncSequenceLogService extends Mock
     implements SyncSequenceLogService {}

@@ -20,6 +20,7 @@ import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../mocks/mocks.dart';
+import 'sync_head_conformance.dart';
 
 /// Minimal base subclass of [IOOverrides] that lets the outer [IOOverrides]
 /// scope call the default (real) file factory without re-entering the zone and
@@ -266,6 +267,7 @@ extension _AnyBackfillSelectionScenario on glados.Any {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  registerSyncHeadConformanceTests();
 
   late MockSyncSequenceLogService mockSequenceService;
   late MockSyncDatabase mockSyncDatabase;
@@ -373,6 +375,59 @@ void main() {
   });
 
   group('BackfillRequestService', () {
+    test('stopAndDrain waits for an active automatic pass before closing', () {
+      fakeAsync((async) {
+        final pending = Completer<bool>();
+        when(
+          mockSequenceService.hasActionableEntries,
+        ).thenAnswer((_) => pending.future);
+        final service = buildService();
+        service.nudge();
+        async.flushMicrotasks();
+        verify(mockSequenceService.hasActionableEntries).called(1);
+
+        var drained = false;
+        unawaited(service.stopAndDrain().then((_) => drained = true));
+        async.elapse(const Duration(seconds: 4));
+        expect(drained, isFalse);
+        pending.complete(false);
+        async.flushMicrotasks();
+        expect(drained, isTrue);
+        service.nudge();
+        async.flushMicrotasks();
+        verifyNever(mockSequenceService.hasActionableEntries);
+      });
+    });
+
+    test(
+      'announces only the settled own head and honors the enabled gate',
+      () async {
+        when(() => mockVcService.initialized).thenAnswer((_) async {});
+        when(
+          () => mockSyncDatabase.highestSettledCounterForHost(myHostId),
+        ).thenAnswer((_) async => 3);
+        when(
+          () => mockOutboxService.enqueueMessageOrThrow(any()),
+        ).thenAnswer((_) async {});
+        final service = buildService();
+
+        await service.announceOwnSequenceHead();
+        final message =
+            verify(
+                  () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
+                ).captured.single
+                as SyncBackfillRequest;
+        expect(message.requesterId, myHostId);
+        expect(message.requesterSequenceHead, 3);
+        expect(message.entries, isEmpty);
+
+        SharedPreferences.setMockInitialValues({'backfill_enabled': false});
+        await service.announceOwnSequenceHead();
+        verifyNever(() => mockOutboxService.enqueueMessageOrThrow(any()));
+        await service.stopAndDrain();
+      },
+    );
+
     test(
       'automatic queue-drain requests exclude the active onboarding range',
       () async {
