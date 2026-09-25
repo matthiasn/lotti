@@ -325,6 +325,19 @@ final goalRuntimeMaintenanceProvider = Provider<GoalRuntimeMaintenance>(
     goalMirrorService: ref.watch(goalMirrorServiceProvider),
     checkInNotifier: ref.watch(goalCheckInNotifierProvider),
     domainLogger: ref.watch(domainLoggerProvider),
+    recomputeProgress: (identity) async {
+      final runKey = 'goal-startup:${identity.agentId}';
+      await ref
+          .read(goalAgentPhaseAProvider)
+          .execute(
+            agentIdentity: identity,
+            runKey: runKey,
+            triggerTokens: const {},
+            threadId: runKey,
+          );
+      // Phase A writes through the sync service, which notifies no UI.
+      ref.read(updateNotificationsProvider).notify({identity.agentId});
+    },
   ),
   name: 'goalRuntimeMaintenanceProvider',
 );

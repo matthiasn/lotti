@@ -71,6 +71,7 @@ void main() {
   late MockGoalMirrorService mirror;
   late MockGoalCheckInNotifier notifier;
   late MockGoalOffTrackSink offTrackAlerts;
+  late List<String> recomputed;
   late List<AgentDomainEntity> upserts;
 
   void stubSpec(String agentId) {
@@ -100,6 +101,7 @@ void main() {
   }
 
   setUp(() {
+    recomputed = [];
     agentService = MockAgentService();
     repository = MockAgentRepository();
     syncService = MockAgentSyncService();
@@ -132,6 +134,7 @@ void main() {
       goalChatService: chatService,
       goalMirrorService: mirror,
       checkInNotifier: notifier,
+      recomputeProgress: (identity) async => recomputed.add(identity.agentId),
     );
     upserts = [];
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
@@ -285,6 +288,113 @@ void main() {
     );
     verify(
       () => chatService.restoreOldestPendingMessage('goal-b'),
+    ).called(1);
+  });
+
+  test('restoreSubscriptions recomputes every active goal once, straight '
+      'through Phase A — the pending refresh it restores keeps its '
+      'deadline', () async {
+    // GoalRegister.tla, Restart = "recompute": a synced row whose in-memory
+    // dispatch died with the process is otherwise never evaluated that day.
+    // A manual orchestrator wake would clear the throttle and the persisted
+    // deadline the restore below re-arms.
+    final dueAt = DateTime(2026, 8, 8, 15);
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer(
+      (_) async => [goalIdentity('goal-a'), goalIdentity('goal-b')],
+    );
+    stubSpec('goal-a');
+    stubSpec('goal-b');
+    // A failing state read must not also cost the goal its recompute.
+    when(
+      () => repository.getAgentState('goal-a'),
+    ).thenThrow(StateError('state gone'));
+    when(() => repository.getAgentState('goal-b')).thenAnswer(
+      (_) async => makeTestState(agentId: 'goal-b', nextWakeAt: dueAt),
+    );
+    when(
+      () => orchestrator.restorePendingWake(
+        agentId: any(named: 'agentId'),
+        dueAt: any(named: 'dueAt'),
+        triggerTokens: any(named: 'triggerTokens'),
+        workspaceKey: any(named: 'workspaceKey'),
+        reasonId: any(named: 'reasonId'),
+      ),
+    ).thenAnswer((invocation) {
+      recomputed.add('restore:${invocation.namedArguments[#agentId]}');
+    });
+
+    await maintenance.restoreSubscriptions();
+
+    // Restore first, so a refresh the recompute queues merges into the
+    // restored job instead of standing beside it.
+    expect(recomputed, ['goal-a', 'restore:goal-b', 'goal-b']);
+    verifyNever(
+      () => orchestrator.enqueueManualWake(
+        agentId: any(named: 'agentId'),
+        reason: any(named: 'reason'),
+      ),
+    );
+    verifyNever(() => orchestrator.clearThrottle(any()));
+    verify(
+      () => orchestrator.restorePendingWake(
+        agentId: 'goal-b',
+        dueAt: dueAt,
+        triggerTokens: const {goalDeferredReportRefreshTriggerToken},
+        workspaceKey: goalReportRefreshTriggerToken,
+        reasonId: goalDeferredReportRefreshTriggerToken,
+      ),
+    ).called(1);
+  });
+
+  test('a recompute that throws for one goal is logged and does not stop the '
+      'next', () async {
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer(
+      (_) async => [goalIdentity('goal-a'), goalIdentity('goal-b')],
+    );
+    stubSpec('goal-a');
+    stubSpec('goal-b');
+    when(
+      () => repository.getAgentState(any()),
+    ).thenAnswer((_) async => null);
+    final logger = MockDomainLogger();
+    final attempted = <String>[];
+    final failing = GoalRuntimeMaintenance(
+      agentService: agentService,
+      repository: repository,
+      syncService: syncService,
+      goalAgentService: GoalAgentService(
+        agentService: agentService,
+        repository: repository,
+        syncService: syncService,
+        orchestrator: orchestrator,
+        offTrackAlerts: offTrackAlerts,
+      ),
+      goalChatService: chatService,
+      goalMirrorService: mirror,
+      checkInNotifier: notifier,
+      domainLogger: logger,
+      recomputeProgress: (identity) async {
+        attempted.add(identity.agentId);
+        if (identity.agentId == 'goal-a') throw StateError('evaluation failed');
+      },
+    );
+
+    await failing.restoreSubscriptions();
+    await pumpEventQueue();
+
+    expect(attempted, ['goal-a', 'goal-b']);
+    verify(
+      () => logger.error(
+        any(),
+        any(that: isA<StateError>()),
+        message: any(named: 'message'),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: any(named: 'subDomain'),
+      ),
     ).called(1);
   });
 

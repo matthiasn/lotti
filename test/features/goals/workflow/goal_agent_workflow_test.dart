@@ -2701,6 +2701,61 @@ void main() {
     expect(upserts.whereType<AgentReportEntity>(), hasLength(1));
   });
 
+  test(
+    'a refresh whose register keeps moving under every attempt ends '
+    'without inference — no report from a snapshot nobody committed',
+    () async {
+      // Review of #4479: after goalPersistAttempts stale commits the wake went
+      // on to infer and publish from a derivation every transaction rejected.
+      stubSpec();
+      stubGlmResolution();
+      var reads = 0;
+      when(
+        () => repository.getEntity(goalProgressId(agentId, '2026-08-09')),
+      ).thenAnswer(
+        (_) async => AgentDomainEntity.goalProgress(
+          id: goalProgressId(agentId, '2026-08-09'),
+          agentId: agentId,
+          periodKey: '2026-08-09',
+          trackStatus: GoalTrackStatus.insufficientData,
+          attainment: 0,
+          dataCoverage: 0,
+          satisfied: false,
+          specVersionId: '$agentId:spec-v1',
+          createdAt: now,
+          updatedAt: now,
+          // A peer row with a new clock on every read.
+          vectorClock: VectorClock({'peer': ++reads}),
+        ),
+      );
+      var inferred = false;
+      conversationRepository.sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async {
+            inferred = true;
+            return null;
+          };
+
+      final result = await run(
+        triggerTokens: const {goalReportRefreshTriggerToken},
+      );
+
+      expect(result.success, isTrue);
+      expect(inferred, isFalse);
+      expect(upserts.whereType<AgentReportEntity>(), isEmpty);
+      expect(upserts.whereType<GoalProgressEntity>(), isEmpty);
+    },
+  );
+
   test('an explicit detail-page refresh forces a standing report even when '
       'the recomputed status did not change', () async {
     stubSpec();

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_progress_models.dart';
@@ -44,6 +46,33 @@ typedef GoalOffTrackSubject = ({String agentId, String goalTitle});
 /// one that transitioned out of it, and when the goal is deleted.
 typedef GoalOffTrackSink =
     NotificationEpisodeSink<GoalOffTrackSubject, GoalWakeDerivation>;
+
+/// What [GoalAgentPhaseA.persistDerivation] did with a derivation.
+enum GoalPersistOutcome {
+  /// The register (and any escalation) was written.
+  persisted,
+
+  /// A spec revision or deletion committed since the derivation read the
+  /// head; the revision's own tick judges again.
+  fenced,
+
+  /// The day's register row or today's report changed since the derivation
+  /// read them — a peer's row synced in mid-run, or a report was published.
+  /// Writing would build on state this derivation never saw; derive again
+  /// instead.
+  stale,
+}
+
+/// How often one Phase A run re-derives after its register moved under it
+/// before it leaves the write to the next trigger.
+const goalPersistAttempts = 3;
+
+/// The Phase A run in flight for each goal on this device.
+///
+/// Process-wide on purpose: the wake orchestrator, the sync dispatcher and
+/// Phase B's report refresh each hold their own [GoalAgentPhaseA] path into
+/// the same register, and they must take turns on one device.
+final _exclusiveRuns = <String, Future<void>>{};
 
 /// Phase A of the goal-agent wake (ADR 0054): deterministic, model-free,
 /// idempotent — the tier that runs on every tick, on every device, and
@@ -93,12 +122,51 @@ class GoalAgentPhaseA {
   final GoalProgressEvaluator _evaluator;
   final GoalTrackPolicy _policy;
 
-  /// The `AgentWakeRunner`-shaped entry point.
+  /// Runs [body] once no other derive-and-persist for [agentId] is in
+  /// flight on this device, and holds every later one back until it ends.
+  ///
+  /// A run derives from the journal, then re-reads the register as the base
+  /// of its write, so that write dominates whatever it read. Two interleaved
+  /// runs let the one that derived FIRST commit LAST: a sync-triggered run
+  /// commits a fresh check-off, then a local run that read the journal
+  /// before it lands on top, and nothing re-triggers — the day's row settles
+  /// without the check-off on every device (`specs/tla/GoalRegister.tla`,
+  /// `Lock = "none"`). Taking turns makes each derivation see every earlier
+  /// commit.
+  static Future<T> runExclusive<T>(
+    String agentId,
+    Future<T> Function() body,
+  ) async {
+    final previous = _exclusiveRuns[agentId];
+    final done = Completer<void>();
+    final mine = done.future;
+    _exclusiveRuns[agentId] = mine;
+    try {
+      if (previous != null) await previous;
+      return await body();
+    } finally {
+      done.complete();
+      _exclusiveRuns.removeWhere(
+        (key, run) => key == agentId && identical(run, mine),
+      );
+    }
+  }
+
+  /// The `AgentWakeRunner`-shaped entry point. Runs exclusively per goal
+  /// ([runExclusive]).
   Future<WakeResult> execute({
     required AgentIdentityEntity agentIdentity,
     required String runKey,
     required Set<String> triggerTokens,
     required String threadId,
+  }) => runExclusive(
+    agentIdentity.agentId,
+    () => _execute(agentIdentity: agentIdentity, triggerTokens: triggerTokens),
+  );
+
+  Future<WakeResult> _execute({
+    required AgentIdentityEntity agentIdentity,
+    required Set<String> triggerTokens,
   }) async {
     final agentId = agentIdentity.agentId;
     final now = clock.now();
@@ -133,60 +201,81 @@ class GoalAgentPhaseA {
       return const WakeResult(success: true);
     }
 
-    final derivation = await deriveWakeFacts(
-      agentId: agentId,
-      version: version,
-      now: now,
-      includeTimeEntryEvidence: false,
-    );
+    final automaticUpdates =
+        agentIdentity.config.automaticUpdatesEnabled ?? true;
+    late GoalWakeDerivation derivation;
+    late bool replacementEligible;
+    late bool shouldRefreshReport;
+    late bool armed;
+    var outcome = GoalPersistOutcome.stale;
+    for (
+      var attempt = 0;
+      attempt < goalPersistAttempts && outcome == GoalPersistOutcome.stale;
+      attempt++
+    ) {
+      derivation = await deriveWakeFacts(
+        agentId: agentId,
+        version: version,
+        now: now,
+        includeTimeEntryEvidence: false,
+      );
+      final facts = derivation.facts;
+      // The sweep runs AFTER derivation so an active banner minted from
+      // evidence that has since changed (a new measurement, a habit
+      // check-off) is recognized as data-stale. Only ad-eligible goals
+      // expire on a digest mismatch: the same eligibility guarantees the
+      // escalation below replaces the copy instead of leaving the goal
+      // silently bannerless.
+      replacementEligible = automaticGoalAdEligible(
+        facts,
+        derivation.priors,
+      );
+      final activeAdExpired = await _expireStaleNudges(
+        agentId,
+        now,
+        activeVersionId: version.id,
+        currentFactsDigest: replacementEligible
+            ? goalFactsDigest(
+                facts,
+                criteria: version.criteria,
+                evaluationReference: now,
+              )
+            : null,
+      );
+      final needsEscalation =
+          facts.needsEscalation || (activeAdExpired && replacementEligible);
+
+      // New evidence after today's earlier tick means the standing report
+      // now describes an outdated picture — record the dirty state durably
+      // so the detail page shows the out-of-date badge and Update now CTA.
+      // A first tick of the day is not "new data" (the window slid), and a
+      // status transition already escalates to a fresh report.
+      final registerChanged =
+          derivation.existingToday != null &&
+          goalRegisterDigest(derivation.existingToday!) !=
+              goalAggregateFactsDigest(facts);
+
+      shouldRefreshReport = needsEscalation || registerChanged;
+      // A status the standing report does not state is armed with the
+      // register, in one transaction: the lease-elected wake is synced, so a
+      // device that dies after this commit cannot take the escalation with
+      // it (`specs/tla/GoalRegister.tla`, ArmAt = "commit"). Evidence that
+      // leaves the status alone still coalesces behind the local countdown.
+      armed = deferredReportRefresh || (needsEscalation && automaticUpdates);
+      outcome = await persistDerivation(
+        agentId: agentId,
+        derivation: derivation,
+        now: now,
+        armEscalation: armed,
+        forceReportRefresh: armed,
+      );
+    }
+    final persisted = outcome == GoalPersistOutcome.persisted;
     final facts = derivation.facts;
-    // The sweep runs AFTER derivation so an active banner minted from
-    // evidence that has since changed (a new measurement, a habit
-    // check-off) is recognized as data-stale. Only ad-eligible goals
-    // expire on a digest mismatch: the same eligibility guarantees the
-    // escalation below replaces the copy instead of leaving the goal
-    // silently bannerless.
-    final replacementEligible = automaticGoalAdEligible(
-      facts,
-      derivation.priors,
-    );
-    final activeAdExpired = await _expireStaleNudges(
-      agentId,
-      now,
-      activeVersionId: version.id,
-      currentFactsDigest: replacementEligible
-          ? goalFactsDigest(
-              facts,
-              criteria: version.criteria,
-              evaluationReference: now,
-            )
-          : null,
-    );
-    final needsEscalation =
-        facts.needsEscalation || (activeAdExpired && replacementEligible);
-
-    // New evidence after today's earlier tick means the standing report
-    // now describes an outdated picture — record the dirty state durably
-    // so the detail page shows the out-of-date badge and Update now CTA.
-    // A first tick of the day is not "new data" (the window slid), and a
-    // status transition already escalates to a fresh report.
-    final registerChanged =
-        derivation.existingToday != null &&
-        goalRegisterDigest(derivation.existingToday!) !=
-            goalAggregateFactsDigest(facts);
-
-    final shouldRefreshReport = needsEscalation || registerChanged;
-    final persisted = await persistDerivation(
-      agentId: agentId,
-      derivation: derivation,
-      now: now,
-      armEscalation: deferredReportRefresh,
-      forceReportRefresh: deferredReportRefresh,
-    );
     if (persisted && shouldRefreshReport) {
       await _onReportStale?.call(agentId);
     }
-    if (deferredReportRefresh && persisted) {
+    if (armed && persisted) {
       _onEscalationArmed?.call();
     } else if (shouldRefreshReport && persisted) {
       await _onReportRefreshNeeded?.call(agentId);
@@ -239,16 +328,22 @@ class GoalAgentPhaseA {
   ///
   /// The explicit report-refresh path uses this without arming another Phase
   /// B wake, so **Update now** advances health/register surfaces from the same
-  /// evidence snapshot that its prose report describes. Returns false when a
-  /// concurrent revision or deletion fences the write.
-  Future<bool> persistDerivation({
+  /// evidence snapshot that its prose report describes.
+  ///
+  /// A write only ever builds on the row its derivation read: the register
+  /// write carries that row's clock, so it dominates it, and a derivation
+  /// that read the journal before a peer's row synced in would otherwise
+  /// replace that row with an older picture. Such a run reports
+  /// [GoalPersistOutcome.stale] and writes nothing (`specs/tla/
+  /// GoalRegister.tla`, Validate = "rederive").
+  Future<GoalPersistOutcome> persistDerivation({
     required String agentId,
     required GoalWakeDerivation derivation,
     required DateTime now,
     bool armEscalation = false,
     bool forceReportRefresh = false,
   }) async {
-    var fenced = false;
+    var outcome = GoalPersistOutcome.persisted;
     await _syncService.runInTransaction(() async {
       // A revision committing after derivation must fence BOTH writes: an old
       // register would overwrite today's row under the new spec, and an old
@@ -256,7 +351,23 @@ class GoalAgentPhaseA {
       final headNow = await _repository.getEntity(goalSpecHeadId(agentId));
       if (headNow is! GoalSpecHeadEntity ||
           headNow.versionId != derivation.version.id) {
-        fenced = true;
+        outcome = GoalPersistOutcome.fenced;
+        return;
+      }
+      final rowNow = await _repository.getEntity(
+        goalProgressId(agentId, derivation.periodKey),
+      );
+      // The escalation decision read today's report too: one published or
+      // synced since would decide it differently.
+      if ((rowNow is GoalProgressEntity ? rowNow : null) !=
+              derivation.existingToday ||
+          await _reportedStatus(
+                agentId,
+                periodKey: derivation.periodKey,
+                versionId: derivation.version.id,
+              ) !=
+              derivation.facts.reportedStatus) {
+        outcome = GoalPersistOutcome.stale;
         return;
       }
       await _upsertRegister(
@@ -278,7 +389,7 @@ class GoalAgentPhaseA {
         );
       }
     });
-    return !fenced;
+    return outcome;
   }
 
   /// The render-side staleness filter hides an overdue ad immediately,
@@ -411,6 +522,11 @@ class GoalAgentPhaseA {
     final existingToday = await _repository.getEntity(
       goalProgressId(agentId, periodKey),
     );
+    final reportedStatus = await _reportedStatus(
+      agentId,
+      periodKey: periodKey,
+      versionId: version.id,
+    );
     final priors = await _priorRegisterRows(agentId, now, version.id);
     final targetDate = version.targetDate;
     final trackStatus = _policy.derive(
@@ -446,6 +562,7 @@ class GoalAgentPhaseA {
         labelTimeEvidenceEnd: signals.labelTimeEvidenceEnd,
         hasActiveCategoryTimer: signals.hasActiveCategoryTimer,
         hasActiveLabelTimer: signals.hasActiveLabelTimer,
+        reportedStatus: reportedStatus,
       ),
       periodKey: periodKey,
       priors: priors,
@@ -453,10 +570,44 @@ class GoalAgentPhaseA {
     );
   }
 
+  /// The status today's standing report states for [versionId], or null
+  /// when the current report is for another day or spec, or states none.
+  Future<GoalTrackStatus?> _reportedStatus(
+    String agentId, {
+    required String periodKey,
+    required String versionId,
+  }) async {
+    final report = await _repository.getLatestReport(
+      agentId,
+      AgentReportScopes.current,
+    );
+    if (report == null ||
+        report.provenance['periodKey'] != periodKey ||
+        report.provenance['specVersionId'] != versionId) {
+      return null;
+    }
+    final name = report.provenance['trackStatus'];
+    return GoalTrackStatus.values
+        .where((status) => status.name == name)
+        .firstOrNull;
+  }
+
   /// Recurrence by re-arm: every run schedules the next cadence tick, and
   /// `GoalRuntimeMaintenance.beforeWakeScan` self-heals a missing record.
-  Future<void> _rearmCadence(String agentId, DateTime now) =>
-      _syncService.upsertEntity(goalCadenceWake(agentId, now));
+  ///
+  /// A record already pending for that tick is left alone: rewriting it
+  /// would stamp a new clock and sync a change that is not one.
+  Future<void> _rearmCadence(String agentId, DateTime now) async {
+    final wake = goalCadenceWake(agentId, now) as ScheduledWakeEntity;
+    final existing = await _repository.getEntity(wake.id);
+    if (existing is ScheduledWakeEntity &&
+        existing.deletedAt == null &&
+        existing.status == ScheduledWakeStatus.pending &&
+        existing.scheduledAt == wake.scheduledAt) {
+      return;
+    }
+    await _syncService.upsertEntity(wake);
+  }
 
   /// Escalation is a scheduled wake due immediately: the manager's lease
   /// election guarantees exactly one device runs it, and an armer that
@@ -562,40 +713,54 @@ class GoalAgentPhaseA {
     final base = rowOrdinal != null && rowOrdinal > version.version
         ? null
         : row;
-    await _syncService.upsertEntity(
-      AgentDomainEntity.goalProgress(
-        id: id,
-        agentId: agentId,
-        periodKey: periodKey,
-        trackStatus: facts.trackStatus,
-        attainment: evaluation.attainment,
-        dataCoverage: evaluation.dataCoverage,
-        satisfied: evaluation.satisfied,
-        specVersionId: version.id,
-        createdAt: base?.createdAt ?? now,
-        updatedAt: now,
-        // Carry the row we read: dropping it would make this recompute
-        // causally CONCURRENT with the peer value it is based on, letting
-        // wall-clock LWW revert fresh progress.
-        vectorClock: base?.vectorClock,
-        criterionResults: [
-          for (final result in evaluation.results.values)
-            GoalCriterionProgress(
-              criterionId: result.criterionId,
-              actual: result.actual,
-              target: result.target,
-              ratio: result.ratio,
-              satisfied: result.satisfied,
-              sampleCount: result.sampleCount,
-              paceFeasible: result.paceFeasible,
-            ),
-        ],
-        paceFeasible: evaluation.paceFeasible,
-        shortTermAttainment: facts.shortTermAttainment,
-        deficit: evaluation.deficit,
-        buffer: evaluation.buffer,
-      ),
-    );
+    final next =
+        AgentDomainEntity.goalProgress(
+              id: id,
+              agentId: agentId,
+              periodKey: periodKey,
+              trackStatus: facts.trackStatus,
+              attainment: evaluation.attainment,
+              dataCoverage: evaluation.dataCoverage,
+              satisfied: evaluation.satisfied,
+              specVersionId: version.id,
+              createdAt: base?.createdAt ?? now,
+              updatedAt: now,
+              // Carry the row we read: dropping it would make this recompute
+              // causally CONCURRENT with the peer value it is based on, letting
+              // wall-clock LWW revert fresh progress.
+              vectorClock: base?.vectorClock,
+              criterionResults: [
+                for (final result in evaluation.results.values)
+                  GoalCriterionProgress(
+                    criterionId: result.criterionId,
+                    actual: result.actual,
+                    target: result.target,
+                    ratio: result.ratio,
+                    satisfied: result.satisfied,
+                    sampleCount: result.sampleCount,
+                    paceFeasible: result.paceFeasible,
+                  ),
+              ],
+              paceFeasible: evaluation.paceFeasible,
+              shortTermAttainment: facts.shortTermAttainment,
+              deficit: evaluation.deficit,
+              buffer: evaluation.buffer,
+            )
+            as GoalProgressEntity;
+    // Recompute-never-accumulate, and write-only-on-change: a row whose
+    // content this run would reproduce exactly is left as it is. Rewriting
+    // it would stamp a new clock and sync a change that is not one.
+    if (base != null &&
+        base.deletedAt == null &&
+        next.copyWith(
+              createdAt: base.createdAt,
+              updatedAt: base.updatedAt,
+              vectorClock: base.vectorClock,
+            ) ==
+            base) {
+      return;
+    }
+    await _syncService.upsertEntity(next);
   }
 }
 

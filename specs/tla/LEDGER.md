@@ -14,16 +14,16 @@ exposed. Then update the [totals](#totals) from the README's tables.
 
 As of `main` at `b1bd9ae11` (2026-09-25):
 
-| Measure | Merged | Including open PRs #4470, #4471 |
+| Measure | Merged | Including open PRs #4470, #4471, #4479 |
 |---------|-------:|--------------------------------:|
-| TLA+ specs | 16 | 17 |
-| TLC configurations | 42 | 46 |
-| Distinct states explored | 113,735,037 | 141,412,820 |
+| TLA+ specs | 16 | 18 |
+| TLC configurations | 42 | 50 |
+| Distinct states explored | 113,735,037 | 145,054,985 |
 | States generated (at `b551bf587`) | 927,744,398 | — |
 | Deepest counterexample-free trace | 53 steps | — |
-| Named safety and liveness properties | about 68 | about 72 |
-| Bugs fixed | 64 | 73 |
-| of which TLC produced the counterexample | 41 | 42 |
+| Named safety and liveness properties | about 68 | about 77 |
+| Bugs fixed | 64 | 81 |
+| of which TLC produced the counterexample | 41 | 47 |
 | Architecture decision records | 11 (ADR 0065–0071, 0075–0078) | 11 |
 | Source paths that re-trigger the TLC workflow | 63 | 63 |
 
@@ -87,6 +87,7 @@ counterexamples found.
 | [#4467](https://github.com/matthiasn/lotti/pull/4467) | 09-24 | sync | — | — | 3 (–) | [0078](../../docs/adr/0078-entry-link-versions-are-ordered.md) | A task removed from a project came back, because receiving a link compared no clocks. 8 of 8 mutants killed |
 | [#4470](https://github.com/matthiasn/lotti/pull/4470) | open | sync | — | 2 | 1 (–) | — | A new device's first edit tied with the version it extended (counter 0 read as absent) and did not stick, even on that device |
 | [#4471](https://github.com/matthiasn/lotti/pull/4471) | open | goals, habits | `HabitDaySettlement` | 2 | 8 (1) | — | An automatic success from one device overwrote a skip the user set on another. Also, 10 × 0.1 l summed to 0.9999999999999999, so a "1 l" goal failed |
+| [#4479](https://github.com/matthiasn/lotti/pull/4479) | open | goals | `GoalRegister` | 4 | 8 (5) | [0082](../../docs/adr/0082-model-checked-goal-registers.md) | A goal's report could say "behind" all day while every device showed it on track, with no fault at all. A check-off could vanish between two overlapping evaluations, and a status change died with the device that noticed it. Review found three more: a startup recompute that dropped a restored refresh, an unvalidated report, and a refresh published from a snapshot every commit rejected |
 | [#4474](https://github.com/matthiasn/lotti/pull/4474) | open | ci | — | — | 0 | — | Packs the configurations into eight CI shards balanced by measured runtime, instead of one runner each |
 
 ## Specs
@@ -113,6 +114,7 @@ counterexamples found.
 | `DayJobPreparation` | #4462 | 1 | 12 |
 | **Merged total** | | **42** | **113,735,037** |
 | `HabitDaySettlement` (open) | #4471 | 2 | 174,119 |
+| `GoalRegister` (open) | #4479 | 4 | 3,642,165 |
 
 ## How the specs earn their keep
 

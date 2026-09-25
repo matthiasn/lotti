@@ -149,3 +149,4 @@ Each ADR should contain:
 - [`0079-recovery-never-replaces-a-live-database.md`](./0079-recovery-never-replaces-a-live-database.md)
 - [`0080-a-present-counter-ranks-above-an-absent-host.md`](./0080-a-present-counter-ranks-above-an-absent-host.md)
 - [`0081-model-checked-evolution-sessions-and-agent-links.md`](./0081-model-checked-evolution-sessions-and-agent-links.md)
+- [`0082-model-checked-goal-registers.md`](./0082-model-checked-goal-registers.md)
