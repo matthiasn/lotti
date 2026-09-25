@@ -257,6 +257,91 @@ void main() {
     });
   });
 
+  group('compact age', () {
+    Widget compactRow({
+      required DateTime? reportUpdatedAt,
+      bool isStale = false,
+      bool hasReportContent = true,
+    }) => AgentAutomationRow.compact(
+      inferenceAvailable: true,
+      isRunning: false,
+      hasReportContent: hasReportContent,
+      isStale: isStale,
+      reportUpdatedAt: reportUpdatedAt,
+      onRunNow: () {},
+    );
+
+    testWidgets('a current summary reads as its age, in the state register', (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(now), () async {
+        await pumpRow(
+          tester,
+          compactRow(
+            reportUpdatedAt: now.subtract(const Duration(days: 2, hours: 3)),
+          ),
+        );
+        expect(find.text('2 days ago'), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('taskAgentFreshGlyph')),
+          findsOneWidget,
+        );
+        expect(find.text('Update now'), findsOneWidget);
+      });
+    });
+
+    testWidgets('Out of date outranks the age, and no summary shows neither', (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(now), () async {
+        final writtenAt = now.subtract(const Duration(minutes: 5));
+        await pumpRow(
+          tester,
+          compactRow(reportUpdatedAt: writtenAt, isStale: true),
+        );
+        expect(find.text('Out of date'), findsOneWidget);
+        expect(find.text('5 min ago'), findsNothing);
+
+        await pumpRow(
+          tester,
+          compactRow(reportUpdatedAt: writtenAt, hasReportContent: false),
+        );
+        expect(
+          find.byKey(const ValueKey('taskAgentFreshnessLabel')),
+          findsNothing,
+        );
+        expect(find.text('Update now'), findsOneWidget);
+      });
+    });
+
+    testWidgets('a dated label gains its year at New Year, unprompted', (
+      tester,
+    ) async {
+      var current = DateTime(2025, 12, 31, 23, 59, 30);
+      await withClock(Clock(() => current), () async {
+        await pumpRow(
+          tester,
+          compactRow(reportUpdatedAt: DateTime(2025, 12, 20, 9)),
+        );
+        expect(find.text('Dec 20'), findsOneWidget);
+
+        // Nothing rebuilds the row but its own timer.
+        current = DateTime(2026, 1, 1, 0, 0, 31);
+        await tester.pump(const Duration(minutes: 1));
+        expect(find.text('Dec 20, 2025'), findsOneWidget);
+      });
+    });
+
+    testWidgets('without a timestamp it still says Up to date', (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(now), () async {
+        await pumpRow(tester, compactRow(reportUpdatedAt: null));
+        expect(find.text('Up to date'), findsOneWidget);
+      });
+    });
+  });
+
   group('manual trigger', () {
     testWidgets('is labelled, glyphed and fires the callback', (tester) async {
       var runs = 0;

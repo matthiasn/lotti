@@ -86,8 +86,9 @@ Contents:
   decisions still open and nothing else. A report with no *Read more* — no
   tldr/content split, so no expanded state to gate on — shows history
   unconditionally rather than stranding it behind a control that never renders.
-- **The freshness strip** — `AgentAutomationRow.compact`, and only while there
-  is something to report. See *What the card says about freshness* below.
+- **The freshness strip** — `AgentAutomationRow.compact`, always present: the
+  summary's age or *Out of date*, with *Update now* beside it. See *What the
+  card says about freshness* below.
 
 `AgentAutomationRow` is also the goal detail report control, and the body of
 the maintenance band in the internals panel. Task, project and goal agents
@@ -119,17 +120,28 @@ each in a 40×40 hit zone with a `step2` dead band between them.
 
 ## What the card says about freshness
 
-**Nothing, while the summary is current.** The card is a reading surface, and a
-permanent *Up to date* line charged the reader a row to be told that nothing
-needed doing. `AgentAutomationRow.compact` with `showsFreshConfirmation: false`
-renders a zero-height box in that state — not a hidden one, so a current card is
-exactly as tall as the summary it shows.
+**The strip is always there on the task card**, with *Update now* on its
+trailing edge. An earlier revision rendered a zero-height box while the summary
+was current, on the grounds that a permanent *Up to date* line said nothing;
+but the trigger then only existed once the summary was behind, so the reader
+could not find it when they wanted a fresh read anyway.
+
+**Current reads as an age, not a verdict.** The word is the report's age —
+*20 min ago*, *2 days ago*, and the date from a week on (*Sep 18*, with the year
+once it is not this year's) — from `relativeAgeOrDateLabel` over the report's
+`createdAt`. A bare *Up to date* could not tell a summary from this morning
+from one from last month. The check glyph and its tooltip (*Summary is up to
+date*) still carry the state. The row arms one timer for the label's next
+change (`untilNextAgeBucket`), not a tick per second; a dated label waits for
+the next local midnight, so *Dec 20* gains its year on New Year's Day. Dates are
+the viewer's: `relativeAgeOrDateLabel` reads both instants in local time. A caller that passes no timestamp still gets *Up to date*; a card
+with no report shows the trigger alone, which is how the first summary gets
+written. The strip pays its own bottom inset from the card, because the dense
+trigger and the bare word bring no air of their own.
 
 When the summary *is* behind — the caller's stale watermark, a change queued
-behind the throttle countdown, or a run rewriting the report — the strip appears
-under the prose, on the summary's own leading edge: the freshness glyph and word, and *Update now* beside them. State and its
-remedy stay adjacent; the one state worth a row is the one the reader may want
-to act on.
+behind the throttle countdown, or a run rewriting the report — the word becomes
+*Out of date*, which outranks the age. State and its remedy stay adjacent.
 
 The compact row does not derive staleness from the countdown, so the task card
 folds it into `isStale` itself: it passes `AgentStateEntity.isReportBehindAt(now)`,
@@ -151,7 +163,9 @@ Ticking digits move nothing here either: the label uses tabular figures
 (`DesignSystemButton.tabularFigures`), and the button holds the widest width it
 has shown for the current deadline, so `10:00` → `9:59` cannot pull its leading
 edge in. The full schedule sentence, *Skip once* and the switch stay in the
-internals panel. The project card passes no deadline and still reads the watermark alone.
+internals panel. The project card passes no deadline or timestamp, still reads
+the watermark alone, and keeps `showsFreshConfirmation: false`, so its strip
+still takes no height while its report is current.
 
 Everything else that used to sit in a footer under the summary — the schedule,
 *Skip once*, the automatic-updates switch, the model identity and the setup

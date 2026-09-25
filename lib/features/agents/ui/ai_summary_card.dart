@@ -542,13 +542,11 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     // the strip omits the word entirely rather than showing a default.
     final hasReportContent = tldr.isNotEmpty || additionalReport != null;
 
-    // The card says nothing about freshness while the summary *is* fresh:
-    // the schedule, the automatic-updates switch and the model identity all
-    // live in the agent internals panel now, and a permanent "Up to date"
-    // line under the summary was the last of that plumbing still charging
-    // the reader a row for nothing. Out of date — or a run rewriting the
-    // summary — is worth a row, because it is the one state the reader may
-    // want to act on, and the trigger that acts on it stands beside it.
+    // The strip is always there: the freshness word and *Update now* are
+    // the one control a reader of the summary reaches for, and a trigger that
+    // appears only once the summary is behind cannot be found when it is
+    // wanted. The schedule, the automatic-updates switch and the model
+    // identity live in the agent internals panel.
     final freshnessStrip = AgentAutomationRow.compact(
       inferenceAvailable: inferenceAvailable,
       isRunning: isRunning,
@@ -559,7 +557,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
       isStale: agentState?.isReportBehindAt(clock.now()) ?? false,
       // …and says when that countdown will refresh it.
       nextWakeAt: agentState?.nextWakeAt,
-      showsFreshConfirmation: false,
+      reportUpdatedAt: report?.createdAt,
       onRunNow: inferenceAvailable
           ? () => ref.read(taskAgentServiceProvider).triggerReanalysis(agentId)
           : null,
@@ -710,11 +708,14 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
             child: reportBody,
           ),
         // The freshness word sits with the summary it describes, on the same
-        // leading edge, and takes no height at all while there is nothing to
-        // say. Its own row box carries the air around it.
+        // leading edge. The dense trigger is a 24-high box and the word
+        // beside it bare text, so the row brings no air of its own: the card
+        // pays the bottom inset, or the status sits four pixels off its edge.
         Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.cardPadding,
+          padding: EdgeInsets.only(
+            left: tokens.spacing.cardPadding,
+            right: tokens.spacing.cardPadding,
+            bottom: tokens.spacing.step4,
           ),
           child: freshnessStrip,
         ),
