@@ -575,8 +575,17 @@ order, any number of times. The receive path is
 picks the entity family: `"state"` is `AgentStateEntity` (whole-row
 last-writer-wins plus per-host G-counters), `"terminal"` a type whose status
 override outranks the timestamp (retracted knowledge, a consumed wake window,
-a dismissed nudge). The decision is
-[ADR 0068](../../docs/adr/0068-model-checked-agent-convergence.md).
+a dismissed nudge), and `"removal"` a register that is removed and written
+again, whose tombstone (`deletedAt`) is ordered like any other field — a day
+plan deleted and drafted again, a parsed capture item replaced by a re-parse,
+a deleted template or soul. The receive is `resolveReceivedAgentEntity`
+(`agent_entity_receive.dart`) inside `SyncEventProcessor`'s receive
+transaction. In the lossy configuration a delivery can also be lost, and the
+receiver recovers it by backfill from the writer's stored version. The
+decisions are
+[ADR 0068](../../docs/adr/0068-model-checked-agent-convergence.md) and, for
+removals, the addendum of
+[ADR 0081](../../docs/adr/0081-model-checked-evolution-sessions-and-agent-links.md).
 
 | Property | Kind | Says |
 |----------|------|------|
@@ -584,7 +593,7 @@ a dismissed nudge). The decision is
 | `NoLostSuccessor` | invariant | a row is never a version that a write it received causally replaced |
 | `OwnCountKept` | invariant | a host always sees all of its own G-counter increments |
 | `NoLostIncrement` | invariant | once everything is delivered, every replica sees every increment |
-| `LocalWriteTakesEffect` | invariant | a write meant to move the row against the resolver's order keeps its fields on the writing device |
+| `LocalWriteTakesEffect` | invariant | a write meant to move the row against the resolver's order keeps its fields on the writing device; on the removal kind, a re-creation over a removed row |
 
 | Configuration | Kind | Replicas | Writes | Clock skew | Checks | Distinct states |
 |---------------|------|----------|--------|------------|--------|-----------------|
@@ -594,6 +603,8 @@ a dismissed nudge). The decision is
 | `AgentReplicationIntentTerminal` | terminal, with `Intend` writes | 3 | 3 | 1 tick | `LocalWriteTakesEffect` | 16,350,444 |
 | `AgentReplicationLegacyCounter` | state, with `Intend` writes; every host's first counter is 0 | 3 | 3 | 1 tick | all five | 17,959,029 |
 | `AgentReplicationLegacyReceiver` | terminal; received by a build that reads an absent host as 0 | 3 | 3 | 1 tick | `Converged`, `NoLostSuccessor` | 9,544,635 |
+| `AgentReplicationRemoval` | removal, with re-creations (`Intend`) | 3 | 3 | 1 tick | `Converged`, `NoLostSuccessor`, `LocalWriteTakesEffect` | 13,561,419 |
+| `AgentReplicationRemovalLossy` | removal, with re-creations; any delivery lost and recovered by backfill | 2 | 3 | 1 tick | `Converged`, `NoLostSuccessor`, `LocalWriteTakesEffect` | 2,257,939 |
 
 A clock maps each replica to a counter or to `Absent`, and the properties use
 the causal order, in which a present entry, 0 included, ranks above an absent
@@ -617,6 +628,11 @@ The design switches are the fixes, and each has a counterexample when set to
 | `IntentCarriesClock` | a writer meant to replace the row built on `vectorClock: null` | `LocalWriteTakesEffect`, two steps: A writes a row, then moves it — out of the terminal status (terminal), or to new fields at the row's own timestamp (state) — and the local write resolution, judging the clockless write concurrent, hands the row back |
 | `AbsentBelowZero` (ADR 0080) | `VectorClock.compare` read an absent host as counter 0 | with `FirstCounter = 0`, `NoLostSuccessor` in two steps: B writes its first version, `{B: 0}`; C receives it and keeps the row it had, which it reads as equal |
 | `CanonAbsentBelowZero` (ADR 0080) | the canonical tiebreak read an absent host as 0 | with `FirstCounter = 0`, `Converged`: A and B each write their first version at the same instant, `{A: 0}` and `{B: 0}`; the tiebreak reads both as all zeros, and each replica keeps the one it received first |
+| `ReceiveSeesTombstones` (ADR 0081 addendum) | the receive read the stored entity with `getEntity`, which filters tombstones | removal kind, `NoLostSuccessor` in three steps: A writes, A removes, and A receives its own first version late, which replaces the removal |
+| `BackfillServesTombstones` (ADR 0081 addendum) | the backfill responder read the same way and answered `deleted` | removal kind, lossy, `Converged` in three steps: A removes, B's delivery is lost, and B's backfill is answered `deleted`, so B keeps the entity |
+| `WriteSeesTombstones` (ADR 0081 addendum) | the local write resolution read the persisted row with `getEntity` too | removal kind, `NoLostSuccessor` in six steps: A writes and removes, B receives the removal and writes the row afresh on `{B:1}` alone, and A's first version, arriving late, wins over B's write on the canonical order |
+| `RecreateKeepsFields` (ADR 0081 addendum) | a row built afresh over a tombstone was resolved against it as if concurrent | removal kind, `LocalWriteTakesEffect` in two steps: A removes, then writes the row afresh at the same instant, and the tiebreak hands the removal back |
+| `AtomicReceive` (ADR 0081 addendum) | every type but agent state, change sets and evolution sessions was read, then written after an await | removal kind, `NoLostSuccessor` in eight steps: B reads the stored row to receive A's version, writes twice locally, and the receive then writes A's version over both |
 
 `Intend` (ADR 0068's addendum) is the class the local write resolution
 opened: a write built on the row whose point is to move it against the
@@ -653,6 +669,21 @@ What the model leaves out, deliberately or as a residual:
   succeeds both. The legacy configurations check each half of a mixed fleet;
   one that mixes both readings over counter-0 clocks is not modelled. No
   receiver can change what an older build does; it ends as devices update.
+- **A removal ranks at its instant.** `effectiveUpdatedAt` takes the later
+  of the variant's timestamp and `deletedAt`, so a removal concurrent with an
+  edit goes by last-writer-wins on those instants, and on an append-only
+  variant, whose edits never move its `createdAt`, the removal always wins.
+  The model stamps a removal at its write time, which is this rule; the old
+  rule, where a removal kept the timestamp of the row it removed, converges
+  too and so has no counterexample here. It is checked by the resolver's and
+  the receive's unit tests.
+- **Seeding restores a deleted default.** The default templates and souls are
+  seeded at every start, and a default the user deleted is created again
+  under its id. That is a re-creation, which this model checks and which now
+  wins on every device; whether a deleted default should stay deleted is a
+  product decision (ADR 0081, addendum).
+- **Hard deletes** (`hardDeleteAgent`, retention pruning) leave no tombstone
+  and are not synced, so a late copy can restore such a row.
 - Agent links (`AgentLink`) are `AgentLinks` below.
 - **Journal entry links** (`JournalDb.upsertEntryLink`) are ordered by one
   lexicographic key: `updatedAt`, then the clock under
@@ -1020,10 +1051,9 @@ What the model leaves out, deliberately or as a residual:
   applies the same way, ranking assignments by `(createdAt, id)` over every
   version known, with writers clamping `createdAt`; or emitting the
   handoff's tombstones as synced writes.
-- **Agent entities have the tombstone hole too.** `getEntity` filters
-  tombstones for the entity receive and its backfill, so a soft-deleted
-  entity can come back when a late copy arrives. It is left for its own
-  change.
+- **Agent entities had the tombstone hole too.** The entity receive and its
+  backfill read with `getEntity`. The addendum of ADR 0081 fixes it; the
+  model is `AgentReplication`'s removal kind above.
 - The model's clocks have no absent hosts. A host's first write at counter 0
   strictly dominates the version it extends only because `VectorClock.compare`
   ranks an absent host below 0
@@ -1260,6 +1290,27 @@ counters at 0, as a host an older build created does
 (`AgentReplicationLegacyCounter`), and the causal check is the model's own
 order rather than `VectorClock.compare`. Reading an absent host as 0 again
 fails both traces.
+
+Removals have theirs. In
+`test/features/agents/sync/agent_removal_model_conformance.dart` (a part of
+the suite of `agent_entity_receive.dart`), a day plan on three devices of a
+`ReplicaNetwork` — each a real agent database, repository and sync service —
+is edited, deleted and drafted again by the product's writers: an edit or a
+deletion of the row `getEntity` reads, so a draft over a deleted plan is
+built afresh, and stale edits and deletions from snapshots. One device's
+clock runs ahead. The writes are delivered in generated orders through
+`resolveReceivedAgentEntity`, and deliveries are lost and recovered from the
+writer's stored version. After every step `NoLostSuccessor` must hold, a
+draft must keep its fields on its device (`LocalWriteTakesEffect`), and after
+everything, `Converged`. Reading the stored row with `getEntity` in the
+receive, reading it with `getEntity` in the write resolution, or resolving a
+re-creation as concurrent each fails it. The two-device regressions — a
+removal reaching the other device, a late copy restoring nothing, a lost
+removal recovered by backfill, a removal concurrent with an edit, a plan
+drafted again — are examples in the same suite and in the `AgentSyncService`
+suite; the receive transaction of every type, the backfill of a tombstone and
+own-counter settlement of a removal are examples in the sync processor's and
+the backfill handler's suites.
 
 Links and sessions have theirs. In
 `test/features/agents/sync/agent_links_model_conformance.dart` (a part of the

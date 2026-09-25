@@ -248,6 +248,13 @@ class AgentRepoCore {
   /// See `docs/perf/2026-08-01_slow-queries-investigation.md`.
   Future<AgentDomainEntity?> getEntity(String id) => _byIdCoalescer.load(id);
 
+  /// The stored version of entity [id], a tombstone included, or `null` when
+  /// there is no row. What sync orders versions against: a removal is a
+  /// version like any other, and reading it as no row would let a late copy
+  /// of the live entity replace it (ADR 0081, addendum).
+  Future<AgentDomainEntity?> getEntityIncludingDeleted(String id) async =>
+      (await getEntitiesByIdsIncludingDeleted([id]))[id];
+
   /// Batch-fetch non-deleted entities for every id in [ids]. Returns
   /// the matched entities keyed by their `id` column so the caller can
   /// look them up without iterating; ids that have no row (or whose

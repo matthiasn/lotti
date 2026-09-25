@@ -477,6 +477,29 @@ void main() {
       );
 
       test(
+        'getEntityIncludingDeleted returns a removed entity as its '
+        'tombstone, which getEntity hides (ADR 0081, addendum)',
+        () async {
+          final removedAt = DateTime(2026, 9, 25, 10);
+          await repo.upsertEntity(
+            makeAgent(id: 'removed-agent').copyWith(deletedAt: removedAt),
+          );
+          await repo.upsertEntity(makeAgent(id: 'live-agent'));
+
+          expect(
+            (await repo.getEntityIncludingDeleted('removed-agent'))!.deletedAt,
+            removedAt,
+          );
+          expect(await repo.getEntity('removed-agent'), isNull);
+          expect(
+            (await repo.getEntityIncludingDeleted('live-agent'))!.deletedAt,
+            isNull,
+          );
+          expect(await repo.getEntityIncludingDeleted('nonexistent'), isNull);
+        },
+      );
+
+      test(
         'getEntitiesByIdsIncludingDeleted returns tombstoned rows too — '
         'the read for callers whose write decision depends on whether a '
         'register was deliberately deleted (week-rollup resurrection guard)',

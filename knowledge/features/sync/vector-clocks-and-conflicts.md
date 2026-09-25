@@ -5,9 +5,13 @@ description: How causal order is represented, why coveredVectorClocks is separat
 resource: ../../../lib/features/sync/vector_clock.dart
 tags: [sync, vector-clock, conflicts, causality]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-25T18:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-25T19:00:00Z }
 stale_after: 2026-12-25
 sources:
+  - id: entity-receive
+    resource: ../../../lib/features/agents/sync/agent_entity_receive.dart
+    title: resolveReceivedAgentEntity — the receive of one agent entity, tombstone included
+    last_modified: 2026-09-25
   - id: vector-clock
     resource: ../../../lib/features/sync/vector_clock.dart
     title: VectorClock compare, compareCanonically and merge
@@ -466,6 +470,52 @@ flowchart TD
 Soul assignments and improver targets are an exception, recorded as a
 residual below.
 
+## Agent entities: a removal is a version too
+
+Removing an agent entity writes it with `deletedAt` set, and sync treats that
+tombstone as one more version of the id, as it does for links (ADR 0081,
+addendum; `specs/tla/AgentReplication.tla`, the removal kind):
+
+- **Everything sync orders reads the tombstone.**
+  `AgentRepository.getEntityIncludingDeleted` is what the receive
+  (`resolveReceivedAgentEntity`), the backfill responder, the backfill
+  verifier, own-counter settlement, the sequence log's canonical clock and the
+  local write resolution read. `getEntity` hides it, so a removal read as no
+  row and a late copy of the live version replaced it; a lost removal was
+  answered `deleted` and never arrived.
+- **Every entity is received in one transaction.** The stored row is read,
+  resolved and written together, whatever the type; a local write that
+  committed between a read and a write was otherwise overwritten.
+- **A removal succeeds the version it replaces.** A removal of any variant,
+  append-only ones included, is stamped over the stored version, like a write
+  to a mutable register.
+- **A removal ranks at its instant.** `effectiveUpdatedAt` is the later of
+  the variant's timestamp and `deletedAt`. A removal and an edit made
+  concurrently go by last-writer-wins on those instants, so the later of the
+  two stands everywhere. An append-only variant's edit keeps its `createdAt`,
+  so there a concurrent removal always wins. No type that is removed has a
+  status override.
+- **A row built afresh over a tombstone is a re-creation.** Its writer read no
+  row, so it has no clock; it keeps its fields, and its stamp covers the
+  tombstone, so it succeeds the removal on every device. A day plan drafted
+  again for a deleted day, a recommendation decision recorded again after an
+  undo, and the default templates and souls that seeding restores are
+  re-created this way.
+
+```mermaid
+flowchart TD
+  M[received agent entity] --> T[open the receive transaction]
+  T --> R["read the stored version, tombstone included"]
+  R --> P{stored version?}
+  P -- no --> A[write the incoming version]
+  P -- yes --> D{resolveAgentEntityVersions}
+  D -- "stored dominates or equal, or wins the concurrent pair" --> K["keep the stored version, a removal included"]
+  D -- otherwise --> W["write the resolved row: incoming, or a merge"]
+  A --> C[commit]
+  K --> C
+  W --> C
+```
+
 ## A local write succeeds the row it replaces
 
 Convergence is not only about the receive path: a pure pairwise rule still
@@ -478,11 +528,13 @@ clock that covers both — every peer takes it as that row's successor — and
 
 ```mermaid
 flowchart TD
-  W[local write of a mutable register] --> R[read the persisted row in the transaction]
+  W[local write of a mutable register, or a removal] --> R["read the persisted row, tombstone included, in the transaction"]
   R --> P{persisted row?}
   P -- no --> S[stamp with the write's own clock]
-  P -- yes --> C{write's clock covers the row's?}
-  C -- yes --> F[keep the write's fields]
+  P -- yes --> Q{"live row built afresh over a tombstone?"}
+  Q -- "yes: a re-creation" --> F[keep the write's fields]
+  Q -- no --> C{write's clock covers the row's?}
+  C -- yes --> F
   C -- "no: stale snapshot or vectorClock null" --> M[resolve against the row as if concurrent]
   F --> J[join agent-state G-counters and watermarks with the row]
   M --> J
@@ -495,7 +547,8 @@ flowchart TD
 A write built on a stale snapshot therefore loses locally exactly where it
 loses on every peer — an edit older than a retraction cannot revive it — and
 a successor never sorts before its predecessor, whatever the writing device's
-clock says. Append-only variants are written as given.
+clock says. Other append-only writes are written as given; a removal of an
+append-only variant is stamped over the persisted row too.
 
 The flip side: a writer that *means* to replace the row must build on it. A
 write with `vectorClock: null` over an existing id is resolved as concurrent,
@@ -556,11 +609,10 @@ change-set write is not resolved by `resolveLocalAgentWrite`; every writer
 already re-reads the set and changes its own item in one transaction
 (ADR 0067).
 
-The receive is also one transaction for change sets: the local row is read,
-compared and written together, not compared against the bundle's prefetched
-snapshot. Otherwise a local claim committing between the read and the write
-is overwritten by a peer version that only covered the row as it was before
-the claim.
+The receive is one transaction, as it is for every agent entity: the local
+row is read, compared and written together. Otherwise a local claim
+committing between the read and the write is overwritten by a peer version
+that only covered the row as it was before the claim.
 
 `specs/tla/ChangeSetLifecycle.tla` model-checks both. An item decided on two
 devices before they sync is still dispatched on both (the rows converge), but
@@ -602,9 +654,8 @@ in the local DAG first (`AgentMessageDag.ancestryOf`, a forward walk over the
 `messagePrev` edges of present rows) and passes it in as `isAncestor`; the
 local write path needs none, since every local head writer reads the row in
 its own transaction. An agent-state row is also read, resolved and written in
-one transaction, as change sets are, and never from the bundle's prefetched
-snapshot: a local append committing in between was otherwise overwritten and
-the head moved back past it.
+one transaction, as every received entity is: a local append committing in
+between was otherwise overwritten and the head moved back past it.
 
 What the merge cannot know — an order whose rows have not arrived yet — the
 append path settles: `_appendMessage` advances the head to a tip past it
@@ -617,8 +668,10 @@ has since received a child does not fork the log — provided the child's
 ## Residuals
 
 The model `specs/tla/AgentReplication.tla` checks this with three replicas,
-arbitrary arrival orders, stale and unclocked writes and a lagging clock. Two
-cases stay open, recorded in `specs/tla/README.md` and ADR 0068:
+arbitrary arrival orders, stale and unclocked writes, removals and
+re-creations, lost deliveries recovered by backfill, and a lagging clock.
+These cases stay open, recorded in `specs/tla/README.md` and ADRs 0068 and
+0081:
 
 - A successor that ranks *below* its predecessor under a type override — the
   day agent's digest retry re-arming its consumed window at the same instant,
@@ -632,7 +685,8 @@ cases stay open, recorded in `specs/tla/README.md` and ADR 0068:
   tombstones the other locally, without a clock bump or a sync message, so
   two devices that reassign concurrently swap the assignments (ADR 0081).
   The fix needs a decision.
-- The entity receive and its backfill read with `getEntity`, which filters
-  tombstones, so a soft-deleted agent entity can still come back when a late
-  copy arrives. That is the link hole of ADR 0081, not yet fixed for
-  entities.
+- Seeding restores a default template or soul the user deleted, at the next
+  start. The re-creation wins on every device; whether a deleted default
+  should stay deleted is a product decision (ADR 0081, addendum).
+- A hard delete (`hardDeleteAgent`, retention pruning) leaves no tombstone and
+  is not synced, so a late copy can restore such a row.

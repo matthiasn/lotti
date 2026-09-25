@@ -25,6 +25,7 @@ import '../../../widget_test_utils.dart';
 import '../agent_test_device.dart';
 import '../test_data/entity_factories.dart';
 import '../test_data/evolution_factories.dart';
+import 'agent_replica_bench.dart';
 import 'fork_test_support.dart';
 import 'in_memory_agent_repository.dart';
 
@@ -2878,6 +2879,151 @@ void main() {
         ),
       ).called(1);
     });
+  });
+
+  group('AgentSyncService.upsertEntity — removals and re-creations succeed '
+      'the stored version (AgentReplication.tla, the removal kind)', () {
+    final at = DateTime(2026, 9, 25, 9);
+    final planId = makeTestDayPlan().id;
+    final itemId = makeTestParsedItem().id;
+    late AgentTestDevice a;
+    late AgentTestDevice b;
+
+    setUp(() {
+      a = AgentTestDevice('host-a');
+      b = AgentTestDevice('host-b');
+      addTearDown(a.close);
+      addTearDown(b.close);
+    });
+
+    test(
+      "a day plan drafted afresh over a peer's later-stamped removal is live "
+      'on both devices (TLC: WriteSeesTombstones, RecreateKeepsFields)',
+      () async {
+        // A drafts the plan, and B, whose clock runs ahead, deletes it. A's
+        // planner drafts the day again: `getEntity` reads no row, so the plan
+        // is built afresh. The write path read the stored row the same way,
+        // so the redraft held A's counter alone — concurrent with the
+        // removal, which its later stamp made win on B while A kept the
+        // plan. Resolved against the removal as if concurrent, A handed
+        // itself the removal back.
+        await a.sync.upsertEntity(makeTestDayPlan(updatedAt: at));
+        await b.receiveEntity(a.sentEntities.last);
+        final onB = (await b.repository.getEntity(planId))! as DayPlanEntity;
+        final removedAt = at.add(const Duration(minutes: 70));
+        await b.sync.upsertEntity(
+          onB.copyWith(deletedAt: removedAt, updatedAt: removedAt),
+        );
+        await a.receiveEntity(b.sentEntities.last);
+        expect(await a.repository.getEntity(planId), isNull);
+
+        await a.sync.upsertEntity(
+          makeTestDayPlan(
+            capacityMinutes: 300,
+            updatedAt: at.add(const Duration(minutes: 65)),
+          ),
+        );
+        await b.receiveEntity(a.sentEntities.last);
+
+        for (final device in [a, b]) {
+          final stored =
+              (await device.repository.getEntityIncludingDeleted(planId))!
+                  as DayPlanEntity;
+          expect(stored.deletedAt, isNull, reason: device.host);
+          expect(stored.capacityMinutes, 300, reason: device.host);
+          // It sorts after the removal it replaced.
+          expect(stored.updatedAt, removedAt, reason: device.host);
+        }
+        expect(
+          VectorClock.compare(
+            a.sentEntities.last.vectorClock!,
+            b.sentEntities.last.vectorClock!,
+          ),
+          VclockStatus.a_gt_b,
+        );
+      },
+    );
+
+    test(
+      "a removal built on a snapshot from before a peer's edit succeeds "
+      'that edit, append-only variants included',
+      () async {
+        // A re-parse reads the old parsed items, then removes them. B linked
+        // one of them to a task meanwhile, and A received it. A parsed item
+        // is append-only, and such writes were stamped on the clock they were
+        // built on: the removal was concurrent with the edit it overwrote.
+        await a.sync.upsertEntity(makeTestParsedItem(createdAt: at));
+        await b.receiveEntity(a.sentEntities.last);
+        final snapshot = (await a.repository.getEntity(itemId))!;
+        final onB = (await b.repository.getEntity(itemId))! as ParsedItemEntity;
+        await b.sync.upsertEntity(onB.copyWith(matchedTaskId: 'task-1'));
+        await a.receiveEntity(b.sentEntities.last);
+
+        await a.sync.upsertEntity(
+          snapshot.copyWith(deletedAt: at.add(const Duration(hours: 1))),
+        );
+        await b.receiveEntity(a.sentEntities.last);
+
+        expect(
+          VectorClock.compare(
+            a.sentEntities.last.vectorClock!,
+            b.sentEntities.last.vectorClock!,
+          ),
+          VclockStatus.a_gt_b,
+        );
+        for (final device in [a, b]) {
+          expect(
+            (await device.repository.getEntityIncludingDeleted(
+              itemId,
+            ))!.deletedAt,
+            at.add(const Duration(hours: 1)),
+            reason: device.host,
+          );
+        }
+      },
+    );
+
+    test(
+      "removing an unparsed capture built on a snapshot succeeds a peer's edit "
+      'that synced in meanwhile (ADR 0081, addendum)',
+      () async {
+        // An unparsed capture takes the capture-normalizing write path, which
+        // stamped a removal on the snapshot's clock alone: concurrent with the
+        // edit it overwrote.
+        final capture = makeTestCapture();
+        expect(capture.dayId, isEmpty);
+        expect(capture.parseCompletedAt, isNull);
+        await a.sync.upsertEntity(capture);
+        await b.receiveEntity(a.sentEntities.last);
+        final snapshot =
+            (await a.repository.getEntity(capture.id))! as CaptureEntity;
+        final onB =
+            (await b.repository.getEntity(capture.id))! as CaptureEntity;
+        await b.sync.upsertEntity(onB.copyWith(transcript: 'Edited on B'));
+        await a.receiveEntity(b.sentEntities.last);
+
+        final removedAt = DateTime(2026, 9, 25, 10);
+        await a.sync.upsertEntity(snapshot.copyWith(deletedAt: removedAt));
+        await b.receiveEntity(a.sentEntities.last);
+
+        expect(
+          VectorClock.compare(
+            a.sentEntities.last.vectorClock!,
+            b.sentEntities.last.vectorClock!,
+          ),
+          VclockStatus.a_gt_b,
+        );
+        for (final device in [a, b]) {
+          expect(
+            (await device.repository.getEntityIncludingDeleted(
+              capture.id,
+            ))!.deletedAt,
+            removedAt,
+            reason: device.host,
+          );
+        }
+      },
+    );
   });
 
   group('AgentSyncService.upsertLink — a write succeeds the stored version '

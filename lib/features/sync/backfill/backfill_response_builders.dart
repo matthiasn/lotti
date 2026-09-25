@@ -78,7 +78,9 @@ extension _BackfillResponseBuilders on BackfillResponseHandler {
         final link = await _journalDb.entryLinkById(payloadId);
         return (exists: link != null, vectorClock: link?.vectorClock);
       case SyncSequencePayloadType.agentEntity:
-        final entity = await agentRepository?.getEntity(payloadId);
+        final entity = await agentRepository?.getEntityIncludingDeleted(
+          payloadId,
+        );
         return (exists: entity != null, vectorClock: entity?.vectorClock);
       case SyncSequencePayloadType.agentLink:
         final link = await agentRepository?.getLinkByIdIncludingDeleted(

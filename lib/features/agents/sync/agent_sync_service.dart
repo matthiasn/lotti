@@ -290,7 +290,12 @@ class AgentSyncService {
   /// makes its fields the ones the replicas then agree on — a write built on
   /// a stale snapshot or on no clock at all cannot keep a row here that its
   /// peers reject, and never lowers a G-counter or moves `updatedAt` back.
-  /// Append-only variants are written as given.
+  /// A removal (`deletedAt` set) of any variant is stamped the same way, so
+  /// it succeeds whatever version this device holds, including one that
+  /// synced in after the remover read the row. The persisted row is read
+  /// with its tombstone: a row written over a removal succeeds the removal on
+  /// every replica, rather than racing it (ADR 0081, addendum). Other
+  /// append-only writes are written as given.
   ///
   /// Local capture rewrites preserve an already persisted `dayId` and
   /// `parseCompletedAt` before stamping so the database row and emitted sync
@@ -336,18 +341,26 @@ class AgentSyncService {
       if (entity is CaptureEntity &&
           (entity.dayId.isEmpty || entity.parseCompletedAt == null)) {
         await _repository.runInTransaction(() async {
-          final existing = await _repository.getEntity(entity.id);
+          // A removal succeeds the stored version, tombstone included, as in
+          // the branch below; any other capture write keeps its live read.
+          final removal = entity.deletedAt != null;
+          final existing = removal
+              ? await _repository.getEntityIncludingDeleted(entity.id)
+              : await _repository.getEntity(entity.id);
           final entityToWrite = AgentRepository.normalizeCaptureForWrite(
             entity,
             existing: existing is CaptureEntity ? existing : null,
           );
-          await stampAndPersist(entityToWrite);
+          await stampAndPersist(
+            entityToWrite,
+            persisted: removal ? existing : null,
+          );
         });
-      } else if (entity.lwwOnUpdatedAt) {
+      } else if (entity.lwwOnUpdatedAt || entity.deletedAt != null) {
         await _repository.runInTransaction(() async {
           await stampAndPersist(
             entity,
-            persisted: await _repository.getEntity(entity.id),
+            persisted: await _repository.getEntityIncludingDeleted(entity.id),
           );
         });
       } else {

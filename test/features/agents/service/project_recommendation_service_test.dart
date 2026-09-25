@@ -9,9 +9,11 @@ import 'package:lotti/features/agents/service/project_recommendation_service.dar
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../sync/agent_replica_bench.dart';
 import '../test_utils.dart';
 import 'project_recommendation_service_test_helpers.dart';
 
@@ -31,6 +33,9 @@ void main() {
     mockDomainLogger = MockDomainLogger();
 
     when(() => mockSyncService.repository).thenReturn(mockRepository);
+    // Nothing is stored under an id a test does not name, such as a
+    // decision's source set before its first decision.
+    when(() => mockRepository.getEntity(any())).thenAnswer((_) async => null);
     when(
       () => mockRepository.getEntitiesByAgentId(
         any(),
@@ -1295,6 +1300,9 @@ void main() {
         type: AgentEntityTypes.projectRecommendationRun,
       ),
     ).thenAnswer((_) async => []);
+    when(
+      () => generatedRepository.getEntity(any()),
+    ).thenAnswer((_) async => null);
     when(() => generatedRepository.getEntity('generated-rec')).thenAnswer(
       (_) async => scenario.lookupEntity,
     );
@@ -1545,6 +1553,77 @@ void main() {
           limit: any(named: 'limit'),
         ),
       );
+    },
+  );
+
+  test(
+    'a decision recorded again after a peer withdrew it is live on both '
+    'devices: the revived source set succeeds the removal (ADR 0081, '
+    'addendum)',
+    () async {
+      // A dismisses a step, B undoes the dismissal (which removes the
+      // decision's source set), and A dismisses it again. The set was
+      // written afresh under its deterministic id with an empty clock:
+      // concurrent with B's removal, which is stamped later than the set's
+      // creation, so B kept the set removed while A showed it.
+      final network = ReplicaNetwork();
+      addTearDown(network.close);
+      final a = network.join('hA');
+      final b = network.join('hB');
+      ProjectRecommendationService on(AgentReplica device) =>
+          ProjectRecommendationService(
+            syncService: device.syncService,
+            notifications: MockUpdateNotifications(),
+          );
+      final start = DateTime(2026, 9, 25, 9);
+      Future<T> at<T>(int minutes, Future<T> Function() action) => withClock(
+        Clock.fixed(start.add(Duration(minutes: minutes))),
+        action,
+      );
+
+      await at(
+        0,
+        () => on(a).replaceForRun(
+          agentId: 'agent-1',
+          projectId: 'project-1',
+          runKey: 'run-1',
+          runStartedAt: start,
+          deferredItems: const [
+            {
+              'toolName': 'recommend_next_steps',
+              'args': {
+                'steps': [
+                  {'title': 'Review penguin launch'},
+                ],
+              },
+            },
+          ],
+        ),
+      );
+      await network.deliverAll();
+      final id = (await a.repository.getEntitiesByAgentId(
+        'agent-1',
+        type: AgentEntityTypes.projectRecommendation,
+      )).single.id;
+      final setId = const Uuid().v5(Namespace.url.value, '$id/decision-source');
+
+      expect(await at(1, () => on(a).dismissRecommendation(id)), isTrue);
+      await network.deliverAll();
+      expect(await at(2, () => on(b).restoreRecommendation(id)), isTrue);
+      await network.deliverAll();
+      expect(
+        (await a.repository.getEntityIncludingDeleted(setId))!.deletedAt,
+        isNotNull,
+      );
+      expect(await at(3, () => on(a).dismissRecommendation(id)), isTrue);
+      await network.deliverAll();
+
+      final sets = [
+        for (final device in [a, b])
+          (await device.repository.getEntityIncludingDeleted(setId))!,
+      ];
+      expect(sets[0].deletedAt, isNull);
+      expect(sets[1].toJson(), sets[0].toJson());
     },
   );
 }

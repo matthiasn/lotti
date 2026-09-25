@@ -1091,6 +1091,18 @@ class MockGoalCheckInDigestService extends Mock
     implements GoalCheckInDigestService {}
 
 class MockAgentRepository extends Mock implements AgentRepository {
+  /// The stored-version read (`getEntityIncludingDeleted`, which the sync
+  /// receive, backfill and local write resolution use) answers what
+  /// `getEntity` is stubbed to answer, so a test about a live row stubs the
+  /// one read. A test about a tombstone stubs `getEntityIncludingDeleted`
+  /// itself; the later, more specific stub wins.
+  MockAgentRepository() {
+    when(() => getEntityIncludingDeleted(any())).thenAnswer(
+      (invocation) =>
+          getEntity(invocation.positionalArguments.single as String),
+    );
+  }
+
   /// Optional transaction boundary hook for concurrency regression tests.
   Future<T> Function<T>(Future<T> Function() action)? transactionDelegate;
 

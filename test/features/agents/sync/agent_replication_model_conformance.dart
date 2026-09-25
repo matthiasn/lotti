@@ -317,7 +317,7 @@ class _ReplicaWorld {
       final row = await replica.row();
       for (final index in replica.delivered) {
         expect(
-          _causallyBefore(row.vectorClock!, sent[index].vectorClock!),
+          causallyBefore(row.vectorClock!, sent[index].vectorClock!),
           isFalse,
           reason: 'NoLostSuccessor on ${replica.host}: $trace',
         );
@@ -363,15 +363,6 @@ class _ReplicaWorld {
     }
   }
 }
-
-/// The causal order the model's `Before` states, independent of
-/// [VectorClock.compare]: every host in [a] is in [b] at a counter at least
-/// as large, and the clocks differ. A present host, at counter 0 too, wrote.
-bool _causallyBefore(VectorClock a, VectorClock b) =>
-    a != b &&
-    a.vclock.entries.every(
-      (e) => b.vclock.containsKey(e.key) && b.vclock[e.key]! >= e.value,
-    );
 
 void _registerReplicationModelConformance() {
   group('model conformance with specs/tla/AgentReplication.tla', () {

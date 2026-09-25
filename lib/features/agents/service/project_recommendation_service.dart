@@ -625,12 +625,24 @@ class ProjectRecommendationService {
         : runs.first.recommendationIds.contains(row.id);
   }
 
+  /// Writes the decision and its single-item source set under their
+  /// deterministic ids. Each carries the clock of the version stored under
+  /// its id, a tombstone included: a decision recorded again after
+  /// [_withdrawDecision] removed the set is that removal's causal successor
+  /// on every device. Built on no clock, the revived set was concurrent with
+  /// the removal, and a peer kept the set removed while this device showed
+  /// the decision (ADR 0081, addendum).
   Future<void> _recordDecision(
     ProjectRecommendationEntity row,
     ChangeDecisionVerdict verdict,
   ) async {
     final setId = _uuid.v5(Namespace.url.value, '${row.id}/decision-source');
     final decisionId = _uuid.v5(Namespace.url.value, '${row.id}/decision');
+    final repository = _syncService.repository;
+    final storedSet = await repository.getEntityIncludingDeleted(setId);
+    final storedDecision = await repository.getEntityIncludingDeleted(
+      decisionId,
+    );
     final args = <String, dynamic>{
       'steps': [
         {
@@ -661,7 +673,7 @@ class ProjectRecommendationService {
         ],
         createdAt: row.createdAt,
         resolvedAt: now,
-        vectorClock: const VectorClock({}),
+        vectorClock: storedSet?.vectorClock ?? const VectorClock({}),
       ),
     );
     await _syncService.upsertEntity(
@@ -676,7 +688,7 @@ class ProjectRecommendationService {
         humanSummary: row.title,
         args: args,
         createdAt: now,
-        vectorClock: const VectorClock({}),
+        vectorClock: storedDecision?.vectorClock ?? const VectorClock({}),
       ),
     );
   }

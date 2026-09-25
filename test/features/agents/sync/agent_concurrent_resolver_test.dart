@@ -642,6 +642,54 @@ void main() {
         expect((row as AgentStateEntity).revision, 2);
       });
 
+      test('a row built afresh over a removal is a re-creation and keeps its '
+          'fields — AgentReplication LocalWriteTakesEffect '
+          '(RecreateKeepsFields)', () {
+        // A day plan deleted on a device whose clock runs ahead, and drafted
+        // again here: the writer read no row, so it could not build on the
+        // tombstone. Resolved as concurrent, the removal's later instant won
+        // and the redraft was handed back.
+        final removal = state(
+          vc: {'B': 2},
+          updatedAt: DateTime(2024, 3, 20),
+        ).copyWith(deletedAt: DateTime(2024, 3, 20));
+        final redraft = state(
+          vc: null,
+          revision: 9,
+          updatedAt: DateTime(2024, 3, 18),
+        );
+
+        final row =
+            resolveLocalAgentWrite(persisted: removal, write: redraft)
+                as AgentStateEntity;
+
+        expect(row.revision, 9);
+        expect(row.deletedAt, isNull);
+        // It still sorts after the removal it replaces.
+        expect(row.updatedAt, DateTime(2024, 3, 20));
+      });
+
+      test('an edit built on a snapshot from before a removal is resolved '
+          'against it like any concurrent write', () {
+        final removal = state(
+          vc: {'A': 1, 'B': 1},
+          updatedAt: DateTime(2024, 3, 15),
+        ).copyWith(deletedAt: DateTime(2024, 3, 20));
+        final staleEdit = state(
+          vc: {'A': 1},
+          revision: 4,
+          updatedAt: DateTime(2024, 3, 18),
+        );
+
+        final row =
+            resolveLocalAgentWrite(persisted: removal, write: staleEdit)
+                as AgentStateEntity;
+
+        // The removal happened later: it stands, as on every peer.
+        expect(row.deletedAt, DateTime(2024, 3, 20));
+        expect(row.revision, 1);
+      });
+
       test('a malformed clock is treated as a base that saw nothing', () {
         final persisted = state(vc: {'A': 1}, updatedAt: DateTime(2024, 3, 20));
         final write = state(vc: {'A': -1}, revision: 7);

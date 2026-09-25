@@ -1618,7 +1618,8 @@ void main() {
           deletedAt: DateTime(2026, 9, 4),
         );
 
-        // A wins the canonical order: keep local, or apply A as incoming.
+        // A wins the canonical order of the misaligned pair: keep local, or
+        // apply A as incoming.
         expect(
           resolveIncomingChangeSet(local: onA, incoming: misaligned),
           isNull,
@@ -1627,7 +1628,17 @@ void main() {
           resolveIncomingChangeSet(local: misaligned, incoming: onA),
           same(onA),
         );
-        expect(resolveIncomingChangeSet(local: onA, incoming: deleted), isNull);
+        // A removal is ordered by the instant it was made, which is after
+        // the set was created: it wins over the concurrent live version on
+        // every replica, whichever holds which (ADR 0081, addendum).
+        expect(
+          resolveIncomingChangeSet(local: onA, incoming: deleted),
+          same(deleted),
+        );
+        expect(
+          resolveIncomingChangeSet(local: deleted, incoming: onA),
+          isNull,
+        );
         expect(
           mergeConcurrentChangeSets(local: onA, incoming: deleted),
           isNull,

@@ -274,6 +274,11 @@ AgentDomainEntity joinConvergentAgentFields({
 ///   head always covers [persisted] (ADR 0076).
 /// - `updatedAt` never moves backwards, so the successor sorts after the row
 ///   it replaces on every replica, whatever the writer's clock says.
+/// - A live row built afresh (no clock) over a removed one is a re-creation
+///   under the same id — a day plan drafted again for a day whose plan was
+///   deleted. Its writer read no row (reads hide tombstones), so it could not
+///   build on the tombstone's clock; it keeps its fields, and the stamped
+///   clock makes it the removal's successor everywhere (ADR 0081, addendum).
 ///
 /// Append-only variants (last-writer-wins on `createdAt`) and a stub or
 /// different variant in [persisted] keep [write]'s fields unchanged.
@@ -286,7 +291,11 @@ AgentDomainEntity resolveLocalAgentWrite({
       !write.lwwOnUpdatedAt) {
     return write;
   }
-  final fields = _covers(write.vectorClock, persisted.vectorClock)
+  final recreates =
+      persisted.deletedAt != null &&
+      write.deletedAt == null &&
+      write.vectorClock == null;
+  final fields = recreates || _covers(write.vectorClock, persisted.vectorClock)
       ? write
       : mergeConcurrentAgentEntities(local: persisted, incoming: write);
   return joinConvergentAgentFields(

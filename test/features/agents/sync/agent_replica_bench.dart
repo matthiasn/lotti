@@ -4,8 +4,18 @@ import 'package:lotti/features/agents/database/agent_database.dart'
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 
 import '../agent_test_device.dart';
+
+/// The causal order the models' `Before` states, independent of
+/// [VectorClock.compare]: every host in [a] is in [b] at a counter at least
+/// as large, and the clocks differ. A present host, at counter 0 too, wrote.
+bool causallyBefore(VectorClock a, VectorClock b) =>
+    a != b &&
+    a.vclock.entries.every(
+      (e) => b.vclock.containsKey(e.key) && b.vclock[e.key]! >= e.value,
+    );
 
 /// One message a device's outbox sent: an agent entity or an agent link.
 typedef ReplicaWrite = ({String from, SyncMessage message});

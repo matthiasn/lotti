@@ -7,7 +7,6 @@ extension SyncEventProcessorApply on SyncEventProcessor {
   Future<SyncApplyDiagnostics?> _applyMessage({
     required PreparedSyncEvent prepared,
     required JournalDb journalDb,
-    Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
     AfterCommitSink? afterCommit,
   }) async {
     final event = prepared.event;
@@ -330,7 +329,6 @@ extension SyncEventProcessorApply on SyncEventProcessor {
           resolvedEntity: prepared.resolvedAgentEntity,
           pendingProjectActivityAtWasPresent:
               prepared.pendingProjectActivityAtWasPresent,
-          prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
         );
         return null;
       case final SyncConsumptionEvent msg:
@@ -359,16 +357,14 @@ extension SyncEventProcessorApply on SyncEventProcessor {
       case SyncOutboxBundle():
         final bundle = prepared.resolvedOutboxBundle;
         if (bundle == null) return null;
-        await _withPrefetchedAgentEntities(
+        // Each agent entity of the bundle is read afresh inside its own
+        // receive transaction; a snapshot taken before them would be stale.
+        await _outboxBundleUnpacker.apply(
           bundle: bundle,
-          apply: (prefetchedAgentEntitiesById) => _outboxBundleUnpacker.apply(
-            bundle: bundle,
-            applyChild: (child) => _applyMessage(
-              prepared: child,
-              journalDb: journalDb,
-              prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
-              afterCommit: afterCommit,
-            ),
+          applyChild: (child) => _applyMessage(
+            prepared: child,
+            journalDb: journalDb,
+            afterCommit: afterCommit,
           ),
         );
         return null;

@@ -168,6 +168,133 @@ repeats.
     complete the session, still creates its version in its own transaction.
     A retry after a failed outbox flush can create a second version.
 
+## Addendum (2026-09-25): agent entity removals stick on every device
+
+Decision from the user: an agent entity that was removed stays removed on
+every device, as a removed link does. This closes the residual above,
+"Agent entities have hole 5 too", and the one after it, "Other entity types
+still receive in two steps".
+
+`specs/tla/AgentReplication.tla` gains a third kind, `"removal"`: a register
+removed and written again, whose tombstone (`deletedAt`) is ordered like any
+other field. The same model now also loses deliveries and recovers them by
+backfill, and can split the receive into a read and a write. Modelled as the
+code was, TLC found these holes:
+
+9. **A late copy of the live version replaced a removal.** The entity receive
+   read the stored row with `getEntity`, which filters `deleted_at IS NULL`,
+   so a removal read as no row (`NoLostSuccessor`, three steps: A writes,
+   A removes, A receives its own first version late). A parsed capture item
+   replaced by a re-parse, a deleted day plan, template or soul came back.
+10. **Backfill could not serve a removal.** The responder, the verifier and
+    own-counter settlement read the same way. A device that lost the removal
+    was answered `deleted`, settled the gap with nothing applied and kept the
+    entity (`Converged`, three steps).
+11. **A row written over a removal did not succeed it.** The local write
+    resolution read the persisted row with `getEntity` as well. A day plan
+    drafted again over a peer's removal carried the drafting host's counter
+    alone, concurrent with the removal. With the removal stamped later, the
+    peers kept it while the drafting device kept the plan, and a late copy of
+    the first version then won over the draft (`NoLostSuccessor`, six steps).
+12. **A re-creation was handed the removal back.** Built afresh, because its
+    writer reads no row, the draft was resolved against the tombstone as if
+    concurrent, and a removal at the same instant or later won
+    (`LocalWriteTakesEffect`, two steps).
+13. **Every other type was received in two steps,** reading the row (or the
+    outbox bundle's prefetched snapshot of it) and writing after an await. A
+    local write that committed in between was overwritten
+    (`NoLostSuccessor`, eight steps).
+
+Three holes were outside the model's reach and were found by the audit of
+every writer that soft-deletes an agent entity:
+
+14. **A removal did not always rank at its own instant.** Last-writer-wins
+    orders a concurrent pair by `updatedAt`, or `createdAt` for append-only
+    variants. The soul, soul-head and version removals set `deletedAt` alone,
+    and an append-only row has no other timestamp to move. A removal then
+    sorted with the edit it came after, or tied with it, and the canonical
+    clock order could bring the entity back on every device. TLC checks
+    convergence either way; this is about which version the devices converge
+    on.
+15. **A removal of an append-only row was stamped on its snapshot.** The
+    local write path resolved only writes to mutable registers against the
+    persisted row. A re-parse that read the old parsed items and then
+    removed them overwrote an edit that synced in meanwhile, under a clock
+    concurrent with it.
+16. **The recommendation decision was revived on no clock.** Withdrawing a
+    project recommendation's decision removes its source change set, and
+    deciding again writes it afresh under its deterministic id with an empty
+    clock. The revival was concurrent with the removal, which the removal's
+    instant now wins. The device that decided again showed the decision and
+    its peers did not.
+
+### Decision
+
+7. **The stored version includes its tombstone** wherever sync orders
+   versions: `AgentRepository.getEntityIncludingDeleted` is what the receive
+   (`resolveReceivedAgentEntity`), the backfill responder and verifier,
+   own-counter settlement, the sequence log's canonical clock and the local
+   write resolution read.
+8. **Every agent entity is received in one transaction.** The stored row is
+   read, resolved and written together, for every type. The outbox bundle's
+   prefetch is gone, and so is the separate change-set receive path, which
+   the general one now covers.
+9. **A removal succeeds the version it replaces.** A local removal of any
+   variant, append-only ones included, is stamped with a clock that covers
+   the stored version, as a write to a mutable register already was.
+10. **A removal ranks at its instant.** `effectiveUpdatedAt` is the later of
+    the variant's timestamp and `deletedAt`. A removal concurrent with an
+    edit is last-writer-wins by these instants: the later of the two stands
+    on every device. Edits of an append-only variant never move its
+    timestamp, so a removal wins over any edit concurrent with it. No type
+    that is removed has a status override.
+11. **A row built afresh over a tombstone is a re-creation and keeps its
+    fields** (`resolveLocalAgentWrite`). Its clock covers the tombstone, so
+    it succeeds the removal everywhere, and its `updatedAt` is raised to the
+    removal's instant at least. A write that carries a clock older than the
+    tombstone is an edit of a stale snapshot and is still resolved against
+    it as concurrent.
+12. **A writer that revives an append-only row under a deterministic id
+    carries the stored clock.** The recommendation decision and its source
+    set read the stored version, tombstone included, and build on its clock.
+
+### Consequences
+
+- `Converged`, `NoLostSuccessor` and `LocalWriteTakesEffect` hold for the
+  removal kind on three replicas with stale and clockless writes and a clock
+  that lags by one tick (`AgentReplicationRemoval`), and on two replicas
+  with any delivery lost and recovered by backfill
+  (`AgentReplicationRemovalLossy`). Each switch set back has a
+  counterexample (`specs/tla/README.md`). The other configurations keep
+  their state counts.
+- A bundle of N agent entities costs N primary-key reads, each in its own
+  receive transaction, instead of one batched read before them. Every
+  removal costs one primary-key read, as a write to a mutable register does.
+- On a mutable register a removal wins over a concurrent edit only when it
+  is the later of the two: an edit made after a removal it had not seen
+  brings the entity back on every device. On an append-only variant the
+  removal always wins.
+- A row built afresh over a removed one always brings it back. The writers
+  that do so read with `getEntity`, which hides the tombstone, so they
+  cannot tell a re-creation from a first creation. Three writers re-create
+  under a reused id today: the day plan's drafting, the recommendation
+  decision, and the seeding of the default templates and souls
+  (`AgentTemplateSeeding.seedDefaults`, `SoulTemplateOps.seedDefaults`),
+  which runs at every start and creates a default the user deleted again.
+  The seeding did so before this change too, on the starting device and,
+  unless a peer's clock ran ahead, on the others. That the removal of a
+  default does not stick is a product question this change does not
+  decide: the options are to seed only on a first start, to skip an id
+  whose tombstone is stored, or to keep restoring the defaults.
+- An append-only row re-created afresh (no clock) under a reused id is
+  written as given, without reading the stored version: only removals of
+  append-only variants read it, to keep appends at one write. The one such
+  writer, the recommendation decision, carries the stored clock itself.
+- Residuals: the soul-assignment swap and `approveSoulProposal` above stay
+  open. Hard deletes (`AgentRepository.hardDeleteAgent`, retention pruning)
+  leave no tombstone and are not synced, so a late copy can still restore
+  such a row; they are unchanged.
+
 ## Related
 
 - [ADR 0068](./0068-model-checked-agent-convergence.md): the entity
@@ -175,6 +302,7 @@ repeats.
 - [ADR 0078](./0078-entry-link-versions-are-ordered.md): the same class of
   hole for journal entry links
 - `specs/tla/EvolutionSession.tla`, `specs/tla/AgentLinks.tla`,
+  `specs/tla/AgentReplication.tla` (the removal kind),
   `specs/tla/VersionHeads.tla`, `specs/tla/README.md`
 - [Templates, souls and evolution](../../knowledge/features/agents/templates-souls-evolution.md)
 - [Agent persistence and sync](../../knowledge/features/agents/persistence-and-sync.md)

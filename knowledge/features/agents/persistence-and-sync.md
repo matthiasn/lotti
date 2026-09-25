@@ -5,7 +5,7 @@ description: The agent.sqlite entity and link model, bulk-read chunking, and exa
 resource: ../../../lib/features/agents/database/agent_database.dart
 tags: [agents, persistence, sync, privacy, drift]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-25T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-25T16:00:00Z }
 stale_after: 2026-12-25
 sources:
   - id: error-logging
@@ -123,6 +123,14 @@ sources:
     resource: ../../../specs/tla/AgentLinks.tla
     title: TLA+ model of agent link versions, removals and backfill
     last_modified: 2026-09-25
+  - id: entity-receive
+    resource: ../../../lib/features/agents/sync/agent_entity_receive.dart
+    title: resolveReceivedAgentEntity — the receive of one agent entity, tombstone included
+    last_modified: 2026-09-25
+  - id: lww-timestamp
+    resource: ../../../lib/features/agents/sync/agent_lww_timestamp.dart
+    title: effectiveUpdatedAt — a removal ranks at its deletedAt
+    last_modified: 2026-09-25
 ---
 
 # One database, two shapes
@@ -198,6 +206,42 @@ the stored version, tombstone included. A late copy of a removed link
 therefore stays removed, and a link written again after a removal wins on
 every device (ADR 0081, `specs/tla/AgentLinks.tla`; the order itself is in
 [vector clocks and conflicts](../sync/vector-clocks-and-conflicts.md)).
+
+**A removed entity is a tombstone too, and sync orders it the same way.**
+Removing an agent entity writes it with `deletedAt` set. The read paths
+(`getEntity`, `getEntitiesByIds`, the typed queries) hide tombstones, so the
+UI, the workflows and the writers never see a removed row. Sync reads
+`getEntityIncludingDeleted` instead: the receive
+(`resolveReceivedAgentEntity`), the backfill responder and verifier,
+own-counter settlement, and the local write resolution in
+`AgentSyncService._upsertEntityRaw`. Every received entity is read, resolved
+and written in one transaction, whatever its type; there is no bundle-wide
+prefetch. A removal is stamped as the successor of the version it removes,
+and it ranks at its `deletedAt` (`effectiveUpdatedAt`). A late copy of the
+live version therefore never brings a removed entity back, and a device that
+missed the removal gets the tombstone from backfill (ADR 0081, addendum;
+`specs/tla/AgentReplication.tla`, the removal kind).
+
+```mermaid
+stateDiagram-v2
+  [*] --> Live: create
+  Live --> Live: edit
+  Live --> Removed: remove (deletedAt set)
+  Removed --> Live: built afresh under the same id
+  note right of Removed
+    getEntity and the typed reads hide it.
+    Sync reads it with getEntityIncludingDeleted.
+  end note
+```
+
+A row built afresh over a removed one — no clock, because its writer read no
+row — is a re-creation: it keeps its fields and succeeds the removal on every
+device. The day plan drafted again for a deleted day, the recommendation
+decision recorded again after an undo, and the seeding of default templates
+and souls re-create under a reused id. An edit and a removal made
+concurrently resolve by last-writer-wins on their instants; an append-only
+variant's edit keeps its `createdAt`, so the removal wins. The rules are in
+[vector clocks and conflicts](../sync/vector-clocks-and-conflicts.md#agent-entities-a-removal-is-a-version-too).
 
 **Soul assignments and improver targets hold one slot.** A partial unique index
 allows one live `soul_assignment` per template and one live `improver_target`
@@ -374,12 +418,15 @@ to `AgentRepository` directly, which is what avoids echo loops. Startup wiring
 attaches the sync event processor when one is registered.
 
 A local write to a mutable register — a variant last-writer-wins orders by
-`updatedAt` — is resolved against the persisted row in the same transaction
-and stamped with a clock covering that row, so every device takes it as the
-row's successor and keeps the same fields the writer keeps (ADR 0068). A write
-built on a stale snapshot or on `vectorClock: null` is resolved as if it were
-concurrent with the row, agent-state G-counters never go down, and
-`updatedAt` never moves backwards. Append-only variants skip the read.
+`updatedAt` — is resolved against the persisted row, tombstone included, in
+the same transaction and stamped with a clock covering that row, so every
+device takes it as the row's successor and keeps the same fields the writer
+keeps (ADR 0068). A write built on a stale snapshot or on
+`vectorClock: null` is resolved as if it were concurrent with the row, except
+a row built afresh over a tombstone, which is a re-creation and keeps its
+fields; agent-state G-counters never go down, and `updatedAt` never moves
+backwards. Other append-only writes skip the read, but a removal of any
+variant makes it, so it succeeds whatever version this device holds.
 
 Several writers share an agent's state row — wake outcomes, report
 freshness, the throttle, sync. Outcome writes therefore go through
@@ -393,7 +440,7 @@ The head pointer, `recentHeadMessageId`, has one local writer —
 `_appendMessage`, plus `appendJoin` for a join — and every other state write
 keeps the persisted head. It is not taken from the last writer on receive
 either (ADR 0076): the sync processor reads, resolves and writes an incoming
-state row in one transaction, never from a bundle's prefetched snapshot, and
+state row in one transaction, as it does every entity, and
 merges the head by the local message DAG — the head that descends from the
 other wins, two heads with no known order go by id. An append first advances
 a head that already has a child here to a tip past it

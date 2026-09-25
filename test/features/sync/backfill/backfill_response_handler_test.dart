@@ -3158,7 +3158,7 @@ void main() {
       );
 
       when(
-        () => mockAgentRepository.getEntity(agentEntityId),
+        () => mockAgentRepository.getEntityIncludingDeleted(agentEntityId),
       ).thenAnswer((_) async => agentEntity);
 
       when(
@@ -3216,7 +3216,7 @@ void main() {
         );
 
         when(
-          () => mockAgentRepository.getEntity(agentEntityId),
+          () => mockAgentRepository.getEntityIncludingDeleted(agentEntityId),
         ).thenAnswer((_) async => agentEntity);
 
         when(
@@ -3251,6 +3251,59 @@ void main() {
       },
     );
 
+    test(
+      'answers with the tombstone of a removed agent entity, not "deleted" '
+      '(AgentReplication.tla: BackfillServesTombstones)',
+      () async {
+        // The responder read the entity with `getEntity`, which hides a
+        // tombstone, and answered `deleted`: a requester that lost the
+        // removal settled the gap with nothing applied and kept the entity.
+        const agentEntityId = 'removed-agent-entity';
+        _stubRequestLookup(
+          mockSequenceService,
+          mockOutboxService,
+          hostId: aliceHostId,
+          counter: 20,
+          logItem: _createLogItem(
+            aliceHostId,
+            20,
+            entryId: agentEntityId,
+            originatingHostId: bobHostId,
+            payloadType: SyncSequencePayloadType.agentEntity,
+          ),
+        );
+        final tombstone = makeTestIdentity(
+          id: agentEntityId,
+          vectorClock: const VectorClock({aliceHostId: 20}),
+        ).copyWith(deletedAt: DateTime(2026, 9, 25, 9));
+        when(
+          () => mockAgentRepository.getEntity(agentEntityId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getEntityIncludingDeleted(agentEntityId),
+        ).thenAnswer((_) async => tombstone);
+
+        await handler.handleBackfillRequest(
+          const SyncBackfillRequest(
+            entries: [BackfillRequestEntry(hostId: aliceHostId, counter: 20)],
+            requesterId: requesterId,
+          ),
+        );
+
+        final captured = verify(
+          () => mockOutboxService.enqueueMessage(captureAny()),
+        ).captured;
+        expect(
+          captured.whereType<SyncAgentEntity>().single.agentEntity,
+          tombstone,
+        );
+        expect(
+          captured.whereType<SyncBackfillResponse>().where((r) => r.deleted),
+          isEmpty,
+        );
+      },
+    );
+
     test('sends deleted response when agent entity not found', () async {
       final logItem = _createLogItem(
         aliceHostId,
@@ -3269,7 +3322,7 @@ void main() {
       );
 
       when(
-        () => mockAgentRepository.getEntity('missing-agent-id'),
+        () => mockAgentRepository.getEntityIncludingDeleted('missing-agent-id'),
       ).thenAnswer((_) async => null);
 
       const request = SyncBackfillRequest(
@@ -3515,6 +3568,63 @@ void main() {
   });
 
   group('handleBackfillResponse - AgentEntity', () {
+    test(
+      'verifies a removed agent entity against its tombstone and marks it '
+      'backfilled (AgentReplication.tla: BackfillServesTombstones)',
+      () async {
+        const response = SyncBackfillResponse(
+          hostId: aliceHostId,
+          counter: 20,
+          deleted: false,
+          payloadType: SyncSequencePayloadType.agentEntity,
+          payloadId: 'removed-agent-entity',
+        );
+        when(
+          () => mockSequenceService.handleBackfillResponse(
+            hostId: any(named: 'hostId'),
+            counter: any(named: 'counter'),
+            deleted: any(named: 'deleted'),
+            unresolvable: any(named: 'unresolvable'),
+            entryId: any(named: 'entryId'),
+            payloadType: any(named: 'payloadType'),
+          ),
+        ).thenAnswer((_) async {});
+        final tombstone = makeTestIdentity(
+          id: 'removed-agent-entity',
+          vectorClock: const VectorClock({aliceHostId: 20}),
+        ).copyWith(deletedAt: DateTime(2026, 9, 25, 9));
+        when(
+          () => mockAgentRepository.getEntity('removed-agent-entity'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getEntityIncludingDeleted(
+            'removed-agent-entity',
+          ),
+        ).thenAnswer((_) async => tombstone);
+        when(
+          () => mockSequenceService.verifyAndMarkBackfilled(
+            hostId: any(named: 'hostId'),
+            counter: any(named: 'counter'),
+            entryId: any(named: 'entryId'),
+            entryVectorClock: any(named: 'entryVectorClock'),
+            payloadType: any(named: 'payloadType'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        await handler.handleBackfillResponse(response);
+
+        verify(
+          () => mockSequenceService.verifyAndMarkBackfilled(
+            hostId: aliceHostId,
+            counter: 20,
+            entryId: 'removed-agent-entity',
+            entryVectorClock: tombstone.vectorClock!,
+            payloadType: SyncSequencePayloadType.agentEntity,
+          ),
+        ).called(1);
+      },
+    );
+
     test('verifies agent entity and marks backfilled when found', () async {
       const response = SyncBackfillResponse(
         hostId: aliceHostId,
@@ -3541,7 +3651,7 @@ void main() {
       );
 
       when(
-        () => mockAgentRepository.getEntity('agent-entity-id'),
+        () => mockAgentRepository.getEntityIncludingDeleted('agent-entity-id'),
       ).thenAnswer((_) async => agentEntity);
 
       when(
@@ -4909,6 +5019,53 @@ void main() {
     }
 
     test(
+      'an own counter whose write removed an agent entity is bound and its '
+      'tombstone resent, not burned',
+      () async {
+        // The removal's own clock read through `getEntity` came back as no
+        // row, so the counter it reserved could not be proven and was given
+        // up although the removal had landed.
+        ownRow = _createLogItem(
+          aliceHostId,
+          3,
+          entryId: 'removed-3',
+          status: SyncSequenceStatus.reserved,
+          payloadType: SyncSequencePayloadType.agentEntity,
+        );
+        stubPending(pending: false);
+        final tombstone = makeTestIdentity(
+          id: 'removed-3',
+          vectorClock: const VectorClock({aliceHostId: 3}),
+        ).copyWith(deletedAt: DateTime(2026, 9, 25, 9));
+        when(
+          () => mockAgentRepository.getEntity('removed-3'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getEntityIncludingDeleted('removed-3'),
+        ).thenAnswer((_) async => tombstone);
+
+        final outcome = await handler.settleOwnCounter(
+          hostId: aliceHostId,
+          counter: 3,
+        );
+
+        expect(outcome, OwnCounterSettlement.bound);
+        verify(
+          () => mockOutboxService.enqueueMessageOrThrow(
+            any(
+              that: isA<SyncAgentEntity>().having(
+                (m) => m.agentEntity,
+                'agentEntity',
+                tombstone,
+              ),
+            ),
+          ),
+        ).called(1);
+        verifyNothingBurned();
+      },
+    );
+
+    test(
       'an agent payload is deferred until the agent store is wired, and '
       'wiring it settles the orphans that waited for it',
       () async {
@@ -4951,7 +5108,7 @@ void main() {
           vectorClock: const VectorClock({aliceHostId: 3}),
         );
         when(
-          () => mockAgentRepository.getEntity('agent-3'),
+          () => mockAgentRepository.getEntityIncludingDeleted('agent-3'),
         ).thenAnswer((_) async => agent);
 
         unwired.agentRepository = mockAgentRepository;
@@ -5281,7 +5438,7 @@ void _stubPayloadByType(
       );
     case SyncSequencePayloadType.agentEntity:
       when(
-        () => bench.agentRepository.getEntity(payloadId),
+        () => bench.agentRepository.getEntityIncludingDeleted(payloadId),
       ).thenAnswer(
         (_) async => vectorClock == null
             ? null
@@ -5352,7 +5509,7 @@ void _stubVerificationPayload(
       );
     case SyncSequencePayloadType.agentEntity:
       when(
-        () => bench.agentRepository.getEntity(payloadId),
+        () => bench.agentRepository.getEntityIncludingDeleted(payloadId),
       ).thenAnswer(
         (_) async => scenario.payloadExists
             ? makeTestIdentity(id: payloadId, vectorClock: vectorClock)
