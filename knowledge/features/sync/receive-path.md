@@ -5,9 +5,13 @@ description: The Drift-backed inbound queue, the anchored catch-up bridge, per-r
 resource: ../../../lib/features/sync/queue
 tags: [sync, inbound-queue, catch-up, matrix]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-25T21:40:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-26T00:45:00Z }
 stale_after: 2026-12-25
 sources:
+  - id: sdk-batch-barrier
+    resource: ../../../lib/features/sync/queue/queue_sync_batch.dart
+    title: Hold SDK slices until metadata protects their gap
+    last_modified: 2026-09-26
   - id: tla-spec
     resource: ../../../specs/tla/InboundQueue.tla
     title: TLA+ model of the inbound queue, its walks and its marker
@@ -122,6 +126,39 @@ worker applied or abandoned again in between must stay as it is.
 
 `QueuePipelineCoordinator` subscribes to `MatrixSessionManager.timelineEvents`.
 The subscription uses `asyncMap`, so live events are handled in stream order.
+SDK `processing` status opens an admission barrier before its timeline events;
+progress updates share that barrier. A subscriber attaching during processing
+also starts held. `onSync` supplies the later room metadata: a limited slice
+must first await the coordinator's durable catch-up claim above the old marker.
+Only then can its events reach the queue and worker. An older claim still writing
+also holds admission when a later response has already finished. This closes the
+window where the post-gap slice could advance the anchor before the gap was known.
+
+If the SDK finishes or errors without observed metadata, the coordinator claims
+the unknown range conservatively before release and requests a bridge pass.
+Failed claims remain retained by the queue and are retried before insertion.
+Out-of-batch decrypted events pass directly when no response is held. Shutdown
+and failed startup discard held events without moving the marker, then await
+claims already writing before disposing their stores; startup catch-up can
+recover those unadmitted events from the retained room history.
+
+```mermaid
+sequenceDiagram
+  participant SDK as Matrix SDK
+  participant Gate as Queue admission barrier
+  participant Queue as Durable inbound queue
+  participant Worker as Inbound worker
+  SDK->>Gate: processing
+  SDK->>Gate: timeline events, held
+  SDK->>Gate: onSync metadata
+  alt limited timeline
+    Gate->>Queue: await claim above old applied marker
+  end
+  Gate->>Queue: enqueue held events in order
+  Queue->>Worker: lease and apply
+  Worker->>Queue: advance marker, preserve missing range
+```
+
 For an event still typed `m.room.encrypted`, the coordinator first lowers the
 room's durable `queue_markers.resume_floor_ts`, then skips the event.
 **Pre-decryption ciphertext never lands in `inbound_event_queue.raw_json`**:

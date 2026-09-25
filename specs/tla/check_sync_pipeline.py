@@ -15,8 +15,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 
 
-def check(name, constants, assertion, *, temporal=False, extension="", fails=True):
-    config = (HERE / "SyncPipeline.cfg").read_text()
+def check(name, constants, assertion, *, temporal=False, extension="", fails=True,
+          module="SyncPipeline", profile=None):
+    config = (HERE / f"{profile or module}.cfg").read_text()
     for key, value in constants.items():
         config, count = re.subn(
             rf"(?m)^    {key} = .*$", f"    {key} = {value}", config
@@ -25,16 +26,16 @@ def check(name, constants, assertion, *, temporal=False, extension="", fails=Tru
             raise ValueError(f"{name}: unknown/duplicate constant {key}")
     config = re.sub(r"(?m)^(INVARIANTS|PROPERTIES) .*\n?", "", config)
     config += f"{'PROPERTY' if temporal else 'INVARIANT'} {assertion}\n"
-    spec = (HERE / "SyncPipeline.tla").read_text()
+    spec = (HERE / f"{module}.tla").read_text()
     separator = "\n" + "=" * 77
     spec = spec.replace(separator, extension + separator)
     with tempfile.TemporaryDirectory(prefix=f"sync-pipeline-{name}-") as directory:
         work = Path(directory)
         shutil.copy2(HERE / "tlc.sh", work / "tlc.sh")
-        (work / "SyncPipeline.tla").write_text(spec)
-        (work / "SyncPipeline.cfg").write_text(config)
+        (work / f"{module}.tla").write_text(spec)
+        (work / f"{module}.cfg").write_text(config)
         result = subprocess.run(
-            ["bash", str(work / "tlc.sh"), "SyncPipeline"],
+            ["bash", str(work / "tlc.sh"), module],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
             timeout=600 if constants.get("AnnounceHeads") == "TRUE" else 300,
             check=False,
@@ -55,6 +56,10 @@ def check(name, constants, assertion, *, temporal=False, extension="", fails=Tru
 
 
 def main():
+    for gated, fails in (("TRUE", False), ("FALSE", True)):
+        check("limited-slice-gate-" + gated, {"GateSyncSlice": gated},
+              "NoSilentLoss", fails=fails, module="InboundQueue",
+              profile="InboundQueueSlice")
     mutations = [
         ("burn", "DurableBurn", {"MaxCounter": "1", "AbortCounters": "{1}",
          "MaxFaults": "1", "FaultKinds": '{"burnStage"}'}, "BurnHasDurableMarker"),
