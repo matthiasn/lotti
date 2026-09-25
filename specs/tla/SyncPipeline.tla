@@ -20,7 +20,7 @@ EXTENDS Naturals, FiniteSets
 CONSTANTS Family, Peers, MaxCounter, SeparateEntities, AbortCounters, ConcurrentWriters,
           MaxFaults, MaxCrashes, FaultKinds,
           DurableBurn, BindAfterEnqueue, ReceiptAfterApply, VerifyHints,
-          PrepareExactPayload
+          PrepareExactPayload, RetryReceipts
 
 ASSUME /\ Family \in {"journal", "entryLink", "agentEntity", "agentLink",
                        "notification", "consumptionEvent"}
@@ -248,11 +248,12 @@ Record(p, m) ==
     /\ s' = [s EXCEPT !.received[p] = @ \cup (Carries(m) \ s.burned[p]),
               !.head[p] = Observe(@, Carries(m)),
               !.inbox[p][m] = "done"]
-\* Current handlers swallow a sequence-write error after applying data.
-\* This may leave an unobserved tail, explicitly outside VisibleGapHeals.
+\* A failed sequence write leaves delivery retryable, including at the tail.
+\* RetryReceipts=FALSE reproduces the old swallowed-error counterexample.
 RecordFail(p, m) == /\ IsData(m) /\ s.inbox[p][m] = "applied"
                     /\ CanFault("receipt")
-                    /\ s' = [s EXCEPT !.inbox[p][m] = "done", !.faults = @ + 1]
+                    /\ s' = [s EXCEPT !.inbox[p][m] = IF RetryReceipts THEN "queued" ELSE "done",
+                                      !.faults = @ + 1]
 ReceiveBurn(p, m) ==
     /\ Queued(p, m) /\ m.kind = "burn"
     /\ s' = [s EXCEPT !.burned[p] = IF m.counter \in s.received[p] THEN @ ELSE @ \cup {m.counter},

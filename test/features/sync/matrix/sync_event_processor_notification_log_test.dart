@@ -349,7 +349,7 @@ void main() {
     );
 
     test(
-      'captures and swallows recordReceivedEntry exceptions',
+      'logs and rethrows recordReceivedEntry exceptions',
       () async {
         when(
           () => sequenceLog.recordReceivedEntry(
@@ -367,18 +367,21 @@ void main() {
           linkedTaskId: 'task-1',
         );
 
-        await processorWithLog.apply(
-          prepared: PreparedSyncEvent.forTesting(
-            event: event,
-            syncMessage: SyncMessage.notification(
-              id: notification.meta.id,
-              jsonPath: '/notifications/throwing-receipt.json',
-              vectorClock: notification.meta.vectorClock,
-              originatingHostId: 'remote-host',
+        await expectLater(
+          processorWithLog.apply(
+            prepared: PreparedSyncEvent.forTesting(
+              event: event,
+              syncMessage: SyncMessage.notification(
+                id: notification.meta.id,
+                jsonPath: '/notifications/throwing-receipt.json',
+                vectorClock: notification.meta.vectorClock,
+                originatingHostId: 'remote-host',
+              ),
+              resolvedNotification: notification,
             ),
-            resolvedNotification: notification,
+            journalDb: journalDb,
           ),
-          journalDb: journalDb,
+          throwsA(isA<Exception>()),
         );
 
         verify(
@@ -393,7 +396,7 @@ void main() {
     );
 
     test(
-      'captures and swallows state update recordReceivedEntry exceptions',
+      'logs and rethrows state update recordReceivedEntry exceptions',
       () async {
         await notificationsDb.upsertNotification(
           hNotification(id: 'state-throwing', linkedTaskId: 'task-1'),
@@ -407,17 +410,20 @@ void main() {
           ),
         ).thenThrow(Exception('state boom'));
 
-        await processorWithLog.apply(
-          prepared: PreparedSyncEvent.forTesting(
-            event: event,
-            syncMessage: SyncMessage.notificationStateUpdate(
-              id: 'state-throwing',
-              seenAt: DateTime.utc(2026, 5, 17, 14),
-              vectorClock: const VectorClock({'remote-host': 3}),
-              originatingHostId: 'remote-host',
+        await expectLater(
+          processorWithLog.apply(
+            prepared: PreparedSyncEvent.forTesting(
+              event: event,
+              syncMessage: SyncMessage.notificationStateUpdate(
+                id: 'state-throwing',
+                seenAt: DateTime.utc(2026, 5, 17, 14),
+                vectorClock: const VectorClock({'remote-host': 3}),
+                originatingHostId: 'remote-host',
+              ),
             ),
+            journalDb: journalDb,
           ),
-          journalDb: journalDb,
+          throwsA(isA<Exception>()),
         );
 
         verify(

@@ -151,6 +151,7 @@ extension _JournalHandlers on SyncEventProcessor {
           stackTrace: st,
           subDomain: 'recordReceived',
         );
+        rethrow;
       }
     }
 
@@ -299,6 +300,7 @@ extension _JournalHandlers on SyncEventProcessor {
           stackTrace: st,
           subDomain: 'duplicateRecord',
         );
+        rethrow;
       }
     }
 
@@ -499,6 +501,7 @@ extension _JournalHandlers on SyncEventProcessor {
             stackTrace: st,
             subDomain: 'recordReceived',
           );
+          rethrow;
         }
       }
     }
@@ -577,6 +580,7 @@ extension _JournalHandlers on SyncEventProcessor {
             stackTrace: st,
             subDomain: 'recordReceived',
           );
+          rethrow;
         }
       }
     }

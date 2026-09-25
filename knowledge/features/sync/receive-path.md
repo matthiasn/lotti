@@ -5,7 +5,7 @@ description: The Drift-backed inbound queue, the anchored catch-up bridge, per-r
 resource: ../../../lib/features/sync/queue
 tags: [sync, inbound-queue, catch-up, matrix]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-25T18:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-25T21:40:00Z }
 stale_after: 2026-12-25
 sources:
   - id: tla-spec
@@ -322,10 +322,10 @@ the loop waits one idle tick (or for `stop()`) and carries on. Nothing else
 restarts the worker while the coordinator runs, so a loop that ended on an
 error would strand every queued row until the next restart.
 
-## Prepare outside the transaction, apply inside
+## Prepare outside the transaction, receipt after commit
 
-`QueueApplyAdapter` runs `prepare` outside the writer transaction and `apply`
-inside it — this is the P1 freeze fix (#2981). Prepare is I/O-bound (attachment
+`QueueApplyAdapter` runs `prepare` outside writer transactions — the P1 freeze
+fix (#2981). Prepare is I/O-bound (attachment
 downloads, gzip decode, JSON decode); running it inside a write transaction held
 the writer lock for the length of a network round trip.
 
@@ -339,8 +339,26 @@ Terminal outcomes caught at prepare time (`permanentSkip`, `pendingAttachment`,
 `retriable`) also survive in the cache, so apply surfaces them without re-running
 prepare.
 
-Each entry's apply runs in its own `JournalDb.transaction`, but only for payload
-families that write to JournalDb tables.
+Journal entities and entry links own their narrow JournalDb transactions.
+Their sequence receipt is written to SyncDatabase only after the domain commit
+returns. The adapter must not wrap these handlers or outbox bundles in another
+journal transaction: a nested savepoint can succeed before an outer commit
+fails, leaving a receipt whose payload rolled back. Other families use their
+own database; the adapter retains the outer journal transaction for definitions,
+config flags and backfill controls.
+
+Receipt write errors propagate to the queue's retriable outcome for journal
+entities, entry links, agents, notifications and consumption events. Replay
+retries receipt even when the domain row is already present. Bundle application
+stops at any failed child and retries the containing delivery; earlier committed
+children tolerate replay. Each child's post-commit effects finish before moving
+to the next child. The worker's attempt limit still applies, so prolonged
+failure can require sequence repair.
+
+The adapter conformance tests use the real processor, JournalDb and SyncDatabase
+with both individual and bundled links. SQLite fault injection covers a refused
+receipt insert and a deferred constraint that fails the payload commit, then
+verifies retry restores the payload and its receipt without a false acknowledgement.
 
 # Marker advancement is monotonic
 

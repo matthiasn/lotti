@@ -285,35 +285,40 @@ void main() {
         ).called(1);
       });
 
-      test('logs and swallows sequence-recording failures — the applied '
-          'event must not be rolled back by bookkeeping errors', () async {
-        when(
-          () => sequenceLog.recordReceivedEntry(
-            entryId: any(named: 'entryId'),
-            vectorClock: any(named: 'vectorClock'),
-            originatingHostId: any(named: 'originatingHostId'),
-            coveredVectorClocks: any(named: 'coveredVectorClocks'),
-            payloadType: any(named: 'payloadType'),
-          ),
-        ).thenThrow(StateError('sequence log down'));
-        final payload = makeConsumptionEvent(
-          id: 'evt-err',
-          vectorClock: const VectorClock({'remote': 4}),
-        );
-        _stubIncomingEvent(payload);
+      test(
+        'rethrows receipt failures after persisting the consumption event',
+        () async {
+          when(
+            () => sequenceLog.recordReceivedEntry(
+              entryId: any(named: 'entryId'),
+              vectorClock: any(named: 'vectorClock'),
+              originatingHostId: any(named: 'originatingHostId'),
+              coveredVectorClocks: any(named: 'coveredVectorClocks'),
+              payloadType: any(named: 'payloadType'),
+            ),
+          ).thenThrow(StateError('sequence log down'));
+          final payload = makeConsumptionEvent(
+            id: 'evt-err',
+            vectorClock: const VectorClock({'remote': 4}),
+          );
+          _stubIncomingEvent(payload);
 
-        await processor.process(event: event, journalDb: journalDb);
+          await expectLater(
+            processor.process(event: event, journalDb: journalDb),
+            throwsA(isA<StateError>()),
+          );
 
-        verify(() => repo.upsertEvent(payload)).called(1);
-        verify(
-          () => loggingService.error(
-            LogDomain.sync,
-            any<Object>(),
-            stackTrace: any(named: 'stackTrace'),
-            subDomain: 'processor.recordReceivedConsumptionEvent',
-          ),
-        ).called(1);
-      });
+          verify(() => repo.upsertEvent(payload)).called(1);
+          verify(
+            () => loggingService.error(
+              LogDomain.sync,
+              any<Object>(),
+              stackTrace: any(named: 'stackTrace'),
+              subDomain: 'processor.recordReceivedConsumptionEvent',
+            ),
+          ).called(1);
+        },
+      );
     });
   });
 }

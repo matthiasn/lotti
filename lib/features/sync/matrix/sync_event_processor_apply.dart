@@ -364,7 +364,8 @@ extension SyncEventProcessorApply on SyncEventProcessor {
           applyChild: (child) => _applyMessage(
             prepared: child,
             journalDb: journalDb,
-            afterCommit: afterCommit,
+            // Bundles have no outer transaction. Complete each child's
+            // effects now; a later child's failure must not discard them.
           ),
         );
         return null;

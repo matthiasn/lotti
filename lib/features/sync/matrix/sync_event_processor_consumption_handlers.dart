@@ -92,6 +92,7 @@ extension SyncEventProcessorConsumptionHandlers on SyncEventProcessor {
         stackTrace: st,
         subDomain: 'processor.recordReceivedConsumptionEvent',
       );
+      rethrow;
     }
   }
 }

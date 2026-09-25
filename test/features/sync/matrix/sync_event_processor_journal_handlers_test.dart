@@ -28,6 +28,74 @@ void main() {
   setUpAll(registerSyncProcessorFallbacks);
   setUp(setUpProcessorMocks);
 
+  test('journal receipt retries survive duplicate detection', () async {
+    final durableJournal = JournalDb(inMemoryDatabase: true);
+    addTearDown(durableJournal.close);
+    final sequence = MockSyncSequenceLogService();
+    var refuseReceipt = true;
+    var receiptAttempts = 0;
+    when(
+      () => sequence.recordReceivedEntry(
+        entryId: any(named: 'entryId'),
+        vectorClock: any(named: 'vectorClock'),
+        originatingHostId: any(named: 'originatingHostId'),
+        coveredVectorClocks: any(named: 'coveredVectorClocks'),
+        jsonPath: any(named: 'jsonPath'),
+      ),
+    ).thenAnswer((_) async {
+      receiptAttempts++;
+      if (refuseReceipt) throw StateError('receipt unavailable');
+      return [];
+    });
+    final receiver = SyncEventProcessor(
+      loggingService: loggingService,
+      updateNotifications: updateNotifications,
+      aiConfigRepository: aiConfigRepository,
+      savedTaskFiltersRepository: savedTaskFiltersRepository,
+      settingsDb: settingsDb,
+      journalEntityLoader: journalEntityLoader,
+      sequenceLogService: sequence,
+    );
+    final entity = fallbackJournalEntity;
+    when(
+      () => journalEntityLoader.load(
+        jsonPath: '/receipt-retry.json',
+        incomingVectorClock: entity.meta.vectorClock,
+      ),
+    ).thenAnswer((_) async => entity);
+    when(() => event.text).thenReturn(
+      encodeMessage(
+        SyncMessage.journalEntity(
+          id: entity.id,
+          jsonPath: '/receipt-retry.json',
+          vectorClock: entity.meta.vectorClock,
+          status: SyncEntryStatus.update,
+          originatingHostId: 'a',
+        ),
+      ),
+    );
+
+    for (var attempt = 0; attempt < 2; attempt++) {
+      await expectLater(
+        receiver.process(event: event, journalDb: durableJournal),
+        throwsA(isA<StateError>()),
+      );
+      expect(
+        await durableJournal.journalEntityByIdIncludingDeleted(entity.id),
+        entity,
+      );
+    }
+    refuseReceipt = false;
+    await receiver.process(event: event, journalDb: durableJournal);
+    expect(receiptAttempts, 3);
+    verify(
+      () => journalEntityLoader.load(
+        jsonPath: '/receipt-retry.json',
+        incomingVectorClock: entity.meta.vectorClock,
+      ),
+    ).called(1);
+  });
+
   group('SyncEventProcessor - attribution projection', () {
     test(
       'projects the AI attribution an applied journal entry carries into the '
@@ -992,7 +1060,7 @@ void main() {
       },
     );
 
-    test('handles recordReceivedEntryLink exceptions gracefully', () async {
+    test('rethrows entry-link receipt failures for retry', () async {
       const vc = VectorClock({'host-C': 3});
       final link = EntryLink.basic(
         id: 'seq-link-error',
@@ -1029,8 +1097,11 @@ void main() {
       when(() => event.text).thenReturn(encodeMessage(message));
       when(() => journalDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
 
-      // Should not throw - errors are caught and logged
-      await processorWithSeq.process(event: event, journalDb: journalDb);
+      // Propagate the failure so the queue retries the receipt.
+      await expectLater(
+        processorWithSeq.process(event: event, journalDb: journalDb),
+        throwsA(isA<Exception>()),
+      );
 
       // Verify exception was logged
       verify(
@@ -1372,7 +1443,7 @@ void main() {
     );
 
     test(
-      'logs and returns null when stale-skip recordReceivedEntry throws',
+      'rethrows receipt failures when skipping a superseded descriptor',
       () async {
         // This path is inside _maybeSkipSupersededStaleDescriptor, after the
         // entity is confirmed superseded, when the sequence log call throws.
@@ -1422,8 +1493,11 @@ void main() {
           ),
         ).thenThrow(Exception('seq log failure'));
 
-        // The skip itself should still succeed (error is swallowed).
-        await processorWithSeq.process(event: event, journalDb: journalDb);
+        // The domain row is already present, but its receipt still needs retry.
+        await expectLater(
+          processorWithSeq.process(event: event, journalDb: journalDb),
+          throwsA(isA<Exception>()),
+        );
 
         // Verify the sequence-log error was logged under 'recordReceived'.
         verify(

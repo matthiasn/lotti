@@ -400,10 +400,10 @@ class SyncEventProcessor {
   }
 
   /// Phase 2 of the two-phase pipeline: applies the already-resolved
-  /// [prepared] event to local stores. This is pure DB work plus in-memory
-  /// notifications — callers run it **inside** a `JournalDb.transaction` so
-  /// per-slice writes coalesce into a single stream emission without holding
-  /// the writer lock for any attachment I/O.
+  /// [prepared] event to local stores. Sequenced handlers commit their domain
+  /// writes before recording receipt in SyncDatabase; callers must not wrap
+  /// them or their containing bundle in another JournalDb transaction.
+  /// Persistence failures propagate so the inbound queue retries delivery.
   Future<SyncApplyDiagnostics?> apply({
     required PreparedSyncEvent prepared,
     required JournalDb journalDb,

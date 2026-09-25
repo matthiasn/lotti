@@ -76,7 +76,8 @@ Family-specific application retains journal conflicts, selects the deterministic
 whole-version winner for entry/agent links and agent entities, joins a notification
 lifecycle mark only after its base exists, or inserts an immutable consumption
 event. File-backed families require an uploaded and downloaded generation.
-Journal sidecar metadata is separate from the retained row. Detailed domain
+The journal row supplies outbound JSON at send time; `descriptor` abstracts
+that prepared generation, not an independent local journal sidecar. Detailed domain
 rules (CRDT fields, timestamps, tombstones, projection, three-version forks) remain
 in `JournalReplication`, `AgentReplication`, `AgentLinks`,
 `NotificationReplication` and `OutboxCausality`; this composition does not replace
@@ -104,11 +105,11 @@ at a time; they are not the Cartesian product of all faults and families.
 | `AgentEntity` | concurrent inline writers and one independent process crash | 2,430 |
 | `AgentLink` | one write; one staging, send or apply failure | 54 |
 | `Notification` | full base plus lifecycle patch, either receive order | 289,859 |
-| `Consumption` | two immutable events; one abandoned delivery or failed receipt | 199,595 |
+| `Consumption` | two immutable events; one abandoned delivery or failed receipt | 183,515 |
 | `Burn` | one aborted reservation, one enqueue/send failure and one process crash | 112 |
-| `Lossy` | two distinct entry links; one abandoned delivery or failed receipt | 199,595 |
+| `Lossy` | two distinct entry links; one abandoned delivery or failed receipt | 183,515 |
 
-These eight configurations explore **954,724 distinct states** in total.
+These eight configurations explore **922,564 distinct states** in total.
 
 The liveness obligations are explicit:
 
@@ -126,9 +127,11 @@ The liveness obligations are explicit:
   retries own settlement on release, startup, store wiring or request, not with
   an endless timer. Backfill request fairness also assumes retry opportunities
   continue (including operator retry), beyond automatic retry exhaustion.
-- Lossy profiles do not promise recovery of an unobserved final counter. A
-  swallowed sequence-write error can likewise leave no receipt and no visible
-  gap. Notification state alone cannot repair a permanently lost base.
+- Lossy profiles do not promise recovery of an unobserved final counter.
+  Receipt failures now retain a retryable delivery; a dedicated temporal check
+  proves eventual receipt with one transient failure, including at the tail.
+  This assumes retry succeeds before the real worker exhausts its attempt cap.
+  Notification state alone cannot repair a permanently lost base.
 - Consumption writers must not reuse an event ID for changed content. This is
   the append-only protocol contract, not a database constraint: the repository
   uses an upsert, and this model does not explore conflicting bodies for one ID.
@@ -140,9 +143,11 @@ The liveness obligations are explicit:
 `python3 specs/tla/check_sync_pipeline.py` runs in CI alongside positive model
 checks. Each guard has a passing control and must fail with only that guard
 removed: durable burn staging, bind-after-enqueue, apply-before-receipt,
-hint verification and exact journal payload preparation. It also requires
-counterexamples to unconditional lost-tail delivery/receipt and a reachable
-request/answer/hint/receipt path, guarding against a vacuous repair claim.
+hint verification and exact journal payload preparation. A paired temporal
+check requires tail-receipt recovery to pass with retry and fail when receipt
+errors are swallowed. Unconditional lost-tail delivery still has an expected
+counterexample. A reachable request/answer/hint/receipt path guards against a
+vacuous repair claim.
 
 The burn mutation exposed a production bug: best-effort enqueue swallowed a
 persistence failure before the counter became terminal. The Dart conformance
@@ -151,6 +156,14 @@ fresh service stack retries after enqueue recovers. Its mock outbox distinguishe
 the actual APIs' swallowed and propagated errors. The regression failed in CI
 on #4493 before the runtime fix; it supplements model checking, not a machine-
 checked refinement proof from Dart to TLA+.
+
+The adapter conformance tests also reproduce failed domain commits and receipt
+writes using real SQLite stores, for individual and bundled links. They failed
+before the fixes: the queue acknowledged failed receipt writes, and an outer
+journal commit could roll back a link after its receipt had committed in the
+sync database. Narrow domain transactions and propagated receipt/child failures
+now satisfy the modeled commit-before-receipt boundary. Typed handler fault
+tests cover journals, agents, notifications and consumption events as well.
 
 ## `SyncSequence` — the sync sequence log and backfill
 
