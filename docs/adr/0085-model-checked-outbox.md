@@ -1,7 +1,15 @@
 # ADR 0085: The Outbox Merges One Enqueue at a Time and Sends Orphaned Claims in Their Turn
 
-- Status: Accepted
+- Status: Accepted; superseded in part by [ADR 0086](./0086-append-only-outbox.md)
 - Date: 2026-09-25
+
+> **Superseded in part by ADR 0086.** The enqueue-time merge and its three
+> fixes (decisions 1–3: the per-entity enqueue lock, newest-wins merge and
+> older-only enrichment) are gone: enqueue now appends one immutable row per
+> version and the processor collapses an entity's rows when it sends.
+> Decisions 4 and 5 (releasing orphaned claims before each drain, and
+> dispose waiting for the drain in flight) stand, and ADR 0086 resolves this
+> ADR's residual 2 (Retry of a superseded failed row).
 
 ## Context
 

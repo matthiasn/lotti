@@ -29,8 +29,8 @@ import '../../ai_consumption/test_utils.dart';
 part 'outbox_model_conformance.dart';
 
 /// Shared collaborators for constructing an [OutboxEnqueueWriter] with the
-/// central mocks: recorded `saveJson` writes, recorded `enqueueNextSendRequest`
-/// delays, and a faithful copy of the service's path-confinement check.
+/// central mocks: recorded `saveJson` writes and a faithful copy of the
+/// service's path-confinement check.
 class _WriterBench {
   factory _WriterBench({
     String? Function(String relativePath)? safePayloadFullPath,
@@ -47,7 +47,6 @@ class _WriterBench {
         ? MockSyncSequenceLogService()
         : null;
     final savedJson = <({String path, String json})>[];
-    final scheduledDelays = <Duration>[];
 
     // Mirrors OutboxService._safePayloadFullPath so path-confinement behavior
     // matches production wiring.
@@ -64,18 +63,6 @@ class _WriterBench {
     }
 
     when(() => syncDatabase.addOutboxItem(any())).thenAnswer((_) async => 1);
-    when(
-      () => syncDatabase.findPendingByEntryId(any()),
-    ).thenAnswer((_) async => null);
-    when(
-      () => syncDatabase.updateOutboxMessage(
-        itemId: any(named: 'itemId'),
-        newMessage: any(named: 'newMessage'),
-        newSubject: any(named: 'newSubject'),
-        payloadSize: any(named: 'payloadSize'),
-        priority: any(named: 'priority'),
-      ),
-    ).thenAnswer((_) async => 1);
     if (sequenceLogService != null) {
       when(
         () => sequenceLogService.recordSentEntry(
@@ -90,9 +77,6 @@ class _WriterBench {
           vectorClock: any(named: 'vectorClock'),
         ),
       ).thenAnswer((_) async {});
-      when(
-        () => sequenceLogService.getLastSentVectorClockForEntry(any()),
-      ).thenAnswer((_) async => null);
     }
 
     final writer = OutboxEnqueueWriter(
@@ -104,10 +88,6 @@ class _WriterBench {
           saveJson ??
           (path, json) async => savedJson.add((path: path, json: json)),
       safePayloadFullPath: safePayloadFullPath ?? defaultSafePath,
-      enqueueNextSendRequest:
-          ({Duration delay = const Duration(milliseconds: 1)}) async {
-            scheduledDelays.add(delay);
-          },
       sequenceLogService: sequenceLogService,
     );
 
@@ -118,7 +98,6 @@ class _WriterBench {
       sequenceLogService: sequenceLogService,
       documentsDirectory: documentsDirectory,
       savedJson: savedJson,
-      scheduledDelays: scheduledDelays,
       writer: writer,
     );
   }
@@ -130,7 +109,6 @@ class _WriterBench {
     required this.sequenceLogService,
     required this.documentsDirectory,
     required this.savedJson,
-    required this.scheduledDelays,
     required this.writer,
   });
 
@@ -140,7 +118,6 @@ class _WriterBench {
   final MockSyncSequenceLogService? sequenceLogService;
   final Directory documentsDirectory;
   final List<({String path, String json})> savedJson;
-  final List<Duration> scheduledDelays;
   final OutboxEnqueueWriter writer;
 
   /// The single companion captured from `addOutboxItem`.
@@ -150,21 +127,6 @@ class _WriterBench {
     ).captured;
     expect(captured, hasLength(1));
     return captured.single as OutboxCompanion;
-  }
-
-  /// The named arguments captured from a single `updateOutboxMessage` call,
-  /// in declaration order (itemId, newMessage, newSubject, payloadSize,
-  /// priority).
-  List<dynamic> capturedUpdate() {
-    return verify(
-      () => syncDatabase.updateOutboxMessage(
-        itemId: captureAny(named: 'itemId'),
-        newMessage: captureAny(named: 'newMessage'),
-        newSubject: captureAny(named: 'newSubject'),
-        payloadSize: captureAny(named: 'payloadSize'),
-        priority: captureAny(named: 'priority'),
-      ),
-    ).captured;
   }
 }
 
@@ -239,22 +201,6 @@ AgentDomainEntity _agentEntity({
   vectorClock: vectorClock,
 );
 
-OutboxItem _pendingItem({
-  required String message,
-  required String entryId,
-  int priority = 1,
-}) => OutboxItem(
-  id: 7,
-  createdAt: DateTime(2024, 3, 15),
-  updatedAt: DateTime(2024, 3, 15),
-  status: OutboxStatus.pending.index,
-  retries: 0,
-  message: message,
-  subject: 'old-subject',
-  outboxEntryId: entryId,
-  priority: priority,
-);
-
 void main() {
   setUpAll(registerAllFallbackValues);
 
@@ -268,15 +214,12 @@ void main() {
         const vc = VectorClock({'host-A': 5});
         final msg = _entryLinkMessage(vectorClock: vc);
 
-        final merged = await bench.writer.enqueueEntryLink(
+        await bench.writer.enqueueEntryLink(
           msg: msg,
           commonFields: _commonFields(msg, priority: OutboxPriority.high.index),
           host: 'host-A',
           hostHash: 'hh',
         );
-
-        expect(merged, isFalse);
-        expect(bench.scheduledDelays, isEmpty);
 
         final companion = bench.capturedOutboxItem();
         expect(companion.subject.value, 'hh:link:5');
@@ -319,136 +262,6 @@ void main() {
         );
       },
     );
-
-    test(
-      'merges into an existing pending row and schedules the next send',
-      () async {
-        final bench = _WriterBench();
-        const oldVc = VectorClock({'host-A': 4});
-        const newVc = VectorClock({'host-A': 5});
-        final oldMsg = _entryLinkMessage(vectorClock: oldVc);
-        final newMsg = _entryLinkMessage(vectorClock: newVc);
-
-        when(
-          () => bench.syncDatabase.findPendingByEntryId('link-1'),
-        ).thenAnswer(
-          (_) async => _pendingItem(
-            message: jsonEncode(oldMsg.toJson()),
-            entryId: 'link-1',
-            priority: OutboxPriority.low.index,
-          ),
-        );
-
-        final merged = await bench.writer.enqueueEntryLink(
-          msg: newMsg,
-          commonFields: _commonFields(
-            newMsg,
-            priority: OutboxPriority.high.index,
-          ),
-          host: 'host-A',
-          hostHash: 'hh',
-        );
-
-        expect(merged, isTrue);
-        expect(bench.scheduledDelays, [const Duration(seconds: 1)]);
-        verifyNever(() => bench.syncDatabase.addOutboxItem(any()));
-
-        final captured = bench.capturedUpdate();
-        expect(captured[0], 7); // itemId
-        expect(captured[2], 'hh:link:5'); // newSubject
-        expect(captured[4], OutboxPriority.high.index); // min(low, high)
-        final decoded = _decode(captured[1] as String) as SyncEntryLink;
-        expect(
-          decoded.coveredVectorClocks!.map((vc) => vc.vclock),
-          containsAll(<Map<String, int>>[
-            {'host-A': 4},
-            {'host-A': 5},
-          ]),
-        );
-
-        verify(
-          () => bench.sequenceLogService!.recordSentEntryLink(
-            linkId: 'link-1',
-            vectorClock: newVc,
-          ),
-        ).called(1);
-      },
-    );
-
-    test('inserts a fresh merged row when the pending row vanished '
-        '(update affected 0 rows)', () async {
-      final bench = _WriterBench();
-      final oldMsg = _entryLinkMessage(
-        vectorClock: const VectorClock({'host-A': 4}),
-      );
-      final newMsg = _entryLinkMessage(
-        vectorClock: const VectorClock({'host-A': 5}),
-      );
-
-      when(
-        () => bench.syncDatabase.findPendingByEntryId('link-1'),
-      ).thenAnswer(
-        (_) async => _pendingItem(
-          message: jsonEncode(oldMsg.toJson()),
-          entryId: 'link-1',
-        ),
-      );
-      when(
-        () => bench.syncDatabase.updateOutboxMessage(
-          itemId: any(named: 'itemId'),
-          newMessage: any(named: 'newMessage'),
-          newSubject: any(named: 'newSubject'),
-          payloadSize: any(named: 'payloadSize'),
-          priority: any(named: 'priority'),
-        ),
-      ).thenAnswer((_) async => 0);
-
-      final merged = await bench.writer.enqueueEntryLink(
-        msg: newMsg,
-        commonFields: _commonFields(newMsg),
-        host: 'host-A',
-        hostHash: 'hh',
-      );
-
-      expect(merged, isTrue);
-      final companion = bench.capturedOutboxItem();
-      expect(companion.subject.value, 'hh:link:5');
-      expect(companion.outboxEntryId.value, 'link-1');
-      final decoded = _decode(companion.message.value) as SyncEntryLink;
-      expect(
-        decoded.coveredVectorClocks!.map((vc) => vc.vclock),
-        contains(equals({'host-A': 4})),
-      );
-    });
-
-    test(
-      'enriches covered clocks from the sequence log on fresh enqueue',
-      () async {
-        final bench = _WriterBench();
-        const lastSentVc = VectorClock({'host-A': 3});
-        const newVc = VectorClock({'host-A': 5});
-        when(
-          () => bench.sequenceLogService!.getLastSentVectorClockForEntry(
-            'link-1',
-          ),
-        ).thenAnswer((_) async => lastSentVc);
-
-        final msg = _entryLinkMessage(vectorClock: newVc);
-        await bench.writer.enqueueEntryLink(
-          msg: msg,
-          commonFields: _commonFields(msg),
-          host: 'host-A',
-          hostHash: 'hh',
-        );
-
-        final decoded =
-            _decode(bench.capturedOutboxItem().message.value) as SyncEntryLink;
-        expect(
-          decoded.coveredVectorClocks!.map((vc) => vc.vclock),
-          contains(equals({'host-A': 3})),
-        );
-      },
-    );
   });
 
   group('enqueueAgentEntity / enqueueAgentPayload', () {
@@ -463,12 +276,11 @@ void main() {
               )
               as SyncAgentEntity;
 
-      final merged = await bench.writer.enqueueAgentEntity(
+      await bench.writer.enqueueAgentEntity(
         msg: msg,
         commonFields: _commonFields(msg),
       );
 
-      expect(merged, isFalse);
       expect(bench.savedJson, hasLength(1));
       expect(
         bench.savedJson.single.path,
@@ -500,12 +312,11 @@ void main() {
           SyncMessage.agentEntity(status: SyncEntryStatus.update)
               as SyncAgentEntity;
 
-      final merged = await bench.writer.enqueueAgentEntity(
+      await bench.writer.enqueueAgentEntity(
         msg: msg,
         commonFields: _commonFields(msg),
       );
 
-      expect(merged, isFalse);
       expect(bench.savedJson, isEmpty);
       verifyNever(() => bench.syncDatabase.addOutboxItem(any()));
     });
@@ -513,7 +324,7 @@ void main() {
     test('rejects relative paths escaping the documents directory', () async {
       final bench = _WriterBench();
 
-      final merged = await bench.writer.enqueueAgentPayload(
+      await bench.writer.enqueueAgentPayload(
         id: 'agent-evil',
         payloadJson: '{}',
         relativePath: '/../../escape.json',
@@ -529,7 +340,6 @@ void main() {
         payloadType: SyncSequencePayloadType.agentEntity,
       );
 
-      expect(merged, isFalse);
       expect(bench.savedJson, isEmpty);
       verifyNever(() => bench.syncDatabase.addOutboxItem(any()));
       verify(
@@ -554,12 +364,11 @@ void main() {
               as SyncAgentEntity;
       final commonFields = _commonFields(msg);
 
-      final merged = await bench.writer.enqueueAgentEntity(
+      await bench.writer.enqueueAgentEntity(
         msg: msg,
         commonFields: commonFields,
       );
 
-      expect(merged, isFalse);
       final companion = bench.capturedOutboxItem();
       expect(companion.subject.value, 'agentEntity:agent-1');
       expect(companion.outboxEntryId.value, 'agent-1');
@@ -582,60 +391,6 @@ void main() {
         ),
       ).called(1);
     });
-
-    test('merges into an existing pending agent row and schedules the next '
-        'send', () async {
-      final bench = _WriterBench();
-      const oldVc = VectorClock({'host-A': 9});
-      const newVc = VectorClock({'host-A': 10});
-      final oldMsg = SyncMessage.agentEntity(
-        agentEntity: _agentEntity(vectorClock: oldVc),
-        status: SyncEntryStatus.update,
-      );
-      final newMsg =
-          SyncMessage.agentEntity(
-                agentEntity: _agentEntity(vectorClock: newVc),
-                status: SyncEntryStatus.update,
-              )
-              as SyncAgentEntity;
-
-      when(
-        () => bench.syncDatabase.findPendingByEntryId('agent-1'),
-      ).thenAnswer(
-        (_) async => _pendingItem(
-          message: jsonEncode(oldMsg.toJson()),
-          entryId: 'agent-1',
-        ),
-      );
-
-      final merged = await bench.writer.enqueueAgentEntity(
-        msg: newMsg,
-        commonFields: _commonFields(newMsg),
-      );
-
-      expect(merged, isTrue);
-      expect(bench.scheduledDelays, [const Duration(seconds: 1)]);
-      verifyNever(() => bench.syncDatabase.addOutboxItem(any()));
-
-      final captured = bench.capturedUpdate();
-      expect(captured[2], 'agentEntity:agent-1'); // newSubject
-      final decoded = _decode(captured[1] as String) as SyncAgentEntity;
-      expect(
-        decoded.coveredVectorClocks!.map((vc) => vc.vclock),
-        containsAll(<Map<String, int>>[
-          {'host-A': 9},
-          {'host-A': 10},
-        ]),
-      );
-
-      verify(
-        () => bench.sequenceLogService!.recordSentEntry(
-          entryId: 'agent-1',
-          vectorClock: newVc,
-          payloadType: SyncSequencePayloadType.agentEntity,
-        ),
-      ).called(1);
-    });
   });
 
   group('enqueueNotification', () {
@@ -652,12 +407,11 @@ void main() {
     test('writes the outbox row and records the sequence log', () async {
       final bench = _WriterBench();
 
-      final merged = await bench.writer.enqueueNotification(
+      await bench.writer.enqueueNotification(
         msg: msg,
         commonFields: _commonFields(msg),
       );
 
-      expect(merged, isFalse);
       final companion = bench.capturedOutboxItem();
       expect(companion.subject.value, 'notification:notif-1');
       expect(companion.filePath.value, '/notifications/notif-1.json');
@@ -680,12 +434,11 @@ void main() {
     test('skips when the payload path is rejected', () async {
       final bench = _WriterBench(safePayloadFullPath: (_) => null);
 
-      final merged = await bench.writer.enqueueNotification(
+      await bench.writer.enqueueNotification(
         msg: msg,
         commonFields: _commonFields(msg),
       );
 
-      expect(merged, isFalse);
       verifyNever(() => bench.syncDatabase.addOutboxItem(any()));
       verifyNever(
         () => bench.sequenceLogService!.recordSentEntry(
@@ -710,12 +463,11 @@ void main() {
               )
               as SyncNotificationStateUpdate;
 
-      final merged = await bench.writer.enqueueNotificationStateUpdate(
+      await bench.writer.enqueueNotificationStateUpdate(
         msg: msg,
         commonFields: _commonFields(msg),
       );
 
-      expect(merged, isFalse);
       expect(
         bench.capturedOutboxItem().subject.value,
         'notificationStateUpdate:notif-1',
@@ -739,12 +491,11 @@ void main() {
         const vc = VectorClock({'host-A': 7});
         final msg = _consumptionEventMessage(vectorClock: vc);
 
-        final merged = await bench.writer.enqueueConsumptionEvent(
+        await bench.writer.enqueueConsumptionEvent(
           msg: msg,
           commonFields: _commonFields(msg),
         );
 
-        expect(merged, isFalse);
         final companion = bench.capturedOutboxItem();
         expect(companion.subject.value, 'consumptionEvent:evt-1');
         expect(companion.outboxEntryId.value, 'evt-1');
@@ -773,12 +524,11 @@ void main() {
         final bench = _WriterBench();
         final msg = _consumptionEventMessage();
 
-        final merged = await bench.writer.enqueueConsumptionEvent(
+        await bench.writer.enqueueConsumptionEvent(
           msg: msg,
           commonFields: _commonFields(msg),
         );
 
-        expect(merged, isFalse);
         final companion = bench.capturedOutboxItem();
         expect(companion.subject.value, 'consumptionEvent:evt-1');
         expect(companion.outboxEntryId.value, 'evt-1');
@@ -805,38 +555,14 @@ void main() {
     test('inserts a fresh row keyed by flag name', () async {
       final bench = _WriterBench();
 
-      final merged = await bench.writer.enqueueConfigFlag(
+      await bench.writer.enqueueConfigFlag(
         msg: msg,
         commonFields: _commonFields(msg),
       );
 
-      expect(merged, isFalse);
       final companion = bench.capturedOutboxItem();
       expect(companion.subject.value, 'configFlag:flag-a');
       expect(companion.outboxEntryId.value, 'configFlag:flag-a');
-    });
-
-    test('merges a pending flag row and schedules the next send', () async {
-      final bench = _WriterBench();
-      when(
-        () => bench.syncDatabase.findPendingByEntryId('configFlag:flag-a'),
-      ).thenAnswer(
-        (_) async => _pendingItem(
-          message: jsonEncode(msg.toJson()),
-          entryId: 'configFlag:flag-a',
-        ),
-      );
-
-      final merged = await bench.writer.enqueueConfigFlag(
-        msg: msg,
-        commonFields: _commonFields(msg),
-      );
-
-      expect(merged, isTrue);
-      expect(bench.scheduledDelays, [const Duration(seconds: 1)]);
-      verifyNever(() => bench.syncDatabase.addOutboxItem(any()));
-      final captured = bench.capturedUpdate();
-      expect(captured[2], 'configFlag:flag-a');
     });
   });
 
@@ -1033,30 +759,26 @@ void main() {
     );
   });
 
-  // The holes TLC found in specs/tla/Outbox.tla (ADR 0085), replayed against
-  // a real SyncDatabase outbox so the merge's read and write interleave the
-  // way they do in the app.
-  group('merge under concurrent and out-of-order enqueues (ADR 0085)', () {
+  // ADR 0086: enqueue appends one immutable row per version and never merges.
+  // Replayed against a real SyncDatabase, where concurrent enqueues of one
+  // entity interleave the way they do in the app.
+  group('append-only enqueue (ADR 0086)', () {
     late SyncDatabase db;
 
     setUp(() => db = SyncDatabase(inMemoryDatabase: true));
     tearDown(() async => db.close());
 
-    OutboxEnqueueWriter realWriter({
-      MockSyncSequenceLogService? sequenceLogService,
-    }) => OutboxEnqueueWriter(
+    OutboxEnqueueWriter realWriter() => OutboxEnqueueWriter(
       journalDb: MockJournalDb(),
       loggingService: MockDomainLogger(),
       syncDatabase: db,
       documentsDirectory: Directory(p.join(p.separator, 'outbox-writer-docs')),
       saveJson: (_, _) async {},
       safePayloadFullPath: (_) => null,
-      enqueueNextSendRequest:
-          ({Duration delay = const Duration(milliseconds: 1)}) async {},
-      sequenceLogService: sequenceLogService,
+      sequenceLogService: null,
     );
 
-    Future<bool> enqueueAgentAt(OutboxEnqueueWriter writer, int counter) {
+    Future<void> enqueueAgentAt(OutboxEnqueueWriter writer, int counter) {
       final msg =
           SyncMessage.agentEntity(
                 agentEntity: _agentEntity(
@@ -1071,7 +793,7 @@ void main() {
       );
     }
 
-    Future<bool> enqueueLinkAt(OutboxEnqueueWriter writer, int counter) {
+    Future<void> enqueueLinkAt(OutboxEnqueueWriter writer, int counter) {
       final msg = _entryLinkMessage(
         vectorClock: VectorClock({'host-A': counter}),
       );
@@ -1083,124 +805,55 @@ void main() {
       );
     }
 
-    /// Every live row as (payload counter, covered counters).
-    Future<List<({int payload, Set<int> covered})>> liveRows() async {
-      final items = await db.getOutboxItems(
-        statuses: const [OutboxStatus.pending, OutboxStatus.sending],
+    int counterOf(OutboxItem item) => switch (_decode(item.message)) {
+      final SyncAgentEntity m => m.agentEntity!.vectorClock!.vclock['host-A']!,
+      final SyncEntryLink m => m.entryLink.vectorClock!.vclock['host-A']!,
+      final other => throw StateError('unexpected $other'),
+    };
+
+    test('concurrent enqueues of one entity lose nothing: one row per '
+        'version, each carrying its own counter', () async {
+      final writer = realWriter();
+      await Future.wait([
+        for (final counter in [1, 2, 3]) enqueueAgentAt(writer, counter),
+        for (final counter in [1, 2, 3]) enqueueLinkAt(writer, counter),
+      ]);
+
+      final rows = await db.getOutboxItems(
+        statuses: const [OutboxStatus.pending],
       );
-      return [
-        for (final item in items.reversed)
-          switch (_decode(item.message)) {
-            final SyncAgentEntity m => (
-              payload: m.agentEntity!.vectorClock!.vclock['host-A']!,
-              covered: {
-                for (final vc in m.coveredVectorClocks ?? <VectorClock>[])
-                  vc.vclock['host-A']!,
-              },
-            ),
-            final SyncEntryLink m => (
-              payload: m.entryLink.vectorClock!.vclock['host-A']!,
-              covered: {
-                for (final vc in m.coveredVectorClocks ?? <VectorClock>[])
-                  vc.vclock['host-A']!,
-              },
-            ),
-            final other => throw StateError('unexpected $other'),
-          },
-      ];
-    }
-
-    test('two concurrent enqueues of one agent keep every counter '
-        '(NoLostCounter)', () async {
-      // TLC: v1 is pending; the enqueues of v2 and v3 both read it, v2
-      // writes {v2, covers v1}, then v3 writes {v3, covers v1} over it and
-      // counter 2 is in no row at all.
-      final writer = realWriter();
-      await enqueueAgentAt(writer, 1);
-
-      await Future.wait([enqueueAgentAt(writer, 2), enqueueAgentAt(writer, 3)]);
-
-      final rows = await liveRows();
-      expect(rows, hasLength(1));
-      expect(rows.single.payload, 3);
-      expect(rows.single.covered, containsAll(<int>[1, 2]));
+      final agentRows = rows.where((r) => r.outboxEntryId == 'agent-1');
+      final linkRows = rows.where((r) => r.outboxEntryId == 'link-1');
+      expect(agentRows.map(counterOf).toSet(), {1, 2, 3});
+      expect(linkRows.map(counterOf).toSet(), {1, 2, 3});
+      expect(rows, hasLength(6));
     });
 
-    test('an agent enqueue arriving after a newer one keeps the newer '
-        'payload (MergeNeverRegresses)', () async {
+    test('config flag enqueues append a row each, keyed by the flag', () async {
       final writer = realWriter();
-      await enqueueAgentAt(writer, 3);
-      await enqueueAgentAt(writer, 2);
+      for (final status in [true, false]) {
+        final msg =
+            SyncMessage.configFlag(
+                  name: 'private',
+                  description: 'd',
+                  status: status,
+                )
+                as SyncConfigFlag;
+        await writer.enqueueConfigFlag(
+          msg: msg,
+          commonFields: _commonFields(msg),
+        );
+      }
 
-      final rows = await liveRows();
-      expect(rows, hasLength(1));
-      expect(rows.single.payload, 3);
-      expect(rows.single.covered, contains(2));
-    });
-
-    test('an entry-link enqueue arriving after a newer one keeps the newer '
-        'link and its subject (MergeNeverRegresses)', () async {
-      final writer = realWriter();
-      await enqueueLinkAt(writer, 3);
-      await enqueueLinkAt(writer, 2);
-
-      final rows = await liveRows();
-      expect(rows, hasLength(1));
-      expect(rows.single.payload, 3);
-      expect(rows.single.covered, contains(2));
-      final items = await db.getOutboxItems();
-      expect(items.single.subject, 'hash:link:3');
-    });
-
-    test('an invalid pending clock never outranks the incoming link', () async {
-      // VectorClock.compare throws on a negative counter; the merge then
-      // takes the incoming link, as it did before newest-wins.
-      final writer = realWriter();
-      await enqueueLinkAt(writer, -1);
-      await enqueueLinkAt(writer, 2);
-
-      final rows = await liveRows();
-      expect(rows.single.payload, 2);
-      expect(rows.single.covered, containsAll(<int>[-1, 2]));
-    });
-
-    test('a fresh inline row covers the last sent counter only when its '
-        'payload is newer (CoversOnlyOlder)', () async {
-      // TLC: version 3 is recorded and in flight when a late enqueue of
-      // version 2 inserts a fresh row; enriched with counter 3, it would let
-      // a peer mark 3 received while holding only version 2.
-      final sequenceLog = MockSyncSequenceLogService();
-      when(
-        () => sequenceLog.getLastSentVectorClockForEntry(any()),
-      ).thenAnswer((_) async => const VectorClock({'host-A': 3}));
-      when(
-        () => sequenceLog.recordSentEntry(
-          entryId: any(named: 'entryId'),
-          vectorClock: any(named: 'vectorClock'),
-          payloadType: any(named: 'payloadType'),
-        ),
-      ).thenAnswer((_) async {});
-      when(
-        () => sequenceLog.recordSentEntryLink(
-          linkId: any(named: 'linkId'),
-          vectorClock: any(named: 'vectorClock'),
-        ),
-      ).thenAnswer((_) async {});
-      final writer = realWriter(sequenceLogService: sequenceLog);
-
-      await enqueueAgentAt(writer, 2);
-      await enqueueLinkAt(writer, 2);
-      final stale = await liveRows();
-      expect(stale.map((row) => row.payload), [2, 2]);
-      expect(stale.map((row) => row.covered), everyElement(isEmpty));
-
-      // A newer payload still picks up the predecessor, as before.
-      await db.delete(db.outbox).go();
-      await enqueueAgentAt(writer, 4);
-      await enqueueLinkAt(writer, 4);
-      final fresh = await liveRows();
-      expect(fresh.map((row) => row.payload), [4, 4]);
-      expect(fresh.map((row) => row.covered), everyElement(equals({3})));
+      final rows = (await db.getOutboxItems()).reversed.toList();
+      expect(rows.map((r) => r.outboxEntryId), [
+        'configFlag:private',
+        'configFlag:private',
+      ]);
+      expect(
+        rows.map((r) => (_decode(r.message) as SyncConfigFlag).status),
+        [true, false],
+      );
     });
   });
 }

@@ -102,8 +102,8 @@ abstract class OutboxService {
 /// Matrix-backed [OutboxService] for real profiles.
 ///
 /// Features enqueue `SyncMessage`s here; the service persists them to the outbox
-/// table in `sync_db` (merging/superseding redundant work and enriching them
-/// with sequence metadata), then nudges the send runner. It waits for the
+/// table in `sync_db` — one immutable row per version, enriched with sequence
+/// metadata — then nudges the send runner. It waits for the
 /// user-activity idle gate before draining so outbound sending yields to live
 /// input. The actual claim → send → mark-sent/retry loop lives in
 /// `OutboxProcessor`; this class owns enqueue + scheduling.
@@ -269,9 +269,8 @@ class MatrixOutboxService extends _OutboxServiceBase
   final Stream<List<ConnectivityResult>>? _connectivityStream;
   final SyncSequenceLogService? _sequenceLogService;
 
-  /// Per-message-type enqueue collaborator behind [enqueueMessage]. Created
-  /// lazily so the tear-off of [enqueueNextSendRequest] dispatches virtually
-  /// (test subclasses overriding it observe the writer's scheduling calls).
+  /// Per-message-type enqueue collaborator behind [enqueueMessage], created
+  /// lazily once the service's fields are in place.
   late final OutboxEnqueueWriter _enqueueWriter = OutboxEnqueueWriter(
     journalDb: _journalDb,
     loggingService: _loggingService,
@@ -279,7 +278,6 @@ class MatrixOutboxService extends _OutboxServiceBase
     documentsDirectory: _documentsDirectory,
     saveJson: _saveJson,
     safePayloadFullPath: _safePayloadFullPath,
-    enqueueNextSendRequest: enqueueNextSendRequest,
     sequenceLogService: _sequenceLogService,
   );
   @override
@@ -441,7 +439,7 @@ class MatrixOutboxService extends _OutboxServiceBase
       );
 
       // Dispatch by message type using pattern matching
-      final merged = await switch (messageToEnqueue) {
+      await switch (messageToEnqueue) {
         final SyncJournalEntity msg => _enqueueWriter.enqueueJournalEntity(
           msg: msg,
           commonFields: commonFields,
@@ -569,18 +567,12 @@ class MatrixOutboxService extends _OutboxServiceBase
 
       _loggingService.logSampled(
         LogDomain.sync,
-        'enqueue type=${messageToEnqueue.runtimeType} priority=$priority '
-        'outcome=${merged ? 'merged' : 'inserted'}',
-        sampleKey:
-            'outbox.enqueue.${messageToEnqueue.runtimeType}.'
-            '${merged ? 'merged' : 'inserted'}',
+        'enqueue type=${messageToEnqueue.runtimeType} priority=$priority',
+        sampleKey: 'outbox.enqueue.${messageToEnqueue.runtimeType}',
         subDomain: 'outbox.enqueue',
       );
 
-      // Schedule next send unless merge already did (returns true)
-      if (!merged) {
-        unawaited(enqueueNextSendRequest(delay: const Duration(seconds: 1)));
-      }
+      unawaited(enqueueNextSendRequest(delay: const Duration(seconds: 1)));
     } catch (exception, stackTrace) {
       _loggingService.error(
         LogDomain.sync,

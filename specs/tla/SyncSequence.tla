@@ -131,7 +131,8 @@ VARIABLES
     oIntent,    \* per counter: whether that row records the payload id
     store,      \* per entity: the own-host counter of its committed payload
     committed,  \* ghost: counters whose payload write committed
-    outbox,     \* per entity: counters merged into its pending outbox row
+    outbox,     \* per entity: counters in its pending outbox rows (one row
+                \* each, collapsed into one send, ADR 0086)
     net,        \* per peer: room events this peer has not read yet
     reqs,       \* backfill requests not yet answered, as <<peer, counter>>
     pLog,       \* per peer, per counter: the peer's sequence-log row
@@ -148,7 +149,7 @@ Max(S) == CHOOSE x \in S : \A y \in S : y <= x
 (* Room events. Every event has the same fields so TLC can compare them.   *)
 (*   payload: announces counter `a`, carries the entity file at counter    *)
 (*            `v` (read at send time, so v >= a), and the superseded       *)
-(*            counters `cov` the outbox merged into it                     *)
+(*            counters `cov` the outbox collapsed into it                  *)
 (*   hint:    a backfill resend of the payload plus the mapping for `c`    *)
 (*   burn:    the originator's unresolvable=true for counter `c`           *)
 (***************************************************************************)
@@ -359,7 +360,7 @@ ThrowAfterCommit(c) ==
     /\ UNCHANGED <<wm, ent, named, intent, pending, oLog, oIntent, store,
                    committed, outbox, net, reqs, pLog, pVer, crashes>>
 
-\* The outbox inserts (or merges into) the entity's pending row, then binds
+\* The outbox appends a row for the counter (Outbox.tla), then binds
 \* the counter to the id it sent, overwriting the reservation's name.
 Enqueue(c) ==
     /\ pc[c] = "committed"

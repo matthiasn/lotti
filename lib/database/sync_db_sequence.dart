@@ -405,39 +405,6 @@ mixin _SyncDbSequenceLog on _$SyncDatabase, _SyncDbSequenceWatermarks {
         .getSingleOrNull();
   }
 
-  /// Get the highest counter sent by [hostId] for a given [entryId].
-  /// Returns null when this host has never sent the entry.
-  /// Used to build covered vector clocks for already-sent predecessors so
-  /// that receivers can resolve intermediate counters without backfill.
-  Future<int?> getLastSentCounterForEntry(String hostId, String entryId) async {
-    final received = SyncSequenceStatus.received.index;
-    final backfilled = SyncSequenceStatus.backfilled.index;
-    // ORDER BY counter DESC LIMIT 1 resolves as an index-only scan against
-    // `idx_sync_sequence_log_host_entry_status_counter` with early
-    // termination on the first match, instead of scanning every row that
-    // matches the prefix just to compute MAX(counter).
-    final query = customSelect(
-      '''
-      SELECT counter AS last_counter
-      FROM sync_sequence_log
-      WHERE host_id = ?
-        AND entry_id = ?
-        AND status IN (?, ?)
-      ORDER BY counter DESC
-      LIMIT 1
-      ''',
-      variables: [
-        Variable.withString(hostId),
-        Variable.withString(entryId),
-        Variable.withInt(received),
-        Variable.withInt(backfilled),
-      ],
-      readsFrom: {syncSequenceLog},
-    );
-    final result = await query.getSingleOrNull();
-    return result?.readNullable<int>('last_counter');
-  }
-
   /// Get all pending (missing/requested) sequence log entries for a given payload.
   /// Used to resolve pending backfill hints when a payload arrives via sync.
   Future<List<SyncSequenceLogItem>> getPendingEntriesByPayloadId({

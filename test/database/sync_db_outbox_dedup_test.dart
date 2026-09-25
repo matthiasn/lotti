@@ -396,7 +396,7 @@ void main() {
     });
   });
 
-  group('Outbox Deduplication Methods', () {
+  group('Dequeue-time collapse lookups (ADR 0086)', () {
     setUpAll(() async {
       db = SyncDatabase(inMemoryDatabase: true);
     });
@@ -407,301 +407,62 @@ void main() {
       await db?.close();
     });
 
-    test(
-      'findPendingByEntryId breaks same-second createdAt ties by newest id',
-      () async {
-        final sameInstant = DateTime(2024, 3, 15, 10);
-        // created_at is stored at second granularity, so two rapid edits
-        // collide on the timestamp; the higher (newer) id must win.
-        await db!.addOutboxItem(
-          OutboxCompanion(
-            status: Value(OutboxStatus.pending.index),
-            subject: const Value('older-edit'),
-            message: const Value('{"v": 1}'),
-            createdAt: Value(sameInstant),
-            updatedAt: Value(sameInstant),
-            outboxEntryId: const Value('tie-entry'),
-          ),
-        );
-        await db!.addOutboxItem(
-          OutboxCompanion(
-            status: Value(OutboxStatus.pending.index),
-            subject: const Value('newer-edit'),
-            message: const Value('{"v": 2}'),
-            createdAt: Value(sameInstant),
-            updatedAt: Value(sameInstant),
-            outboxEntryId: const Value('tie-entry'),
-          ),
-        );
-
-        final pending = await db!.findPendingByEntryId('tie-entry');
-        expect(pending, isNotNull);
-        expect(pending!.subject, 'newer-edit');
-      },
+    Future<int> row(OutboxStatus status, String? entryId) => db!.addOutboxItem(
+      OutboxCompanion(
+        status: Value(status.index),
+        subject: Value('${status.name}:$entryId'),
+        message: const Value('{}'),
+        createdAt: Value(DateTime(2024, 3, 15)),
+        updatedAt: Value(DateTime(2024, 3, 15)),
+        outboxEntryId: Value(entryId),
+      ),
     );
 
-    test('findPendingByEntryId returns pending item for entry', () async {
-      final database = db!;
-      final now = DateTime(2024, 1, 1);
+    test('collapsibleOutboxRows returns the pending and failed rows of the '
+        'entity in enqueue order, and nothing else', () async {
+      final failed = await row(OutboxStatus.error, 'e');
+      final first = await row(OutboxStatus.pending, 'e');
+      await row(OutboxStatus.sending, 'e');
+      await row(OutboxStatus.sent, 'e');
+      await row(OutboxStatus.pending, 'other');
+      await row(OutboxStatus.pending, null);
+      final second = await row(OutboxStatus.pending, 'e');
 
-      // Add a pending item with entryId
-      await database.addOutboxItem(
+      final rows = await db!.collapsibleOutboxRows('e');
+      expect(rows.map((r) => r.id), [failed, first, second]);
+
+      final withoutFirst = await db!.collapsibleOutboxRows(
+        'e',
+        excludeIds: {first},
+      );
+      expect(withoutFirst.map((r) => r.id), [failed, second]);
+    });
+
+    test('claimOutboxRows claims only rows whose status is unchanged since '
+        'they were read', () async {
+      final pending = await row(OutboxStatus.pending, 'e');
+      final failed = await row(OutboxStatus.error, 'e');
+      final read = await db!.collapsibleOutboxRows('e');
+      // The monitor retries the failed row in between.
+      await db!.updateOutboxItem(
         OutboxCompanion(
+          id: Value(failed),
           status: Value(OutboxStatus.pending.index),
-          message: const Value('{"test": true}'),
-          subject: const Value('test-subject'),
-          createdAt: Value(now),
-          updatedAt: Value(now),
-          outboxEntryId: const Value('entry-123'),
         ),
       );
 
-      final result = await database.findPendingByEntryId('entry-123');
-      expect(result, isNotNull);
-      expect(result!.outboxEntryId, 'entry-123');
-      expect(result.message, '{"test": true}');
-    });
+      final now = DateTime(2024, 3, 15, 12);
+      final claimed = await db!.claimOutboxRows(read, now: now);
 
-    test('findPendingByEntryId returns null when no matching entry', () async {
-      final database = db!;
-      final now = DateTime(2024, 1, 1);
-
-      // Add a pending item with different entryId
-      await database.addOutboxItem(
-        OutboxCompanion(
-          status: Value(OutboxStatus.pending.index),
-          message: const Value('{"test": true}'),
-          subject: const Value('test-subject'),
-          createdAt: Value(now),
-          updatedAt: Value(now),
-          outboxEntryId: const Value('entry-456'),
-        ),
-      );
-
-      final result = await database.findPendingByEntryId('entry-123');
-      expect(result, isNull);
-    });
-
-    test(
-      'findPendingByEntryId returns null when entry is not pending',
-      () async {
-        final database = db!;
-        final now = DateTime(2024, 1, 1);
-
-        // Add a sent (non-pending) item with entryId
-        await database.addOutboxItem(
-          OutboxCompanion(
-            status: Value(OutboxStatus.sent.index),
-            message: const Value('{"test": true}'),
-            subject: const Value('test-subject'),
-            createdAt: Value(now),
-            updatedAt: Value(now),
-            outboxEntryId: const Value('entry-123'),
-          ),
-        );
-
-        final result = await database.findPendingByEntryId('entry-123');
-        expect(result, isNull);
-      },
-    );
-
-    test(
-      'findPendingByEntryId returns most recent when multiple exist',
-      () async {
-        final database = db!;
-
-        // Add older item
-        await database.addOutboxItem(
-          OutboxCompanion(
-            status: Value(OutboxStatus.pending.index),
-            message: const Value('{"version": 1}'),
-            subject: const Value('test-subject-old'),
-            createdAt: Value(DateTime(2024, 1, 1)),
-            updatedAt: Value(DateTime(2024, 1, 1)),
-            outboxEntryId: const Value('entry-123'),
-          ),
-        );
-
-        // Add newer item
-        await database.addOutboxItem(
-          OutboxCompanion(
-            status: Value(OutboxStatus.pending.index),
-            message: const Value('{"version": 2}'),
-            subject: const Value('test-subject-new'),
-            createdAt: Value(DateTime(2024, 1, 2)),
-            updatedAt: Value(DateTime(2024, 1, 2)),
-            outboxEntryId: const Value('entry-123'),
-          ),
-        );
-
-        final result = await database.findPendingByEntryId('entry-123');
-        expect(result, isNotNull);
-        expect(result!.message, '{"version": 2}');
-        expect(result.subject, 'test-subject-new');
-      },
-    );
-
-    test(
-      'findPendingByEntryId uses the pending entry-id partial index',
-      () async {
-        final database = db!;
-
-        for (var i = 0; i < 50; i++) {
-          await database.addOutboxItem(
-            OutboxCompanion(
-              status: Value(OutboxStatus.sent.index),
-              message: Value('{"i":$i}'),
-              subject: Value('sent-$i'),
-              createdAt: Value(DateTime(2024, 1, 1).add(Duration(minutes: i))),
-              updatedAt: Value(DateTime(2024, 1, 1).add(Duration(minutes: i))),
-              outboxEntryId: Value('entry-$i'),
-            ),
-          );
-        }
-        await database.addOutboxItem(
-          OutboxCompanion(
-            status: Value(OutboxStatus.pending.index),
-            message: const Value('{"version": 1}'),
-            subject: const Value('test-subject'),
-            createdAt: Value(DateTime(2024, 1, 2)),
-            updatedAt: Value(DateTime(2024, 1, 2)),
-            outboxEntryId: const Value('entry-123'),
-          ),
-        );
-        await database.customStatement('ANALYZE');
-
-        final capture = _SelectPlanCapture();
-        final result = await database.runWithInterceptor(
-          () => database.findPendingByEntryId('entry-123'),
-          interceptor: capture,
-        );
-        final plan = capture.formattedPlan;
-
-        expect(result, isNotNull);
-        expect(
-          plan,
-          contains('idx_outbox_pending_entry_id_created_at'),
-          reason:
-              'literal status = 0 must let SQLite use the pending entry-id '
-              'partial index instead of scanning all pending rows',
-        );
-        expect(plan, isNot(matches(RegExp('SCAN outbox(?! USING)'))));
-      },
-    );
-
-    test('updateOutboxMessage updates message and subject', () async {
-      final database = db!;
-      final now = DateTime(2024, 1, 1);
-
-      // Add an item
-      final id = await database.addOutboxItem(
-        OutboxCompanion(
-          status: Value(OutboxStatus.pending.index),
-          message: const Value('{"original": true}'),
-          subject: const Value('original-subject'),
-          createdAt: Value(now),
-          updatedAt: Value(now),
-          outboxEntryId: const Value('entry-123'),
-        ),
-      );
-
-      // Update the item
-      final rowsAffected = await database.updateOutboxMessage(
-        itemId: id,
-        newMessage: '{"updated": true}',
-        newSubject: 'updated-subject',
-      );
-
-      expect(rowsAffected, 1);
-
-      // Verify the update
-      final items = await database.allOutboxItems;
-      expect(items, hasLength(1));
-      expect(items.first.message, '{"updated": true}');
-      expect(items.first.subject, 'updated-subject');
-      // updatedAt should be changed
-      expect(items.first.updatedAt.isAfter(now), isTrue);
-    });
-
-    test('updateOutboxMessage promotes a text row to media-bearing', () async {
-      final database = db!;
-      final now = DateTime(2024, 1, 1);
-
-      final id = await database.addOutboxItem(
-        OutboxCompanion(
-          status: Value(OutboxStatus.pending.index),
-          message: const Value('{"original": true}'),
-          subject: const Value('original-subject'),
-          createdAt: Value(now),
-          updatedAt: Value(now),
-          outboxEntryId: const Value('entry-media'),
-        ),
-      );
-
-      // A re-sync merging onto a pending edit must carry the blob. The row's
-      // filePath is also what keeps it out of the dequeue-time bundler, which
-      // ships JSON manifests only.
-      final rowsAffected = await database.updateOutboxMessage(
-        itemId: id,
-        newMessage: '{"updated": true}',
-        newSubject: 'updated-subject',
-        filePath: '/images/photo.jpg',
-      );
-      expect(rowsAffected, 1);
-      expect(
-        (await database.allOutboxItems).single.filePath,
-        '/images/photo.jpg',
-      );
-
-      // A later merge that passes no path leaves the attachment in place
-      // rather than silently clearing it.
-      await database.updateOutboxMessage(
-        itemId: id,
-        newMessage: '{"updated": 2}',
-        newSubject: 'updated-subject-2',
-      );
-      expect(
-        (await database.allOutboxItems).single.filePath,
-        '/images/photo.jpg',
-      );
-    });
-
-    test('updateOutboxMessage returns 0 when item not found', () async {
-      final database = db!;
-
-      final rowsAffected = await database.updateOutboxMessage(
-        itemId: 999,
-        newMessage: '{"new": true}',
-        newSubject: 'new-subject',
-      );
-
-      expect(rowsAffected, 0);
-    });
-
-    test('updateOutboxMessage updates payloadSize when provided', () async {
-      final database = db!;
-      final now = DateTime(2025, 3, 15, 10);
-
-      await database.addOutboxItem(
-        buildOutboxCompanion(
-          status: OutboxStatus.pending,
-          createdAt: now,
-          message: '{"data": "test"}',
-        ),
-      );
-
-      final items = await database.allOutboxItems;
-      expect(items, hasLength(1));
-
-      await database.updateOutboxMessage(
-        itemId: items.first.id,
-        newMessage: '{"data": "updated"}',
-        newSubject: 'updated',
-        payloadSize: 12345,
-      );
-
-      final updatedItems = await database.allOutboxItems;
-      expect(updatedItems.first.payloadSize, 12345);
+      expect(claimed.map((r) => r.id), [pending]);
+      expect(claimed.single.status, OutboxStatus.sending.index);
+      final statuses = {
+        for (final item in await db!.allOutboxItems) item.id: item.status,
+      };
+      expect(statuses, {
+        pending: OutboxStatus.sending.index,
+        failed: OutboxStatus.pending.index,
+      });
     });
   });
 
@@ -780,30 +541,6 @@ void main() {
       expect(items.first.payloadSize, isNull);
     });
 
-    test('updateOutboxMessage writes payloadSize to existing row', () async {
-      final now = DateTime(2025, 3, 15, 10);
-      await db.addOutboxItem(
-        OutboxCompanion(
-          status: Value(OutboxStatus.pending.index),
-          subject: const Value('subject'),
-          message: const Value('{"old": true}'),
-          createdAt: Value(now),
-          updatedAt: Value(now),
-        ),
-      );
-
-      final items = await db.allOutboxItems;
-      await db.updateOutboxMessage(
-        itemId: items.first.id,
-        newMessage: '{"updated": true}',
-        newSubject: 'updated-subject',
-        payloadSize: 9999,
-      );
-
-      final updated = await db.allOutboxItems;
-      expect(updated.first.payloadSize, 9999);
-    });
-
     test('schema version is 29', () {
       expect(db.schemaVersion, 30);
     });
@@ -837,75 +574,13 @@ void main() {
             'sent must be index 1 — used as a literal in the '
             'sent-ledger updated_at partial-index WHERE clause.',
       );
-    });
-  });
-
-  group('updateOutboxMessage - priority parameter -', () {
-    // Exercises line 2253: the `priority != null ? Value(priority) : Value.absent()`
-    // branch inside `updateOutboxMessage`.
-    late SyncDatabase database;
-
-    setUpAll(() async {
-      database = SyncDatabase(inMemoryDatabase: true);
-    });
-    setUp(() async {
-      await clearAllSyncTables(database);
-    });
-    tearDownAll(() async {
-      await database.close();
-    });
-
-    test('updates priority when non-null priority is supplied', () async {
-      final now = DateTime(2024, 3, 15, 10);
-      final id = await database.addOutboxItem(
-        OutboxCompanion(
-          status: Value(OutboxStatus.pending.index),
-          subject: const Value('subject'),
-          message: const Value('{}'),
-          createdAt: Value(now),
-          updatedAt: Value(now),
-          priority: Value(OutboxPriority.low.index),
-        ),
+      expect(
+        OutboxStatus.error.index,
+        2,
+        reason:
+            'error must be index 2 — used as a literal in '
+            '`collapsibleOutboxRows`.',
       );
-
-      final rowsAffected = await database.updateOutboxMessage(
-        itemId: id,
-        newMessage: '{"v":2}',
-        newSubject: 'updated',
-        priority: OutboxPriority.high.index,
-      );
-
-      expect(rowsAffected, 1);
-      final item = await database.getOutboxItemById(id);
-      expect(item, isNotNull);
-      expect(item!.message, '{"v":2}');
-      expect(item.priority, OutboxPriority.high.index);
-    });
-
-    test('leaves priority unchanged when null priority is supplied', () async {
-      final now = DateTime(2024, 3, 15, 10);
-      final id = await database.addOutboxItem(
-        OutboxCompanion(
-          status: Value(OutboxStatus.pending.index),
-          subject: const Value('subject'),
-          message: const Value('{}'),
-          createdAt: Value(now),
-          updatedAt: Value(now),
-          priority: Value(OutboxPriority.normal.index),
-        ),
-      );
-
-      await database.updateOutboxMessage(
-        itemId: id,
-        newMessage: '{"v":2}',
-        newSubject: 'updated',
-        // priority intentionally null
-      );
-
-      final item = await database.getOutboxItemById(id);
-      expect(item, isNotNull);
-      // Priority must remain normal since we passed null.
-      expect(item!.priority, OutboxPriority.normal.index);
     });
   });
 }

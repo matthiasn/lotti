@@ -181,62 +181,6 @@ void main() {
     });
   });
 
-  group('last-sent LRU', () {
-    test('touch refreshes recency and evicts the oldest past capacity', () {
-      // Fill to capacity.
-      for (var i = 0; i < SyncSequenceCache.lastSentCounterCacheCapacity; i++) {
-        cache.touchLastSentCache('k$i', i);
-      }
-      cache
-        // Refresh the oldest key so it is no longer the eviction target.
-        ..touchLastSentCache('k0', 0)
-        // One more key triggers eviction of the now-oldest (k1).
-        ..touchLastSentCache('overflow', 999);
-
-      expect(cache.containsLastSent('k0'), isTrue);
-      expect(cache.containsLastSent('k1'), isFalse);
-      expect(cache.containsLastSent('overflow'), isTrue);
-    });
-
-    test('expireCacheForTesting wipes the LRU and the last-sent window', () {
-      cache
-        ..ensureLastSentCacheWindow()
-        ..touchLastSentCache('k', 1);
-      expect(cache.containsLastSent('k'), isTrue);
-
-      cache.expireCacheForTesting();
-
-      expect(cache.containsLastSent('k'), isFalse);
-    });
-
-    test(
-      'invalidateLastSentCacheIfExpired clears the LRU once the window passes',
-      () {
-        final start = DateTime(2024, 3, 15, 10);
-        withClock(Clock.fixed(start), () {
-          cache
-            ..ensureLastSentCacheWindow()
-            ..touchLastSentCache('k', 1);
-        });
-
-        withClock(
-          Clock.fixed(
-            start.add(SyncSequenceCache.cacheTtl + const Duration(minutes: 1)),
-          ),
-          () {
-            cache.invalidateLastSentCacheIfExpired();
-          },
-        );
-
-        expect(cache.containsLastSent('k'), isFalse);
-      },
-    );
-
-    test('lastSentCacheKey namespaces by host and entry', () {
-      expect(cache.lastSentCacheKey('h', 'e'), 'h::e');
-    });
-  });
-
   group('sent bindings', () {
     void remember(int counter) => cache.rememberSentBinding(
       hostId: hostId,
@@ -302,58 +246,6 @@ void main() {
       (int kind, int arg) => (kind: kind, arg: arg),
     );
     final start = DateTime(2024, 3, 15, 10);
-
-    glados.Glados(
-      glados.any.listWithLengthInRange(0, 30, step),
-      glados.ExploreConfig(numRuns: 80),
-    ).test(
-      'the last-sent LRU matches a list model and never outgrows capacity',
-      (steps) {
-        const capacity = SyncSequenceCache.lastSentCounterCacheCapacity;
-        final cache = SyncSequenceCache(MockSyncDatabase());
-        // Oldest first. Flood keys are always new, so only pool keys move.
-        final order = ListQueue<String>();
-        final values = <String, int?>{};
-
-        void touch(String key, int? value, {bool isNew = false}) {
-          cache.touchLastSentCache(key, value);
-          if (!isNew) order.remove(key);
-          order.add(key);
-          values[key] = value;
-          while (order.length > capacity) {
-            final evicted = order.removeFirst();
-            values.remove(evicted);
-            // The cache evicted the same entry the model did; a miss has no
-            // side effect on recency.
-            expect(cache.containsLastSent(evicted), isFalse, reason: evicted);
-          }
-        }
-
-        var fresh = 0;
-        for (final s in steps) {
-          final key = cache.lastSentCacheKey('host-a', 'entry-${s.arg}');
-          switch (s.kind) {
-            case 0:
-              touch(key, s.arg.isEven ? s.arg : null);
-            case 1:
-              expect(cache.containsLastSent(key), values.containsKey(key));
-              expect(cache.getLastSent(key), values[key]);
-            case 2:
-              // No clock here: the LRU's time window is the service's.
-              break;
-            default:
-              for (var i = 0; i < capacity ~/ 4 * s.arg ~/ 3; i++) {
-                touch('flood-${fresh++}', i, isNew: true);
-              }
-          }
-        }
-        expect(order.length, lessThanOrEqualTo(capacity));
-        for (final key in values.keys) {
-          expect(cache.getLastSent(key), values[key]);
-        }
-      },
-      tags: 'glados',
-    );
 
     glados.Glados(
       glados.any.listWithLengthInRange(0, 30, step),

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math' as math;
 
 import 'package:drift/drift.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -26,13 +25,13 @@ part 'outbox_enqueue_writer_agent.dart';
 
 /// Per-message-type enqueue collaborator behind `OutboxService.enqueueMessage`:
 /// message preparation (originating host, embedded links, covered vector
-/// clocks) and persistence into the outbox table, including pending-row merge
-/// dedup and sequence-log bookkeeping.
+/// clocks) and persistence into the outbox table — one immutable row per
+/// version, never merged (ADR 0086) — and sequence-log bookkeeping.
 ///
 /// Deliberately free of any runner/timer/connectivity state — every
 /// collaborator is injected, so the enqueue paths can be tested in isolation
-/// from the send pipeline. Scheduling hops back into the service through the
-/// injected [_enqueueNextSendRequest] callback.
+/// from the send pipeline; the owning service schedules the send after every
+/// enqueue.
 class OutboxEnqueueWriter {
   OutboxEnqueueWriter({
     required this._journalDb,
@@ -41,7 +40,6 @@ class OutboxEnqueueWriter {
     required this._documentsDirectory,
     required this._saveJson,
     required this._safePayloadFullPath,
-    required this._enqueueNextSendRequest,
     required this._sequenceLogService,
   });
 
@@ -57,56 +55,7 @@ class OutboxEnqueueWriter {
   /// notification-enqueue entry point.
   final String? Function(String relativePath) _safePayloadFullPath;
 
-  /// Schedules the next outbox send pass on the owning service's runner.
-  final Future<void> Function({Duration delay}) _enqueueNextSendRequest;
   final SyncSequenceLogService? _sequenceLogService;
-
-  /// The last enqueue queued per outbox entry id; see [_serializedByKey].
-  final Map<String, Completer<void>> _keyTails = <String, Completer<void>>{};
-
-  /// Runs [body] after every earlier enqueue of [key] has finished.
-  ///
-  /// The merge paths read the pending row with `findPendingByEntryId` and
-  /// write it back after further awaits. Two enqueues of one entity that
-  /// interleave there both merge into the row as they read it, and the second
-  /// write drops the counter the first one added — and, for an inline payload,
-  /// can put the older payload back (ADR 0085, `NoLostCounter`). Keyed by the
-  /// outbox entry id, so different entities still enqueue concurrently. The
-  /// processor is not excluded: the update's compare-and-set on `pending`
-  /// already turns a claim in between into a fresh row.
-  Future<T> _serializedByKey<T>(String key, Future<T> Function() body) async {
-    final previous = _keyTails[key];
-    final done = Completer<void>();
-    _keyTails[key] = done;
-    try {
-      if (previous != null) await previous.future;
-      return await body();
-    } finally {
-      done.complete();
-      if (identical(_keyTails[key], done)) {
-        _keyTails.remove(key);
-      }
-    }
-  }
-
-  /// Whether the payload already pending, at [pending], is strictly newer
-  /// than the incoming one at [incoming]. A merge then keeps the pending
-  /// payload and only folds the incoming clock into the covered ones, so an
-  /// enqueue that arrives out of order never replaces a newer inline payload
-  /// with an older one (ADR 0085, `MergeNeverRegresses`).
-  bool _pendingSupersedes(VectorClock? pending, VectorClock? incoming) {
-    if (pending == null || incoming == null) return false;
-    try {
-      return VectorClock.compare(pending, incoming) == VclockStatus.a_gt_b;
-    } on VclockException {
-      return false;
-    }
-  }
-
-  /// Whether [clock] has reached every counter of [other]: each host in
-  /// [other] is at least as far along in [clock].
-  bool _reaches(VectorClock clock, VectorClock other) =>
-      other.vclock.entries.every((e) => (clock.vclock[e.key] ?? -1) >= e.value);
 
   void _logEnqueueSample(
     String message, {
@@ -331,26 +280,11 @@ class OutboxEnqueueWriter {
   // Per-type enqueue helpers
   // ---------------------------------------------------------------------------
 
-  /// Enqueues a SyncJournalEntity. Returns true if merge happened (caller
-  /// should not schedule another send request). Descriptor refresh failures
-  /// propagate so recovery cannot settle a counter against a stale sidecar.
-  /// Enqueues of one entry run one at a time ([_serializedByKey]).
-  Future<bool> enqueueJournalEntity({
-    required SyncJournalEntity msg,
-    required OutboxCompanion commonFields,
-    required String? host,
-    required String? hostHash,
-  }) => _serializedByKey(
-    msg.id,
-    () => _enqueueJournalEntity(
-      msg: msg,
-      commonFields: commonFields,
-      host: host,
-      hostHash: hostHash,
-    ),
-  );
-
-  Future<bool> _enqueueJournalEntity({
+  /// Appends a SyncJournalEntity row for this version. Rows are never merged:
+  /// the processor collapses an entry's pending rows when it sends (ADR 0086).
+  /// Descriptor refresh failures propagate so recovery cannot settle a counter
+  /// against a stale sidecar.
+  Future<void> enqueueJournalEntity({
     required SyncJournalEntity msg,
     required OutboxCompanion commonFields,
     required String? host,
@@ -384,192 +318,32 @@ class OutboxEnqueueWriter {
 
     final localCounter = journalEntity.meta.vectorClock?.vclock[host];
 
-    // Resolved here, not just at send time: stamping `filePath` on the row is
-    // what keeps a media-bearing row out of the dequeue-time bundler, which
-    // ships JSON manifests only. Leave it null and the blob is dropped no
-    // matter what the sender would have done with it.
-    final mediaFile = _mediaFileFor(journalEntity);
+    // Resolved here, not just at send time: `filePath` on the row is what
+    // keeps a media-bearing row out of the dequeue-time bundler, which ships
+    // JSON manifests only, and what tells the collapse that one of the rows
+    // it folds together still owes the peers its attachment.
     final sendAttachments = shouldSendJournalAttachments(
       status: msg.status,
       includeAttachments: msg.includeAttachments,
       resendAttachmentsFlag: await _journalDb.getConfigFlag(resendAttachments),
     );
-
-    final attachment = sendAttachments ? mediaFile : null;
+    final attachment = sendAttachments ? _mediaFileFor(journalEntity) : null;
     final fileLength = await _attachmentLength(attachment);
-    final embeddedLinksCount = msg.entryLinks?.length ?? 0;
+    final subject = '$hostHash:$localCounter';
 
-    // Check for existing pending outbox item for this entry (merge logic)
-    final existingItem = await _syncDatabase.findPendingByEntryId(msg.id);
-
-    if (existingItem != null) {
-      // Merge: extract old VC and add to coveredVectorClocks
-      try {
-        final oldMessage = SyncMessage.fromJson(
-          json.decode(existingItem.message) as Map<String, dynamic>,
-        );
-
-        if (oldMessage is SyncJournalEntity) {
-          final latestVc = journalEntity.meta.vectorClock;
-          final coveredClocks = VectorClock.mergeUniqueClocks([
-            ...?oldMessage.coveredVectorClocks,
-            ...?msg.coveredVectorClocks,
-            oldMessage.vectorClock,
-            // Also capture the current enqueue call's VC if it differs from
-            // the latest. This handles the race condition where multiple
-            // enqueue calls are in flight concurrently - each intermediate
-            // VC must be captured to prevent false gaps.
-            if (msg.vectorClock != null && msg.vectorClock != latestVc)
-              msg.vectorClock,
-            latestVc,
-          ]);
-
-          // Create merged message with updated VC and covered clocks. The
-          // attachment opt-in is the union of both payloads: one Matrix event
-          // now stands in for both enqueues, so if either wanted the media
-          // sent, the survivor must send it.
-          final mergedIncludesAttachments =
-              (msg.includeAttachments ?? false) ||
-              (oldMessage.includeAttachments ?? false);
-          final mergedMessage = msg.copyWith(
-            vectorClock: latestVc,
-            coveredVectorClocks: coveredClocks,
-            includeAttachments: mergedIncludesAttachments ? true : null,
-          );
-          logVectorClockAssignment(
-            _loggingService,
-            subDomain: 'enqueue.merge',
-            action: 'assign',
-            type: 'SyncJournalEntity',
-            entryId: msg.id,
-            jsonPath: msg.jsonPath,
-            reason: 'pending_merge_refresh',
-            previous: msg.vectorClock,
-            assigned: latestVc,
-            coveredVectorClocks: coveredClocks,
-            extras: {'oldVc': oldMessage.vectorClock?.vclock},
-          );
-
-          // The merged message may want media even when this enqueue did not
-          // (an ordinary edit landing on a pending re-sync row), so resolve
-          // the attachment against the union decision rather than reusing the
-          // per-message one.
-          final mergedAttachment =
-              (sendAttachments || mergedIncludesAttachments) ? mediaFile : null;
-          final mergedFileLength = mergedAttachment == attachment
-              ? fileLength
-              : await _attachmentLength(mergedAttachment);
-          final mergedFilePath = (mergedFileLength > 0)
-              ? getRelativeAssetPath(mergedAttachment!.path)
-              : null;
-
-          final mergedJson = json.encode(mergedMessage.toJson());
-          final mergedPayloadSize =
-              utf8.encode(mergedJson).length + mergedFileLength;
-          final mergedPriority = math.min(
-            existingItem.priority,
-            commonFields.priority.value,
-          );
-          final affectedRows = await _syncDatabase.updateOutboxMessage(
-            itemId: existingItem.id,
-            newMessage: mergedJson,
-            newSubject: '$hostHash:$localCounter',
-            payloadSize: mergedPayloadSize,
-            priority: mergedPriority,
-            filePath: mergedFilePath,
-          );
-
-          if (affectedRows == 0) {
-            // Row was no longer pending — insert fresh row with merged data
-            _loggingService.log(
-              LogDomain.sync,
-              'enqueue MERGE-MISS type=SyncJournalEntity id=${msg.id} '
-              '(row no longer pending, inserting fresh)',
-              subDomain: 'enqueueMessage',
-            );
-            await _syncDatabase.addOutboxItem(
-              commonFields.copyWith(
-                subject: Value('$hostHash:$localCounter'),
-                message: Value(mergedJson),
-                payloadSize: Value(mergedPayloadSize),
-                outboxEntryId: Value(msg.id),
-                priority: Value(mergedPriority),
-                // Without this the fresh row is text-only and the bundler
-                // would pack it, dropping the blob the merged message asks
-                // the sender to upload.
-                filePath: Value(mergedFilePath),
-              ),
-            );
-          }
-
-          _logEnqueueSample(
-            'enqueue MERGED type=SyncJournalEntity id=${msg.id} '
-            'coveredClocks=${coveredClocks?.length ?? 0} '
-            'latest=${latestVc?.vclock}',
-            sampleKey: 'merge.SyncJournalEntity',
-          );
-
-          // Still record in sequence log for the new counter
-          if (_sequenceLogService != null &&
-              journalEntity.meta.vectorClock != null) {
-            try {
-              await _sequenceLogService.recordSentEntry(
-                entryId: journalEntity.meta.id,
-                vectorClock: journalEntity.meta.vectorClock!,
-              );
-            } catch (e, st) {
-              _loggingService.error(
-                LogDomain.sync,
-                e,
-                stackTrace: st,
-                subDomain: 'recordSent',
-              );
-            }
-          }
-
-          unawaited(
-            _enqueueNextSendRequest(delay: const Duration(seconds: 1)),
-          );
-          return true; // Merge happened - don't create new item
-        }
-      } catch (e, st) {
-        _loggingService.error(
-          LogDomain.sync,
-          e,
-          stackTrace: st,
-          subDomain: 'enqueueMessage.merge',
-        );
-        // Fall through to create new item on merge error
-      }
-    }
-
-    // No existing item or merge failed - create new outbox item with entryId.
-    // Enrich covered VCs from the sequence log so receivers can resolve
-    // intermediate counters even when the predecessor was already sent.
-    final enrichedCovered = await enrichCoveredVcsFromSequenceLog(
-      msg.id,
-      msg.coveredVectorClocks,
-    );
-    var outboxMsg = msg;
-    if (enrichedCovered != msg.coveredVectorClocks) {
-      outboxMsg = msg.copyWith(coveredVectorClocks: enrichedCovered);
-    }
-    final outboxJson = json.encode(outboxMsg.toJson());
-    final outboxSize = utf8.encode(outboxJson).length + fileLength;
     await _syncDatabase.addOutboxItem(
       commonFields.copyWith(
         filePath: Value(
           (fileLength > 0) ? getRelativeAssetPath(attachment!.path) : null,
         ),
-        subject: Value('$hostHash:$localCounter'),
+        subject: Value(subject),
         outboxEntryId: Value(msg.id),
-        message: Value(outboxJson),
-        payloadSize: Value(outboxSize),
+        payloadSize: Value((commonFields.payloadSize.value ?? 0) + fileLength),
       ),
     );
     _logEnqueueSample(
-      'enqueue type=SyncJournalEntity subject=${'$hostHash:$localCounter'} '
-      'id=${msg.id} attachBytes=$fileLength embeddedLinks=$embeddedLinksCount',
+      'enqueue type=SyncJournalEntity subject=$subject id=${msg.id} '
+      'attachBytes=$fileLength embeddedLinks=${msg.entryLinks?.length ?? 0}',
       sampleKey: 'insert.SyncJournalEntity',
     );
 
@@ -589,14 +363,11 @@ class OutboxEnqueueWriter {
         );
       }
     }
-
-    return false; // No merge - caller should schedule the next send request
   }
 
   /// The on-disk media file [entity] references, or null for entity types that
   /// carry no media. Pure path resolution — it does not check existence and
-  /// does not consult the attachment policy, so callers can resolve the
-  /// candidate once and decide separately whether to send it.
+  /// does not consult the attachment policy.
   File? _mediaFileFor(JournalEntity entity) => entity.maybeMap(
     journalAudio: (JournalAudio journalAudio) =>
         File(AudioUtils.getAudioPath(journalAudio, _documentsDirectory)),
@@ -621,212 +392,24 @@ class OutboxEnqueueWriter {
     }
   }
 
-  /// Looks up the last sent vector clock for [entryId] from the sequence log
-  /// and merges it into [existingCovered].  Returns [existingCovered] unchanged
-  /// when no previous send is found or the sequence log service is absent.
-  ///
-  /// [payloadClock] is the clock of an inline payload the row will carry.
-  /// When given, the last sent clock is folded in only if the payload is at
-  /// least that new: a peer marks every covered counter received, so a row
-  /// carrying an older payload must not cover a newer counter, or the peer
-  /// would never ask for the newer version (ADR 0085, `CoversOnlyOlder`). A
-  /// journal row omits it, because its sender reads the entry's current
-  /// version at send time.
-  Future<List<VectorClock>?> enrichCoveredVcsFromSequenceLog(
-    String entryId,
-    List<VectorClock>? existingCovered, {
-    VectorClock? payloadClock,
-  }) async {
-    if (_sequenceLogService == null) return existingCovered;
-    try {
-      final lastSentVc = await _sequenceLogService
-          .getLastSentVectorClockForEntry(entryId);
-      if (lastSentVc == null) return existingCovered;
-      if (payloadClock != null && !_reaches(payloadClock, lastSentVc)) {
-        return existingCovered;
-      }
-      return VectorClock.mergeUniqueClocks([
-        ...?existingCovered,
-        lastSentVc,
-      ]);
-    } catch (e, st) {
-      _loggingService.error(
-        LogDomain.sync,
-        e,
-        stackTrace: st,
-        subDomain: 'enrichCoveredVcs',
-      );
-      return existingCovered;
-    }
-  }
-
-  /// Enqueues a SyncEntryLink. Returns true if merge happened (caller should
-  /// not schedule another send request). Enqueues of one link run one at a
-  /// time ([_serializedByKey]).
-  Future<bool> enqueueEntryLink({
-    required SyncEntryLink msg,
-    required OutboxCompanion commonFields,
-    required String? host,
-    required String? hostHash,
-  }) => _serializedByKey(
-    msg.entryLink.id,
-    () => _enqueueEntryLink(
-      msg: msg,
-      commonFields: commonFields,
-      host: host,
-      hostHash: hostHash,
-    ),
-  );
-
-  Future<bool> _enqueueEntryLink({
+  /// Appends a SyncEntryLink row for this version of the link. Rows are never
+  /// merged; the processor collapses a link's pending rows when it sends.
+  Future<void> enqueueEntryLink({
     required SyncEntryLink msg,
     required OutboxCompanion commonFields,
     required String? host,
     required String? hostHash,
   }) async {
     final linkId = msg.entryLink.id;
+    final localCounter = msg.entryLink.vectorClock?.vclock[host];
+    final subject = localCounter == null
+        ? '$hostHash:link'
+        : '$hostHash:link:$localCounter';
 
-    // Check for existing pending outbox item for this entry link (merge logic)
-    final existingItem = await _syncDatabase.findPendingByEntryId(linkId);
-
-    if (existingItem != null) {
-      // Merge: extract old VC and add to coveredVectorClocks
-      try {
-        final oldMessage = SyncMessage.fromJson(
-          json.decode(existingItem.message) as Map<String, dynamic>,
-        );
-
-        if (oldMessage is SyncEntryLink) {
-          final coveredClocks = VectorClock.mergeUniqueClocks([
-            ...?oldMessage.coveredVectorClocks,
-            ...?msg.coveredVectorClocks,
-            oldMessage.entryLink.vectorClock,
-            msg.entryLink.vectorClock,
-          ]);
-
-          // Create merged message with covered clocks. The link rides inline,
-          // so the merge keeps whichever version is newer: an enqueue that
-          // arrives after a newer one of the same link only adds its clock.
-          final base =
-              _pendingSupersedes(
-                oldMessage.entryLink.vectorClock,
-                msg.entryLink.vectorClock,
-              )
-              ? oldMessage
-              : msg;
-          final mergedMessage = base.copyWith(
-            coveredVectorClocks: coveredClocks,
-          );
-          final subject = _entryLinkSubject(base, host, hostHash);
-          logVectorClockAssignment(
-            _loggingService,
-            subDomain: 'enqueue.merge',
-            action: 'assign',
-            type: 'SyncEntryLink',
-            entryId: linkId,
-            reason: 'pending_merge_cover',
-            previous: msg.entryLink.vectorClock,
-            assigned: base.entryLink.vectorClock,
-            coveredVectorClocks: coveredClocks,
-            extras: {'oldVc': oldMessage.entryLink.vectorClock?.vclock},
-          );
-
-          final mergedJson = json.encode(mergedMessage.toJson());
-          final mergedSize = utf8.encode(mergedJson).length;
-          final mergedPriority = math.min(
-            existingItem.priority,
-            commonFields.priority.value,
-          );
-          final affectedRows = await _syncDatabase.updateOutboxMessage(
-            itemId: existingItem.id,
-            newMessage: mergedJson,
-            newSubject: subject,
-            payloadSize: mergedSize,
-            priority: mergedPriority,
-          );
-
-          if (affectedRows == 0) {
-            // Row was no longer pending — insert fresh row with merged data
-            _loggingService.log(
-              LogDomain.sync,
-              'enqueue MERGE-MISS type=SyncEntryLink id=$linkId '
-              '(row no longer pending, inserting fresh)',
-              subDomain: 'enqueueMessage',
-            );
-            await _syncDatabase.addOutboxItem(
-              commonFields.copyWith(
-                subject: Value(subject),
-                message: Value(mergedJson),
-                payloadSize: Value(mergedSize),
-                outboxEntryId: Value(linkId),
-                priority: Value(mergedPriority),
-              ),
-            );
-          }
-
-          final latestVcStr = base.entryLink.vectorClock?.vclock;
-          _logEnqueueSample(
-            'enqueue MERGED type=SyncEntryLink id=$linkId '
-            'coveredClocks=${coveredClocks?.length ?? 0} '
-            'latest=$latestVcStr',
-            sampleKey: 'merge.SyncEntryLink',
-          );
-
-          // Still record in sequence log for the new counter
-          if (_sequenceLogService != null &&
-              msg.entryLink.vectorClock != null) {
-            try {
-              await _sequenceLogService.recordSentEntryLink(
-                linkId: linkId,
-                vectorClock: msg.entryLink.vectorClock!,
-              );
-            } catch (e, st) {
-              _loggingService.error(
-                LogDomain.sync,
-                e,
-                stackTrace: st,
-                subDomain: 'recordSent',
-              );
-            }
-          }
-
-          unawaited(
-            _enqueueNextSendRequest(delay: const Duration(seconds: 1)),
-          );
-          return true; // Merge happened - don't create new item
-        }
-      } catch (e, st) {
-        _loggingService.error(
-          LogDomain.sync,
-          e,
-          stackTrace: st,
-          subDomain: 'enqueueMessage.merge',
-        );
-        // Fall through to create new item on merge error
-      }
-    }
-
-    // No existing item or merge failed - create new outbox item with entryId.
-    // Enrich covered VCs from the sequence log for already-sent predecessors.
-    // The link rides inline, so only a predecessor it is newer than.
-    final subject = _entryLinkSubject(msg, host, hostHash);
-    final enrichedLinkCovered = await enrichCoveredVcsFromSequenceLog(
-      linkId,
-      msg.coveredVectorClocks,
-      payloadClock: msg.entryLink.vectorClock,
-    );
-    var outboxLinkMsg = msg;
-    if (enrichedLinkCovered != msg.coveredVectorClocks) {
-      outboxLinkMsg = msg.copyWith(coveredVectorClocks: enrichedLinkCovered);
-    }
-    final outboxLinkJson = json.encode(outboxLinkMsg.toJson());
-    final outboxLinkSize = utf8.encode(outboxLinkJson).length;
     await _syncDatabase.addOutboxItem(
       commonFields.copyWith(
         subject: Value(subject),
         outboxEntryId: Value(linkId),
-        message: Value(outboxLinkJson),
-        payloadSize: Value(outboxLinkSize),
       ),
     );
     _logEnqueueSample(
@@ -851,16 +434,5 @@ class OutboxEnqueueWriter {
         );
       }
     }
-
-    return false; // No merge - caller should schedule the next send request
-  }
-
-  /// The outbox subject of an entry-link row: this host's counter in the
-  /// link's clock, when it has one.
-  String _entryLinkSubject(SyncEntryLink msg, String? host, String? hostHash) {
-    final localCounter = msg.entryLink.vectorClock?.vclock[host];
-    return localCounter == null
-        ? '$hostHash:link'
-        : '$hostHash:link:$localCounter';
   }
 }

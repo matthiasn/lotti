@@ -5,7 +5,7 @@ description: How causal order is represented, why coveredVectorClocks is separat
 resource: ../../../lib/features/sync/vector_clock.dart
 tags: [sync, vector-clock, conflicts, causality]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-25T20:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-25T21:00:00Z }
 stale_after: 2026-12-25
 sources:
   - id: entity-receive
@@ -268,7 +268,8 @@ break offline convergence.
 ## Worked example: rapid updates on one host
 
 Host `A` updates the same entry three times before the outbox drains — `{A:5}`,
-`{A:6}`, `{A:7}`. The outbox merge path collapses them into one pending message:
+`{A:6}`, `{A:7}`. Each is its own outbox row; when the processor sends, it
+collapses them into one message (ADR 0086):
 
 ```text
 vectorClock         = {A:7}

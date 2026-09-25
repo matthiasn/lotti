@@ -1061,102 +1061,91 @@ What the model leaves out, deliberately or as a residual:
   The regression for a host's first relink and removal is in the
   `AgentSyncService` suite.
 
-## `Outbox` — enqueue, merge, claim, send and prune
+## `Outbox` — append, collapse, claim, send and prune
 
 The outbound queue of one device, which `SyncSequence` treats as a set of
 counters per entity that is sent atomically and never fails. Here the box is
-open: local writes enqueue payloads, the enqueue writer merges a new version
-into the entity's pending row (`findPendingByEntryId`, then
-`updateOutboxMessage`'s compare-and-set on `pending`, or a fresh row on a
-miss), a fresh row is enriched with the last counter the sequence log
-recorded, and one `ClientRunner` callback at a time claims a bundle, sends it,
-marks it sent or retries it up to `maxRetries`, then `error`. Sends fail, time
-out and land anyway, marks throw, the process dies between the send and the
-mark, claim leases run out, sent rows are pruned, and the monitor's Retry and
-Remove act on failed rows. A key is an entity whose payload rides inline in
-the row — an agent entity or link, an entry link — and its versions are
-ordered like its vector clocks. The decision is
-[ADR 0085](../../docs/adr/0085-model-checked-outbox.md).
+open. Enqueue appends one immutable row per version and never merges. One
+drain at a time claims a bundle and collapses each entity's rows into one
+send of its newest version by clock, covering every other counter and
+carrying the attachment if any collapsed row owed it. Every collapsed row is
+then marked sent, or all of them are retried up to `maxRetries`, then
+`error`. A send also settles the entity's failed rows it supersedes. Sends
+fail, time out and land anyway, marks throw, the process dies between the
+send and the mark, claim leases run out, the same profile is torn down and
+restarted, sent rows are pruned, and the monitor's Retry and Remove act on
+failed rows. A key is an entity whose rows collapse — a journal entry, an
+entry link, an agent entity or link, a config flag — and its versions are
+ordered like its vector clocks; a version in `MediaVersions` owes the
+attachment. The design is
+[ADR 0086](../../docs/adr/0086-append-only-outbox.md), which supersedes the
+enqueue-time merge of
+[ADR 0085](../../docs/adr/0085-model-checked-outbox.md) and keeps its
+orphan release and dispose quiesce. TLC's fairness check is far slower than
+its safety check on this spec, so the two large configurations check safety
+and the action properties, and three smaller ones add the liveness
+properties.
 
 | Property | Kind | Says |
 |----------|------|------|
-| `NoLostCounter` | invariant | every enqueued version is on the wire, still in a live row, or removed by the user: dedup never drops the only row carrying a counter |
-| `CoversOnlyOlder` | invariant | a row never covers a counter newer than the payload it sends, so a peer never marks a version received that it does not hold |
-| `MergeNeverRegresses` | action | a merge never replaces a pending payload with an older one |
-| `SentWasDelivered` | invariant | a row is `sent` only after its message reached the room |
+| `NoLostCounter` | invariant | every enqueued version is on the wire, still in a live row, or removed by the user |
+| `CoversOnlyOlder` | invariant | a send never covers a counter newer than the payload it carries, so a peer never marks a version received that it does not hold |
+| `RowsImmutable` | action | a row, once appended, keeps its payload (the successor of ADR 0085's `MergeNeverRegresses`) |
+| `SentWasDelivered` | invariant | a row is `sent` only after its counter reached the room |
+| `MediaNotDropped` | invariant | a row that owed the attachment is `sent` only after a send of its entity carried it |
 | `PruneOnlySent` | action | pruning deletes only sent rows |
-| `NewestLandsLast` | invariant | with callers enqueuing in order, the last payload of an entity in the room is the newest the room holds; a resent bundle repeats older versions before the newer ones, a lone older payload after a newer one is a stale overwrite |
+| `NewestLandsLast` | invariant | with callers enqueuing in order, the last payload of an entity in the room is the newest the room holds |
 | `EveryRowSettles` | liveness | every pending or sending row ends sent, failed for good, or removed |
 | `EnqueuedIsDelivered` | liveness | every enqueued version reaches the room, unless its row failed for good or was removed |
 
 | Configuration | Enqueue order | Faults | Distinct states |
 |---------------|---------------|--------|-----------------|
-| `Outbox` | in order, three versions, one simple message, bundles of two | failed sends, a mark that throws, a crash | 2,419,919 |
-| `OutboxConcurrent` | concurrent, any order, three versions, bundles of two | failed sends, a mark that throws, a crash | 498,812 |
-| `OutboxOperator` | in order, two versions | failed and timed-out sends that land late, marks that throw, a crash, the monitor's Retry and Remove | 59,395 |
+| `Outbox` | in order, three versions (the first owing the attachment), one simple message, bundles of two | failed sends, a mark that throws, a crash or a teardown; safety only | 945,340 |
+| `OutboxConcurrent` | any order, three versions (the first owing the attachment), bundles of two | failed sends, a mark that throws, a crash or a teardown; safety only | 167,990 |
+| `OutboxConcurrentLive` | any order, two versions (the first owing the attachment), bundles of two | failed sends, a mark that throws, a crash or a teardown | 4,814 |
+| `OutboxOperator` | in order, two versions | failed sends, marks that throw, a crash or a teardown, the monitor's Retry | 5,890 |
+| `OutboxGhost` | in order, two versions (the first owing the attachment) | timed-out sends that land late, marks that throw, a crash or a teardown, the monitor's Retry and Remove | 16,097 |
 
-| Switch | Old behaviour | Counterexample |
-|--------|---------------|----------------|
-| `KeyedEnqueueLock` | enqueues of one entity interleaved between the pending-row read and the write | `NoLostCounter`, six steps: v1 is pending, the enqueues of v2 and v3 both read it, v2 writes `{v2, covers v1}`, v3 writes `{v3, covers v1}` over it, and counter 2 is in no row |
-| `NewestPayloadWins` | a merge always took the incoming inline payload | `CoversOnlyOlder` in four steps: v3 is pending and a late enqueue of v1 makes the row `{v1, covers 3}`; `MergeNeverRegresses` in the same shape |
-| `CoverOnlyOlder` | a fresh row was enriched with the last recorded counter whatever its payload | `CoversOnlyOlder`, eight steps: v3 is in flight when a late v2 inserts a fresh row covering 3, so a peer would mark 3 received holding only v2 |
-| `ReleaseBeforeDrain` | a `sending` row a claim left behind waited out its one-minute lease | `NewestLandsLast`, fourteen steps: v1 is claimed, v2 is enqueued as a fresh row, the process dies; after the restart the drain sends v2, the lease runs out, and v1 lands last |
-| `QuiesceOnDispose` | `OutboxService.dispose` returned while its drain still awaited a send | `NewestLandsLast`, eleven steps: v1 is claimed, v2 enqueued, the generation is torn down and the same profile restarts (`Teardown`); the new drain releases v1 and sends v1 and v2, then the old generation's send of v1 lands |
-
-With callers that enqueue in order the old merge was already sound: the same
-configuration with the three enqueue switches off passes. The holes need two
-enqueues of one entity in flight at once, which nothing in the app prevented
-— every write path awaits its own enqueue, but two paths writing one entity
-(two wake chains, an edit racing a backfill response) do not wait for each
-other.
+| Switch | Without it | Counterexample |
+|--------|------------|----------------|
+| `NewestByClock` | the collapse sends the row enqueued last | `CoversOnlyOlder`, five steps: v3 and then v2 are appended and sent as v2 covering 3 |
+| `CoverCollapsed` | the send covers nothing it folded in | `NoLostCounter`, seven steps: v1 and v2 go out as v2 alone and both rows are marked sent |
+| `CarryMedia` | the send carries the attachment only if its own row owed it | `MediaNotDropped`, seven steps: the audio row and the edit after it go out as the edit, and the audio row is marked sent |
+| `AbsorbErrorRows` | a send leaves the entity's failed rows alone | `NewestLandsLast`, fifteen steps: v1 fails to `error`, v2 is sent, the monitor retries v1 and it lands last — ADR 0085's residual 2, which this design resolves |
+| `ReleaseBeforeDrain` | a claim a crash left behind waits out its lease | `NewestLandsLast`, ten steps (ADR 0085) |
+| `QuiesceOnDispose` | dispose returns while its drain still sends | `NewestLandsLast`, nine steps (ADR 0085) |
 
 What the model leaves out, deliberately or as a residual:
 
-- **A timed-out send can land after a newer one.** `OutboxProcessor` gives a
-  send `sendTimeout` (20 s), then marks the row for retry; the Matrix send it
-  abandoned keeps running and can land later, after the retry or a newer
-  version has gone out. `SendGhost` in `OutboxOperator` models it, and a
-  copy of `Outbox` with ghosts and `NewestLandsLast` (not checked in) fails
-  in twelve steps. For payloads the receiver orders by vector clock (journal
-  entities, entry links, agent entities and links) the late copy is dropped;
-  for a payload the receiver applies in arrival order — a config flag, whose
-  receiver upserts whatever arrives, and an AI configuration — it overwrites
-  the newer value on the peer. (The theme and the Daily OS user name carry a
-  timestamp their receivers compare, and saved task filters are checked for
-  staleness.) The
-  options are sending with a stable Matrix transaction id per outbox row, so
-  a retry reuses the abandoned event instead of racing it; giving those
-  payloads a clock or timestamp the receiver compares; or not timing sends
-  out while the SDK still retries them. Each is a wire or protocol change.
-- **Retrying an old failed row sends a stale value.** A row that reached
-  `error` stays there while newer versions of its entity go out. The
-  monitor's Retry puts it back in the queue, and it lands after the newer
-  version (`OutboxOperator` allows it; a copy with Retry fails
-  `NewestLandsLast` in twenty steps). The same clockless payloads are affected.
-  The options are dropping an `error` row once a newer row of its entity is
-  sent, merging a retried row into the newest pending one, or hiding Retry
-  for a superseded row — each changes what the monitor shows.
-- **Clockless payloads follow the callers' order.** A config flag's pending
-  row is overwritten by the next enqueue of that flag. With the keyed lock
-  the value that ships is the one enqueued last, but two callers setting one
-  flag at once enqueue in whichever order their writes finish.
-- A journal entity's row sends the entry's current version, read at send
-  time, so it is left out of `CoversOnlyOlder`: its fresh rows keep the
-  unconditional enrichment.
+- **A timed-out send can land after a newer one** (ADR 0085's residual 1,
+  unchanged). `OutboxGhost` allows it; with `NewestLandsLast` it fails in ten
+  steps. Payloads the receiver orders by vector clock drop the late copy; a
+  config flag or an AI configuration, applied in arrival order, is
+  overwritten on the peer. The options — a stable Matrix transaction id per
+  outbox row, a clock or timestamp for those payloads, no timeout while the
+  SDK still retries — each change the wire or the protocol.
+- **Remove of the newer row, then Retry of an older one**, sends the older
+  value last (sixteen steps, with `UserRemoves` in `OutboxOperator`). That is
+  the user's own reversal, not a stale retry: Remove is guarded by a
+  confirmation that the change will not reach other devices.
+- **A bundle does not settle a failed row that owes an attachment.** A bundle
+  ships JSON only, so when an entity's other rows owe the attachment, the
+  bundled send of a newer version leaves them alone; a later Retry sends
+  that older version, with its attachment, after the newer one. Only journal
+  entries carry attachments, and their receivers order the JSON by clock, so
+  the older JSON is dropped and the attachment lands.
+- **Clockless payloads follow the callers' order.** The collapse picks the
+  config flag enqueued last; two callers setting one flag at once enqueue in
+  whichever order their writes finish.
+- The claim and the collapse are one step. Between the Dart claim and its
+  collapse lookups only appends (rows the collapse did not read), the
+  monitor (guarded by a compare-and-set on status) and pruning (sent rows
+  only) can run.
 - Claim order is the row id; priority is fixed per message type, and
-  `createdAt` follows the id unless the wall clock steps back. Media rows
-  only change a bundle's size and are left out.
-- `Teardown` is a profile switch or a closed-generation restart
-  (`ProfileSwitcher.runWithGenerationClosed`) that brings the same profile
-  back. The old generation's marks are not modelled: `ServiceDisposer` closes
-  that generation's `SyncDatabase` before the next one opens the file, so a
-  late `markSent` or `markRetry` throws instead of overwriting the new
-  generation's status. What the old generation can still do is land a send,
-  which `QuiesceOnDispose` rules out. The disposer gives `dispose` three
-  seconds; a send slower than that is the timed-out-send residual above, and
-  the strict closed-generation path reports it as a quiescence failure.
-- The claim lease is kept, although a drain now releases every orphaned
-  claim before it starts, as a second guard behind the quiesce.
+  `createdAt` follows the id unless the wall clock steps back.
+- `Teardown` is a profile switch or a closed-generation restart that brings
+  the same profile back; the old generation's late marks hit a closed
+  database and are not modelled (ADR 0085).
 
 ## `InboundQueue` — Matrix events into the queue, and the marker that resumes them
 
@@ -1635,22 +1624,28 @@ retry adopts exactly one.
 The outbox has one too. `test/features/sync/outbox/outbox_model_conformance.dart`
 (a part of the enqueue writer's suite) drives the real `OutboxEnqueueWriter`,
 `SyncDatabase` outbox, `DatabaseOutboxRepository` and `OutboxProcessor` over
-an in-memory database through generated traces of one agent entity written
-again and again: enqueues in flight together and alongside drains, writes
-enqueued late, drains whose sends fail or whose marks throw (leaving the rows
-`sending`, as a crash between send and mark does), time passing beyond the
-claim lease, crashes (a fresh writer, repository and processor) and prunes.
-A drain releases orphaned claims first, as `sendNext` does. After every step
-it checks `NoLostCounter`, `CoversOnlyOlder`, `MergeNeverRegresses`,
-`SentWasDelivered`, `PruneOnlySent` and, while enqueues arrived in order,
-`NewestLandsLast`; after draining everything, that every enqueued version
-reached the wire or a row that failed for good and that no row is left
-pending or sending. Removing the keyed lock fails it in three steps (two
-held-back writes enqueued together at the end), dropping newest-wins in four,
-enriching regardless of the payload in five, and a release that does nothing
-in two (a drain whose marks throw leaves its row `sending` for good). The
-regressions for each hole are examples in the same suite and, for the
-release, in the outbox service's send suite.
+an in-memory database through generated traces of two entities: an agent
+entity appended by the real writer, concurrently, alongside drains, and out
+of order (a newer version's enqueue arriving first), and a journal entry
+whose first row owes its audio and whose later rows are JSON-only edits.
+Drains collapse each entity's rows when they send; they fail, or lose their
+marks (the rows stay `sending`, as after a crash between send and mark); time
+passes beyond the claim lease; crashes build a fresh writer, repository and
+processor; sent rows are pruned; the monitor retries a failed row. A drain
+releases orphaned claims first, as `sendNext` does. After every step it
+checks `NoLostCounter`, `CoversOnlyOlder`, `RowsImmutable`,
+`SentWasDelivered`, `MediaNotDropped`, `PruneOnlySent` and, while enqueues
+arrived in order, `NewestLandsLast`; after draining everything, that every
+enqueued version reached the wire or a row that failed for good and that no
+row is left pending or sending. Collapsing onto the row enqueued last fails
+it in one step (`enqueueLatePair`), dropping the covered counters in one,
+dropping the attachment in two (`journalEdit` twice), leaving failed rows out
+of the collapse in five (a stale Retry), and a release that does nothing in
+two. The regressions — concurrent enqueues losing nothing, the newest sent
+once with every counter covered, the attachment sent exactly once across the
+audio row and its edit, a superseded failed row settled, and pruning only
+after the collapse marks — are examples in the processor's and the writer's
+suites.
 
 The inbound queue has one. In
 `test/features/sync/queue/inbound_event_queue_model_conformance.dart` (a part

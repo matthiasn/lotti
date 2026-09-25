@@ -43,14 +43,13 @@ part of 'sync_db.dart';
   'ON outbox (subject) '
   'WHERE status IN (0, 3)',
 )
-// Covers `findPendingByEntryId` — the outbox merge-deduplication path
-// fired on every enqueue. Filter is `status = pending AND
-// outbox_entry_id = ? ORDER BY created_at DESC LIMIT 1`. Without this
-// index the slow-query log on a real iOS device showed 2,394
-// occurrences with p50=197 ms, p95=371 ms, because the planner fell
-// back to the (status, priority, created_at) index and scanned every
-// pending row to find the entry_id match. The partial WHERE keeps the
-// index dense — only the hot pending+addressable rows live in it.
+// Covers the pending half of `collapsibleOutboxRows` — the dequeue-time
+// collapse's `status = pending AND outbox_entry_id = ?` lookup (ADR 0086).
+// It was added for the enqueue-time merge lookup, which the slow-query log
+// on a real iOS device showed at p50=197 ms without it, because the planner
+// fell back to the (status, priority, created_at) index and scanned every
+// pending row. The partial WHERE keeps the index dense — only pending,
+// addressable rows live in it.
 @TableIndex.sql(
   'CREATE INDEX idx_outbox_pending_entry_id_created_at '
   'ON outbox (outbox_entry_id, created_at) '
@@ -183,12 +182,9 @@ class Outbox extends Table {
   'ON sync_sequence_log (entry_id, payload_type, status) '
   'WHERE entry_id IS NOT NULL',
 )
-// Covers `getLastSentCounterForEntry`. Placing `counter DESC` before
-// `status` lets SQLite satisfy `ORDER BY counter DESC LIMIT 1` by walking
-// the index behind the `(host_id, entry_id)` equality prefix in reverse
-// counter order and applying the `status IN (?, ?)` predicate in-index,
-// terminating on the first match. With `status` trailing `counter`, the
-// engine would have to merge two status partitions via a temp B-tree.
+// Served the outbox's last-sent-counter lookup, which ADR 0086 removed
+// with the enqueue-time merge. No query reads it any more; dropping it needs
+// a schema migration, left for the next one that touches this table.
 @TableIndex.sql(
   'CREATE INDEX idx_sync_sequence_log_host_entry_status_counter '
   'ON sync_sequence_log (host_id, entry_id, counter DESC, status) '

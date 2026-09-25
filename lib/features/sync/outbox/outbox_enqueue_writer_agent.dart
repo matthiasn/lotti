@@ -9,9 +9,9 @@ extension OutboxEnqueueAgent on OutboxEnqueueWriter {
   // ---------------------------------------------------------------------------
 
   /// Enqueues an agent entity by writing its payload to disk and routing
-  /// through [enqueueAgentPayload]. Skips (logs and returns `false`) when the
+  /// through [enqueueAgentPayload]. Skips (logs and returns) when the
   /// message carries no entity.
-  Future<bool> enqueueAgentEntity({
+  Future<void> enqueueAgentEntity({
     required SyncAgentEntity msg,
     required OutboxCompanion commonFields,
   }) async {
@@ -22,7 +22,7 @@ extension OutboxEnqueueAgent on OutboxEnqueueWriter {
         'enqueue.skip agentEntity is null',
         subDomain: 'enqueueMessage',
       );
-      return false;
+      return;
     }
     return enqueueAgentPayload(
       id: entity.id,
@@ -40,9 +40,9 @@ extension OutboxEnqueueAgent on OutboxEnqueueWriter {
   }
 
   /// Enqueues an agent link by writing its payload to disk and routing through
-  /// [enqueueAgentPayload]. Skips (logs and returns `false`) when the message
+  /// [enqueueAgentPayload]. Skips (logs and returns) when the message
   /// carries no link.
-  Future<bool> enqueueAgentLink({
+  Future<void> enqueueAgentLink({
     required SyncAgentLink msg,
     required OutboxCompanion commonFields,
   }) async {
@@ -53,7 +53,7 @@ extension OutboxEnqueueAgent on OutboxEnqueueWriter {
         'enqueue.skip agentLink is null',
         subDomain: 'enqueueMessage',
       );
-      return false;
+      return;
     }
     return enqueueAgentPayload(
       id: link.id,
@@ -69,37 +69,11 @@ extension OutboxEnqueueAgent on OutboxEnqueueWriter {
   }
 
   /// Shared implementation for enqueuing agent entities and links.
-  /// Saves [payloadJson] to disk, builds an enriched outbox message from
-  /// [enrichedMessage], and either merges into an existing pending item or
-  /// creates a new one. Records sent entries in the sequence log when a
-  /// [vectorClock] is provided. Enqueues of one id run one at a time
-  /// ([OutboxEnqueueWriter._serializedByKey]).
-  Future<bool> enqueueAgentPayload({
-    required String id,
-    required String payloadJson,
-    required String relativePath,
-    required SyncMessage enrichedMessage,
-    required String subjectPrefix,
-    required String typeName,
-    required OutboxCompanion commonFields,
-    required VectorClock? vectorClock,
-    required SyncSequencePayloadType payloadType,
-  }) => _serializedByKey(
-    id,
-    () => _enqueueAgentPayload(
-      id: id,
-      payloadJson: payloadJson,
-      relativePath: relativePath,
-      enrichedMessage: enrichedMessage,
-      subjectPrefix: subjectPrefix,
-      typeName: typeName,
-      commonFields: commonFields,
-      vectorClock: vectorClock,
-      payloadType: payloadType,
-    ),
-  );
-
-  Future<bool> _enqueueAgentPayload({
+  /// Saves [payloadJson] to disk and appends a row carrying
+  /// [enrichedMessage] for this version. Rows are never merged; the processor
+  /// collapses an id's pending rows when it sends (ADR 0086). Records sent
+  /// entries in the sequence log when a [vectorClock] is provided.
+  Future<void> enqueueAgentPayload({
     required String id,
     required String payloadJson,
     required String relativePath,
@@ -123,7 +97,7 @@ extension OutboxEnqueueAgent on OutboxEnqueueWriter {
         'enqueue.skip invalid agent payload path: $relativePath',
         subDomain: 'enqueueMessage',
       );
-      return false;
+      return;
     }
 
     try {
@@ -143,189 +117,16 @@ extension OutboxEnqueueAgent on OutboxEnqueueWriter {
           outboxEntryId: Value(id),
         ),
       );
-      return false;
+      return;
     }
 
-    final existingItem = await _syncDatabase.findPendingByEntryId(id);
-
-    if (existingItem != null) {
-      // Merge: extract old VC and add to coveredVectorClocks so receivers
-      // can mark the old counter as covered instead of creating a gap.
-      var mergedMessage = enrichedMessage;
-      try {
-        final oldMessage = SyncMessage.fromJson(
-          json.decode(existingItem.message) as Map<String, dynamic>,
-        );
-
-        final VectorClock? oldVc;
-        final List<VectorClock>? oldCovered;
-        if (oldMessage is SyncAgentEntity) {
-          oldVc = oldMessage.agentEntity?.vectorClock;
-          oldCovered = oldMessage.coveredVectorClocks;
-        } else if (oldMessage is SyncAgentLink) {
-          oldVc = oldMessage.agentLink?.vectorClock;
-          oldCovered = oldMessage.coveredVectorClocks;
-        } else {
-          oldVc = null;
-          oldCovered = null;
-        }
-
-        final List<VectorClock>? newCovered;
-        if (mergedMessage case final SyncAgentEntity entity) {
-          newCovered = entity.coveredVectorClocks;
-        } else if (mergedMessage case final SyncAgentLink link) {
-          newCovered = link.coveredVectorClocks;
-        } else {
-          newCovered = null;
-        }
-
-        final coveredClocks = VectorClock.mergeUniqueClocks([
-          ...?oldCovered,
-          ...?newCovered,
-          oldVc,
-          vectorClock,
-        ]);
-
-        // The payload rides inline. When the pending one is newer (this
-        // enqueue arrived out of order), keep it and only add this clock.
-        final sameKind =
-            (oldMessage is SyncAgentEntity &&
-                mergedMessage is SyncAgentEntity) ||
-            (oldMessage is SyncAgentLink && mergedMessage is SyncAgentLink);
-        if (sameKind && _pendingSupersedes(oldVc, vectorClock)) {
-          mergedMessage = oldMessage;
-        }
-
-        if (mergedMessage case final SyncAgentEntity entity) {
-          mergedMessage = entity.copyWith(
-            coveredVectorClocks: coveredClocks,
-          );
-          logVectorClockAssignment(
-            _loggingService,
-            subDomain: 'enqueue.merge',
-            action: 'assign',
-            type: 'SyncAgentEntity',
-            entryId: id,
-            jsonPath: entity.jsonPath,
-            reason: 'pending_merge_cover',
-            previous: oldVc,
-            assigned: vectorClock,
-            coveredVectorClocks: coveredClocks,
-          );
-        } else if (mergedMessage case final SyncAgentLink link) {
-          mergedMessage = link.copyWith(
-            coveredVectorClocks: coveredClocks,
-          );
-          logVectorClockAssignment(
-            _loggingService,
-            subDomain: 'enqueue.merge',
-            action: 'assign',
-            type: 'SyncAgentLink',
-            entryId: id,
-            jsonPath: link.jsonPath,
-            reason: 'pending_merge_cover',
-            previous: oldVc,
-            assigned: vectorClock,
-            coveredVectorClocks: coveredClocks,
-          );
-        }
-
-        _logEnqueueSample(
-          'enqueue MERGED type=$typeName id=$id '
-          'coveredClocks=${coveredClocks?.length ?? 0}',
-          sampleKey: 'merge.$typeName',
-        );
-      } catch (e, st) {
-        _loggingService.error(
-          LogDomain.sync,
-          e,
-          stackTrace: st,
-          subDomain: 'enqueueMessage.agentMerge',
-        );
-        // Fallback: proceed without merging covered clocks.
-        _logEnqueueSample(
-          'enqueue MERGED type=$typeName id=$id (no VC merge)',
-          sampleKey: 'merge.$typeName.noVectorClock',
-        );
-      }
-
-      final mergedJson = json.encode(mergedMessage.toJson());
-      final mergedSize = utf8.encode(mergedJson).length;
-      final mergedPriority = math.min(
-        existingItem.priority,
-        commonFields.priority.value,
-      );
-      final affectedRows = await _syncDatabase.updateOutboxMessage(
-        itemId: existingItem.id,
-        newMessage: mergedJson,
-        newSubject: subject,
-        payloadSize: mergedSize,
-        priority: mergedPriority,
-      );
-
-      if (affectedRows == 0) {
-        // Row was no longer pending (sent or in-flight between lookup and
-        // update). Insert a fresh row with the merged message so nothing is
-        // lost.
-        _loggingService.log(
-          LogDomain.sync,
-          'enqueue MERGE-MISS type=$typeName id=$id '
-          '(row no longer pending, inserting fresh)',
-          subDomain: 'enqueueMessage',
-        );
-        await _syncDatabase.addOutboxItem(
-          commonFields.copyWith(
-            subject: Value(subject),
-            message: Value(mergedJson),
-            payloadSize: Value(mergedSize),
-            priority: Value(mergedPriority),
-            outboxEntryId: Value(id),
-          ),
-        );
-      }
-
-      // Still record in sequence log for the new counter
-      await recordAgentSent(
-        entryId: id,
-        vectorClock: vectorClock,
-        payloadType: payloadType,
-      );
-
-      unawaited(_enqueueNextSendRequest(delay: const Duration(seconds: 1)));
-      return true;
-    }
-
-    // Enrich covered VCs from the sequence log for already-sent predecessors.
-    final initialCovered = switch (enrichedMessage) {
-      final SyncAgentEntity e => e.coveredVectorClocks,
-      final SyncAgentLink l => l.coveredVectorClocks,
-      _ => null,
-    };
-    final enrichedAgentCovered = await enrichCoveredVcsFromSequenceLog(
-      id,
-      initialCovered,
-      payloadClock: vectorClock,
-    );
-    var outboxAgentMsg = enrichedMessage;
-    if (enrichedAgentCovered != initialCovered) {
-      outboxAgentMsg = switch (outboxAgentMsg) {
-        final SyncAgentEntity e => e.copyWith(
-          coveredVectorClocks: enrichedAgentCovered,
-        ),
-        final SyncAgentLink l => l.copyWith(
-          coveredVectorClocks: enrichedAgentCovered,
-        ),
-        _ => outboxAgentMsg,
-      };
-    }
-    final outboxAgentJson = json.encode(outboxAgentMsg.toJson());
-    final outboxAgentSize = utf8.encode(outboxAgentJson).length;
+    final outboxAgentJson = json.encode(enrichedMessage.toJson());
     await _syncDatabase.addOutboxItem(
       commonFields.copyWith(
         subject: Value(subject),
         message: Value(outboxAgentJson),
         outboxEntryId: Value(id),
-        payloadSize: Value(outboxAgentSize),
+        payloadSize: Value(utf8.encode(outboxAgentJson).length),
       ),
     );
     _logEnqueueSample(
@@ -339,8 +140,6 @@ extension OutboxEnqueueAgent on OutboxEnqueueWriter {
       vectorClock: vectorClock,
       payloadType: payloadType,
     );
-
-    return false;
   }
 
   /// Records an agent entity or link in the sequence log.

@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Sync send path
-description: Outbox staging, the CAS claim that makes merges safe, dequeue-time bundling into one gzipped Matrix envelope, and the retry lifecycle.
+description: Outbox staging as one immutable row per version, the dequeue-time collapse of an entity's rows into one send, bundling into one gzipped Matrix envelope, and the retry lifecycle.
 resource: ../../../lib/features/sync/outbox
 tags: [sync, outbox, bundling, retries]
 status: stable
@@ -18,16 +18,24 @@ sources:
     last_modified: 2026-09-25
   - id: outbox-spec
     resource: ../../../specs/tla/Outbox.tla
-    title: TLA+ model of the outbox — merge, claim, send, prune
+    title: TLA+ model of the outbox — append, collapse, claim, send, prune
     last_modified: 2026-09-25
   - id: adr-0085
     resource: ../../../docs/adr/0085-model-checked-outbox.md
-    title: ADR 0085 — model-checked outbox
+    title: ADR 0085 — model-checked outbox (merge superseded by 0086)
+    last_modified: 2026-09-25
+  - id: adr-0086
+    resource: ../../../docs/adr/0086-append-only-outbox.md
+    title: ADR 0086 — append-only outbox, collapse at send time
+    last_modified: 2026-09-25
+  - id: outbox-collapse
+    resource: ../../../lib/features/sync/outbox/outbox_collapse.dart
+    title: The collapse rules
     last_modified: 2026-09-25
   - id: payload-sender
     resource: ../../../lib/features/sync/matrix/matrix_payload_sender.dart
     title: MatrixPayloadSender — wire encoding
-    last_modified: 2026-09-05
+    last_modified: 2026-09-25
   - id: agent-payload-sender
     resource: ../../../lib/features/sync/matrix/matrix_payload_sender_notifications.dart
     title: Agent and notification payload encoding
@@ -48,9 +56,10 @@ sources:
 
 # Staging
 
-`OutboxService` stages local work in `sync_db`, merges superseded work when it
-can, enriches sequence-aware payloads with covered clocks, and nudges a
-`ClientRunner`-driven `OutboxProcessor`.
+`OutboxService` stages local work in `sync_db` as **one immutable row per
+version** — never merged — and nudges a `ClientRunner`-driven
+`OutboxProcessor`, which collapses an entity's rows when it sends
+([ADR 0086](../../../docs/adr/0086-append-only-outbox.md)).
 
 ```mermaid
 sequenceDiagram
@@ -61,13 +70,13 @@ sequenceDiagram
   participant Matrix as "MatrixService"
 
   Local->>Outbox: enqueueMessage(syncMessage)
-  Outbox->>Outbox: merge/enrich covered clocks
-  Outbox->>Repo: persist pending row
+  Outbox->>Repo: append a pending row for this version
   Outbox->>Proc: nudge runner
   Proc->>Repo: claimNextBatch() [CAS pending→sending]
-  Proc->>Matrix: sendMatrixMsg(syncMessage)
+  Proc->>Repo: collapsibleRows(entity) + claimRows(superseded)
+  Proc->>Matrix: sendMatrixMsg(newest version, covering the rest)
   alt send succeeds
-    Proc->>Repo: markSent()
+    Proc->>Repo: markSent() every collapsed row
     Proc->>Repo: hasMorePending()
   else send fails
     Proc->>Repo: markRetry() or markError()
@@ -93,12 +102,16 @@ Two collaborators consult that one function, and they must agree:
 | Where | What it does with the answer |
 | --- | --- |
 | `OutboxEnqueueWriter` | Resolves the media file and stamps the row's `filePath` |
+| `OutboxProcessor` collapse | Sets `includeAttachments` on the send when any collapsed row has a `filePath` |
 | `MatrixPayloadSender.sendJournalEntityPayload` | Uploads the blob as a second file event |
 
 The enqueue-time half is not redundant. `filePath` is what excludes a row from
 dequeue-time bundling (below), and a bundle ships a JSON manifest only. A row
 whose message asks for media but whose `filePath` is null would be packed into a
-bundle and its blob dropped with no error anywhere.
+bundle and its blob dropped with no error anywhere. It is also how the collapse
+knows a row still owes the blob: an audio entry and the location update that
+follows it before the first send go out as one send of the update, with the
+audio; a later edit ships JSON only, so the blob goes up exactly once.
 
 `includeAttachments` exists for the flows that hand an entire history to a peer
 holding none of it — the historical re-send
@@ -178,46 +191,35 @@ stateDiagram-v2
   Disposed --> [*]
 ```
 
-# The CAS claim is load-bearing
+# Collapse at send time
 
-`claimNextBatch` is a per-row compare-and-set from `pending` to `sending`. That
-is not an optimisation — it is what makes merging safe.
+Enqueue never reads the outbox: every version of every entity is appended as
+its own row, keyed by the entity's outbox entry id and carrying its own
+counter, so concurrent enqueues of one entity cannot overwrite each other.
 
-A merge that fires while a send is in flight runs
-`updateOutboxMessage(... WHERE status = pending)` and gets `affectedRows = 0`.
-The merged content then spills into a **fresh pending row** through the
-existing fresh-insert fallback, instead of overwriting the row whose old content
-is currently being serialised onto the wire.
+The processor coalesces instead. For each entity with a row in the claimed
+batch, `OutboxProcessor._collapse` reads the entity's other `pending` and
+`error` rows (`collapsibleOutboxRows`), picks the newest version and claims
+every row that version supersedes (`claimOutboxRows`, a compare-and-set on the
+status it read). The rules live in `outbox_collapse.dart`:
 
-Without this, the pre-merge Matrix event would still go out while the new
-`coveredVectorClocks` list sat in a row that would never be sent — producing
-scattered single-counter holes on receivers that only backfill could repair.
+- **Newest by clock.** Journal entities, entry links and agent entities and
+  links are ordered by vector clock, so an enqueue that arrived out of order
+  never sends an older payload over a newer one. A config flag has no clock
+  and is applied in arrival order, so its newest is the row enqueued last.
+- **Cover everything folded in.** The send carries the newest payload with
+  every other collapsed row's clock as a covered clock, so each counter
+  reaches peers exactly as if its row had been sent. A row whose clock is
+  concurrent with the newest is not folded; it is sent on its own.
+- **Carry the attachment if any folded row owed it** (see above). A bundle
+  ships JSON only, so a bundled send does not fold in rows that owe an
+  attachment; they go out alone.
+- **Settle superseded failures.** An `error` row that the newest version
+  supersedes is folded in and marked sent with it, so the monitor's Retry can
+  never resend a stale value after a newer one went out.
 
-## One enqueue per entity at a time
-
-The CAS guards the merge against the processor, not against another enqueue.
-The merge reads the pending row, awaits more work, and writes it back, so two
-enqueues of one entity that interleave both merge into the row as they read
-it, and the second write drops the counter the first added.
-`OutboxEnqueueWriter._serializedByKey` therefore chains the journal-entity,
-entry-link, agent-payload and config-flag enqueues per outbox entry id;
-different entities still enqueue concurrently.
-
-Two more rules keep a row from promising a version it does not carry, since a
-peer marks every covered counter received:
-
-- A merge keeps the **newer inline payload**. When the pending entry link or
-  agent payload's clock dominates the incoming one (an enqueue that arrived
-  out of order), the pending payload stays and only the incoming clock is
-  folded into the covered ones. A journal row takes the entry's current clock
-  from the database anyway.
-- A fresh inline row is enriched from the sequence log only with a counter its
-  payload has reached (`enrichCoveredVcsFromSequenceLog(payloadClock: …)`).
-  Journal rows keep the unconditional enrichment, because their sender reads
-  the entry's current version at send time.
-
-`specs/tla/Outbox.tla` model-checks these rules
-([ADR 0085](../../../docs/adr/0085-model-checked-outbox.md)).
+Every collapsed row is marked sent with the send, or retried with it.
+`specs/tla/Outbox.tla` model-checks the rules.
 
 # File payload identity follows the claimed generation
 
@@ -239,7 +241,11 @@ snapshot; outbox bundles use a fresh UUID path and stamp the manifest upload id.
 
 When a standalone journal sidecar is missing, the sender reads the canonical
 journal row, including deletion tombstones. That replacement must cover the
-queued vector clock and every merged covered clock before upload. Recovery
+queued vector clock and every covered clock before upload. The same holds
+when the sidecar exists but is older than the queued version — two enqueues
+refreshed it out of order: the sender sends the canonical row instead of
+adopting the sidecar's older clock, which would cover a newer counter than
+the payload carries. Recovery
 serializes the row in memory and leaves the reclaimed sidecar absent. An absent
 row, an older or concurrent clock, or another filesystem error keeps the outbox
 item retryable; none acknowledges an unsent generation.
@@ -248,13 +254,14 @@ item retryable; none acknowledges an unsent generation.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> pending: enqueued (or merged into)
-    pending --> sending: claimed by OutboxProcessor
+    [*] --> pending: appended, one row per version
+    pending --> sending: claimed, or collapsed into a newer send
     sending --> sent: delivered (markSent)
     sending --> pending: failure below the cap (markRetry, retries++)
     sending --> error: failure at the cap (retries reach maxRetries)
     sending --> pending: orphaned claim released before the next drain
     sending --> sending: expired lease reclaimed
+    error --> sending: collapsed into a newer version's send
     error --> pending: manual Retry / Retry all (re-queue)
     sent --> [*]: pruned after 7 days
     error --> [*]: Remove (won't sync)
@@ -285,11 +292,14 @@ generation's send could land after the new generation released and resent its
 row together with a newer version. The old generation's late marks cannot
 touch the new one's rows: `ServiceDisposer` closes its `SyncDatabase` first.
 
-Two orderings are **not** guaranteed (ADR 0085 residuals): a send the
-processor abandoned at its timeout can still land after a newer version, and
-the monitor's Retry on an old `error` row sends it after the versions that
-superseded it. Receivers that order by vector clock drop the stale copy; a
-config flag or an AI configuration is applied in arrival order.
+One ordering is **not** guaranteed (ADR 0085's residual, kept by ADR 0086):
+a send the processor abandoned at its timeout can still land after a newer
+version. Receivers that order by vector clock drop the stale copy; a config
+flag or an AI configuration is applied in arrival order. Two narrower cases
+are documented in ADR 0086: a bundled send leaves a failed row that owes an
+attachment alone, so a later Retry sends that older journal version (and its
+blob) after the newer one; and removing the newer row, then retrying an
+older one, is the user's own reversal.
 
 # Dequeue-time bundling
 

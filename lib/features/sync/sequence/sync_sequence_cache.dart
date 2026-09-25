@@ -31,15 +31,6 @@ import 'package:lotti/database/sync_db.dart';
 /// rows just to produce `inserted=0`. Skipping it removes the dominant
 /// redundant DB cost on hosts that carry a pre-history gap.
 ///
-/// ## Last-sent counter LRU
-/// Last-sent counter per `(myHost, entryId)`. The outbox calls
-/// `getLastSentVectorClockForEntry` on every enqueue to build covered vector
-/// clocks; without this cache each call hit the UI isolate with a
-/// `SELECT ... FROM sync_sequence_log` that, on a 329k-row table with hot
-/// entry_ids, routinely took 40–600 ms and dominated the image-paste freeze.
-/// LRU-bounded; entries are added on lookup and refreshed on `recordSentEntry`
-/// so the cached value cannot lag a concurrent write.
-///
 /// ## Recent sent-binding LRU
 /// Exact `(host, counter, entry, payload type)` bindings are remembered after
 /// a successful sequence-log write. Persistence records bindings immediately
@@ -51,9 +42,6 @@ class SyncSequenceCache {
 
   final SyncDatabase _syncDatabase;
 
-  /// LRU capacity for [_lastSentCounterByEntry].
-  static const int lastSentCounterCacheCapacity = 2048;
-
   /// LRU capacity for exact sent sequence bindings.
   static const int sentBindingCacheCapacity = 4096;
 
@@ -61,7 +49,7 @@ class SyncSequenceCache {
   /// Let later calls reach the DB again in case row status changed meanwhile.
   static const sentBindingCacheTtl = Duration(minutes: 5);
 
-  /// TTL applied to every per-host and the last-sent cache window.
+  /// TTL applied to every per-host cache entry.
   static const cacheTtl = Duration(minutes: 5);
 
   final _hostActivityCache = <String, DateTime?>{};
@@ -72,21 +60,11 @@ class SyncSequenceCache {
   // an inactive host stays cached until it's actually queried again.
   final Map<String, DateTime> _hostCacheExpiry = <String, DateTime>{};
 
-  final LinkedHashMap<String, int?> _lastSentCounterByEntry =
-      LinkedHashMap<String, int?>();
   final LinkedHashMap<
     ({String hostId, int counter, String entryId, int payloadType}),
     DateTime
   >
   _sentBindings = LinkedHashMap();
-
-  // Separate global TTL for the entry-keyed [_lastSentCounterByEntry] LRU. It
-  // is keyed by `host::entryId` and is also size-bounded by
-  // [lastSentCounterCacheCapacity], so eviction is dominated by LRU pressure
-  // under normal load. The TTL stays as a belt-and-braces guard against rare
-  // cross-process drift and matches the semantics a test in this file pins
-  // (`expireCacheForTesting()` re-queries on the next call).
-  DateTime? _lastSentCacheExpiry;
 
   // ── Host activity / last-counter caches ───────────────────────────────────
 
@@ -247,35 +225,6 @@ class SyncSequenceCache {
     _materializedUpperBound.clear();
   }
 
-  // ── Last-sent counter LRU ─────────────────────────────────────────────────
-
-  String lastSentCacheKey(String hostId, String entryId) => '$hostId::$entryId';
-
-  void invalidateLastSentCacheIfExpired() {
-    final now = clock.now();
-    if (_lastSentCacheExpiry != null && now.isAfter(_lastSentCacheExpiry!)) {
-      _lastSentCounterByEntry.clear();
-      _lastSentCacheExpiry = null;
-    }
-  }
-
-  void ensureLastSentCacheWindow() {
-    _lastSentCacheExpiry ??= clock.now().add(cacheTtl);
-  }
-
-  bool containsLastSent(String key) => _lastSentCounterByEntry.containsKey(key);
-
-  int? getLastSent(String key) => _lastSentCounterByEntry[key];
-
-  void touchLastSentCache(String key, int? value) {
-    _lastSentCounterByEntry
-      ..remove(key)
-      ..[key] = value;
-    while (_lastSentCounterByEntry.length > lastSentCounterCacheCapacity) {
-      _lastSentCounterByEntry.remove(_lastSentCounterByEntry.keys.first);
-    }
-  }
-
   // ── Exact sent-binding LRU ────────────────────────────────────────────────
 
   ({String hostId, int counter, String entryId, int payloadType}) _sentBinding({
@@ -341,17 +290,14 @@ class SyncSequenceCache {
   /// `@visibleForTesting` annotation) so tests can verify that expired caches
   /// are cleared and the DB is re-queried.
   ///
-  /// Wipes both the per-host caches (host activity, last counter, materialized
-  /// upper bound) and the entry-keyed last-sent counter LRU so existing tests
-  /// that assert re-query behaviour after expiry see a fully cold cache
-  /// regardless of which lookup surface they exercise.
+  /// Wipes the per-host caches (host activity, last counter, materialized
+  /// upper bound) and the sent-binding LRU so tests that assert re-query
+  /// behaviour after expiry see a fully cold cache.
   void expireCacheForTesting() {
     _hostActivityCache.clear();
     _lastCounterCache.clear();
     _materializedUpperBound.clear();
     _hostCacheExpiry.clear();
-    _lastSentCounterByEntry.clear();
     _sentBindings.clear();
-    _lastSentCacheExpiry = null;
   }
 }

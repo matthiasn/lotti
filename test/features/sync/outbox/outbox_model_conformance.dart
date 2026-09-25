@@ -5,18 +5,23 @@ part of 'outbox_enqueue_writer_test.dart';
 // traces, must keep the invariants `specs/tla/Outbox.tla` model-checks. TLC
 // proves the design; these traces check that the Dart code behaves like it.
 //
-// One agent entity is written again and again. Its enqueues run
-// concurrently with each other and with drains, a write can be enqueued
-// late (after a newer one), a drain can fail or lose its marks (the rows it
-// sent stay `sending`, as after a crash between the send and markSent), time
-// can pass beyond the claim lease, and a crash is a fresh writer, repository
-// and processor over the same database. A drain releases orphaned claims
-// first, as `MatrixOutboxService.sendNext` does.
+// Two entities are written again and again: an agent entity, enqueued by the
+// real writer (append-only, ADR 0086), sometimes concurrently and sometimes
+// late (after a newer version), and a journal entry whose first row owes its
+// audio and whose later rows are JSON-only edits — rows shaped exactly as the
+// journal writer appends them. Drains collapse each entity's rows when they
+// send; they can fail, lose their marks (the rows stay `sending`, as after a
+// crash between send and markSent), time can pass beyond the claim lease, a
+// crash is a fresh writer, repository and processor over the same database,
+// sent rows are pruned, and the monitor retries a failed row. A drain releases
+// orphaned claims first, as `MatrixOutboxService.sendNext` does.
 
 enum _OutboxOp {
   enqueueNext,
+  enqueueLatePair,
   holdBack,
   enqueueHeld,
+  journalEdit,
   settle,
   drainOk,
   drainFail,
@@ -25,6 +30,7 @@ enum _OutboxOp {
   tick,
   crash,
   prune,
+  userRetry,
 }
 
 class _OutboxStep {
@@ -43,26 +49,41 @@ extension _AnyOutboxTrace on glados.Any {
   glados.Generator<List<_OutboxStep>> get outboxTrace => glados.ListAnys(this)
       .listWithLengthInRange(
         1,
-        16,
+        20,
         glados.IntAnys(this).intInRange(0, _OutboxOp.values.length),
       )
       .map((codes) => [for (final code in codes) _OutboxStep.decode(code)]);
 }
 
-/// A payload as it left the device: the counter it announces and the
-/// counters it covers.
-typedef _Sent = ({int payload, Set<int> covered});
+const _agentId = 'agent-1';
+const _journalId = 'journal-1';
 
-_Sent _sentOf(SyncMessage message) {
-  final agent = message as SyncAgentEntity;
-  return (
-    payload: agent.agentEntity!.vectorClock!.vclock['host-A']!,
+/// A payload as it left the device: its entity, the counter it announces, the
+/// counters it covers, and whether it carries the attachment.
+typedef _Sent = ({String entity, int payload, Set<int> covered, bool media});
+
+_Sent _sentOf(SyncMessage message) => switch (message) {
+  final SyncAgentEntity m => (
+    entity: _agentId,
+    payload: m.agentEntity!.vectorClock!.vclock['host-A']!,
     covered: {
-      for (final vc in agent.coveredVectorClocks ?? <VectorClock>[])
+      for (final vc in m.coveredVectorClocks ?? <VectorClock>[])
         vc.vclock['host-A']!,
     },
-  );
-}
+    media: false,
+  ),
+  final SyncJournalEntity m => (
+    entity: _journalId,
+    payload: m.vectorClock!.vclock['host-A']!,
+    covered: {
+      for (final vc in m.coveredVectorClocks ?? <VectorClock>[])
+        vc.vclock['host-A']!,
+    },
+    media:
+        m.status == SyncEntryStatus.initial || (m.includeAttachments ?? false),
+  ),
+  final other => throw StateError('unexpected $other'),
+};
 
 /// A mark that failed, as a database write can.
 class _MarkFailed implements Exception {
@@ -93,6 +114,16 @@ class _FaultyRepository implements OutboxRepository {
 
   @override
   Future<int> releaseOrphanedClaims() => _inner.releaseOrphanedClaims();
+
+  @override
+  Future<List<OutboxItem>> collapsibleRows(
+    String entryId, {
+    Set<int> excludeIds = const {},
+  }) => _inner.collapsibleRows(entryId, excludeIds: excludeIds);
+
+  @override
+  Future<List<OutboxItem>> claimRows(List<OutboxItem> rows) =>
+      _inner.claimRows(rows);
 
   @override
   Future<bool> hasMorePending() => _inner.hasMorePending();
@@ -143,23 +174,6 @@ class _FaultyRepository implements OutboxRepository {
 
 class _OutboxBench {
   _OutboxBench() {
-    when(
-      () => sequenceLog.recordSentEntry(
-        entryId: any(named: 'entryId'),
-        vectorClock: any(named: 'vectorClock'),
-        payloadType: any(named: 'payloadType'),
-      ),
-    ).thenAnswer((invocation) async {
-      final vc = invocation.namedArguments[#vectorClock] as VectorClock;
-      final counter = vc.vclock['host-A']!;
-      if (counter > lastRecorded) lastRecorded = counter;
-    });
-    when(
-      () => sequenceLog.getLastSentVectorClockForEntry(any()),
-    ).thenAnswer(
-      (_) async =>
-          lastRecorded == 0 ? null : VectorClock({'host-A': lastRecorded}),
-    );
     when(() => sender.send(any())).thenAnswer((invocation) async {
       if (sendFails) return false;
       final message = invocation.positionalArguments.single as SyncMessage;
@@ -174,11 +188,9 @@ class _OutboxBench {
   }
 
   final db = SyncDatabase(inMemoryDatabase: true);
-  final sequenceLog = MockSyncSequenceLogService();
   final sender = MockOutboxMessageSender();
   final wire = <_Sent>[];
   DateTime now = DateTime(2026, 9, 25, 12);
-  int lastRecorded = 0;
   bool sendFails = false;
 
   late OutboxEnqueueWriter writer;
@@ -188,14 +200,17 @@ class _OutboxBench {
   int written = 0;
   final heldBack = <int>[];
   final inFlight = <Future<void>>[];
-  final done = <int>{};
-  final enqueued = <int>{};
 
-  /// Whether every enqueue so far started in version order.
+  /// Versions whose enqueue finished, per entity.
+  final done = <String, Set<int>>{_agentId: {}, _journalId: {}};
+  final launched = <int>{};
+  int journalVersion = 0;
+
+  /// Whether every agent enqueue so far started in version order.
   bool inOrder = true;
 
-  /// Payload counter of each pending row after the previous step.
-  Map<int, int> pendingPayloads = {};
+  /// Each row's message as it was inserted: rows are immutable.
+  final inserted = <int, String>{};
 
   /// A process start: fresh writer, repository and processor.
   void boot() {
@@ -206,23 +221,21 @@ class _OutboxBench {
       documentsDirectory: Directory(p.join(p.separator, 'outbox-model-docs')),
       saveJson: (_, _) async {},
       safePayloadFullPath: (_) => null,
-      enqueueNextSendRequest:
-          ({Duration delay = const Duration(milliseconds: 1)}) async {},
-      sequenceLogService: sequenceLog,
+      sequenceLogService: null,
     );
-    repository = _FaultyRepository(DatabaseOutboxRepository(db, maxRetries: 3));
+    repository = _FaultyRepository(DatabaseOutboxRepository(db, maxRetries: 2));
     processor = OutboxProcessor(
       repository: repository,
       messageSender: sender,
       loggingService: MockDomainLogger(),
       bundleMaxSizeOverride: 2,
-      maxRetriesOverride: 3,
+      maxRetriesOverride: 2,
     );
   }
 
   void launch(int version) {
-    if (enqueued.any((v) => v > version)) inOrder = false;
-    enqueued.add(version);
+    if (launched.any((v) => v > version)) inOrder = false;
+    launched.add(version);
     final msg = writer.prepareAgentEntity(
       SyncMessage.agentEntity(
             agentEntity: _agentEntity(
@@ -236,8 +249,33 @@ class _OutboxBench {
     inFlight.add(
       writer
           .enqueueAgentEntity(msg: msg, commonFields: _commonFields(msg))
-          .then((_) => done.add(version)),
+          .then((_) => done[_agentId]!.add(version)),
     );
+  }
+
+  /// The journal writer's row for the next version of the entry: the first
+  /// one owes the audio (status initial, `filePath` set), later ones are
+  /// JSON-only edits.
+  Future<void> journalEdit() async {
+    final version = ++journalVersion;
+    final initial = version == 1;
+    final msg = SyncMessage.journalEntity(
+      id: _journalId,
+      vectorClock: VectorClock({'host-A': version}),
+      jsonPath: '/text_entries/$_journalId.json',
+      status: initial ? SyncEntryStatus.initial : SyncEntryStatus.update,
+      coveredVectorClocks: [
+        VectorClock({'host-A': version}),
+      ],
+    );
+    await db.addOutboxItem(
+      _commonFields(msg, priority: OutboxPriority.high.index).copyWith(
+        subject: Value('hash:$version'),
+        outboxEntryId: const Value(_journalId),
+        filePath: Value(initial ? '/audio/$_journalId.m4a' : null),
+      ),
+    );
+    done[_journalId]!.add(version);
   }
 
   Future<void> settle() async {
@@ -265,10 +303,17 @@ class _OutboxBench {
     switch (step.op) {
       case _OutboxOp.enqueueNext:
         launch(++written);
+      case _OutboxOp.enqueueLatePair:
+        // Two writes whose enqueues arrive out of order: the newer first.
+        written += 2;
+        launch(written);
+        launch(written - 1);
       case _OutboxOp.holdBack:
         heldBack.add(++written);
       case _OutboxOp.enqueueHeld:
         if (heldBack.isNotEmpty) launch(heldBack.removeAt(0));
+      case _OutboxOp.journalEdit:
+        await journalEdit();
       case _OutboxOp.settle:
         await settle();
       case _OutboxOp.drainOk:
@@ -308,75 +353,86 @@ class _OutboxBench {
             reason: 'PruneOnlySent: row ${item.id}',
           );
         }
+      case _OutboxOp.userRetry:
+        final failed = await db.getOutboxItems(
+          statuses: const [OutboxStatus.error],
+        );
+        if (failed.isNotEmpty) {
+          await db.updateOutboxItem(
+            OutboxCompanion(
+              id: Value(failed.last.id),
+              status: Value(OutboxStatus.pending.index),
+              retries: Value(failed.last.retries + 1),
+            ),
+          );
+        }
     }
   }
 
+  bool carries(_Sent m, String entity, int version) =>
+      m.entity == entity &&
+      (m.payload == version || m.covered.contains(version));
+
   Future<void> checkInvariants(List<_OutboxStep> trace) async {
     final items = await db.getOutboxItems();
-    final live = items.where(
-      (item) =>
-          item.status == OutboxStatus.pending.index ||
-          item.status == OutboxStatus.sending.index ||
-          item.status == OutboxStatus.error.index,
-    );
-    final liveRows = {
-      for (final item in live) item.id: _sentOf(_decode(item.message)),
-    };
-
-    for (final version in done) {
-      final carried =
-          wire.any(
-            (m) => m.payload == version || m.covered.contains(version),
-          ) ||
-          liveRows.values.any(
-            (m) => m.payload == version || m.covered.contains(version),
-          );
-      expect(carried, isTrue, reason: 'NoLostCounter $version: $trace');
+    for (final item in items) {
+      final first = inserted.putIfAbsent(item.id, () => item.message);
+      expect(item.message, first, reason: 'RowsImmutable ${item.id}: $trace');
     }
+    final live = [
+      for (final item in items)
+        if (item.status == OutboxStatus.pending.index ||
+            item.status == OutboxStatus.sending.index ||
+            item.status == OutboxStatus.error.index)
+          _sentOf(_decode(item.message)),
+    ];
 
-    for (final row in liveRows.values) {
-      expect(
-        row.covered.every((c) => c <= row.payload),
-        isTrue,
-        reason: 'CoversOnlyOlder $row: $trace',
-      );
-    }
-
-    final pendingNow = {
-      for (final item in items.where(
-        (item) => item.status == OutboxStatus.pending.index,
-      ))
-        item.id: _sentOf(_decode(item.message)).payload,
-    };
-    for (final entry in pendingNow.entries) {
-      final before = pendingPayloads[entry.key];
-      if (before != null) {
+    for (final entity in done.keys) {
+      for (final version in done[entity]!) {
         expect(
-          entry.value,
-          greaterThanOrEqualTo(before),
-          reason: 'MergeNeverRegresses row ${entry.key}: $trace',
+          wire.any((m) => carries(m, entity, version)) ||
+              live.any((m) => carries(m, entity, version)),
+          isTrue,
+          reason: 'NoLostCounter $entity@$version: $trace',
         );
       }
     }
-    pendingPayloads = pendingNow;
+
+    for (final m in wire) {
+      expect(
+        m.covered.every((c) => c <= m.payload),
+        isTrue,
+        reason: 'CoversOnlyOlder $m: $trace',
+      );
+    }
 
     for (final item in items.where(
       (item) => item.status == OutboxStatus.sent.index,
     )) {
       final sent = _sentOf(_decode(item.message));
       expect(
-        wire.any((m) => m.payload == sent.payload),
+        wire.any((m) => carries(m, sent.entity, sent.payload)),
         isTrue,
         reason: 'SentWasDelivered row ${item.id}: $trace',
       );
+      if (item.filePath != null) {
+        expect(
+          wire.any((m) => m.entity == sent.entity && m.media),
+          isTrue,
+          reason: 'MediaNotDropped row ${item.id}: $trace',
+        );
+      }
     }
 
-    if (inOrder && wire.isNotEmpty) {
-      final newest = wire.map((m) => m.payload).reduce(math.max);
+    for (final entity in [_agentId, _journalId]) {
+      if (entity == _agentId && !inOrder) continue;
+      final sent = wire.where((m) => m.entity == entity).toList();
+      if (sent.isEmpty) continue;
+      final newest = sent.map((m) => m.payload).reduce(math.max);
       expect(
-        wire.last.payload,
+        sent.last.payload,
         newest,
-        reason: 'NewestLandsLast ${wire.map((m) => m.payload)}: $trace',
+        reason: 'NewestLandsLast $entity ${sent.map((m) => m.payload)}: $trace',
       );
     }
   }
@@ -386,11 +442,11 @@ void _registerOutboxModelConformance() {
   group('model conformance with specs/tla/Outbox.tla', () {
     glados.Glados(
       glados.any.outboxTrace,
-      glados.ExploreConfig(numRuns: 120),
+      glados.ExploreConfig(numRuns: 250),
     ).test(
-      'generated traces keep NoLostCounter, CoversOnlyOlder, '
-      'MergeNeverRegresses, SentWasDelivered, PruneOnlySent and '
-      'NewestLandsLast, and deliver every enqueued version',
+      'generated traces keep NoLostCounter, CoversOnlyOlder, RowsImmutable, '
+      'SentWasDelivered, MediaNotDropped, PruneOnlySent and NewestLandsLast, '
+      'and deliver every enqueued version',
       (trace) async {
         final bench = _OutboxBench();
         try {
@@ -426,14 +482,15 @@ Future<void> _playOut(_OutboxBench bench, List<_OutboxStep> trace) async {
   final errorRows = (await bench.db.getOutboxItems(
     statuses: const [OutboxStatus.error],
   )).map((item) => _sentOf(_decode(item.message)));
-  for (final version in bench.done) {
-    bool carries(_Sent m) =>
-        m.payload == version || m.covered.contains(version);
-    expect(
-      bench.wire.any(carries) || errorRows.any(carries),
-      isTrue,
-      reason: 'EnqueuedIsDelivered $version: $trace',
-    );
+  for (final entity in bench.done.keys) {
+    for (final version in bench.done[entity]!) {
+      expect(
+        bench.wire.any((m) => bench.carries(m, entity, version)) ||
+            errorRows.any((m) => bench.carries(m, entity, version)),
+        isTrue,
+        reason: 'EnqueuedIsDelivered $entity@$version: $trace',
+      );
+    }
   }
   expect(
     await bench.db.getOutboxItems(

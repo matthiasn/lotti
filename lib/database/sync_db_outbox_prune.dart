@@ -20,10 +20,8 @@ mixin _SyncDbOutboxPrune on _$SyncDatabase {
   /// Without this, the outbox grows unbounded (observed: 395k rows on
   /// desktop, 265k on mobile). Every outbox enqueue pays the table-size
   /// cost on indexed writes, WAL checkpoints get heavier, and backups
-  /// balloon. A week of kept-forever sent rows is already far more
-  /// than the `outbox_entry_id` dedup path requires (dedup only
-  /// matters for in-flight edits — a message already sent more than a
-  /// minute ago will never be re-deduped).
+  /// balloon. A sent row is never read again by the send path: the
+  /// dequeue-time collapse only looks at pending and error rows.
   ///
   /// Returns the number of rows deleted.
   Future<int> pruneSentOutboxItems({

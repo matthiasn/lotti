@@ -5,8 +5,8 @@ final int _outboxSendingStatus = OutboxStatus.sending.index;
 /// Outbox queue engine for [SyncDatabase]: enqueue, claim/lease,
 /// mark-sent, watch/list surfaces, and counts.
 ///
-/// Pruning lives in [_SyncDbOutboxPrune]; dedup lookups and volume/health
-/// stats live in [_SyncDbOutboxDedup].
+/// Pruning lives in [_SyncDbOutboxPrune]; collapse lookups and the pending
+/// backfill-request scan live in [_SyncDbOutboxDedup].
 mixin _SyncDbOutbox on _$SyncDatabase {
   Future<int> updateOutboxItem(OutboxCompanion item) {
     return (update(

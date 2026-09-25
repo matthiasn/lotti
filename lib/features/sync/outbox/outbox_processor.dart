@@ -1,10 +1,10 @@
 // ignore_for_file: sort_constructors_first
 
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/outbox/outbox_collapse.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -38,14 +38,14 @@ class OutboxProcessingResult {
 /// and after how long.
 ///
 /// This is the per-pass engine behind the outbox runner: it claims rows
-/// (atomically, so concurrent merges cannot overwrite an already-sending row),
-/// sends them through the injected [OutboxMessageSender] under a [sendTimeout],
-/// and translates the outcome into row state via [OutboxRepository] —
-/// `markSent` on success, `markRetry` (which flips to `error` once `retries`
-/// crosses the repository's `maxRetries`) on failure. A single-row claim sends
-/// the row verbatim; a multi-row claim is packed into a `SyncMessage.outboxBundle`
-/// so consecutive text rows ride one Matrix event (media attachments always
-/// travel alone). [maxRetriesForDiagnostics] only controls log verbosity and the
+/// atomically, collapses each entity's rows into one send of its newest
+/// version (ADR 0086, see `outbox_collapse.dart`), sends through the injected
+/// [OutboxMessageSender] under a [sendTimeout], and translates the outcome
+/// into row state via [OutboxRepository] — every collapsed row marked sent on
+/// success, `markRetry` (which flips to `error` once `retries` crosses the
+/// repository's `maxRetries`) on failure. A single send goes out verbatim;
+/// several are packed into a `SyncMessage.outboxBundle` so consecutive text
+/// rows ride one Matrix event (media attachments always travel alone). [maxRetriesForDiagnostics] only controls log verbosity and the
 /// fast-path "cap reached" scheduling, not the actual retry ceiling.
 class OutboxProcessor {
   OutboxProcessor({
@@ -93,19 +93,9 @@ class OutboxProcessor {
   /// off after a failure). Never throws: send failures and post-send exceptions
   /// are caught and converted into retry scheduling.
   Future<OutboxProcessingResult> processQueue() async {
-    // Atomic claim (pending → sending). Closes the merge-send race: while
-    // we are sending, the row's status is `sending`, so in-flight merges'
-    // `updateOutboxMessage` (which matches `status=pending`) returns
-    // affectedRows=0 and falls through to inserting a fresh row — the
-    // merged content still rides a later Matrix event instead of being
-    // silently overwritten into an already-sent row.
-    //
-    // The batch claim enforces the bundling boundary rule: media
+    // Atomic claim (pending → sending) of the next contiguous batch. Media
     // attachments always travel alone; text rows pack up to [bundleMaxSize]
-    // consecutive rows stopping before the next attachment. A single-row
-    // batch routes through [_processSingle] so the wire format stays
-    // byte-for-byte identical to the pre-bundling behavior when only one
-    // row is pending.
+    // consecutive rows stopping before the next attachment.
     final batch = await _repository.claimNextBatch(
       maxSize: bundleMaxSize,
       leaseDuration: claimLease,
@@ -113,26 +103,184 @@ class OutboxProcessor {
     if (batch.isEmpty) {
       return OutboxProcessingResult.none;
     }
-    if (batch.length == 1) {
-      return _processSingle(batch.first);
+
+    final List<_OutboxSend> sends;
+    try {
+      sends = await _collapse(batch);
+    } catch (error, stackTrace) {
+      // An undecodable row: the claimed batch goes back to the queue with its
+      // retry count raised, exactly as a failed send does.
+      _loggingService.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'sendNext.collapse',
+      );
+      await _markRetry(batch);
+      return _retryResult(
+        batch,
+        delay: errorDelay,
+        subject: batch.first.subject,
+      );
     }
-    return _processBundle(batch);
+    if (sends.length == 1) {
+      return _processSingle(sends.single);
+    }
+    return _processBundle(sends);
   }
 
-  Future<OutboxProcessingResult> _processSingle(OutboxItem claimedItem) async {
-    // Tracks whether the row has already been committed as sent so the
-    // exception handler below does not revive an already-sent row. Without
-    // this, a throw from the post-send observability path (hasMorePending,
-    // captureEvent) would run `markRetry` on a row we've just acknowledged —
-    // re-sending the same Matrix event on the next pass.
+  /// Turns the claimed [batch] into sends, collapsing each entity's rows.
+  ///
+  /// For every entity with a claimed row, the entity's other pending and
+  /// failed rows are read and the newest version chosen, by clock or, for a
+  /// clockless payload, by enqueue order. Every row that version supersedes is
+  /// claimed and rides the send: the newest payload, covering their counters,
+  /// with the attachment if any of them owed one. A bundle carries JSON only,
+  /// so a bundled send does not fold in rows that owe an attachment; those
+  /// go out alone later.
+  Future<List<_OutboxSend>> _collapse(List<OutboxItem> batch) async {
+    final allowMedia = batch.length == 1;
+    final claimedIds = {for (final row in batch) row.id};
+    final groups = <String, List<CollapseCandidate>>{};
+    final slots = <Object>[];
+    for (final row in batch) {
+      final candidate = CollapseCandidate.decode(row);
+      final key = collapseKeyOf(candidate);
+      if (key == null) {
+        slots.add(_OutboxSend(candidate.message, [row]));
+        continue;
+      }
+      final group = groups[key];
+      if (group == null) {
+        groups[key] = [candidate];
+        slots.add(key);
+      } else {
+        group.add(candidate);
+      }
+    }
+
+    final sends = <_OutboxSend>[];
+    for (final slot in slots) {
+      if (slot is _OutboxSend) {
+        sends.add(slot);
+      } else {
+        final key = slot as String;
+        sends.addAll(
+          await _collapseEntity(
+            key,
+            groups[key]!,
+            claimedIds: claimedIds,
+            allowMedia: allowMedia,
+          ),
+        );
+      }
+    }
+    return sends;
+  }
+
+  Future<List<_OutboxSend>> _collapseEntity(
+    String key,
+    List<CollapseCandidate> claimed, {
+    required Set<int> claimedIds,
+    required bool allowMedia,
+  }) async {
+    final others = [
+      for (final row in await _repository.collapsibleRows(
+        key,
+        excludeIds: claimedIds,
+      ))
+        CollapseCandidate.decode(row),
+    ]..removeWhere((c) => !allowMedia && c.needsMedia);
+    final readNewest = newestOf([...claimed, ...others]);
+    final wanted = [
+      for (final c in others)
+        if (supersededBy(c, readNewest)) c.row,
+    ];
+    final taken = wanted.isEmpty
+        ? const <int>{}
+        : {for (final row in await _repository.claimRows(wanted)) row.id};
+
+    final members = [
+      ...claimed,
+      ...others.where((c) => taken.contains(c.row.id)),
+    ];
+    final newest = newestOf(members);
+    final collapsed = members.where((c) => supersededBy(c, newest)).toList()
+      ..sort((a, b) => a.row.id.compareTo(b.row.id));
+    return [
+      _OutboxSend(
+        collapsedMessage(newest, collapsed),
+        [for (final c in collapsed) c.row],
+      ),
+      for (final c in members)
+        if (!supersededBy(c, newest)) _OutboxSend(c.message, [c.row]),
+    ];
+  }
+
+  Future<void> _markSent(List<OutboxItem> rows) => rows.length == 1
+      ? _repository.markSent(rows.single)
+      : _repository.markSentBatch(rows);
+
+  Future<void> _markRetry(List<OutboxItem> rows) => rows.length == 1
+      ? _repository.markRetry(rows.single)
+      : _repository.markRetryBatch(rows);
+
+  /// Scheduling after a failed attempt over [rows]: straight on when a row
+  /// just reached the retry cap (the repository flipped it to error), else
+  /// after [delay]. [bundleSize] is set for a bundle, whose log line names
+  /// its head subject and size.
+  OutboxProcessingResult _retryResult(
+    List<OutboxItem> rows, {
+    required Duration delay,
+    required String? subject,
+    int? bundleSize,
+  }) {
+    final capReached = rows.any(
+      (row) => row.retries + 1 >= maxRetriesForDiagnostics,
+    );
+    if (capReached) {
+      try {
+        _loggingService.log(
+          LogDomain.sync,
+          bundleSize == null
+              ? 'retryCapReached subject=$subject '
+                    'attempts=${rows.first.retries + 1} '
+                    'status=error → skip/head-advance'
+              : 'retryCapReached headSubject=$subject size=$bundleSize '
+                    'attempts=${rows.first.retries + 1} '
+                    'status=error → skip/head-advance',
+          subDomain: 'retry.cap',
+        );
+      } catch (_) {}
+      return OutboxProcessingResult.schedule(Duration.zero);
+    }
+    return OutboxProcessingResult.schedule(delay);
+  }
+
+  void _trackFailure(String? subject) {
+    if (_lastFailedSubject == subject) {
+      _lastFailedRepeats++;
+    } else {
+      _lastFailedSubject = subject;
+      _lastFailedRepeats = 1;
+    }
+  }
+
+  Future<OutboxProcessingResult> _processSingle(_OutboxSend send) async {
+    final rows = send.rows;
+    final head = rows.first;
+    // Tracks whether the rows have already been committed as sent so the
+    // exception handler below does not revive them. Without this, a throw
+    // from the post-send observability path (hasMorePending, logging) would
+    // run `markRetry` on rows just acknowledged — re-sending the same Matrix
+    // event on the next pass.
     var markedSent = false;
 
     try {
-      final syncMessage = _decodeMessage(claimedItem);
       final sendStart = DateTime.now();
       var timedOut = false;
       final success = await _messageSender
-          .send(syncMessage)
+          .send(send.message)
           .timeout(
             sendTimeout,
             onTimeout: () {
@@ -142,53 +290,36 @@ class OutboxProcessor {
           );
 
       if (!success) {
-        final nextAttempts = claimedItem.retries + 1;
-        await _repository.markRetry(claimedItem);
+        final nextAttempts = head.retries + 1;
+        await _markRetry(rows);
         _syncLog(
-          'sendFail subject=${claimedItem.subject} attempts=$nextAttempts timedOut=$timedOut',
+          'sendFail subject=${head.subject} attempts=$nextAttempts timedOut=$timedOut',
           subDomain: 'outbox.retry',
         );
-        // Track repeated failures for quick visibility on head-of-queue pins.
-        if (_lastFailedSubject == claimedItem.subject) {
-          _lastFailedRepeats++;
-        } else {
-          _lastFailedSubject = claimedItem.subject;
-          _lastFailedRepeats = 1;
-        }
+        _trackFailure(head.subject);
         try {
           _loggingService.log(
             LogDomain.sync,
-            'sendFailed subject=${claimedItem.subject} attempts=$nextAttempts repeats=$_lastFailedRepeats backoffMs=${retryDelay.inMilliseconds} timedOut=$timedOut',
+            'sendFailed subject=${head.subject} attempts=$nextAttempts repeats=$_lastFailedRepeats backoffMs=${retryDelay.inMilliseconds} timedOut=$timedOut',
             subDomain: 'retry',
           );
         } catch (_) {}
-        if (nextAttempts >= maxRetriesForDiagnostics) {
-          try {
-            _loggingService.log(
-              LogDomain.sync,
-              'retryCapReached subject=${claimedItem.subject} attempts=$nextAttempts status=error → skip/head-advance',
-              subDomain: 'retry.cap',
-            );
-          } catch (_) {}
-          // The repository marks status=error at cap. Continue immediately to the next item.
-          return OutboxProcessingResult.schedule(Duration.zero);
-        }
-        return OutboxProcessingResult.schedule(retryDelay);
+        return _retryResult(rows, delay: retryDelay, subject: head.subject);
       }
 
-      await _repository.markSent(claimedItem);
+      await _markSent(rows);
       markedSent = true;
       final elapsedMs = DateTime.now().difference(sendStart).inMilliseconds;
       final hasMore = await _repository.hasMorePending();
       _loggingService.log(
         LogDomain.sync,
-        'sent type=${syncMessage.runtimeType} subject=${claimedItem.subject} '
-        'retries=${claimedItem.retries} ms=$elapsedMs '
-        'pending=${hasMore ? 2 : 1}',
+        'sent type=${send.message.runtimeType} subject=${head.subject} '
+        'retries=${head.retries} ms=$elapsedMs '
+        'rows=${rows.length} pending=${hasMore ? 2 : 1}',
         subDomain: 'outbox.send',
       );
       // Reset repeat tracker on success for this subject.
-      if (_lastFailedSubject == claimedItem.subject) {
+      if (_lastFailedSubject == head.subject) {
         _lastFailedSubject = null;
         _lastFailedRepeats = 0;
       }
@@ -203,59 +334,43 @@ class OutboxProcessor {
         stackTrace: stackTrace,
         subDomain: 'sendNext',
       );
-      // If the row is already sent, the exception happened in the post-send
-      // observability path (hasMorePending/logging). Swallow it here — we do
-      // not want markRetry to revive a sent row and cause duplicate delivery.
+      // If the rows are already sent, the exception happened in the post-send
+      // observability path. Swallow it: markRetry would revive sent rows and
+      // cause duplicate delivery.
       if (markedSent) {
         return OutboxProcessingResult.schedule(Duration.zero);
       }
-      final nextAttempts = claimedItem.retries + 1;
-      await _repository.markRetry(claimedItem);
-      if (_lastFailedSubject == claimedItem.subject) {
-        _lastFailedRepeats++;
-      } else {
-        _lastFailedSubject = claimedItem.subject;
-        _lastFailedRepeats = 1;
-      }
+      final nextAttempts = head.retries + 1;
+      await _markRetry(rows);
+      _trackFailure(head.subject);
       try {
         _loggingService.log(
           LogDomain.sync,
-          'sendException subject=${claimedItem.subject} attempts=$nextAttempts repeats=$_lastFailedRepeats backoffMs=${errorDelay.inMilliseconds}',
+          'sendException subject=${head.subject} attempts=$nextAttempts repeats=$_lastFailedRepeats backoffMs=${errorDelay.inMilliseconds}',
           subDomain: 'retry',
         );
       } catch (_) {}
-      if (nextAttempts >= maxRetriesForDiagnostics) {
-        try {
-          _loggingService.log(
-            LogDomain.sync,
-            'retryCapReached subject=${claimedItem.subject} attempts=$nextAttempts status=error → skip/head-advance',
-            subDomain: 'retry.cap',
-          );
-        } catch (_) {}
-        return OutboxProcessingResult.schedule(Duration.zero);
-      }
-      return OutboxProcessingResult.schedule(errorDelay);
+      return _retryResult(rows, delay: errorDelay, subject: head.subject);
     }
   }
 
   Future<OutboxProcessingResult> _processBundle(
-    List<OutboxItem> claimedBatch,
+    List<_OutboxSend> sends,
   ) async {
     // Head subject anchors all head-of-queue diagnostics. The bundle is one
     // logical send attempt; per-row retries++/error-cap accounting still
     // happens row-by-row inside [OutboxRepository.markRetryBatch], so a
     // rotten head row eventually flips to error and the next drain claims a
     // smaller bundle without it.
-    final headSubject = claimedBatch.first.subject;
-    final bundleSize = claimedBatch.length;
+    final rows = [for (final send in sends) ...send.rows];
+    final headSubject = rows.first.subject;
+    final bundleSize = sends.length;
 
     var markedSent = false;
     try {
-      final children = <SyncMessage>[];
-      for (final item in claimedBatch) {
-        children.add(_decodeMessage(item));
-      }
-      final bundle = SyncMessage.outboxBundle(children: children);
+      final bundle = SyncMessage.outboxBundle(
+        children: [for (final send in sends) send.message],
+      );
 
       final sendStart = DateTime.now();
       var timedOut = false;
@@ -270,19 +385,14 @@ class OutboxProcessor {
           );
 
       if (!success) {
-        final nextAttempts = claimedBatch.first.retries + 1;
-        await _repository.markRetryBatch(claimedBatch);
+        final nextAttempts = rows.first.retries + 1;
+        await _repository.markRetryBatch(rows);
         _syncLog(
           'bundleSendFail size=$bundleSize headSubject=$headSubject '
           'attempts=$nextAttempts timedOut=$timedOut',
           subDomain: 'outbox.retry',
         );
-        if (_lastFailedSubject == headSubject) {
-          _lastFailedRepeats++;
-        } else {
-          _lastFailedSubject = headSubject;
-          _lastFailedRepeats = 1;
-        }
+        _trackFailure(headSubject);
         try {
           _loggingService.log(
             LogDomain.sync,
@@ -292,34 +402,22 @@ class OutboxProcessor {
             subDomain: 'retry',
           );
         } catch (_) {}
-        // If any row in the bundle just hit the retry cap, fast-path the
-        // next drain. The repository has already flipped those rows to
-        // error in the same transaction; the next claim will skip them.
-        final capReached = claimedBatch.any(
-          (row) => row.retries + 1 >= maxRetriesForDiagnostics,
+        return _retryResult(
+          rows,
+          delay: retryDelay,
+          subject: headSubject,
+          bundleSize: bundleSize,
         );
-        if (capReached) {
-          try {
-            _loggingService.log(
-              LogDomain.sync,
-              'retryCapReached headSubject=$headSubject size=$bundleSize '
-              'attempts=$nextAttempts status=error → skip/head-advance',
-              subDomain: 'retry.cap',
-            );
-          } catch (_) {}
-          return OutboxProcessingResult.schedule(Duration.zero);
-        }
-        return OutboxProcessingResult.schedule(retryDelay);
       }
 
-      await _repository.markSentBatch(claimedBatch);
+      await _repository.markSentBatch(rows);
       markedSent = true;
       final elapsedMs = DateTime.now().difference(sendStart).inMilliseconds;
       final hasMore = await _repository.hasMorePending();
       _loggingService.log(
         LogDomain.sync,
-        'bundleSent size=$bundleSize headSubject=$headSubject '
-        'ms=$elapsedMs pending=${hasMore ? 2 : 1}',
+        'bundleSent size=$bundleSize rows=${rows.length} '
+        'headSubject=$headSubject ms=$elapsedMs pending=${hasMore ? 2 : 1}',
         subDomain: 'outbox.send',
       );
       if (_lastFailedSubject == headSubject) {
@@ -340,14 +438,9 @@ class OutboxProcessor {
       if (markedSent) {
         return OutboxProcessingResult.schedule(Duration.zero);
       }
-      final nextAttempts = claimedBatch.first.retries + 1;
-      await _repository.markRetryBatch(claimedBatch);
-      if (_lastFailedSubject == headSubject) {
-        _lastFailedRepeats++;
-      } else {
-        _lastFailedSubject = headSubject;
-        _lastFailedRepeats = 1;
-      }
+      final nextAttempts = rows.first.retries + 1;
+      await _repository.markRetryBatch(rows);
+      _trackFailure(headSubject);
       try {
         _loggingService.log(
           LogDomain.sync,
@@ -357,26 +450,20 @@ class OutboxProcessor {
           subDomain: 'retry',
         );
       } catch (_) {}
-      final capReached = claimedBatch.any(
-        (row) => row.retries + 1 >= maxRetriesForDiagnostics,
+      return _retryResult(
+        rows,
+        delay: errorDelay,
+        subject: headSubject,
+        bundleSize: bundleSize,
       );
-      if (capReached) {
-        try {
-          _loggingService.log(
-            LogDomain.sync,
-            'retryCapReached headSubject=$headSubject size=$bundleSize '
-            'attempts=$nextAttempts status=error → skip/head-advance',
-            subDomain: 'retry.cap',
-          );
-        } catch (_) {}
-        return OutboxProcessingResult.schedule(Duration.zero);
-      }
-      return OutboxProcessingResult.schedule(errorDelay);
     }
   }
+}
 
-  SyncMessage _decodeMessage(OutboxItem item) {
-    final jsonMap = json.decode(item.message) as Map<String, dynamic>;
-    return SyncMessage.fromJson(jsonMap);
-  }
+/// One Matrix send: the message, and every row it settles.
+class _OutboxSend {
+  _OutboxSend(this.message, this.rows);
+
+  final SyncMessage message;
+  final List<OutboxItem> rows;
 }

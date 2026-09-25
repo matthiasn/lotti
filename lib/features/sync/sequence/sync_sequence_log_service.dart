@@ -22,7 +22,7 @@ import 'package:meta/meta.dart';
 ///
 /// - [SyncSequenceCache] — the SINGLE owner of every mutable in-memory cache
 ///   (per-host activity / watermark / materialized-bound maps and the
-///   last-sent LRU). Injected into every collaborator that records or reads
+///   sent-binding LRU). Injected into every collaborator that records or reads
 ///   sequence data so dedup and watermark bookkeeping stay coherent.
 /// - [SyncSequenceTracer] — sync-domain log routing shared by all collaborators.
 /// - [SyncSequenceMissingNotifier] — owns the deferred "missing entries
@@ -139,11 +139,6 @@ class SyncSequenceLogService {
   );
 
   // ── Receive path ──────────────────────────────────────────────────────────
-
-  /// Returns the last sent vector clock for [entryId] from this host's
-  /// perspective. Used by the outbox to build covered vector clocks.
-  Future<VectorClock?> getLastSentVectorClockForEntry(String entryId) =>
-      _receiver.getLastSentVectorClockForEntry(entryId);
 
   /// Record a received entry and detect gaps in the sequence.
   Future<List<({String hostId, int counter})>> recordReceivedEntry({
