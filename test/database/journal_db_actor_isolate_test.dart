@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -7,7 +5,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/utils/file_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
@@ -44,34 +41,24 @@ void main() {
   });
 
   group('JournalDb isolate-safe construction', () {
-    late Directory documentsDirectory;
     late JournalDb db;
     final mockLoggingService = MockDomainLogger();
 
     setUp(() {
-      documentsDirectory = Directory.systemTemp.createTempSync(
-        'journaldb_actor_isolated_',
-      );
-
       _stubDomainLogger(mockLoggingService);
 
       db = JournalDb(
         inMemoryDatabase: true,
-        documentsDirectory: documentsDirectory,
         loggingService: mockLoggingService,
       );
     });
 
     tearDown(() async {
       await db.close();
-
-      if (documentsDirectory.existsSync()) {
-        documentsDirectory.deleteSync(recursive: true);
-      }
     });
 
     test(
-      'updates journal entries and writes JSON without a global getIt directory',
+      'updates journal entries without a global getIt directory or logger',
       () async {
         final entry = JournalEntity.journalEntry(
           meta: Metadata(
@@ -89,12 +76,9 @@ void main() {
         await initConfigFlags(db, inMemoryDatabase: true);
         final result = await db.updateJournalEntity(entry);
 
-        final expectedPath = entityPath(entry, documentsDirectory);
-
         expect(result.applied, isTrue);
-        expect(getIt.isRegistered<Directory>(), isFalse);
+        expect(await db.journalEntityById(entry.id), entry);
         expect(getIt.isRegistered<DomainLogger>(), isFalse);
-        expect(File(expectedPath).existsSync(), isTrue);
       },
     );
   });

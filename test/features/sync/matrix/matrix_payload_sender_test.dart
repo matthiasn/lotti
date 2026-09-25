@@ -203,7 +203,7 @@ void main() {
     });
   });
 
-  group('sendJournalEntityPayload missing JSON recovery', () {
+  group('sendJournalEntityPayload stored row', () {
     const message = SyncJournalEntity(
       id: 'recovery-entry',
       jsonPath: '/entries/recovery.json',
@@ -226,7 +226,7 @@ void main() {
       );
     }
 
-    void stubRecovery(JournalEntity? recovered) {
+    void stubRow(JournalEntity? recovered) {
       when(
         () => journalDb.journalEntityMapForIdsIncludingDeleted([message.id]),
       ).thenAnswer((_) async => {message.id: ?recovered});
@@ -237,13 +237,13 @@ void main() {
 
     for (final deleted in [false, true]) {
       test(
-        'recovers missing JSON from DB including deleted=$deleted',
+        'sends the stored row, including deleted=$deleted',
         () async {
           final recovered = entity(
             clock: const VectorClock({'hostA': 3}),
             deleted: deleted,
           );
-          stubRecovery(recovered);
+          stubRow(recovered);
           MatrixFile? uploaded;
           when(
             () => room.sendFileEvent(
@@ -271,7 +271,7 @@ void main() {
           expect(
             File('${documentsDirectory.path}${message.jsonPath}').existsSync(),
             isFalse,
-            reason: 'Recovery must not recreate a reclaimed sidecar.',
+            reason: 'Sending must not write the entry to a file.',
           );
         },
       );
@@ -285,7 +285,7 @@ void main() {
       test(
         'does not acknowledge a missing queued version from DB clock $clock',
         () async {
-          stubRecovery(entity(clock: clock));
+          stubRow(entity(clock: clock));
           final result = await payloadSender.sendJournalEntityPayload(
             room: room,
             message: message,
@@ -307,7 +307,7 @@ void main() {
     }
 
     test('checks covered clocks as well as the queued version', () async {
-      stubRecovery(entity(clock: const VectorClock({'hostA': 3})));
+      stubRow(entity(clock: const VectorClock({'hostA': 3})));
       final merged = message.copyWith(
         coveredVectorClocks: const [
           VectorClock({'hostB': 1}),
@@ -332,7 +332,7 @@ void main() {
     });
 
     test('keeps genuinely absent payloads retryable', () async {
-      stubRecovery(null);
+      stubRow(null);
       expect(
         await payloadSender.sendJournalEntityPayload(
           room: room,
@@ -353,25 +353,45 @@ void main() {
       );
     });
 
-    test('does not use DB fallback for other filesystem failures', () async {
-      Directory(
-        '${documentsDirectory.path}${message.jsonPath}',
-      ).createSync(recursive: true);
-      expect(
-        await payloadSender.sendJournalEntityPayload(
+    test(
+      'ignores a JSON file left at the entry path by an older build',
+      () async {
+        final stored = entity(clock: const VectorClock({'hostA': 3}));
+        final leftover = entity(clock: const VectorClock({'hostA': 2}));
+        File('${documentsDirectory.path}${message.jsonPath}')
+          ..createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(leftover.toJson()));
+        stubRow(stored);
+        MatrixFile? uploaded;
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenAnswer((invocation) async {
+          uploaded = invocation.positionalArguments.first as MatrixFile;
+          return 'row-upload';
+        });
+
+        final result = await payloadSender.sendJournalEntityPayload(
           room: room,
           message: message,
-        ),
-        isNull,
-      );
-      verifyNever(
-        () => journalDb.journalEntityMapForIdsIncludingDeleted(any()),
-      );
-    });
+        );
+
+        expect(result?.vectorClock, stored.meta.vectorClock);
+        expect(
+          JournalEntity.fromJson(
+            jsonDecode(utf8.decode(gzip.decode(uploaded!.bytes)))
+                as Map<String, dynamic>,
+          ),
+          stored,
+        );
+      },
+    );
   });
 
   group('sendJournalEntityPayload attachments', () {
-    /// Writes an image entry's JSON payload and its 12-byte blob under the
+    /// Stores an image entry's row and writes its 12-byte blob under the
     /// documents directory, and returns the relative paths of every file event
     /// the sender uploads for [message].
     Future<List<String>> uploadedPathsFor(SyncJournalEntity message) async {
@@ -393,9 +413,9 @@ void main() {
         ),
       );
 
-      File('${documentsDirectory.path}${message.jsonPath}')
-        ..createSync(recursive: true)
-        ..writeAsStringSync(jsonEncode(entity.toJson()));
+      when(
+        () => journalDb.journalEntityMapForIdsIncludingDeleted([message.id]),
+      ).thenAnswer((_) async => {message.id: entity});
       File('${documentsDirectory.path}/images/${message.id}.jpg')
         ..createSync(recursive: true)
         ..writeAsBytesSync(List<int>.filled(12, 7));

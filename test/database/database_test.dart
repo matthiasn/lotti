@@ -191,7 +191,6 @@ void main() {
         final db = JournalDb(
           inMemoryDatabase: true,
           loggingService: injectedLogger,
-          documentsDirectory: documentsDirectory,
         );
         addTearDown(db.close);
 

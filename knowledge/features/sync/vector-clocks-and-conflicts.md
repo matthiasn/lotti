@@ -114,7 +114,7 @@ sources:
     last_modified: 2026-09-25
   - id: journal-replication-spec
     resource: ../../../specs/tla/JournalReplication.tla
-    title: TLA+ model of journal entry replication, conflicts and the sidecar
+    title: TLA+ model of journal entry replication and conflicts
     last_modified: 2026-09-25
   - id: adr-0083
     resource: ../../../docs/adr/0083-model-checked-journal-replication.md

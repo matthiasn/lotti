@@ -306,7 +306,9 @@ stubbed to) records the wrong call and breaks every stub of the method — and
 it swallows a `thenThrow`, so stub a failure as
 `thenAnswer((_) => Future.error(...))`. Code that now reads the stored row
 with its deletion (`journalEntityByIdIncludingDeleted`, ADR 0083) is stubbed
-on that method directly; unstubbed, `restoreSidecar` answers `true`.
+on that method directly. A journal enqueue or send reads the stored row, never
+a JSON file, so stage its payload as a row: `OutboxServiceTestHarness.stageRow`
+for the outbox, a `journalEntityMapForIdsIncludingDeleted` stub for the sender.
 
 ## Native drag-and-drop wrappers
 

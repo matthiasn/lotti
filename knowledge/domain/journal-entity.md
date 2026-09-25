@@ -1,7 +1,7 @@
 ---
 type: Domain Model
 title: JournalEntity
-description: The nineteen-variant union every recorded journal entry is, what sits outside it, and the shared Metadata envelope that carries identity, time, ownership and sync state.
+description: The eighteen-variant union every recorded journal entry is, what sits outside it, and the shared Metadata envelope that carries identity, time, ownership and sync state.
 resource: ../../lib/classes/journal_entities.dart
 tags: [domain, journal-entity, metadata, freezed]
 status: stable
@@ -18,7 +18,7 @@ sources:
     last_modified: 2026-07-22
 ---
 
-# One union, nineteen variants
+# One union, eighteen variants
 
 Every entry the user *records* is a `JournalEntity` — a Freezed union whose
 variants are:
@@ -26,7 +26,7 @@ variants are:
 `journalEntry`, `journalImage`, `journalAudio`, `task`, `event`, `checklistItem`,
 `checklist`, `quantitative`, `measurement`, `aiResponse`, `workout`,
 `habitCompletion`, `survey`, `dayPlan`, `rating`, `project`, `relationship`,
-`checkIn`, `goal`.
+`checkIn`.
 
 That breadth is why the [journal feature](../features/journal/) is the app's
 substrate rather than a note-taking screen: create, browse, search, link, focus
@@ -36,7 +36,7 @@ its own detail widget.
 ```mermaid
 classDiagram
   class JournalEntity {
-    <<Freezed union — 19 variants>>
+    <<Freezed union — 18 variants>>
     Metadata meta
   }
   class Metadata {
@@ -75,7 +75,6 @@ classDiagram
   JournalEntity <|-- ProjectEntry
   JournalEntity <|-- RelationshipEntry
   JournalEntity <|-- CheckInEntry
-  JournalEntity <|-- GoalEntry
 
   Task o-- TaskData : payload
   JournalEvent o-- EventData : payload

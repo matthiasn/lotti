@@ -11,25 +11,8 @@ enum ConflictStatus {
 mixin _JournalDbEntityOps
     on _$JournalDb, _JournalDbJournalQueries, _JournalDbDefinitions {
   // Shell seams: implemented in `database.dart` because they consume the
-  // constructor-injected dependencies (`_loggingService`,
-  // `_documentsDirectory`) that live on the [JournalDb] shell class.
-
-  /// Writes the canonical JSON file for [updated], honoring the
-  /// documents-directory override injected via the [JournalDb]
-  /// constructor. Protected so a test double can delay or fail one write
-  /// and exercise [_publishSidecar]'s ordering.
-  @protected
-  @visibleForTesting
-  Future<void> persistEntityJson(JournalEntity updated);
-
-  // Per-entity ordering for sidecar writes. The transaction hands out a
-  // ticket per applied write; sidecar writes for one id run one after the
-  // other, and a ticket older than the newest one already on disk is
-  // skipped — so two accepted writes of the same entity can never leave
-  // the earlier document as the sync payload for the later row.
-  final Map<String, int> _sidecarIssued = <String, int>{};
-  final Map<String, int> _sidecarWritten = <String, int>{};
-  final Map<String, Future<void>> _sidecarChain = <String, Future<void>>{};
+  // constructor-injected `_loggingService` that lives on the [JournalDb]
+  // shell class.
 
   /// Reports [error] to the domain logger, if one is available.
   void _captureException(
@@ -196,7 +179,7 @@ mixin _JournalDbEntityOps
   /// [precondition], when supplied, runs inside that same transaction before
   /// any write. It must only read this journal database, without side effects
   /// or external awaits. Use direct queries, not readers that coalesce calls
-  /// across transaction zones. Returning false leaves the row and sidecar untouched.
+  /// across transaction zones. Returning false leaves the row untouched.
   ///
   /// The stored row is read with its soft deletion
   /// ([entityByIdIncludingDeleted]): a deletion is a version like any other,
@@ -207,19 +190,15 @@ mixin _JournalDbEntityOps
   /// entry's conflict resolved only when it includes the conflict's version
   /// (ADR 0083).
   ///
-  /// The JSON sidecar is written **after** the transaction commits: it is
-  /// the sync payload, so it must never describe a row that rolled back,
-  /// and writing it inside the transaction would hold the journal writer
-  /// lock across file I/O. Sidecar writes for one entity are published in
-  /// commit order (see [_publishSidecar]).
+  /// The row is the only stored copy of the entity. Sync reads its payload
+  /// from here; nothing writes the entity to a file.
   Future<JournalUpdateResult> updateJournalEntity(
     JournalEntity updated, {
     bool overwrite = true,
     Future<bool> Function()? precondition,
   }) async {
-    var ticket = 0;
     var written = updated;
-    final result = await transaction(() async {
+    return transaction(() async {
       var applied = false;
       JournalUpdateSkipReason? skipReason;
       var rowsWritten = 0;
@@ -277,7 +256,6 @@ mixin _JournalDbEntityOps
 
       if (applied) {
         await addLabeled(written);
-        ticket = _issueSidecarTicket(written.meta.id);
         return JournalUpdateResult.applied(rowsWritten: rowsWritten);
       }
 
@@ -285,73 +263,10 @@ mixin _JournalDbEntityOps
         reason: skipReason ?? JournalUpdateSkipReason.olderOrEqual,
       );
     });
-
-    if (result.applied) {
-      await _publishSidecar(written, ticket);
-    }
-    return result;
   }
 
   JournalDbEntity _toRow(JournalEntity entity) =>
       toDbEntity(entity).copyWith(updatedAt: clock.now());
-
-  /// The next sidecar ticket for [id]. Called inside the transaction that
-  /// commits the version the sidecar will describe.
-  int _issueSidecarTicket(String id) {
-    final ticket = (_sidecarIssued[id] ?? 0) + 1;
-    _sidecarIssued[id] = ticket;
-    return ticket;
-  }
-
-  /// Writes the stored row's sidecar for [id] again, in commit order with
-  /// every other sidecar write for it, and returns whether a row is stored.
-  ///
-  /// The sidecar is the payload this device sends for the entry, and two
-  /// writers besides [updateJournalEntity] touch it: a receive from an older
-  /// peer, which names only a path and has the loader save the incoming JSON
-  /// there before the write decision, and the outbox, which refreshes it
-  /// before it reads the payload. Both go through here, so neither can leave
-  /// it describing a version other than the stored row (ADR 0083).
-  Future<bool> restoreSidecar(String id) async {
-    var ticket = 0;
-    final stored = await transaction(() async {
-      final row = await entityByIdIncludingDeleted(id);
-      if (row == null) return null;
-      ticket = _issueSidecarTicket(id);
-      return fromDbEntity(row);
-    });
-    if (stored == null) return false;
-    await _publishSidecar(stored, ticket);
-    return true;
-  }
-
-  /// Writes the sidecar for [entity] after the sidecar writes queued before
-  /// it for the same id, and only if no newer [ticket] has been written yet.
-  ///
-  /// A failed write does not poison the chain: the next writer for the id
-  /// still runs, and the failure surfaces to this caller.
-  Future<void> _publishSidecar(JournalEntity entity, int ticket) {
-    final id = entity.meta.id;
-    final previous = _sidecarChain[id] ?? Future<void>.value();
-    late final Future<void> current;
-    current = previous
-        .catchError((Object _) {})
-        .then((_) async {
-          if ((_sidecarWritten[id] ?? 0) >= ticket) return;
-          await persistEntityJson(entity);
-          _sidecarWritten[id] = ticket;
-        })
-        .whenComplete(() {
-          if (!identical(_sidecarChain[id], current)) return;
-          _sidecarChain.remove(id);
-          if (_sidecarWritten[id] == _sidecarIssued[id]) {
-            _sidecarIssued.remove(id);
-            _sidecarWritten.remove(id);
-          }
-        });
-    _sidecarChain[id] = current;
-    return current;
-  }
 
   Future<Conflict?> conflictById(String id) async {
     final res = await (select(conflicts)..where((t) => t.id.equals(id))).get();

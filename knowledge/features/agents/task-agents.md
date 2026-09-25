@@ -715,13 +715,10 @@ phrases from the current task's perspective, produced by one
 relationships in exactly the vocabulary it would use to propose new ones, and
 the prompt forbids re-proposing a listed relation.
 
-There are no other immediate task-mutating tools. Immediate non-local writes go
-through `AgentToolExecutor`, which enforces the agent's allowed category set,
-captures post-write vector clocks when a journal entity changes, and persists
-audit messages for tool actions and results. A confirmed proposal does not: the
-confirmation service hands it straight to `TaskToolDispatcher.dispatchApproved`,
-so there is no category re-check or audit message at apply time. The change-set
-decision is its record.
+There are no other immediate task-mutating tools. Non-local writes go through
+`AgentToolExecutor`, which enforces the agent's allowed category set, captures
+post-write vector clocks when a journal entity changes, and persists audit
+messages for tool actions and results.
 
 ## `get_related_task_details` is disabled
 

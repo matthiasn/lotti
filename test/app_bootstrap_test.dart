@@ -207,10 +207,11 @@ void main() {
           'guest-task-1',
         );
         expect(persisted, isNotNull);
-        final guestSidecars = Directory(
-          p.join(registry.rootFor(guest).path, 'tasks'),
+        // The row is the only copy: no JSON file mirrors the entry.
+        expect(
+          Directory(p.join(registry.rootFor(guest).path, 'tasks')).existsSync(),
+          isFalse,
         );
-        expect(guestSidecars.existsSync(), isTrue);
 
         // Own sync identity: the host id exists in the guest settings db;
         // the real world has no settings.sqlite at all.
@@ -429,7 +430,6 @@ void main() {
         await priorSettings.close();
         final priorJournal = JournalDb(
           documentsDirectoryProvider: provider,
-          documentsDirectory: osRoot,
         );
         final at = DateTime(2026, 9, 23, 12);
         await priorJournal.updateJournalEntity(
@@ -521,7 +521,6 @@ void main() {
         await priorSettings.close();
         final priorJournal = JournalDb(
           documentsDirectoryProvider: provider,
-          documentsDirectory: osRoot,
         );
         final at = DateTime(2026, 9, 23, 12);
         await priorJournal.updateJournalEntity(

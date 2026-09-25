@@ -405,27 +405,6 @@ extension _JournalHandlers on SyncEventProcessor {
     }
     final rows = updateResult.rowsWritten ?? 0;
 
-    // A path-only envelope (an older peer) is loaded through the sidecar,
-    // and the loader saved the incoming JSON over it before the decision.
-    // When the version was refused, the sidecar — the payload this device
-    // sends for the entry — is put back to the stored row (ADR 0083). A
-    // failed restore propagates before the event is marked processed, so
-    // the receive is retried and the restore with it; swallowed, the
-    // rejected version would stay in the sidecar for good.
-    if (!updateResult.applied && syncMessage.attachmentEventId == null) {
-      try {
-        await journalDb.restoreSidecar(journalEntity.meta.id);
-      } catch (error, stackTrace) {
-        _loggingService.error(
-          LogDomain.sync,
-          error,
-          stackTrace: stackTrace,
-          subDomain: 'apply.restoreSidecar',
-        );
-        rethrow;
-      }
-    }
-
     final diag = SyncApplyDiagnostics(
       eventId: event.eventId,
       payloadType: 'journalEntity',

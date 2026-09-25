@@ -53,7 +53,6 @@ class WorldHandle {
       journalDb: JournalDb(
         readPool: 0,
         documentsDirectoryProvider: provider,
-        documentsDirectory: root,
       ),
       settingsDb: SettingsDb(documentsDirectoryProvider: provider),
       syncDb: SyncDatabase(documentsDirectoryProvider: provider),

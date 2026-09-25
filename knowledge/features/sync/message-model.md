@@ -178,8 +178,9 @@ notifications, agent entities and links, and outbox bundle manifests. Agent
 rows carry their exact serialized payload inline while pending, so the sender
 uploads those claimed bytes before stripping the large entity from the wire
 envelope; a newer enqueue overwriting the stable sidecar cannot change the
-generation already claimed for send. A legacy file-only outbox row still reads
-its sidecar as a compatibility fallback. Exact journal payloads are parsed
+generation already claimed for send. A legacy file-only agent outbox row still
+reads its sidecar as a compatibility fallback. Journal payloads are serialized
+from the stored row when they are sent. Exact journal payloads are parsed
 directly from their referenced attachment rather than written through the
 mutable stable-path cache; outbox manifests retain their existing cache write
 because each current sender allocates a fresh UUID path per manifest.

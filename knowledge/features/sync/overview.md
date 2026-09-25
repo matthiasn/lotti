@@ -96,7 +96,7 @@ High-frequency bookkeeping uses `DomainLogger.logSampled`: the first event is
 emitted immediately, followed by a counted summary every 100 observations or
 five minutes. Every summary carries `sampleKey`, `observed`, `suppressed` and
 cumulative `total`, so amplification remains measurable without one line per
-record. The sampled families are enqueue insert outcomes, sequence
+record. The sampled families are enqueue insert/merge outcomes, sequence
 binding writes and duplicate skips, vector-clock assignments, and embedded-link
 preparation. Backfill's two no-work outcomes use the same scheme with a
 50-observation / 15-minute window; actual requests remain unsampled.

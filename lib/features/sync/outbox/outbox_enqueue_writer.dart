@@ -282,39 +282,26 @@ class OutboxEnqueueWriter {
 
   /// Appends a SyncJournalEntity row for this version. Rows are never merged:
   /// the processor collapses an entry's pending rows when it sends (ADR 0086).
-  /// Descriptor refresh failures propagate so recovery cannot settle a counter
-  /// against a stale sidecar.
+  /// The stored row is read, including a deletion, which is a version too. A
+  /// missing row fails the enqueue, so recovery cannot settle a counter
+  /// against a payload that does not exist.
   Future<void> enqueueJournalEntity({
     required SyncJournalEntity msg,
     required OutboxCompanion commonFields,
     required String? host,
     required String? hostHash,
   }) async {
-    // Refresh JSON from DB before reading descriptor. Through the journal's
-    // sidecar queue: a refresh written beside it could land after a newer
-    // commit's write and leave the sidecar describing an older row
-    // (ADR 0083). A deleted entry is refreshed too; it is a version.
-    try {
-      final stored = await _journalDb.restoreSidecar(msg.id);
-      if (!stored) {
-        _loggingService.log(
-          LogDomain.sync,
-          'enqueueMessage.missingEntity id=${msg.id}',
-          subDomain: 'enqueueMessage',
-        );
-      }
-    } catch (error, stackTrace) {
-      _loggingService.error(
+    final journalEntity = await _journalDb.journalEntityByIdIncludingDeleted(
+      msg.id,
+    );
+    if (journalEntity == null) {
+      _loggingService.log(
         LogDomain.sync,
-        error,
-        stackTrace: stackTrace,
-        subDomain: 'enqueueMessage.refreshJson',
+        'enqueueMessage.missingEntity id=${msg.id}',
+        subDomain: 'enqueueMessage',
       );
-      rethrow;
+      throw StateError('No stored journal entry ${msg.id} to enqueue');
     }
-
-    final fullPath = '${_documentsDirectory.path}${msg.jsonPath}';
-    final journalEntity = await readEntityFromJson(fullPath);
 
     final localCounter = journalEntity.meta.vectorClock?.vclock[host];
 
