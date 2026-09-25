@@ -7,7 +7,7 @@ been written.
 The spec asks for a map of five areas before any implementation, and for every
 assumption that contradicts the codebase to be flagged rather than adapted to.
 Section 6 lists those contradictions and what each one means for the spec. Read
-it first if you only need the decisions.
+it first if you only need the proposed resolutions.
 
 ## 1. Raw entries: where they are created, stored and mutated
 
@@ -257,7 +257,7 @@ decision. The proposed resolution is a recommendation, not a decision.
 | C8 | §4 terminology | `AgentRetentionPolicy` calls day plans, day summaries and reports "user authored". | Two taxonomies for one concept. | Adopt the spec's raw/derived split in the knowledge docs and code comments once D8 is settled. |
 | C9 | §9.2: every device destroys content once the tombstone syncs | Soft deletes sync, but purge is manual and local, and peers keep the content. Backups and sidecars keep copies. | Crypto-shredding needs per-entry data keys, which do not exist. | Phase 7 adds per-entry keys. Until then, deletion is "hidden and tombstoned", not "unrecoverable", and the UI should say so. |
 | C10 | §2 item 3: "the TLA+ sync model" | There are 26 specs, not one, and none models identity or hashing. | §13.1 is several new specs, not an extension of one. | Add `EnvelopeChain.tla` (I1–I4, fork detection, revocation), and extend `ChangeSetLifecycle` with approval identity and R4 staleness. |
-| C11 | §3: the sync server cannot alter history undetected | Server-side tampering is already bounded by megolm. The larger gap is the one above: nothing authenticates the *sending device*. | The threat model undersells the win. | Also list "a device that holds room keys but was never certified" in §3's "detects or prevents" set. |
+| C11 | §3: the sync server cannot alter history undetected | Megolm detects modification of an authenticated message, but it does not prevent replay or guarantee that every device saw the same set of messages. Vector clocks and the sequence log cover part of that. The larger gap is the one above: nothing authenticates the *sending device*. | The threat model undersells the win. | Also list "a device that holds room keys but was never certified" in §3's "detects or prevents" set. |
 
 ## 7. New decisions the mapping surfaced
 
@@ -285,21 +285,19 @@ These are in addition to the six open decisions in the spec (§17).
 ## 8. Doc drift found while mapping
 
 Per the repository rule, the knowledge concept is the defect when it disagrees
-with the code. None of these is fixed here; they are follow-ups.
+with the code. This change fixes the ones the mapping confirmed:
 
-- `knowledge/features/agents/index.md` says there is "a human review gate in
-  front of every task mutation". Section 4 lists the exceptions.
-- `knowledge/features/agents/task-agents.md` has three problems:
-  - It says non-local writes go through `AgentToolExecutor`; confirmed change
-    sets skip it.
-  - It describes approval receipts as general; they are query-chat only.
-  - It calls `approvalHost` the human's sync host; the decision entity has no
-    host.
-- `knowledge/features/sync/send-path.md` still describes the merge-in-place
-  outbox. ADR 0086 moved it to one row per version, collapsed at send time.
-- `knowledge/domain/journal-entity.md` says there are 18 entity variants; the
-  `goal` variant makes 19.
-- `docs/architecture/sync_current_architecture.md` is historical. It predates
-  counter reservations and ADR 0080.
-- The Matrix SDK version is cited as 7.0.0, 8.1.0 and 10.0.0 in different code
-  comments and docs.
+- `knowledge/features/agents/index.md` said there was a human review gate in
+  front of every task mutation. It now names the exceptions from section 4.
+- `knowledge/features/agents/task-agents.md` said non-local writes go through
+  `AgentToolExecutor`. That holds only for immediate writes; it now says that
+  confirmed proposals go straight to `dispatchApproved`.
+- `knowledge/domain/journal-entity.md` listed 18 variants. It now includes
+  `goal`, making 19.
+- `knowledge/features/sync/overview.md` named an enqueue "merge" outcome that
+  the append-only outbox (ADR 0086) no longer has.
+
+One follow-up remains. Some comments and concepts date an SDK behaviour to the
+Matrix SDK version it was observed on: 7.0.0 in `receive-path.md` and
+`bootstrap_forward_strategy.dart`, and 10.0.0 in `overview.md`. `pubspec.yaml`
+now pins `^12.0.1`. Re-checking them means reading the SDK 12 source.

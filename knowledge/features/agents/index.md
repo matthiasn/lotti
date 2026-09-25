@@ -1,7 +1,9 @@
 # Agents
 
 The persisted agent runtime: the agent kinds, their wake scheduling, memory, and
-the human review gates in front of every task mutation.
+the human review gates in front of most task mutations. The exceptions apply
+immediately: a task agent filling an empty title or language, and the day
+agent's triage and task-from-phrase tools.
 
 * [Overview](overview.md) - agent kinds, lifecycle, startup wiring, and the code reading guide.
 * [Wake orchestration](wake-orchestration.md) - how a change becomes a wake, and the three failure modes the design defends against.
