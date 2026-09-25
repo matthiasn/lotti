@@ -146,6 +146,30 @@ void main() {
     }
   });
 
+  test('creditable days never exceed a period and are reached by the '
+      'shortest one', () {
+    // Every window of every day across a leap year and the two after: the
+    // capacity is the minimum period length, so a quota at capacity is
+    // reachable in every period and one above it is out of reach in some.
+    for (final window in [
+      const GoalWindow.day(),
+      const GoalWindow.rollingDays(count: 5),
+      const GoalWindow.calendarWeek(),
+      const GoalWindow.calendarMonth(),
+    ]) {
+      var shortest = 1 << 30;
+      for (
+        var day = DateTime.utc(2024);
+        day.isBefore(DateTime.utc(2027));
+        day = day.add(const Duration(days: 1))
+      ) {
+        final length = window.lengthInDays(day);
+        if (length < shortest) shortest = length;
+      }
+      expect(goalWindowCreditableDays(window), shortest, reason: '$window');
+    }
+  });
+
   group('window properties', () {
     String dayKey(DateTime day) =>
         '${day.year.toString().padLeft(4, '0')}-'

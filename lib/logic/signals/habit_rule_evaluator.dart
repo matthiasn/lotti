@@ -221,9 +221,11 @@ class HabitRuleEvaluator {
           for (final entry
               in (window.workoutsByDay[dataType] ?? const {}).entries)
             if (entry.value.isNotEmpty)
-              entry.key: entry.value
-                  .map((workout) => workoutSignalValue(workout, valueType))
-                  .fold<num>(0, (sum, value) => sum + value),
+              entry.key: canonicalSignalSum(
+                entry.value.map(
+                  (workout) => workoutSignalValue(workout, valueType),
+                ),
+              ),
         };
         return _numericLeaf(
           rule,
@@ -269,7 +271,8 @@ class HabitRuleEvaluator {
     HabitSignalValueBasis valueBasis,
     List<HabitLeafVerdict> leaves,
   ) {
-    final todayValue = valuesByDay[day];
+    final rawToday = valuesByDay[day];
+    final todayValue = rawToday == null ? null : canonicalSignalValue(rawToday);
     // "Any reading" remains today's presence check. A stored basis only
     // affects bounded rules, so older behavior cannot change invisibly when a
     // threshold is removed.

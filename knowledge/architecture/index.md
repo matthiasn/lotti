@@ -11,6 +11,7 @@ Cross-cutting runtime structure — the parts no single feature owns.
 * [Device location](device-location.md) - how a new entry gets its geolocation: platform routing, the native sources without Google Play Services, permission, timeouts and the IP fallback.
 * [Logging and diagnostics](logging-and-diagnostics.md) - the opt-in logging domains, where their lines land, and why errors bypass the gate.
 * [Signals](signals.md) - the journal series goals and habits both evaluate, bucketed by calendar day, and the habit rule evaluator.
+* [Success semantics](success-semantics.md) - the deterministic goal and habit verdicts as definitions, the theorems they satisfy, and the checks that prove each.
 * [Day indicators](day-indicators.md) - the shared day-mark model and the cells, strip, track geometry and legend goals and habits draw their per-day squares with.
 * [Shared widgets](shared-widgets.md) - the widgets that belong to no single feature.
 * [Platform targets, CI and release](platform-and-release.md) - every platform target from one codebase, the checks each branch runs, and the tag that triggers the release pipelines.

@@ -67,7 +67,8 @@ class GoalAgentService {
   /// `runInTransaction` calls join the outer one), so a failure anywhere
   /// leaves no orphaned half-goal behind.
   ///
-  /// Throws [ArgumentError] when [criteria] fails structural validation,
+  /// Throws [ArgumentError] when [criteria] fails authoring validation
+  /// ([GoalSpecValidator.authoringIssues]),
   /// and [StateError] when a goal already exists for a caller-supplied
   /// [agentId] — spec v1 is immutable and must never be rewritten by a
   /// repeated create.
@@ -81,7 +82,7 @@ class GoalAgentService {
     String? rationale,
     String? agentId,
   }) async {
-    final issues = GoalSpecValidator.criterionIssues(criteria);
+    final issues = GoalSpecValidator.authoringIssues(criteria);
     if (issues.isNotEmpty) {
       throw ArgumentError('Invalid goal criteria: ${issues.join('; ')}');
     }

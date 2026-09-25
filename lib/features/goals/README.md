@@ -13,8 +13,6 @@ today:
   without `features/agents` depending on a feature (the `day_plan.dart`
   precedent). The banner-nudge vocabulary moved out of this feature
   entirely in ADR 0059 and is now the kind-agnostic `nudge_models.dart`.
-  `GoalCriterion.fromAutoCompleteRule` imports an existing habit rule as a
-  goal seed.
 - `evaluation/` — `GoalSignalReader`, which loads leaf series through the
   shared `lib/logic/signals/` helpers, `GoalProgressEvaluator`, a pure fold over a
   `GoalSignalWindow` of daily aggregates, and `GoalTrackPolicy`, which turns

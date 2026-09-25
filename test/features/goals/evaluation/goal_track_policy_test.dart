@@ -189,6 +189,136 @@ void main() {
     );
   });
 
+  group('exhaustive decision table', () {
+    // A proof by exhaustion. `derive` reads its real-valued inputs only
+    // through comparisons with fixed thresholds (`minDataCoverage`, 1.0,
+    // `offTrackThreshold`), so every input is equivalent to one of the
+    // representatives below: a value on each side of every threshold and the
+    // threshold itself. Enumerating all of them visits every region of the
+    // input space. Each status is then checked against a declarative
+    // characterisation — an "if and only if", not a replay of the rule chain —
+    // and the characterisations must partition the space: exactly one holds.
+    for (final policy in const [
+      GoalTrackPolicy(),
+      GoalTrackPolicy(
+        offTrackThreshold: 0.6,
+        minDataCoverage: 0.25,
+        priorBadPeriodsForOffTrack: 2,
+      ),
+    ]) {
+      test(
+        'every status holds exactly when its characterisation does '
+        '(threshold ${policy.offTrackThreshold}, coverage '
+        '${policy.minDataCoverage}, streak '
+        '${policy.priorBadPeriodsForOffTrack})',
+        () {
+          final thr = policy.offTrackThreshold;
+          final cov = policy.minDataCoverage;
+          final coverages = [0.0, cov - 0.01, cov, 1.0];
+          final attainments = [0.0, thr - 0.01, thr, 0.99, 1.0];
+          final shortTerms = <double?>[null, 0, 0.99, 1];
+          final priorValues = [thr - 0.01, thr];
+          final priorLists = <List<double>>[
+            const [],
+            for (final a in priorValues) [a],
+            for (final a in priorValues)
+              for (final b in priorValues) [a, b],
+            for (final a in priorValues)
+              for (final b in priorValues)
+                for (final c in priorValues) [a, b, c],
+          ];
+
+          var cases = 0;
+          for (final coverage in coverages) {
+            for (final passed in [false, true]) {
+              for (final satisfied in [false, true]) {
+                for (final attainment in attainments) {
+                  // An evaluator never reports a met criterion below full
+                  // attainment, nor an unmet one at it; the policy must still
+                  // be total over the impossible combinations.
+                  for (final trend in [false, true]) {
+                    for (final pace in const <bool?>[null, true, false]) {
+                      for (final shortTerm in shortTerms) {
+                        for (final priors in priorLists) {
+                          cases++;
+                          final status = policy.derive(
+                            evaluation: GoalEvaluation(
+                              attainment: attainment,
+                              satisfied: satisfied,
+                              dataCoverage: coverage,
+                              results: const {},
+                              paceFeasible: pace,
+                              onTrackByTrend: trend,
+                            ),
+                            shortTermAttainment: shortTerm,
+                            priorAttainments: priors,
+                            targetDatePassed: passed,
+                          );
+
+                          final covered = coverage >= cov;
+                          final live = covered && !passed;
+                          final meetsNow =
+                              satisfied || attainment >= 1 || trend;
+                          final recovers =
+                              pace != false &&
+                              shortTerm != null &&
+                              shortTerm >= 1;
+                          final badStreak = priors
+                              .takeWhile((prior) => prior < thr)
+                              .length;
+                          final graceSpent =
+                              attainment < thr &&
+                              badStreak >= policy.priorBadPeriodsForOffTrack;
+
+                          final expected = {
+                            GoalTrackStatus.insufficientData: !covered,
+                            GoalTrackStatus.achieved:
+                                covered && passed && satisfied,
+                            GoalTrackStatus.onTrack: live && meetsNow,
+                            GoalTrackStatus.recovering:
+                                live && !meetsNow && recovers,
+                            GoalTrackStatus.offTrack:
+                                (covered && passed && !satisfied) ||
+                                (live &&
+                                    !meetsNow &&
+                                    (pace == false ||
+                                        (!recovers && graceSpent))),
+                            GoalTrackStatus.atRisk:
+                                live &&
+                                !meetsNow &&
+                                pace != false &&
+                                !recovers &&
+                                !graceSpent,
+                          };
+                          final input =
+                              'coverage $coverage passed $passed satisfied '
+                              '$satisfied attainment $attainment trend '
+                              '$trend pace $pace short $shortTerm priors '
+                              '$priors';
+                          expect(
+                            expected.values.where((holds) => holds),
+                            hasLength(1),
+                            reason: 'characterisations overlap: $input',
+                          );
+                          expect(
+                            expected[status],
+                            isTrue,
+                            reason: '$status for $input',
+                          );
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+          expect(cases, 4 * 2 * 2 * 5 * 2 * 3 * 4 * 15);
+        },
+      );
+    }
+  });
+
   group('policy properties', () {
     // Higher is better; recovering and onTrack both mean "no nudge".
     int rank(GoalTrackStatus status) => switch (status) {

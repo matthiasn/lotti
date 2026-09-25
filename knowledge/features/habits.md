@@ -1,11 +1,11 @@
 ---
 type: Feature Module
 title: Habits
-description: Two record streams reconciled into "what should the user see now" — three read models, last-write-wins per habit/day, and a data model more ambitious than its editing surface.
+description: Two record streams reconciled into "what should the user see now" — three read models, one settled completion per habit/day (the person's entry first, then last write wins), and a data model more ambitious than its editing surface.
 resource: ../../lib/features/habits
 tags: [habits, derivation, streaks, heatmap]
 status: stable
-generated: { by: claude-code/fable-5, at: 2026-09-01T12:00:00Z }
+generated: { by: claude-code/fable-5, at: 2026-09-25T12:00:00Z }
 stale_after: 2027-02-22
 sources:
   - id: src
@@ -60,7 +60,7 @@ That split keeps tab state coherent without turning every card refresh into a
 full-page recomputation, and **keeps the heatmap's deep fetch off the tab's
 completion hot path**.
 
-# Last write wins per habit/day
+# One settled completion per habit/day
 
 Completion is **append-style journal data, not a mutable field on the
 definition** — a user can record the same habit/day more than once.
@@ -73,9 +73,19 @@ flowchart LR
   Latest --> CardStrip["HabitCompletionController strip"]
 ```
 
-The durable contract is **last write wins per `(habitId, dateFrom.ymd)`**: read
-models collapse repeated rows and keep the entry with the newest metadata write
-timestamp before deriving UI state.
+The durable contract settles each `(habitId, dateFrom.ymd)` to one row: **a
+person's own entry outranks an automatic one, and within each the newest
+metadata write wins** (`compareHabitCompletionPrecedence`; the id breaks the
+last tie, so the order is total and every replica settles alike). The source
+rank is what keeps "manual beats auto" true across devices: the engine only
+fills a day it sees empty, but a skip recorded on another device may still be
+in flight, and pure recency let the later automatic success replace it
+everywhere once it synced. The model and its counterexample are
+`specs/tla/HabitDaySettlement.tla`; the definitions are in
+[success semantics](../architecture/success-semantics.md).
+
+The SQL ranking behind `getHabitCompletionRecordsInRange` must order exactly
+as the Dart collapse does; a database test runs both over the same rows.
 
 The goal-details quick picker uses that contract to clear a day without
 deleting history: it appends a newer `HabitCompletionEntry` whose nullable
@@ -271,8 +281,9 @@ This is stated plainly rather than pretending the weekly/monthly UI exists.
 The same is true of the signal side. `HabitDefinition.autoCompleteRule` — the
 `AutoCompleteRule` tree of measurable / health / workout leaves under
 `and` / `or` / `multiple` — is the habit ↔ signal association: edited by the
-signal card (below), evaluated by the engine, and read by
-`GoalCriterion.fromAutoCompleteRule` as a goal seed. The fields around it:
+signal card (below) and evaluated by the engine. Its decision rules, and what is
+proven about them, are in [success semantics](../architecture/success-semantics.md).
+The fields around it:
 
 - `AutoCompleteRule.workout.valueType` (`WorkoutValueType?`) chooses which
   workout value a threshold applies to; `null` means "any workout of that
@@ -294,7 +305,8 @@ reads a seven-day window from the same journal series the goals runtime does,
 through the neutral
 [signals logic](../architecture/signals.md), and writes an ordinary
 `HabitCompletionEntry` through `PersistenceLogic` with
-`source: auto` — so the result syncs, resolves and renders like a manual one.
+`source: auto` — so the result syncs and renders like a manual one, and
+settles below any entry the person made for that day.
 When the Habits page opens, it also queues a delta import once for every
 platform-health type watched by an active habit. This matches the Goals
 surface: evaluation still reads journal rows, while the importer catches those
@@ -305,14 +317,16 @@ stateDiagram-v2
   [*] --> Empty: day has no completion
   Empty --> Auto: rule satisfied<br/>(engine writes success, source auto)
   Empty --> Manual: user records success / skip / missed
-  Auto --> Manual: user records anything<br/>(last write wins)
-  Manual --> Manual: user records again
+  Auto --> Manual: user records anything<br/>(a person's entry outranks auto)
+  Manual --> Manual: user records again (newest wins),<br/>or another device's auto success syncs in<br/>(settles below the person's entry)
   note right of Manual
-    The engine never writes into a day that
-    already has any completion, so a manual
-    entry, an explicit skip, or its own earlier
-    write all stop it. That is the whole
-    "manual beats auto" rule.
+    On one device the engine never writes into
+    a day that already has any completion.
+    Across devices a day can look empty while
+    the person's entry is still in flight, so
+    the settlement order ranks any manual entry
+    above any automatic one; together they make
+    "manual beats auto" hold everywhere.
   end note
 ```
 

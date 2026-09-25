@@ -5,6 +5,8 @@ import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_spec_validator.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/features/goals/evaluation/goal_progress_evaluator.dart';
+import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 
 void main() {
   Map<String, dynamic> jsonOf(GoalCriterion criterion) =>
@@ -338,6 +340,146 @@ void main() {
         GoalSpecValidator.criterionJsonIssues(jsonOf(validTree)),
         isEmpty,
       );
+    });
+  });
+
+  group('authoring layer — quotas no schedule can meet', () {
+    String quotaIssue(String id, int target, int capacity) =>
+        '$id: targetCount $target exceeds the $capacity days the window can '
+        'credit — unsatisfiable';
+
+    GoalCriterion habit(GoalWindow window, int targetCount) =>
+        GoalCriterion.habit(
+          criterionId: 'h',
+          habitId: 'h',
+          window: window,
+          targetCount: targetCount,
+        );
+
+    test('rejects a habit quota above the days its window can credit', () {
+      for (final (window, capacity) in [
+        (const GoalWindow.day(), 1),
+        (const GoalWindow.rollingDays(count: 7), 7),
+        (const GoalWindow.calendarWeek(), 7),
+        (const GoalWindow.calendarMonth(), 28),
+      ]) {
+        expect(
+          GoalSpecValidator.authoringIssues(habit(window, capacity)),
+          isEmpty,
+          reason: 'exactly $capacity fits $window',
+        );
+        expect(
+          GoalSpecValidator.authoringIssues(habit(window, capacity + 1)),
+          [quotaIssue('h', capacity + 1, capacity)],
+        );
+      }
+    });
+
+    test('rejects a rolling window beyond the ten-year maximum, on any '
+        'leaf', () {
+      const windowIssue =
+          'water: rolling window of ${maxGoalRollingDays + 1} days exceeds '
+          'the maximum of $maxGoalRollingDays';
+      const tooLong = GoalWindow.rollingDays(count: maxGoalRollingDays + 1);
+      expect(
+        GoalSpecValidator.authoringIssues(
+          const GoalCriterion.allOf(
+            criterionId: 'root',
+            criteria: [
+              GoalCriterion.measurable(
+                criterionId: 'water',
+                dataTypeId: 'water',
+                window: tooLong,
+                aggregation: GoalAggregation.sum,
+                target: 2,
+              ),
+            ],
+          ),
+        ),
+        [windowIssue],
+      );
+      expect(
+        GoalSpecValidator.authoringIssues(
+          habit(
+            const GoalWindow.rollingDays(count: maxGoalRollingDays),
+            1,
+          ),
+        ),
+        isEmpty,
+      );
+    });
+
+    test('keeps every structural issue, and persisted specs still decode', () {
+      const infeasible = GoalCriterion.anyOf(
+        criterionId: 'root',
+        criteria: [
+          GoalCriterion.habit(
+            criterionId: 'gym',
+            habitId: 'gym-habit',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 10,
+          ),
+          GoalCriterion.habit(
+            criterionId: 'gym',
+            habitId: ' ',
+            window: GoalWindow.day(),
+            targetCount: 1,
+          ),
+        ],
+      );
+      expect(GoalSpecValidator.authoringIssues(infeasible), [
+        ...GoalSpecValidator.criterionIssues(infeasible),
+        quotaIssue('gym', 10, 7),
+      ]);
+      // A spec minted before the check existed must keep loading on every
+      // replica: decoding applies only the structural layer.
+      final older = habit(const GoalWindow.rollingDays(count: 7), 10);
+      expect(GoalSpecValidator.decodeValidated(jsonOf(older)), older);
+    });
+
+    test('a quota is accepted exactly when perfect adherence meets it '
+        '(exhaustive against the evaluator)', () {
+      // Perfect adherence: a success on every day of the period, evaluated on
+      // its last day — in the period's shortest form, since a quota must be
+      // reachable in every period it recurs over. February 2026 has 28 days;
+      // the ISO week of 2026-08-03 ends on Sunday 2026-08-09.
+      const evaluator = GoalProgressEvaluator();
+      final aug31 = DateTime.utc(2026, 8, 31);
+      final sunday = DateTime.utc(2026, 8, 9);
+      final february = DateTime.utc(2026, 2, 28);
+      final shapes = <(GoalWindow, DateTime)>[
+        (const GoalWindow.day(), aug31),
+        (const GoalWindow.calendarWeek(), sunday),
+        (const GoalWindow.calendarMonth(), february),
+        for (var count = 1; count <= 12; count++)
+          (GoalWindow.rollingDays(count: count), aug31),
+      ];
+      var cases = 0;
+      for (final (window, reference) in shapes) {
+        final range = window.periodRange(reference);
+        final everyDay = {
+          for (
+            var day = range.start;
+            !day.isAfter(range.end);
+            day = day.add(const Duration(days: 1))
+          )
+            day: 1,
+        };
+        for (var target = 1; target <= 40; target++) {
+          cases++;
+          final criterion = habit(window, target);
+          final accepted = GoalSpecValidator.authoringIssues(criterion).isEmpty;
+          final achievable = evaluator
+              .evaluate(
+                criterion,
+                GoalSignalWindow(habitSuccessesByDay: {'h': everyDay}),
+                reference,
+              )
+              .satisfied;
+          expect(accepted, achievable, reason: '$target over $window');
+        }
+      }
+      expect(cases, 15 * 40);
     });
   });
 }

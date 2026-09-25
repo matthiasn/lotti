@@ -1,5 +1,4 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
 
@@ -31,10 +30,9 @@ abstract class GoalDailyTimeRange with _$GoalDailyTimeRange {
 /// results in `goalProgress` register rows stay addressable across goal
 /// revisions that keep a criterion and change its siblings.
 ///
-/// This is deliberately **not** a reuse of [AutoCompleteRule]: that tree
+/// This is deliberately **not** a reuse of `AutoCompleteRule`: that tree
 /// models point-in-time, same-day thresholds owned by habit autocompletion,
 /// with no windows, aggregation, direction, or per-window quotas (ADR 0053).
-/// [GoalCriterion.fromAutoCompleteRule] imports one as a seed instead.
 @freezed
 sealed class GoalCriterion with _$GoalCriterion {
   /// A health/quantitative dimension: "daily step totals, averaged over a
@@ -145,154 +143,6 @@ sealed class GoalCriterion with _$GoalCriterion {
 
   factory GoalCriterion.fromJson(Map<String, dynamic> json) =>
       _$GoalCriterionFromJson(json);
-
-  /// Imports an existing habit [AutoCompleteRule] as a goal criteria seed.
-  ///
-  /// The import is faithful by default: rule thresholds are same-day checks,
-  /// so [window] defaults to a single day and [aggregation] to the day's
-  /// sum. Callers upgrade to rolling windows explicitly after import.
-  ///
-  /// Node ids are deterministic paths under [idPrefix] (`c`, `c.0`,
-  /// `c.0.min`, …) so repeated imports of the same rule produce identical
-  /// trees. A threshold rule with neither `minimum` nor `maximum` throws an
-  /// [ArgumentError] — it asserts nothing and cannot seed a target.
-  factory GoalCriterion.fromAutoCompleteRule(
-    AutoCompleteRule rule, {
-    GoalWindow window = const GoalWindow.day(),
-    GoalAggregation aggregation = GoalAggregation.sum,
-    String idPrefix = 'c',
-  }) {
-    switch (rule) {
-      case AutoCompleteRuleHealth(
-        :final dataType,
-        :final minimum,
-        :final maximum,
-        :final title,
-      ):
-      case AutoCompleteRuleWorkout(
-        :final dataType,
-        :final minimum,
-        :final maximum,
-        :final title,
-      ):
-        return _threshold(
-          idPrefix: idPrefix,
-          title: title,
-          minimum: minimum,
-          maximum: maximum,
-          build: (id, target, direction) => GoalCriterion.metric(
-            criterionId: id,
-            dataType: dataType,
-            window: window,
-            aggregation: aggregation,
-            target: target,
-            direction: direction,
-            title: title,
-          ),
-        );
-      case AutoCompleteRuleMeasurable(
-        :final dataTypeId,
-        :final minimum,
-        :final maximum,
-        :final title,
-      ):
-        return _threshold(
-          idPrefix: idPrefix,
-          title: title,
-          minimum: minimum,
-          maximum: maximum,
-          build: (id, target, direction) => GoalCriterion.measurable(
-            criterionId: id,
-            dataTypeId: dataTypeId,
-            window: window,
-            aggregation: aggregation,
-            target: target,
-            direction: direction,
-            title: title,
-          ),
-        );
-      case AutoCompleteRuleHabit(:final habitId, :final title):
-        return GoalCriterion.habit(
-          criterionId: idPrefix,
-          habitId: habitId,
-          window: window,
-          targetCount: 1,
-          title: title,
-        );
-      case AutoCompleteRuleAnd(:final rules, :final title):
-        return GoalCriterion.allOf(
-          criterionId: idPrefix,
-          criteria: _children(rules, window, aggregation, idPrefix),
-          title: title,
-        );
-      case AutoCompleteRuleOr(:final rules, :final title):
-        return GoalCriterion.anyOf(
-          criterionId: idPrefix,
-          criteria: _children(rules, window, aggregation, idPrefix),
-          title: title,
-        );
-      case AutoCompleteRuleMultiple(
-        :final rules,
-        :final successes,
-        :final title,
-      ):
-        return GoalCriterion.atLeastCount(
-          criterionId: idPrefix,
-          criteria: _children(rules, window, aggregation, idPrefix),
-          successes: successes,
-          title: title,
-        );
-    }
-  }
-
-  static List<GoalCriterion> _children(
-    List<AutoCompleteRule> rules,
-    GoalWindow window,
-    GoalAggregation aggregation,
-    String idPrefix,
-  ) => [
-    for (var i = 0; i < rules.length; i++)
-      GoalCriterion.fromAutoCompleteRule(
-        rules[i],
-        window: window,
-        aggregation: aggregation,
-        idPrefix: '$idPrefix.$i',
-      ),
-  ];
-
-  static GoalCriterion _threshold({
-    required String idPrefix,
-    required String? title,
-    required num? minimum,
-    required num? maximum,
-    required GoalCriterion Function(
-      String criterionId,
-      num target,
-      GoalDirection direction,
-    )
-    build,
-  }) {
-    if (minimum != null && maximum != null) {
-      return GoalCriterion.allOf(
-        criterionId: idPrefix,
-        criteria: [
-          build('$idPrefix.min', minimum, GoalDirection.atLeast),
-          build('$idPrefix.max', maximum, GoalDirection.atMost),
-        ],
-        title: title,
-      );
-    }
-    if (minimum != null) {
-      return build(idPrefix, minimum, GoalDirection.atLeast);
-    }
-    if (maximum != null) {
-      return build(idPrefix, maximum, GoalDirection.atMost);
-    }
-    throw ArgumentError(
-      'AutoCompleteRule threshold with neither minimum nor maximum '
-      'cannot seed a goal criterion.',
-    );
-  }
 }
 
 /// Every habit id referenced anywhere in [criterion]'s tree — the join used

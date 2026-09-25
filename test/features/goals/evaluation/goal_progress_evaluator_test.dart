@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/goal_criterion.dart';
@@ -6,6 +8,7 @@ import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 import 'package:lotti/features/goals/evaluation/goal_progress_evaluator.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
+import 'package:lotti/features/goals/evaluation/goal_track_policy.dart';
 
 void main() {
   const evaluator = GoalProgressEvaluator();
@@ -40,7 +43,8 @@ void main() {
       });
       final evaluation = evaluator.evaluate(stepsCriterion, signals, saturday);
       final leaf = evaluation.results['steps']!;
-      expect(leaf.actual, closeTo(44900 / 7, 1e-9));
+      // The canonical 12-significant-digit aggregate, not the raw double.
+      expect(leaf.actual, 6414.28571429);
       expect(evaluation.attainment, closeTo(44900 / 7 / 10000, 1e-9));
       expect(evaluation.satisfied, isFalse);
       expect(leaf.sampleCount, 7);
@@ -684,12 +688,23 @@ void main() {
 
     test('recovery days SIMULATE the sliding window — an old success at the '
         'left edge is not worth one day of recovery', () {
-      // target 3, successes on the window-start day d(2) and yesterday d(7):
-      // succeeding tomorrow ages d(2) out, so the count stays 2, not 3. Two
-      // days of perfect adherence are needed, not the static one.
-      final leaf = leafFor({d(2): 1, d(7): 1});
+      // target 3, today d(8) already done, and the other success on the
+      // window-start day d(2): succeeding tomorrow ages d(2) out, so the count
+      // stays 2, not 3. Two days of perfect adherence are needed, not the
+      // static one.
+      final leaf = leafFor({d(2): 1, d(8): 1});
       expect(leaf.actual, 2);
       expect(leaf.deficit, 2);
+    });
+
+    test('an open today is the first day of recovery — completing it before '
+        'the edge success ages out recovers today', () {
+      // target 3, successes on d(2) and yesterday d(7), today d(8) still
+      // open: completing today makes d(2), d(7), d(8) — three in the window
+      // d(2)..d(8). Starting the simulation tomorrow read 2 days instead.
+      final leaf = leafFor({d(2): 1, d(7): 1});
+      expect(leaf.actual, 2);
+      expect(leaf.deficit, 1);
     });
 
     test('multiple completions on one day are ONE creditable day', () {
@@ -697,6 +712,155 @@ void main() {
       final leaf = leafFor({d(3): 2, d(5): 1});
       expect(leaf.actual, 2);
       expect(leaf.deficit, 1);
+    });
+  });
+
+  group('habit leaf — exhaustive against a brute-force simulation', () {
+    // Small-scope proofs: every success pattern of every window shape below,
+    // every admissible target, compared with an oracle that simulates the
+    // calendar day by day instead of reasoning about it.
+    int successesIn(Set<DateTime> done, DateTime end, int count) {
+      final start = end.subtract(Duration(days: count - 1));
+      return done
+          .where((day) => !day.isBefore(start) && !day.isAfter(end))
+          .length;
+    }
+
+    test('rolling windows up to 8 days: satisfaction, days to recover and '
+        'buffer', () {
+      var cases = 0;
+      for (var count = 1; count <= 8; count++) {
+        final start = saturday.subtract(Duration(days: count - 1));
+        for (var mask = 0; mask < 1 << count; mask++) {
+          final done = {
+            for (var i = 0; i < count; i++)
+              if (mask & (1 << i) != 0) start.add(Duration(days: i)),
+          };
+          for (var target = 1; target <= count; target++) {
+            cases++;
+            final result = evaluator
+                .evaluate(
+                  GoalCriterion.habit(
+                    criterionId: 'h',
+                    habitId: 'h',
+                    window: GoalWindow.rollingDays(count: count),
+                    targetCount: target,
+                  ),
+                  GoalSignalWindow(
+                    habitSuccessesByDay: {
+                      // A day logged twice credits like a day logged once.
+                      'h': {
+                        for (final day in done) day: day.day.isEven ? 2 : 1,
+                      },
+                    },
+                  ),
+                  saturday,
+                )
+                .results['h']!;
+            final met = done.length >= target;
+
+            // Days to recover: the fewest days of perfect adherence — from
+            // today while today is open, else from tomorrow — after which the
+            // window ending on the last of them holds the target.
+            var deficit = met ? 0 : null;
+            final firstDay = done.contains(saturday)
+                ? saturday.add(const Duration(days: 1))
+                : saturday;
+            for (var f = 1; deficit == null && f <= count; f++) {
+              final last = firstDay.add(Duration(days: f - 1));
+              final adherence = {
+                for (var j = 0; j < f; j++) firstDay.add(Duration(days: j)),
+              };
+              if (successesIn({...done, ...adherence}, last, count) >= target) {
+                deficit = f;
+              }
+            }
+
+            // Buffer: how many more midnights the count stays at target with
+            // no new success.
+            int? buffer;
+            if (met) {
+              var ahead = 1;
+              while (successesIn(
+                    done,
+                    saturday.add(Duration(days: ahead)),
+                    count,
+                  ) >=
+                  target) {
+                ahead++;
+              }
+              buffer = ahead - 1;
+            }
+
+            final label =
+                'rolling $count, target $target, done '
+                '${done.map((day) => day.day).toList()}';
+            expect(result.satisfied, met, reason: label);
+            expect(result.actual, done.length, reason: label);
+            expect(result.ratio, met ? 1 : done.length / target, reason: label);
+            expect(deficit, isNotNull, reason: 'recoverable: $label');
+            expect(result.deficit, deficit, reason: label);
+            expect(result.buffer, buffer, reason: label);
+          }
+        }
+      }
+      expect(cases, 3586);
+    });
+
+    test('calendar weeks: pace is feasible exactly when perfect adherence '
+        'from today still meets the quota', () {
+      // The ISO week of Monday d(3) .. Sunday d(9), evaluated on every day.
+      var cases = 0;
+      for (var weekday = 0; weekday < 7; weekday++) {
+        final today = d(3 + weekday);
+        for (var mask = 0; mask < 1 << (weekday + 1); mask++) {
+          final done = {
+            for (var i = 0; i <= weekday; i++)
+              if (mask & (1 << i) != 0) d(3 + i),
+          };
+          final best = {
+            ...done,
+            for (
+              var day = today;
+              !day.isAfter(d(9));
+              day = day.add(
+                const Duration(days: 1),
+              )
+            )
+              day,
+          }.length;
+          for (var target = 1; target <= 7; target++) {
+            cases++;
+            final result = evaluator
+                .evaluate(
+                  GoalCriterion.habit(
+                    criterionId: 'h',
+                    habitId: 'h',
+                    window: const GoalWindow.calendarWeek(),
+                    targetCount: target,
+                  ),
+                  GoalSignalWindow(
+                    habitSuccessesByDay: {
+                      'h': {for (final day in done) day: 1},
+                    },
+                  ),
+                  today,
+                )
+                .results['h']!;
+            final met = done.length >= target;
+            final label =
+                'today ${today.day}, target $target, done '
+                '${done.map((day) => day.day).toList()}';
+            expect(result.satisfied, met, reason: label);
+            expect(
+              result.paceFeasible,
+              met ? null : best >= target,
+              reason: label,
+            );
+          }
+        }
+      }
+      expect(cases, 254 * 7);
     });
   });
 
@@ -906,6 +1070,109 @@ void main() {
         evaluator.evaluate(doomed, signals, d(9)).paceFeasible,
         isFalse,
       );
+    });
+
+    test('an either is not dead while one leg is met or can still be', () {
+      GoalCriterion weekly(String id, int target) => GoalCriterion.habit(
+        criterionId: id,
+        habitId: id,
+        window: const GoalWindow.calendarWeek(),
+        targetCount: target,
+      );
+      // Saturday. 'swim' needs 7 of 7 and has 1: dead. 'run' is met.
+      // 'read' has 1 of 2 with Saturday and Sunday left: feasible.
+      final signals = GoalSignalWindow(
+        habitSuccessesByDay: {
+          'run': {d(4): 1},
+          'swim': {d(4): 1},
+          'read': {d(5): 1},
+        },
+      );
+      final metLeg = evaluator.evaluate(
+        GoalCriterion.allOf(
+          criterionId: 'root',
+          criteria: [
+            GoalCriterion.anyOf(
+              criterionId: 'either',
+              criteria: [weekly('run', 1), weekly('swim', 7)],
+            ),
+            weekly('read', 2),
+          ],
+        ),
+        signals,
+        saturday,
+      );
+      expect(metLeg.results['either']!.satisfied, isTrue);
+      expect(metLeg.results['either']!.paceFeasible, isTrue);
+      expect(
+        metLeg.paceFeasible,
+        isTrue,
+        reason: 'the only open requirement, read, is still feasible',
+      );
+
+      // A metric leg has no pace opinion, but it can still be met.
+      final openMetric = evaluator.evaluate(
+        GoalCriterion.anyOf(
+          criterionId: 'either',
+          criteria: [weekly('swim', 7), stepsCriterion],
+        ),
+        signals,
+        saturday,
+      );
+      expect(openMetric.satisfied, isFalse);
+      expect(openMetric.paceFeasible, isNull);
+    });
+
+    test('an unmet composite never reads as fully attained, whatever the '
+        'rounding', () {
+      // 1.999999999 against the next double above it misses by one unit in
+      // the last place: ratio 1 - 2^-53. Averaged with a met leg, the binary
+      // mean rounds to exactly 1.0 — full attainment for an unmet goal.
+      const actual = 1.999999999;
+      final bits = ByteData(8)..setFloat64(0, actual);
+      bits.setInt64(0, bits.getInt64(0) + 1);
+      final target = bits.getFloat64(0);
+      final nearMiss = GoalCriterion.measurable(
+        criterionId: 'near',
+        dataTypeId: 'near',
+        window: const GoalWindow.day(),
+        aggregation: GoalAggregation.sum,
+        target: target,
+      );
+      const met = GoalCriterion.measurable(
+        criterionId: 'met',
+        dataTypeId: 'met',
+        window: GoalWindow.day(),
+        aggregation: GoalAggregation.sum,
+        target: 1,
+      );
+      final signals = GoalSignalWindow(
+        measurableDailySums: {
+          'near': {saturday: actual},
+          'met': {saturday: 1},
+        },
+      );
+      final leaf = evaluator.evaluate(nearMiss, signals, saturday);
+      expect(leaf.satisfied, isFalse);
+      expect(leaf.attainment, GoalProgressEvaluator.maxUnmetRatio);
+      expect((1 + leaf.attainment) / 2, 1.0, reason: 'the rounding hazard');
+
+      for (final composite in [
+        GoalCriterion.allOf(criterionId: 'root', criteria: [met, nearMiss]),
+        GoalCriterion.atLeastCount(
+          criterionId: 'root',
+          criteria: [met, nearMiss],
+          successes: 2,
+        ),
+      ]) {
+        final evaluation = evaluator.evaluate(composite, signals, saturday);
+        expect(evaluation.satisfied, isFalse);
+        expect(evaluation.attainment, lessThan(1));
+        expect(
+          const GoalTrackPolicy().derive(evaluation: evaluation),
+          isNot(GoalTrackStatus.onTrack),
+        );
+      }
     });
 
     test('metric-only trees have no pace opinion', () {
@@ -1263,6 +1530,141 @@ void main() {
       },
       tags: 'glados',
     );
+
+    glados.Glados(
+      glados.any.goalTree,
+      glados.ExploreConfig(numRuns: 300),
+    ).test(
+      'anyOf is atLeastCount(1) and allOf is atLeastCount(all), pace '
+      'included',
+      (tree) {
+        final signals = tree.signals();
+        GoalEvaluation eval(GoalCriterion criterion) =>
+            evaluator.evaluate(criterion, signals, saturday);
+        final children = tree.children;
+        final anyOf = eval(
+          GoalCriterion.anyOf(criterionId: 'root', criteria: children),
+        );
+        final atLeastOne = eval(
+          GoalCriterion.atLeastCount(
+            criterionId: 'root',
+            criteria: children,
+            successes: 1,
+          ),
+        );
+        expect(atLeastOne.satisfied, anyOf.satisfied);
+        expect(atLeastOne.attainment, anyOf.attainment);
+        expect(atLeastOne.paceFeasible, anyOf.paceFeasible);
+
+        final allOf = eval(
+          GoalCriterion.allOf(criterionId: 'root', criteria: children),
+        );
+        final atLeastAll = eval(
+          GoalCriterion.atLeastCount(
+            criterionId: 'root',
+            criteria: children,
+            successes: children.length,
+          ),
+        );
+        expect(atLeastAll.satisfied, allOf.satisfied);
+        // The same mean, summed in another order.
+        expect(atLeastAll.attainment, closeTo(allOf.attainment, 1e-12));
+        // Only a dead verdict drives the policy; an affirmative "on pace"
+        // from allOf with a metric leg (no opinion) is informational.
+        expect(atLeastAll.paceFeasible == false, allOf.paceFeasible == false);
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados2(
+      glados.any.goalTree,
+      glados.IntAnys(glados.any).intInRange(0, 24),
+      glados.ExploreConfig(numRuns: 300),
+    ).test(
+      'anyOf and atLeastCount do not depend on the order of their children',
+      (tree, rotation) {
+        final children = tree.children;
+        final shift = rotation % children.length;
+        final rotated = [
+          ...children.skip(shift),
+          ...children.take(shift),
+        ].reversed.toList();
+        final signals = tree.signals();
+        for (final build in <GoalCriterion Function(List<GoalCriterion>)>[
+          (criteria) =>
+              GoalCriterion.anyOf(criterionId: 'root', criteria: criteria),
+          (criteria) => GoalCriterion.atLeastCount(
+            criterionId: 'root',
+            criteria: criteria,
+            successes: tree.successes,
+          ),
+        ]) {
+          final before = evaluator.evaluate(build(children), signals, saturday);
+          final after = evaluator.evaluate(build(rotated), signals, saturday);
+          expect(after.satisfied, before.satisfied);
+          expect(after.attainment, before.attainment);
+          expect(after.paceFeasible, before.paceFeasible);
+          expect(after.dataCoverage, before.dataCoverage);
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.intInRange(1, 50),
+      glados.ExploreConfig(numRuns: 200),
+    ).test(
+      'a total logged in tenths meets a target of exactly that total, in '
+      'either direction',
+      (entries) {
+        // `entries` measurements of 0.1 on one day, then `entries` days of
+        // 0.1 each: binary sums miss the decimal total (ten 0.1 add up to
+        // 0.9999999999999999), the canonical aggregate does not.
+        final target = entries / 10;
+        for (final (window, aggregation, series) in [
+          (
+            const GoalWindow.day(),
+            GoalAggregation.sum,
+            {
+              saturday: List.filled(
+                entries,
+                0.1,
+              ).fold<num>(0, (sum, value) => sum + value),
+            },
+          ),
+          (
+            GoalWindow.rollingDays(count: entries),
+            GoalAggregation.sum,
+            {
+              for (var i = 0; i < entries; i++)
+                saturday.subtract(Duration(days: i)): 0.1,
+            },
+          ),
+        ]) {
+          for (final direction in GoalDirection.values) {
+            final evaluation = evaluator.evaluate(
+              GoalCriterion.measurable(
+                criterionId: 'water',
+                dataTypeId: 'water',
+                window: window,
+                aggregation: aggregation,
+                target: target,
+                direction: direction,
+              ),
+              GoalSignalWindow(measurableDailySums: {'water': series}),
+              saturday,
+            );
+            expect(
+              evaluation.satisfied,
+              isTrue,
+              reason: '$direction $target over $window',
+            );
+            expect(evaluation.results['water']!.actual, target);
+          }
+        }
+      },
+      tags: 'glados',
+    );
   });
 }
 
@@ -1321,13 +1723,15 @@ class _GoalLeaf {
     series: series.map((day, value) => MapEntry(day, value + bump)),
   );
 
-  GoalCriterion get criterion => isMeasurable
+  /// In decimal mode measurable values and targets are read in tenths, the
+  /// way people log litres or kilograms — values binary doubles cannot hold.
+  GoalCriterion criterionIn({required bool decimals}) => isMeasurable
       ? GoalCriterion.measurable(
           criterionId: id,
           dataTypeId: 'm$index',
           window: window,
           aggregation: aggregation,
-          target: target,
+          target: decimals ? target / 10 : target,
           direction: direction,
         )
       : GoalCriterion.habit(
@@ -1338,24 +1742,34 @@ class _GoalLeaf {
         );
 
   @override
-  String toString() => '$criterion $series';
+  String toString() => '${criterionIn(decimals: false)} $series';
 }
 
-/// A leaf (kind 3) or a composite of kind 0 allOf, 1 anyOf, 2 atLeastCount.
+/// A leaf (kind 3) or a composite of kind 0 allOf, 1 anyOf, 2 atLeastCount,
+/// over integer or (with [decimals]) tenth-valued measurables.
 class _GoalTree {
-  _GoalTree(this.kind, List<_GoalLeaf> leaves, int successes)
-    : leaves = [
-        for (final (i, leaf) in leaves.take(kind == 3 ? 1 : 4).indexed)
-          leaf.withIndex(i),
-      ],
-      successes = 1 + (successes - 1) % leaves.length;
+  _GoalTree(
+    this.kind,
+    List<_GoalLeaf> leaves,
+    int successes, {
+    this.decimals = false,
+  }) : leaves = [
+         for (final (i, leaf) in leaves.take(kind == 3 ? 1 : 4).indexed)
+           leaf.withIndex(i),
+       ],
+       successes = 1 + (successes - 1) % leaves.take(4).length;
 
   final int kind;
   final List<_GoalLeaf> leaves;
   final int successes;
+  final bool decimals;
+
+  List<GoalCriterion> get children => [
+    for (final leaf in leaves) leaf.criterionIn(decimals: decimals),
+  ];
 
   GoalCriterion get criterion {
-    final children = [for (final leaf in leaves) leaf.criterion];
+    final children = this.children;
     return switch (kind) {
       0 => GoalCriterion.allOf(criterionId: 'root', criteria: children),
       1 => GoalCriterion.anyOf(criterionId: 'root', criteria: children),
@@ -1383,7 +1797,10 @@ class _GoalTree {
     final measurables = [
       for (final leaf in leaves)
         if (leaf.isMeasurable)
-          MapEntry('m${leaf.index}', byDay(leaf, (v) => v)),
+          MapEntry(
+            'm${leaf.index}',
+            byDay<num>(leaf, (v) => decimals ? v / 10 : v),
+          ),
     ];
     final habits = [
       for (final leaf in leaves)
@@ -1401,7 +1818,8 @@ class _GoalTree {
   }
 
   @override
-  String toString() => '_GoalTree($criterion, $leaves)';
+  String toString() =>
+      '_GoalTree(${decimals ? 'decimal' : 'integer'} $criterion, $leaves)';
 }
 
 extension _AnyGoalTree on glados.Any {
@@ -1451,10 +1869,12 @@ extension _AnyGoalTree on glados.Any {
       );
 
   glados.Generator<_GoalTree> get goalTree =>
-      glados.CombinableAny(this).combine3(
+      glados.CombinableAny(this).combine4(
         glados.IntAnys(this).intInRange(0, 4),
         glados.ListAnys(this).listWithLengthInRange(1, 5, goalLeaf),
         glados.IntAnys(this).intInRange(1, 5),
-        _GoalTree.new,
+        glados.BoolAny(this).bool,
+        (int kind, List<_GoalLeaf> leaves, int successes, bool decimals) =>
+            _GoalTree(kind, leaves, successes, decimals: decimals),
       );
 }

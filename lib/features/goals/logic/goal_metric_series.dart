@@ -40,9 +40,13 @@ bool goalMetricShowsSevenDayAverage(GoalMetricProgressView metric) =>
 /// missed weigh-in lowers nothing; a window with no observation at all yields
 /// no point rather than a fabricated one.
 ///
-/// One pass: the series is already sorted, so the window is advanced with a
-/// running sum instead of re-scanning the observations for every day — the
-/// re-scan made a 90-day chart quadratic in the middle of `build`.
+/// One pass: the series is already sorted, so the window bounds advance
+/// instead of re-scanning the observations for every day — the re-scan made a
+/// 90-day chart quadratic in the middle of `build`. Each mean is summed afresh
+/// over its (at most seven) observations with [canonicalSignalSum] rather
+/// than kept as a running sum, whose drift over a long history would make the
+/// chart quote a different last digit than [goalMetricSevenDayAverageOn] for
+/// the same day.
 List<Observation> goalMetricSevenDayAverage(
   GoalMetricProgressView metric, {
   required DateTime today,
@@ -73,8 +77,6 @@ List<Observation> goalMetricSevenDayAverage(
   final averages = <Observation>[];
   var entered = 0;
   var left = 0;
-  num sum = 0;
-  var count = 0;
   // With a run-up present the series starts on the first visible day; with
   // none (a metric whose history genuinely does not reach back) it still
   // waits for a full window rather than averaging two days and calling it a
@@ -86,17 +88,17 @@ List<Observation> goalMetricSevenDayAverage(
     final windowStart = currentDay.subtract(const Duration(days: 6));
     while (entered < observed.length &&
         !observed[entered].day.isAfter(currentDay)) {
-      sum += observed[entered].value;
-      count++;
       entered++;
     }
     while (left < entered && observed[left].day.isBefore(windowStart)) {
-      sum -= observed[left].value;
-      count--;
       left++;
     }
+    final count = entered - left;
     if (count == 0) continue;
-    averages.add(Observation(day.day, sum / count));
+    final sum = canonicalSignalSum([
+      for (var i = left; i < entered; i++) observed[i].value,
+    ]);
+    averages.add(Observation(day.day, canonicalSignalValue(sum / count)));
   }
   return averages;
 }

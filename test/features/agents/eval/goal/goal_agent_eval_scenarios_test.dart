@@ -9,6 +9,7 @@ import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/evaluation/goal_track_policy.dart';
 import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
+import 'package:lotti/logic/signals/signal_day_buckets.dart';
 
 import 'support/goal_agent_eval_fixtures.dart';
 import 'support/goal_agent_eval_scenarios.dart';
@@ -125,7 +126,7 @@ void main() {
       );
       expect(
         evaluation.results['g1']!.actual,
-        closeTo(gWorseningMean, 1e-9),
+        canonicalSignalValue(gWorseningMean),
       );
       final shortTerm = evaluator.shortTermAttainment(
         stepsCriterion,
@@ -162,7 +163,7 @@ void main() {
       );
       expect(
         evaluation.results['g1']!.actual,
-        closeTo(gRecoveringMean, 1e-9),
+        canonicalSignalValue(gRecoveringMean),
       );
       expect(
         evaluator.shortTermAttainment(
@@ -422,7 +423,8 @@ void main() {
         complexHealthEvalReference,
       );
       expect(habitDue.results['habit-bp-meds']!.actual, 6);
-      expect(habitDue.results['habit-bp-meds']!.deficit, 7);
+      // Six of seven with today's dose still open: taking it today recovers.
+      expect(habitDue.results['habit-bp-meds']!.deficit, 1);
       expect(
         habitDue.attainment,
         closeTo(complexHealthHabitDueAttainment, 1e-12),
@@ -521,7 +523,7 @@ void main() {
         expect(meds['actual'], 6);
         expect(meds['target'], 7);
         expect(meds['satisfied'], isFalse);
-        expect(meds['daysToRecover'], 7);
+        expect(meds['daysToRecover'], 1);
         expect(
           (decodedFacts(habitDue)['evaluation']
               as Map<String, dynamic>)['todayGuidance'],

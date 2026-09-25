@@ -131,6 +131,40 @@ void main() {
     expect(upserts, isEmpty);
   });
 
+  test('an unmeetable quota is refused before anything is written', () async {
+    // Structurally sound, but ten successes cannot fit in seven days of at
+    // most one each.
+    const unmeetable = GoalCriterion.habit(
+      criterionId: 'gym',
+      habitId: 'gym-habit',
+      window: GoalWindow.rollingDays(count: 7),
+      targetCount: 10,
+    );
+    await expectLater(
+      () => service.createGoalAgent(
+        title: 'Gym',
+        statement: 'x',
+        criteria: unmeetable,
+      ),
+      throwsA(
+        isA<ArgumentError>().having(
+          (error) => '${error.message}',
+          'message',
+          contains('unsatisfiable'),
+        ),
+      ),
+    );
+    verifyNever(
+      () => agentService.createAgent(
+        kind: any(named: 'kind'),
+        displayName: any(named: 'displayName'),
+        config: any(named: 'config'),
+        agentId: any(named: 'agentId'),
+      ),
+    );
+    expect(upserts, isEmpty);
+  });
+
   test('creation writes spec v1 + head + first cadence tick, then '
       'subscribes to the goal signals', () async {
     final identity = await service.createGoalAgent(

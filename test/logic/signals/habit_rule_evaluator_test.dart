@@ -3,6 +3,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/logic/signals/habit_rule_evaluator.dart';
+import 'package:lotti/logic/signals/signal_day_buckets.dart';
 import 'package:lotti/logic/signals/signal_window.dart';
 
 import 'signal_test_fixtures.dart';
@@ -569,6 +570,65 @@ void main() {
       expect(count, bits.toRadixString(2).replaceAll('0', '').length);
       expect(verdict.satisfied, count >= n);
     }, tags: 'glados');
+
+    glados.Glados2(
+      glados.any.intInRange(1, 40),
+      glados.any.intInRange(1, 30),
+      glados.ExploreConfig(numRuns: 200),
+    ).test(
+      'a bound equal to the exact decimal amount is met, on every basis',
+      (entries, tenths) {
+        // `entries` measurements of `tenths / 10` today, through the real
+        // day bucketing; and a raw binary day sum of the same amount handed
+        // straight to a health leaf, which must canonicalise it itself.
+        final amount = tenths / 10;
+        final exact = entries * tenths / 10;
+        final measurables = {
+          'water': bucketMeasurableTotalsByDay([
+            for (var i = 0; i < entries; i++)
+              measurementEntity(
+                today.subtract(Duration(minutes: i)),
+                amount,
+                id: 'm$i',
+              ),
+          ]),
+        };
+        final rawSum = List.filled(
+          entries,
+          amount,
+        ).fold<num>(0, (sum, v) => sum + v);
+        final quantitative = {
+          'sleep': {todayKey: rawSum},
+          // The same amount every day for a week: a mean equal to it.
+          'steps': {
+            for (var i = 0; i < 7; i++)
+              todayKey.subtract(Duration(days: i)): rawSum,
+          },
+        };
+        final w = window(measurables: measurables, quantitative: quantitative);
+        for (final rule in [
+          AutoCompleteRule.measurable(
+            dataTypeId: 'water',
+            minimum: exact,
+            maximum: exact,
+          ),
+          AutoCompleteRule.health(
+            dataType: 'sleep',
+            minimum: exact,
+            maximum: exact,
+          ),
+          AutoCompleteRule.health(
+            dataType: 'steps',
+            minimum: exact,
+            maximum: exact,
+            valueBasis: HabitSignalValueBasis.sevenDayAverage,
+          ),
+        ]) {
+          expect(eval(rule, w).satisfied, isTrue, reason: '$rule');
+        }
+      },
+      tags: 'glados',
+    );
 
     glados.Glados(glados.any.intInRange(0, 16)).test(
       'and is multiple(all) and or is multiple(1)',
