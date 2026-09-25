@@ -3,17 +3,23 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
 import 'package:lotti/features/sync/queue/queue_apply_adapter.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../ai_consumption/test_utils.dart';
+import '../matrix/sync_event_processor_test_helpers.dart' as processor_harness;
 import 'queue_apply_adapter_test_helpers.dart';
 
 void main() {
@@ -46,6 +52,130 @@ void main() {
     logging: logging,
     hasOlderActiveEntry: (_) async => false,
   );
+
+  group('durable payload and receipt conformance', () {
+    setUpAll(processor_harness.registerSyncProcessorFallbacks);
+    setUp(processor_harness.setUpProcessorMocks);
+
+    for (final bundled in [false, true]) {
+      for (final failCommit in [false, true]) {
+        test(
+          'retries ${failCommit ? 'payload commit' : 'receipt write'} failure '
+          'with bundled=$bundled',
+          () async {
+            final syncDb = SyncDatabase(
+              inMemoryDatabase: true,
+              background: false,
+            );
+            addTearDown(syncDb.close);
+            final clock = MockVectorClockService();
+            when(clock.getHost).thenAnswer((_) async => 'receiver');
+            final sequence = SyncSequenceLogService(
+              syncDatabase: syncDb,
+              vectorClockService: clock,
+              loggingService: logging,
+            );
+            final receiver = SyncEventProcessor(
+              loggingService: logging,
+              updateNotifications: processor_harness.updateNotifications,
+              aiConfigRepository: processor_harness.aiConfigRepository,
+              savedTaskFiltersRepository:
+                  processor_harness.savedTaskFiltersRepository,
+              settingsDb: processor_harness.settingsDb,
+              journalEntityLoader: processor_harness.journalEntityLoader,
+              sequenceLogService: sequence,
+            );
+            final link = EntryLink.basic(
+              id: 'durable-link',
+              fromId: 'from',
+              toId: 'to',
+              createdAt: DateTime.utc(2026, 9, 25),
+              updatedAt: DateTime.utc(2026, 9, 25),
+              vectorClock: const VectorClock({'sender': 1}),
+            );
+            final message = SyncMessage.entryLink(
+              entryLink: link,
+              status: SyncEntryStatus.update,
+              originatingHostId: 'sender',
+            );
+            final entry = hBuildEntry(
+              eventId: r'$durable-link',
+              roomId: '!r:example.org',
+              originTsMs: 1,
+              body: processor_harness.encodeMessage(
+                bundled
+                    ? SyncMessage.outboxBundle(
+                        children: [message],
+                        originatingHostId: 'sender',
+                      )
+                    : message,
+              ),
+            );
+            final apply = QueueApplyAdapter(
+              processor: receiver,
+              journalDb: journalDb,
+              logging: logging,
+              hasOlderActiveEntry: (_) async => false,
+            ).bind();
+
+            if (failCommit) {
+              // Fail COMMIT, after the handler's upsert has returned inside
+              // any outer transaction. A receipt in another database must
+              // not survive this rollback.
+              await journalDb.customStatement('PRAGMA foreign_keys = ON');
+              await journalDb.customStatement(
+                'CREATE TABLE commit_parent (id INTEGER PRIMARY KEY)',
+              );
+              await journalDb.customStatement(
+                'CREATE TABLE commit_guard (id INTEGER REFERENCES '
+                'commit_parent(id) DEFERRABLE INITIALLY DEFERRED)',
+              );
+              await journalDb.customStatement('''
+                CREATE TRIGGER fail_payload_commit AFTER INSERT ON linked_entries
+                BEGIN INSERT INTO commit_guard VALUES (1); END
+              ''');
+            } else {
+              await syncDb.customStatement('''
+                CREATE TRIGGER fail_receipt BEFORE INSERT ON sync_sequence_log
+                BEGIN SELECT RAISE(ABORT, 'receipt unavailable'); END
+              ''');
+            }
+
+            expect(await apply(entry, room), ApplyOutcome.retriable);
+            expect(await syncDb.getEntryByHostAndCounter('sender', 1), isNull);
+            expect(
+              await journalDb.entryLinkById(link.id),
+              failCommit ? isNull : equals(link),
+            );
+
+            if (failCommit) {
+              await journalDb.customStatement(
+                'DROP TRIGGER fail_payload_commit',
+              );
+            } else {
+              await syncDb.customStatement('DROP TRIGGER fail_receipt');
+            }
+
+            expect(await apply(entry, room), ApplyOutcome.applied);
+            expect(await journalDb.entryLinkById(link.id), link);
+            final receipt = await syncDb.getEntryByHostAndCounter('sender', 1);
+            expect(receipt?.entryId, link.id);
+            expect(receipt?.status, SyncSequenceStatus.received.index);
+
+            // Replayed delivery must preserve both durable witnesses.
+            expect(await apply(entry, room), ApplyOutcome.applied);
+            expect(await journalDb.entryLinkById(link.id), link);
+            final replayReceipt = await syncDb.getEntryByHostAndCounter(
+              'sender',
+              1,
+            );
+            expect(replayReceipt?.entryId, link.id);
+            expect(replayReceipt?.status, SyncSequenceStatus.received.index);
+          },
+        );
+      }
+    }
+  });
 
   glados.Glados(
     glados.any.adapterScenario,

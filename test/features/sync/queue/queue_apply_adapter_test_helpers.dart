@@ -222,8 +222,12 @@ InboundQueueEntry hBuildEntry({
   required String eventId,
   required String roomId,
   required int originTsMs,
+  String? body,
 }) {
-  final content = <String, dynamic>{'msgtype': syncMessageType};
+  final content = <String, dynamic>{
+    'msgtype': syncMessageType,
+    'body': ?body,
+  };
   final json = <String, dynamic>{
     'event_id': eventId,
     'room_id': roomId,
