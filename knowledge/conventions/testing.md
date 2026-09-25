@@ -5,7 +5,7 @@ description: "The rules that keep a single-threaded CI lane green — fake time,
 resource: ../../test/README.md
 tags: [convention, testing, fake-time, glados, ci]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-25T09:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-25T15:00:00Z }
 stale_after: 2026-12-25
 sources:
   - id: test-readme
@@ -87,7 +87,7 @@ documented in `test/README.md`.
 | **Use `setUpTestGetIt()` / `tearDownTestGetIt()`** — never inline `getIt.isRegistered` / `unregister` boilerplate | GetIt is process-wide; a missed unregister leaks into the next test |
 | **Use `makeTestableWidget()`** rather than ad-hoc `MaterialApp` / `ProviderScope` wrappers | Localization, media query and provider scoping have to match production |
 | **Use the test data factories** where a feature has one | |
-| **A test of what a device commits and syncs uses `AgentTestDevice`** (`test/features/agents/agent_test_device.dart`) — a real in-memory agent database, `AgentRepository` and `AgentSyncService` per host, with the receive decision the sync processor applies | Mocked repositories cannot roll back a transaction or keep a tombstone, which is exactly what multi-device regressions hinge on; the harness can fail a write before it is stored or the outbox after a commit |
+| **A test of what a device commits and syncs uses `AgentTestDevice`** (`test/features/agents/agent_test_device.dart`) — a real in-memory agent database, `AgentRepository` and `AgentSyncService` per host, with the receive decision the sync processor applies; a trace over several devices and generated delivery orders wraps them in `ReplicaNetwork` (`test/features/agents/sync/agent_replica_bench.dart`), and one that also needs the wake runtime in `WakeDevice` (`test/features/agents/wake/wake_device_bench.dart`) | Mocked repositories cannot roll back a transaction or keep a tombstone, which is exactly what multi-device regressions hinge on; the harness can fail a write before it is stored or the outbox after a commit |
 
 **Mocktail global-state hygiene** and **stubbing mixin-declared methods by
 mirroring the production call shape** are both documented in `test/README.md` —

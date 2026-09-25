@@ -1054,7 +1054,8 @@ The lease, the chat recovery and the version heads have generated traces of
 their own, over devices that are each a real agent database, sync service
 and — for the first two — wake orchestrator, wake-intent store and
 scheduled-wake manager (`test/features/agents/wake/wake_device_bench.dart`,
-over `test/features/agents/sync/agent_replica_bench.dart`). Writes travel as
+over `test/features/agents/sync/agent_replica_bench.dart`, a network of
+`test/features/agents/agent_test_device.dart` devices). Writes travel as
 single sync messages through the real receive decision; a crash is the next
 process over the same stores.
 

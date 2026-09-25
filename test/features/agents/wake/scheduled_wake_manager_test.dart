@@ -3394,7 +3394,9 @@ void main() {
             }
           };
           final manager = start(escalation());
-          when(() => repository.getEntity(any())).thenAnswer((invocation) async {
+          when(() => repository.getEntity(any())).thenAnswer((
+            invocation,
+          ) async {
             final id = invocation.positionalArguments.single as String;
             if (id != escalation().id) return makeTestIdentity();
             events.add('read:$inTransaction');

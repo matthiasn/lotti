@@ -722,9 +722,13 @@ A trace that drives real code through the interleavings of a TLA+ model in
 `specs/tla/` is a `part` of the suite of the code it drives, and reuses the
 multi-device benches rather than building its own:
 
-- `features/agents/sync/agent_replica_bench.dart` — devices that each hold a
-  real in-memory agent database, repository and `AgentSyncService`, exchanging
-  every committed write as a single message through the real receive decision.
+- `features/agents/agent_test_device.dart` (`AgentTestDevice`) — one device's
+  real in-memory agent database, repository and `AgentSyncService`, with the
+  receive decision the sync processor applies. Pass `background: false` under
+  `fakeAsync`; `reboot()` is a process restart over the same database.
+- `features/agents/sync/agent_replica_bench.dart` — a network of
+  `AgentTestDevice`s that delivers every committed write as its own message,
+  in whatever order the trace chooses.
 - `features/agents/wake/wake_device_bench.dart` — adds a process per device: a
   real `WakeOrchestrator`, `WakeIntentStore` and `ScheduledWakeManager`, with
   the lease's host lookup and the intent write held until the trace releases
