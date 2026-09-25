@@ -94,12 +94,13 @@ SECONDS = {
     "SyncSettingsFlags": 1,
     "OutboxCausality": 7,
     # Measured locally (20 workers) when added; refresh from CI.
-    "JournalReplicationSidecar": 38,
     "JournalReplication": 8,
-    "JournalReplicationSidecarRollback": 5,
     "JournalReplicationLabels": 3,
     "JournalReplicationLossy": 3,
     "JournalReplicationLegacy": 2,
+    # Measured locally when added; refresh from CI.
+    "EnvelopeChain": 2,
+    "EnvelopeChainRevocation": 15,
 }
 
 # Pessimistic, so an unmeasured configuration is not piled onto a full shard.
