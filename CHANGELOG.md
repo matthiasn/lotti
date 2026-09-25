@@ -4,6 +4,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.27]
+
+### Changed
+
+- **The task's AI summary now shows how fresh it is, and when it will
+  refresh.** Under a current summary the card says when it was written —
+  "20 min ago", "2 days ago", or the date once it is more than a week old —
+  and "Update now" is always there, instead of appearing only once the summary
+  was out of date. While an out-of-date summary waits for its automatic
+  update, the button reads "Update now · 1:30", so a stale summary no longer
+  looks abandoned; tapping it still updates straight away.
+
+### Fixed
+
+- **Closing a task left its AI summary saying it was still in progress.** When
+  you moved a task to Done, the task agent woke up, saw no reason to write a new
+  summary and kept the old one. It had no way to tell that the status had
+  changed since that summary was written. The agent now notices any status
+  change since its last summary and always writes a fresh one.
+- **Other devices could end up with an older version of a change.** If the
+  app closed or crashed just after sending an update, and the same thing was
+  changed again right after it restarted, the older update was sent a second
+  time a minute later, after the newer one — so a setting changed on one
+  device could flip back on the others. Two updates of the same agent or link
+  queued at the same moment could also lose one of them until the next
+  change. Unfinished sends now go out again in their original order, and
+  updates of the same item are queued one after another.
+- **Sync no longer skips messages when a catch-up is interrupted.** After
+  being offline, a device catches up on what other devices sent. If that
+  catch-up stopped early — a network error, a crash, a very large backlog —
+  or newer messages arrived while it ran, the device could resume from past
+  the part it had not fetched yet and never apply those messages; they only
+  came back if another device happened to resend them. A catch-up now keeps
+  its place until it has fetched everything, and a message that fails to save
+  when it arrives is fetched again instead of being dropped.
+- **Incoming sync no longer stalls after a database hiccup.** A single
+  database error while applying incoming changes stopped all further
+  processing until the app restarted. Processing now pauses briefly and
+  carries on.
+
 ## [1.1.26]
 
 ### Added
