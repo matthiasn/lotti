@@ -5,9 +5,13 @@ description: Causal accounting over (hostId, counter) pairs, bounded initial-onb
 resource: ../../../lib/features/sync/sequence
 tags: [sync, sequence-log, backfill, gap-detection]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-25T21:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-25T21:50:00Z }
 stale_after: 2026-12-25
 sources:
+  - id: periodic-recovery
+    resource: ../../../lib/features/sync/backfill/sync_recovery_service.dart
+    title: Periodic durable-intent recovery and awaited shutdown
+    last_modified: 2026-09-25
   - id: tla-spec
     resource: ../../../specs/tla/SyncSequence.tla
     title: TLA+ model of the sequence log and backfill protocol
@@ -218,8 +222,8 @@ stateDiagram-v2
 
 `BackfillResponseHandler.settleOwnCounter` is the single decision for an own
 counter nothing has bound yet — no row, `reserved`, or `burnPending`. The
-backfill responder, the VC release handler and startup reconciliation all use
-it:
+backfill responder, the VC release handler, startup and periodic reconciliation
+all use it:
 
 1. If the reservation names its payload — on the row, in its settings
    fallback record, or in the pending map — and that payload's own-host clock
@@ -227,7 +231,7 @@ it:
    superseded it. The payload is resent first — durably, a failed enqueue
    throws — and only then is the counter bound (never over a `received` or
    `burned` row). A failed or interrupted resend therefore leaves the row
-   unsettled for the next request or startup; binding first would hide it
+   unsettled for the next recovery pass or request; binding first would hide it
    behind `received` with nothing sent. Each settlement queues the current
    payload independently of batch deduplication: an earlier best-effort attempt
    may have failed silently, and even an earlier successful resend may contain
@@ -247,8 +251,21 @@ it:
    must reach the durable outbox through `enqueueMessageOrThrow` before the
    sequence row becomes `burned`. The ordinary enqueue API logs and swallows
    persistence failures, so it cannot establish this precondition. A failure
-   leaves the reservation retryable by a later request or startup; there is
-   no continuous orphan-settlement retry loop.
+   leaves the reservation retryable by the next periodic pass or request.
+
+`SyncRecoveryService` runs at startup and every backfill request interval while
+the real sync stack is alive. Each pass first migrates fallback reservations
+from SettingsDb, then settles own counters. Migration failure does not prevent
+settlement of rows already in the sequence log. Passes never overlap; a failed
+pass is logged and the next timer tick retries. This local durability repair
+does not depend on a peer requesting the counter or on automatic backfill being
+enabled. Active writes and unavailable stores remain protected by the settlement
+guards above. The unnamed-reservation audit runs once after a successful pass.
+
+Startup tracks the first pass, and `ServiceDisposer` drains active recovery
+before closing the outbox or databases. Stopping or suspending the app stops
+progress; the guarantee still assumes the app eventually runs with usable
+stores and fair timer scheduling.
 
 If both the sequence-row lookup and the settings fallback lookup miss,
 settlement re-reads the sequence log before deciding. Migration inserts that

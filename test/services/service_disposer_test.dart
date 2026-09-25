@@ -19,6 +19,7 @@ import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 import 'package:lotti/features/habits/service/habit_auto_completion_notifier.dart';
 import 'package:lotti/features/habits/service/habit_auto_completion_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
+import 'package:lotti/features/sync/backfill/sync_recovery_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/services/service_disposer.dart';
@@ -45,6 +46,41 @@ void main() {
   });
 
   group('ServiceDisposer', () {
+    test('drains recovery before closing its outbox and database', () {
+      fakeAsync((async) {
+        final pending = Completer<void>();
+        final order = <String>[];
+        final recovery = SyncRecoveryService(
+          logging: MockDomainLogger(),
+          recover: () {
+            order.add('recover');
+            return pending.future;
+          },
+        );
+        final outbox = MockOutboxService();
+        when(outbox.dispose).thenAnswer((_) async => order.add('outbox'));
+        final syncDb = MockSyncDatabase();
+        when(syncDb.close).thenAnswer((_) async => order.add('database'));
+        testGetIt
+          ..registerSingleton<SyncRecoveryService>(recovery)
+          ..registerSingleton<OutboxService>(outbox)
+          ..registerSingleton<SyncDatabase>(syncDb);
+        unawaited(recovery.start());
+        List<ServiceDisposalFailure>? failures;
+        unawaited(disposer.disposeAll().then((value) => failures = value));
+        async.flushMicrotasks();
+        expect(order, ['recover']);
+        expect(failures, isNull);
+
+        pending.complete();
+        async.flushMicrotasks();
+        expect(order, ['recover', 'outbox', 'database']);
+        expect(failures, isEmpty);
+        async.elapse(const Duration(minutes: 10));
+        expect(order, ['recover', 'outbox', 'database']);
+      });
+    });
+
     test('disposeAll on empty container is a no-op', () async {
       await disposer.disposeAll();
       expect(loggedErrors, isEmpty);

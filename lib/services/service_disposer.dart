@@ -18,6 +18,7 @@ import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 import 'package:lotti/features/habits/service/habit_auto_completion_notifier.dart';
 import 'package:lotti/features/habits/service/habit_auto_completion_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
+import 'package:lotti/features/sync/backfill/sync_recovery_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 
@@ -52,7 +53,7 @@ class ServiceDisposalFailure {
 /// switches simply carry on.
 ///
 /// Order matters:
-/// 1. Stop periodic timers (BackfillRequestService, EmbeddingService)
+/// 1. Drain sync recovery and stop periodic timers (backfill, embeddings)
 /// 2. Stop the outbox (depends on MatrixService being alive)
 /// 3. Stop Matrix sync and close its FFI-backed database
 /// 4. Close the ObjectBox embedding store (no FFI-callback issue, safe on macOS)
@@ -78,6 +79,13 @@ class ServiceDisposer {
   }
 
   Future<void> _disposeServices() async {
+    // Recovery can still enqueue a resend or a burn marker. Drain it before
+    // closing the outbox and the stores whose durable intents it reconciles.
+    await _disposeAsyncSafely<SyncRecoveryService>(
+      (s) => s.dispose(),
+      'SyncRecoveryService',
+    );
+
     // 1. Stop periodic background services.
     _disposeSyncSafely<HabitAutoCompletionNotifier>(
       (s) => s.dispose(),

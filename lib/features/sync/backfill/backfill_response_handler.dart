@@ -171,7 +171,7 @@ class BackfillResponseHandler {
       counter: counter,
     );
     // A reservation whose sequence-log insert failed lives in the settings
-    // database until startup migrates it; it counts as a `reserved` row.
+    // database until recovery migrates it; it counts as a `reserved` row.
     final fallback = row == null
         ? await _vectorClockService.unrecordedReservation(
             hostId: hostId,
@@ -179,7 +179,7 @@ class BackfillResponseHandler {
           )
         : null;
     if (row == null && fallback == null) {
-      // Startup migration inserts the sequence row before removing the settings
+      // Recovery migration inserts the sequence row before removing the settings
       // fallback. It can run between our two reads, so two misses do not prove
       // there was no intent. Re-read the destination after the fallback miss.
       final migratedRow = await _sequenceLogService.getEntryByHostAndCounter(
@@ -296,10 +296,10 @@ class BackfillResponseHandler {
     return OwnCounterSettlement.burned;
   }
 
-  /// Startup reconciliation: settle every own counter an earlier process left
-  /// unsettled — released reservations still `burnPending`, and `reserved`
-  /// rows that name their payload. Reservations this process has made since
-  /// it started are pending and stay deferred.
+  /// Startup and periodic reconciliation of unsettled own counters: released
+  /// reservations still `burnPending`, and `reserved` rows naming a payload.
+  /// Live pending writes stay deferred; finished scopes and crashed writers
+  /// can be settled on any pass.
   Future<void> settleOrphanedOwnCounters() async {
     await _vectorClockService.initialized;
     final hostId = await _vectorClockService.getHost();
@@ -324,7 +324,7 @@ class BackfillResponseHandler {
           error,
           message:
               'own counter settlement failed host=$hostId counter=$counter; '
-              'it is retried on the next startup',
+              'periodic recovery will retry',
           stackTrace: stackTrace,
           subDomain: 'backfill.settle',
         );

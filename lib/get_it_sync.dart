@@ -245,7 +245,7 @@ Future<String? Function()> _registerMatrixSyncStack({
   // arrival instead of issuing a backfill request first. Registered here
   // because settlement fires into OutboxService, which is only now available.
   // VectorClockService awaits the handler and swallows its failures: the row
-  // stays `burnPending` and the next startup settles it.
+  // stays `burnPending` and periodic recovery retries it.
   //
   // [hostId] is the host captured at reservation time, not whatever
   // [VectorClockService.getHost] returns now, so a burn is never attributed
@@ -263,70 +263,46 @@ Future<String? Function()> _registerMatrixSyncStack({
     );
   });
 
-  // Crash recovery for own counters an earlier process left unsettled:
-  // releases whose settlement did not finish, and reservations that name
-  // their payload. Settlement checks each payload before burning anything.
-  getIt<StartupTasks>().track(
-    Future<void>(() async {
+  // Retry unsettled durable intents while the app stays open, including
+  // reservations whose first sequence-log insert failed. The one-time audit
+  // stays inside the tracked pass so shutdown also waits for its reads.
+  var auditOwnReservations = true;
+  final syncRecoveryService = SyncRecoveryService(
+    logging: domainLogger,
+    recover: () async {
       try {
-        // Reservations whose sequence-log insert failed were recorded in the
-        // settings database; move them into the log first so settlement
-        // finds them.
-        // A failed migration must not skip settling everything else.
-        try {
-          await vectorClockService.migrateUnrecordedReservations();
-        } catch (error, stackTrace) {
-          // defensive: only reachable when the settings database itself
-          // cannot be read or written during boot.
-          // coverage:ignore-start
-          domainLogger.error(
-            LogDomain.sync,
-            error,
-            message:
-                'unrecorded reservation migration failed; retried on the next '
-                'startup',
-            stackTrace: stackTrace,
-            subDomain: 'vc.reserve.migrate',
-          );
-          // coverage:ignore-end
-        }
-        await backfillResponseHandler.settleOrphanedOwnCounters();
-        // Diagnostic only (see `reservedCountersForHost`): reservations that
-        // do not name their payload cannot be settled, so the same counters
-        // surface on every launch. Logged at info, not error — as an error
-        // this one line was the most frequent "failure" in the system health
-        // report on a phone that starts the process many times a day,
-        // burying real ones.
-        final hostId = await vectorClockService.getHost();
-        if (hostId == null) return;
-        final reservedCounters = await syncSequenceLogService
-            .reservedCountersForHost(hostId: hostId);
-        if (reservedCounters.isNotEmpty) {
-          domainLogger.log(
-            LogDomain.sync,
-            'vc.reserved.audit host=$hostId '
-            'count=${reservedCounters.length} '
-            'counters=$reservedCounters',
-            subDomain: 'vc.reserved.audit',
-          );
-        }
+        await vectorClockService.migrateUnrecordedReservations();
       } catch (error, stackTrace) {
-        // defensive: whole-pass containment when the
-        // sequence log itself cannot be read.
-        // coverage:ignore-start
+        // A failed ledger migration must not prevent settlement of counters
+        // already present in the sequence log. The next pass retries both.
         domainLogger.error(
           LogDomain.sync,
           error,
           message:
-              'own counter settlement failed; unsettled counters will retry '
-              'on the next startup or reactive backfill',
+              'unrecorded reservation migration failed; recovery will retry',
           stackTrace: stackTrace,
-          subDomain: 'vc.burn.reconcile',
+          subDomain: 'vc.reserve.migrate',
         );
-        // coverage:ignore-end
       }
-    }),
+      await backfillResponseHandler.settleOrphanedOwnCounters();
+      if (!auditOwnReservations) return;
+      final hostId = await vectorClockService.getHost();
+      if (hostId == null) return;
+      final reservedCounters = await syncSequenceLogService
+          .reservedCountersForHost(hostId: hostId);
+      auditOwnReservations = false;
+      if (reservedCounters.isNotEmpty) {
+        domainLogger.log(
+          LogDomain.sync,
+          'vc.reserved.audit host=$hostId '
+          'count=${reservedCounters.length} '
+          'counters=$reservedCounters',
+          subDomain: 'vc.reserved.audit',
+        );
+      }
+    },
   );
+  getIt<StartupTasks>().track(syncRecoveryService.start());
   final backfillRequestService = BackfillRequestService(
     sequenceLogService: syncSequenceLogService,
     syncDatabase: syncDatabase,
@@ -384,6 +360,10 @@ Future<String? Function()> _registerMatrixSyncStack({
   backfillRequestService.start();
 
   getIt
+    ..registerSingleton<SyncRecoveryService>(
+      syncRecoveryService,
+      dispose: (service) => service.dispose(),
+    )
     ..registerSingleton<BackfillResponseHandler>(backfillResponseHandler)
     ..registerSingleton<BackfillRequestService>(backfillRequestService)
     ..registerSingleton<OnboardingSyncService>(onboardingSyncService)
