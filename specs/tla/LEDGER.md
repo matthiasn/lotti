@@ -22,12 +22,12 @@ As of `main` at `218d6fb83` (2026-09-25):
 | Distinct states explored | 152,766,553 |
 | States generated (at `b551bf587`, 42 configurations) | 927,744,398 |
 | Deepest counterexample-free trace (same run) | 53 steps |
-| Named safety and liveness properties | about 80 |
+| Named safety and liveness properties | 80 |
 | Bugs fixed | 82 |
 | of which TLC produced the counterexample | 50 |
 | [By severity](#severity), P0 / P1 / P2 / P3 | 2 / 29 / 22 / 29 |
 | Architecture decision records | 13 (ADR 0065–0071, 0075–0078, 0080, 0081) |
-| Source paths that re-trigger the TLC workflow | 73 |
+| Source paths the specs model, each re-triggering the TLC workflow | 73 |
 
 How the figures are counted:
 
@@ -36,15 +36,20 @@ How the figures are counted:
   `main` at `b1bd9ae11` summed to exactly the figure measured for #4466. A
   configuration's count changes when its spec does, so never add up the numbers
   quoted in successive PRs.
-- **Bugs fixed** follows each PR description's own list. A few PRs bundle
-  sub-fixes, so read it as roughly 80, give or take five. Bugs that a PR introduced and a later
-  one fixed before release count once, in the fixing PR (#4447).
+- **Bugs fixed** follows each PR description's own list, and is the length of
+  the [full list](#severity) below. A few PRs bundle sub-fixes, so where one
+  bug ends and the next begins is a judgement call. Bugs that a PR introduced
+  and a later one fixed before release count once, in the fixing PR (#4447).
 - **TLC-found** counts only bugs where the PR says TLC produced the trace. The
   rest came from code audits the models prompted, review rounds, Glados
   conformance traces (#4476 among them), exhaustive tests and a CI shard failure.
 - **Properties** counts named invariants and temporal properties, excluding
-  `TypeOK`. The same name can appear in several specs (`Converged` is in eight),
-  and each of those checks is counted.
+  `TypeOK`, once per spec that checks it in any of its configurations. The
+  same name can appear in several specs (`Converged` is in nine), and each of
+  those is counted; there are 67 distinct names.
+- **Source paths** counts the distinct Dart files and globs in the workflow's
+  `paths:` filter (two are listed twice). A change to `specs/tla/` or to the
+  workflow file itself also triggers it.
 
 ## Timeline
 
@@ -164,7 +169,7 @@ The P0 and P1 bugs:
 | [#4473](https://github.com/matthiasn/lotti/pull/4473) | P1 | yes | Removed agent link came back from a late copy |
 | [#4473](https://github.com/matthiasn/lotti/pull/4473) | P1 | yes | Unlink then relink left devices disagreeing on a link |
 | [#4473](https://github.com/matthiasn/lotti/pull/4473) | P1 | yes | Link receive race overwrote a local link write |
-| [#4476](https://github.com/matthiasn/lotti/pull/4476) | P1 | no | East of UTC a peer answered a goal chat message alongside its author. |
+| [#4476](https://github.com/matthiasn/lotti/pull/4476) | P1 | no | East of UTC a peer answered a goal chat message alongside its author |
 
 <details>
 <summary>All 82 bugs</summary>
@@ -252,8 +257,7 @@ The P0 and P1 bugs:
 | [#4473](https://github.com/matthiasn/lotti/pull/4473) | P2 | yes | Backfill could not deliver an agent link removal |
 | [#4473](https://github.com/matthiasn/lotti/pull/4473) | P1 | yes | Unlink then relink left devices disagreeing on a link |
 | [#4473](https://github.com/matthiasn/lotti/pull/4473) | P1 | yes | Link receive race overwrote a local link write |
-
-| [#4476](https://github.com/matthiasn/lotti/pull/4476) | P1 | no | East of UTC a peer answered a goal chat message alongside its author. |
+| [#4476](https://github.com/matthiasn/lotti/pull/4476) | P1 | no | East of UTC a peer answered a goal chat message alongside its author |
 </details>
 
 ## Specs
@@ -289,8 +293,8 @@ The P0 and P1 bugs:
   `.cfg`; #4448 gave each its own job, and #4474 packs them into eight shards
   balanced by measured runtime (see [README.md](README.md#running)). An
   aggregate `TLC` check requires all of them to pass. The workflow runs
-  whenever a spec changes, or when any of the 63 source paths it models
-  changes.
+  whenever a spec changes, or when any of the 73 source paths the specs
+  model changes.
 - **Every fix is pinned by a switch.** Each fix gets a boolean switch in its
   spec. Turning the switch off in a temporary copy must reproduce the original
   counterexample. The README lists each switch together with its trace.
