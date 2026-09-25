@@ -716,6 +716,30 @@ Glados(any.myInput, ExploreConfig(numRuns: 120))
 
 The `tags` argument is a passthrough to `package:test`'s `test()`. It works the same for `Glados.testWithRandom`, `Glados2`, `Glados3`. The tag is declared in `dart_test.yaml` at the repo root.
 
+### Model-conformance traces
+
+A trace that drives real code through the interleavings of a TLA+ model in
+`specs/tla/` is a `part` of the suite of the code it drives, and reuses the
+multi-device benches rather than building its own:
+
+- `features/agents/agent_test_device.dart` (`AgentTestDevice`) — one device's
+  real in-memory agent database, repository and `AgentSyncService`, with the
+  receive decision the sync processor applies. Pass `background: false` under
+  `fakeAsync`; `reboot()` is a process restart over the same database.
+- `features/agents/sync/agent_replica_bench.dart` — a network of
+  `AgentTestDevice`s that delivers every committed write as its own message,
+  in whatever order the trace chooses.
+- `features/agents/wake/wake_device_bench.dart` — adds a process per device: a
+  real `WakeOrchestrator`, `WakeIntentStore` and `ScheduledWakeManager`, with
+  the lease's host lookup and the intent write held until the trace releases
+  them, crash as the next process over the same stores.
+
+Run them under `fakeAsync` with an explicit `settle()` (microtasks plus
+`elapse(Duration.zero)`), close the databases in a `finally`, and never order
+anything by a random id — Glados replays a failing input and expects the same
+result. `specs/tla/README.md` ("From the model to the code") lists each trace
+and the mutants it catches.
+
 ### Why the tag matters for CI
 
 CI runs two parallel test lanes — a ten-shard standard matrix plus a Glados job — followed by a final Codecov status job gated on both:

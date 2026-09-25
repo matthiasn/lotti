@@ -416,6 +416,17 @@ configuration kept out of this directory:
   and nothing owed, and the window runs again on the same device. The checked
   configurations assume an inference outlasts a local write.
 
+A third lies outside the model, which its conformance trace shows (see
+[From the model to the code](#from-the-model-to-the-code)): `FinishJob`
+settles the window's intent in the same step as the run, while the code
+settles it with the next coalesced write to the settings database. A process
+that dies after a run completes and before that write lands restores the
+intent at the next launch, and the window runs a second time on the same
+device — the at-least-once side of `WakeRuntime`'s `NoLostWake`, which the
+digest avoids by owning its recovery (ADR 0070). Closing it would take the
+run's own writes and its settle in one transaction across two databases; it
+is left as a decision.
+
 A fencing token (ADR 0018 rule 2) was a suspected gap and is not one TLC can
 show: with the settle above twice the sync delay a late confirmation cannot
 fire beside a takeover, and where a device is suspended or offline across the
@@ -1039,20 +1050,98 @@ stranded confirmation as a `ConfirmedMeansApplied` counterexample. Service
 regressions exercise the real sync service and Drift transactions with a
 throwing outbox, for both confirmation and rejection.
 
-The lease and chat models have no generated trace yet; their counterexamples
-are pinned as deterministic regressions instead, each failing with its fix
-reverted. `scheduled_wake_manager_test.dart` (group *firing and consuming a
-record*) checks that the intent is flushed before the consume, that an owed
-record is consumed rather than claimed or fired — before the claim and after
-the lease wait — and that the consume carries the current row and leaves a
-newer window alone. `goal_agent_phase_a_test.dart` checks that a second
-escalation carries the consumed clock at a later deadline, outranking a late
-takeover claim of the first window, and leaves a pending one untouched.
-`goal_chat_service_test.dart` and `goal_agent_providers_test.dart` check that a
-sent turn arms its recovery before its wake and the answering wake consumes it,
-that maintenance arms records and enqueues nothing, that the next window waits
-for the last lease to lapse, and that a goal wake not for a message leaves it
-alone.
+The lease, the chat recovery and the version heads have generated traces of
+their own, over devices that are each a real agent database, sync service
+and — for the first two — wake orchestrator, wake-intent store and
+scheduled-wake manager (`test/features/agents/wake/wake_device_bench.dart`,
+over `test/features/agents/sync/agent_replica_bench.dart`, a network of
+`test/features/agents/agent_test_device.dart` devices). Writes travel as
+single sync messages through the real receive decision; a crash is the next
+process over the same stores.
+
+In `test/features/agents/wake/scheduled_wake_manager_model_conformance.dart`
+(300 runs), the real goal Phase A arms the period's escalation on either of
+two devices, the real lease claims, settles and fires it, and the trace
+chooses when the host lookup the lease awaits and the coalesced wake-intent
+write come back — so sync can land between a claim's approval and the
+re-read before firing, and a crash between the intent reaching the disk and
+the consume. Time moves a minute at a time with the model's `Tick` guards:
+settle three, lease five, delivery within one, a device down up to eight.
+After every step it checks `NoDeviceRunsTwice`, `WindowTerminal`, `Converged`
+and, until a crash, `AtMostOnce`; after two drained hours every armed window
+has run, counting a re-arm over a consumed window as a window even when the
+code writes nothing a device could fire (`NoLostWindow`). Each design switch
+but one fails it with a shrunk trace: `ArmMode = "fresh"` (`NoLostWindow`) and
+the carried clock at the same instant (`WindowTerminal`) in the same seven
+steps — arm, the claim, its settle and the fire, re-arm on the same device;
+`FlushBeforeConsume = FALSE` (`NoLostWindow`: arm, four ticks, crash);
+`OwedCheck = FALSE` (`NoDeviceRunsTwice`: arm, five ticks, a crash after the
+intent landed and before the consume, two ticks); the resolver without
+`consumed` terminal at one instant (`WindowTerminal`, seven steps: the peer
+crashes, the other device fires, the peer restarts on its stale replica and
+arms) or without the later deadline (`WindowTerminal`, eleven steps: the same
+over the re-armed window); and no settle wait (`NoLostWindow` of the second
+window, sixteen steps).
+`ConsumeCurrentRow = FALSE` is not reached: a snapshot consume only differs
+once the next window syncs in during the fire, which needs a window run on
+two devices, and the local write path's resolution (ADR 0068) masks it besides;
+its regressions stay in the suite (group *firing and consuming a record*).
+Neither are the re-reads after the host lookup and before firing, singly or
+together: under the model's timing no consumed or crossing version can
+arrive in that gap, and their regressions stay in the lease group. The
+consume's transaction cannot be interleaved by a trace at all; a regression
+pins its boundary. The trace also found the model's `FinishJob` to be
+stronger than the code: the run's intent is settled by the same coalesced
+settings write, so a crash between a run completing and that write landing
+restores the intent and runs the window again on the same device
+(`NoDeviceRunsTwice`: arm, the claim and fire, finish, crash, restart,
+restore, finish). The trace lands the settle with the finish, as the model
+does; see the residuals above.
+
+In `test/features/goals/service/goal_chat_service_model_conformance.dart`
+(200 runs), the author sends through the real `GoalChatService.sendMessage`,
+each device's pre-scan maintenance is the real `restoreOldestPendingMessage`,
+the recovery record is fired by the real lease rather than taken as given,
+and every wake runs the real router (`goalAgentWakeRunnersProvider`), which
+hands a message it has to answer to a scripted workflow the trace commits or
+fails. Ten minutes are the model's unit (the grace is three, the run cap
+one); sync delivers within a minute, below half the lease's settle. After
+every step it checks `AtMostOneReply`; after four drained hours, `Answered`.
+It found a bug: the due query compared `scheduledAt` as a string with a local
+`now`, and a chat recovery is written in UTC, so east of Greenwich the peer
+fired the recovery as soon as it synced in and answered beside the author
+(`AtMostOneReply`: four minutes, the peer's scan, fourteen minutes), and west
+of it the recovery waited hours (`Answered`, after a failed first run). The
+read now bounds the range scan in UTC and decides by the instant; a
+regression in the repository suite fails with the fix reverted in UTC,
+UTC+2 and UTC−7, where the trace fails east and west of UTC but not in it.
+A router that answers a message already answered fails it in one
+step (a tick; the author's wake and the recovery both answer), and
+maintenance that enqueues the message as before ADR 0069
+(`Recovery = "eager"`) in one (the author's run fails, and both devices'
+maintenance enqueue it). Two switches are not reached: the next window
+due at the last deadline plus the grace equals the lease's lapse unless a
+claim comes late and a second device then runs the next window inside the
+first run's cap, and the author's answering wake not consuming the record is
+masked by the router, which finds the message answered. Their regressions
+stay in `goal_chat_service_test.dart` and `goal_agent_providers_test.dart`.
+
+The version heads are traced in `test/features/agents/sync/version_heads_conformance.dart`,
+registered from the suites of the three services that own them (150 runs
+each): `SoulVersionOps`, `AgentTemplateCrud` (`Kind = "soul"`, with
+rollbacks) and `GoalSpecRevisionService` (`Kind = "goal"`). Two devices edit
+offline, three edits each, the second device's clock two minutes ahead; the
+rows are exchanged one message at a time in generated orders. Whenever
+everything has been delivered it checks `Converged`, `HeadResolves` — and
+that the service's active read resolves to the head — and, after an edit made
+with everything received, `SettlesAfterCleanEdit`; at the end, a clean edit
+on the device that did not edit last must settle whatever concurrent edits
+left. `SupersedeAll = FALSE` fails it in two steps (both devices edit, then
+the settling edit), as does a soul or template version that archives only the
+head's version; a rollback that archives nothing fails it in two; a head move
+built on a null clock (the ADR 0068 addendum) fails it in one, through the
+clock skew. The goal head resolver's higher-ordinal rule is not needed by any
+of the model's properties, and removing it passes.
 
 `ChangeSetLifecycle` has two. In
 `test/features/agents/service/change_set_confirmation_service_lifecycle_conformance.dart`,

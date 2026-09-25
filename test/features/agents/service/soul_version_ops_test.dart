@@ -8,8 +8,12 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../sync/agent_replica_bench.dart';
+import '../sync/version_heads_conformance.dart';
 import '../test_data/constants.dart';
 import '../test_data/soul_factories.dart';
+
+part 'soul_version_ops_model_conformance.dart';
 
 /// Mirror test for the [SoulVersionOps] collaborator. Covers the soul-document
 /// create path and the version-creation chain (archive + new active + head),
@@ -218,4 +222,6 @@ void main() {
       expect(result?.voiceDirective, 'Active.');
     });
   });
+
+  _registerSoulVersionHeadsConformance();
 }

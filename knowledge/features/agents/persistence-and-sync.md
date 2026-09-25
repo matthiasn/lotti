@@ -5,7 +5,7 @@ description: The agent.sqlite entity and link model, bulk-read chunking, and exa
 resource: ../../../lib/features/agents/database/agent_database.dart
 tags: [agents, persistence, sync, privacy, drift]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-25T09:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-25T12:00:00Z }
 stale_after: 2026-12-25
 sources:
   - id: error-logging
@@ -24,6 +24,14 @@ sources:
     resource: ../../../lib/features/agents/database/agent_repo_core.dart
     title: AgentRepoCore
     last_modified: 2026-08-01
+  - id: repo-evolution
+    resource: ../../../lib/features/agents/database/agent_repo_evolution.dart
+    title: AgentRepoEvolution — the due and pending scheduled-wake reads
+    last_modified: 2026-09-25
+  - id: goal-chat-reply-spec
+    resource: ../../../specs/tla/GoalChatReply.tla
+    title: TLA+ model of who answers a goal chat message
+    last_modified: 2026-09-25
   - id: repo-links
     resource: ../../../lib/features/agents/database/agent_repo_links.dart
     title: AgentRepoLinks
@@ -341,6 +349,18 @@ Due and pending scheduled-wake reads pin
 provides both the due-time range scan and the pending-list order; pinning it in
 the hand-written methods avoids platform-specific SQLite planner choices that
 otherwise fall back to the broader active-type index and a temporary sort.
+
+**The index narrows the due read; the instant decides it.** `scheduledAt` is
+stored as written: in UTC with a `Z` for a record built from a UTC instant (a
+goal chat recovery, an escalation, a relationship reminder) and as local wall
+time for the rest. The two forms do not order as strings, so
+`getDueScheduledWakeRecords` bounds the range scan at `now` in UTC plus the
+widest zone offset (fourteen hours) and keeps the rows whose `scheduledAt` is
+not after `now` as a `DateTime`. Comparing the string of a local `now` alone
+made a UTC record due hours early east of Greenwich — a goal chat's recovery
+fired as soon as it synced in, and a second device answered the message — and
+hours late west of it. `specs/tla/GoalChatReply.tla`'s conformance trace found
+it.
 
 # Sync
 

@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
+import 'package:lotti/features/agents/sync/agent_message_dag.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -28,10 +29,21 @@ import '../../mocks/mocks.dart';
 /// build creates (`firstVectorClockCounter`), 0 for one an older build
 /// created (ADR 0080).
 ///
+/// `background` runs the database on a background isolate, as the app does;
+/// a trace under `fakeAsync` needs it off. [reboot] is a process death and
+/// restart: a fresh repository and sync service over the same database,
+/// with the counter — which the real service persists — carried over.
+/// [onSent] sees every accepted message as it is accepted.
+///
 /// Callers close the database with [close] (in `addTearDown`).
 class AgentTestDevice {
-  AgentTestDevice(this.host, {int firstCounter = firstVectorClockCounter})
-    : _counter = firstCounter - 1 {
+  AgentTestDevice(
+    this.host, {
+    int firstCounter = firstVectorClockCounter,
+    bool background = true,
+    this.onSent,
+  }) : _counter = firstCounter - 1,
+       db = AgentDatabase(inMemoryDatabase: true, background: background) {
     when(
       () => clocks.getNextVectorClock(
         previous: any(named: 'previous'),
@@ -51,20 +63,29 @@ class AgentTestDevice {
     });
     when(() => outbox.enqueueMessage(any())).thenAnswer((invocation) async {
       if (outboxFails) throw StateError('outbox unavailable after commit');
-      sent.add(invocation.positionalArguments.single as SyncMessage);
+      final message = invocation.positionalArguments.single as SyncMessage;
+      sent.add(message);
+      onSent?.call(message);
     });
+    reboot();
   }
 
   final String host;
-  final db = AgentDatabase(inMemoryDatabase: true);
-  late final repository = AgentRepository(db);
+  final AgentDatabase db;
+  final void Function(SyncMessage message)? onSent;
+  late AgentRepository repository;
   final clocks = MockVectorClockService();
   final outbox = MockOutboxService();
-  late final sync = AgentSyncService(
-    repository: repository,
-    outboxService: outbox,
-    vectorClockService: clocks,
-  );
+  late AgentSyncService sync;
+
+  void reboot() {
+    repository = AgentRepository(db);
+    sync = AgentSyncService(
+      repository: repository,
+      outboxService: outbox,
+      vectorClockService: clocks,
+    );
+  }
 
   /// Every message the outbox accepted, in order.
   final sent = <SyncMessage>[];
@@ -91,13 +112,25 @@ class AgentTestDevice {
 
   /// Receives [incoming] the way `SyncEventProcessor` applies an agent
   /// entity: the stored row, read and written in one transaction, resolved
-  /// by [resolveAgentEntityVersions].
+  /// by [resolveAgentEntityVersions] — for two agent-state rows, with the
+  /// order of their heads in the local message DAG.
   Future<void> receiveEntity(AgentDomainEntity incoming) =>
       repository.runInTransaction(() async {
         final local = await repository.getEntity(incoming.id);
+        final isAncestor =
+            local is AgentStateEntity && incoming is AgentStateEntity
+            ? await AgentMessageDag(repository).ancestryOf(
+                local.recentHeadMessageId,
+                incoming.recentHeadMessageId,
+              )
+            : noKnownAncestry;
         final resolved = local == null
             ? incoming
-            : resolveAgentEntityVersions(local: local, incoming: incoming);
+            : resolveAgentEntityVersions(
+                local: local,
+                incoming: incoming,
+                isAncestor: isAncestor,
+              );
         if (!identical(resolved, local)) {
           await repository.upsertEntity(resolved);
         }
