@@ -75,6 +75,82 @@ void main() {
     });
 
     test(
+      'replays the notification content/state trace through durable apply',
+      () async {
+        final base =
+            (hNotification(id: 'model-trace', linkedTaskId: 'task-1')
+                    as TaskSuggestionNotification)
+                .copyWith(title: 'A reminder');
+        final content = base.copyWith(
+          title: 'Z reminder',
+          meta: base.meta.copyWith(
+            originatingHostId: 'remote-host',
+            vectorClock: const VectorClock({'remote-host': 1}),
+          ),
+        );
+        final seenAt = DateTime.utc(2026, 5, 17, 11);
+        final state = PreparedSyncEvent.forTesting(
+          event: event,
+          syncMessage: SyncMessage.notificationStateUpdate(
+            id: base.id,
+            seenAt: seenAt,
+            vectorClock: const VectorClock({'z-host': 1}),
+            originatingHostId: 'z-host',
+          ),
+        );
+        Future<void> applyFull(NotificationEntity row) =>
+            processorWithLog.apply(
+              prepared: PreparedSyncEvent.forTesting(
+                event: event,
+                syncMessage: SyncMessage.notification(
+                  id: row.id,
+                  jsonPath: '/notifications/model-trace.json',
+                  vectorClock: row.meta.vectorClock,
+                  originatingHostId: row.meta.originatingHostId,
+                ),
+                resolvedNotification: row,
+              ),
+              journalDb: journalDb,
+            );
+
+        // An early state envelope must remain retryable, with no receipt.
+        await expectLater(
+          processorWithLog.apply(prepared: state, journalDb: journalDb),
+          throwsA(isA<FileSystemException>()),
+        );
+        expect(await notificationsDb.notificationById(base.id), isNull);
+        verifyNever(
+          () => sequenceLog.recordReceivedEntry(
+            entryId: base.id,
+            vectorClock: any(named: 'vectorClock'),
+            originatingHostId: 'z-host',
+            payloadType: SyncSequencePayloadType.notificationStateUpdate,
+          ),
+        );
+        await applyFull(base);
+        await processorWithLog.apply(prepared: state, journalDb: journalDb);
+        await applyFull(content);
+        final joined = await notificationsDb.notificationById(base.id);
+        expect(joined!.title, content.title);
+        expect(joined.meta.seenAt, seenAt);
+        expect(
+          joined.meta.vectorClock,
+          const VectorClock({'local-host': 1, 'remote-host': 1, 'z-host': 1}),
+        );
+
+        // A retained current snapshot repairs a gap, then old deliveries and
+        // post-crash replays must leave both content and lifecycle intact.
+        await applyFull(joined);
+        await applyFull(base);
+        await processorWithLog.apply(prepared: state, journalDb: journalDb);
+        final replayed = await notificationsDb.notificationById(base.id);
+        expect(replayed!.title, content.title);
+        expect(replayed.meta.seenAt, seenAt);
+        expect(replayed.meta.vectorClock, joined.meta.vectorClock);
+      },
+    );
+
+    test(
       'records full notification receipt and traces detected gaps',
       () async {
         when(

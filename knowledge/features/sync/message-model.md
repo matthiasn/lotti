@@ -5,7 +5,7 @@ description: The twenty-five SyncMessage families, which seven are sequence-trac
 resource: ../../../lib/features/sync/model/sync_message.dart
 tags: [sync, wire-format, sync-message]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-10T01:20:00+02:00 }
+generated: { by: codex/gpt-6, at: 2026-09-25T18:55:00Z }
 stale_after: 2026-11-02
 sources:
   - id: sync-message
@@ -20,6 +20,10 @@ sources:
     resource: ../../../lib/features/sync/matrix/sync_event_processor_apply.dart
     title: Apply path
     last_modified: 2026-08-02
+  - id: settings-model
+    resource: ../../../specs/tla/SyncSettings.tla
+    title: Conditional convergence of untracked settings
+    last_modified: 2026-09-25
   - id: attachment-index
     resource: ../../../lib/features/sync/matrix/pipeline/attachment_index.dart
     title: AttachmentIndex exact and legacy lookup
@@ -134,6 +138,17 @@ Entities*), which re-enqueues every persisted definition.
 
 Per-device list order and derived per-filter task counts are computed locally
 and **never** synced.
+
+# Settings without sequence recovery
+
+`themingSelection` and `dailyOsUserName` reject strictly older timestamps but
+accept equal ones. `configFlag` overwrites on arrival without a version stamp.
+They have no sequence-gap repair. Theme/name apply writes individual settings
+and catches persistence errors, so a failed group can be partly saved.
+
+`SyncSettings` checks their conditional convergence and documents counterexamples
+for equal timestamps, reordered flags and failed writes. The assumptions and
+configurations are in the [formal specs](../../../specs/tla/README.md#syncsettings--the-boundary-for-settings-without-sequence-recovery).
 
 # File-backed payloads
 

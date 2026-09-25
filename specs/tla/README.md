@@ -1719,3 +1719,94 @@ attempt runs, using the same executor and separate executors sharing the
 registry. This removes the runtime timing assumption represented by
 `NoneChecking` in the broader `DayProcessingJob` model; that model retains its
 existing claim, retry and crash exploration.
+
+## `NotificationReplication` — content, lifecycle and typed gap repair
+
+A retained source has two equal-time content snapshots and two lifecycle
+updates for one notification. The model separates outbox send, delivery,
+transactional apply and receipt. A state event can arrive before the base;
+a process can die after applying it but before acknowledging it. One event
+may be lost. A visible gap requests the current full snapshot or the current
+lifecycle patch according to the missing payload's type, matching the two
+notification branches in `BackfillResponseHandler`.
+
+| Property | Meaning |
+|---|---|
+| `NoFalseReceipt` | A receipt has a durable applied witness |
+| `NoStateWithoutBase` | State updates cannot create a contentless notification |
+| `LifecyclePreserved` | Applied seen/acted/deleted marks remain set at the earliest observed time |
+| `ContentConverged` | Receiving both content versions chooses the stable content winner, regardless of interleaved state patches |
+| `AcknowledgedConverges` | Acknowledging all four events implies the expected content and lifecycle projection |
+| `VisibleGapHeals` | Once the final counter is observed, fair processing and typed repair eventually acknowledge all events |
+
+`NotificationReplication.cfg` checks one receiver, four events, one loss and
+one crash: **146,969 distinct states**. Content and lifecycle are compared to
+the same fixed reference on every receive order; `originatingHostId` remains
+arrival-dependent state metadata and is excluded from that projection.
+
+Three temporary mutations produce counterexamples:
+
+- `LegacyContentTie = TRUE`: state changes the owner before a competing full
+  snapshot arrives. Because canonical metadata sorts before title, the old
+  content wins on that receiver (`ContentConverged`, nine transitions).
+- `RequireBase = FALSE`: a state event creates lifecycle marks without content
+  (`NoStateWithoutBase`).
+- `AckAfterApply = FALSE`: the inbound queue acknowledges an unapplied event
+  (`NoFalseReceipt`).
+
+The first trace is reproduced both by `notification_merge_test.dart` and by
+`sync_event_processor_notification_log_test.dart` through the actual processor
+and `NotificationsDb`. Both regressions fail with the content fix reverted.
+The processor trace also checks deferral before the base row, retained-snapshot
+apply, and repeated old content/state deliveries. This does not execute a
+transport or the complete queue/sequence implementation.
+
+The source starts with durable enqueued events and retains their joined row.
+Receipts abstract the detailed vector-clock, hint and settlement protocol;
+`SyncSequence` checks that machinery separately. Gap recovery is conditional
+on visibility and fair successful repair: losing the unobserved tail does not
+imply convergence. Source crashes, absent databases, permanent retry exhaustion,
+payload purges, corrupt/missing attachment generations and OS scheduling are
+excluded. Full/state merges are atomic database transactions. Detailed inbound
+retries and outbox claim/mark windows remain in their own models.
+
+## `SyncSettings` — the boundary for settings without sequence recovery
+
+Config flags, theme selection and the Daily OS greeting name are not
+sequence-tracked payloads. This model opens the receive register: the timestamp
+guard, individual durable setting writes, stamp persistence and successful
+return are distinct steps. Three envelopes reach two serial receivers in
+independently chosen orders. Flags overwrite on arrival; theme/name messages
+reject strictly older stamps and accept equal ones.
+
+| Configuration | Register | Delivery assumption | Distinct states |
+|---|---|---|---:|
+| `SyncSettings` | Three theme fields plus stamp | Distinct stamps; any order | 1,296 |
+| `SyncSettingsName` | Greeting value plus stamp | Distinct stamps; any order | 484 |
+| `SyncSettingsFlags` | One flag value | Same order on both receivers | 100 |
+
+All three check `CompletedCoherent` (a completed settings group agrees with its
+stamp), `Converged` (fully processed peers agree), `LatestWins` (the greatest
+stamp or shared ordered tail survives), and `EventuallyComplete` under fair
+processing. They assume every write succeeds and all three envelopes arrive.
+These are conditional guarantees, not a claim that the untracked settings have
+the journal's repair contract.
+
+The current implementation has three explicit residual counterexamples, found
+by changing constants in temporary copies rather than checking failing configs
+into CI:
+
+- Equal timestamps: `EqualStamps = TRUE` allows different final values after
+  the same envelopes arrive in different orders (`Converged`).
+- Unordered flags: `OrderedDelivery = FALSE` in the flags configuration has the
+  same consequence. There is no version field to resolve the competing values.
+- A failed settings write: `FailureBudget = 1` leaves a partially persisted
+  group, because theme/name apply catches the error and returns successfully
+  (`CompletedCoherent`).
+
+Those settings behaviors are recorded, not changed, by this PR. The existing
+`sync_event_processor_test.dart` theme/name cases exercise the timestamp guard,
+individual saves and swallowed errors. The model excludes concurrent local
+writers, platform effects, theme-mode normalization, the greeting's bootstrap
+published marker, source staging, and transport loss; there is no automatic
+sequence-gap recovery for these families.

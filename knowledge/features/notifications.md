@@ -5,13 +5,17 @@ description: Durable app-level alerts stored outside the journal, converging acr
 resource: ../../lib/features/notifications
 tags: [notifications, sync, convergence]
 status: stable
-generated: { by: claude-code/fable-5.1, at: 2026-09-16T21:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-25T18:55:00Z }
 stale_after: 2027-03-01
 sources:
   - id: src
     resource: ../../lib/features/notifications
     title: Synced notifications source
-    last_modified: 2026-09-02
+    last_modified: 2026-09-25
+  - id: replication-model
+    resource: ../../specs/tla/NotificationReplication.tla
+    title: Notification content, lifecycle and typed recovery model
+    last_modified: 2026-09-25
   - id: bell
     resource: ../../lib/features/notifications/ui/widgets/notification_bell.dart
     title: NotificationBell — the inbox popover and where its rows lead
@@ -105,9 +109,9 @@ over the union, so every variant has to choose — keeps them home:
 For such a row `NotificationRepository` skips the outbox on create **and on
 every lifecycle mark**. The second half is the load-bearing one: a peer that
 receives a `notificationStateUpdate` for a row it never got treats it as a
-base row that has not arrived yet and keeps the event pending, retrying
-forever. Everything else is unchanged — the row is stored, scheduled onto the
-OS, shown in the bell, and cleared by a tap like any other.
+base row that has not arrived yet and defers it for retry. Everything else is
+unchanged — the row is stored, scheduled onto the OS, shown in the bell, and
+cleared by a tap like any other.
 
 Both are "due on arrival" and keyed per episode through the same
 `notificationEpisodeId` the producers use: a plan outcome by the job and its
@@ -205,11 +209,25 @@ sync traffic at all.
 
 Only a transition that actually changed something advances the vector clock,
 enqueues a `notificationStateUpdate`, reschedules and notifies listeners; the
-four steps happen inside one `withVcScope` so a failure part-way commits nothing.
+steps share one `withVcScope`, which finalizes counter reservations. It is not
+a cross-database transaction: a row already written survives a later enqueue
+or scheduling failure. Named reservations let counter settlement inspect that
+durable row rather than announcing an unwritten counter. See
+[sequence settlement](sync/sequence-and-backfill.md).
 
 Both `notification` and `notificationStateUpdate` are **sequence-tracked**
 [sync message families](sync/message-model.md), so a missed transition is a
 detectable gap rather than silent divergence.
+
+Full snapshots choose content by `updatedAt`, then canonical content JSON.
+Lifecycle marks, vector clocks and the state-mutable `originatingHostId` do not
+rank competing content. The owner is only a final metadata tie-break when
+content is identical; state updates can still replace it in arrival order.
+Otherwise a seen/retracted patch could change which same-time title wins.
+
+`NotificationReplication` composes send, apply, acknowledgement and typed gap
+repair. Its bounds, exclusions, properties and executable conformance traces
+are documented in the [formal specs](../../specs/tla/README.md#notificationreplication--content-lifecycle-and-typed-gap-repair).
 
 The scheduler and the platform-plugin boundary live in `lib/services/`, lazily
 registered so a sandboxed build does not initialise the plugin until something
@@ -278,10 +296,9 @@ collapses concurrent callers into one request.
 **A failed request is logged, swallowed, and not memoised.** Both halves are
 load-bearing. Asking is best-effort but the callers are not — `createDbEntity`
 runs `updateBadge` as post-commit work, and `NotificationRepository` schedules
-inside a vector-clock scope that commits only when its body returns, so an
-error escaping the request would abort notification creation and every
-lifecycle transition. Memoising a *rejected* future would then make that abort
-permanent for the life of the process rather than transient.
+inside a vector-clock scope, so an error escaping the request would report
+failure after a notification row may already have been persisted. Memoising a
+*rejected* future would repeat that failure for the life of the process.
 
 The badge follows the flag rather than outliving it, and taking it down is
 **two calls, not one**. `cancel` removes the delivered record, but on Darwin
@@ -447,7 +464,7 @@ Three things follow from switching it on, and none of them are cosmetic:
   `AndroidNotificationChannelAction.update` would, and some channel properties
   are immutable even then. Resolving that copy also degrades to English rather
   than throwing: it runs inside `NotificationRepository`'s vector-clock scope,
-  where an escaping exception would abort the notification row itself.
+  where an escaping exception could report failure after the row was saved.
 - **`updateBadge` is Darwin-only, and that is a behavioural guard.** The badge
   is a *number on the icon*, carried by a notification's own `badge` field and
   posted with `presentAlert: false`. Android has no such thing: the same call

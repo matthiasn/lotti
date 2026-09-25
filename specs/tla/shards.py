@@ -77,6 +77,10 @@ SECONDS = {
     "DigestRecoveryCrash": 1,
     "GoalChatReply": 1,
     "OwnCounterSettlement": 1,
+    "NotificationReplication": 10,
+    "SyncSettings": 1,
+    "SyncSettingsName": 1,
+    "SyncSettingsFlags": 1,
     # Measured locally (20 workers) when added; refresh from CI.
     "JournalReplicationSidecar": 38,
     "JournalReplication": 8,
