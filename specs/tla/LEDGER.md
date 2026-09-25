@@ -17,7 +17,7 @@ As of `main` at `b1bd9ae11` (2026-09-25):
 | Measure | Merged | Including open PRs #4470, #4471 |
 |---------|-------:|--------------------------------:|
 | TLA+ specs | 16 | 17 |
-| TLC configurations (one CI shard each) | 42 | 46 |
+| TLC configurations | 42 | 46 |
 | Distinct states explored | 113,735,037 | 141,412,820 |
 | States generated (at `b551bf587`) | 927,744,398 | — |
 | Deepest counterexample-free trace | 53 steps | — |
@@ -87,6 +87,7 @@ counterexamples found.
 | [#4467](https://github.com/matthiasn/lotti/pull/4467) | 09-24 | sync | — | — | 3 (–) | [0078](../../docs/adr/0078-entry-link-versions-are-ordered.md) | A task removed from a project came back, because receiving a link compared no clocks. 8 of 8 mutants killed |
 | [#4470](https://github.com/matthiasn/lotti/pull/4470) | open | sync | — | 2 | 1 (–) | — | A new device's first edit tied with the version it extended (counter 0 read as absent) and did not stick, even on that device |
 | [#4471](https://github.com/matthiasn/lotti/pull/4471) | open | goals, habits | `HabitDaySettlement` | 2 | 8 (1) | — | An automatic success from one device overwrote a skip the user set on another. Also, 10 × 0.1 l summed to 0.9999999999999999, so a "1 l" goal failed |
+| [#4474](https://github.com/matthiasn/lotti/pull/4474) | open | ci | — | — | 0 | — | Packs the configurations into eight CI shards balanced by measured runtime, instead of one runner each |
 
 ## Specs
 
@@ -115,9 +116,10 @@ counterexamples found.
 
 ## How the specs earn their keep
 
-- **Every configuration is a CI shard.** Since #4448 the workflow finds every
-  checked-in `.cfg` and runs each one in its own job with `fail-fast: false`.
-  An aggregate `TLC` check requires all of them to pass. The workflow runs
+- **Every configuration runs in CI.** The workflow finds every checked-in
+  `.cfg`; #4448 gave each its own job, and #4474 packs them into eight shards
+  balanced by measured runtime (see [README.md](README.md#running)). An
+  aggregate `TLC` check requires all of them to pass. The workflow runs
   whenever a spec changes, or when any of the 63 source paths it models
   changes.
 - **Every fix is pinned by a switch.** Each fix gets a boolean switch in its
