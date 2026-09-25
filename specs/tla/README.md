@@ -97,16 +97,18 @@ check conditional gap repair and room delivery; the others also require delivery
 to peers and burn propagation. Profiles deliberately vary one stress dimension
 at a time; they are not the Cartesian product of all faults and families.
 
-| Configuration suffix | Payload and stress |
-|---|---|
-| (none) | entry-link causal chain; collapse and out-of-order receipt |
-| `Journal` | two concurrent journal writers, two peers, attachments and retained conflicts |
-| `AgentEntity` | concurrent inline writers and one independent process crash |
-| `AgentLink` | one write; one staging, send or apply failure |
-| `Notification` | full base plus lifecycle patch, either receive order |
-| `Consumption` | two immutable events; one abandoned delivery or failed receipt |
-| `Burn` | one aborted reservation, one enqueue/send failure and one process crash |
-| `Lossy` | two distinct entry links; one abandoned delivery or failed receipt |
+| Configuration suffix | Payload and stress | Distinct states |
+|---|---|---:|
+| (none) | entry-link causal chain; collapse and out-of-order receipt | 203,895 |
+| `Journal` | two concurrent journal writers, two peers, attachments and retained conflicts | 59,184 |
+| `AgentEntity` | concurrent inline writers and one independent process crash | 2,430 |
+| `AgentLink` | one write; one staging, send or apply failure | 54 |
+| `Notification` | full base plus lifecycle patch, either receive order | 289,859 |
+| `Consumption` | two immutable events; one abandoned delivery or failed receipt | 199,595 |
+| `Burn` | one aborted reservation, one enqueue/send failure and one process crash | 112 |
+| `Lossy` | two distinct entry links; one abandoned delivery or failed receipt | 199,595 |
+
+These eight configurations explore **954,724 distinct states** in total.
 
 The liveness obligations are explicit:
 
@@ -127,6 +129,9 @@ The liveness obligations are explicit:
 - Lossy profiles do not promise recovery of an unobserved final counter. A
   swallowed sequence-write error can likewise leave no receipt and no visible
   gap. Notification state alone cannot repair a permanently lost base.
+- Consumption writers must not reuse an event ID for changed content. This is
+  the append-only protocol contract, not a database constraint: the repository
+  uses an upsert, and this model does not explore conflicting bodies for one ID.
 - Named reservations, available stores and causal payload clocks are required.
   Legacy clockless/counter-zero traffic, settings/config flags, cross-family
   dependencies, unbounded devices/writes and arbitrary overlapping local

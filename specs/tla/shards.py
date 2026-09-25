@@ -26,7 +26,7 @@ SECONDS = {
     "SyncPipelineJournal": 240,
     "SyncPipelineAgentEntity": 5,
     "SyncPipelineAgentLink": 1,
-    "SyncPipelineNotification": 180,
+    "SyncPipelineNotification": 360,
     "SyncPipelineConsumption": 180,
     "SyncPipelineLossy": 180,
     "SyncPipelineBurn": 5,

@@ -62,8 +62,9 @@ properties and 28,451 distinct states to the configurations present at
 does not include the intervening outbox, inbound-queue and journal models.
 
 The `SyncPipeline` follow-up (#4493) adds one composed spec and eight
-configurations spanning six payload families. Its bounded pipeline found one
-additional burn-staging bug; guarded mutations, repair reachability and two
+configurations spanning six payload families and 954,724 distinct states. Its
+bounded pipeline found one additional burn-staging bug; guarded mutations,
+repair reachability and two
 known lost-tail limitations are executable CI checks. These additions are not
 included in the historical totals above; configuration results live in the
 [composed model section](README.md#syncpipeline--the-composed-sync-protocol).
