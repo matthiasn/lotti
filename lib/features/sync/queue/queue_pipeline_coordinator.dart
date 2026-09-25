@@ -105,6 +105,7 @@ class QueuePipelineCoordinator {
           readMarker: _readMarker,
           bootstrapRunner: _runBootstrap,
           logging: _logging,
+          claimGap: _claimCatchUpRange,
         );
   }
 
@@ -591,6 +592,14 @@ class QueuePipelineCoordinator {
     _trackEnqueue(_safePostLoad(room, roomId));
   }
 
+  /// Enqueues a live event. The live stream never delivers an event twice,
+  /// so an insert that throws would lose it once a later event applied
+  /// and moved the anchor past it. The failure is recorded like
+  /// unresolved ciphertext instead: the floor drops to the event, and a
+  /// bridge pass walks back to fetch it (`FailedEnqueueLowersFloor` in
+  /// `specs/tla/InboundQueue.tla`). When the floor write fails too, the
+  /// value stays retained in memory and is persisted before any later
+  /// queue insert.
   Future<void> _safeEnqueue(Event event) async {
     try {
       await _queue.enqueueLive(event);
@@ -601,7 +610,41 @@ class QueuePipelineCoordinator {
         stackTrace: stackTrace,
         subDomain: '$_logSub.enqueue',
       );
+      final roomId = event.roomId;
+      if (roomId == null) return;
+      try {
+        await _queue.lowerResumeFloor(
+          roomId: roomId,
+          originTs: event.originServerTs.millisecondsSinceEpoch,
+        );
+      } catch (floorError, floorStackTrace) {
+        _logging.error(
+          LogDomain.sync,
+          floorError,
+          stackTrace: floorStackTrace,
+          subDomain: '$_logSub.enqueue.floor',
+        );
+      }
+      unawaited(_bridge.bridgeNow());
     }
+  }
+
+  /// Durably claims everything above [roomId]'s applied marker for the
+  /// next catch-up: lowers the resume floor to one above the marker, as a
+  /// floor observation that invalidates an in-flight walk's completion.
+  ///
+  /// Called before anything newer than a known gap can apply: on start,
+  /// for the events that arrived while the app was down, and when a
+  /// limited sync reveals a gap. Without the claim, the worker could apply
+  /// a newer live event first and move the anchor past the gap, and the
+  /// forward walk from that anchor would never fetch it
+  /// (`ClaimOnStart` / `ClaimOnGap` in `specs/tla/InboundQueue.tla`).
+  Future<void> _claimCatchUpRange(String roomId) async {
+    final marker = await _readMarkerForRoom(roomId);
+    await _queue.lowerResumeFloor(
+      roomId: roomId,
+      originTs: marker.claimFloorTs,
+    );
   }
 
   void _trackEnqueue(Future<void> future) {

@@ -364,6 +364,13 @@ extension _LiveIngressPropertyCases on _QueueCoordinatorTestSetup {
 
         try {
           await coordinator.start();
+          // start() claims the range above the (absent) marker first.
+          expect(
+            loweredFloors,
+            [(roomId: scenario.currentRoomId, originTs: 1)],
+            reason: '$scenario',
+          );
+          loweredFloors.clear();
           for (var i = 0; i < scenario.operations.length; i++) {
             final operation = scenario.operations[i];
             final eventId = scenario.eventIdAt(i);

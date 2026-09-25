@@ -24,6 +24,7 @@ extension _LiveIngressCases on _QueueCoordinatorTestSetup {
       () async {
         final coordinator = build();
         await coordinator.start();
+        verifyStartClaim();
 
         timelineCtl.add(buildEvent(EventTypes.Message));
         await pumpEventQueue();
@@ -50,6 +51,7 @@ extension _LiveIngressCases on _QueueCoordinatorTestSetup {
         );
         final coordinator = build(attachmentIngestor: ingestor);
         await coordinator.start();
+        verifyStartClaim();
         final event = buildEvent(EventTypes.Message);
 
         timelineCtl.add(event);
@@ -116,6 +118,7 @@ extension _LiveIngressCases on _QueueCoordinatorTestSetup {
       () async {
         final coordinator = build();
         await coordinator.start();
+        verifyStartClaim();
 
         final foreign = MockEvent();
         when(() => foreign.eventId).thenReturn(r'$other');
@@ -181,6 +184,9 @@ extension _LiveIngressCases on _QueueCoordinatorTestSetup {
         var current = DateTime.utc(2026);
         await withClock(Clock(() => current), () async {
           await coordinator.start();
+          verify(
+            () => bench.queue.lowerResumeFloor(roomId: roomId, originTs: 1),
+          ).called(1);
 
           // First suppressed echo: no previous flush -> logs count=1 and
           // starts the suppression window.
@@ -219,26 +225,42 @@ extension _LiveIngressCases on _QueueCoordinatorTestSetup {
   }
 
   void registerEnqueueFailure() {
-    test('safeEnqueue swallows errors from enqueueLive', () async {
-      when(
-        () => queue.enqueueLive(any()),
-      ).thenThrow(StateError('queue closed'));
-      final coordinator = build();
-      await coordinator.start();
+    test(
+      'a live enqueue that throws is logged, lowers the floor to the event '
+      'and requests a bridge pass (FailedEnqueueLowersFloor in '
+      'InboundQueue.tla: the live stream never redelivers the event, so '
+      'swallowing the error lost it once a later event moved the anchor)',
+      () async {
+        when(
+          () => queue.enqueueLive(any()),
+        ).thenThrow(StateError('queue closed'));
+        final coordinator = build();
+        await coordinator.start();
+        verifyStartClaim();
+        verify(bridge.bridgeNow).called(1);
 
-      timelineCtl.add(buildEvent(EventTypes.Message));
-      await pumpEventQueue();
+        timelineCtl.add(buildEvent(EventTypes.Message));
+        await pumpEventQueue();
 
-      verify(
-        () => logging.error(
-          any<LogDomain>(),
-          any<Object>(),
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
-          subDomain: any<String>(named: 'subDomain', that: contains('enqueue')),
-        ),
-      ).called(1);
-      await coordinator.stop();
-    });
+        verify(
+          () => queue.lowerResumeFloor(roomId: roomId, originTs: 1234),
+        ).called(1);
+        verify(bridge.bridgeNow).called(1);
+
+        verify(
+          () => logging.error(
+            any<LogDomain>(),
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: any<String>(
+              named: 'subDomain',
+              that: contains('enqueue'),
+            ),
+          ),
+        ).called(1);
+        await coordinator.stop();
+      },
+    );
   }
 
   void registerAttachmentIngestor() {

@@ -165,6 +165,14 @@ class InboundQueueResurrection {
       // re-abandoned on its next worker pass because the elapsed
       // calculation in `InboundWorker._maybeRetry` is anchored to the
       // original enqueue time.
+      //
+      // The status guard repeats the SELECT's predicate. The SELECT runs
+      // outside this transaction, so a concurrent pass (an attachment
+      // landing, a journal update, "Retry all") can re-arm a selected row
+      // and the worker can apply it before this UPDATE runs; flipping it
+      // by id alone turned an `applied` ledger row back into `enqueued`
+      // and applied it twice (`AppliedIsFinal` in
+      // `specs/tla/InboundQueue.tla`).
       final custom = await _db.customUpdate(
         'UPDATE inbound_event_queue '
         'SET status = ?, '
@@ -175,7 +183,8 @@ class InboundQueueResurrection {
         '    enqueued_at = ?, '
         '    last_error_reason = NULL, '
         '    abandoned_at = NULL '
-        'WHERE queue_id IN (${List.filled(ids.length, '?').join(', ')})',
+        "WHERE status = 'abandoned' "
+        '  AND queue_id IN (${List.filled(ids.length, '?').join(', ')})',
         variables: [
           Variable.withString(InboundQueueStatuses.enqueued),
           Variable.withInt(nowMs),

@@ -28,6 +28,21 @@ extension QueueLifecycle on QueuePipelineCoordinator {
           subDomain: '$_logSub.start.seed',
         );
       }
+      // Claim what arrived while the app was down before the live
+      // subscription and the worker start: a live event applied ahead of
+      // the startup bridge would otherwise move the anchor past it. A
+      // failed write stays retained and is persisted before the first
+      // queue insert.
+      try {
+        await _claimCatchUpRange(roomId);
+      } catch (error, stackTrace) {
+        _logging.error(
+          LogDomain.sync,
+          error,
+          stackTrace: stackTrace,
+          subDomain: '$_logSub.start.claim',
+        );
+      }
     } else {
       _logging.log(
         LogDomain.sync,

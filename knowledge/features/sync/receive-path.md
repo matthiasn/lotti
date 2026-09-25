@@ -5,9 +5,17 @@ description: The Drift-backed inbound queue, the anchored catch-up bridge, per-r
 resource: ../../../lib/features/sync/queue
 tags: [sync, inbound-queue, catch-up, matrix]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-06T00:25:30+02:00 }
-stale_after: 2026-11-02
+generated: { by: claude-code/opus-5.5, at: 2026-09-25T18:00:00Z }
+stale_after: 2026-12-25
 sources:
+  - id: tla-spec
+    resource: ../../../specs/tla/InboundQueue.tla
+    title: TLA+ model of the inbound queue, its walks and its marker
+    last_modified: 2026-09-25
+  - id: adr-0084
+    resource: ../../../docs/adr/0084-model-checked-inbound-queue.md
+    title: ADR 0084 — model-checked inbound queue
+    last_modified: 2026-09-25
   - id: metrics-panel
     resource: ../../../lib/features/sync/ui/matrix_stats/matrix_metrics_panel.dart
     title: Serialized Matrix metrics refreshes
@@ -15,7 +23,7 @@ sources:
   - id: queue
     resource: ../../../lib/features/sync/queue
     title: Inbound queue pipeline
-    last_modified: 2026-08-03
+    last_modified: 2026-09-25
   - id: processor
     resource: ../../../lib/features/sync/matrix/sync_event_processor.dart
     title: SyncEventProcessor
@@ -104,7 +112,10 @@ the same normalized `relativePath` as the envelope; a mismatched immutable id is
 malformed rather than a reason to read some other file.
 
 Per-room markers advance only after a successful slice commit, so a crash
-mid-drain simply re-leases the same rows on restart.
+mid-drain simply re-leases the same rows on restart. Resurrection flips a row
+back to `enqueued` only while it is still `abandoned`: its SELECT runs outside
+the UPDATE's transaction, and a row another pass re-armed and the worker
+applied in between must stay applied.
 
 # Live ingestion
 
@@ -135,6 +146,11 @@ classification. The descriptor then enters the same bounded attachment worker
 pool as plaintext page events, so its JSON can land and wake a companion payload
 from `pendingAttachment`; the descriptor itself remains excluded from the
 inbound event queue.
+
+A plaintext insert that throws is recorded the same way: `_safeEnqueue` lowers
+the floor to the event and requests a bridge pass. The live stream never
+delivers an event twice, so dropping it would lose it as soon as a later event
+applied and moved the anchor past it.
 
 The same rule applies to bootstrap pages. `QueueBootstrapSink` lowers each
 room's floor before appending later plaintext from that page, re-decrypts each
@@ -181,8 +197,10 @@ newest event and probes until the server returns nothing newer.
 
 The fallback is a timestamp-bounded **backward** walk
 (`collectHistoryForBootstrap`), used for fresh clients, unresolvable anchors,
-and unsafe anchors. An unsafe anchor walks back to `resume_floor_ts`, not
-`last_applied_ts`. Both directions feed the same enqueue path with
+and unsafe anchors. It walks back to `BridgeMarker.backwardWalkBound`, the
+lower of `resume_floor_ts` and `last_applied_ts`: an unsafe anchor walks to the
+floor, and a claim one millisecond above the marker never narrows the walk past
+the applied millisecond. Both directions feed the same enqueue path with
 `producer=bootstrap` via `InboundQueue.appendBootstrapPage`. When the boundary
 timestamp spans pages, the backward walk continues until that entire
 millisecond bucket is exhausted. It retains only the event IDs emitted at the
@@ -195,17 +213,52 @@ gap-recovery backward walks also have a wall-clock budget.
 ```mermaid
 stateDiagram-v2
   [*] --> NoFloor
-  NoFloor --> FloorRecorded: encrypted event skipped
-  FloorRecorded --> FloorLowered: older unresolved event observed
+  NoFloor --> FloorRecorded: encrypted event skipped, live insert failed, or range claimed
+  FloorRecorded --> FloorLowered: older unresolved event observed or older range claimed
   FloorLowered --> FloorLowered: newer unresolved event observed
+  FloorRecorded --> FloorRecorded: forward walk checkpoints its cursor
   FloorRecorded --> WalkIncomplete: catch-up stops before coverage
   FloorLowered --> WalkIncomplete: catch-up stops before coverage
   WalkIncomplete --> FloorRecorded: retry starts from durable floor
-  FloorRecorded --> WalkComplete: backward walk covers floor
-  FloorLowered --> WalkComplete: backward walk covers floor
+  FloorRecorded --> WalkComplete: walk covers floor
+  FloorLowered --> WalkComplete: walk covers floor
   WalkComplete --> FloorRecorded: walk still observes ciphertext
   WalkComplete --> NoFloor: walk observes no unresolved ciphertext
 ```
+
+## Claiming the range above the marker
+
+The anchor must never pass an event that is neither queued nor inside the
+range the next catch-up fetches. Walks break that on their own: a backward
+walk pages the tip first, so its newest event can apply and become the anchor
+while older pages are still unfetched, and a forward walk that stops on its
+budget or an error leaves a remainder that the next live event applies past.
+A retry, or the startup walk after a crash, would then walk forward from the
+new anchor and skip the rest for good.
+
+So the range above the marker is **claimed** before anything newer can apply
+there: the floor drops to one millisecond above `last_applied_ts`
+(`BridgeMarker.claimFloorTs`). One above, so the claim alone keeps the anchor
+safe and the forward walk remains the normal path; once something newer
+applies past it, the next walk goes backward to the claim.
+
+- `startImpl` claims before it subscribes to the live stream and starts the
+  worker, covering what arrived while the app was down.
+- A limited sync claims the gap at once, before requesting its pass, so a pass
+  that has to wait for an in-flight walk cannot re-read a marker the post-gap
+  slice already moved.
+- Every walk claims at its start in the room's lane, walk-locally, so its own
+  completion still clears it.
+- A forward walk **checkpoints** after each page: the floor moves to one above
+  the page's newest event, or to the oldest ciphertext the walk still holds. A
+  retry after a capped or failed forward walk then resumes forward from the
+  anchor the walk's own rows reached, and walks backward only over the
+  remainder when something newer applied past it.
+
+One window is left open: the SDK publishes a limited sync's slice on
+`onTimelineEvent` before `onSync`, so a post-gap event can apply before the
+bridge claims the gap. The options and the model's counterexample are in
+[ADR 0084](../../../docs/adr/0084-model-checked-inbound-queue.md).
 
 A completed walk compare-and-sets the floor revision it observed at walk start
 with the sink's oldest still-encrypted event, or clears it when the walk
@@ -259,6 +312,12 @@ Each batch is wrapped in `SyncSequenceLogService.runWithDeferredMissingEntries`,
 so per-slice gap detections coalesce into **one** `onMissingEntriesDetected`
 emission rather than a storm.
 
+A throw inside one iteration — a peek, or the batch's queue transaction, which
+rolls back and leaves its row leased until the lease expires — is logged, and
+the loop waits one idle tick (or for `stop()`) and carries on. Nothing else
+restarts the worker while the coordinator runs, so a loop that ended on an
+error would strand every queued row until the next restart.
+
 ## Prepare outside the transaction, apply inside
 
 `QueueApplyAdapter` runs `prepare` outside the writer transaction and `apply`
@@ -294,7 +353,8 @@ every skipped encrypted event lowers the floor before later plaintext can
 advance the applied marker, and `_runBootstrap` rejects a forward anchor at or
 ahead of it. The current or next process therefore walks backward to the floor
 instead of stepping over work known to be unresolved. Only a completed walk
-may raise or clear the floor.
+may clear the floor, and only a completed walk or a forward walk's checkpoint
+may raise it.
 
 `QueueMarkerAdvancer` performs that comparison inline: it checks the stored
 timestamp first and uses durable event ids only to break an equal-timestamp
@@ -304,13 +364,18 @@ let an older durable event regress the marker.
 The net effect: an out-of-order apply — a live event at ts=100 applied first,
 then a bridge event at ts=60 from the same burst — cannot regress the marker.
 
+The clamp keeps `last_applied_ts` meaning "applied", but it is not what keeps
+events from being lost: a row it holds the marker behind is already in the
+queue. Loss is prevented by the claims above; the model checks this
+(`NoSilentLoss` holds without the clamp).
+
 # Lifecycle
 
 ```mermaid
 stateDiagram-v2
     [*] --> Stopped
     Stopped --> Starting: coordinator.start()
-    Starting --> Running: marker seeded · stranded rows pruned · worker + bridge started
+    Starting --> Running: marker seeded · stranded rows pruned · range above marker claimed · worker + bridge started
     Running --> Running: plaintext → enqueueLive<br/>ciphertext → lower durable floor + skip<br/>worker drains one entry per batch
     Running --> Draining: coordinator.stop(drainFirst: true)
     Draining --> Stopped: coordinator.drainUntilEmpty()<br/>(loops worker.drainToCompletion until queue empty or timeout)

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
@@ -129,6 +130,13 @@ extension _AnyInboundWorkerScenario on glados.Any {
             (outcomes) => _GeneratedWorkerOutcomeScenario(outcomes: outcomes),
           );
 }
+
+/// A depth stream whose `cancel()` completes inside the fake-async zone.
+/// Cancelling a `Stream.empty()` or broadcast subscription returns the
+/// root zone's shared completed future, whose continuation fakeAsync never
+/// runs.
+Stream<QueueDepthSignal> _fakeAsyncDepthStream() =>
+    StreamController<QueueDepthSignal>(onCancel: () async {}).stream;
 
 void main() {
   late SyncDatabase db;
@@ -694,53 +702,113 @@ void main() {
     );
 
     test(
-      'an uncaught exception in the loop body is captured by _logging and '
-      '_running is cleared so start() can relaunch afterwards',
-      () async {
-        final loopErrorCaptured = Completer<void>();
-        final brokenQueue = MockInboundQueue();
-        when(
-          () => brokenQueue.depthChanges,
-        ).thenAnswer((_) => const Stream<QueueDepthSignal>.empty());
-        when(
-          () => brokenQueue.peekBatchReady(maxBatch: any(named: 'maxBatch')),
-        ).thenThrow(StateError('peek boom'));
-        final worker = InboundWorker(
-          queue: brokenQueue,
-          sequenceLogService: sequenceLog,
-          resolveRoom: () async => room,
-          apply: (_, _) async => ApplyOutcome.applied,
-          logging: logging,
-        );
-        when(
-          () => logging.error(
-            any<LogDomain>(),
-            any<Object>(),
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
-            subDomain: any(
-              named: 'subDomain',
-              that: contains('loop'),
+      'a throw in the loop body is logged and the loop keeps draining '
+      'after the idle tick (QueuedEventuallySettled in InboundQueue.tla: '
+      'a dead loop stranded every queued row until the next restart)',
+      () {
+        fakeAsync((async) {
+          const entry = InboundQueueEntry(
+            queueId: 1,
+            eventId: r'$afterBoom',
+            roomId: roomId,
+            originTs: 1,
+            enqueuedAt: 0,
+            attempts: 0,
+            rawJson: '{}',
+          );
+          final flakyQueue = MockInboundQueue();
+          when(
+            () => flakyQueue.depthChanges,
+          ).thenAnswer((_) => _fakeAsyncDepthStream());
+          when(flakyQueue.earliestReadyAt).thenAnswer((_) async => null);
+          var peeks = 0;
+          when(
+            () => flakyQueue.peekBatchReady(maxBatch: any(named: 'maxBatch')),
+          ).thenAnswer((_) async {
+            peeks++;
+            if (peeks == 1) throw StateError('database is locked');
+            return peeks == 2 ? [entry] : const <InboundQueueEntry>[];
+          });
+          // The worker's phase-2 body is an `async` closure without a
+          // return, so the transaction's type argument is inferred as Null.
+          when(
+            () => flakyQueue.runInTransaction<Null>(any()),
+          ).thenAnswer(
+            (invocation) =>
+                (invocation.positionalArguments.first
+                    as Future<Null> Function())(),
+          );
+          when(() => flakyQueue.commitApplied(entry)).thenAnswer((_) async {});
+          final applied = <String>[];
+          final worker = InboundWorker(
+            queue: flakyQueue,
+            sequenceLogService: sequenceLog,
+            resolveRoom: () async => room,
+            apply: (e, _) async {
+              applied.add(e.eventId);
+              return ApplyOutcome.applied;
+            },
+            logging: logging,
+          );
+
+          unawaited(worker.start());
+          async.elapse(Duration.zero);
+          expect(peeks, 1);
+          expect(applied, isEmpty);
+
+          // The loop is still alive: after the idle tick it peeks again
+          // and applies the row the failed peek could not hand out.
+          async.elapse(const Duration(seconds: 5));
+          expect(applied, [r'$afterBoom']);
+          verify(() => flakyQueue.commitApplied(entry)).called(1);
+          verify(
+            () => logging.error(
+              any<LogDomain>(),
+              any<Object>(that: isA<StateError>()),
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: any(named: 'subDomain', that: contains('loop')),
             ),
-          ),
-        ).thenAnswer((_) {
-          if (!loopErrorCaptured.isCompleted) {
-            loopErrorCaptured.complete();
-          }
+          ).called(1);
+
+          var stopped = false;
+          unawaited(worker.stop().then((_) => stopped = true));
+          async.elapse(Duration.zero);
+          expect(stopped, isTrue);
         });
-        await worker.start();
-        await loopErrorCaptured.future;
-        await worker.stop();
-        verify(
-          () => logging.error(
-            any<LogDomain>(),
-            any<Object>(),
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
-            subDomain: any(
-              named: 'subDomain',
-              that: contains('loop'),
-            ),
-          ),
-        ).called(greaterThanOrEqualTo(1));
+      },
+    );
+
+    test(
+      'stop() during the pause after a loop error returns without waiting '
+      'for the idle tick',
+      () {
+        fakeAsync((async) {
+          final brokenQueue = MockInboundQueue();
+          when(
+            () => brokenQueue.depthChanges,
+          ).thenAnswer((_) => _fakeAsyncDepthStream());
+          when(
+            () => brokenQueue.peekBatchReady(maxBatch: any(named: 'maxBatch')),
+          ).thenThrow(StateError('peek boom'));
+          final worker = InboundWorker(
+            queue: brokenQueue,
+            sequenceLogService: sequenceLog,
+            resolveRoom: () async => room,
+            apply: (_, _) async => ApplyOutcome.applied,
+            logging: logging,
+            idleTick: const Duration(minutes: 10),
+          );
+          unawaited(worker.start());
+          async.elapse(Duration.zero);
+
+          var stopped = false;
+          unawaited(worker.stop().then((_) => stopped = true));
+          async.flushMicrotasks();
+          expect(stopped, isTrue);
+          verify(
+            () => brokenQueue.peekBatchReady(maxBatch: any(named: 'maxBatch')),
+          ).called(1);
+        });
       },
     );
 

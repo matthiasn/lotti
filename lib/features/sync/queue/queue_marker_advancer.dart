@@ -196,6 +196,44 @@ class QueueMarkerAdvancer {
     );
   }
 
+  /// Records how far an in-flight forward walk has captured, so an
+  /// incomplete walk leaves a floor at its cursor rather than at the
+  /// marker it started from.
+  ///
+  /// Every event after the walk's anchor up to [coveredThroughTs] has been
+  /// enqueued (or seen as ciphertext, which [unresolvedFloorTs] records),
+  /// so the floor moves to one above the cursor, or to the oldest
+  /// unresolved ciphertext when that is lower. A retry after a failure
+  /// then resumes forward from the anchor the walk's rows reach, and only
+  /// falls back to a backward walk down to the cursor when newer events
+  /// were applied past it.
+  ///
+  /// Unlike [completeResumeWalk] this needs no compare-and-set, and leaves
+  /// the revision alone so the walk's completion still matches: a floor
+  /// observed while the walk runs is of an event the walk has already
+  /// passed (queued, or held in [unresolvedFloorTs]) or has yet to reach
+  /// (above the cursor). `WalkCheckpoint` in `specs/tla/InboundQueue.tla`.
+  Future<void> checkpointResumeWalk({
+    required String roomId,
+    required int coveredThroughTs,
+    required int? unresolvedFloorTs,
+  }) {
+    final cursorFloor = coveredThroughTs + 1;
+    final floor = unresolvedFloorTs != null && unresolvedFloorTs < cursorFloor
+        ? unresolvedFloorTs
+        : cursorFloor;
+    return _serializeResumeFloorWrite(
+      () => _db
+          .into(_db.queueMarkers)
+          .insertOnConflictUpdate(
+            QueueMarkersCompanion.insert(
+              roomId: roomId,
+              resumeFloorTs: Value(floor),
+            ),
+          ),
+    );
+  }
+
   /// The room's durable floor, or null when nothing is outstanding.
   Future<int?> resumeFloorTs(String roomId) async {
     await ensureResumeFloorPersisted(roomId);

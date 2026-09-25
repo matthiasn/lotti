@@ -133,6 +133,9 @@ class _QueueCoordinatorTestSetup {
       when(() => sessionManager.client).thenReturn(client);
       when(() => roomManager.currentRoomId).thenReturn(roomId);
       when(() => roomManager.currentRoom).thenReturn(null);
+      // Start and every walk read the marker to claim the range above it;
+      // no legacy marker unless a test says otherwise.
+      when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
       when(() => seeder.seedIfAbsent(any())).thenAnswer((_) async => true);
       when(() => queue.pruneStrandedEntries(any())).thenAnswer((_) async => 0);
       when(worker.start).thenAnswer((_) async {});
@@ -185,6 +188,12 @@ class _QueueCoordinatorTestSetup {
       await journalDb.close();
     });
   }
+
+  /// Consumes the claim `start()` makes before anything can apply: the
+  /// floor one above the room's (absent) marker.
+  void verifyStartClaim() => verify(
+    () => queue.lowerResumeFloor(roomId: roomId, originTs: 1),
+  ).called(1);
 
   QueuePipelineCoordinator build({
     AttachmentIngestor? attachmentIngestor,

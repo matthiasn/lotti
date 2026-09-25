@@ -53,7 +53,34 @@ class BridgeMarker {
     if (applied == null) return false;
     return floor > applied;
   }
+
+  /// The floor that claims everything newer than the applied marker for
+  /// the next catch-up: one millisecond above it, or the whole history
+  /// when there is no marker. One above, so the claim alone keeps
+  /// [anchorIsSafe] true and the forward walk from the anchor stays the
+  /// path taken until something newer applies past it.
+  int get claimFloorTs => (lastAppliedTs ?? 0) + 1;
+
+  /// Lower bound of a backward walk: the smaller of the floor and the
+  /// applied timestamp, or whichever is known.
+  ///
+  /// A catch-up claim sets the floor one millisecond above the applied
+  /// timestamp. Walking only to that floor would skip the rest of the
+  /// applied millisecond's bucket, which walking to the applied timestamp
+  /// covered before claims existed.
+  int? get backwardWalkBound {
+    final floor = resumeFloorTs;
+    final applied = lastAppliedTs;
+    if (floor == null) return applied;
+    if (applied == null) return floor;
+    return floor < applied ? floor : applied;
+  }
 }
+
+/// Durably claims everything newer than a room's applied marker for the
+/// next catch-up walk, by lowering the room's resume floor to one above
+/// the marker. Owned by `QueuePipelineCoordinator`.
+typedef CatchUpRangeClaim = Future<void> Function(String roomId);
 
 /// Callback owned by `QueuePipelineCoordinator` that streams the room's
 /// catch-up events through a `BootstrapSink` with back-pressure.
@@ -95,6 +122,7 @@ class BridgeCoordinator {
     required this._readMarker,
     required this._bootstrapRunner,
     required this._logging,
+    this._claimGap,
     this._incompleteRetryDelay = const Duration(seconds: 10),
     this._maxIncompleteRetries = 3,
   });
@@ -106,6 +134,14 @@ class BridgeCoordinator {
 
   final BootstrapRunner _bootstrapRunner;
   final DomainLogger _logging;
+
+  /// Claims the range above the marker when a limited sync reveals a gap,
+  /// before the bridge pass is requested. A pass that has to wait for an
+  /// in-flight walk re-reads the marker only when it starts, and by then
+  /// the worker may have applied the post-gap slice and moved the anchor
+  /// past the gap; the claim keeps the gap in the durable floor instead
+  /// (`ClaimOnGap` in `specs/tla/InboundQueue.tla`).
+  final CatchUpRangeClaim? _claimGap;
   final Duration _incompleteRetryDelay;
   final int _maxIncompleteRetries;
 
@@ -203,7 +239,7 @@ class BridgeCoordinator {
       // settings flip changes `_currentRoomId`) between the trigger and
       // `_runBridgeOnce` resolving a Room, we must not end up running a
       // catch-up against the wrong room.
-      unawaited(_bridge(roomId));
+      unawaited(_claimGapThenBridge(roomId));
       return;
     }
     // The Matrix SDK processes to-device events before publishing onSync.
@@ -214,6 +250,25 @@ class BridgeCoordinator {
     if (sync.toDevice?.isNotEmpty ?? false) {
       unawaited(_bridgeIfResumeFloor(roomId));
     }
+  }
+
+  Future<void> _claimGapThenBridge(String roomId) async {
+    final claim = _claimGap;
+    if (claim != null) {
+      try {
+        await claim(roomId);
+      } catch (error, stackTrace) {
+        // A failed floor write stays retained in memory and is persisted
+        // before the next queue insert, so the pass still runs.
+        _logging.error(
+          LogDomain.sync,
+          error,
+          stackTrace: stackTrace,
+          subDomain: '$_logSub.claimGap',
+        );
+      }
+    }
+    await _bridge(roomId);
   }
 
   Future<void> _bridgeIfResumeFloor(String roomId) async {

@@ -276,6 +276,77 @@ void main() {
     });
   });
 
+  group('BridgeMarker claims and backward bounds', () {
+    test('a claim sits one above the applied marker, so the claim alone '
+        'keeps the anchor safe', () {
+      const marker = BridgeMarker(
+        lastAppliedTs: 5000,
+        lastAppliedEventId: r'$a',
+      );
+      expect(marker.claimFloorTs, 5001);
+      expect(
+        BridgeMarker(
+          lastAppliedTs: 5000,
+          lastAppliedEventId: r'$a',
+          resumeFloorTs: marker.claimFloorTs,
+        ).anchorIsSafe,
+        isTrue,
+      );
+      expect(
+        const BridgeMarker(
+          lastAppliedTs: null,
+          lastAppliedEventId: null,
+        ).claimFloorTs,
+        1,
+        reason: 'no marker claims the whole history',
+      );
+    });
+
+    test('the backward walk goes down to the lower of floor and marker', () {
+      expect(
+        const BridgeMarker(
+          lastAppliedTs: 5000,
+          lastAppliedEventId: null,
+          resumeFloorTs: 5001,
+        ).backwardWalkBound,
+        5000,
+        reason:
+            'a claim above the marker must not narrow the walk past the '
+            "applied millisecond's bucket",
+      );
+      expect(
+        const BridgeMarker(
+          lastAppliedTs: 5000,
+          lastAppliedEventId: r'$a',
+          resumeFloorTs: 3000,
+        ).backwardWalkBound,
+        3000,
+      );
+      expect(
+        const BridgeMarker(
+          lastAppliedTs: 5000,
+          lastAppliedEventId: null,
+        ).backwardWalkBound,
+        5000,
+      );
+      expect(
+        const BridgeMarker(
+          lastAppliedTs: null,
+          lastAppliedEventId: null,
+          resumeFloorTs: 3000,
+        ).backwardWalkBound,
+        3000,
+      );
+      expect(
+        const BridgeMarker(
+          lastAppliedTs: null,
+          lastAppliedEventId: null,
+        ).backwardWalkBound,
+        isNull,
+      );
+    });
+  });
+
   late SyncDatabase db;
   late MockDomainLogger logging;
   late InboundQueue queue;
@@ -311,9 +382,11 @@ void main() {
     _RecordingRunner? runner,
     Duration incompleteRetryDelay = const Duration(seconds: 10),
     int maxIncompleteRetries = 3,
+    CatchUpRangeClaim? claimGap,
   }) {
     final recording = runner ?? _RecordingRunner();
     return BridgeCoordinator(
+      claimGap: claimGap,
       client: client,
       currentRoomId: () => roomId,
       resolveRoom: resolveRoom ?? () async => null,
@@ -330,6 +403,79 @@ void main() {
       maxIncompleteRetries: maxIncompleteRetries,
     );
   }
+
+  test(
+    'a limited sync claims the gap before its pass, and a limited sync '
+    'during an in-flight pass claims it at once rather than when the '
+    'rerun starts (ClaimOnGap in InboundQueue.tla: the rerun re-read a '
+    'marker the post-gap slice had already moved past the gap)',
+    () async {
+      final room = MockRoom();
+      when(() => room.id).thenReturn(roomId);
+      final claims = <String>[];
+      final runner = _RecordingRunner();
+      final firstPass = Completer<bool>();
+      runner.override = (_, _) {
+        expect(
+          claims,
+          hasLength(runner.calls.length),
+          reason: 'every pass follows the claim of its own gap',
+        );
+        return runner.calls.length == 1
+            ? firstPass.future
+            : Future<bool>.value(true);
+      };
+      final coordinator = buildCoordinator(
+        resolveRoom: () async => room,
+        runner: runner,
+        claimGap: (id) async => claims.add(id),
+      )..start();
+
+      syncCtl.add(_limitedSyncFor(roomId));
+      await pumpEventQueue();
+      expect(claims, [roomId]);
+      expect(runner.calls, hasLength(1));
+
+      syncCtl.add(_limitedSyncFor(roomId, prevBatch: 'pb-2'));
+      await pumpEventQueue();
+      expect(
+        claims,
+        [roomId, roomId],
+        reason: 'the second gap is claimed while the first pass still runs',
+      );
+      expect(runner.calls, hasLength(1));
+
+      firstPass.complete(true);
+      await pumpEventQueue();
+      expect(runner.calls, hasLength(2));
+      await coordinator.stop();
+    },
+  );
+
+  test('a claim that throws is logged and the pass still runs', () async {
+    final room = MockRoom();
+    when(() => room.id).thenReturn(roomId);
+    final runner = _RecordingRunner();
+    final coordinator = buildCoordinator(
+      resolveRoom: () async => room,
+      runner: runner,
+      claimGap: (_) async => throw StateError('floor write failed'),
+    )..start();
+
+    syncCtl.add(_limitedSyncFor(roomId));
+    await pumpEventQueue();
+
+    expect(runner.calls, hasLength(1));
+    verify(
+      () => logging.error(
+        LogDomain.sync,
+        any<Object>(that: isA<StateError>()),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: any<String>(named: 'subDomain', that: endsWith('.claimGap')),
+      ),
+    ).called(1);
+    await coordinator.stop();
+  });
 
   test('non-limited syncs are ignored', () async {
     final coordinator = buildCoordinator()..start();
