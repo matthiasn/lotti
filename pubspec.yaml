@@ -130,6 +130,7 @@ dependencies:
   shared_preferences: ^2.3.2
   sherpa_onnx: 1.13.4
   sliver_tools: ^0.2.12
+  sodium: ^4.1.1+1
   sqflite_common_ffi: ^2.3.3
   sqlite3: ^3.5.1
   super_clipboard: ^0.9.1

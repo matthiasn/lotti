@@ -16,6 +16,11 @@ checkout. Both materialize native libraries under `build/native_assets/`;
 overlapping builds can remove a library while another test process is loading
 it. Use separate checkouts for concurrent desktop and VM runs.
 
+The provenance tests sign with libsodium, which the `sodium` package's build
+hook compiles from bundled source on the first `flutter test` in a checkout —
+no system library needed, but a C toolchain and `make` are (Xcode command-line
+tools on a Mac). Later runs reuse the build.
+
 ## Plaza skeleton tests
 
 `test/features/plaza/scene/test_utils.dart` reads the shipped penguin and meerkat node

@@ -155,3 +155,4 @@ Each ADR should contain:
 - [`0085-model-checked-outbox.md`](./0085-model-checked-outbox.md)
 - [`0086-append-only-outbox.md`](./0086-append-only-outbox.md)
 - [`0087-journal-row-is-the-only-copy.md`](./0087-journal-row-is-the-only-copy.md)
+- [`0088-provenance-crypto-primitives.md`](./0088-provenance-crypto-primitives.md)
