@@ -153,20 +153,25 @@ class EnvelopeAuthor {
 /// ingest, not for this class.
 @immutable
 class Envelope {
+  /// Copies [causalRefs], [vectorClock] and [refs] into unmodifiable
+  /// snapshots (deeply, for the nested [refs]), so nothing the caller still
+  /// holds can change a signed envelope's bytes under its signature.
   Envelope({
     required this.kind,
     required this.deviceId,
     required this.seq,
     required this.prev,
-    required this.causalRefs,
-    required this.vectorClock,
+    required List<String> causalRefs,
+    required Map<String, int> vectorClock,
     required this.author,
     required this.claimedTime,
     required this.contentCommitment,
-    required this.refs,
+    required Map<String, Object?> refs,
     this.signature,
     this.version = envelopeVersion,
-  }) {
+  }) : causalRefs = List.unmodifiable(causalRefs),
+       vectorClock = Map.unmodifiable(vectorClock),
+       refs = Map.unmodifiable(refs.map((k, v) => MapEntry(k, _freeze(v)))) {
     validate();
   }
 
@@ -343,6 +348,13 @@ class Envelope {
         'claimed_time must be UTC at millisecond precision',
       );
     }
+    // The wire form has exactly four year digits; a year outside them could
+    // be signed here and then never decode.
+    if (claimedTime.year < 0 || claimedTime.year > 9999) {
+      throw EnvelopeFormatException(
+        'claimed_time year ${claimedTime.year} is outside 0000-9999',
+      );
+    }
     final commitment = contentCommitment;
     if (commitment != null && !isHexOfLength(commitment, envelopeHashLength)) {
       throw const EnvelopeFormatException(
@@ -422,6 +434,16 @@ DateTime parseClaimedTime(String value) {
   }
   return parsed;
 }
+
+/// An unmodifiable deep copy of the lists and maps in [value]; other values
+/// are returned as they are.
+Object? _freeze(Object? value) => switch (value) {
+  final List<Object?> list => List<Object?>.unmodifiable(list.map(_freeze)),
+  final Map<Object?, Object?> map => Map<Object?, Object?>.unmodifiable(
+    map.map((k, v) => MapEntry(k, _freeze(v))),
+  ),
+  _ => value,
+};
 
 Map<String, Object?> _requireMap(Object? value, String field) {
   if (value is! Map) {

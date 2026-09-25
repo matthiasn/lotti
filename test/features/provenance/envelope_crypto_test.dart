@@ -130,6 +130,39 @@ void main() {
       );
     });
 
+    test(
+      'changing the inputs after signing changes nothing that was signed',
+      () {
+        final refs = <String>[...EnvelopeReference.causalRefs];
+        final clock = <String, int>{'host-a': 3, 'host-b': 1};
+        final nested = <String, Object?>{
+          'targets': <Object?>['a'],
+        };
+        final signed = signEnvelope(
+          referenceEnvelope(
+            causalRefs: refs,
+            vectorClock: clock,
+            refs: {'supersedes': EnvelopeReference.prev, 'nested': nested},
+          ),
+          signer,
+        );
+        final bytes = encodeEnvelope(signed);
+
+        refs.add('f' * 64);
+        clock['host-a'] = 99;
+        (nested['targets']! as List<Object?>).add('b');
+        nested['extra'] = 1;
+
+        expect(encodeEnvelope(signed), bytes);
+        expect(
+          verifyEnvelopeSignature(signed, signer.publicKey, ed25519),
+          isTrue,
+        );
+        expect(() => signed.causalRefs.add('x'), throwsUnsupportedError);
+        expect(() => signed.refs['x'] = 1, throwsUnsupportedError);
+      },
+    );
+
     test("another device's signature cannot be re-attributed", () {
       final other = ed25519.generate();
       addTearDown(other.dispose);

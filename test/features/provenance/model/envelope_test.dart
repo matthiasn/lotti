@@ -108,6 +108,14 @@ void main() {
         ),
       ),
       (
+        'a claimed time after year 9999',
+        () => referenceEnvelope(claimedTime: DateTime.utc(10000)),
+      ),
+      (
+        'a claimed time before year 0',
+        () => referenceEnvelope(claimedTime: DateTime.utc(-1)),
+      ),
+      (
         'a commitment that is not a hash',
         () => referenceEnvelope(contentCommitment: 'abc'),
       ),
