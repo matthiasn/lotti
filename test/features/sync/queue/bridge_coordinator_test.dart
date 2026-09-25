@@ -277,28 +277,14 @@ void main() {
   });
 
   group('BridgeMarker claims and backward bounds', () {
-    test('a claim sits one above the applied marker, so the claim alone '
-        'keeps the anchor safe', () {
-      const marker = BridgeMarker(
-        lastAppliedTs: 5000,
-        lastAppliedEventId: r'$a',
-      );
-      expect(marker.claimFloorTs, 5001);
-      expect(
-        BridgeMarker(
-          lastAppliedTs: 5000,
-          lastAppliedEventId: r'$a',
-          resumeFloorTs: marker.claimFloorTs,
-        ).anchorIsSafe,
-        isTrue,
-      );
+    test('a claim one above the applied marker keeps the anchor safe', () {
       expect(
         const BridgeMarker(
-          lastAppliedTs: null,
-          lastAppliedEventId: null,
-        ).claimFloorTs,
-        1,
-        reason: 'no marker claims the whole history',
+          lastAppliedTs: 5000,
+          lastAppliedEventId: r'$a',
+          resumeFloorTs: 5001,
+        ).anchorIsSafe,
+        isTrue,
       );
     });
 

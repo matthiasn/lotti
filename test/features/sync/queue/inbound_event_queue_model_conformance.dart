@@ -22,6 +22,7 @@ const _encryptedEvent = 3;
 /// a delivery with nothing left to deliver first lets an event arrive,
 /// and a walk step with no walk running starts one.
 enum _QueueOp {
+  claimReadFails,
   arrive,
   liveDeliver,
   liveGap,
@@ -40,6 +41,7 @@ enum _QueueOp {
 /// since the interleavings that matter are a walk in flight while live
 /// events apply past it.
 const _opWeights = <_QueueOp, int>{
+  _QueueOp.claimReadFails: 1,
   _QueueOp.arrive: 1,
   _QueueOp.liveDeliver: 2,
   _QueueOp.liveGap: 2,
@@ -72,6 +74,11 @@ extension _AnyQueueTrace on glados.Any {
                 _weightedOps.length],
         ],
       );
+}
+
+/// A transient database error while a claim reads the marker.
+class _ClaimReadFailed implements Exception {
+  const _ClaimReadFailed();
 }
 
 String _conformanceEventId(int index) => '\$e$index';
@@ -140,18 +147,37 @@ class _QueueBench {
     );
   }
 
-  Future<void> claim({required bool walkLocal}) async {
-    final marker = await readMarker();
-    if (walkLocal) {
-      await queue.lowerResumeFloorFromWalk(
+  /// Set by [_QueueOp.claimReadFails]: the next claim's own marker read
+  /// throws, as a transient database error would. The queue retains the
+  /// claim, and resolving it later reads the marker successfully.
+  bool failNextClaimRead = false;
+
+  Future<int?> readAppliedTs() async {
+    final row = await durableMarker();
+    return row != null && row.lastAppliedTs > 0 ? row.lastAppliedTs : null;
+  }
+
+  /// Claims the range above the marker. Returns false when the claim's
+  /// marker read threw; the coordinator logs that and carries on, and the
+  /// queue keeps the claim until it resolves.
+  Future<bool> claim({required bool walkLocal}) async {
+    var fail = failNextClaimRead;
+    failNextClaimRead = false;
+    try {
+      await queue.claimAboveMarker(
         roomId: _conformanceRoom,
-        originTs: marker.claimFloorTs,
+        readAppliedTs: () async {
+          if (fail) {
+            fail = false;
+            throw const _ClaimReadFailed();
+          }
+          return readAppliedTs();
+        },
+        walkLocal: walkLocal,
       );
-    } else {
-      await queue.lowerResumeFloor(
-        roomId: _conformanceRoom,
-        originTs: marker.claimFloorTs,
-      );
+      return true;
+    } on _ClaimReadFailed {
+      return false;
     }
   }
 
@@ -180,8 +206,9 @@ class _QueueBench {
   }
 
   Future<void> startWalk() async {
+    // A walk whose claim throws never starts; the bridge retries it.
+    if (!await claim(walkLocal: true)) return;
     bridgePending = false;
-    await claim(walkLocal: true);
     final marker = await readMarker();
     revision = queue.resumeFloorRevision(_conformanceRoom);
     unresolved = null;
@@ -199,6 +226,8 @@ class _QueueBench {
   Future<void> run(_QueueOp op) async {
     log.add(op.name);
     switch (op) {
+      case _QueueOp.claimReadFails:
+        failNextClaimRead = true;
       case _QueueOp.arrive:
         if (tip < _timelineLength) tip++;
       case _QueueOp.liveDeliver:

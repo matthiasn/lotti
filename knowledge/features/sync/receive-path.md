@@ -113,9 +113,10 @@ malformed rather than a reason to read some other file.
 
 Per-room markers advance only after a successful slice commit, so a crash
 mid-drain simply re-leases the same rows on restart. Resurrection flips a row
-back to `enqueued` only while it is still `abandoned`: its SELECT runs outside
-the UPDATE's transaction, and a row another pass re-armed and the worker
-applied in between must stay applied.
+back to `enqueued` only while the UPDATE still finds it eligible — abandoned,
+under the hard cap, and matching the pass's path or reason: its SELECT runs
+outside the UPDATE's transaction, and a row another pass re-armed and the
+worker applied or abandoned again in between must stay as it is.
 
 # Live ingestion
 
@@ -238,7 +239,7 @@ new anchor and skip the rest for good.
 
 So the range above the marker is **claimed** before anything newer can apply
 there: the floor drops to one millisecond above `last_applied_ts`
-(`BridgeMarker.claimFloorTs`). One above, so the claim alone keeps the anchor
+(`InboundQueue.claimAboveMarker`). One above, so the claim alone keeps the anchor
 safe and the forward walk remains the normal path; once something newer
 applies past it, the next walk goes backward to the claim.
 
@@ -249,6 +250,9 @@ applies past it, the next walk goes backward to the claim.
   slice already moved.
 - Every walk claims at its start in the room's lane, walk-locally, so its own
   completion still clears it.
+- A claim whose marker read throws is retained in the queue, like a failed
+  floor write, and resolved against the marker as it then is before any
+  queue insert or floor read.
 - A forward walk **checkpoints** after each page: the floor moves to one above
   the page's newest event, or to the oldest ciphertext the walk still holds. A
   retry after a capped or failed forward walk then resumes forward from the

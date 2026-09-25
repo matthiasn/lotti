@@ -463,12 +463,26 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
     return _readMarkerForRoom(roomId);
   }
 
-  Future<void> _claimWalkRange(String roomId) async {
-    final marker = await _readMarkerForRoom(roomId);
-    await _queue.lowerResumeFloorFromWalk(
-      roomId: roomId,
-      originTs: marker.claimFloorTs,
-    );
+  Future<void> _claimWalkRange(String roomId) => _queue.claimAboveMarker(
+    roomId: roomId,
+    readAppliedTs: () => _readAppliedTs(roomId),
+    walkLocal: true,
+  );
+
+  /// The applied timestamp the bridge would read for [roomId], without the
+  /// floor: the queue marker, or the legacy settings marker while the queue
+  /// marker has not advanced. Claims resolve through this inside the floor's
+  /// serialized writes, where reading the floor again would wait on itself.
+  Future<int?> _readAppliedTs(String roomId) async =>
+      _appliedTsOf(await _readMarkerRow(roomId));
+
+  Future<QueueMarkerItem?> _readMarkerRow(String roomId) => (_syncDb.select(
+    _syncDb.queueMarkers,
+  )..where((t) => t.roomId.equals(roomId))).getSingleOrNull();
+
+  Future<int?> _appliedTsOf(QueueMarkerItem? row) async {
+    final ts = row?.lastAppliedTs ?? 0;
+    return ts > 0 ? ts : getLastReadMatrixEventTs(_settingsDb);
   }
 
   Future<BridgeMarker> _readMarkerForRoom(String roomId) async {
@@ -477,20 +491,15 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
     // must not gate on the raw table and skip the only signal that a bridge is
     // required.
     final retainedFloorTs = await _queue.resumeFloorTs(roomId);
-    final marker = await (_syncDb.select(
-      _syncDb.queueMarkers,
-    )..where((t) => t.roomId.equals(roomId))).getSingleOrNull();
+    final marker = await _readMarkerRow(roomId);
+    final ts = await _appliedTsOf(marker);
     if (marker == null) {
-      final legacy = await getLastReadMatrixEventTs(_settingsDb);
       return BridgeMarker(
-        lastAppliedTs: legacy,
+        lastAppliedTs: ts,
         lastAppliedEventId: null,
         resumeFloorTs: retainedFloorTs,
       );
     }
-    final ts = marker.lastAppliedTs > 0
-        ? marker.lastAppliedTs
-        : await getLastReadMatrixEventTs(_settingsDb);
     return BridgeMarker(
       lastAppliedTs: ts,
       resumeFloorTs: retainedFloorTs ?? marker.resumeFloorTs,

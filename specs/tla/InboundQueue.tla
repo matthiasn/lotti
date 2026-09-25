@@ -90,6 +90,9 @@ CONSTANTS
     FailedEnqueueLowersFloor, \* a live enqueue that throws lowers the floor
     WorkerSurvivesErrors, \* the worker loop outlives a throw
     GuardedResurrect, \* resurrection flips only rows still abandoned
+    ResurrectRechecksCap, \* ... and still under the hard cap
+    RetainFailedClaim, \* a claim whose marker read throws stays pending
+    HardCap,        \* resurrections per row (`hardCap`)
     \* The residual:
     SliceRace       \* TRUE: the slice can apply before the trigger claims
 
@@ -98,13 +101,14 @@ FaultKinds == {
     "floorWrite",   \* a resume-floor write throws; the value is retained
                     \* in memory (QueueMarkerAdvancer._pendingResumeFloors)
     "walk",         \* a catch-up walk ends incomplete
-    "worker"        \* the worker's peek or phase-2 transaction throws
+    "worker",       \* the worker's peek or phase-2 transaction throws
+    "claimRead"     \* reading the marker for a claim throws
 }
 
 ASSUME Faults \subseteq FaultKinds
 ASSUME N \in Nat /\ InitTip \in 0..N /\ EncInit \subseteq 1..N
 ASSUME MaxDowns \in Nat /\ FaultBudget \in Nat
-ASSUME MaxRetries \in Nat /\ MaxResurrections \in Nat
+ASSUME MaxRetries \in Nat /\ MaxResurrections \in Nat /\ HardCap \in Nat
 
 Events == 1..N
 None == -1
@@ -131,6 +135,8 @@ VARIABLES
     mAnchor,        \* queue_markers.last_applied_event_id (0: none)
     floor,          \* queue_markers.resume_floor_ts (None: null)
     pend,           \* a floor retained in memory after a failed write
+    pendClaim,      \* a claim retained in memory after a failed marker read
+    resCount,       \* inbound_event_queue.resurrection_count per event
     dirty,          \* the floor revision moved since the walk started
     walk,           \* "idle", "fwd" or "bwd"
     wCur,           \* the walk's last emitted event (fwd) or next-above (bwd)
@@ -142,7 +148,8 @@ VARIABLES
     retries, resurrections, downs, faults
 
 vars == <<tip, enc, running, workerAlive, liveNext, gapPending, row, wk,
-          wkPhase, mTs, mAnchor, floor, pend, dirty, walk, wCur, wBound,
+          wkPhase, mTs, mAnchor, floor, pend, pendClaim, resCount, dirty,
+          walk, wCur, wBound,
           wUnres, bridgePending, recovered, rsSel, retries, resurrections,
           downs, faults>>
 
@@ -176,21 +183,32 @@ Captured(e) == row[e] # "none"
 (* Floor writes. `_retainAndPersistResumeFloor` folds the value into the *)
 (* retained minimum and persists it; on a throw it stays retained.       *)
 
-\* Persisting the retained floor (ensureResumeFloorPersisted).
-Flushed == IF pend = None THEN floor ELSE Lower(floor, pend)
+\* Persisting the retained floor (ensureResumeFloorPersisted), after
+\* resolving a claim whose marker read failed against the marker as it is
+\* now.
+Flushed ==
+    LET f1 == IF pend = None THEN floor ELSE Lower(floor, pend)
+    IN IF pendClaim THEN Lower(f1, mTs + 1) ELSE f1
 
 LowerFloor(t) ==
     \/ /\ floor' = Lower(Flushed, t)
-       /\ pend' = None
+       /\ pend' = None /\ pendClaim' = FALSE
        /\ UNCHANGED faults
     \/ /\ FaultOK("floorWrite")
        /\ pend' = Lower(pend, t)
        /\ faults' = faults + 1
-       /\ UNCHANGED floor
+       /\ UNCHANGED <<floor, pendClaim>>
 
 \* Claiming the range above the marker: a floor one above it.
-Claim(on) == IF on THEN LowerFloor(mTs + 1)
-             ELSE UNCHANGED <<floor, pend, faults>>
+Claim(on) ==
+    IF on
+      THEN \/ LowerFloor(mTs + 1)
+           \/ \* reading the marker throws before the floor is written
+              /\ FaultOK("claimRead")
+              /\ faults' = faults + 1
+              /\ pendClaim' = (pendClaim \/ RetainFailedClaim)
+              /\ UNCHANGED <<floor, pend>>
+      ELSE UNCHANGED <<floor, pend, pendClaim, faults>>
 
 -----------------------------------------------------------------------------
 (* QueueMarkerAdvancer.advanceIfNewer for event e leaving the active set. *)
@@ -201,7 +219,7 @@ AdvanceMarker(e) ==
         cand == IF oa = None \/ e < oa THEN e ELSE oa - 1
         tie == cand = e /\ e = mTs
         adv == mTs = 0 \/ cand > mTs \/ tie
-    IN IF ~adv THEN UNCHANGED <<mTs, mAnchor>>
+    IN IF ~adv THEN UNCHANGED <<mTs, mAnchor, resCount>>
        ELSE /\ mTs' = IF tie THEN mTs ELSE cand
             \* An equal timestamp takes the larger event id, which is
             \* arbitrary here; a null stored id always yields.
@@ -225,6 +243,8 @@ Init ==
     /\ mAnchor = 0
     /\ floor = None
     /\ pend = None
+    /\ pendClaim = FALSE
+    /\ resCount = [e \in Events |-> 0]
     /\ dirty = FALSE
     /\ walk = "idle"
     /\ wCur = 0
@@ -241,9 +261,7 @@ Init ==
 Arrive ==
     /\ tip < N
     /\ tip' = tip + 1
-    /\ UNCHANGED <<enc, running, workerAlive, liveNext, gapPending, row, wk,
-                   wkPhase, mTs, mAnchor, floor, pend, dirty, walkVars,
-                   bridgePending, recovered, rsSel, counters>>
+    /\ UNCHANGED <<enc, running, workerAlive, liveNext, gapPending, row, wk, wkPhase, mTs, mAnchor, floor, pend, pendClaim, dirty, walkVars, bridgePending, recovered, rsSel, counters, resCount>>
 
 \* A key arrives. BridgeCoordinator reruns catch-up on to-device traffic
 \* while a floor exists; reading the marker persists a retained floor.
@@ -251,11 +269,9 @@ KeyArrives(e) ==
     /\ e \in enc
     /\ enc' = enc \ {e}
     /\ IF running /\ Flushed # None
-         THEN bridgePending' = TRUE /\ floor' = Flushed /\ pend' = None
-         ELSE UNCHANGED <<bridgePending, floor, pend>>
-    /\ UNCHANGED <<tip, running, workerAlive, liveNext, gapPending, row, wk,
-                   wkPhase, mTs, mAnchor, dirty, walkVars, recovered, rsSel,
-                   counters>>
+         THEN bridgePending' = TRUE /\ floor' = Flushed /\ pend' = None /\ pendClaim' = FALSE
+         ELSE UNCHANGED <<bridgePending, floor, pend, pendClaim, resCount>>
+    /\ UNCHANGED <<tip, running, workerAlive, liveNext, gapPending, row, wk, wkPhase, mTs, mAnchor, dirty, walkVars, recovered, rsSel, counters, resCount>>
 
 LiveDeliver ==
     /\ running
@@ -266,13 +282,13 @@ LiveDeliver ==
             THEN \* ciphertext: lowerResumeFloor bumps the revision
                  /\ LowerFloor(e)
                  /\ dirty' = TRUE
-                 /\ UNCHANGED <<row, bridgePending>>
+                 /\ UNCHANGED <<row, bridgePending, resCount>>
             ELSE \/ \* enqueueLive: the retained floor first, then the insert
                     /\ floor' = Flushed
-                    /\ pend' = None
+                    /\ pend' = None /\ pendClaim' = FALSE
                     /\ row' = IF row[e] = "none"
                                 THEN [row EXCEPT ![e] = "enqueued"] ELSE row
-                    /\ UNCHANGED <<dirty, faults, bridgePending>>
+                    /\ UNCHANGED <<dirty, faults, bridgePending, resCount>>
                  \/ \* the insert throws; _safeEnqueue catches it
                     /\ FaultOK("enqueue")
                     /\ UNCHANGED row
@@ -282,13 +298,11 @@ LiveDeliver ==
                               /\ dirty' = TRUE
                               /\ bridgePending' = TRUE
                               /\ \/ /\ floor' = Lower(Flushed, e)
-                                    /\ pend' = None
+                                    /\ pend' = None /\ pendClaim' = FALSE
                                  \/ /\ pend' = Lower(pend, e)
-                                    /\ UNCHANGED floor
-                         ELSE UNCHANGED <<floor, pend, dirty, bridgePending>>
-    /\ UNCHANGED <<tip, enc, running, workerAlive, gapPending, wk, wkPhase,
-                   mTs, mAnchor, walkVars, recovered, rsSel, retries,
-                   resurrections, downs>>
+                                    /\ UNCHANGED <<floor, pendClaim>>
+                         ELSE UNCHANGED <<floor, pend, pendClaim, dirty, bridgePending, resCount>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, gapPending, wk, wkPhase, mTs, mAnchor, walkVars, recovered, rsSel, retries, resurrections, downs, resCount>>
 
 \* The bridge sees a limited sync: claim the gap, then request a pass.
 GapClaimed ==
@@ -304,30 +318,24 @@ LiveGap ==
          /\ liveNext' = k
          /\ IF SliceRace
               THEN /\ gapPending' = TRUE
-                   /\ UNCHANGED <<floor, pend, dirty, bridgePending, faults>>
+                   /\ UNCHANGED <<floor, pend, pendClaim, dirty, bridgePending, faults, resCount>>
               ELSE /\ GapClaimed
                    /\ UNCHANGED gapPending
-    /\ UNCHANGED <<tip, enc, running, workerAlive, row, wk, wkPhase, mTs,
-                   mAnchor, walkVars, recovered, rsSel, retries,
-                   resurrections, downs>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, row, wk, wkPhase, mTs, mAnchor, walkVars, recovered, rsSel, retries, resurrections, downs, resCount>>
 
 \* "Catch up now", MatrixService.forceRescan: a pass with no gap known.
 ManualBridge ==
     /\ running
     /\ ~bridgePending
     /\ bridgePending' = TRUE
-    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row,
-                   wk, wkPhase, mTs, mAnchor, floor, pend, dirty, walkVars,
-                   recovered, rsSel, counters>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row, wk, wkPhase, mTs, mAnchor, floor, pend, pendClaim, dirty, walkVars, recovered, rsSel, counters, resCount>>
 
 GapTrigger ==
     /\ running
     /\ gapPending
     /\ gapPending' = FALSE
     /\ GapClaimed
-    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, row, wk, wkPhase,
-                   mTs, mAnchor, walkVars, recovered, rsSel, retries,
-                   resurrections, downs>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, row, wk, wkPhase, mTs, mAnchor, walkVars, recovered, rsSel, retries, resurrections, downs, resCount>>
 
 \* A walk starts in the lane. The marker read persists a retained floor.
 \* The walk's own claim is walk-local: it does not move the revision.
@@ -335,7 +343,7 @@ BeginWalk(forward, unbounded) ==
     LET f1 == Flushed
         claimed == IF ClaimOnWalk THEN Lower(f1, mTs + 1) ELSE f1
     IN /\ floor' = claimed
-       /\ pend' = None
+       /\ pend' = None /\ pendClaim' = FALSE
        /\ dirty' = FALSE
        /\ walk' = IF forward THEN "fwd" ELSE "bwd"
        /\ wCur' = IF forward THEN mAnchor ELSE tip + 1
@@ -348,8 +356,7 @@ WalkStart ==
     /\ bridgePending
     /\ bridgePending' = FALSE
     /\ BeginWalk(AnchorSafe(Flushed), FALSE)
-    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row,
-                   wk, wkPhase, mTs, mAnchor, recovered, rsSel, counters>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row, wk, wkPhase, mTs, mAnchor, recovered, rsSel, counters, resCount>>
 
 GapRecoveryStart ==
     /\ GapRecovery
@@ -358,34 +365,33 @@ GapRecoveryStart ==
     /\ ~recovered
     /\ recovered' = TRUE
     /\ BeginWalk(FALSE, TRUE)
-    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row,
-                   wk, wkPhase, mTs, mAnchor, bridgePending, rsSel, counters>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row, wk, wkPhase, mTs, mAnchor, bridgePending, rsSel, counters, resCount>>
 
 \* The walk ends incomplete; the bridge schedules its bounded retry.
 AbortWalk ==
     /\ walk' = "idle"
     /\ bridgePending' = TRUE
-    /\ UNCHANGED <<wCur, wBound, wUnres>>
+    /\ UNCHANGED <<wCur, wBound, wUnres, resCount>>
 
 \* The sink handles event c of the walk.
 Emit(c) ==
     IF c \in enc
       THEN \* still ciphertext after one fresh decrypt attempt
            \/ /\ floor' = Lower(Flushed, c)
-              /\ pend' = None
+              /\ pend' = None /\ pendClaim' = FALSE
               /\ wUnres' = Lower(wUnres, c)
-              /\ UNCHANGED <<row, faults, walk, bridgePending>>
+              /\ UNCHANGED <<row, faults, walk, bridgePending, resCount>>
            \/ /\ FaultOK("floorWrite")
               /\ pend' = Lower(pend, c)
               /\ faults' = faults + 1
-              /\ UNCHANGED <<row, floor, wUnres>>
+              /\ UNCHANGED <<row, floor, wUnres, resCount, pendClaim>>
               /\ walk' = "idle"
               /\ bridgePending' = TRUE
       ELSE /\ floor' = Flushed
-           /\ pend' = None
+           /\ pend' = None /\ pendClaim' = FALSE
            /\ row' = IF row[c] = "none"
                        THEN [row EXCEPT ![c] = "enqueued"] ELSE row
-           /\ UNCHANGED <<faults, wUnres, walk, bridgePending>>
+           /\ UNCHANGED <<faults, wUnres, walk, bridgePending, resCount>>
 
 WalkStepFwd ==
     /\ running
@@ -393,9 +399,7 @@ WalkStepFwd ==
     /\ wCur < tip
     /\ wCur' = wCur + 1
     /\ Emit(wCur + 1)
-    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, wk,
-                   wkPhase, mTs, mAnchor, dirty, wBound, recovered, rsSel,
-                   retries, resurrections, downs>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, wk, wkPhase, mTs, mAnchor, dirty, wBound, recovered, rsSel, retries, resurrections, downs, resCount>>
 
 WalkStepBwd ==
     /\ running
@@ -404,9 +408,7 @@ WalkStepBwd ==
     /\ wCur - 1 >= 1
     /\ wCur' = wCur - 1
     /\ Emit(wCur - 1)
-    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, wk,
-                   wkPhase, mTs, mAnchor, dirty, wBound, recovered, rsSel,
-                   retries, resurrections, downs>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, wk, wkPhase, mTs, mAnchor, dirty, wBound, recovered, rsSel, retries, resurrections, downs, resCount>>
 
 \* After a forward page: every event after the anchor up to the cursor is
 \* queued, or is ciphertext the walk holds in wUnres, so the floor moves to
@@ -419,9 +421,7 @@ WalkCheckpoint ==
     /\ running
     /\ walk = "fwd"
     /\ floor' = Lower(wUnres, wCur + 1)
-    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row,
-                   wk, wkPhase, mTs, mAnchor, pend, dirty, walkVars,
-                   bridgePending, recovered, rsSel, counters>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row, wk, wkPhase, mTs, mAnchor, pend, pendClaim, dirty, walkVars, bridgePending, recovered, rsSel, counters, resCount>>
 
 WalkComplete ==
     /\ running
@@ -429,9 +429,7 @@ WalkComplete ==
        \/ walk = "bwd" /\ (wCur - 1 < wBound \/ wCur - 1 < 1)
     /\ walk' = "idle"
     /\ floor' = IF dirty THEN floor ELSE wUnres
-    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row,
-                   wk, wkPhase, mTs, mAnchor, pend, dirty, wCur, wBound,
-                   wUnres, bridgePending, recovered, rsSel, counters>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row, wk, wkPhase, mTs, mAnchor, pend, pendClaim, dirty, wCur, wBound, wUnres, bridgePending, recovered, rsSel, counters, resCount>>
 
 WalkFail ==
     /\ running
@@ -439,9 +437,7 @@ WalkFail ==
     /\ FaultOK("walk")
     /\ faults' = faults + 1
     /\ AbortWalk
-    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row,
-                   wk, wkPhase, mTs, mAnchor, floor, pend, dirty, recovered,
-                   rsSel, retries, resurrections, downs>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row, wk, wkPhase, mTs, mAnchor, floor, pend, pendClaim, dirty, recovered, rsSel, retries, resurrections, downs, resCount>>
 
 -----------------------------------------------------------------------------
 (* The worker. A leased row that no worker holds is an expired lease.    *)
@@ -455,18 +451,14 @@ Peek(e) ==
     /\ row' = [row EXCEPT ![e] = "leased"]
     /\ wk' = e
     /\ wkPhase' = "leased"
-    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, mTs,
-                   mAnchor, floor, pend, dirty, walkVars, bridgePending,
-                   recovered, rsSel, counters>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, mTs, mAnchor, floor, pend, pendClaim, dirty, walkVars, bridgePending, recovered, rsSel, counters, resCount>>
 
 ApplyOk ==
     /\ WorkerUp
     /\ wk # 0
     /\ wkPhase = "leased"
     /\ wkPhase' = "done"
-    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row,
-                   wk, mTs, mAnchor, floor, pend, dirty, walkVars,
-                   bridgePending, recovered, rsSel, counters>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row, wk, mTs, mAnchor, floor, pend, pendClaim, dirty, walkVars, bridgePending, recovered, rsSel, counters, resCount>>
 
 Commit ==
     /\ WorkerUp
@@ -476,9 +468,7 @@ Commit ==
     /\ AdvanceMarker(wk)
     /\ wk' = 0
     /\ wkPhase' = "none"
-    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending,
-                   floor, pend, dirty, walkVars, bridgePending, recovered,
-                   rsSel, counters>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, floor, pend, pendClaim, dirty, walkVars, bridgePending, recovered, rsSel, counters, resCount>>
 
 ApplyRetry ==
     /\ WorkerUp
@@ -489,9 +479,7 @@ ApplyRetry ==
     /\ row' = [row EXCEPT ![wk] = "retrying"]
     /\ wk' = 0
     /\ wkPhase' = "none"
-    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, mTs,
-                   mAnchor, floor, pend, dirty, walkVars, bridgePending,
-                   recovered, rsSel, resurrections, downs, faults>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, mTs, mAnchor, floor, pend, pendClaim, dirty, walkVars, bridgePending, recovered, rsSel, resurrections, downs, faults, resCount>>
 
 \* permanentSkip, maxAttempts or the pending-attachment deadline.
 ApplyAbandon ==
@@ -502,9 +490,7 @@ ApplyAbandon ==
     /\ AdvanceMarker(wk)
     /\ wk' = 0
     /\ wkPhase' = "none"
-    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending,
-                   floor, pend, dirty, walkVars, bridgePending, recovered,
-                   rsSel, counters>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, floor, pend, pendClaim, dirty, walkVars, bridgePending, recovered, rsSel, counters, resCount>>
 
 \* The batch's transaction rolls back; its row keeps its lease.
 WorkerError ==
@@ -514,43 +500,54 @@ WorkerError ==
     /\ wk' = 0
     /\ wkPhase' = "none"
     /\ workerAlive' = WorkerSurvivesErrors
-    /\ UNCHANGED <<tip, enc, running, liveNext, gapPending, row, mTs, mAnchor,
-                   floor, pend, dirty, walkVars, bridgePending, recovered,
-                   rsSel, retries, resurrections, downs>>
+    /\ UNCHANGED <<tip, enc, running, liveNext, gapPending, row, mTs, mAnchor, floor, pend, pendClaim, dirty, walkVars, bridgePending, recovered, rsSel, retries, resurrections, downs, resCount>>
 
 -----------------------------------------------------------------------------
+
+Eligible(e) == row[e] = "abandoned" /\ resCount[e] < HardCap
 
 ResurrectSelect ==
     /\ running
     /\ rsSel = {}
     /\ resurrections < MaxResurrections
-    /\ LET s == {e \in Events : row[e] = "abandoned"} IN
-       /\ s # {}
-       /\ rsSel' = s
+    /\ LET sel == {e \in Events : Eligible(e)} IN
+       /\ sel # {}
+       /\ rsSel' = sel
     /\ resurrections' = resurrections + 1
     /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row,
-                   wk, wkPhase, mTs, mAnchor, floor, pend, dirty, walkVars,
-                   bridgePending, recovered, retries, downs, faults>>
+                   wk, wkPhase, mTs, mAnchor, floor, pend, pendClaim, dirty,
+                   walkVars, bridgePending, recovered, retries, downs, faults,
+                   resCount>>
+
+\* The UPDATE by queue id; the guard is what it re-checks of the SELECT.
+StillEligible(e) ==
+    \/ ~GuardedResurrect
+    \/ /\ row[e] = "abandoned"
+       /\ (~ResurrectRechecksCap \/ resCount[e] < HardCap)
 
 ResurrectUpdate ==
     /\ rsSel # {}
-    /\ row' = [e \in Events |->
-                 IF e \in rsSel /\ (~GuardedResurrect \/ row[e] = "abandoned")
-                   THEN "enqueued" ELSE row[e]]
+    /\ LET flip == {e \in rsSel : StillEligible(e)} IN
+       /\ row' = [e \in Events |->
+                    IF e \in flip THEN "enqueued" ELSE row[e]]
+       /\ resCount' = [e \in Events |->
+                         IF e \in flip THEN resCount[e] + 1 ELSE resCount[e]]
     /\ rsSel' = {}
     /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, wk,
-                   wkPhase, mTs, mAnchor, floor, pend, dirty, walkVars,
-                   bridgePending, recovered, counters>>
+                   wkPhase, mTs, mAnchor, floor, pend, pendClaim, dirty,
+                   walkVars, bridgePending, recovered, counters>>
 
 ResurrectNow(e) ==
     /\ running
     /\ resurrections < MaxResurrections
-    /\ row[e] = "abandoned"
+    /\ Eligible(e)
     /\ row' = [row EXCEPT ![e] = "enqueued"]
+    /\ resCount' = [resCount EXCEPT ![e] = @ + 1]
     /\ resurrections' = resurrections + 1
     /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, wk,
-                   wkPhase, mTs, mAnchor, floor, pend, dirty, walkVars,
-                   bridgePending, recovered, rsSel, retries, downs, faults>>
+                   wkPhase, mTs, mAnchor, floor, pend, pendClaim, dirty,
+                   walkVars, bridgePending, recovered, rsSel, retries, downs,
+                   faults>>
 
 -----------------------------------------------------------------------------
 
@@ -565,9 +562,7 @@ Stop ==
     /\ bridgePending' = FALSE
     /\ gapPending' = FALSE
     /\ rsSel' = {}
-    /\ UNCHANGED <<tip, enc, workerAlive, liveNext, row, wk, wkPhase, mTs,
-                   mAnchor, floor, pend, dirty, walkVars, recovered, retries,
-                   resurrections, faults>>
+    /\ UNCHANGED <<tip, enc, workerAlive, liveNext, row, wk, wkPhase, mTs, mAnchor, floor, pend, pendClaim, dirty, walkVars, recovered, retries, resurrections, faults, resCount>>
 
 Crash ==
     /\ running
@@ -577,13 +572,11 @@ Crash ==
     /\ wk' = 0
     /\ wkPhase' = "none"
     /\ walk' = "idle"
-    /\ pend' = None
+    /\ pend' = None /\ pendClaim' = FALSE
     /\ bridgePending' = FALSE
     /\ gapPending' = FALSE
     /\ rsSel' = {}
-    /\ UNCHANGED <<tip, enc, workerAlive, liveNext, row, mTs, mAnchor, floor,
-                   dirty, wCur, wBound, wUnres, recovered, retries,
-                   resurrections, faults>>
+    /\ UNCHANGED <<tip, enc, workerAlive, liveNext, row, mTs, mAnchor, floor, dirty, wCur, wBound, wUnres, recovered, retries, resurrections, faults, resCount>>
 
 \* startImpl: events already on the homeserver never reach the live
 \* stream; the startup bridge (bridgeNow) catches them up.
@@ -594,9 +587,7 @@ Start ==
     /\ liveNext' = tip + 1
     /\ bridgePending' = TRUE
     /\ Claim(ClaimOnStart)
-    /\ UNCHANGED <<tip, enc, gapPending, row, wk, wkPhase, mTs, mAnchor,
-                   dirty, walkVars, recovered, rsSel, retries, resurrections,
-                   downs>>
+    /\ UNCHANGED <<tip, enc, gapPending, row, wk, wkPhase, mTs, mAnchor, dirty, walkVars, recovered, rsSel, retries, resurrections, downs, resCount>>
 
 -----------------------------------------------------------------------------
 
@@ -662,6 +653,8 @@ TypeOK ==
     /\ pend \in {None} \cup 0..(N + 1)
     /\ walk \in {"idle", "fwd", "bwd"}
     /\ rsSel \subseteq Events
+    /\ pendClaim \in BOOLEAN
+    /\ resCount \in [Events -> 0..MaxResurrections]
 
 \* No silent loss: every event the homeserver holds is captured in the
 \* queue (in any status, abandoned included) or fetched by the catch-up
@@ -679,6 +672,9 @@ MarkerMonotone ==
 \* UNIQUE constraint and nothing re-arms a committed row.
 AppliedIsFinal ==
     [][\A e \in Events : row[e] = "applied" => row'[e] = "applied"]_vars
+
+\* No row is resurrected past its hard cap.
+CapHolds == \A e \in Events : resCount[e] <= HardCap
 
 \* Every durably queued event is eventually applied or dead-lettered.
 QueuedEventuallySettled ==

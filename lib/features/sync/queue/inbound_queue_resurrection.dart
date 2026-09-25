@@ -166,31 +166,36 @@ class InboundQueueResurrection {
       // calculation in `InboundWorker._maybeRetry` is anchored to the
       // original enqueue time.
       //
-      // The status guard repeats the SELECT's predicate. The SELECT runs
-      // outside this transaction, so a concurrent pass (an attachment
-      // landing, a journal update, "Retry all") can re-arm a selected row
-      // and the worker can apply it before this UPDATE runs; flipping it
-      // by id alone turned an `applied` ledger row back into `enqueued`
-      // and applied it twice (`AppliedIsFinal` in
-      // `specs/tla/InboundQueue.tla`).
-      final custom = await _db.customUpdate(
-        'UPDATE inbound_event_queue '
-        'SET status = ?, '
-        '    resurrection_count = resurrection_count + 1, '
-        '    attempts = 0, '
-        '    next_due_at = 0, '
-        '    lease_until = 0, '
-        '    enqueued_at = ?, '
-        '    last_error_reason = NULL, '
-        '    abandoned_at = NULL '
-        "WHERE status = 'abandoned' "
-        '  AND queue_id IN (${List.filled(ids.length, '?').join(', ')})',
-        variables: [
-          Variable.withString(InboundQueueStatuses.enqueued),
-          Variable.withInt(nowMs),
-          ...ids.map(Variable.withInt),
-        ],
-        updates: {table},
+      // The UPDATE repeats every eligibility predicate of the SELECT — the
+      // status, the hard cap and the caller's filter (path or reason). The
+      // SELECT runs outside this transaction, so a concurrent pass (an
+      // attachment landing, a journal update, "Retry all") can re-arm a
+      // selected row and the worker apply it, or abandon it again at the
+      // cap or for another reason, before this UPDATE runs. Flipping it by
+      // id alone turned an `applied` ledger row back into `enqueued`
+      // (`AppliedIsFinal` in `specs/tla/InboundQueue.tla`) and resurrected
+      // rows past their cap (`CapHolds`).
+      final update = _db.update(table)
+        ..where(
+          (t) =>
+              const CustomExpression<bool>("status = 'abandoned'") &
+              t.resurrectionCount.isSmallerThanValue(hardCap) &
+              t.queueId.isIn(ids),
+        );
+      if (extraWhere != null) {
+        update.where(extraWhere);
+      }
+      final custom = await update.write(
+        InboundEventQueueCompanion.custom(
+          status: const Constant(InboundQueueStatuses.enqueued),
+          resurrectionCount: table.resurrectionCount + const Constant(1),
+          attempts: const Constant(0),
+          nextDueAt: const Constant(0),
+          leaseUntil: const Constant(0),
+          enqueuedAt: Constant(nowMs),
+          lastErrorReason: const Constant<String>(null),
+          abandonedAt: const Constant<int>(null),
+        ),
       );
       return custom;
     });

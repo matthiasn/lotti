@@ -639,13 +639,14 @@ class QueuePipelineCoordinator {
   /// a newer live event first and move the anchor past the gap, and the
   /// forward walk from that anchor would never fetch it
   /// (`ClaimOnStart` / `ClaimOnGap` in `specs/tla/InboundQueue.tla`).
-  Future<void> _claimCatchUpRange(String roomId) async {
-    final marker = await _readMarkerForRoom(roomId);
-    await _queue.lowerResumeFloor(
-      roomId: roomId,
-      originTs: marker.claimFloorTs,
-    );
-  }
+  ///
+  /// A claim whose marker read throws stays retained in the queue and is
+  /// resolved before the next queue insert, so a failure here cannot let
+  /// anything newer apply first.
+  Future<void> _claimCatchUpRange(String roomId) => _queue.claimAboveMarker(
+    roomId: roomId,
+    readAppliedTs: () => _readAppliedTs(roomId),
+  );
 
   void _trackEnqueue(Future<void> future) {
     _inFlightEnqueues.add(future);

@@ -11,6 +11,7 @@ extension _CatchUpClaimCases on _QueueCoordinatorTestSetup {
       when(() => event.eventId).thenReturn(id);
       when(() => event.roomId).thenReturn(roomId);
       when(() => event.type).thenReturn(EventTypes.Message);
+      when(() => event.status).thenReturn(EventStatus.synced);
       when(() => event.content).thenReturn(content);
       when(
         () => event.originServerTs,
@@ -79,6 +80,58 @@ extension _CatchUpClaimCases on _QueueCoordinatorTestSetup {
           worker.start,
         ]);
         await coordinator.stop();
+      },
+    );
+
+    test(
+      'a start claim whose marker read throws is retained, and resolved '
+      'before the first live event enters the queue (RetainFailedClaim: '
+      'the lost claim let a live event apply past the range that arrived '
+      'while the app was down)',
+      () async {
+        await syncDb
+            .into(syncDb.queueMarkers)
+            .insert(
+              QueueMarkersCompanion.insert(
+                roomId: roomId,
+                lastAppliedEventId: const Value(r'$anchor'),
+              ),
+            );
+        var legacyReads = 0;
+        when(
+          () => settingsDb.itemByKey('LAST_READ_MATRIX_EVENT_TS'),
+        ).thenAnswer((_) async {
+          legacyReads++;
+          if (legacyReads == 1) throw StateError('database is locked');
+          return '5000';
+        });
+        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        addTearDown(realQueue.dispose);
+        final coordinator = buildReal(realQueue);
+        await coordinator.start();
+        addTearDown(coordinator.stop);
+
+        var row = await readMarkerRow();
+        expect(row.resumeFloorTs, isNull);
+        verify(
+          () => logging.error(
+            LogDomain.sync,
+            any<Object>(that: isA<StateError>()),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: any<String>(
+              named: 'subDomain',
+              that: endsWith('.start.claim'),
+            ),
+          ),
+        ).called(1);
+
+        timelineCtl.add(syncPayload(r'$live', 9000));
+        await pumpEventQueue();
+
+        row = await readMarkerRow();
+        expect(row.resumeFloorTs, 5001);
+        final queued = await syncDb.select(syncDb.inboundEventQueue).get();
+        expect(queued.map((r) => r.eventId), [r'$live']);
       },
     );
 

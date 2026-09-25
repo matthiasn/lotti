@@ -52,7 +52,10 @@ after a crash. These are the holes TLC confirmed, each as a concrete trace.
    abandoned rows, then updates them by id. A concurrent pass (attachment
    landed, journal update, "Retry all") could re-arm a selected row and the
    worker apply it in between, and the UPDATE flipped the applied row back to
-   `enqueued` (`AppliedIsFinal`, eleven steps).
+   `enqueued` (`AppliedIsFinal`, eleven steps). Guarding only on the status
+   was not enough either: a row the worker abandoned again in between was
+   resurrected past its hard cap (`CapHolds`, twelve steps), or by a
+   reason-scoped pass after its reason changed.
 
 Losses 1–4 are silent at the queue level. For sequenced payloads the
 sequence-log backfill of ADR 0065 eventually re-requests the missing counter
@@ -63,7 +66,7 @@ as long as that device still has it.
 
 The range above the marker is claimed before anything newer can apply there.
 A claim lowers the resume floor to one millisecond above `last_applied_ts`
-(`BridgeMarker.claimFloorTs`). One above, so the claim alone keeps
+(`InboundQueue.claimAboveMarker`). One above, so the claim alone keeps
 `anchorIsSafe` true and the forward walk stays the normal path; once a newer
 event applies past it, the next walk goes backward to the claim. A completed
 walk clears it through the existing compare-and-set; an incomplete one leaves
@@ -92,7 +95,12 @@ it for the next pass.
   does, and requests a bridge pass.
 - **The worker loop outlives a throw**: it logs, waits one idle tick (or for
   `stop()`), and carries on.
-- **Resurrection's UPDATE repeats `status = 'abandoned'`.**
+- **Resurrection's UPDATE repeats every eligibility predicate of its
+  SELECT**: the status, the hard cap and the path or reason filter.
+- **A claim whose marker read throws is retained** in the queue, like a
+  failed floor write, and resolved against the marker as it then is before
+  any queue insert or floor read. Dropping it let a live event apply past the
+  range (`NoSilentLoss`, five steps).
 
 ## Consequences
 

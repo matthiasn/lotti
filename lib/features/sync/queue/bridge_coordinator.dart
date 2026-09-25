@@ -54,13 +54,6 @@ class BridgeMarker {
     return floor > applied;
   }
 
-  /// The floor that claims everything newer than the applied marker for
-  /// the next catch-up: one millisecond above it, or the whole history
-  /// when there is no marker. One above, so the claim alone keeps
-  /// [anchorIsSafe] true and the forward walk from the anchor stays the
-  /// path taken until something newer applies past it.
-  int get claimFloorTs => (lastAppliedTs ?? 0) + 1;
-
   /// Lower bound of a backward walk: the smaller of the floor and the
   /// applied timestamp, or whichever is known.
   ///
@@ -258,8 +251,9 @@ class BridgeCoordinator {
       try {
         await claim(roomId);
       } catch (error, stackTrace) {
-        // A failed floor write stays retained in memory and is persisted
-        // before the next queue insert, so the pass still runs.
+        // A claim whose marker read or floor write failed stays retained
+        // in the queue and is resolved before the next queue insert, so
+        // the pass still runs.
         _logging.error(
           LogDomain.sync,
           error,

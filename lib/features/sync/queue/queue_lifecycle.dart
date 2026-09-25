@@ -31,8 +31,8 @@ extension QueueLifecycle on QueuePipelineCoordinator {
       // Claim what arrived while the app was down before the live
       // subscription and the worker start: a live event applied ahead of
       // the startup bridge would otherwise move the anchor past it. A
-      // failed write stays retained and is persisted before the first
-      // queue insert.
+      // claim whose marker read or floor write fails stays retained and is
+      // resolved before the first queue insert.
       try {
         await _claimCatchUpRange(roomId);
       } catch (error, stackTrace) {

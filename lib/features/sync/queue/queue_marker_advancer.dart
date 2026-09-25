@@ -15,6 +15,8 @@ class QueueMarkerAdvancer {
   final SyncDatabase _db;
   final Map<String, int> _resumeFloorRevisions = <String, int>{};
   final Map<String, int> _pendingResumeFloors = <String, int>{};
+  final Map<String, Future<int?> Function()> _pendingClaims =
+      <String, Future<int?> Function()>{};
   Future<void> _resumeFloorWrites = Future<void>.value();
 
   /// Advances `queue_markers` for [entry]'s room if the candidate
@@ -118,11 +120,13 @@ class QueueMarkerAdvancer {
     required int originTs,
   }) => _retainAndPersistResumeFloor(roomId: roomId, originTs: originTs);
 
-  /// Retries any floor observation retained after a failed durable write.
+  /// Retries any floor observation retained after a failed durable write,
+  /// resolving a retained claim first.
   ///
   /// Queue insertion and floor reads call this before proceeding. Therefore a
   /// transient SQLite failure cannot let later plaintext advance the marker
-  /// past ciphertext whose recovery floor has not yet become durable.
+  /// past ciphertext, or a claimed range, whose recovery floor has not yet
+  /// become durable.
   Future<void> ensureResumeFloorPersisted(String roomId) =>
       _serializeResumeFloorWrite(() => _persistPendingResumeFloor(roomId));
 
@@ -138,7 +142,52 @@ class QueueMarkerAdvancer {
     return ensureResumeFloorPersisted(roomId);
   }
 
+  /// Claims everything newer than the room's applied marker for the next
+  /// catch-up: lowers the floor to one millisecond above the applied
+  /// timestamp that [readAppliedTs] returns (null: no marker, so the whole
+  /// history).
+  ///
+  /// The claim is retained until it is durable, like a failed floor write:
+  /// when reading the marker throws, the claim stays pending, and
+  /// [ensureResumeFloorPersisted] — which every queue insert and floor read
+  /// runs first — resolves it against the marker as it is then. Nothing
+  /// newer can enter the queue and move the anchor past the claimed range
+  /// until it is durable (`RetainFailedClaim` in
+  /// `specs/tla/InboundQueue.tla`). The marker can only have advanced
+  /// through rows queued before the claim, which are already captured.
+  ///
+  /// A [walkLocal] claim is a walk's own and leaves the revision alone, so
+  /// the walk's completion still clears it; any other claim is an
+  /// observation that invalidates an in-flight walk's completion.
+  Future<void> claimAboveMarker({
+    required String roomId,
+    required Future<int?> Function() readAppliedTs,
+    bool walkLocal = false,
+  }) {
+    if (!walkLocal) {
+      _resumeFloorRevisions.update(
+        roomId,
+        (revision) => revision + 1,
+        ifAbsent: () => 1,
+      );
+    }
+    _pendingClaims[roomId] = readAppliedTs;
+    return ensureResumeFloorPersisted(roomId);
+  }
+
   Future<void> _persistPendingResumeFloor(String roomId) async {
+    final claim = _pendingClaims[roomId];
+    if (claim != null) {
+      final claimFloor = ((await claim()) ?? 0) + 1;
+      _pendingResumeFloors.update(
+        roomId,
+        (current) => claimFloor < current ? claimFloor : current,
+        ifAbsent: () => claimFloor,
+      );
+      if (identical(_pendingClaims[roomId], claim)) {
+        _pendingClaims.remove(roomId);
+      }
+    }
     final pending = _pendingResumeFloors[roomId];
     if (pending == null) return;
 

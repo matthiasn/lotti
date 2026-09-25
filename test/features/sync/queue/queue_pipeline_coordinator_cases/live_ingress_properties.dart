@@ -219,6 +219,25 @@ class _GladosBench {
       ),
     );
     when(queue.earliestReadyAt).thenAnswer((_) async => null);
+    // The mock resolves a claim the way the queue does: read the applied
+    // marker, then lower the floor one above it.
+    when(
+      () => queue.claimAboveMarker(
+        roomId: any<String>(named: 'roomId'),
+        readAppliedTs: any(named: 'readAppliedTs'),
+        walkLocal: any(named: 'walkLocal'),
+      ),
+    ).thenAnswer((invocation) async {
+      final roomId = invocation.namedArguments[#roomId] as String;
+      final read =
+          invocation.namedArguments[#readAppliedTs] as Future<int?> Function();
+      final floor = ((await read()) ?? 0) + 1;
+      if (invocation.namedArguments[#walkLocal] == true) {
+        await queue.lowerResumeFloorFromWalk(roomId: roomId, originTs: floor);
+      } else {
+        await queue.lowerResumeFloor(roomId: roomId, originTs: floor);
+      }
+    });
     when(() => queue.resumeFloorTs(any())).thenAnswer((_) async => null);
     when(() => queue.resumeFloorRevision(any())).thenReturn(0);
     when(
