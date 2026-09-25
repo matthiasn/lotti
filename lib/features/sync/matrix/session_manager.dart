@@ -32,6 +32,14 @@ class MatrixSessionManager {
   /// controller types to tests or call-sites.
   Stream<Event> get timelineEvents => _gateway.client.onTimelineEvent.stream;
 
+  /// SDK processing boundaries precede timeline events and their later onSync
+  /// metadata. Queue ingestion uses them to hold a slice until its gap is known.
+  Stream<SyncStatusUpdate> get syncStatusUpdates => client.onSyncStatus.stream;
+
+  /// A subscriber may attach part-way through an SDK response.
+  bool get isProcessingSync =>
+      client.onSyncStatus.value?.status == SyncStatus.processing;
+
   /// Establishes a Matrix session and, if requested, performs an interactive
   /// login. Returns `true` when connectivity succeeded.
   Future<bool> connect({required bool shouldAttemptLogin}) async {

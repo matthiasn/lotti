@@ -48,6 +48,7 @@ SECONDS = {
     "VersionHeadsSoul": 266,
     "AgentReplicationLegacyReceiver": 223,
     "InboundQueue": 120,
+    "InboundQueueSlice": 5,
     "SyncSequenceCrashFault": 78,
     "ScheduledWakeLeaseThree": 74,
     "WakeRuntimeCrash": 66,

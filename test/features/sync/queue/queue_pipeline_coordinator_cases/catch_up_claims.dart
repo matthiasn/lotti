@@ -66,6 +66,279 @@ extension _CatchUpClaimCases on _QueueCoordinatorTestSetup {
         );
 
     test(
+      'holds the SDK slice until limited metadata protects the old anchor',
+      () async {
+        await seedMarker(ts: 100, eventId: r'$before-gap');
+        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        addTearDown(realQueue.dispose);
+        final coordinator = buildReal(realQueue);
+        await coordinator.start();
+        addTearDown(coordinator.stop);
+        // A successful startup walk has already covered the startup interval.
+        await realQueue.completeResumeWalk(
+          roomId: roomId,
+          walkStartedAtFloorRevision: realQueue.resumeFloorRevision(roomId),
+          unresolvedFloorTs: null,
+        );
+        expect((await readMarkerRow()).resumeFloorTs, isNull);
+
+        syncStatusCtl.add(const SyncStatusUpdate(SyncStatus.processing));
+        timelineCtl.add(syncPayload(r'$after-gap', 900));
+        await pumpEventQueue();
+        expect(await syncDb.select(syncDb.inboundEventQueue).get(), isEmpty);
+        expect((await readMarkerRow()).lastAppliedTs, 100);
+
+        syncCtl.add(
+          SyncUpdate(
+            nextBatch: 'limited-batch',
+            rooms: RoomsUpdate(
+              join: {
+                roomId: JoinedRoomUpdate(
+                  timeline: TimelineUpdate(limited: true),
+                ),
+              },
+            ),
+          ),
+        );
+        await _waitForQueueStats(realQueue, (stats) => stats.total == 1);
+        final ready = await realQueue.peekBatchReady(maxBatch: 1);
+        await realQueue.commitApplied(ready.single);
+        final marker = await readMarkerRow();
+        expect(marker.lastAppliedTs, 900);
+        expect(marker.resumeFloorTs, 101);
+        expect(
+          BridgeMarker(
+            lastAppliedTs: marker.lastAppliedTs,
+            lastAppliedEventId: marker.lastAppliedEventId,
+            resumeFloorTs: marker.resumeFloorTs,
+          ).anchorIsSafe,
+          isFalse,
+        );
+      },
+    );
+
+    for (final endStatus in [
+      SyncStatus.error,
+      SyncStatus.cleaningUp,
+      SyncStatus.finished,
+    ]) {
+      test(
+        'SDK batch $endStatus awaits a conservative claim before admission',
+        () async {
+          final coordinator = build();
+          await coordinator.start();
+          addTearDown(coordinator.stop);
+          final claim = Completer<void>();
+          when(
+            () => queue.claimAboveMarker(
+              roomId: roomId,
+              readAppliedTs: any(named: 'readAppliedTs'),
+              walkLocal: any(named: 'walkLocal'),
+            ),
+          ).thenAnswer((_) => claim.future);
+          syncStatusCtl
+            ..add(const SyncStatusUpdate(SyncStatus.processing))
+            ..add(const SyncStatusUpdate(SyncStatus.processing, progress: .5));
+          timelineCtl.add(syncPayload(r'$held', 900));
+          syncStatusCtl.add(SyncStatusUpdate(endStatus));
+          await pumpEventQueue();
+          verifyNever(() => queue.enqueueLive(any()));
+          claim.complete();
+          await pumpEventQueue();
+          verify(() => queue.enqueueLive(any())).called(1);
+        },
+      );
+    }
+
+    test('SDK batch admission waits across overlapping responses', () async {
+      final coordinator = build();
+      await coordinator.start();
+      addTearDown(coordinator.stop);
+      final claim = Completer<void>();
+      when(
+        () => queue.claimAboveMarker(
+          roomId: roomId,
+          readAppliedTs: any(named: 'readAppliedTs'),
+          walkLocal: any(named: 'walkLocal'),
+        ),
+      ).thenAnswer((_) => claim.future);
+      syncStatusCtl.add(const SyncStatusUpdate(SyncStatus.processing));
+      final first = syncPayload(r'$first-response', 900);
+      timelineCtl.add(first);
+      syncStatusCtl.add(const SyncStatusUpdate(SyncStatus.error));
+      await pumpEventQueue();
+      syncStatusCtl.add(const SyncStatusUpdate(SyncStatus.processing));
+      final second = syncPayload(r'$second-response', 901);
+      timelineCtl.add(second);
+      claim.complete();
+      await pumpEventQueue();
+      verifyNever(() => queue.enqueueLive(any()));
+      syncCtl.add(SyncUpdate(nextBatch: 'second-response'));
+      await pumpEventQueue();
+      expect(
+        verify(() => queue.enqueueLive(captureAny())).captured,
+        [first, second],
+      );
+    });
+
+    test('SDK batch status stream errors protect held events', () async {
+      final coordinator = build();
+      await coordinator.start();
+      addTearDown(coordinator.stop);
+      final claim = Completer<void>();
+      when(
+        () => queue.claimAboveMarker(
+          roomId: roomId,
+          readAppliedTs: any(named: 'readAppliedTs'),
+          walkLocal: any(named: 'walkLocal'),
+        ),
+      ).thenAnswer((_) => claim.future);
+      syncStatusCtl.add(const SyncStatusUpdate(SyncStatus.processing));
+      final event = syncPayload(r'$stream-error', 900);
+      timelineCtl.add(event);
+      syncStatusCtl.addError(StateError('status stream failed'));
+      await pumpEventQueue();
+      verifyNever(() => queue.enqueueLive(any()));
+      claim.complete();
+      await pumpEventQueue();
+      verify(() => queue.enqueueLive(event)).called(1);
+    });
+
+    test(
+      'SDK batch stop drops a held slice and restart accepts new events',
+      () async {
+        final coordinator = build();
+        await coordinator.start();
+        addTearDown(coordinator.stop);
+        syncStatusCtl.add(const SyncStatusUpdate(SyncStatus.processing));
+        timelineCtl.add(syncPayload(r'$dropped-on-stop', 900));
+        await pumpEventQueue();
+        await coordinator.stop();
+        verifyNever(() => queue.enqueueLive(any()));
+        await coordinator.start();
+        final fresh = syncPayload(r'$new-session', 901);
+        timelineCtl.add(fresh);
+        await pumpEventQueue();
+        verify(() => queue.enqueueLive(fresh)).called(1);
+      },
+    );
+
+    test('SDK batch normal metadata releases without claiming a gap', () async {
+      when(() => sessionManager.isProcessingSync).thenReturn(true);
+      final coordinator = build();
+      await coordinator.start();
+      addTearDown(coordinator.stop);
+      verifyStartClaim();
+      timelineCtl.add(syncPayload(r'$attached-mid-batch', 900));
+      await pumpEventQueue();
+      verifyNever(() => queue.enqueueLive(any()));
+      syncCtl.add(SyncUpdate(nextBatch: 'complete-batch'));
+      await pumpEventQueue();
+      verify(() => queue.enqueueLive(any())).called(1);
+      verifyNever(
+        () => queue.lowerResumeFloor(
+          roomId: any(named: 'roomId'),
+          originTs: any(named: 'originTs'),
+        ),
+      );
+    });
+
+    test(
+      'SDK batch shutdown drains a claim already writing to the queue',
+      () async {
+        final coordinator = build();
+        await coordinator.start();
+        final claim = Completer<void>();
+        when(
+          () => queue.claimAboveMarker(
+            roomId: roomId,
+            readAppliedTs: any(named: 'readAppliedTs'),
+            walkLocal: any(named: 'walkLocal'),
+          ),
+        ).thenAnswer((_) => claim.future);
+        syncStatusCtl.add(const SyncStatusUpdate(SyncStatus.processing));
+        timelineCtl.add(syncPayload(r'$held-for-claim', 900));
+        syncStatusCtl.add(const SyncStatusUpdate(SyncStatus.error));
+        var stopped = false;
+        final stop = coordinator.stop().then((_) => stopped = true);
+        await pumpEventQueue();
+        expect(stopped, isFalse);
+        verifyNever(worker.stop);
+        verifyNever(queue.dispose);
+        claim.complete();
+        await stop;
+        expect(stopped, isTrue);
+        verifyNever(() => queue.enqueueLive(any()));
+        verify(worker.stop).called(1);
+      },
+    );
+
+    test('SDK batch failed startup drains its pending claim', () async {
+      final starting = Completer<void>();
+      when(worker.start).thenAnswer((_) => starting.future);
+      final coordinator = build();
+      var unwound = false;
+      final start = coordinator.start();
+      final failed = expectLater(start, throwsStateError).then(
+        (_) => unwound = true,
+      );
+      await pumpEventQueue();
+      final claim = Completer<void>();
+      when(
+        () => queue.claimAboveMarker(
+          roomId: roomId,
+          readAppliedTs: any(named: 'readAppliedTs'),
+          walkLocal: any(named: 'walkLocal'),
+        ),
+      ).thenAnswer((_) => claim.future);
+      syncStatusCtl.add(const SyncStatusUpdate(SyncStatus.processing));
+      timelineCtl.add(syncPayload(r'$failed-startup', 900));
+      syncStatusCtl.add(const SyncStatusUpdate(SyncStatus.error));
+      starting.completeError(StateError('worker failed to start'));
+      await pumpEventQueue();
+      expect(unwound, isFalse);
+      verifyNever(worker.stop);
+      claim.complete();
+      await failed;
+      verifyNever(() => queue.enqueueLive(any()));
+      verify(worker.stop).called(1);
+    });
+
+    glados.Glados(
+      glados.IntAnys(glados.any).intInRange(1, 12),
+      glados.ExploreConfig(numRuns: 25),
+    ).test('SDK batch progress updates preserve ordered admission', (
+      count,
+    ) async {
+      final coordinator = build();
+      clearInteractions(queue);
+      await coordinator.start();
+      try {
+        for (var index = 0; index < count; index++) {
+          syncStatusCtl.add(
+            SyncStatusUpdate(
+              SyncStatus.processing,
+              progress: index / count,
+            ),
+          );
+          timelineCtl.add(syncPayload('\$batch-$index', 900 + index));
+        }
+        await pumpEventQueue();
+        verifyNever(() => queue.enqueueLive(any()));
+        syncCtl.add(SyncUpdate(nextBatch: 'normal'));
+        await pumpEventQueue();
+        final admitted = verify(
+          () => queue.enqueueLive(captureAny()),
+        ).captured.cast<Event>();
+        expect(admitted.map((event) => event.eventId), [
+          for (var index = 0; index < count; index++) '\$batch-$index',
+        ]);
+      } finally {
+        await coordinator.stop();
+      }
+    }, tags: 'glados');
+
+    test(
       'start claims the range above the marker before the live stream '
       'and the worker can apply anything (ClaimOnStart: a live event '
       'applied ahead of the startup bridge moved the anchor past the '

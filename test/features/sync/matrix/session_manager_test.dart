@@ -202,6 +202,23 @@ void main() {
   });
 
   group('MatrixSessionManager', () {
+    test(
+      'sync status exposes live updates and the current processing state',
+      () async {
+        final statuses = CachedStreamController<SyncStatusUpdate>();
+        addTearDown(statuses.close);
+        when(() => client.onSyncStatus).thenReturn(statuses);
+        expect(sessionManager.isProcessingSync, isFalse);
+        final next = sessionManager.syncStatusUpdates.first;
+        const processing = SyncStatusUpdate(SyncStatus.processing);
+        statuses.add(processing);
+        expect(sessionManager.isProcessingSync, isTrue);
+        expect(await next, same(processing));
+        statuses.add(const SyncStatusUpdate(SyncStatus.finished));
+        expect(sessionManager.isProcessingSync, isFalse);
+      },
+    );
+
     test('timelineEvents relays the client timeline event stream', () async {
       final timeline = CachedStreamController<Event>();
       addTearDown(timeline.close);
