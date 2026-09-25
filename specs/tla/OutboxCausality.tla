@@ -1,6 +1,6 @@
 ------------------------- MODULE OutboxCausality -------------------------
 (***************************************************************************)
-(* Refines Outbox's scalar-version merge with two-host vector clocks.      *)
+(* Refines Outbox's scalar-version collapse with two-host vector clocks.      *)
 (* One inline entry link, agent entity, or agent link, staged by one       *)
 (* device (including backfill/history snapshots). Its three versions form *)
 (* a fork and a successor of both branches. Enqueues may arrive in any    *)
@@ -9,9 +9,9 @@
 (* counter. Sending, receiving, and sequence acknowledgement are separate *)
 (* actions. Delivery can repeat and recipients can see different orders.  *)
 (*                                                                         *)
-(* Commit / Stage: payload commit then OutboxEnqueueWriter's keyed merge. *)
-(* Claim: SyncDatabase.claimNextOutboxBatch, one row (bundling is checked  *)
-(*        by Outbox.tla); a concurrent enqueue cannot rewrite the claim.  *)
+(* Commit / Stage: payload commit then immutable OutboxEnqueueWriter append. *)
+(* Claim: OutboxProcessor collapses causally superseded rows into one send  *)
+(*        (batch/CAS detail in Outbox); enqueues cannot rewrite the claim.  *)
 (* Send: OutboxProcessor -> the immutable claimed inline payload.         *)
 (* Apply: entry-link total order / basic agent LWW, with a timestamp      *)
 (*        order that extends causality but does not order concurrent      *)
@@ -24,7 +24,7 @@
 (* acknowledgement is repeated. There is no network loss in this focused *)
 (* model: gap discovery/backfill, attachments, clockless payloads, retry  *)
 (* exhaustion and payload purges are not claims of this configuration.   *)
-(* Setting PreserveConcurrent FALSE reproduces the pre-fix merge.        *)
+(* Setting PreserveConcurrent FALSE allows unsound concurrent coverage.        *)
 (***************************************************************************)
 EXTENDS Naturals, Sequences, FiniteSets
 CONSTANTS Peers, PreserveConcurrent, MaxCrashes
@@ -34,7 +34,6 @@ Clock(v) == CASE v = 1 -> [h \in Hosts |-> IF h = "A" THEN 2 ELSE 1]
              [] v = 2 -> [h \in Hosts |-> IF h = "A" THEN 1 ELSE 2]
              [] OTHER -> [h \in Hosts |-> 3]
 Covers(a, b) == \A h \in Hosts : Clock(a)[h] >= Clock(b)[h]
-Comparable(a, b) == Covers(a, b) \/ Covers(b, a)
 \* v1 is a later-timestamp tombstone; v2 is a concurrent older live copy.
 \* v3 succeeds both. Every causal successor also wins the receiver order.
 Rank(v) == CASE v = 1 -> 2 [] v = 2 -> 1 [] OTHER -> 3
@@ -58,20 +57,24 @@ Commit(v) == /\ v \notin committed
                              acked, crashes>>
 Stage(v) ==
     /\ v \in committed \ staged
-    /\ LET n == Len(pending) IN
-       IF n = 0 THEN pending' = <<Msg(v, {})>>
-       ELSE LET old == pending[n]
-                merge == ~PreserveConcurrent \/ Comparable(old.payload, v)
-                keep == IF Covers(old.payload, v) /\ old.payload # v
-                        THEN old.payload ELSE v
-            IN pending' = IF merge
-               THEN [pending EXCEPT ![n] =
-                       Msg(keep, (Carried(old) \cup {v}) \ {keep})]
-               ELSE Append(pending, Msg(v, {}))
+    /\ pending' = Append(pending, Msg(v, {}))
     /\ staged' = staged \cup {v}
     /\ UNCHANGED <<committed, claim, wire, applied, receipts, acked, crashes>>
+\* Choose the causal maximum, breaking concurrent ties by row order. With
+\* this fixed three-version fork, this is newestOf's sequential reduction.
+NewestIndex ==
+    CHOOSE i \in 1..Len(pending) :
+        \A j \in 1..Len(pending) :
+            Covers(pending[i].payload, pending[j].payload)
+            \/ (~Covers(pending[j].payload, pending[i].payload) /\ i > j)
 Claim == /\ claim = <<>> /\ pending # <<>>
-         /\ claim' = <<Head(pending)>> /\ pending' = Tail(pending)
+         /\ LET newest == pending[NewestIndex]
+                folds(m) == ~PreserveConcurrent
+                            \/ Covers(newest.payload, m.payload)
+                members == {m \in {pending[i] : i \in 1..Len(pending)} : folds(m)}
+                covered == UNION {Carried(m) : m \in members}
+            IN /\ claim' = <<Msg(newest.payload, covered \ {newest.payload})>>
+               /\ pending' = SelectSeq(pending, LAMBDA m : ~folds(m))
          /\ UNCHANGED <<committed, staged, wire, applied, receipts, acked,
                          crashes>>
 Send == /\ claim # <<>>

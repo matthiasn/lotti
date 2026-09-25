@@ -1,4 +1,4 @@
 ### Fixed
-- **Concurrent link and agent changes survive outgoing sync.** Changes from
-  different devices now travel separately until the receiving device resolves
-  them, preventing a delayed update from hiding another change from sync repair.
+- **Sync preserves link and agent snapshots with missing version clocks.**
+  These changes now travel separately so outgoing sync cannot discard a
+  snapshot before the receiving device resolves it.

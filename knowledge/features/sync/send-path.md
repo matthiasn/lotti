@@ -5,7 +5,7 @@ description: Outbox staging as one immutable row per version, the dequeue-time c
 resource: ../../../lib/features/sync/outbox
 tags: [sync, outbox, bundling, retries]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-25T18:00:00+00:00 }
+generated: { by: codex/gpt-6, at: 2026-09-25T19:33:00Z }
 stale_after: 2026-12-25
 sources:
   - id: outbox
@@ -27,6 +27,10 @@ sources:
   - id: adr-0086
     resource: ../../../docs/adr/0086-append-only-outbox.md
     title: ADR 0086 — append-only outbox, collapse at send time
+    last_modified: 2026-09-25
+  - id: outbox-causality
+    resource: ../../../specs/tla/OutboxCausality.tla
+    title: Two-host fork through staging, collapse, receive and acknowledgement
     last_modified: 2026-09-25
   - id: outbox-collapse
     resource: ../../../lib/features/sync/outbox/outbox_collapse.dart
@@ -212,7 +216,10 @@ status it read). The rules live in `outbox_collapse.dart`:
 - **Cover everything folded in.** The send carries the newest payload with
   every other collapsed row's clock as a covered clock, so each counter
   reaches peers exactly as if its row had been sent. A row whose clock is
-  concurrent with the newest is not folded; it is sent on its own.
+  concurrent with the newest is not folded; it is sent on its own. Missing,
+  empty or malformed clocks also cannot prove supersession, so those
+  snapshots travel separately. Config flags intentionally collapse by enqueue
+  order because their receiver applies them in arrival order.
 - **Carry the attachment if any folded row owed it** (see above). A bundle
   ships JSON only, so a bundled send does not fold in rows that owe an
   attachment; they go out alone.
@@ -225,7 +232,10 @@ row outside the batch that cannot be decoded is skipped, not allowed to fail
 the send; it fails on its own when claimed. Retry pacing follows the rows the
 pass claimed: a folded-in `error` row is past the cap already and does not
 turn the retries of newer rows into a zero-delay loop.
-`specs/tla/Outbox.tla` model-checks the rules.
+`specs/tla/Outbox.tla` model-checks the rules. `OutboxCausality.tla` adds
+a two-host fork, a successor of both branches, and the path to applied
+payloads and sequence acknowledgements. Its bounds and exclusions are in
+the [formal specs](../../../specs/tla/README.md#outboxcausality--a-version-fork-through-the-send-and-receive-boundary).
 
 # File payload identity follows the claimed generation
 
