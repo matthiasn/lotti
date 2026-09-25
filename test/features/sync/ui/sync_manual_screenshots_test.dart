@@ -679,7 +679,7 @@ void main() {
       () => mocks.journalDb.watchConflictById(_conflictId),
     ).thenAnswer((_) => Stream.value([_taskConflict]));
     when(
-      () => mocks.journalDb.journalEntityById(_conflictId),
+      () => mocks.journalDb.journalEntityByIdIncludingDeleted(_conflictId),
     ).thenAnswer((_) async => _localTask);
 
     when(matrixService.isLoggedIn).thenReturn(false);
