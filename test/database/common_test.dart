@@ -862,9 +862,11 @@ void main() {
 
         // Closing an ordinary connection beside a file that is not a
         // database deletes both companions, and the WAL holds exactly the
-        // commits a restore keeps beside the damaged file.
+        // commits a restore keeps beside the damaged file. The confirming
+        // read-only look may rebuild the -shm, an index of the WAL, but
+        // never removes it.
         expect(wal.readAsStringSync(), 'stale wal');
-        expect(shm.readAsStringSync(), 'stale shm');
+        expect(shm.existsSync(), isTrue);
         // A connection left to the garbage collector deletes them later, at
         // whatever moment its finalizer runs — in CI, mid-restore.
         if (Platform.isLinux) {
@@ -877,6 +879,46 @@ void main() {
         }
       },
     );
+
+    /// A live WAL database whose main file header is torn, as a read of the
+    /// main file in the middle of another connection's checkpoint can see
+    /// it. The writer keeps the connection open, and every commit — page 1
+    /// included — is still in its WAL, so SQLite's own readers read it whole.
+    Database liveDatabaseWithTornMainFile(String path) {
+      final writer = sqlite3.open(path)
+        ..execute('PRAGMA journal_mode = WAL')
+        ..execute('PRAGMA wal_autocheckpoint = 0')
+        ..execute('CREATE TABLE t (v TEXT)')
+        ..execute("INSERT INTO t VALUES ('live')");
+      File(path).openSync(mode: FileMode.append)
+        ..setPositionSync(0)
+        ..writeFromSync(List.filled(100, 0x41))
+        ..closeSync();
+      return writer;
+    }
+
+    test('a live database whose main file reads torn is readable: the '
+        'locking look sees it whole', () {
+      final path = p.join(testDirectory.path, 'db.sqlite');
+      final writer = liveDatabaseWithTornMainFile(path);
+      addTearDown(writer.close);
+
+      // The immutable look alone reads only the torn main file.
+      final immutable = sqlite3.open(
+        Uri.file(
+          path,
+        ).replace(queryParameters: const {'immutable': '1'}).toString(),
+        uri: true,
+      );
+      addTearDown(immutable.close);
+      expect(
+        () => immutable.select('PRAGMA schema_version'),
+        throwsA(isA<SqliteException>()),
+      );
+
+      expect(isReadableDatabaseFile(File(path)), isTrue);
+      expect(writer.select('SELECT v FROM t').single['v'], 'live');
+    });
 
     test('a WAL database whose rows are only in the WAL is readable, and the '
         'probe leaves the WAL as it found it', () {
@@ -948,6 +990,212 @@ void main() {
         reason: 'nothing should have been moved aside',
       );
     });
+
+    test('a live database another connection is checkpointing is never '
+        'replaced by a backup', () async {
+      final file = File(p.join(testDirectory.path, 'db.sqlite'));
+      final writer = sqlite3.open(file.path)
+        ..execute('PRAGMA journal_mode = WAL')
+        ..execute('PRAGMA wal_autocheckpoint = 0')
+        ..execute('CREATE TABLE t (v TEXT)')
+        ..execute("INSERT INTO t VALUES ('live')");
+      addTearDown(writer.close);
+      backupOf('db', '2026-09-05_11-00-00-000', 'older backup');
+      // The main file as a read in the middle of a checkpoint can see it.
+      file.openSync(mode: FileMode.append)
+        ..setPositionSync(0)
+        ..writeFromSync(List.filled(100, 0x41))
+        ..closeSync();
+
+      await recoverDatabaseIfUnreadable(file);
+
+      expect(writer.select('SELECT v FROM t').single['v'], 'live');
+      expect(
+        Directory(testDirectory.path)
+            .listSync()
+            .map((f) => p.basename(f.path))
+            .where(
+              (name) =>
+                  name.contains('.corrupt-') || name.contains('restore-tmp'),
+            ),
+        isEmpty,
+        reason: 'nothing may be moved aside or staged for a live database',
+      );
+    });
+
+    test('a file that reads again by the time the snapshot is staged is left '
+        'in place', () async {
+      // restoreDatabaseFromBackup is only called on a file judged unreadable;
+      // handing it a readable one stands in for a file that recovered while
+      // the snapshot was being copied.
+      final file = File(p.join(testDirectory.path, 'db.sqlite'));
+      writeDatabase(file.path, 'live');
+      backupOf('db', '2026-09-05_11-00-00-000', 'older backup');
+
+      final restored = await restoreDatabaseFromBackup(file);
+
+      expect(restored, isNull);
+      expect(markerOf(file.path), 'live');
+      expect(
+        Directory(
+          testDirectory.path,
+        ).listSync().whereType<File>().map((f) => p.basename(f.path)),
+        ['db.sqlite'],
+        reason: 'the staged copy is removed and nothing is moved aside',
+      );
+    });
+
+    test('a raw-copy snapshot that reads only through its own -wal is '
+        'skipped: the restore installs the main file alone', () async {
+      final file = File(p.join(testDirectory.path, 'db.sqlite'))
+        ..writeAsStringSync('this is not a database');
+      backupOf('db', '2026-09-05_09-00-00-000', 'older');
+      // The newest snapshot, as createDbBackup's raw-copy fallback leaves
+      // it: a main file whose header is torn, beside a WAL that holds every
+      // page, page 1 included.
+      final source = p.join(testDirectory.path, 'source.sqlite');
+      final writer = sqlite3.open(source)
+        ..execute('PRAGMA journal_mode = WAL')
+        ..execute('PRAGMA wal_autocheckpoint = 0')
+        ..execute('CREATE TABLE t (v TEXT)')
+        ..execute("INSERT INTO t VALUES ('only in the wal')");
+      final backupDir = Directory(
+        p.join(testDirectory.path, _backupDirectoryName),
+      );
+      final rawCopy = p.join(
+        backupDir.path,
+        'db.2026-09-05_11-00-00-000.sqlite',
+      );
+      File(source).copySync(rawCopy);
+      File('$source-wal').copySync('$rawCopy-wal');
+      writer.close();
+      File(rawCopy).openSync(mode: FileMode.append)
+        ..setPositionSync(0)
+        ..writeFromSync(List.filled(100, 0x41))
+        ..closeSync();
+
+      await withClock(
+        Clock.fixed(DateTime(2026, 9, 5, 12)),
+        () => recoverDatabaseIfUnreadable(file),
+      );
+
+      // The WAL-backed snapshot would install as an unreadable main file.
+      expect(markerOf(file.path), 'older');
+    });
+
+    test('two recoverers of the same file restore it once', () async {
+      final file = File(p.join(testDirectory.path, 'db.sqlite'))
+        ..writeAsStringSync('this is not a database');
+      backupOf('db', '2026-09-05_09-00-00-000', 'older');
+      backupOf('db', '2026-09-05_11-00-00-000', 'newest');
+
+      await withClock(
+        Clock.fixed(DateTime(2026, 9, 5, 12)),
+        () => Future.wait([
+          recoverDatabaseIfUnreadable(file),
+          recoverDatabaseIfUnreadable(file),
+        ]),
+      );
+
+      expect(markerOf(file.path), 'newest');
+      final names = Directory(
+        testDirectory.path,
+      ).listSync().whereType<File>().map((f) => p.basename(f.path)).toList();
+      // The second recoverer waits its turn, then finds the file readable:
+      // it neither moves the first one's restored file aside nor leaves a
+      // staged copy behind.
+      expect(names.where((name) => name.contains('.corrupt-')), hasLength(1));
+      expect(names.where((name) => name.contains('restore-tmp')), isEmpty);
+    });
+
+    test(
+      'a recoverer in another process waits for the lock: its restore is '
+      'not moved aside by one that judged the file first',
+      () async {
+        final file = File(p.join(testDirectory.path, 'db.sqlite'))
+          ..writeAsStringSync('this is not a database');
+        backupOf('db', '2026-09-05_11-00-00-000', 'newest');
+        final lockPath = p.join(
+          testDirectory.path,
+          _backupDirectoryName,
+          'db.sqlite.recovery-lock',
+        );
+        // The other instance, as a separate process: it takes the same
+        // recovery lock (fcntl, like dart:io's RandomAccessFile.lock), then
+        // installs a readable database it has since written to. It reports
+        // `wrote` if it got the lock at once and `busy` if it had to wait.
+        const otherInstance = """
+import fcntl, os, sqlite3, sys
+lock_path, db_path = sys.argv[1], sys.argv[2]
+fd = os.open(lock_path, os.O_RDWR | os.O_CREAT)
+try:
+    fcntl.lockf(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    got = True
+except OSError:
+    print('busy', flush=True)
+    fcntl.lockf(fd, fcntl.LOCK_EX)
+    got = False
+tmp = db_path + '.other'
+db = sqlite3.connect(tmp)
+db.execute('CREATE TABLE t (v TEXT)')
+db.execute("INSERT INTO t VALUES ('the other instance')")
+db.commit()
+db.close()
+os.replace(tmp, db_path)
+if got:
+    print('wrote', flush=True)
+""";
+        Process? other;
+        final lines = <String>[];
+        final firstLine = Completer<String>();
+        debugBeforeRecoveryRename = () async {
+          debugBeforeRecoveryRename = null;
+          other = await Process.start('python3', [
+            '-c',
+            otherInstance,
+            lockPath,
+            file.path,
+          ]);
+          other!.stdout
+              .transform(const SystemEncoding().decoder)
+              .expand((chunk) => chunk.split('\n'))
+              .where((line) => line.isNotEmpty)
+              .listen((line) {
+                lines.add(line);
+                if (!firstLine.isCompleted) firstLine.complete(line);
+              });
+          // Either it is blocked on the lock, or it has already replaced
+          // the file this recoverer is about to move aside.
+          await firstLine.future;
+        };
+        addTearDown(() => debugBeforeRecoveryRename = null);
+
+        await withClock(
+          Clock.fixed(DateTime(2026, 9, 5, 12)),
+          () => recoverDatabaseIfUnreadable(file),
+        );
+        expect(await other!.exitCode, 0);
+
+        expect(lines.first, 'busy', reason: 'the lock must hold it off');
+        // It restored after this recoverer finished, so its database — not
+        // an older backup over it — is what the next open finds.
+        expect(markerOf(file.path), 'the other instance');
+        // Only the damaged original was moved aside.
+        final keptAside = Directory(testDirectory.path)
+            .listSync()
+            .whereType<File>()
+            .map((f) => p.basename(f.path))
+            .where((name) => name.contains('.corrupt-'));
+        expect(keptAside, hasLength(1));
+        expect(
+          File(p.join(testDirectory.path, keptAside.single)).readAsStringSync(),
+          'this is not a database',
+        );
+      },
+      skip: Platform.isLinux || Platform.isMacOS
+          ? false
+          : 'relies on fcntl locks shared with python3',
+    );
 
     test('a corrupt database is replaced by the newest backup', () async {
       final file = File(p.join(testDirectory.path, 'db.sqlite'))

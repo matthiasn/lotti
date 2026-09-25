@@ -146,5 +146,6 @@ Each ADR should contain:
 - [`0076-model-checked-agent-head.md`](./0076-model-checked-agent-head.md)
 - [`0077-a-reservation-names-the-id-written.md`](./0077-a-reservation-names-the-id-written.md)
 - [`0078-entry-link-versions-are-ordered.md`](./0078-entry-link-versions-are-ordered.md)
+- [`0079-recovery-never-replaces-a-live-database.md`](./0079-recovery-never-replaces-a-live-database.md)
 - [`0080-a-present-counter-ranks-above-an-absent-host.md`](./0080-a-present-counter-ranks-above-an-absent-host.md)
 - [`0081-model-checked-evolution-sessions-and-agent-links.md`](./0081-model-checked-evolution-sessions-and-agent-links.md)

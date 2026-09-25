@@ -10,6 +10,7 @@ import 'package:lotti/database/slow_query_logging.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqlite3/sqlite3.dart';
@@ -408,6 +409,11 @@ LazyDatabase openDbConnection(
   });
 }
 
+/// How long the confirming probe waits on a lock another connection holds.
+/// Only an unreadable first look pays it, and a probe that still cannot get
+/// the lock reports the file readable rather than risk a restore.
+const _probeBusyTimeoutMs = 2000;
+
 /// Whether [file] can still be opened and read as a SQLite database.
 ///
 /// Reads the header and the schema cookie only, so the cost does not grow
@@ -416,27 +422,49 @@ LazyDatabase openDbConnection(
 /// anything else (a lock, a missing file, a permission problem) is not a
 /// corruption verdict and reports `true` so the normal open path surfaces it.
 ///
-/// The probe opens the file `immutable`, so SQLite reads the main file and
-/// nothing beside it. An ordinary connection opens the `-wal`, and closing
-/// it beside a file that is not a database deletes that `-wal` and its
-/// `-shm` — the commits a restore keeps next to the damaged file. The
-/// connection is closed before returning, whatever the query did: a probe
-/// that left it to the garbage collector deleted the `-wal` at whatever
-/// moment the finalizer ran, sometimes in the middle of a restore.
+/// An unreadable verdict is what makes recovery replace the file, so it
+/// takes two looks that must agree:
+///
+/// 1. The file is opened `immutable`: SQLite reads the main file and nothing
+///    beside it, takes no lock, and never touches the `-wal`. Nearly every
+///    launch ends here, readable.
+/// 2. Only when that fails is it confirmed read-only (`mode=ro`) under
+///    SQLite's normal locking. Nothing guarantees this process is the only
+///    one with the file open — a second desktop instance can have it open,
+///    checkpointing — and an immutable read of a main file in the middle of a
+///    checkpoint can see a torn page. A locking reader sees a consistent
+///    snapshot, reading from the WAL whatever the main file does not yet
+///    hold, so a live database always passes it. A read-only connection
+///    closing beside a file that is not a database leaves the `-wal` in
+///    place; it may rebuild the `-shm`, which is only an index of the WAL.
+///
+/// An ordinary read-write connection would not do for either look: closing
+/// one beside a file that is not a database deletes the `-wal` and `-shm` —
+/// the commits a restore keeps next to the damaged file. Every connection is
+/// closed before returning, whatever the query did: a probe that left it to
+/// the garbage collector deleted the `-wal` at whatever moment the
+/// finalizer ran, sometimes in the middle of a restore.
 bool isReadableDatabaseFile(File file) {
   if (!file.existsSync()) return true;
+  return _probeReads(file, const {'immutable': '1'}) ||
+      _probeReads(file, const {'mode': 'ro'});
+}
+
+/// One look at [file] through a connection opened with [parameters]: `false`
+/// only when SQLite reports the file is not, or no longer, a database.
+bool _probeReads(File file, Map<String, String> parameters) {
   Database? database;
   try {
     final opened = sqlite3.open(
-      Uri.file(
-        file.path,
-      ).replace(queryParameters: const {'immutable': '1'}).toString(),
+      Uri.file(file.path).replace(queryParameters: parameters).toString(),
       uri: true,
     );
-    // Held before the query runs, not assigned from a cascade with it: a
+    // Held before the queries run, not assigned from a cascade with them: a
     // query that throws would otherwise leave nothing for `finally` to close.
     database = opened;
-    opened.select('PRAGMA schema_version');
+    opened
+      ..execute('PRAGMA busy_timeout = $_probeBusyTimeoutMs')
+      ..select('PRAGMA schema_version');
     return true;
   } on SqliteException catch (e) {
     return !_isUnreadableSource(e);
@@ -464,12 +492,23 @@ bool isReadableDatabaseFile(File file) {
 ///
 /// Snapshots are tried newest first, so a backup that is itself damaged does
 /// not block recovery from an older one. Returns `null` when nothing was
-/// restored — no backup directory, no snapshot, or none of them readable.
+/// restored — no backup directory, no snapshot, none of them readable, or a
+/// live file that reads again by the time the snapshot is staged.
+///
+/// The live file is probed once more right before it is moved aside. Copying
+/// a snapshot takes time, and a file that reads by then — another recoverer
+/// restored it — must not be replaced by an older copy.
+///
+/// Snapshots are judged by their main file alone, because that is what is
+/// installed: a raw-copy snapshot's `-wal` stays in the backup directory.
 Future<File?> restoreDatabaseFromBackup(File file) async {
   final backupDir = Directory(p.join(file.parent.path, _backupDirectoryName));
   final stem = p.basenameWithoutExtension(file.path);
   for (final (_, _, snapshot) in _snapshotsOf(backupDir, stem: stem)) {
-    if (!isReadableDatabaseFile(snapshot)) {
+    // Judged by what the restore installs: the main file alone. A raw-copy
+    // snapshot keeps its source's `-wal` beside it, and a read through that
+    // WAL can succeed where the main file installed on its own cannot.
+    if (!_probeReads(snapshot, const {'immutable': '1'})) {
       DevLogger.warning(
         name: 'Database',
         message:
@@ -490,6 +529,22 @@ Future<File?> restoreDatabaseFromBackup(File file) async {
       if (staged.existsSync()) await staged.delete();
       rethrow;
     }
+    // Nothing is awaited between this check and the rename below, so no
+    // recoverer in this process can slip in between; one in another process
+    // is held off by the recovery lock (see [recoverDatabaseIfUnreadable]).
+    if (isReadableDatabaseFile(file)) {
+      await staged.delete();
+      DevLogger.warning(
+        name: 'Database',
+        message:
+            '${p.basename(file.path)} reads again; '
+            'leaving it in place instead of restoring a backup',
+      );
+      return null;
+    }
+    // Awaited only when a test sets it: `await null` would itself yield.
+    final beforeRename = debugBeforeRecoveryRename;
+    if (beforeRename != null) await beforeRename();
     final ts = DateFormat(_backupTimestampFormat).format(clock.now());
     if (file.existsSync()) {
       await file.rename('${file.path}.corrupt-$ts');
@@ -511,6 +566,54 @@ Future<File?> restoreDatabaseFromBackup(File file) async {
   return null;
 }
 
+/// Runs between the final recheck and moving the live file aside, for tests
+/// that need another process to act inside that window.
+@visibleForTesting
+Future<void> Function()? debugBeforeRecoveryRename;
+
+/// Recoverers of the same file waiting on each other in this process. An
+/// OS file lock does not exclude a second holder in the same process.
+final Map<String, Future<void>> _recoveryQueue = {};
+
+/// Runs [action] as the only recoverer of [file]: queued behind any other in
+/// this process, and holding an exclusive lock on
+/// `backup/<name>.recovery-lock` against other processes. Two app instances
+/// can open one profile, and both would otherwise judge the file unreadable
+/// and restore it in turn, the second moving the first one's restored — and
+/// perhaps since written — file aside. With no backup directory there is
+/// nothing to restore from and no lock to take.
+Future<T?> _withRecoveryLock<T>(
+  File file,
+  Future<T?> Function() action,
+) async {
+  final backupDir = Directory(p.join(file.parent.path, _backupDirectoryName));
+  if (!backupDir.existsSync()) return action();
+  final lockPath = p.join(
+    backupDir.path,
+    '${p.basename(file.path)}.recovery-lock',
+  );
+  final previous = _recoveryQueue[lockPath];
+  final done = Completer<void>();
+  final turn = done.future;
+  _recoveryQueue[lockPath] = turn;
+  try {
+    await previous;
+    final lock = await File(lockPath).open(mode: FileMode.append);
+    try {
+      await lock.lock(FileLock.blockingExclusive);
+      return await action();
+    } finally {
+      // Closing the handle releases the lock.
+      await lock.close();
+    }
+  } finally {
+    done.complete();
+    if (identical(_recoveryQueue[lockPath], turn)) {
+      unawaited(_recoveryQueue.remove(lockPath));
+    }
+  }
+}
+
 /// Restores [file] from its newest backup when it can no longer be read.
 ///
 /// Called on the open path, before the connection is built: a database whose
@@ -527,7 +630,12 @@ Future<void> recoverDatabaseIfUnreadable(File file) async {
         'looking for a backup to restore',
   );
   try {
-    final restored = await restoreDatabaseFromBackup(file);
+    // Another recoverer may restore the file while this one waits for the
+    // lock; the recheck before the rename leaves such a file in place.
+    final restored = await _withRecoveryLock(
+      file,
+      () => restoreDatabaseFromBackup(file),
+    );
     DevLogger.log(
       name: 'Database',
       message: restored == null
