@@ -257,6 +257,7 @@ class GoalWakeFacts {
     this.categoryTimeEvidenceEnd,
     this.hasActiveCategoryTimer = false,
     this.hasActiveLabelTimer = false,
+    this.reportedStatus,
   });
 
   /// Policy-derived status for the evaluation day.
@@ -293,6 +294,22 @@ class GoalWakeFacts {
   bool get hasActiveTrackedTimer =>
       hasActiveCategoryTimer || hasActiveLabelTimer;
 
+  /// The status today's standing report states, when it was written for
+  /// today under the same spec; null otherwise.
+  final GoalTrackStatus? reportedStatus;
+
+  /// Whether today's standing report states a status the day no longer has.
+  ///
+  /// A transition is judged against the last persisted register row, and a
+  /// peer's row can carry the new status before this device ever sees a
+  /// transition — while the report was written by a device whose journal
+  /// was still behind. Without this, that stale report would stand for the
+  /// rest of the day (`specs/tla/GoalRegister.tla`,
+  /// Escalate = "contradicted"). It needs a report for today, so a Phase B
+  /// that failed to write one is not retried on every tick.
+  bool get reportContradicted =>
+      reportedStatus != null && reportedStatus != trackStatus;
+
   /// Whether the status changed against the last persisted register row.
   /// A first-ever evaluation counts as a transition (there is a new fact
   /// where there was none).
@@ -300,10 +317,11 @@ class GoalWakeFacts {
 
   /// Whether this tick warrants waking the LLM tier (Phase B, PR 3).
   ///
-  /// A status transition is intrinsically LLM-worthy. Phase A separately
-  /// combines this with deterministic banner expiry so an eligible goal can
-  /// replace stale copy without making ordinary unchanged ticks spend money.
-  bool get needsEscalation => statusTransitioned;
+  /// A status transition, or a report for today that states another status,
+  /// is LLM-worthy. Phase A separately combines this with deterministic
+  /// banner expiry so an eligible goal can replace stale copy without making
+  /// ordinary unchanged ticks spend money.
+  bool get needsEscalation => statusTransitioned || reportContradicted;
 }
 
 /// Everything one deterministic derivation pass computed for a goal wake:

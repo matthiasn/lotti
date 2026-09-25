@@ -97,6 +97,9 @@ void main() {
     ).thenAnswer((_) async => []);
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
     when(
+      () => repository.getLatestReport(any(), any()),
+    ).thenAnswer((_) async => null);
+    when(
       () => repository.getEntitiesByAgentId(any(), type: any(named: 'type')),
     ).thenAnswer((_) async => []);
     when(
@@ -469,8 +472,11 @@ void main() {
     expect(phaseA.success, isTrue);
   });
 
-  test('a local transition queues the countdown, and only its deferred wake '
-      'arms and nudges the lease manager', () async {
+  test('a local transition arms its escalation with the register and '
+      'nudges the lease manager at once — no device-local countdown', () async {
+    // specs/tla/GoalRegister.tla, ArmAt = "commit": a transition parked on a
+    // device-local countdown died with its device, and every peer compared
+    // against the synced register and saw no transition.
     const agentId = 'goal-esc';
     when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
       (_) async => AgentDomainEntity.goalSpecHead(
@@ -545,26 +551,15 @@ void main() {
     );
     expect(result.success, isTrue);
 
-    verify(
+    verifyNever(
       () => wakeOrchestrator.enqueueDeferredAutomaticWake(
-        agentId: agentId,
-        reason: WakeReason.subscription.name,
-        triggerTokens: const {goalDeferredReportRefreshTriggerToken},
-        workspaceKey: goalReportRefreshTriggerToken,
+        agentId: any(named: 'agentId'),
+        reason: any(named: 'reason'),
+        triggerTokens: any(named: 'triggerTokens'),
+        workspaceKey: any(named: 'workspaceKey'),
       ),
-    ).called(1);
-    verifyNever(() => repository.getDueScheduledWakeRecords(any()));
-
-    final deferred = await runner(
-      agentIdentity: goalIdentity(agentId),
-      runKey: 'run-deferred',
-      triggerTokens: const {goalDeferredReportRefreshTriggerToken},
-      threadId: 'thread-esc',
     );
-    expect(deferred.success, isTrue);
-
-    // Only the deferred arm writes the deterministic scheduled record and
-    // kicks the lease manager into an immediate scan pass.
+    // The armed record kicks the lease manager into an immediate scan pass.
     await untilCalled(() => repository.getDueScheduledWakeRecords(any()));
   });
 

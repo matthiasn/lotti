@@ -77,6 +77,9 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
             identity.agentId,
             criteria,
           )
+          // Before the state read below: a failing read must not also cost
+          // the goal its recompute.
+          ..recomputeProgress(identity.agentId)
           ..restorePendingReportRefresh(
             identity: identity,
             state: await _repository.getAgentState(identity.agentId),

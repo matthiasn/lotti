@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
@@ -36,6 +38,38 @@ class _FakeSignalReader extends GoalSignalReader {
     DateTime? timeEntryEvidenceStart,
     DateTime? timeEntryEndExclusive,
   }) async => window;
+}
+
+/// Records every read and holds the first one until [release].
+class _GatedSignalReader extends GoalSignalReader {
+  _GatedSignalReader(this.window, this.reads)
+    : super(journalDb: MockJournalDb());
+
+  final GoalSignalWindow window;
+  final List<String> reads;
+  final _gate = Completer<void>();
+  var _held = false;
+
+  void release() {
+    if (!_gate.isCompleted) _gate.complete();
+  }
+
+  @override
+  Future<GoalSignalWindow> read({
+    required GoalCriterion criteria,
+    required DateTime reference,
+    int shortTermDays = 3,
+    bool includeTimeEntryEvidence = true,
+    DateTime? timeEntryEvidenceStart,
+    DateTime? timeEntryEndExclusive,
+  }) async {
+    reads.add('read');
+    if (!_held) {
+      _held = true;
+      await _gate.future;
+    }
+    return window;
+  }
 }
 
 void main() {
@@ -132,6 +166,9 @@ void main() {
     };
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
     when(
+      () => repository.getLatestReport(any(), any()),
+    ).thenAnswer((_) async => null);
+    when(
       () => repository.getEntitiesByAgentId(
         any(),
         type: any(named: 'type'),
@@ -141,6 +178,12 @@ void main() {
       upserts.add(invocation.positionalArguments.first as AgentDomainEntity);
     });
   });
+
+  /// The escalation wakes this test's runs armed, in write order.
+  List<ScheduledWakeEntity> escalations() => upserts
+      .whereType<ScheduledWakeEntity>()
+      .where((wake) => isGoalEscalationWorkspace(wake.workspaceKey))
+      .toList();
 
   void stubSpec() {
     when(
@@ -355,10 +398,11 @@ void main() {
       NudgeStatus.expired,
     );
     expect(
-      refreshRequests,
-      [agentId],
-      reason: 'one coalesced refresh must replace the expired banner',
+      escalations(),
+      hasLength(1),
+      reason: 'the replacement is armed with the register, not deferred',
     );
+    expect(refreshRequests, isEmpty);
   });
 
   test('an expired banner stays a €0 maintenance event when unchanged '
@@ -472,10 +516,11 @@ void main() {
       reason: 'data-stale expiry records the sweep that observed the change',
     );
     expect(
-      refreshRequests,
-      [agentId],
-      reason: 'one coalesced refresh must re-mint from changed evidence',
+      escalations(),
+      hasLength(1),
+      reason: 'the re-mint from changed evidence is armed with the register',
     );
+    expect(refreshRequests, isEmpty);
   });
 
   test('a banner minted today is exempt from digest expiry — one automatic '
@@ -720,6 +765,133 @@ void main() {
     expect(upserts.whereType<GoalNudgeEntity>(), isEmpty);
   });
 
+  test('a second run of the same goal waits for the first to commit before '
+      'it reads the journal; another goal does not wait', () async {
+    // GoalRegister.tla, Lock = "none": a run that read the journal before a
+    // check-off committed after a later run that saw it, and its stale row
+    // dominated on every device. Runs of one goal now take turns.
+    stubSpec();
+    final reads = <String>[];
+    final reader = _GatedSignalReader(onTrackSignals(), reads);
+    // Never leave the goal's turn held for the tests after this one.
+    addTearDown(reader.release);
+    final gated = GoalAgentPhaseA(
+      repository: repository,
+      syncService: syncService,
+      signalReader: reader,
+    );
+    Future<WakeResult> start(AgentIdentityEntity agent) => withClock(
+      fixedClock,
+      () => gated.execute(
+        agentIdentity: agent,
+        runKey: 'run',
+        triggerTokens: const {'cumulative_step_count'},
+        threadId: 'thread',
+      ),
+    );
+
+    final first = start(identity);
+    await pumpEventQueue();
+    expect(reads, ['read'], reason: 'the first run is held in its read');
+
+    final second = start(identity);
+    await pumpEventQueue();
+    expect(reads, ['read'], reason: 'the same goal waits its turn');
+
+    // Another goal (here one without a spec yet) runs to completion while
+    // the first goal's run is still held.
+    var otherDone = false;
+    unawaited(
+      start(
+        identity.copyWith(agentId: 'goal-agent-2'),
+      ).then((_) => otherDone = true),
+    );
+    await pumpEventQueue();
+    expect(otherDone, isTrue, reason: 'another goal does not wait');
+
+    reader.release();
+    await first;
+    await second;
+    expect(reads, ['read', 'read']);
+    final registerWrites = upserts.whereType<GoalProgressEntity>().length;
+    expect(registerWrites, greaterThanOrEqualTo(2));
+  });
+
+  test('a run that would reproduce the persisted rows writes nothing '
+      'synced; a changed signal still writes', () async {
+    // GoalRegister.tla, OnSynced = "recompute": peers recompute on a synced
+    // agent change, so a no-op run must not answer with a write of its own.
+    stubSpec();
+    await run(onTrackSignals());
+    final register = upserts.whereType<GoalProgressEntity>().single;
+    final cadence = upserts.whereType<ScheduledWakeEntity>().singleWhere(
+      (wake) => wake.workspaceKey == goalCadenceWorkspaceKey,
+    );
+    when(
+      () => repository.getEntity(register.id),
+    ).thenAnswer((_) async => register);
+    when(
+      () => repository.getEntity(cadence.id),
+    ).thenAnswer((_) async => cadence);
+    upserts.clear();
+
+    await run(onTrackSignals());
+    expect(upserts, isEmpty);
+
+    final fewerSteps = GoalSignalWindow(
+      quantitativeDailySums: {
+        'cumulative_step_count': {
+          for (var day = 2; day <= 8; day++) DateTime.utc(2026, 8, day): 10500,
+        },
+      },
+    );
+    await run(fewerSteps);
+    final rewritten = upserts.whereType<GoalProgressEntity>().single;
+    expect(rewritten.vectorClock, register.vectorClock);
+    expect(rewritten.criterionResults.single.actual, 10500);
+    expect(upserts.whereType<ScheduledWakeEntity>(), isEmpty);
+  });
+
+  test('a register that moved under the run is derived again, and the write '
+      'builds on the row it read', () async {
+    // GoalRegister.tla, Validate = "rederive": the write carries the clock
+    // of the row it re-reads, so a derivation that read the journal before
+    // a peer's row synced in would otherwise replace that row with an older
+    // picture and dominate it on every device.
+    stubSpec();
+    final peerRow = progressRow(
+      periodKey: '2026-08-08',
+      status: GoalTrackStatus.atRisk,
+      attainment: 0.85,
+    ).copyWith(vectorClock: const VectorClock({'peer': 3}));
+    var rowReads = 0;
+    when(
+      () => repository.getEntity(goalProgressId(agentId, '2026-08-08')),
+    ).thenAnswer((_) async => rowReads++ == 0 ? null : peerRow);
+    final reads = <String>[];
+    final reader = _GatedSignalReader(onTrackSignals(), reads)..release();
+
+    await withClock(
+      fixedClock,
+      () =>
+          GoalAgentPhaseA(
+            repository: repository,
+            syncService: syncService,
+            signalReader: reader,
+          ).execute(
+            agentIdentity: identity,
+            runKey: 'run-1',
+            triggerTokens: const {'cumulative_step_count'},
+            threadId: 'thread-1',
+          ),
+    );
+
+    expect(reads, hasLength(2), reason: 'the stale derivation was redone');
+    final written = upserts.whereType<GoalProgressEntity>().single;
+    expect(written.vectorClock, peerRow.vectorClock);
+    expect(written.trackStatus, GoalTrackStatus.onTrack);
+  });
+
   test('a goal without a spec head is a clean no-op', () async {
     final result = await run(onTrackSignals());
     expect(result.success, isTrue);
@@ -761,20 +933,114 @@ void main() {
   );
 
   test(
-    'the first-ever evaluation requests a deferred refresh without arming '
-    'Phase B immediately',
+    'the first-ever evaluation arms its escalation with the register — no '
+    'device-local countdown a dying device could take along',
     () async {
+      // GoalRegister.tla, ArmAt = "commit".
       stubSpec();
       await run(onTrackSignals());
-      expect(refreshRequests, [agentId]);
+      expect(refreshRequests, isEmpty);
+      final wake = escalations().single;
+      expect(wake.triggerTokens, contains(goalReportRefreshTriggerToken));
       expect(
-        upserts.whereType<ScheduledWakeEntity>().where(
-          (wake) => isGoalEscalationWorkspace(wake.workspaceKey),
-        ),
-        isEmpty,
+        upserts.indexOf(wake),
+        greaterThan(upserts.indexWhere((e) => e is GoalProgressEntity)),
+        reason: 'armed in the same write sequence as the register',
       );
     },
   );
+
+  test(
+    'with automatic updates off, a transition arms nothing and leaves the '
+    'refresh to the countdown, which honours the setting',
+    () async {
+      stubSpec();
+      await withClock(
+        fixedClock,
+        () => phaseA(onTrackSignals()).execute(
+          agentIdentity: identity.copyWith(
+            config: const AgentConfig(automaticUpdatesEnabled: false),
+          ),
+          runKey: 'run-1',
+          triggerTokens: const {'cumulative_step_count'},
+          threadId: 'thread-1',
+        ),
+      );
+      expect(escalations(), isEmpty);
+      expect(refreshRequests, [agentId]);
+    },
+  );
+
+  group('a report for today that states another status', () {
+    // GoalRegister.tla, Escalate = "contradicted": a lagging device's Phase B
+    // can report a status the day no longer has, and the device that sees
+    // the day as it is compares against the synced register, which already
+    // carries that status — no transition, and the stale report stands.
+    AgentReportEntity report({
+      required String periodKey,
+      required GoalTrackStatus status,
+      String specVersionId = '$agentId:spec-v1',
+    }) =>
+        AgentDomainEntity.agentReport(
+              id: 'report-1',
+              agentId: agentId,
+              scope: AgentReportScopes.current,
+              createdAt: DateTime(2026, 8, 8, 9),
+              vectorClock: null,
+              provenance: {
+                'trackStatus': status.name,
+                'periodKey': periodKey,
+                'specVersionId': specVersionId,
+              },
+            )
+            as AgentReportEntity;
+
+    void stubToday(GoalTrackStatus status) {
+      when(
+        () => repository.getEntity(goalProgressId(agentId, '2026-08-08')),
+      ).thenAnswer(
+        (_) async => progressRow(
+          periodKey: '2026-08-08',
+          status: status,
+          attainment: 1.1,
+        ),
+      );
+    }
+
+    test('is escalated even though the register shows no transition', () async {
+      stubSpec();
+      stubToday(GoalTrackStatus.onTrack);
+      when(
+        () => repository.getLatestReport(agentId, AgentReportScopes.current),
+      ).thenAnswer(
+        (_) async =>
+            report(periodKey: '2026-08-08', status: GoalTrackStatus.atRisk),
+      );
+      await run(onTrackSignals());
+      expect(escalations(), hasLength(1));
+    });
+
+    test('is not escalated when it agrees, is from another day, or judged '
+        'another spec', () async {
+      stubSpec();
+      stubToday(GoalTrackStatus.onTrack);
+      for (final standing in [
+        report(periodKey: '2026-08-08', status: GoalTrackStatus.onTrack),
+        report(periodKey: '2026-08-07', status: GoalTrackStatus.atRisk),
+        report(
+          periodKey: '2026-08-08',
+          status: GoalTrackStatus.atRisk,
+          specVersionId: '$agentId:spec-v0',
+        ),
+      ]) {
+        when(
+          () => repository.getLatestReport(agentId, AgentReportScopes.current),
+        ).thenAnswer((_) async => standing);
+        await run(onTrackSignals());
+        expect(escalations(), isEmpty, reason: '${standing.provenance}');
+      }
+    });
+  });
 
   test('an unchanged status is the €0 no-op: no escalation armed', () async {
     stubSpec();

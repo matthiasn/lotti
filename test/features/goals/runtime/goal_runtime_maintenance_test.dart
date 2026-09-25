@@ -113,6 +113,14 @@ void main() {
     when(() => notifier.unwatch(any())).thenReturn(null);
     when(() => notifier.start(any())).thenReturn(null);
     when(
+      () => orchestrator.enqueueManualWake(
+        agentId: any(named: 'agentId'),
+        reason: any(named: 'reason'),
+        supersede: any(named: 'supersede'),
+        initiator: any(named: 'initiator'),
+      ),
+    ).thenReturn('run');
+    when(
       () => chatService.restoreOldestPendingMessage(any()),
     ).thenAnswer((_) async => false);
     when(
@@ -286,6 +294,36 @@ void main() {
     verify(
       () => chatService.restoreOldestPendingMessage('goal-b'),
     ).called(1);
+  });
+
+  test('restoreSubscriptions recomputes every active goal once, as an '
+      'automation wake that supersedes nothing', () async {
+    // GoalRegister.tla, Restart = "recompute": a synced row whose in-memory
+    // dispatch died with the process is otherwise never evaluated that day.
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer(
+      (_) async => [goalIdentity('goal-a'), goalIdentity('goal-b')],
+    );
+    stubSpec('goal-a');
+    stubSpec('goal-b');
+    // A failing state read must not also cost the goal its recompute.
+    when(
+      () => repository.getAgentState('goal-a'),
+    ).thenThrow(StateError('state gone'));
+
+    await maintenance.restoreSubscriptions();
+
+    for (final agentId in ['goal-a', 'goal-b']) {
+      verify(
+        () => orchestrator.enqueueManualWake(
+          agentId: agentId,
+          reason: goalStartupRecomputeReason,
+          supersede: false,
+          initiator: WakeInitiator.automation,
+        ),
+      ).called(1);
+    }
   });
 
   test('restoreSubscriptions re-arms a report refresh that was pending when '

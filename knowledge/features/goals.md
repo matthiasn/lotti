@@ -212,14 +212,15 @@ flowchart TD
     REG --> ALERT{persisted status\ntransition?}
     ALERT -- "into a slip" --> ARM[GoalOffTrackSink.arm\nafter the transaction — one\nalert per slip, next 09:00]
     ALERT -- "out of one" --> CLEAR[GoalOffTrackSink.clearFor\nretracts the open alert]
-    REG --> MATERIAL{status transition, register change,\nor eligible banner expiry?}
+    REG --> MATERIAL{a status the standing report\ndoes not state, a register change,\nor eligible banner expiry?}
     MATERIAL -- no --> DONE[return — the €0 no-op]
     MATERIAL -- yes --> STALE2[advance report-stale watermark]
     STALE2 --> AUTO{automatic report\nupdates enabled?}
     AUTO -- no --> DONE
-    AUTO -- yes --> DEFER[local goal-report-refresh job\n120-second visible countdown\nfirst deadline wins]
+    AUTO -- "status or banner" --> ESC[arm escalation wake\ngoal-escalation:periodKey,\nperiod-derived UTC deadline,\nlease-elected, same txn\nas the register]
+    AUTO -- "evidence only" --> DEFER[local goal-report-refresh job\n120-second visible countdown\nfirst deadline wins]
     DEFER --> DPA[GoalAgentPhaseA\ndeferred refresh trigger]
-    DPA --> ESC[arm escalation wake\ngoal-escalation:periodKey,\nperiod-derived UTC deadline,\nlease-elected, same txn\nas the register]
+    DPA --> ESC
     ESC --> NUDGE[nudge ScheduledWakeManager\nrequestCheck on arming device]
     NUDGE --> ROUTE{escalation trigger token\non the wake?}
     ROUTE -- no --> PA
@@ -285,10 +286,42 @@ handler would retract it; that wiring is a follow-up.
   content from the same journal, so concurrent Phase A runs converge
   instead of duplicating. A recompute over a synced row carries that
   row's vector clock forward — dropping it would make the write causally
-  concurrent with its own input.
+  concurrent with its own input. Carrying the clock means a write dominates
+  the row it builds on, so four rules keep that from burying evidence,
+  each model-checked in `specs/tla/GoalRegister.tla` ([ADR 0082](../../docs/adr/0082-model-checked-goal-registers.md)):
+  - **Runs of one goal take turns on a device** (`GoalAgentPhaseA.runExclusive`,
+    shared by the orchestrator, the sync dispatcher and Phase B's report
+    refresh). Interleaved, a run that read the journal first could commit
+    last, over a later run that saw a fresh check-off.
+  - **A commit builds only on the row its derivation read.** A peer's row that
+    synced in mid-run makes `persistDerivation` report
+    `GoalPersistOutcome.stale`, and the run derives again (up to
+    `goalPersistAttempts` times, then leaves the write to the next trigger).
+  - **A run that would reproduce the row writes nothing**, and the cadence
+    re-arm skips a record already pending for that tick: an unchanged run
+    stamps no clock and syncs nothing.
+  - **Startup recomputes every active goal** (`GoalAgentService.recomputeProgress`,
+    an automation wake that supersedes nothing). The sync dispatcher's queue
+    lives in memory, so a synced row applied just before a crash is otherwise
+    evaluated by nobody that day.
+
+  The residual is a device that recomputes from a journal still missing
+  evidence and **never comes back**: its row dominates the better one it built
+  on, and no peer can tell. A synced row is deliberately **not** a trigger:
+  devices whose views legitimately differ — a private entry one device hides,
+  a time zone that moves an entry to another day — would answer each other's
+  rows forever, and every answer that escalates is a paid Phase B run. A
+  device that returns heals the row by its startup recompute and the evidence
+  that syncs in.
 - **Transitions compare against the last persisted status** — today's own
   earlier row first, yesterday's otherwise — so an escalation wake that
-  re-runs Phase A is a no-op, not a self-re-arming loop.
+  re-runs Phase A is a no-op, not a self-re-arming loop. **A report for today
+  that states another status escalates too** (`GoalWakeFacts.reportContradicted`):
+  a device whose journal was behind can run Phase B and report a status the
+  day no longer has, while every register already carries the true one, so no
+  device would ever see a transition. It needs a report written today under
+  the same spec, so a Phase B that failed to write one is not retried on every
+  tick.
 - **Banner expiry can be LLM-worthy without a status transition.** Phase A's
   deterministic staleness sweep records an overdue active banner as expired.
   When the unchanged goal still qualifies for automatic copy (off track, or
@@ -345,11 +378,14 @@ handler would retract it; that wiring is a follow-up.
   eligible banner expiry, or derivation that differs from today's persisted
   register (`goalRegisterDigest` vs `goalAggregateFactsDigest`) makes Phase A
   advance the durable report-stale watermark immediately. With automatic
-  updates enabled, it also queues one local `goal-report-refresh` job behind
-  the shared 120-second agent countdown. Bursts merge into the first job and
-  keep its original deadline; they cannot postpone inference forever. The
-  detail page uses the shared automation control to expose that deadline,
-  Update now, Skip once, and the persisted automatic-updates switch. The first
+  updates enabled, a status change or an eligible banner expiry arms the
+  escalation in the register's own transaction (below); evidence that leaves
+  the status alone queues one local `goal-report-refresh` job behind the shared
+  120-second agent countdown instead. Bursts merge into the first job and keep
+  its original deadline; they cannot postpone inference forever. The detail
+  page uses the shared automation control to expose that deadline, Update now,
+  Skip once (which skips only the countdown), and the persisted
+  automatic-updates switch. The first
   tick of a day is not "new data" (the window slid), and identical
   recomputation keeps the report fresh.
   **A direct identity write must ping `UpdateNotifications` itself.**
@@ -360,9 +396,13 @@ handler would retract it; that wiring is a follow-up.
   `agentIdentityProvider` keeps its cached value and the switch renders the old
   state until the page is rebuilt from scratch, which reads as a switch that
   does not work.
-- **The deferred arm and its escalation commit in one transaction.** When the
-  local countdown fires, its dedicated trigger re-enters Phase A and writes the
-  current register together with a forced report-refresh escalation. The
+- **An escalation commits with its register.** A status the report does not
+  state arms the forced report-refresh escalation in the transaction that
+  writes the register. It used to wait behind the device-local countdown, and
+  a device that died in those two minutes took the escalation with it: its
+  peers compared against the synced register, which already carried the new
+  status, and saw no transition. When the countdown for evidence-only changes
+  fires, its dedicated trigger re-enters Phase A and does the same. The
   escalation deadline is derived from the period (its UTC day key), never from
   the arming device's wall clock, so every device arming the same logical
   escalation writes an identical record and the concurrent resolver's

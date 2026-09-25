@@ -344,23 +344,44 @@ class GoalAgentWorkflow with AgentErrorLogging {
         version.id != head.versionId) {
       return const WakeResult(success: true);
     }
-    final derivation = await _phaseA.deriveWakeFacts(
-      agentId: agentId,
-      version: version,
-      now: reference,
-      timeEntryEvidenceStart: agentIdentity.createdAt,
-      timeEntryEndExclusive: overdueEscalation
-          ? _periodEndExclusive(escalationPeriod!)
-          : null,
+    // Derive and persist take their turn with every other Phase A run of
+    // this goal on this device (GoalAgentPhaseA.runExclusive).
+    // A register that moved under the derivation is derived again; one
+    // still moving after that is left to the next trigger, and the report
+    // describes the last snapshot. Only a fenced write (a revision landed)
+    // ends the wake.
+    final evaluatedVersion = version;
+    final (derivation, fenced) = await GoalAgentPhaseA.runExclusive(
+      agentId,
+      () async {
+        late GoalWakeDerivation derivation;
+        var outcome = GoalPersistOutcome.stale;
+        for (
+          var attempt = 0;
+          attempt < goalPersistAttempts && outcome == GoalPersistOutcome.stale;
+          attempt++
+        ) {
+          derivation = await _phaseA.deriveWakeFacts(
+            agentId: agentId,
+            version: evaluatedVersion,
+            now: reference,
+            timeEntryEvidenceStart: agentIdentity.createdAt,
+            timeEntryEndExclusive: overdueEscalation
+                ? _periodEndExclusive(escalationPeriod!)
+                : null,
+          );
+          outcome = reportRefresh
+              ? await _phaseA.persistDerivation(
+                  agentId: agentId,
+                  derivation: derivation,
+                  now: now,
+                )
+              : GoalPersistOutcome.persisted;
+        }
+        return (derivation, outcome == GoalPersistOutcome.fenced);
+      },
     );
-    if (reportRefresh) {
-      final persisted = await _phaseA.persistDerivation(
-        agentId: agentId,
-        derivation: derivation,
-        now: now,
-      );
-      if (!persisted) return const WakeResult(success: true);
-    }
+    if (fenced) return const WakeResult(success: true);
     // Phase A persisted the transition's register row BEFORE arming this
     // wake, so re-deriving sees the new status as previousStatus and the
     // transition vanishes. The wake record carries the PRE-transition

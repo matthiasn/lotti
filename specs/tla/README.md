@@ -487,6 +487,69 @@ it; `habit_completion_resolution_test.dart` and
 the rank removed. Not modelled: clock skew between devices, which reorders any
 last-write-wins decision.
 
+## `GoalRegister` — Phase A's register and the report it escalates
+
+One goal, one day, across devices. Evidence written on any device syncs in any
+order; each device runs Phase A from two lanes — the wake orchestrator for its
+own writes, the sync dispatcher for synced ones — and recomputes the day's
+register row from its own journal, carrying the clock of the row it builds on.
+A status the standing report does not state arms the synced escalation, whose
+lease (`ScheduledWakeLease`, taken as given) elects one live device to derive
+and write the report. The model carries crashes that lose in-flight runs and
+the dispatcher's in-memory queue, devices that never return, and devices whose
+views of the journal never agree (`Hidden`: a private entry one device hides,
+or a time zone that moves an entry to another day). The runtime is described
+in [goals](../../knowledge/features/goals.md#invariants).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `Converged` | invariant | once sync is quiet, every live replica holds the same row |
+| `Complete` | invariant | once quiet, the row was computed from every item written that day |
+| `ReportCurrent` | invariant | once quiet, the standing report states the status the day came to |
+| `EscalationDurable` | invariant | an escalation a commit owed never dies with the device that owed it |
+| `Bounded` | invariant | devices whose views never agree still stop writing |
+
+| Configuration | Devices | Items | Faults | Distinct states |
+|---------------|---------|-------|--------|-----------------|
+| `GoalRegister` | 2 | 2 | none | 125,784 |
+| `GoalRegisterCrash` | 2 | 2 | one restart | 2,333,840 |
+| `GoalRegisterDeath` | 2 | 2 | one device lost (`EscalationDurable` only) | 612,952 |
+| `GoalRegisterDivergent` | 2 | 2, one hidden from device 2 | none (`Bounded`) | 5,161 |
+
+Each constant but `Hidden` and `MaxTick` contrasts the code before this spec
+with the code now; reverting one fix at a time breaks a property in a few
+steps, and the code before breaks `ReportCurrent` in 13 with no fault at all.
+Each counterexample is pinned by a Dart regression that fails with its fix
+reverted:
+
+| Reverted | Breaks | Trace | Regression |
+|----------|--------|-------|------------|
+| `Lock` and `Validate` | `Complete`, 17 states | a local run reads the journal, a synced check-off is committed by the dispatcher's run, then the local run commits its older snapshot on top: carrying the clock makes it dominate on every device, and nothing re-triggers | `goal_agent_phase_a_test.dart`: a second run of the same goal waits; a register that moved under the run is derived again |
+| `Escalate` | `ReportCurrent`, 12 states | the lease elects a device whose journal is behind; its report states the old status while every register already carries the new one, so no device sees a transition | `goal_agent_phase_a_test.dart`: a report for today that states another status is escalated |
+| `Restart` | `ReportCurrent`, 11 states | a synced row is applied and the process dies before the dispatcher runs; after the restart nothing evaluates it that day | `goal_runtime_maintenance_test.dart`: restoreSubscriptions recomputes every active goal |
+| `ArmAt` | `EscalationDurable`, 6 states | a transition is committed and its refresh parked on the device-local countdown; the device dies, and its peers, holding the synced row with the new status, see no transition | `goal_agent_phase_a_test.dart`, `goal_agent_providers_test.dart`: the transition arms its escalation with the register |
+
+`Lock` and `Validate` each close the interleaved-lanes trace alone; both
+stay because they differ in cost and reach: the lock keeps a device's own
+lanes from re-deriving at all, validation also covers a peer's row that
+syncs in mid-run.
+
+`OnSynced = "recompute"` is the design this spec rejected: a synced register
+row or report owes the receiver a recompute, which would heal a stale row a
+lagging device left behind. Under `Hidden` it never stops — each device answers
+the other's row with its own — and breaks `Bounded` in 25 states, every
+escalating round a paid Phase B run. Damping it (reacting to organic writes
+only) or reacting only to a row that beat this device's own on the timestamp
+bounds the loop but still fails with a death, because the harmful write is the
+lagging device's own recompute from a journal still missing evidence.
+
+That is the residual, and why `GoalRegisterDeath` claims only
+`EscalationDurable`: a device that recomputes, or runs Phase B, from a journal
+still missing evidence and then never comes back leaves a row or a report no
+peer can tell is stale (`Complete` in 11 states, `ReportCurrent` in 8). A device that
+does come back heals both — its startup recompute, the evidence that syncs in,
+and a report for today that contradicts the status re-escalates.
+
 ## `AgentReplication` — converging synced agent entities
 
 Three replicas of one synced agent entity. Local writes build on the
