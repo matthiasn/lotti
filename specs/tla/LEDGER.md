@@ -12,35 +12,37 @@ exposed. Then update the [totals](#totals) from the README's tables.
 
 ## Totals
 
-As of `main` at `b1bd9ae11` (2026-09-25):
+As of `main` at `00c2a40f0` (2026-09-25):
 
-| Measure | Merged | Including open PRs #4470, #4471, #4479 |
-|---------|-------:|--------------------------------:|
-| TLA+ specs | 16 | 18 |
-| TLC configurations | 42 | 50 |
-| Distinct states explored | 113,735,037 | 145,054,985 |
-| States generated (at `b551bf587`) | 927,744,398 | — |
-| Deepest counterexample-free trace | 53 steps | — |
-| Named safety and liveness properties | about 68 | about 77 |
-| Bugs fixed | 64 | 81 |
-| of which TLC produced the counterexample | 41 | 47 |
-| Architecture decision records | 11 (ADR 0065–0071, 0075–0078) | 11 |
-| Source paths that re-trigger the TLC workflow | 63 | 63 |
+| Measure | Value |
+|---------|------:|
+| TLA+ specs | 19 |
+| TLC configurations | 49 |
+| CI shards they run in | 8 |
+| Distinct states explored | 152,766,553 |
+| States generated (at `b551bf587`, 42 configurations) | 927,744,398 |
+| Deepest counterexample-free trace (same run) | 53 steps |
+| Named safety and liveness properties | about 80 |
+| Bugs fixed | 81 |
+| of which TLC produced the counterexample | 50 |
+| Architecture decision records | 13 (ADR 0065–0071, 0075–0078, 0080, 0081) |
+| Source paths that re-trigger the TLC workflow | 73 |
 
 How the figures are counted:
 
 - **Distinct states** is the sum of the latest figure for each configuration in
-  the README. It matches the figure measured for #4466 exactly. A
+  the README (`DayJobPreparation`'s 12 is in #4462). The 42 configurations on
+  `main` at `b1bd9ae11` summed to exactly the figure measured for #4466. A
   configuration's count changes when its spec does, so never add up the numbers
   quoted in successive PRs.
 - **Bugs fixed** follows each PR description's own list. A few PRs bundle
-  sub-fixes, so read it as roughly 70–75. Bugs that a PR introduced and a later
+  sub-fixes, so read it as roughly 80, give or take five. Bugs that a PR introduced and a later
   one fixed before release count once, in the fixing PR (#4447).
 - **TLC-found** counts only bugs where the PR says TLC produced the trace. The
   rest came from code audits the models prompted, review rounds, Glados
   conformance traces, exhaustive tests and a CI shard failure.
 - **Properties** counts named invariants and temporal properties, excluding
-  `TypeOK`. The same name can appear in several specs (`Converged` is in five),
+  `TypeOK`. The same name can appear in several specs (`Converged` is in eight),
   and each of those checks is counted.
 
 ## Timeline
@@ -55,7 +57,9 @@ timeline
                : #4449 to #4454 change sets, replication, wake leases, Daily OS, the message log
                : #4455 to #4467 follow-ups, audits and new configurations
     2026-09-25 : #4466 the README claims about 114M states
-               : #4470 and #4471 open, with HabitDaySettlement
+               : #4470 and #4471 new-host clocks and HabitDaySettlement
+               : #4473 EvolutionSession and AgentLinks
+               : #4474 the configurations packed into eight CI shards
 ```
 
 ## Pull request ledger
@@ -85,10 +89,11 @@ counterexamples found.
 | [#4464](https://github.com/matthiasn/lotti/pull/4464) | 09-25 | sync | — | — | 2 (–) | [0077](../../docs/adr/0077-a-reservation-names-the-id-written.md) | Three create paths reserved a counter under the wrong id. A CI shard failure exposed a corrupt-database probe that deleted the WAL |
 | [#4466](https://github.com/matthiasn/lotti/pull/4466) | 09-25 | docs | — | — | 0 | — | The root README now claims about 114M states across 42 configurations |
 | [#4467](https://github.com/matthiasn/lotti/pull/4467) | 09-24 | sync | — | — | 3 (–) | [0078](../../docs/adr/0078-entry-link-versions-are-ordered.md) | A task removed from a project came back, because receiving a link compared no clocks. 8 of 8 mutants killed |
-| [#4470](https://github.com/matthiasn/lotti/pull/4470) | open | sync | — | 2 | 1 (–) | — | A new device's first edit tied with the version it extended (counter 0 read as absent) and did not stick, even on that device |
-| [#4471](https://github.com/matthiasn/lotti/pull/4471) | open | goals, habits | `HabitDaySettlement` | 2 | 8 (1) | — | An automatic success from one device overwrote a skip the user set on another. Also, 10 × 0.1 l summed to 0.9999999999999999, so a "1 l" goal failed |
-| [#4479](https://github.com/matthiasn/lotti/pull/4479) | open | goals | `GoalRegister` | 4 | 8 (5) | [0082](../../docs/adr/0082-model-checked-goal-registers.md) | A goal's report could say "behind" all day while every device showed it on track, with no fault at all. A check-off could vanish between two overlapping evaluations, and a status change died with the device that noticed it. Review found three more: a startup recompute that dropped a restored refresh, an unvalidated report, and a refresh published from a snapshot every commit rejected |
-| [#4474](https://github.com/matthiasn/lotti/pull/4474) | open | ci | — | — | 0 | — | Packs the configurations into eight CI shards balanced by measured runtime, instead of one runner each |
+| [#4470](https://github.com/matthiasn/lotti/pull/4470) | 09-25 | sync | — | 2 | 1 (–) | [0080](../../docs/adr/0080-a-present-counter-ranks-above-an-absent-host.md) | A new device's first edit tied with the version it extended (counter 0 read as absent) and did not stick, even on that device |
+| [#4471](https://github.com/matthiasn/lotti/pull/4471) | 09-25 | goals, habits | `HabitDaySettlement` | 2 | 8 (1) | — | An automatic success from one device overwrote a skip the user set on another. Also, 10 × 0.1 l summed to 0.9999999999999999, so a "1 l" goal failed |
+| [#4472](https://github.com/matthiasn/lotti/pull/4472) | 09-25 | docs | — | — | 0 | — | This ledger |
+| [#4473](https://github.com/matthiasn/lotti/pull/4473) | 09-25 | agents | `EvolutionSession`, `AgentLinks` | 3 | 8 (8) | [0081](../../docs/adr/0081-model-checked-evolution-sessions-and-agent-links.md) | A peer's sweep marked an approved 1-on-1 as abandoned on every device. A removed agent link came back, because the receive read its tombstone as no row |
+| [#4474](https://github.com/matthiasn/lotti/pull/4474) | 09-25 | ci | — | — | 0 | — | Packs the configurations into eight CI shards balanced by measured runtime, instead of one runner each |
 
 ## Specs
 
@@ -102,7 +107,7 @@ counterexamples found.
 | `ChangeSetConfirm` | #4446 | 2 | 337 |
 | `ChangeSetLifecycle` | #4449 | 9 | 2,421,196 |
 | `ChangeSetDependency` | #4455 | 1 | 14 |
-| `AgentReplication` | #4450 | 4 | 61,172,373 |
+| `AgentReplication` | #4450 | 6 | 88,676,037 |
 | `AgentStateWrites` | #4450 | 1 | 604 |
 | `VersionHeads` | #4450 | 2 | 9,468,242 |
 | `ScheduledWakeLease` | #4451 | 4 | 11,450,359 |
@@ -112,9 +117,10 @@ counterexamples found.
 | `AgentMessageLog` | #4454 | 3 | 2,682,996 |
 | `LogCompaction` | #4454 | 1 | 590,909 |
 | `DayJobPreparation` | #4462 | 1 | 12 |
-| **Merged total** | | **42** | **113,735,037** |
-| `HabitDaySettlement` (open) | #4471 | 2 | 174,119 |
-| `GoalRegister` (open) | #4479 | 4 | 3,642,165 |
+| `HabitDaySettlement` | #4471 | 2 | 174,119 |
+| `EvolutionSession` | #4473 | 1 | 243,264 |
+| `AgentLinks` | #4473 | 2 | 11,110,469 |
+| **Total** | | **49** | **152,766,553** |
 
 ## How the specs earn their keep
 
