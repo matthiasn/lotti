@@ -529,7 +529,6 @@ What the model leaves out, deliberately or as a residual:
   can resolve differently on different replicas. Agent state keeps the
   winner's own clock and joins its G-counters on every delivery instead,
   which is what this model checks; the nudge variant is not modelled.
-- Links (`AgentLink`) keep plain last-writer-wins and are not modelled.
 - **Devices that have not updated** still read an absent host as 0 (ADR
   0080). Over clocks that carry a counter 0 from a host an older build
   created, two such devices compare that host's first write equal, and an
@@ -538,6 +537,7 @@ What the model leaves out, deliberately or as a residual:
   succeeds both. The legacy configurations check each half of a mixed fleet;
   one that mixes both readings over counter-0 clocks is not modelled. No
   receiver can change what an older build does; it ends as devices update.
+- Agent links (`AgentLink`) are `AgentLinks` below.
 - **Journal entry links** (`JournalDb.upsertEntryLink`) are ordered by one
   lexicographic key: `updatedAt`, then the clock under
   `VectorClock.compareCanonically` (an absent host below counter 0), then the
@@ -806,6 +806,108 @@ Two cases stay open:
   so its request can run again, the boundary `WakeRuntime` accepts for single
   flight. The model does not declare executors hung.
 
+## `EvolutionSession` — a 1-on-1 and the version it adopts
+
+One evolution session (a template or soul 1-on-1) on three replicas.
+Replica 1 owns it: only the owner holds the conversation in memory, so only
+the owner approves, and an approval creates a template or soul version.
+Every replica can abandon the session. `startSession` and every approval
+sweep the sessions a device reads as active (`_abandonStaleActiveSessions`),
+and the owner abandons it when the user leaves the chat. The version rows
+and the head they update are `VersionHeads`; here version creation is one
+atomic step. The session row is received like any agent register
+(`resolveAgentEntityVersions`), and a local write goes through
+`resolveLocalAgentWrite`. The decision is
+[ADR 0081](../../docs/adr/0081-model-checked-evolution-sessions-and-agent-links.md).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `Converged` | invariant | once every write has reached every replica, all hold the same row |
+| `OneVersion` | invariant | the session creates at most one version |
+| `AdoptionRecorded` | invariant | once the owner is done, a session that created a version is completed, naming it, everywhere |
+| `CompletedNamesVersion` | invariant | a completed row names a version the session created |
+| `CompletedStays` | action property | a replica that holds the session completed keeps it completed |
+| `NeverReactivated` | action property | no terminal row becomes active again |
+
+| Configuration | Replicas | Session-row writes | Owner crashes | Clock skew | Distinct states |
+|---------------|----------|--------------------|---------------|------------|-----------------|
+| `EvolutionSession` | 3 | 4 | yes | 1 tick | 243,264 |
+
+The three design switches are the fixes, and each has a counterexample when
+set to `FALSE` (run a copy of the configuration outside this directory):
+
+| Switch | Old behaviour | Counterexample |
+|--------|---------------|----------------|
+| `CompletedOutranks` | a concurrent completion and abandonment went to `updatedAt` | `CompletedStays`, five steps: the owner approves, the peer starts its own session a minute later and sweeps this one, and the owner receives the sweep. `AdoptionRecorded` follows: every replica ends with the session abandoned while its version is in effect |
+| `AtomicApprove` | the version committed on its own, then the notes, the recap and the row | template (`VersionCache = TRUE`): `AdoptionRecorded`, the version commits, the completion fails, the user leaves the chat, and the session is abandoned under its own version. After a crash between the steps the session stays active until a sweep abandons it (two steps). soul (`VersionCache = FALSE`): `OneVersion` in three steps, create, fail, and create again |
+| `AtomicReceive` | the receive read the row and wrote after an await | `CompletedStays`, four steps: the owner reads its active row to apply a peer's sweep, the approval commits, and the receive writes the sweep over it. Peers keep the completion |
+
+Suspected but not confirmed: a completed session is never reopened
+(`NeverReactivated`). `active` is written only at creation, and the
+override ranks it below both terminal statuses. What the model leaves out:
+
+- `approveSoulProposal`, the mid-session soul approval that does not complete
+  the session, still creates its version in its own transaction. A retry
+  after a failed outbox flush can create a second soul version.
+- The session's notes and recap are advisory rows written in the approval's
+  transaction. They are not modelled.
+
+## `AgentLinks` — a link written, removed and written again
+
+One agent link on three replicas: written afresh (`vectorClock: null`) and
+removed (`softDeleted` of the row read) under one reused id, which covers the
+Daily OS links' deterministic ids, the planner's template assignment,
+`msgprev` edges and any link written again after a removal. Versions are
+delivered in any order and any number of times. In the lossy configuration
+a delivery can also be lost, and the receiver then recovers it by backfill
+from the writer's stored version. The receive is
+`SyncEventProcessor._resolveAndPersistAgentLink`, which calls
+`resolveAgentLinkVersions`: dominance, then `updatedAt`, then the canonical
+clock. The local write is `AgentSyncService.upsertLink`. The decision is
+[ADR 0081](../../docs/adr/0081-model-checked-evolution-sessions-and-agent-links.md).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `Converged` | invariant | once every write has reached every replica, directly or by backfill, all hold the same version |
+| `NoLostSuccessor` | invariant | a row is never a version that a version it received causally replaced: a removal is not undone by a late copy of the link |
+
+| Configuration | Replicas | Writes | Losses | Clock | Distinct states |
+|---------------|----------|--------|--------|-------|-----------------|
+| `AgentLinks` | 3 | 3 | none | 0..2, 1 tick skew | 169,899 |
+| `AgentLinksLossy` | 3 | 3 | any, recovered by backfill | 0..1, 1 tick skew | 10,940,570 |
+
+| Switch | Old behaviour | Counterexample |
+|--------|---------------|----------------|
+| `ReceiveSeesTombstones` | the receive read the local link with `getLinkById`, which filters tombstones | `NoLostSuccessor` in three steps (link, remove, a late copy of the link). `Converged` in six: C receives the removal before the link and keeps the link |
+| `BackfillServesTombstones` | the backfill responder read the same way and answered `deleted` | `Converged`, seven steps: C loses the removal, asks for it, gets `deleted`, and keeps the link |
+| `WriteSucceedsRow` | a write's clock was its own base plus this host's counter, and it overwrote the row | `Converged` with no clock skew: B links, A removes, and B links again afresh. `{B:2}` is concurrent with A's `{A:1, B:1}`, and the canonical order prefers the removal, so A and C keep the removal and B keeps the link |
+| `ClampTimestamp` | a successor's `updatedAt` could be older than its predecessor's | `Converged`: a write on a lagging clock loses to a third concurrent version that its predecessor beat |
+| `AtomicReceive` | the receive read the link and wrote the incoming version after an await | `NoLostSuccessor`, seven steps: a local write commits between the receive's read and its write and is overwritten |
+
+What the model leaves out, deliberately or as a residual:
+
+- **Two concurrent reassignments of one slot swap.** A template has at most
+  one live soul assignment, and a template has at most one improver. When a
+  live assignment arrives, `AgentRepoLinks.upsertLink` tombstones the other
+  live one locally, without a clock bump or a sync message. A copy of this
+  model with that handoff (not checked in) finds the swap in five steps: A
+  and B reassign the template's soul concurrently, each receives the
+  other's link and keeps it, and A ends with B's soul and B with A's until
+  the next assignment. The same handoff hard-deletes a row that shares the
+  slot's natural key. The fix needs a decision. The options are one
+  deterministic link id per slot, which makes the assignment a register but
+  needs a migration and a plan for older clients; a slot rule every replica
+  applies the same way, ranking assignments by `(createdAt, id)` over every
+  version known, with writers clamping `createdAt`; or emitting the
+  handoff's tombstones as synced writes.
+- **Agent entities have the tombstone hole too.** `getEntity` filters
+  tombstones for the entity receive and its backfill, so a soft-deleted
+  entity can come back when a late copy arrives. It is left for its own
+  change.
+- `VectorClock.compare` reads an absent host as counter 0, so a new host's
+  first write can compare *equal* to the version it succeeds. ADR 0080
+  fixes that globally. The model's clocks have no absent hosts.
+
 ## From the model to the code
 
 TLC checks the design, not the Dart that implements it. The gap is narrowed by
@@ -957,6 +1059,25 @@ counters at 0, as a host an older build created does
 (`AgentReplicationLegacyCounter`), and the causal check is the model's own
 order rather than `VectorClock.compare`. Reading an absent host as 0 again
 fails both traces.
+
+Links and sessions have theirs. In
+`test/features/agents/sync/agent_links_model_conformance.dart` (a part of the
+`AgentSyncService` suite), three replicas, each a real `AgentSyncService`
+over its own in-memory agent database, write one link afresh under a reused
+id and remove it. They exchange the versions in generated orders through
+`resolveAgentLinkVersions` and the tombstone-inclusive read, lose deliveries
+and recover them from the writer's stored version, as the backfill responder
+does. After every step `NoLostSuccessor` must hold, and after everything,
+`Converged`. Stamping the write without the stored clock, dropping the
+`updatedAt` clamp, or filtering tombstones out of
+`getLinkByIdIncludingDeleted` fails it. The replication trace above now also
+has an evolution-session kind whose writes only move the status up. Without
+the completion override a replica that held the session completed ends with
+it abandoned (`CompletedStays`) in three steps. The receive transactions of
+links and sessions are examples in the sync processor's suite. The approval's
+transaction is an example over a real agent database in the template and
+soul workflow suites, where a failure after the version rolls it back and a
+retry adopts exactly one.
 
 ## Changing a spec
 

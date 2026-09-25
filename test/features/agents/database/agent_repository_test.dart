@@ -3183,6 +3183,34 @@ void main() {
       });
     });
 
+    group('getLinkByIdIncludingDeleted (ADR 0081)', () {
+      test('returns a removed link as its tombstone, which getLinkById '
+          'hides', () async {
+        final removedAt = testDate.add(const Duration(hours: 1));
+        await repo.upsertLink(
+          makeBasicLink(id: 'link-removed').softDeleted(removedAt),
+        );
+
+        final tombstone = await repo.getLinkByIdIncludingDeleted(
+          'link-removed',
+        );
+
+        expect(tombstone!.deletedAt, removedAt);
+        expect(tombstone.vectorClock, const VectorClock({'node-1': 1}));
+        expect(await repo.getLinkById('link-removed'), isNull);
+      });
+
+      test('returns a live link and null for an unknown id', () async {
+        await repo.upsertLink(makeBasicLink(id: 'link-live'));
+
+        expect(
+          (await repo.getLinkByIdIncludingDeleted('link-live'))!.deletedAt,
+          isNull,
+        );
+        expect(await repo.getLinkByIdIncludingDeleted('nonexistent'), isNull);
+      });
+    });
+
     test(
       'multiple link types for the same agent are stored independently',
       () async {

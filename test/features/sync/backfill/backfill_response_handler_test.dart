@@ -11,6 +11,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/agents/model/agent_link.dart'
+    show AgentLinkSoftDelete;
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
@@ -3349,7 +3351,7 @@ void main() {
       );
 
       when(
-        () => mockAgentRepository.getLinkById(agentLinkId),
+        () => mockAgentRepository.getLinkByIdIncludingDeleted(agentLinkId),
       ).thenAnswer((_) async => agentLink);
 
       when(
@@ -3384,6 +3386,58 @@ void main() {
       );
     });
 
+    test(
+      'answers with the tombstone of a removed agent link, not "deleted" '
+      '(AgentLinks.tla: BackfillServesTombstones)',
+      () async {
+        // A requester that lost the removal would otherwise settle the gap
+        // with nothing applied and keep the live link for good.
+        const agentLinkId = 'removed-link-id';
+        _stubRequestLookup(
+          mockSequenceService,
+          mockOutboxService,
+          hostId: aliceHostId,
+          counter: 20,
+          logItem: _createLogItem(
+            aliceHostId,
+            20,
+            entryId: agentLinkId,
+            originatingHostId: bobHostId,
+            payloadType: SyncSequencePayloadType.agentLink,
+          ),
+        );
+        final tombstone = makeTestBasicLink(
+          id: agentLinkId,
+          vectorClock: const VectorClock({'alice-host-uuid': 20}),
+        ).softDeleted(DateTime(2026, 9, 24, 9));
+        when(
+          () => mockAgentRepository.getLinkById(agentLinkId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getLinkByIdIncludingDeleted(agentLinkId),
+        ).thenAnswer((_) async => tombstone);
+
+        await handler.handleBackfillRequest(
+          const SyncBackfillRequest(
+            entries: [BackfillRequestEntry(hostId: aliceHostId, counter: 20)],
+            requesterId: requesterId,
+          ),
+        );
+
+        final captured = verify(
+          () => mockOutboxService.enqueueMessage(captureAny()),
+        ).captured;
+        expect(
+          captured.whereType<SyncAgentLink>().single.agentLink,
+          tombstone,
+        );
+        expect(
+          captured.whereType<SyncBackfillResponse>().where((r) => r.deleted),
+          isEmpty,
+        );
+      },
+    );
+
     test('sends deleted response when agent link not found', () async {
       final logItem = _createLogItem(
         aliceHostId,
@@ -3402,7 +3456,8 @@ void main() {
       );
 
       when(
-        () => mockAgentRepository.getLinkById('missing-link-id'),
+        () =>
+            mockAgentRepository.getLinkByIdIncludingDeleted('missing-link-id'),
       ).thenAnswer((_) async => null);
 
       const request = SyncBackfillRequest(
@@ -3514,6 +3569,63 @@ void main() {
   });
 
   group('handleBackfillResponse - AgentLink', () {
+    test(
+      'verifies a removed agent link against its tombstone and marks it '
+      'backfilled (AgentLinks.tla: BackfillServesTombstones)',
+      () async {
+        const response = SyncBackfillResponse(
+          hostId: aliceHostId,
+          counter: 20,
+          deleted: false,
+          payloadType: SyncSequencePayloadType.agentLink,
+          payloadId: 'removed-link-id',
+        );
+        when(
+          () => mockSequenceService.handleBackfillResponse(
+            hostId: any(named: 'hostId'),
+            counter: any(named: 'counter'),
+            deleted: any(named: 'deleted'),
+            unresolvable: any(named: 'unresolvable'),
+            entryId: any(named: 'entryId'),
+            payloadType: any(named: 'payloadType'),
+          ),
+        ).thenAnswer((_) async {});
+        final tombstone = makeTestBasicLink(
+          id: 'removed-link-id',
+          vectorClock: const VectorClock({aliceHostId: 20}),
+        ).softDeleted(DateTime(2026, 9, 24, 9));
+        when(
+          () => mockAgentRepository.getLinkById('removed-link-id'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getLinkByIdIncludingDeleted(
+            'removed-link-id',
+          ),
+        ).thenAnswer((_) async => tombstone);
+        when(
+          () => mockSequenceService.verifyAndMarkBackfilled(
+            hostId: any(named: 'hostId'),
+            counter: any(named: 'counter'),
+            entryId: any(named: 'entryId'),
+            entryVectorClock: any(named: 'entryVectorClock'),
+            payloadType: any(named: 'payloadType'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        await handler.handleBackfillResponse(response);
+
+        verify(
+          () => mockSequenceService.verifyAndMarkBackfilled(
+            hostId: aliceHostId,
+            counter: 20,
+            entryId: 'removed-link-id',
+            entryVectorClock: tombstone.vectorClock!,
+            payloadType: SyncSequencePayloadType.agentLink,
+          ),
+        ).called(1);
+      },
+    );
+
     test('verifies agent link and marks backfilled when found', () async {
       const response = SyncBackfillResponse(
         hostId: aliceHostId,
@@ -3540,7 +3652,7 @@ void main() {
       );
 
       when(
-        () => mockAgentRepository.getLinkById('agent-link-id'),
+        () => mockAgentRepository.getLinkByIdIncludingDeleted('agent-link-id'),
       ).thenAnswer((_) async => agentLink);
 
       when(
@@ -5180,7 +5292,7 @@ void _stubPayloadByType(
       );
     case SyncSequencePayloadType.agentLink:
       when(
-        () => bench.agentRepository.getLinkById(payloadId),
+        () => bench.agentRepository.getLinkByIdIncludingDeleted(payloadId),
       ).thenAnswer(
         (_) async => vectorClock == null
             ? null
@@ -5248,7 +5360,7 @@ void _stubVerificationPayload(
       );
     case SyncSequencePayloadType.agentLink:
       when(
-        () => bench.agentRepository.getLinkById(payloadId),
+        () => bench.agentRepository.getLinkByIdIncludingDeleted(payloadId),
       ).thenAnswer(
         (_) async => scenario.payloadExists
             ? makeTestBasicLink(id: payloadId, vectorClock: vectorClock)

@@ -5,8 +5,8 @@ description: The agent.sqlite entity and link model, bulk-read chunking, and exa
 resource: ../../../lib/features/agents/database/agent_database.dart
 tags: [agents, persistence, sync, privacy, drift]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-24T18:00:00Z }
-stale_after: 2026-12-24
+generated: { by: claude-code/opus-5.5, at: 2026-09-25T09:00:00Z }
+stale_after: 2026-12-25
 sources:
   - id: error-logging
     resource: ../../../lib/features/agents/util/agent_error_logging.dart
@@ -107,6 +107,14 @@ sources:
     resource: ../../../specs/tla/AgentMessageLog.tla
     title: TLA+ model of the message DAG and head pointer
     last_modified: 2026-09-24
+  - id: adr-0081
+    resource: ../../../docs/adr/0081-model-checked-evolution-sessions-and-agent-links.md
+    title: ADR 0081 — Model-checked evolution sessions and agent links
+    last_modified: 2026-09-25
+  - id: links-spec
+    resource: ../../../specs/tla/AgentLinks.tla
+    title: TLA+ model of agent link versions, removals and backfill
+    last_modified: 2026-09-25
 ---
 
 # One database, two shapes
@@ -172,6 +180,23 @@ The link kinds live in `agent_constants.dart`:
 day, back-linking `slots.activeDayId`. ADR 0022's single long-lived planner pins
 no `activeDayId` slot and writes no new `agent_day` links — the type and its
 projection remain only to read pre-migration data.
+
+**A removed link is a tombstone, and sync orders it like any version.**
+Removing a link writes `link.softDeleted(now)`, which sets `deletedAt` and
+syncs. The read paths (`getLinksFrom`, `getLinkById`, …) hide tombstones.
+Sync does not: the receive, the backfill responder and the backfill verifier
+read `getLinkByIdIncludingDeleted`, and `AgentSyncService.upsertLink` succeeds
+the stored version, tombstone included. A late copy of a removed link
+therefore stays removed, and a link written again after a removal wins on
+every device (ADR 0081, `specs/tla/AgentLinks.tla`; the order itself is in
+[vector clocks and conflicts](../sync/vector-clocks-and-conflicts.md)).
+
+**Soul assignments and improver targets hold one slot.** A partial unique index
+allows one live `soul_assignment` per template and one live `improver_target`
+per template. `AgentRepoLinks.upsertLink` makes room for an arriving live link
+by tombstoning the other one locally, without a clock bump or a sync message.
+Two devices that reassign concurrently therefore swap the assignments, a
+residual that ADR 0081 records with the options for fixing it.
 
 ## What is deliberately absent
 

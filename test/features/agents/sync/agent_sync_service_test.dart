@@ -21,10 +21,13 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../agent_test_device.dart';
 import '../test_data/entity_factories.dart';
+import '../test_data/evolution_factories.dart';
 import 'fork_test_support.dart';
 import 'in_memory_agent_repository.dart';
 
+part 'agent_links_model_conformance.dart';
 part 'agent_replication_model_conformance.dart';
 
 /// Records whether the scope accepts or releases a reservation, without
@@ -380,6 +383,7 @@ extension _AnyGeneratedAgentSyncServiceScenario on glados.Any {
 
 void main() {
   _registerReplicationModelConformance();
+  _registerLinkModelConformance();
   late MockAgentRepository mockRepository;
   late MockOutboxService mockOutboxService;
   late MockVectorClockService mockVectorClockService;
@@ -519,6 +523,11 @@ void main() {
 
     when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {});
     when(() => mockRepository.upsertLink(any())).thenAnswer((_) async {});
+    // A link write reads the version stored under its id, a tombstone
+    // included, to succeed it; default to none.
+    when(
+      () => mockRepository.getLinkByIdIncludingDeleted(any()),
+    ).thenAnswer((_) async => null);
     // Local message upserts route through the causal-DAG append path, which
     // reads the agent's head and (when unset) backfills the prefix; default to
     // no head and no prior messages unless a test overrides.
@@ -1214,6 +1223,9 @@ void main() {
         // Nor is it about resolving a write against the persisted row.
         when(
           () => generatedRepository.getEntity(any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => generatedRepository.getLinkByIdIncludingDeleted(any()),
         ).thenAnswer((_) async => null);
         final generatedOutboxService = MockOutboxService();
         final generatedVectorClockService = MockVectorClockService();
@@ -2043,6 +2055,9 @@ void main() {
         'defaulting threadId to the marker id', (scenario) async {
       // Fresh wiring per run so captures don't accumulate across iterations.
       final repository = MockAgentRepository();
+      when(
+        () => repository.getLinkByIdIncludingDeleted(any()),
+      ).thenAnswer((_) async => null);
       final upserted = <AgentDomainEntity>[];
       when(() => repository.upsertEntity(any())).thenAnswer((invocation) async {
         upserted.add(
@@ -2113,6 +2128,9 @@ void main() {
         'fields, for any head combination', (scenario) async {
       // Fresh wiring per run so captures don't accumulate across iterations.
       final repository = MockAgentRepository();
+      when(
+        () => repository.getLinkByIdIncludingDeleted(any()),
+      ).thenAnswer((_) async => null);
       final upserted = <AgentDomainEntity>[];
       when(() => repository.upsertEntity(any())).thenAnswer((invocation) async {
         upserted.add(
@@ -2859,5 +2877,79 @@ void main() {
         ),
       ).called(1);
     });
+  });
+
+  group('AgentSyncService.upsertLink — a write succeeds the stored version '
+      '(AgentLinks.tla, ADR 0081)', () {
+    const id = 'parsed_item_to_task:item:task';
+    final at = DateTime(2026, 9, 24, 9);
+    late AgentTestDevice a;
+    late AgentTestDevice b;
+
+    setUp(() {
+      a = AgentTestDevice('host-a');
+      b = AgentTestDevice('host-b');
+      addTearDown(a.close);
+      addTearDown(b.close);
+    });
+
+    /// `linkCaptureItem`: the link built afresh under its reused id.
+    AgentLink fresh({DateTime? updatedAt}) => AgentLink.parsedItemToTask(
+      id: id,
+      fromId: 'item',
+      toId: 'task',
+      createdAt: at,
+      updatedAt: updatedAt ?? at,
+      vectorClock: null,
+    );
+
+    test(
+      "a link written afresh over a peer's removal is the newer version on "
+      'both devices (TLC: Converged, WriteSucceedsRow)',
+      () async {
+        // The trace: B links, A removes the link, B links it again. Built
+        // without a clock, the relink held only B's counter: concurrent with
+        // A's removal, which the canonical clock order preferred — A kept the
+        // removal and B the link, for good.
+        await b.sync.upsertLink(fresh());
+        await a.receiveLink(b.sentLinks.last);
+        final live = (await a.repository.getLinkById(id))!;
+        await a.sync.upsertLink(live.softDeleted(at));
+        await b.receiveLink(a.sentLinks.last);
+        await b.sync.upsertLink(fresh());
+        await a.receiveLink(b.sentLinks.last);
+
+        for (final device in [a, b]) {
+          final stored = await device.repository.getLinkByIdIncludingDeleted(
+            id,
+          );
+          expect(stored!.deletedAt, isNull, reason: device.host);
+        }
+        expect(
+          VectorClock.compare(
+            b.sentLinks.last.vectorClock!,
+            a.sentLinks.last.vectorClock!,
+          ),
+          VclockStatus.a_gt_b,
+        );
+      },
+    );
+
+    test(
+      "a write stamped before the version it replaces keeps that version's "
+      'updatedAt (TLC: ClampTimestamp)',
+      () async {
+        final later = at.add(const Duration(minutes: 5));
+        await a.sync.upsertLink(fresh(updatedAt: later));
+        final live = (await a.repository.getLinkById(id))!;
+
+        await a.sync.upsertLink(live.softDeleted(at));
+
+        final stored = (await a.repository.getLinkByIdIncludingDeleted(id))!;
+        expect(stored.deletedAt, at);
+        expect(stored.updatedAt, later);
+        expect(a.sentLinks.last.updatedAt, later);
+      },
+    );
   });
 }

@@ -325,8 +325,9 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
 
   /// Complete a standalone soul session by approving the soul proposal.
   ///
-  /// Creates a new [SoulDocumentVersionEntity], persists notes and recap,
-  /// completes the session entity. Returns the new version, or `null`.
+  /// Creates a new [SoulDocumentVersionEntity], persists notes and recap, and
+  /// completes the session entity, all in one transaction; a session already
+  /// completed returns the version it names. Returns the version, or `null`.
   Future<SoulDocumentVersionEntity?> completeSoulSessionImpl({
     required String sessionId,
     Map<String, int> categoryRatings = const {},
@@ -350,72 +351,82 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
       final soulId =
           active.templateId; // templateId == soulId for soul sessions
 
-      // Resolve current soul version to fill in unchanged fields.
-      final currentVersion = await soulSvc.getActiveSoulVersion(soulId);
-      if (currentVersion == null) {
-        developer.log(
-          'No active soul version for ${DomainLogger.sanitizeId(soulId)}',
-          name: _logTag,
+      // One transaction, as the template approval: a failure part-way leaves
+      // no version behind for a retry to duplicate, and a session already
+      // completed returns the version it names (ADR 0081).
+      final newVersion = await sync.runInTransaction(() async {
+        final sessionEntity = await _getSessionEntity(sessionId);
+        final adopted = await _versionAdoptedBy<SoulDocumentVersionEntity>(
+          sessionEntity,
+          sessionEntity?.proposedSoulVersionId,
         );
-        return null;
-      }
+        if (adopted != null) return adopted;
 
-      final newVersion = await soulSvc.createVersion(
-        soulId: soulId,
-        voiceDirective: proposal.voiceDirective.trim().isNotEmpty
-            ? proposal.voiceDirective
-            : currentVersion.voiceDirective,
-        toneBounds: proposal.toneBounds.trim().isNotEmpty
-            ? proposal.toneBounds
-            : currentVersion.toneBounds,
-        coachingStyle: proposal.coachingStyle.trim().isNotEmpty
-            ? proposal.coachingStyle
-            : currentVersion.coachingStyle,
-        antiSycophancyPolicy: proposal.antiSycophancyPolicy.trim().isNotEmpty
-            ? proposal.antiSycophancyPolicy
-            : currentVersion.antiSycophancyPolicy,
-        authoredBy: AgentAuthors.evolutionAgent,
-        sourceSessionId: sessionId,
-      );
+        // Resolve current soul version to fill in unchanged fields.
+        final currentVersion = await soulSvc.getActiveSoulVersion(soulId);
+        if (currentVersion == null) {
+          developer.log(
+            'No active soul version for ${DomainLogger.sanitizeId(soulId)}',
+            name: _logTag,
+          );
+          return null;
+        }
 
-      // Persist notes.
-      await _persistNotes(
-        strategy: active.strategy,
-        templateId: soulId,
-        sessionId: sessionId,
-        sync: sync,
-      );
-
-      // Build and persist recap.
-      final recap = _buildSoulSessionRecapEntity(
-        active: active,
-        proposal: proposal,
-        categoryRatings: categoryRatings,
-      );
-      if (recap != null) {
-        await sync.upsertEntity(recap);
-      }
-
-      // Complete session entity.
-      final now = clock.now();
-      final sessionEntity = await _getSessionEntity(sessionId);
-      if (sessionEntity != null) {
-        final normalizedRating = _averageCategoryRating(categoryRatings);
-        final recapTldr = recap?.tldr.trim();
-        final normalizedSummary = (recapTldr != null && recapTldr.isNotEmpty)
-            ? recapTldr
-            : proposal.rationale;
-        await sync.upsertEntity(
-          sessionEntity.copyWith(
-            status: EvolutionSessionStatus.completed,
-            proposedSoulVersionId: newVersion.id,
-            feedbackSummary: normalizedSummary,
-            userRating: normalizedRating,
-            completedAt: now,
-            updatedAt: now,
-          ),
+        final version = await soulSvc.createVersion(
+          soulId: soulId,
+          voiceDirective: proposal.voiceDirective.trim().isNotEmpty
+              ? proposal.voiceDirective
+              : currentVersion.voiceDirective,
+          toneBounds: proposal.toneBounds.trim().isNotEmpty
+              ? proposal.toneBounds
+              : currentVersion.toneBounds,
+          coachingStyle: proposal.coachingStyle.trim().isNotEmpty
+              ? proposal.coachingStyle
+              : currentVersion.coachingStyle,
+          antiSycophancyPolicy: proposal.antiSycophancyPolicy.trim().isNotEmpty
+              ? proposal.antiSycophancyPolicy
+              : currentVersion.antiSycophancyPolicy,
+          authoredBy: AgentAuthors.evolutionAgent,
+          sourceSessionId: sessionId,
         );
-      }
+
+        await _persistNotes(
+          strategy: active.strategy,
+          templateId: soulId,
+          sessionId: sessionId,
+          sync: sync,
+        );
+
+        final recap = _buildSoulSessionRecapEntity(
+          active: active,
+          proposal: proposal,
+          categoryRatings: categoryRatings,
+        );
+        if (recap != null) {
+          await sync.upsertEntity(recap);
+        }
+
+        if (sessionEntity != null) {
+          final now = clock.now();
+          final normalizedRating = _averageCategoryRating(categoryRatings);
+          final recapTldr = recap?.tldr.trim();
+          final normalizedSummary = (recapTldr != null && recapTldr.isNotEmpty)
+              ? recapTldr
+              : proposal.rationale;
+          await sync.upsertEntity(
+            sessionEntity.copyWith(
+              status: EvolutionSessionStatus.completed,
+              proposedSoulVersionId: version.id,
+              feedbackSummary: normalizedSummary,
+              userRating: normalizedRating,
+              completedAt: now,
+              updatedAt: now,
+            ),
+          );
+        }
+        return version;
+      });
+      if (newVersion == null) return null;
 
       // Clear strategy state.
       active.strategy

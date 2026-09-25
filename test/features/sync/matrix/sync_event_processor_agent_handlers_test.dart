@@ -32,6 +32,7 @@ import 'package:path/path.dart' as path;
 
 import '../../../mocks/mocks.dart';
 import '../../agents/test_data/entity_factories.dart';
+import '../../agents/test_data/evolution_factories.dart';
 import '../../ai_consumption/test_utils.dart';
 import 'sync_event_processor_test_helpers.dart';
 
@@ -53,7 +54,7 @@ void main() {
       when(
         () => mockAgentRepo.getEntitiesByIds(any()),
       ).thenAnswer((_) async => const <String, AgentDomainEntity>{});
-      when(() => mockAgentRepo.getLinkById(any())).thenAnswer(
+      when(() => mockAgentRepo.getLinkByIdIncludingDeleted(any())).thenAnswer(
         (_) async => null,
       );
       when(
@@ -548,6 +549,186 @@ void main() {
           await Future.wait([received, append]);
 
           expect(stored().recentHeadMessageId, 'a2');
+        },
+      );
+    });
+
+    group('links and evolution sessions (AgentLinks.tla, '
+        'EvolutionSession.tla, ADR 0081)', () {
+      /// Drift-like serialized transactions: a transaction started while
+      /// another runs waits for it.
+      void serializeTransactions() {
+        var tail = Future<void>.value();
+        mockAgentRepo.transactionDelegate = <T>(action) {
+          if (Zone.current[#agentTx] == true) return action();
+          final run = tail.then(
+            (_) => runZoned(action, zoneValues: {#agentTx: true}),
+          );
+          tail = run.then<void>((_) {}, onError: (_) {});
+          return run;
+        };
+      }
+
+      AgentLink link({required Map<String, int> clock, bool removed = false}) =>
+          AgentLink.parsedItemToTask(
+            id: 'l',
+            fromId: 'item',
+            toId: 'task',
+            createdAt: DateTime(2026, 9, 24, 9),
+            updatedAt: DateTime(2026, 9, 24, 9),
+            vectorClock: VectorClock(clock),
+            deletedAt: removed ? DateTime(2026, 9, 24, 9) : null,
+          );
+
+      EvolutionSessionEntity session(
+        EvolutionSessionStatus status,
+        Map<String, int> clock,
+      ) => makeTestEvolutionSession(
+        id: 's',
+        status: status,
+        vectorClock: VectorClock(clock),
+      );
+
+      void receive(SyncMessage message) =>
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+      test(
+        'a late copy of a removed link does not bring it back '
+        '(TLC: NoLostSuccessor, ReceiveSeesTombstones)',
+        () async {
+          // The trace: the removal arrives first, then the link it removed.
+          // The tombstone read as no row, so the late copy replaced it.
+          when(
+            () => mockAgentRepo.getLinkById('l'),
+          ).thenAnswer((_) async => null);
+          when(() => mockAgentRepo.getLinkByIdIncludingDeleted('l')).thenAnswer(
+            (_) async => link(clock: {'peer': 2}, removed: true),
+          );
+          receive(
+            SyncMessage.agentLink(
+              agentLink: link(clock: {'peer': 1}),
+              status: SyncEntryStatus.update,
+            ),
+          );
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          verifyNever(() => mockAgentRepo.upsertLink(any()));
+        },
+      );
+
+      test(
+        'a local link write that commits during the receive is not '
+        'overwritten (TLC: AtomicReceive)',
+        () async {
+          var stored = link(clock: {'local': 1});
+          final gate = Completer<void>();
+          var gated = true;
+          serializeTransactions();
+          when(() => mockAgentRepo.getLinkByIdIncludingDeleted('l')).thenAnswer(
+            (_) async {
+              final snapshot = stored;
+              if (gated) {
+                gated = false;
+                await gate.future;
+              }
+              return snapshot;
+            },
+          );
+          when(() => mockAgentRepo.upsertLink(any())).thenAnswer((
+            invocation,
+          ) async {
+            stored = invocation.positionalArguments.single as AgentLink;
+          });
+          // A peer's removal of the row this device holds.
+          receive(
+            SyncMessage.agentLink(
+              agentLink: link(clock: {'local': 1, 'peer': 1}, removed: true),
+              status: SyncEntryStatus.update,
+            ),
+          );
+
+          final received = processor.process(
+            event: event,
+            journalDb: journalDb,
+          );
+          await pumpEventQueue();
+          // Meanwhile this device links the item again, over what it holds.
+          final relink = mockAgentRepo.runInTransaction(() async {
+            final current = (await mockAgentRepo.getLinkByIdIncludingDeleted(
+              'l',
+            ))!;
+            await mockAgentRepo.upsertLink(
+              link(clock: {...current.vectorClock!.vclock, 'local': 2}),
+            );
+          });
+          await pumpEventQueue();
+          gate.complete();
+          await Future.wait([received, relink]);
+
+          expect(stored.deletedAt, isNull);
+          expect(stored.vectorClock!.vclock['local'], 2);
+        },
+      );
+
+      test(
+        'an approval that commits during the receive of a sweep is not '
+        'overwritten (TLC: AtomicReceive, CompletedStays)',
+        () async {
+          // The trace: this device reads its active row to apply a peer's
+          // sweep, the approval completes the session, and the receive then
+          // writes the sweep over the completion.
+          AgentDomainEntity stored = session(EvolutionSessionStatus.active, {
+            'local': 1,
+          });
+          final gate = Completer<void>();
+          var gated = true;
+          serializeTransactions();
+          when(() => mockAgentRepo.getEntity('s')).thenAnswer((_) async {
+            final snapshot = stored;
+            if (gated) {
+              gated = false;
+              await gate.future;
+            }
+            return snapshot;
+          });
+          when(() => mockAgentRepo.upsertEntity(any())).thenAnswer((
+            invocation,
+          ) async {
+            stored = invocation.positionalArguments.single as AgentDomainEntity;
+          });
+          receive(
+            SyncMessage.agentEntity(
+              agentEntity: session(EvolutionSessionStatus.abandoned, {
+                'local': 1,
+                'peer': 1,
+              }),
+              status: SyncEntryStatus.update,
+            ),
+          );
+
+          final received = processor.process(
+            event: event,
+            journalDb: journalDb,
+          );
+          await pumpEventQueue();
+          final approval = mockAgentRepo.runInTransaction(() async {
+            final current = (await mockAgentRepo.getEntity('s'))!;
+            await mockAgentRepo.upsertEntity(
+              session(EvolutionSessionStatus.completed, {
+                ...current.vectorClock!.vclock,
+                'local': 2,
+              }),
+            );
+          });
+          await pumpEventQueue();
+          gate.complete();
+          await Future.wait([received, approval]);
+
+          expect(
+            (stored as EvolutionSessionEntity).status,
+            EvolutionSessionStatus.completed,
+          );
         },
       );
     });
@@ -2288,7 +2469,9 @@ void main() {
       });
 
       test('applies incoming link when its updatedAt is newer', () async {
-        when(() => mockAgentRepo.getLinkById('link-cc')).thenAnswer(
+        when(
+          () => mockAgentRepo.getLinkByIdIncludingDeleted('link-cc'),
+        ).thenAnswer(
           (_) async => linkWith(
             vectorClock: vcWinsTie,
             updatedAt: DateTime(2024, 3, 15),
@@ -2305,7 +2488,9 @@ void main() {
       });
 
       test('keeps local link when its updatedAt is newer', () async {
-        when(() => mockAgentRepo.getLinkById('link-cc')).thenAnswer(
+        when(
+          () => mockAgentRepo.getLinkByIdIncludingDeleted('link-cc'),
+        ).thenAnswer(
           (_) async => linkWith(
             vectorClock: vcLosesTie,
             updatedAt: DateTime(2024, 3, 16),
@@ -2322,7 +2507,9 @@ void main() {
       // Equal-timestamp link cases — exercise the canonical vector-clock
       // tiebreak on the link path, mirroring the entity cases above.
       test('equal updatedAt: a greater incoming link clock wins', () async {
-        when(() => mockAgentRepo.getLinkById('link-cc')).thenAnswer(
+        when(
+          () => mockAgentRepo.getLinkByIdIncludingDeleted('link-cc'),
+        ).thenAnswer(
           (_) async => linkWith(
             vectorClock: vcLosesTie,
             updatedAt: DateTime(2024, 3, 15),
@@ -2339,7 +2526,9 @@ void main() {
       });
 
       test('equal updatedAt: a greater local link clock is kept', () async {
-        when(() => mockAgentRepo.getLinkById('link-cc')).thenAnswer(
+        when(
+          () => mockAgentRepo.getLinkByIdIncludingDeleted('link-cc'),
+        ).thenAnswer(
           (_) async => linkWith(
             vectorClock: vcWinsTie,
             updatedAt: DateTime(2024, 3, 15),
@@ -2463,6 +2652,9 @@ void main() {
         for (final link in links) {
           reset(mockAgentRepo);
           when(() => mockAgentRepo.upsertLink(any())).thenAnswer((_) async {});
+          when(
+            () => mockAgentRepo.getLinkByIdIncludingDeleted(any()),
+          ).thenAnswer((_) async => null);
 
           final message = SyncMessage.agentLink(
             agentLink: link,
@@ -2702,7 +2894,7 @@ void main() {
             vectorClock: const VectorClock({'host-A': -1}),
           );
           when(
-            () => mockAgentRepo.getLinkById('link-invalid-vc'),
+            () => mockAgentRepo.getLinkByIdIncludingDeleted('link-invalid-vc'),
           ).thenAnswer((_) async => local);
 
           final message = SyncMessage.agentLink(
@@ -2749,7 +2941,7 @@ void main() {
           () => mockAgentRepoSeq.getEntitiesByIds(any()),
         ).thenAnswer((_) async => const <String, AgentDomainEntity>{});
         when(
-          () => mockAgentRepoSeq.getLinkById(any()),
+          () => mockAgentRepoSeq.getLinkByIdIncludingDeleted(any()),
         ).thenAnswer((_) async => null);
       });
 
@@ -2905,7 +3097,8 @@ void main() {
             vectorClock: incomingVc,
           );
           when(
-            () => mockAgentRepoSeq.getLinkById('link-dominates'),
+            () =>
+                mockAgentRepoSeq.getLinkByIdIncludingDeleted('link-dominates'),
           ).thenAnswer((_) async => local);
           when(
             () => mockSeqService.recordReceivedEntry(
@@ -6072,7 +6265,7 @@ void main() {
 
             AgentLink? storedLink;
             when(
-              () => mockAgentRepo.getLinkById(link.id),
+              () => mockAgentRepo.getLinkByIdIncludingDeleted(link.id),
             ).thenAnswer((_) async => storedLink);
             when(() => mockAgentRepo.upsertLink(any())).thenAnswer((
               call,
@@ -6416,7 +6609,9 @@ void main() {
               vectorClock: incomingVc,
             );
             when(
-              () => mockAgentRepo.getLinkById('link-restore-fail'),
+              () => mockAgentRepo.getLinkByIdIncludingDeleted(
+                'link-restore-fail',
+              ),
             ).thenAnswer((_) async => local);
 
             final message = SyncMessage.agentLink(

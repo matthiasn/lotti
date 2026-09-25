@@ -4,6 +4,7 @@ import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/sync/agent_lww_timestamp.dart';
 import 'package:lotti/features/sync/g_counter.dart';
@@ -345,10 +346,24 @@ bool _covers(VectorClock? base, VectorClock? seen) {
 ///   replicas can independently mint the same successor ordinal. A direct
 ///   owner edit outranks an agent-proposal approval at that ordinal, preventing
 ///   generic LWW from replacing explicit owner intent.
+/// - **Evolution sessions — completed, then abandoned, then active.** Only
+///   the device holding a session in memory completes it, and completing it
+///   creates the version the session produced; any device abandons a session
+///   it reads as active, for instance when it starts one of its own. A
+///   completion therefore beats a concurrent abandonment, and a terminal
+///   status beats `active`, so a session whose proposal was adopted is never
+///   recorded as abandoned (ADR 0081, `specs/tla/EvolutionSession.tla`).
 ConcurrentWinner? resolveConcurrentAgentEntityOverride({
   required AgentDomainEntity local,
   required AgentDomainEntity incoming,
 }) {
+  if (local is EvolutionSessionEntity && incoming is EvolutionSessionEntity) {
+    final byStatus = _evolutionSessionRank(
+      local.status,
+    ).compareTo(_evolutionSessionRank(incoming.status));
+    if (byStatus == 0) return null;
+    return byStatus > 0 ? ConcurrentWinner.local : ConcurrentWinner.incoming;
+  }
   if (local is PlannerKnowledgeEntity && incoming is PlannerKnowledgeEntity) {
     final localRetracted = local.status == KnowledgeStatus.retracted;
     final incomingRetracted = incoming.status == KnowledgeStatus.retracted;
@@ -498,6 +513,50 @@ ConcurrentWinner? resolveConcurrentNudgeLifecycle({
 int? specVersionOrdinal(String specVersionId) {
   final match = RegExp(r'spec-v(\d+)').firstMatch(specVersionId);
   return match == null ? null : int.tryParse(match.group(1)!);
+}
+
+/// How final an evolution session status is: a concurrent pair keeps the
+/// more final one ([resolveConcurrentAgentEntityOverride]).
+int _evolutionSessionRank(EvolutionSessionStatus status) => switch (status) {
+  EvolutionSessionStatus.active => 0,
+  EvolutionSessionStatus.abandoned => 1,
+  EvolutionSessionStatus.completed => 2,
+};
+
+/// The version of one agent link a replica keeps: [local], the row it
+/// holds — a tombstone included — or [incoming], the version it received.
+/// Returns [local] itself when it stands.
+///
+/// Causal dominance decides first; a concurrent pair goes to
+/// [resolveConcurrent] (the later `updatedAt`, then the canonical clock).
+/// A version without a clock carries no order and applies. The local write
+/// path stamps every write as a successor of the row it replaces, tombstone
+/// included, and never earlier than it (`AgentSyncService.upsertLink`), so
+/// this order agrees with causality and every replica keeps the same
+/// version in any arrival order (ADR 0081, `specs/tla/AgentLinks.tla`).
+/// Pure, like [resolveAgentEntityVersions]. Throws [VclockException] for a
+/// malformed clock, which the caller handles.
+AgentLink resolveAgentLinkVersions({
+  required AgentLink local,
+  required AgentLink incoming,
+}) {
+  final localVc = local.vectorClock;
+  final incomingVc = incoming.vectorClock;
+  if (localVc == null || incomingVc == null) return incoming;
+  return switch (VectorClock.compare(localVc, incomingVc)) {
+    VclockStatus.a_gt_b || VclockStatus.equal => local,
+    VclockStatus.b_gt_a => incoming,
+    VclockStatus.concurrent =>
+      resolveConcurrent(
+                localVc: localVc,
+                incomingVc: incomingVc,
+                localUpdatedAt: local.updatedAt,
+                incomingUpdatedAt: incoming.updatedAt,
+              ) ==
+              ConcurrentWinner.local
+          ? local
+          : incoming,
+  };
 }
 
 const Set<NudgeStatus> _terminalNudgeStatuses = {
