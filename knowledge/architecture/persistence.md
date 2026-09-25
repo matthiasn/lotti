@@ -575,7 +575,9 @@ those). SQL comments are stripped before a predicate is looked for. An
 allowlist entry that stops being an exception fails the build too. What the
 allowlist holds:
 
-- **By-id reads.** `journalEntityById` / `entityById`, the id-batch variants
+- **By-id reads.** `journalEntityById` / `entityById`, their tombstone-inclusive
+  twin `entityByIdIncludingDeleted` (the stored row the write decision, backfill
+  and the conflict page order versions against, ADR 0083), the id-batch variants
   that resolve ids the caller already holds (checklist items, editor drafts,
   coalesced by-id reads, tombstone lookups), task estimates and project-id
   maps by id, the rating attached to an entry.

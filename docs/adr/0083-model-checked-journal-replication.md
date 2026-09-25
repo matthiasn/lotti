@@ -108,7 +108,10 @@ retried, and the model's rollback configuration shows the retry heals it.
 7. **The sidecar has one writer: the queue.** `JournalDb.restoreSidecar`
    reads the stored row, deletion included, and takes a ticket in one
    transaction, then writes through `_publishSidecar`. The receive calls it
-   when it refused a path-only envelope, and the outbox's refresh is it.
+   when it refused a path-only envelope, and the outbox's refresh is it. A
+   failed restore fails the receive before it is recorded, so the event is
+   retried with the restore, as a rolled-back receive is
+   (`JournalReplicationSidecarRollback`).
 8. **Resolving over a deletion made here keeps the entry's labels.**
    `PersistenceLogic.updateJournalEntity` reads the stored row with its
    deletion to preserve labels, as it does for a live one.

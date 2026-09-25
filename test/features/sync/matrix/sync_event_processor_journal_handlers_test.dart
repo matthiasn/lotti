@@ -1668,6 +1668,8 @@ void main() {
         ),
       );
 
+      SyncEventProcessor? lastProcessor;
+
       Future<MockSyncSequenceLogService> receive({
         required bool applied,
         String? attachmentEventId,
@@ -1735,7 +1737,7 @@ void main() {
             ),
           ),
         ).thenAnswer((_) async => []);
-        await SyncEventProcessor(
+        lastProcessor = SyncEventProcessor(
           loggingService: loggingService,
           updateNotifications: updateNotifications,
           aiConfigRepository: aiConfigRepository,
@@ -1743,7 +1745,19 @@ void main() {
           settingsDb: settingsDb,
           journalEntityLoader: journalEntityLoader,
           sequenceLogService: sequenceLog,
-        ).process(event: event, journalDb: journalDb);
+        );
+        final processing = lastProcessor!.process(
+          event: event,
+          journalDb: journalDb,
+        );
+        if (restoreFails) {
+          await expectLater(
+            processing,
+            throwsA(isA<FileSystemException>()),
+          );
+        } else {
+          await processing;
+        }
         return sequenceLog;
       }
 
@@ -1810,32 +1824,62 @@ void main() {
         verifyNever(() => journalDb.restoreSidecar(any()));
       });
 
-      test('logs a failed restore and still records the receipt', () async {
-        final sequenceLog = await receive(applied: false, restoreFails: true);
+      // A failed restore must leave the receive retryable: recorded and
+      // deduplicated, the event would never run again, and the sidecar would
+      // keep the version the decision refused.
+      test(
+        'a failed restore fails the receive, and the retry restores',
+        () async {
+          final sequenceLog = await receive(applied: false, restoreFails: true);
 
-        verify(
-          () => loggingService.error(
-            LogDomain.sync,
-            any<Object>(),
-            stackTrace: any<StackTrace?>(named: 'stackTrace'),
-            subDomain: 'apply.restoreSidecar',
-          ),
-        ).called(1);
-        verify(
-          () => sequenceLog.recordReceivedEntry(
-            entryId: 'refused-entry',
-            vectorClock: vc,
-            originatingHostId: 'host-P',
-            coveredVectorClocks: any(named: 'coveredVectorClocks'),
-            payloadType: any(named: 'payloadType'),
-            jsonPath: '/refused.json',
-            payloadVectorClock: any(named: 'payloadVectorClock'),
-            canonicalPayloadVectorClock: any(
-              named: 'canonicalPayloadVectorClock',
+          verify(
+            () => loggingService.error(
+              LogDomain.sync,
+              any<Object>(),
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              subDomain: 'apply.restoreSidecar',
             ),
-          ),
-        ).called(1);
-      });
+          ).called(1);
+          verifyNever(
+            () => sequenceLog.recordReceivedEntry(
+              entryId: any(named: 'entryId'),
+              vectorClock: any(named: 'vectorClock'),
+              originatingHostId: any(named: 'originatingHostId'),
+              coveredVectorClocks: any(named: 'coveredVectorClocks'),
+              payloadType: any(named: 'payloadType'),
+              jsonPath: any(named: 'jsonPath'),
+              payloadVectorClock: any(named: 'payloadVectorClock'),
+              canonicalPayloadVectorClock: any(
+                named: 'canonicalPayloadVectorClock',
+              ),
+            ),
+          );
+
+          // The disk recovers and the event is delivered again: it is not a
+          // duplicate, so the decision runs and the sidecar is restored.
+          when(
+            () => journalDb.restoreSidecar('refused-entry'),
+          ).thenAnswer((_) async => true);
+          await lastProcessor!.process(event: event, journalDb: journalDb);
+
+          verify(() => journalDb.updateJournalEntity(incoming)).called(2);
+          verify(() => journalDb.restoreSidecar('refused-entry')).called(2);
+          verify(
+            () => sequenceLog.recordReceivedEntry(
+              entryId: 'refused-entry',
+              vectorClock: vc,
+              originatingHostId: 'host-P',
+              coveredVectorClocks: any(named: 'coveredVectorClocks'),
+              payloadType: any(named: 'payloadType'),
+              jsonPath: '/refused.json',
+              payloadVectorClock: any(named: 'payloadVectorClock'),
+              canonicalPayloadVectorClock: any(
+                named: 'canonicalPayloadVectorClock',
+              ),
+            ),
+          ).called(1);
+        },
+      );
     });
 
     test(
