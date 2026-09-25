@@ -393,6 +393,35 @@ missing media is repaired by a broadcast any peer holding the blob may answer.
 The retention window is therefore the bound on how long a device can be offline
 and still resynchronise from the server alone.
 
+### The room states its own TTL
+
+Every sync room carries an `m.room.retention` state event with a
+`max_lifetime` of 30 days: rooms this service provisions
+(`SYNC_ROOM_RETENTION_DAYS` in `shared/matrix/provisioner.py`, which
+`DEFAULT_RETENTION_DAYS` follows) and rooms the app creates or joins
+(`SyncTuning.syncRoomRetention`). A homeserver with retention enabled then
+purges old events on its own, for every sync room, including accounts
+this service never provisioned. Synapse ignores the event until retention
+is switched on in `homeserver.yaml`:
+
+```yaml
+retention:
+  enabled: true
+  allowed_lifetime_min: 7d   # MIN_RETENTION_DAYS: the offline catch-up floor
+  allowed_lifetime_max: 90d
+  purge_jobs:
+    - interval: 12h
+media_retention:
+  local_media_lifetime: 30d  # room retention purges events, never media
+```
+
+Room retention never removes media, so `media_retention` is what frees the
+uploads. It expires a file by its last access, which for sync is when a
+device downloaded it. Synapse keeps a room's latest event and its current
+state whatever the policy says. Check these keys against the Synapse
+version you run. The scheduled sweep remains as a backstop for homeservers
+without retention enabled.
+
 A manual purge with no explicit window applies the **user's own** policy, the
 same one the sweep would use. Falling back to the service default here would let
 one "purge now" click delete far more than a pinned user is meant to keep.

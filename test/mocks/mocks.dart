@@ -392,7 +392,23 @@ class MockSyncMaintenanceRepository extends Mock
 class MockSyncedAudioInferenceDispatcher extends Mock
     implements SyncedAudioInferenceDispatcher {}
 
-class MockMatrixSyncGateway extends Mock implements MatrixSyncGateway {}
+class MockMatrixSyncGateway extends Mock implements MatrixSyncGateway {
+  /// Unstubbed, the room already carries a retention policy.
+  @override
+  Future<bool> ensureRoomRetention(String roomId) {
+    try {
+      final result = super.noSuchMethod(
+        Invocation.method(#ensureRoomRetention, [roomId]),
+      );
+      if (result is Future<bool>) {
+        return result;
+      }
+    } catch (_) {
+      // ignore and fall back
+    }
+    return Future<bool>.value(false);
+  }
+}
 
 class MockMatrixMessageSender extends Mock implements MatrixMessageSender {}
 

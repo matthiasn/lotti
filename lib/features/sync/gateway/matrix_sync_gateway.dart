@@ -36,6 +36,11 @@ abstract class MatrixSyncGateway {
   /// Joins the room with the given ID.
   Future<void> joinRoom(String roomId);
 
+  /// Gives the room the sync-room retention policy when it has none, and
+  /// returns whether it sent one. A policy the room already carries is left
+  /// alone, whatever its lifetime.
+  Future<bool> ensureRoomRetention(String roomId);
+
   /// Returns a room snapshot by its identifier.
   Room? getRoomById(String roomId);
 

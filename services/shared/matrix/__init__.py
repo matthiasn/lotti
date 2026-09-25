@@ -26,10 +26,11 @@ from .core import (
     encode_mxid_for_path,
     encode_room_id_for_path,
 )
-from .provisioner import ProvisionResult, SynapseProvisioner
+from .provisioner import SYNC_ROOM_RETENTION_DAYS, ProvisionResult, SynapseProvisioner
 
 __all__ = [
     "BUNDLE_SCHEMA_VERSION",
+    "SYNC_ROOM_RETENTION_DAYS",
     "AdminCredentials",
     "BundleDecodeError",
     "BundleKind",

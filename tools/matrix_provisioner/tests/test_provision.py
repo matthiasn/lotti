@@ -11,6 +11,9 @@ import pytest
 from provision import UserAlreadyExistsError, _encode_mxid_for_path, provision
 from tests.conftest import decode_bundle, make_args, synapse_handler
 
+#: The sync room TTL, spelled out so a change to it is deliberate here too.
+THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
+
 # ---------------------------------------------------------------------------
 # Happy-path tests
 # ---------------------------------------------------------------------------
@@ -160,8 +163,8 @@ async def test_provision_user_token_is_short_lived(tracking_transport):
 
 
 @pytest.mark.anyio
-async def test_provision_room_has_encryption_and_marker(tracking_transport):
-    """The created room includes encryption and m.lotti.sync_room state."""
+async def test_provision_room_has_encryption_marker_and_retention(tracking_transport):
+    """The created room includes encryption, m.lotti.sync_room and retention state."""
     transport, requests_seen = tracking_transport
     await provision(make_args(), transport=transport)
 
@@ -178,6 +181,24 @@ async def test_provision_room_has_encryption_and_marker(tracking_transport):
 
     marker_state = next(s for s in body["initial_state"] if s["type"] == "m.lotti.sync_room")
     assert marker_state["content"]["version"] == 1
+
+    retention_state = next(s for s in body["initial_state"] if s["type"] == "m.room.retention")
+    assert retention_state["content"] == {"max_lifetime": THIRTY_DAYS_MS}
+
+
+@pytest.mark.anyio
+async def test_provision_reenforces_room_retention(tracking_transport):
+    """The retention policy is also sent as state, in case initial_state was ignored."""
+    transport, requests_seen = tracking_transport
+    await provision(make_args(), transport=transport)
+
+    retention_puts = [
+        r
+        for r in requests_seen
+        if r.method == "PUT" and r.url.path.endswith("/state/m.room.retention")
+    ]
+    assert len(retention_puts) == 1
+    assert json.loads(retention_puts[0].content) == {"max_lifetime": THIRTY_DAYS_MS}
 
 
 @pytest.mark.anyio

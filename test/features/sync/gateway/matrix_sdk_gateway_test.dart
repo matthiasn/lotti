@@ -13,6 +13,10 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
+/// `SyncTuning.syncRoomRetention` in milliseconds, spelled out so a change
+/// to the constant is a deliberate change to this test.
+const int _thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+
 MatrixEvent _stateEvent({
   required String type,
   String stateKey = '',
@@ -94,6 +98,10 @@ void main() {
           content: const <String, Object?>{
             'version': 1,
           },
+        ),
+        _stateEvent(
+          type: 'm.room.retention',
+          content: const <String, Object?>{'max_lifetime': _thirtyDaysMs},
         ),
       ],
     );
@@ -199,13 +207,15 @@ void main() {
     verify(() => client.logout()).called(1);
   });
 
-  test('createRoom sets encrypted initial state and sync marker', () async {
+  test('createRoom creates a non-federated room with encryption, marker and '
+      'retention', () async {
     when(
       () => client.createRoom(
         visibility: Visibility.private,
         name: 'Room',
         invite: ['@bob:server'],
         preset: CreateRoomPreset.trustedPrivateChat,
+        creationContent: any(named: 'creationContent'),
         initialState: any(named: 'initialState'),
       ),
     ).thenAnswer((_) async => '!room:server');
@@ -216,23 +226,31 @@ void main() {
     );
 
     expect(roomId, '!room:server');
-    final captured =
-        verify(
-              () => client.createRoom(
-                visibility: Visibility.private,
-                name: 'Room',
-                invite: ['@bob:server'],
-                preset: CreateRoomPreset.trustedPrivateChat,
-                initialState: captureAny(named: 'initialState'),
-              ),
-            ).captured.single
-            as List<StateEvent>;
+    final captured = verify(
+      () => client.createRoom(
+        visibility: Visibility.private,
+        name: 'Room',
+        invite: ['@bob:server'],
+        preset: CreateRoomPreset.trustedPrivateChat,
+        creationContent: captureAny(named: 'creationContent'),
+        initialState: captureAny(named: 'initialState'),
+      ),
+    ).captured;
+    final creationContent = captured[0] as Map<String, Object?>;
+    final initialState = captured[1] as List<StateEvent>;
 
-    final types = captured.map((event) => event.type).toSet();
+    expect(creationContent, {'m.federate': false});
+    final types = initialState.map((event) => event.type).toSet();
     expect(types, contains('m.room.encryption'));
     expect(types, contains('m.lotti.sync_room'));
+    expect(
+      initialState
+          .firstWhere((event) => event.type == 'm.room.retention')
+          .content,
+      {'max_lifetime': _thirtyDaysMs},
+    );
 
-    final encryption = captured
+    final encryption = initialState
         .firstWhere((event) => event.type == 'm.room.encryption')
         .content;
     expect(encryption['algorithm'], 'm.megolm.v1.aes-sha2');
@@ -370,6 +388,7 @@ void main() {
         name: 'Room',
         invite: <String>[],
         preset: CreateRoomPreset.trustedPrivateChat,
+        creationContent: any(named: 'creationContent'),
         initialState: any(named: 'initialState'),
       ),
     ).thenAnswer((_) async => '!room:server');
@@ -391,6 +410,7 @@ void main() {
         name: 'Room',
         invite: <String>[],
         preset: CreateRoomPreset.trustedPrivateChat,
+        creationContent: any(named: 'creationContent'),
         initialState: any(named: 'initialState'),
       ),
     ).thenAnswer((_) async => '!room:server');
@@ -399,6 +419,10 @@ void main() {
         _stateEvent(
           type: 'm.lotti.sync_room',
           content: const <String, Object?>{'version': 1},
+        ),
+        _stateEvent(
+          type: 'm.room.retention',
+          content: const <String, Object?>{'max_lifetime': _thirtyDaysMs},
         ),
       ],
     );
@@ -434,6 +458,7 @@ void main() {
         name: 'Room',
         invite: <String>[],
         preset: CreateRoomPreset.trustedPrivateChat,
+        creationContent: any(named: 'creationContent'),
         initialState: any(named: 'initialState'),
       ),
     ).thenAnswer((_) async => '!room:server');
@@ -444,6 +469,10 @@ void main() {
           content: const <String, Object?>{
             'algorithm': 'm.megolm.v1.aes-sha2',
           },
+        ),
+        _stateEvent(
+          type: 'm.room.retention',
+          content: const <String, Object?>{'max_lifetime': _thirtyDaysMs},
         ),
       ],
     );
@@ -469,6 +498,88 @@ void main() {
         '',
         any(),
       ),
+    );
+  });
+
+  test('createRoom backfills the retention policy when missing', () async {
+    when(
+      () => client.createRoom(
+        visibility: Visibility.private,
+        name: 'Room',
+        invite: <String>[],
+        preset: CreateRoomPreset.trustedPrivateChat,
+        creationContent: any(named: 'creationContent'),
+        initialState: any(named: 'initialState'),
+      ),
+    ).thenAnswer((_) async => '!room:server');
+    when(() => client.getRoomState('!room:server')).thenAnswer(
+      (_) async => [
+        _stateEvent(
+          type: 'm.room.encryption',
+          content: const <String, Object?>{
+            'algorithm': 'm.megolm.v1.aes-sha2',
+          },
+        ),
+        _stateEvent(
+          type: 'm.lotti.sync_room',
+          content: const <String, Object?>{'version': 1},
+        ),
+      ],
+    );
+
+    await gateway.createRoom(name: 'Room', inviteUserIds: []);
+
+    verify(
+      () => client.setRoomStateWithKey(
+        '!room:server',
+        'm.room.retention',
+        '',
+        const <String, Object?>{'max_lifetime': _thirtyDaysMs},
+      ),
+    ).called(1);
+  });
+
+  test(
+    'ensureRoomRetention gives an existing room without a policy its TTL',
+    () async {
+      when(() => client.getRoomState('!old:server')).thenAnswer(
+        (_) async => [
+          _stateEvent(
+            type: 'm.room.encryption',
+            content: const <String, Object?>{
+              'algorithm': 'm.megolm.v1.aes-sha2',
+            },
+          ),
+        ],
+      );
+
+      expect(await gateway.ensureRoomRetention('!old:server'), isTrue);
+
+      verify(
+        () => client.setRoomStateWithKey(
+          '!old:server',
+          'm.room.retention',
+          '',
+          const <String, Object?>{'max_lifetime': _thirtyDaysMs},
+        ),
+      ).called(1);
+    },
+  );
+
+  test('ensureRoomRetention leaves a policy the room already has', () async {
+    when(() => client.getRoomState('!kept:server')).thenAnswer(
+      (_) async => [
+        _stateEvent(
+          type: 'm.room.retention',
+          content: const <String, Object?>{'max_lifetime': 604800000},
+        ),
+      ],
+    );
+
+    expect(await gateway.ensureRoomRetention('!kept:server'), isFalse);
+
+    verifyNever(
+      () => client.setRoomStateWithKey(any(), any(), any(), any()),
     );
   });
 
