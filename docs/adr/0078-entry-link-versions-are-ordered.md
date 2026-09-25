@@ -12,8 +12,8 @@ than once: as its own `entryLink` message, as a backfill answer, and inside
 every journal-entity message, which embeds a snapshot of all the entry's links
 (`OutboxEnqueueWriter.prepareJournalEntity`). The receive handlers had a
 comment saying links "have their own vector clock for conflict resolution via
-`upsertEntryLink()`". They did not. An audit during PR #4464 (ADR 0077) found
-two holes:
+`upsertEntryLink()`". They did not. An audit during PR #4464
+([ADR 0077](./0077-a-reservation-names-the-id-written.md)) found two holes:
 
 1. **The receive applied whatever arrived last.** `JournalDb.upsertEntryLink`
    compared nothing but the serialized row: any version that differed
@@ -75,7 +75,8 @@ on the parameter. It only suggested a way to choose the id that did not exist.
    the clock: the edit's clock is its predecessor's plus this host's next
    counter, which is either larger than before or new.
 3. **`createTextEntry` loses its `id` parameter.** The id is minted with the
-   metadata, where the reservation names it, as ADR 0077 requires.
+   metadata, where the reservation names it, as
+   [ADR 0077](./0077-a-reservation-names-the-id-written.md) requires.
 
 ## Consequences
 
@@ -112,7 +113,8 @@ on the parameter. It only suggested a way to choose the id that did not exist.
 
 - [ADR 0068](./0068-model-checked-agent-convergence.md) — the order and the
   writer-side fixes, model-checked for agent entities
-- ADR 0077, "A reservation names the id that is written" (in PR #4464)
+- [ADR 0077](./0077-a-reservation-names-the-id-written.md) — a reservation
+  names the id that is written
 - `specs/tla/AgentReplication.tla`, `specs/tla/README.md`
 - [Vector clocks and conflicts](../../knowledge/features/sync/vector-clocks-and-conflicts.md)
 - [Entry links](../../knowledge/domain/entry-links.md)

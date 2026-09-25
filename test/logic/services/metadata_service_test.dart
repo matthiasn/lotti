@@ -167,6 +167,30 @@ void main() {
         },
       );
 
+      test(
+        'an explicit id is the entry id and the one its reservation names',
+        () async {
+          final metadata = await metadataService.createMetadata(
+            uuidV5Input: 'payload-hash-input',
+            id: 'caller-chosen-id',
+          );
+
+          // The explicit id wins over the payload-derived one, and it is the
+          // id the reservation names: settlement after a crash looks the
+          // written entry up by this name. Naming the uuidV5 id instead let
+          // settlement burn a counter whose entry was on disk.
+          expect(metadata.id, 'caller-chosen-id');
+          verify(
+            () => mockVectorClockService.getNextVectorClock(
+              payload: (
+                id: 'caller-chosen-id',
+                type: SyncSequencePayloadType.journalEntity,
+              ),
+            ),
+          ).called(1);
+        },
+      );
+
       test('creates metadata with UUID v5 when uuidV5Input provided', () async {
         const input = 'health-data-unique-id';
 

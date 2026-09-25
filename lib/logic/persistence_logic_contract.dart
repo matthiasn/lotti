@@ -27,6 +27,7 @@ abstract class PersistenceLogicContract {
     String? categoryId,
     bool? starred,
     EntryFlag? flag,
+    String? id,
   });
 
   Future<Metadata> updateMetadata(

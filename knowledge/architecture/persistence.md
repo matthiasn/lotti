@@ -5,8 +5,8 @@ description: The eleven Drift/SQLite databases, attachment storage, how connecti
 resource: ../../lib/database
 tags: [architecture, persistence, drift, sqlite, migrations]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-13T12:25:00Z }
-stale_after: 2027-03-05
+generated: { by: claude-code/opus-5.5, at: 2026-09-24T18:00:00Z }
+stale_after: 2026-12-24
 sources:
   - id: screenshot-capture
     resource: ../../lib/utils/screenshots.dart
@@ -662,7 +662,13 @@ Those snapshots are also the recovery path. Every database opened through
 `openDbConnection` is probed before its connection is built
 (`recoverDatabaseIfUnreadable`): opening the file and reading its schema
 cookie costs nothing that grows with the database, and a header SQLite can no
-longer read means every query after it would fail. When that happens the
+longer read means every query after it would fail. The probe
+(`isReadableDatabaseFile`) opens the file `immutable` and closes it before
+returning. An ordinary connection opens the `-wal` beside the file, and
+closing it beside a file that is not a database deletes the `-wal` and
+`-shm`; the probe once left that close to the garbage collector, which then
+deleted the WAL at an arbitrary moment — in one CI run, in the middle of the
+restore that was about to keep it. When that happens the
 newest readable snapshot of the same store is copied to a scratch path and
 only moved into place once that copy has succeeded — a copy that fails
 partway must not leave the live path empty, or the open that follows would

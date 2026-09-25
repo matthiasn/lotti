@@ -123,10 +123,11 @@ void main() {
         dateTo: any(named: 'dateTo'),
         categoryId: any(named: 'categoryId'),
         private: any(named: 'private'),
+        id: any(named: 'id'),
       ),
     ).thenAnswer(
       (invocation) async => Metadata(
-        id: 'generated-id',
+        id: invocation.namedArguments[#id] as String? ?? 'generated-id',
         createdAt: testDate,
         updatedAt: testDate,
         dateFrom: invocation.namedArguments[#dateFrom] as DateTime? ?? testDate,
@@ -210,6 +211,18 @@ void main() {
       );
 
       expect(result!.meta.id, 'minted-at-review');
+      // The id goes into createMetadata, which reserves the vector clock
+      // naming it. Swapping it in afterwards left the reservation naming the
+      // minted id, so crash recovery burned the person's counter.
+      verify(
+        () => mockPersistence.createMetadata(
+          dateFrom: any(named: 'dateFrom'),
+          dateTo: any(named: 'dateTo'),
+          categoryId: any(named: 'categoryId'),
+          private: any(named: 'private'),
+          id: 'minted-at-review',
+        ),
+      ).called(1);
       final stored =
           verify(
                 () => mockPersistence.createDbEntity(captureAny()),

@@ -77,8 +77,12 @@ void main() {
         categoryId: any(named: 'categoryId'),
         starred: any(named: 'starred'),
         flag: any(named: 'flag'),
+        id: any(named: 'id'),
       ),
-    ).thenAnswer((_) async => metaFor('meta-id'));
+    ).thenAnswer(
+      (invocation) async =>
+          metaFor(invocation.namedArguments[#id] as String? ?? 'meta-id'),
+    );
     when(
       () => logic.createDbEntity(
         any(),
@@ -527,6 +531,21 @@ void main() {
         entryText: const EntryText(plainText: 'I promised to pack fish.'),
       );
       expect(result?.id, 'relationship-commitment-id');
+      // The id is chosen inside createMetadata, before the clock is reserved,
+      // so the reservation names the id the task is written under.
+      verify(
+        () => logic.createMetadata(
+          dateFrom: any(named: 'dateFrom'),
+          dateTo: any(named: 'dateTo'),
+          uuidV5Input: any(named: 'uuidV5Input'),
+          private: any(named: 'private'),
+          labelIds: any(named: 'labelIds'),
+          categoryId: any(named: 'categoryId'),
+          starred: any(named: 'starred'),
+          flag: any(named: 'flag'),
+          id: 'relationship-commitment-id',
+        ),
+      ).called(1);
       final written =
           verify(
                 () => logic.createDbEntity(captureAny()),

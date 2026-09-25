@@ -40,6 +40,7 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
     String? categoryId,
     bool? starred,
     EntryFlag? flag,
+    String? id,
   }) => metadataService.createMetadata(
     dateFrom: dateFrom,
     dateTo: dateTo,
@@ -49,6 +50,7 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
     categoryId: categoryId,
     starred: starred,
     flag: flag,
+    id: id,
   );
 
   /// Updates existing [Metadata] with a new vector clock and optional field

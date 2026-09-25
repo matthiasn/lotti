@@ -54,6 +54,7 @@ class PersistenceLogic implements PersistenceLogicContract {
     String? categoryId,
     bool? starred,
     EntryFlag? flag,
+    String? id,
   }) => _entries.createMetadata(
     dateFrom: dateFrom,
     dateTo: dateTo,
@@ -63,6 +64,7 @@ class PersistenceLogic implements PersistenceLogicContract {
     categoryId: categoryId,
     starred: starred,
     flag: flag,
+    id: id,
   );
 
   @override
