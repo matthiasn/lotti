@@ -6393,6 +6393,7 @@
   "taskAgentThisReportHeader": "Dit verslag",
   "taskAgentTurnOffSetup": "Zet AI uit voor deze agent.",
   "taskAgentUpdateNow": "Nu bijwerken",
+  "taskAgentUpdateNowCountdown": "Nu bijwerken · {countdown}",
   "taskAgentUpdatesOnChange": "Werkt bij na wijzigingen",
   "taskAgentUseCategoryDefault": "Standaard categorie kopiëren",
   "taskAgentUseCategoryDefaultDescription": "Kopieert de categorie . Huidige setup. Latere categorie wijzigingen zal dit agent niet beïnvloeden.",

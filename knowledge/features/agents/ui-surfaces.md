@@ -131,13 +131,27 @@ under the prose, on the summary's own leading edge: the freshness glyph and word
 remedy stay adjacent; the one state worth a row is the one the reader may want
 to act on.
 
-The compact row never receives the countdown, so the task card folds it into
-`isStale` itself: it passes `AgentStateEntity.isReportBehindAt(now)`, which is
-the stale watermark OR a `nextWakeAt` still ahead of `now`. A task change arms
-that deadline without touching `reportStaleAt`, so reading the watermark alone
-left the card silent — looking current — for the whole countdown. The digits
-stay in the internals panel; the card only says *Out of date*. The project
-card still reads the watermark alone.
+The compact row does not derive staleness from the countdown, so the task card
+folds it into `isStale` itself: it passes `AgentStateEntity.isReportBehindAt(now)`,
+which is the stale watermark OR a `nextWakeAt` still ahead of `now`. A task
+change arms that deadline without touching `reportStaleAt`, so reading the
+watermark alone left the card silent — looking current — for the whole
+countdown.
+
+The task card also hands the compact row that `nextWakeAt`, and while the
+strip reads *Out of date* and no run is in flight, the countdown rides **in the
+trigger**: *Update now · 1:30*. *Out of date* alone looked like a summary left
+to rot, and the remedy is where the reader looks for what happens next. The
+label keeps *now* because a tap still runs the update immediately; the time is
+when it runs by itself. Screen readers hear *Update now, Next update in 1:30*
+rather than the separator. At zero the plain *Update now* returns, and a
+current summary or a run in flight (*Thinking…*) never shows a time.
+
+Ticking digits move nothing here either: the label uses tabular figures
+(`DesignSystemButton.tabularFigures`), and the button holds the widest width it
+has shown for the current deadline, so `10:00` → `9:59` cannot pull its leading
+edge in. The full schedule sentence, *Skip once* and the switch stay in the
+internals panel. The project card passes no deadline and still reads the watermark alone.
 
 Everything else that used to sit in a footer under the summary — the schedule,
 *Skip once*, the automatic-updates switch, the model identity and the setup

@@ -520,7 +520,8 @@ class TaskAgentContextBuilder {
   /// markdown task state when the read-flip succeeds, or the full JSON header
   /// (inline log included) for fallback prompts. [hasReport] makes report
   /// existence explicit and selects first-publication or material-change
-  /// guidance; the prior report's prose is never injected.
+  /// guidance; the prior report's prose is never injected. [statusTransition]
+  /// is a status change since that report, stated as a material change.
   ///
   /// [categoryKnowledge] is the user-written brief of the task's category
   /// (see `AiInputRepository.buildCategoryKnowledge`); it opens the stable
@@ -544,6 +545,7 @@ class TaskAgentContextBuilder {
     TimeService? timeService,
     String? compactedTaskLog,
     String? categoryKnowledge,
+    TaskStatusTransition? statusTransition,
   }) async {
     final buffer = StringBuffer();
 
@@ -732,6 +734,11 @@ class TaskAgentContextBuilder {
         hasReport
             ? TaskAgentReportPolicy.existingReportContext
             : TaskAgentReportPolicy.firstReportContext,
+      )
+      ..write(
+        hasReport && statusTransition != null
+            ? TaskAgentReportPolicy.statusTransitionContext(statusTransition)
+            : '',
       )
       ..write(
         TaskAgentReportPolicy.changedEntitiesContext(

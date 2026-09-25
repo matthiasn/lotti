@@ -61,6 +61,9 @@ the column when it sits first on a leading edge. `alignsLabelToLeadingEdge`
 cancels exactly that inset, direction-aware, so a button can start a shared
 column without a call site open-coding a `Transform`.
 
+A label that carries a live value — a countdown — sets `tabularFigures`, so
+every digit shares one advance and a changing digit cannot resize the button.
+
 `DsPill` carries the corner-radius convention through its `shape` parameter:
 the default `DsPillShape.pill` (fully-rounded, `radii.badgesPills`) is the
 *interactive* grammar — filters, levers, pickers — while `DsPillShape.tag`

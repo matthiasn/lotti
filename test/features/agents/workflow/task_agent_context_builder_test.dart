@@ -14,6 +14,7 @@ import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/task_agent_context_builder.dart';
+import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -514,6 +515,7 @@ void main() {
       Task? task,
       String? compactedTaskLog,
       String? categoryKnowledge,
+      TaskStatusTransition? statusTransition,
     }) {
       return withClock(Clock.fixed(clockNow), () {
         when(() => timeService.getCurrent()).thenReturn(null);
@@ -535,6 +537,7 @@ void main() {
           timeService: timeService,
           compactedTaskLog: compactedTaskLog,
           categoryKnowledge: categoryKnowledge,
+          statusTransition: statusTransition,
         );
       });
     }
@@ -650,6 +653,34 @@ void main() {
         expect(result.text, contains('not proof of material progress'));
       });
     }
+
+    test(
+      'states a status change after the existing-report guidance, and only '
+      'when a report exists',
+      () async {
+        const transition = (from: 'IN PROGRESS', to: 'DONE');
+        final followUp = (await build(statusTransition: transition)).text;
+        final section = TaskAgentReportPolicy.statusTransitionContext(
+          transition,
+        );
+
+        expect(followUp, contains(section));
+        expect(
+          followUp.indexOf(section),
+          greaterThan(followUp.indexOf('A report already exists')),
+        );
+
+        final firstWake = (await build(
+          hasReport: false,
+          statusTransition: transition,
+        )).text;
+        expect(firstWake, isNot(contains('## Material Change')));
+        expect(
+          (await build()).text,
+          isNot(contains('## Material Change')),
+        );
+      },
+    );
 
     test('renders each open proposal detail only in the guard', () async {
       final ledger = makeProposalLedger(

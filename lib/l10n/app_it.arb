@@ -6394,6 +6394,7 @@
   "taskAgentThisReportHeader": "Questa relazione",
   "taskAgentTurnOffSetup": "Spegnere l'IA per questo agente",
   "taskAgentUpdateNow": "Aggiorna ora",
+  "taskAgentUpdateNowCountdown": "Aggiorna ora · {countdown}",
   "taskAgentUpdatesOnChange": "Si aggiorna con le modifiche",
   "taskAgentUseCategoryDefault": "Copiare la categoria predefinita",
   "taskAgentUseCategoryDefaultDescription": "Copre la configurazione attuale della categoria. Le modifiche successive della categoria non influenzeranno questo agente.",

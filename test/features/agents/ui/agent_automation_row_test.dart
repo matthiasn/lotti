@@ -112,6 +112,151 @@ void main() {
     expect(scheduleLabel(), findsNothing);
   });
 
+  group('compact countdown', () {
+    Widget compactRow({
+      required DateTime? nextWakeAt,
+      bool isStale = true,
+      bool isRunning = false,
+    }) => AgentAutomationRow.compact(
+      inferenceAvailable: true,
+      isRunning: isRunning,
+      hasReportContent: true,
+      isStale: isStale,
+      nextWakeAt: nextWakeAt,
+      showsFreshConfirmation: false,
+      onRunNow: () {},
+    );
+
+    // The label, not the refresh glyph, which renders as a RichText too.
+    Finder triggerLabelFinder() => find.descendant(
+      of: trigger(),
+      matching: find.byWidgetPredicate(
+        (widget) => widget is RichText && widget.text.toPlainText().length > 1,
+      ),
+    );
+    RichText triggerText(WidgetTester tester) =>
+        tester.widget<RichText>(triggerLabelFinder());
+    String triggerLabel(WidgetTester tester) =>
+        triggerText(tester).text.toPlainText();
+
+    testWidgets(
+      'the trigger carries the time to the next update, ticking down and '
+      'dropping it at zero',
+      (tester) async {
+        var current = now;
+        await withClock(Clock(() => current), () async {
+          await pumpRow(
+            tester,
+            compactRow(nextWakeAt: now.add(const Duration(seconds: 90))),
+          );
+
+          // The word stays a word; the time is on the remedy.
+          expect(find.text('Out of date'), findsOneWidget);
+          expect(triggerLabel(tester), 'Update now · 1:30');
+          // Read as a sentence, not as "Update now dot one thirty".
+          expect(
+            find.bySemanticsLabel('Update now, Next update in 1:30'),
+            findsOneWidget,
+          );
+
+          current = current.add(const Duration(seconds: 1));
+          await tester.pump(const Duration(seconds: 1));
+          expect(triggerLabel(tester), 'Update now · 1:29');
+
+          current = now.add(const Duration(seconds: 90));
+          await tester.pump(const Duration(seconds: 1));
+          await tester.pump();
+          expect(triggerLabel(tester), 'Update now');
+          // The word stays until the caller learns the summary is current.
+          expect(find.text('Out of date'), findsOneWidget);
+        });
+      },
+    );
+
+    testWidgets('ticking digits never move the trigger', (tester) async {
+      var current = now;
+      await withClock(Clock(() => current), () async {
+        await pumpRow(
+          tester,
+          compactRow(nextWakeAt: now.add(const Duration(minutes: 10))),
+        );
+        final style = triggerText(tester).text.style;
+        expect(
+          style?.fontFeatures,
+          contains(const FontFeature.tabularFigures()),
+        );
+        final buttonAt1000 = tester.getTopLeft(trigger());
+        final labelAt1000 = tester.getTopLeft(triggerLabelFinder());
+        expect(triggerLabel(tester), 'Update now · 10:00');
+
+        // One digit fewer: tabular figures alone would still pull the
+        // trailing-aligned button's leading edge right by a digit's width.
+        // Held at its widest, the glyph and the words stay put and only the
+        // last digit's own ink goes.
+        current = current.add(const Duration(seconds: 1));
+        await tester.pump(const Duration(seconds: 1));
+        expect(triggerLabel(tester), 'Update now · 9:59');
+        expect(tester.getTopLeft(trigger()), buttonAt1000);
+        expect(tester.getTopLeft(triggerLabelFinder()), labelAt1000);
+      });
+    });
+
+    testWidgets('promises nothing beside a fresh summary or a running update', (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(now), () async {
+        final pending = now.add(const Duration(minutes: 5));
+
+        await pumpRow(tester, compactRow(nextWakeAt: pending, isStale: false));
+        expect(
+          find.byKey(const ValueKey('agentAutomationRowSilent')),
+          findsOneWidget,
+        );
+
+        await pumpRow(tester, compactRow(nextWakeAt: pending, isRunning: true));
+        expect(find.text('Out of date'), findsOneWidget);
+        expect(triggerLabel(tester), 'Thinking…');
+      });
+    });
+
+    testWidgets('keeps the plain trigger without a future deadline', (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(now), () async {
+        for (final wakeAt in [null, now.subtract(const Duration(seconds: 1))]) {
+          await pumpRow(tester, compactRow(nextWakeAt: wakeAt));
+          expect(triggerLabel(tester), 'Update now', reason: '$wakeAt');
+          expect(
+            triggerText(tester).text.style?.fontFeatures,
+            isNot(contains(const FontFeature.tabularFigures())),
+            reason: '$wakeAt',
+          );
+        }
+      });
+    });
+
+    testWidgets('fits a narrow German phone without truncating the time', (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(now), () async {
+        await pumpRow(
+          tester,
+          compactRow(nextWakeAt: now.add(const Duration(seconds: 90))),
+          width: 320,
+          locale: const Locale('de'),
+          textScaler: const TextScaler.linear(1.3),
+        );
+
+        expect(tester.takeException(), isNull);
+        expect(triggerLabel(tester), 'Jetzt aktualisieren · 1:30');
+        final label = tester.renderObject<RenderParagraph>(
+          triggerLabelFinder(),
+        );
+        expect(label.didExceedMaxLines, isFalse);
+      });
+    });
+  });
+
   group('manual trigger', () {
     testWidgets('is labelled, glyphed and fires the callback', (tester) async {
       var runs = 0;

@@ -15341,6 +15341,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskAgentUpdateNow => 'Aktualizovat nyní';
 
   @override
+  String taskAgentUpdateNowCountdown(String countdown) {
+    return 'Aktualizovat nyní · $countdown';
+  }
+
+  @override
   String get taskAgentUpdatesOnChange => 'Aktualizace při změnách';
 
   @override

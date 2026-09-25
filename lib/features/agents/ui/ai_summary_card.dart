@@ -557,6 +557,8 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
       // summary out of date; the reader should not learn that only when the
       // countdown fires.
       isStale: agentState?.isReportBehindAt(clock.now()) ?? false,
+      // …and says when that countdown will refresh it.
+      nextWakeAt: agentState?.nextWakeAt,
       showsFreshConfirmation: false,
       onRunNow: inferenceAvailable
           ? () => ref.read(taskAgentServiceProvider).triggerReanalysis(agentId)

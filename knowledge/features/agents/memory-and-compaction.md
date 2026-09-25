@@ -280,8 +280,12 @@ stale conclusions creates a feedback loop. `update_report` is conditional: the
 agent publishes only when the report would materially change. The first report is
 forced via a retry. A wake that successfully mutates task state also forces a
 report retry when the executor omits one, preventing an older projection from
-remaining visible after the change. A wake with no successful mutation and
-nothing report-worthy keeps the existing report and ends with a plain-text note.
+remaining visible after the change. So does a task status change since the
+report was written — the user moving the task to DONE — which the executor
+detects from the task's status history, because without the prose the model has
+no baseline to compare the current status against. A wake with no successful
+mutation, no status change and nothing report-worthy keeps the existing report
+and ends with a plain-text note.
 
 ## Prompt persistence stores only what is not derivable
 

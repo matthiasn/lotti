@@ -1740,6 +1740,163 @@ not describe task configuration or tool activity as progress.
         );
       }
 
+      group('status change since the prior report', () {
+        final inProgress = TaskStatus.inProgress(
+          id: 'status-in-progress',
+          createdAt: testDate.subtract(const Duration(days: 1)),
+          utcOffset: 0,
+        );
+
+        /// Runs a wake whose model reports only when forced to, against a
+        /// report written at `testDate` and a task that moved from IN
+        /// PROGRESS to DONE at [doneAt]. Returns the wake prompt, the tool
+        /// choices of every call, and the reports persisted.
+        Future<
+          ({
+            String prompt,
+            List<ChatCompletionToolChoiceOption?> calls,
+            List<AgentReportEntity> reports,
+          })
+        >
+        runWake({required DateTime doneAt}) async {
+          when(() => mockJournalDb.journalEntityById(taskId)).thenAnswer(
+            (_) async => makeWorkflowTestTask(
+              taskId,
+              languageCode: 'en',
+              statusHistory: [inProgress],
+              status: TaskStatus.done(
+                id: 'status-done',
+                createdAt: doneAt,
+                utcOffset: 0,
+              ),
+            ),
+          );
+          when(
+            () => mockAgentRepository.getLatestReport(agentId, 'current'),
+          ).thenAnswer(
+            (_) async =>
+                AgentDomainEntity.agentReport(
+                      id: 'previous-report',
+                      agentId: agentId,
+                      scope: 'current',
+                      createdAt: testDate,
+                      vectorClock: null,
+                      content: '## Status\nIn progress.',
+                      tldr: 'Work is in progress.',
+                      oneLiner: 'In progress',
+                    )
+                    as AgentReportEntity,
+          );
+
+          final messages = <String>[];
+          final calls = <ChatCompletionToolChoiceOption?>[];
+          mockConversationRepository
+            ..maxDelegateCalls = 2
+            ..sendMessageDelegate =
+                ({
+                  required conversationId,
+                  required message,
+                  required model,
+                  required provider,
+                  required inferenceRepo,
+                  tools,
+                  toolChoice,
+                  temperature = 0.7,
+                  strategy,
+                }) async {
+                  messages.add(message);
+                  calls.add(toolChoice);
+                  // The model under test concludes "no material change" on
+                  // its own, as it did in the bug; only a forced retry makes
+                  // it publish.
+                  if (toolChoice != null && strategy is TaskAgentStrategy) {
+                    await strategy.processToolCalls(
+                      toolCalls: const [
+                        ChatCompletionMessageToolCall(
+                          id: 'fresh-report',
+                          type: ChatCompletionMessageToolCallType.function,
+                          function: ChatCompletionMessageFunctionCall(
+                            name: TaskAgentToolNames.updateReport,
+                            arguments:
+                                r'''{"oneLiner":"Done","tldr":"The task is done.","content":"## Status\nDone."}''',
+                          ),
+                        ),
+                      ],
+                      manager: mockConversationManager,
+                    );
+                  }
+                  return null;
+                };
+
+          final result =
+              await createTestWorkflow(
+                agentRepository: mockAgentRepository,
+                conversationRepository: mockConversationRepository,
+                aiInputRepository: mockAiInputRepository,
+                aiConfigRepository: mockAiConfigRepository,
+                journalDb: mockJournalDb,
+                cloudInferenceRepository: mockCloudInferenceRepository,
+                journalRepository: mockJournalRepository,
+                checklistRepository: mockChecklistRepository,
+                labelsRepository: mockLabelsRepository,
+                syncService: mockSyncService,
+                templateService: mockTemplateService,
+              ).execute(
+                agentIdentity: testAgentIdentity,
+                runKey: runKey,
+                triggerTokens: {taskId},
+                threadId: threadId,
+              );
+          expect(result.success, isTrue);
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          return (
+            prompt: messages.first,
+            calls: calls,
+            reports: capturedEntitiesOfType<AgentReportEntity>(
+              captured,
+            ).toList(),
+          );
+        }
+
+        test('moving the task to DONE forces a report that says so', () async {
+          final wake = await runWake(
+            doneAt: testDate.add(const Duration(hours: 1)),
+          );
+
+          expect(
+            wake.prompt,
+            contains(
+              'The task status changed from IN PROGRESS to DONE after the '
+              'current report was written.',
+            ),
+          );
+          expect(wake.calls, hasLength(2));
+          expect(wake.calls.first, isNull);
+          expect(wake.calls.last, isNotNull);
+          expect(wake.reports.single.content, '## Status\nDone.');
+          expect(wake.reports.single.oneLiner, 'Done');
+        });
+
+        test(
+          'a DONE the prior report already saw neither prompts nor forces one',
+          () async {
+            final wake = await runWake(
+              doneAt: testDate.subtract(const Duration(hours: 1)),
+            );
+
+            expect(
+              wake.prompt,
+              isNot(contains('## Material Change Since Last Report')),
+            );
+            expect(wake.calls, [isNull]);
+            expect(wake.reports, isEmpty);
+          },
+        );
+      });
+
       test('swallows retry failures so the main-pass observations and metadata '
           'still reach the transaction', () async {
         mockConversationRepository

@@ -7,9 +7,13 @@ import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../test_utils/screenshot_harness.dart' show loadAppFonts;
 import '../../../../widget_test_utils.dart';
 
 void main() {
+  // Real glyph advances: the bare test font gives every glyph one width, so
+  // the tabular-figures test could not tell proportional digits apart.
+  setUpAll(loadAppFonts);
   group('DesignSystemButton', () {
     testWidgets('renders the primary small variant from tokens', (
       tester,
@@ -171,6 +175,42 @@ void main() {
           ),
         );
         expect(visualRect.width, 320);
+      },
+    );
+
+    testWidgets(
+      'tabularFigures gives every digit one advance, only when asked',
+      (tester) async {
+        Future<Size> labelSize(String label, {required bool tabular}) async {
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              Center(
+                child: DesignSystemButton(
+                  label: label,
+                  tabularFigures: tabular,
+                  onPressed: _noop,
+                ),
+              ),
+              theme: DesignSystemTheme.light(),
+            ),
+          );
+          final text = find.descendant(
+            of: find.byType(DesignSystemButton),
+            matching: find.byType(RichText),
+          );
+          expect(
+            tester.widget<RichText>(text).text.style?.fontFeatures,
+            tabular ? [const FontFeature.tabularFigures()] : isNull,
+          );
+          return tester.getSize(text);
+        }
+
+        // "1" is narrower than "8" in the bundled Inter's proportional digits.
+        final ones = await labelSize('1:11', tabular: true);
+        final eights = await labelSize('8:88', tabular: true);
+        expect(ones.width, eights.width);
+        final proportionalOnes = await labelSize('1:11', tabular: false);
+        expect(proportionalOnes.width, lessThan(ones.width));
       },
     );
 
