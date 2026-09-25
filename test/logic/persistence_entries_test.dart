@@ -58,7 +58,6 @@ void main() {
       () => mocks.journalDb.updateJournalEntity(
         any(),
         overwrite: any(named: 'overwrite'),
-        overrideComparison: any(named: 'overrideComparison'),
       ),
     ).thenAnswer((_) async => JournalUpdateResult.applied());
     when(() => mocks.updateNotifications.notify(any())).thenReturn(null);

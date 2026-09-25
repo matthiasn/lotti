@@ -110,7 +110,8 @@ void main() {
     ).called(1);
   });
 
-  test('enqueueMessage refreshes JSON before reading descriptor', () async {
+  test('enqueueMessage refreshes JSON through the journal before reading '
+      'the descriptor', () async {
     const id = 'checklist-refresh';
     final staleMeta = Metadata(
       id: id,
@@ -141,9 +142,12 @@ void main() {
       ..parent.createSync(recursive: true)
       ..writeAsStringSync(jsonEncode(staleChecklist));
 
-    when(
-      () => journalDb.journalEntityById(id),
-    ).thenAnswer((_) async => freshChecklist);
+    // The journal rewrites the sidecar from the stored row, in order with
+    // its own sidecar writes (ADR 0083).
+    when(() => journalDb.restoreSidecar(id)).thenAnswer((_) async {
+      file.writeAsStringSync(jsonEncode(freshChecklist));
+      return true;
+    });
 
     final message = SyncMessage.journalEntity(
       id: id,
@@ -184,7 +188,7 @@ void main() {
         ..parent.createSync(recursive: true)
         ..writeAsStringSync(jsonEncode(entity.toJson()));
 
-      when(() => journalDb.journalEntityById(id)).thenAnswer((_) async => null);
+      when(() => journalDb.restoreSidecar(id)).thenAnswer((_) async => false);
 
       final message = SyncMessage.journalEntity(
         id: id,
@@ -232,17 +236,14 @@ void main() {
         final file = File('${documentsDirectory.path}$jsonPath')
           ..parent.createSync(recursive: true)
           ..writeAsStringSync(jsonEncode(stale.toJson()));
-        when(
-          () => journalDb.journalEntityById(id),
-        ).thenAnswer((_) async => fresh);
         var failRefresh = true;
         final refreshError = Exception('disk full');
-        final retryableService = buildService(
-          saveJsonHandler: (path, json) async {
-            if (failRefresh) throw refreshError;
-            await File(path).writeAsString(json);
-          },
-        );
+        when(() => journalDb.restoreSidecar(id)).thenAnswer((_) async {
+          if (failRefresh) throw refreshError;
+          file.writeAsStringSync(jsonEncode(fresh.toJson()));
+          return true;
+        });
+        final retryableService = buildService();
         final message = SyncMessage.journalEntity(
           id: id,
           jsonPath: jsonPath,
@@ -295,7 +296,7 @@ void main() {
 
     await service.enqueueMessage(const SyncMessage.aiConfigDelete(id: 'cfg'));
 
-    verifyNever(() => journalDb.journalEntityById(any()));
+    verifyNever(() => journalDb.restoreSidecar(any()));
   });
 
   test('enqueueMessageOrThrow propagates an outbox write failure', () async {

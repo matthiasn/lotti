@@ -150,5 +150,6 @@ Each ADR should contain:
 - [`0080-a-present-counter-ranks-above-an-absent-host.md`](./0080-a-present-counter-ranks-above-an-absent-host.md)
 - [`0081-model-checked-evolution-sessions-and-agent-links.md`](./0081-model-checked-evolution-sessions-and-agent-links.md)
 - [`0082-model-checked-goal-registers.md`](./0082-model-checked-goal-registers.md)
+- [`0083-model-checked-journal-replication.md`](./0083-model-checked-journal-replication.md)
 - [`0084-model-checked-inbound-queue.md`](./0084-model-checked-inbound-queue.md)
 - [`0085-model-checked-outbox.md`](./0085-model-checked-outbox.md)

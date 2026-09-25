@@ -90,7 +90,6 @@ void main() {
           any(),
           linkedId: any(named: 'linkedId'),
           enqueueSync: any(named: 'enqueueSync'),
-          overrideComparison: any(named: 'overrideComparison'),
           beforeNotify: any(named: 'beforeNotify'),
         ),
       ).thenAnswer((_) async => true);
@@ -113,6 +112,52 @@ void main() {
       ).called(1);
       // The write applied, so the label index must be refreshed.
       verify(() => mocks.journalDb.addLabeled(any())).called(1);
+    },
+  );
+
+  // ADR 0083: a conflict resolution that keeps an edit over a deletion made
+  // here writes over the soft-deleted row, and must keep the entry's labels.
+  test(
+    'updateJournalEntity keeps the labels of a deleted stored row',
+    () async {
+      final deleted = testTextEntry.copyWith(
+        meta: testTextEntry.meta.copyWith(
+          labelIds: const ['label-a'],
+          deletedAt: DateTime(2024, 3, 15),
+        ),
+      );
+      when(
+        () => mocks.journalDb.journalEntityById(testTextEntry.id),
+      ).thenAnswer((_) async => null);
+      when(
+        () =>
+            mocks.journalDb.journalEntityByIdIncludingDeleted(testTextEntry.id),
+      ).thenAnswer((_) async => deleted);
+      when(() => logic.updateMetadata(any())).thenAnswer(
+        (invocation) async => invocation.positionalArguments.first as Metadata,
+      );
+      when(
+        () => logic.updateDbEntity(
+          any(),
+          beforeNotify: any(named: 'beforeNotify'),
+        ),
+      ).thenAnswer((_) async => true);
+      when(() => mocks.journalDb.addLabeled(any())).thenAnswer((_) async => 1);
+
+      final edited = testTextEntry.copyWith(
+        meta: testTextEntry.meta.copyWith(labelIds: null),
+      );
+      await updates.updateJournalEntity(edited, edited.meta);
+
+      final written =
+          verify(
+                () => logic.updateDbEntity(
+                  captureAny(),
+                  beforeNotify: any(named: 'beforeNotify'),
+                ),
+              ).captured.single
+              as JournalEntity;
+      expect(written.meta.labelIds, ['label-a']);
     },
   );
 

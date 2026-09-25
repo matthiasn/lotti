@@ -59,6 +59,9 @@ const _ungatedDeclarations = <String, String>{
   // Resolving ids the caller already holds.
   'lib/database/database_journal_queries.dart:entityById':
       'the single-entity read behind every detail page',
+  'lib/database/database_journal_queries.dart:entityByIdIncludingDeleted':
+      'the stored row sync orders versions against — the write decision, '
+      'backfill, the conflict page — tombstone included (ADR 0083)',
   'lib/database/database_journal_queries.dart:'
           'getJournalEntitiesForIdsIncludingDeleted':
       'ids the caller holds, tombstones included (demo reseed inventory)',

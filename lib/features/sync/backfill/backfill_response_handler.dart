@@ -539,7 +539,8 @@ class BackfillResponseHandler {
               counter: response.counter,
               payloadId: payloadId,
               payloadType: payloadType,
-              loadPayload: () => _journalDb.journalEntityById(payloadId),
+              loadPayload: () =>
+                  _journalDb.journalEntityByIdIncludingDeleted(payloadId),
               getVectorClock: (entry) => entry.meta.vectorClock,
               payloadTypeName: 'journal entry',
             );
@@ -835,8 +836,12 @@ class BackfillResponseHandler {
 
     switch (payloadType) {
       case SyncSequencePayloadType.journalEntity:
-        // Check if entry exists in journal
-        final journalEntry = await _journalDb.journalEntityById(payloadId);
+        // A soft-deleted entry is served like any version: a deletion the
+        // requester lost must reach it (ADR 0083). Only a row that is gone
+        // altogether — purged — is answered `deleted`.
+        final journalEntry = await _journalDb.journalEntityByIdIncludingDeleted(
+          payloadId,
+        );
 
         if (journalEntry == null) {
           _trace(

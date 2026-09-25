@@ -301,6 +301,22 @@ class MockJournalDb extends Mock implements JournalDb {
     return Future<bool>.value(false);
   }
 
+  /// Unstubbed, a row is stored and nothing is written.
+  @override
+  Future<bool> restoreSidecar(String id) {
+    try {
+      final result = super.noSuchMethod(
+        Invocation.method(#restoreSidecar, [id]),
+      );
+      if (result is Future<bool>) {
+        return result;
+      }
+    } catch (_) {
+      // ignore and fall back
+    }
+    return Future<bool>.value(true);
+  }
+
   /// Unstubbed, no version of the link is stored — so every
   /// `PersistenceLogic.createLink` behind a mocked database (and every entry
   /// created with a `linkedId`) mints a fresh link instead of failing on a

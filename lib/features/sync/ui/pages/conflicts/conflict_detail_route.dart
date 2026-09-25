@@ -32,10 +32,16 @@ class _ConflictDetailRouteState extends State<ConflictDetailRoute> {
 
   /// Cache the local-entry lookup keyed by conflict id so the
   /// [FutureBuilder] doesn't re-issue the DB read on every stream tick.
+  ///
+  /// The local side is read with its soft deletion: an edit that arrived
+  /// after this device deleted the entry is a delete-versus-edit conflict,
+  /// and the user decides it here.
   Future<JournalEntity?> _localEntryFor(String conflictId) {
     if (_futureKey != conflictId || _localEntryFuture == null) {
       _futureKey = conflictId;
-      _localEntryFuture = getIt<JournalDb>().journalEntityById(conflictId);
+      _localEntryFuture = getIt<JournalDb>().journalEntityByIdIncludingDeleted(
+        conflictId,
+      );
     }
     return _localEntryFuture!;
   }

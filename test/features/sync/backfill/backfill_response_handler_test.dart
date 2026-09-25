@@ -1389,7 +1389,8 @@ void main() {
         logItem: _createLogItem(aliceHostId, 3, entryId: 'reserved-payload'),
       );
       when(
-        () => mockJournalDb.journalEntityById('reserved-payload'),
+        () =>
+            mockJournalDb.journalEntityByIdIncludingDeleted('reserved-payload'),
       ).thenAnswer(
         (_) async => _createJournalEntry(
           'reserved-payload',
@@ -1611,7 +1612,7 @@ void main() {
 
       // The journal entry exists locally
       when(
-        () => mockJournalDb.journalEntityById(entryId),
+        () => mockJournalDb.journalEntityByIdIncludingDeleted(entryId),
       ).thenAnswer(
         (_) async => _createJournalEntry(
           entryId,
@@ -1690,7 +1691,7 @@ void main() {
           ),
         );
         when(
-          () => mockJournalDb.journalEntityById(staleEntryId),
+          () => mockJournalDb.journalEntityByIdIncludingDeleted(staleEntryId),
         ).thenAnswer(
           (_) async => _createJournalEntry(
             staleEntryId,
@@ -1711,7 +1712,8 @@ void main() {
           ),
         );
         when(
-          () => mockJournalDb.journalEntityById(coveringEntryId),
+          () =>
+              mockJournalDb.journalEntityByIdIncludingDeleted(coveringEntryId),
         ).thenAnswer(
           (_) async => _createJournalEntry(
             coveringEntryId,
@@ -1796,7 +1798,7 @@ void main() {
 
         // Entry exists but VC is behind the requested counter
         when(
-          () => mockJournalDb.journalEntityById(entryId),
+          () => mockJournalDb.journalEntityByIdIncludingDeleted(entryId),
         ).thenAnswer(
           (_) async => _createJournalEntry(
             entryId,
@@ -1878,7 +1880,7 @@ void main() {
           ),
         );
         when(
-          () => mockJournalDb.journalEntityById(staleEntryId),
+          () => mockJournalDb.journalEntityByIdIncludingDeleted(staleEntryId),
         ).thenAnswer(
           (_) async => _createJournalEntry(
             staleEntryId,
@@ -1886,7 +1888,7 @@ void main() {
           ),
         );
         when(
-          () => mockJournalDb.journalEntityById(validEntryId),
+          () => mockJournalDb.journalEntityByIdIncludingDeleted(validEntryId),
         ).thenAnswer(
           (_) async => _createJournalEntry(
             validEntryId,
@@ -1917,7 +1919,114 @@ void main() {
       },
     );
 
-    test('sends deleted response when journal entry was deleted', () async {
+    // ADR 0083: a deletion is a version. Answering `deleted` settled a lost
+    // deletion with nothing applied, and the requester kept the entry.
+    test('serves a soft-deleted journal entry like any version', () async {
+      const request = SyncBackfillRequest(
+        entries: [
+          BackfillRequestEntry(hostId: aliceHostId, counter: 3),
+        ],
+        requesterId: requesterId,
+      );
+      when(
+        () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 3),
+      ).thenAnswer(
+        (_) async => _createLogItem(aliceHostId, 3, entryId: entryId),
+      );
+      final live = _createJournalEntry(
+        entryId,
+        vectorClock: const VectorClock({aliceHostId: 3}),
+      );
+      final deletion = live.copyWith(
+        meta: live.meta.copyWith(deletedAt: DateTime(2024, 3, 15)),
+      );
+      // The live read hides the deletion; the stored row is the tombstone.
+      when(
+        () => mockJournalDb.journalEntityById(entryId),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockJournalDb.journalEntityByIdIncludingDeleted(entryId),
+      ).thenAnswer((_) async => deletion);
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
+
+      await handler.handleBackfillRequest(request);
+
+      final captured = verify(
+        () => mockOutboxService.enqueueMessage(captureAny()),
+      ).captured.cast<SyncMessage>();
+      expect(
+        captured.single,
+        isA<SyncJournalEntity>()
+            .having((m) => m.id, 'id', entryId)
+            .having(
+              (m) => m.vectorClock,
+              'vectorClock',
+              const VectorClock({aliceHostId: 3}),
+            ),
+      );
+    });
+
+    test(
+      'verifies a backfilled journal entry that is stored deleted',
+      () async {
+        const response = SyncBackfillResponse(
+          hostId: aliceHostId,
+          counter: 3,
+          deleted: false,
+          payloadType: SyncSequencePayloadType.journalEntity,
+          payloadId: entryId,
+        );
+        final live = _createJournalEntry(
+          entryId,
+          vectorClock: const VectorClock({aliceHostId: 3}),
+        );
+        when(
+          () => mockSequenceService.handleBackfillResponse(
+            hostId: any(named: 'hostId'),
+            counter: any(named: 'counter'),
+            deleted: any(named: 'deleted'),
+            unresolvable: any(named: 'unresolvable'),
+            entryId: any(named: 'entryId'),
+            payloadType: any(named: 'payloadType'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockJournalDb.journalEntityById(entryId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockJournalDb.journalEntityByIdIncludingDeleted(entryId),
+        ).thenAnswer(
+          (_) async => live.copyWith(
+            meta: live.meta.copyWith(deletedAt: DateTime(2024, 3, 15)),
+          ),
+        );
+        when(
+          () => mockSequenceService.verifyAndMarkBackfilled(
+            hostId: any(named: 'hostId'),
+            counter: any(named: 'counter'),
+            entryId: any(named: 'entryId'),
+            entryVectorClock: any(named: 'entryVectorClock'),
+            payloadType: any(named: 'payloadType'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        await handler.handleBackfillResponse(response);
+
+        verify(
+          () => mockSequenceService.verifyAndMarkBackfilled(
+            hostId: aliceHostId,
+            counter: 3,
+            entryId: entryId,
+            entryVectorClock: const VectorClock({aliceHostId: 3}),
+            payloadType: SyncSequencePayloadType.journalEntity,
+          ),
+        ).called(1);
+      },
+    );
+
+    test('sends deleted response when the journal entry is gone', () async {
       const request = SyncBackfillRequest(
         entries: [
           BackfillRequestEntry(hostId: aliceHostId, counter: 3),
@@ -1932,7 +2041,7 @@ void main() {
       );
 
       when(
-        () => mockJournalDb.journalEntityById(entryId),
+        () => mockJournalDb.journalEntityByIdIncludingDeleted(entryId),
       ).thenAnswer((_) async => null);
 
       when(
@@ -1976,7 +2085,7 @@ void main() {
         vectorClock: const VectorClock({aliceHostId: 3}),
       );
       when(
-        () => mockJournalDb.journalEntityById(entryId),
+        () => mockJournalDb.journalEntityByIdIncludingDeleted(entryId),
       ).thenAnswer((_) async => journalEntry);
 
       when(
@@ -2019,7 +2128,7 @@ void main() {
 
         final journalEntry = _createJournalEntry(entryId);
         when(
-          () => mockJournalDb.journalEntityById(entryId),
+          () => mockJournalDb.journalEntityByIdIncludingDeleted(entryId),
         ).thenAnswer((_) async => journalEntry);
 
         when(
@@ -2076,7 +2185,7 @@ void main() {
         ];
         var read = 0;
         when(
-          () => mockJournalDb.journalEntityById(entryId),
+          () => mockJournalDb.journalEntityByIdIncludingDeleted(entryId),
         ).thenAnswer((_) async => reads[math.min(read++, reads.length - 1)]);
         when(
           () => mockOutboxService.enqueueMessage(any()),
@@ -2122,7 +2231,7 @@ void main() {
         vectorClock: const VectorClock({aliceHostId: 10}),
       );
       when(
-        () => mockJournalDb.journalEntityById(entryId),
+        () => mockJournalDb.journalEntityByIdIncludingDeleted(entryId),
       ).thenAnswer((_) async => journalEntry);
 
       when(
@@ -2175,7 +2284,7 @@ void main() {
 
         // Entry exists locally but carries NO vector clock.
         when(
-          () => mockJournalDb.journalEntityById(entryId),
+          () => mockJournalDb.journalEntityByIdIncludingDeleted(entryId),
         ).thenAnswer((_) async => _createJournalEntryWithoutVC(entryId));
 
         when(
@@ -2254,11 +2363,12 @@ void main() {
         // Exact row's payload has a stale VC ({alice: 0}) that does not
         // cover counter 3.
         when(
-          () => mockJournalDb.journalEntityById(entryId),
+          () => mockJournalDb.journalEntityByIdIncludingDeleted(entryId),
         ).thenAnswer((_) async => _createJournalEntry(entryId));
 
         when(
-          () => mockJournalDb.journalEntityById(coveringEntryId),
+          () =>
+              mockJournalDb.journalEntityByIdIncludingDeleted(coveringEntryId),
         ).thenAnswer(
           (_) async => _createJournalEntry(
             coveringEntryId,
@@ -2596,7 +2706,7 @@ void main() {
       // Entry exists locally
       final journalEntry = _createJournalEntry(entryId);
       when(
-        () => mockJournalDb.journalEntityById(entryId),
+        () => mockJournalDb.journalEntityByIdIncludingDeleted(entryId),
       ).thenAnswer((_) async => journalEntry);
 
       when(
@@ -2658,7 +2768,7 @@ void main() {
 
         // Entry does NOT exist locally
         when(
-          () => mockJournalDb.journalEntityById(entryId),
+          () => mockJournalDb.journalEntityByIdIncludingDeleted(entryId),
         ).thenAnswer((_) async => null);
 
         await handler.handleBackfillResponse(response);
@@ -2722,7 +2832,7 @@ void main() {
       ).called(1);
 
       // Should NOT try to verify (no entryId)
-      verifyNever(() => mockJournalDb.journalEntityById(any()));
+      verifyNever(() => mockJournalDb.journalEntityByIdIncludingDeleted(any()));
     });
 
     test('skips verification when entry has null vectorClock', () async {
@@ -2747,7 +2857,7 @@ void main() {
       // Entry exists but has null vectorClock
       final journalEntry = _createJournalEntryWithoutVC(entryId);
       when(
-        () => mockJournalDb.journalEntityById(entryId),
+        () => mockJournalDb.journalEntityByIdIncludingDeleted(entryId),
       ).thenAnswer((_) async => journalEntry);
 
       await handler.handleBackfillResponse(response);
@@ -4386,7 +4496,9 @@ void main() {
     }
 
     void stubJournalPayload(int? ownCounter) {
-      when(() => mockJournalDb.journalEntityById('entry-3')).thenAnswer(
+      when(
+        () => mockJournalDb.journalEntityByIdIncludingDeleted('entry-3'),
+      ).thenAnswer(
         (_) async => ownCounter == null
             ? null
             : _createJournalEntry(
@@ -5422,7 +5534,7 @@ void _stubPayloadByType(
   switch (payloadType) {
     case SyncSequencePayloadType.journalEntity:
       when(
-        () => bench.journalDb.journalEntityById(payloadId),
+        () => bench.journalDb.journalEntityByIdIncludingDeleted(payloadId),
       ).thenAnswer(
         (_) async => vectorClock == null
             ? null
@@ -5493,7 +5605,7 @@ void _stubVerificationPayload(
   switch (scenario.effectivePayloadType) {
     case SyncSequencePayloadType.journalEntity:
       when(
-        () => bench.journalDb.journalEntityById(payloadId),
+        () => bench.journalDb.journalEntityByIdIncludingDeleted(payloadId),
       ).thenAnswer(
         (_) async => scenario.payloadExists
             ? _createJournalEntrySrc(payloadId, vectorClock: vectorClock)

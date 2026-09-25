@@ -43,7 +43,6 @@ class _RejectingTaskCleanupPersistenceLogic extends PersistenceLogic {
     JournalEntity journalEntity, {
     String? linkedId,
     bool enqueueSync = true,
-    bool overrideComparison = false,
     Future<void> Function()? beforeNotify,
     Future<bool> Function()? precondition,
   }) async {
@@ -57,7 +56,6 @@ class _RejectingTaskCleanupPersistenceLogic extends PersistenceLogic {
       journalEntity,
       linkedId: linkedId,
       enqueueSync: enqueueSync,
-      overrideComparison: overrideComparison,
       beforeNotify: beforeNotify,
       precondition: precondition,
     );

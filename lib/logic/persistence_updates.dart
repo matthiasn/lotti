@@ -87,10 +87,14 @@ class PersistenceUpdates extends PersistenceCollaboratorBase {
           // Preserve existing labels to avoid races with concurrent label
           // assignments. Label changes should go through LabelsRepository;
           // general updates should not override meta.labelIds based on a
-          // stale in-memory entity.
+          // stale in-memory entity. The stored row is read with its soft
+          // deletion: resolving a conflict with an edit over a deletion
+          // made here keeps the entry's labels too.
           JournalEntity? current;
           try {
-            current = await journalDb.journalEntityById(journalEntity.id);
+            current = await journalDb.journalEntityByIdIncludingDeleted(
+              journalEntity.id,
+            );
           } catch (_) {
             // If we can't fetch current (e.g., in tests without a stub),
             // proceed without preservation.
@@ -142,7 +146,6 @@ class PersistenceUpdates extends PersistenceCollaboratorBase {
     JournalEntity journalEntity, {
     String? linkedId,
     bool enqueueSync = true,
-    bool overrideComparison = false,
     Future<void> Function()? beforeNotify,
     Future<bool> Function()? precondition,
   }) async {
@@ -151,7 +154,6 @@ class PersistenceUpdates extends PersistenceCollaboratorBase {
         () async {
           final updateResult = await journalDb.updateJournalEntity(
             journalEntity,
-            overrideComparison: overrideComparison,
             precondition: precondition,
           );
           final applied = updateResult.applied;

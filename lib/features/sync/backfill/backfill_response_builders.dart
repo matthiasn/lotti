@@ -69,7 +69,9 @@ extension _BackfillResponseBuilders on BackfillResponseHandler {
   }) async {
     switch (payloadType) {
       case SyncSequencePayloadType.journalEntity:
-        final entry = await _journalDb.journalEntityById(payloadId);
+        final entry = await _journalDb.journalEntityByIdIncludingDeleted(
+          payloadId,
+        );
         return (
           exists: entry != null,
           vectorClock: entry?.meta.vectorClock,

@@ -224,6 +224,68 @@ void main() {
       });
     });
 
+    // ADR 0083: the reads sync orders versions with.
+    group('Stored-row reads -', () {
+      JournalEntity version(Map<String, int> clock, {bool deleted = false}) {
+        final base = createJournalEntryWithVclock(
+          VectorClock(clock),
+          id: 'stored-row',
+        );
+        return base.copyWith(
+          meta: base.meta.copyWith(deletedAt: deleted ? testDate : null),
+        );
+      }
+
+      test('a deleted row is read with its deletion', () async {
+        await db!.updateJournalEntity(version({'a': 1}));
+        await db!.updateJournalEntity(version({'a': 2}, deleted: true));
+
+        expect(await db!.journalEntityById('stored-row'), isNull);
+        expect(await db!.entityById('stored-row'), isNull);
+        final stored = await db!.journalEntityByIdIncludingDeleted(
+          'stored-row',
+        );
+        expect(stored?.meta.deletedAt, isNotNull);
+        expect(stored?.meta.vectorClock, const VectorClock({'a': 2}));
+        expect(
+          (await db!.entityByIdIncludingDeleted('stored-row'))?.deleted,
+          isTrue,
+        );
+        expect(await db!.journalEntityByIdIncludingDeleted('absent'), isNull);
+      });
+
+      test(
+        'isStoredVersion matches only the live row with that clock',
+        () async {
+          await db!.updateJournalEntity(version({'a': 1}));
+
+          expect(
+            await db!.isStoredVersion(
+              'stored-row',
+              const VectorClock({'a': 1}),
+            ),
+            isTrue,
+          );
+          expect(
+            await db!.isStoredVersion(
+              'stored-row',
+              const VectorClock({'a': 2}),
+            ),
+            isFalse,
+          );
+
+          await db!.updateJournalEntity(version({'a': 2}, deleted: true));
+          expect(
+            await db!.isStoredVersion(
+              'stored-row',
+              const VectorClock({'a': 2}),
+            ),
+            isFalse,
+          );
+        },
+      );
+    });
+
     group('Edge cases -', () {
       test(
         'journalEntityById returns new data after an initial cache miss',
@@ -278,7 +340,8 @@ void main() {
         },
       );
 
-      test('handles null vector clock on incoming entity', () async {
+      // ADR 0083: a version without a clock never replaces a clocked row.
+      test('refuses an incoming entity without a vector clock', () async {
         const existingClock = VectorClock(<String, int>{'device1': 1});
         final existing = createJournalEntryWithVclock(existingClock);
         await db!.updateJournalEntity(existing);
@@ -290,11 +353,11 @@ void main() {
 
         final result = await db!.updateJournalEntity(update);
 
-        expect(result.applied, isTrue);
+        expect(result.applied, isFalse);
+        expect(result.skipReason, JournalUpdateSkipReason.olderOrEqual);
         final stored = await db!.journalEntityById(existing.meta.id);
-        expect(stored, isNotNull);
-        expect(stored?.entryText?.plainText, 'null vector clock update');
-        expect(stored?.meta.vectorClock, isNull);
+        expect(stored?.entryText, existing.entryText);
+        expect(stored?.meta.vectorClock, existingClock);
       });
 
       test('returns skipReason when detectConflict throws', () async {

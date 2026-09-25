@@ -91,7 +91,7 @@ class _Bench {
       () => db.watchConflictById(conflict.id),
     ).thenAnswer((_) => controller.stream);
     when(
-      () => db.journalEntityById(conflict.id),
+      () => db.journalEntityByIdIncludingDeleted(conflict.id),
     ).thenAnswer((_) async => localEntry);
 
     return _Bench._(db: db, persistence: persistence, controller: controller);
@@ -193,7 +193,7 @@ void main() {
       final bench = await _Bench.create(localEntry: local, conflict: conflict);
       addTearDown(bench.dispose);
       when(
-        () => bench.db.journalEntityById(conflict.id),
+        () => bench.db.journalEntityByIdIncludingDeleted(conflict.id),
       ).thenAnswer((_) async => null);
       await _pump(tester, conflict.id);
       bench.controller.add([conflict]);
@@ -207,7 +207,7 @@ void main() {
       final bench = await _Bench.create(localEntry: remote, conflict: conflict);
       addTearDown(bench.dispose);
       when(
-        () => bench.db.journalEntityById(conflict.id),
+        () => bench.db.journalEntityByIdIncludingDeleted(conflict.id),
       ).thenAnswer((_) => Future.error(StateError('db gone')));
       await _pump(tester, conflict.id);
       bench.controller.add([conflict]);
@@ -329,6 +329,35 @@ void main() {
       expect(toast.title, l10n.conflictApplyFailedTitle);
     });
 
+    // ADR 0083: an edit that arrives after this device deleted the entry is
+    // a conflict, and the page must open on the deleted local side.
+    testWidgets('opens a deletion made here against an edit from sync', (
+      tester,
+    ) async {
+      final live = _entry(title: 'Local title', clock: const {'a': 9});
+      final deletedHere = live.copyWith(
+        meta: live.meta.copyWith(deletedAt: _baseTime),
+      );
+      final remote = _entry(title: 'Edited there', clock: const {'b': 1});
+      final conflict = _conflict(remote: remote);
+      final bench = await _Bench.create(
+        localEntry: deletedHere,
+        conflict: conflict,
+      );
+      addTearDown(bench.dispose);
+      await _showConflict(tester, bench, conflict);
+
+      expect(find.text(l10n.conflictDeleteVsEditTitle), findsOneWidget);
+      await _tap(tester, l10n.conflictKeepEdited);
+
+      final captured = verify(
+        () => bench.persistence.updateJournalEntity(captureAny(), any()),
+      ).captured;
+      final written = captured.single as JournalEntity;
+      expect(_firstLineOf(written), 'Edited there');
+      expect(written.meta.deletedAt, isNull);
+    });
+
     testWidgets('the local entry is read once and reused across ticks', (
       tester,
     ) async {
@@ -339,11 +368,15 @@ void main() {
       addTearDown(bench.dispose);
       await _showConflict(tester, bench, conflict);
 
-      verify(() => bench.db.journalEntityById(conflict.id)).called(1);
+      verify(
+        () => bench.db.journalEntityByIdIncludingDeleted(conflict.id),
+      ).called(1);
       bench.controller.add([conflict]);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      verifyNever(() => bench.db.journalEntityById(conflict.id));
+      verifyNever(
+        () => bench.db.journalEntityByIdIncludingDeleted(conflict.id),
+      );
     });
   });
 }

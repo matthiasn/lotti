@@ -73,7 +73,10 @@ extension _JournalHandlers on SyncEventProcessor {
     }
     JournalEntity? existing;
     try {
-      existing = await journalDb.journalEntityById(syncMessage.id);
+      // A deletion supersedes the versions before it too.
+      existing = await journalDb.journalEntityByIdIncludingDeleted(
+        syncMessage.id,
+      );
     } catch (e, st) {
       _loggingService.error(
         LogDomain.sync,
@@ -338,7 +341,7 @@ extension _JournalHandlers on SyncEventProcessor {
     var predictedStatus = VclockStatus.b_gt_a;
     if (applyObserver != null) {
       try {
-        final existing = await journalDb.journalEntityById(
+        final existing = await journalDb.journalEntityByIdIncludingDeleted(
           journalEntity.meta.id,
         );
         final vcA = existing?.meta.vectorClock;
@@ -402,6 +405,27 @@ extension _JournalHandlers on SyncEventProcessor {
     }
     final rows = updateResult.rowsWritten ?? 0;
 
+    // A path-only envelope (an older peer) is loaded through the sidecar,
+    // and the loader saved the incoming JSON over it before the decision.
+    // When the version was refused, the sidecar — the payload this device
+    // sends for the entry — is put back to the stored row (ADR 0083). A
+    // failed restore propagates before the event is marked processed, so
+    // the receive is retried and the restore with it; swallowed, the
+    // rejected version would stay in the sidecar for good.
+    if (!updateResult.applied && syncMessage.attachmentEventId == null) {
+      try {
+        await journalDb.restoreSidecar(journalEntity.meta.id);
+      } catch (error, stackTrace) {
+        _loggingService.error(
+          LogDomain.sync,
+          error,
+          stackTrace: stackTrace,
+          subDomain: 'apply.restoreSidecar',
+        );
+        rethrow;
+      }
+    }
+
     final diag = SyncApplyDiagnostics(
       eventId: event.eventId,
       payloadType: 'journalEntity',
@@ -435,9 +459,14 @@ extension _JournalHandlers on SyncEventProcessor {
     if (_sequenceLogService != null &&
         syncMessage.vectorClock != null &&
         syncMessage.originatingHostId != null) {
+      // A stored deletion is a version that covers the refused one: the
+      // counter is received, and backfill must stop asking for it.
       final entryExistsInJournal =
           updateResult.applied ||
-          await journalDb.journalEntityById(journalEntity.meta.id) != null;
+          await journalDb.journalEntityByIdIncludingDeleted(
+                journalEntity.meta.id,
+              ) !=
+              null;
       if (entryExistsInJournal) {
         try {
           final List<({String hostId, int counter})> gaps;
@@ -456,7 +485,7 @@ extension _JournalHandlers on SyncEventProcessor {
             final payloadVectorClock = journalEntity.meta.vectorClock;
             final canonicalVectorClock = updateResult.applied
                 ? payloadVectorClock
-                : (await journalDb.journalEntityById(
+                : (await journalDb.journalEntityByIdIncludingDeleted(
                     journalEntity.meta.id,
                   ))?.meta.vectorClock;
             if (payloadVectorClock == null) {

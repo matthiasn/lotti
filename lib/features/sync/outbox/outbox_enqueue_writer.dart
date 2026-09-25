@@ -356,13 +356,13 @@ class OutboxEnqueueWriter {
     required String? host,
     required String? hostHash,
   }) async {
-    // Refresh JSON from DB before reading descriptor
+    // Refresh JSON from DB before reading descriptor. Through the journal's
+    // sidecar queue: a refresh written beside it could land after a newer
+    // commit's write and leave the sidecar describing an older row
+    // (ADR 0083). A deleted entry is refreshed too; it is a version.
     try {
-      final latest = await _journalDb.journalEntityById(msg.id);
-      if (latest != null) {
-        final canonicalPath = entityPath(latest, _documentsDirectory);
-        await _saveJson(canonicalPath, jsonEncode(latest));
-      } else {
+      final stored = await _journalDb.restoreSidecar(msg.id);
+      if (!stored) {
         _loggingService.log(
           LogDomain.sync,
           'enqueueMessage.missingEntity id=${msg.id}',

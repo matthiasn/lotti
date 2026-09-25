@@ -45,6 +45,32 @@ mixin _JournalDbJournalQueries on _$JournalDb, _JournalDbConfigFlags {
     return null;
   }
 
+  /// The stored row for [id], soft-deleted or not.
+  ///
+  /// A deletion is a version of the entry like any other, so everything that
+  /// orders versions — the write decision, the sync receive, backfill —
+  /// reads with this rather than with [entityById], which hides it (ADR
+  /// 0083). A direct query, never coalesced, so it can run inside a write
+  /// transaction.
+  Future<JournalDbEntity?> entityByIdIncludingDeleted(String id) {
+    return (select(journal)..where((t) => t.id.equals(id))).getSingleOrNull();
+  }
+
+  /// Whether the live row stored for [id] carries exactly [vectorClock]: the
+  /// precondition of a write built on that row, which must not replace a
+  /// version that was stored after it was read. A direct query, so it can
+  /// run inside the write's transaction.
+  Future<bool> isStoredVersion(String id, VectorClock? vectorClock) async {
+    final row = await entityById(id);
+    return row != null && fromDbEntity(row).meta.vectorClock == vectorClock;
+  }
+
+  /// [entityByIdIncludingDeleted], deserialized.
+  Future<JournalEntity?> journalEntityByIdIncludingDeleted(String id) async {
+    final dbEntity = await entityByIdIncludingDeleted(id);
+    return dbEntity == null ? null : fromDbEntity(dbEntity);
+  }
+
   // Microtask-coalescing state for `journalEntityById`. Riverpod
   // `FutureProvider.autoDispose.family` shapes (e.g.
   // `taskLiveDataProvider`) spin up one provider per visible row in a

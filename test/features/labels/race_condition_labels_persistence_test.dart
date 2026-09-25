@@ -106,7 +106,7 @@ void main() {
       // Current DB state has label "nice" already assigned (e.g., by addLabels)
       final current = makeTask(labelIds: const ['nice']);
       when(
-        () => journalDb.journalEntityById('task-1'),
+        () => journalDb.journalEntityByIdIncludingDeleted('task-1'),
       ).thenAnswer((_) async => current);
 
       // JournalDb side-effects no-op
@@ -141,7 +141,6 @@ class _TestPersistenceLogic extends PersistenceLogic {
     JournalEntity journalEntity, {
     String? linkedId,
     bool enqueueSync = true,
-    bool overrideComparison = false,
     Future<void> Function()? beforeNotify,
     Future<bool> Function()? precondition,
   }) async {

@@ -114,7 +114,15 @@ void main() {
             any(),
             linkedId: any(named: 'linkedId'),
             enqueueSync: any(named: 'enqueueSync'),
-            overrideComparison: any(named: 'overrideComparison'),
+          ),
+        ).thenAnswer((inv) async {
+          current = inv.positionalArguments.first as JournalEntity;
+          return true;
+        });
+        when(
+          () => mockPl.updateDbEntity(
+            any(),
+            precondition: any(named: 'precondition'),
           ),
         ).thenAnswer((inv) async {
           current = inv.positionalArguments.first as JournalEntity;

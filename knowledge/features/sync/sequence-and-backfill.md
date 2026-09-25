@@ -5,7 +5,7 @@ description: Causal accounting over (hostId, counter) pairs, bounded initial-onb
 resource: ../../../lib/features/sync/sequence
 tags: [sync, sequence-log, backfill, gap-detection]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-25T09:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-25T20:00:00Z }
 stale_after: 2026-12-25
 sources:
   - id: tla-spec
@@ -95,6 +95,14 @@ sources:
   - id: adr-0080
     resource: ../../../docs/adr/0080-a-present-counter-ranks-above-an-absent-host.md
     title: ADR 0080 — a present counter ranks above an absent host, and new hosts start at 1
+    last_modified: 2026-09-25
+  - id: journal-replication-spec
+    resource: ../../../specs/tla/JournalReplication.tla
+    title: TLA+ model of journal entry replication, conflicts and the sidecar
+    last_modified: 2026-09-25
+  - id: adr-0083
+    resource: ../../../docs/adr/0083-model-checked-journal-replication.md
+    title: ADR 0083 — model-checked journal replication
     last_modified: 2026-09-25
 ---
 
@@ -539,7 +547,11 @@ feedback loop.
 
 An exact sequence row is not sufficient evidence by itself. Before resend, the
 handler loads the current payload and distinguishes absence from an absent
-vector clock. A missing payload follows the per-type `deleted` path. A present
+vector clock. A missing payload follows the per-type `deleted` path. A
+soft-deleted payload is not missing: journal entries, agent entities and agent
+links are loaded with their deletion and resent like any version, so a lost
+deletion reaches the requester (ADR 0081, ADR 0083); `deleted` means the row is
+gone. A present
 payload whose clock is null, lacks the requested host, or is behind the counter
 is rejected before any resend. The originating host answers that rejection with
 only `unresolvable`; a relay searches later resolved rows and uses only a

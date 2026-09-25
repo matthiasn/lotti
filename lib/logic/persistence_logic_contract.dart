@@ -56,7 +56,6 @@ abstract class PersistenceLogicContract {
     JournalEntity journalEntity, {
     String? linkedId,
     bool enqueueSync = true,
-    bool overrideComparison = false,
     Future<void> Function()? beforeNotify,
     Future<bool> Function()? precondition,
   });

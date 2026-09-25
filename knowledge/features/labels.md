@@ -5,8 +5,8 @@ description: A lightweight taxonomy with two separated concerns — definitions 
 resource: ../../lib/features/labels
 tags: [labels, taxonomy, ai-suggestions, assignment]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T03:00:00Z }
-stale_after: 2027-03-01
+generated: { by: claude-code/opus-5.5, at: 2026-09-25T20:00:00Z }
+stale_after: 2026-12-25
 sources:
   - id: src
     resource: ../../lib/features/labels
@@ -16,6 +16,14 @@ sources:
     resource: ../../lib/features/labels/repository/labels_repository.dart
     title: LabelsRepository — the write boundary
     last_modified: 2026-06-16
+  - id: journal-replication-spec
+    resource: ../../specs/tla/JournalReplication.tla
+    title: TLA+ model of journal entry replication, conflicts and the sidecar
+    last_modified: 2026-09-25
+  - id: adr-0083
+    resource: ../../docs/adr/0083-model-checked-journal-replication.md
+    title: ADR 0083 — model-checked journal replication
+    last_modified: 2026-09-25
 ---
 
 Labels are the app's lightweight taxonomy: more flexible than a single status,
@@ -88,6 +96,16 @@ removed and added ids from the old and replacement sets:
 
 **That coupling is deliberate.** "I removed this label from this task" is useful
 feedback for later AI suggestions.
+
+`setLabels()` and `suppressLabelOnTask()` write through `_writeOnStored`: the
+change is built on the stored entry under a new vector clock and applied only
+while that entry is still the stored one (a `precondition` in the write's
+transaction). When another version synced in meanwhile, the change is built
+again on it, up to three times. Before
+[ADR 0083](../../docs/adr/0083-model-checked-journal-replication.md) a refused
+write was forced with `overrideComparison` over the version that had arrived,
+and a suppression kept the task's own clock, so peers refused it as equal and
+it never synced.
 
 # Assignment UI
 

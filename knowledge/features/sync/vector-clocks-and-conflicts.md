@@ -5,7 +5,7 @@ description: How causal order is represented, why coveredVectorClocks is separat
 resource: ../../../lib/features/sync/vector_clock.dart
 tags: [sync, vector-clock, conflicts, causality]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-25T19:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-25T20:00:00Z }
 stale_after: 2026-12-25
 sources:
   - id: entity-receive
@@ -111,6 +111,22 @@ sources:
   - id: session-spec
     resource: ../../../specs/tla/EvolutionSession.tla
     title: TLA+ model of an evolution session and the version it adopts
+    last_modified: 2026-09-25
+  - id: journal-replication-spec
+    resource: ../../../specs/tla/JournalReplication.tla
+    title: TLA+ model of journal entry replication, conflicts and the sidecar
+    last_modified: 2026-09-25
+  - id: adr-0083
+    resource: ../../../docs/adr/0083-model-checked-journal-replication.md
+    title: ADR 0083 — model-checked journal replication
+    last_modified: 2026-09-25
+  - id: labels-repo
+    resource: ../../../lib/features/labels/repository/labels_repository.dart
+    title: LabelsRepository — label writes built on the stored entry
+    last_modified: 2026-09-25
+  - id: conflict-route
+    resource: ../../../lib/features/sync/ui/pages/conflicts/conflict_detail_route.dart
+    title: ConflictDetailRoute — the local side, deletion included
     last_modified: 2026-09-25
 ---
 
@@ -282,10 +298,45 @@ exactly why gap detection walks all hosts rather than only the originator.
 When detection yields `concurrent`, the payload lands as a `Conflict` row and
 the user resolves it in *Settings → Advanced → Conflicts*.
 
+## The journal write decision
+
+`JournalDb.updateJournalEntity` decides every journal write, local and
+received, in one transaction: it reads the stored row **with its deletion**
+(`entityByIdIncludingDeleted`) and compares clocks with `detectConflict`
+([ADR 0083](../../../docs/adr/0083-model-checked-journal-replication.md),
+`specs/tla/JournalReplication.tla`).
+
+| Stored vs incoming | Outcome |
+|--------------------|---------|
+| incoming newer | applied; the entry's open conflict is marked resolved **only if the written version includes it** (its clock covers the conflict's) |
+| equal or older | refused — a late copy of the version a deletion replaced included |
+| concurrent | refused and stored as the entry's `Conflict` row, **unless the open conflict already holds that version or a newer one** |
+| concurrent, both deleted | merged, no conflict: the canonically greater deletion's fields under the join of both clocks, the same row on every device |
+| incoming without a clock | refused over a clocked row; applied over a row without one |
+| stored without a clock | incoming applied |
+
+A deletion is therefore a version like any other: a late copy cannot bring a
+deleted entry back, and an edit made concurrently with a deletion is a
+delete-versus-edit conflict on both devices. Only a creation
+(`overwrite: false`) under a reused id replaces a deleted row outright, as it
+always has — under a clock that does not cover the deletion, so peers ask the
+user. Label writes (`LabelsRepository.setLabels`, `suppressLabelOnTask`) build
+on the stored entry under a new clock, conditional on it still being stored,
+and build again on a version that synced in meanwhile; nothing forces a write
+over the stored row any more.
+
+The conflict table holds **one row per entry**. A second concurrent version —
+from a third device, or a save of this device refused while a conflict is
+open — replaces the first on this device. A peer's version replaced this way
+is raised again from its own device; a refused local save replaced this way is
+lost. That is a residual awaiting a product decision (ADR 0083).
+
 ```mermaid
 stateDiagram-v2
     [*] --> Detected: incoming clock concurrent with local
     Detected: Detected (status = unresolved)
+    Detected --> Detected: a concurrent version not older than the open one replaces it
+    Detected --> Resolved: a version that includes it is written
     Detected --> Alerted: ConflictNotificationObserver inbox row → OS banner
     Alerted --> Reviewing: open conflict detail
     Detected --> Reviewing: open from settings list
@@ -330,13 +381,16 @@ base side. A *recommended* chip marks the no-data-loss option.
 When one side was soft-deleted while the other was edited
 (`ConflictShape.deletedOnLocal` / `deletedOnRemote`), the diff is replaced by a
 safe binary — keep the edited version or confirm the deletion — defaulting to
-keeping the edit.
+keeping the edit. The page reads the local side with its deletion
+(`journalEntityByIdIncludingDeleted`), so a deletion made on this device opens
+too; before ADR 0083 it showed "entry not found".
 
 All three paths resolve through `ConflictResolutionService`. `resolveToSide` /
 `buildMergedEntity` build the winner and stamp `VectorClock.merge(local,
 remote)`, so the written entity dominates both clocks;
-`PersistenceLogic.updateJournalEntity` applies it and the `detectConflict`
-write-gate auto-resolves the row.
+`PersistenceLogic.updateJournalEntity` applies it — keeping the stored row's
+labels, a deleted one's included — and the write decision marks the row
+resolved, because the written clock covers the conflict's.
 
 ## Proactive surfacing
 
