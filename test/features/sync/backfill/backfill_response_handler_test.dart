@@ -723,6 +723,13 @@ class _GeneratedBackfillResponseBench {
         invocation.positionalArguments.single as SyncMessage,
       );
     });
+    when(() => outboxService.enqueueMessageOrThrow(any())).thenAnswer((
+      invocation,
+    ) async {
+      bench.sentMessages.add(
+        invocation.positionalArguments.single as SyncMessage,
+      );
+    });
     when(
       () => outboxService.enqueueNotification(
         any(),
@@ -990,6 +997,9 @@ void main() {
     mockJournalDb = MockJournalDb();
     mockSequenceService = MockSyncSequenceLogService();
     mockOutboxService = MockOutboxService();
+    when(
+      () => mockOutboxService.enqueueMessageOrThrow(any()),
+    ).thenAnswer((_) async {});
     mockLogging = MockDomainLogger();
     mockVcService = MockVectorClockService();
 
@@ -1432,7 +1442,7 @@ void main() {
 
       // Should send unresolvable response for our own counter
       verify(
-        () => mockOutboxService.enqueueMessage(
+        () => mockOutboxService.enqueueMessageOrThrow(
           const SyncMessage.backfillResponse(
             hostId: aliceHostId,
             counter: 3,
@@ -1457,14 +1467,14 @@ void main() {
         when(
           () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 3),
         ).thenAnswer((_) async => null);
-        when(() => mockOutboxService.enqueueMessage(any())).thenThrow(
-          StateError('outbox unavailable'),
-        );
+        when(
+          () => mockOutboxService.enqueueMessageOrThrow(any()),
+        ).thenAnswer((_) async => throw StateError('outbox unavailable'));
 
         await handler.handleBackfillRequest(request);
 
         verify(
-          () => mockOutboxService.enqueueMessage(
+          () => mockOutboxService.enqueueMessageOrThrow(
             const SyncMessage.backfillResponse(
               hostId: aliceHostId,
               counter: 3,
@@ -1531,7 +1541,7 @@ void main() {
 
         // Should send unresolvable response for our own counter
         verify(
-          () => mockOutboxService.enqueueMessage(
+          () => mockOutboxService.enqueueMessageOrThrow(
             const SyncMessage.backfillResponse(
               hostId: aliceHostId,
               counter: 3,
@@ -1814,7 +1824,7 @@ void main() {
         // Should send unresolvable (our own counter, all covering entries
         // exhausted)
         verify(
-          () => mockOutboxService.enqueueMessage(
+          () => mockOutboxService.enqueueMessageOrThrow(
             any(
               that: isA<SyncBackfillResponse>()
                   .having((r) => r.hostId, 'hostId', aliceHostId)
@@ -1903,7 +1913,7 @@ void main() {
         await handler.handleBackfillRequest(request);
 
         final captured = verify(
-          () => mockOutboxService.enqueueMessage(captureAny()),
+          () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
         ).captured.cast<SyncMessage>();
 
         // Exactly one response — unresolvable. No covering entity sent.
@@ -2138,7 +2148,7 @@ void main() {
         await handler.handleBackfillRequest(request);
 
         final captured = verify(
-          () => mockOutboxService.enqueueMessage(captureAny()),
+          () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
         ).captured;
 
         expect(captured.length, 1);
@@ -2194,12 +2204,15 @@ void main() {
         await handler.handleBackfillRequest(request);
 
         final captured = verify(
+          () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
+        ).captured;
+        expect(captured, hasLength(1));
+        final payloads = verify(
           () => mockOutboxService.enqueueMessage(captureAny()),
         ).captured;
-        expect(captured, hasLength(2));
-        expect(captured[0], isA<SyncJournalEntity>());
+        expect(payloads, [isA<SyncJournalEntity>()]);
         expect(
-          captured[1],
+          captured.single,
           isA<SyncBackfillResponse>()
               .having((r) => r.hostId, 'hostId', aliceHostId)
               .having((r) => r.counter, 'counter', 3)
@@ -2294,7 +2307,7 @@ void main() {
         await handler.handleBackfillRequest(request);
 
         final captured = verify(
-          () => mockOutboxService.enqueueMessage(captureAny()),
+          () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
         ).captured.cast<SyncMessage>();
 
         expect(captured, hasLength(1));
@@ -2383,7 +2396,7 @@ void main() {
         await handler.handleBackfillRequest(request);
 
         final captured = verify(
-          () => mockOutboxService.enqueueMessage(captureAny()),
+          () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
         ).captured;
 
         expect(captured.length, 1);
@@ -2636,7 +2649,7 @@ void main() {
         );
 
         verify(
-          () => mockOutboxService.enqueueMessage(
+          () => mockOutboxService.enqueueMessageOrThrow(
             const SyncMessage.backfillResponse(
               hostId: aliceHostId,
               counter: 3,
@@ -3028,7 +3041,7 @@ void main() {
         await handler.handleBackfillRequest(request);
 
         final captured = verify(
-          () => mockOutboxService.enqueueMessage(captureAny()),
+          () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
         ).captured;
 
         expect(captured.length, 1);
@@ -3343,7 +3356,7 @@ void main() {
         await handler.handleBackfillRequest(request);
 
         final captured = verify(
-          () => mockOutboxService.enqueueMessage(captureAny()),
+          () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
         ).captured;
 
         expect(captured.length, 1);
@@ -4519,7 +4532,7 @@ void main() {
 
     void verifyNothingBurned() {
       verifyNever(
-        () => mockOutboxService.enqueueMessage(
+        () => mockOutboxService.enqueueMessageOrThrow(
           any(
             that: isA<SyncBackfillResponse>().having(
               (m) => m.unresolvable,
@@ -5037,7 +5050,7 @@ void main() {
 
       expect(outcome, OwnCounterSettlement.burned);
       verify(
-        () => mockOutboxService.enqueueMessage(
+        () => mockOutboxService.enqueueMessageOrThrow(
           const SyncMessage.backfillResponse(
             hostId: aliceHostId,
             counter: 3,

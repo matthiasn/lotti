@@ -2,8 +2,8 @@ part of 'backfill_response_handler_test.dart';
 
 // Model conformance: the real reservation, sequence-log and settlement code,
 // driven through generated operation traces, must keep the invariants that
-// `specs/tla/SyncSequence.tla` model-checks. TLC proves the design; these
-// traces check that the Dart code behaves like the design, over in-memory
+// `specs/tla/SyncSequence.tla` and `SyncPipeline.tla` model-check within their
+// configured bounds. These traces exercise the implementation over in-memory
 // databases, with a crash being a fresh service stack over the same stores.
 
 /// One step of a generated trace. `arg` picks among live reservations or
@@ -267,7 +267,11 @@ class _ConformanceBench {
       if (burnedEver.contains(counter)) {
         expect(status, SyncSequenceStatus.burned, reason: reason);
       }
-      if (status == SyncSequenceStatus.burned) burnedEver.add(counter);
+      if (status == SyncSequenceStatus.burned) {
+        // SyncPipeline: terminal settlement must have a durable marker.
+        expect(unresolvableSent, contains(counter), reason: reason);
+        burnedEver.add(counter);
+      }
     }
   }
 
@@ -280,6 +284,44 @@ class _ConformanceBench {
 
 void _registerModelConformance() {
   group('model conformance with specs/tla/SyncSequence.tla', () {
+    test('failed burn enqueue stays retryable across restart', () async {
+      // SyncPipeline's Reserve -> Abort -> FailBurnStage counterexample.
+      // Recovery must retain the pending intent until the marker is durable.
+      final bench = await _ConformanceBench.create();
+      try {
+        await bench.run(const _TraceStep(_TraceOp.reserveA, 0));
+        final counter = bench.live.single.counter;
+        await bench.run(const _TraceStep(_TraceOp.outboxDown, 0));
+        await bench.run(const _TraceStep(_TraceOp.release, 0));
+
+        final pending = await bench.syncDb.getEntryByHostAndCounter(
+          bench.host,
+          counter,
+        );
+        expect(pending?.status, SyncSequenceStatus.burnPending.index);
+        expect(bench.unresolvableSent, isEmpty);
+        expect(
+          await bench.log.settleableOwnCountersForHost(hostId: bench.host),
+          contains(counter),
+        );
+
+        await bench.run(const _TraceStep(_TraceOp.outboxUp, 0));
+        await bench.run(const _TraceStep(_TraceOp.crash, 0));
+        final settled = await bench.syncDb.getEntryByHostAndCounter(
+          bench.host,
+          counter,
+        );
+        expect(settled?.status, SyncSequenceStatus.burned.index);
+        expect(bench.unresolvableSent, {counter});
+        expect(
+          await bench.log.settleableOwnCountersForHost(hostId: bench.host),
+          isEmpty,
+        );
+      } finally {
+        await bench.close();
+      }
+    });
+
     glados.Glados(
       glados.any.syncTrace,
       glados.ExploreConfig(numRuns: 150),
