@@ -542,7 +542,9 @@ Future<File?> restoreDatabaseFromBackup(File file) async {
       );
       return null;
     }
-    await debugBeforeRecoveryRename?.call();
+    // Awaited only when a test sets it: `await null` would itself yield.
+    final beforeRename = debugBeforeRecoveryRename;
+    if (beforeRename != null) await beforeRename();
     final ts = DateFormat(_backupTimestampFormat).format(clock.now());
     if (file.existsSync()) {
       await file.rename('${file.path}.corrupt-$ts');
