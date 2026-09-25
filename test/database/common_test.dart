@@ -862,9 +862,11 @@ void main() {
 
         // Closing an ordinary connection beside a file that is not a
         // database deletes both companions, and the WAL holds exactly the
-        // commits a restore keeps beside the damaged file.
+        // commits a restore keeps beside the damaged file. The confirming
+        // read-only look may rebuild the -shm, an index of the WAL, but
+        // never removes it.
         expect(wal.readAsStringSync(), 'stale wal');
-        expect(shm.readAsStringSync(), 'stale shm');
+        expect(shm.existsSync(), isTrue);
         // A connection left to the garbage collector deletes them later, at
         // whatever moment its finalizer runs — in CI, mid-restore.
         if (Platform.isLinux) {
@@ -877,6 +879,46 @@ void main() {
         }
       },
     );
+
+    /// A live WAL database whose main file header is torn, as a read of the
+    /// main file in the middle of another connection's checkpoint can see
+    /// it. The writer keeps the connection open, and every commit — page 1
+    /// included — is still in its WAL, so SQLite's own readers read it whole.
+    Database liveDatabaseWithTornMainFile(String path) {
+      final writer = sqlite3.open(path)
+        ..execute('PRAGMA journal_mode = WAL')
+        ..execute('PRAGMA wal_autocheckpoint = 0')
+        ..execute('CREATE TABLE t (v TEXT)')
+        ..execute("INSERT INTO t VALUES ('live')");
+      File(path).openSync(mode: FileMode.append)
+        ..setPositionSync(0)
+        ..writeFromSync(List.filled(100, 0x41))
+        ..closeSync();
+      return writer;
+    }
+
+    test('a live database whose main file reads torn is readable: the '
+        'locking look sees it whole', () {
+      final path = p.join(testDirectory.path, 'db.sqlite');
+      final writer = liveDatabaseWithTornMainFile(path);
+      addTearDown(writer.close);
+
+      // The immutable look alone reads only the torn main file.
+      final immutable = sqlite3.open(
+        Uri.file(
+          path,
+        ).replace(queryParameters: const {'immutable': '1'}).toString(),
+        uri: true,
+      );
+      addTearDown(immutable.close);
+      expect(
+        () => immutable.select('PRAGMA schema_version'),
+        throwsA(isA<SqliteException>()),
+      );
+
+      expect(isReadableDatabaseFile(File(path)), isTrue);
+      expect(writer.select('SELECT v FROM t').single['v'], 'live');
+    });
 
     test('a WAL database whose rows are only in the WAL is readable, and the '
         'probe leaves the WAL as it found it', () {
@@ -946,6 +988,60 @@ void main() {
         ).listSync().whereType<File>().map((f) => p.basename(f.path)),
         ['db.sqlite'],
         reason: 'nothing should have been moved aside',
+      );
+    });
+
+    test('a live database another connection is checkpointing is never '
+        'replaced by a backup', () async {
+      final file = File(p.join(testDirectory.path, 'db.sqlite'));
+      final writer = sqlite3.open(file.path)
+        ..execute('PRAGMA journal_mode = WAL')
+        ..execute('PRAGMA wal_autocheckpoint = 0')
+        ..execute('CREATE TABLE t (v TEXT)')
+        ..execute("INSERT INTO t VALUES ('live')");
+      addTearDown(writer.close);
+      backupOf('db', '2026-09-05_11-00-00-000', 'older backup');
+      // The main file as a read in the middle of a checkpoint can see it.
+      file.openSync(mode: FileMode.append)
+        ..setPositionSync(0)
+        ..writeFromSync(List.filled(100, 0x41))
+        ..closeSync();
+
+      await recoverDatabaseIfUnreadable(file);
+
+      expect(writer.select('SELECT v FROM t').single['v'], 'live');
+      expect(
+        Directory(testDirectory.path)
+            .listSync()
+            .map((f) => p.basename(f.path))
+            .where(
+              (name) =>
+                  name.contains('.corrupt-') || name.contains('restore-tmp'),
+            ),
+        isEmpty,
+        reason: 'nothing may be moved aside or staged for a live database',
+      );
+    });
+
+    test('a file that reads again by the time the snapshot is staged is left '
+        'in place', () async {
+      // restoreDatabaseFromBackup is only called on a file judged unreadable;
+      // handing it a readable one stands in for a file that recovered while
+      // the snapshot was being copied.
+      final file = File(p.join(testDirectory.path, 'db.sqlite'));
+      writeDatabase(file.path, 'live');
+      backupOf('db', '2026-09-05_11-00-00-000', 'older backup');
+
+      final restored = await restoreDatabaseFromBackup(file);
+
+      expect(restored, isNull);
+      expect(markerOf(file.path), 'live');
+      expect(
+        Directory(
+          testDirectory.path,
+        ).listSync().whereType<File>().map((f) => p.basename(f.path)),
+        ['db.sqlite'],
+        reason: 'the staged copy is removed and nothing is moved aside',
       );
     });
 

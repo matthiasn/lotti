@@ -408,6 +408,11 @@ LazyDatabase openDbConnection(
   });
 }
 
+/// How long the confirming probe waits on a lock another connection holds.
+/// Only an unreadable first look pays it, and a probe that still cannot get
+/// the lock reports the file readable rather than risk a restore.
+const _probeBusyTimeoutMs = 2000;
+
 /// Whether [file] can still be opened and read as a SQLite database.
 ///
 /// Reads the header and the schema cookie only, so the cost does not grow
@@ -416,27 +421,49 @@ LazyDatabase openDbConnection(
 /// anything else (a lock, a missing file, a permission problem) is not a
 /// corruption verdict and reports `true` so the normal open path surfaces it.
 ///
-/// The probe opens the file `immutable`, so SQLite reads the main file and
-/// nothing beside it. An ordinary connection opens the `-wal`, and closing
-/// it beside a file that is not a database deletes that `-wal` and its
-/// `-shm` — the commits a restore keeps next to the damaged file. The
-/// connection is closed before returning, whatever the query did: a probe
-/// that left it to the garbage collector deleted the `-wal` at whatever
-/// moment the finalizer ran, sometimes in the middle of a restore.
+/// An unreadable verdict is what makes recovery replace the file, so it
+/// takes two looks that must agree:
+///
+/// 1. The file is opened `immutable`: SQLite reads the main file and nothing
+///    beside it, takes no lock, and never touches the `-wal`. Nearly every
+///    launch ends here, readable.
+/// 2. Only when that fails is it confirmed read-only (`mode=ro`) under
+///    SQLite's normal locking. Nothing guarantees this process is the only
+///    one with the file open — a second desktop instance can have it open,
+///    checkpointing — and an immutable read of a main file in the middle of a
+///    checkpoint can see a torn page. A locking reader sees a consistent
+///    snapshot, reading from the WAL whatever the main file does not yet
+///    hold, so a live database always passes it. A read-only connection
+///    closing beside a file that is not a database leaves the `-wal` in
+///    place; it may rebuild the `-shm`, which is only an index of the WAL.
+///
+/// An ordinary read-write connection would not do for either look: closing
+/// one beside a file that is not a database deletes the `-wal` and `-shm` —
+/// the commits a restore keeps next to the damaged file. Every connection is
+/// closed before returning, whatever the query did: a probe that left it to
+/// the garbage collector deleted the `-wal` at whatever moment the
+/// finalizer ran, sometimes in the middle of a restore.
 bool isReadableDatabaseFile(File file) {
   if (!file.existsSync()) return true;
+  return _probeReads(file, const {'immutable': '1'}) ||
+      _probeReads(file, const {'mode': 'ro'});
+}
+
+/// One look at [file] through a connection opened with [parameters]: `false`
+/// only when SQLite reports the file is not, or no longer, a database.
+bool _probeReads(File file, Map<String, String> parameters) {
   Database? database;
   try {
     final opened = sqlite3.open(
-      Uri.file(
-        file.path,
-      ).replace(queryParameters: const {'immutable': '1'}).toString(),
+      Uri.file(file.path).replace(queryParameters: parameters).toString(),
       uri: true,
     );
-    // Held before the query runs, not assigned from a cascade with it: a
+    // Held before the queries run, not assigned from a cascade with them: a
     // query that throws would otherwise leave nothing for `finally` to close.
     database = opened;
-    opened.select('PRAGMA schema_version');
+    opened
+      ..execute('PRAGMA busy_timeout = $_probeBusyTimeoutMs')
+      ..select('PRAGMA schema_version');
     return true;
   } on SqliteException catch (e) {
     return !_isUnreadableSource(e);
@@ -464,7 +491,12 @@ bool isReadableDatabaseFile(File file) {
 ///
 /// Snapshots are tried newest first, so a backup that is itself damaged does
 /// not block recovery from an older one. Returns `null` when nothing was
-/// restored — no backup directory, no snapshot, or none of them readable.
+/// restored — no backup directory, no snapshot, none of them readable, or a
+/// live file that reads again by the time the snapshot is staged.
+///
+/// The live file is probed once more right before it is moved aside. Copying
+/// a snapshot takes time, and a file that reads by then — whatever made the
+/// first verdict — must not be replaced by an older copy of itself.
 Future<File?> restoreDatabaseFromBackup(File file) async {
   final backupDir = Directory(p.join(file.parent.path, _backupDirectoryName));
   final stem = p.basenameWithoutExtension(file.path);
@@ -489,6 +521,16 @@ Future<File?> restoreDatabaseFromBackup(File file) async {
     } catch (_) {
       if (staged.existsSync()) await staged.delete();
       rethrow;
+    }
+    if (isReadableDatabaseFile(file)) {
+      await staged.delete();
+      DevLogger.warning(
+        name: 'Database',
+        message:
+            '${p.basename(file.path)} reads again; '
+            'leaving it in place instead of restoring a backup',
+      );
+      return null;
     }
     final ts = DateFormat(_backupTimestampFormat).format(clock.now());
     if (file.existsSync()) {

@@ -5,9 +5,13 @@ description: The eleven Drift/SQLite databases, attachment storage, how connecti
 resource: ../../lib/database
 tags: [architecture, persistence, drift, sqlite, migrations]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-24T18:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-25T09:00:00Z }
 stale_after: 2026-12-24
 sources:
+  - id: adr-0079
+    resource: ../../docs/adr/0079-recovery-never-replaces-a-live-database.md
+    title: ADR 0079 — recovery never replaces a live database
+    last_modified: 2026-09-25
   - id: screenshot-capture
     resource: ../../lib/utils/screenshots.dart
     title: Screenshot capture and process timeout
@@ -662,13 +666,7 @@ Those snapshots are also the recovery path. Every database opened through
 `openDbConnection` is probed before its connection is built
 (`recoverDatabaseIfUnreadable`): opening the file and reading its schema
 cookie costs nothing that grows with the database, and a header SQLite can no
-longer read means every query after it would fail. The probe
-(`isReadableDatabaseFile`) opens the file `immutable` and closes it before
-returning. An ordinary connection opens the `-wal` beside the file, and
-closing it beside a file that is not a database deletes the `-wal` and
-`-shm`; the probe once left that close to the garbage collector, which then
-deleted the WAL at an arbitrary moment — in one CI run, in the middle of the
-restore that was about to keep it. When that happens the
+longer read means every query after it would fail. When that happens the
 newest readable snapshot of the same store is copied to a scratch path and
 only moved into place once that copy has succeeded — a copy that fails
 partway must not leave the live path empty, or the open that follows would
@@ -681,6 +679,30 @@ file's WAL holds exactly the commits the snapshot is missing. A damaged snapshot
 one, and a store with no snapshot is left exactly as it was, so the failure
 surfaces where it always did. Recovery is best effort: a failure inside it is
 logged and the normal open proceeds.
+
+Because a wrong "unreadable" verdict replaces a database with an older copy,
+the probe (`isReadableDatabaseFile`) takes two looks that must agree
+([ADR 0079](../../docs/adr/0079-recovery-never-replaces-a-live-database.md)).
+The first opens the file `immutable`. It reads only the main file, takes no
+lock, never touches the `-wal`, and almost every launch stops here. Nothing
+guarantees the probe's process is alone with the file: the desktop builds
+have no single-instance lock, and a second handle on a store in the same
+process runs the probe too. An immutable read of a main file in the middle
+of another connection's checkpoint can see a torn page. So a failing first
+look is confirmed read-only (`mode=ro`) under SQLite's normal locking, with
+a busy timeout. That reader sees a consistent snapshot and takes whatever
+the main file does not yet hold from the WAL, so a database any connection
+can read passes it. A lock it cannot get counts as readable. The file is
+checked again right before it is moved aside, and a file that reads by then
+stays in place.
+
+Neither look uses a read-write connection: closing one beside a file that
+is not a database deletes the `-wal` and `-shm`, which hold the commits a
+restore keeps. A read-only connection leaves the `-wal` in place and may
+rebuild the `-shm`, which is only an index of the WAL. Every probe
+connection is closed before it returns. The probe once left that close to
+the garbage collector, which then deleted the WAL at an arbitrary moment; in
+one CI run that was in the middle of the restore that was about to keep it.
 
 *Settings → Advanced → Maintenance* also runs `PRAGMA quick_check` across the
 journal, sync, agent, editor and search stores on demand
