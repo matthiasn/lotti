@@ -1988,3 +1988,77 @@ individual saves and swallowed errors. The model excludes concurrent local
 writers, platform effects, theme-mode normalization, the greeting's bootstrap
 published marker, source staging, and transport loss; there is no automatic
 sequence-gap recovery for these families.
+
+## `EnvelopeChain` — signed provenance chains (a design model)
+
+**Written before the code, unlike every other spec here.** Record provenance
+signs each entry and hash-links it into a per-device, per-store chain. Phase 1
+built the envelope (`lib/features/provenance`); the key store, the chain in the
+write path and verification on ingest are still to come. This model fixes their
+design first, while it is cheap to change, and those phases must conform to it.
+Its header's action-to-code map fills in as they land. Per-store chains share
+nothing, so the model has one store.
+
+A device signs envelopes under its current key, each one `seq` past its chain's
+head with `prev` naming the head. The room delivers them and may forget any of
+them — the 30-day retention, or a lost delivery — and peers answer backfill. A
+receiver applies an envelope only when it extends the chain it holds (spec
+invariant I3), sees a second envelope for a held `seq` as a fork (I4), and
+never keeps anything past a revocation it knows (I2). A database can come back
+from an older backup while its key, in the keystore, survives. Signatures are
+abstracted: every envelope is validly signed by the key it names.
+
+| Property | Kind | Says |
+|----------|------|------|
+| `ChainContinuous` | invariant | a device's chain has no gap: its i-th envelope is at `seq` i - 1 |
+| `NoFork` | invariant | no two envelopes share a key and a `seq` |
+| `ForkNeverApplied` | invariant | however a fork arises, no device applies both sides |
+| `AcceptedIsPrefix` | invariant | what a device holds of each chain is a gap-free prefix |
+| `NoAcceptBeyondRevocation` | invariant | nothing is held past a revocation the device knows |
+| `EventuallyApplied` | liveness | every envelope reaches every other device, unless a revocation or a fork excuses it, or it was lost with a restored database, or it follows one that was |
+
+| Configuration | Devices | Envelopes | Adds | Distinct states |
+|---------------|--------:|----------:|------|----------------:|
+| `EnvelopeChain` | 2 | 3 | one restore, one revocation, the room forgetting anything | 11,561 |
+| `EnvelopeChainRevocation` | 3 | 3 | one revocation reaching a device that already accepted past it; no restore | 134,365 |
+
+Each design switch is the proposed design; set to `FALSE` (in a copy outside
+this directory) it has a counterexample:
+
+| Switch | Alternative | Counterexample |
+|--------|-------------|----------------|
+| `AtomicSeq` | `seq` from a separate durable counter, advanced before the envelope commits | `ChainContinuous`, five states: a crash between reserving and committing leaves a gap the chain can never close |
+| `RotateKeyOnRestore` | a restored device signs on under its surviving key | `NoFork`, five states: after the restore it signs a second envelope for a `seq` it had already signed |
+| `ServeEnvelopeLog` | backfill answers with a chain's latest envelope only, as journal backfill answers with the current row today | `EventuallyApplied`: the room forgets an envelope a receiver still needs, and no peer will hand out anything but the head |
+| `RetroactiveRevocation` | learning a revocation stops new acceptance but keeps what is held | `NoAcceptBeyondRevocation` in the revocation configuration, five states; with two devices the revoker is the only receiver, so the two-device configuration cannot show it |
+
+**The per-store decision is what makes `AtomicSeq` possible.** The chain for
+the journal lives in the journal database and commits in the write's own
+transaction; one chain across stores would need a transaction across databases.
+
+**Serving the envelope log is a requirement the current sync does not meet.**
+Journal backfill answers with the writer's current row, so it can never supply
+the historical envelope a receiver's chain is missing once retention has pruned
+it from the room. Envelopes need their own durable store and a backfill path
+that serves any of them.
+
+Two design questions the model surfaced, recorded rather than settled:
+
+- **Orphans.** A device is restored from a backup older than envelopes the room
+  then forgets before anyone received them. A later envelope of that chain,
+  still in the room, can never be shown to extend the chain, so a strict
+  receiver quarantines it for good — although today's sync would apply the
+  entry. The first counterexample TLC found for `EventuallyApplied` was exactly
+  this; the property now excuses such orphans (`Orphaned`). Options: the new
+  key's certificate declares where the old chain ends, or orphans are applied
+  marked "continuity unverified".
+- **Where a revocation cuts.** The revoker sets the last valid `seq` from the
+  chain as it holds it, so an honest envelope another device already applied
+  can fall past the cut and be dropped (the revocation counterexample shows
+  it). Whether the cut should come from more than the revoker's view is for
+  the key phase.
+
+Left out, deliberately: causal refs (I6) — a reference to an envelope that is
+lost or revoked could block its referrer forever, which a follow-up spec should
+settle — along with certificate delivery, signature forgery, content and its
+commitments, and the approval flow (to be modelled on `ChangeSetLifecycle`).

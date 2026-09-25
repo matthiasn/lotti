@@ -28,6 +28,10 @@ sources:
     resource: ../../lib/features/provenance/envelope_crypto.dart
     title: signEnvelope / verifyEnvelopeSignature / envelopeHash
     last_modified: 2026-09-26
+  - id: envelope-chain
+    resource: ../../specs/tla/EnvelopeChain.tla
+    title: EnvelopeChain design model
+    last_modified: 2026-09-26
   - id: phase0
     resource: ../../docs/implementation_plans/2026-09-25_record_provenance_phase0_mapping.md
     title: Record provenance Phase 0 mapping
@@ -118,6 +122,14 @@ journal, entry links, and any other store brought under provenance), rather than
 one chain across all of them. This answers decision D9 of the Phase 0 mapping.
 The envelope format does not change for it; which store a chain belongs to is for
 the chain phases to encode.
+
+**The chain design is model-checked before it is built.**
+[`EnvelopeChain`](../../specs/tla/README.md#envelopechain--signed-provenance-chains-a-design-model)
+fixes four rules the chain phases must follow: `seq` is assigned in the write's
+own transaction, a restored database signs on under a new key, backfill serves
+any envelope a peer holds rather than only the latest, and learning a revocation
+drops what was accepted past it. It also leaves two questions open for the key
+phase: envelopes orphaned by a restore, and where a revocation cuts.
 
 # Ed25519 and libsodium
 
