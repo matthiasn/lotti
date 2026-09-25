@@ -248,13 +248,13 @@ jobs:
       - test
       - glados
     env:
-      CS_ACCESS_TOKEN: ${{ secrets.CS_ACCESS_TOKEN }}
+      CS_ACCESS_TOKEN_AVAILABLE: ${{ secrets.CS_ACCESS_TOKEN != '' }}
     steps:
       # cs-coverage keys the upload to the checked-out commit, so it must run
       # from the repository root of this exact revision.
       - uses: actions/checkout@v5
       - uses: actions/download-artifact@v5
-        if: env.CS_ACCESS_TOKEN != ''
+        if: env.CS_ACCESS_TOKEN_AVAILABLE == 'true'
         with:
           pattern: coverage-*
           path: coverage-reports
@@ -262,7 +262,7 @@ jobs:
       # upload wins), so the eleven reports become one before a single upload.
       # Flutter emits line data only (DA records), hence line-coverage alone.
       - name: Merge coverage reports
-        if: env.CS_ACCESS_TOKEN != ''
+        if: env.CS_ACCESS_TOKEN_AVAILABLE == 'true'
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq lcov
@@ -273,10 +273,12 @@ jobs:
           mkdir -p coverage
           lcov "${args[@]}" --output-file coverage/lcov.info
       - name: Install CodeScene coverage CLI
-        if: env.CS_ACCESS_TOKEN != ''
+        if: env.CS_ACCESS_TOKEN_AVAILABLE == 'true'
         run: |
           curl -fsSL https://downloads.codescene.io/enterprise/cli/install-cs-coverage-tool.sh | bash -s -- -y
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - name: Upload coverage to CodeScene
-        if: env.CS_ACCESS_TOKEN != ''
+        if: env.CS_ACCESS_TOKEN_AVAILABLE == 'true'
+        env:
+          CS_ACCESS_TOKEN: ${{ secrets.CS_ACCESS_TOKEN }}
         run: cs-coverage upload --format "lcov" --metric "line-coverage" coverage/lcov.info
