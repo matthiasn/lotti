@@ -105,6 +105,11 @@ jobs:
           flags: standard
           name: standard-shard-${{ matrix.shard_label }}
           files: coverage/lcov.info
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-standard-${{ matrix.shard_label }}
+          path: coverage/lcov.info
+          retention-days: 1
 
   glados:
     name: Glados Property Tests (Linux)
@@ -161,6 +166,11 @@ jobs:
           fail_ci_if_error: true
           flags: glados
           files: coverage/lcov.info
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-glados
+          path: coverage/lcov.info
+          retention-days: 1
 
   performance:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
@@ -228,3 +238,45 @@ jobs:
           version: v11.2.8
           fail_ci_if_error: true
           run_command: send-notifications
+
+  codescene-coverage:
+    name: Upload Coverage to CodeScene
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    needs:
+      - test
+      - glados
+    env:
+      CS_ACCESS_TOKEN: ${{ secrets.CS_ACCESS_TOKEN }}
+    steps:
+      # cs-coverage keys the upload to the checked-out commit, so it must run
+      # from the repository root of this exact revision.
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v5
+        if: env.CS_ACCESS_TOKEN != ''
+        with:
+          pattern: coverage-*
+          path: coverage-reports
+      # CodeScene never merges one file's coverage across uploads (the latest
+      # upload wins), so the eleven reports become one before a single upload.
+      # Flutter emits line data only (DA records), hence line-coverage alone.
+      - name: Merge coverage reports
+        if: env.CS_ACCESS_TOKEN != ''
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lcov
+          args=()
+          for report in coverage-reports/*/lcov.info; do
+            args+=(--add-tracefile "$report")
+          done
+          mkdir -p coverage
+          lcov "${args[@]}" --output-file coverage/lcov.info
+      - name: Install CodeScene coverage CLI
+        if: env.CS_ACCESS_TOKEN != ''
+        run: |
+          curl -fsSL https://downloads.codescene.io/enterprise/cli/install-cs-coverage-tool.sh | bash -s -- -y
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Upload coverage to CodeScene
+        if: env.CS_ACCESS_TOKEN != ''
+        run: cs-coverage upload --format "lcov" --metric "line-coverage" coverage/lcov.info
