@@ -391,8 +391,9 @@ class MatrixOutboxService extends _OutboxServiceBase
   /// Enqueues [syncMessage] and propagates preparation or persistence failures
   /// after logging them.
   ///
-  /// Use this for user-initiated operations whose UI must distinguish a fully
-  /// queued batch from a partial or failed batch.
+  /// Use this when a caller must distinguish durable staging from failure:
+  /// user-initiated batches and recovery that terminalizes a sequence row only
+  /// after its payload or burn marker has reached the outbox.
   @override
   Future<void> enqueueMessageOrThrow(SyncMessage syncMessage) =>
       _enqueueMessage(syncMessage, rethrowFailure: true);

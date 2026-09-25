@@ -28,15 +28,16 @@ extension _BackfillResponseBuilders on BackfillResponseHandler {
   ///
   /// Always called on our own host — the callers in [_processBackfillEntry]
   /// and [_sendHintOrUnresolvable] gate on `hostId == myHost`. Enqueue the
-  /// outbound marker before terminalizing the local sequence row so a failed
-  /// outbox write leaves a retryable reservation/miss instead of silently
+  /// outbound marker with the failure-propagating API before terminalizing the
+  /// local sequence row so a failed outbox write leaves a retryable
+  /// reservation/miss instead of silently
   /// dropping the proactive repair signal.
   Future<void> _sendUnresolvableResponse({
     required String hostId,
     required int counter,
     SyncSequencePayloadType? payloadType,
   }) async {
-    await _outboxService.enqueueMessage(
+    await _outboxService.enqueueMessageOrThrow(
       SyncMessage.backfillResponse(
         hostId: hostId,
         counter: counter,
