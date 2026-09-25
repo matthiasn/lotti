@@ -38,7 +38,9 @@ turns consecutive rows into one bundle. Coalescing belongs there.
    `updateOutboxMessage` and its `filePath` promotion are deleted.
 2. **The processor collapses at send time.** For every entity with a claimed
    row, `OutboxProcessor._collapse` reads the entity's other pending and
-   failed rows (`collapsibleOutboxRows`), picks the newest version by vector
+   failed rows (`collapsibleOutboxRows`) — only rows of the same payload
+   family *and* outbox entry id, since two families can share an id (an
+   agent entity and an agent link) — picks the newest version by vector
    clock — or, for a clockless payload such as a config flag, the one
    enqueued last — and claims every row that version supersedes
    (`claimOutboxRows`, a compare-and-set on the status read). One message

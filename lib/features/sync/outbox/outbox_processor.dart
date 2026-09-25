@@ -72,6 +72,11 @@ class OutboxProcessor {
   final DomainLogger _loggingService;
   final DomainLogger? _domainLogger;
   final int bundleMaxSize;
+
+  /// The ids of the rows this pass claimed from the queue, as opposed to the
+  /// rows a collapse folded in. Retry scheduling and diagnostics follow the
+  /// claimed rows: a folded-in `error` row is already past the retry cap.
+  Set<int> _claimedIds = const {};
   final Duration retryDelay;
   final Duration errorDelay;
   final int maxRetriesForDiagnostics;
@@ -103,6 +108,7 @@ class OutboxProcessor {
     if (batch.isEmpty) {
       return OutboxProcessingResult.none;
     }
+    _claimedIds = {for (final row in batch) row.id};
 
     final List<_OutboxSend> sends;
     try {
@@ -186,16 +192,31 @@ class OutboxProcessor {
   }) async {
     // Rows are stored under the bare entry id, which other payload families
     // may share: only rows of the same family (the same collapse key) fold.
-    final others =
-        [
-          for (final row in await _repository.collapsibleRows(
-            claimed.first.row.outboxEntryId!,
-            excludeIds: claimedIds,
-          ))
-            CollapseCandidate.decode(row),
-        ]..removeWhere(
-          (c) => collapseKeyOf(c) != key || (!allowMedia && c.needsMedia),
+    final others = <CollapseCandidate>[];
+    for (final row in await _repository.collapsibleRows(
+      claimed.first.row.outboxEntryId!,
+      excludeIds: claimedIds,
+    )) {
+      // A row outside the batch is only a fold-in candidate. One that cannot
+      // be decoded is left alone: it fails on its own when it is claimed, and
+      // must not block the sends of the rows that were.
+      final CollapseCandidate candidate;
+      try {
+        candidate = CollapseCandidate.decode(row);
+      } catch (error, stackTrace) {
+        _loggingService.error(
+          LogDomain.sync,
+          error,
+          stackTrace: stackTrace,
+          subDomain: 'sendNext.collapse.skip',
         );
+        continue;
+      }
+      if (collapseKeyOf(candidate) == key &&
+          (allowMedia || !candidate.needsMedia)) {
+        others.add(candidate);
+      }
+    }
     final readNewest = newestOf([...claimed, ...others]);
     final wanted = [
       for (final c in others)
@@ -230,17 +251,27 @@ class OutboxProcessor {
       ? _repository.markRetry(rows.single)
       : _repository.markRetryBatch(rows);
 
-  /// Scheduling after a failed attempt over [rows]: straight on when a row
-  /// just reached the retry cap (the repository flipped it to error), else
-  /// after [delay]. [bundleSize] is set for a bundle, whose log line names
-  /// its head subject and size.
+  /// The rows of [rows] this pass claimed, or all of them when none was
+  /// (a collapse only ever adds to claimed rows).
+  List<OutboxItem> _claimedOf(List<OutboxItem> rows) {
+    final claimed = rows.where((row) => _claimedIds.contains(row.id)).toList();
+    return claimed.isEmpty ? rows : claimed;
+  }
+
+  /// Scheduling after a failed attempt over [rows]: straight on when a
+  /// claimed row just reached the retry cap (the repository flipped it to
+  /// error), else after [delay]. Folded-in `error` rows are past the cap
+  /// already and do not count, or one of them would turn every retry of the
+  /// newer rows into a zero-delay loop. [bundleSize] is set for a bundle,
+  /// whose log line names its head subject and size.
   OutboxProcessingResult _retryResult(
     List<OutboxItem> rows, {
     required Duration delay,
     required String? subject,
     int? bundleSize,
   }) {
-    final capReached = rows.any(
+    final claimed = _claimedOf(rows);
+    final capReached = claimed.any(
       (row) => row.retries + 1 >= maxRetriesForDiagnostics,
     );
     if (capReached) {
@@ -249,10 +280,10 @@ class OutboxProcessor {
           LogDomain.sync,
           bundleSize == null
               ? 'retryCapReached subject=$subject '
-                    'attempts=${rows.first.retries + 1} '
+                    'attempts=${claimed.first.retries + 1} '
                     'status=error → skip/head-advance'
               : 'retryCapReached headSubject=$subject size=$bundleSize '
-                    'attempts=${rows.first.retries + 1} '
+                    'attempts=${claimed.first.retries + 1} '
                     'status=error → skip/head-advance',
           subDomain: 'retry.cap',
         );
@@ -273,7 +304,7 @@ class OutboxProcessor {
 
   Future<OutboxProcessingResult> _processSingle(_OutboxSend send) async {
     final rows = send.rows;
-    final head = rows.first;
+    final head = _claimedOf(rows).first;
     // Tracks whether the rows have already been committed as sent so the
     // exception handler below does not revive them. Without this, a throw
     // from the post-send observability path (hasMorePending, logging) would
@@ -368,7 +399,8 @@ class OutboxProcessor {
     // rotten head row eventually flips to error and the next drain claims a
     // smaller bundle without it.
     final rows = [for (final send in sends) ...send.rows];
-    final headSubject = rows.first.subject;
+    final head = _claimedOf(rows).first;
+    final headSubject = head.subject;
     final bundleSize = sends.length;
 
     var markedSent = false;
@@ -390,7 +422,7 @@ class OutboxProcessor {
           );
 
       if (!success) {
-        final nextAttempts = rows.first.retries + 1;
+        final nextAttempts = head.retries + 1;
         await _repository.markRetryBatch(rows);
         _syncLog(
           'bundleSendFail size=$bundleSize headSubject=$headSubject '
@@ -443,7 +475,7 @@ class OutboxProcessor {
       if (markedSent) {
         return OutboxProcessingResult.schedule(Duration.zero);
       }
-      final nextAttempts = rows.first.retries + 1;
+      final nextAttempts = head.retries + 1;
       await _repository.markRetryBatch(rows);
       _trackFailure(headSubject);
       try {

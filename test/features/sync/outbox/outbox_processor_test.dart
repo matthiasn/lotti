@@ -14,6 +14,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -2059,6 +2060,49 @@ void main() {
         failed: OutboxStatus.sent.index,
         newer: OutboxStatus.sent.index,
       });
+    });
+
+    test('an undecodable row outside the batch is skipped, not allowed to '
+        'block the sends of the claimed rows', () async {
+      final broken = await db.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.error.index),
+          subject: const Value('broken'),
+          message: const Value('{not json'),
+          outboxEntryId: const Value('agent-1'),
+          retries: const Value(3),
+          createdAt: Value(DateTime(2026, 9, 25, 12)),
+          updatedAt: Value(DateTime(2026, 9, 25, 12)),
+        ),
+      );
+      final pending = await append(agentAt({'host': 2}), entryId: 'agent-1');
+
+      await drain();
+
+      expect(
+        (wire.single as SyncAgentEntity).agentEntity!.vectorClock!.vclock,
+        {'host': 2},
+      );
+      expect(await statuses(), {
+        broken: OutboxStatus.error.index,
+        pending: OutboxStatus.sent.index,
+      });
+    });
+
+    test('a folded-in failed row does not turn the retry of a new row into a '
+        'zero-delay loop', () async {
+      when(() => sender.send(any())).thenAnswer((_) async => false);
+      await append(
+        agentAt({'host': 1}),
+        entryId: 'agent-1',
+        status: OutboxStatus.error,
+        retries: 3,
+      );
+      await append(agentAt({'host': 2}), entryId: 'agent-1');
+
+      final result = await processor.processQueue();
+
+      expect(result.nextDelay, SyncTuning.outboxRetryDelay);
     });
 
     test('a config flag collapses to the value enqueued last', () async {

@@ -199,7 +199,9 @@ counter, so concurrent enqueues of one entity cannot overwrite each other.
 
 The processor coalesces instead. For each entity with a row in the claimed
 batch, `OutboxProcessor._collapse` reads the entity's other `pending` and
-`error` rows (`collapsibleOutboxRows`), picks the newest version and claims
+`error` rows (`collapsibleOutboxRows`) — only rows of the same payload family
+*and* outbox entry id, because two families can share an id (an agent entity
+and an agent link) — picks the newest version and claims
 every row that version supersedes (`claimOutboxRows`, a compare-and-set on the
 status it read). The rules live in `outbox_collapse.dart`:
 
@@ -218,7 +220,11 @@ status it read). The rules live in `outbox_collapse.dart`:
   supersedes is folded in and marked sent with it, so the monitor's Retry can
   never resend a stale value after a newer one went out.
 
-Every collapsed row is marked sent with the send, or retried with it.
+Every collapsed row is marked sent with the send, or retried with it. A
+row outside the batch that cannot be decoded is skipped, not allowed to fail
+the send; it fails on its own when claimed. Retry pacing follows the rows the
+pass claimed: a folded-in `error` row is past the cap already and does not
+turn the retries of newer rows into a zero-delay loop.
 `specs/tla/Outbox.tla` model-checks the rules.
 
 # File payload identity follows the claimed generation

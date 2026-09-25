@@ -133,12 +133,13 @@ failed for good) held already.
   a clock or timestamp that the receiver compares; or stop timing sends out
   while the SDK still retries them. Each changes the wire or the protocol and
   needs a decision.
-- **Residual: Retry on an old failed row sends a stale value.** A row in
-  `error` stays there while newer versions of its entity go out, and the
-  monitor's Retry sends it after them (twenty steps). Options: drop an
-  `error` row once a newer row of its entity is sent; merge a retried row
-  into the newest pending one; or hide Retry on a superseded row. Each
-  changes what the monitor shows and needs a decision.
+- **Residual (resolved by ADR 0086): Retry on an old failed row sent a
+  stale value.** A row in `error` stayed there while newer versions of its
+  entity went out, and the monitor's Retry sent it after them (twenty
+  steps). Under ADR 0086 a newer send settles the superseded failed rows of
+  its entity. Two narrower cases remain there: a bundled send leaves a
+  failed row that owes an attachment alone, and removing the newer row
+  before retrying an older one is the user's own reversal.
 - **Residual: a clockless payload follows its callers' order.** Two callers
   setting one config flag at once enqueue in whichever order their writes
   finish; the lock only makes the last enqueue win.
