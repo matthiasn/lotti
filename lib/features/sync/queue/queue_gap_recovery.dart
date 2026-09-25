@@ -146,7 +146,7 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
 
     return _runBackwardBootstrap(
       room: room,
-      untilTimestamp: marker.resumeFloorTs ?? marker.lastAppliedTs,
+      untilTimestamp: marker.backwardWalkBound,
     );
   }
 
@@ -156,11 +156,19 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
   }) async {
     final walkStartedAtFloorRevision = _queue.resumeFloorRevision(room.id);
     AttachmentAwareBootstrapSink? attachmentSink;
-    final queueSink = QueueBootstrapSink(
+    late final QueueBootstrapSink queueSink;
+    queueSink = QueueBootstrapSink(
       queue: _queue,
       logging: _logging,
       decryptEvent: _decryptBootstrapEvent,
       onDecryptedEvent: (event) => attachmentSink?.addDecryptedEvent(event),
+      // Pages arrive oldest first, so a page's newest event is how far
+      // the walk has captured (`CheckpointForward` in InboundQueue.tla).
+      onPageQueued: (newestTs) => _queue.checkpointResumeWalk(
+        roomId: room.id,
+        coveredThroughTs: newestTs,
+        unresolvedFloorTs: queueSink.oldestUnresolvedTs,
+      ),
     );
     attachmentSink = _attachmentIngestor == null
         ? null
@@ -455,26 +463,43 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
     return _readMarkerForRoom(roomId);
   }
 
+  Future<void> _claimWalkRange(String roomId) => _queue.claimAboveMarker(
+    roomId: roomId,
+    readAppliedTs: () => _readAppliedTs(roomId),
+    walkLocal: true,
+  );
+
+  /// The applied timestamp the bridge would read for [roomId], without the
+  /// floor: the queue marker, or the legacy settings marker while the queue
+  /// marker has not advanced. Claims resolve through this inside the floor's
+  /// serialized writes, where reading the floor again would wait on itself.
+  Future<int?> _readAppliedTs(String roomId) async =>
+      _appliedTsOf(await _readMarkerRow(roomId));
+
+  Future<QueueMarkerItem?> _readMarkerRow(String roomId) => (_syncDb.select(
+    _syncDb.queueMarkers,
+  )..where((t) => t.roomId.equals(roomId))).getSingleOrNull();
+
+  Future<int?> _appliedTsOf(QueueMarkerItem? row) async {
+    final ts = row?.lastAppliedTs ?? 0;
+    return ts > 0 ? ts : getLastReadMatrixEventTs(_settingsDb);
+  }
+
   Future<BridgeMarker> _readMarkerForRoom(String roomId) async {
     // This accessor first retries any process-local floor retained after a
     // transient database failure. In particular, the to-device key trigger
     // must not gate on the raw table and skip the only signal that a bridge is
     // required.
     final retainedFloorTs = await _queue.resumeFloorTs(roomId);
-    final marker = await (_syncDb.select(
-      _syncDb.queueMarkers,
-    )..where((t) => t.roomId.equals(roomId))).getSingleOrNull();
+    final marker = await _readMarkerRow(roomId);
+    final ts = await _appliedTsOf(marker);
     if (marker == null) {
-      final legacy = await getLastReadMatrixEventTs(_settingsDb);
       return BridgeMarker(
-        lastAppliedTs: legacy,
+        lastAppliedTs: ts,
         lastAppliedEventId: null,
         resumeFloorTs: retainedFloorTs,
       );
     }
-    final ts = marker.lastAppliedTs > 0
-        ? marker.lastAppliedTs
-        : await getLastReadMatrixEventTs(_settingsDb);
     return BridgeMarker(
       lastAppliedTs: ts,
       resumeFloorTs: retainedFloorTs ?? marker.resumeFloorTs,
@@ -489,12 +514,28 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
     );
   }
 
+  /// Runs [walk] in [roomId]'s walk lane, after claiming the range above
+  /// the marker for it.
+  ///
+  /// Every walk enqueues events newer than the marker before it has
+  /// fetched all of them: a backward walk pages the tip first, and a
+  /// forward walk can stop early on a budget or an error while live events
+  /// keep applying. Once one of those applies, the anchor passes the part
+  /// still unfetched, and a retry — or the startup walk after a crash —
+  /// forward-walking from it would skip that part for good. The claim is a
+  /// floor one above the marker. It is walk-local (it does not invalidate
+  /// the walk's own completion), a completed walk clears it, and an
+  /// incomplete one leaves it for the next pass (`ClaimOnWalk` in
+  /// `specs/tla/InboundQueue.tla`).
   Future<T> _serializeResumeFloorWalk<T>(
     String roomId,
     Future<T> Function() walk,
   ) {
     final previous = _resumeFloorWalkTails[roomId] ?? Future<void>.value();
-    final result = previous.then<T>((_) => walk());
+    final result = previous.then<T>((_) async {
+      await _claimWalkRange(roomId);
+      return walk();
+    });
     final tail = result.then<void>(
       (_) {},
       onError: (Object _, StackTrace _) {},

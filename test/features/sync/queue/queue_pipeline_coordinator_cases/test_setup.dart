@@ -133,6 +133,9 @@ class _QueueCoordinatorTestSetup {
       when(() => sessionManager.client).thenReturn(client);
       when(() => roomManager.currentRoomId).thenReturn(roomId);
       when(() => roomManager.currentRoom).thenReturn(null);
+      // Start and every walk read the marker to claim the range above it;
+      // no legacy marker unless a test says otherwise.
+      when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
       when(() => seeder.seedIfAbsent(any())).thenAnswer((_) async => true);
       when(() => queue.pruneStrandedEntries(any())).thenAnswer((_) async => 0);
       when(worker.start).thenAnswer((_) async {});
@@ -175,7 +178,28 @@ class _QueueCoordinatorTestSetup {
           roomId: any<String>(named: 'roomId'),
           originTs: any<int>(named: 'originTs'),
         ),
-      ).thenAnswer((_) async {});
+      ).thenAnswer(
+        (_) async {},
+      ); // The mock resolves a claim the way the queue does: read the applied
+      // marker, then lower the floor one above it.
+      when(
+        () => queue.claimAboveMarker(
+          roomId: any<String>(named: 'roomId'),
+          readAppliedTs: any(named: 'readAppliedTs'),
+          walkLocal: any(named: 'walkLocal'),
+        ),
+      ).thenAnswer((invocation) async {
+        final roomId = invocation.namedArguments[#roomId] as String;
+        final read =
+            invocation.namedArguments[#readAppliedTs]
+                as Future<int?> Function();
+        final floor = ((await read()) ?? 0) + 1;
+        if (invocation.namedArguments[#walkLocal] == true) {
+          await queue.lowerResumeFloorFromWalk(roomId: roomId, originTs: floor);
+        } else {
+          await queue.lowerResumeFloor(roomId: roomId, originTs: floor);
+        }
+      });
     });
 
     tearDown(() async {
@@ -185,6 +209,12 @@ class _QueueCoordinatorTestSetup {
       await journalDb.close();
     });
   }
+
+  /// Consumes the claim `start()` makes before anything can apply: the
+  /// floor one above the room's (absent) marker.
+  void verifyStartClaim() => verify(
+    () => queue.lowerResumeFloor(roomId: roomId, originTs: 1),
+  ).called(1);
 
   QueuePipelineCoordinator build({
     AttachmentIngestor? attachmentIngestor,

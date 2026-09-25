@@ -29,6 +29,7 @@ class QueueBootstrapSink implements BootstrapSink {
     this._cancelSignal,
     this.decryptEvent,
     this.onDecryptedEvent,
+    this.onPageQueued,
   }) {
     // Register the cancel handler eagerly so cancellation that lands
     // between pages (while `_waitForDrain` is not currently awaiting)
@@ -45,6 +46,11 @@ class QueueBootstrapSink implements BootstrapSink {
   final Future<void>? _cancelSignal;
   final BootstrapEventDecryptor? decryptEvent;
   final BootstrapDecryptedEventHandler? onDecryptedEvent;
+
+  /// Called with the newest origin timestamp of a page once every event
+  /// of it is durably captured: plaintext queued, ciphertext recorded in
+  /// the floor. A forward walk checkpoints its floor here.
+  final Future<void> Function(int newestTs)? onPageQueued;
 
   bool _cancelled = false;
   int _lastAcceptedCount = 0;
@@ -126,6 +132,16 @@ class QueueBootstrapSink implements BootstrapSink {
     }
 
     final enqueue = await _queue.appendBootstrapPage(forQueue);
+
+    final pageQueued = onPageQueued;
+    if (pageQueued != null && events.isNotEmpty) {
+      var newestTs = events.first.originServerTs.millisecondsSinceEpoch;
+      for (final event in events) {
+        final ts = event.originServerTs.millisecondsSinceEpoch;
+        if (ts > newestTs) newestTs = ts;
+      }
+      await pageQueued(newestTs);
+    }
 
     // Ciphertext counts as observed progress. A zero here means the page was
     // stale/irrelevant and lets the catch-up strategy continue past a cache

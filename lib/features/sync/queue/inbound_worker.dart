@@ -147,50 +147,67 @@ class InboundWorker {
     }
   }
 
+  /// Drains until [stop]. A throw from one iteration — a peek, or the
+  /// batch's phase-2 transaction, both of which roll back and leave the
+  /// row leased until its lease expires — is logged and the loop carries
+  /// on after [_idleTick]. Ending the loop instead would leave every
+  /// queued row stranded until the coordinator restarts, since nothing
+  /// else calls [start] while the coordinator is running
+  /// (`QueuedEventuallySettled` in `specs/tla/InboundQueue.tla`).
   Future<void> _loop() async {
     try {
       while (_running) {
-        await _waitUntilIdleOrStopped();
-        if (!_running) break;
-
-        // Subscribe to depthChanges BEFORE peeking so an enqueue that
-        // lands during the peek cannot be missed: if the subscription
-        // were attached after a peek-empty outcome, the signal for an
-        // enqueue in that gap would land on a dead stream.
-        final depthTrigger = Completer<void>();
-        final depthSub = _queue.depthChanges.listen((_) {
-          if (!depthTrigger.isCompleted) depthTrigger.complete();
-        });
-
-        final batch = await _queue.peekBatchReady(
-          maxBatch: SyncTuning.inboundWorkerBatchSize,
-        );
-        if (batch.isEmpty) {
-          try {
-            await _waitForWork(depthTrigger.future);
-          } finally {
-            await depthSub.cancel();
-          }
-          continue;
+        try {
+          await _iterate();
+        } catch (error, stackTrace) {
+          _logging.error(
+            LogDomain.sync,
+            error,
+            stackTrace: stackTrace,
+            subDomain: '$_logSub.loop',
+          );
+          await _pauseAfterError();
         }
-        await depthSub.cancel();
-        await _runBatch(batch);
       }
-    } catch (error, stackTrace) {
-      _logging.error(
-        LogDomain.sync,
-        error,
-        stackTrace: stackTrace,
-        subDomain: '$_logSub.loop',
-      );
     } finally {
-      // Clear `_running` even when the loop exits via the catch block
-      // so a later `start()` can relaunch the worker cleanly. Without
-      // this the worker would silently stop processing after any
-      // uncaught error inside the loop body.
       _running = false;
       _loopCompleted?.complete();
     }
+  }
+
+  Future<void> _iterate() async {
+    await _waitUntilIdleOrStopped();
+    if (!_running) return;
+
+    // Subscribe to depthChanges BEFORE peeking so an enqueue that
+    // lands during the peek cannot be missed: if the subscription
+    // were attached after a peek-empty outcome, the signal for an
+    // enqueue in that gap would land on a dead stream.
+    final depthTrigger = Completer<void>();
+    final depthSub = _queue.depthChanges.listen((_) {
+      if (!depthTrigger.isCompleted) depthTrigger.complete();
+    });
+
+    final List<InboundQueueEntry> batch;
+    try {
+      batch = await _queue.peekBatchReady(
+        maxBatch: SyncTuning.inboundWorkerBatchSize,
+      );
+      if (batch.isEmpty) {
+        await _waitForWork(depthTrigger.future);
+        return;
+      }
+    } finally {
+      await depthSub.cancel();
+    }
+    await _runBatch(batch);
+  }
+
+  /// Waits [_idleTick] or until [stop], so a persistent failure does not
+  /// spin the loop.
+  Future<void> _pauseAfterError() async {
+    final stopFuture = _stopRequested?.future ?? Future<void>.value();
+    await Future.any<void>([stopFuture, Future<void>.delayed(_idleTick)]);
   }
 
   /// Awaits whichever of the activity gate or the stop signal resolves

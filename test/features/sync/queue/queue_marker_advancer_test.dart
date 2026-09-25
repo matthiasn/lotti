@@ -198,6 +198,136 @@ void main() {
     );
 
     test(
+      'a checkpoint moves the walk claim up to one above its cursor, or to '
+      'the oldest ciphertext the walk still holds, without moving the '
+      'revision its completion compares against',
+      () async {
+        final revisionAtWalkStart = advancer.resumeFloorRevision(_roomA);
+        // The walk's claim above a marker at 5000.
+        await advancer.lowerResumeFloorFromWalk(
+          roomId: _roomA,
+          originTs: 5001,
+        );
+
+        await advancer.checkpointResumeWalk(
+          roomId: _roomA,
+          coveredThroughTs: 7000,
+          unresolvedFloorTs: null,
+        );
+        expect(await advancer.resumeFloorTs(_roomA), 7001);
+
+        await advancer.checkpointResumeWalk(
+          roomId: _roomA,
+          coveredThroughTs: 9000,
+          unresolvedFloorTs: 6000,
+        );
+        expect(
+          await advancer.resumeFloorTs(_roomA),
+          6000,
+          reason: 'ciphertext the walk could not resolve keeps the floor',
+        );
+        expect(advancer.resumeFloorRevision(_roomA), revisionAtWalkStart);
+
+        await advancer.completeResumeWalk(
+          roomId: _roomA,
+          walkStartedAtFloorRevision: revisionAtWalkStart,
+          unresolvedFloorTs: null,
+        );
+        expect(
+          await advancer.resumeFloorTs(_roomA),
+          isNull,
+          reason: 'the checkpoints left the completion compare-and-set intact',
+        );
+      },
+    );
+
+    test(
+      'a checkpoint lands even after a newer floor observation: that '
+      'event is above the cursor or was passed by the walk',
+      () async {
+        final revisionAtWalkStart = advancer.resumeFloorRevision(_roomA);
+        await advancer.lowerResumeFloorFromWalk(
+          roomId: _roomA,
+          originTs: 5001,
+        );
+        // Live ciphertext newer than the walk's cursor.
+        await advancer.lowerResumeFloor(roomId: _roomA, originTs: 8000);
+
+        await advancer.checkpointResumeWalk(
+          roomId: _roomA,
+          coveredThroughTs: 7000,
+          unresolvedFloorTs: null,
+        );
+        expect(await advancer.resumeFloorTs(_roomA), 7001);
+
+        await advancer.completeResumeWalk(
+          roomId: _roomA,
+          walkStartedAtFloorRevision: revisionAtWalkStart,
+          unresolvedFloorTs: null,
+        );
+        expect(
+          await advancer.resumeFloorTs(_roomA),
+          7001,
+          reason:
+              'the completion compare-and-set still keeps the live '
+              'observation from being cleared',
+        );
+      },
+    );
+
+    test(
+      'a claim sits one above the applied marker, and a claim whose marker '
+      'read throws is retained and resolved by the next floor persist '
+      '(RetainFailedClaim in InboundQueue.tla: the claim was lost, so a '
+      'post-gap event could apply past the unclaimed range)',
+      () async {
+        var reads = 0;
+        Future<int?> flakyRead() async {
+          reads++;
+          if (reads == 1) throw StateError('database is locked');
+          return 5000;
+        }
+
+        await expectLater(
+          advancer.claimAboveMarker(
+            roomId: _roomA,
+            readAppliedTs: flakyRead,
+          ),
+          throwsStateError,
+        );
+        expect((await readMarker())?.resumeFloorTs, isNull);
+
+        await advancer.ensureResumeFloorPersisted(_roomA);
+
+        expect(reads, 2);
+        expect((await readMarker())?.resumeFloorTs, 5001);
+        expect(
+          advancer.resumeFloorRevision(_roomA),
+          1,
+          reason: 'a claim is an observation that invalidates a walk',
+        );
+
+        // Resolved once: later persists read nothing.
+        await advancer.ensureResumeFloorPersisted(_roomA);
+        expect(reads, 2);
+      },
+    );
+
+    test(
+      'a walk-local claim with no marker claims the whole history and '
+      'leaves the revision alone',
+      () async {
+        await advancer.claimAboveMarker(
+          roomId: _roomA,
+          readAppliedTs: () async => null,
+          walkLocal: true,
+        );
+        expect((await readMarker())?.resumeFloorTs, 1);
+        expect(advancer.resumeFloorRevision(_roomA), 0);
+      },
+    );
+
+    test(
       'walk-local observations do not invalidate their own completion CAS',
       () async {
         await advancer.lowerResumeFloor(roomId: _roomA, originTs: 1000);

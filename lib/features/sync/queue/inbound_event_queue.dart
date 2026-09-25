@@ -80,6 +80,30 @@ class InboundQueue {
     unresolvedFloorTs: unresolvedFloorTs,
   );
 
+  /// Claims everything above [roomId]'s applied marker for the next
+  /// catch-up. See [QueueMarkerAdvancer.claimAboveMarker].
+  Future<void> claimAboveMarker({
+    required String roomId,
+    required Future<int?> Function() readAppliedTs,
+    bool walkLocal = false,
+  }) => _markerAdvancer.claimAboveMarker(
+    roomId: roomId,
+    readAppliedTs: readAppliedTs,
+    walkLocal: walkLocal,
+  );
+
+  /// Raises an in-flight forward walk's floor to the events it has
+  /// captured so far. See [QueueMarkerAdvancer.checkpointResumeWalk].
+  Future<void> checkpointResumeWalk({
+    required String roomId,
+    required int coveredThroughTs,
+    required int? unresolvedFloorTs,
+  }) => _markerAdvancer.checkpointResumeWalk(
+    roomId: roomId,
+    coveredThroughTs: coveredThroughTs,
+    unresolvedFloorTs: unresolvedFloorTs,
+  );
+
   /// The durable floor for [roomId], or null when nothing is outstanding.
   Future<int?> resumeFloorTs(String roomId) =>
       _markerAdvancer.resumeFloorTs(roomId);

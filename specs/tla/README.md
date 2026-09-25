@@ -1158,6 +1158,111 @@ What the model leaves out, deliberately or as a residual:
 - The claim lease is kept, although a drain now releases every orphaned
   claim before it starts, as a second guard behind the quiesce.
 
+## `InboundQueue` — Matrix events into the queue, and the marker that resumes them
+
+One room's inbound pipeline: timeline events reaching `inbound_event_queue`
+live (`QueuePipelineCoordinator._handleLiveEvent`, in stream order) and
+through catch-up walks (`BridgeCoordinator`, `QueueGapRecovery`: forward from
+the applied anchor, or backward from the tip), the worker leasing, applying,
+retrying and abandoning rows (`InboundWorker`, `InboundQueue`), the per-room
+`queue_markers` row — the applied marker (`QueueMarkerAdvancer.advanceIfNewer`)
+and the resume floor with its revision compare-and-set — resurrection of
+abandoned rows, and stop, start and crash. `SyncSequence` is the layer above:
+it models counters and peer backfill, not how timeline events are consumed.
+
+An event's number is both its timeline position and its origin timestamp, so
+equal-millisecond collisions are left out. The durable marker decides what
+the next catch-up fetches after a crash: the forward walk from the anchor
+when `BridgeMarker.anchorIsSafe`, otherwise the backward walk down to
+`BridgeMarker.backwardWalkBound`. The decision is
+[ADR 0084](../../docs/adr/0084-model-checked-inbound-queue.md).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `NoSilentLoss` | invariant | every event the homeserver holds is captured (a queue row in any status, abandoned included) or fetched by the catch-up the durable marker selects; a crash at any step loses nothing |
+| `HeldIsLeased` | invariant | the worker holds only a row it leased |
+| `CapHolds` | invariant | no row is resurrected past its hard cap |
+| `MarkerMonotone` | action | `last_applied_ts` and the anchor never move back |
+| `AppliedIsFinal` | action | an applied row stays applied: nothing re-arms a committed row, and a duplicate is ignored by the `event_id` UNIQUE constraint |
+| `QueuedEventuallySettled` | liveness | every queued event is eventually applied or dead-lettered (abandoned) |
+| `EventuallyCaptured` | liveness | every plaintext event the homeserver holds is eventually captured |
+
+| Configuration | Events | Crashes/stops | Faults (one of) | Distinct states |
+|---------------|--------|---------------|-----------------|-----------------|
+| `InboundQueue` | 3, one on the server at the first start | 1 | failed enqueue, failed claim read, incomplete walk, worker throw; one retry, two resurrection passes (hard cap one), a gap-recovery walk | 40,494,743 |
+| `InboundQueueCipher` | 3, event 2 encrypted until its key arrives | 1 | failed resume-floor write, failed enqueue | 1,607,563 |
+| `InboundQueueCrash` | 4 | 2 | incomplete walk, failed claim read | 3,484,605 |
+| `InboundQueueLiveness` | 3 | 1 | worker throw, incomplete walk, failed enqueue (fairness) | 410,386 |
+
+The fixes are switches, so each one's old behaviour is a configuration away;
+every checked-in configuration sets them `TRUE`. "Claiming the range above
+the marker" is lowering the resume floor to one millisecond above
+`last_applied_ts` (`InboundQueue.claimAboveMarker`): the claim alone keeps the
+anchor safe, so the forward walk stays the normal path, but once anything
+newer applies past it the next walk goes backward to the claim.
+
+| Switch | Old behaviour | Counterexample |
+|--------|---------------|----------------|
+| `ClaimOnWalk` | a walk enqueued events newer than the marker before it had fetched all of them | `NoSilentLoss`, 12 steps: a backward walk pages the tip first, its tip event applies and becomes the anchor, and the older pages are never fetched — by a crash's startup walk or by the bridge's retry, which both walk forward from that anchor. A coalesced "Catch up now" pass does the same in 13 steps |
+| `ClaimOnGap` | a limited sync only requested a pass | `NoSilentLoss`, 10 steps: a limited sync arrives while a walk is in flight, the post-gap live event applies, the in-flight walk completes and clears the floor, and the rerun walks forward from the new anchor past the gap |
+| `ClaimOnStart` | the startup bridge read the marker after the live stream and the worker had started | `NoSilentLoss`, 7 steps: live events apply before the startup walk reads the marker, and the events that arrived while the app was down fall behind the anchor. With ciphertext (`InboundQueueCipher`), 4 steps: a fresh device's startup walk was bounded by the floor of the first live ciphertext, so its older history was never fetched |
+| `FailedEnqueueLowersFloor` | `_safeEnqueue` logged and dropped an insert that threw | `NoSilentLoss`, 10 steps: the next live event applies and the dropped one is behind the anchor for good. Lowering the floor alone left `EventuallyCaptured` failing until an unrelated trigger, so the failure also requests a pass |
+| `WorkerSurvivesErrors` | a throw in the worker loop ended it; nothing restarted it while the coordinator ran | `QueuedEventuallySettled`: after one worker throw, queued rows stay queued forever |
+| `RetainFailedClaim` | a claim whose marker read threw was logged and dropped, and start and the limited-sync handler carried on | `NoSilentLoss`, 5 steps: the start claim's read fails, a live event applies, and what arrived while the app was down is behind the anchor. A retained claim is resolved against the marker as it then is, before any queue insert |
+| `GuardedResurrect` | the resurrection UPDATE flipped the selected rows by id | `AppliedIsFinal`, 11 steps: a second pass re-arms the row, the worker applies it, and the first pass's UPDATE flips the applied row back to `enqueued` |
+| `ResurrectRechecksCap` | the UPDATE re-checked only `status = 'abandoned'` | `CapHolds`, 12 steps: a second pass re-arms the selected row, the worker abandons it again, and the first pass resurrects it past its hard cap. The same holds for the reason filter of `resurrectByReason`, which the model leaves out |
+| `CheckpointForward` | an incomplete forward walk left its claim at the old marker | no violation (14,186,906 states): the checkpoint is efficiency, not safety. Without it, a retry after a capped or failed forward walk whose rows applied walks backward over everything the walk already fetched |
+
+Two spec mutants also pass, and say which parts are load-bearing. Without
+`advanceIfNewer`'s clamp (the marker stopping below an older active row)
+`NoSilentLoss` still holds: a row held back is already captured, so the
+clamp keeps `last_applied_ts` honest but is not what prevents loss. Without
+the checkpoint's own compare-and-set it holds as well, so
+`checkpointResumeWalk` has none: an observation made during the walk is of
+an event the walk has passed or has yet to reach. Without the completion's
+compare-and-set it fails in 8 steps (`ClaimOnGap`'s trace, with the claim
+cleared).
+
+What the model leaves out, deliberately or as a residual:
+
+- **A limited sync's slice can apply before the bridge sees the sync
+  (`SliceRace`).** The Matrix SDK adds the slice's events to
+  `onTimelineEvent` before it publishes `onSync`, and awaits database writes
+  in between. If the live handler enqueues a post-gap event and the worker
+  applies it before `BridgeCoordinator` handles the sync and claims the gap,
+  the anchor passes the gap first. `SliceRace = TRUE` finds it in 10 steps,
+  and every checked-in configuration sets it `FALSE`. The window is the
+  worker's whole apply-and-commit against a few database reads, so it is
+  narrow, and the sequence-log backfill (`SyncSequence`) repairs a lost
+  sequenced payload from a peer. Closing it needs a decision: take live
+  events from `Client.onSync`'s room updates, where the `limited` flag and
+  the slice arrive together, so the claim precedes the enqueue; or let only
+  walk-contiguous rows move the anchor, with a durable captured-frontier
+  column and a migration; or accept the window and rely on backfill.
+- **Equal milliseconds.** A claim is one millisecond above the marker and a
+  checkpoint one above the walk's newest event. An uncaptured event in the
+  same millisecond as the marker or the cursor, later in timeline order, is
+  outside a backward walk bounded there. `backwardWalkBound` takes the lower
+  of the floor and `last_applied_ts`, so a claim never narrows a walk past the
+  applied millisecond, and a backward page that crosses the bound is
+  enqueued whole.
+- **Timestamps are positions.** The marker, the floor and the walks all
+  order by `originServerTs`; homeservers assign it, and the model assumes it
+  follows timeline order.
+- **The bridge gives up after three incomplete passes in a row.** The model
+  retries until a walk completes. In the app the durable floor stays, and the
+  next trigger — to-device traffic, a limited sync, a restart, "Catch up now"
+  — walks from it.
+- **Applying twice.** A crash between the journal write and the queue commit,
+  or a transaction that rolls back, re-applies the row after its lease
+  expires. The queue guarantees at-least-once apply and one row per event;
+  that a second apply changes nothing is `SyncEventProcessor`'s vector-clock
+  resolution, which other specs cover.
+- **One room.** `pruneStrandedEntries` abandoning another room's rows on a
+  room switch, retry backoffs, barriers (`pendingBarrier`) and the
+  attachment deadline are outside it; abandoning is one nondeterministic
+  outcome, and a resurrected row is queued again.
+
 ## From the model to the code
 
 TLC checks the design, not the Dart that implements it. The gap is narrowed by
@@ -1447,6 +1552,28 @@ enriching regardless of the payload in five, and a release that does nothing
 in two (a drain whose marks throw leaves its row `sending` for good). The
 regressions for each hole are examples in the same suite and, for the
 release, in the outbox service's send suite.
+
+The inbound queue has one. In
+`test/features/sync/queue/inbound_event_queue_model_conformance.dart` (a part
+of the `InboundQueue` suite), a five-event room drives the real
+`InboundQueue` — its enqueue, lease, commit, retry and skip, the marker
+advance, the resume floor with its claims, checkpoints and completion
+compare-and-set — through generated interleavings of live deliveries,
+limited-sync gaps, a late key, claims whose marker read fails, forward and
+backward walks that step, fail and complete, worker commits, retries and
+skips, and crashes (a fresh queue over
+the same database, losing the process-local revisions and retained floors).
+The walks and the live stream follow the coordinator's protocol and choose
+their direction with the real `BridgeMarker`. After every step
+`NoSilentLoss`, `MarkerMonotone` and `AppliedIsFinal` must hold against the
+durable marker row. Dropping the completion's compare-and-set, ignoring the
+walk's unresolved ciphertext in a checkpoint, or dropping a claim whose
+marker read failed fails it; so does leaving out the gap claim in the
+driver.
+The coordinator's wiring — the claims on start, on a limited sync and at
+every walk, the checkpoint and the failed-enqueue floor — has regressions
+in the coordinator's and the bridge's suites, each failing with its fix
+reverted.
 
 ## Changing a spec
 

@@ -13,6 +13,7 @@ import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_ingestor.dart';
 import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
+import 'package:lotti/features/sync/queue/bridge_coordinator.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
@@ -28,6 +29,7 @@ import '../../../mocks/mocks.dart';
 import 'test_utils.dart';
 
 part 'queue_pipeline_coordinator_cases/bridge_recovery.dart';
+part 'queue_pipeline_coordinator_cases/catch_up_claims.dart';
 part 'queue_pipeline_coordinator_cases/gap_recovery.dart';
 part 'queue_pipeline_coordinator_cases/history_collection.dart';
 part 'queue_pipeline_coordinator_cases/lifecycle.dart';
@@ -45,6 +47,7 @@ void main() {
   final setup = _QueueCoordinatorTestSetup()
     ..registerLifecycle()
     ..registerStart()
+    ..registerCatchUpClaims()
     ..registerLiveIngress()
     ..registerStartUnwind()
     ..registerLiveIngressProperties()

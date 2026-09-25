@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:drift/drift.dart' hide isNotNull, isNull;
@@ -8,13 +9,17 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/slow_query_logging.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
+import 'package:lotti/features/sync/queue/bridge_coordinator.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../database/slow_query_logging_test_utils.dart';
 import '../../../mocks/mocks.dart';
 import 'test_utils.dart';
+
+part 'inbound_event_queue_model_conformance.dart';
 
 /// Local alias for the shared [buildSyncEvent] factory so the many
 /// existing call sites keep their concise name.
@@ -656,6 +661,8 @@ void main() {
   setUpAll(() {
     registerFallbackValue(StackTrace.empty);
   });
+
+  _registerModelConformance();
 
   setUp(() {
     db = SyncDatabase(inMemoryDatabase: true);

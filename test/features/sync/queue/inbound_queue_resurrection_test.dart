@@ -1,5 +1,12 @@
 import 'package:clock/clock.dart';
-import 'package:drift/drift.dart' show Value;
+import 'package:drift/drift.dart'
+    show
+        ApplyInterceptor,
+        DatabaseConnection,
+        QueryExecutor,
+        QueryInterceptor,
+        Value;
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
@@ -12,6 +19,29 @@ import '../../../mocks/mocks.dart';
 import 'test_utils.dart';
 
 const _roomA = '!roomA:example.org';
+
+/// Runs [onAbandonedSelected] once, right after the resurrection's SELECT
+/// of abandoned rows returns and before its UPDATE, standing in for a
+/// concurrent pass and a worker commit landing in that window.
+class _BetweenSelectAndUpdate extends QueryInterceptor {
+  Future<void> Function(QueryExecutor executor)? onAbandonedSelected;
+
+  @override
+  Future<List<Map<String, Object?>>> runSelect(
+    QueryExecutor executor,
+    String statement,
+    List<Object?> args,
+  ) async {
+    final rows = await executor.runSelect(statement, args);
+    final hook = onAbandonedSelected;
+    if (hook != null && statement.contains("status = 'abandoned'")) {
+      onAbandonedSelected = null;
+      await hook(executor);
+    }
+    return rows;
+  }
+}
+
 final _frozenNow = DateTime(2024, 3, 15, 12);
 
 void main() {
@@ -221,6 +251,137 @@ void main() {
       );
       expect((await readRow(appliedId)).status, InboundQueueStatuses.applied);
     });
+
+    test(
+      'a row applied between the SELECT and the UPDATE stays applied '
+      '(AppliedIsFinal in InboundQueue.tla: another pass re-armed the row '
+      'and the worker committed it before this pass flipped it by id)',
+      () async {
+        final hook = _BetweenSelectAndUpdate();
+        final racedDb = SyncDatabase.connect(
+          DatabaseConnection(NativeDatabase.memory().interceptWith(hook)),
+        );
+        addTearDown(racedDb.close);
+        final racedResurrection = InboundQueueResurrection(
+          db: racedDb,
+          logging: logging,
+          onDepthChanged: () => depthChangedCalls++,
+        );
+        final queueId = await racedDb
+            .into(racedDb.inboundEventQueue)
+            .insert(
+              InboundEventQueueCompanion.insert(
+                eventId: r'$raced',
+                roomId: _roomA,
+                originTs: 1000,
+                producer: InboundEventProducer.live.name,
+                rawJson: '{}',
+                enqueuedAt: 1000,
+                status: const Value(InboundQueueStatuses.abandoned),
+                lastErrorReason: const Value('missingBase'),
+              ),
+            );
+        hook.onAbandonedSelected = (executor) => executor.runUpdate(
+          "UPDATE inbound_event_queue SET status = 'applied' "
+          'WHERE queue_id = ?',
+          [queueId],
+        );
+
+        final count = await racedResurrection.resurrectAll();
+
+        final row = await (racedDb.select(
+          racedDb.inboundEventQueue,
+        )..where((t) => t.queueId.equals(queueId))).getSingle();
+        expect(row.status, InboundQueueStatuses.applied);
+        expect(row.resurrectionCount, 0);
+        expect(count, 0);
+        expect(depthChangedCalls, 0);
+      },
+    );
+  });
+
+  group('predicates rechecked by the UPDATE', () {
+    Future<(SyncDatabase, InboundQueueResurrection, _BetweenSelectAndUpdate)>
+    racedSetup() async {
+      final hook = _BetweenSelectAndUpdate();
+      final racedDb = SyncDatabase.connect(
+        DatabaseConnection(NativeDatabase.memory().interceptWith(hook)),
+      );
+      addTearDown(racedDb.close);
+      return (
+        racedDb,
+        InboundQueueResurrection(
+          db: racedDb,
+          logging: logging,
+          onDepthChanged: () => depthChangedCalls++,
+        ),
+        hook,
+      );
+    }
+
+    Future<int> insertAbandoned(SyncDatabase racedDb) => racedDb
+        .into(racedDb.inboundEventQueue)
+        .insert(
+          InboundEventQueueCompanion.insert(
+            eventId: r'$raced',
+            roomId: _roomA,
+            originTs: 1000,
+            producer: InboundEventProducer.live.name,
+            rawJson: '{}',
+            enqueuedAt: 1000,
+            status: const Value(InboundQueueStatuses.abandoned),
+            lastErrorReason: const Value('missingBase'),
+            resurrectionCount: const Value(1),
+          ),
+        );
+
+    Future<InboundEventQueueItem> readRaced(SyncDatabase racedDb, int id) =>
+        (racedDb.select(
+          racedDb.inboundEventQueue,
+        )..where((t) => t.queueId.equals(id))).getSingle();
+
+    test(
+      'a row abandoned again at the hard cap between the SELECT and the '
+      'UPDATE stays abandoned (CapHolds in InboundQueue.tla)',
+      () async {
+        final (racedDb, raced, hook) = await racedSetup();
+        final queueId = await insertAbandoned(racedDb);
+        // Another pass re-armed the row and the worker abandoned it again.
+        hook.onAbandonedSelected = (executor) => executor.runUpdate(
+          'UPDATE inbound_event_queue SET resurrection_count = 2 '
+          'WHERE queue_id = ?',
+          [queueId],
+        );
+
+        final count = await raced.resurrectAll(hardCap: 2);
+
+        final row = await readRaced(racedDb, queueId);
+        expect(count, 0);
+        expect(row.status, InboundQueueStatuses.abandoned);
+        expect(row.resurrectionCount, 2);
+      },
+    );
+
+    test(
+      'a row abandoned again for another reason between the SELECT and the '
+      'UPDATE is not resurrected by a reason-scoped pass',
+      () async {
+        final (racedDb, raced, hook) = await racedSetup();
+        final queueId = await insertAbandoned(racedDb);
+        hook.onAbandonedSelected = (executor) => executor.runUpdate(
+          "UPDATE inbound_event_queue SET last_error_reason = 'permanentSkip' "
+          'WHERE queue_id = ?',
+          [queueId],
+        );
+
+        final count = await raced.resurrectByReason('missingBase');
+
+        final row = await readRaced(racedDb, queueId);
+        expect(count, 0);
+        expect(row.status, InboundQueueStatuses.abandoned);
+        expect(row.lastErrorReason, 'permanentSkip');
+      },
+    );
   });
 
   group('resurrectByReason', () {

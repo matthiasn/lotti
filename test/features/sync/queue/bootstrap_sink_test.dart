@@ -233,6 +233,40 @@ void main() {
   );
 
   test(
+    'onPageQueued reports the newest timestamp of a page only after its '
+    'rows are in the queue, ciphertext and filtered events included, and '
+    'stays silent for an empty page',
+    () async {
+      final reported = <int>[];
+      final queuedWhenReported = <int>[];
+      final sink = QueueBootstrapSink(
+        queue: queue,
+        logging: logging,
+        onPageQueued: (newestTs) async {
+          reported.add(newestTs);
+          queuedWhenReported.add((await queue.stats()).total);
+        },
+      );
+      final events = [
+        _buildEvent(eventId: r'$a', originTsMs: 30),
+        _buildEvent(
+          eventId: r'$sealed',
+          originTsMs: 50,
+          type: EventTypes.Encrypted,
+        ),
+        _buildEvent(eventId: r'$b', originTsMs: 40),
+      ];
+
+      await sink.onPage(events, info(0, events.length));
+      await sink.onPage(const <Event>[], info(1, events.length));
+
+      expect(reported, [50]);
+      expect(queuedWhenReported, [2]);
+      expect(await queue.resumeFloorTs('!roomA:example.org'), 50);
+    },
+  );
+
+  test(
     'encrypted backfill is re-decrypted once before floor fallback',
     () async {
       final encrypted = _buildEvent(

@@ -383,9 +383,11 @@ extension _BridgeRecoveryCases on _QueueCoordinatorTestSetup {
 
           await coordinator.triggerBridge();
 
+          // The bridge's read, the walk's claim above the marker, and the
+          // walk's refreshed read inside the lane.
           verify(
             () => settingsDb.itemByKey('LAST_READ_MATRIX_EVENT_TS'),
-          ).called(2);
+          ).called(3);
         },
       );
 
@@ -586,9 +588,11 @@ extension _BridgeRecoveryCases on _QueueCoordinatorTestSetup {
 
           await coordinator.triggerBridge();
 
+          // The bridge's read, the walk's claim above the marker, and the
+          // walk's refreshed read inside the lane.
           verify(
             () => settingsDb.itemByKey('LAST_READ_MATRIX_EVENT_TS'),
-          ).called(2);
+          ).called(3);
         },
       );
 
