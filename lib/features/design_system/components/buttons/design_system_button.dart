@@ -72,6 +72,7 @@ class DesignSystemButton extends StatefulWidget {
     this.isLoading = false,
     this.alignsLabelToLeadingEdge = false,
     this.suppressHoverFill = false,
+    this.tabularFigures = false,
     this.tapTargetSize = MaterialTapTargetSize.shrinkWrap,
     super.key,
   }) : assert(
@@ -116,6 +117,11 @@ class DesignSystemButton extends StatefulWidget {
   /// affordance survives the fill's removal. Filled variants ignore this:
   /// their fill IS the button.
   final bool suppressHoverFill;
+
+  /// Renders the label's digits at one shared advance, for a label that
+  /// carries a live value — a countdown — so a changing digit does not
+  /// change the button's width.
+  final bool tabularFigures;
 
   /// When true, the button expands to fill its parent's width (use inside an
   /// [Expanded]/[SizedBox]) and its content is centered rather than left
@@ -184,6 +190,9 @@ class _DesignSystemButtonState extends State<DesignSystemButton> {
         child: DefaultTextStyle.merge(
           style: sizeSpec.labelStyle.copyWith(
             color: variantSpec.foregroundColor,
+            fontFeatures: widget.tabularFigures
+                ? const [FontFeature.tabularFigures()]
+                : null,
           ),
           child: IconTheme.merge(
             data: IconThemeData(

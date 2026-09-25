@@ -25235,6 +25235,12 @@ abstract class AppLocalizations {
   /// **'Update now'**
   String get taskAgentUpdateNow;
 
+  /// Manual update trigger on the task summary card while an automatic update is pending; the countdown is the time until it runs by itself
+  ///
+  /// In en, this message translates to:
+  /// **'Update now · {countdown}'**
+  String taskAgentUpdateNowCountdown(String countdown);
+
   /// Schedule line in the task-agent card footer when automatic updates are on but no wake is currently pending. Keeps the line reserved so toggling automation does not resize the card.
   ///
   /// In en, this message translates to:

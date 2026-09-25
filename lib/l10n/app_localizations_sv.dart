@@ -15163,6 +15163,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get taskAgentUpdateNow => 'Uppdatera nu';
 
   @override
+  String taskAgentUpdateNowCountdown(String countdown) {
+    return 'Uppdatera nu · $countdown';
+  }
+
+  @override
   String get taskAgentUpdatesOnChange => 'Uppdateras vid ändringar';
 
   @override

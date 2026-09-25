@@ -15409,6 +15409,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get taskAgentUpdateNow => 'Mettre à jour';
 
   @override
+  String taskAgentUpdateNowCountdown(String countdown) {
+    return 'Mettre à jour · $countdown';
+  }
+
+  @override
   String get taskAgentUpdatesOnChange => 'Se met à jour lors des changements';
 
   @override

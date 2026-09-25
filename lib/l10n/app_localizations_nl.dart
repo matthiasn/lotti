@@ -15197,6 +15197,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get taskAgentUpdateNow => 'Nu bijwerken';
 
   @override
+  String taskAgentUpdateNowCountdown(String countdown) {
+    return 'Nu bijwerken · $countdown';
+  }
+
+  @override
   String get taskAgentUpdatesOnChange => 'Werkt bij na wijzigingen';
 
   @override

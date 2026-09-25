@@ -6,6 +6,7 @@
   change since its last summary and always writes a fresh one.
 
 ### Changed
-- **An out-of-date AI summary now says when it will refresh itself.** Next to
-  "Out of date" on the task's summary card, "Next update in 1:30" shows when
-  the automatic update will run, so a stale summary no longer looks abandoned.
+- **An out-of-date AI summary now says when it will refresh itself.** On the
+  task's summary card, the update button next to "Out of date" now reads
+  "Update now · 1:30" while an automatic update is pending, so a stale summary
+  no longer looks abandoned. Tapping it still updates straight away.

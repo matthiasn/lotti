@@ -15061,6 +15061,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskAgentUpdateNow => 'Update now';
 
   @override
+  String taskAgentUpdateNowCountdown(String countdown) {
+    return 'Update now · $countdown';
+  }
+
+  @override
   String get taskAgentUpdatesOnChange => 'Updates on changes';
 
   @override

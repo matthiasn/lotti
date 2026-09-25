@@ -6394,6 +6394,7 @@
   "taskAgentThisReportHeader": "Denna rapport",
   "taskAgentTurnOffSetup": "Stäng av AI för denna agent",
   "taskAgentUpdateNow": "Uppdatera nu",
+  "taskAgentUpdateNowCountdown": "Uppdatera nu · {countdown}",
   "taskAgentUpdatesOnChange": "Uppdateras vid ändringar",
   "taskAgentUseCategoryDefault": "Kopiera kategori standard",
   "taskAgentUseCategoryDefaultDescription": "Kopierar kategorins nuvarande uppställning. Senare kategoriändringar påverkar inte denna agent.",

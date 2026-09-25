@@ -161,7 +161,7 @@ void main() {
           // Out of date says when it will fix itself; a deadline already
           // behind `now` promises nothing.
           expect(
-            find.text('Next update in 1:30'),
+            find.text('Update now · 1:30'),
             behind ? findsOneWidget : findsNothing,
             reason: reason,
           );

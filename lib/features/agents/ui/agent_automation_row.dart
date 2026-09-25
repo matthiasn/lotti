@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:clock/clock.dart';
+import 'package:flutter/rendering.dart';
 import 'package:lotti/features/agents/ui/wake_countdown_state.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
@@ -84,10 +87,10 @@ class AgentAutomationRow extends StatefulWidget {
   /// four was how the previous callers of `compact: true` read.
   ///
   /// [nextWakeAt] is the one piece of the schedule the pair does carry: while
-  /// the summary reads out of date and an automatic update is pending,
-  /// "Next update in 1:30" follows the word, so an out-of-date summary also
-  /// says that it is about to fix itself. It never latches a layout or reports an
-  /// expiry — the readout simply leaves once it reaches zero.
+  /// the summary reads out of date and an automatic update is pending, the
+  /// trigger reads "Update now · 1:30", so an out-of-date summary also says
+  /// that it is about to fix itself. It reports no expiry — the time simply
+  /// leaves the label once it reaches zero.
   const AgentAutomationRow.compact({
     required this.inferenceAvailable,
     required this.isRunning,
@@ -305,26 +308,30 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
         return const SizedBox.shrink(key: ValueKey('agentAutomationRowSilent'));
       }
       final pendingWakeAt = widget.nextWakeAt;
-      // Only beside "Out of date": a countdown under a fresh summary, or
-      // beside "Thinking…", would promise an update that is not the point.
-      final countdown =
-          outdated &&
-              freshnessLabel != null &&
-              !widget.isRunning &&
-              pendingWakeAt != null &&
-              pendingWakeAt.isAfter(clock.now())
-          ? _CompactCountdown(nextWakeAt: pendingWakeAt)
-          : null;
       final freshness = _FreshnessCluster(
         label: freshnessLabel,
         tooltip: freshnessTooltip,
         isStale: outdated,
-        trailing: countdown,
       );
-      final trigger = _UpdateNowButton(
-        isRunning: widget.isRunning,
-        onRunNow: widget.inferenceAvailable ? widget.onRunNow : null,
-      );
+      // The countdown rides in the trigger only beside "Out of date": under a
+      // fresh summary, or in place of "Thinking…", it would promise an update
+      // that is not the point.
+      final trigger =
+          outdated &&
+              freshnessLabel != null &&
+              !widget.isRunning &&
+              widget.inferenceAvailable &&
+              pendingWakeAt != null &&
+              pendingWakeAt.isAfter(clock.now())
+          ? _CountdownUpdateNowButton(
+              key: ValueKey(pendingWakeAt),
+              nextWakeAt: pendingWakeAt,
+              onRunNow: widget.onRunNow,
+            )
+          : _UpdateNowButton(
+              isRunning: widget.isRunning,
+              onRunNow: widget.inferenceAvailable ? widget.onRunNow : null,
+            );
       final row = Row(
         key: const ValueKey('agentAutomationRowCompact'),
         mainAxisAlignment: freshnessLabel == null
@@ -564,16 +571,11 @@ class _FreshnessCluster extends StatelessWidget {
     required this.label,
     required this.tooltip,
     required this.isStale,
-    this.trailing,
   });
 
   final String? label;
   final String? tooltip;
   final bool isStale;
-
-  /// Follows the word — the compact form's countdown — on the same line
-  /// while both fit, and on the next one otherwise.
-  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -581,9 +583,8 @@ class _FreshnessCluster extends StatelessWidget {
     if (text == null) return const SizedBox.shrink();
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
-    final trailing = this.trailing;
-    final state = Row(
-      key: trailing == null ? const ValueKey('taskAgentStatusCluster') : null,
+    return Row(
+      key: const ValueKey('taskAgentStatusCluster'),
       mainAxisSize: MainAxisSize.min,
       children: [
         Tooltip(
@@ -624,42 +625,37 @@ class _FreshnessCluster extends StatelessWidget {
         ),
       ],
     );
-    if (trailing == null) return state;
-    // A run, not a row: where the word and the countdown cannot share a line
-    // — German on a narrow phone — the countdown takes the next one rather
-    // than squeezing the word to an ellipsis or clipping its own digits.
-    return Wrap(
-      key: const ValueKey('taskAgentStatusCluster'),
-      spacing: tokens.spacing.step3,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [state, trailing],
-    );
   }
 }
 
-/// The compact form's "Next update in 1:30": when the out-of-date summary
-/// refreshes itself. Always the full sentence — the bare "in 1:30" beside
-/// "Out of date" reads as "will be out of date in 1:30". Shares the full
-/// band's schedule register, and takes no space once the deadline has passed.
-class _CompactCountdown extends StatefulWidget {
-  const _CompactCountdown({required this.nextWakeAt});
+/// The compact form's trigger while an automatic update is pending:
+/// "Update now · 1:30". The time says the summary will refresh itself; the
+/// label still says what a tap does, which is run it now.
+///
+/// **Ticking digits move nothing.** The label uses tabular figures, so equal
+/// digit counts are equal widths, and the button holds the widest width it
+/// has shown for this deadline, so `10:00` → `9:59` does not pull its edge in
+/// either. Callers key it by the deadline, which resets that width. Once the
+/// deadline passes it is the plain trigger again.
+class _CountdownUpdateNowButton extends StatefulWidget {
+  const _CountdownUpdateNowButton({
+    required this.nextWakeAt,
+    required this.onRunNow,
+    super.key,
+  });
 
   final DateTime nextWakeAt;
+  final VoidCallback? onRunNow;
 
   @override
-  State<_CompactCountdown> createState() => _CompactCountdownState();
+  State<_CountdownUpdateNowButton> createState() =>
+      _CountdownUpdateNowButtonState();
 }
 
-class _CompactCountdownState extends State<_CompactCountdown>
-    with WakeCountdownState<_CompactCountdown> {
+class _CountdownUpdateNowButtonState extends State<_CountdownUpdateNowButton>
+    with WakeCountdownState<_CountdownUpdateNowButton> {
   @override
   DateTime get nextWakeAt => widget.nextWakeAt;
-
-  @override
-  void didUpdateWidget(covariant _CompactCountdown oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.nextWakeAt != widget.nextWakeAt) resyncCountdown();
-  }
 
   @override
   void onCountdownExpired() {
@@ -668,16 +664,38 @@ class _CompactCountdownState extends State<_CompactCountdown>
 
   @override
   Widget build(BuildContext context) {
-    if (countdownSeconds <= 0) return const SizedBox.shrink();
-    return Text(
-      context.messages.taskAgentNextUpdateIn(
-        formatCountdown(countdownSeconds),
+    final seconds = countdownSeconds;
+    if (seconds <= 0) {
+      return _UpdateNowButton(isRunning: false, onRunNow: widget.onRunNow);
+    }
+    return _WidestSoFar(
+      child: _UpdateNowButton(
+        isRunning: false,
+        onRunNow: widget.onRunNow,
+        countdown: formatCountdown(seconds),
       ),
-      key: const ValueKey('taskAgentCompactCountdown'),
-      maxLines: 1,
-      softWrap: false,
-      style: scheduleLabelStyle(context.designTokens),
     );
+  }
+}
+
+/// Sizes to the widest width its child has had, so a label that only ever
+/// gets shorter never moves what is beside it. Height follows the child.
+class _WidestSoFar extends SingleChildRenderObjectWidget {
+  const _WidestSoFar({required super.child});
+
+  @override
+  RenderObject createRenderObject(BuildContext context) => _RenderWidestSoFar();
+}
+
+class _RenderWidestSoFar extends RenderProxyBox {
+  double _widest = 0;
+
+  @override
+  void performLayout() {
+    final child = this.child!
+      ..layout(constraints.loosen(), parentUsesSize: true);
+    _widest = math.max(_widest, child.size.width);
+    size = constraints.constrain(Size(_widest, child.size.height));
   }
 }
 
@@ -877,10 +895,17 @@ class _SkipAction extends StatelessWidget {
 /// slot and swaps to a spinner plus the thinking label, so the row's
 /// silhouette never changes.
 class _UpdateNowButton extends StatelessWidget {
-  const _UpdateNowButton({required this.isRunning, required this.onRunNow});
+  const _UpdateNowButton({
+    required this.isRunning,
+    required this.onRunNow,
+    this.countdown,
+  });
 
   final bool isRunning;
   final VoidCallback? onRunNow;
+
+  /// Time until the pending automatic update, shown after the label.
+  final String? countdown;
 
   @override
   Widget build(BuildContext context) {
@@ -889,7 +914,15 @@ class _UpdateNowButton extends StatelessWidget {
       key: const ValueKey('taskAgentWakeButton'),
       label: isRunning
           ? messages.aiSummaryThinkingLabel
-          : messages.taskAgentUpdateNow,
+          : countdown == null
+          ? messages.taskAgentUpdateNow
+          : messages.taskAgentUpdateNowCountdown(countdown!),
+      // The separator glyph is not worth reading aloud; the full sentence is.
+      semanticsLabel: countdown == null || isRunning
+          ? null
+          : '${messages.taskAgentUpdateNow}, '
+                '${messages.taskAgentNextUpdateIn(countdown!)}',
+      tabularFigures: countdown != null,
       leadingIcon: LottiIcons.refresh,
       isLoading: isRunning,
       // Caption tier: the footer must not field a string at the same size and

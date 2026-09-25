@@ -139,17 +139,19 @@ watermark alone left the card silent — looking current — for the whole
 countdown.
 
 The task card also hands the compact row that `nextWakeAt`, and while the
-strip reads *Out of date* and no run is in flight, a ticking *Next update in
-1:30* follows the word in the schedule register (`scheduleLabelStyle`). It is
-always the full sentence: the bare *in 1:30* beside *Out of date* read as "will
-be out of date in 1:30". The word and the countdown form a `Wrap`, so where
-both do not fit one line the countdown takes the next rather than truncating
-either. *Out of
-date* alone looked like a summary left to rot; the readout says it is about to
-refresh itself. It takes no space once the deadline passes, and never appears
-beside a current summary or beside *Thinking…*. The full schedule sentence,
-*Skip once* and the switch stay in the internals panel. The project card
-passes no deadline and still reads the watermark alone.
+strip reads *Out of date* and no run is in flight, the countdown rides **in the
+trigger**: *Update now · 1:30*. *Out of date* alone looked like a summary left
+to rot, and the remedy is where the reader looks for what happens next. The
+label keeps *now* because a tap still runs the update immediately; the time is
+when it runs by itself. Screen readers hear *Update now, Next update in 1:30*
+rather than the separator. At zero the plain *Update now* returns, and a
+current summary or a run in flight (*Thinking…*) never shows a time.
+
+Ticking digits move nothing here either: the label uses tabular figures
+(`DesignSystemButton.tabularFigures`), and the button holds the widest width it
+has shown for the current deadline, so `10:00` → `9:59` cannot pull its leading
+edge in. The full schedule sentence, *Skip once* and the switch stay in the
+internals panel. The project card passes no deadline and still reads the watermark alone.
 
 Everything else that used to sit in a footer under the summary — the schedule,
 *Skip once*, the automatic-updates switch, the model identity and the setup

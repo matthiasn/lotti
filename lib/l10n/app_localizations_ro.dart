@@ -15454,6 +15454,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskAgentUpdateNow => 'Actualizați acum';
 
   @override
+  String taskAgentUpdateNowCountdown(String countdown) {
+    return 'Actualizați acum · $countdown';
+  }
+
+  @override
   String get taskAgentUpdatesOnChange => 'Se actualizează la modificări';
 
   @override
