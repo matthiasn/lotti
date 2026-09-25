@@ -66,24 +66,31 @@ ciphertext, not forever, and nothing depends on it keeping anything — a new
 device catches up because your other devices re-send history, not because a
 server archived it. No telemetry, and nothing uploaded to Lotti.
 
-**The sync protocol is formally verified.** Keeping several devices consistent
-without a server in charge is a distributed-systems problem, and it is treated
-as one. The protocol that proves no change was lost between devices — which
-counters exist, which carry data, how a device recovers from a crash in the
-middle of a save — is written down as a
-[TLA+ model](specs/tla/SyncSequence.tla) and model-checked with TLC on every
-change to it: about 12 million reachable states per run, under crashes and
-injected failures, against the properties that matter: no saved change is
-ever declared lost, and even with a crash at any point, every saved change
-still reaches every device. That is a
-statement about the design, not a proof that every line of code matches it;
-[the specs](specs/tla/README.md) say exactly what is covered. The code is held
-to it the ordinary way, too: over 35,000 tests at 99.9% line coverage,
-including more than 900 property-based tests that generate about 130,000 inputs
-and run over half a million assertions on every CI run. The agent runtime has
-since followed: [models](specs/tla/README.md) of how agent wakes are scheduled
-and survive a crash, and of how a suggestion you confirm is applied, are
-checked the same way, and the cases they leave open are written down.
+**The sync protocol and the agent runtime are formally verified.** Keeping
+several devices consistent without a server in charge is a distributed-systems
+problem, and it is treated as one. The parts where concurrency and crashes could
+lose or duplicate your data — the sync log that proves no change was lost
+between devices, how agents are woken and recover after a crash, how a
+suggestion you confirm is applied when two devices race, how synced agent state
+converges, the agents' message log, and the Daily OS jobs — are written down as
+[16 TLA+ models](specs/tla/README.md) and model-checked with TLC on every change
+to them: about 114 million distinct states across 42 configurations, under
+crashes, injected failures, clock skew and messages arriving in any order. The
+properties are the ones that matter. No saved change is ever declared lost, and
+as long as devices keep reconnecting and a failed send is retried, every saved
+change reaches every device, even with a crash at any point. A double tap never
+applies a confirmed change twice. When two devices confirm the same change
+before they sync, both may apply it, but for the tools that create tasks, time
+entries and checklist items or set task fields, the result is one entry rather
+than two, and a later edit is not overwritten. Synced agent state converges on
+every device, apart from a few cases the specs list. Checking them found and
+closed dozens of real bugs. These are statements about the design, not a proof
+that every line of code matches it; [the specs](specs/tla/README.md) say
+exactly what is covered and which cases remain open, and generated traces drive
+the real code through the same scenarios to check that it follows the models.
+The code is held to them the ordinary way, too: over 35,000 tests at 99.9% line coverage, including more than
+900 property-based tests that generate about 130,000 inputs and run over half a
+million assertions on every CI run.
 
 **You choose the brain, and you can see what it cost.** Route each category of
 your life to the compute you are willing to stand behind: a local model for the
@@ -477,7 +484,7 @@ the build it documents.
 **Stack**: Flutter and Dart across five platforms, local SQLite via Drift with
 ObjectBox for embeddings, Whisper and Voxtral for on-device speech recognition,
 Matrix and Vodozemac for the encrypted sync transport, Glados for property-based
-tests, TLA+ and TLC for the formally verified sync protocol.
+tests, TLA+ and TLC for the formally verified sync protocol and agent runtime.
 
 ---
 
