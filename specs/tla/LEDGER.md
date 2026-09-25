@@ -12,7 +12,7 @@ exposed. Then update the [totals](#totals) from the README's tables.
 
 ## Totals
 
-As of `main` at `218d6fb83` (2026-09-25):
+As of `main` at `5e09d448e` (2026-09-25):
 
 | Measure | Value |
 |---------|------:|
@@ -23,9 +23,9 @@ As of `main` at `218d6fb83` (2026-09-25):
 | States generated (at `b551bf587`, 42 configurations) | 927,744,398 |
 | Deepest counterexample-free trace (same run) | 53 steps |
 | Named safety and liveness properties | 80 |
-| Bugs fixed | 82 |
+| Bugs fixed | 85 |
 | of which TLC produced the counterexample | 50 |
-| [By severity](#severity), P0 / P1 / P2 / P3 | 2 / 29 / 22 / 29 |
+| [By severity](#severity), P0 / P1 / P2 / P3 | 2 / 32 / 22 / 29 |
 | Architecture decision records | 13 (ADR 0065–0071, 0075–0078, 0080, 0081) |
 | Source paths the specs model, each re-triggering the TLC workflow | 73 |
 
@@ -67,6 +67,8 @@ timeline
                : #4473 EvolutionSession and AgentLinks
                : #4474 the configurations packed into eight CI shards
                : #4476 conformance traces for three more models find a time-zone bug
+               : #4477 shards rebalanced on measured times
+               : #4478 entry-link removals sync as tombstones
 ```
 
 ## Pull request ledger
@@ -103,6 +105,8 @@ counterexamples found. "Severity" grades each of those bugs; see
 | [#4473](https://github.com/matthiasn/lotti/pull/4473) | 09-25 | agents | `EvolutionSession`, `AgentLinks` | 3 | 8 (8) | P1×7 P2 | [0081](../../docs/adr/0081-model-checked-evolution-sessions-and-agent-links.md) | A peer's sweep marked an approved 1-on-1 as abandoned on every device. A removed agent link came back, because the receive read its tombstone as no row |
 | [#4474](https://github.com/matthiasn/lotti/pull/4474) | 09-25 | ci | — | — | 0 | — | — | Packs the configurations into eight CI shards balanced by measured runtime, instead of one runner each |
 | [#4476](https://github.com/matthiasn/lotti/pull/4476) | 09-25 | agents | — | — | 1 (–) | P1 | — | A generated conformance trace found the due-wake query comparing a UTC timestamp with local time as strings: east of UTC a peer answered a goal chat message beside its author, west of UTC recovery waited hours. Traces now drive `ScheduledWakeLease`, `GoalChatReply` and `VersionHeads` |
+| [#4477](https://github.com/matthiasn/lotti/pull/4477) | 09-25 | ci | — | — | 0 | — | — | Rebalanced the eight shards on per-configuration TLC times measured in the first sharded runs |
+| [#4478](https://github.com/matthiasn/lotti/pull/4478) | 09-25 | sync | — | — | 3 (–) | P1×3 | [0078](../../docs/adr/0078-entry-link-versions-are-ordered.md) addendum | Removing an entry link deleted the row locally and sent nothing, so peers kept it and their next update restored it. Removals are now synced tombstones, and linking again revives the same id. Closed the residual ADR 0078 left open |
 
 ## Severity
 
@@ -126,14 +130,14 @@ effect.
 | Level | Bugs | TLC-found | sync | agents | daily-os | goals, habits |
 |-------|-----:|----------:|-----:|-------:|---------:|--------------:|
 | P0 | 2 | 0 | 2 | 0 | 0 | 0 |
-| P1 | 29 | 23 | 5 | 21 | 1 | 2 |
+| P1 | 32 | 23 | 8 | 21 | 1 | 2 |
 | P2 | 22 | 16 | 1 | 16 | 2 | 3 |
 | P3 | 29 | 11 | 7 | 16 | 3 | 3 |
-| **Total** | **82** | **50** | 15 | 53 | 6 | 8 |
+| **Total** | **85** | **50** | 18 | 53 | 6 | 8 |
 
 Neither P0 came from a TLC trace: the WAL deletion surfaced as a CI shard
 failure (#4464), and the discarded first edit on a new device in the review of
-#4467 (#4470). TLC found 23 of the 29 P1s.
+#4467 (#4470). TLC found 23 of the 32 P1s.
 
 The P0 and P1 bugs:
 
@@ -170,9 +174,12 @@ The P0 and P1 bugs:
 | [#4473](https://github.com/matthiasn/lotti/pull/4473) | P1 | yes | Unlink then relink left devices disagreeing on a link |
 | [#4473](https://github.com/matthiasn/lotti/pull/4473) | P1 | yes | Link receive race overwrote a local link write |
 | [#4476](https://github.com/matthiasn/lotti/pull/4476) | P1 | no | East of UTC a peer answered a goal chat message alongside its author |
+| [#4478](https://github.com/matthiasn/lotti/pull/4478) | P1 | no | Removing a link on one device never reached the others |
+| [#4478](https://github.com/matthiasn/lotti/pull/4478) | P1 | no | A removed link came back from a peer's next entry update |
+| [#4478](https://github.com/matthiasn/lotti/pull/4478) | P1 | no | Re-linking after a removal left devices disagreeing on the link |
 
 <details>
-<summary>All 82 bugs</summary>
+<summary>All 85 bugs</summary>
 
 | PR | Level | TLC | Bug |
 |----|-------|-----|-----|
@@ -258,6 +265,9 @@ The P0 and P1 bugs:
 | [#4473](https://github.com/matthiasn/lotti/pull/4473) | P1 | yes | Unlink then relink left devices disagreeing on a link |
 | [#4473](https://github.com/matthiasn/lotti/pull/4473) | P1 | yes | Link receive race overwrote a local link write |
 | [#4476](https://github.com/matthiasn/lotti/pull/4476) | P1 | no | East of UTC a peer answered a goal chat message alongside its author |
+| [#4478](https://github.com/matthiasn/lotti/pull/4478) | P1 | no | Removing a link on one device never reached the others |
+| [#4478](https://github.com/matthiasn/lotti/pull/4478) | P1 | no | A removed link came back from a peer's next entry update |
+| [#4478](https://github.com/matthiasn/lotti/pull/4478) | P1 | no | Re-linking after a removal left devices disagreeing on the link |
 </details>
 
 ## Specs
