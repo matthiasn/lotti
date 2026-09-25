@@ -228,7 +228,32 @@ mixin _OutboxSend on _OutboxServiceBase {
   /// path it drains via [_drainOutbox], waits a short settle window so bursty
   /// enqueues coalesce into the next bundle, then drains once more. Never
   /// throws: any failure is logged and converted into a 15s backoff.
-  Future<void> sendNext() async {
+  ///
+  /// Does nothing once the service is disposed. While it runs, [_activeSend]
+  /// holds it, so dispose can wait for the drain in flight (ADR 0085).
+  Future<void> sendNext() {
+    if (_isDisposed) return Future<void>.value();
+    late final Future<void> tracked;
+    tracked = _sendNext().whenComplete(() {
+      if (identical(_activeSend, tracked)) _activeSend = null;
+    });
+    _activeSend = tracked;
+    return tracked;
+  }
+
+  /// The drain [sendNext] is running, if any. Dispose awaits it: a drain
+  /// that outlived its service could still land a send after the next
+  /// generation released that row and sent newer ones.
+  Future<void>? _activeSend;
+
+  /// Waits for the drain in flight, which stops after its current pass once
+  /// the service is disposed.
+  Future<void> _quiesceActiveSend() async {
+    final active = _activeSend;
+    if (active != null) await active;
+  }
+
+  Future<void> _sendNext() async {
     try {
       final enableMatrix = await _journalDb.getConfigFlag(
         enableMatrixFlag,

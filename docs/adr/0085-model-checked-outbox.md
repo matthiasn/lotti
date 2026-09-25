@@ -78,7 +78,20 @@ failed for good) held already.
    back to `pending` with its retry count untouched and is sent in its turn,
    before newer rows of its entity. The send may have landed, so this is a
    duplicate, never a loss.
-5. **The model gates the code**, as in ADR 0065: `Outbox.tla` and its three
+5. **Dispose waits for the drain in flight.** Found in review, then
+   confirmed by TLC with a `Teardown` action (the generation disposed and the
+   same profile restarted, as `ProfileSwitcher.runWithGenerationClosed`
+   does): `dispose` closed the runner but returned while its drain still
+   awaited a send. The next generation released that row (decision 4) and
+   sent it and a newer version; then the old send landed last
+   (`NewestLandsLast`, eleven steps). `sendNext` now records its run in
+   `_activeSend` and returns at once when disposed, and `dispose` awaits the
+   run before it tears anything else down; the drain stops after its current
+   pass. The old generation cannot overwrite the new one's statuses:
+   `ServiceDisposer` closes its `SyncDatabase` before the next generation
+   opens the file, so its late marks throw. A per-instance claim token was
+   rejected as unnecessary for that reason, and it would need a schema change.
+6. **The model gates the code**, as in ADR 0065: `Outbox.tla` and its three
    configurations run in CI whenever the outbox, its database mixins, the
    runner or the outbox monitor change, and a Glados trace in the enqueue
    writer's suite drives the real writer, database, repository and processor
@@ -94,8 +107,12 @@ failed for good) held already.
 - After a crash or a double mark failure, the rows a claim left behind are
   resent on the next drain instead of a minute later. That was always a
   duplicate; now it is one that arrives in order. The claim lease stays as a
-  guard for a service rebuilt over the same database while the old one still
-  sends; there, releasing costs a duplicate send.
+  second guard.
+- A profile switch or restart can take up to one send longer to dispose the
+  outbox. `ServiceDisposer` allows each service three seconds; a send still
+  running after that is recorded as a disposal failure (and makes the strict
+  closed-generation path report a quiescence failure) and is the timed-out
+  send residual below.
 - **Residual: a timed-out send can land after a newer one.** The processor
   abandons a send after `sendTimeout` and retries the row, but the Matrix send
   keeps running and can land after the retry or a newer version

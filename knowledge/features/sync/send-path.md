@@ -273,8 +273,16 @@ A claim can end without any mark: the process dies between the send and
 one callback at a time and only `sendNext` claims, so no claim of this
 process is in flight there. The orphan is resent in its turn, before newer
 rows of its entity. Left to its one-minute lease, it would go out after them
-and an older payload would land last. The lease stays as a guard for a
-service rebuilt over the same database while the old one still sends.
+and an older payload would land last. The lease stays as a second guard.
+
+The release is sound only because no other drain can still be running, and a
+profile switch or closed-generation restart brings the same profile back
+within the same process. So `sendNext` records its run and returns at once
+once the service is disposed, and `dispose` awaits that run — the drain stops
+after its current pass — before it cancels anything else. Otherwise the old
+generation's send could land after the new generation released and resent its
+row together with a newer version. The old generation's late marks cannot
+touch the new one's rows: `ServiceDisposer` closes its `SyncDatabase` first.
 
 Two orderings are **not** guaranteed (ADR 0085 residuals): a send the
 processor abandoned at its timeout can still land after a newer version, and

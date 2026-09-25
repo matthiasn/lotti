@@ -45,6 +45,10 @@
 (*   UserRetry,          OutboxMonitorPage._requeue and _removeItem        *)
 (*   UserRemove                                                            *)
 (*   Crash               the process dies; the database survives           *)
+(*   Teardown            OutboxService.dispose in a profile switch or a    *)
+(*                       closed-generation restart; ServiceDisposer then   *)
+(*                       closes SyncDatabase, so a drain dispose did not   *)
+(*                       wait for can no longer mark, only land its send   *)
 (*                                                                         *)
 (* The switches are the fixes of ADR 0085; setting one FALSE restores the  *)
 (* code before it:                                                         *)
@@ -54,6 +58,7 @@
 (*   CoverOnlyOlder      a fresh row is enriched only with an older clock  *)
 (*   ReleaseBeforeDrain  a drain first returns orphaned `sending` rows to  *)
 (*                       `pending`                                         *)
+(*   QuiesceOnDispose    dispose waits for the drain in flight             *)
 (*                                                                         *)
 (* Abstractions: claim order is row id order (priority is fixed per        *)
 (* message type, and createdAt follows the id while the clock does not     *)
@@ -77,7 +82,8 @@ CONSTANTS
     KeyedEnqueueLock,
     NewestPayloadWins,
     CoverOnlyOlder,
-    ReleaseBeforeDrain
+    ReleaseBeforeDrain,
+    QuiesceOnDispose
 
 FaultKinds == {
     "sendFail",     \* the sender returns false or throws
@@ -90,7 +96,8 @@ ASSUME MaxVersion \in Nat \ {0} /\ MaxRetries \in Nat \ {0}
 ASSUME MaxBundle \in Nat \ {0} /\ MaxCrashes \in Nat /\ FaultBudget \in Nat
 ASSUME Keys \cap SimpleMsgs = {}
 ASSUME \A b \in {InOrderEnqueue, UserActions, KeyedEnqueueLock,
-                 NewestPayloadWins, CoverOnlyOlder, ReleaseBeforeDrain} :
+                 NewestPayloadWins, CoverOnlyOlder, ReleaseBeforeDrain,
+                 QuiesceOnDispose} :
           b \in BOOLEAN
 
 Versions == 1..MaxVersion
@@ -381,6 +388,21 @@ Crash ==
     /\ crashes' = crashes + 1
     /\ UNCHANGED <<rows, expired, snap, wire, ghosts, abandoned, faults>>
 
+\* The generation is disposed and the same profile starts again. With the
+\* fix, dispose returns only once the drain in flight has finished. Without
+\* it, a send still running outlives its service: its database is closed, so
+\* it cannot mark, but it can still land after the next generation has
+\* released its rows and sent newer ones.
+Teardown ==
+    /\ crashes < MaxCrashes
+    /\ QuiesceOnDispose => phase \in {"off", "idle"}
+    /\ ghosts' = IF phase = "sending" THEN ghosts \cup {BatchMsgs} ELSE ghosts
+    /\ phase' = "off"
+    /\ batch' = <<>>
+    /\ enq' = [i \in Items |-> IF enq[i] = "read" THEN "idle" ELSE enq[i]]
+    /\ crashes' = crashes + 1
+    /\ UNCHANGED <<rows, expired, snap, wire, abandoned, faults>>
+
 Next ==
     \/ \E k \in Keys, v \in Versions : EnqRead(k, v) \/ EnqWrite(k, v)
     \/ \E m \in SimpleMsgs : EnqSimple(m)
@@ -389,7 +411,7 @@ Next ==
     \/ \E g \in ghosts : GhostLand(g)
     \/ \E r \in Ids : LeaseExpire(r) \/ Prune(r) \/ UserRetry(r)
                       \/ UserRemove(r)
-    \/ Crash
+    \/ Crash \/ Teardown
 
 \* The implementation's own steps eventually happen: an enqueue that read
 \* writes, nudges start drains, sends finish, marks land and leases run out.

@@ -1101,6 +1101,7 @@ ordered like its vector clocks. The decision is
 | `NewestPayloadWins` | a merge always took the incoming inline payload | `CoversOnlyOlder` in four steps: v3 is pending and a late enqueue of v1 makes the row `{v1, covers 3}`; `MergeNeverRegresses` in the same shape |
 | `CoverOnlyOlder` | a fresh row was enriched with the last recorded counter whatever its payload | `CoversOnlyOlder`, eight steps: v3 is in flight when a late v2 inserts a fresh row covering 3, so a peer would mark 3 received holding only v2 |
 | `ReleaseBeforeDrain` | a `sending` row a claim left behind waited out its one-minute lease | `NewestLandsLast`, fourteen steps: v1 is claimed, v2 is enqueued as a fresh row, the process dies; after the restart the drain sends v2, the lease runs out, and v1 lands last |
+| `QuiesceOnDispose` | `OutboxService.dispose` returned while its drain still awaited a send | `NewestLandsLast`, eleven steps: v1 is claimed, v2 enqueued, the generation is torn down and the same profile restarts (`Teardown`); the new drain releases v1 and sends v1 and v2, then the old generation's send of v1 lands |
 
 With callers that enqueue in order the old merge was already sound: the same
 configuration with the three enqueue switches off passes. The holes need two
@@ -1145,10 +1146,17 @@ What the model leaves out, deliberately or as a residual:
 - Claim order is the row id; priority is fixed per message type, and
   `createdAt` follows the id unless the wall clock steps back. Media rows
   only change a bundle's size and are left out.
+- `Teardown` is a profile switch or a closed-generation restart
+  (`ProfileSwitcher.runWithGenerationClosed`) that brings the same profile
+  back. The old generation's marks are not modelled: `ServiceDisposer` closes
+  that generation's `SyncDatabase` before the next one opens the file, so a
+  late `markSent` or `markRetry` throws instead of overwriting the new
+  generation's status. What the old generation can still do is land a send,
+  which `QuiesceOnDispose` rules out. The disposer gives `dispose` three
+  seconds; a send slower than that is the timed-out-send residual above, and
+  the strict closed-generation path reports it as a quiescence failure.
 - The claim lease is kept, although a drain now releases every orphaned
-  claim before it starts. It still guards a service torn down and rebuilt
-  over the same database while a send of the old one is in flight; there the
-  release costs a duplicate send, not an order.
+  claim before it starts, as a second guard behind the quiesce.
 
 ## From the model to the code
 

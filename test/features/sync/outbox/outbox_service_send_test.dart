@@ -146,6 +146,73 @@ void main() {
       },
     );
 
+    test(
+      'dispose waits for the drain in flight (Outbox.tla Teardown)',
+      () async {
+        // TLC's trace: the generation is disposed while its drain awaits a
+        // send; the same profile restarts, releases that row and sends it with
+        // a newer one, and then the old send lands last. Dispose must not tear
+        // the service down while its own drain can still send.
+        when(
+          () => journalDb.getConfigFlag(enableMatrixFlag),
+        ).thenAnswer((_) async => true);
+        final claimed = Completer<void>();
+        final inFlight = Completer<OutboxProcessingResult>();
+        when(() => processor.processQueue()).thenAnswer((_) {
+          if (!claimed.isCompleted) claimed.complete();
+          return inFlight.future;
+        });
+        var drainDone = false;
+        bool? drainDoneAtTeardown;
+        // The first thing dispose tears down after the quiesce: record whether
+        // the drain had finished by then.
+        final connectivity = StreamController<List<ConnectivityResult>>(
+          onCancel: () => drainDoneAtTeardown = drainDone,
+        );
+        addTearDown(connectivity.close);
+
+        final svc = MatrixOutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          activityGate: createGate(),
+          ownsActivityGate: false,
+          connectivityStream: connectivity.stream,
+          postDrainSettle: Duration.zero,
+        );
+        final drain = svc.sendNext().then((_) => drainDone = true);
+        await claimed.future;
+
+        final disposing = svc.dispose();
+        inFlight.complete(OutboxProcessingResult.none);
+        await disposing;
+        await drain;
+
+        expect(drainDoneAtTeardown, isTrue);
+        // The drain stopped at the disposal: no second pass after the settle.
+        verify(() => processor.processQueue()).called(1);
+      },
+    );
+
+    test('sendNext does nothing once the service is disposed', () async {
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => true);
+      final svc = buildService(activityGate: createGate());
+      await svc.dispose();
+
+      await svc.sendNext();
+
+      verifyNever(() => repository.releaseOrphanedClaims());
+      verifyNever(() => processor.processQueue());
+    });
+
     test('sendNext releases orphaned claims before it claims', () async {
       when(
         () => journalDb.getConfigFlag(enableMatrixFlag),
