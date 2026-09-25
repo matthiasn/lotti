@@ -356,6 +356,14 @@ Four context details are load-bearing:
   and housekeeping alone are not material progress. Trigger ids identify what
   to inspect, not proof that the situation changed. The prior report's prose is
   deliberately omitted so stale conclusions cannot feed back as evidence.
+  That omission also hides the report's baseline: the model sees `Status: DONE`
+  with nothing saying the report still calls the task IN PROGRESS, so it used
+  to conclude "no material change" after the user closed a task. The executor
+  therefore computes the transition itself —
+  `TaskAgentReportPolicy.statusTransitionSinceReport` reads the status in
+  effect at the report's `createdAt` from the task's timestamped
+  `statusHistory` — and, when it differs from the current status, the context
+  gains a `## Material Change Since Last Report` section naming both statuses.
   No-change wakes skip optional label/language tidying while honoring explicit
   requests. Both scaffolds initialize a missing language when a report is
   required; they do not require that write on an otherwise unchanged wake.
@@ -363,7 +371,8 @@ Four context details are load-bearing:
   gate; it does not require publication on every wake. The scaffold, tool
   descriptions and context use `TaskAgentReportPolicy` for publication,
   language and decision-section wording. The executor uses the same policy
-  to exclude label/language-only housekeeping from forced publication.
+  to exclude label/language-only housekeeping from forced publication, and to
+  force publication after a status change since the last report.
 - **Parent project context** carries only the project agent's latest `oneLiner`
   and `tldr` — the full report body is omitted to keep wake prefill small.
   Linked-task context does the same via `agent_task` links and `agentReportHead`.
@@ -510,8 +519,9 @@ Common changes across the path:
   request to make that boundary concrete. Investigation and checklist follow-up
   alone stay on the task without timing urgency or a reservation request; the
   model must not invent a deadline or time window to justify planner attention.
-- A first report or a report omitted after a successful material mutation gets
-  a forced report call. An existing report with only label/language housekeeping
+- A first report, a report omitted after a successful material mutation, or
+  one omitted after the task's status changed since the last report gets a
+  forced report call. An existing report with only label/language housekeeping
   is preserved, as is a true no-op. The same gate controls retry, report-editor
   audit and missing-report diagnostics.
 

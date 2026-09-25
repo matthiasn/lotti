@@ -112,6 +112,89 @@ void main() {
     expect(scheduleLabel(), findsNothing);
   });
 
+  group('compact countdown', () {
+    Finder countdown() =>
+        find.byKey(const ValueKey('taskAgentCompactCountdown'));
+
+    Widget compactRow({
+      required DateTime? nextWakeAt,
+      bool isStale = true,
+      bool isRunning = false,
+    }) => AgentAutomationRow.compact(
+      inferenceAvailable: true,
+      isRunning: isRunning,
+      hasReportContent: true,
+      isStale: isStale,
+      nextWakeAt: nextWakeAt,
+      showsFreshConfirmation: false,
+      onRunNow: () {},
+    );
+
+    testWidgets(
+      'follows "Out of date" with the time to the next update, ticking down '
+      'and leaving at zero',
+      (tester) async {
+        var current = now;
+        await withClock(Clock(() => current), () async {
+          await pumpRow(
+            tester,
+            compactRow(nextWakeAt: now.add(const Duration(seconds: 90))),
+          );
+
+          expect(find.text('Out of date'), findsOneWidget);
+          expect(tester.widget<Text>(countdown()).data, 'in 1:30');
+          // The schedule register the full band's countdown uses.
+          expect(
+            tester.widget<Text>(countdown()).style,
+            scheduleLabelStyle(tokensOf(tester)),
+          );
+
+          current = current.add(const Duration(seconds: 1));
+          await tester.pump(const Duration(seconds: 1));
+          expect(tester.widget<Text>(countdown()).data, 'in 1:29');
+
+          current = now.add(const Duration(seconds: 90));
+          await tester.pump(const Duration(seconds: 1));
+          await tester.pump();
+          expect(countdown(), findsNothing);
+          // The word stays until the caller learns the summary is current.
+          expect(find.text('Out of date'), findsOneWidget);
+        });
+      },
+    );
+
+    testWidgets('promises nothing beside a fresh summary or a running update', (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(now), () async {
+        final pending = now.add(const Duration(minutes: 5));
+
+        await pumpRow(tester, compactRow(nextWakeAt: pending, isStale: false));
+        expect(
+          find.byKey(const ValueKey('agentAutomationRowSilent')),
+          findsOneWidget,
+        );
+        expect(countdown(), findsNothing);
+
+        await pumpRow(tester, compactRow(nextWakeAt: pending, isRunning: true));
+        expect(find.text('Out of date'), findsOneWidget);
+        expect(countdown(), findsNothing);
+      });
+    });
+
+    testWidgets('shows no countdown without a future deadline', (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(now), () async {
+        for (final wakeAt in [null, now.subtract(const Duration(seconds: 1))]) {
+          await pumpRow(tester, compactRow(nextWakeAt: wakeAt));
+          expect(find.text('Out of date'), findsOneWidget, reason: '$wakeAt');
+          expect(countdown(), findsNothing, reason: '$wakeAt');
+        }
+      });
+    });
+  });
+
   group('manual trigger', () {
     testWidgets('is labelled, glyphed and fires the callback', (tester) async {
       var runs = 0;

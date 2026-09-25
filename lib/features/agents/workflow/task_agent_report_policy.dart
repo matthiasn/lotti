@@ -1,4 +1,8 @@
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+
+/// A task status change that happened after the current report was written.
+typedef TaskStatusTransition = ({String from, String to});
 
 /// Publication requirements shared by task-agent prompts and execution.
 abstract final class TaskAgentReportPolicy {
@@ -64,6 +68,45 @@ A report already exists. Before publishing, identify a new or corrected task fac
   static const closingInstruction =
       'Analyze the current state, maintain any attention requests, and call '
       'tools if needed. $publicationRule Add observations if warranted.';
+
+  /// The status the task had when a report written at [reportCreatedAt] was
+  /// published, paired with the one it has now, or `null` when they match.
+  ///
+  /// The report's prose is never shown to the model, so without this it sees
+  /// only the current status and cannot tell that a task moved to DONE since
+  /// the report still calling it IN PROGRESS was written. The baseline is
+  /// read from the task's own timestamped status history, which every status
+  /// change appends to, so reports written before this check existed are
+  /// covered too. Returns `null` when there is no report or no status that
+  /// predates it.
+  static TaskStatusTransition? statusTransitionSinceReport({
+    required TaskData? task,
+    required DateTime? reportCreatedAt,
+  }) {
+    if (task == null || reportCreatedAt == null) return null;
+    final statusAtReport = [...task.statusHistory, task.status]
+        .where((status) => !status.createdAt.isAfter(reportCreatedAt))
+        .fold<TaskStatus?>(
+          null,
+          (latest, status) =>
+              latest == null || !status.createdAt.isBefore(latest.createdAt)
+              ? status
+              : latest,
+        );
+    if (statusAtReport == null) return null;
+    final from = statusAtReport.toDbString;
+    final to = task.status.toDbString;
+    return from == to ? null : (from: from, to: to);
+  }
+
+  /// States a status change as the material fact it is, so the model does
+  /// not have to infer it from a report it cannot see.
+  static String statusTransitionContext(TaskStatusTransition transition) =>
+      '## Material Change Since Last Report\n'
+      'The task status changed from ${transition.from} to ${transition.to} '
+      'after the current report was written. That report still describes the '
+      'task as ${transition.from}, so it is stale: publish an updated report '
+      'that reflects the current status.\n\n';
 
   /// Rendered by production and synthetic eval contexts from the same source.
   static String changedEntitiesContext({
@@ -280,11 +323,15 @@ A report already exists. Before publishing, identify a new or corrected task fac
 
   /// Housekeeping alone does not stale an existing task report. The model may
   /// still publish when independent evidence changes the task's material state.
+  /// A status change since the report was written ([taskStatusChanged]) always
+  /// stales it, whoever made the change.
   static bool requiresReport({
     required bool hasExistingReport,
     required Iterable<String> successfulToolNames,
+    bool taskStatusChanged = false,
   }) =>
       !hasExistingReport ||
+      taskStatusChanged ||
       successfulToolNames.any(
         (name) => !const {
           TaskAgentToolNames.assignTaskLabel,

@@ -757,7 +757,13 @@ int countOccurrences(String haystack, String needle) {
   return count;
 }
 
-Task makeWorkflowTestTask(String id, {String? languageCode, DateTime? due}) {
+Task makeWorkflowTestTask(
+  String id, {
+  String? languageCode,
+  DateTime? due,
+  TaskStatus? status,
+  List<TaskStatus> statusHistory = const [],
+}) {
   return Task(
     meta: Metadata(
       id: id,
@@ -767,14 +773,16 @@ Task makeWorkflowTestTask(String id, {String? languageCode, DateTime? due}) {
       updatedAt: DateTime(2024, 6),
     ),
     data: TaskData(
-      status: TaskStatus.open(
-        id: id,
-        createdAt: DateTime(2024, 6),
-        utcOffset: 0,
-      ),
+      status:
+          status ??
+          TaskStatus.open(
+            id: id,
+            createdAt: DateTime(2024, 6),
+            utcOffset: 0,
+          ),
       dateFrom: DateTime(2024, 6),
       dateTo: DateTime(2024, 6),
-      statusHistory: [],
+      statusHistory: statusHistory,
       title: 'Linked task',
       due: due,
       languageCode: languageCode,

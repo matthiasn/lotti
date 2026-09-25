@@ -80,15 +80,21 @@ class AgentAutomationRow extends StatefulWidget {
   ///
   /// Everything the full band needs and this pair does not is fixed here
   /// rather than left to each caller: a card that has no switch cannot
-  /// meaningfully answer "is the switch busy", and a countdown it does not
-  /// render has no deadline to latch. Passing twelve arguments to use four
-  /// was how the previous callers of `compact: true` read.
+  /// meaningfully answer "is the switch busy". Passing twelve arguments to use
+  /// four was how the previous callers of `compact: true` read.
+  ///
+  /// [nextWakeAt] is the one piece of the schedule the pair does carry: while
+  /// the summary reads out of date and an automatic update is pending, a
+  /// short "in 1:30" follows the word, so an out-of-date summary also says
+  /// that it is about to fix itself. It never latches a layout or reports an
+  /// expiry — the readout simply leaves once it reaches zero.
   const AgentAutomationRow.compact({
     required this.inferenceAvailable,
     required this.isRunning,
     required this.hasReportContent,
     required this.isStale,
     required this.onRunNow,
+    this.nextWakeAt,
     this.isRefreshingReport,
     this.showsFreshConfirmation = true,
     super.key,
@@ -96,7 +102,6 @@ class AgentAutomationRow extends StatefulWidget {
        automaticUpdatesEnabled = false,
        automationBusy = false,
        showCountdown = false,
-       nextWakeAt = null,
        showsIdleScheduleLabel = false,
        onAutomaticUpdatesChanged = null,
        onSkipScheduledUpdate = null,
@@ -299,10 +304,22 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
           !(outdated && freshnessLabel != null)) {
         return const SizedBox.shrink(key: ValueKey('agentAutomationRowSilent'));
       }
+      final pendingWakeAt = widget.nextWakeAt;
+      // Only beside "Out of date": a countdown under a fresh summary, or
+      // beside "Thinking…", would promise an update that is not the point.
+      final countdown =
+          outdated &&
+              freshnessLabel != null &&
+              !widget.isRunning &&
+              pendingWakeAt != null &&
+              pendingWakeAt.isAfter(clock.now())
+          ? _CompactCountdown(nextWakeAt: pendingWakeAt)
+          : null;
       final freshness = _FreshnessCluster(
         label: freshnessLabel,
         tooltip: freshnessTooltip,
         isStale: outdated,
+        trailing: countdown,
       );
       final trigger = _UpdateNowButton(
         isRunning: widget.isRunning,
@@ -547,11 +564,15 @@ class _FreshnessCluster extends StatelessWidget {
     required this.label,
     required this.tooltip,
     required this.isStale,
+    this.trailing,
   });
 
   final String? label;
   final String? tooltip;
   final bool isStale;
+
+  /// Follows the word on the same line — the compact form's countdown.
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -599,7 +620,54 @@ class _FreshnessCluster extends StatelessWidget {
             ),
           ),
         ),
+        if (trailing case final trailing?) ...[
+          SizedBox(width: tokens.spacing.step2),
+          trailing,
+        ],
       ],
+    );
+  }
+}
+
+/// The compact form's "in 1:30": when the out-of-date summary refreshes
+/// itself. Shares the full band's wording ladder and schedule register, and
+/// takes no space once the deadline has passed.
+class _CompactCountdown extends StatefulWidget {
+  const _CompactCountdown({required this.nextWakeAt});
+
+  final DateTime nextWakeAt;
+
+  @override
+  State<_CompactCountdown> createState() => _CompactCountdownState();
+}
+
+class _CompactCountdownState extends State<_CompactCountdown>
+    with WakeCountdownState<_CompactCountdown> {
+  @override
+  DateTime get nextWakeAt => widget.nextWakeAt;
+
+  @override
+  void didUpdateWidget(covariant _CompactCountdown oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.nextWakeAt != widget.nextWakeAt) resyncCountdown();
+  }
+
+  @override
+  void onCountdownExpired() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (countdownSeconds <= 0) return const SizedBox.shrink();
+    return Text(
+      context.messages.taskAgentNextUpdateInShort(
+        formatCountdown(countdownSeconds),
+      ),
+      key: const ValueKey('taskAgentCompactCountdown'),
+      maxLines: 1,
+      softWrap: false,
+      style: scheduleLabelStyle(context.designTokens),
     );
   }
 }

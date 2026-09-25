@@ -111,7 +111,8 @@ void main() {
     });
 
     testWidgets(
-      'a change waiting out its countdown already reads Out of date',
+      'a change waiting out its countdown reads Out of date, with the time '
+      'to the next update',
       (tester) async {
         // A task change arms the throttle deadline without moving the stale
         // watermark, so before the fix the card stayed silent — looking
@@ -157,8 +158,13 @@ void main() {
             behind ? findsOneWidget : findsNothing,
             reason: reason,
           );
-          // Still no digits: the countdown itself stays in the panel.
-          expect(find.textContaining('1:30'), findsNothing, reason: reason);
+          // Out of date says when it will fix itself; a deadline already
+          // behind `now` promises nothing.
+          expect(
+            find.text('in 1:30'),
+            behind ? findsOneWidget : findsNothing,
+            reason: reason,
+          );
           if (behind) {
             // The reader can act on it straight away instead of waiting.
             await tester.tap(find.byKey(const ValueKey('taskAgentWakeButton')));

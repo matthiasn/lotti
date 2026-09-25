@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 
@@ -48,6 +49,120 @@ void main() {
       }
     },
   );
+
+  test('a status change since the report always requires a new one', () {
+    expect(
+      TaskAgentReportPolicy.requiresReport(
+        hasExistingReport: true,
+        successfulToolNames: const [],
+        taskStatusChanged: true,
+      ),
+      isTrue,
+    );
+    expect(
+      TaskAgentReportPolicy.requiresReport(
+        hasExistingReport: true,
+        successfulToolNames: const [],
+      ),
+      isFalse,
+    );
+  });
+
+  group('statusTransitionSinceReport', () {
+    final reportAt = DateTime(2024, 6, 15, 10);
+    final before = reportAt.subtract(const Duration(hours: 2));
+    final after = reportAt.add(const Duration(hours: 2));
+
+    TaskStatus inProgress(DateTime at) =>
+        TaskStatus.inProgress(id: 'ip-$at', createdAt: at, utcOffset: 0);
+    TaskStatus done(DateTime at) =>
+        TaskStatus.done(id: 'done-$at', createdAt: at, utcOffset: 0);
+    TaskData task(TaskStatus status, List<TaskStatus> history) => TaskData(
+      status: status,
+      statusHistory: history,
+      dateFrom: before,
+      dateTo: before,
+      title: 'Ship it',
+    );
+
+    test('reports IN PROGRESS → DONE when DONE came after the report', () {
+      expect(
+        TaskAgentReportPolicy.statusTransitionSinceReport(
+          task: task(done(after), [inProgress(before)]),
+          reportCreatedAt: reportAt,
+        ),
+        (from: 'IN PROGRESS', to: 'DONE'),
+      );
+    });
+
+    test('reads the baseline whether or not history holds the current', () {
+      final current = done(after);
+      expect(
+        TaskAgentReportPolicy.statusTransitionSinceReport(
+          task: task(current, [inProgress(before), current]),
+          reportCreatedAt: reportAt,
+        ),
+        (from: 'IN PROGRESS', to: 'DONE'),
+      );
+    });
+
+    test('is null when the report already saw the current status', () {
+      expect(
+        TaskAgentReportPolicy.statusTransitionSinceReport(
+          task: task(done(before), [inProgress(before.subtract(_day))]),
+          reportCreatedAt: reportAt,
+        ),
+        isNull,
+      );
+    });
+
+    test('is null when the status left and came back since the report', () {
+      expect(
+        TaskAgentReportPolicy.statusTransitionSinceReport(
+          task: task(inProgress(after.add(_day)), [
+            inProgress(before),
+            done(after),
+          ]),
+          reportCreatedAt: reportAt,
+        ),
+        isNull,
+      );
+    });
+
+    test('is null without a report, a task, or a status predating it', () {
+      final data = task(done(after), [inProgress(before)]);
+      expect(
+        TaskAgentReportPolicy.statusTransitionSinceReport(
+          task: data,
+          reportCreatedAt: null,
+        ),
+        isNull,
+      );
+      expect(
+        TaskAgentReportPolicy.statusTransitionSinceReport(
+          task: null,
+          reportCreatedAt: reportAt,
+        ),
+        isNull,
+      );
+      expect(
+        TaskAgentReportPolicy.statusTransitionSinceReport(
+          task: task(done(after), const []),
+          reportCreatedAt: reportAt,
+        ),
+        isNull,
+      );
+    });
+
+    test('the context names both statuses and demands a new report', () {
+      final context = TaskAgentReportPolicy.statusTransitionContext(
+        (from: 'IN PROGRESS', to: 'DONE'),
+      );
+      expect(context, startsWith('## Material Change Since Last Report\n'));
+      expect(context, contains('from IN PROGRESS to DONE'));
+      expect(context, contains('publish an updated report'));
+    });
+  });
 
   test(
     'changed IDs are stable and only follow-up wakes need restraint guidance',
@@ -280,3 +395,5 @@ void main() {
     });
   });
 }
+
+const _day = Duration(days: 1);

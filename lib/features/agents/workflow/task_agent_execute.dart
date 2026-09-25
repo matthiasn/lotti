@@ -246,6 +246,21 @@ extension TaskAgentExecute on TaskAgentWorkflow {
     // compaction, which consumes its resolved entries as decision events).
     final pendingSets = ledger.pendingSets;
 
+    // The report's prose is withheld from the model, so a status change the
+    // user made since it was written (IN PROGRESS → DONE) is computed here
+    // rather than left for the model to notice.
+    final statusTransition = TaskAgentReportPolicy.statusTransitionSinceReport(
+      task: taskAttentionContext.task?.data,
+      reportCreatedAt: lastReport?.createdAt,
+    );
+    if (statusTransition != null) {
+      _log(
+        'status changed since last report: '
+        '${statusTransition.from} → ${statusTransition.to}',
+        subDomain: 'execute',
+      );
+    }
+
     final systemPrompt = _buildSystemPrompt(templateCtx, modelId: modelId);
     final builtMessage = await _buildUserMessage(
       agentId: agentId,
@@ -264,6 +279,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       // Only attach the compacted log when we're actually using it (the inline
       // log was dropped); otherwise the full inline log already carries it.
       compactedTaskLog: useCompactedLog ? compactedTaskLog : null,
+      statusTransition: statusTransition,
     );
     final userMessage = builtMessage.text;
 
@@ -608,10 +624,12 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       );
 
       // 7b. First reports and material mutations require publication. Label
-      // and language housekeeping alone preserve an existing report.
+      // and language housekeeping alone preserve an existing report; a status
+      // change since the last report never does.
       final reportMissing = strategy.extractReportContent().isEmpty;
       final reportWasRequired = TaskAgentReportPolicy.requiresReport(
         hasExistingReport: lastReport != null,
+        taskStatusChanged: statusTransition != null,
         successfulToolNames: strategy.extractSuccessfulMutations().map(
           (mutation) => mutation.toolName,
         ),
