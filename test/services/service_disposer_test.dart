@@ -46,40 +46,66 @@ void main() {
   });
 
   group('ServiceDisposer', () {
-    test('drains recovery before closing its outbox and database', () {
-      fakeAsync((async) {
-        final pending = Completer<void>();
-        final order = <String>[];
-        final recovery = SyncRecoveryService(
-          logging: MockDomainLogger(),
-          recover: () {
-            order.add('recover');
-            return pending.future;
-          },
-        );
-        final outbox = MockOutboxService();
-        when(outbox.dispose).thenAnswer((_) async => order.add('outbox'));
-        final syncDb = MockSyncDatabase();
-        when(syncDb.close).thenAnswer((_) async => order.add('database'));
-        testGetIt
-          ..registerSingleton<SyncRecoveryService>(recovery)
-          ..registerSingleton<OutboxService>(outbox)
-          ..registerSingleton<SyncDatabase>(syncDb);
-        unawaited(recovery.start());
-        List<ServiceDisposalFailure>? failures;
-        unawaited(disposer.disposeAll().then((value) => failures = value));
-        async.flushMicrotasks();
-        expect(order, ['recover']);
-        expect(failures, isNull);
+    for (final recoveryFails in [false, true]) {
+      test(
+        'drains slow recovery before closing stores (failure=$recoveryFails)',
+        () {
+          fakeAsync((async) {
+            final pending = Completer<void>();
+            final order = <String>[];
+            final recovery = SyncRecoveryService(
+              logging: MockDomainLogger(),
+              recover: () {
+                order.add('recover');
+                return pending.future;
+              },
+            );
+            final outbox = MockOutboxService();
+            when(outbox.dispose).thenAnswer((_) async => order.add('outbox'));
+            final syncDb = MockSyncDatabase();
+            when(syncDb.close).thenAnswer((_) async => order.add('database'));
+            testGetIt
+              ..registerSingleton<SyncRecoveryService>(
+                recovery,
+                dispose: (service) => service.dispose(),
+              )
+              ..registerSingleton<OutboxService>(outbox)
+              ..registerSingleton<SyncDatabase>(syncDb);
+            unawaited(recovery.start());
+            List<ServiceDisposalFailure>? failures;
+            unawaited(disposer.disposeAll().then((value) => failures = value));
+            async.flushMicrotasks();
+            expect(order, ['recover']);
+            expect(failures, isNull);
 
-        pending.complete();
-        async.flushMicrotasks();
-        expect(order, ['recover', 'outbox', 'database']);
-        expect(failures, isEmpty);
-        async.elapse(const Duration(minutes: 10));
-        expect(order, ['recover', 'outbox', 'database']);
-      });
-    });
+            // Future.timeout does not cancel the work it stops awaiting. Stores
+            // must remain open even after the ordinary disposal deadline passes.
+            async
+              ..elapse(const Duration(seconds: 4))
+              ..flushMicrotasks();
+            expect(order, ['recover']);
+            expect(failures, isNull);
+            expect(loggedErrors, isEmpty);
+
+            if (recoveryFails) {
+              pending.completeError(StateError('recovery store unavailable'));
+            } else {
+              pending.complete();
+            }
+            async.flushMicrotasks();
+            expect(order, ['recover', 'outbox', 'database']);
+            expect(failures, isEmpty);
+
+            var resetFinished = false;
+            unawaited(testGetIt.reset().then((_) => resetFinished = true));
+            async.flushMicrotasks();
+            expect(resetFinished, isTrue);
+            async.elapse(const Duration(minutes: 10));
+            expect(order, ['recover', 'outbox', 'database']);
+          });
+        },
+      );
+    }
 
     test('disposeAll on empty container is a no-op', () async {
       await disposer.disposeAll();

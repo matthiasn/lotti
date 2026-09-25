@@ -22,8 +22,8 @@ import 'package:lotti/features/sync/backfill/sync_recovery_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 
-/// Per-operation deadline so a single hung service cannot block the entire
-/// shutdown sequence.
+/// Default deadline for best-effort cleanup. Dependency-sensitive drains opt
+/// out because timing out a Future does not stop it from using its stores.
 const _perOperationTimeout = Duration(seconds: 3);
 
 /// One service or database that did not dispose cleanly: it threw, or it did
@@ -46,8 +46,9 @@ class ServiceDisposalFailure {
 
 /// Disposes long-running services and databases in dependency-safe order.
 ///
-/// Each disposal is guarded independently so a failure or timeout in one does
-/// not prevent the next service from being torn down. Every failure is
+/// Cleanup failures are guarded independently. Sync recovery first drains
+/// without a deadline so its dependencies cannot close while it uses them;
+/// subsequent cleanup steps have individual deadlines. Every failure is
 /// logged and also returned, so a caller that must know the generation
 /// really closed (a backup) can refuse to proceed, while shutdown and profile
 /// switches simply carry on.
@@ -70,7 +71,7 @@ class ServiceDisposer {
 
   /// Disposes all services and databases, returning every one that did not
   /// dispose cleanly. An empty list means each registered service and
-  /// database was closed within its deadline.
+  /// database finished closing (within its deadline where one applies).
   Future<List<ServiceDisposalFailure>> disposeAll() async {
     _failures.clear();
     await _disposeServices();
@@ -81,9 +82,11 @@ class ServiceDisposer {
   Future<void> _disposeServices() async {
     // Recovery can still enqueue a resend or a burn marker. Drain it before
     // closing the outbox and the stores whose durable intents it reconciles.
+    // A timeout would leave that work running against closed dependencies.
     await _disposeAsyncSafely<SyncRecoveryService>(
       (s) => s.dispose(),
       'SyncRecoveryService',
+      timeout: null,
     );
 
     // 1. Stop periodic background services.
@@ -193,11 +196,13 @@ class ServiceDisposer {
 
   Future<void> _disposeAsyncSafely<T extends Object>(
     Future<void> Function(T) action,
-    String name,
-  ) async {
+    String name, {
+    Duration? timeout = _perOperationTimeout,
+  }) async {
     if (!_getIt.isRegistered<T>()) return;
     try {
-      await action(_getIt<T>()).timeout(_perOperationTimeout);
+      final future = action(_getIt<T>());
+      await (timeout == null ? future : future.timeout(timeout));
     } catch (e, s) {
       _recordFailure(e, s, name);
     }

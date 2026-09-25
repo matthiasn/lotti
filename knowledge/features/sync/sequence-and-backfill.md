@@ -263,9 +263,12 @@ enabled. Active writes and unavailable stores remain protected by the settlement
 guards above. The unnamed-reservation audit runs once after a successful pass.
 
 Startup tracks the first pass, and `ServiceDisposer` drains active recovery
-before closing the outbox or databases. Stopping or suspending the app stops
-progress; the guarantee still assumes the app eventually runs with usable
-stores and fair timer scheduling.
+before closing the outbox or databases. This drain has no timeout: abandoning
+the await would leave the same pass using stores that teardown had closed.
+A slow pass therefore delays shutdown or a profile switch until it finishes;
+the later GetIt disposal hook then observes an already-drained service.
+Stopping or suspending the app stops progress; the guarantee still assumes
+the app eventually runs with usable stores and fair timer scheduling.
 
 If both the sequence-row lookup and the settings fallback lookup miss,
 settlement re-reads the sequence log before deciding. Migration inserts that
