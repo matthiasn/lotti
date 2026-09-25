@@ -40,7 +40,7 @@ sequence receipt cannot stand in for applying its payload.
 ```mermaid
 flowchart LR
     Write[Reserve and commit] --> Outbox[Durable outbox]
-    Recovery[Release or startup recovery] --> Outbox
+    Recovery[Release, startup or periodic recovery] --> Outbox
     Outbox --> Claim[Claim and causal collapse]
     Claim --> Upload[Prepare attachment]
     Upload --> Room[Send to retained room history]
@@ -123,10 +123,11 @@ The liveness obligations are explicit:
   are compressed, and resend re-arms an abandoned attempt only after a send.
   `folded` rows retain their claimed representative rather than becoming sent
   before transmission. Physical row deletion and retry counters are abstracted.
-- Fair **recovery opportunities** are an environment requirement. Production
-  retries own settlement on release, startup, store wiring or request, not with
-  an endless timer. Backfill request fairness also assumes retry opportunities
-  continue (including operator retry), beyond automatic retry exhaustion.
+- Fair **recovery opportunities** assume the app eventually runs with usable
+  stores and fair timer scheduling. Production retries own settlement
+  periodically as well as on release, startup, store wiring or request.
+  Backfill request fairness still assumes retry opportunities continue
+  (including operator retry), beyond automatic retry exhaustion.
 - Lossy profiles do not promise recovery of an unobserved final counter.
   Receipt failures now retain a retryable delivery; a dedicated temporal check
   proves eventual receipt with one transient failure, including at the tail.
