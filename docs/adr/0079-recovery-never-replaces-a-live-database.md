@@ -53,6 +53,22 @@ the WAL.
    snapshot takes time. A file that reads by then is left in place, and the
    staged copy is removed.
 3. **Every probe connection is closed before it returns** (as in PR #4464).
+4. **A snapshot is judged by what the restore installs.** The restore copies
+   only a snapshot's main file. A snapshot from `createDbBackup`'s raw-copy
+   fallback keeps its source's `-wal` next to it, and a locking read through
+   that WAL can succeed even though the main file alone cannot be read.
+   Snapshots therefore get the immutable, main-file-only look.
+5. **Recoverers of one file run one at a time.** Two app instances can open
+   the same profile. Each would judge the file unreadable and restore it, and
+   the second could move aside the file the first had restored and written
+   to since, then install an older backup over it. Recovery therefore holds
+   an exclusive OS lock on `backup/<name>.recovery-lock` (dart:io
+   `RandomAccessFile.lock`, which is `fcntl` on Unix) from staging the
+   snapshot until the backup is in place. An OS lock does not exclude a
+   second holder inside the same process, so recoverers in one process also
+   wait in a queue keyed by the lock file. After waiting, the recheck in
+   step 2 finds the other recoverer's restore readable and leaves it alone.
+   Inside one process, no `await` separates that recheck from the rename.
 
 ## Consequences
 
@@ -61,11 +77,26 @@ the WAL.
   database with a torn main file, both through the probe and through the
   whole recovery. Removing the second look, making it read-write, or skipping
   the recheck before the rename each makes a test fail.
+- A raw-copy snapshot that reads only through its own `-wal` is skipped in
+  favour of an older snapshot that reads on its own. A test covers this, and
+  it fails if snapshots are judged with the WAL-reading look.
+- A recoverer in another process waits for the lock and does not have its
+  restore moved aside. The test runs that other process as a `python3`
+  script using the same `fcntl` lock, inside a test hook placed between the
+  final recheck and the rename. It fails without the lock, and it fails with
+  only the in-process queue. The test runs on Linux and macOS.
 - A truly damaged file fails both looks, so recovery still restores it.
 - Only the damaged-file path pays for the second look: one more open, plus up
   to two seconds if a lock is held.
+- The lock file stays in `backup/`. Deleting it would open a race between
+  unlinking it and another process opening it.
 - **Residual:** a file that becomes damaged between the final recheck and the
   rename is still replaced. That is the case recovery exists for.
+- **Residual:** only recoverers take the lock. Ordinary connections, such as
+  a store's own connection after recovery or the backup capture's
+  connections, do not take it. Such a connection could write a file that is
+  truly damaged in the moment between the final recheck and the rename. No
+  such writer has been found.
 
 ## Related
 

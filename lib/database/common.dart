@@ -10,6 +10,7 @@ import 'package:lotti/database/slow_query_logging.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqlite3/sqlite3.dart';
@@ -495,13 +496,19 @@ bool _probeReads(File file, Map<String, String> parameters) {
 /// live file that reads again by the time the snapshot is staged.
 ///
 /// The live file is probed once more right before it is moved aside. Copying
-/// a snapshot takes time, and a file that reads by then — whatever made the
-/// first verdict — must not be replaced by an older copy of itself.
+/// a snapshot takes time, and a file that reads by then — another recoverer
+/// restored it — must not be replaced by an older copy.
+///
+/// Snapshots are judged by their main file alone, because that is what is
+/// installed: a raw-copy snapshot's `-wal` stays in the backup directory.
 Future<File?> restoreDatabaseFromBackup(File file) async {
   final backupDir = Directory(p.join(file.parent.path, _backupDirectoryName));
   final stem = p.basenameWithoutExtension(file.path);
   for (final (_, _, snapshot) in _snapshotsOf(backupDir, stem: stem)) {
-    if (!isReadableDatabaseFile(snapshot)) {
+    // Judged by what the restore installs: the main file alone. A raw-copy
+    // snapshot keeps its source's `-wal` beside it, and a read through that
+    // WAL can succeed where the main file installed on its own cannot.
+    if (!_probeReads(snapshot, const {'immutable': '1'})) {
       DevLogger.warning(
         name: 'Database',
         message:
@@ -522,6 +529,9 @@ Future<File?> restoreDatabaseFromBackup(File file) async {
       if (staged.existsSync()) await staged.delete();
       rethrow;
     }
+    // Nothing is awaited between this check and the rename below, so no
+    // recoverer in this process can slip in between; one in another process
+    // is held off by the recovery lock (see [recoverDatabaseIfUnreadable]).
     if (isReadableDatabaseFile(file)) {
       await staged.delete();
       DevLogger.warning(
@@ -532,6 +542,7 @@ Future<File?> restoreDatabaseFromBackup(File file) async {
       );
       return null;
     }
+    await debugBeforeRecoveryRename?.call();
     final ts = DateFormat(_backupTimestampFormat).format(clock.now());
     if (file.existsSync()) {
       await file.rename('${file.path}.corrupt-$ts');
@@ -553,6 +564,54 @@ Future<File?> restoreDatabaseFromBackup(File file) async {
   return null;
 }
 
+/// Runs between the final recheck and moving the live file aside, for tests
+/// that need another process to act inside that window.
+@visibleForTesting
+Future<void> Function()? debugBeforeRecoveryRename;
+
+/// Recoverers of the same file waiting on each other in this process. An
+/// OS file lock does not exclude a second holder in the same process.
+final Map<String, Future<void>> _recoveryQueue = {};
+
+/// Runs [action] as the only recoverer of [file]: queued behind any other in
+/// this process, and holding an exclusive lock on
+/// `backup/<name>.recovery-lock` against other processes. Two app instances
+/// can open one profile, and both would otherwise judge the file unreadable
+/// and restore it in turn, the second moving the first one's restored — and
+/// perhaps since written — file aside. With no backup directory there is
+/// nothing to restore from and no lock to take.
+Future<T?> _withRecoveryLock<T>(
+  File file,
+  Future<T?> Function() action,
+) async {
+  final backupDir = Directory(p.join(file.parent.path, _backupDirectoryName));
+  if (!backupDir.existsSync()) return action();
+  final lockPath = p.join(
+    backupDir.path,
+    '${p.basename(file.path)}.recovery-lock',
+  );
+  final previous = _recoveryQueue[lockPath];
+  final done = Completer<void>();
+  final turn = done.future;
+  _recoveryQueue[lockPath] = turn;
+  try {
+    await previous;
+    final lock = await File(lockPath).open(mode: FileMode.append);
+    try {
+      await lock.lock(FileLock.blockingExclusive);
+      return await action();
+    } finally {
+      // Closing the handle releases the lock.
+      await lock.close();
+    }
+  } finally {
+    done.complete();
+    if (identical(_recoveryQueue[lockPath], turn)) {
+      unawaited(_recoveryQueue.remove(lockPath));
+    }
+  }
+}
+
 /// Restores [file] from its newest backup when it can no longer be read.
 ///
 /// Called on the open path, before the connection is built: a database whose
@@ -569,7 +628,12 @@ Future<void> recoverDatabaseIfUnreadable(File file) async {
         'looking for a backup to restore',
   );
   try {
-    final restored = await restoreDatabaseFromBackup(file);
+    // Another recoverer may restore the file while this one waits for the
+    // lock; the recheck before the rename leaves such a file in place.
+    final restored = await _withRecoveryLock(
+      file,
+      () => restoreDatabaseFromBackup(file),
+    );
     DevLogger.log(
       name: 'Database',
       message: restored == null

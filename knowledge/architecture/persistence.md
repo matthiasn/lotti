@@ -696,6 +696,15 @@ can read passes it. A lock it cannot get counts as readable. The file is
 checked again right before it is moved aside, and a file that reads by then
 stays in place.
 
+A snapshot is judged by its main file alone (the immutable look), because
+only the main file is installed. A raw-copy snapshot's `-wal` stays in
+`backup/`, and a read through it could pass a snapshot whose main file alone
+cannot be read. Recoverers of one file take turns: they hold an exclusive OS
+lock on `backup/<name>.recovery-lock` against other app instances, and they
+wait in an in-process queue, because an OS lock does not exclude a second
+holder in the same process. A recoverer that waited finds the other one's
+restore readable at its final recheck, and leaves it in place.
+
 Neither look uses a read-write connection: closing one beside a file that
 is not a database deletes the `-wal` and `-shm`, which hold the commits a
 restore keeps. A read-only connection leaves the `-wal` in place and may
