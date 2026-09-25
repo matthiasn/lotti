@@ -77,37 +77,6 @@ void main() {
   });
 
   test(
-    'primes the shared last-sent cache so a later lookup avoids the DB',
-    () async {
-      await sender.recordSentEntry(
-        entryId: 'e1',
-        vectorClock: const VectorClock({myHost: 4}),
-      );
-
-      final key = cache.lastSentCacheKey(myHost, 'e1');
-      expect(cache.containsLastSent(key), isTrue);
-      expect(cache.getLastSent(key), 4);
-    },
-  );
-
-  test(
-    'does not downgrade the cached counter when a lower one is re-recorded',
-    () async {
-      await sender.recordSentEntry(
-        entryId: 'e1',
-        vectorClock: const VectorClock({myHost: 7}),
-      );
-      await sender.recordSentEntry(
-        entryId: 'e1',
-        vectorClock: const VectorClock({myHost: 3}),
-      );
-
-      final key = cache.lastSentCacheKey(myHost, 'e1');
-      expect(cache.getLastSent(key), 7);
-    },
-  );
-
-  test(
     'skips an exact duplicate binding but reports the duplicate count',
     () async {
       const vectorClock = VectorClock({myHost: 7});

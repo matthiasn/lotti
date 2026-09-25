@@ -6,10 +6,16 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
+import 'package:lotti/features/sync/tuning.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -1824,5 +1830,338 @@ void main() {
         );
       },
     );
+  });
+
+  // ADR 0086: every version is its own immutable row; the processor collapses
+  // an entity's rows when it sends. Against a real SyncDatabase, so the claim,
+  // the collapse lookups and the marks all run for real.
+  group('dequeue-time collapse (ADR 0086, Outbox.tla)', () {
+    late SyncDatabase db;
+    late MockOutboxMessageSender sender;
+    late List<SyncMessage> wire;
+    late OutboxProcessor processor;
+
+    setUp(() {
+      db = SyncDatabase(inMemoryDatabase: true);
+      sender = MockOutboxMessageSender();
+      wire = [];
+      when(() => sender.send(any())).thenAnswer((invocation) async {
+        final message = invocation.positionalArguments.single as SyncMessage;
+        wire.addAll(
+          message is SyncOutboxBundle ? message.children : [message],
+        );
+        return true;
+      });
+      final log = MockDomainLogger();
+      _stubSilentLogging(log);
+      processor = OutboxProcessor(
+        repository: DatabaseOutboxRepository(db, maxRetries: 3),
+        messageSender: sender,
+        loggingService: log,
+        bundleMaxSizeOverride: 2,
+        maxRetriesOverride: 3,
+      );
+    });
+    tearDown(() async => db.close());
+
+    SyncMessage agentAt(Map<String, int> clock) => SyncMessage.agentEntity(
+      agentEntity: AgentDomainEntity.agent(
+        id: 'agent-1',
+        agentId: 'agent-1',
+        kind: 'task_agent',
+        displayName: 'Agent',
+        lifecycle: AgentLifecycle.active,
+        mode: AgentInteractionMode.autonomous,
+        allowedCategoryIds: const {},
+        currentStateId: 'state-1',
+        config: const AgentConfig(),
+        createdAt: DateTime(2026, 9, 25),
+        updatedAt: DateTime(2026, 9, 25),
+        vectorClock: VectorClock(clock),
+      ),
+      status: SyncEntryStatus.update,
+    );
+
+    SyncMessage journalAt(int counter, {bool initial = false}) =>
+        SyncMessage.journalEntity(
+          id: 'entry-1',
+          vectorClock: VectorClock({'host': counter}),
+          jsonPath: '/audio/entry-1.json',
+          status: initial ? SyncEntryStatus.initial : SyncEntryStatus.update,
+        );
+
+    Future<int> append(
+      SyncMessage message, {
+      required String entryId,
+      String? filePath,
+      OutboxStatus status = OutboxStatus.pending,
+      int retries = 0,
+      int priority = 2,
+    }) => db.addOutboxItem(
+      OutboxCompanion(
+        status: Value(status.index),
+        subject: Value('$entryId-${message.runtimeType}'),
+        message: Value(jsonEncode(message.toJson())),
+        outboxEntryId: Value(entryId),
+        filePath: Value(filePath),
+        retries: Value(retries),
+        priority: Value(priority),
+        createdAt: Value(DateTime(2026, 9, 25, 12)),
+        updatedAt: Value(DateTime(2026, 9, 25, 12)),
+      ),
+    );
+
+    Future<void> drain() async {
+      for (var pass = 0; pass < 10; pass++) {
+        final result = await processor.processQueue();
+        if (!result.shouldSchedule) return;
+      }
+    }
+
+    Future<Map<int, int>> statuses() async => {
+      for (final item in await db.getOutboxItems()) item.id: item.status,
+    };
+
+    List<int?> coveredCounters(List<VectorClock>? clocks, String host) => [
+      for (final vc in clocks ?? <VectorClock>[]) vc.vclock[host],
+    ]..sort((a, b) => a!.compareTo(b!));
+
+    test('collapse sends the newest version once, covering every other '
+        'counter, and marks every row sent', () async {
+      final ids = [
+        for (final c in [1, 2, 3])
+          await append(agentAt({'host': c}), entryId: 'agent-1'),
+      ];
+
+      await drain();
+
+      expect(wire, hasLength(1));
+      final sent = wire.single as SyncAgentEntity;
+      expect(sent.agentEntity!.vectorClock!.vclock, {'host': 3});
+      expect(coveredCounters(sent.coveredVectorClocks, 'host'), [1, 2]);
+      expect((await statuses()).values.toSet(), {OutboxStatus.sent.index});
+      expect((await statuses()).keys, containsAll(ids));
+    });
+
+    test('a version enqueued after a newer one is covered, never sent over '
+        'it: the newest is chosen by clock, not by enqueue order', () async {
+      await append(agentAt({'host': 3}), entryId: 'agent-1');
+      await append(agentAt({'host': 2}), entryId: 'agent-1');
+
+      await drain();
+
+      final sent = wire.single as SyncAgentEntity;
+      expect(sent.agentEntity!.vectorClock!.vclock, {'host': 3});
+      expect(coveredCounters(sent.coveredVectorClocks, 'host'), [2]);
+    });
+
+    test('an agent entity and an agent link sharing an id never fold into '
+        'each other: both are sent', () async {
+      await append(agentAt({'host': 1}), entryId: 'shared-id');
+      // Fills the bundle, so the link is not claimed with the entity and is
+      // found by the entity's collapse lookup instead.
+      await append(
+        const SyncMessage.aiConfigDelete(id: 'unrelated'),
+        entryId: 'unrelated',
+      );
+      await append(
+        SyncMessage.agentLink(
+          agentLink: AgentLink.agentTask(
+            id: 'shared-id',
+            fromId: 'agent-1',
+            toId: 'task-1',
+            createdAt: DateTime(2026, 9, 25),
+            updatedAt: DateTime(2026, 9, 25),
+            vectorClock: const VectorClock({'host': 2}),
+          ),
+          status: SyncEntryStatus.update,
+        ),
+        entryId: 'shared-id',
+      );
+
+      await drain();
+
+      expect(wire.whereType<SyncAgentEntity>(), hasLength(1));
+      expect(wire.whereType<SyncAgentLink>(), hasLength(1));
+      expect((await statuses()).values.toSet(), {OutboxStatus.sent.index});
+    });
+
+    test(
+      'rows with concurrent clocks are not folded into each other',
+      () async {
+        await append(agentAt({'a': 1}), entryId: 'agent-1');
+        await append(agentAt({'b': 1}), entryId: 'agent-1');
+
+        await drain();
+
+        expect(
+          wire.map(
+            (m) => (m as SyncAgentEntity).agentEntity!.vectorClock!.vclock,
+          ),
+          unorderedEquals([
+            {'a': 1},
+            {'b': 1},
+          ]),
+        );
+        for (final m in wire) {
+          expect(
+            (m as SyncAgentEntity).coveredVectorClocks ?? const [],
+            isEmpty,
+          );
+        }
+      },
+    );
+
+    test('the attachment goes up exactly once across an initial row and the '
+        'edit that follows it', () async {
+      // An audio entry, then a location enrichment update before the first
+      // send: one send, carrying the newest JSON and the audio.
+      await append(
+        journalAt(1, initial: true),
+        entryId: 'entry-1',
+        filePath: '/audio/entry-1.m4a',
+      );
+      await append(journalAt(2), entryId: 'entry-1');
+
+      await drain();
+
+      expect(wire, hasLength(1));
+      final first = wire.single as SyncJournalEntity;
+      expect(first.vectorClock!.vclock, {'host': 2});
+      expect(first.includeAttachments, isTrue);
+      expect(coveredCounters(first.coveredVectorClocks, 'host'), [1]);
+
+      // A later edit ships JSON only: the audio already went up.
+      await append(journalAt(3), entryId: 'entry-1');
+      await drain();
+
+      final second = wire.last as SyncJournalEntity;
+      expect(second.vectorClock!.vclock, {'host': 3});
+      expect(second.includeAttachments, isNull);
+      expect(second.status, SyncEntryStatus.update);
+    });
+
+    test('a failed row superseded by a newer send is settled with it, not '
+        'left retryable with a stale value', () async {
+      final failed = await append(
+        agentAt({'host': 1}),
+        entryId: 'agent-1',
+        status: OutboxStatus.error,
+        retries: 3,
+      );
+      final newer = await append(agentAt({'host': 2}), entryId: 'agent-1');
+
+      await drain();
+
+      final sent = wire.single as SyncAgentEntity;
+      expect(sent.agentEntity!.vectorClock!.vclock, {'host': 2});
+      expect(coveredCounters(sent.coveredVectorClocks, 'host'), [1]);
+      expect(await statuses(), {
+        failed: OutboxStatus.sent.index,
+        newer: OutboxStatus.sent.index,
+      });
+    });
+
+    test('an undecodable row outside the batch is skipped, not allowed to '
+        'block the sends of the claimed rows', () async {
+      final broken = await db.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.error.index),
+          subject: const Value('broken'),
+          message: const Value('{not json'),
+          outboxEntryId: const Value('agent-1'),
+          retries: const Value(3),
+          createdAt: Value(DateTime(2026, 9, 25, 12)),
+          updatedAt: Value(DateTime(2026, 9, 25, 12)),
+        ),
+      );
+      final pending = await append(agentAt({'host': 2}), entryId: 'agent-1');
+
+      await drain();
+
+      expect(
+        (wire.single as SyncAgentEntity).agentEntity!.vectorClock!.vclock,
+        {'host': 2},
+      );
+      expect(await statuses(), {
+        broken: OutboxStatus.error.index,
+        pending: OutboxStatus.sent.index,
+      });
+    });
+
+    test('a folded-in failed row does not turn the retry of a new row into a '
+        'zero-delay loop', () async {
+      when(() => sender.send(any())).thenAnswer((_) async => false);
+      await append(
+        agentAt({'host': 1}),
+        entryId: 'agent-1',
+        status: OutboxStatus.error,
+        retries: 3,
+      );
+      await append(agentAt({'host': 2}), entryId: 'agent-1');
+
+      final result = await processor.processQueue();
+
+      expect(result.nextDelay, SyncTuning.outboxRetryDelay);
+    });
+
+    test('a config flag collapses to the value enqueued last', () async {
+      for (final status in [true, false, true, false]) {
+        await append(
+          SyncMessage.configFlag(
+            name: 'private',
+            description: 'd',
+            status: status,
+          ),
+          entryId: 'configFlag:private',
+        );
+      }
+
+      await drain();
+
+      expect(wire, hasLength(1));
+      expect((wire.single as SyncConfigFlag).status, isFalse);
+      expect((await statuses()).values.toSet(), {OutboxStatus.sent.index});
+    });
+
+    test('a bundle does not collapse an entity whose other rows owe an '
+        'attachment; those go out alone, attachment and all', () async {
+      final failedInitial = await append(
+        journalAt(1, initial: true),
+        entryId: 'entry-1',
+        filePath: '/audio/entry-1.m4a',
+        status: OutboxStatus.error,
+      );
+      await append(journalAt(2), entryId: 'entry-1');
+      await append(agentAt({'host': 7}), entryId: 'agent-1');
+
+      await processor.processQueue();
+
+      // The bundle carried the edit and the agent, JSON only.
+      expect(wire, hasLength(2));
+      final edit = wire.first as SyncJournalEntity;
+      expect(edit.vectorClock!.vclock, {'host': 2});
+      expect(edit.includeAttachments, isNull);
+      expect((await statuses())[failedInitial], OutboxStatus.error.index);
+    });
+
+    test('prune removes collapsed rows only once the collapse has marked '
+        'them sent', () async {
+      for (final c in [1, 2]) {
+        await append(agentAt({'host': c}), entryId: 'agent-1');
+      }
+      final later = DateTime(2026, 10, 25);
+
+      expect(
+        await db.pruneSentOutboxItems(retention: Duration.zero, now: later),
+        0,
+      );
+      await drain();
+      expect(
+        await db.pruneSentOutboxItems(retention: Duration.zero, now: later),
+        2,
+      );
+      expect(await db.getOutboxItems(), isEmpty);
+    });
   });
 }

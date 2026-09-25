@@ -1,7 +1,15 @@
 # ADR 0085: The Outbox Merges One Enqueue at a Time and Sends Orphaned Claims in Their Turn
 
-- Status: Accepted
+- Status: Accepted; superseded in part by [ADR 0086](./0086-append-only-outbox.md)
 - Date: 2026-09-25
+
+> **Superseded in part by ADR 0086.** The enqueue-time merge and its three
+> fixes (decisions 1–3: the per-entity enqueue lock, newest-wins merge and
+> older-only enrichment) are gone: enqueue now appends one immutable row per
+> version and the processor collapses an entity's rows when it sends.
+> Decisions 4 and 5 (releasing orphaned claims before each drain, and
+> dispose waiting for the drain in flight) stand, and ADR 0086 resolves this
+> ADR's residual 2 (Retry of a superseded failed row).
 
 ## Context
 
@@ -125,12 +133,13 @@ failed for good) held already.
   a clock or timestamp that the receiver compares; or stop timing sends out
   while the SDK still retries them. Each changes the wire or the protocol and
   needs a decision.
-- **Residual: Retry on an old failed row sends a stale value.** A row in
-  `error` stays there while newer versions of its entity go out, and the
-  monitor's Retry sends it after them (twenty steps). Options: drop an
-  `error` row once a newer row of its entity is sent; merge a retried row
-  into the newest pending one; or hide Retry on a superseded row. Each
-  changes what the monitor shows and needs a decision.
+- **Residual (resolved by ADR 0086): Retry on an old failed row sent a
+  stale value.** A row in `error` stayed there while newer versions of its
+  entity went out, and the monitor's Retry sent it after them (twenty
+  steps). Under ADR 0086 a newer send settles the superseded failed rows of
+  its entity. Two narrower cases remain there: a bundled send leaves a
+  failed row that owes an attachment alone, and removing the newer row
+  before retrying an older one is the user's own reversal.
 - **Residual: a clockless payload follows its callers' order.** Two callers
   setting one config flag at once enqueue in whichever order their writes
   finish; the lock only makes the last enqueue win.

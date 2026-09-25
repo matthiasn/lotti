@@ -1042,83 +1042,106 @@ void main() {
     );
   });
 
-  test('adopts descriptor vector clock when message is stale', () async {
-    when(
-      () => room.sendFileEvent(
-        any<MatrixFile>(),
-        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
-      ),
-    ).thenAnswer((_) async => 'file-id');
-    var capturedPayload = '';
-    when(
-      () => room.sendTextEvent(
-        any<String>(),
-        msgtype: any<String>(named: 'msgtype'),
-        parseCommands: any<bool>(named: 'parseCommands'),
-        parseMarkdown: any<bool>(named: 'parseMarkdown'),
-      ),
-    ).thenAnswer((invocation) async {
-      capturedPayload = invocation.positionalArguments.first as String;
-      return 'text-id';
-    });
+  group('a sidecar older than the queued version (ADR 0086)', () {
+    // Two enqueues of one entry refresh its sidecar concurrently; the older
+    // refresh can land last. Adopting that sidecar's clock would cover the
+    // newer counter with an older payload, so the canonical row is sent.
+    late String capturedPayload;
+    late List<MatrixFile> uploads;
 
-    final staleMeta = Metadata(
+    Metadata metaAt(int counter) => Metadata(
       id: 'checklist-1',
       createdAt: DateTime(2025, 10, 22, 23, 18, 48),
       updatedAt: DateTime(2025, 10, 22, 23, 18, 49),
       dateFrom: DateTime(2025, 10, 22, 23, 18, 48),
       dateTo: DateTime(2025, 10, 22, 23, 18, 48),
-      vectorClock: const VectorClock({'hostA': 402}),
+      vectorClock: VectorClock({'hostA': counter}),
     );
-    final staleChecklist = JournalEntity.checklist(
-      meta: staleMeta,
+
+    JournalEntity checklistAt(int counter) => JournalEntity.checklist(
+      meta: metaAt(counter),
       data: const ChecklistData(
         title: 'Todos',
         linkedChecklistItems: <String>[],
         linkedTasks: <String>['task-1'],
       ),
     );
-    final path = relativeEntityPath(staleChecklist);
-    File('${documentsDirectory.path}$path')
-      ..parent.createSync(recursive: true)
-      ..writeAsStringSync(jsonEncode(staleChecklist));
 
-    final context = buildContext();
-    final message = SyncMessage.journalEntity(
-      id: staleChecklist.meta.id,
-      jsonPath: path,
-      vectorClock: const VectorClock({'hostA': 425}),
-      status: SyncEntryStatus.update,
-    );
-
-    final result = await sender.sendMatrixMessage(
-      message: message,
-      context: context,
-      onSent: (_, _) {},
-    );
-
-    expect(result, isTrue);
-    verify(
-      () => loggingService.log(
-        LogDomain.sync,
-        any<String>(
-          that: allOf(
-            contains('reason=json_mismatch'),
-            contains('previous={hostA: 425}'),
-            contains('assigned={hostA: 402}'),
-          ),
+    setUp(() {
+      capturedPayload = '';
+      uploads = [];
+      when(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
         ),
-        subDomain: 'send.adoptJson',
-      ),
-    ).called(1);
-    final decoded =
-        json.decode(
-              utf8.decode(base64.decode(capturedPayload)),
-            )
-            as Map<String, dynamic>;
-    expect(
-      decoded['vectorClock'],
-      equals({'hostA': 402}),
+      ).thenAnswer((invocation) async {
+        uploads.add(invocation.positionalArguments.first as MatrixFile);
+        return 'file-id';
+      });
+      when(
+        () => room.sendTextEvent(
+          any<String>(),
+          msgtype: any<String>(named: 'msgtype'),
+          parseCommands: any<bool>(named: 'parseCommands'),
+          parseMarkdown: any<bool>(named: 'parseMarkdown'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedPayload = invocation.positionalArguments.first as String;
+        return 'text-id';
+      });
+    });
+
+    Future<bool> sendQueued425({required int canonical}) {
+      final stale = checklistAt(402);
+      final path = relativeEntityPath(stale);
+      File('${documentsDirectory.path}$path')
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(stale));
+      when(
+        () => journalDb.journalEntityMapForIdsIncludingDeleted(
+          any<Iterable<String>>(),
+        ),
+      ).thenAnswer((_) async => {'checklist-1': checklistAt(canonical)});
+      return sender.sendMatrixMessage(
+        message: SyncMessage.journalEntity(
+          id: 'checklist-1',
+          jsonPath: path,
+          vectorClock: const VectorClock({'hostA': 425}),
+          status: SyncEntryStatus.update,
+        ),
+        context: buildContext(),
+        onSent: (_, _) {},
+      );
+    }
+
+    test('sends the canonical row and keeps the queued clock', () async {
+      expect(await sendQueued425(canonical: 425), isTrue);
+
+      expect(uploads, hasLength(1));
+      verify(
+        () => journalDb.journalEntityMapForIdsIncludingDeleted(['checklist-1']),
+      ).called(1);
+      final decoded =
+          json.decode(utf8.decode(base64.decode(capturedPayload)))
+              as Map<String, dynamic>;
+      expect(decoded['vectorClock'], {'hostA': 425});
+      verifyNever(
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(that: contains('reason=json_mismatch')),
+          subDomain: 'send.adoptJson',
+        ),
+      );
+    });
+
+    test(
+      'fails the send, for a retry, when the canonical row is stale too',
+      () async {
+        expect(await sendQueued425(canonical: 402), isFalse);
+        expect(uploads, isEmpty);
+        expect(capturedPayload, isEmpty);
+      },
     );
   });
 

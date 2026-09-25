@@ -60,6 +60,8 @@ void main() {
     // it and died before markSent; version 3 was enqueued as a fresh row
     // after the restart. While version 2's lease ran, the drain sent 3, and
     // once the lease ran out it sent 2 — the older payload landed last.
+    // Released, the orphan is collapsed into the newer row's send (ADR 0086):
+    // version 3 goes out once, covering 2, and both rows are settled.
     SyncMessage agentAt(int counter) => SyncMessage.agentEntity(
       agentEntity: AgentDomainEntity.agent(
         id: 'agent-1',
@@ -78,11 +80,19 @@ void main() {
       status: SyncEntryStatus.update,
     );
 
-    int counterOf(SyncMessage message) =>
-        (message as SyncAgentEntity).agentEntity!.vectorClock!.vclock['host']!;
+    String sentOf(SyncMessage message) {
+      final agent = message as SyncAgentEntity;
+      final covered = [
+        for (final vc in agent.coveredVectorClocks ?? <VectorClock>[])
+          vc.vclock['host'],
+      ];
+      return '${agent.agentEntity!.vectorClock!.vclock['host']} '
+          'covers $covered';
+    }
 
     test(
-      'a claim orphaned between send and mark goes out before the newer row',
+      'a claim orphaned between send and mark is sent with the newer row, '
+      'not after it',
       () async {
         final db = SyncDatabase(inMemoryDatabase: true);
         addTearDown(db.close);
@@ -104,13 +114,13 @@ void main() {
         when(
           () => journalDb.getConfigFlag(enableMatrixFlag),
         ).thenAnswer((_) async => true);
-        final wire = <int>[];
+        final wire = <String>[];
         when(() => messageSender.send(any())).thenAnswer((invocation) async {
           final message = invocation.positionalArguments.single as SyncMessage;
           wire.addAll(
             message is SyncOutboxBundle
-                ? message.children.map(counterOf)
-                : [counterOf(message)],
+                ? message.children.map(sentOf)
+                : [sentOf(message)],
           );
           return true;
         });
@@ -135,7 +145,7 @@ void main() {
           svc.sendNext,
         );
 
-        expect(wire, [2, 3]);
+        expect(wire, ['3 covers [2]']);
         final statuses = {
           for (final item in await db.getOutboxItems()) item.id: item.status,
         };

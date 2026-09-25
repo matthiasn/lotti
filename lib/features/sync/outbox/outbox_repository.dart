@@ -9,10 +9,9 @@ import 'package:lotti/features/sync/tuning.dart';
 /// The outbox is a Drift-backed table of pending sync messages, each with a
 /// `status` (pending → sending → sent/error), a `priority`, and a `retries`
 /// counter. This interface exposes only the operations the `OutboxProcessor`
-/// needs — atomic claim (single or batched), status transitions, the
-/// has-more peek, and retention pruning — so the processor can be tested
-/// against an in-memory fake. See [claim]/[claimNextBatch] for the locking
-/// model that protects against the merge-send race.
+/// needs — atomic claim (single or batched), the collapse lookups, status
+/// transitions, the has-more peek, and retention pruning — so the processor
+/// can be tested against an in-memory fake.
 abstract class OutboxRepository {
   /// Oldest [limit] rows in `(priority, createdAt)` order without claiming
   /// them. Read-only peek used by diagnostics and the UI monitor; the send
@@ -23,12 +22,6 @@ abstract class OutboxRepository {
   /// `pending` (or an expired `sending` lease) to `sending`. Returns the
   /// claimed item, or `null` when the queue is empty or the claim races
   /// another worker.
-  ///
-  /// Using this instead of `fetchPending` closes the merge-send race:
-  /// once the row is `sending`, `updateOutboxMessage` (which matches
-  /// `status=pending`) no longer updates it in place, so in-flight merges
-  /// fall through to inserting a fresh row and the now-merged content is
-  /// still guaranteed to be sent as its own Matrix event.
   Future<OutboxItem?> claim({Duration? leaseDuration});
 
   /// Atomically claim a contiguous batch of pending rows for bundling.
@@ -55,6 +48,17 @@ abstract class OutboxRepository {
   /// Waiting out the claim lease instead lets newer rows of the same entity go
   /// first and the orphan's older payload land last.
   Future<int> releaseOrphanedClaims();
+
+  /// The pending and failed rows of the entity [entryId], minus [excludeIds],
+  /// in enqueue order: what a send of that entity can collapse (ADR 0086).
+  Future<List<OutboxItem>> collapsibleRows(
+    String entryId, {
+    Set<int> excludeIds = const {},
+  });
+
+  /// Claim [rows] for a send, each only if it still has the status it was
+  /// read with. Returns the rows claimed.
+  Future<List<OutboxItem>> claimRows(List<OutboxItem> rows);
 
   /// Peek whether at least one pending row remains, without transitioning
   /// status. Used to decide whether the processor should schedule another
@@ -154,6 +158,19 @@ class DatabaseOutboxRepository implements OutboxRepository {
   @override
   Future<int> releaseOrphanedClaims() {
     return _database.releaseSendingOutboxItems();
+  }
+
+  @override
+  Future<List<OutboxItem>> collapsibleRows(
+    String entryId, {
+    Set<int> excludeIds = const {},
+  }) {
+    return _database.collapsibleOutboxRows(entryId, excludeIds: excludeIds);
+  }
+
+  @override
+  Future<List<OutboxItem>> claimRows(List<OutboxItem> rows) {
+    return _database.claimOutboxRows(rows);
   }
 
   @override

@@ -294,9 +294,6 @@ class OutboxServiceTestHarness {
       () => syncDatabase.watchOutboxCount(),
     ).thenAnswer((_) => const Stream<int>.empty());
     when(
-      () => syncDatabase.findPendingByEntryId(any()),
-    ).thenAnswer((_) async => null);
-    when(
       () => repository.pruneSentOutboxItems(retention: any(named: 'retention')),
     ).thenAnswer((_) async => 0);
     when(() => repository.releaseOrphanedClaims()).thenAnswer((_) async => 0);

@@ -9,10 +9,7 @@ import 'package:lotti/services/vector_clock_service.dart';
 /// Records entries that THIS device sends, so it can answer backfill requests
 /// from peers.
 ///
-/// Writes only our own host's counters into the sequence log and keeps the
-/// shared last-sent LRU in [SyncSequenceCache] consistent with each write so a
-/// subsequent `getLastSentVectorClockForEntry` does not race back to the DB
-/// for a value we already know.
+/// Writes only our own host's counters into the sequence log.
 class SyncSequenceSender {
   SyncSequenceSender({
     required this._syncDatabase,
@@ -81,15 +78,6 @@ class SyncSequenceSender {
         payloadType: payloadType.index,
       );
       _vectorClockService.settle(hostId: hostId, counter: counter);
-
-      // Keep the cache consistent with the write we just issued so a
-      // subsequent `getLastSentVectorClockForEntry` does not race back to
-      // the DB for a value we already know.
-      final cacheKey = _cache.lastSentCacheKey(hostId, entryId);
-      final previous = _cache.getLastSent(cacheKey);
-      if (previous == null || counter > previous) {
-        _cache.touchLastSentCache(cacheKey, counter);
-      }
 
       _tracer.traceSampled(
         'recordSentEntry type=$payloadType hostId=$hostId counter=$counter entryId=$entryId',

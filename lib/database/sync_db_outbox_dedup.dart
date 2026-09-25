@@ -1,8 +1,8 @@
 part of 'sync_db.dart';
 
-/// Outbox introspection for [SyncDatabase]: merge-dedup lookups
-/// ([findPendingByEntryId] / [updateOutboxMessage]), pending backfill
-/// request extraction and health counts.
+/// Outbox lookups for [SyncDatabase]: the rows a send collapses
+/// ([collapsibleOutboxRows] / [claimOutboxRows]) and pending backfill request
+/// extraction.
 mixin _SyncDbOutboxDedup on _$SyncDatabase {
   /// Get (hostId, counter) pairs from queued or in-flight backfill request
   /// messages in outbox.
@@ -83,63 +83,70 @@ mixin _SyncDbOutboxDedup on _$SyncDatabase {
     return entries;
   }
 
-  // ============ Outbox Deduplication Methods ============
+  // ============ Dequeue-time collapse ============
 
-  /// Find a pending outbox item for a specific entry ID.
-  /// Returns the most recent pending item for this entry, or null.
+  /// The rows of [entryId] that a send of that entity can collapse: every
+  /// `pending` and every `error` row, minus [excludeIds] (the rows already
+  /// claimed), in enqueue (id) order.
   ///
-  /// `created_at` is stored at second granularity, so two rapid edits can
-  /// collide on the timestamp; `id DESC` breaks the tie deterministically
-  /// in favor of the latest insert so the merge-dedup path always targets
-  /// the newest pending row.
-  Future<OutboxItem?> findPendingByEntryId(String entryId) {
-    return (select(outbox)
-          ..where((t) => const CustomExpression<bool>('status = 0'))
-          ..where((t) => t.outboxEntryId.equals(entryId))
-          ..orderBy([
-            (t) => OrderingTerm.desc(t.createdAt),
-            (t) => OrderingTerm.desc(t.id),
-          ])
-          ..limit(1))
-        .getSingleOrNull();
+  /// Two literal-status queries, so the pending one matches the partial index
+  /// `idx_outbox_pending_entry_id_created_at` and the error one only walks the
+  /// few failed rows. Error rows are included so a newer send settles a
+  /// superseded failure instead of leaving it retryable with a stale value
+  /// (ADR 0086).
+  Future<List<OutboxItem>> collapsibleOutboxRows(
+    String entryId, {
+    Set<int> excludeIds = const {},
+  }) async {
+    final pending =
+        await (select(outbox)
+              ..where((t) => const CustomExpression<bool>('status = 0'))
+              ..where((t) => t.outboxEntryId.equals(entryId)))
+            .get();
+    final failed =
+        await (select(outbox)
+              ..where((t) => const CustomExpression<bool>('status = 2'))
+              ..where((t) => t.outboxEntryId.equals(entryId)))
+            .get();
+    return [
+        ...pending,
+        ...failed,
+      ].where((row) => !excludeIds.contains(row.id)).toList()
+      ..sort((a, b) => a.id.compareTo(b.id));
   }
 
-  /// Update an existing pending outbox item's message and subject.
-  ///
-  /// Only updates rows that are still [OutboxStatus.pending] to avoid
-  /// overwriting in-flight or already-sent items (compare-and-swap on
-  /// status). Returns the number of affected rows — 0 means the row was
-  /// no longer pending and the caller should insert a fresh row instead.
-  ///
-  /// [filePath] promotes a text-only row to a media-bearing one when a merge
-  /// brings in a payload that must carry its attachment (a re-sync or backfill
-  /// re-send landing on a pending edit). It is never cleared: `null` leaves the
-  /// existing value untouched. A row that keeps `filePath` null while its
-  /// message asks for media would be packed into a dequeue-time bundle, which
-  /// ships JSON only, and the blob would be silently dropped.
-  Future<int> updateOutboxMessage({
-    required int itemId,
-    required String newMessage,
-    required String newSubject,
-    int? payloadSize,
-    int? priority,
-    String? filePath,
+  /// Claim [rows] for a send: each moves to `sending` only if it still has the
+  /// status it was read with (a compare-and-set, so a row the monitor retried
+  /// or removed in between is left alone). Returns the rows claimed, as
+  /// `sending`, in the order given.
+  Future<List<OutboxItem>> claimOutboxRows(
+    List<OutboxItem> rows, {
+    DateTime? now,
   }) {
-    return (update(outbox)..where(
-          (t) =>
-              t.id.equals(itemId) & t.status.equals(OutboxStatus.pending.index),
-        ))
-        .write(
-          OutboxCompanion(
-            message: Value(newMessage),
-            subject: Value(newSubject),
-            updatedAt: Value(clock.now()),
-            payloadSize: payloadSize != null
-                ? Value(payloadSize)
-                : const Value.absent(),
-            priority: priority != null ? Value(priority) : const Value.absent(),
-            filePath: filePath != null ? Value(filePath) : const Value.absent(),
-          ),
-        );
+    final effectiveNow = now ?? clock.now();
+    return transaction(() async {
+      final claimed = <OutboxItem>[];
+      for (final row in rows) {
+        final updated =
+            await (update(outbox)..where(
+                  (t) => t.id.equals(row.id) & t.status.equals(row.status),
+                ))
+                .write(
+                  OutboxCompanion(
+                    status: Value(OutboxStatus.sending.index),
+                    updatedAt: Value(effectiveNow),
+                  ),
+                );
+        if (updated == 1) {
+          claimed.add(
+            row.copyWith(
+              status: OutboxStatus.sending.index,
+              updatedAt: effectiveNow,
+            ),
+          );
+        }
+      }
+      return claimed;
+    });
   }
 }

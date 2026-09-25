@@ -153,3 +153,4 @@ Each ADR should contain:
 - [`0083-model-checked-journal-replication.md`](./0083-model-checked-journal-replication.md)
 - [`0084-model-checked-inbound-queue.md`](./0084-model-checked-inbound-queue.md)
 - [`0085-model-checked-outbox.md`](./0085-model-checked-outbox.md)
+- [`0086-append-only-outbox.md`](./0086-append-only-outbox.md)

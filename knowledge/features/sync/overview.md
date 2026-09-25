@@ -5,8 +5,8 @@ description: Single-user multi-device replication over end-to-end encrypted Matr
 resource: ../../../lib/features/sync
 tags: [sync, matrix, replication, outbox, queue]
 status: stable
-generated: { by: claude-code/fable-5.1, at: 2026-09-02T00:30:00Z }
-stale_after: 2026-12-02
+generated: { by: claude-code/opus-5.5, at: 2026-09-25T21:00:00Z }
+stale_after: 2026-12-25
 sources:
   - id: sync-src
     resource: ../../../lib/features/sync
@@ -109,7 +109,7 @@ full journal, agent or attachment payloads.
 
 | Area | Role |
 |------|------|
-| `outbox/` | Persist pending payloads in `sync_db`, merge superseded work, enrich sequence metadata, drive send retries |
+| `outbox/` | Append one immutable row per version in `sync_db`, collapse an entity's rows into one send of its newest version, drive send retries |
 | `matrix/` | Session management, sync-room persistence and join/hydrate, message sending, read markers, verification, lifecycle. `MatrixPayloadSender` owns wire encoding (gzip, manifest, VC reconcile, size cap); `MatrixMessageSender` delegates to it |
 | `gateway/` | `MatrixSyncGateway` interface and the `MatrixSdkGateway` implementation wrapping the Matrix SDK `Client` |
 | `matrix/pipeline/` | Attachment ingestion and index, metrics aggregation, the `sync.limited` diagnostic listener |

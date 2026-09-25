@@ -16,8 +16,7 @@ import 'package:lotti/services/vector_clock_service.dart';
 /// Records received entries and detects gaps in the sync sequence log — the
 /// orchestration core of the receive path.
 ///
-/// Collaborates with the shared [SyncSequenceCache] (watermark and last-sent
-/// caches), the [SyncSequenceGapMaterializer] (large-gap and covered-counter
+/// Collaborates with the shared [SyncSequenceCache] (watermark caches), the [SyncSequenceGapMaterializer] (large-gap and covered-counter
 /// bookkeeping), the [SyncSequenceBackfillResponder] (pending-hint resolution
 /// after recording), and the [SyncSequenceMissingNotifier] (deferred
 /// missing-entries nudge).
@@ -39,34 +38,6 @@ class SyncSequenceReceiver {
   final SyncSequenceBackfillResponder _backfillResponder;
   final SyncSequenceMissingNotifier _missingNotifier;
   final SyncSequenceTracer _tracer;
-
-  /// Returns the single-node vector clock `{myHost: counter}` of the last copy
-  /// of [entryId] this device sent, or null if we never sent it (or have no
-  /// host id). Served from the last-sent LRU cache when warm, falling back to
-  /// the DB. Used to attach our own clock when re-sending an entry so peers can
-  /// place it in sequence.
-  Future<VectorClock?> getLastSentVectorClockForEntry(String entryId) async {
-    final myHost = await _vectorClockService.getHost();
-    if (myHost == null) return null;
-    _cache
-      ..invalidateLastSentCacheIfExpired()
-      ..ensureLastSentCacheWindow();
-    final cacheKey = _cache.lastSentCacheKey(myHost, entryId);
-    int? counter;
-    if (_cache.containsLastSent(cacheKey)) {
-      counter = _cache.getLastSent(cacheKey);
-      // Refresh LRU position on hit so active entries stay resident.
-      _cache.touchLastSentCache(cacheKey, counter);
-    } else {
-      counter = await _syncDatabase.getLastSentCounterForEntry(
-        myHost,
-        entryId,
-      );
-      _cache.touchLastSentCache(cacheKey, counter);
-    }
-    if (counter == null) return null;
-    return VectorClock({myHost: counter});
-  }
 
   /// Record a received entry and detect gaps in the sequence.
   /// Returns a read-only list of detected gaps as `(hostId, counter)` records.

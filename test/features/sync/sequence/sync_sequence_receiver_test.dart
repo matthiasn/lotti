@@ -98,27 +98,6 @@ void main() {
     receiver = build();
   });
 
-  group('getLastSentVectorClockForEntry', () {
-    test('returns null when the host is unavailable', () async {
-      when(vc.getHost).thenAnswer((_) async => null);
-
-      expect(await receiver.getLastSentVectorClockForEntry('e1'), isNull);
-    });
-
-    test('caches the DB result so repeated lookups do not re-query', () async {
-      when(
-        () => db.getLastSentCounterForEntry(myHost, 'e1'),
-      ).thenAnswer((_) async => 4);
-
-      final first = await receiver.getLastSentVectorClockForEntry('e1');
-      final second = await receiver.getLastSentVectorClockForEntry('e1');
-
-      expect(first?.vclock, {myHost: 4});
-      expect(second?.vclock, {myHost: 4});
-      verify(() => db.getLastSentCounterForEntry(myHost, 'e1')).called(1);
-    });
-  });
-
   group('recordReceivedEntry gap detection', () {
     test('records the originator counter and detects a small gap', () async {
       // Alice is online with watermark 1; we observe counter 4 → gap 2,3.

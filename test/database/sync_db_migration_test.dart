@@ -426,11 +426,11 @@ void main() {
       expect(items.first.payloadSize, isNull);
 
       // Verify payload_size column is usable
-      await db.updateOutboxMessage(
-        itemId: items.first.id,
-        newMessage: '{"v5": true}',
-        newSubject: 'v5-subject',
-        payloadSize: 42,
+      await db.updateOutboxItem(
+        OutboxCompanion(
+          id: Value(items.first.id),
+          payloadSize: const Value(42),
+        ),
       );
       final updated = await db.oldestOutboxItems(10);
       expect(updated.first.payloadSize, 42);
@@ -566,8 +566,8 @@ void main() {
           containsAll(<String>{'outbox_entry_id', 'payload_size', 'priority'}),
         );
 
-        // The v4 dedup column is functional after migration: a row written
-        // with an entry id resolves through findPendingByEntryId.
+        // The v4 entry-id column is functional after migration: a row written
+        // with an entry id resolves through the collapse lookup.
         await db.addOutboxItem(
           OutboxCompanion(
             status: Value(OutboxStatus.pending.index),
@@ -578,8 +578,8 @@ void main() {
             outboxEntryId: const Value('entry-after-v4'),
           ),
         );
-        final pending = await db.findPendingByEntryId('entry-after-v4');
-        expect(pending, isNotNull);
+        final pending = await db.collapsibleOutboxRows('entry-after-v4');
+        expect(pending.single.outboxEntryId, 'entry-after-v4');
 
         await db.close();
       },
@@ -839,9 +839,8 @@ void main() {
         expect(indexSql, contains('status'));
         expect(indexSql, contains('counter'));
         expect(indexSql, contains('WHERE'));
-        // Column order matters for the `ORDER BY counter DESC LIMIT 1` plan
-        // used by `getLastSentCounterForEntry`: counter must sit between the
-        // `(host_id, entry_id)` equality prefix and the `status` filter.
+        // The migration's column order: counter between the
+        // `(host_id, entry_id)` prefix and the `status` filter.
         expect(
           indexSql,
           contains('host_id, entry_id, counter DESC, status'),

@@ -1,13 +1,13 @@
 part of 'outbox_enqueue_writer.dart';
 
-/// Simple, merge-free message enqueue methods for [OutboxEnqueueWriter]
+/// Simple message enqueue methods for [OutboxEnqueueWriter]
 /// (entity definitions, AI config, flags, theming, notifications, node
 /// profile, backfill). Public extension so cross-library callers keep
 /// invoking these on an [OutboxEnqueueWriter] instance.
 extension OutboxEnqueueSimple on OutboxEnqueueWriter {
-  /// Shared helper for simple message types that don't require merge logic.
+  /// Shared helper for message types whose row needs nothing but a subject.
   /// Adds the item to the outbox and logs the event.
-  Future<bool> enqueueSimple({
+  Future<void> enqueueSimple({
     required OutboxCompanion commonFields,
     required String subject,
     required String logMessage,
@@ -19,10 +19,9 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
       logMessage,
       sampleKey: 'insert.simple',
     );
-    return false;
   }
 
-  Future<bool> enqueueEntityDefinition({
+  Future<void> enqueueEntityDefinition({
     required SyncEntityDefinition msg,
     required OutboxCompanion commonFields,
     required String? host,
@@ -39,7 +38,7 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
     );
   }
 
-  Future<bool> enqueueAiConfig({
+  Future<void> enqueueAiConfig({
     required SyncAiConfig msg,
     required OutboxCompanion commonFields,
   }) => enqueueSimple(
@@ -50,7 +49,7 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
         'id=${msg.aiConfig.id}',
   );
 
-  Future<bool> enqueueAiConfigDelete({
+  Future<void> enqueueAiConfigDelete({
     required SyncAiConfigDelete msg,
     required OutboxCompanion commonFields,
   }) => enqueueSimple(
@@ -61,7 +60,7 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
         'id=${msg.id}',
   );
 
-  Future<bool> enqueueSavedTaskFilter({
+  Future<void> enqueueSavedTaskFilter({
     required SyncSavedTaskFilter msg,
     required OutboxCompanion commonFields,
   }) => enqueueSimple(
@@ -72,7 +71,7 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
         'id=${msg.filter.id}',
   );
 
-  Future<bool> enqueueSavedTaskFilterDelete({
+  Future<void> enqueueSavedTaskFilterDelete({
     required SyncSavedTaskFilterDelete msg,
     required OutboxCompanion commonFields,
   }) => enqueueSimple(
@@ -83,50 +82,14 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
         'id=${msg.id}',
   );
 
-  /// Enqueues a config-flag change, coalescing with an already-pending row for
-  /// the same flag when one exists: the existing row's message is updated in
-  /// place (keeping the higher priority) so only the latest value ships.
-  /// Returns `true` when it merged into an existing row, `false` when it
-  /// inserted a fresh one. The in-place update only matches `status=pending`,
-  /// so a row already being sent falls through to a new insert. Enqueues of
-  /// one flag run one at a time ([OutboxEnqueueWriter._serializedByKey]), so
-  /// the value that ships is the one enqueued last.
-  Future<bool> enqueueConfigFlag({
-    required SyncConfigFlag msg,
-    required OutboxCompanion commonFields,
-  }) => _serializedByKey(
-    'configFlag:${msg.name}',
-    () => _enqueueConfigFlag(msg: msg, commonFields: commonFields),
-  );
-
-  Future<bool> _enqueueConfigFlag({
+  /// Appends a config-flag row keyed by the flag name. Rows are never merged:
+  /// when the processor sends, it collapses the flag's pending rows onto the
+  /// one enqueued last, so only the latest value ships (ADR 0086).
+  Future<void> enqueueConfigFlag({
     required SyncConfigFlag msg,
     required OutboxCompanion commonFields,
   }) async {
     final key = 'configFlag:${msg.name}';
-    final existingItem = await _syncDatabase.findPendingByEntryId(key);
-    if (existingItem != null) {
-      final affectedRows = await _syncDatabase.updateOutboxMessage(
-        itemId: existingItem.id,
-        newMessage: commonFields.message.value,
-        newSubject: key,
-        payloadSize: commonFields.payloadSize.value,
-        priority: math.min(
-          existingItem.priority,
-          commonFields.priority.value,
-        ),
-      );
-      if (affectedRows > 0) {
-        _logEnqueueSample(
-          'enqueue MERGED type=SyncConfigFlag subject=$key '
-          'status=${msg.status}',
-          sampleKey: 'merge.SyncConfigFlag',
-        );
-        unawaited(_enqueueNextSendRequest(delay: const Duration(seconds: 1)));
-        return true;
-      }
-    }
-
     await _syncDatabase.addOutboxItem(
       commonFields.copyWith(
         subject: Value(key),
@@ -138,10 +101,9 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
       'status=${msg.status}',
       sampleKey: 'insert.SyncConfigFlag',
     );
-    return false;
   }
 
-  Future<bool> enqueueThemingSelection({
+  Future<void> enqueueThemingSelection({
     required SyncThemingSelection msg,
     required OutboxCompanion commonFields,
   }) => enqueueSimple(
@@ -153,7 +115,7 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
         'mode=${msg.themeMode}',
   );
 
-  Future<bool> enqueueDailyOsUserName({
+  Future<void> enqueueDailyOsUserName({
     required SyncDailyOsUserName msg,
     required OutboxCompanion commonFields,
   }) => enqueueSimple(
@@ -167,9 +129,9 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
   /// Enqueues a notification message: validates the payload path stays within
   /// the documents root, folds the message's own clock into
   /// `coveredVectorClocks`, sizes the row including the on-disk attachment, and
-  /// records the send in the sequence log. Skips (logs and returns `false`)
+  /// records the send in the sequence log. Skips (logs and returns)
   /// when the payload path is unsafe.
-  Future<bool> enqueueNotification({
+  Future<void> enqueueNotification({
     required SyncNotification msg,
     required OutboxCompanion commonFields,
   }) async {
@@ -180,7 +142,7 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
         'enqueue.skip invalid notification payload path: ${msg.jsonPath}',
         subDomain: 'enqueueMessage',
       );
-      return false;
+      return;
     }
 
     var fileLength = 0;
@@ -218,14 +180,13 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
       vectorClock: msg.vectorClock,
       payloadType: SyncSequencePayloadType.notification,
     );
-    return false;
   }
 
-  Future<bool> enqueueNotificationStateUpdate({
+  Future<void> enqueueNotificationStateUpdate({
     required SyncNotificationStateUpdate msg,
     required OutboxCompanion commonFields,
   }) async {
-    final result = await enqueueSimple(
+    await enqueueSimple(
       commonFields: commonFields,
       subject: 'notificationStateUpdate:${msg.id}',
       logMessage:
@@ -237,20 +198,19 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
       vectorClock: msg.vectorClock,
       payloadType: SyncSequencePayloadType.notificationStateUpdate,
     );
-    return result;
   }
 
   /// Enqueues an AI consumption event. These are immutable and append-only
-  /// (unique id, no pending-merge case) and ride inline (no attachment), so this
+  /// (unique id, so they never collapse) and ride inline (no attachment), so this
   /// just writes the row with the event id and records the send in the sequence
   /// log for gap detection/backfill. [recordAgentSent] is the generic
   /// sequence-log recorder (accepts any [SyncSequencePayloadType]).
-  Future<bool> enqueueConsumptionEvent({
+  Future<void> enqueueConsumptionEvent({
     required SyncConsumptionEvent msg,
     required OutboxCompanion commonFields,
   }) async {
     final id = msg.event.id;
-    final result = await enqueueSimple(
+    await enqueueSimple(
       commonFields: commonFields.copyWith(outboxEntryId: Value(id)),
       subject: 'consumptionEvent:$id',
       logMessage:
@@ -261,10 +221,9 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
       vectorClock: msg.event.vectorClock,
       payloadType: SyncSequencePayloadType.consumptionEvent,
     );
-    return result;
   }
 
-  Future<bool> enqueueSyncNodeProfile({
+  Future<void> enqueueSyncNodeProfile({
     required SyncSyncNodeProfile msg,
     required OutboxCompanion commonFields,
   }) => enqueueSimple(
@@ -276,7 +235,7 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
         'caps=${msg.profile.capabilities.length}',
   );
 
-  Future<bool> enqueueBackfillRequest({
+  Future<void> enqueueBackfillRequest({
     required SyncBackfillRequest msg,
     required OutboxCompanion commonFields,
   }) => enqueueSimple(
@@ -287,7 +246,7 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
         'entries=${msg.entries.length}',
   );
 
-  Future<bool> enqueueMediaRequest({
+  Future<void> enqueueMediaRequest({
     required SyncMediaRequest msg,
     required OutboxCompanion commonFields,
   }) => enqueueSimple(
@@ -298,7 +257,7 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
         'entries=${msg.entryIds.length} requester=${msg.requesterId}',
   );
 
-  Future<bool> enqueueBackfillResponse({
+  Future<void> enqueueBackfillResponse({
     required SyncBackfillResponse msg,
     required OutboxCompanion commonFields,
   }) => enqueueSimple(

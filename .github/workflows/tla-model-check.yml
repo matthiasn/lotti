@@ -20,6 +20,7 @@ on:
       - "lib/features/sync/matrix/pipeline/catch_up_strategy.dart"
       - "lib/features/sync/matrix/pipeline/bootstrap_backward_strategy.dart"
       - "lib/features/sync/matrix/pipeline/bootstrap_forward_strategy.dart"
+      - "lib/features/sync/matrix/matrix_payload_sender.dart"
       - "lib/database/sync_db_sequence.dart"
       - "lib/database/sync_db_watermarks.dart"
       - "lib/features/sync/vector_clock.dart"

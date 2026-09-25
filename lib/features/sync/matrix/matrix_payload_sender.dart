@@ -156,30 +156,68 @@ class MatrixPayloadSender {
     SyncJournalEntity message,
     String fullPath,
   ) async {
+    Uint8List sidecar;
     try {
-      return await File(fullPath).readAsBytes();
+      sidecar = await File(fullPath).readAsBytes();
     } on PathNotFoundException {
-      final entities = await journalDb.journalEntityMapForIdsIncludingDeleted(
-        [message.id],
-      );
-      final entity = entities[message.id];
-      if (entity == null) rethrow;
-      final recoveredClock = entity.meta.vectorClock;
-      for (final queuedClock in [
-        message.vectorClock,
-        ...?message.coveredVectorClocks,
-      ]) {
-        if (queuedClock == null) continue;
-        if (recoveredClock == null ||
-            !{
-              VclockStatus.equal,
-              VclockStatus.a_gt_b,
-            }.contains(VectorClock.compare(recoveredClock, queuedClock))) {
-          throw StateError('Database payload does not cover queued version');
-        }
-      }
-      return Uint8List.fromList(utf8.encode(jsonEncode(entity.toJson())));
+      return _readCanonicalJournalPayload(message);
     }
+    // A sidecar older than the queued version (two enqueues of the entry
+    // refreshed it out of order) must not be sent: the send would adopt its
+    // older clock and cover the newer counter it does not carry (ADR 0086).
+    final sidecarClock = _sidecarClock(sidecar);
+    if (sidecarClock == null || _coversQueued(sidecarClock, message)) {
+      return sidecar;
+    }
+    return _readCanonicalJournalPayload(message);
+  }
+
+  /// The entry's canonical row, which must cover the queued version and
+  /// every covered clock; otherwise the send fails and is retried.
+  Future<Uint8List> _readCanonicalJournalPayload(
+    SyncJournalEntity message,
+  ) async {
+    final entities = await journalDb.journalEntityMapForIdsIncludingDeleted([
+      message.id,
+    ]);
+    final entity = entities[message.id];
+    if (entity == null) {
+      throw StateError('No payload for queued journal entry ${message.id}');
+    }
+    if (!_coversQueued(entity.meta.vectorClock, message)) {
+      throw StateError('Database payload does not cover queued version');
+    }
+    return Uint8List.fromList(utf8.encode(jsonEncode(entity.toJson())));
+  }
+
+  /// The clock a sidecar's JSON carries, or null when it has none or cannot
+  /// be read. Such a sidecar is sent as before: the send keeps the message's
+  /// clock, and an undecodable one fails the send at its decode step.
+  VectorClock? _sidecarClock(Uint8List bytes) {
+    try {
+      return JournalEntity.fromJson(
+        json.decode(utf8.decode(bytes)) as Map<String, dynamic>,
+      ).meta.vectorClock;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool _coversQueued(VectorClock? payloadClock, SyncJournalEntity message) {
+    for (final queuedClock in [
+      message.vectorClock,
+      ...?message.coveredVectorClocks,
+    ]) {
+      if (queuedClock == null) continue;
+      if (payloadClock == null ||
+          !{
+            VclockStatus.equal,
+            VclockStatus.a_gt_b,
+          }.contains(VectorClock.compare(payloadClock, queuedClock))) {
+        return false;
+      }
+    }
+    return true;
   }
 
   Future<SyncJournalEntity?> sendJournalEntityPayload({
