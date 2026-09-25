@@ -158,10 +158,11 @@ class _HeadBench {
     final device = devices[index];
     final isClean = network.pendingFor(device).isEmpty;
     final sentBefore = network.sent.length;
-    _edits[index]++;
     await _at(index, () => doc.edit(device, ++_serial));
-    // A refused revision writes nothing and is no edit.
+    // A refused revision writes nothing and is no edit: it neither counts
+    // against the device's budget nor changes the ghost.
     if (network.sent.length != sentBefore) {
+      _edits[index]++;
       clean = isClean;
       _lastEditor = index;
     }
