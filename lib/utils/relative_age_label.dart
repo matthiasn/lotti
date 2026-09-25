@@ -1,3 +1,4 @@
+import 'package:intl/intl.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
 /// "just now" · "3 min ago" · "1 h ago" · "2 days ago" — the one
@@ -23,4 +24,23 @@ Duration untilNextAgeBucket(Duration age) {
     return Duration(seconds: 3600 - (age.inSeconds % 3600) + 1);
   }
   return Duration(seconds: 86400 - (age.inSeconds % 86400) + 1);
+}
+
+/// How old a timestamp may be before [relativeAgeOrDateLabel] names the date
+/// instead: "12 days ago" asks the reader to count back, "Sep 13" does not.
+const relativeAgeDateThreshold = Duration(days: 7);
+
+/// [relativeAgoLabel] for [at] up to [relativeAgeDateThreshold] before [now],
+/// and the date beyond it — "Sep 13", with the year once it is not [now]'s.
+String relativeAgeOrDateLabel(
+  AppLocalizations messages, {
+  required DateTime at,
+  required DateTime now,
+}) {
+  final age = now.difference(at);
+  if (age < relativeAgeDateThreshold) return relativeAgoLabel(messages, age);
+  final format = at.year == now.year
+      ? DateFormat.MMMd(messages.localeName)
+      : DateFormat.yMMMd(messages.localeName);
+  return format.format(at);
 }

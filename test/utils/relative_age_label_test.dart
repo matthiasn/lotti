@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/utils/relative_age_label.dart';
 import 'package:material_ui/material_ui.dart';
@@ -8,6 +9,9 @@ void main() {
   late AppLocalizations messages;
 
   setUpAll(() async {
+    // In the app the localization delegates load the date symbols; a bare
+    // unit test has to do it itself.
+    await initializeDateFormatting();
     messages = await AppLocalizations.delegate.load(const Locale('en'));
   });
 
@@ -35,6 +39,59 @@ void main() {
   test('from a day on counts days', () {
     expect(relativeAgoLabel(messages, const Duration(days: 1)), '1 day ago');
     expect(relativeAgoLabel(messages, const Duration(days: 12)), '12 days ago');
+  });
+
+  group('relativeAgeOrDateLabel', () {
+    final now = DateTime(2026, 9, 25, 12);
+
+    test('is relative for the first week', () {
+      expect(
+        relativeAgeOrDateLabel(
+          messages,
+          at: now.subtract(const Duration(minutes: 20)),
+          now: now,
+        ),
+        '20 min ago',
+      );
+      expect(
+        relativeAgeOrDateLabel(
+          messages,
+          at: now.subtract(const Duration(days: 6, hours: 23)),
+          now: now,
+        ),
+        '6 days ago',
+      );
+    });
+
+    test(
+      'names the date from a week on, with the year only when it differs',
+      () {
+        expect(
+          relativeAgeOrDateLabel(
+            messages,
+            at: now.subtract(relativeAgeDateThreshold),
+            now: now,
+          ),
+          'Sep 18',
+        );
+        expect(
+          relativeAgeOrDateLabel(
+            messages,
+            at: DateTime(2025, 12, 30),
+            now: now,
+          ),
+          'Dec 30, 2025',
+        );
+      },
+    );
+
+    test('follows the catalog locale', () async {
+      final german = await AppLocalizations.delegate.load(const Locale('de'));
+      expect(
+        relativeAgeOrDateLabel(german, at: DateTime(2026, 9, 2), now: now),
+        '2. Sept.',
+      );
+    });
   });
 
   group('untilNextAgeBucket', () {

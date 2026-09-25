@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
@@ -9,6 +10,7 @@ import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/relative_age_label.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Shared automation controls for agent report surfaces.
@@ -75,7 +77,8 @@ class AgentAutomationRow extends StatefulWidget {
     this.showsIdleScheduleLabel = true,
     this.isRefreshingReport,
     super.key,
-  }) : showsFreshConfirmation = true;
+  }) : showsFreshConfirmation = true,
+       reportUpdatedAt = null;
 
   /// The freshness word and the manual trigger alone, for a surface that
   /// keeps no settings of its own — the task and project summary cards, whose
@@ -98,6 +101,7 @@ class AgentAutomationRow extends StatefulWidget {
     required this.isStale,
     required this.onRunNow,
     this.nextWakeAt,
+    this.reportUpdatedAt,
     this.isRefreshingReport,
     this.showsFreshConfirmation = true,
     super.key,
@@ -156,6 +160,13 @@ class AgentAutomationRow extends StatefulWidget {
   final bool showCountdown;
   final DateTime? nextWakeAt;
 
+  /// When the summary on screen was written. While it is current, the
+  /// compact form says so by its age — "20 min ago", "2 days ago", or the
+  /// date once it is a week old — rather than a bare "Up to date", which
+  /// cannot tell a summary from this morning from one from last month. Only
+  /// [AgentAutomationRow.compact] takes it.
+  final DateTime? reportUpdatedAt;
+
   /// Whether the card has a summary whose freshness is worth describing. A
   /// blank task has nothing to be "out of date", so the status is omitted
   /// rather than shown in some default state.
@@ -198,6 +209,9 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
   /// Guards the deadline-already-passed report so a rebuild cannot repeat it.
   bool _expiryReported = false;
 
+  /// Rebuilds the age label when it would next read differently.
+  Timer? _ageTimer;
+
   @override
   void initState() {
     super.initState();
@@ -224,6 +238,26 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
     _expiryReported = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) widget.onCountdownExpired?.call();
+    });
+  }
+
+  @override
+  void dispose() {
+    _ageTimer?.cancel();
+    super.dispose();
+  }
+
+  /// One timer for the age label's next change — the next minute, hour or
+  /// day — rather than a tick per second. A dated label never changes, so
+  /// it arms none; neither does a row showing no age.
+  void _scheduleAgeRefresh(DateTime? updatedAt, DateTime now) {
+    _ageTimer?.cancel();
+    _ageTimer = null;
+    if (updatedAt == null) return;
+    final age = now.difference(updatedAt);
+    if (age >= relativeAgeDateThreshold) return;
+    _ageTimer = Timer(untilNextAgeBucket(age), () {
+      if (mounted) setState(() {});
     });
   }
 
@@ -290,10 +324,18 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
     final tokens = context.designTokens;
     final messages = context.messages;
     final outdated = _isOutdated;
+    final updatedAt = widget.reportUpdatedAt;
+    final now = clock.now();
+    _scheduleAgeRefresh(
+      outdated || !widget.hasReportContent ? null : updatedAt,
+      now,
+    );
     final freshnessLabel = widget.hasReportContent
         ? (outdated
               ? messages.taskAgentStatusOutOfDate
-              : messages.taskAgentStatusUpToDate)
+              : updatedAt == null
+              ? messages.taskAgentStatusUpToDate
+              : relativeAgeOrDateLabel(messages, at: updatedAt, now: now))
         : null;
     final freshnessTooltip = widget.hasReportContent
         ? (outdated

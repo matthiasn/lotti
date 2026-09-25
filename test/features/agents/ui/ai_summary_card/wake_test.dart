@@ -36,46 +36,78 @@ void main() {
   );
 
   group('AiSummaryCard – freshness strip', () {
-    testWidgets('a current summary says nothing about freshness at all', (
+    testWidgets(
+      'a current summary shows its age and the trigger, and none of the '
+      'settings',
+      (tester) async {
+        final writtenAt = DateTime(2026, 5, 4, 12);
+        await withClock(
+          Clock.fixed(writtenAt.add(const Duration(minutes: 20))),
+          () async {
+            final bench = AgentTestBench(
+              report: makeTestReport(tldr: 'Tldr line.', createdAt: writtenAt),
+              state: makeTestState(),
+            );
+
+            await tester.pumpWidget(bench.build());
+            await tester.pumpAndSettle();
+          },
+        );
+
+        expect(find.text('Tldr line.'), findsOneWidget);
+        // The age says more than "Up to date" could: a summary from this
+        // morning and one from last month are not equally current.
+        expect(find.text('20 min ago'), findsOneWidget);
+        expect(find.text('Up to date'), findsNothing);
+        final tooltip = tester.widget<Tooltip>(
+          find.ancestor(
+            of: find.byKey(const ValueKey('taskAgentFreshGlyph')),
+            matching: find.byType(Tooltip),
+          ),
+        );
+        expect(tooltip.message, 'Summary is up to date');
+        // The trigger is always where the reader looks for it.
+        expect(
+          find.descendant(
+            of: find.byKey(const ValueKey('taskAgentWakeButton')),
+            matching: find.text('Update now'),
+          ),
+          findsOneWidget,
+        );
+        // And none of the settings that moved to the internals panel.
+        expect(find.text('Automatic updates'), findsNothing);
+        expect(find.text('Updates on changes'), findsNothing);
+        expect(find.text('test-model · via Test Provider'), findsNothing);
+      },
+    );
+
+    testWidgets('the age advances in place and becomes a date after a week', (
       tester,
     ) async {
-      final bench = AgentTestBench(
-        report: makeTestReport(tldr: 'Tldr line.'),
-        state: makeTestState(),
-      );
+      final writtenAt = DateTime(2026, 5, 4, 12);
+      var current = writtenAt.add(const Duration(minutes: 59, seconds: 30));
+      await withClock(Clock(() => current), () async {
+        await tester.pumpWidget(
+          AgentTestBench(
+            report: makeTestReport(tldr: 'Tldr line.', createdAt: writtenAt),
+            state: makeTestState(),
+          ).build(),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('59 min ago'), findsOneWidget);
 
-      await tester.pumpWidget(bench.build());
-      await tester.pumpAndSettle();
+        // One timer for the next bucket, not a tick per second.
+        current = current.add(const Duration(seconds: 31));
+        await tester.pump(const Duration(seconds: 31));
+        expect(find.text('1 h ago'), findsOneWidget);
 
-      expect(find.text('AI summary'), findsOneWidget);
-      expect(find.text('Tldr line.'), findsOneWidget);
-      // Neither the confirmation nor the trigger: a reader of a current
-      // summary is offered no chrome for a state that needs no action.
-      expect(find.text('Up to date'), findsNothing);
-      expect(find.text('Update now'), findsNothing);
-      expect(find.byKey(const ValueKey('taskAgentWakeButton')), findsNothing);
-      // And none of the settings that moved to the internals panel.
-      expect(find.text('Automatic updates'), findsNothing);
-      expect(find.text('Updates on changes'), findsNothing);
-      expect(find.text('test-model · via Test Provider'), findsNothing);
-    });
-
-    testWidgets('the strip takes no height while the summary is current', (
-      tester,
-    ) async {
-      // Not merely invisible: a zero-height row, so a current card is
-      // exactly as tall as the summary it shows.
-      final bench = AgentTestBench(
-        report: makeTestReport(tldr: 'Tldr line.'),
-        state: makeTestState(),
-      );
-
-      await tester.pumpWidget(bench.build());
-      await tester.pumpAndSettle();
-
-      final silent = find.byKey(const ValueKey('agentAutomationRowSilent'));
-      expect(silent, findsOneWidget);
-      expect(tester.getSize(silent).height, 0);
+        current = writtenAt.add(const Duration(days: 6, hours: 23));
+        await tester.pump(const Duration(hours: 1));
+        await tester.pump(const Duration(days: 1));
+        current = writtenAt.add(const Duration(days: 7, minutes: 1));
+        await tester.pump(const Duration(days: 1));
+        expect(find.text('May 4'), findsOneWidget);
+      });
     });
 
     testWidgets('a stale summary says so, with the trigger beside it', (
@@ -170,9 +202,13 @@ void main() {
             await tester.tap(find.byKey(const ValueKey('taskAgentWakeButton')));
             verify(() => taskAgentService.triggerReanalysis(any())).called(1);
           } else {
+            // Current again: the trigger stays, without a time.
             expect(
-              find.byKey(const ValueKey('taskAgentWakeButton')),
-              findsNothing,
+              find.descendant(
+                of: find.byKey(const ValueKey('taskAgentWakeButton')),
+                matching: find.text('Update now'),
+              ),
+              findsOneWidget,
               reason: reason,
             );
           }
@@ -180,11 +216,11 @@ void main() {
       },
     );
 
-    testWidgets('a stale card with no report at all shows nothing', (
+    testWidgets('a card with no report offers only the trigger', (
       tester,
     ) async {
-      // Nothing on screen is out of date, so there is no state to report
-      // and no summary for the trigger to refresh in place.
+      // Nothing on screen is out of date, so there is no state to report —
+      // but the trigger is how the first summary gets written.
       final bench = AgentTestBench(
         identity: makeTestIdentity().copyWith(
           config: const AgentConfig(automaticUpdatesEnabled: false),
@@ -198,7 +234,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const ValueKey('taskAgentStaleGlyph')), findsNothing);
-      expect(find.byKey(const ValueKey('taskAgentWakeButton')), findsNothing);
+      expect(find.byKey(const ValueKey('taskAgentFreshGlyph')), findsNothing);
+      expect(find.byKey(const ValueKey('taskAgentWakeButton')), findsOneWidget);
     });
 
     testWidgets(
@@ -242,7 +279,7 @@ void main() {
       },
     );
 
-    testWidgets('the strip withdraws only once the run has ended', (
+    testWidgets('Out of date lasts until the run has ended', (
       tester,
     ) async {
       final runningController = StreamController<bool>.broadcast();
@@ -265,8 +302,9 @@ void main() {
       await tester.pumpWidget(bench.build());
       await tester.pumpAndSettle();
 
-      // Not stale, not running: silent.
+      // Not stale, not running: current.
       expect(find.text('Out of date'), findsNothing);
+      expect(find.byKey(const ValueKey('taskAgentFreshGlyph')), findsOneWidget);
       expect(thinkingTrigger(), findsNothing);
 
       // A run starts: the card admits the summary on screen is being
@@ -277,14 +315,15 @@ void main() {
       expect(thinkingTrigger(), findsOneWidget);
       expect(find.text('Out of date'), findsOneWidget);
 
-      // The run ends with a state that is not stale: the strip goes quiet
-      // again rather than switching to a confirmation.
+      // The run ends with a state that is not stale: current again, told by
+      // the summary's age rather than a bare confirmation.
       runningController.add(false);
       await tester.pump();
       await tester.pump();
       expect(thinkingTrigger(), findsNothing);
       expect(find.text('Out of date'), findsNothing);
       expect(find.text('Up to date'), findsNothing);
+      expect(find.byKey(const ValueKey('taskAgentFreshGlyph')), findsOneWidget);
     });
 
     testWidgets('without a setup the trigger is dead rather than absent', (
