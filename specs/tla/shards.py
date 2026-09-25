@@ -83,6 +83,7 @@ SECONDS = {
     "SyncSettings": 1,
     "SyncSettingsName": 1,
     "SyncSettingsFlags": 1,
+    "OutboxCausality": 6,
     # Measured locally (20 workers) when added; refresh from CI.
     "JournalReplicationSidecar": 38,
     "JournalReplication": 8,
