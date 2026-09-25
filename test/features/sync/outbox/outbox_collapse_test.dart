@@ -61,8 +61,8 @@ SyncAgentLink _agentLink(int counter) =>
 void main() {
   group('collapseKeyOf', () {
     test('entity payloads collapse by their outbox entry id', () {
-      expect(collapseKeyOf(_candidate(_link({'h': 1}))), 'e');
-      expect(collapseKeyOf(_candidate(_agentLink(1))), 'e');
+      expect(collapseKeyOf(_candidate(_link({'h': 1}))), 'entryLink:e');
+      expect(collapseKeyOf(_candidate(_agentLink(1))), 'agentLink:e');
       expect(
         collapseKeyOf(
           _candidate(
@@ -73,7 +73,7 @@ void main() {
             ),
           ),
         ),
-        'e',
+        'configFlag:e',
       );
     });
 

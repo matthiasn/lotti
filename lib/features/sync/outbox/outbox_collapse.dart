@@ -53,19 +53,26 @@ class CollapseCandidate {
   bool get needsMedia => row.filePath != null;
 }
 
-/// The collapse key of [candidate]: its row's outbox entry id when its message is an
-/// entity payload whose rows collapse, else null.
+/// The collapse key of [candidate]: its payload family and its row's outbox
+/// entry id, when its message is an entity payload whose rows collapse, else
+/// null.
+///
+/// The family is part of the key because the entry id alone is not unique
+/// across families: an agent entity and an agent link, say, can share an id,
+/// and folding one into the other would mark a row sent whose object never
+/// went out.
 String? collapseKeyOf(CollapseCandidate candidate) {
   final entryId = candidate.row.outboxEntryId;
   if (entryId == null) return null;
-  return switch (candidate.message) {
-    SyncJournalEntity() ||
-    SyncEntryLink() ||
-    SyncAgentEntity() ||
-    SyncAgentLink() ||
-    SyncConfigFlag() => entryId,
+  final family = switch (candidate.message) {
+    SyncJournalEntity() => 'journalEntity',
+    SyncEntryLink() => 'entryLink',
+    SyncAgentEntity() => 'agentEntity',
+    SyncAgentLink() => 'agentLink',
+    SyncConfigFlag() => 'configFlag',
     _ => null,
   };
+  return family == null ? null : '$family:$entryId';
 }
 
 /// Whether [a] is a newer version than [b]: by clock when both carry one and

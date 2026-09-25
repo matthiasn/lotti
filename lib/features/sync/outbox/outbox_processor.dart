@@ -184,13 +184,18 @@ class OutboxProcessor {
     required Set<int> claimedIds,
     required bool allowMedia,
   }) async {
-    final others = [
-      for (final row in await _repository.collapsibleRows(
-        key,
-        excludeIds: claimedIds,
-      ))
-        CollapseCandidate.decode(row),
-    ]..removeWhere((c) => !allowMedia && c.needsMedia);
+    // Rows are stored under the bare entry id, which other payload families
+    // may share: only rows of the same family (the same collapse key) fold.
+    final others =
+        [
+          for (final row in await _repository.collapsibleRows(
+            claimed.first.row.outboxEntryId!,
+            excludeIds: claimedIds,
+          ))
+            CollapseCandidate.decode(row),
+        ]..removeWhere(
+          (c) => collapseKeyOf(c) != key || (!allowMedia && c.needsMedia),
+        );
     final readNewest = newestOf([...claimed, ...others]);
     final wanted = [
       for (final c in others)

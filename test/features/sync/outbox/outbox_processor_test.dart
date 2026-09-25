@@ -9,6 +9,7 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
@@ -1951,6 +1952,37 @@ void main() {
       final sent = wire.single as SyncAgentEntity;
       expect(sent.agentEntity!.vectorClock!.vclock, {'host': 3});
       expect(coveredCounters(sent.coveredVectorClocks, 'host'), [2]);
+    });
+
+    test('an agent entity and an agent link sharing an id never fold into '
+        'each other: both are sent', () async {
+      await append(agentAt({'host': 1}), entryId: 'shared-id');
+      // Fills the bundle, so the link is not claimed with the entity and is
+      // found by the entity's collapse lookup instead.
+      await append(
+        const SyncMessage.aiConfigDelete(id: 'unrelated'),
+        entryId: 'unrelated',
+      );
+      await append(
+        SyncMessage.agentLink(
+          agentLink: AgentLink.agentTask(
+            id: 'shared-id',
+            fromId: 'agent-1',
+            toId: 'task-1',
+            createdAt: DateTime(2026, 9, 25),
+            updatedAt: DateTime(2026, 9, 25),
+            vectorClock: const VectorClock({'host': 2}),
+          ),
+          status: SyncEntryStatus.update,
+        ),
+        entryId: 'shared-id',
+      );
+
+      await drain();
+
+      expect(wire.whereType<SyncAgentEntity>(), hasLength(1));
+      expect(wire.whereType<SyncAgentLink>(), hasLength(1));
+      expect((await statuses()).values.toSet(), {OutboxStatus.sent.index});
     });
 
     test(
