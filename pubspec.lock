@@ -2848,6 +2848,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
+  sodium:
+    dependency: "direct main"
+    description:
+      name: sodium
+      sha256: ed4733228fbd45b4177e09feb84a08385d53dc39f2a2166b7439ad80a19ac5f5
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.1.1+1"
   source_gen:
     dependency: transitive
     description:

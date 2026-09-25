@@ -36,6 +36,7 @@ what it does for a user; these describe how it runs.
 
 * [Sync](sync/) - single-user multi-device replication over end-to-end encrypted Matrix.
 * [Notifications](notifications.md) - durable alerts that converge across devices.
+* [Provenance](provenance.md) - the cryptographic core of record provenance: canonical JSON, domain-separated hashing, commitments, Ed25519 and the signed envelope.
 * [Backup and restore](backup-and-restore.md) - the independent recovery artifact: profile inventory, integrity manifest, and safe capture/restore boundary.
 
 # Shell, settings and look
