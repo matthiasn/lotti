@@ -71,6 +71,14 @@ extension _DescriptorCache on SyncEventProcessor {
           descriptor.roomId == envelope.roomId) {
         index.record(descriptor);
       }
+      _trace(
+        'descriptorLookup.result eventId=$id found=${descriptor != null} '
+        'type=${descriptor?.type} '
+        'roomMatches=${descriptor?.roomId == envelope.roomId} '
+        'hasRelativePath=${descriptor?.content['relativePath'] is String} '
+        'indexed=${index.findByEventId(id) != null}',
+        subDomain: 'processor.resolve.descriptorLookup',
+      );
     } catch (error, stackTrace) {
       _loggingService.error(
         LogDomain.sync,
