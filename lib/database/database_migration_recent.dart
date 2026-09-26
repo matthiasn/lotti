@@ -340,6 +340,9 @@ CREATE TABLE config_flags_v48 (
         );
       }();
     }
+    if (from < 49) {
+      await m.createTable(configFlagVersions);
+    }
   }
 }
 

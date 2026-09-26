@@ -113,19 +113,20 @@ def check_settings():
         check("settings-equal-stamps-" + guarded,
               {"EqualStamps": "TRUE", "DeterministicTies": guarded}, "Converged",
               module="SyncSettings", fails=fails)
-    # Unversioned flags still depend on delivery order.
-    check("settings-unordered-flags",
-          {"Timestamped": "FALSE", "FieldCount": "1"}, "Converged",
-          module="SyncSettings")
+    for versioned, fails in (("TRUE", False), ("FALSE", True)):
+        check("settings-flag-versions-" + versioned,
+              {"Timestamped": versioned}, "Converged",
+              module="SyncSettings", profile="SyncSettingsFlags", fails=fails)
 
 
 def check_preference_edits():
-    for switch, assertion in (("MonotoneLocalStamps", "LocalVersionsAdvance"),
-                              ("PublishCommittedSnapshot", "OnlyCommittedSnapshots")):
-        for guarded, fails in (("TRUE", False), ("FALSE", True)):
-            check("preference-edits-" + switch + "-" + guarded,
-                  {switch: guarded}, assertion,
-                  module="SyncPreferenceEdits", fails=fails)
+    for profile in ("SyncPreferenceEdits", "SyncPreferenceEditsFlags"):
+        for switch, assertion in (("MonotoneLocalStamps", "LocalVersionsAdvance"),
+                                  ("PublishCommittedSnapshot", "OnlyCommittedSnapshots")):
+            for guarded, fails in (("TRUE", False), ("FALSE", True)):
+                check(profile + "-" + switch + "-" + guarded,
+                      {switch: guarded}, assertion, profile=profile,
+                      module="SyncPreferenceEdits", fails=fails)
     # With at most two edits per peer, a stamp above two requires a local
     # edit after learning another peer's version, not only isolated edits.
     check("preference-causal-edit-reachable", {}, "NoCausalEditWitness",

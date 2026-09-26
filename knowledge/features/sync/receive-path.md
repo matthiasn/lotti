@@ -389,8 +389,9 @@ Their sequence receipt is written to SyncDatabase only after the domain commit
 returns. The adapter must not wrap these handlers or outbox bundles in another
 journal transaction: a nested savepoint can succeed before an outer commit
 fails, leaving a receipt whose payload rolled back. Other families use their
-own database; the adapter retains the outer journal transaction for definitions,
-config flags and backfill controls.
+own database. Config flags also own their commit so cache publication cannot
+precede an outer rollback; the adapter retains the outer journal transaction for
+definitions and backfill controls.
 
 Receipt write errors propagate to the queue's retriable outcome for journal
 entities, entry links, agents, notifications and consumption events. Replay

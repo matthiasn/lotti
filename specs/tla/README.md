@@ -2034,15 +2034,15 @@ Config flags, theme selection and the Daily OS greeting name are not
 sequence-tracked payloads. This model opens the receive register: the timestamp
 guard, transaction-local writes, atomic group commit and successful
 return are distinct steps. Three envelopes reach two serial receivers in
-independently chosen orders. Flags overwrite on arrival; theme/name messages
-order stamps, breaking ties by a canonical payload tuple. The model's version
+independently chosen orders. All three families order stamps, breaking ties by a
+canonical payload tuple. The model's version
 rank represents this deterministic payload order; it is not a sender counter.
 
 | Configuration | Register | Delivery assumption | Distinct states |
 |---|---|---|---:|
 | `SyncSettings` | Three theme fields plus stamp | Distinct stamps; any order | 1,296 |
 | `SyncSettingsName` | Greeting value plus stamp | Distinct stamps; any order | 484 |
-| `SyncSettingsFlags` | One flag value | Same order on both receivers | 100 |
+| `SyncSettingsFlags` | One flag payload plus stamp | Any order; one failed write, then retry | 968 |
 | `SyncSettingsFailure` | Three theme fields plus stamp | Distinct stamps; one failed write, then retry | 2,592 |
 | `SyncSettingsNameFailure` | Greeting value plus stamp | Distinct stamps; one failed write, then retry | 968 |
 | `SyncSettingsEqualStamps` | Three theme fields plus stamp | Equal stamps; any order; one failed write, then retry | 2,592 |
@@ -2060,9 +2060,9 @@ the journal's repair contract.
 The mutation check runs guarded controls and changes one switch at a time:
 `AtomicGroups = FALSE` breaks `CompletedCoherent`; `RetryFailures = FALSE`
 breaks `LatestWins`. A third pair passes with equal-stamp tie-breaking and
-violates `Converged` when only `DeterministicTies` is disabled. Unordered flags
-remain a residual counterexample: `OrderedDelivery = FALSE` has no version
-field to resolve competing values.
+violates `Converged` when only `DeterministicTies` is disabled. The flag profile
+passes with versioning and violates `Converged` when only `Timestamped` is
+disabled, reproducing the prior arrival-order overwrite.
 
 The real SQLite regressions in `sync_event_processor_test.dart` fail each
 field write, verify the persisted group and cache are unchanged, then retry
@@ -2072,7 +2072,10 @@ write cannot incorrectly skip against a cache predating an atomic group.
 Opposite-order theme/name traces with equal stamps verify the same persisted
 winner and cache; they fail against arrival-order overwrite. Conditional-group
 tests cover queued newer writes, tie tuple ordering, metadata exclusion,
-rollback/retry and caller snapshots.
+rollback/retry and caller snapshots. Flag traces cover distinct stamps, equal
+stamps and legacy event-timestamp fallback in opposite delivery orders. A
+deferred SQLite constraint reproduces an outer-commit failure: restoring the
+adapter wrap makes the cache expose a rolled-back flag.
 
 The model excludes concurrent local writers, platform effects, theme-mode
 normalization, the greeting's bootstrap published marker, source staging, and
@@ -2139,22 +2142,27 @@ This register model adds two peers that each make two local edits, interleaved
 with publishing and receiving. Each local wall clock stays at 1, so a second
 edit and an edit after a received future stamp must advance from persisted
 state. Payload ranks stand for the canonical tuple used by the receiver.
-Pending debounce snapshots can be replaced by a newer local commit. Receives
+Theme/name pending debounce snapshots can be replaced by a newer local commit.
+The flag profile retains every immediate publication and alternates two boolean
+payload ranks, including repeated values across versions. Receives
 merge by stamp and payload rank without changing the captured outbound snapshot.
 
 | Action | Implementation boundary |
 |---|---|
-| `LocalEdit` | `SettingsDb.saveLocalSettingsGroup`: atomic payload/stamp commit and immutable returned snapshot |
-| `Publish` | Theme/name controllers debounce and enqueue the saved snapshot |
-| `Receive` | `SettingsDb.saveSettingsItemsIfNewer`: compare the persisted register and commit the winning group |
+| `LocalEdit` | `SettingsDb.saveLocalSettingsGroup` or `JournalDb.saveLocalConfigFlag`: atomic payload/stamp commit and returned snapshot |
+| `Publish` | Theme/name controllers debounce; `PersistenceDefinitionOps` immediately enqueues the committed flag snapshot |
+| `Receive` | `SettingsDb.saveSettingsItemsIfNewer` or `JournalDb.applyConfigFlagVersion`: compare the persisted register and commit the winner |
 
-The checked profile explores **3,301 distinct states**. It checks that local
+The theme/name profile explores **3,301 distinct states**, and the immediate
+flag profile **2,981**. The flag profile retains every publication: outbox
+coalescing is a separate implementation boundary covered by regressions for
+reversed enqueue order and mixed legacy/stamped rows. Both check that local
 versions advance, published payload/stamp pairs were actually committed, and
 settled peers agree on a version covering every committed edit. Fair edit,
 publication and delivery actions imply eventual settlement and eventual coverage
 of every edit, including local edits coalesced before publication.
 
-Guarded controls pass; disabling `MonotoneLocalStamps` violates
+Guarded controls pass for both profiles; disabling `MonotoneLocalStamps` violates
 `LocalVersionsAdvance`, and disabling `PublishCommittedSnapshot` violates
 `OnlyCommittedSnapshots`. A reachability check requires a stamp above two:
 with two edits per peer, this witnesses an edit after a received version.

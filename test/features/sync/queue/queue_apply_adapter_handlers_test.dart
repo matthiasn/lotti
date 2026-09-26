@@ -240,16 +240,21 @@ void main() {
       'a journal-writing message runs the parked work after apply returned, '
       'once, and still maps to applied',
       () async {
-        // A synced notification preference parks its platform calls and
-        // reconcile here: they must not run inside the journal transaction
-        // the adapter wraps a journal-writing apply in.
+        // Entity definitions still use the adapter's outer transaction.
+        // Parked work runs only after that transaction has returned.
         final entry = hBuildEntry(
           eventId: r'$flag',
           roomId: '!r',
           originTsMs: 1,
         );
         final prepared = AdapterMockPreparedSyncEvent();
-        final log = stubParkingApply(prepared);
+        final log = stubParkingApply(
+          prepared,
+          message: SyncMessage.entityDefinition(
+            entityDefinition: measurableWater,
+            status: SyncEntryStatus.update,
+          ),
+        );
         expect(QueueApplyAdapter.writesJournalDb(prepared.syncMessage), isTrue);
 
         final outcome = await build().bind()(entry, room);
@@ -438,13 +443,13 @@ void main() {
       expect(wraps(message), isFalse);
     });
 
-    test('SyncConfigFlag wraps — writes to config_flags (JournalDb)', () {
+    test('SyncConfigFlag owns its payload and stamp transaction', () {
       const message = SyncMessage.configFlag(
         name: 'enableDailyOs',
         description: 'Enable DailyOS Page?',
         status: true,
       );
-      expect(wraps(message), isTrue);
+      expect(wraps(message), isFalse);
     });
 
     test('SyncThemingSelection bypasses outer wrap (settings_db)', () {

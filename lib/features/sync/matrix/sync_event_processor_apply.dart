@@ -136,14 +136,22 @@ extension SyncEventProcessorApply on SyncEventProcessor {
           deletedAt: deletedAt,
         );
         return null;
-      case SyncConfigFlag(:final name, :final description, :final status):
+      case SyncConfigFlag(
+        :final name,
+        :final description,
+        :final status,
+        :final updatedAt,
+      ):
         final configFlag = ConfigFlag(
           name: name,
           description: description,
           status: status,
         );
-        final previous = await journalDb.getConfigFlagByName(name);
-        await journalDb.upsertConfigFlag(configFlag);
+        final result = await journalDb.applyConfigFlagVersion(
+          configFlag,
+          updatedAt: updatedAt ?? event.originServerTs.millisecondsSinceEpoch,
+        );
+        if (!result.applied) return null;
         if (configFlag.name == 'private') {
           _updateNotifications.notify(
             {privateToggleNotification},
@@ -155,10 +163,10 @@ extension SyncEventProcessorApply on SyncEventProcessor {
         // switched off over there stops alerting here, and one switched on
         // re-arms what is already in the inbox. Those consequences are
         // platform calls and an alarm reconciliation, which must not run
-        // inside the journal transaction the queue adapter wraps this apply
-        // in — they would hold the writer lock for every reader — so they
-        // are parked for after the commit when the caller offers a slot.
-        final effects = previous?.status != configFlag.status
+        // inside the flag's owned transaction — they would hold the writer
+        // lock for every reader. The flag has committed at this point; a
+        // caller-provided after-commit slot can defer the effects further.
+        final effects = result.statusChanged
             ? _notificationPreferenceEffects?.call(journalDb)
             : null;
         if (effects != null) {

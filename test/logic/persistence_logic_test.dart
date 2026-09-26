@@ -1978,6 +1978,25 @@ void main() {
     setUp(() async {
       await getIt.reset();
       journalDb = MockJournalDb();
+      when(
+        () => journalDb.getConfigFlagByName(any()),
+      ).thenAnswer((_) async => null);
+      when(
+        () => journalDb.saveLocalConfigFlag(
+          any(),
+          timestamp: any(named: 'timestamp'),
+        ),
+      ).thenAnswer((invocation) async {
+        final flag = invocation.positionalArguments.single as ConfigFlag;
+        final previous = await journalDb.getConfigFlagByName(flag.name);
+        return (
+          flag: flag,
+          updatedAt: invocation.namedArguments[#timestamp] as int,
+          applied: previous != flag,
+          statusChanged: previous?.status != flag.status,
+        );
+      });
+
       updateNotifications = MockUpdateNotifications();
       loggingService = MockDomainLogger();
       outboxService = MockOutboxService();
@@ -2719,7 +2738,7 @@ void main() {
       },
     );
 
-    test('setConfigFlag skips sync when the status is unchanged', () async {
+    test('setConfigFlag publishes description-only versions', () async {
       when(() => journalDb.getConfigFlagByName('enableDailyOs')).thenAnswer(
         (_) async => const ConfigFlag(
           name: 'enableDailyOs',
@@ -2739,7 +2758,14 @@ void main() {
         ),
       );
 
-      verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
+      final message =
+          verify(
+                () => outboxService.enqueueMessage(captureAny<SyncMessage>()),
+              ).captured.single
+              as SyncConfigFlag;
+      expect(message.status, isTrue);
+      expect(message.description, 'Use DailyOS');
+      expect(message.updatedAt, isNotNull);
     });
   });
 

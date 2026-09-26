@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -70,6 +73,25 @@ void main() {
     when(
       () => notificationScheduler.reconcile(now: any(named: 'now')),
     ).thenAnswer((_) async {});
+
+    when(
+      () => mocks.journalDb.getConfigFlagByName(any()),
+    ).thenAnswer((_) async => null);
+    when(
+      () => mocks.journalDb.saveLocalConfigFlag(
+        any(),
+        timestamp: any(named: 'timestamp'),
+      ),
+    ).thenAnswer((invocation) async {
+      final flag = invocation.positionalArguments.single as ConfigFlag;
+      final previous = await mocks.journalDb.getConfigFlagByName(flag.name);
+      return (
+        flag: flag,
+        updatedAt: invocation.namedArguments[#timestamp] as int,
+        applied: previous != flag,
+        statusChanged: previous?.status != flag.status,
+      );
+    });
     logic = MockPersistenceLogic();
     ops = PersistenceDefinitionOps(logic);
 
@@ -423,6 +445,58 @@ void main() {
       ).called(1);
     },
   );
+
+  test('local flag publication waits for the committed version', () {
+    fakeAsync((async) {
+      const flag = ConfigFlag(
+        name: 'formal_flag',
+        description: 'd',
+        status: true,
+      );
+      final committed = Completer<ConfigFlagWriteResult>();
+      when(
+        () => mocks.journalDb.saveLocalConfigFlag(
+          flag,
+          timestamp: any(named: 'timestamp'),
+        ),
+      ).thenAnswer((_) => committed.future);
+      var completed = false;
+      unawaited(ops.setConfigFlagImpl(flag).then((_) => completed = true));
+      async.flushMicrotasks();
+      expect(completed, isFalse);
+      verifyNever(() => outboxService.enqueueMessage(any()));
+      committed.complete((
+        flag: flag,
+        updatedAt: 301,
+        applied: true,
+        statusChanged: true,
+      ));
+      async.flushMicrotasks();
+      expect(completed, isTrue);
+      final message =
+          verify(
+                () => outboxService.enqueueMessage(captureAny()),
+              ).captured.single
+              as SyncConfigFlag;
+      expect(message.updatedAt, 301);
+      expect(message.status, isTrue);
+      expect(message.description, 'd');
+    }, initialTime: DateTime(2026));
+  });
+
+  test('failed local flag commit cannot publish or notify', () async {
+    const flag = ConfigFlag(name: 'private', description: 'd', status: true);
+    final error = StateError('injected flag commit failure');
+    when(
+      () => mocks.journalDb.saveLocalConfigFlag(
+        flag,
+        timestamp: any(named: 'timestamp'),
+      ),
+    ).thenAnswer((_) async => throw error);
+    await expectLater(ops.setConfigFlagImpl(flag), throwsA(same(error)));
+    verifyNever(() => outboxService.enqueueMessage(any()));
+    verifyNever(() => mocks.updateNotifications.notify(any()));
+  });
 
   test('setConfigFlagImpl enqueues only when the status changes', () async {
     const flag = ConfigFlag(

@@ -20,6 +20,8 @@ on:
       - "lib/features/tasks/state/saved_filters/saved_task_filters_repository.dart"
       - "lib/features/tasks/state/saved_filters/saved_task_filters_persistence.dart"
       - "lib/features/tasks/state/saved_filters/saved_task_filters_controller.dart"
+      - "lib/database/database_config_flags.dart"
+      - "lib/logic/persistence_definition_ops.dart"
       - "lib/features/theming/state/theming_controller.dart"
       - "lib/features/daily_os_next/state/daily_os_preferences_controller.dart"
       - "lib/database/sync_db_outbox.dart"

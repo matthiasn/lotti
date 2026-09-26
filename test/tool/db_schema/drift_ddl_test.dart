@@ -3,6 +3,31 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../tool/db_schema/drift_ddl.dart';
 
 void main() {
+  test('schema version follows the getter literal or its exact constant', () {
+    expect(declaredJournalSchemaVersion('int get schemaVersion => 47;'), 47);
+    expect(
+      declaredJournalSchemaVersion('''
+static const int otherVersion = 999;
+static const int currentSchemaVersion = 49;
+int get schemaVersion => currentSchemaVersion;
+'''),
+      49,
+    );
+    expect(
+      declaredJournalSchemaVersion('''
+static const int otherVersion = 999;
+int get schemaVersion => missing;
+'''),
+      isNull,
+    );
+    expect(
+      declaredJournalSchemaVersion(
+        'static const int currentSchemaVersion = 49;',
+      ),
+      isNull,
+    );
+  });
+
   group('extractDriftDdl', () {
     const source = '''
 -- A leading comment.

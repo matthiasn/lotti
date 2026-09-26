@@ -1,5 +1,13 @@
 part of 'database.dart';
 
+/// The durable result of a local or received flag version.
+typedef ConfigFlagWriteResult = ({
+  ConfigFlag flag,
+  int updatedAt,
+  bool applied,
+  bool statusChanged,
+});
+
 /// Config-flag state, lookups, and private-visibility helpers for
 /// [JournalDb].
 ///
@@ -107,10 +115,79 @@ mixin _JournalDbConfigFlags on _$JournalDb {
     return true;
   }
 
+  /// Local maintenance writes (rollouts and demo seeding) also advance the
+  /// stored version, although their callers deliberately do not broadcast.
   Future<int> upsertConfigFlag(ConfigFlag configFlag) async {
+    final result = await saveLocalConfigFlag(
+      configFlag,
+      timestamp: clock.now().millisecondsSinceEpoch,
+    );
+    return result.applied ? 1 : 0;
+  }
+
+  /// Commits a local flag edit with a version beyond the persisted stamp.
+  /// Identical edits do not bump the stamp or require publication. This owns
+  /// its transaction; callers must not wrap it in an outer transaction.
+  Future<ConfigFlagWriteResult> saveLocalConfigFlag(
+    ConfigFlag flag, {
+    required int timestamp,
+  }) => _writeConfigFlagVersion(flag, timestamp, local: true);
+
+  /// Applies the greater (stamp, status, description) tuple atomically.
+  /// The cache and watchers change only after the owned transaction commits.
+  /// Callers must not wrap this in an outer JournalDb transaction.
+  Future<ConfigFlagWriteResult> applyConfigFlagVersion(
+    ConfigFlag flag, {
+    required int updatedAt,
+  }) => _writeConfigFlagVersion(flag, updatedAt, local: false);
+
+  Future<ConfigFlagWriteResult> _writeConfigFlagVersion(
+    ConfigFlag flag,
+    int stamp, {
+    required bool local,
+  }) async {
     await _ensureConfigFlagsLoaded();
-    final result = await into(configFlags).insertOnConflictUpdate(configFlag);
-    _setConfigFlag(configFlag);
+    final result = await transaction(() async {
+      // Bypass the cache so a preceding transaction's version participates in
+      // this decision even when a local edit races an inbound preference.
+      final previous = await (select(
+        configFlags,
+      )..where((row) => row.name.equals(flag.name))).getSingleOrNull();
+      final version = await (select(
+        configFlagVersions,
+      )..where((row) => row.name.equals(flag.name))).getSingleOrNull();
+      final previousStamp = version?.updatedAt ?? 0;
+      var comparison = stamp.compareTo(previousStamp);
+      if (comparison == 0 && previous != null) {
+        comparison = (flag.status ? 1 : 0).compareTo(previous.status ? 1 : 0);
+        if (comparison == 0) {
+          comparison = flag.description.compareTo(previous.description);
+        }
+      }
+      if ((local && previous == flag) ||
+          (!local && previous != null && comparison <= 0)) {
+        return (
+          flag: previous!,
+          updatedAt: previousStamp,
+          applied: false,
+          statusChanged: false,
+        );
+      }
+      final updatedAt = local && stamp <= previousStamp
+          ? previousStamp + 1
+          : stamp;
+      await into(configFlags).insertOnConflictUpdate(flag);
+      await into(configFlagVersions).insertOnConflictUpdate(
+        ConfigFlagVersion(name: flag.name, updatedAt: updatedAt),
+      );
+      return (
+        flag: flag,
+        updatedAt: updatedAt,
+        applied: true,
+        statusChanged: previous?.status != flag.status,
+      );
+    });
+    if (result.applied) _setConfigFlag(result.flag);
     return result;
   }
 

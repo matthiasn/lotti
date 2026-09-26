@@ -920,7 +920,12 @@ void main() {
 
     await processor.process(event: event, journalDb: journalDb);
 
-    verify(() => journalDb.upsertConfigFlag(flag)).called(1);
+    verify(
+      () => journalDb.applyConfigFlagVersion(
+        flag,
+        updatedAt: any(named: 'updatedAt'),
+      ),
+    ).called(1);
   });
 
   group('a synced notification preference (ADR 0073, the settings page)', () {
@@ -962,7 +967,12 @@ void main() {
 
       // The alarms a preference governs are this device's: a switch flipped
       // on the phone has to reach the laptop's alarms, not only its page.
-      verify(() => journalDb.upsertConfigFlag(stored.copyWith(status: false)));
+      verify(
+        () => journalDb.applyConfigFlagVersion(
+          stored.copyWith(status: false),
+          updatedAt: any(named: 'updatedAt'),
+        ),
+      );
       verify(
         () => effects.apply(stored.copyWith(status: false)),
       ).called(1);
@@ -990,8 +1000,8 @@ void main() {
     test(
       'with an after-commit slot the effects are parked, not run inline',
       () async {
-        // The queue adapter wraps this apply in the journal transaction; the
-        // platform calls and the reconcile must wait for the commit.
+        // The owned flag transaction commits before returning; a supplied
+        // after-commit sink still controls when platform effects run.
         when(
           () => event.text,
         ).thenReturn(encodeMessage(flipped(status: false)));
@@ -1005,7 +1015,10 @@ void main() {
         );
 
         verify(
-          () => journalDb.upsertConfigFlag(stored.copyWith(status: false)),
+          () => journalDb.applyConfigFlagVersion(
+            stored.copyWith(status: false),
+            updatedAt: any(named: 'updatedAt'),
+          ),
         );
         verifyNever(() => effects.apply(any()));
         expect(parked, hasLength(1));
@@ -1058,7 +1071,10 @@ void main() {
             await applying;
           }
           verify(
-            () => journalDb.upsertConfigFlag(stored.copyWith(status: false)),
+            () => journalDb.applyConfigFlagVersion(
+              stored.copyWith(status: false),
+              updatedAt: any(named: 'updatedAt'),
+            ),
           ).called(1);
           expect(parked, isEmpty);
         },
@@ -1100,7 +1116,10 @@ void main() {
         );
 
         verify(
-          () => journalDb.upsertConfigFlag(stored.copyWith(status: false)),
+          () => journalDb.applyConfigFlagVersion(
+            stored.copyWith(status: false),
+            updatedAt: any(named: 'updatedAt'),
+          ),
         );
       },
     );
@@ -1126,7 +1145,12 @@ void main() {
 
       await processor.process(event: event, journalDb: journalDb);
 
-      verify(() => journalDb.upsertConfigFlag(flag)).called(1);
+      verify(
+        () => journalDb.applyConfigFlagVersion(
+          flag,
+          updatedAt: any(named: 'updatedAt'),
+        ),
+      ).called(1);
       verify(
         () => updateNotifications.notify(
           {privateToggleNotification},
@@ -1555,6 +1579,127 @@ void main() {
         subDomain: 'SyncEventProcessor.missingAttachment',
       ),
     ).called(1);
+  });
+
+  group('versioned config flag convergence', () {
+    test('queue publishes a flag only after the outer commit succeeds', () async {
+      final peer = JournalDb(inMemoryDatabase: true);
+      addTearDown(peer.close);
+      const before = ConfigFlag(
+        name: 'private',
+        description: 'Private',
+        status: false,
+      );
+      await peer.applyConfigFlagVersion(before, updatedAt: 100);
+      await peer.customStatement('PRAGMA foreign_keys = ON');
+      await peer.customStatement(
+        'CREATE TABLE flag_commit_guard (parent_name TEXT REFERENCES '
+        'config_flags(name) DEFERRABLE INITIALLY DEFERRED)',
+      );
+      // Unlike a statement error, this constraint fails at the outer COMMIT.
+      // A nested savepoint must not publish cache state that is then rolled back.
+      await peer.customStatement(
+        'CREATE TRIGGER reject_flag_commit AFTER UPDATE ON config_flag_versions '
+        "WHEN NEW.name = 'private' BEGIN INSERT INTO flag_commit_guard "
+        "VALUES ('missing-parent'); END",
+      );
+      final room = MockRoom();
+      when(() => room.id).thenReturn('!flags:example.org');
+      final entry = InboundQueueEntry(
+        queueId: 1,
+        eventId: r'$flag',
+        roomId: '!flags:example.org',
+        originTs: 200,
+        enqueuedAt: 200,
+        attempts: 0,
+        rawJson: jsonEncode({
+          'event_id': r'$flag',
+          'room_id': '!flags:example.org',
+          'origin_server_ts': 200,
+          'type': EventTypes.Message,
+          'sender': '@peer:example.org',
+          'content': {
+            'msgtype': 'com.lotti.sync.message',
+            'body': encodeMessage(
+              const SyncMessage.configFlag(
+                name: 'private',
+                description: 'Private',
+                status: true,
+                updatedAt: 200,
+              ),
+            ),
+          },
+        }),
+      );
+      final adapter = QueueApplyAdapter(
+        processor: processor,
+        journalDb: peer,
+        logging: loggingService,
+        hasOlderActiveEntry: (_) async => false,
+      );
+      expect(await adapter.bind()(entry, room), ApplyOutcome.retriable);
+      expect(await peer.listConfigFlags().getSingle(), before);
+      expect(await peer.getConfigFlagByName('private'), before);
+      expect(
+        (await peer.select(peer.configFlagVersions).getSingle()).updatedAt,
+        100,
+      );
+      verifyNever(() => updateNotifications.notify(any(), fromSync: true));
+      await peer.customStatement('DROP TRIGGER reject_flag_commit');
+      expect(await adapter.bind()(entry, room), ApplyOutcome.applied);
+      expect(await peer.getConfigFlag('private'), isTrue);
+      expect((await peer.listConfigFlags().getSingle()).status, isTrue);
+      expect(
+        (await peer.select(peer.configFlagVersions).getSingle()).updatedAt,
+        200,
+      );
+    });
+
+    for (final scenario in ['newer', 'equal', 'legacy']) {
+      test(
+        '$scenario flag updates converge in opposite delivery orders',
+        () async {
+          const name = 'formal_flag';
+          final first = {
+            'runtimeType': 'configFlag',
+            'name': name,
+            'description': 'Formal flag',
+            'status': scenario != 'equal',
+            if (scenario != 'legacy') 'updatedAt': 100,
+          };
+          final second = {
+            ...first,
+            'status': scenario == 'equal',
+            if (scenario != 'legacy')
+              'updatedAt': scenario == 'equal' ? 100 : 200,
+          };
+          for (final order in [
+            [first, second, first],
+            [second, first, second],
+          ]) {
+            final peer = JournalDb(inMemoryDatabase: true);
+            addTearDown(peer.close);
+            for (final payload in order) {
+              when(() => event.originServerTs).thenReturn(
+                DateTime.fromMillisecondsSinceEpoch(
+                  identical(payload, first) ? 100 : 200,
+                ),
+              );
+              // Decode the wire form: the updatedAt field is ignored by the old
+              // receiver, so this regression fails behaviorally before the fix.
+              when(
+                () => event.text,
+              ).thenReturn(encodeMessage(SyncMessage.fromJson(payload)));
+              await processor.process(event: event, journalDb: peer);
+            }
+            final winner = await peer.getConfigFlagByName(name);
+            expect(winner?.status, scenario == 'equal');
+            final persisted = await peer.listConfigFlags().getSingle();
+            expect(persisted, winner);
+          }
+        },
+      );
+    }
   });
 
   group('atomic synced settings', () {

@@ -41,9 +41,9 @@ void main(List<String> args) {
     return;
   }
 
-  final declared = RegExp(
-    r'int get schemaVersion => (\d+);',
-  ).firstMatch(_read(ref, _databasePath))?.group(1);
+  final declared = declaredJournalSchemaVersion(
+    _read(ref, _databasePath),
+  )?.toString();
   if (declared != version) {
     stderr.writeln(
       'Refusing to write: $ref declares schemaVersion $declared, '

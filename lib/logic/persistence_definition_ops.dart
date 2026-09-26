@@ -153,24 +153,27 @@ class PersistenceDefinitionOps extends PersistenceCollaboratorBase {
     return linesAffected;
   }
 
+  /// Commits a local version before publishing or applying platform effects.
   Future<void> setConfigFlagImpl(ConfigFlag configFlag) async {
-    final previous = await journalDb.getConfigFlagByName(configFlag.name);
-    await journalDb.upsertConfigFlag(configFlag);
-    final changed = previous?.status != configFlag.status;
-    if (changed) {
+    final result = await journalDb.saveLocalConfigFlag(
+      configFlag,
+      timestamp: clock.now().millisecondsSinceEpoch,
+    );
+    if (result.applied) {
       await outboxService.enqueueMessage(
         SyncMessage.configFlag(
-          name: configFlag.name,
-          description: configFlag.description,
-          status: configFlag.status,
+          name: result.flag.name,
+          description: result.flag.description,
+          status: result.flag.status,
+          updatedAt: result.updatedAt,
         ),
       );
     }
     if (configFlag.name == 'private') {
       updateNotifications.notify({privateToggleNotification});
     }
-    if (changed) {
-      await _applyNotificationPreference(configFlag);
+    if (result.statusChanged) {
+      await _applyNotificationPreference(result.flag);
     }
   }
 
