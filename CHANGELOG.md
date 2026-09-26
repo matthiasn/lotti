@@ -4,6 +4,76 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.28]
+
+### Changed
+
+- **Rolling the minutes past the hour now moves the hour too.** In every time
+  picker, scrolling the minutes back past :00 turns 14:00 into 13:59 — and
+  again into 12:59 — with the hour sliding along, so you can go back several
+  hours without reaching for the hour wheel. Scrolling forward past :59 moves
+  the hour up the same way, and 12-hour pickers switch between AM and PM when
+  they cross noon or midnight. The habit editor's "show from" and alert times
+  now use the same time wheel as the rest of the app.
+
+### Fixed
+
+- **Checklist items and whole checklists could silently disappear from a
+  task.** When an item or a checklist arrived from another device, or was
+  added by the task agent, a moment before you reordered a checklist, added
+  an item or changed the task's status, priority or estimate — or before the
+  agent changed one of them — your change was saved over the list as your
+  screen last saw it, and the new item or checklist dropped out of the task
+  on every device, although it still existed. Those changes are now applied
+  to the lists as they are stored, so nothing added meanwhile is lost. A
+  checklist added after you had reordered a task's checklists also stayed
+  hidden until you left the task; it now shows up straight away.
+- **Checking off an item could undo a move or a rename made elsewhere.**
+  Ticking an item that another device (or the agent) had just moved or
+  renamed saved your screen's older copy of it back. A check, rename or
+  archive now changes only what you changed.
+- **Swiping a checklist item away never actually deleted it.** The item
+  vanished from its checklist but stayed stored, and synced to your other
+  devices, indefinitely. It is now deleted once the undo toast has passed.
+- **Closing the app in the middle of a checklist change could leave it half
+  done** — an item created but in no checklist, an item moved into a second
+  checklist while still listed in the first, or an item you swiped away and
+  did not undo still around. The app now finishes such a change the next
+  time it starts.
+- **Saved task filters created on one device could be missing on another.**
+  Filters saved before saved filters synced were never sent, a filter that
+  arrived from another device did not show until the app restarted, and
+  reordering the list in the meantime deleted it from that device for good.
+  A change that failed to send was not retried, and a delete or an edit from
+  a device whose clock ran behind could settle differently on each device.
+  Every saved filter now reaches every device and stays there: changes are
+  sent until they get through, arriving filters appear right away, and
+  deletes and edits end the same way everywhere. Filters that exist on only
+  one device are sent the first time the updated app starts.
+- **Synced theme and greeting-name changes now arrive whole and agree
+  everywhere.** Related settings now save together, and failed saves are
+  retried instead of leaving a partially applied change marked as complete.
+  When two updates carry the same timestamp, every device now keeps the same
+  one, instead of whichever message arrived last.
+- **Sync can discover a missing final update automatically.** Devices
+  periodically announce their latest settled counter so peers can request
+  missing updates even when no later edit arrives. Recovery can retry older
+  gaps while the originating device is available, without requiring an app
+  restart.
+- **Missing sync items recover together across data types.** Backfill no
+  longer skips one item when another type of item has the same identifier in
+  a repair request.
+- **Updates waiting for attachments can recover after a restart.** Sync now
+  retrieves the exact referenced attachment when its earlier room event is
+  missing from memory, preventing queued updates from remaining stuck behind
+  the saved sync position.
+- **Sync recovers interrupted outgoing changes while the app stays open.**
+  Temporary database or queue failures are retried automatically without
+  waiting for a restart or a request from another device.
+- **Sync retries changes when saving their receipt fails.** Temporary
+  database failures no longer silently finish individual changes or bundles,
+  and a failed link save cannot leave the link incorrectly marked as received.
+
 ## [1.1.27]
 
 ### Changed
