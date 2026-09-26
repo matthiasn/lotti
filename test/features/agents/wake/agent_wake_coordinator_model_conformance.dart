@@ -13,10 +13,9 @@ part of 'agent_wake_coordinator_test.dart';
 // (`claimed`, `hash`, `left`, `done`) and updates it by the spec's `Deliver`
 // and `Tick`. Every dispatch must decide what the spec's guards decide:
 // cancel exactly when `Covered`, defer exactly when `Blocked`, proceed
-// otherwise. The view also applies the code's two extensions of the spec:
-// delivery here is unbounded, so a claim delivered after it would have lapsed
-// is dropped, and a peer's completed digests are bounded to the most recent
-// `doneHistoryLimit`. After every step `CancelCovered` must hold, and so must the
+// otherwise. The view also applies the code's one extension of the spec: a
+// peer's completed digests are bounded to the most recent `doneHistoryLimit`.
+// Delivery here is unbounded; a late claim is timed from its receipt. After every step `CancelCovered` must hold, and so must the
 // sender's side of `Tick`: a live run has claimed within the last heartbeat
 // interval. After the trace is played out to quiescence, `NoLostEdit`.
 
@@ -238,8 +237,6 @@ class _CoordinationTrace {
     final view = to.model;
     switch (message.kind) {
       case AgentWakeCoordinationKind.claim:
-        final age = clock.now().difference(message.sentAt);
-        if (age >= AgentWakeCoordinator.coordinationTimeout) return;
         view
           ..claimed = true
           ..hash = message.stateHash

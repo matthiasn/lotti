@@ -93,13 +93,24 @@ Future<String?> taskStateDigest({
       ...checklists,
       ...items,
       for (final responses in analyses.values) ...responses,
-      for (final inputs in linkedTaskInputs.values) ...inputs,
     ])
       entity.meta.id: _version(entity.meta),
-    for (final report in linkedReports.values)
-      'report:${report.id}':
-          report.vectorClock?.vclock ??
-          report.createdAt.toUtc().toIso8601String(),
+    // Keyed by their linked task: moving an entry from one linked task to
+    // another changes each one's summed time without changing the entry.
+    for (final MapEntry(key: linkedTaskId, value: inputs)
+        in linkedTaskInputs.entries)
+      for (final input in inputs)
+        'linked:$linkedTaskId>${input.meta.id}': _version(input.meta),
+    for (final MapEntry(key: linkedTaskId, value: links)
+        in linkedTaskAgentLinks.entries)
+      for (final link in links)
+        if (linkedReports[link.fromId] case final report?)
+          'report:$linkedTaskId>${link.fromId}': {
+            'id': report.id,
+            'version':
+                report.vectorClock?.vclock ??
+                report.createdAt.toUtc().toIso8601String(),
+          },
   });
 }
 

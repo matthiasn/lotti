@@ -51,6 +51,9 @@ class _TaskWorld {
     linkedTask = TestTaskFactory.create(
       id: 'linked-task-1',
     ).copyWith(meta: _meta('linked-task-1', vc: _vc(8)));
+    otherLinkedTask = TestTaskFactory.create(
+      id: 'linked-task-2',
+    ).copyWith(meta: _meta('linked-task-2', vc: _vc(11)));
     childEntry = JournalEntity.journalEntry(
       meta: _meta('child-entry-1', vc: _vc(9)),
     );
@@ -69,6 +72,10 @@ class _TaskWorld {
   late JournalEntity item;
   late JournalEntity analysis;
   late JournalEntity linkedTask;
+  late JournalEntity otherLinkedTask;
+
+  /// The linked task the child entry is linked from.
+  String childOwner = 'linked-task-1';
   late JournalEntity childEntry;
   late AgentReportEntity linkedReport;
 
@@ -80,9 +87,10 @@ class _TaskWorld {
   MockAgentRepository agents() {
     final repository = MockAgentRepository();
     when(
-      () => repository.getLinksToMultiple([
-        'linked-task-1',
-      ], type: AgentLinkTypes.agentTask),
+      () => repository.getLinksToMultiple(
+        any(that: unorderedEquals(['linked-task-1', 'linked-task-2'])),
+        type: AgentLinkTypes.agentTask,
+      ),
     ).thenAnswer(
       (_) async => {
         'linked-task-1': [
@@ -106,7 +114,9 @@ class _TaskWorld {
     when(() => db.journalEntityById('task-1')).thenAnswer((_) async => task);
     when(
       () => db.getLinkedEntities('task-1'),
-    ).thenAnswer((_) async => _order([entry, image, linkedTask]));
+    ).thenAnswer(
+      (_) async => _order([entry, image, linkedTask, otherLinkedTask]),
+    );
     when(
       () => db.getLinkedToEntities('task-1'),
     ).thenAnswer((_) async => [toDbEntity(project)]);
@@ -121,9 +131,11 @@ class _TaskWorld {
         'image-1': [analysis],
       },
     );
-    when(() => db.getBulkLinkedEntities({'linked-task-1'})).thenAnswer(
+    when(
+      () => db.getBulkLinkedEntities({'linked-task-1', 'linked-task-2'}),
+    ).thenAnswer(
       (_) async => {
-        'linked-task-1': [childEntry],
+        childOwner: [childEntry],
       },
     );
     return db;
@@ -153,8 +165,12 @@ void main() {
           'item-1': {'host-a': 6},
           'analysis-1': {'host-a': 7},
           'linked-task-1': {'host-a': 8},
-          'child-entry-1': {'host-a': 9},
-          'report:linked-report-1': {'host-a': 10},
+          'linked-task-2': {'host-a': 11},
+          'linked:linked-task-1>child-entry-1': {'host-a': 9},
+          'report:linked-task-1>linked-agent-1': {
+            'id': 'linked-report-1',
+            'version': {'host-a': 10},
+          },
         }),
       );
     },
@@ -219,6 +235,16 @@ void main() {
         updatedAt: world.entry.meta.updatedAt.add(const Duration(minutes: 1)),
       ),
     );
+
+    expect(await world.digest(), isNot(before));
+  });
+
+  test('moving an entry between linked tasks changes it', () async {
+    final world = _TaskWorld();
+    final before = await world.digest();
+
+    // The entry itself is unchanged; only its link moved.
+    world.childOwner = 'linked-task-2';
 
     expect(await world.digest(), isNot(before));
   });

@@ -318,54 +318,35 @@ void main() {
       },
     );
 
-    test('a lapsed claim newer than the held one supersedes it', () {
-      _fake((async) {
-        final device = _Device('me');
-        // Delivered late, but still inside its window.
-        device.coordinator.onMessage(
-          _message(
-            kind: AgentWakeCoordinationKind.claim,
-            sentAt: _start.subtract(const Duration(seconds: 100)),
-          ),
-        );
-        async.elapse(const Duration(seconds: 30));
-        expect(
-          _resolve(async, device.evaluate()),
-          isA<WakeCoordinationDefer>(),
-        );
+    test(
+      'a peer whose clock runs behind still coordinates: the timer runs '
+      'from receipt',
+      () {
+        _fake((async) {
+          final device = _Device('me');
+          device.coordinator.onMessage(
+            _message(
+              kind: AgentWakeCoordinationKind.claim,
+              sentAt: _start.subtract(const Duration(minutes: 10)),
+            ),
+          );
 
-        // A heartbeat sent after it, arriving after its own window.
-        device.coordinator.onMessage(
-          _message(
-            kind: AgentWakeCoordinationKind.claim,
-            sentAt: _start.subtract(const Duration(seconds: 95)),
-          ),
-        );
-
-        expect(device.changed, [_agent]);
-        expect(
-          _resolve(async, device.evaluate()),
-          isA<WakeCoordinationProceed>(),
-        );
-      });
-    });
-
-    test('a claim that arrives after it would have lapsed is ignored', () {
-      _fake((async) {
-        final device = _Device('me');
-        device.coordinator.onMessage(
-          _message(
-            kind: AgentWakeCoordinationKind.claim,
-            sentAt: _start.subtract(AgentWakeCoordinator.coordinationTimeout),
-          ),
-        );
-
-        expect(
-          _resolve(async, device.evaluate()),
-          isA<WakeCoordinationProceed>(),
-        );
-      });
-    });
+          async.elapse(
+            AgentWakeCoordinator.coordinationTimeout -
+                const Duration(seconds: 1),
+          );
+          expect(
+            _resolve(async, device.evaluate()),
+            isA<WakeCoordinationDefer>(),
+          );
+          async.elapse(const Duration(seconds: 1));
+          expect(
+            _resolve(async, device.evaluate()),
+            isA<WakeCoordinationProceed>(),
+          );
+        });
+      },
+    );
 
     test('a late completion still cancels: the state was processed', () {
       _fake((async) {

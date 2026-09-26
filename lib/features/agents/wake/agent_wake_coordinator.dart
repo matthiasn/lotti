@@ -250,7 +250,8 @@ class AgentWakeCoordinator with AgentErrorLogging {
   }
 
   /// Applies a peer's broadcast. Messages from one peer about one agent are
-  /// applied in the order they were sent; an older one is dropped.
+  /// applied in the order they were sent — by that peer's own clock, so the
+  /// comparison never mixes clocks; an older one is dropped.
   void onMessage(SyncAgentWakeCoordination message) {
     final view = (_peers[message.agentId] ??= {})[message.hostId] ??=
         _PeerView();
@@ -262,16 +263,10 @@ class AgentWakeCoordinator with AgentErrorLogging {
     switch (message.kind) {
       case AgentWakeCoordinationKind.claim:
         final previous = view.claimHash;
-        // A claim that arrives after it would have lapsed says nothing about
-        // a live run: the device was offline, or the queue was backed up. It
-        // is still newer than the claim held, which it supersedes.
-        if (now.difference(message.sentAt) >= coordinationTimeout) {
-          if (previous != null) {
-            view.clearClaim();
-            _peerStateChanged(message.agentId);
-          }
-          return;
-        }
+        // The timer runs from receipt, on this device's clock: `sentAt` is
+        // the peer's clock, and comparing the two would drop every claim
+        // from a peer whose clock runs behind. A claim that arrives late
+        // holds a matching wake back for at most one timeout.
         view
           ..claimHash = message.stateHash
           ..claimExpiresAt = now.add(coordinationTimeout);

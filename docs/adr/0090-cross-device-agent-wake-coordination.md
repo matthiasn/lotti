@@ -50,7 +50,7 @@ action by action.
   live claim, so its next claim cannot erase them.
 - **Every event that frees a deferred job drains again**: a `done`, a
   `release`, a lapse, and a claim that replaces the held one with another
-  digest (or a late claim that supersedes it). The model assumes a dispatch
+  digest. The model assumes a dispatch
   is re-evaluated whenever its guard holds; these are the code's side of
   that fairness.
 - **Release on failure.** A run that fails, is aborted, or never reaches its
@@ -61,8 +61,10 @@ action by action.
   run, never a lost one. A wake the user asks for explicitly always runs.
 - **Transport.** A new `SyncMessage.agentWakeCoordination`, not
   sequence-tracked, at high outbox priority. A receiver drops a peer's
-  message older than the last one it applied, and a claim that arrives after
-  it would have lapsed. Older clients skip the unknown variant.
+  message older than the last one it applied, comparing that peer's own
+  timestamps. The timer runs from receipt on the receiver's clock, never
+  against the sender's, so clock skew between devices does not matter.
+  Older clients skip the unknown variant.
 
 The two-minute timer and the 45-second heartbeat are constants on
 `AgentWakeCoordinator`; the model requires the timer to exceed a heartbeat
@@ -78,8 +80,9 @@ plus a delivery delay, which leaves 75 seconds for delivery.
 - **Claims that cross** — two devices dispatching within one delivery delay
   of each other — both run. Excluding them needs a settle before every run,
   which is the latency this design exists to avoid.
-- **A long disconnect** makes coordination fall back to today's behaviour: a
-  claim delivered more than two minutes late is ignored.
+- **A claim that arrives late** — after a disconnect — holds a matching wake
+  back for up to two minutes even if its run has long ended; its `done`
+  usually arrives in the same batch and cancels the wake instead.
 - **The first wake on an untitled task** sets its title directly, which
   changes the digest, so a peer runs once more.
 - Coordination state is in memory. A restart forgets the peers' claims,

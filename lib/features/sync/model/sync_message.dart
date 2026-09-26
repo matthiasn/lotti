@@ -382,9 +382,8 @@ sealed class SyncMessage with _$SyncMessage {
   /// `AgentWakeCoordinator` and `specs/tla/AgentWakeCoordination.tla`).
   ///
   /// Broadcast like [SyncMediaRequest]. Carries no vector clock and is not
-  /// sequence-tracked: it is transient runtime coordination, not state. A
-  /// receiver that sees it late treats a stale claim as lapsed, and an older
-  /// client, which cannot deserialize it, simply skips it.
+  /// sequence-tracked: it is transient runtime coordination, not state. An
+  /// older client, which cannot deserialize it, simply skips it.
   const factory SyncMessage.agentWakeCoordination({
     /// The agent whose wake this describes.
     required String agentId,
@@ -402,8 +401,8 @@ sealed class SyncMessage with _$SyncMessage {
     /// The sender's `VectorClockService` host UUID.
     required String hostId,
 
-    /// When the sender emitted this message. Orders one sender's messages
-    /// and lets a receiver discard a claim that arrives after it lapsed.
+    /// When the sender emitted this message, by the sender's clock. Orders
+    /// one sender's messages; never compared with the receiver's clock.
     required DateTime sentAt,
   }) = SyncAgentWakeCoordination;
 

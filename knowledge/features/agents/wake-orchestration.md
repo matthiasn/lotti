@@ -547,7 +547,7 @@ The comparison key is `taskStateDigest`: a `ContentDigest` over the vector
 clock of every entity the task context reads — the task, the entities linked
 from and to it, its checklists and items, its images' AI analyses, and for
 each linked task the entries its time is summed from and its agent's current
-report. Replicas holding the same versions agree on it without coordinating,
+report, keyed by that linked task. Replicas holding the same versions agree on it without coordinating,
 and a wake's own writes are change-set proposals in the agent database, so
 they leave it alone. A matching `done` cancels a wake, so **the digest must
 follow the context builders**: an input the context reads but the digest
@@ -582,8 +582,9 @@ stateDiagram-v2
 The completed digests (the last eight) are kept apart from the claim, so a
 peer's next claim cannot erase them: TLC found that a device still at the
 older state otherwise ran it again. A receiver drops a peer's message older
-than the last it applied, and a claim that arrives after it would have
-lapsed.
+than the last it applied, by that peer's own timestamps; the timer runs from
+receipt on the receiver's clock, so clock skew between devices does not
+matter.
 
 Everything fails open. The coordination state is in memory, a digest that
 throws proceeds uncoordinated, and a crash, a lost message, a peer that

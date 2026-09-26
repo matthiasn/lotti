@@ -2751,8 +2751,8 @@ class SyncAgentWakeCoordination implements SyncMessage {
  final  String runKey;
 /// The sender's `VectorClockService` host UUID.
  final  String hostId;
-/// When the sender emitted this message. Orders one sender's messages
-/// and lets a receiver discard a claim that arrives after it lapsed.
+/// When the sender emitted this message, by the sender's clock. Orders
+/// one sender's messages; never compared with the receiver's clock.
  final  DateTime sentAt;
 
 @JsonKey(name: 'runtimeType')

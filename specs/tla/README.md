@@ -1647,10 +1647,10 @@ every dispatch must decide as the spec's guards do: cancel exactly when
 `CancelCovered` and the sender's side of `Tick` — a live run claimed within
 the last heartbeat — and after playing the trace out, `NoLostEdit`. Letting
 a claim erase the peer's completed digests, cancelling on any digest,
-dropping the heartbeat or never lapsing a claim each fails it. Re-arming,
-dropping a peer's older message and dropping a stale claim are covered by
-the suite's examples: over FIFO channels an older message never arrives,
-and the timing the other two need is rare in random traces.
+dropping the heartbeat or never lapsing a claim each fails it. Re-arming
+and dropping a peer's older message are covered by the suite's examples:
+over FIFO channels an older message never arrives, and the timing re-arming
+needs is rare in random traces.
 
 For the message log, `test/features/agents/sync/agent_message_log_model_conformance.dart`
 (a part of the fork healer's suite) drives two real `AgentSyncService` and
@@ -2424,8 +2424,9 @@ design does not claim, each shown above by the configurations that drop
 Three more lie outside the model. The digest is computed a moment before
 the claim, and state that changes in between makes the claim name an older
 digest — a peer holding the newer state runs, which is the conservative
-direction. A claim delivered more than `Timeout` late is dropped by the code
-rather than delivered within `MaxDelay`, so a long disconnect degrades to
-uncoordinated wakes. And the code keeps the last eight completed digests per
+direction. A claim delivered later than `MaxDelay` — after a disconnect —
+holds a matching wake back for up to `Timeout` from its receipt, even if its
+run has ended; the code never compares the sender's clock with its own. And
+the code keeps the last eight completed digests per
 peer, where the model keeps all; a device eight completed runs behind its
 peer runs once more.
