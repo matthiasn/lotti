@@ -6173,6 +6173,7 @@
   "syncPayloadAgentBundle": "Agent bundel",
   "syncPayloadAgentEntity": "Agent-entiteit",
   "syncPayloadAgentLink": "Agentlink",
+  "syncPayloadAgentWakeCoordination": "Coördinatie van agentruns",
   "syncPayloadAiConfig": "AI configuratie",
   "syncPayloadAiConfigDelete": "AI configuratie verwijderen",
   "syncPayloadBackfillRequest": "Terugvullen verzoek",

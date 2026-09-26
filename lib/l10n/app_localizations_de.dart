@@ -14823,6 +14823,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncPayloadMediaRequest => 'Medienanfrage';
 
   @override
+  String get syncPayloadAgentWakeCoordination =>
+      'Koordination von Agentenläufen';
+
+  @override
   String get syncPayloadNotification => 'Hinweis';
 
   @override

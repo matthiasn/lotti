@@ -1037,13 +1037,21 @@ void main() {
     );
 
     test(
-      'mediaRequest and syncNodeProfile bypass the JournalDb transaction '
-      'wrap — neither writes journal state',
+      'mediaRequest, agentWakeCoordination and syncNodeProfile bypass the '
+      'JournalDb transaction wrap — none writes journal state',
       () {
         final messages = <SyncMessage>[
           const SyncMessage.mediaRequest(
             entryIds: ['img-1'],
             requesterId: 'host-a',
+          ),
+          SyncMessage.agentWakeCoordination(
+            agentId: 'agent-1',
+            kind: AgentWakeCoordinationKind.claim,
+            stateHash: 'sha256-v1:state',
+            runKey: 'run-1',
+            hostId: 'host-a',
+            sentAt: DateTime(2024, 3, 15),
           ),
           SyncMessage.syncNodeProfile(
             profile: SyncNodeProfile(

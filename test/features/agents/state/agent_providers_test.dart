@@ -26,6 +26,7 @@ import 'package:lotti/features/agents/service/project_activity_monitor.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
+import 'package:lotti/features/agents/wake/agent_wake_coordinator.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
 import 'package:lotti/features/agents/wake/wake_intent_store.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
@@ -50,6 +51,7 @@ import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -810,6 +812,37 @@ void main() {
 
       verify(() => bench.mockProjectActivityMonitor.start()).called(1);
     });
+
+    test(
+      "wires the wake coordinator into the orchestrator, and a peer's "
+      'completion re-drains it',
+      () async {
+        when(bench.mockOrchestrator.processNext).thenAnswer((_) async {});
+        final container = bench.createContainer();
+        await bench.initAndSubscribe(container);
+
+        final coordinator =
+            verify(
+                  () => bench.mockOrchestrator.coordinator = captureAny(),
+                ).captured.single
+                as AgentWakeCoordinator;
+        expect(coordinator, same(container.read(agentWakeCoordinatorProvider)));
+
+        coordinator.onMessage(
+          SyncMessage.agentWakeCoordination(
+                agentId: kTestAgentId,
+                kind: AgentWakeCoordinationKind.done,
+                stateHash: 'sha256-v1:state',
+                runKey: 'peer-run',
+                hostId: 'peer-device',
+                sentAt: DateTime(2024, 3, 15),
+              )
+              as SyncAgentWakeCoordination,
+        );
+
+        verify(bench.mockOrchestrator.processNext).called(1);
+      },
+    );
 
     test('sets wakeExecutor on orchestrator when enabled', () async {
       final container = bench.createContainer();
@@ -1675,6 +1708,11 @@ void main() {
         () => mockProcessor.wakeOrchestrator = bench.mockOrchestrator,
       ).called(1);
       verify(
+        () => mockProcessor.agentWakeCoordinator = container.read(
+          agentWakeCoordinatorProvider,
+        ),
+      ).called(1);
+      verify(
         () => mockProcessor.agentRepository = any(that: isNotNull),
       ).called(1);
       verify(
@@ -1701,6 +1739,7 @@ void main() {
       container.dispose();
 
       verify(() => mockProcessor.wakeOrchestrator = null).called(1);
+      verify(() => mockProcessor.agentWakeCoordinator = null).called(1);
       verify(() => mockProcessor.agentRepository = null).called(1);
       verify(() => mockHandler.agentRepository = null).called(1);
     });

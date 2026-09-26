@@ -8402,6 +8402,10 @@
   "syncPayloadAgentBundle": "Agent bundle",
   "syncPayloadAgentEntity": "Agent entity",
   "syncPayloadAgentLink": "Agent link",
+  "syncPayloadAgentWakeCoordination": "Agent wake coordination",
+  "@syncPayloadAgentWakeCoordination": {
+    "description": "Outbox list label for a cross-device broadcast that tells peers which device runs an agent wake."
+  },
   "syncPayloadAiConfig": "AI configuration",
   "syncPayloadAiConfigDelete": "AI configuration delete",
   "syncPayloadBackfillRequest": "Backfill request",

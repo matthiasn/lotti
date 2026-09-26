@@ -15008,6 +15008,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncPayloadMediaRequest => 'Cerere de fișiere media';
 
   @override
+  String get syncPayloadAgentWakeCoordination =>
+      'Coordonarea activărilor agentului';
+
+  @override
   String get syncPayloadNotification => 'Notificare';
 
   @override

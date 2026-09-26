@@ -6174,6 +6174,7 @@
   "syncPayloadAgentBundle": "Pacchetto dell'agente",
   "syncPayloadAgentEntity": "Ente agente",
   "syncPayloadAgentLink": "Collegamento dell'agente",
+  "syncPayloadAgentWakeCoordination": "Coordinamento delle attivazioni dell'agente",
   "syncPayloadAiConfig": "Configurazione AI",
   "syncPayloadAiConfigDelete": "Configurazione AI eliminare",
   "syncPayloadBackfillRequest": "Richiesta di rimborso",

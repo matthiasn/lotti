@@ -5632,6 +5632,7 @@
   "syncPayloadAgentBundle": "Agent-Bündel",
   "syncPayloadAgentEntity": "Agent-Entität",
   "syncPayloadAgentLink": "Agent-Link",
+  "syncPayloadAgentWakeCoordination": "Koordination von Agentenläufen",
   "syncPayloadAiConfig": "AI-Konfiguration",
   "syncPayloadAiConfigDelete": "AI-Konfiguration löschen",
   "syncPayloadBackfillRequest": "Nachfüllanfrage",

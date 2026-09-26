@@ -255,6 +255,7 @@ void wireSyncEventProcessor(
   processor
     ..agentRepository = repository
     ..wakeOrchestrator = orchestrator
+    ..agentWakeCoordinator = ref.read(agentWakeCoordinatorProvider)
     // Feature-owned runtime mirrors (goal agents today): a synced-in
     // identity is offered to each contributor so subscriptions follow the
     // agent onto this device mid-session.
@@ -266,6 +267,7 @@ void wireSyncEventProcessor(
     processor
       ..agentRepository = null
       ..wakeOrchestrator = null
+      ..agentWakeCoordinator = null
       ..runtimeMaintenance = const [];
     processor.backfillResponseHandler.agentRepository = null;
   });

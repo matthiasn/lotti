@@ -28,6 +28,7 @@ enum _GeneratedPriorityMessageKind {
   backfillRequest,
   backfillResponse,
   mediaRequest,
+  agentWakeCoordination,
   agentEntity,
   agentLink,
   agentBundle,
@@ -170,6 +171,15 @@ class _GeneratedPriorityScenario {
         ],
         requesterId: 'requester-$counterSlot',
       ),
+      _GeneratedPriorityMessageKind.agentWakeCoordination =>
+        SyncMessage.agentWakeCoordination(
+          agentId: 'agent-$counterSlot',
+          kind: AgentWakeCoordinationKind.claim,
+          stateHash: 'sha256-v1:state-$counterSlot',
+          runKey: 'run-$counterSlot',
+          hostId: 'host-$counterSlot',
+          sentAt: DateTime(2024, 3, 15),
+        ),
       _GeneratedPriorityMessageKind.backfillResponse =>
         SyncMessage.backfillResponse(
           hostId: 'host-$counterSlot',
@@ -241,7 +251,11 @@ class _GeneratedPriorityScenario {
       _GeneratedPriorityMessageKind.onboardingSnapshotEnd =>
         OutboxPriority.low.index,
       _GeneratedPriorityMessageKind.journalEntity ||
-      _GeneratedPriorityMessageKind.entryLink => OutboxPriority.high.index,
+      _GeneratedPriorityMessageKind.entryLink ||
+      // A claim is worth something only while it can still beat a peer's
+      // own dispatch.
+      _GeneratedPriorityMessageKind.agentWakeCoordination =>
+        OutboxPriority.high.index,
       _GeneratedPriorityMessageKind.backfillRequest ||
       _GeneratedPriorityMessageKind.backfillResponse ||
       _GeneratedPriorityMessageKind.mediaRequest ||

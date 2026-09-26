@@ -14711,6 +14711,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get syncPayloadMediaRequest => 'Medieanmodning';
 
   @override
+  String get syncPayloadAgentWakeCoordination => 'Koordinering af agentkørsler';
+
+  @override
   String get syncPayloadNotification => 'Underretning';
 
   @override

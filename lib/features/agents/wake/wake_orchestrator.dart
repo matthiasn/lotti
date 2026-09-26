@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
+import 'package:lotti/features/agents/wake/agent_wake_coordinator.dart';
 import 'package:lotti/features/agents/wake/run_key_factory.dart';
 import 'package:lotti/features/agents/wake/wake_intent_store.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
@@ -316,6 +317,11 @@ class WakeOrchestrator with AgentErrorLogging {
 
   /// Optional transactional state updater for partial state mutations.
   SyncAgentStateUpdater? syncAgentStateUpdater;
+
+  /// Optional cross-device coordination: of several devices about to wake the
+  /// same agent over the same state, one runs and the others stand down (see
+  /// [AgentWakeCoordinator]). When null, every wake runs uncoordinated.
+  AgentWakeCoordinator? coordinator;
 
   /// Optional pre-wake hook (fork healing, ADR 0018 rule 8) run just before the
   /// executor for each wake. When null (the default), wakes run exactly as

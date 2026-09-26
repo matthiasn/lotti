@@ -278,6 +278,17 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
         'entries=${msg.entryIds.length} requester=${msg.requesterId}',
   );
 
+  Future<void> enqueueAgentWakeCoordination({
+    required SyncAgentWakeCoordination msg,
+    required OutboxCompanion commonFields,
+  }) => enqueueSimple(
+    commonFields: commonFields,
+    subject: 'agentWakeCoordination:${msg.kind.name}:${msg.runKey}',
+    logMessage:
+        'enqueue type=SyncAgentWakeCoordination kind=${msg.kind.name} '
+        'agent=${msg.agentId}',
+  );
+
   Future<void> enqueueBackfillResponse({
     required SyncBackfillResponse msg,
     required OutboxCompanion commonFields,

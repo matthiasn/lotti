@@ -57,6 +57,19 @@ abstract class SyncCounterRange with _$SyncCounterRange {
 /// Why an initial-onboarding snapshot round stopped suppressing backfill.
 enum OnboardingSyncEndReason { complete, aborted }
 
+/// What a [SyncAgentWakeCoordination] broadcast announces about one wake.
+enum AgentWakeCoordinationKind {
+  /// The sender is running a wake over the state digest; repeated as a
+  /// heartbeat while the run is live.
+  claim,
+
+  /// The sender's wake over the state digest completed successfully.
+  done,
+
+  /// The sender's wake failed or was aborted; peers need not wait for it.
+  release,
+}
+
 /// The sealed envelope for every message that crosses the wire between
 /// devices.
 ///
@@ -363,6 +376,36 @@ sealed class SyncMessage with _$SyncMessage {
     /// The host UUID asking for the blobs. Peers ignore their own requests.
     required String requesterId,
   }) = SyncMediaRequest;
+
+  /// Cross-device coordination of one agent's wakes, so that one device runs
+  /// a wake over a given state and its peers stand down (see
+  /// `AgentWakeCoordinator` and `specs/tla/AgentWakeCoordination.tla`).
+  ///
+  /// Broadcast like [SyncMediaRequest]. Carries no vector clock and is not
+  /// sequence-tracked: it is transient runtime coordination, not state. A
+  /// receiver that sees it late treats a stale claim as lapsed, and an older
+  /// client, which cannot deserialize it, simply skips it.
+  const factory SyncMessage.agentWakeCoordination({
+    /// The agent whose wake this describes.
+    required String agentId,
+
+    /// Claim, done or release.
+    required AgentWakeCoordinationKind kind,
+
+    /// Digest of the state the wake reads, as `ContentDigest` renders it.
+    /// Peers compare it with their own digest of the same state.
+    required String stateHash,
+
+    /// The sender's run key, for correlation in logs.
+    required String runKey,
+
+    /// The sender's `VectorClockService` host UUID.
+    required String hostId,
+
+    /// When the sender emitted this message. Orders one sender's messages
+    /// and lets a receiver discard a claim that arrives after it lapsed.
+    required DateTime sentAt,
+  }) = SyncAgentWakeCoordination;
 
   const factory SyncMessage.agentEntity({
     required SyncEntryStatus status,

@@ -14627,6 +14627,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncPayloadMediaRequest => 'Media request';
 
   @override
+  String get syncPayloadAgentWakeCoordination => 'Agent wake coordination';
+
+  @override
   String get syncPayloadNotification => 'Notification';
 
   @override

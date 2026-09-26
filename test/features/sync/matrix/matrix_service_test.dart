@@ -1349,6 +1349,14 @@ void main() {
         entryIds: ['img-1'],
         requesterId: 'host-1',
       ),
+      'agentWakeCoordination': SyncMessage.agentWakeCoordination(
+        agentId: 'agent-1',
+        kind: AgentWakeCoordinationKind.claim,
+        stateHash: 'sha256-v1:state',
+        runKey: 'run-1',
+        hostId: 'host-1',
+        sentAt: DateTime(2024, 3, 15),
+      ),
       'backfillResponse': const SyncMessage.backfillResponse(
         hostId: 'h1',
         counter: 1,

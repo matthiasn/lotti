@@ -1,5 +1,7 @@
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/agents/wake/agent_wake_coordinator.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
 
 import 'wake_orchestrator_test_harness.dart';
 
@@ -1772,6 +1774,202 @@ void main() {
           async.flushMicrotasks();
 
           expect(done, isTrue);
+        });
+      });
+    });
+
+    // Cross-device coordination (specs/tla/AgentWakeCoordination.tla): the
+    // drain asks the coordinator before it runs a job.
+    group('cross-device coordination', () {
+      const stateA = 'sha256-v1:state-a';
+      const stateB = 'sha256-v1:state-b';
+
+      late String? digest;
+      late List<SyncAgentWakeCoordination> sent;
+      late AgentWakeCoordinator coordinator;
+      late int executions;
+
+      /// Runs [body] in fake time with the coordinator wired as
+      /// agentInitialization wires it. Built inside the fake zone, so its
+      /// broadcasts run on fake microtasks.
+      void coordinated(void Function(FakeAsync async) body) {
+        fakeAsync((async) {
+          digest = stateA;
+          sent = [];
+          executions = 0;
+          coordinator = AgentWakeCoordinator(
+            digestState: (_) async => digest,
+            send: (message) async =>
+                sent.add(message as SyncAgentWakeCoordination),
+            localHostId: () async => 'this-device',
+          )..onPeerStateChanged = (_) => unawaited(orchestrator.processNext());
+          orchestrator
+            ..coordinator = coordinator
+            ..wakeExecutor = (_, _, _, _) async {
+              executions++;
+              return null;
+            };
+          try {
+            body(async);
+          } finally {
+            coordinator.dispose();
+          }
+        });
+      }
+
+      void enqueueAutomaticWake({
+        WakeInitiator initiator = WakeInitiator.automation,
+      }) {
+        queue.enqueue(
+          WakeJob(
+            runKey: 'run-1',
+            agentId: 'agent-1',
+            reason: initiator == WakeInitiator.user
+                ? WakeReason.reanalysis.name
+                : WakeReason.subscription.name,
+            initiator: initiator,
+            triggerTokens: const {'task-1'},
+            createdAt: DateTime(2024, 3, 15),
+          ),
+        );
+      }
+
+      void peer(AgentWakeCoordinationKind kind, {String stateHash = stateA}) {
+        coordinator.onMessage(
+          SyncMessage.agentWakeCoordination(
+                agentId: 'agent-1',
+                kind: kind,
+                stateHash: stateHash,
+                runKey: 'peer-run',
+                hostId: 'peer-device',
+                sentAt: clock.now(),
+              )
+              as SyncAgentWakeCoordination,
+        );
+      }
+
+      void drain(FakeAsync async) {
+        unawaited(orchestrator.processNext());
+        async.flushMicrotasks();
+      }
+
+      test('a run claims its state and announces completion', () {
+        coordinated((async) {
+          enqueueAutomaticWake();
+          drain(async);
+
+          expect(executions, 1);
+          expect(sent.map((m) => (m.kind, m.stateHash, m.runKey)), [
+            (AgentWakeCoordinationKind.claim, stateA, 'run-1'),
+            (AgentWakeCoordinationKind.done, stateA, 'run-1'),
+          ]);
+        });
+      });
+
+      test('a failed run releases its claim', () {
+        coordinated((async) {
+          orchestrator.wakeExecutor = (_, _, _, _) async =>
+              throw StateError('inference failed');
+          enqueueAutomaticWake();
+          drain(async);
+
+          expect(sent.map((m) => m.kind), [
+            AgentWakeCoordinationKind.claim,
+            AgentWakeCoordinationKind.release,
+          ]);
+        });
+      });
+
+      test(
+        'a job over a state a peer is running waits, and is dropped when '
+        'the peer completes it',
+        () {
+          coordinated((async) {
+            peer(AgentWakeCoordinationKind.claim);
+            enqueueAutomaticWake();
+            drain(async);
+
+            expect(executions, 0);
+            expect(queue.length, 1);
+            verifyNever(
+              () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+            );
+
+            peer(AgentWakeCoordinationKind.done);
+            async.flushMicrotasks();
+
+            expect(executions, 0);
+            expect(queue.length, 0);
+            expect(orchestrator.hasPendingOrActiveWake('agent-1'), isFalse);
+            expect(sent, isEmpty);
+          });
+        },
+      );
+
+      test('a job waits out a silent peer, then runs', () {
+        coordinated((async) {
+          peer(AgentWakeCoordinationKind.claim);
+          enqueueAutomaticWake();
+          drain(async);
+
+          async.elapse(
+            AgentWakeCoordinator.coordinationTimeout -
+                const Duration(seconds: 1),
+          );
+          expect(executions, 0);
+
+          async.elapse(const Duration(seconds: 1));
+          expect(executions, 1);
+          expect(queue.length, 0);
+        });
+      });
+
+      test('a released peer claim lets the job run at once', () {
+        coordinated((async) {
+          peer(AgentWakeCoordinationKind.claim);
+          enqueueAutomaticWake();
+          drain(async);
+          expect(executions, 0);
+
+          peer(AgentWakeCoordinationKind.release);
+          async.flushMicrotasks();
+
+          expect(executions, 1);
+        });
+      });
+
+      test('a job over a newer state runs beside the peer', () {
+        coordinated((async) {
+          digest = stateB;
+          peer(AgentWakeCoordinationKind.claim);
+          enqueueAutomaticWake();
+          drain(async);
+
+          expect(executions, 1);
+          expect(sent.first.stateHash, stateB);
+        });
+      });
+
+      test('a job over a state a peer already completed never runs', () {
+        coordinated((async) {
+          peer(AgentWakeCoordinationKind.done);
+          enqueueAutomaticWake();
+          drain(async);
+
+          expect(executions, 0);
+          expect(queue.length, 0);
+          expect(sent, isEmpty);
+        });
+      });
+
+      test('a wake the user asked for runs despite a peer claim', () {
+        coordinated((async) {
+          peer(AgentWakeCoordinationKind.claim);
+          enqueueAutomaticWake(initiator: WakeInitiator.user);
+          drain(async);
+
+          expect(executions, 1);
+          expect(sent.first.kind, AgentWakeCoordinationKind.claim);
         });
       });
     });

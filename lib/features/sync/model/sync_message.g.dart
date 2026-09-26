@@ -482,6 +482,36 @@ Map<String, dynamic> _$SyncMediaRequestToJson(SyncMediaRequest instance) =>
       'runtimeType': instance.$type,
     };
 
+SyncAgentWakeCoordination _$SyncAgentWakeCoordinationFromJson(
+  Map<String, dynamic> json,
+) => SyncAgentWakeCoordination(
+  agentId: json['agentId'] as String,
+  kind: $enumDecode(_$AgentWakeCoordinationKindEnumMap, json['kind']),
+  stateHash: json['stateHash'] as String,
+  runKey: json['runKey'] as String,
+  hostId: json['hostId'] as String,
+  sentAt: DateTime.parse(json['sentAt'] as String),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$SyncAgentWakeCoordinationToJson(
+  SyncAgentWakeCoordination instance,
+) => <String, dynamic>{
+  'agentId': instance.agentId,
+  'kind': _$AgentWakeCoordinationKindEnumMap[instance.kind]!,
+  'stateHash': instance.stateHash,
+  'runKey': instance.runKey,
+  'hostId': instance.hostId,
+  'sentAt': instance.sentAt.toIso8601String(),
+  'runtimeType': instance.$type,
+};
+
+const _$AgentWakeCoordinationKindEnumMap = {
+  AgentWakeCoordinationKind.claim: 'claim',
+  AgentWakeCoordinationKind.done: 'done',
+  AgentWakeCoordinationKind.release: 'release',
+};
+
 SyncAgentEntity _$SyncAgentEntityFromJson(Map<String, dynamic> json) =>
     SyncAgentEntity(
       status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),

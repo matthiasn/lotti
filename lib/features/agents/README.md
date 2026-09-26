@@ -70,7 +70,8 @@ and agents read them on demand.
 
 ```text
 lib/features/agents/
-├── wake/         # orchestrator, queue, runner, scheduling, durable wake intents
+├── wake/         # orchestrator, queue, runner, scheduling, durable wake intents,
+│                 # cross-device wake coordination
 ├── workflow/     # one per agent kind, plus evolution and improver
 ├── service/      # creation, change-set confirmation, souls, templates
 ├── query/        # scoped conversations, retrieval, evidence and shared conclusions

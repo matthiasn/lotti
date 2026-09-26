@@ -590,6 +590,18 @@ void main() {
               (ctx) => ctx.messages.syncPayloadMediaRequest,
             ),
             (
+              'agentWakeCoordination',
+              () => SyncMessage.agentWakeCoordination(
+                agentId: 'agent-1',
+                kind: AgentWakeCoordinationKind.done,
+                stateHash: 'sha256-v1:state',
+                runKey: 'run-1',
+                hostId: 'host-a',
+                sentAt: DateTime(2024, 3, 15),
+              ),
+              (ctx) => ctx.messages.syncPayloadAgentWakeCoordination,
+            ),
+            (
               'syncNodeProfile',
               () => SyncMessage.syncNodeProfile(
                 profile: SyncNodeProfile(

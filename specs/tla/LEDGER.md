@@ -87,6 +87,13 @@ saved filters that never reached a peer; all nine bugs were found by auditing
 the code, and TLC reproduces each through its switch. Not included in the
 historical totals above.
 
+The `AgentWakeCoordination` model (#PRNUM) adds one spec, four
+configurations, four named properties and 4,333,778 distinct states. It
+modelled cross-device wake coordination before the code was written; TLC
+rejected its first draft, and each of its six switches and its timing
+assumption has a counterexample. Not included in the historical totals
+above.
+
 ## Timeline
 
 ```mermaid
@@ -156,6 +163,7 @@ counterexamples found. "Severity" grades each of those bugs; see
 
 | [#4504](https://github.com/matthiasn/lotti/pull/4504) | 09-26 | tasks | `ChecklistMembership` | 3 | 6 (5) | P1×3 P2×3 | [0089](../../docs/adr/0089-checklist-membership-on-the-stored-row.md) | The first spec of the tasks feature. A stale copy — a screen's state, or a row read several awaits before the write — replaced what sync or the agent had stored: an item dropped from its checklist, a checklist dropped from its task by a status change, an item's back-link reverted by a check; a checklist hidden behind a dragged order; and a crash left a multi-row operation half done, now finished at startup from a recorded intent. Auditing the undo window the model covers found swiped items were never deleted at all |
 | [#4506](https://github.com/matthiasn/lotti/pull/4506) | 09-26 | tasks, sync | `SavedTaskFilterSync` | 2 | 9 (0) | P0×2 P1×3 P2 P3×3 | — | Saved filters created on a desktop never reached the phone: filters saved before they synced were never sent, and a reorder on the receiver wrote its stale list over the filters sync had just stored. Changes are now owed in a durable ledger until the outbox accepts them, and revisions and deletes have one total order |
+| [#PRNUM](https://github.com/matthiasn/lotti/pull/PRNUM) | pending | agents, sync | `AgentWakeCoordination` | 4 | 1 (0) | P2 | [0090](../../docs/adr/0090-cross-device-agent-wake-coordination.md) | Two devices ran the same task agent over the same synced state, an inference paid twice for one result. Modelled before it was built: a claim broadcast with the state digest defers a matching peer, `done` cancels it, a heartbeat carries runs past the two-minute timer. TLC rejected the first draft, where a peer's next claim erased its completion and a device still at the older state ran it again |
 
 ## Sync follow-up evidence, 2026-09-26
 
@@ -395,6 +403,7 @@ The P0 and P1 bugs:
 | [#4506](https://github.com/matthiasn/lotti/pull/4506) | P3 | no | Two revisions with the same stamp swapped between devices instead of converging |
 | [#4506](https://github.com/matthiasn/lotti/pull/4506) | P3 | no | A filter option added by a newer build made the whole synced filter undecodable and skipped for good |
 | [#4506](https://github.com/matthiasn/lotti/pull/4506) | P3 | no | One undecodable stored filter blanked the list, and the next save persisted it empty |
+| [#PRNUM](https://github.com/matthiasn/lotti/pull/PRNUM) | P2 | no | Edits on two devices at once made both run the same task agent over the same state |
 </details>
 
 ## Specs

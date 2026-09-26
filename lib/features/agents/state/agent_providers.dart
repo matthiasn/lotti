@@ -12,6 +12,8 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/service/agent_retention_service.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_sidecar_reclaimer.dart';
@@ -27,11 +29,13 @@ import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/sync/fork_healer.dart';
+import 'package:lotti/features/agents/wake/agent_wake_coordinator.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
 import 'package:lotti/features/agents/wake/wake_intent_store.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
+import 'package:lotti/features/agents/workflow/task_state_digest.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
@@ -331,6 +335,48 @@ WakeOrchestrator wakeOrchestrator(Ref ref) {
   );
 }
 
+/// This device's `VectorClockService` host id. `getHost()` reads a `late`
+/// field the service only assigns in `init()`, so a cold start must await
+/// initialisation first or throw LateInitializationError.
+Future<String?> _localHostId() async {
+  final vectorClock = getIt<VectorClockService>();
+  await vectorClock.initialized;
+  return vectorClock.getHost();
+}
+
+/// Cross-device coordination of task-agent wakes: of several devices about to
+/// wake a task agent over the same task state, one runs and the others stand
+/// down (`specs/tla/AgentWakeCoordination.tla`). Other agent kinds have no
+/// state digest and run uncoordinated.
+final agentWakeCoordinatorProvider = Provider<AgentWakeCoordinator>(
+  agentWakeCoordinator,
+  name: 'agentWakeCoordinatorProvider',
+);
+AgentWakeCoordinator agentWakeCoordinator(Ref ref) {
+  final repository = ref.watch(agentRepositoryProvider);
+  final coordinator = AgentWakeCoordinator(
+    digestState: (agentId) async {
+      final identity = await repository.getEntity(agentId);
+      if (identity is! AgentIdentityEntity ||
+          identity.kind != AgentKinds.taskAgent) {
+        return null;
+      }
+      final state = await repository.getAgentState(agentId);
+      final taskId = state?.slots.activeTaskId;
+      if (taskId == null) return null;
+      return taskStateDigest(
+        journalDb: ref.read(journalDbProvider),
+        taskId: taskId,
+      );
+    },
+    send: ref.watch(outboxServiceProvider).enqueueMessage,
+    localHostId: _localHostId,
+    domainLogger: ref.watch(domainLoggerProvider),
+  );
+  ref.onDispose(coordinator.dispose);
+  return coordinator;
+}
+
 /// The scheduled wake manager for time-based agent wakes.
 final scheduledWakeManagerProvider = Provider<ScheduledWakeManager>(
   scheduledWakeManager,
@@ -356,16 +402,10 @@ ScheduledWakeManager scheduledWakeManager(Ref ref) {
         isGoalEscalationWorkspace(record.workspaceKey) ||
         isGoalChatRecoveryWorkspace(record.workspaceKey) ||
         isRelationshipEscalationWorkspace(record.workspaceKey),
-    // `getHost()` reads a `late` field the service only assigns in `init()`,
-    // so a cold start that reaches here first throws
-    // LateInitializationError. The manager would catch that as a per-record
-    // failure and leave a due digest neither claimed nor fired until the next
-    // hourly tick.
-    localHostId: () async {
-      final vectorClock = getIt<VectorClockService>();
-      await vectorClock.initialized;
-      return vectorClock.getHost();
-    },
+    // A host id read before the vector clock service initialised would
+    // throw; the manager would catch that as a per-record failure and leave a
+    // due digest neither claimed nor fired until the next hourly tick.
+    localHostId: _localHostId,
     // Repairs that must land before a pass reads what is due, rather than
     // after it. Retirement decides which agents may still wake — a day agent
     // whose day is over is `active` until it runs, so its overdue wake would
@@ -565,6 +605,12 @@ Future<void> agentInitialization(Ref ref) async {
     workflow,
     updateNotifications,
   );
+
+  // 2.5. Coordinate wakes with peer devices: a peer's claim or completion
+  //      re-drains the jobs it held back.
+  final coordinator = ref.watch(agentWakeCoordinatorProvider);
+  orchestrator.coordinator = coordinator;
+  coordinator.onPeerStateChanged = (_) => unawaited(orchestrator.processNext());
 
   // 3. Start the orchestrator on the local update stream.
   await orchestrator.start(updateNotifications.localUpdateStream);

@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Wake orchestration
-description: How a local change becomes an agent wake — subscription matching, run-key dedupe, workspace partitioning, bounded concurrency — and the three failure modes the design defends against.
+description: How a local change becomes an agent wake — subscription matching, run-key dedupe, workspace partitioning, bounded concurrency, cross-device coordination — and the three failure modes the design defends against.
 resource: ../../../lib/features/agents/wake
 tags: [agents, wake, scheduling, concurrency]
 status: stable
@@ -10,8 +10,12 @@ stale_after: 2026-12-24
 sources:
   - id: wake
     resource: ../../../lib/features/agents/wake
-    title: WakeOrchestrator, WakeQueue, WakeRunner, drain engine
-    last_modified: 2026-09-24
+    title: WakeOrchestrator, WakeQueue, WakeRunner, drain engine, AgentWakeCoordinator
+    last_modified: 2026-09-26
+  - id: task-state-digest
+    resource: ../../../lib/features/agents/workflow/task_state_digest.dart
+    title: The task state digest devices compare
+    last_modified: 2026-09-26
   - id: enums
     resource: ../../../lib/features/agents/model/agent_enums.dart
     title: WakeReason
@@ -52,6 +56,14 @@ sources:
     resource: ../../../docs/adr/0070-model-checked-digest-recovery-and-processing-jobs.md
     title: ADR 0070 — Model-checked digest recovery and processing jobs
     last_modified: 2026-09-24
+  - id: coordination-spec
+    resource: ../../../specs/tla/AgentWakeCoordination.tla
+    title: TLA+ model of cross-device wake coordination
+    last_modified: 2026-09-26
+  - id: adr-0090
+    resource: ../../../docs/adr/0090-cross-device-agent-wake-coordination.md
+    title: ADR 0090 — One device wakes a task agent over a given state
+    last_modified: 2026-09-26
 ---
 
 # Why the design is this defensive
@@ -89,7 +101,12 @@ flowchart TD
   KeepQueued --> Capacity
   Busy -->|no| Content{"awaitingContent gate?"}
   Content -->|skip| Wait["Leave agent dormant until content exists"]
-  Content -->|run| Persist["Persist wake_run_log row"]
+  Content -->|run| Coord{"Peer device on the same state?"}
+  Coord -->|completed it| Covered["Drop job, intent settled as covered"]
+  Coord -->|running it| Defer["Hold back until the claim ends or lapses"]
+  Defer --> Capacity
+  Coord -->|no| Claim["Broadcast claim(state digest)"]
+  Claim --> Persist["Persist wake_run_log row"]
   Persist --> Exec["Dispatch workflow by agent kind in a capacity slot"]
   Exec --> Capacity
 ```
@@ -513,3 +530,58 @@ restoration follow the same raw local transaction rule. Startup also removes
 markerless or pending fallbacks unconditionally when the project agent has
 explicitly opted out; the completed-wake guard applies only to legacy cleanup
 for agents whose automation remains allowed.
+
+# One device per state: cross-device coordination
+
+Each device wakes a task agent on its own local edits, so edits made on two
+devices at once — typing on the desktop, dictating into the phone — leave a
+wake on each. By the time their throttle windows elapse, sync has usually
+merged both edits, and both devices would run the agent over the same
+inputs. `AgentWakeCoordinator` lets one of them run
+([ADR 0090](../../../docs/adr/0090-cross-device-agent-wake-coordination.md)).
+The protocol is model-checked in
+[`AgentWakeCoordination.tla`](../../../specs/tla/AgentWakeCoordination.tla);
+each coordinator method names the action it implements.
+
+The comparison key is `taskStateDigest`: a `ContentDigest` over the vector
+clock of every journal entity the task context reads — the task, the entities
+linked from and to it, its checklists and items, its images' AI analyses.
+Replicas holding the same versions agree on it without coordinating, and a
+wake's own writes are change-set proposals in the agent database, so they
+leave it alone. Agent kinds without a digest run uncoordinated.
+
+The drain asks the coordinator after the content gate. **Cancel** when a peer
+completed a run over this digest: the job is dropped and its intent settled,
+since the peer's run covers its triggers. **Defer** while a peer's claim for
+this digest is live: the job is held back and the coordinator asks for a
+drain when that claim ends or lapses. **Proceed** otherwise — a different
+digest is new work — and broadcast `claim(digest)`, repeated every 45 seconds
+while the run lives. A successful run broadcasts `done`; `_executeJob`'s
+outer `finally` broadcasts `release` for any run that ended otherwise, which
+is a no-op after `done`. A wake the user asked for explicitly is never
+deferred or cancelled, but still claims.
+
+What a device holds about one peer's wakes of one agent:
+
+```mermaid
+stateDiagram-v2
+  [*] --> NoClaim
+  NoClaim --> Claimed: claim(h) received
+  Claimed --> Claimed: claim received (timer re-armed)
+  Claimed --> NoClaim: done(h), h added to completed digests
+  Claimed --> NoClaim: release(h)
+  Claimed --> NoClaim: two minutes without a message
+  NoClaim --> NoClaim: done(h), h added to completed digests
+```
+
+The completed digests (the last eight) are kept apart from the claim, so a
+peer's next claim cannot erase them: TLC found that a device still at the
+older state otherwise ran it again. A receiver drops a peer's message older
+than the last it applied, and a claim that arrives after it would have
+lapsed.
+
+Everything fails open. The coordination state is in memory, a digest that
+throws proceeds uncoordinated, and a crash, a lost message, a peer that
+never returns or claims that cross within one delivery delay can each cost a
+duplicate run — never a lost one, which the model's `CancelCovered` and
+`NoLostEdit` check.
