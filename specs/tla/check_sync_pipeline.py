@@ -56,6 +56,15 @@ def check(name, constants, assertion, *, temporal=False, extension="", fails=Tru
 
 
 def main():
+    for guarded, fails in (("TRUE", False), ("FALSE", True)):
+        check("mixed-family-namespace-" + guarded,
+              {"MixedFamilies": "TRUE", "MaxCounter": "2",
+               "ConcurrentWriters": "TRUE", "NamespacePayloads": guarded},
+              "PayloadFamilySafe", fails=fails)
+    check("mixed-peers-fully-acknowledged", {"MaxFaults": "0", "MaxCrashes": "0"},
+          "NoSettledMixedWitness", profile="SyncPipelineMixedPeers",
+          extension='\nNoSettledMixedWitness == ~(Counters \\subseteq s.committed /\\\n'
+                    '    (\\A p \\in Peers : Counters \\subseteq s.received[p]))\n')
     for gated, fails in (("TRUE", False), ("FALSE", True)):
         check("limited-slice-gate-" + gated, {"GateSyncSlice": gated},
               "NoSilentLoss", fails=fails, module="InboundQueue",

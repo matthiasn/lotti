@@ -15,6 +15,10 @@ from pathlib import Path
 
 SHARDS = 8
 
+# Keep measured multi-hour profiles out of the one-hour regular shards. They
+# still run on every applicable push and feed the same required TLC check.
+EXTENDED_CONFIGURATIONS = {"SyncPipelineForkSuccessor"}
+
 # Seconds TLC spent on each configuration in CI runs 36198815983 and
 # 36217391296, retaining
 # larger historic budgets from runs 36106366560 and 36109959497. The
@@ -26,6 +30,9 @@ SECONDS = {
     # slower 36198563598 measurement: the old 300s estimate overloaded a shard
     # past its 45-minute deadline even though the profile itself passed.
     "SyncPipeline": 685,
+    # Local exhaustive runs with six workers; refresh from CI measurements.
+    "SyncPipelineForkSuccessor": 9860,
+    "SyncPipelineMixedPeers": 1078,
     "SyncPipelineJournal": 646,
     "SyncPipelineAgentEntity": 6,
     "SyncPipelineAgentLink": 1,
@@ -122,16 +129,22 @@ DEFAULT_SECONDS = 300
 
 def plan(configurations, shards=SHARDS):
     """Longest-first greedy packing: each configuration goes to the lightest shard."""
-    bins = [{"seconds": 0, "configurations": []} for _ in range(min(shards, len(configurations)))]
-    ordered = sorted(configurations, key=lambda c: (-SECONDS.get(c, DEFAULT_SECONDS), c))
+    regular = [c for c in configurations if c not in EXTENDED_CONFIGURATIONS]
+    bins = [{"seconds": 0, "configurations": []} for _ in range(min(shards, len(regular)))]
+    ordered = sorted(regular, key=lambda c: (-SECONDS.get(c, DEFAULT_SECONDS), c))
     for configuration in ordered:
         lightest = min(bins, key=lambda b: b["seconds"])
         lightest["configurations"].append(configuration)
         lightest["seconds"] += SECONDS.get(configuration, DEFAULT_SECONDS)
+    for configuration in sorted(set(configurations) & EXTENDED_CONFIGURATIONS):
+        bins.append({"seconds": SECONDS[configuration], "configurations": [configuration]})
     assigned = sorted(c for b in bins for c in b["configurations"])
     assert assigned == sorted(configurations), "every configuration runs exactly once"
     return [
-        {"shard": index + 1, "estimate": b["seconds"], "configurations": " ".join(b["configurations"])}
+        {"shard": index + 1, "estimate": b["seconds"],
+         "configurations": " ".join(b["configurations"]),
+         "timeout_minutes": 360 if b["configurations"][0] in EXTENDED_CONFIGURATIONS else 60,
+         "java_options": "-Xmx12g" if b["configurations"][0] in EXTENDED_CONFIGURATIONS else ""}
         for index, b in enumerate(bins)
     ]
 
@@ -147,7 +160,8 @@ def main():
     shards = plan(configurations)
     if args.table:
         for shard in shards:
-            print(f"{shard['shard']}  ~{shard['estimate']:>4}s  {shard['configurations']}")
+            print(f"{shard['shard']}  ~{shard['estimate']:>4}s  "
+                  f"limit={shard['timeout_minutes']}m  {shard['configurations']}")
     else:
         print(json.dumps(shards))
 
