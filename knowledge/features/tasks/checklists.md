@@ -89,12 +89,14 @@ sequenceDiagram
   participant R as ChecklistRepository
   participant DB as JournalDb
   W->>R: updateChecklist(change) / updateTaskChecklistIds(change)
-  loop up to 3 attempts
+  loop while the stored row keeps moving
     R->>DB: read the stored row
     R->>R: change(stored list), next clock on the stored row
     R->>DB: write, precondition: row is still the version read
     alt a version landed in between
       DB-->>R: refused — build again on the new row
+    else refused, row unchanged (a conflict)
+      DB-->>R: refused — stop, report failure
     else
       DB-->>R: applied
     end

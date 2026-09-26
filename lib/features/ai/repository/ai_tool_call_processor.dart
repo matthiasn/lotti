@@ -496,14 +496,19 @@ class AiToolCallProcessor {
                   name: 'UnifiedAiInferenceRepository',
                 );
               } else {
-                // Safe to auto-check: item is unchecked and agent-owned
+                // Safe to auto-check: item is unchecked and agent-owned. The
+                // guards run again on the item as stored, so a check or an
+                // uncheck the user made since the read above stands.
                 await checklistRepository.updateChecklistItem(
                   checklistItemId: suggestion.checklistItemId,
-                  change: (stored) => stored.copyWith(
-                    isChecked: true,
-                    checkedBy: ChangeSource.agent,
-                    checkedAt: clock(),
-                  ),
+                  change: (stored) =>
+                      stored.isChecked || stored.checkedBy == ChangeSource.user
+                      ? stored
+                      : stored.copyWith(
+                          isChecked: true,
+                          checkedBy: ChangeSource.agent,
+                          checkedAt: clock(),
+                        ),
                   taskId: currentTask.id,
                 );
 

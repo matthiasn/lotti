@@ -459,27 +459,38 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
       // Only the fields this call changes are written, onto the item as
       // stored: the entity read above may predate a move or an edit made
       // since (ChecklistMembership.tla, RebaseItems).
+      // The sovereignty guard above judged the item as read. A check the
+      // user makes after that read is theirs as well, and this call brought
+      // no reason to override it: on the item as stored, it stands.
+      final guardedByRead =
+          approval != null || entity.data.checkedBy == ChangeSource.user;
       final updated = await checklistRepository.updateChecklistItem(
         checklistItemId: id,
-        change: (stored) => stored.copyWith(
-          isChecked: isCheckedChanged ? newIsChecked! : stored.isChecked,
-          title: titleChanged ? newTitle! : stored.title,
-          isArchived: isArchivedChanged ? newIsArchived! : stored.isArchived,
-          checkedBy: applyChecked ? checkedBy : stored.checkedBy,
-          checkedAt: applyChecked ? checkedAt : stored.checkedAt,
-          approvalHistory: [
-            ...stored.approvalHistory,
-            if (approval case final receipt?)
-              receipt.copyWith(
-                isChecked: newIsChecked,
-                title: newTitle,
-                isArchived: newIsArchived,
-              ),
-          ],
-        ),
+        change: (stored) {
+          final userTookOver =
+              !guardedByRead && stored.checkedBy == ChangeSource.user;
+          final setChecked = applyChecked && !userTookOver;
+          return stored.copyWith(
+            isChecked: isCheckedChanged && !userTookOver
+                ? newIsChecked!
+                : stored.isChecked,
+            title: titleChanged ? newTitle! : stored.title,
+            isArchived: isArchivedChanged ? newIsArchived! : stored.isArchived,
+            checkedBy: setChecked ? checkedBy : stored.checkedBy,
+            checkedAt: setChecked ? checkedAt : stored.checkedAt,
+            approvalHistory: [
+              ...stored.approvalHistory,
+              if (approval case final receipt?)
+                receipt.copyWith(
+                  isChecked: newIsChecked,
+                  title: newTitle,
+                  isArchived: newIsArchived,
+                ),
+            ],
+          );
+        },
         taskId: task.id,
       );
-
       if (updated != null) {
         final updatedData = updated.data;
         successCount++;

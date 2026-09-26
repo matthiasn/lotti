@@ -718,6 +718,52 @@ void main() {
     );
 
     test(
+      'a checklist whose creation reported no result is not listed, creates '
+      'no item, and clears its intent',
+      () async {
+        final rows = storeRows([
+          taskWith(const ['first']),
+        ]);
+        final ids = ['new-checklist', 'item-1'];
+        when(
+          () => mockPersistenceLogic.createMetadata(),
+        ).thenAnswer((_) async => testTask.meta.copyWith(id: ids.removeAt(0)));
+        when(
+          () => mockPersistenceLogic.createDbEntity(any()),
+        ).thenAnswer((inv) async {
+          events.add(
+            'create? ${(inv.positionalArguments.first as JournalEntity).id}',
+          );
+          return null;
+        });
+
+        final result = await repository.createChecklist(
+          taskId: testTask.id,
+          items: const [
+            ChecklistItemData(
+              title: 'Pack the fish',
+              isChecked: false,
+              linkedChecklists: [],
+            ),
+          ],
+        );
+
+        expect(result.checklist, isNull);
+        expect(result.createdItems, isEmpty);
+        // No task write, no item row and no ListItemsIntent; the
+        // ListChecklistIntent has nothing left to finish.
+        expect(events, [
+          'record listChecklist',
+          'create? new-checklist',
+          'clear listChecklist',
+        ]);
+        expect(intentRows, isEmpty);
+        expect((rows[testTask.id]! as Task).data.checklistIds, ['first']);
+        expect(rows.keys, [testTask.id]);
+      },
+    );
+
+    test(
       'keeps the ListItemsIntent when the list write is refused, and the '
       'next start lists the items',
       () async {
@@ -1545,6 +1591,11 @@ void main() {
         when(
           () => mockJournalDb.journalEntityById(checklistId),
         ).thenAnswer((_) async => checklist);
+        // The other device's row under the derived id, which refused the
+        // creation.
+        when(
+          () => mockJournalDb.journalEntityById('derived-item-id'),
+        ).thenAnswer((_) async => itemIn('derived-item-id', [checklistId]));
         // A rewrite of the checklist would go through here.
         when(
           () => mockPersistenceLogic.updateMetadata(any()),
@@ -1566,6 +1617,92 @@ void main() {
         verifyNoWrite();
       },
     );
+
+    group('an item row the creation did not store', () {
+      const checklistId = 'checklist-id';
+      late Map<String, JournalEntity> rows;
+
+      setUp(() {
+        rows = storeRows([
+          checklistWith(checklistId, const ['existing']),
+        ]);
+        when(
+          () => mockPersistenceLogic.createMetadata(),
+        ).thenAnswer((_) async => testTask.meta.copyWith(id: 'new-item'));
+      });
+
+      void stubCreate({required bool? answer}) =>
+          when(
+            () => mockPersistenceLogic.createDbEntity(any()),
+          ).thenAnswer((inv) async {
+            events.add(
+              'create? ${(inv.positionalArguments.first as JournalEntity).id}',
+            );
+            return answer;
+          });
+
+      Future<ChecklistItem?> add() => repository.addItemToChecklist(
+        checklistId: checklistId,
+        title: 'Count the krill crates',
+        isChecked: false,
+        categoryId: null,
+      );
+
+      test(
+        'reported no result: returns null, lists nothing and keeps the '
+        'intent',
+        () async {
+          stubCreate(answer: null);
+
+          expect(await add(), isNull);
+
+          expect(events, ['record listItems', 'create? new-item']);
+          expect(listed(rows, checklistId), ['existing']);
+          expect(
+            intentRows.values.map(jsonDecode).single,
+            containsPair('op', 'listItems'),
+          );
+        },
+      );
+
+      test(
+        'refused over a row already stored under the id: lists it',
+        () async {
+          // A derived id another device created first (ADR 0075).
+          rows['new-item'] = itemIn('new-item', const [checklistId]);
+          stubCreate(answer: false);
+
+          final result = await add();
+
+          expect(result?.id, 'new-item');
+          expect(events, [
+            'record listItems',
+            'create? new-item',
+            'write $checklistId',
+            'clear listItems',
+          ]);
+          expect(listed(rows, checklistId), ['existing', 'new-item']);
+          expect(intentRows, isEmpty);
+        },
+      );
+
+      test(
+        'refused with no row under the id: returns null and lists nothing',
+        () async {
+          stubCreate(answer: false);
+
+          expect(await add(), isNull);
+
+          expect(events, ['record listItems', 'create? new-item']);
+          expect(listed(rows, checklistId), ['existing']);
+          expect(intentRows.values.map(jsonDecode).single, {
+            'op': 'listItems',
+            'checklistId': checklistId,
+            'itemIds': ['new-item'],
+          });
+        },
+      );
+    });
 
     // Stubs metadata/db-entity creation for the path-terminates-early error
     // cases; only the entity returned for the checklist lookup varies.

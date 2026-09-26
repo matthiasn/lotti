@@ -128,17 +128,26 @@ class ChecklistRepository {
           ),
       ];
 
+      var checklistStored = true;
       await _intents.run(
         ListChecklistIntent(checklistId: newChecklist.meta.id, taskId: task.id),
         () async {
-          await _persistenceLogic.createDbEntity(newChecklist);
+          checklistStored = await _createRow(newChecklist);
+          if (!checklistStored) return false;
           return updateTaskChecklistIds(
             taskId: task.id,
             change: (ids) => withMember(ids, newChecklist.meta.id),
           );
         },
-        done: (listed) => listed,
+        // A checklist that was never stored leaves nothing to finish.
+        done: (listed) => listed || !checklistStored,
       );
+      if (!checklistStored) {
+        return (
+          checklist: null,
+          createdItems: <({String id, String title, bool isChecked})>[],
+        );
+      }
 
       final createdItemsList = <({String id, String title, bool isChecked})>[];
 
@@ -151,7 +160,7 @@ class ChecklistRepository {
           () async {
             final createdIds = <String>[];
             for (final item in built) {
-              if (await _createItemRow(item)) {
+              if (await _createRow(item)) {
                 createdIds.add(item.id);
                 createdItemsList.add((
                   id: item.id,
@@ -272,11 +281,20 @@ class ChecklistRepository {
     );
   }
 
-  /// Stores the new [item]; `false` when the write failed.
-  Future<bool> _createItemRow(ChecklistItem item) async {
+  /// Stores the new [entity]; `false` when it is not stored.
+  ///
+  /// A refused creation (`false`) counts when a row exists under the id —
+  /// a derived id (ADR 0075) another device already created, which is then
+  /// listed like this one. A write that reported no result (`null`) or
+  /// threw does not: listing an id with no stored row would clear the
+  /// operation's intent over nothing.
+  Future<bool> _createRow(JournalEntity entity) async {
     try {
-      await _persistenceLogic.createDbEntity(item);
-      return true;
+      return switch (await _persistenceLogic.createDbEntity(entity)) {
+        true => true,
+        false => await _journalDb.journalEntityById(entity.id) != null,
+        null => false,
+      };
     } catch (exception, stackTrace) {
       _loggingService.error(
         LogDomain.persistence,
@@ -471,7 +489,7 @@ class ChecklistRepository {
       return await _intents.run(
         ListItemsIntent(checklistId: checklistId, itemIds: [newItem.id]),
         () async {
-          if (!await _createItemRow(newItem)) return null;
+          if (!await _createRow(newItem)) return null;
           // Listed on the checklist as stored, so an item that synced in or
           // was added by another writer meanwhile stays listed too.
           final checklist = await updateChecklist(

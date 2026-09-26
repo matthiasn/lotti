@@ -813,6 +813,19 @@ void main() {
           checkedAt: autoCheckTime,
         ),
       );
+
+      // The guards run again on the item as stored: an uncheck the user
+      // made since the read, or a check made since, stands untouched.
+      final uncheckedByUser = checklistItem.data.copyWith(
+        checkedBy: ChangeSource.user,
+        checkedAt: DateTime(2026, 2, 28, 22),
+      );
+      expect(change(uncheckedByUser), uncheckedByUser);
+      final checkedSince = checklistItem.data.copyWith(
+        isChecked: true,
+        checkedAt: DateTime(2026, 2, 28, 22),
+      );
+      expect(change(checkedSince), checkedSince);
     });
 
     test('does not auto-check items with medium or low confidence', () async {

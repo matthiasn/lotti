@@ -701,6 +701,92 @@ void main() {
             );
           },
         );
+
+        test(
+          'a check the user took over since the agent-owned read stands, '
+          'while the rename in the same call lands',
+          () async {
+            final item = readItem();
+            // Unchecked by the user after the handler's read.
+            final stored = item.copyWith(
+              data: item.data.copyWith(
+                checkedBy: ChangeSource.user,
+                checkedAt: DateTime(2026, 3, 2, 9),
+              ),
+            );
+            stubItemFetch(['item-1'], [item]);
+            stubTaskById();
+            stubUpdateSuccess(stored);
+
+            final count = await handler.executeUpdates(
+              makeUpdateResult([
+                {
+                  'id': 'item-1',
+                  'isChecked': true,
+                  'title': 'Feed all the penguins',
+                },
+              ]),
+            );
+
+            expect(count, 1);
+            final change =
+                verify(
+                      () => mockChecklistRepository.updateChecklistItem(
+                        checklistItemId: 'item-1',
+                        change: captureAny<ItemChange>(named: 'change'),
+                        taskId: testTask.id,
+                      ),
+                    ).captured.single
+                    as ItemChange;
+            expect(
+              change(stored.data),
+              stored.data.copyWith(title: 'Feed all the penguins'),
+            );
+          },
+        );
+
+        test(
+          'a user-owned read overridden with a valid reason overrides the '
+          'stored check too',
+          () async {
+            final item = readItem(checkedBy: ChangeSource.user);
+            final stored = storedSince(item);
+            stubItemFetch(['item-1'], [item]);
+            stubTaskById();
+            stubUpdateSuccess(stored);
+
+            final count = await handler.executeUpdates(
+              makeUpdateResult([
+                {
+                  'id': 'item-1',
+                  'isChecked': false,
+                  'reason':
+                      'The 09:00 log says the feeding was cancelled today.',
+                },
+              ]),
+            );
+
+            expect(count, 1);
+            expect(handler.skippedItems, isEmpty);
+            final change =
+                verify(
+                      () => mockChecklistRepository.updateChecklistItem(
+                        checklistItemId: 'item-1',
+                        change: captureAny<ItemChange>(named: 'change'),
+                        taskId: testTask.id,
+                      ),
+                    ).captured.single
+                    as ItemChange;
+            expect(
+              change(stored.data),
+              stored.data.copyWith(
+                isChecked: false,
+                checkedBy: ChangeSource.agent,
+                checkedAt: clockTime,
+              ),
+            );
+          },
+        );
       });
 
       test('skips an archival that matches the current state', () async {
