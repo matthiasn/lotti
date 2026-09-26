@@ -5,7 +5,7 @@ description: The eleven Drift/SQLite databases, attachment storage, how connecti
 resource: ../../lib/database
 tags: [architecture, persistence, drift, sqlite, migrations]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-25T20:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-26T09:39:00Z }
 stale_after: 2026-12-25
 sources:
   - id: adr-0079
@@ -128,6 +128,29 @@ and label definitions that have not arrived through sync. The classifier uses
 the primary code's low byte, including extended codes transported through a
 background isolate. Other SQL errors propagate so reconciliation transactions
 roll back instead of committing a partial label set.
+
+# Settings groups
+
+`SettingsDb.saveSettingsItems` owns a transaction for a group of related keys.
+It copies caller input, writes every field, then publishes all cached values
+only after commit. On failure, both persisted and cached values remain at the
+previous group. Callers must not wrap this API in an outer settings transaction:
+cache publication belongs to the transaction it owns.
+
+Single-key saves, removals and group saves share a write queue. Cache-based
+no-op checks run inside that queue, so a local save cannot skip against an old
+value while a group is still committing. Failed writes release the queue.
+Reads already in flight cannot replace the cache after its generation changes.
+
+```mermaid
+flowchart LR
+  Queue[Serialized write] --> Write[Write transaction-local fields]
+  Write --> Commit[Commit group]
+  Write -->|failure| Rollback[Roll back and propagate error]
+  Commit --> Cache[Publish cache]
+  Cache --> Release[Release write queue]
+  Rollback --> Release
+```
 
 # Opening a connection
 

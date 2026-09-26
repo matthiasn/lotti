@@ -41,6 +41,7 @@ class SettingsDb extends _$SettingsDb {
   final Map<String, int> _pendingReadGenerations = <String, int>{};
   final Map<String, int> _cacheGenerations = <String, int>{};
   bool _isPendingReadFlushScheduled = false;
+  Future<void> _writeTail = Future<void>.value();
 
   /// The schema this build writes. A restored backup may carry an
   /// older schema, which Drift migrates, but never a newer one.
@@ -76,34 +77,77 @@ class SettingsDb extends _$SettingsDb {
     )..where((table) => table.configKey.isIn(keyList))).get();
   }
 
-  Future<int> saveSettingsItem(String configKey, String value) async {
-    if (_cache.containsKey(configKey) && _cache[configKey] == value) {
-      unawaited(_inFlightReads.remove(configKey));
-      _resolveQueuedRead(configKey, value);
-      return 0;
-    }
+  // Serialize cache decisions with writes, including atomic groups. Otherwise a
+  // single-key save can skip against an old cache while a group is committing.
+  Future<T> _write<T>(Future<T> Function() action) {
+    final previous = _writeTail;
+    final completed = Completer<void>();
+    _writeTail = completed.future;
+    return (() async {
+      await previous;
+      try {
+        return await action();
+      } finally {
+        completed.complete();
+      }
+    })();
+  }
 
-    _bumpGeneration(configKey);
-    final settingsItem = SettingsItem(
-      configKey: configKey,
-      value: value,
-      updatedAt: clock.now(),
-    );
-
-    final result = await into(settings).insertOnConflictUpdate(settingsItem);
+  void _publishValue(String configKey, String? value) {
     _cache[configKey] = value;
     unawaited(_inFlightReads.remove(configKey));
     _resolveQueuedRead(configKey, value);
-    return result;
   }
 
-  Future<void> removeSettingsItem(String configKey) async {
+  Future<int> saveSettingsItem(String configKey, String value) =>
+      _write(() async {
+        if (_cache.containsKey(configKey) && _cache[configKey] == value) {
+          _publishValue(configKey, value);
+          return 0;
+        }
+        _bumpGeneration(configKey);
+        final result = await into(settings).insertOnConflictUpdate(
+          SettingsItem(
+            configKey: configKey,
+            value: value,
+            updatedAt: clock.now(),
+          ),
+        );
+        _publishValue(configKey, value);
+        return result;
+      });
+
+  /// Persists a settings group atomically and publishes its cache after commit.
+  ///
+  /// A failed write leaves both durable values and cached values unchanged.
+  /// This owns its transaction; callers must not wrap it in another SettingsDb
+  /// transaction, whose later rollback would invalidate the published cache.
+  Future<void> saveSettingsItems(Map<String, String> values) {
+    final snapshot = Map<String, String>.of(values);
+    return _write(() async {
+      if (snapshot.isEmpty) return;
+      snapshot.keys.forEach(_bumpGeneration);
+      final updatedAt = clock.now();
+      await transaction(() async {
+        for (final entry in snapshot.entries) {
+          await into(settings).insertOnConflictUpdate(
+            SettingsItem(
+              configKey: entry.key,
+              value: entry.value,
+              updatedAt: updatedAt,
+            ),
+          );
+        }
+      });
+      snapshot.forEach(_publishValue);
+    });
+  }
+
+  Future<void> removeSettingsItem(String configKey) => _write(() async {
     _bumpGeneration(configKey);
     await (delete(settings)..where((t) => t.configKey.equals(configKey))).go();
-    _cache.remove(configKey);
-    unawaited(_inFlightReads.remove(configKey));
-    _resolveQueuedRead(configKey, null);
-  }
+    _publishValue(configKey, null);
+  });
 
   Future<Map<String, String?>> itemsByKeys(Iterable<String> configKeys) async {
     final keyList = configKeys.toSet().toList(growable: false);

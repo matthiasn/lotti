@@ -24,7 +24,7 @@ def check(name, constants, assertion, *, temporal=False, extension="", fails=Tru
         )
         if count != 1:
             raise ValueError(f"{name}: unknown/duplicate constant {key}")
-    config = re.sub(r"(?m)^(INVARIANTS|PROPERTIES) .*\n?", "", config)
+    config = re.sub(r"(?m)^(INVARIANTS?|PROPERT(?:Y|IES)) .*\n?", "", config)
     config += f"{'PROPERTY' if temporal else 'INVARIANT'} {assertion}\n"
     spec = (HERE / f"{module}.tla").read_text()
     separator = "\n" + "=" * 77
@@ -95,5 +95,23 @@ def main():
                     '      c \\in s.hints[p] /\\ c \\in s.received[p])\n')
 
 
+def check_settings():
+    # The guarded profile includes one failure, below the inbound retry cap.
+    for switch, assertion in (("AtomicGroups", "CompletedCoherent"),
+                              ("RetryFailures", "LatestWins")):
+        constants = {"FailureBudget": "1"}
+        check("settings-" + switch + "-guarded", constants, assertion,
+              module="SyncSettings", fails=False)
+        check("settings-" + switch + "-mutated",
+              {**constants, switch: "FALSE"}, assertion, module="SyncSettings")
+    # These protocol limits remain explicit even after persistence is atomic.
+    check("settings-equal-stamps", {"EqualStamps": "TRUE"}, "Converged",
+          module="SyncSettings")
+    check("settings-unordered-flags",
+          {"Timestamped": "FALSE", "FieldCount": "1"}, "Converged",
+          module="SyncSettings")
+
+
 if __name__ == "__main__":
     main()
+    check_settings()

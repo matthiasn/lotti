@@ -53,6 +53,84 @@ void main() {
     await db.close();
   });
 
+  group('atomic settings groups', () {
+    const before = {'first': 'old-first', 'second': 'old-second'};
+    const after = {'first': 'new-first', 'second': 'new-second'};
+
+    Future<Map<String, String>> stored() async => {
+      for (final row in await db.loadSettingsItems(before.keys))
+        row.configKey: row.value,
+    };
+
+    test('publishes all values only after the transaction succeeds', () async {
+      await db.saveSettingsItems(before);
+      await db.saveSettingsItems(after);
+      expect(await stored(), after);
+      expect(await db.itemsByKeys(before.keys), after);
+    });
+
+    test(
+      'rolls back an earlier field and its cache when a later write fails',
+      () async {
+        await db.saveSettingsItems(before);
+        await db.customStatement(
+          'CREATE TRIGGER reject_second BEFORE INSERT ON settings '
+          "WHEN NEW.config_key = 'second' BEGIN "
+          "SELECT RAISE(ABORT, 'injected settings failure'); END",
+        );
+        await expectLater(
+          db.saveSettingsItems(after),
+          throwsA(isA<Exception>()),
+        );
+        expect(await stored(), before);
+        expect(await db.itemsByKeys(before.keys), before);
+        await db.customStatement('DROP TRIGGER reject_second');
+        await db.saveSettingsItems(after);
+        expect(await stored(), after);
+        expect(await db.itemsByKeys(before.keys), after);
+      },
+    );
+
+    test(
+      'serializes a same-as-old single write behind a pending group',
+      () async {
+        await db.saveSettingsItems(before);
+        final entered = Completer<void>();
+        final release = Completer<void>();
+        final blocker = db.transaction(() async {
+          entered.complete();
+          await release.future;
+        });
+        await entered.future;
+        final group = db.saveSettingsItems(after);
+        final single = db.saveSettingsItem('first', 'old-first');
+        expect(await db.itemByKey('first'), 'old-first');
+        release.complete();
+        await blocker;
+        await group;
+        await single;
+        expect(await stored(), {'first': 'old-first', 'second': 'new-second'});
+        expect(await db.itemsByKeys(before.keys), await stored());
+      },
+    );
+
+    test('snapshots input and allows a queued removal after a group', () async {
+      final input = Map<String, String>.of(before);
+      final write = db.saveSettingsItems(input);
+      input['first'] = 'mutated';
+      final remove = db.removeSettingsItem('second');
+      await write;
+      await remove;
+      expect(await stored(), {'first': 'old-first'});
+      expect(await db.itemsByKeys(before.keys), {
+        'first': 'old-first',
+        'second': null,
+      });
+      await db.saveSettingsItems({});
+      expect(await stored(), {'first': 'old-first'});
+    });
+  });
+
   test('removeSettingsItem removes existing entries', () async {
     await db.saveSettingsItem('test_key', 'test_value');
     expect(await db.itemByKey('test_key'), 'test_value');

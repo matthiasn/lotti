@@ -12,11 +12,15 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/database/logging_types.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
+import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
+import 'package:lotti/features/sync/queue/inbound_worker.dart';
+import 'package:lotti/features/sync/queue/queue_apply_adapter.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
@@ -1553,363 +1557,201 @@ void main() {
     ).called(1);
   });
 
-  group('SyncEventProcessor - SyncThemingSelection', () {
-    String encodeThemingMessage(SyncMessage message) =>
-        base64.encode(utf8.encode(json.encode(message.toJson())));
+  group('atomic synced settings', () {
+    late SettingsDb realSettings;
 
-    // Helper to create event with theming message
-    Event createThemingEvent(SyncMessage message) {
-      final themingEvent = MockEvent();
-      final encoded = encodeThemingMessage(message);
-      when(() => themingEvent.eventId).thenReturn('event-id');
-      when(() => themingEvent.originServerTs).thenReturn(DateTime(2024));
-      when(() => themingEvent.content).thenReturn({
-        'msgtype': 'com.lotti.sync.message',
-        'body': 'sync',
-        'data': encoded,
-      });
-      when(() => themingEvent.text).thenReturn(encoded);
-      return themingEvent;
+    setUp(() {
+      realSettings = SettingsDb(inMemoryDatabase: true);
+      processor = SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: aiConfigRepository,
+        savedTaskFiltersRepository: savedTaskFiltersRepository,
+        settingsDb: realSettings,
+      );
+    });
+
+    tearDown(() => realSettings.close());
+
+    final cases = [
+      (
+        name: 'theme',
+        stampKey: 'THEME_PREFS_UPDATED_AT',
+        values: {
+          'LIGHT_SCHEME': 'Indigo',
+          'DARK_SCHEMA': 'Shark',
+          'THEME_MODE': 'dark',
+          'THEME_PREFS_UPDATED_AT': '100',
+        },
+        message: const SyncMessage.themingSelection(
+          lightThemeName: 'Indigo',
+          darkThemeName: 'Shark',
+          themeMode: 'dark',
+          updatedAt: 100,
+          status: SyncEntryStatus.update,
+        ),
+      ),
+      (
+        name: 'name',
+        stampKey: 'DAILY_OS_USER_NAME_UPDATED_AT',
+        values: {
+          'DAILY_OS_USER_NAME': 'Sam',
+          'DAILY_OS_USER_NAME_UPDATED_AT': '100',
+          'DAILY_OS_USER_NAME_SYNCED_AT': '100',
+        },
+        message: const SyncMessage.dailyOsUserName(
+          userName: 'Sam',
+          updatedAt: 100,
+          status: SyncEntryStatus.update,
+        ),
+      ),
+    ];
+
+    for (final scenario in cases) {
+      Future<void> apply() async {
+        when(() => event.text).thenReturn(encodeMessage(scenario.message));
+        await processor.process(event: event, journalDb: journalDb);
+      }
+
+      Future<Map<String, String>> stored() async => {
+        for (final row in await realSettings.loadSettingsItems(
+          scenario.values.keys,
+        ))
+          row.configKey: row.value,
+      };
+
+      test(
+        '${scenario.name}: persists all fields and notifies after success',
+        () async {
+          await apply();
+          expect(await stored(), scenario.values);
+          expect(
+            await realSettings.itemsByKeys(scenario.values.keys),
+            scenario.values,
+          );
+          verify(
+            () => updateNotifications.notify({
+              settingsNotification,
+            }, fromSync: true),
+          ).called(1);
+        },
+      );
+
+      for (final localStamp in ['50', '100', 'invalid']) {
+        test('${scenario.name}: accepts local stamp $localStamp', () async {
+          await realSettings.saveSettingsItem(scenario.stampKey, localStamp);
+          await apply();
+          expect(await stored(), scenario.values);
+        });
+      }
+
+      test(
+        '${scenario.name}: ignores a stale envelope without notifying',
+        () async {
+          await realSettings.saveSettingsItem(scenario.stampKey, '200');
+          await apply();
+          expect(await stored(), {scenario.stampKey: '200'});
+          verifyNever(() => updateNotifications.notify(any(), fromSync: true));
+        },
+      );
+
+      test(
+        '${scenario.name}: queue retries a failed group instead of acknowledging it',
+        () async {
+          final realJournal = JournalDb(inMemoryDatabase: true);
+          addTearDown(realJournal.close);
+          final room = MockRoom();
+          when(() => room.id).thenReturn('!settings:example.org');
+          final entry = InboundQueueEntry(
+            queueId: 1,
+            eventId: r'$settings',
+            roomId: '!settings:example.org',
+            originTs: 100,
+            enqueuedAt: 100,
+            attempts: 0,
+            rawJson: jsonEncode({
+              'event_id': r'$settings',
+              'room_id': '!settings:example.org',
+              'origin_server_ts': 100,
+              'type': EventTypes.Message,
+              'sender': '@peer:example.org',
+              'content': {
+                'msgtype': 'com.lotti.sync.message',
+                'body': encodeMessage(scenario.message),
+              },
+            }),
+          );
+          final adapter = QueueApplyAdapter(
+            processor: processor,
+            journalDb: realJournal,
+            logging: loggingService,
+            hasOlderActiveEntry: (_) async => false,
+          );
+          await realSettings.customStatement(
+            'CREATE TRIGGER reject_stamp BEFORE INSERT ON settings '
+            "WHEN NEW.config_key = '${scenario.stampKey}' BEGIN "
+            "SELECT RAISE(ABORT, 'injected stamp failure'); END",
+          );
+          expect(await adapter.bind()(entry, room), ApplyOutcome.retriable);
+          expect(await stored(), isEmpty);
+          verifyNever(() => updateNotifications.notify(any(), fromSync: true));
+          await realSettings.customStatement('DROP TRIGGER reject_stamp');
+          expect(await adapter.bind()(entry, room), ApplyOutcome.applied);
+          expect(await stored(), scenario.values);
+        },
+      );
+
+      for (final failingKey in scenario.values.keys) {
+        test(
+          '${scenario.name}: rolls back and propagates a failure at $failingKey, then retries',
+          () async {
+            final before = {
+              for (final key in scenario.values.keys)
+                key: key == scenario.stampKey ? '50' : 'before',
+            };
+            await realSettings.saveSettingsItems(before);
+            await realSettings.customStatement(
+              'CREATE TRIGGER reject_setting BEFORE INSERT ON settings '
+              "WHEN NEW.config_key = '$failingKey' BEGIN "
+              "SELECT RAISE(ABORT, 'injected settings failure'); END",
+            );
+            await expectLater(apply(), throwsA(isA<Exception>()));
+            expect(await stored(), before);
+            expect(await realSettings.itemsByKeys(before.keys), before);
+            verifyNever(
+              () => updateNotifications.notify(any(), fromSync: true),
+            );
+            await realSettings.customStatement('DROP TRIGGER reject_setting');
+            await apply();
+            expect(await stored(), scenario.values);
+            expect(
+              await realSettings.itemsByKeys(before.keys),
+              scenario.values,
+            );
+            verify(
+              () => updateNotifications.notify({
+                settingsNotification,
+              }, fromSync: true),
+            ).called(1);
+          },
+        );
+      }
     }
 
-    test('applies incoming theme selection', () async {
-      final testTimestamp = DateTime(2024, 3, 15).millisecondsSinceEpoch;
-      final message = SyncMessage.themingSelection(
-        lightThemeName: 'Indigo',
-        darkThemeName: 'Shark',
-        themeMode: 'dark',
-        updatedAt: testTimestamp,
-        status: SyncEntryStatus.update,
-      );
-      final themingEvent = createThemingEvent(message);
-
-      await processor.process(event: themingEvent, journalDb: journalDb);
-
-      // Verify all settings saved
-      verify(
-        () => settingsDb.saveSettingsItem('LIGHT_SCHEME', 'Indigo'),
-      ).called(1);
-      verify(
-        () => settingsDb.saveSettingsItem('DARK_SCHEMA', 'Shark'),
-      ).called(1);
-      verify(() => settingsDb.saveSettingsItem('THEME_MODE', 'dark')).called(1);
-      verify(
-        () => settingsDb.saveSettingsItem(
-          'THEME_PREFS_UPDATED_AT',
-          '$testTimestamp',
+    test('normalizes an invalid theme mode before committing', () async {
+      when(() => event.text).thenReturn(
+        encodeMessage(
+          const SyncMessage.themingSelection(
+            lightThemeName: 'Indigo',
+            darkThemeName: 'Shark',
+            themeMode: 'invalid_mode',
+            updatedAt: 100,
+            status: SyncEntryStatus.update,
+          ),
         ),
-      ).called(1);
-    });
-
-    test('rejects stale message based on timestamp', () async {
-      // Mock local timestamp to future
-      when(
-        () => settingsDb.itemByKey('THEME_PREFS_UPDATED_AT'),
-      ).thenAnswer((_) async => '9999999999999');
-
-      const message = SyncMessage.themingSelection(
-        lightThemeName: 'Indigo',
-        darkThemeName: 'Shark',
-        themeMode: 'dark',
-        updatedAt: 1000000000000,
-        status: SyncEntryStatus.update,
       );
-      final themingEvent = createThemingEvent(message);
-
-      await processor.process(event: themingEvent, journalDb: journalDb);
-
-      // Verify settings not saved for theme keys
-      verifyNever(() => settingsDb.saveSettingsItem('LIGHT_SCHEME', any()));
-      verifyNever(() => settingsDb.saveSettingsItem('DARK_SCHEMA', any()));
-      verifyNever(() => settingsDb.saveSettingsItem('THEME_MODE', any()));
-
-      // Verify log contains stale message
-      verify(
-        () => loggingService.log(
-          LogDomain.theming,
-          any<String>(that: contains('themingSync.ignored.stale')),
-          subDomain: 'apply',
-        ),
-      ).called(1);
-    });
-
-    test('accepts message when no local timestamp exists', () async {
-      // Mock no local timestamp
-      when(
-        () => settingsDb.itemByKey('THEME_PREFS_UPDATED_AT'),
-      ).thenAnswer((_) async => null);
-
-      final testTimestamp = DateTime(2024, 3, 15).millisecondsSinceEpoch;
-      final message = SyncMessage.themingSelection(
-        lightThemeName: 'Indigo',
-        darkThemeName: 'Shark',
-        themeMode: 'dark',
-        updatedAt: testTimestamp,
-        status: SyncEntryStatus.update,
-      );
-      final themingEvent = createThemingEvent(message);
-
-      await processor.process(event: themingEvent, journalDb: journalDb);
-
-      // Verify all settings saved
-      verify(
-        () => settingsDb.saveSettingsItem('LIGHT_SCHEME', 'Indigo'),
-      ).called(1);
-      verify(
-        () => settingsDb.saveSettingsItem('DARK_SCHEMA', 'Shark'),
-      ).called(1);
-      verify(() => settingsDb.saveSettingsItem('THEME_MODE', 'dark')).called(1);
-      verify(
-        () => settingsDb.saveSettingsItem(
-          'THEME_PREFS_UPDATED_AT',
-          '$testTimestamp',
-        ),
-      ).called(1);
-    });
-
-    test('accepts newer message', () async {
-      // Mock old local timestamp
-      when(
-        () => settingsDb.itemByKey('THEME_PREFS_UPDATED_AT'),
-      ).thenAnswer((_) async => '1000000000000');
-
-      final testTimestamp = DateTime(2024, 3, 15).millisecondsSinceEpoch;
-      final message = SyncMessage.themingSelection(
-        lightThemeName: 'Indigo',
-        darkThemeName: 'Shark',
-        themeMode: 'dark',
-        updatedAt: testTimestamp,
-        status: SyncEntryStatus.update,
-      );
-      final themingEvent = createThemingEvent(message);
-
-      await processor.process(event: themingEvent, journalDb: journalDb);
-
-      // Verify all settings saved
-      verify(
-        () => settingsDb.saveSettingsItem('LIGHT_SCHEME', 'Indigo'),
-      ).called(1);
-      verify(
-        () => settingsDb.saveSettingsItem('DARK_SCHEMA', 'Shark'),
-      ).called(1);
-      verify(() => settingsDb.saveSettingsItem('THEME_MODE', 'dark')).called(1);
-      verify(
-        () => settingsDb.saveSettingsItem(
-          'THEME_PREFS_UPDATED_AT',
-          '$testTimestamp',
-        ),
-      ).called(1);
-    });
-
-    test('normalizes invalid ThemeMode to system', () async {
-      final testTimestamp = DateTime(2024, 3, 15).millisecondsSinceEpoch;
-      final message = SyncMessage.themingSelection(
-        lightThemeName: 'Indigo',
-        darkThemeName: 'Shark',
-        themeMode: 'invalid_mode',
-        updatedAt: testTimestamp,
-        status: SyncEntryStatus.update,
-      );
-      final themingEvent = createThemingEvent(message);
-
-      await processor.process(event: themingEvent, journalDb: journalDb);
-
-      // Verify themeMode normalized to 'system'
-      verify(
-        () => settingsDb.saveSettingsItem('THEME_MODE', 'system'),
-      ).called(1);
-    });
-
-    test('handles exception during apply', () async {
-      // Mock saveSettingsItem to throw
-      when(
-        () => settingsDb.saveSettingsItem(any(), any()),
-      ).thenThrow(Exception('DB error'));
-
-      final message = SyncMessage.themingSelection(
-        lightThemeName: 'Indigo',
-        darkThemeName: 'Shark',
-        themeMode: 'dark',
-        updatedAt: DateTime(2024, 3, 15).millisecondsSinceEpoch,
-        status: SyncEntryStatus.update,
-      );
-      final themingEvent = createThemingEvent(message);
-
-      // Should not throw
-      await processor.process(event: themingEvent, journalDb: journalDb);
-
-      // Verify exception logged
-      verify(
-        () => loggingService.error(
-          LogDomain.theming,
-          any<Object>(),
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
-          subDomain: 'apply',
-        ),
-      ).called(1);
-    });
-
-    test('logs success on apply', () async {
-      final testTimestamp = DateTime(2024, 3, 15).millisecondsSinceEpoch;
-      final message = SyncMessage.themingSelection(
-        lightThemeName: 'Indigo',
-        darkThemeName: 'Shark',
-        themeMode: 'dark',
-        updatedAt: testTimestamp,
-        status: SyncEntryStatus.update,
-      );
-      final themingEvent = createThemingEvent(message);
-
-      await processor.process(event: themingEvent, journalDb: journalDb);
-
-      // Verify success logged
-      verify(
-        () => loggingService.log(
-          LogDomain.theming,
-          any<String>(that: contains('apply themingSelection')),
-          subDomain: 'apply',
-        ),
-      ).called(1);
-    });
-
-    test('saves updatedAt as string', () async {
-      const timestamp = 1234567890;
-      const message = SyncMessage.themingSelection(
-        lightThemeName: 'Indigo',
-        darkThemeName: 'Shark',
-        themeMode: 'dark',
-        updatedAt: timestamp,
-        status: SyncEntryStatus.update,
-      );
-      final themingEvent = createThemingEvent(message);
-
-      await processor.process(event: themingEvent, journalDb: journalDb);
-
-      // Verify updatedAt saved as string
-      verify(
-        () =>
-            settingsDb.saveSettingsItem('THEME_PREFS_UPDATED_AT', '$timestamp'),
-      ).called(1);
-    });
-  });
-
-  group('SyncEventProcessor - SyncDailyOsUserName', () {
-    Event createNameEvent(SyncMessage message) {
-      final event = MockEvent();
-      final encoded = base64.encode(utf8.encode(json.encode(message.toJson())));
-      when(() => event.eventId).thenReturn('event-id');
-      when(() => event.originServerTs).thenReturn(DateTime(2024));
-      when(() => event.content).thenReturn({
-        'msgtype': 'com.lotti.sync.message',
-        'body': 'sync',
-        'data': encoded,
-      });
-      when(() => event.text).thenReturn(encoded);
-      return event;
-    }
-
-    test('applies a newer name and notifies settings listeners', () async {
-      final timestamp = DateTime(2024, 3, 15).millisecondsSinceEpoch;
-      final message = SyncMessage.dailyOsUserName(
-        userName: 'Sam',
-        updatedAt: timestamp,
-        status: SyncEntryStatus.update,
-      );
-
-      await processor.process(
-        event: createNameEvent(message),
-        journalDb: journalDb,
-      );
-
-      verify(
-        () => settingsDb.saveSettingsItem('DAILY_OS_USER_NAME', 'Sam'),
-      ).called(1);
-      verify(
-        () => settingsDb.saveSettingsItem(
-          'DAILY_OS_USER_NAME_UPDATED_AT',
-          '$timestamp',
-        ),
-      ).called(1);
-      // A received name is marked synced so this device won't re-publish it.
-      verify(
-        () => settingsDb.saveSettingsItem(
-          'DAILY_OS_USER_NAME_SYNCED_AT',
-          '$timestamp',
-        ),
-      ).called(1);
-      verify(
-        () => updateNotifications.notify(any(), fromSync: true),
-      ).called(1);
-    });
-
-    test('ignores a stale name based on the stored timestamp', () async {
-      when(
-        () => settingsDb.itemByKey('DAILY_OS_USER_NAME_UPDATED_AT'),
-      ).thenAnswer((_) async => '9999999999999');
-
-      const message = SyncMessage.dailyOsUserName(
-        userName: 'Stale',
-        updatedAt: 1000000000000,
-        status: SyncEntryStatus.update,
-      );
-
-      await processor.process(
-        event: createNameEvent(message),
-        journalDb: journalDb,
-      );
-
-      verifyNever(
-        () => settingsDb.saveSettingsItem('DAILY_OS_USER_NAME', any()),
-      );
-    });
-
-    test('accepts the name when no local timestamp exists', () async {
-      when(
-        () => settingsDb.itemByKey('DAILY_OS_USER_NAME_UPDATED_AT'),
-      ).thenAnswer((_) async => null);
-
-      final timestamp = DateTime(2024, 3, 15).millisecondsSinceEpoch;
-      final message = SyncMessage.dailyOsUserName(
-        userName: 'Sam',
-        updatedAt: timestamp,
-        status: SyncEntryStatus.update,
-      );
-
-      await processor.process(
-        event: createNameEvent(message),
-        journalDb: journalDb,
-      );
-
-      verify(
-        () => settingsDb.saveSettingsItem('DAILY_OS_USER_NAME', 'Sam'),
-      ).called(1);
-    });
-
-    test('catches and logs a persistence failure during apply', () async {
-      when(
-        () => settingsDb.saveSettingsItem(any(), any()),
-      ).thenThrow(Exception('DB error'));
-
-      final message = SyncMessage.dailyOsUserName(
-        userName: 'Sam',
-        updatedAt: DateTime(2024, 3, 15).millisecondsSinceEpoch,
-        status: SyncEntryStatus.update,
-      );
-
-      // Should not throw — the error is caught and logged.
-      await processor.process(
-        event: createNameEvent(message),
-        journalDb: journalDb,
-      );
-
-      verify(
-        () => loggingService.error(
-          LogDomain.dailyOs,
-          any<Object>(),
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
-          subDomain: 'apply',
-        ),
-      ).called(1);
+      await processor.process(event: event, journalDb: journalDb);
+      expect(await realSettings.itemByKey('THEME_MODE'), 'system');
     });
   });
 

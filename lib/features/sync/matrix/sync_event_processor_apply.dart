@@ -206,23 +206,13 @@ extension SyncEventProcessorApply on SyncEventProcessor {
               ) ??
               ThemeMode.system;
 
-          // Apply all three settings
-          await _settingsDb.saveSettingsItem(
-            lightSchemeNameKey,
-            lightThemeName,
-          );
-          await _settingsDb.saveSettingsItem(
-            darkSchemeNameKey,
-            darkThemeName,
-          );
-          await _settingsDb.saveSettingsItem(
-            themeModeKey,
-            EnumToString.convertToString(normalizedMode),
-          );
-          await _settingsDb.saveSettingsItem(
-            themePrefsUpdatedAtKey,
-            updatedAt.toString(),
-          );
+          // The values and their freshness stamp must commit together.
+          await _settingsDb.saveSettingsItems({
+            lightSchemeNameKey: lightThemeName,
+            darkSchemeNameKey: darkThemeName,
+            themeModeKey: EnumToString.convertToString(normalizedMode),
+            themePrefsUpdatedAtKey: updatedAt.toString(),
+          });
 
           _updateNotifications.notify(
             {settingsNotification},
@@ -245,6 +235,7 @@ extension SyncEventProcessorApply on SyncEventProcessor {
             stackTrace: st,
             subDomain: 'apply',
           );
+          rethrow;
         }
         return null;
       case SyncDailyOsUserName(:final userName, :final updatedAt):
@@ -266,20 +257,13 @@ extension SyncEventProcessorApply on SyncEventProcessor {
             return null;
           }
 
-          await _settingsDb.saveSettingsItem(
-            dailyOsUserNameSettingsKey,
-            userName,
-          );
-          await _settingsDb.saveSettingsItem(
-            dailyOsUserNameUpdatedAtSettingsKey,
-            updatedAt.toString(),
-          );
-          // A name received from another device is already published; mark it
-          // synced so this device does not bootstrap-republish it.
-          await _settingsDb.saveSettingsItem(
-            dailyOsUserNameSyncedAtSettingsKey,
-            updatedAt.toString(),
-          );
+          // A received name is already published. Its value, freshness stamp
+          // and bootstrap marker belong to the same atomic settings group.
+          await _settingsDb.saveSettingsItems({
+            dailyOsUserNameSettingsKey: userName,
+            dailyOsUserNameUpdatedAtSettingsKey: updatedAt.toString(),
+            dailyOsUserNameSyncedAtSettingsKey: updatedAt.toString(),
+          });
 
           _updateNotifications.notify(
             {settingsNotification},
@@ -298,6 +282,7 @@ extension SyncEventProcessorApply on SyncEventProcessor {
             stackTrace: st,
             subDomain: 'apply',
           );
+          rethrow;
         }
         return null;
       case SyncOnboardingSnapshotBegin() ||
