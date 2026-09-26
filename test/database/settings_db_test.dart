@@ -53,6 +53,228 @@ void main() {
     await db.close();
   });
 
+  group('cached writes own their transaction', () {
+    test('another database retains its own commit boundary', () async {
+      final other = SettingsDb(inMemoryDatabase: true);
+      addTearDown(other.close);
+      await db.transaction(
+        () => other.saveSettingsItem('independent', 'saved'),
+      );
+      expect(await other.itemByKey('independent'), 'saved');
+      expect(
+        (await other.loadSettingsItems(['independent'])).single.value,
+        'saved',
+      );
+      expect(await db.loadSettingsItems(['independent']), isEmpty);
+    });
+
+    for (final kind in ['single', 'group', 'remove']) {
+      test(
+        '$kind rejects an outer transaction without changing data',
+        () async {
+          await db.saveSettingsItem('guarded', 'before');
+          await db.transaction(() async {
+            final Future<Object?> write = switch (kind) {
+              'single' => db.saveSettingsItem('guarded', 'after'),
+              'group' => db.saveSettingsItems({'guarded': 'after'}),
+              _ => db.removeSettingsItem('guarded'),
+            };
+            await expectLater(
+              write,
+              throwsA(
+                isA<StateError>().having(
+                  (e) => e.message,
+                  'reason',
+                  contains('outer transaction'),
+                ),
+              ),
+            );
+          });
+          expect(await db.itemByKey('guarded'), 'before');
+          expect(
+            (await db.loadSettingsItems(['guarded'])).single.value,
+            'before',
+          );
+          await db.saveSettingsItem('guarded', 'after');
+          expect(await db.itemByKey('guarded'), 'after');
+        },
+      );
+    }
+
+    test(
+      'rejects before waiting on an outside writer blocked by the transaction',
+      () async {
+        await db.saveSettingsItem('guarded', 'before');
+        final entered = Completer<void>();
+        final outsideQueued = Completer<void>();
+        final outer = db.transaction(() async {
+          entered.complete();
+          await outsideQueued.future;
+          await expectLater(
+            db.saveSettingsItem('guarded', 'inside'),
+            throwsA(
+              isA<StateError>().having(
+                (e) => e.message,
+                'reason',
+                contains('outer transaction'),
+              ),
+            ),
+          );
+        });
+        await entered.future;
+        final outside = db.saveSettingsItem('guarded', 'outside');
+        outsideQueued.complete();
+        await Future.wait<Object?>([outer, outside]);
+        expect(await db.itemByKey('guarded'), 'outside');
+        expect(
+          (await db.loadSettingsItems(['guarded'])).single.value,
+          'outside',
+        );
+      },
+    );
+  });
+
+  test(
+    'close drains pending settings writes before closing the executor',
+    () async {
+      final first = db.saveSettingsItem('first', 'one');
+      final second = db.saveSettingsItems({'second': 'two', 'third': 'three'});
+      final closing = db.close();
+      await Future.wait<void>([first.then((_) {}), second, closing]);
+      expect(await db.itemsByKeys(['first', 'second', 'third']), {
+        'first': 'one',
+        'second': 'two',
+        'third': 'three',
+      });
+    },
+  );
+
+  test('close rejects new writes while draining accepted work', () async {
+    final accepted = db.saveSettingsItem('first', 'one');
+    final closing = db.close();
+    await expectLater(
+      db.saveSettingsItem('late', 'lost'),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'reason',
+          'SettingsDb is closing',
+        ),
+      ),
+    );
+    await accepted;
+    await closing;
+    expect(await db.itemByKey('first'), 'one');
+    await expectLater(
+      db.saveSettingsItem('after', 'closed'),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'reason',
+          'SettingsDb is closing',
+        ),
+      ),
+    );
+  });
+
+  test('close drains writes after a failed queued write', () async {
+    await db.saveSettingsItem('first', 'before');
+    await db.customStatement(
+      'CREATE TRIGGER reject_first BEFORE INSERT ON settings '
+      "WHEN NEW.config_key = 'first' BEGIN "
+      "SELECT RAISE(ABORT, 'injected close failure'); END",
+    );
+    final failed = expectLater(
+      db.saveSettingsItem('first', 'after'),
+      throwsA(isA<Exception>()),
+    );
+    final accepted = db.saveSettingsItem('second', 'two');
+    final closing = db.close();
+    await Future.wait<void>([failed, accepted.then((_) {}), closing]);
+    expect(await db.itemsByKeys(['first', 'second']), {
+      'first': 'before',
+      'second': 'two',
+    });
+  });
+
+  group('atomic settings groups', () {
+    const before = {'first': 'old-first', 'second': 'old-second'};
+    const after = {'first': 'new-first', 'second': 'new-second'};
+
+    Future<Map<String, String>> stored() async => {
+      for (final row in await db.loadSettingsItems(before.keys))
+        row.configKey: row.value,
+    };
+
+    test('publishes all values only after the transaction succeeds', () async {
+      await db.saveSettingsItems(before);
+      await db.saveSettingsItems(after);
+      expect(await stored(), after);
+      expect(await db.itemsByKeys(before.keys), after);
+    });
+
+    test(
+      'rolls back an earlier field and its cache when a later write fails',
+      () async {
+        await db.saveSettingsItems(before);
+        await db.customStatement(
+          'CREATE TRIGGER reject_second BEFORE INSERT ON settings '
+          "WHEN NEW.config_key = 'second' BEGIN "
+          "SELECT RAISE(ABORT, 'injected settings failure'); END",
+        );
+        await expectLater(
+          db.saveSettingsItems(after),
+          throwsA(isA<Exception>()),
+        );
+        expect(await stored(), before);
+        expect(await db.itemsByKeys(before.keys), before);
+        await db.customStatement('DROP TRIGGER reject_second');
+        await db.saveSettingsItems(after);
+        expect(await stored(), after);
+        expect(await db.itemsByKeys(before.keys), after);
+      },
+    );
+
+    test(
+      'serializes a same-as-old single write behind a pending group',
+      () async {
+        await db.saveSettingsItems(before);
+        final entered = Completer<void>();
+        final release = Completer<void>();
+        final blocker = db.transaction(() async {
+          entered.complete();
+          await release.future;
+        });
+        await entered.future;
+        final group = db.saveSettingsItems(after);
+        final single = db.saveSettingsItem('first', 'old-first');
+        expect(await db.itemByKey('first'), 'old-first');
+        release.complete();
+        await blocker;
+        await group;
+        await single;
+        expect(await stored(), {'first': 'old-first', 'second': 'new-second'});
+        expect(await db.itemsByKeys(before.keys), await stored());
+      },
+    );
+
+    test('snapshots input and allows a queued removal after a group', () async {
+      final input = Map<String, String>.of(before);
+      final write = db.saveSettingsItems(input);
+      input['first'] = 'mutated';
+      final remove = db.removeSettingsItem('second');
+      await write;
+      await remove;
+      expect(await stored(), {'first': 'old-first'});
+      expect(await db.itemsByKeys(before.keys), {
+        'first': 'old-first',
+        'second': null,
+      });
+      await db.saveSettingsItems({});
+      expect(await stored(), {'first': 'old-first'});
+    });
+  });
+
   test('removeSettingsItem removes existing entries', () async {
     await db.saveSettingsItem('test_key', 'test_value');
     expect(await db.itemByKey('test_key'), 'test_value');
@@ -206,6 +428,96 @@ void main() {
       expect(await secondRead, 'second_value');
     },
   );
+
+  test('cold read returns the old value while a group awaits commit', () async {
+    final snapshot = Completer<SettingsItem?>();
+    final readStarted = Completer<void>();
+    await db.close();
+    db = _TestSettingsDb(
+      loader: (_) {
+        readStarted.complete();
+        return snapshot.future;
+      },
+    );
+    await db.customStatement(
+      'INSERT INTO settings (config_key, value, updated_at) VALUES (?, ?, ?)',
+      ['first', 'before', timestamp.millisecondsSinceEpoch ~/ 1000],
+    );
+    final read = db.itemByKey('first');
+    await readStarted.future;
+    final entered = Completer<void>();
+    final release = Completer<void>();
+    final blocker = db.transaction(() async {
+      entered.complete();
+      await release.future;
+    });
+    await entered.future;
+    final write = db.saveSettingsItems({'first': 'after'});
+    await Future<void>.microtask(() {});
+    snapshot.complete(
+      SettingsItem(
+        configKey: 'first',
+        value: 'before',
+        updatedAt: timestamp,
+      ),
+    );
+    try {
+      expect(await read, 'before');
+    } finally {
+      release.complete();
+      await blocker;
+      await write;
+    }
+    expect(await db.itemByKey('first'), 'after');
+  });
+
+  for (final operation in ['single', 'group', 'remove']) {
+    test('failed $operation write preserves an in-flight cold read', () async {
+      final snapshot = Completer<SettingsItem?>();
+      final started = Completer<void>();
+      await db.close();
+      db = _TestSettingsDb(
+        loader: (_) {
+          started.complete();
+          return snapshot.future;
+        },
+      );
+      await db.customStatement(
+        'INSERT INTO settings (config_key, value, updated_at) VALUES (?, ?, ?)',
+        ['first', 'before', timestamp.millisecondsSinceEpoch ~/ 1000],
+      );
+      final read = db.itemByKey('first');
+      await started.future;
+      final deleting = operation == 'remove';
+      final failingKey = operation == 'group' ? 'second' : 'first';
+      await db.customStatement(
+        'CREATE TRIGGER reject_write BEFORE ${deleting ? 'DELETE' : 'INSERT'} '
+        'ON settings WHEN ${deleting ? 'OLD' : 'NEW'}.config_key = '
+        "'$failingKey' BEGIN SELECT RAISE(ABORT, 'injected failure'); END",
+      );
+      final write = switch (operation) {
+        'single' => db.saveSettingsItem('first', 'after'),
+        'group' => db.saveSettingsItems({'first': 'after', 'second': 'after'}),
+        _ => db.removeSettingsItem('first'),
+      };
+      await expectLater(write, throwsA(isA<Exception>()));
+      snapshot.complete(
+        SettingsItem(
+          configKey: 'first',
+          value: 'before',
+          updatedAt: timestamp,
+        ),
+      );
+      expect(await read, 'before');
+      expect(await db.itemByKey('first'), 'before');
+      final persisted = await db
+          .customSelect(
+            "SELECT value FROM settings WHERE config_key = 'first'",
+          )
+          .getSingle();
+      expect(persisted.read<String>('value'), 'before');
+    });
+  }
 
   test('saveSettingsItem wins over stale in-flight reads', () async {
     final completer = Completer<SettingsItem?>();

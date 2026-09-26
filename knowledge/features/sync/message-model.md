@@ -5,7 +5,7 @@ description: The twenty-five SyncMessage families, which seven are sequence-trac
 resource: ../../../lib/features/sync/model/sync_message.dart
 tags: [sync, wire-format, sync-message]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-26T12:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-26T12:13:54Z }
 stale_after: 2026-11-02
 sources:
   - id: sync-message
@@ -181,11 +181,14 @@ copies as no-ops.
 
 `themingSelection` and `dailyOsUserName` reject strictly older timestamps but
 accept equal ones. `configFlag` overwrites on arrival without a version stamp.
-They have no sequence-gap repair. Theme/name apply writes individual settings
-and catches persistence errors, so a failed group can be partly saved.
+They have no sequence-gap repair. Theme/name apply persists the values,
+freshness stamp and (for the name) bootstrap marker in one settings transaction.
+Failures propagate to the inbound queue's bounded retry policy; notifications
+are emitted only after successful persistence. Cache publication follows the
+[settings group contract](../../architecture/persistence.md#settings-groups).
 
 `SyncSettings` checks their conditional convergence and documents counterexamples
-for equal timestamps, reordered flags and failed writes. The assumptions and
+for equal timestamps and reordered flags, with a guarded failed-write profile. The assumptions and
 configurations are in the [formal specs](../../../specs/tla/README.md#syncsettings--the-boundary-for-settings-without-sequence-recovery).
 
 # File-backed payloads

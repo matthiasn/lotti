@@ -273,6 +273,50 @@ void main() {
     });
   });
 
+  group('form-factor changes', () {
+    setUp(setUpTestGetIt);
+    tearDown(tearDownTestGetIt);
+    testWidgets('crossing the breakpoint re-renders every tab for the new '
+        'layout', (tester) async {
+      // A frame has to actually run for the deferred rebuild to land.
+      await tester.pumpWidget(const SizedBox.shrink());
+      final preferences = MockSettingsDb();
+      when(
+        () => preferences.saveSettingsItem(any(), any()),
+      ).thenAnswer((_) async => 1);
+      final bench = _NavFlagBench(settingsDb: preferences)
+        ..emitAll(enabled: true);
+      final navService = bench.navService;
+
+      var tasksRebuilds = 0;
+      void countTasks() => tasksRebuilds++;
+      navService.tasksDelegate.addListener(countTasks);
+      addTearDown(() => navService.tasksDelegate.removeListener(countTasks));
+
+      // The shell keeps the nav subtree alive across the breakpoint, so
+      // nothing rebuilds the delegates by accident — but the locations
+      // branch on this flag to decide whether a detail is a pushed page or
+      // a right-hand pane, so the change has to reach them.
+      navService.isDesktopMode = true;
+      expect(
+        tasksRebuilds,
+        0,
+        reason: 'assigned during build — must not notify synchronously',
+      );
+
+      // Production assigns this from `AppScreen.build`, so a frame is
+      // always in flight; drive one here the same way.
+      await tester.pumpWidget(const SizedBox(width: 1));
+
+      expect(tasksRebuilds, 1);
+
+      // An unchanged assignment is not a layout change.
+      navService.isDesktopMode = true;
+      await tester.pumpWidget(const SizedBox(width: 2));
+      expect(tasksRebuilds, 1);
+    });
+  });
+
   group('NavService Tests', () {
     late SettingsDb settingsDb;
     late JournalDb mockJournalDb;
@@ -1676,43 +1720,6 @@ void main() {
         final seen = await navService.getIndexStream().first;
 
         expect(seen, navService.journalIndex);
-      });
-    });
-
-    group('form-factor changes', () {
-      testWidgets('crossing the breakpoint re-renders every tab for the new '
-          'layout', (tester) async {
-        // A frame has to actually run for the deferred rebuild to land.
-        await tester.pumpWidget(const SizedBox.shrink());
-        final bench = _NavFlagBench()..emitAll(enabled: true);
-        final navService = bench.navService;
-
-        var tasksRebuilds = 0;
-        void countTasks() => tasksRebuilds++;
-        navService.tasksDelegate.addListener(countTasks);
-        addTearDown(() => navService.tasksDelegate.removeListener(countTasks));
-
-        // The shell keeps the nav subtree alive across the breakpoint, so
-        // nothing rebuilds the delegates by accident — but the locations
-        // branch on this flag to decide whether a detail is a pushed page or
-        // a right-hand pane, so the change has to reach them.
-        navService.isDesktopMode = true;
-        expect(
-          tasksRebuilds,
-          0,
-          reason: 'assigned during build — must not notify synchronously',
-        );
-
-        // Production assigns this from `AppScreen.build`, so a frame is
-        // always in flight; drive one here the same way.
-        await tester.pumpWidget(const SizedBox(width: 1));
-
-        expect(tasksRebuilds, 1);
-
-        // An unchanged assignment is not a layout change.
-        navService.isDesktopMode = true;
-        await tester.pumpWidget(const SizedBox(width: 2));
-        expect(tasksRebuilds, 1);
       });
     });
 

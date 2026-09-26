@@ -2011,7 +2011,7 @@ retries and outbox claim/mark windows remain in their own models.
 
 Config flags, theme selection and the Daily OS greeting name are not
 sequence-tracked payloads. This model opens the receive register: the timestamp
-guard, individual durable setting writes, stamp persistence and successful
+guard, transaction-local writes, atomic group commit and successful
 return are distinct steps. Three envelopes reach two serial receivers in
 independently chosen orders. Flags overwrite on arrival; theme/name messages
 reject strictly older stamps and accept equal ones.
@@ -2021,32 +2021,36 @@ reject strictly older stamps and accept equal ones.
 | `SyncSettings` | Three theme fields plus stamp | Distinct stamps; any order | 1,296 |
 | `SyncSettingsName` | Greeting value plus stamp | Distinct stamps; any order | 484 |
 | `SyncSettingsFlags` | One flag value | Same order on both receivers | 100 |
+| `SyncSettingsFailure` | Three theme fields plus stamp | Distinct stamps; one failed write, then retry | 2,592 |
+| `SyncSettingsNameFailure` | Greeting value plus stamp | Distinct stamps; one failed write, then retry | 968 |
 
-All three check `CompletedCoherent` (a completed settings group agrees with its
+All five check `CompletedCoherent` (a completed settings group agrees with its
 stamp), `Converged` (fully processed peers agree), `LatestWins` (the greatest
 stamp or shared ordered tail survives), and `EventuallyComplete` under fair
-processing. They assume every write succeeds and all three envelopes arrive.
+processing. All three envelopes must arrive. Failure profiles permit one
+transient write failure, within the inbound worker's bounded retry budget; they
+do not claim recovery after that budget is exhausted.
 These are conditional guarantees, not a claim that the untracked settings have
 the journal's repair contract.
 
-The current implementation has three explicit residual counterexamples, found
-by changing constants in temporary copies rather than checking failing configs
-into CI:
+The mutation check runs guarded controls and changes one switch at a time:
+`AtomicGroups = FALSE` breaks `CompletedCoherent`; `RetryFailures = FALSE`
+breaks `LatestWins`. It also checks two residual protocol counterexamples:
 
 - Equal timestamps: `EqualStamps = TRUE` allows different final values after
   the same envelopes arrive in different orders (`Converged`).
 - Unordered flags: `OrderedDelivery = FALSE` in the flags configuration has the
   same consequence. There is no version field to resolve the competing values.
-- A failed settings write: `FailureBudget = 1` leaves a partially persisted
-  group, because theme/name apply catches the error and returns successfully
-  (`CompletedCoherent`).
 
-Those settings behaviors are recorded, not changed, by this PR. The existing
-`sync_event_processor_test.dart` theme/name cases exercise the timestamp guard,
-individual saves and swallowed errors. The model excludes concurrent local
-writers, platform effects, theme-mode normalization, the greeting's bootstrap
-published marker, source staging, and transport loss; there is no automatic
-sequence-gap recovery for these families.
+The real SQLite regressions in `sync_event_processor_test.dart` fail each
+field write, verify the persisted group and cache are unchanged, then retry
+and verify all fields. Adapter cases check that failures yield `retriable`,
+never `applied`. `settings_db_test.dart` also checks that a queued single-key
+write cannot incorrectly skip against a cache predating an atomic group.
+
+The model excludes concurrent local writers, platform effects, theme-mode
+normalization, the greeting's bootstrap published marker, source staging, and
+transport loss; there is no automatic sequence-gap recovery for these families.
 
 ## `SavedTaskFilterSync` — every saved filter reaches every device
 

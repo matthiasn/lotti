@@ -41,6 +41,10 @@ class SettingsDb extends _$SettingsDb {
   final Map<String, int> _pendingReadGenerations = <String, int>{};
   final Map<String, int> _cacheGenerations = <String, int>{};
   bool _isPendingReadFlushScheduled = false;
+  // Retain only outstanding work, not a completed future and its async zone.
+  Future<void>? _writeTail;
+  Future<void>? _closing;
+  final Object _transactionZoneKey = Object();
 
   /// The schema this build writes. A restored backup may carry an
   /// older schema, which Drift migrates, but never a newer one.
@@ -76,34 +80,108 @@ class SettingsDb extends _$SettingsDb {
     )..where((table) => table.configKey.isIn(keyList))).get();
   }
 
-  Future<int> saveSettingsItem(String configKey, String value) async {
-    if (_cache.containsKey(configKey) && _cache[configKey] == value) {
-      unawaited(_inFlightReads.remove(configKey));
-      _resolveQueuedRead(configKey, value);
-      return 0;
+  /// Runs raw settings SQL transactionally. Cached write APIs own their commit
+  /// boundary and cannot be called from this callback; use saveSettingsItems
+  /// for an atomic group whose cache is published after commit.
+  @override
+  Future<T> transaction<T>(
+    Future<T> Function() action, {
+    bool requireNew = false,
+  }) => super.transaction(
+    () => runZoned(action, zoneValues: {_transactionZoneKey: true}),
+    requireNew: requireNew,
+  );
+
+  // Serialize cache decisions with writes, including atomic groups. Otherwise a
+  // single-key save can skip against an old cache while a group is committing.
+  Future<T> _write<T>(Future<T> Function() action) {
+    if (Zone.current[_transactionZoneKey] == true) {
+      return Future<T>.error(
+        StateError(
+          'Cached settings writes cannot run inside an outer transaction',
+        ),
+      );
     }
+    if (_closing != null) {
+      return Future<T>.error(StateError('SettingsDb is closing'));
+    }
+    final previous = _writeTail;
+    final completed = Completer<void>();
+    _writeTail = completed.future;
+    return (() async {
+      if (previous != null) await previous;
+      try {
+        return await action();
+      } finally {
+        if (identical(_writeTail, completed.future)) _writeTail = null;
+        completed.complete();
+      }
+    })();
+  }
 
+  /// Drains accepted writes before releasing the executor. New writes are
+  /// rejected once shutdown begins, so a queued preference cannot outlive it.
+  @override
+  Future<void> close() => _closing ??= (() async {
+    await _writeTail;
+    await super.close();
+  })();
+
+  void _publishValue(String configKey, String? value) {
+    // Reads may still return the prior value while a write is pending. Only a
+    // committed write invalidates their generation; a rollback invalidates none.
     _bumpGeneration(configKey);
-    final settingsItem = SettingsItem(
-      configKey: configKey,
-      value: value,
-      updatedAt: clock.now(),
-    );
-
-    final result = await into(settings).insertOnConflictUpdate(settingsItem);
     _cache[configKey] = value;
     unawaited(_inFlightReads.remove(configKey));
     _resolveQueuedRead(configKey, value);
-    return result;
   }
 
-  Future<void> removeSettingsItem(String configKey) async {
-    _bumpGeneration(configKey);
-    await (delete(settings)..where((t) => t.configKey.equals(configKey))).go();
-    _cache.remove(configKey);
-    unawaited(_inFlightReads.remove(configKey));
-    _resolveQueuedRead(configKey, null);
+  Future<int> saveSettingsItem(String configKey, String value) =>
+      _write(() async {
+        if (_cache.containsKey(configKey) && _cache[configKey] == value) {
+          _publishValue(configKey, value);
+          return 0;
+        }
+        final result = await into(settings).insertOnConflictUpdate(
+          SettingsItem(
+            configKey: configKey,
+            value: value,
+            updatedAt: clock.now(),
+          ),
+        );
+        _publishValue(configKey, value);
+        return result;
+      });
+
+  /// Persists a settings group atomically and publishes its cache after commit.
+  ///
+  /// A failed write leaves both durable values and cached values unchanged.
+  /// This owns its transaction; callers must not wrap it in another SettingsDb
+  /// transaction, whose later rollback would invalidate the published cache.
+  Future<void> saveSettingsItems(Map<String, String> values) {
+    final snapshot = Map<String, String>.of(values);
+    return _write(() async {
+      if (snapshot.isEmpty) return;
+      final updatedAt = clock.now();
+      await transaction(() async {
+        for (final entry in snapshot.entries) {
+          await into(settings).insertOnConflictUpdate(
+            SettingsItem(
+              configKey: entry.key,
+              value: entry.value,
+              updatedAt: updatedAt,
+            ),
+          );
+        }
+      });
+      snapshot.forEach(_publishValue);
+    });
   }
+
+  Future<void> removeSettingsItem(String configKey) => _write(() async {
+    await (delete(settings)..where((t) => t.configKey.equals(configKey))).go();
+    _publishValue(configKey, null);
+  });
 
   Future<Map<String, String?>> itemsByKeys(Iterable<String> configKeys) async {
     final keyList = configKeys.toSet().toList(growable: false);
