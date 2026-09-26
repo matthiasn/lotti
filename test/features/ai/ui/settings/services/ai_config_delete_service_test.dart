@@ -482,6 +482,45 @@ void main() {
         verify(() => mockRepository.restoreConfig(testModel.id)).called(1);
       });
 
+      // A prompt is hard-deleted, so there is no stamp to clear: restoring
+      // by id found no row and the undo did nothing.
+      testWidgets('undoing a prompt deletion writes the prompt back', (
+        WidgetTester tester,
+      ) async {
+        when(
+          () => mockRepository.deleteConfig(testPrompt.id),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockRepository.saveConfig(testPrompt),
+        ).thenAnswer((_) async {});
+
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Delete Prompt'),
+            onPressed: (context, ref) async {
+              await deleteService.deleteConfig(
+                context: context,
+                ref: ref,
+                config: testPrompt,
+              );
+            },
+          ),
+        );
+
+        await tester.tap(find.text('Delete Prompt'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('Delete'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 800));
+        await tester.tap(find.text('Undo'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        verify(() => mockRepository.saveConfig(testPrompt)).called(1);
+        verifyNever(() => mockRepository.restoreConfig(any()));
+      });
+
       testWidgets('should undo provider deletion with associated models', (
         WidgetTester tester,
       ) async {

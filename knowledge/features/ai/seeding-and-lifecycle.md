@@ -1,12 +1,12 @@
 ---
 type: Feature Module
 title: Seeding and config lifecycle
-description: Provider-gated profile seeds, why deletion needed a tombstone, and the migration-safe upgrade pass that never overwrites user choices.
+description: Provider-gated profile seeds, why deletion needed a tombstone, how config revisions converge across devices, and the migration-safe upgrade pass that never overwrites user choices.
 resource: ../../../lib/features/ai/util/profile_seeding_service.dart
-tags: [ai, seeding, migration, soft-delete, lifecycle]
+tags: [ai, seeding, migration, soft-delete, lifecycle, sync, tombstone, last-writer-wins]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-19T00:00:00Z }
-stale_after: 2026-11-10
+generated: { by: claude-code/opus-5.5, at: 2026-09-26T13:00:00Z }
+stale_after: 2026-12-26
 sources:
   - id: seeding
     resource: ../../../lib/features/ai/util/profile_seeding_service.dart
@@ -14,12 +14,16 @@ sources:
     last_modified: 2026-08-19
   - id: repo
     resource: ../../../lib/features/ai/repository/ai_config_repository.dart
-    title: AiConfigRepository — soft and hard delete
-    last_modified: 2026-07-25
+    title: AiConfigRepository — revision order, soft and hard delete
+    last_modified: 2026-09-26
   - id: model-prepopulation
     resource: ../../../lib/features/ai/util/model_prepopulation_service.dart
     title: ModelPrepopulationService — backfill and renamed-id repair
     last_modified: 2026-08-19
+  - id: tla-spec
+    resource: ../../../specs/tla/AiConfigReplication.tla
+    title: AiConfigReplication — the model TLC checks replication against
+    last_modified: 2026-09-26
   - id: skill-lookup
     resource: ../../../lib/features/ai/skills/skill_lookup.dart
     title: resolveAssignedSkill — why skills resolve from code, not the store
@@ -135,9 +139,11 @@ stateDiagram-v2
     Active --> Tombstoned: deleteConfig() stamps deletedAt
     Tombstoned --> Tombstoned: seedDefaults() reads it as PRESENT and skips
     Tombstoned --> Active: restoreConfig() clears the stamp
+    Tombstoned --> Active: a newer live revision arrives by sync
+    Active --> Tombstoned: a newer tombstone arrives by sync
     Absent --> Active: hardDeleteConfig() then a later seed
     Active --> Absent: removeOrphanedDefaultSeeds() — untouched seed, gate lost
-    Active --> Absent: provider cascade removes its model rows
+    Active --> Tombstoned: provider cascade tombstones its model rows
     note right of Tombstoned
       The row IS the tombstone, so
       "deleted" is distinguishable from
@@ -169,13 +175,61 @@ Two paths must **not** leave a stamp and use `hardDeleteConfig`:
 - **`removeOrphanedDefaultSeeds()`** sheds bundled profiles whose gate type has
   no usable provider and deliberately re-seeds them when that provider returns. A
   soft delete there would make the removal permanent — the opposite of what the
-  pass means.
-- **A provider cascade** removes the provider's model rows, which must come back
-  if the user re-adds that provider.
+  pass means. It sends nothing (`fromSync: true`): usability is per device.
+- **Deleting a prompt or skill** must not keep its messages, so the row goes and
+  `aiConfigDelete(hardDelete: true)` tells the peers. The delete toast's undo
+  writes the row back from the snapshot it deleted. With no tombstone, an older
+  copy a peer sends later brings the row back — a known residual.
+
+**A provider cascade tombstones** the provider and every live model of it in one
+transaction, and the provider's tombstone drops its API key (which removes the
+key from the keychain). A re-added provider gets a new id, so its models come
+back under new ids; the undo re-saves the deleted rows, which the repository
+stamps past their tombstones.
 
 `restoreConfig` clears the stamp for the one case where the user asks for
 something back: re-running onboarding for a provider whose bundled profile they
 had deleted, which happens before FTUE setup seeds.
+
+# Replication across devices
+
+Configs are not sequence-tracked: each change travels as the whole row
+(`SyncMessage.aiConfig`), and "Send settings" re-sends every row a device holds,
+tombstones included. So a receiver sees rows late, twice and out of order, and
+`AiConfigRepository.saveConfig` orders them itself. The model TLC checks this
+against is `specs/tla/AiConfigReplication.tla`.
+
+- **One total order.** `compareAiConfigRevisions`: `updatedAt` (a row without one
+  ranks by `createdAt`), then a tombstone over a live row, then the canonical
+  JSON. A synced row — live or tombstone — is applied only when it beats the
+  stored one, so every device settles on the newest revision and a replayed
+  older copy changes nothing. The comparison leaves out `apiKeyStorageKey`,
+  which is local to each device.
+- **Local writes are stamped by the repository**, past the row they replace, so
+  callers need not set `updatedAt` and a device whose clock is behind still
+  writes a newer revision. Reads, compares and writes are serialized.
+- **No live model under a deleted provider.** When a provider's tombstone lands,
+  the receiver tombstones and sends its live models of that provider; a live
+  model arriving for a tombstoned provider is tombstoned and sent too. That
+  catches a model another device backfilled before it heard of the deletion.
+- **A synced provider without a key keeps the receiver's key.** An empty key on
+  the wire means the sender's keychain read came back empty, not that the user
+  removed it. A provider tombstone does remove it.
+
+```mermaid
+sequenceDiagram
+    participant A as Device A
+    participant B as Device B
+    A->>A: cascade: tombstone provider P and its models
+    B->>B: backfill: new model M under P (B has not heard yet)
+    A-->>B: P tombstone
+    B->>B: tombstone its live models of P (M), send
+    B-->>A: M live (sent before)
+    A->>A: M's provider is tombstoned: tombstone M, send
+    B-->>A: M tombstone
+    A-->>B: M tombstone
+    Note over A,B: both hold P and M as tombstones
+```
 
 # Upgrades never overwrite a choice
 
@@ -195,7 +249,7 @@ deliberate user choice rather than a gap to fill.
 What `upgradeExisting()` does backfill, after model rows exist:
 
 - **Heals dangling model slots on default profiles.** Deleting a provider
-  cascade-deletes its model rows, but the seeded profile kept pointing at the dead
+  tombstones its model rows, but the seeded profile kept pointing at the dead
   ids. Each such slot resets to the seed template's provider-native default and
   re-resolves once the rows are recreated. Catalog-known provider-native values
   are treated as *pending*, not dangling.

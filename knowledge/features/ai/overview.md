@@ -5,8 +5,8 @@ description: The shared inference plumbing — configuration objects, the skill/
 resource: ../../../lib/features/ai
 tags: [ai, inference, configuration, profiles, skills]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-06T12:00:00Z }
-stale_after: 2026-10-19
+generated: { by: claude-code/opus-5.5, at: 2026-09-26T13:00:00Z }
+stale_after: 2026-12-26
 sources:
   - id: ai-src
     resource: ../../../lib/features/ai
@@ -72,7 +72,11 @@ platform secure storage (Keychain, Keystore, or the platform equivalent) when
 loading a provider. Legacy rows containing `apiKey` are migrated lazily: the
 value is written to secure storage first, then removed from the row. Migration
 is retry-safe when secure storage is unavailable. Keys are scoped by world and
-removed when a provider is hard-deleted.
+removed when a provider is deleted, whose tombstone carries no key. A live
+provider that arrives by sync without a key keeps the key this device holds,
+since an empty key on the wire only means the sender could not read its own;
+how config revisions converge is in
+[seeding and lifecycle](seeding-and-lifecycle.md#replication-across-devices).
 
 | Object | Stored as | Used for |
 |--------|-----------|----------|

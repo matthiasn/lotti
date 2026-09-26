@@ -1,12 +1,16 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:async/async.dart';
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/ai/database/ai_api_key_storage.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -99,8 +103,10 @@ void main() {
       mockDb = MockAiConfigDb();
       repository = AiConfigRepository(mockDb);
 
-      // Set up default behavior for mockDb
+      // Set up default behavior for mockDb. A save reads the stored row
+      // first, to order the new revision after it.
       when(() => mockDb.saveConfig(any())).thenAnswer((_) async => 1);
+      when(() => mockDb.getConfigById(any())).thenAnswer((_) async => null);
       when(() => mockDb.getAllConfigs()).thenAnswer((_) async => []);
       when(
         () => mockDb.watchAllConfigs(),
@@ -617,6 +623,29 @@ void main() {
       await db.close();
     });
 
+    test('an identical synced replay keeps its type listed', () async {
+      final model = AiConfig.model(
+        id: 'replayed-model',
+        name: 'Replayed',
+        providerModelId: 'prov/replayed',
+        inferenceProviderId: 'prov',
+        createdAt: fixedDate,
+        updatedAt: fixedDate,
+        inputModalities: const [Modality.text],
+        outputModalities: const [Modality.text],
+        isReasoningModel: false,
+      );
+      await repository.saveConfig(model, fromSync: true);
+      // Load the all-configs snapshot, as any settings page watching does.
+      await repository.watchConfigsByType(AiConfigType.model).first;
+
+      // "Send settings" on a peer replays the row exactly as stored here.
+      await repository.saveConfig(model, fromSync: true);
+
+      final models = await repository.getConfigsByType(AiConfigType.model);
+      expect(models.map((config) => config.id), ['replayed-model']);
+    });
+
     test('saveConfig and getConfigById work correctly', () async {
       // Arrange
       final apiKeyConfig = AiConfig.inferenceProvider(
@@ -1089,6 +1118,270 @@ void main() {
     );
   });
 
+  // Two devices, each with its own database, keychain and repository, and
+  // the rows each one sends delivered by hand in whatever order a test picks.
+  // specs/tla/AiConfigReplication.tla is the model these traces come from.
+  group('replication across devices', () {
+    late List<AiConfigDb> dbs;
+    late List<AiApiKeyStorage> keychains;
+    late AiConfigRepository deviceA;
+    late AiConfigRepository deviceB;
+    final sent = <AiConfig>[];
+    final t1 = DateTime(2024, 3, 15, 12);
+    final t2 = DateTime(2024, 3, 15, 13);
+    final t3 = DateTime(2024, 3, 15, 14);
+
+    AiConfigRepository device() {
+      final keychain = AiApiKeyStorage.inMemory();
+      final db = AiConfigDb(inMemoryDatabase: true, apiKeyStorage: keychain);
+      keychains.add(keychain);
+      dbs.add(db);
+      return AiConfigRepository(db);
+    }
+
+    /// Runs [write] on a device at [at], and returns the configs it sent.
+    Future<List<AiConfig>> at(
+      DateTime at,
+      Future<void> Function() write,
+    ) async {
+      sent.clear();
+      await withClock(Clock.fixed(at), write);
+      return [...sent];
+    }
+
+    Future<void> deliver(AiConfigRepository to, Iterable<AiConfig> rows) async {
+      for (final row in rows) {
+        await to.saveConfig(row, fromSync: true);
+      }
+    }
+
+    Future<AiConfig?> stored(AiConfigRepository on, String id) =>
+        on.getConfigById(id, includeDeleted: true);
+
+    final provider = AiConfig.inferenceProvider(
+      id: 'provider',
+      baseUrl: 'https://api.example.com',
+      apiKey: 'secret-key',
+      name: 'Provider',
+      createdAt: fixedDate,
+      inferenceProviderType: InferenceProviderType.genericOpenAi,
+    );
+    final model = AiConfig.model(
+      id: 'model',
+      name: 'Model',
+      providerModelId: 'provider/model',
+      inferenceProviderId: 'provider',
+      createdAt: fixedDate,
+      inputModalities: const [Modality.text],
+      outputModalities: const [Modality.text],
+      isReasoningModel: false,
+    );
+
+    /// Both devices hold [configs], as written on A at [t1].
+    Future<void> seedBoth(List<AiConfig> configs) async {
+      final sent = await at(t1, () async {
+        for (final config in configs) {
+          await deviceA.saveConfig(config);
+        }
+      });
+      await deliver(deviceB, sent);
+    }
+
+    setUp(() {
+      dbs = [];
+      keychains = [];
+      deviceA = device();
+      deviceB = device();
+      when(() => mockOutboxService.enqueueMessage(any())).thenAnswer((
+        invocation,
+      ) async {
+        final message = invocation.positionalArguments.first;
+        if (message is SyncAiConfig) sent.add(message.aiConfig);
+      });
+    });
+
+    tearDown(() async {
+      await deviceA.close();
+      await deviceB.close();
+    });
+
+    test('concurrent edits settle on the newer one on both devices', () async {
+      await seedBoth([model]);
+      final fromA = await at(
+        t2,
+        () => deviceA.saveConfig(model.copyWith(name: 'Edited on A')),
+      );
+      final fromB = await at(
+        t3,
+        () => deviceB.saveConfig(model.copyWith(name: 'Edited on B')),
+      );
+
+      // Each receives the other's edit.
+      await deliver(deviceA, fromB);
+      await deliver(deviceB, fromA);
+
+      expect((await stored(deviceA, 'model'))?.name, 'Edited on B');
+      expect((await stored(deviceB, 'model'))?.name, 'Edited on B');
+    });
+
+    test('edits with the same stamp settle on the same one', () async {
+      await seedBoth([model]);
+      final fromA = await at(
+        t2,
+        () => deviceA.saveConfig(model.copyWith(name: 'A')),
+      );
+      final fromB = await at(
+        t2,
+        () => deviceB.saveConfig(model.copyWith(name: 'B')),
+      );
+
+      await deliver(deviceA, fromB);
+      await deliver(deviceB, fromA);
+
+      final onA = await stored(deviceA, 'model');
+      expect(onA, await stored(deviceB, 'model'));
+      expect(onA?.name, 'B');
+    });
+
+    test(
+      'a late copy of an older edit does not overwrite a newer one',
+      () async {
+        await seedBoth([model]);
+        final older = await at(
+          t2,
+          () => deviceA.saveConfig(model.copyWith(name: 'older')),
+        );
+        final newer = await at(
+          t3,
+          () => deviceA.saveConfig(model.copyWith(name: 'newer')),
+        );
+
+        await deliver(deviceB, newer);
+        await deliver(deviceB, older);
+
+        expect((await stored(deviceB, 'model'))?.name, 'newer');
+      },
+    );
+
+    test('a replayed older tombstone does not undo a newer restore', () async {
+      await seedBoth([model]);
+      final delete = await at(t2, () => deviceA.deleteConfig('model'));
+      await deliver(deviceB, delete);
+      final restore = await at(t3, () => deviceB.restoreConfig('model'));
+      await deliver(deviceA, restore);
+
+      // "Send settings" on A replays whatever it holds; a stale copy of the
+      // deletion is still in flight to B as well.
+      await deliver(deviceB, delete);
+
+      expect((await stored(deviceA, 'model'))?.deletedAt, isNull);
+      expect((await stored(deviceB, 'model'))?.deletedAt, isNull);
+    });
+
+    test(
+      'a device whose clock is behind still writes a newer revision',
+      () async {
+        await seedBoth([model]);
+        final edit = await at(
+          t3,
+          () => deviceA.saveConfig(model.copyWith(name: 'first')),
+        );
+        await deliver(deviceB, edit);
+        // B's clock runs an hour behind A's.
+        final behind = await at(
+          t2,
+          () => deviceB.saveConfig(model.copyWith(name: 'second')),
+        );
+        await deliver(deviceA, behind);
+
+        expect((await stored(deviceA, 'model'))?.name, 'second');
+        expect(
+          behind.single.updatedAt,
+          t3.add(const Duration(milliseconds: 1)),
+        );
+      },
+    );
+
+    test('a deleted provider does not come back from a peer replay', () async {
+      await seedBoth([provider, model]);
+      // B's "Send settings" was queued before it heard of the deletion.
+      final replay = [
+        (await stored(deviceB, 'provider'))!,
+        (await stored(deviceB, 'model'))!,
+      ];
+      final cascade = await at(
+        t2,
+        () => deviceA.deleteInferenceProviderWithModels('provider'),
+      );
+
+      await deliver(deviceA, replay);
+      await deliver(deviceB, cascade);
+
+      for (final repository in [deviceA, deviceB]) {
+        expect(await repository.getConfigById('provider'), isNull);
+        expect(await repository.getConfigById('model'), isNull);
+      }
+      // The API key went with it, on both devices.
+      for (final keychain in keychains) {
+        expect(
+          await keychain.read(apiKeyStorageKeyFor('provider')),
+          isNull,
+        );
+      }
+    });
+
+    test(
+      'a model a peer backfilled before the deletion is deleted with it',
+      () async {
+        await seedBoth([provider]);
+        final cascade = await at(
+          t2,
+          () => deviceA.deleteInferenceProviderWithModels('provider'),
+        );
+        // Meanwhile B backfills a model for the provider it still holds.
+        final backfill = await at(t2, () => deviceB.saveConfig(model));
+
+        // Each device, once it holds both, tombstones the model and sends it.
+        final fromA = await at(t3, () => deliver(deviceA, backfill));
+        final fromB = await at(t3, () => deliver(deviceB, cascade));
+        expect(fromA.single.id, 'model');
+        expect(fromB.single.id, 'model');
+        await deliver(deviceA, fromB);
+        await deliver(deviceB, fromA);
+
+        final onA = await stored(deviceA, 'model');
+        expect(onA?.deletedAt, t3);
+        expect(await stored(deviceB, 'model'), onA);
+        expect(await deviceA.getConfigById('model'), isNull);
+      },
+    );
+
+    test('a synced provider without a key keeps the key held here', () async {
+      await seedBoth([provider]);
+      // A's keychain lost the key (a restored backup, a reset keychain), so
+      // its next send carries none.
+      final sent = await at(
+        t2,
+        () => deviceA.saveConfig(
+          (provider as AiConfigInferenceProvider).copyWith(
+            apiKey: '',
+            name: 'Renamed',
+          ),
+        ),
+      );
+      await deliver(deviceB, sent);
+
+      final onB =
+          await stored(deviceB, 'provider') as AiConfigInferenceProvider?;
+      expect(onB?.name, 'Renamed');
+      expect(onB?.apiKey, 'secret-key');
+      expect(
+        await keychains[1].read(apiKeyStorageKeyFor('provider')),
+        'secret-key',
+      );
+    });
+  });
+
   group('AiConfigRepository with mocks — error handling', () {
     late MockAiConfigDb mockDb;
     late MockDomainLogger mockDomainLogger;
@@ -1249,7 +1542,7 @@ void main() {
 
     // Enqueuing peer deletes from inside the transaction meant a later
     // failure rolled the local rows back while the queued deletes stayed —
-    // hard-deleting on other devices rows that still exist here.
+    // deleting on other devices rows that still exist here.
     test(
       'deleteInferenceProviderWithModels queues no peer deletes when the '
       'transaction rolls back',
@@ -1298,11 +1591,13 @@ void main() {
                   as Future<CascadeDeletionResult> Function();
           return callback();
         });
-        // The model deletes, then the provider row fails, so the transaction
-        // rolls back with one row already removed inside it.
-        when(
-          () => mockDb.deleteConfig('provider-1'),
-        ).thenThrow(Exception('db down'));
+        // The model is tombstoned, then the provider row fails, so the
+        // transaction rolls back with one row already written inside it.
+        when(() => mockDb.saveConfig(any())).thenAnswer((invocation) async {
+          final config = invocation.positionalArguments.first as AiConfig;
+          if (config.id == 'provider-1') throw Exception('db down');
+          return 1;
+        });
 
         await expectLater(
           repository.deleteInferenceProviderWithModels('provider-1'),
@@ -1657,6 +1952,62 @@ void main() {
       },
     );
 
+    // A write drops its type's cached list and rebuilds it from the snapshot.
+    // When the database watch had already put the write in the snapshot, the
+    // unchanged snapshot returned early and left the type unlisted: every
+    // later read of it answered "none" — the cascade then deleted a provider
+    // but none of its models, and the backfill re-created known models.
+    test('a write the database watch delivered first stays listed', () async {
+      final watch = StreamController<List<AiConfigDbEntity>>();
+      addTearDown(watch.close);
+      when(() => mockDb.watchAllConfigs()).thenAnswer((_) => watch.stream);
+      when(() => mockDb.getConfigById(any())).thenAnswer((_) async => null);
+      final model = AiConfig.model(
+        id: 'watched-model',
+        name: 'Watched',
+        providerModelId: 'prov/watched',
+        inferenceProviderId: 'prov',
+        createdAt: fixedDate,
+        inputModalities: const [Modality.text],
+        outputModalities: const [Modality.text],
+        isReasoningModel: false,
+      );
+      final entity = AiConfigDbEntity(
+        id: model.id,
+        type: AiConfigType.model.name,
+        name: model.name,
+        serialized: jsonEncode(model.toJson()),
+        createdAt: fixedDate,
+      );
+      final snapshots = StreamQueue(
+        repository.watchConfigsByType(AiConfigType.model),
+      );
+      addTearDown(snapshots.cancel);
+      expect(await snapshots.next, isEmpty);
+
+      final reachedDb = Completer<void>();
+      final dbWrite = Completer<int>();
+      when(() => mockDb.saveConfig(any())).thenAnswer((_) {
+        reachedDb.complete();
+        return dbWrite.future;
+      });
+      final saving = repository.saveConfig(model, fromSync: true);
+      await reachedDb.future;
+      // The row is in the database; its watch reports it before the save
+      // returns.
+      watch.add([entity]);
+      expect((await snapshots.next).map((config) => config.id), [model.id]);
+      dbWrite.complete(1);
+      await saving;
+
+      expect(
+        (await repository.getConfigsByType(
+          AiConfigType.model,
+        )).map((config) => config.id),
+        [model.id],
+      );
+    });
+
     test(
       '_setConfigsByTypeCache removes stale id-cache entries when type-list '
       'shrinks via _cacheConfigInTypeList → _setConfigsByTypeCache path '
@@ -1741,23 +2092,74 @@ void main() {
     late MockAiConfigDb mockDb;
     late MockOutboxService mockOutboxService;
     late AiConfigRepository repository;
+    late List<AiConfig> written;
+    final deletedAt = DateTime(2024, 3, 16, 9);
+
+    AiConfigModel modelOf(String id, String providerId) => AiConfigModel(
+      id: id,
+      name: 'Model $id',
+      providerModelId: 'provider-$id',
+      inferenceProviderId: providerId,
+      createdAt: DateTime(2024, 3, 15, 10, 30),
+      inputModalities: const [Modality.text],
+      outputModalities: const [Modality.text],
+      isReasoningModel: false,
+    );
+
+    AiConfigDbEntity entityOf(AiConfig config) => AiConfigDbEntity(
+      id: config.id,
+      type: 'AiConfigModel',
+      name: config.name,
+      serialized: jsonEncode(config.toJson()),
+      createdAt: config.createdAt,
+    );
+
+    AiConfigInferenceProvider providerOf(String id) =>
+        AiConfigInferenceProvider(
+          id: id,
+          name: 'Provider $id',
+          baseUrl: 'https://test.com',
+          apiKey: 'secret-key',
+          createdAt: DateTime(2024, 3, 15, 10, 30),
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
+
+    void stubRows(String providerId, List<AiConfigModel> models) {
+      when(
+        () => mockDb.getConfigById(providerId),
+      ).thenAnswer((_) async => providerOf(providerId));
+      when(
+        () => mockDb.getConfigsByType(AiConfigType.model.name),
+      ).thenAnswer((_) async => models.map(entityOf).toList());
+    }
+
+    Future<CascadeDeletionResult> cascade(String providerId) => withClock(
+      Clock.fixed(deletedAt),
+      () => repository.deleteInferenceProviderWithModels(providerId),
+    );
+
+    List<AiConfig> enqueuedConfigs() => verify(
+      () => mockOutboxService.enqueueMessage(captureAny()),
+    ).captured.map((message) => (message as SyncAiConfig).aiConfig).toList();
 
     setUp(() {
       mockDb = MockAiConfigDb();
       mockOutboxService = MockOutboxService();
       repository = AiConfigRepository(mockDb);
+      written = [];
 
       // Swap in the group-local mock for the file-level registration.
       getIt
         ..unregister<OutboxService>()
         ..registerSingleton<OutboxService>(mockOutboxService);
 
-      // Setup default mocks
       when(
         () => mockOutboxService.enqueueMessage(any()),
       ).thenAnswer((_) async => {});
-
-      // Setup default transaction mock to execute the callback
+      when(() => mockDb.saveConfig(any())).thenAnswer((invocation) async {
+        written.add(invocation.positionalArguments.first as AiConfig);
+        return 1;
+      });
       when(() => mockDb.transaction<CascadeDeletionResult>(any())).thenAnswer((
         invocation,
       ) async {
@@ -1766,18 +2168,6 @@ void main() {
                 as Future<CascadeDeletionResult> Function();
         return callback();
       });
-
-      // Setup default getConfigById mock to return a mock provider
-      when(() => mockDb.getConfigById(any())).thenAnswer(
-        (_) async => AiConfigInferenceProvider(
-          id: 'test-provider',
-          name: 'Test Provider',
-          baseUrl: 'https://test.com',
-          apiKey: 'test-key',
-          createdAt: DateTime(2024, 3, 15, 10, 30),
-          inferenceProviderType: InferenceProviderType.genericOpenAi,
-        ),
-      );
       when(() => mockDb.close()).thenAnswer((_) async {});
     });
 
@@ -1785,184 +2175,62 @@ void main() {
       await repository.close();
     });
 
-    test('should delete provider and all associated models', () async {
-      // Arrange
+    test('tombstones the provider and its models, and sends each', () async {
       const providerId = 'provider-123';
+      final model1 = modelOf('model-1', providerId);
+      final model2 = modelOf('model-2', providerId);
+      final otherModel = modelOf('model-3', 'other-provider');
+      stubRows(providerId, [model1, model2, otherModel]);
 
-      final model1 = AiConfigModel(
-        id: 'model-1',
-        name: 'Model 1',
-        providerModelId: 'provider-model-1',
-        inferenceProviderId: providerId,
-        createdAt: DateTime(2024, 3, 15, 10, 30),
-        inputModalities: [Modality.text],
-        outputModalities: [Modality.text],
-        isReasoningModel: false,
-      );
+      final result = await cascade(providerId);
 
-      final model2 = AiConfigModel(
-        id: 'model-2',
-        name: 'Model 2',
-        providerModelId: 'provider-model-2',
-        inferenceProviderId: providerId,
-        createdAt: DateTime(2024, 3, 15, 10, 30),
-        inputModalities: [Modality.text, Modality.image],
-        outputModalities: [Modality.text],
-        isReasoningModel: true,
-      );
-
-      // Model from different provider
-      final otherModel = AiConfigModel(
-        id: 'model-3',
-        name: 'Model 3',
-        providerModelId: 'provider-model-3',
-        inferenceProviderId: 'other-provider',
-        createdAt: DateTime(2024, 3, 15, 10, 30),
-        inputModalities: [Modality.text],
-        outputModalities: [Modality.text],
-        isReasoningModel: false,
-      );
-
-      // Mock the database responses
-      when(() => mockDb.getConfigsByType(AiConfigType.model.name)).thenAnswer(
-        (_) async => [
-          AiConfigDbEntity(
-            id: model1.id,
-            type: 'AiConfigModel',
-            name: model1.name,
-            serialized: jsonEncode(model1.toJson()),
-            createdAt: model1.createdAt,
-          ),
-          AiConfigDbEntity(
-            id: model2.id,
-            type: 'AiConfigModel',
-            name: model2.name,
-            serialized: jsonEncode(model2.toJson()),
-            createdAt: model2.createdAt,
-          ),
-          AiConfigDbEntity(
-            id: otherModel.id,
-            type: 'AiConfigModel',
-            name: otherModel.name,
-            serialized: jsonEncode(otherModel.toJson()),
-            createdAt: otherModel.createdAt,
-          ),
-        ],
-      );
-
-      when(() => mockDb.deleteConfig(any())).thenAnswer((_) async {});
-
-      // Act
-      final result = await repository.deleteInferenceProviderWithModels(
+      // The result carries the models as they were, for the undo.
+      expect(result.deletedModels, [model1, model2]);
+      // Tombstones, not hard deletes: an older copy a peer replays later
+      // must lose to them instead of bringing the rows back.
+      verifyNever(() => mockDb.deleteConfig(any()));
+      expect(written.map((config) => config.id), [
+        'model-1',
+        'model-2',
         providerId,
-      );
-
-      // Assert
-      expect(result.deletedModels.length, equals(2));
-      expect(
-        result.deletedModels.map((m) => m.id),
-        containsAll(['model-1', 'model-2']),
-      );
-
-      // Verify models were deleted
-      verify(() => mockDb.deleteConfig('model-1')).called(1);
-      verify(() => mockDb.deleteConfig('model-2')).called(1);
-
-      // Verify provider was deleted
-      verify(() => mockDb.deleteConfig(providerId)).called(1);
-
-      // Verify other model was not deleted
-      verifyNever(() => mockDb.deleteConfig('model-3'));
-
-      // Verify sync messages were sent
-      verify(() => mockOutboxService.enqueueMessage(any())).called(3);
+      ]);
+      for (final tombstone in written) {
+        expect(tombstone.deletedAt, deletedAt);
+        expect(tombstone.updatedAt, deletedAt);
+      }
+      // The provider's tombstone keeps no credential, so it is deleted from
+      // the keychain here and never replicated.
+      expect((written.last as AiConfigInferenceProvider).apiKey, isEmpty);
+      expect(enqueuedConfigs(), written);
+      // The cache shows the deletion at once.
+      for (final id in [providerId, 'model-1', 'model-2']) {
+        expect(await repository.getConfigById(id), isNull);
+        expect(
+          (await repository.getConfigById(id, includeDeleted: true))?.deletedAt,
+          deletedAt,
+        );
+      }
     });
 
-    test('should handle provider with no models', () async {
-      // Arrange
+    test('tombstones only the provider when it has no models', () async {
       const providerId = 'provider-with-no-models';
+      stubRows(providerId, []);
 
-      when(
-        () => mockDb.getConfigsByType(AiConfigType.model.name),
-      ).thenAnswer((_) async => []);
+      final result = await cascade(providerId);
 
-      when(() => mockDb.deleteConfig(any())).thenAnswer((_) async {});
-
-      // Act
-      final result = await repository.deleteInferenceProviderWithModels(
-        providerId,
-      );
-
-      // Assert
-      expect(result.deletedModels.length, equals(0));
-
-      // Verify only provider was deleted
-      verify(() => mockDb.deleteConfig(providerId)).called(1);
-
-      // Verify sync message was sent for provider deletion
-      verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+      expect(result.deletedModels, isEmpty);
+      expect(written.map((config) => config.id), [providerId]);
+      expect(enqueuedConfigs().single.deletedAt, deletedAt);
     });
 
-    test('should not send sync messages when fromSync is true', () async {
-      // Arrange
-      const providerId = 'provider-sync';
-      final model = AiConfigModel(
-        id: 'model-sync',
-        name: 'Model Sync',
-        providerModelId: 'provider-model-sync',
-        inferenceProviderId: providerId,
-        createdAt: DateTime(2024, 3, 15, 10, 30),
-        inputModalities: [Modality.text],
-        outputModalities: [Modality.text],
-        isReasoningModel: false,
-      );
-
-      when(() => mockDb.getConfigsByType(AiConfigType.model.name)).thenAnswer(
-        (_) async => [
-          AiConfigDbEntity(
-            id: model.id,
-            type: 'AiConfigModel',
-            name: model.name,
-            serialized: jsonEncode(model.toJson()),
-            createdAt: model.createdAt,
-          ),
-        ],
-      );
-
-      when(() => mockDb.deleteConfig(any())).thenAnswer((_) async {});
-
-      // Act
-      final result = await repository.deleteInferenceProviderWithModels(
-        providerId,
-        fromSync: true,
-      );
-
-      // Assert
-      expect(result.deletedModels.length, equals(1));
-      expect(
-        result.deletedModels.map((m) => m.id),
-        containsAll(['model-sync']),
-      );
-
-      // Verify deletions happened
-      verify(() => mockDb.deleteConfig('model-sync')).called(1);
-      verify(() => mockDb.deleteConfig(providerId)).called(1);
-
-      // Verify no sync messages were sent
-      verifyNever(() => mockOutboxService.enqueueMessage(any()));
-    });
-
-    test('should handle database errors gracefully', () async {
-      // Arrange
+    test('rethrows a failed read and writes nothing', () async {
       const providerId = 'provider-error';
-
       when(
         () => mockDb.getConfigsByType(AiConfigType.model.name),
       ).thenThrow(Exception('Database error'));
 
-      // Act & Assert
-      expect(
-        () => repository.deleteInferenceProviderWithModels(providerId),
+      await expectLater(
+        cascade(providerId),
         throwsA(
           isA<Exception>().having(
             (e) => e.toString(),
@@ -1971,117 +2239,23 @@ void main() {
           ),
         ),
       );
+      expect(written, isEmpty);
+      verifyNever(() => mockOutboxService.enqueueMessage(any()));
     });
 
-    test('should delete multiple models in correct order', () async {
-      // Arrange
-      const providerId = 'provider-multi';
-      final models = List.generate(
-        5,
-        (i) => AiConfigModel(
-          id: 'model-$i',
-          name: 'Model $i',
-          providerModelId: 'provider-model-$i',
-          inferenceProviderId: providerId,
-          createdAt: DateTime(2024, 3, 15, 10, 30),
-          inputModalities: [Modality.text],
-          outputModalities: [Modality.text],
-          isReasoningModel: false,
-        ),
-      );
-
-      when(() => mockDb.getConfigsByType(AiConfigType.model.name)).thenAnswer(
-        (_) async => models
-            .map(
-              (m) => AiConfigDbEntity(
-                id: m.id,
-                type: 'AiConfigModel',
-                name: m.name,
-                serialized: jsonEncode(m.toJson()),
-                createdAt: m.createdAt,
-              ),
-            )
-            .toList(),
-      );
-
-      when(() => mockDb.deleteConfig(any())).thenAnswer((_) async {});
-
-      // Act
-      final result = await repository.deleteInferenceProviderWithModels(
-        providerId,
-      );
-
-      // Assert
-      expect(result.deletedModels.length, equals(5));
-      expect(
-        result.deletedModels.map((m) => m.id),
-        containsAll(['model-0', 'model-1', 'model-2', 'model-3', 'model-4']),
-      );
-
-      // Verify all models were deleted
-      for (var i = 0; i < 5; i++) {
-        verify(() => mockDb.deleteConfig('model-$i')).called(1);
-      }
-
-      // Verify provider was deleted after models
-      verify(() => mockDb.deleteConfig(providerId)).called(1);
-    });
-
-    test('should rollback transaction when model deletion fails', () async {
-      // Arrange
+    test('a failed model tombstone rolls back and sends nothing', () async {
       const providerId = 'provider-rollback';
+      final model1 = modelOf('model-1', providerId);
+      final model2 = modelOf('model-2', providerId);
+      stubRows(providerId, [model1, model2]);
+      when(() => mockDb.saveConfig(any())).thenAnswer((invocation) async {
+        final config = invocation.positionalArguments.first as AiConfig;
+        if (config.id == 'model-2') throw Exception('Model deletion failed');
+        return 1;
+      });
 
-      final model1 = AiConfigModel(
-        id: 'model-1',
-        name: 'Model 1',
-        providerModelId: 'provider-model-1',
-        inferenceProviderId: providerId,
-        createdAt: DateTime(2024, 3, 15, 10, 30),
-        inputModalities: [Modality.text],
-        outputModalities: [Modality.text],
-        isReasoningModel: false,
-      );
-
-      final model2 = AiConfigModel(
-        id: 'model-2',
-        name: 'Model 2',
-        providerModelId: 'provider-model-2',
-        inferenceProviderId: providerId,
-        createdAt: DateTime(2024, 3, 15, 10, 30),
-        inputModalities: [Modality.text],
-        outputModalities: [Modality.text],
-        isReasoningModel: false,
-      );
-
-      // Mock the database responses
-      when(() => mockDb.getConfigsByType(AiConfigType.model.name)).thenAnswer(
-        (_) async => [
-          AiConfigDbEntity(
-            id: model1.id,
-            type: 'AiConfigModel',
-            name: model1.name,
-            serialized: jsonEncode(model1.toJson()),
-            createdAt: model1.createdAt,
-          ),
-          AiConfigDbEntity(
-            id: model2.id,
-            type: 'AiConfigModel',
-            name: model2.name,
-            serialized: jsonEncode(model2.toJson()),
-            createdAt: model2.createdAt,
-          ),
-        ],
-      );
-
-      // Mock first model deletion to succeed, second to fail
-      when(() => mockDb.deleteConfig('model-1')).thenAnswer((_) async {});
-      when(
-        () => mockDb.deleteConfig('model-2'),
-      ).thenThrow(Exception('Model deletion failed'));
-
-      // Act & Assert
-      expect(
-        () => repository.deleteInferenceProviderWithModels(providerId),
+      await expectLater(
+        cascade(providerId),
         throwsA(
           isA<Exception>().having(
             (e) => e.toString(),
@@ -2090,48 +2264,28 @@ void main() {
           ),
         ),
       );
-
-      // Verify that the transaction was attempted
       verify(() => mockDb.transaction<CascadeDeletionResult>(any())).called(1);
+      verifyNever(() => mockOutboxService.enqueueMessage(any()));
+      // The rolled-back rows are still live in the cache.
+      expect(
+        (await repository.getConfigsByType(
+          AiConfigType.model,
+        )).map((config) => config.id),
+        ['model-1', 'model-2'],
+      );
     });
 
-    test('should rollback transaction when provider deletion fails', () async {
-      // Arrange
+    test('a failed provider tombstone names the provider', () async {
       const providerId = 'provider-delete-fail';
+      stubRows(providerId, [modelOf('model-1', providerId)]);
+      when(() => mockDb.saveConfig(any())).thenAnswer((invocation) async {
+        final config = invocation.positionalArguments.first as AiConfig;
+        if (config.id == providerId) throw Exception('disk full');
+        return 1;
+      });
 
-      final model = AiConfigModel(
-        id: 'model-1',
-        name: 'Model 1',
-        providerModelId: 'provider-model-1',
-        inferenceProviderId: providerId,
-        createdAt: DateTime(2024, 3, 15, 10, 30),
-        inputModalities: [Modality.text],
-        outputModalities: [Modality.text],
-        isReasoningModel: false,
-      );
-
-      // Mock the database responses
-      when(() => mockDb.getConfigsByType(AiConfigType.model.name)).thenAnswer(
-        (_) async => [
-          AiConfigDbEntity(
-            id: model.id,
-            type: 'AiConfigModel',
-            name: model.name,
-            serialized: jsonEncode(model.toJson()),
-            createdAt: model.createdAt,
-          ),
-        ],
-      );
-
-      // Mock model deletion to succeed, provider deletion to fail
-      when(() => mockDb.deleteConfig('model-1')).thenAnswer((_) async {});
-      when(
-        () => mockDb.deleteConfig(providerId),
-      ).thenThrow(Exception('Provider deletion failed'));
-
-      // Act & Assert
-      expect(
-        () => repository.deleteInferenceProviderWithModels(providerId),
+      await expectLater(
+        cascade(providerId),
         throwsA(
           isA<Exception>().having(
             (e) => e.toString(),
@@ -2140,56 +2294,7 @@ void main() {
           ),
         ),
       );
-
-      // Verify that the transaction was attempted
-      verify(() => mockDb.transaction<CascadeDeletionResult>(any())).called(1);
-    });
-
-    test('should use transaction for successful deletions', () async {
-      // Arrange
-      const providerId = 'provider-transaction';
-
-      final model = AiConfigModel(
-        id: 'model-1',
-        name: 'Model 1',
-        providerModelId: 'provider-model-1',
-        inferenceProviderId: providerId,
-        createdAt: DateTime(2024, 3, 15, 10, 30),
-        inputModalities: [Modality.text],
-        outputModalities: [Modality.text],
-        isReasoningModel: false,
-      );
-
-      // Mock the database responses
-      when(() => mockDb.getConfigsByType(AiConfigType.model.name)).thenAnswer(
-        (_) async => [
-          AiConfigDbEntity(
-            id: model.id,
-            type: 'AiConfigModel',
-            name: model.name,
-            serialized: jsonEncode(model.toJson()),
-            createdAt: model.createdAt,
-          ),
-        ],
-      );
-
-      when(() => mockDb.deleteConfig(any())).thenAnswer((_) async {});
-
-      // Act
-      final result = await repository.deleteInferenceProviderWithModels(
-        providerId,
-      );
-
-      // Assert
-      expect(result.deletedModels.length, equals(1));
-      expect(result.deletedModels.map((m) => m.id), containsAll(['model-1']));
-
-      // Verify that the transaction was used
-      verify(() => mockDb.transaction<CascadeDeletionResult>(any())).called(1);
-
-      // Verify deletions happened within the transaction
-      verify(() => mockDb.deleteConfig('model-1')).called(1);
-      verify(() => mockDb.deleteConfig(providerId)).called(1);
+      verifyNever(() => mockOutboxService.enqueueMessage(any()));
     });
   });
 

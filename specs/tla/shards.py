@@ -115,6 +115,9 @@ SECONDS = {
     "SavedTaskFilterSync": 35,
     "SyncSettingsFailure": 1,
     "SyncSettingsNameFailure": 1,
+    # Measured locally (4 shared cores) when added; refresh from CI.
+    "AiConfigReplication": 11,
+    "AiConfigReplicationCascade": 17,
     "OutboxCausality": 20,
     # Measured locally (20 workers) when added; refresh from CI.
     "JournalReplication": 33,

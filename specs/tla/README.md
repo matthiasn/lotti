@@ -1351,9 +1351,9 @@ What the model leaves out, deliberately or as a residual:
 
 - **A timed-out send can land after a newer one** (ADR 0085's residual 1,
   unchanged). `OutboxGhost` allows it; with `NewestLandsLast` it fails in ten
-  steps. Payloads the receiver orders by vector clock drop the late copy; a
-  config flag or an AI configuration, applied in arrival order, is
-  overwritten on the peer. The options — a stable Matrix transaction id per
+  steps. Payloads the receiver orders by vector clock or stamp drop the late
+  copy (AI configurations since `AiConfigReplication`); a config flag,
+  applied in arrival order, is overwritten on the peer. The options — a stable Matrix transaction id per
   outbox row, a clock or timestamp for those payloads, no timeout while the
   SDK still retries — each change the wire or the protocol.
 - **Remove of the newer row, then Retry of an older one**, sends the older
@@ -2132,6 +2132,67 @@ The repository suite (`saved_task_filters_repository_test.dart`) has a
 deterministic regression for each switch, including every delivery order of an
 edit and two deletes; reverting any one of the Dart fixes fails at least one of
 them.
+
+## `AiConfigReplication` — AI settings converge, and deletions stick
+
+AI configurations — inference providers with their API keys, models, prompts,
+profiles and skills — replicate as whole rows (`SyncMessage.aiConfig`), are
+not sequence-tracked, and are re-sent wholesale by "Send settings". The model
+covers one provider and two models (one that exists everywhere, one that model
+backfill creates under its deterministic id): the user's edits, soft deletes
+and restores, the provider cascade, backfill on a device that still holds the
+provider, "Send settings" replaying every row a device holds (deleted ones
+included), and receivers applying any sent row in any order and again. Rows
+are `none`, `live` or `tomb` with a stamp (`updatedAt`) and content. The
+protocol is described in
+[seeding and lifecycle](../../knowledge/features/ai/seeding-and-lifecycle.md#replication-across-devices).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `Converged` | invariant | once every row sent has reached every device, all devices hold the same rows |
+| `LatestWins` | invariant | ... and each is the greatest revision written: a newer restore beats an older delete and the reverse, and a replayed or late older copy changes nothing |
+| `NoDanglingModel` | invariant | ... and no device holds a live model whose provider is deleted or missing |
+| `EventuallyConverged` | liveness | the devices end up holding the same rows and stay so |
+
+| Configuration | Devices | Edits | Soft deletes | Restores | Cascades | Backfills | Replays | Distinct states |
+|---------------|---------|-------|--------------|----------|----------|-----------|---------|-----------------|
+| `AiConfigReplication` | 2 | 2 | 1 | 1 | 0 | 0 | 1 | 37,789 |
+| `AiConfigReplicationCascade` | 2 | 0 | 0 | 0 | 1 | 2 | 1 | 34,641 |
+
+Both check `TypeOK` and every property above, with stamps 1–2 chosen freely per
+write (device clocks are not synchronised). Each fix has a switch; setting one
+to `FALSE` in a temporary copy of the configuration named gives:
+
+| Mutation | Configuration | Counterexample |
+|----------|---------------|----------------|
+| `OrderLiveRows = FALSE` | `AiConfigReplication` | `Converged` (5 states): both devices edit the provider with the same stamp; each applies the other's edit over its own and they swap for good. With different stamps a late or replayed older copy overwrites the newer one the same way |
+| `OrderTombstones = FALSE` | `AiConfigReplication` | `Converged` (5 states): device 1 deletes a model and then restores it; device 2 receives the restore first and the older delete second, and keeps the model deleted |
+| `MonotonicStamps = FALSE` | `AiConfigReplication` | `Converged` (5 states): device 1 edits the provider at stamp 2, then again at stamp 1 (its clock behind, or a writer that copied the old stamp); it keeps its own last edit while device 2 rejects it as older |
+| `SoftCascade = FALSE` | `AiConfigReplicationCascade` | `NoDanglingModel` (6 states): device 1 hard-deletes the provider and its model while device 2 backfills a new model for it; both end with a live model and no provider. Checking `Converged` alone (6 states): device 2's "Send settings", queued before the model's delete reached it, brings the model back on device 1 only. `LatestWins` fails at once, since a hard delete is not a revision |
+| `CascadeOnReceive = FALSE` | `AiConfigReplicationCascade` | `NoDanglingModel` (7 states): device 1 tombstones the provider and its model while device 2 backfills a second model; after every row is delivered both devices hold that model live under a deleted provider |
+
+What the model leaves out:
+
+- **Prompts and skills are still hard-deleted**, so their content is not kept
+  on any device, and a delete is sent as `aiConfigDelete(hardDelete: true)`.
+  An older copy a peer replays after that delete brings the prompt back; the
+  model's `SoftCascade = FALSE` trace is the same hole. Keeping a tombstone
+  would need one that holds no content.
+- **Orphaned-seed pruning** (`removeOrphanedDefaultSeeds`) hard-deletes locally
+  and sends nothing: whether a profile can be served is per device, and a
+  pruned profile is expected to come back.
+- **Legacy peers.** A build before this model sends unstamped rows, hard
+  cascade deletes and unordered applies; those are the `FALSE` switches.
+- **The enqueue.** A write and its enqueue are one step; a failed or lost
+  enqueue is `Outbox.tla`'s, and nothing records the owed row (no intent
+  ledger as in `SavedTaskFilterSync`). "Send settings" is the repair.
+- **API keys.** A live provider synced without a key keeps the receiver's key,
+  and a provider tombstone drops it everywhere; neither is modelled. So is the
+  repository's cache (its rebuild bug is a unit regression).
+
+The repository suite (`ai_config_repository_test.dart`, "replication across
+devices") drives two real repositories over in-memory databases through the
+traces above; reverting any one of the Dart fixes fails at least one of them.
 
 ## `EnvelopeChain` — signed provenance chains (a design model)
 

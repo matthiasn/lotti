@@ -87,6 +87,13 @@ saved filters that never reached a peer; all nine bugs were found by auditing
 the code, and TLC reproduces each through its switch. Not included in the
 historical totals above.
 
+The `AiConfigReplication` model (pending) adds one spec, two configurations,
+four named properties and 72,430 distinct states. It came with a fix for AI
+settings that diverged between devices or came back after a deletion; all
+eight bugs were found by auditing the code, and TLC reproduces the five the
+model covers through its switches. Not included in the historical totals
+above.
+
 ## Timeline
 
 ```mermaid
@@ -155,6 +162,7 @@ counterexamples found. "Severity" grades each of those bugs; see
 | [#4501](https://github.com/matthiasn/lotti/pull/4501) | pending | provenance | `EnvelopeChain` | 2 | 0 | — | — | A design model written before the code: per-store signed chains under crashes, restores, retention and revocation. Each of its four design switches has a counterexample, and it raised two open questions — envelopes orphaned by a restore, and where a revocation cuts |
 | [#4504](https://github.com/matthiasn/lotti/pull/4504) | pending | tasks | `ChecklistMembership` | 3 | 6 (5) | P1×3 P2×3 | [0089](../../docs/adr/0089-checklist-membership-on-the-stored-row.md) | The first spec of the tasks feature. A stale copy — a screen's state, or a row read several awaits before the write — replaced what sync or the agent had stored: an item dropped from its checklist, a checklist dropped from its task by a status change, an item's back-link reverted by a check; a checklist hidden behind a dragged order; and a crash left a multi-row operation half done, now finished at startup from a recorded intent. Auditing the undo window the model covers found swiped items were never deleted at all |
 | [#4506](https://github.com/matthiasn/lotti/pull/4506) | pending | tasks, sync | `SavedTaskFilterSync` | 2 | 9 (0) | P0×2 P1×3 P2 P3×3 | — | Saved filters created on a desktop never reached the phone: filters saved before they synced were never sent, and a reorder on the receiver wrote its stale list over the filters sync had just stored. Changes are now owed in a durable ledger until the outbox accepts them, and revisions and deletes have one total order |
+| pending | pending | ai, sync | `AiConfigReplication` | 2 | 8 (0) | P0 P1×4 P2×2 P3 | — | Two devices editing the same AI setting swapped edits for good, a replayed older delete undid a restore, and a deleted provider came back — API key and all — from any older copy a peer sent. Revisions and deletions of AI configs now have one total order, the provider cascade leaves tombstones, and a receiver deletes the models a deleted provider leaves behind. Also: a synced provider without a key wiped the key on peers, a replayed row blanked its type from the repository cache, and undoing a prompt deletion did nothing |
 
 ## Severity
 
@@ -357,6 +365,14 @@ The P0 and P1 bugs:
 | [#4506](https://github.com/matthiasn/lotti/pull/4506) | P3 | no | Two revisions with the same stamp swapped between devices instead of converging |
 | [#4506](https://github.com/matthiasn/lotti/pull/4506) | P3 | no | A filter option added by a newer build made the whole synced filter undecodable and skipped for good |
 | [#4506](https://github.com/matthiasn/lotti/pull/4506) | P3 | no | One undecodable stored filter blanked the list, and the next save persisted it empty |
+| pending | P0 | no | Two devices editing the same AI config swapped edits and never converged; a late or replayed older copy overwrote a newer edit |
+| pending | P1 | no | A replayed older deletion of an AI config undid a newer restore on the peer |
+| pending | P1 | no | A deleted provider, with its API key, came back from any older copy a peer sent |
+| pending | P1 | no | A provider synced without an API key deleted the key from every peer's keychain |
+| pending | P1 | no | Undoing a prompt or skill deletion did nothing |
+| pending | P2 | no | A model a peer backfilled before seeing its provider's deletion stayed live under the deleted provider |
+| pending | P2 | no | A replayed AI config left its whole type unlisted in the repository cache until the next change |
+| pending | P3 | no | A restore from a device whose clock ran behind the deletion was dropped as stale by its peers |
 </details>
 
 ## Specs
