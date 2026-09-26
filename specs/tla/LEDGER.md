@@ -108,6 +108,12 @@ could store an older version, reports stayed in a task's old category, and a
 crash recovery could bring back older content. All six were found by reading
 the code — five in the audit that prompted the model, one (a short task's
 reports) while writing it — and TLC reproduces each through its switch. Not
+The `ConversationLoop` model (pending) adds one spec, two configurations, six
+named properties and 57,245 distinct states. It came with a fix for an agent
+wake that could keep calling the model without end once its tool calls filled
+the trimmed history; the six bugs were found by reading the code, and TLC
+reproduces the five the protocol covers through its four switches (the
+streamed-chunk accumulator's is pinned by a Glados property instead). Not
 included in the historical totals above.
 
 ## Timeline
@@ -181,6 +187,7 @@ counterexamples found. "Severity" grades each of those bugs; see
 | pending | pending | ai, sync | `AiConfigReplication` | 2 | 8 (0) | P0 P1×4 P2×2 P3 | — | Two devices editing the same AI setting swapped edits for good, a replayed older delete undid a restore, and a deleted provider came back — API key and all — from any older copy a peer sent. Revisions and deletions of AI configs now have one total order, the provider cascade leaves tombstones, and a receiver deletes the models a deleted provider leaves behind. Also: a synced provider without a key wiped the key on peers, a replayed row blanked its type from the repository cache, and undoing a prompt deletion did nothing |
 | pending | pending | ai | `TranscriptionRun` | 2 | 4 (0) | P1×2 P2×2 | — | A skill transcription whose write the database refused — a synced edit landed between the re-read and the write, or the write threw — was reported as a success: status idle, attribution succeeded, the summary and the agent nudge ran, and the check-in waiter sat on its spinner until the timeout. Failed runs still summarized and woke the agent, two requests for one recording both paid for an inference, and text edited during the run was overwritten. Writes are now checked and retried, runs are single-flight per recording, and an edit made during the run wins |
 | pending | pending | ai | `EmbeddingFreshness` | 2 | 6 (0) | P1 P2×3 P3×2 | — | Semantic search kept finding deleted and shortened entries, and pulled up their tasks; edits made while Ollama was down were never indexed. Runs of one entity are now serialised end to end, gone entries lose their vectors, failures retry after the cooldown, reports follow their task, and a crash recovery keeps the newest copy |
+| pending | pending | ai | `ConversationLoop` | 2 | 6 (0) | P2×4 P3×2 | — | The turn limit counted the user messages left after trimming, so a wake calling nine tools a round never reached `maxTurnsPerWake` and kept calling the model, and synthesized tool-call ids repeated. A trim could also open the history on a tool call, a strategy that threw left calls unanswered for the next message, and nothing serialized sends on one conversation |
 
 ## Severity
 

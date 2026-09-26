@@ -139,6 +139,8 @@ SECONDS = {
     # Measured locally (two workers, 2 GB heap) when added; refresh from CI.
     "EmbeddingFreshness": 30,
     "EmbeddingFreshnessTwo": 65,
+    "ConversationLoop": 10,
+    "ConversationLoopConcurrent": 11,
 }
 
 # Pessimistic, so an unmeasured configuration is not piled onto a full shard.

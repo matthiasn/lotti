@@ -170,6 +170,8 @@ on:
       - "lib/features/ai/repository/ollama_embedding_repository.dart"
       - "lib/features/agents/workflow/task_agent_persistence_helpers.dart"
       - "lib/services/db_notification.dart"
+      - "lib/features/ai/conversation/conversation_manager.dart"
+      - "lib/features/ai/conversation/conversation_repository.dart"
       - ".github/workflows/tla-model-check.yml"
 
 concurrency:

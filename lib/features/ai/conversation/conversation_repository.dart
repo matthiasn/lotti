@@ -57,8 +57,18 @@ conversationRepositoryProvider =
       name: 'conversationRepositoryProvider',
     );
 
+/// The result recorded for a tool call the loop ended without running (see
+/// [ConversationManager.answerPendingToolCalls]).
+@visibleForTesting
+const unansweredToolCallResult =
+    'Error: this tool call was not executed, so it has no result.';
+
 class ConversationRepository extends Notifier<void> {
   final _conversations = <String, ConversationManager>{};
+
+  /// Completes when the latest [sendMessage] queued on a conversation has
+  /// returned; the next one waits for it (see [_serialized]).
+  final _sendQueues = <String, Completer<void>>{};
   final _uuid = const Uuid();
 
   @override
@@ -97,9 +107,14 @@ class ConversationRepository extends Notifier<void> {
         );
   }
 
+  /// The id synthesized for the [n]th tool call of [turn] when the provider
+  /// sends none. Unique across the conversation because
+  /// [ConversationManager.turnCount] never goes back.
+  static String _turnScopedToolCallId(int turn, int n) => 'tool_turn${turn}_$n';
+
   /// Appends Gemini's complete-in-one-chunk tool calls to [toolCalls],
   /// synthesizing ids unique across conversation turns
-  /// (`tool_turn<turn>_<n>`).
+  /// ([_turnScopedToolCallId]).
   @visibleForTesting
   static void appendGeminiToolCalls({
     required List<ChatCompletionMessageToolCall> toolCalls,
@@ -108,7 +123,7 @@ class ConversationRepository extends Notifier<void> {
   }) {
     for (final toolCallChunk in chunks) {
       if (toolCallChunk.function != null) {
-        final toolCallId = 'tool_turn${turn}_${toolCalls.length}';
+        final toolCallId = _turnScopedToolCallId(turn, toolCalls.length);
         toolCalls.add(
           ChatCompletionMessageToolCall(
             id: toolCallId,
@@ -124,28 +139,29 @@ class ConversationRepository extends Notifier<void> {
   }
 
   /// Standard OpenAI-style streaming accumulation: tool-call argument
-  /// fragments are stitched per tool call (matched by id first, then by
-  /// chunk index) via [argumentBuffers] so JSON split across chunks — even
-  /// mid-character — reassembles intact.
+  /// fragments are stitched per tool call via [argumentBuffers] so JSON split
+  /// across chunks — even mid-character — reassembles intact.
+  ///
+  /// A chunk with an id continues the call with that id, or starts a new one
+  /// when the id is new, even if its index is taken: some providers number
+  /// every call 0. A chunk without an id (an empty one counts as none)
+  /// continues the call at its index. A new call without an id gets
+  /// [_turnScopedToolCallId] for [turn].
   @visibleForTesting
   static void accumulateOpenAiToolCallChunks({
     required List<ChatCompletionMessageToolCall> toolCalls,
     required Map<String, StringBuffer> argumentBuffers,
     required List<ChatCompletionStreamMessageToolCallChunk> chunks,
+    required int turn,
   }) {
     for (final toolCallChunk in chunks) {
-      // Find existing tool call by ID or index
+      final chunkId = toolCallChunk.id;
+      final hasId = chunkId != null && chunkId.isNotEmpty;
       var existingIndex = -1;
 
-      // First try to find by ID if available
-      if (toolCallChunk.id != null && toolCallChunk.id!.isNotEmpty) {
-        existingIndex = toolCalls.indexWhere(
-          (tc) => tc.id == toolCallChunk.id,
-        );
-      }
-
-      // If not found by ID and we have an index, use the index
-      if (existingIndex < 0 && toolCallChunk.index != null) {
+      if (hasId) {
+        existingIndex = toolCalls.indexWhere((tc) => tc.id == chunkId);
+      } else if (toolCallChunk.index != null) {
         final chunkIndex = toolCallChunk.index!;
         if (chunkIndex < toolCalls.length) {
           existingIndex = chunkIndex;
@@ -177,9 +193,12 @@ class ConversationRepository extends Notifier<void> {
         );
       } else if (toolCallChunk.function != null) {
         // Add new tool call
-        final toolCallId =
-            toolCallChunk.id ??
-            'tool_${toolCallChunk.index ?? toolCalls.length}';
+        final toolCallId = hasId
+            ? chunkId
+            : _turnScopedToolCallId(
+                turn,
+                toolCallChunk.index ?? toolCalls.length,
+              );
 
         // Initialize buffer for new tool call
         final initialArgs = toolCallChunk.function!.arguments ?? '';
@@ -205,6 +224,12 @@ class ConversationRepository extends Notifier<void> {
   }
 
   /// Send a message in a conversation.
+  ///
+  /// Calls on one conversation run one at a time, in the order they were
+  /// made: a second call waits until the first has returned. The loop ends
+  /// when the strategy stops, a reply has no tool calls, or
+  /// [ConversationManager.canContinue] refuses the next turn; any tool call
+  /// it leaves unanswered is answered with [unansweredToolCallResult].
   ///
   /// When [toolChoice] is supplied it overrides the provider default (`auto`)
   /// for every inference call this `sendMessage` makes. This is the hook the
@@ -239,7 +264,7 @@ class ConversationRepository extends Notifier<void> {
     String? consumptionWakeRunKey,
     String? consumptionThreadId,
     bool rethrowInferenceErrors = false,
-  }) async {
+  }) => _serialized(conversationId, () async {
     final manager = _conversations[conversationId];
     if (manager == null) {
       throw ArgumentError('Conversation $conversationId not found');
@@ -437,13 +462,14 @@ class ConversationRepository extends Notifier<void> {
                   appendGeminiToolCalls(
                     toolCalls: toolCalls,
                     chunks: chunks,
-                    turn: manager.turnCount,
+                    turn: turnIndex,
                   );
                 } else {
                   accumulateOpenAiToolCallChunks(
                     toolCalls: toolCalls,
                     argumentBuffers: toolCallArgumentBuffers,
                     chunks: chunks,
+                    turn: turnIndex,
                   );
                 }
               }
@@ -540,6 +566,11 @@ class ConversationRepository extends Notifier<void> {
       }
     }
 
+    // A strategy that threw part-way, or none to run the calls, leaves the
+    // last round's calls unanswered, and strict providers would reject the
+    // next message on this conversation for it.
+    manager.answerPendingToolCalls(unansweredToolCallResult);
+
     if (attributionSession != null &&
         (consumptionAgentId == null || consumptionWakeRunKey == null) &&
         !nonAgentStreamFailed) {
@@ -552,6 +583,32 @@ class ConversationRepository extends Notifier<void> {
     }
 
     return accumulated.hasData ? accumulated : null;
+  });
+
+  /// Runs [send] once every earlier [sendMessage] on [conversationId] has
+  /// returned.
+  ///
+  /// A turn awaits the provider and every tool execution. A second message
+  /// interleaved there lands between an assistant's tool calls and their
+  /// results, which strict providers reject for the rest of the
+  /// conversation, and both would read the same turn for their tool-call
+  /// ids.
+  Future<T> _serialized<T>(
+    String conversationId,
+    Future<T> Function() send,
+  ) async {
+    final previous = _sendQueues[conversationId];
+    final done = Completer<void>();
+    _sendQueues[conversationId] = done;
+    try {
+      if (previous != null) await previous.future;
+      return await send();
+    } finally {
+      done.complete();
+      if (identical(_sendQueues[conversationId], done)) {
+        _sendQueues.remove(conversationId);
+      }
+    }
   }
 
   void _storeTurnError(

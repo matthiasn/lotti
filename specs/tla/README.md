@@ -2346,6 +2346,75 @@ recategorisation, the short task's reports — and checks the deletion rules;
 failure under fake time; `sharded_embedding_store_test.dart` pins the rebuild's
 choice and a move's re-stamped `createdAt`; `vector_search_repository_test.dart`
 skips a deleted entry's leftover vector. Each fails with its fix reverted.
+## `ConversationLoop` — the multi-turn tool-calling loop
+
+`ConversationRepository.sendMessage` drives every agent wake and evolution
+chat: it adds the user turn, asks the provider, records the assistant's tool
+calls, lets the `ConversationStrategy` run them, and either sends the
+strategy's continuation prompt as the next turn or stops.
+`ConversationManager` keeps the history, trims it to `maxHistorySize`, and
+refuses a turn past `maxTurns`. The model keeps the history as a sequence of
+roles and tool-call ids (`tool_turn<t>_<n>`, the ids the Gemini adapters and
+the repository synthesize from the turn index), lets the model answer each
+round with any number of tool calls up to `MaxCalls`, and lets the strategy
+continue for ever — a task agent continues until it calls `update_report`.
+The awaits inside one send (the stream, every tool execution) are where a
+second send on the same conversation interleaves, and a strategy can throw
+part-way through a round. The loop is described in
+[Conversations and tool calling](../../knowledge/features/ai/conversations-and-tools.md).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `BoundedRounds` | invariant | one send makes at most `maxTurns` requests, however the history is trimmed |
+| `UniqueToolCallIds` | invariant | no tool-call id is issued twice in a conversation (thought signatures and Gemini's result-to-function mapping are keyed by it) |
+| `NoOrphanResult` | invariant | no request carries a tool result without its call in the assistant turn before it |
+| `EveryCallAnswered` | invariant | no request carries a tool call without its result |
+| `OpensWithUserTurn` | invariant | after the system instructions, every request opens on a user turn (Gemini rejects a function call that follows neither a user turn nor a function response) |
+| `Terminates` | liveness | every send returns |
+
+| Configuration | Senders | Sends each | `maxTurns` | History | Calls a round | Throws | Distinct states |
+|---------------|---------|------------|------------|---------|---------------|--------|-----------------|
+| `ConversationLoop` | 1 | 2 | 6 | 9 | 0–3 | 1 | 21,926 |
+| `ConversationLoopConcurrent` | 2 | 2 | 5 | 8 | 0–2 | 1 | 35,319 |
+
+The second send of `ConversationLoop` is the task agent's forced
+`update_report` retry, or the next message of an evolution chat. Both
+configurations check `TypeOK` and every property above. Each fix has a switch;
+setting one to `FALSE` in a temporary copy of the configuration named gives:
+
+| Mutation | Counterexample |
+|----------|----------------|
+| `MonotonicTurns = FALSE` (`ConversationLoop`) | `BoundedRounds` (27 states): one tool call a round, and the trim at the third continuation leaves two user turns, so `turnCount` never reaches six and the seventh request goes out. `Terminates` fails on a lasso that returns to its 33rd state, and `UniqueToolCallIds` in 13 states: after the trim the turn index goes back to 2 and the next round reissues `tool_turn2_1`. In the code, a wake (`maxTurnsPerWake = 10`, 100 messages of history) never ends while every round has nine tool calls or more, and an evolution chat, whose strategy hands back to the user after each round, never reaches its 20-turn limit at four |
+| `TailFromUser = FALSE` (`ConversationLoop`) | `OpensWithUserTurn` (16 states): the fourth turn's trim cuts inside a tool round; the old strip dropped only the leading tool results and kept the assistant's tool call that followed as the first turn |
+| `AnswerPending = FALSE` (`ConversationLoop`) | `EveryCallAnswered` (8 states): the strategy throws before answering, the loop ends, and the retry sends a user turn after two unanswered calls |
+| `Serialize = FALSE` (`ConversationLoopConcurrent`) | `NoOrphanResult` (7 states): the second send's user turn lands between the first's tool call and its result. `EveryCallAnswered` (6 states): the second send's request goes out while the first's tools still run. `UniqueToolCallIds` (7 states): both sends read the same turn and issue `tool_turn2_1` twice |
+
+`Serialize = FALSE` has no counterexample in `ConversationLoop`, whose one
+sender never overlaps itself.
+
+What the model leaves out:
+
+- **Stream failures.** A failed stream ends the send before its assistant
+  turn, so it leaves no call open; the history then ends on a user turn, and
+  the next send adds a second one, which every provider accepts.
+- **Provider-sent ids.** OpenAI and Mistral send their own tool-call ids.
+  Melious's adapter falls back to `tool_<index>` when its provider sends none,
+  which repeats every round; that adapter is outside the loop. The model covers
+  the ids the conversation loop and the Gemini adapters synthesize.
+- **The turn budget across sends.** The count is per conversation, so a retry
+  sent after the loop used every turn is refused at once: the task agent's
+  forced `update_report` retry never runs after a wake that ran out of turns.
+  The model shows it (the second send ends in `Begin`) and checks nothing about
+  it.
+- **Streamed chunk assembly.** How OpenAI-style fragments become calls is a
+  pure function, checked by a Glados property in the repository suite instead.
+
+The repository suite (`conversation_repository_test.dart`) drives the real
+loop with an adversarial provider and strategy: a Glados property over the
+tool calls per round and `maxTurns` checks `BoundedRounds` (exactly
+`maxTurns - 1` requests), `UniqueToolCallIds` and the three request-time
+invariants on every request, and deterministic regressions cover each switch.
+Reverting any one of the Dart fixes fails at least one of them.
 
 ## `EnvelopeChain` — signed provenance chains (a design model)
 
