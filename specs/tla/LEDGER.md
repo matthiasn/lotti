@@ -112,7 +112,7 @@ counterexamples found. "Severity" grades each of those bugs; see
 
 | PR | Merged | Area | Specs added | Configs added | Bugs (TLC) | Severity | ADR | What it caught |
 |----|--------|------|-------------|--------------:|-----------:|----------|-----|----------------|
-| [#4493](https://github.com/matthiasn/lotti/pull/4493) | pending | sync | `SyncPipeline` | 8 | 1 (1) | P2 | — | A swallowed burn-marker enqueue failure terminalized the own counter, preventing startup retry; CI reproduced the model trace before the fix |
+| [#4493](https://github.com/matthiasn/lotti/pull/4493) | 09-25 | sync | `SyncPipeline` | 8 | 1 (1) | P2 | — | A swallowed burn-marker enqueue failure terminalized the own counter, preventing startup retry; CI reproduced the model trace before the fix |
 | [#4445](https://github.com/matthiasn/lotti/pull/4445) | 09-23 | sync | `SyncSequence` | 5 | 6 (3) | P1×2 P2 P3×3 | [0065](../../docs/adr/0065-model-checked-sync-sequence-reservations.md) | A crash between saving and queuing left a counter reserved forever, and the change never reached other devices. Also added the TLC workflow and a checksummed `tlc.sh` |
 | [#4446](https://github.com/matthiasn/lotti/pull/4446) | 09-24 | agents | `WakeRuntime`, `ChangeSetConfirm` | 4 | 4 (4) | P1×2 P2×2 | [0066](../../docs/adr/0066-model-checked-agent-wakes-and-confirmations.md) | "Confirm all" racing a tap applied one suggestion twice. A conformance trace also rejected the first design of the wake fix before it shipped |
 | [#4447](https://github.com/matthiasn/lotti/pull/4447) | 09-23 | sync | `OwnCounterSettlement` | 1 | 2 (–) | P3×2 | — | Counter settlement could discard durable evidence (both bugs came from #4445 and never shipped) |
@@ -144,11 +144,42 @@ counterexamples found. "Severity" grades each of those bugs; see
 | [#4479](https://github.com/matthiasn/lotti/pull/4479) | 09-25 | goals, habits | `GoalRegister` | 4 | 8 (5) | P1×3 P2 P3×4 | [0082](../../docs/adr/0082-model-checked-goal-registers.md) | A device whose journal was behind could win the lease and report "behind" all day while every device showed the goal on track, with no fault at all. Overlapping evaluations dropped a synced check-off, and an escalation died with the device that noticed the change. Review found three more in the fix itself |
 | [#4480](https://github.com/matthiasn/lotti/pull/4480) | 09-25 | agents | — | 2 | 8 (5) | P1×7 P2 | [0081](../../docs/adr/0081-model-checked-evolution-sessions-and-agent-links.md) addendum | A removed agent entity came back from a late copy or a backfill, and a write or re-creation over a removal lost. `AgentReplication` gained a removal kind, lossy delivery and a split receive; an audit of every soft-delete writer found three more |
 
-| [#4491](https://github.com/matthiasn/lotti/pull/4491) | pending | sync | `NotificationReplication`, `SyncSettings` | 4 | 1 (1) | P1 | — | A lifecycle patch changed the content tie-break, so peers retained different same-time notification text. Also models typed recovery and documents untracked settings limits |
-| [#4490](https://github.com/matthiasn/lotti/pull/4490) | pending | sync | `OutboxCausality` | 1 | 1 (0) | P1 | — | Checks concurrent inline versions through append, collapse and receipt after #4489; fixes missing/empty-clock snapshots being folded at send time. A deliberately unsound collapse violates causal coverage. Also restores TLC triggers for startup and profile teardown |
-| [#4494](https://github.com/matthiasn/lotti/pull/4494) | pending | sync | — | −2 | 0 | — | [0087](../../docs/adr/0087-journal-row-is-the-only-copy.md) | Removed the journal JSON sidecar, and with it `SidecarMatchesRow` and the `JournalReplicationSidecar` and `JournalReplicationSidecarRollback` configurations; the four other `JournalReplication` configurations pass with unchanged state counts |
-| [#4501](https://github.com/matthiasn/lotti/pull/4501) | pending | provenance | `EnvelopeChain` | 2 | 0 | — | — | A design model written before the code: per-store signed chains under crashes, restores, retention and revocation. Each of its four design switches has a counterexample, and it raised two open questions — envelopes orphaned by a restore, and where a revocation cuts |
-| [#4506](https://github.com/matthiasn/lotti/pull/4506) | pending | tasks, sync | `SavedTaskFilterSync` | 2 | 9 (0) | P0×2 P1×3 P2 P3×3 | — | Saved filters created on a desktop never reached the phone: filters saved before they synced were never sent, and a reorder on the receiver wrote its stale list over the filters sync had just stored. Changes are now owed in a durable ledger until the outbox accepts them, and revisions and deletes have one total order |
+| [#4491](https://github.com/matthiasn/lotti/pull/4491) | 09-25 | sync | `NotificationReplication`, `SyncSettings` | 4 | 1 (1) | P1 | — | A lifecycle patch changed the content tie-break, so peers retained different same-time notification text. Also models typed recovery and documents untracked settings limits |
+| [#4490](https://github.com/matthiasn/lotti/pull/4490) | 09-25 | sync | `OutboxCausality` | 1 | 1 (0) | P1 | — | Checks concurrent inline versions through append, collapse and receipt after #4489; fixes missing/empty-clock snapshots being folded at send time. A deliberately unsound collapse violates causal coverage. Also restores TLC triggers for startup and profile teardown |
+| [#4494](https://github.com/matthiasn/lotti/pull/4494) | 09-25 | sync | — | −2 | 0 | — | [0087](../../docs/adr/0087-journal-row-is-the-only-copy.md) | Removed the journal JSON sidecar, and with it `SidecarMatchesRow` and the `JournalReplicationSidecar` and `JournalReplicationSidecarRollback` configurations; the four other `JournalReplication` configurations pass with unchanged state counts |
+| [#4501](https://github.com/matthiasn/lotti/pull/4501) | 09-25 | provenance | `EnvelopeChain` | 2 | 0 | — | — | A design model written before the code: per-store signed chains under crashes, restores, retention and revocation. Each of its four design switches has a counterexample, and it raised two open questions — envelopes orphaned by a restore, and where a revocation cuts |
+
+| [#4506](https://github.com/matthiasn/lotti/pull/4506) | 09-26 | tasks, sync | `SavedTaskFilterSync` | 2 | 9 (0) | P0×2 P1×3 P2 P3×3 | — | Saved filters created on a desktop never reached the phone: filters saved before they synced were never sent, and a reorder on the receiver wrote its stale list over the filters sync had just stored. Changes are now owed in a durable ledger until the outbox accepts them, and revisions and deletes have one total order |
+
+## Sync follow-up evidence, 2026-09-26
+
+This supplements the historical totals above; it does not add repeated model
+runs together or assign unreviewed bug/severity counts. The links identify the
+change and its validation record. “Merged” records repository integration, not
+proof that every later CI run is green. The open changes still require CI,
+coverage, review and integration before the combined result can be claimed.
+
+| PR | Status at this snapshot | Obligation addressed | Evidence and boundary |
+|----|-------------------------|----------------------|-----------------------|
+| [#4495](https://github.com/matthiasn/lotti/pull/4495) | Merged 09-25 | Receipt failure must leave delivery retryable; a receipt must follow durable domain apply | Real SQLite receipt/commit failure regressions and a paired temporal receipt-retry check. Retry exhaustion remains outside the bounded transient-failure guarantee |
+| [#4498](https://github.com/matthiasn/lotti/pull/4498) | Merged 09-25 | Unsettled own counters retry while the app remains open | Periodic, single-flight recovery and shutdown-drain regressions fail when the relevant guards are removed. Requires the app and stores eventually to remain available |
+| [#4500](https://github.com/matthiasn/lotti/pull/4500) | Merged 09-25 | A missing final update becomes observable without a later payload | Three head-announcement profiles cover lost payload, lost burn and crash; disabling announcements gives the expected counterexample. Two/three-device real-database traces drive automatic repair under controlled transport |
+| [#4502](https://github.com/matthiasn/lotti/pull/4502) | Merged 09-25 | Limited-sync metadata claims the missing range before newer events advance the cursor | Delayed-metadata queue profile and a real-database regression; removing admission gating violates `NoSilentLoss`. SDK ordering and retained history are interface assumptions |
+| [#4503](https://github.com/matthiasn/lotti/pull/4503) | Merged 09-26 | Exact attachment discovery can recover beyond the saved cursor | Real queue regressions cover delayed descriptors, keys and downloads, while local disk failures remain bounded. The subsequent Matrix failure is still being investigated in [#4510](https://github.com/matthiasn/lotti/pull/4510); merging this change did not establish transport correctness |
+| [#4507](https://github.com/matthiasn/lotti/pull/4507) | Open | Theme/name fields commit together and failed receives retry | SQLite failure injection, cache/queue/shutdown regressions and atomicity/retry model mutations. Cached writes reject an outer settings transaction before entering the write queue |
+| [#4508](https://github.com/matthiasn/lotti/pull/4508) | Open | Mixed payload families remain distinct through repair; concurrent fork/successor coverage reaches peers | Typed-identity regressions fail on the old raw-ID key. Separate composed profiles cover three-write fork/successor and two-family/two-peer receipt failure plus crash; eight real two/three-device traces combine inline families, forks, delays, duplicates and repair |
+| [#4509](https://github.com/matthiasn/lotti/pull/4509) | Open | Equal-stamp theme/name updates converge regardless of arrival order | Opposite-order receive regressions and deterministic-tie model controls. Depends on atomic settings persistence |
+| [#4511](https://github.com/matthiasn/lotti/pull/4511) | Open | A local preference edit commits a monotone version before publishing its matching payload | `SyncPreferenceEdits`, real SQLite/controller tests and guard-removal regressions. Source-crash recovery and failed or missing publication remain outside its convergence assumption |
+| [#4512](https://github.com/matthiasn/lotti/pull/4512) | Open | Config flags use the same durable version order at local commit, outbox collapse and receive | Local-edit and receive/failure models plus migration, transaction and outbox regressions. Old receivers and untracked-message loss remain outside the convergence claim |
+
+The intended assurance is a bounded composed protocol model, richer component
+models and implementation conformance tested against real stores. It is not an
+unbounded proof of the Dart implementation, nor one exploration of the full
+product of every family, fork, device count and fault. Model-to-runtime mappings,
+configuration bounds and fairness assumptions remain in the relevant
+[spec reference sections](README.md). The implementation traces replace network
+transport with controlled delivery; encryption, server behavior and attachment
+bytes still need their own integration evidence.
 
 ## Severity
 
