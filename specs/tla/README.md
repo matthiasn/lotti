@@ -19,8 +19,8 @@ It downloads the pinned `tla2tools.jar` once, verifies its SHA-256, and caches
 it in `TLA_TOOLS_DIR` (default `~/.cache/lotti-tla`). A configuration
 `<Spec><Variant>.cfg` checks `<Spec>.tla`.
 
-CI packs every checked-in `.cfg` into eight shards (`shards.py`), balanced by
-each configuration's measured runtime, and runs them with `fail-fast: false`.
+CI packs every checked-in `.cfg` into runtime-balanced shards (`shards.py`)
+and runs them with `fail-fast: false`.
 A shard checks all of its configurations even after one fails, and lists each
 result in the job summary. A new configuration joins a shard automatically,
 counted at a pessimistic five minutes until its runtime is added to
