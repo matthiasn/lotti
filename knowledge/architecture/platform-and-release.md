@@ -97,8 +97,20 @@ Every push to every branch runs:
 |----------|------------------|
 | `flutter-analyze.yml` | `flutter analyze` — the zero-warning policy |
 | `flutter-test-linux-faster.yml` | The fast unit/widget test lane on Linux |
-| `flutter-matrix-test.yml` | Sync tests against a real Matrix homeserver |
 | `okf-validate.yml` | This knowledge bundle stays conformant and its code pointers still resolve |
+
+`flutter-matrix-test.yml` also triggers on every branch push, but a
+`changes` job (`dorny/paths-filter`) gates its jobs by path. The Matrix
+homeserver sync tests run when sync code, the database or persistence layer,
+or shared core (dependencies, `lib/classes`, `lib/services`, `lib/utils`, the
+GetIt wiring, the Linux runner, the workflow itself) changed. The journal
+persistence test runs when shared core, the database, persistence or journal
+code, or the tutorial harness and fixtures it boots the app with changed. Scheduled and manual runs, and any run whose filter job
+fails, execute everything. None of these jobs is a required status check.
+
+There is no build-only macOS or Android job on pull requests: tag pushes build
+both platforms in the release workflows, and those builds are the ones that get
+published.
 
 Two more run on **every** branch push despite looking scoped:
 
