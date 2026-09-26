@@ -67,17 +67,6 @@ extension _DescriptorCache on SyncEventProcessor {
         final remote = await envelope.room.client
             .getOneRoomEvent(envelope.room.id, id)
             .timeout(SyncTuning.attachmentDownloadTimeout);
-        // Log only protocol shape, never attachment contents or encryption
-        // material. This distinguishes a malformed server event from a
-        // descriptor whose metadata is lost during SDK decryption.
-        _trace(
-          'descriptorLookup.wire eventId=$id type=${remote.type} '
-          'hasCiphertext=${remote.content.containsKey('ciphertext')} '
-          'hasMessageType=${remote.content.containsKey('msgtype')} '
-          'hasRelativePath=${remote.content.containsKey('relativePath')} '
-          'redacted=${remote.unsigned?.containsKey('redacted_because') == true}',
-          subDomain: 'processor.resolve.descriptorLookup',
-        );
         // Event.fromMatrixEvent assigns the supplied room, so validate the
         // wire room before conversion. The room-scoped API may omit room_id.
         descriptor =
@@ -97,10 +86,6 @@ extension _DescriptorCache on SyncEventProcessor {
         'descriptorLookup.result eventId=$id found=${descriptor != null} '
         'source=$source type=${descriptor?.type} '
         'msgtype=${descriptor?.content['msgtype']} '
-        'emptyContent=${descriptor?.content.isEmpty} '
-        'hasNestedContent=${descriptor?.content.containsKey('content')} '
-        'hasBody=${descriptor?.content.containsKey('body')} '
-        'redacted=${descriptor?.unsigned?.containsKey('redacted_because') == true} '
         'roomMatches=${descriptor?.roomId == envelope.roomId} '
         'hasRelativePath=${descriptor?.content['relativePath'] is String} '
         'indexed=${index.findByEventId(id) != null}',
@@ -125,45 +110,11 @@ extension _DescriptorCache on SyncEventProcessor {
   Future<Event?> _decryptDescriptor(Event? descriptor, Room room) async {
     if (descriptor?.type != EventTypes.Encrypted) return descriptor;
     final encryption = room.client.encryption;
-    if (encryption == null) return descriptor;
-    final decrypted = await encryption
-        .decryptRoomEvent(descriptor!)
-        .timeout(SyncTuning.attachmentDownloadTimeout);
-    if (decrypted.type == EventTypes.Message && decrypted.content.isEmpty) {
-      // Diagnostic for an encrypted server descriptor that the SDK turns into
-      // empty plaintext. Inspect only shape; never log plaintext, keys or the
-      // ciphertext. This does not substitute for the SDK's validated result.
-      try {
-        final sessionId = descriptor.content['session_id'];
-        final ciphertext = descriptor.content['ciphertext'];
-        final session = sessionId is String
-            ? encryption.keyManager
-                  .getInboundGroupSession(room.id, sessionId)
-                  ?.inboundGroupSession
-            : null;
-        final decoded = session != null && ciphertext is String
-            ? jsonDecode(session.decrypt(ciphertext).plaintext)
-            : null;
-        final content = decoded is Map ? decoded['content'] : null;
-        _trace(
-          'descriptorLookup.directShape eventId=${descriptor.eventId} '
-          'sessionAvailable=${session != null} '
-          'payloadIsMap=${decoded is Map} contentIsMap=${content is Map} '
-          'contentFields=${content is Map ? content.length : 0} '
-          'hasMessageType=${content is Map && content.containsKey('msgtype')} '
-          'hasRelativePath=${content is Map && content.containsKey('relativePath')}',
-          subDomain: 'processor.resolve.descriptorLookup',
-        );
-      } catch (error) {
-        // Exception text from a crypto implementation could contain input.
-        _trace(
-          'descriptorLookup.directShape eventId=${descriptor.eventId} '
-          'errorType=${error.runtimeType}',
-          subDomain: 'processor.resolve.descriptorLookup',
-        );
-      }
-    }
-    return decrypted;
+    return encryption == null
+        ? descriptor
+        : encryption
+              .decryptRoomEvent(descriptor!)
+              .timeout(SyncTuning.attachmentDownloadTimeout);
   }
 
   /// Fetches fresh JSON from the [AttachmentIndex] descriptor and writes it

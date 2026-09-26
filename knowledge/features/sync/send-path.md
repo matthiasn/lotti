@@ -5,7 +5,7 @@ description: Outbox staging as one immutable row per version, the dequeue-time c
 resource: ../../../lib/features/sync/outbox
 tags: [sync, outbox, bundling, retries]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-25T19:33:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-26T12:15:00Z }
 stale_after: 2026-12-25
 sources:
   - id: outbox
@@ -243,6 +243,37 @@ Every JSON-backed send records the successful Matrix file-event id in the text
 envelope as `attachmentEventId`. The relative path remains the cache location
 and the compatibility key for older peers; it is no longer the identity of a
 new payload generation.
+
+Before accepting an upload, `MatrixPayloadSender` reads its exact event from
+`getOneRoomEvent`, bypassing the SDK's optimistic local echo. It decrypts an
+encrypted event and checks the event/room identity, file message type, relative
+path, encoding marker and Matrix media URL. An empty or mismatched descriptor,
+lookup failure, missing encryption service or decryption failure fails the send
+before publishing its referencing envelope or acknowledging the outbox row.
+Lookup and decryption each use `SyncTuning.attachmentDownloadTimeout`; failures
+follow the existing retry budget. A later attempt uploads a new descriptor.
+
+This costs one server read per uploaded file, including bundle manifests and
+media. It validates descriptor metadata, not downloaded bytes or the correctness
+of the SDK's cryptography, and does not repair an already-published unusable
+descriptor. The model's successful-upload boundary relies on these runtime
+checks; eventual delivery still assumes a usable upload within the retry policy.
+
+```mermaid
+sequenceDiagram
+  participant Sender as "MatrixPayloadSender"
+  participant Room as "Matrix room"
+  Sender->>Room: sendFileEvent(bytes, metadata)
+  Room-->>Sender: eventId
+  Sender->>Room: getOneRoomEvent(roomId, eventId)
+  Room-->>Sender: stored event
+  Sender->>Sender: decrypt and validate descriptor
+  alt valid descriptor
+    Sender->>Room: referencing sync envelope
+  else unusable descriptor or failed lookup
+    Sender-->>Sender: fail send and leave outbox unacknowledged
+  end
+```
 
 Agent outbox rows make the send-side half explicit. A pending
 `SyncAgentEntity` retains the serialized entity inline even though the sender

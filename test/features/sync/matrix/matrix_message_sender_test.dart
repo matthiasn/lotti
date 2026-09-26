@@ -29,6 +29,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import 'matrix_upload_test_stub.dart';
 
 enum _GeneratedSendMessageKind {
   aiConfigDelete,
@@ -455,6 +456,7 @@ void main() {
   late MockJournalDb journalDb;
   late MatrixMessageSender sender;
   late MockRoom room;
+  late MatrixUploadTestStub uploadStub;
   late SentEventRegistry sentEventRegistry;
 
   /// Stores [entity] as the row the sender serializes for its id.
@@ -478,6 +480,7 @@ void main() {
       sentEventRegistry: sentEventRegistry,
     );
     room = MockRoom();
+    uploadStub = MatrixUploadTestStub(room);
 
     when(
       () => loggingService.log(
@@ -522,7 +525,7 @@ void main() {
         any<MatrixFile>(),
         extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
       ),
-    ).thenAnswer((_) async => 'file-id');
+    ).thenAnswer(uploadStub.record((_) async => 'file-id'));
   });
 
   tearDown(() {
@@ -861,12 +864,14 @@ void main() {
           any<MatrixFile>(),
           extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
         ),
-      ).thenAnswer((invocation) async {
-        capturedFile = invocation.positionalArguments.first as MatrixFile;
-        capturedExtra =
-            invocation.namedArguments[#extraContent] as Map<String, dynamic>?;
-        return r'$file-event-id';
-      });
+      ).thenAnswer(
+        uploadStub.record((invocation) async {
+          capturedFile = invocation.positionalArguments.first as MatrixFile;
+          capturedExtra =
+              invocation.namedArguments[#extraContent] as Map<String, dynamic>?;
+          return r'$file-event-id';
+        }),
+      );
       when(
         () => room.sendTextEvent(
           any<String>(),
@@ -929,7 +934,7 @@ void main() {
         any<MatrixFile>(),
         extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
       ),
-    ).thenAnswer((_) async => r'$file-event-id');
+    ).thenAnswer(uploadStub.record((_) async => r'$file-event-id'));
     when(
       () => room.sendTextEvent(
         any<String>(),
@@ -978,12 +983,14 @@ void main() {
         any<MatrixFile>(),
         extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
       ),
-    ).thenAnswer((invocation) async {
-      capturedFile = invocation.positionalArguments.first as MatrixFile;
-      capturedExtra =
-          invocation.namedArguments[#extraContent] as Map<String, dynamic>?;
-      return r'$notification-file-event-id';
-    });
+    ).thenAnswer(
+      uploadStub.record((invocation) async {
+        capturedFile = invocation.positionalArguments.first as MatrixFile;
+        capturedExtra =
+            invocation.namedArguments[#extraContent] as Map<String, dynamic>?;
+        return r'$notification-file-event-id';
+      }),
+    );
     when(
       () => room.sendTextEvent(
         any<String>(),
@@ -1079,10 +1086,12 @@ void main() {
           any<MatrixFile>(),
           extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
         ),
-      ).thenAnswer((invocation) async {
-        uploads.add(invocation.positionalArguments.first as MatrixFile);
-        return 'file-id';
-      });
+      ).thenAnswer(
+        uploadStub.record((invocation) async {
+          uploads.add(invocation.positionalArguments.first as MatrixFile);
+          return 'file-id';
+        }),
+      );
       when(
         () => room.sendTextEvent(
           any<String>(),
@@ -1195,11 +1204,13 @@ void main() {
           any<MatrixFile>(),
           extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
         ),
-      ).thenAnswer((invocation) async {
-        capturedFile = invocation.positionalArguments.first as MatrixFile;
-        stageRow(updatedEntity);
-        return 'file-id';
-      });
+      ).thenAnswer(
+        uploadStub.record((invocation) async {
+          capturedFile = invocation.positionalArguments.first as MatrixFile;
+          stageRow(updatedEntity);
+          return 'file-id';
+        }),
+      );
 
       final result = await sender.sendMatrixMessage(
         message: SyncMessage.journalEntity(
@@ -1241,7 +1252,7 @@ void main() {
           any<MatrixFile>(),
           extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
         ),
-      ).thenAnswer((_) async => 'file-id');
+      ).thenAnswer(uploadStub.record((_) async => 'file-id'));
       var capturedPayload = '';
       when(
         () => room.sendTextEvent(
@@ -1311,7 +1322,7 @@ void main() {
         any<MatrixFile>(),
         extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
       ),
-    ).thenAnswer((_) async => 'file-id');
+    ).thenAnswer(uploadStub.record((_) async => 'file-id'));
     var capturedPayload = '';
     when(
       () => room.sendTextEvent(
@@ -1378,7 +1389,7 @@ void main() {
           any<MatrixFile>(),
           extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
         ),
-      ).thenAnswer((_) async => 'file-id');
+      ).thenAnswer(uploadStub.record((_) async => 'file-id'));
       var capturedPayload = '';
       when(
         () => room.sendTextEvent(
@@ -1453,7 +1464,7 @@ void main() {
           any<MatrixFile>(),
           extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
         ),
-      ).thenAnswer((_) async => 'file-id');
+      ).thenAnswer(uploadStub.record((_) async => 'file-id'));
       var capturedPayload = '';
       when(
         () => room.sendTextEvent(
@@ -1553,7 +1564,7 @@ void main() {
         any<MatrixFile>(),
         extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
       ),
-    ).thenAnswer((_) async => 'file-id');
+    ).thenAnswer(uploadStub.record((_) async => 'file-id'));
 
     var calls = 0;
     final result = await sender.sendMatrixMessage(
@@ -1671,7 +1682,7 @@ void main() {
         any<MatrixFile>(),
         extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
       ),
-    ).thenAnswer((_) async => 'file-id');
+    ).thenAnswer(uploadStub.record((_) async => 'file-id'));
     when(
       () => journalDb.getConfigFlag(resendAttachments),
     ).thenAnswer((_) async => true);
@@ -1756,7 +1767,7 @@ void main() {
         any<MatrixFile>(),
         extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
       ),
-    ).thenAnswer((_) async => null);
+    ).thenAnswer(uploadStub.record((_) async => null));
 
     final metadata = Metadata(
       id: 'entry',
@@ -1810,10 +1821,12 @@ void main() {
         any<MatrixFile>(),
         extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
       ),
-    ).thenAnswer((invocation) async {
-      capturedFile = invocation.positionalArguments.first as MatrixFile;
-      return 'file-id';
-    });
+    ).thenAnswer(
+      uploadStub.record((invocation) async {
+        capturedFile = invocation.positionalArguments.first as MatrixFile;
+        return 'file-id';
+      }),
+    );
 
     final metadata = Metadata(
       id: 'entry',
@@ -1864,7 +1877,7 @@ void main() {
           any<MatrixFile>(),
           extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
         ),
-      ).thenAnswer((_) async => 'file-id');
+      ).thenAnswer(uploadStub.record((_) async => 'file-id'));
       when(
         () => journalDb.getConfigFlag(resendAttachments),
       ).thenAnswer((_) async => true);
@@ -1944,7 +1957,11 @@ void main() {
         any<MatrixFile>(),
         extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
       ),
-    ).thenAnswer((_) => Future<String?>.error(Exception('network error')));
+    ).thenAnswer(
+      uploadStub.record(
+        (_) => Future<String?>.error(Exception('network error')),
+      ),
+    );
 
     final metadata = Metadata(
       id: 'entry',
@@ -1994,7 +2011,7 @@ void main() {
         any<MatrixFile>(),
         extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
       ),
-    ).thenAnswer((_) async => 'file-id');
+    ).thenAnswer(uploadStub.record((_) async => 'file-id'));
     when(
       () => journalDb.getConfigFlag(resendAttachments),
     ).thenAnswer((_) async => true);
@@ -2195,7 +2212,7 @@ void main() {
           any<MatrixFile>(),
           extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
         ),
-      ).thenAnswer((_) async => 'file-id');
+      ).thenAnswer(uploadStub.record((_) async => 'file-id'));
       when(
         () => journalDb.getConfigFlag(resendAttachments),
       ).thenAnswer((_) async => true);
@@ -2298,7 +2315,7 @@ void main() {
           any<MatrixFile>(),
           extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
         ),
-      ).thenAnswer((_) async => responses.removeAt(0));
+      ).thenAnswer(uploadStub.record((_) async => responses.removeAt(0)));
       when(
         () => journalDb.getConfigFlag(resendAttachments),
       ).thenAnswer((_) async => true);
@@ -2359,7 +2376,7 @@ void main() {
           any<MatrixFile>(),
           extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
         ),
-      ).thenAnswer((_) async => responses.removeAt(0));
+      ).thenAnswer(uploadStub.record((_) async => responses.removeAt(0)));
       when(
         () => journalDb.getConfigFlag(resendAttachments),
       ).thenAnswer((_) async => true);
@@ -2451,7 +2468,7 @@ void main() {
           any<MatrixFile>(),
           extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
         ),
-      ).thenAnswer((_) async => 'file-id');
+      ).thenAnswer(uploadStub.record((_) async => 'file-id'));
 
       final entity = AgentDomainEntity.agent(
         id: 'agent-1',
@@ -2551,7 +2568,7 @@ void main() {
           any<MatrixFile>(),
           extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
         ),
-      ).thenAnswer((_) async => null);
+      ).thenAnswer(uploadStub.record((_) async => null));
 
       final entity = AgentDomainEntity.agent(
         id: 'agent-fail',
@@ -2593,7 +2610,7 @@ void main() {
           any<MatrixFile>(),
           extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
         ),
-      ).thenAnswer((_) async => 'file-id');
+      ).thenAnswer(uploadStub.record((_) async => 'file-id'));
 
       final link = AgentLink.basic(
         id: 'link-1',
@@ -2665,7 +2682,7 @@ void main() {
           any<MatrixFile>(),
           extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
         ),
-      ).thenAnswer((_) async => 'file-id');
+      ).thenAnswer(uploadStub.record((_) async => 'file-id'));
 
       var capturedPayload = '';
       when(
@@ -2734,7 +2751,7 @@ void main() {
           any<MatrixFile>(),
           extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
         ),
-      ).thenAnswer((_) async => null);
+      ).thenAnswer(uploadStub.record((_) async => null));
 
       final entity = AgentDomainEntity.agent(
         id: 'fail-agent',
@@ -2779,7 +2796,7 @@ void main() {
           any<MatrixFile>(),
           extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
         ),
-      ).thenAnswer((_) async => null);
+      ).thenAnswer(uploadStub.record((_) async => null));
 
       final link = AgentLink.basic(
         id: 'fail-link',
@@ -2818,7 +2835,7 @@ void main() {
           any<MatrixFile>(),
           extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
         ),
-      ).thenAnswer((_) async => 'file-id');
+      ).thenAnswer(uploadStub.record((_) async => 'file-id'));
 
       var capturedPayload = '';
       when(
@@ -2941,18 +2958,20 @@ void main() {
             any<MatrixFile>(),
             extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
           ),
-        ).thenAnswer((inv) async {
-          uploadCalls++;
-          capturedFile = inv.positionalArguments.single as MatrixFile;
-          capturedExtra =
-              inv.namedArguments[#extraContent] as Map<String, dynamic>?;
-          switch (scenario.uploadKind) {
-            case _GeneratedBundleUploadKind.succeeds:
-              return r'$generated-bundle-file-id';
-            case _GeneratedBundleUploadKind.returnsNull:
-              return null;
-          }
-        });
+        ).thenAnswer(
+          uploadStub.record((inv) async {
+            uploadCalls++;
+            capturedFile = inv.positionalArguments.single as MatrixFile;
+            capturedExtra =
+                inv.namedArguments[#extraContent] as Map<String, dynamic>?;
+            switch (scenario.uploadKind) {
+              case _GeneratedBundleUploadKind.succeeds:
+                return r'$generated-bundle-file-id';
+              case _GeneratedBundleUploadKind.returnsNull:
+                return null;
+            }
+          }),
+        );
 
         final stripped = await localSender.sendOutboxBundlePayloadForTesting(
           room: room,
@@ -3091,12 +3110,14 @@ void main() {
             any<MatrixFile>(),
             extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
           ),
-        ).thenAnswer((inv) async {
-          capturedFile = inv.positionalArguments.first as MatrixFile;
-          capturedExtra =
-              inv.namedArguments[#extraContent] as Map<String, dynamic>?;
-          return r'$bundle-file-id';
-        });
+        ).thenAnswer(
+          uploadStub.record((inv) async {
+            capturedFile = inv.positionalArguments.first as MatrixFile;
+            capturedExtra =
+                inv.namedArguments[#extraContent] as Map<String, dynamic>?;
+            return r'$bundle-file-id';
+          }),
+        );
 
         final stripped = await sender.sendOutboxBundlePayloadForTesting(
           room: room,
@@ -3181,10 +3202,12 @@ void main() {
             any<MatrixFile>(),
             extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
           ),
-        ).thenAnswer((inv) async {
-          capturedFile = inv.positionalArguments.first as MatrixFile;
-          return r'$bundle-file-id';
-        });
+        ).thenAnswer(
+          uploadStub.record((inv) async {
+            capturedFile = inv.positionalArguments.first as MatrixFile;
+            return r'$bundle-file-id';
+          }),
+        );
 
         final bundle = SyncOutboxBundle(
           children: [
@@ -3272,7 +3295,7 @@ void main() {
             any<MatrixFile>(),
             extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
           ),
-        ).thenAnswer((_) async => null);
+        ).thenAnswer(uploadStub.record((_) async => null));
 
         final result = await sender.sendOutboxBundlePayloadForTesting(
           room: room,
@@ -3322,6 +3345,40 @@ void main() {
     );
 
     test(
+      'an empty uploaded descriptor cannot publish or acknowledge a bundle',
+      () async {
+        when(
+          () => uploadStub.client.getOneRoomEvent('!room:test', 'file-id'),
+        ).thenAnswer(
+          (_) async => MatrixEvent(
+            content: {},
+            type: EventTypes.Message,
+            eventId: 'file-id',
+            senderId: '@sender:example.test',
+            originServerTs: DateTime.utc(2026, 9, 26),
+          ),
+        );
+        var acknowledged = false;
+        final result = await sender.sendMatrixMessage(
+          message: bundleWith(3),
+          context: buildContext(),
+          onSent: (_, _) => acknowledged = true,
+        );
+        expect(result, isFalse);
+        expect(acknowledged, isFalse);
+        expect(sentEventRegistry.consume('file-id'), isFalse);
+        verifyNever(
+          () => room.sendTextEvent(
+            any<String>(),
+            msgtype: any<String>(named: 'msgtype'),
+            parseCommands: any<bool>(named: 'parseCommands'),
+            parseMarkdown: any<bool>(named: 'parseMarkdown'),
+          ),
+        );
+      },
+    );
+
+    test(
       'sendMatrixMessage returns false when the outboxBundle upload fails — '
       'the failure is traced and the text event is never sent',
       () async {
@@ -3330,7 +3387,7 @@ void main() {
             any<MatrixFile>(),
             extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
           ),
-        ).thenAnswer((_) async => null);
+        ).thenAnswer(uploadStub.record((_) async => null));
         when(
           () => room.sendTextEvent(
             any<String>(),
@@ -3368,7 +3425,7 @@ void main() {
             any<MatrixFile>(),
             extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
           ),
-        ).thenAnswer((_) async => r'$bundle-file-id');
+        ).thenAnswer(uploadStub.record((_) async => r'$bundle-file-id'));
         String? capturedPayload;
         when(
           () => room.sendTextEvent(
@@ -3484,10 +3541,12 @@ void main() {
             any<MatrixFile>(),
             extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
           ),
-        ).thenAnswer((inv) async {
-          capturedFile = inv.positionalArguments.first as MatrixFile;
-          return r'$file-id';
-        });
+        ).thenAnswer(
+          uploadStub.record((inv) async {
+            capturedFile = inv.positionalArguments.first as MatrixFile;
+            return r'$file-id';
+          }),
+        );
 
         final stripped = await sender.sendOutboxBundlePayloadForTesting(
           room: room,
@@ -3532,10 +3591,12 @@ void main() {
             any<MatrixFile>(),
             extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
           ),
-        ).thenAnswer((inv) async {
-          capturedFile = inv.positionalArguments.first as MatrixFile;
-          return r'$file-id';
-        });
+        ).thenAnswer(
+          uploadStub.record((inv) async {
+            capturedFile = inv.positionalArguments.first as MatrixFile;
+            return r'$file-id';
+          }),
+        );
 
         final agentEntity = AgentDomainEntity.agentState(
           id: 'state-1',
@@ -3779,10 +3840,12 @@ void main() {
             any<MatrixFile>(),
             extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
           ),
-        ).thenAnswer((inv) async {
-          capturedFile = inv.positionalArguments.first as MatrixFile;
-          return r'$file-id';
-        });
+        ).thenAnswer(
+          uploadStub.record((inv) async {
+            capturedFile = inv.positionalArguments.first as MatrixFile;
+            return r'$file-id';
+          }),
+        );
 
         const stateUpdate = SyncMessage.notificationStateUpdate(
           id: 'state-bundle',
@@ -4021,10 +4084,12 @@ void main() {
             any<MatrixFile>(),
             extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
           ),
-        ).thenAnswer((inv) async {
-          capturedFile = inv.positionalArguments.first as MatrixFile;
-          return r'$file-id';
-        });
+        ).thenAnswer(
+          uploadStub.record((inv) async {
+            capturedFile = inv.positionalArguments.first as MatrixFile;
+            return r'$file-id';
+          }),
+        );
 
         const configFlag = SyncMessage.configFlag(
           name: 'enable_logging',
@@ -4094,7 +4159,7 @@ void main() {
             any<MatrixFile>(),
             extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
           ),
-        ).thenAnswer((_) async => r'$bad-json-file-id');
+        ).thenAnswer(uploadStub.record((_) async => r'$bad-json-file-id'));
 
         final result = await sender.sendNotificationPayloadForTesting(
           room: room,
@@ -4142,7 +4207,7 @@ void main() {
             any<MatrixFile>(),
             extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
           ),
-        ).thenAnswer((_) async => r'$file-audio-initial');
+        ).thenAnswer(uploadStub.record((_) async => r'$file-audio-initial'));
         // resendAttachments is false — only the initial-status branch matters.
         when(
           () => journalDb.getConfigFlag(resendAttachments),
@@ -4238,10 +4303,12 @@ void main() {
             any<MatrixFile>(),
             extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
           ),
-        ).thenAnswer((inv) async {
-          capturedFile = inv.positionalArguments.first as MatrixFile;
-          return r'$bundle-null-msgvc-file-id';
-        });
+        ).thenAnswer(
+          uploadStub.record((inv) async {
+            capturedFile = inv.positionalArguments.first as MatrixFile;
+            return r'$bundle-null-msgvc-file-id';
+          }),
+        );
 
         // Child has vectorClock: null so messageVc == null but entityVc != null.
         final bundle = SyncOutboxBundle(
@@ -4328,10 +4395,12 @@ void main() {
             any<MatrixFile>(),
             extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
           ),
-        ).thenAnswer((inv) async {
-          capturedFile = inv.positionalArguments.first as MatrixFile;
-          return r'$no-vc-link-file-id';
-        });
+        ).thenAnswer(
+          uploadStub.record((inv) async {
+            capturedFile = inv.positionalArguments.first as MatrixFile;
+            return r'$no-vc-link-file-id';
+          }),
+        );
 
         // Use a sender without vectorClockService so host is null.
         final senderNoVc = MatrixMessageSender(
