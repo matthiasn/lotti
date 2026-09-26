@@ -202,6 +202,31 @@ extension _TranscriptionSummaryCases on _SkillInferenceTestSetup {
         },
       );
 
+      // The recording already held a summarizable transcript, so only the
+      // outcome gate can stop a paid summary of words that are not new.
+      test(
+        'does NOT summarize when the transcript was not saved',
+        () async {
+          final audio = makeAudioEntity(plainText: longTranscript);
+          await stubTranscriptionThrough(audio);
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => false);
+          stubLoggingException();
+          final errors = <Object>[];
+
+          await runner.runTranscription(
+            audioEntryId: 'audio-1',
+            automationResult: makeTranscriptionResultWithSummary(),
+            linkedTaskId: 'task-1',
+            onError: errors.add,
+          );
+
+          expect(errors.single, isA<StateError>());
+          verifyNotSummarized();
+        },
+      );
+
       test(
         'does NOT summarize a recording with no resolved task — the summary '
         'is framed by a task, and a check-in or standalone note has none',

@@ -156,6 +156,13 @@ on:
       - "lib/features/labels/repository/labels_repository.dart"
       - "lib/features/journal/repository/journal_repository.dart"
       - "lib/logic/persistence_updates.dart"
+      - "lib/features/ai/services/skill_inference_runner.dart"
+      - "lib/features/ai/services/skill_inference_runner_internals.dart"
+      - "lib/features/ai/helpers/entity_state_helper.dart"
+      - "lib/features/ai/state/skill_trigger_providers.dart"
+      - "lib/features/speech/helpers/automatic_prompt_trigger.dart"
+      - "lib/features/sync/services/synced_audio_inference_dispatcher.dart"
+      - "lib/features/relationships/service/check_in_transcription_service.dart"
       - ".github/workflows/tla-model-check.yml"
 
 concurrency:

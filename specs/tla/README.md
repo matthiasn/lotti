@@ -2193,6 +2193,81 @@ What the model leaves out:
 The repository suite (`ai_config_repository_test.dart`, "replication across
 devices") drives two real repositories over in-memory databases through the
 traces above; reverting any one of the Dart fixes fails at least one of them.
+## `TranscriptionRun` — a recording's transcript, saved once and for real
+
+Skill-based transcription of one recording on one device, through
+`SkillInferenceRunner.runTranscription`: the requests that start it (the
+automatic trigger when a recording stops, the AI popup and the timelines'
+Retry through `triggerSkillProvider`, the synced-audio dispatcher on a pinned
+host, the check-in service), the provider call, the re-read and the write of
+the transcript back onto the `JournalAudio`, the audio summary, and what the
+callers do once the call returns — `AutomaticPromptTrigger` nudges the
+subject's agent, the check-in waiter gives up on `onError`. A peer's synced
+edit can land at any point; one landing between the re-read and the write
+makes the write's vector clock concurrent with the stored one, and
+`JournalDb.updateJournalEntity` refuses it. `JournalRepository` also turns a
+throw into `false`. A local edit only raises this host's counter, which the
+run's own write passes. The runner's contract is described in
+[AI execution paths](../../knowledge/features/ai/execution-paths.md#saving-a-transcript).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `OkMeansPersisted` | invariant | a caller told the run succeeded can find its transcript |
+| `AttributionTruthful` | invariant | an attribution is finalized as succeeded only when its transcript was saved |
+| `FollowUpsNeedTranscript` | invariant | the audio summary and the agent nudge follow a saved transcript only |
+| `SingleInference` | invariant | at most one paid inference of a recording is in flight on a device |
+| `StatusShowsRunning` | invariant | while a transcription is under way its status says so |
+| `NoLostEdit` | invariant | text edited while a run was under way survives its write |
+| `ConflictIsTransient` | invariant | a write that did not land fails the run only after `MaxAttempts` tries |
+| `EveryRequestSettles` | liveness | every request returns, succeeded or visibly failed |
+| `WaiterResolves` | liveness | the check-in waiter ends with the words or with the error, never only by its timeout |
+
+| Configuration | Requests | Peer edits | User edits | Provider failures | Write throws | Write attempts | Distinct states |
+|---------------|----------|------------|------------|-------------------|--------------|----------------|-----------------|
+| `TranscriptionRun` | 2 | 1 | 1 | 1 | 1 | 3 | 20,533 |
+| `TranscriptionRunExhaust` | 2 | 2 | 1 | 0 | 1 | 2 | 93,568 |
+
+The second lets a run use up its write attempts, so the failure path after the
+last retry is explored too. Each fix has a switch; setting one to `FALSE` in a
+temporary copy of `TranscriptionRun.cfg` gives:
+
+| Mutation | Counterexample |
+|----------|----------------|
+| `CheckWrite = FALSE` (the code before) | `OkMeansPersisted` (5 states): request, inference, re-read, and a write that does not land — the run reports success, status idle, an attribution finalized as succeeded (`AttributionTruthful`), and one step later the summary runs (`FollowUpsNeedTranscript`, 6 states). Checking `WaiterResolves` alone (10 states): the check-in joins, a write that does not land, both calls return without an error, and the waiter sees no words until its timeout |
+| `RetryConflict = FALSE` | `ConflictIsTransient` (5 states): the first write that does not land fails the run, which paid for an inference a second attempt would have saved |
+| `SettleOnOutcome = FALSE` | `FollowUpsNeedTranscript` (4 states): the provider fails and the summary runs anyway — over whatever the recording held before; the agent nudge after it likewise |
+| `SingleFlight = FALSE` | `SingleInference` (3 states): two requests for one recording both start an inference. Checking `StatusShowsRunning` alone (4 states): the second run fails and sets the status to error while the first is still running |
+| `KeepConcurrentEdit = FALSE` | `NoLostEdit` (6 states): a synced edit of the text lands during the inference, the re-read sees it, and the write replaces it with the transcript |
+| `EditInWriteWindow = TRUE` | `NoLostEdit` (6 states) — a residual, below |
+
+What the model leaves out:
+
+- **A local edit between the re-read and the write** (`EditInWriteWindow`). The
+  run compares the re-read text with the text at its first read; an edit that
+  commits after the re-read, with a smaller counter than the one the run's write
+  then reserves, is still overwritten. The window is a few local database
+  calls long.
+  Closing it means a compare-and-set write (`updateDbEntity`'s `precondition`),
+  which `JournalRepository.updateJournalEntity` does not expose.
+- **Re-transcription replaces text edited before the run.** That is the
+  request: the user asked for new words. The earlier transcripts stay in the
+  history, but typed corrections do not.
+- **Another device transcribing the same recording.** The model is one device.
+  The synced-audio dispatcher's self-echo, pin and transcript-count guards
+  decide which device transcribes a synced recording; a transcript that lands
+  from a peer during a run is a peer edit here, and the run keeps the peer's
+  text.
+- **A failed run's attribution** stays an unfinalized in-memory session, as an
+  image analysis whose response was not stored does: the consumption events are
+  the evidence and no output claims the work.
+- **The summary's own gates** (a task, an automated transcription, an automated
+  summary skill) and its failures, which never reach the transcription run.
+- **Daily OS capture**, which transcribes through `AudioTranscriptionService`,
+  not this runner.
+
+The runner suite (`skill_inference_runner_test.dart`, `transcription_save.dart`
+and `transcription_summary.dart`) and `automatic_prompt_trigger_test.dart` hold
+a deterministic regression for each switch; each fails with its fix reverted.
 
 ## `EnvelopeChain` — signed provenance chains (a design model)
 

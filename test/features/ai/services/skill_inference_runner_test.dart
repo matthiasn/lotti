@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -67,6 +68,7 @@ part 'skill_inference_runner_cases/prompt_generation_scenarios.dart';
 part 'skill_inference_runner_cases/test_setup.dart';
 part 'skill_inference_runner_cases/transcription.dart';
 part 'skill_inference_runner_cases/transcription_context_and_errors.dart';
+part 'skill_inference_runner_cases/transcription_save.dart';
 part 'skill_inference_runner_cases/transcription_summary.dart';
 
 void main() {
@@ -76,7 +78,8 @@ void main() {
     group('runTranscription', () {
       setup
         ..registerTranscription()
-        ..registerTranscriptionContextAndErrors();
+        ..registerTranscriptionContextAndErrors()
+        ..registerTranscriptionSave();
     });
     group('runImageAnalysis', () {
       setup

@@ -133,6 +133,9 @@ SECONDS = {
     "GoalRegisterCrash": 23,
     "GoalRegisterDeath": 4,
     "GoalRegisterDivergent": 1,
+    # Measured locally (4 shared cores) when added; refresh from CI.
+    "TranscriptionRun": 12,
+    "TranscriptionRunExhaust": 44,
 }
 
 # Pessimistic, so an unmeasured configuration is not piled onto a full shard.
