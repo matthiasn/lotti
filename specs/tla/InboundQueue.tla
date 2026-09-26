@@ -65,9 +65,10 @@
 (*                     stay until they expire, in-memory state is lost     *)
 (*                                                                         *)
 (* The fixes are switches, so a configuration with a switch FALSE is the   *)
-(* old code. Every checked-in configuration keeps the guards TRUE.        *)
-(* SliceRace delays gap metadata; GateSyncSlice holds the live slice until *)
-(* that gap is claimed. InboundQueueSlice exercises this SDK ordering.     *)
+(* old code. Every checked-in configuration sets them TRUE. SliceRace is   *)
+(* the one residual: TRUE lets the worker apply a limited sync's slice     *)
+(* before BridgeCoordinator sees the sync, which the checked-in            *)
+(* configurations exclude (see the README).                                *)
 (***************************************************************************)
 EXTENDS Integers, FiniteSets
 
@@ -92,9 +93,8 @@ CONSTANTS
     ResurrectRechecksCap, \* ... and still under the hard cap
     RetainFailedClaim, \* a claim whose marker read throws stays pending
     HardCap,        \* resurrections per row (`hardCap`)
-    \* SDK response admission and delayed metadata:
-    GateSyncSlice,  \* TRUE: hold live events until delayed gap metadata is claimed
-    SliceRace       \* TRUE: SDK gap metadata arrives after the live slice
+    \* The residual:
+    SliceRace       \* TRUE: the slice can apply before the trigger claims
 
 FaultKinds == {
     "enqueue",      \* an inbound_event_queue insert throws
@@ -275,7 +275,6 @@ KeyArrives(e) ==
 
 LiveDeliver ==
     /\ running
-    /\ ~(GateSyncSlice /\ gapPending)
     /\ liveNext <= tip
     /\ LET e == liveNext IN
        /\ liveNext' = e + 1

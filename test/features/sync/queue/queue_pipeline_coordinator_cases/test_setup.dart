@@ -101,7 +101,6 @@ class _QueueCoordinatorTestSetup {
   late MockQueueMarkerSeeder seeder;
   late StreamController<Event> timelineCtl;
   late CachedStreamController<SyncUpdate> syncCtl;
-  late StreamController<SyncStatusUpdate> syncStatusCtl;
   late MockMatrixClient client;
   final roomId = '!roomA:example.org';
 
@@ -125,10 +124,6 @@ class _QueueCoordinatorTestSetup {
       seeder = MockQueueMarkerSeeder();
       timelineCtl = StreamController<Event>.broadcast(sync: true);
       syncCtl = CachedStreamController<SyncUpdate>();
-      syncStatusCtl = StreamController<SyncStatusUpdate>.broadcast(sync: true);
-      when(() => sessionManager.syncStatusUpdates).thenAnswer(
-        (_) => syncStatusCtl.stream,
-      );
       client = MockMatrixClient();
       when(() => client.onSync).thenReturn(syncCtl);
 
@@ -210,7 +205,6 @@ class _QueueCoordinatorTestSetup {
     tearDown(() async {
       await timelineCtl.close();
       await syncCtl.close();
-      await syncStatusCtl.close();
       await syncDb.close();
       await journalDb.close();
     });

@@ -414,12 +414,7 @@ class MockMatrixMessageSender extends Mock implements MatrixMessageSender {}
 
 class MockSentEventRegistry extends Mock implements SentEventRegistry {}
 
-class MockMatrixSessionManager extends Mock implements MatrixSessionManager {
-  MockMatrixSessionManager() {
-    when(() => syncStatusUpdates).thenAnswer((_) => const Stream.empty());
-    when(() => isProcessingSync).thenReturn(false);
-  }
-}
+class MockMatrixSessionManager extends Mock implements MatrixSessionManager {}
 
 class MockSyncRoomManager extends Mock implements SyncRoomManager {}
 

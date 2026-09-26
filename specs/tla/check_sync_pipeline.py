@@ -65,10 +65,6 @@ def main():
           "NoSettledMixedWitness", profile="SyncPipelineMixedPeers",
           extension='\nNoSettledMixedWitness == ~(Counters \\subseteq s.committed /\\\n'
                     '    (\\A p \\in Peers : Counters \\subseteq s.received[p]))\n')
-    for gated, fails in (("TRUE", False), ("FALSE", True)):
-        check("limited-slice-gate-" + gated, {"GateSyncSlice": gated},
-              "NoSilentLoss", fails=fails, module="InboundQueue",
-              profile="InboundQueueSlice")
     mutations = [
         ("burn", "DurableBurn", {"MaxCounter": "1", "AbortCounters": "{1}",
          "MaxFaults": "1", "FaultKinds": '{"burnStage"}'}, "BurnHasDurableMarker"),
