@@ -63,7 +63,6 @@ class FakeChecklistItemController extends ChecklistItemController {
       super(const (id: 'fake', taskId: null));
 
   ChecklistItem? _item;
-  bool deleteCalled = false;
   bool archiveCalled = false;
   bool unarchiveCalled = false;
   bool? checkedValue;
@@ -71,13 +70,6 @@ class FakeChecklistItemController extends ChecklistItemController {
 
   @override
   Future<ChecklistItem?> build() async => _item;
-
-  @override
-  Future<bool> delete() async {
-    deleteCalled = true;
-    state = const AsyncData(null);
-    return true;
-  }
 
   @override
   void archive() {
@@ -114,8 +106,12 @@ class FakeChecklistItemController extends ChecklistItemController {
 
 /// Shared state holder for [FakeChecklistController] instances.
 class ChecklistControllerCallTracker {
-  String? unlinkedItemId;
-  String? relinkedItemId;
+  /// The key `beginItemDeletion` hands back; `null` models a deletion that
+  /// could not be recorded.
+  String? deletionKey = 'deletion-key';
+  String? deletionBegunForItemId;
+  Duration? deletionUndoWindow;
+  ({String key, String itemId})? undoneDeletion;
   Object? droppedLocalData;
   int? droppedTargetIndex;
   String? droppedTargetItemId;
@@ -131,13 +127,22 @@ class FakeChecklistController extends ChecklistController {
   Future<Checklist?> build() async => null;
 
   @override
-  Future<void> unlinkItem(String checklistItemId) async {
-    _tracker?.unlinkedItemId = checklistItemId;
+  Future<String?> beginItemDeletion(
+    String checklistItemId, {
+    required Duration undoWindow,
+  }) async {
+    _tracker
+      ?..deletionBegunForItemId = checklistItemId
+      ..deletionUndoWindow = undoWindow;
+    return _tracker?.deletionKey;
   }
 
   @override
-  Future<void> relinkItem(String checklistItemId) async {
-    _tracker?.relinkedItemId = checklistItemId;
+  Future<void> undoItemDeletion({
+    required String key,
+    required String checklistItemId,
+  }) async {
+    _tracker?.undoneDeletion = (key: key, itemId: checklistItemId);
   }
 
   @override
@@ -954,22 +959,56 @@ void main() {
 
     // ── Swipe to delete ────────────────────────────────────────────────────
 
-    testWidgets('swipe left dismisses and shows delete snackbar', (
-      tester,
-    ) async {
-      final ctrls = await _pumpWithControllers(tester);
-      await tester.pump();
+    /// Swipes the row away to the left and lets the dismiss animation run,
+    /// staying well inside the undo window.
+    Future<void> swipeToDelete(WidgetTester tester) async {
+      await tester.drag(find.byType(Dismissible), const Offset(-300, 0));
+      // Frame by frame: the slide-out, then the resize, then onDismissed.
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 200));
+      }
+    }
 
-      // Swipe left (endToStart)
-      await tester.drag(
-        find.byType(Dismissible),
-        const Offset(-300, 0),
-      );
-      await tester.pumpAndSettle();
+    testWidgets(
+      'swipe left begins the deletion with the undo window, and leaves '
+      'timing and completing it to the repository',
+      (tester) async {
+        final ctrls = await _pumpWithControllers(tester);
+        final tracker = ctrls.checklistTracker;
+        await tester.pump();
 
-      expect(ctrls.checklistTracker.unlinkedItemId, 'item-1');
-      expect(find.text('Item deleted'), findsOneWidget);
-    });
+        await swipeToDelete(tester);
+
+        expect(tracker.deletionBegunForItemId, 'item-1');
+        // The repository deletes the item when this window closes — the row
+        // leaves the screen with the item, so it cannot time it.
+        expect(tracker.deletionUndoWindow, kChecklistDeleteDuration);
+        expect(find.text('Item deleted'), findsOneWidget);
+
+        // The row starts no timer of its own: nothing is pending past the
+        // window, and the deletion is never undone.
+        await tester.pump(kChecklistDeleteDuration * 2);
+        expect(tracker.undoneDeletion, isNull);
+      },
+    );
+
+    testWidgets(
+      'swipe left schedules nothing when the deletion was not recorded',
+      (tester) async {
+        final ctrls = await _pumpWithControllers(tester);
+        final tracker = ctrls.checklistTracker..deletionKey = null;
+        await tester.pump();
+
+        await swipeToDelete(tester);
+        await tester.pump(kChecklistDeleteDuration * 2);
+
+        expect(tracker.deletionBegunForItemId, 'item-1');
+        // No toast, so nothing to undo.
+        expect(find.text('Item deleted'), findsNothing);
+        expect(find.text('Undo'), findsNothing);
+        expect(tracker.undoneDeletion, isNull);
+      },
+    );
 
     testWidgets(
       'checking item with active suggestion clears it',
@@ -1531,16 +1570,15 @@ void main() {
     // ── Delete undo action ──────────────────────────────────────────────────
 
     testWidgets(
-      'tapping Undo in delete snackbar relinks item and cancels delete timer',
+      'tapping Undo in delete snackbar undoes the deletion by its key',
       (tester) async {
         final ctrls = await _pumpWithControllers(tester);
+        final tracker = ctrls.checklistTracker;
         await tester.pump();
 
-        // Swipe left to delete.
-        await tester.drag(find.byType(Dismissible), const Offset(-300, 0));
-        await tester.pumpAndSettle();
+        await swipeToDelete(tester);
 
-        expect(ctrls.checklistTracker.unlinkedItemId, 'item-1');
+        expect(tracker.deletionBegunForItemId, 'item-1');
         expect(find.text('Item deleted'), findsOneWidget);
 
         // Tap the "Undo" action in the snackbar.
@@ -1549,8 +1587,11 @@ void main() {
         await tester.tap(undoFinder);
         await tester.pump();
 
-        // relinkItem should have been called by the undo action.
-        expect(ctrls.checklistTracker.relinkedItemId, 'item-1');
+        expect(tracker.undoneDeletion, (
+          key: 'deletion-key',
+          itemId: 'item-1',
+        ));
+        await tester.pump(kChecklistDeleteDuration * 2);
       },
     );
 

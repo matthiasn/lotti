@@ -462,7 +462,7 @@ void main() {
         for (final title in ['Send the memo', 'Send the launch memo']) {
           await repository.updateChecklistItem(
             checklistItemId: memoItemId,
-            data: (await stored(memoItemId)).data.copyWith(title: title),
+            change: (stored) => stored.copyWith(title: title),
             taskId: task.meta.id,
           );
         }

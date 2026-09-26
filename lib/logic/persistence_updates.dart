@@ -73,10 +73,13 @@ class PersistenceUpdates extends PersistenceCollaboratorBase {
     geolocationService.addGeolocation(journalEntityId, logic.updateDbEntity);
   }
 
+  /// [precondition], when given, runs inside the write's transaction; the
+  /// write applies only while it holds (see `updateDbEntity`).
   Future<bool> updateJournalEntity(
     JournalEntity journalEntity,
-    Metadata metadata,
-  ) async {
+    Metadata metadata, {
+    Future<bool> Function()? precondition,
+  }) async {
     try {
       // Wrap the whole update chain in a VC scope so the counter reserved
       // inside [updateMetadata] rolls back whenever the downstream write is
@@ -122,6 +125,7 @@ class PersistenceUpdates extends PersistenceCollaboratorBase {
               (await logic.updateDbEntity(
                 entityWithUpdatedMeta,
                 beforeNotify: beforeNotify,
+                precondition: precondition,
               )) ??
               false;
           if (applied) {

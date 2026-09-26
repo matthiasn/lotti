@@ -2,10 +2,12 @@ import 'dart:io';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/change_source.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
 import 'package:lotti/features/plaza/data/plaza_repository.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -274,50 +276,112 @@ void main() {
       expect(await repository.loadProject(project.id), isNull);
     },
   );
-  test(
-    'checklist writes preserve fresh content and stamp user provenance',
-    () async {
+  group('a checklist click written onto the item as stored', () {
+    late String itemId;
+    late ChecklistItem read;
+    late ChecklistItem storedSince;
+
+    setUp(() {
       final checklist = entities[task.data.checklistIds!.first]! as Checklist;
-      final itemId = checklist.data.linkedChecklistItems.first;
+      itemId = checklist.data.linkedChecklistItems.first;
       final original = entities[itemId]! as ChecklistItem;
-      final item = original.copyWith(
+      read = original.copyWith(
         data: original.data.copyWith(
-          title: 'Renamed by sync',
+          title: 'Count the krill',
           isChecked: false,
         ),
       );
-      entities[itemId] = item;
-      when(
-        () => persistence.updateMetadata(item.meta),
-      ).thenAnswer((_) async => item.meta);
-      when(
-        () => persistence.updateDbEntity(any(), linkedId: task.meta.id),
-      ).thenAnswer((_) async => true);
-      final saved = await withClock(
-        Clock.fixed(manualDemoNow),
-        () => repository.setChecklistItemChecked(
-          projectId: project.meta.id,
-          taskId: task.meta.id,
-          itemId: itemId,
-          checked: true,
+      entities[itemId] = read;
+      // Renamed and listed on a second checklist after the click's checks
+      // read the item.
+      storedSince = read.copyWith(
+        meta: read.meta.copyWith(vectorClock: const VectorClock({'sync': 3})),
+        data: read.data.copyWith(
+          title: 'Count the krill twice',
+          linkedChecklists: [...read.data.linkedChecklists, 'second-list'],
         ),
       );
-      expect(saved, isTrue);
-      final updated =
-          verify(
-                () => persistence.updateDbEntity(
-                  captureAny(),
-                  linkedId: task.meta.id,
-                ),
-              ).captured.single
-              as ChecklistItem;
-      expect(updated.meta.id, itemId);
-      expect(updated.data.title, 'Renamed by sync');
-      expect(updated.data.isChecked, isTrue);
-      expect(updated.data.checkedAt, manualDemoNow);
-      expect(updated.data.linkedChecklists, item.data.linkedChecklists);
-    },
-  );
+      when(
+        () => db.journalEntityById(itemId),
+      ).thenAnswer((_) async => storedSince);
+      when(
+        () => db.isStoredVersion(any(), any()),
+      ).thenAnswer((_) async => true);
+      when(() => persistence.updateMetadata(any())).thenAnswer(
+        (invocation) async => invocation.positionalArguments.first as Metadata,
+      );
+      when(
+        () => persistence.updateDbEntity(
+          any(),
+          linkedId: any(named: 'linkedId'),
+          precondition: any(named: 'precondition'),
+        ),
+      ).thenAnswer((_) async => true);
+    });
+
+    Future<bool> check({required bool checked}) => withClock(
+      Clock.fixed(manualDemoNow),
+      () => repository.setChecklistItemChecked(
+        projectId: project.meta.id,
+        taskId: task.meta.id,
+        itemId: itemId,
+        checked: checked,
+      ),
+    );
+
+    test(
+      'keeps a rename and a move stored after the read, stamps user '
+      'provenance, and writes only while that version is stored',
+      () async {
+        expect(await check(checked: true), isTrue);
+
+        final captured = verify(
+          () => persistence.updateDbEntity(
+            captureAny(),
+            linkedId: task.meta.id,
+            precondition: captureAny(named: 'precondition'),
+          ),
+        ).captured;
+        final updated = captured[0]! as ChecklistItem;
+        expect(
+          updated.data,
+          storedSince.data.copyWith(
+            isChecked: true,
+            checkedBy: ChangeSource.user,
+            checkedAt: manualDemoNow,
+          ),
+        );
+        verify(() => persistence.updateMetadata(storedSince.meta)).called(1);
+        expect(await (captured[1]! as Future<bool> Function())(), isTrue);
+        verify(
+          () => db.isStoredVersion(itemId, const VectorClock({'sync': 3})),
+        ).called(1);
+      },
+    );
+
+    test(
+      'writes nothing when the stored item is already in the requested '
+      'state',
+      () async {
+        when(() => db.journalEntityById(itemId)).thenAnswer(
+          (_) async => storedSince.copyWith(
+            data: storedSince.data.copyWith(isChecked: true),
+          ),
+        );
+
+        expect(await check(checked: true), isTrue);
+
+        verifyNever(() => persistence.updateMetadata(any()));
+        verifyNever(
+          () => persistence.updateDbEntity(
+            any(),
+            linkedId: any(named: 'linkedId'),
+            precondition: any(named: 'precondition'),
+          ),
+        );
+      },
+    );
+  });
 
   test(
     'checklist writes reject items no longer belonging to the task',

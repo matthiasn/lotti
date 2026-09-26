@@ -69,6 +69,11 @@ known lost-tail limitations are executable CI checks. These additions are not
 included in the historical totals above; configuration results live in the
 [composed model section](README.md#syncpipeline--the-composed-sync-protocol).
 
+The `ChecklistMembership` model (#4504) adds the first spec of the tasks feature:
+one spec, three configurations, six named properties and 5,597,909 distinct
+states. TLC found five bugs and an audit of the modelled code one more (P1×3, P2×3). Not included in the historical totals
+above.
+
 The `EnvelopeChain` design model (#4501) adds one spec, two configurations, six
 named properties and 145,926 distinct states. It models record provenance's
 signed chains before they are built, so it caught no shipped bug; its four
@@ -148,6 +153,7 @@ counterexamples found. "Severity" grades each of those bugs; see
 | [#4490](https://github.com/matthiasn/lotti/pull/4490) | pending | sync | `OutboxCausality` | 1 | 1 (0) | P1 | — | Checks concurrent inline versions through append, collapse and receipt after #4489; fixes missing/empty-clock snapshots being folded at send time. A deliberately unsound collapse violates causal coverage. Also restores TLC triggers for startup and profile teardown |
 | [#4494](https://github.com/matthiasn/lotti/pull/4494) | pending | sync | — | −2 | 0 | — | [0087](../../docs/adr/0087-journal-row-is-the-only-copy.md) | Removed the journal JSON sidecar, and with it `SidecarMatchesRow` and the `JournalReplicationSidecar` and `JournalReplicationSidecarRollback` configurations; the four other `JournalReplication` configurations pass with unchanged state counts |
 | [#4501](https://github.com/matthiasn/lotti/pull/4501) | pending | provenance | `EnvelopeChain` | 2 | 0 | — | — | A design model written before the code: per-store signed chains under crashes, restores, retention and revocation. Each of its four design switches has a counterexample, and it raised two open questions — envelopes orphaned by a restore, and where a revocation cuts |
+| [#4504](https://github.com/matthiasn/lotti/pull/4504) | pending | tasks | `ChecklistMembership` | 3 | 6 (5) | P1×3 P2×3 | [0089](../../docs/adr/0089-checklist-membership-on-the-stored-row.md) | The first spec of the tasks feature. A stale copy — a screen's state, or a row read several awaits before the write — replaced what sync or the agent had stored: an item dropped from its checklist, a checklist dropped from its task by a status change, an item's back-link reverted by a check; a checklist hidden behind a dragged order; and a crash left a multi-row operation half done, now finished at startup from a recorded intent. Auditing the undo window the model covers found swiped items were never deleted at all |
 | [#4506](https://github.com/matthiasn/lotti/pull/4506) | pending | tasks, sync | `SavedTaskFilterSync` | 2 | 9 (0) | P0×2 P1×3 P2 P3×3 | — | Saved filters created on a desktop never reached the phone: filters saved before they synced were never sent, and a reorder on the receiver wrote its stale list over the filters sync had just stored. Changes are now owed in a durable ledger until the outbox accepts them, and revisions and deletes have one total order |
 
 ## Severity
@@ -336,6 +342,12 @@ The P0 and P1 bugs:
 | [#4480](https://github.com/matthiasn/lotti/pull/4480) | P1 | no | A removal sorted before the concurrent edit it followed, so the entity returned |
 | [#4480](https://github.com/matthiasn/lotti/pull/4480) | P1 | no | Removing parsed items, versions or change sets used a stale snapshot clock |
 | [#4480](https://github.com/matthiasn/lotti/pull/4480) | P1 | no | A project recommendation recorded again after an undo stayed removed on peers |
+| [#4504](https://github.com/matthiasn/lotti/pull/4504) | P1 | yes | Adding or reordering a checklist item from a stale copy dropped an item synced in meanwhile, on every device |
+| [#4504](https://github.com/matthiasn/lotti/pull/4504) | P1 | yes | A task field edit, by the user or the agent, dropped a checklist listed since the task was read |
+| [#4504](https://github.com/matthiasn/lotti/pull/4504) | P1 | yes | A check saved from stale item state wrote an old back-link over a move made elsewhere |
+| [#4504](https://github.com/matthiasn/lotti/pull/4504) | P2 | yes | After a drag, a checklist added to the task stayed hidden until the task was left |
+| [#4504](https://github.com/matthiasn/lotti/pull/4504) | P2 | yes | A crash mid-operation left an item unlisted, a move half done or a checklist off its task |
+| [#4504](https://github.com/matthiasn/lotti/pull/4504) | P2 | no | A swiped checklist item was never deleted: the row cancelled the delete when it left the screen |
 | [#4506](https://github.com/matthiasn/lotti/pull/4506) | P0 | no | Saved filters created before they synced were never sent to any peer |
 | [#4506](https://github.com/matthiasn/lotti/pull/4506) | P0 | no | Reordering on a device wrote its stale list over filters sync had stored, deleting them there for good |
 | [#4506](https://github.com/matthiasn/lotti/pull/4506) | P1 | no | A failed enqueue, or a crash after the write, left a saved-filter change that was never sent |

@@ -14,7 +14,9 @@ import '../../../widget_test_utils.dart' show setUpTestGetIt, tearDownTestGetIt;
 import '../../agents/test_utils.dart' show makeTestChecklistApproval;
 import '../test_utils.dart' show ChecklistTestDataFactory;
 
-// Mocks
+/// The field-level change the handler hands `updateChecklistItem`.
+typedef ItemChange = ChecklistItemData Function(ChecklistItemData stored);
+
 void main() {
   late MockChecklistRepository mockChecklistRepository;
   late MockJournalDb mockJournalDb;
@@ -29,6 +31,7 @@ void main() {
         linkedChecklists: [],
       ),
     );
+    registerFallbackValue((ChecklistItemData stored) => stored);
   });
 
   setUp(() async {
@@ -66,15 +69,20 @@ void main() {
     ).thenAnswer((_) async => testTask);
   }
 
-  /// Stubs a successful repository write for [checklistItemId].
-  void stubUpdateSuccess(String checklistItemId) {
+  /// Stubs a successful repository write on [stored]: like the repository,
+  /// it applies the handler's change to the item as stored and returns the
+  /// written item.
+  void stubUpdateSuccess(ChecklistItem stored) {
     when(
       () => mockChecklistRepository.updateChecklistItem(
-        checklistItemId: checklistItemId,
-        data: any(named: 'data'),
+        checklistItemId: stored.id,
+        change: any<ItemChange>(named: 'change'),
         taskId: testTask.id,
       ),
-    ).thenAnswer((_) async => true);
+    ).thenAnswer((invocation) async {
+      final change = invocation.namedArguments[#change] as ItemChange;
+      return stored.copyWith(data: change(stored.data));
+    });
   }
 
   /// Builds the canonical successful processFunctionCall result carrying
@@ -459,7 +467,7 @@ void main() {
 
         stubItemFetch(['item-1'], [item]);
         stubTaskById();
-        stubUpdateSuccess('item-1');
+        stubUpdateSuccess(item);
 
         final result = makeUpdateResult([
           {'id': 'item-1', 'isChecked': true},
@@ -472,7 +480,7 @@ void main() {
         verify(
           () => mockChecklistRepository.updateChecklistItem(
             checklistItemId: 'item-1',
-            data: any(named: 'data'),
+            change: any<ItemChange>(named: 'change'),
             taskId: testTask.id,
           ),
         ).called(1);
@@ -489,7 +497,7 @@ void main() {
 
           stubItemFetch(['item-1'], [item]);
           stubTaskById();
-          stubUpdateSuccess('item-1');
+          stubUpdateSuccess(item);
 
           final result = makeUpdateResult([
             {'id': 'item-1', 'isArchived': true},
@@ -499,14 +507,14 @@ void main() {
 
           expect(count, 1);
           final written =
-              verify(
+              (verify(
                     () => mockChecklistRepository.updateChecklistItem(
                       checklistItemId: 'item-1',
-                      data: captureAny(named: 'data'),
+                      change: captureAny<ItemChange>(named: 'change'),
                       taskId: testTask.id,
                     ),
                   ).captured.single
-                  as ChecklistItemData;
+                  as ItemChange)(item.data);
           expect(written.isArchived, true);
           // Archival must not flip checked state or re-stamp provenance.
           expect(written.isChecked, item.data.isChecked);
@@ -528,10 +536,10 @@ void main() {
           when(
             () => mockChecklistRepository.updateChecklistItem(
               checklistItemId: 'item-1',
-              data: any(named: 'data'),
+              change: any<ItemChange>(named: 'change'),
               taskId: testTask.id,
             ),
-          ).thenAnswer((_) async => false);
+          ).thenAnswer((_) async => null);
 
           final count = await handler.executeUpdates(
             makeUpdateResult([
@@ -544,6 +552,242 @@ void main() {
           expect(handler.skippedItems.single.reason, 'Update failed');
         },
       );
+
+      group('writes onto the item as stored', () {
+        final clockTime = DateTime(2026, 3, 2, 9, 30);
+
+        /// The handler's read, and the version stored by the time it writes:
+        /// renamed and listed on a second checklist in between.
+        ChecklistItem readItem({ChangeSource checkedBy = ChangeSource.agent}) =>
+            ChecklistTestDataFactory.createChecklistItem(
+              id: 'item-1',
+              title: 'Feed the penguins',
+              isChecked: checkedBy == ChangeSource.user,
+              checkedBy: checkedBy,
+              checkedAt: DateTime(2026, 3),
+            );
+        ChecklistItem storedSince(ChecklistItem read) => read.copyWith(
+          data: read.data.copyWith(
+            title: 'Feed the emperor penguins',
+            linkedChecklists: ['checklist-1', 'checklist-2'],
+          ),
+        );
+
+        setUp(() {
+          handler = LottiChecklistUpdateHandler(
+            task: testTask,
+            checklistRepository: mockChecklistRepository,
+            clock: () => clockTime,
+          );
+        });
+
+        test(
+          'a check keeps the rename and the second list stored since its '
+          'read, and reports the stored title',
+          () async {
+            final item = readItem();
+            final stored = storedSince(item);
+            stubItemFetch(['item-1'], [item]);
+            stubTaskById();
+            stubUpdateSuccess(stored);
+
+            final count = await handler.executeUpdates(
+              makeUpdateResult([
+                {'id': 'item-1', 'isChecked': true},
+              ]),
+            );
+
+            expect(count, 1);
+            final change =
+                verify(
+                      () => mockChecklistRepository.updateChecklistItem(
+                        checklistItemId: 'item-1',
+                        change: captureAny<ItemChange>(named: 'change'),
+                        taskId: testTask.id,
+                      ),
+                    ).captured.single
+                    as ItemChange;
+            expect(
+              change(stored.data),
+              stored.data.copyWith(
+                isChecked: true,
+                checkedBy: ChangeSource.agent,
+                checkedAt: clockTime,
+              ),
+            );
+            expect(
+              handler.createToolResponse(
+                makeUpdateResult([
+                  {'id': 'item-1', 'isChecked': true},
+                ]),
+              ),
+              'Updated 1 item: "Feed the emperor penguins" (isChecked).',
+            );
+          },
+        );
+
+        test(
+          'an archival next to a blocked uncheck keeps the stored rename, '
+          'lists and check',
+          () async {
+            final item = readItem(checkedBy: ChangeSource.user);
+            final stored = storedSince(item);
+            stubItemFetch(['item-1'], [item]);
+            stubTaskById();
+            stubUpdateSuccess(stored);
+
+            final count = await handler.executeUpdates(
+              makeUpdateResult([
+                {'id': 'item-1', 'isChecked': false, 'isArchived': true},
+              ]),
+            );
+
+            expect(count, 1);
+            final change =
+                verify(
+                      () => mockChecklistRepository.updateChecklistItem(
+                        checklistItemId: 'item-1',
+                        change: captureAny<ItemChange>(named: 'change'),
+                        taskId: testTask.id,
+                      ),
+                    ).captured.single
+                    as ItemChange;
+            expect(
+              change(stored.data),
+              stored.data.copyWith(isArchived: true),
+            );
+            expect(
+              handler.createToolResponse(
+                makeUpdateResult([
+                  {'id': 'item-1', 'isArchived': true},
+                ]),
+              ),
+              startsWith(
+                'Updated 1 item: "Feed the emperor penguins" (isArchived).',
+              ),
+            );
+          },
+        );
+
+        test(
+          'an archival next to a blocked uncheck counts nothing when the '
+          'repository writes nothing',
+          () async {
+            final item = readItem(checkedBy: ChangeSource.user);
+            stubItemFetch(['item-1'], [item]);
+            stubTaskById();
+            when(
+              () => mockChecklistRepository.updateChecklistItem(
+                checklistItemId: 'item-1',
+                change: any<ItemChange>(named: 'change'),
+                taskId: testTask.id,
+              ),
+            ).thenAnswer((_) async => null);
+
+            final count = await handler.executeUpdates(
+              makeUpdateResult([
+                {'id': 'item-1', 'isChecked': false, 'isArchived': true},
+              ]),
+            );
+
+            expect(count, 0);
+            expect(
+              handler.createToolResponse(
+                makeUpdateResult([
+                  {'id': 'item-1', 'isArchived': true},
+                ]),
+              ),
+              isNot(contains('Updated')),
+            );
+          },
+        );
+
+        test(
+          'a check the user took over since the agent-owned read stands, '
+          'while the rename in the same call lands',
+          () async {
+            final item = readItem();
+            // Unchecked by the user after the handler's read.
+            final stored = item.copyWith(
+              data: item.data.copyWith(
+                checkedBy: ChangeSource.user,
+                checkedAt: DateTime(2026, 3, 2, 9),
+              ),
+            );
+            stubItemFetch(['item-1'], [item]);
+            stubTaskById();
+            stubUpdateSuccess(stored);
+
+            final count = await handler.executeUpdates(
+              makeUpdateResult([
+                {
+                  'id': 'item-1',
+                  'isChecked': true,
+                  'title': 'Feed all the penguins',
+                },
+              ]),
+            );
+
+            expect(count, 1);
+            final change =
+                verify(
+                      () => mockChecklistRepository.updateChecklistItem(
+                        checklistItemId: 'item-1',
+                        change: captureAny<ItemChange>(named: 'change'),
+                        taskId: testTask.id,
+                      ),
+                    ).captured.single
+                    as ItemChange;
+            expect(
+              change(stored.data),
+              stored.data.copyWith(title: 'Feed all the penguins'),
+            );
+          },
+        );
+
+        test(
+          'a user-owned read overridden with a valid reason overrides the '
+          'stored check too',
+          () async {
+            final item = readItem(checkedBy: ChangeSource.user);
+            final stored = storedSince(item);
+            stubItemFetch(['item-1'], [item]);
+            stubTaskById();
+            stubUpdateSuccess(stored);
+
+            final count = await handler.executeUpdates(
+              makeUpdateResult([
+                {
+                  'id': 'item-1',
+                  'isChecked': false,
+                  'reason':
+                      'The 09:00 log says the feeding was cancelled today.',
+                },
+              ]),
+            );
+
+            expect(count, 1);
+            expect(handler.skippedItems, isEmpty);
+            final change =
+                verify(
+                      () => mockChecklistRepository.updateChecklistItem(
+                        checklistItemId: 'item-1',
+                        change: captureAny<ItemChange>(named: 'change'),
+                        taskId: testTask.id,
+                      ),
+                    ).captured.single
+                    as ItemChange;
+            expect(
+              change(stored.data),
+              stored.data.copyWith(
+                isChecked: false,
+                checkedBy: ChangeSource.agent,
+                checkedAt: clockTime,
+              ),
+            );
+          },
+        );
+      });
 
       test('skips an archival that matches the current state', () async {
         final item = ChecklistTestDataFactory.createChecklistItem(
@@ -565,7 +809,7 @@ void main() {
         verifyNever(
           () => mockChecklistRepository.updateChecklistItem(
             checklistItemId: any(named: 'checklistItemId'),
-            data: any(named: 'data'),
+            change: any<ItemChange>(named: 'change'),
             taskId: any(named: 'taskId'),
           ),
         );
@@ -584,7 +828,7 @@ void main() {
 
         stubItemFetch(['item-1'], [item]);
         stubTaskById();
-        stubUpdateSuccess('item-1');
+        stubUpdateSuccess(item);
 
         final result = makeUpdateResult([
           {'id': 'item-1', 'isChecked': false, 'isArchived': true},
@@ -598,14 +842,14 @@ void main() {
           contains('User set this item'),
         );
         final written =
-            verify(
+            (verify(
                   () => mockChecklistRepository.updateChecklistItem(
                     checklistItemId: 'item-1',
-                    data: captureAny(named: 'data'),
+                    change: captureAny<ItemChange>(named: 'change'),
                     taskId: testTask.id,
                   ),
                 ).captured.single
-                as ChecklistItemData;
+                as ItemChange)(item.data);
         expect(written.isArchived, true);
         expect(written.isChecked, true); // the blocked uncheck did NOT land
       });
@@ -618,7 +862,7 @@ void main() {
 
         stubItemFetch(['item-1'], [item]);
         stubTaskById();
-        stubUpdateSuccess('item-1');
+        stubUpdateSuccess(item);
 
         final result = makeUpdateResult([
           {'id': 'item-1', 'title': 'macOS settings'},
@@ -646,7 +890,7 @@ void main() {
         verifyNever(
           () => mockChecklistRepository.updateChecklistItem(
             checklistItemId: any(named: 'checklistItemId'),
-            data: any(named: 'data'),
+            change: any<ItemChange>(named: 'change'),
             taskId: any(named: 'taskId'),
           ),
         );
@@ -701,7 +945,7 @@ void main() {
 
         stubItemFetch(['valid-item', 'missing-item'], [validItem]);
         stubTaskById();
-        stubUpdateSuccess('valid-item');
+        stubUpdateSuccess(validItem);
 
         final result = makeUpdateResult([
           {'id': 'valid-item', 'isChecked': true},
@@ -779,7 +1023,7 @@ void main() {
         when(
           () => mockJournalDb.journalEntityById(testTask.id),
         ).thenAnswer((_) async => refreshedTask);
-        stubUpdateSuccess('item-1');
+        stubUpdateSuccess(item);
 
         final result = makeUpdateResult([
           {'id': 'item-1', 'isChecked': true},
@@ -905,7 +1149,7 @@ void main() {
 
         stubItemFetch(['item-1'], [item]);
         stubTaskById();
-        stubUpdateSuccess('item-1');
+        stubUpdateSuccess(item);
 
         final result = makeUpdateResult([
           {'id': 'item-1', 'isChecked': true, 'title': 'Updated'},
@@ -1015,13 +1259,7 @@ void main() {
       void stubSingleItem(ChecklistItem item) {
         stubItemFetch([item.id], [item]);
         stubTaskById();
-        when(
-          () => mockChecklistRepository.updateChecklistItem(
-            checklistItemId: item.id,
-            data: any(named: 'data'),
-            taskId: testTask.id,
-          ),
-        ).thenAnswer((_) async => true);
+        stubUpdateSuccess(item);
       }
 
       test(
@@ -1055,14 +1293,14 @@ void main() {
             LottiChecklistUpdateHandler.userApprovedStateReason,
           );
           final written =
-              verify(
+              (verify(
                     () => mockChecklistRepository.updateChecklistItem(
                       checklistItemId: item.id,
-                      data: captureAny(named: 'data'),
+                      change: captureAny<ItemChange>(named: 'change'),
                       taskId: testTask.id,
                     ),
                   ).captured.single
-                  as ChecklistItemData;
+                  as ItemChange)(item.data);
           expect(written.title, 'Inspect penguin feeder');
           expect(written.isArchived, isTrue);
           expect(written.isChecked, isTrue);
@@ -1114,14 +1352,14 @@ void main() {
             expect(count, approved ? 1 : 0);
             if (approved) {
               final written =
-                  verify(
+                  (verify(
                         () => mockChecklistRepository.updateChecklistItem(
                           checklistItemId: item.id,
-                          data: captureAny(named: 'data'),
+                          change: captureAny<ItemChange>(named: 'change'),
                           taskId: testTask.id,
                         ),
                       ).captured.single
-                      as ChecklistItemData;
+                      as ItemChange)(item.data);
               expect(written.isChecked, isFalse);
               expect(written.checkedBy, ChangeSource.user);
               expect(written.checkedAt, next.approvedAt);
@@ -1141,7 +1379,7 @@ void main() {
               verifyNever(
                 () => mockChecklistRepository.updateChecklistItem(
                   checklistItemId: any(named: 'checklistItemId'),
-                  data: any(named: 'data'),
+                  change: any<ItemChange>(named: 'change'),
                   taskId: any(named: 'taskId'),
                 ),
               );
@@ -1174,14 +1412,14 @@ void main() {
             1,
           );
           final written =
-              verify(
+              (verify(
                     () => mockChecklistRepository.updateChecklistItem(
                       checklistItemId: item.id,
-                      data: captureAny(named: 'data'),
+                      change: captureAny<ItemChange>(named: 'change'),
                       taskId: testTask.id,
                     ),
                   ).captured.single
-                  as ChecklistItemData;
+                  as ItemChange)(item.data);
           expect(written.checkedStateApproval, receipt);
           expect(written.checkedBy, ChangeSource.user);
         },
@@ -1210,14 +1448,14 @@ void main() {
         }
 
         ChecklistItemData written(String id) =>
-            verify(
+            (verify(
                   () => mockChecklistRepository.updateChecklistItem(
                     checklistItemId: id,
-                    data: captureAny(named: 'data'),
+                    change: captureAny<ItemChange>(named: 'change'),
                     taskId: testTask.id,
                   ),
                 ).captured.single
-                as ChecklistItemData;
+                as ItemChange)(approvedItem().data);
 
         test('agent cannot reverse them but its other changes apply', () async {
           final item = approvedItem();
@@ -1262,7 +1500,7 @@ void main() {
           verifyNever(
             () => mockChecklistRepository.updateChecklistItem(
               checklistItemId: any(named: 'checklistItemId'),
-              data: any(named: 'data'),
+              change: any<ItemChange>(named: 'change'),
               taskId: any(named: 'taskId'),
             ),
           );
@@ -1339,7 +1577,7 @@ void main() {
         verifyNever(
           () => mockChecklistRepository.updateChecklistItem(
             checklistItemId: any(named: 'checklistItemId'),
-            data: any(named: 'data'),
+            change: any<ItemChange>(named: 'change'),
             taskId: any(named: 'taskId'),
           ),
         );
@@ -1412,14 +1650,14 @@ void main() {
           expect(handler.skippedItems, isEmpty);
 
           final captured =
-              verify(
+              (verify(
                     () => mockChecklistRepository.updateChecklistItem(
                       checklistItemId: 'item-1',
-                      data: captureAny(named: 'data'),
+                      change: captureAny<ItemChange>(named: 'change'),
                       taskId: testTask.id,
                     ),
                   ).captured.single
-                  as ChecklistItemData;
+                  as ItemChange)(item.data);
 
           expect(captured.isChecked, false);
           expect(captured.checkedBy, ChangeSource.agent);
@@ -1454,14 +1692,14 @@ void main() {
         expect(handler.skippedItems, isEmpty);
 
         final captured =
-            verify(
+            (verify(
                   () => mockChecklistRepository.updateChecklistItem(
                     checklistItemId: 'item-1',
-                    data: captureAny(named: 'data'),
+                    change: captureAny<ItemChange>(named: 'change'),
                     taskId: testTask.id,
                   ),
                 ).captured.single
-                as ChecklistItemData;
+                as ItemChange)(item.data);
 
         expect(captured.isChecked, false);
         expect(captured.checkedBy, ChangeSource.agent);
@@ -1506,14 +1744,14 @@ void main() {
           );
 
           final captured =
-              verify(
+              (verify(
                     () => mockChecklistRepository.updateChecklistItem(
                       checklistItemId: 'item-1',
-                      data: captureAny(named: 'data'),
+                      change: captureAny<ItemChange>(named: 'change'),
                       taskId: testTask.id,
                     ),
                   ).captured.single
-                  as ChecklistItemData;
+                  as ItemChange)(item.data);
 
           expect(captured.title, 'macOS setup');
           // isChecked should remain unchanged (user's value)
@@ -1611,14 +1849,14 @@ void main() {
         expect(count, 1);
 
         final captured =
-            verify(
+            (verify(
                   () => mockChecklistRepository.updateChecklistItem(
                     checklistItemId: 'item-1',
-                    data: captureAny(named: 'data'),
+                    change: captureAny<ItemChange>(named: 'change'),
                     taskId: testTask.id,
                   ),
                 ).captured.single
-                as ChecklistItemData;
+                as ItemChange)(item.data);
 
         // Provenance should be preserved (no isChecked change)
         expect(captured.checkedBy, ChangeSource.user);
@@ -1697,14 +1935,14 @@ void main() {
         );
 
         final captured =
-            verify(
+            (verify(
                   () => mockChecklistRepository.updateChecklistItem(
                     checklistItemId: 'item-1',
-                    data: captureAny(named: 'data'),
+                    change: captureAny<ItemChange>(named: 'change'),
                     taskId: testTask.id,
                   ),
                 ).captured.single
-                as ChecklistItemData;
+                as ItemChange)(item.data);
 
         expect(captured.title, 'macOS setup');
         // isChecked should remain unchanged (user's value)

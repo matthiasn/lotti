@@ -84,16 +84,16 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
   }) async {
     if (!titleChanged && !isArchivedChanged) return false;
 
-    final partialData = entity.data.copyWith(
-      title: titleChanged ? newTitle! : entity.data.title,
-      isArchived: isArchivedChanged ? newIsArchived! : entity.data.isArchived,
-    );
-    final success = await checklistRepository.updateChecklistItem(
+    final updated = await checklistRepository.updateChecklistItem(
       checklistItemId: id,
-      data: partialData,
+      change: (stored) => stored.copyWith(
+        title: titleChanged ? newTitle! : stored.title,
+        isArchived: isArchivedChanged ? newIsArchived! : stored.isArchived,
+      ),
       taskId: task.id,
     );
-    if (success) {
+    if (updated != null) {
+      final partialData = updated.data;
       _updatedItems.add(
         UpdatedItemDetail(
           title: partialData.title,
@@ -451,34 +451,48 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
       // Apply updates with provenance stamping. The change flags already
       // exclude protected fields; an approved reaffirmation restamps checks.
       final applyChecked = isCheckedChanged || approvedCheck;
-      final updatedData = entity.data.copyWith(
-        isChecked: isCheckedChanged ? newIsChecked! : currentIsChecked,
-        title: titleChanged ? newTitle! : currentTitle,
-        isArchived: isArchivedChanged ? newIsArchived! : currentIsArchived,
-        checkedBy: applyChecked
-            ? (approval == null ? ChangeSource.agent : ChangeSource.user)
-            : entity.data.checkedBy,
-        checkedAt: applyChecked
-            ? (approval?.approvedAt ?? _clock())
-            : entity.data.checkedAt,
-        approvalHistory: [
-          ...entity.data.approvalHistory,
-          if (approval case final receipt?)
-            receipt.copyWith(
-              isChecked: newIsChecked,
-              title: newTitle,
-              isArchived: newIsArchived,
-            ),
-        ],
-      );
+      final checkedBy = approval == null
+          ? ChangeSource.agent
+          : ChangeSource.user;
+      final checkedAt = approval?.approvedAt ?? _clock();
 
-      final success = await checklistRepository.updateChecklistItem(
+      // Only the fields this call changes are written, onto the item as
+      // stored: the entity read above may predate a move or an edit made
+      // since (ChecklistMembership.tla, RebaseItems).
+      // The sovereignty guard above judged the item as read. A check the
+      // user makes after that read is theirs as well, and this call brought
+      // no reason to override it: on the item as stored, it stands.
+      final guardedByRead =
+          approval != null || entity.data.checkedBy == ChangeSource.user;
+      final updated = await checklistRepository.updateChecklistItem(
         checklistItemId: id,
-        data: updatedData,
+        change: (stored) {
+          final userTookOver =
+              !guardedByRead && stored.checkedBy == ChangeSource.user;
+          final setChecked = applyChecked && !userTookOver;
+          return stored.copyWith(
+            isChecked: isCheckedChanged && !userTookOver
+                ? newIsChecked!
+                : stored.isChecked,
+            title: titleChanged ? newTitle! : stored.title,
+            isArchived: isArchivedChanged ? newIsArchived! : stored.isArchived,
+            checkedBy: setChecked ? checkedBy : stored.checkedBy,
+            checkedAt: setChecked ? checkedAt : stored.checkedAt,
+            approvalHistory: [
+              ...stored.approvalHistory,
+              if (approval case final receipt?)
+                receipt.copyWith(
+                  isChecked: newIsChecked,
+                  title: newTitle,
+                  isArchived: newIsArchived,
+                ),
+            ],
+          );
+        },
         taskId: task.id,
       );
-
-      if (success) {
+      if (updated != null) {
+        final updatedData = updated.data;
         successCount++;
         final changes = <String>[
           if (isCheckedChanged) 'isChecked',

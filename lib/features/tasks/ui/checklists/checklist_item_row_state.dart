@@ -27,8 +27,9 @@ import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 /// State for [ChecklistItemRow]. Manages inline title editing, the delayed
 /// hide/cross-fade when an item is checked off under the Open/Done filter
-/// (via `_holdTimer`), the undoable swipe-to-delete grace period (via
-/// `_deleteTimer`), and the pulsing animation overlaid when an AI completion
+/// (via `_holdTimer`), the undoable swipe-to-delete (whose grace period the
+/// repository times, since the row leaves the screen with the item), and the
+/// pulsing animation overlaid when an AI completion
 /// suggestion targets this item. Tracks the item's last checked/archived
 /// state to decide visibility on data updates.
 class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
@@ -36,7 +37,6 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
   bool _isEditing = false;
   bool _showRow = true;
   Timer? _holdTimer;
-  Timer? _deleteTimer;
 
   late AnimationController _suggestionController;
   late Animation<double> _suggestionPulse;
@@ -110,7 +110,6 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
   @override
   void dispose() {
     _holdTimer?.cancel();
-    _deleteTimer?.cancel();
     _suggestionController.dispose();
     _checkPopController.dispose();
     super.dispose();
@@ -695,19 +694,20 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
         },
         onDismissed: (_) async {
           // Capture the message strings from `context` BEFORE the await:
-          // `unlinkItem` removes this row from the checklist's item list,
+          // `beginItemDeletion` removes this row from the checklist's items,
           // which unmounts the row and invalidates `context`. The
           // `messenger` reference is captured higher up and survives.
           final deletedMessage = context.messages.checklistItemDeleted;
           final undoLabel = context.messages.checklistItemArchiveUndo;
 
-          await checklistNotifier.unlinkItem(widget.itemId);
-
-          _deleteTimer?.cancel();
-          _deleteTimer = Timer(
-            kChecklistDeleteDuration,
-            () async => itemNotifier.delete(),
+          // The repository deletes the item when the undo window closes —
+          // this row is gone by then — and records the deletion, so it
+          // completes even if the app dies meanwhile.
+          final key = await checklistNotifier.beginItemDeletion(
+            widget.itemId,
+            undoWindow: kChecklistDeleteDuration,
           );
+          if (key == null) return;
 
           messenger.showDesignSystemToast(
             tone: DesignSystemToastTone.warning,
@@ -718,9 +718,12 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
             action: ToastAction(
               label: undoLabel,
               onPressed: () {
-                _deleteTimer?.cancel();
-                _deleteTimer = null;
-                checklistNotifier.relinkItem(widget.itemId);
+                unawaited(
+                  checklistNotifier.undoItemDeletion(
+                    key: key,
+                    checklistItemId: widget.itemId,
+                  ),
+                );
                 messenger.hideCurrentSnackBar();
               },
             ),

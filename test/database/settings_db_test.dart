@@ -596,6 +596,66 @@ void main() {
     expect(values, isEmpty);
   });
 
+  group('itemsWithKeyPrefix', () {
+    test('returns every row whose key starts with the prefix, and no other '
+        'row', () async {
+      await db.saveSettingsItem('intent:a', 'first');
+      await db.saveSettingsItem('intent:b', 'second');
+      await db.saveSettingsItem('intentional', 'no colon');
+      await db.saveSettingsItem('other:intent:c', 'prefix inside the key');
+
+      expect(await db.itemsWithKeyPrefix('intent:'), {
+        'intent:a': 'first',
+        'intent:b': 'second',
+      });
+    });
+
+    test('reads the table, so a removed row is gone', () async {
+      await db.saveSettingsItem('intent:a', 'first');
+      await db.saveSettingsItem('intent:b', 'second');
+      await db.removeSettingsItem('intent:a');
+
+      expect(await db.itemsWithKeyPrefix('intent:'), {'intent:b': 'second'});
+    });
+
+    test('treats % and _ in the prefix as literal characters', () async {
+      await db.saveSettingsItem('a%b:1', 'percent');
+      await db.saveSettingsItem('aXYZb:2', 'matches an unescaped %');
+      await db.saveSettingsItem('c_d:1', 'underscore');
+      await db.saveSettingsItem('cXd:2', 'matches an unescaped _');
+
+      expect(await db.itemsWithKeyPrefix('a%b:'), {'a%b:1': 'percent'});
+      expect(await db.itemsWithKeyPrefix('c_d:'), {'c_d:1': 'underscore'});
+    });
+
+    test('treats a backslash in the prefix as a literal character', () async {
+      await db.saveSettingsItem(r'e\%f:1', 'backslash then percent');
+      await db.saveSettingsItem('e%f:2', 'percent alone');
+
+      expect(await db.itemsWithKeyPrefix(r'e\%f:'), {
+        r'e\%f:1': 'backslash then percent',
+      });
+    });
+
+    test('compares case exactly, so a differently cased key is not '
+        'matched', () async {
+      await db.saveSettingsItem('intent:a', 'lower');
+      await db.saveSettingsItem('Intent:b', 'capitalised');
+      await db.saveSettingsItem('INTENT:c', 'upper');
+
+      expect(await db.itemsWithKeyPrefix('intent:'), {'intent:a': 'lower'});
+      expect(await db.itemsWithKeyPrefix('Intent:'), {
+        'Intent:b': 'capitalised',
+      });
+    });
+
+    test('returns an empty map when no key has the prefix', () async {
+      await db.saveSettingsItem('intent:a', 'first');
+
+      expect(await db.itemsWithKeyPrefix('missing:'), isEmpty);
+    });
+  });
+
   test(
     'flush propagates loader failures to every queued completer',
     () async {

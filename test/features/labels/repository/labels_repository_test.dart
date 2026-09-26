@@ -714,40 +714,46 @@ void main() {
     },
   );
 
-  test('setLabels gives up after three refused attempts', () async {
-    final entry = buildEntry(labelIds: const ['a']);
-    when(
-      () => journalDb.journalEntityById(entry.meta.id),
-    ).thenAnswer((_) async => entry);
-    when(
-      () => persistenceLogic.updateMetadata(
-        any(),
-        labelIds: any(named: 'labelIds'),
-        clearLabelIds: any(named: 'clearLabelIds'),
-      ),
-    ).thenAnswer(
-      (invocation) async => invocation.positionalArguments.first as Metadata,
-    );
-    when(
-      () => persistenceLogic.updateDbEntity(
-        any(),
-        precondition: any(named: 'precondition'),
-      ),
-    ).thenAnswer((_) async => false);
+  // A refusal that finds the row as it was is not a race — the write
+  // decision refused it for another reason — so it is not retried.
+  test(
+    'setLabels stops when a refused write finds the row unchanged',
+    () async {
+      final entry = buildEntry(labelIds: const ['a']);
+      when(
+        () => journalDb.journalEntityById(entry.meta.id),
+      ).thenAnswer((_) async => entry);
+      when(
+        () => persistenceLogic.updateMetadata(
+          any(),
+          labelIds: any(named: 'labelIds'),
+          clearLabelIds: any(named: 'clearLabelIds'),
+        ),
+      ).thenAnswer(
+        (invocation) async => invocation.positionalArguments.first as Metadata,
+      );
+      when(
+        () => persistenceLogic.updateDbEntity(
+          any(),
+          precondition: any(named: 'precondition'),
+        ),
+      ).thenAnswer((_) async => false);
 
-    final result = await repository.setLabels(
-      journalEntityId: entry.meta.id,
-      labelIds: const [],
-    );
+      final result = await repository.setLabels(
+        journalEntityId: entry.meta.id,
+        labelIds: const [],
+      );
 
-    expect(result, isFalse);
-    verify(
-      () => persistenceLogic.updateDbEntity(
-        any(),
-        precondition: any(named: 'precondition'),
-      ),
-    ).called(3);
-  });
+      expect(result, isFalse);
+      verify(
+        () => persistenceLogic.updateDbEntity(
+          any(),
+          precondition: any(named: 'precondition'),
+        ),
+      ).called(1);
+      verify(() => journalDb.journalEntityById(entry.meta.id)).called(2);
+    },
+  );
 
   test('setLabels returns false when the entry is missing', () async {
     when(
@@ -1119,8 +1125,8 @@ void main() {
 
     test('builds again on a version stored while it was written', () async {
       final task = buildTask();
-      final taskAfterConflict = buildTask(
-        aiSuppressedLabelIds: {'other-label'},
+      final taskAfterConflict = _storedLater(
+        buildTask(aiSuppressedLabelIds: {'other-label'}),
       );
 
       var readCount = 0;
@@ -1149,8 +1155,8 @@ void main() {
 
     test('returns true on retry when label already in latest', () async {
       final task = buildTask();
-      final taskAlreadySuppressed = buildTask(
-        aiSuppressedLabelIds: {'label-bug'},
+      final taskAlreadySuppressed = _storedLater(
+        buildTask(aiSuppressedLabelIds: {'label-bug'}),
       );
 
       var readCount = 0;
@@ -1224,3 +1230,9 @@ class _TestNotifications implements UpdateNotifications {
     await _controller.close();
   }
 }
+
+/// [task] as a version another writer stored meanwhile: it carries a clock
+/// the one read first does not.
+Task _storedLater(Task task) => task.copyWith(
+  meta: task.meta.copyWith(vectorClock: const VectorClock({'peer': 1})),
+);

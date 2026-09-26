@@ -86,6 +86,10 @@ SECONDS = {
     "ChangeSetLifecycleSyncSplit": 4,
     "InboundQueueCipher": 17,
     "HabitDaySettlement": 4,
+    # Local measurements; refresh from CI.
+    "ChecklistMembership": 60,
+    "ChecklistMembershipCrash": 20,
+    "ChecklistMembershipThree": 10,
     "Outbox": 12,
     "ChangeSetLifecycle": 2,
     "OutboxConcurrent": 3,

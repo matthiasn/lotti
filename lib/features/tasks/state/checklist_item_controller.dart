@@ -8,7 +8,6 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/checklist/services/correction_capture_service.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -80,15 +79,6 @@ class ChecklistItemController extends AsyncNotifier<ChecklistItem?> {
     }
   }
 
-  /// Soft-deletes the item and clears the state; returns the delete result.
-  Future<bool> delete() async {
-    final res = await ref
-        .read(journalRepositoryProvider)
-        .deleteJournalEntity(id);
-    state = const AsyncData(null);
-    return res;
-  }
-
   /// Marks the item archived — it is hidden from active checklist counts but
   /// not deleted. Reversed by [unarchive].
   void archive() => _setArchived(isArchived: true);
@@ -96,48 +86,43 @@ class ChecklistItemController extends AsyncNotifier<ChecklistItem?> {
   /// Restores an archived item back into the active checklist.
   void unarchive() => _setArchived(isArchived: false);
 
-  void _setArchived({required bool isArchived}) {
+  void _setArchived({required bool isArchived}) =>
+      _update((data) => data.copyWith(isArchived: isArchived));
+
+  /// Publishes [change] of this item at once, and writes it onto the item as
+  /// stored ([ChecklistRepository.updateChecklistItem]) — not onto this
+  /// controller's state, which may predate a move or an edit made elsewhere
+  /// — then publishes what was stored. No-op while the item is unloaded.
+  void _update(ChecklistItemData Function(ChecklistItemData data) change) {
     final current = state.value;
-    final data = current?.data;
-    if (current != null && data != null) {
-      final updated = current.copyWith(
-        data: data.copyWith(isArchived: isArchived),
-      );
+    if (current == null) return;
+    state = AsyncData(current.copyWith(data: change(current.data)));
+    unawaited(
       ref
           .read(checklistRepositoryProvider)
           .updateChecklistItem(
             checklistItemId: id,
-            data: updated.data,
+            change: change,
             taskId: taskId,
-          );
-      state = AsyncData(updated);
-    }
+          )
+          .then((written) {
+            if (written != null && ref.mounted) state = AsyncData(written);
+          }),
+    );
   }
 
   /// Toggles the item's checked state, stamping [ChangeSource.user] and the
   /// current time (via [clockProvider]) as the audit trail, then persists and
   /// optimistically publishes the new state.
   void updateChecked({required bool checked}) {
-    final current = state.value;
-    final data = current?.data;
-    if (current != null && data != null) {
-      final updated = current.copyWith(
-        data: data.copyWith(
-          isChecked: checked,
-          checkedBy: ChangeSource.user,
-          checkedAt: ref.read(clockProvider)(),
-        ),
-      );
-      ref
-          .read(checklistRepositoryProvider)
-          .updateChecklistItem(
-            checklistItemId: id,
-            data: updated.data,
-            taskId: taskId,
-          );
-
-      state = AsyncData(updated);
-    }
+    final checkedAt = ref.read(clockProvider)();
+    _update(
+      (data) => data.copyWith(
+        isChecked: checked,
+        checkedBy: ChangeSource.user,
+        checkedAt: checkedAt,
+      ),
+    );
   }
 
   /// Renames the item and, as a side effect, fires a fire-and-forget
@@ -146,70 +131,19 @@ class ChecklistItemController extends AsyncNotifier<ChecklistItem?> {
   /// No-op when the item is unloaded or [title] is null.
   void updateTitle(String? title) {
     final current = state.value;
-    final data = current?.data;
-    if (current != null && data != null && title != null) {
-      final oldTitle = data.title;
-      final categoryId = current.meta.categoryId;
+    if (current == null || title == null) return;
 
-      // Fire-and-forget capture. The service will handle notifications.
-      unawaited(
-        ref
-            .read(correctionCaptureServiceProvider)
-            .captureCorrection(
-              categoryId: categoryId,
-              beforeText: oldTitle,
-              afterText: title,
-            ),
-      );
-
-      // Existing update logic continues synchronously
-      final updated = current.copyWith(
-        data: data.copyWith(title: title),
-      );
-
+    // Fire-and-forget capture. The service will handle notifications.
+    unawaited(
       ref
-          .read(checklistRepositoryProvider)
-          .updateChecklistItem(
-            checklistItemId: id,
-            data: updated.data,
-            taskId: taskId,
-          );
+          .read(correctionCaptureServiceProvider)
+          .captureCorrection(
+            categoryId: current.meta.categoryId,
+            beforeText: current.data.title,
+            afterText: title,
+          ),
+    );
 
-      state = AsyncData(updated);
-    }
-  }
-
-  /// Re-points the item's `linkedChecklists` from [fromChecklistId] to
-  /// [linkedChecklistId] when a drag moves it between checklists. Updates only
-  /// this item's back-links; the two `ChecklistController`s own their own
-  /// linked-item lists.
-  Future<void> moveToChecklist({
-    required String linkedChecklistId,
-    required String fromChecklistId,
-  }) async {
-    final current = state.value;
-    final data = current?.data;
-    if (current != null && data != null) {
-      final linkedChecklists = {
-        ...data.linkedChecklists,
-        linkedChecklistId,
-      }..remove(fromChecklistId);
-
-      final updated = current.copyWith(
-        data: data.copyWith(
-          linkedChecklists: linkedChecklists.toList(),
-        ),
-      );
-
-      await ref
-          .read(checklistRepositoryProvider)
-          .updateChecklistItem(
-            checklistItemId: id,
-            data: updated.data,
-            taskId: taskId,
-          );
-
-      state = AsyncData(updated);
-    }
+    _update((data) => data.copyWith(title: title));
   }
 }

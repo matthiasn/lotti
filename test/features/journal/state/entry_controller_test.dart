@@ -34,6 +34,7 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/utils.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -2342,10 +2343,13 @@ void main() {
   // Add tests for updateChecklistOrder
   group('updateChecklistOrder method', () {
     const entryId = _testTaskId; // ID of the main Task entry
+    late MockChecklistRepository mockChecklistRepository;
 
     setUp(() {
       reset(mockPersistenceLogic);
       reset(mockJournalDb);
+      registerFallbackValue((List<String> stored) => stored);
+      mockChecklistRepository = MockChecklistRepository();
 
       when(
         () => mockJournalDb.journalEntityById(entryId),
@@ -2353,16 +2357,36 @@ void main() {
       when(
         () => mockJournalDb.getJournalEntitiesForIdsUnordered(any()),
       ).thenAnswer((_) async => [testChecklistItem1, testChecklistItem2]);
-
-      // Corrected when call for updateTask
       when(
-        () => mockPersistenceLogic.updateTask(
-          entryText: any(named: 'entryText'),
-          journalEntityId: any(named: 'journalEntityId'),
-          taskData: any(named: 'taskData'),
+        () => mockChecklistRepository.updateTaskChecklistIds(
+          taskId: any(named: 'taskId'),
+          change: any(named: 'change'),
         ),
       ).thenAnswer((_) async => true);
     });
+
+    Future<EntryController> loadedNotifier(String id) async {
+      final container = makeProviderContainer(
+        overrides: [
+          checklistRepositoryProvider.overrideWithValue(
+            mockChecklistRepository,
+          ),
+        ],
+      );
+      final notifier = container.read(entryControllerProvider(id).notifier);
+      await container.read(entryControllerProvider(id).future);
+      return notifier;
+    }
+
+    /// The change the reorder handed the repository, for task [entryId].
+    List<String> Function(List<String>) capturedChange() =>
+        verify(
+              () => mockChecklistRepository.updateTaskChecklistIds(
+                taskId: entryId,
+                change: captureAny(named: 'change'),
+              ),
+            ).captured.single
+            as List<String> Function(List<String>);
 
     test('does nothing if current entry is not a Task', () async {
       final nonTaskEntryId = testImageEntryNoText.meta.id;
@@ -2370,15 +2394,36 @@ void main() {
         () => mockJournalDb.journalEntityById(nonTaskEntryId),
       ).thenAnswer((_) async => testImageEntryNoText);
 
-      final container = makeProviderContainer();
-      final notifier = container.read(
-        entryControllerProvider(nonTaskEntryId).notifier,
-      );
-      await container.read(entryControllerProvider(nonTaskEntryId).future);
-
+      final notifier = await loadedNotifier(nonTaskEntryId);
       await notifier.updateChecklistOrder(['any_id']);
 
-      // Corrected verifyNever call
+      verifyNever(
+        () => mockChecklistRepository.updateTaskChecklistIds(
+          taskId: any(named: 'taskId'),
+          change: any(named: 'change'),
+        ),
+      );
+      verifyNever(
+        () => mockPersistenceLogic.updateTask(
+          entryText: any(named: 'entryText'),
+          journalEntityId: any(named: 'journalEntityId'),
+          taskData: any(named: 'taskData'),
+        ),
+      );
+    });
+
+    test('applies the new order to the stored list of the task', () async {
+      final notifier = await loadedNotifier(entryId);
+      final newOrder = [testChecklistItem2.id, testChecklistItem1.id];
+
+      await notifier.updateChecklistOrder(newOrder);
+
+      expect(
+        capturedChange()([testChecklistItem1.id, testChecklistItem2.id]),
+        newOrder,
+      );
+      // The order is the one writer of the list; the task's other fields are
+      // not saved along with it.
       verifyNever(
         () => mockPersistenceLogic.updateTask(
           entryText: any(named: 'entryText'),
@@ -2389,96 +2434,28 @@ void main() {
     });
 
     test(
-      'updates with an empty list, clearing existing checklistIds',
+      'keeps a checklist stored after the page last read the task — sorting '
+      'must not drop what the agent or sync added (ChecklistMembership.tla)',
       () async {
-        final container = makeProviderContainer();
-        final notifier = container.read(
-          entryControllerProvider(entryId).notifier,
+        final notifier = await loadedNotifier(entryId);
+
+        await notifier.updateChecklistOrder([
+          testChecklistItem2.id,
+          testChecklistItem1.id,
+        ]);
+
+        expect(
+          capturedChange()([
+            testChecklistItem1.id,
+            'added-meanwhile',
+            testChecklistItem2.id,
+          ]),
+          [testChecklistItem2.id, testChecklistItem1.id, 'added-meanwhile'],
         );
-        await container.read(entryControllerProvider(entryId).future);
-
-        notifier.controller.document.insert(
-          0,
-          'Task description from controller',
-        );
-        final expectedEntryText = entryTextFromController(notifier.controller);
-
-        when(
-          () =>
-              mockJournalDb.getJournalEntitiesForIdsUnordered(const <String>{}),
-        ).thenAnswer((_) async => []);
-
-        await notifier.updateChecklistOrder([]);
-
-        final captured = verify(
-          () => mockPersistenceLogic.updateTask(
-            entryText: captureAny(named: 'entryText'),
-            journalEntityId: captureAny(named: 'journalEntityId'),
-            taskData: captureAny(named: 'taskData'),
-          ),
-        ).captured;
-
-        expect(captured[0], entryId);
-        final capturedTaskData = captured[1] as TaskData;
-        final capturedEntryText = captured[2] as EntryText;
-        expect(capturedTaskData.checklistIds, isEmpty);
-        expect(capturedEntryText.plainText, expectedEntryText.plainText);
       },
     );
 
-    test('updates with a new order of existing checklistIds', () async {
-      final container = makeProviderContainer();
-      final notifier = container.read(
-        entryControllerProvider(entryId).notifier,
-      );
-      await container.read(entryControllerProvider(entryId).future);
-      notifier.controller.document.insert(0, 'Reordering checklist');
-      final expectedEntryText = entryTextFromController(notifier.controller);
-
-      final newOrder = [testChecklistItem2.id, testChecklistItem1.id];
-      when(
-        () => mockJournalDb.getJournalEntitiesForIdsUnordered(
-          {testChecklistItem1.id, testChecklistItem2.id},
-        ),
-      ).thenAnswer((_) async => [testChecklistItem1, testChecklistItem2]);
-
-      await notifier.updateChecklistOrder(newOrder);
-
-      final captured = verify(
-        () => mockPersistenceLogic.updateTask(
-          entryText: captureAny(named: 'entryText'),
-          journalEntityId: captureAny(named: 'journalEntityId'),
-          taskData: captureAny(named: 'taskData'),
-        ),
-      ).captured;
-
-      expect(captured[0], entryId);
-      final capturedTaskData = captured[1] as TaskData;
-      final capturedEntryText = captured[2] as EntryText;
-      expect(capturedTaskData.checklistIds, newOrder);
-      expect(capturedEntryText.plainText, expectedEntryText.plainText);
-    });
-
-    test('filters out non-existent or deleted checklistIds', () async {
-      final container = makeProviderContainer();
-      final notifier = container.read(
-        entryControllerProvider(entryId).notifier,
-      );
-      await container.read(entryControllerProvider(entryId).future);
-      notifier.controller.document.insert(0, 'Filtering checklist');
-      final expectedEntryText = entryTextFromController(notifier.controller);
-
-      final idsWithInvalid = [
-        testChecklistItem1.id,
-        'non_existent_id',
-        testChecklistItem3Deleted.id,
-        testChecklistItem2.id,
-      ];
-      final expectedFilteredOrder = [
-        testChecklistItem1.id,
-        testChecklistItem2.id,
-      ];
-
+    test('prunes ids of the shown order that are missing or deleted', () async {
       when(
         () => mockJournalDb.getJournalEntitiesForIdsUnordered({
           testChecklistItem1.id,
@@ -2493,22 +2470,24 @@ void main() {
           testChecklistItem3Deleted,
         ],
       );
+      final notifier = await loadedNotifier(entryId);
 
-      await notifier.updateChecklistOrder(idsWithInvalid);
+      await notifier.updateChecklistOrder([
+        testChecklistItem1.id,
+        'non_existent_id',
+        testChecklistItem3Deleted.id,
+        testChecklistItem2.id,
+      ]);
 
-      final captured = verify(
-        () => mockPersistenceLogic.updateTask(
-          entryText: captureAny(named: 'entryText'),
-          journalEntityId: captureAny(named: 'journalEntityId'),
-          taskData: captureAny(named: 'taskData'),
-        ),
-      ).captured;
-
-      expect(captured[0], entryId);
-      final capturedTaskData = captured[1] as TaskData;
-      final capturedEntryText = captured[2] as EntryText;
-      expect(capturedTaskData.checklistIds, expectedFilteredOrder);
-      expect(capturedEntryText.plainText, expectedEntryText.plainText);
+      expect(
+        capturedChange()([
+          testChecklistItem2.id,
+          testChecklistItem3Deleted.id,
+          'non_existent_id',
+          testChecklistItem1.id,
+        ]),
+        [testChecklistItem1.id, testChecklistItem2.id],
+      );
     });
   });
 

@@ -343,8 +343,13 @@ class PersistenceLogic implements PersistenceLogicContract {
 
   Future<bool> updateJournalEntity(
     JournalEntity journalEntity,
-    Metadata metadata,
-  ) => _updates.updateJournalEntity(journalEntity, metadata);
+    Metadata metadata, {
+    Future<bool> Function()? precondition,
+  }) => _updates.updateJournalEntity(
+    journalEntity,
+    metadata,
+    precondition: precondition,
+  );
 
   @override
   Future<bool?> updateDbEntity(

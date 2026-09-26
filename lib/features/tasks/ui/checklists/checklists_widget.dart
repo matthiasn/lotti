@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
@@ -32,6 +33,9 @@ class ChecklistsWidget extends ConsumerStatefulWidget {
 
 class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
   List<String>? _checklistIds;
+
+  /// The task's stored checklist ids the page last rendered from.
+  List<String>? _renderedTaskChecklistIds;
 
   /// Track expansion states for each checklist (used for sorting mode).
   final Map<String, bool> _expansionStates = {};
@@ -99,6 +103,16 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
 
     if (item == null || item is! Task) {
       return const SizedBox.shrink();
+    }
+
+    // The order a drag produced is shown only until the task's own list
+    // changes — the drag's save landing, or a checklist added by the agent
+    // or by sync — so a checklist that arrives later is never hidden behind
+    // it (specs/tla/ChecklistMembership.tla, PageShowsChecklists).
+    final storedIds = item.data.checklistIds;
+    if (!listEquals(storedIds, _renderedTaskChecklistIds)) {
+      _checklistIds = null;
+      _renderedTaskChecklistIds = storedIds;
     }
 
     final checklistIds = _checklistIds ?? item.data.checklistIds ?? [];

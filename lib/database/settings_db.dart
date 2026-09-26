@@ -183,6 +183,18 @@ class SettingsDb extends _$SettingsDb {
     _publishValue(configKey, null);
   });
 
+  /// Every setting whose key starts with [prefix], by key — compared
+  /// exactly, case included. Read straight from the table, bypassing the
+  /// per-key cache: it lists rows, and a prefix has no single cache entry.
+  Future<Map<String, String>> itemsWithKeyPrefix(String prefix) async {
+    final rows =
+        await (select(settings)..where(
+              (t) => t.configKey.substr(1, prefix.length).equals(prefix),
+            ))
+            .get();
+    return {for (final row in rows) row.configKey: row.value};
+  }
+
   Future<Map<String, String?>> itemsByKeys(Iterable<String> configKeys) async {
     final keyList = configKeys.toSet().toList(growable: false);
     if (keyList.isEmpty) {

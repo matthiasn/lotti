@@ -8,6 +8,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/labels/utils/labels_normalization.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/write_on_stored.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -382,33 +383,18 @@ class LabelsRepository {
     );
   }
 
-  /// Writes the version [build] makes of the stored entry [id] — null when
-  /// there is nothing to write — and applies it only while the stored row is
-  /// still the one it was built on. A version that synced in meanwhile is
-  /// never overwritten: the change is built again on it, under a new clock,
-  /// up to [_storedWriteAttempts] times (ADR 0083).
+  /// Writes the version [build] makes of the stored entry [id] with
+  /// [writeOnStored]: a version that synced in meanwhile is never
+  /// overwritten, the change is built again on it (ADR 0083).
   Future<bool> _writeOnStored(
     String id,
     Future<JournalEntity?> Function(JournalEntity stored) build,
-  ) async {
-    for (var attempt = 0; attempt < _storedWriteAttempts; attempt++) {
-      final stored = await _journalDb.journalEntityById(id);
-      if (stored == null) return false;
-      final updated = await build(stored);
-      if (updated == null) return true;
-      final applied = await _persistenceLogic.updateDbEntity(
-        updated,
-        precondition: () =>
-            _journalDb.isStoredVersion(id, stored.meta.vectorClock),
-      );
-      if (applied ?? false) return true;
-    }
-    return false;
-  }
-
-  /// How often a label write is built again on a version that synced in
-  /// while it was being written.
-  static const _storedWriteAttempts = 3;
+  ) => writeOnStored(
+    journalDb: _journalDb,
+    persistenceLogic: _persistenceLogic,
+    id: id,
+    build: build,
+  );
 }
 
 Set<String>? _mergeSuppressed({

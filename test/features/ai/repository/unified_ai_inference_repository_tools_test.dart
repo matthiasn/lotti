@@ -744,10 +744,18 @@ void main() {
       when(
         () => mockChecklistRepo.updateChecklistItem(
           checklistItemId: 'item-1',
-          data: any(named: 'data'),
+          change: any<ItemChange>(
+            named: 'change',
+          ),
           taskId: taskEntity.id,
         ),
-      ).thenAnswer((_) async => true);
+      ).thenAnswer(
+        (invocation) async => checklistItem.copyWith(
+          data: (invocation.namedArguments[#change] as ItemChange)(
+            checklistItem.data,
+          ),
+        ),
+      );
 
       // Create stream with high confidence suggestion
       final streamController =
@@ -781,20 +789,43 @@ void main() {
         onStatusChange: (_) {},
       );
 
-      // Verify the item was updated to be checked with agent provenance
-      verify(
-        () => mockChecklistRepo.updateChecklistItem(
-          checklistItemId: 'item-1',
-          data: any(
-            named: 'data',
-            that: isA<ChecklistItemData>()
-                .having((d) => d.isChecked, 'isChecked', true)
-                .having((d) => d.checkedBy, 'checkedBy', ChangeSource.agent)
-                .having((d) => d.checkedAt, 'checkedAt', autoCheckTime),
-          ),
-          taskId: taskEntity.id,
+      // The item is checked with agent provenance, on the item as stored
+      // when it is written: a rename and a move made since the read above
+      // are kept.
+      final change =
+          verify(
+                () => mockChecklistRepo.updateChecklistItem(
+                  checklistItemId: 'item-1',
+                  change: captureAny<ItemChange>(named: 'change'),
+                  taskId: taskEntity.id,
+                ),
+              ).captured.single
+              as ItemChange;
+      final storedSince = checklistItem.data.copyWith(
+        title: 'Test item, renamed',
+        linkedChecklists: ['checklist-1', 'checklist-2'],
+      );
+      expect(
+        change(storedSince),
+        storedSince.copyWith(
+          isChecked: true,
+          checkedBy: ChangeSource.agent,
+          checkedAt: autoCheckTime,
         ),
-      ).called(1);
+      );
+
+      // The guards run again on the item as stored: an uncheck the user
+      // made since the read, or a check made since, stands untouched.
+      final uncheckedByUser = checklistItem.data.copyWith(
+        checkedBy: ChangeSource.user,
+        checkedAt: DateTime(2026, 2, 28, 22),
+      );
+      expect(change(uncheckedByUser), uncheckedByUser);
+      final checkedSince = checklistItem.data.copyWith(
+        isChecked: true,
+        checkedAt: DateTime(2026, 2, 28, 22),
+      );
+      expect(change(checkedSince), checkedSince);
     });
 
     test('does not auto-check items with medium or low confidence', () async {
@@ -880,7 +911,9 @@ void main() {
       verifyNever(
         () => mockChecklistRepo.updateChecklistItem(
           checklistItemId: any(named: 'checklistItemId'),
-          data: any(named: 'data'),
+          change: any<ItemChange>(
+            named: 'change',
+          ),
           taskId: any(named: 'taskId'),
         ),
       );
@@ -983,7 +1016,9 @@ void main() {
       verifyNever(
         () => mockChecklistRepo.updateChecklistItem(
           checklistItemId: any(named: 'checklistItemId'),
-          data: any(named: 'data'),
+          change: any<ItemChange>(
+            named: 'change',
+          ),
           taskId: any(named: 'taskId'),
         ),
       );
@@ -1085,7 +1120,9 @@ void main() {
       verifyNever(
         () => mockChecklistRepo.updateChecklistItem(
           checklistItemId: any(named: 'checklistItemId'),
-          data: any(named: 'data'),
+          change: any<ItemChange>(
+            named: 'change',
+          ),
           taskId: any(named: 'taskId'),
         ),
       );

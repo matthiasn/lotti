@@ -1,11 +1,11 @@
 ---
 type: Feature Module
 title: Checklists
-description: The checklist subsystem, its celebration and collapse motion contract, and the sorting state machine.
+description: The checklist subsystem, how its membership lists are written, its celebration and collapse motion contract, and the sorting state machine.
 resource: ../../../lib/features/tasks/ui/checklists
-tags: [tasks, checklists, motion, accessibility]
+tags: [tasks, checklists, motion, accessibility, tla]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-22T19:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-26T11:00:00Z }
 stale_after: 2027-01-25
 sources:
   - id: ui
@@ -28,6 +28,22 @@ sources:
     resource: ../../../lib/features/tasks/state/checklists_sorting_controller.dart
     title: Checklist sorting controller
     last_modified: 2026-08-02
+  - id: membership
+    resource: ../../../lib/features/tasks/model/membership_list.dart
+    title: Membership list changes
+    last_modified: 2026-09-26
+  - id: repository
+    resource: ../../../lib/features/tasks/repository/checklist_repository.dart
+    title: ChecklistRepository — writes on the stored row
+    last_modified: 2026-09-26
+  - id: intents
+    resource: ../../../lib/features/tasks/repository/checklist_membership_intents.dart
+    title: Checklist membership intent log
+    last_modified: 2026-09-26
+  - id: membership-spec
+    resource: ../../../specs/tla/ChecklistMembership.tla
+    title: ChecklistMembership TLA+ spec
+    last_modified: 2026-09-26
 ---
 
 Checklists are one of the main reasons the tasks feature exists as a feature
@@ -52,6 +68,93 @@ flowchart TD
   Ctl --> Move["Move item across checklists"]
   Ctl --> Create["Create new checklist item from drop payload"]
 ```
+
+# Membership is changed on the stored row
+
+Which checklists a task shows is `TaskData.checklistIds`; which items a
+checklist shows is `ChecklistData.linkedChecklistItems`. Every reader — the
+task page, `ChecklistRepository.getChecklistItemsForTask`, the agent's context
+— resolves membership from those lists alone, so an id dropped from its
+parent's list is an item or checklist nobody sees, though its row lives on.
+
+**A membership write states an intent, never a whole list.** Add an id
+(`withMember`), remove one (`withoutMember`), or show these in this order
+(`inVisibleOrder`, which keeps ids the screen never saw) — the pure helpers in
+`lib/features/tasks/model/membership_list.dart`. The intent is applied to the
+list *as stored*, through `writeOnStored` (`lib/logic/write_on_stored.dart`):
+
+```mermaid
+sequenceDiagram
+  participant W as Writer (screen or agent)
+  participant R as ChecklistRepository
+  participant DB as JournalDb
+  W->>R: updateChecklist(change) / updateTaskChecklistIds(change)
+  loop while the stored row keeps moving
+    R->>DB: read the stored row
+    R->>R: change(stored list), next clock on the stored row
+    R->>DB: write, precondition: row is still the version read
+    alt a version landed in between
+      DB-->>R: refused — build again on the new row
+    else refused, row unchanged (a conflict)
+      DB-->>R: refused — stop, report failure
+    else
+      DB-->>R: applied
+    end
+  end
+  R-->>W: the checklist as stored (the controller's new state)
+```
+
+**`ChecklistRepository.updateTaskChecklistIds` is the one writer of a task's
+checklist list.** Every other task write keeps the stored list:
+`PersistenceLogic.updateTask` writes on the stored task with its own
+`checklistIds`, and `JournalRepository.updateJournalEntity` (the agent's task
+field tools) keeps the list read just before the write. So a status or
+estimate saved from a screen's copy of the task cannot drop a checklist the
+agent or sync added since. Conflict resolution writes through
+`PersistenceLogic` directly and keeps the side the user chose.
+
+**The screens' copies are never the base of a write.** `ChecklistController`
+and `ChecklistItemController` state is refreshed by an update notification
+some time after its row changes, so it only decides *what* to change: an item
+check, rename or archive is a change of those fields applied to the stored
+item (`ChecklistRepository.updateChecklistItem`), so it never writes an old
+back-link or title back. The agent's item tools and the Plaza check-off write
+the same way. `ChecklistsWidget` keeps the order of a drag only until the
+task's own list changes, so a checklist that arrives later is shown.
+
+**An operation that writes several rows records its intent first.** Creating
+and listing items, moving an item (its back-link, the target's list, the
+source's), deleting an item across its swipe-undo window, and creating or
+deleting a checklist each save a device-local settings row
+(`ChecklistMembershipIntents`) before their first write and remove it after
+their last. At startup `ChecklistRepository.replayMembershipIntents` finishes
+whatever the app died in the middle of; each intent is a set of idempotent
+changes to stored rows, so replaying a finished one is harmless.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Recorded: record(intent) before the first write
+  Recorded --> Applying: operation writes its rows
+  Applying --> [*]: clear(key) after the last write
+  Applying --> Pending: app dies
+  Recorded --> Pending: app dies
+  Pending --> Replayed: next start, replayMembershipIntents
+  Replayed --> [*]: clear(key)
+  Replayed --> Pending: replay throws or dies (kept)
+```
+
+A swipe-deleted item's intent spans the undo window: `beginItemDeletion`
+records it, unlists the item and times the window in the (keep-alive)
+repository — not in the row, which leaves the screen with the item and used
+to cancel the delete with it, leaving swiped items alive forever. Either
+`completeItemDeletion` (window closed) or `undoItemDeletion` (Undo) clears
+it; a crash in between completes the deletion the user last saw. An
+operation whose writes were refused or failed keeps its intent too, and the
+next start finishes it.
+
+Why each rule exists — the counterexamples TLC found when it was missing — is
+in `specs/tla/ChecklistMembership.tla` and its README section, and the
+decision in [ADR 0089](../../../docs/adr/0089-checklist-membership-on-the-stored-row.md).
 
 When a user renames an item, `ChecklistItemController.updateTitle` fires a
 fire-and-forget `correctionCaptureService.captureCorrection(...)` with the
