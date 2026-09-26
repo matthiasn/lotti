@@ -125,11 +125,45 @@ extension _DescriptorCache on SyncEventProcessor {
   Future<Event?> _decryptDescriptor(Event? descriptor, Room room) async {
     if (descriptor?.type != EventTypes.Encrypted) return descriptor;
     final encryption = room.client.encryption;
-    return encryption == null
-        ? descriptor
-        : encryption
-              .decryptRoomEvent(descriptor!)
-              .timeout(SyncTuning.attachmentDownloadTimeout);
+    if (encryption == null) return descriptor;
+    final decrypted = await encryption
+        .decryptRoomEvent(descriptor!)
+        .timeout(SyncTuning.attachmentDownloadTimeout);
+    if (decrypted.type == EventTypes.Message && decrypted.content.isEmpty) {
+      // Diagnostic for an encrypted server descriptor that the SDK turns into
+      // empty plaintext. Inspect only shape; never log plaintext, keys or the
+      // ciphertext. This does not substitute for the SDK's validated result.
+      try {
+        final sessionId = descriptor.content['session_id'];
+        final ciphertext = descriptor.content['ciphertext'];
+        final session = sessionId is String
+            ? encryption.keyManager
+                  .getInboundGroupSession(room.id, sessionId)
+                  ?.inboundGroupSession
+            : null;
+        final decoded = session != null && ciphertext is String
+            ? jsonDecode(session.decrypt(ciphertext).plaintext)
+            : null;
+        final content = decoded is Map ? decoded['content'] : null;
+        _trace(
+          'descriptorLookup.directShape eventId=${descriptor.eventId} '
+          'sessionAvailable=${session != null} '
+          'payloadIsMap=${decoded is Map} contentIsMap=${content is Map} '
+          'contentFields=${content is Map ? content.length : 0} '
+          'hasMessageType=${content is Map && content.containsKey('msgtype')} '
+          'hasRelativePath=${content is Map && content.containsKey('relativePath')}',
+          subDomain: 'processor.resolve.descriptorLookup',
+        );
+      } catch (error) {
+        // Exception text from a crypto implementation could contain input.
+        _trace(
+          'descriptorLookup.directShape eventId=${descriptor.eventId} '
+          'errorType=${error.runtimeType}',
+          subDomain: 'processor.resolve.descriptorLookup',
+        );
+      }
+    }
+    return decrypted;
   }
 
   /// Fetches fresh JSON from the [AttachmentIndex] descriptor and writes it
