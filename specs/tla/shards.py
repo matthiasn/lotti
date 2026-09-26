@@ -15,7 +15,8 @@ from pathlib import Path
 
 SHARDS = 8
 
-# Seconds TLC spent on each configuration in CI run 36198815983, retaining
+# Seconds TLC spent on each configuration in CI runs 36198815983 and
+# 36217391296, retaining
 # larger historic budgets from runs 36106366560 and 36109959497. The
 # same configuration can take half as long again on another runner, so refresh
 # when a configuration is added or its state space changes by an order of
@@ -28,7 +29,7 @@ SECONDS = {
     "SyncPipelineJournal": 646,
     "SyncPipelineAgentEntity": 6,
     "SyncPipelineAgentLink": 1,
-    "SyncPipelineNotification": 769,
+    "SyncPipelineNotification": 1515,
     "SyncPipelineConsumption": 339,
     "SyncPipelineLossy": 369,
     "SyncPipelineBurn": 5,
@@ -62,7 +63,7 @@ SECONDS = {
     "LogCompaction": 30,
     "InboundQueueLiveness": 124,
     "VersionHeadsGoal": 26,
-    "OutboxOperator": 169,
+    "OutboxOperator": 223,
     "ChangeSetLifecycleRaceSet": 20,
     "OutboxConcurrentLive": 119,
     "ScheduledWakeLeaseCrash": 16,

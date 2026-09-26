@@ -1,5 +1,10 @@
 part of 'sync_event_processor.dart';
 
+/// Download/decode failed before any local cache write was attempted.
+class _SyncDescriptorFetchException extends FileSystemException {
+  const _SyncDescriptorFetchException(super.message, super.path);
+}
+
 /// Descriptor-driven attachment fetching with in-flight deduplication —
 /// shared by the agent payload resolution and the outbox bundle resolver.
 extension _DescriptorCache on SyncEventProcessor {
@@ -8,26 +13,59 @@ extension _DescriptorCache on SyncEventProcessor {
   Future<bool> _recoverMissingDescriptor(
     Event envelope,
     SyncMessage message,
+    FileSystemException error,
   ) async {
-    final id = switch (message) {
-      SyncJournalEntity(:final attachmentEventId) ||
-      SyncAgentEntity(:final attachmentEventId) ||
-      SyncAgentLink(:final attachmentEventId) ||
-      SyncNotification(:final attachmentEventId) ||
-      SyncOutboxBundle(:final attachmentEventId) => attachmentEventId,
-      _ => null,
+    final (id, path) = switch (message) {
+      SyncJournalEntity(:final attachmentEventId, :final jsonPath) => (
+        attachmentEventId,
+        jsonPath,
+      ),
+      SyncAgentEntity(:final attachmentEventId, :final jsonPath) => (
+        attachmentEventId,
+        jsonPath,
+      ),
+      SyncAgentLink(:final attachmentEventId, :final jsonPath) => (
+        attachmentEventId,
+        jsonPath,
+      ),
+      SyncNotification(:final attachmentEventId, :final jsonPath) => (
+        attachmentEventId,
+        jsonPath,
+      ),
+      SyncOutboxBundle(
+        :final attachmentEventId,
+        :final jsonPath,
+      ) =>
+        (attachmentEventId, jsonPath),
+      _ => (null, null),
     };
     final index = _attachmentIndex;
-    if (id == null || index == null) return false;
+    if (id == null || index == null || error.path != path) return false;
+    // Do not promote disk failures (including a bundled child's cache write)
+    // into an unlimited descriptor retry merely because its parent has an ID.
+    if (error is! _SyncDescriptorFetchException &&
+        !error.message.startsWith('attachment descriptor not yet available')) {
+      return false;
+    }
     // Preparation already tried this exact descriptor. Its download may be
     // temporarily unavailable; keep the same periodic recovery contract.
     if (index.findByEventId(id) != null) {
       throw const PendingSyncDescriptorException();
     }
     try {
-      final descriptor = await envelope.room
+      var descriptor = await envelope.room
           .getEventById(id)
           .timeout(SyncTuning.attachmentDownloadTimeout);
+      // Room.getEventById decrypts server results, but returns cached database
+      // events as stored. Retry decryption here when a key arrived later.
+      if (descriptor?.type == EventTypes.Encrypted) {
+        final encryption = envelope.room.client.encryption;
+        if (encryption != null) {
+          descriptor = await encryption
+              .decryptRoomEvent(descriptor!)
+              .timeout(SyncTuning.attachmentDownloadTimeout);
+        }
+      }
       if (descriptor != null &&
           descriptor.eventId == id &&
           descriptor.roomId == envelope.roomId) {
@@ -112,6 +150,8 @@ extension _DescriptorCache on SyncEventProcessor {
     required Event descriptorEvent,
     required bool writeToDisk,
   }) async {
+    final String jsonString;
+    final int bytesLength;
     try {
       final matrixFile = await downloadAttachmentWithTimeout(
         descriptorEvent,
@@ -127,16 +167,8 @@ extension _DescriptorCache on SyncEventProcessor {
         relativePath: jsonPath,
         logging: _loggingService,
       );
-      final jsonString = utf8.decode(bytes);
-      if (writeToDisk) {
-        await saveJson(targetFile.path, jsonString);
-      }
-      _trace(
-        '$typeName.descriptor.fetched path=$jsonPath bytes=${bytes.length} '
-        'cached=$writeToDisk',
-        subDomain: 'processor.resolve',
-      );
-      return jsonString;
+      jsonString = utf8.decode(bytes);
+      bytesLength = bytes.length;
     } catch (e, st) {
       _loggingService.error(
         LogDomain.sync,
@@ -146,10 +178,21 @@ extension _DescriptorCache on SyncEventProcessor {
       );
       // Descriptor was found but download/decode failed — throw to prevent
       // falling back to potentially stale disk data. The pipeline will retry.
-      throw FileSystemException(
+      throw _SyncDescriptorFetchException(
         '$typeName descriptor fetch failed',
         jsonPath,
       );
     }
+    // Local persistence failures retain their original error and bounded retry
+    // policy; another descriptor lookup cannot repair the filesystem.
+    if (writeToDisk) {
+      await saveJson(targetFile.path, jsonString);
+    }
+    _trace(
+      '$typeName.descriptor.fetched path=$jsonPath bytes=$bytesLength '
+      'cached=$writeToDisk',
+      subDomain: 'processor.resolve',
+    );
+    return jsonString;
   }
 }

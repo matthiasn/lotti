@@ -261,6 +261,7 @@ void main() {
       for (final lookup in [
         'indexed',
         'retained',
+        'cachedCiphertext',
         'missing',
         'error',
         'wrongId',
@@ -285,6 +286,7 @@ void main() {
               ],
             };
             final descriptor = MockEvent();
+            when(() => descriptor.type).thenReturn(EventTypes.Message);
             when(() => descriptor.eventId).thenReturn(
               lookup == 'wrongId' ? 'other-event' : 'exact-process-event',
             );
@@ -314,11 +316,21 @@ void main() {
                   ? '!other:example.org'
                   : '!retained:example.org',
             );
+            final ciphertext = MockEvent();
+            when(() => ciphertext.type).thenReturn(EventTypes.Encrypted);
+            final client = MockMatrixClient();
+            final encryption = MockEncryption();
+            when(() => room.client).thenReturn(client);
+            when(() => client.encryption).thenReturn(encryption);
+            when(() => encryption.decryptRoomEvent(ciphertext)).thenAnswer(
+              (_) async => descriptor,
+            );
             when(() => room.getEventById('exact-process-event')).thenAnswer((
               _,
             ) async {
               if (lookup == 'error') throw const SocketException('offline');
               if (lookup == 'timeout') return Completer<Event?>().future;
+              if (lookup == 'cachedCiphertext') return ciphertext;
               return lookup == 'missing' ? null : descriptor;
             });
             final exactProcessor = SyncEventProcessor(
@@ -338,7 +350,9 @@ void main() {
             );
             when(() => event.text).thenReturn(encodeMessage(message));
 
-            if (lookup == 'indexed' || lookup == 'retained') {
+            if (lookup == 'indexed' ||
+                lookup == 'retained' ||
+                lookup == 'cachedCiphertext') {
               await exactProcessor.process(event: event, journalDb: journalDb);
               verify(
                 () => aiConfigRepository.deleteConfig(

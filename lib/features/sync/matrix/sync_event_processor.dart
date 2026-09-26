@@ -118,8 +118,7 @@ class UnrecoverableSyncPayloadException implements Exception {
 
 /// An exact descriptor or its attachment is temporarily unavailable.
 /// The queue retries independently of the envelope's age: no future event is
-/// guaranteed
-/// to wake a descriptor that was already passed before a restart.
+/// guaranteed to wake a descriptor that was already passed before a restart.
 class PendingSyncDescriptorException extends FileSystemException {
   const PendingSyncDescriptorException()
     : super('Exact sync descriptor lookup pending');
@@ -507,8 +506,8 @@ class SyncEventProcessor {
   };
 
   /// Prepares typed payloads, recovering missing exact descriptors for journal,
-  /// agent, notification and bundle attachments. Failed exact preparation stays
-  /// periodically retryable even when the envelope predates the current run.
+  /// agent, notification and bundle attachments. Missing descriptors and failed
+  /// downloads remain periodically retryable; local I/O keeps bounded retries.
   Future<PreparedSyncEvent> _prepareForMessage({
     required Event event,
     required SyncMessage syncMessage,
@@ -520,18 +519,18 @@ class SyncEventProcessor {
         syncMessage: syncMessage,
         rawMessageJson: rawMessageJson,
       );
-    } on FileSystemException {
+    } on FileSystemException catch (error) {
       // The volatile descriptor index may have been lost after the cursor
       // passed the file event. Recover its exact identity from retained room
       // history; another forward walk cannot recover events behind the cursor.
-      if (!await _recoverMissingDescriptor(event, syncMessage)) rethrow;
+      if (!await _recoverMissingDescriptor(event, syncMessage, error)) rethrow;
       try {
         return await _prepareMessageOnce(
           event: event,
           syncMessage: syncMessage,
           rawMessageJson: rawMessageJson,
         );
-      } on FileSystemException {
+      } on _SyncDescriptorFetchException {
         throw const PendingSyncDescriptorException();
       }
     }

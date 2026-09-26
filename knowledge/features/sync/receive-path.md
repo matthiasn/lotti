@@ -121,14 +121,18 @@ malformed rather than a reason to read some other file.
 
 The index is volatile. If preparation needs an exact descriptor that is absent,
 `SyncEventProcessor` retrieves that event by ID from the envelope's room through
-the SDK's database/server lookup, verifies its event and room IDs, indexes it,
+the SDK's database/server lookup, retries decryption of cached ciphertext,
+verifies its event and room IDs, indexes it,
 and retries preparation once. This repairs a restart or missed file event even
 when the durable cursor has already passed the descriptor. Existing canonical
 data that satisfies preparation needs no lookup. Missing, still-encrypted or
 temporarily unavailable descriptors produce `PendingSyncDescriptorException`.
 `QueueApplyAdapter` maps this to `pendingDescriptor`: the worker retries every
 30 seconds without the generic attempt cap or the attachment-arrival age limit.
-Attachment download failures after exact discovery use the same recovery state.
+Descriptor-cache download/decode failures after exact discovery use the same
+recovery state. Local cache writes preserve their original filesystem error and
+use bounded generic retries; a parent bundle descriptor does not turn a child
+cache-write failure into unlimited attachment recovery.
 An envelope already older than ten minutes at restart therefore stays active
 until exact-ID discovery succeeds; it does not depend on another timeline event
 or a manual retry. This requires the referenced event to remain retrievable and

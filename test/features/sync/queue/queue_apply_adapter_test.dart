@@ -64,9 +64,9 @@ void main() {
     setUpAll(processor_harness.registerSyncProcessorFallbacks);
     setUp(processor_harness.setUpProcessorMocks);
 
-    for (final failure in ['lookup', 'download']) {
+    for (final failure in ['lookup', 'download', 'decrypt', 'localWrite']) {
       test(
-        'aged exact bundle recovers through the real queue after $failure failures',
+        'aged exact bundle handles $failure failures through the real queue',
         () async {
           final syncDb = SyncDatabase(
             inMemoryDatabase: true,
@@ -81,6 +81,11 @@ void main() {
             'aged-bundle-',
           );
           addTearDown(() => directory.delete(recursive: true));
+          if (failure == 'localWrite') {
+            await File('${directory.path}/outbox_bundles').writeAsString(
+              'Block the manifest cache directory.',
+            );
+          }
           final sequence = SyncSequenceLogService(
             syncDatabase: syncDb,
             vectorClockService: MockVectorClockService(),
@@ -107,6 +112,7 @@ void main() {
           );
           const path = '/outbox_bundles/aged.json';
           final descriptor = MockEvent();
+          when(() => descriptor.type).thenReturn(EventTypes.Message);
           when(() => descriptor.eventId).thenReturn(r'$aged-file');
           when(() => descriptor.roomId).thenReturn('!r:example.org');
           when(() => descriptor.content).thenReturn({'relativePath': path});
@@ -137,12 +143,26 @@ void main() {
               ),
             );
           });
+          final ciphertext = MockEvent();
+          when(() => ciphertext.type).thenReturn(EventTypes.Encrypted);
+          when(() => ciphertext.eventId).thenReturn(r'$aged-file');
+          when(() => ciphertext.roomId).thenReturn('!r:example.org');
+          when(() => ciphertext.content).thenReturn(<String, dynamic>{});
+          when(() => ciphertext.attachmentMimetype).thenReturn('');
+          final client = MockMatrixClient();
+          final encryption = MockEncryption();
+          when(() => room.client).thenReturn(client);
+          when(() => client.encryption).thenReturn(encryption);
+          var decryptions = 0;
+          when(() => encryption.decryptRoomEvent(ciphertext)).thenAnswer(
+            (_) async => ++decryptions <= 5 ? ciphertext : descriptor,
+          );
           var lookups = 0;
           when(() => room.getEventById(r'$aged-file')).thenAnswer((_) async {
             if (++lookups <= 5 && failure == 'lookup') {
               throw const SocketException('offline');
             }
-            return descriptor;
+            return failure == 'decrypt' ? ciphertext : descriptor;
           });
           final adapter = QueueApplyAdapter(
             processor: receiver,
@@ -182,6 +202,18 @@ void main() {
             ).thenReturn({...raw, 'sender': '@sender:example.org'});
             await queue.enqueueLive(envelope);
             now = now.add(const Duration(days: 1));
+            if (failure == 'localWrite') {
+              for (var i = 0; i < 4; i++) {
+                expect(await worker.drainToCompletion(), 0);
+                expect(await journalDb.entryLinkById(link.id), isNull);
+                now = now.add(const Duration(seconds: 30));
+              }
+              expect((await queue.stats()).retrying, 0);
+              expect((await queue.stats()).abandoned, 1);
+              expect(lookups, 1);
+              verify(descriptor.downloadAndDecryptAttachment).called(4);
+              return;
+            }
             for (var i = 0; i < 5; i++) {
               expect(await worker.drainToCompletion(), 0);
               expect((await queue.stats()).retrying, 1);
@@ -194,9 +226,13 @@ void main() {
             expect(await journalDb.entryLinkById(link.id), link);
             expect((await queue.stats()).total, 0);
             expect((await queue.stats()).abandoned, 0);
-            expect(lookups, failure == 'lookup' ? 6 : 1);
+            expect(
+              lookups,
+              failure == 'lookup' || failure == 'decrypt' ? 6 : 1,
+            );
+            expect(decryptions, failure == 'decrypt' ? 6 : 0);
             verify(descriptor.downloadAndDecryptAttachment).called(
-              failure == 'lookup' ? 1 : 6,
+              failure == 'download' ? 6 : 1,
             );
           });
         },
