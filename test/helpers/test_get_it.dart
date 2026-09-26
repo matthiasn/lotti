@@ -74,6 +74,7 @@ Future<TestGetItMocks> setUpTestGetIt({
   when(
     () => mockSettingsDb.itemsWithKeyPrefix(any()),
   ).thenAnswer((_) async => <String, String>{});
+  _stubLocalSettingsGroup(mockSettingsDb);
   final mockEmbeddingStore = MockEmbeddingStore();
 
   getIt
@@ -154,6 +155,7 @@ void ensureThemingServicesRegistered() {
     when(
       () => mockSettingsDb.itemsWithKeyPrefix(any()),
     ).thenAnswer((_) async => <String, String>{});
+    _stubLocalSettingsGroup(mockSettingsDb);
     getIt.registerSingleton<SettingsDb>(mockSettingsDb);
   }
 
@@ -166,4 +168,32 @@ void ensureThemingServicesRegistered() {
       DomainLogger(loggingService: getIt<LoggingService>()),
     );
   }
+}
+
+void _stubLocalSettingsGroup(MockSettingsDb settingsDb) {
+  Future<SavedSettingsGroup> answer(Invocation invocation) async {
+    final defaults =
+        invocation.namedArguments[#retainedDefaults] as Map<String, String>? ??
+        const {};
+    final retained = defaults.isEmpty
+        ? <String, String?>{}
+        : await settingsDb.itemsByKeys(defaults.keys);
+    return (
+      updatedAt: invocation.namedArguments[#timestamp] as int,
+      values: {
+        for (final entry in defaults.entries)
+          entry.key: retained[entry.key] ?? entry.value,
+        ...invocation.positionalArguments.single as Map<String, String>,
+      },
+    );
+  }
+
+  when(
+    () => settingsDb.saveLocalSettingsGroup(
+      any(),
+      stampKey: any(named: 'stampKey'),
+      timestamp: any(named: 'timestamp'),
+      retainedDefaults: any(named: 'retainedDefaults'),
+    ),
+  ).thenAnswer(answer);
 }

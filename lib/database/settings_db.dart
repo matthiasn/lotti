@@ -10,6 +10,9 @@ part 'settings_db.g.dart';
 
 const settingsDbFileName = 'settings.sqlite';
 
+/// The committed preference payload and its persisted ordering stamp.
+typedef SavedSettingsGroup = ({int updatedAt, Map<String, String> values});
+
 @DriftDatabase(include: {'settings_db.drift'})
 class SettingsDb extends _$SettingsDb {
   SettingsDb({
@@ -209,6 +212,51 @@ class SettingsDb extends _$SettingsDb {
       });
       if (applied) snapshot.forEach(_publishValue);
       return applied;
+    });
+  }
+
+  /// Commits a local edit with a stamp strictly newer than the stored group.
+  ///
+  /// [retainedDefaults] names companion fields to capture in this transaction;
+  /// existing values take precedence over these defaults, while [values]
+  /// contains the user's edits. The returned immutable snapshot is what the
+  /// caller publishes, even if another edit arrives during its debounce.
+  /// Like [saveSettingsItems], this owns its transaction.
+  Future<SavedSettingsGroup> saveLocalSettingsGroup(
+    Map<String, String> values, {
+    required String stampKey,
+    required int timestamp,
+    Map<String, String> retainedDefaults = const {},
+  }) {
+    final edits = Map<String, String>.of(values);
+    final defaults = Map<String, String>.of(retainedDefaults);
+    return _write(() async {
+      final saved = await transaction(() async {
+        final rows =
+            await (select(settings)..where(
+                  (table) => table.configKey.isIn([stampKey, ...defaults.keys]),
+                ))
+                .get();
+        final stored = {for (final row in rows) row.configKey: row.value};
+        final previous = int.tryParse(stored[stampKey] ?? '') ?? 0;
+        final updatedAt = timestamp > previous ? timestamp : previous + 1;
+        final snapshot = {
+          for (final entry in defaults.entries)
+            entry.key: stored[entry.key] ?? entry.value,
+          ...edits,
+        };
+        await _persistSettingsItems({
+          ...snapshot,
+          stampKey: updatedAt.toString(),
+        });
+        return (
+          updatedAt: updatedAt,
+          values: Map<String, String>.unmodifiable(snapshot),
+        );
+      });
+      saved.values.forEach(_publishValue);
+      _publishValue(stampKey, saved.updatedAt.toString());
+      return saved;
     });
   }
 

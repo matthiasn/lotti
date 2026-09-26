@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:easy_debounce/easy_debounce.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -164,12 +165,7 @@ class ThemingController extends Notifier<ThemingState> {
     );
   }
 
-  void _enqueueSyncMessage() {
-    // Skip enqueuing sync messages when applying synced changes
-    if (_isApplyingSyncedChanges) {
-      return;
-    }
-
+  void _enqueueSyncMessage(SavedSettingsGroup saved) {
     EasyDebounce.debounce(
       _debounceKey,
       const Duration(milliseconds: 250),
@@ -178,22 +174,12 @@ class ThemingController extends Notifier<ThemingState> {
           return;
         }
         try {
-          // Round-trip whatever scheme names a legacy device last synced —
-          // this version never writes these keys, so the stored values are
-          // exactly what the wire owes older receivers back.
-          final settingsDb = getIt<SettingsDb>();
-          final storedNames = await settingsDb.itemsByKeys({
-            lightSchemeNameKey,
-            darkSchemeNameKey,
-          });
           await getIt<OutboxService>().enqueueMessage(
             SyncMessage.themingSelection(
-              lightThemeName:
-                  storedNames[lightSchemeNameKey] ?? kLegacyDefaultThemeName,
-              darkThemeName:
-                  storedNames[darkSchemeNameKey] ?? kLegacyDefaultThemeName,
-              themeMode: state.themeMode.name,
-              updatedAt: DateTime.now().millisecondsSinceEpoch,
+              lightThemeName: saved.values[lightSchemeNameKey]!,
+              darkThemeName: saved.values[darkSchemeNameKey]!,
+              themeMode: saved.values[themeModeKey]!,
+              updatedAt: saved.updatedAt,
               status: SyncEntryStatus.update,
             ),
           );
@@ -212,17 +198,35 @@ class ThemingController extends Notifier<ThemingState> {
   /// Updates [ThemingState.themeMode] from a segmented-button selection.
   ///
   /// Takes the first entry of `modes` (the picker is single-select), persists
-  /// it to settings, and enqueues a debounced sync message. `modes` must be
-  /// non-empty.
+  /// it with a newer stored timestamp, then debounces that committed snapshot
+  /// for sync. `modes` must be non-empty.
   void onThemeSelectionChanged(Set<ThemeMode> modes) {
     final themeMode = modes.first;
 
     state = state.copyWith(themeMode: themeMode);
 
-    getIt<SettingsDb>().saveSettingsItem(
-      themeModeKey,
-      EnumToString.convertToString(themeMode),
-    );
-    _enqueueSyncMessage();
+    unawaited(_persistThemeMode(themeMode, clock.now().millisecondsSinceEpoch));
+  }
+
+  Future<void> _persistThemeMode(ThemeMode mode, int timestamp) async {
+    try {
+      final saved = await getIt<SettingsDb>().saveLocalSettingsGroup(
+        {themeModeKey: EnumToString.convertToString(mode)},
+        stampKey: themePrefsUpdatedAtKey,
+        timestamp: timestamp,
+        retainedDefaults: {
+          lightSchemeNameKey: kLegacyDefaultThemeName,
+          darkSchemeNameKey: kLegacyDefaultThemeName,
+        },
+      );
+      if (ref.mounted) _enqueueSyncMessage(saved);
+    } catch (error, stackTrace) {
+      getIt<DomainLogger>().error(
+        LogDomain.theming,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'persist',
+      );
+    }
   }
 }
