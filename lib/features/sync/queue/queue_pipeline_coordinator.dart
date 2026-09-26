@@ -31,7 +31,6 @@ import 'package:meta/meta.dart';
 
 part 'queue_gap_recovery.dart';
 part 'queue_lifecycle.dart';
-part 'queue_sync_batch.dart';
 
 const _logSub = 'queue.coordinator';
 
@@ -143,11 +142,6 @@ class QueuePipelineCoordinator {
   StreamSubscription<void>? _liveSub;
   // ignore: cancel_subscriptions
   StreamSubscription<SyncUpdate>? _syncSub;
-  // ignore: cancel_subscriptions
-  StreamSubscription<SyncStatusUpdate>? _syncStatusSub;
-  _SyncBatch? _syncBatch;
-  final Set<_SyncBatch> _syncBatches = {};
-  bool _syncIngressStopped = false;
   // ignore: cancel_subscriptions
   StreamSubscription<String>? _attachmentPathSub;
   // ignore: cancel_subscriptions
@@ -447,7 +441,7 @@ class QueuePipelineCoordinator {
   }
 
   Future<void> _handleTrackedLiveEvent(Event event) {
-    final future = _admitAfterSyncBatch(event);
+    final future = _handleLiveEvent(event);
     _trackEnqueue(future);
     return future;
   }
