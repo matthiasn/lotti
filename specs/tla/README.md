@@ -56,12 +56,18 @@ flowchart LR
     Hint --> Receipt
 ```
 
-The model has one causal chain or a two-origin fork, at most two writes, and
-one or two receiving devices. Fork writes have independent clocks even though
+The checked profiles have a causal chain, a two-origin fork, or a fork followed
+by a same-origin successor, with at most three writes and one or two receiving
+devices. Fork writes have independent clocks even though
 the bounded source-write scheduler opens one reservation at a time; their
 outbox, transport and receive operations interleave freely. Origins retain
 their own payload; each peer tracks a separate sequence head per origin.
 Origins do not also act as receiving peers in these configurations.
+`ForkSuccessor` composes A1, concurrent B1, and A2 with the shared send/receive
+pipeline. `MixedPeers` instead sends an inline agent entity and a file-backed
+full notification with the same raw ID, from distinct origins to two receivers;
+it permits one receipt failure and one process crash. Family-qualified identity
+keeps their source rows, collapse candidates and applied payloads separate.
 
 | Action/state | Implementation boundary |
 |---|---|
@@ -85,6 +91,7 @@ their richer state spaces.
 
 | Checks | Guarantee within the configured bounds |
 |---|---|
+| `PayloadFamilySafe` | stored winner, content and conflict versions belong to the row's payload family |
 | `NoFalseBurn`, `BurnHasDurableMarker` | committed counters are never burned; terminal own burns have a durably queued marker |
 | `BoundHasDurablePayload`, `StagedHasDurablePayload` | settled/staged writes retain a queued or sent causal representative |
 | `NoFalseReceipt`, `CausalCoverage` | receipts have an applied causal witness; announced coverage belongs to the actual payload |
@@ -108,6 +115,20 @@ at a time; they are not the Cartesian product of all faults and families.
 | `Consumption` | two immutable events; one abandoned delivery or failed receipt | 183,515 |
 | `Burn` | one aborted reservation, one enqueue/send failure and one process crash | 112 |
 | `Lossy` | two distinct entry links; one abandoned delivery or failed receipt | 183,515 |
+| `ForkSuccessor` | concurrent agent A1/B1 followed by A2; one receiver, no injected faults | 2,038,963 |
+| `MixedPeers` | agent entity and full notification share a raw ID; two receivers, one receipt failure and one crash | 179,850 |
+
+The two added profiles measure different obligations: `SettledPeersAgree` is
+non-vacuous in `MixedPeers`; a one-receiver profile cannot establish peer
+agreement. `ForkSuccessor` checks successor coverage through the complete
+pipeline without injecting crashes. Neither profile claims the full product of
+three-version forks, mixed families, multiple receivers and every fault.
+
+The fork/successor exploration took about 164 minutes locally and gets an
+isolated CI shard with a six-hour deadline and 12 GiB heap. It still runs on
+every applicable push and gates the same aggregate `TLC` check; regular shards
+retain their one-hour deadline. `shards_test.py` protects complete configuration
+assignment and isolation of the long profile.
 
 The original eight configurations explore **922,564 distinct states** in total.
 `Heads`, `HeadsBurn` and `HeadsCrash` additionally enable periodic origin-head
@@ -154,11 +175,27 @@ The liveness obligations are explicit:
 `python3 specs/tla/check_sync_pipeline.py` runs in CI alongside positive model
 checks. Each guard has a passing control and must fail with only that guard
 removed: durable burn staging, bind-after-enqueue, apply-before-receipt,
-hint verification and exact journal payload preparation. A paired temporal
+hint verification, exact journal payload preparation, and family-qualified
+payload identity. The namespace mutant deliberately aliases equal raw IDs across
+families and must violate `PayloadFamilySafe`. A separate reachability control
+requires both receiving peers to acknowledge both mixed-family commits, so the
+agreement assertion cannot pass solely because its antecedent is unreachable. A paired temporal
 check requires tail-receipt recovery to pass with retry and fail when receipt
 errors are swallowed. Lost-tail delivery passes with announcements and has
 an expected counterexample with only announcements disabled. A reachable request/answer/hint/receipt path guards against a
 vacuous repair claim.
+
+The mixed-family conformance traces in
+`test/features/sync/backfill/sync_head_conformance.dart` use two and three real
+in-memory devices, four deterministic schedules each, agent A1/B1/A2 plus an
+entry link with the same raw ID, delayed/duplicate delivery, a dropped tail and
+a failed SQLite receipt insert. They drive real persistence, outbox claim/mark,
+processor/queue-adapter application and periodic head repair. Removing the
+backfill handler's family-qualified deduplication makes all eight traces fail.
+These traces use inline envelopes: Matrix SDK encryption, uploads, downloads and
+server behavior are outside that harness. The formal mixed profile uses a full
+notification to additionally exercise the abstract attachment path, rather than
+claiming a literal trace equivalence with the Dart entry-link scenario.
 
 The head conformance scenarios run two and three replicas with real journal and
 sync databases, enqueue writers, outbox claims, receive adapters and backfill

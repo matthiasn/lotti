@@ -157,6 +157,7 @@ jobs:
       - id: plan
         name: Pack every checked-in configuration into shards
         run: |
+          python3 -m unittest specs/tla/shards_test.py
           python3 specs/tla/shards.py --table
           echo "shards=$(python3 specs/tla/shards.py)" >> "$GITHUB_OUTPUT"
 
@@ -166,9 +167,9 @@ jobs:
     permissions:
       contents: read
     runs-on: ubuntu-latest
-    # Runner variance doubled a measured profile in run 36217391296. Leave
-    # headroom above the packed estimates without dropping any configurations.
-    timeout-minutes: 60
+    # Regular shards retain one hour. The measured multi-hour fork/successor
+    # profile gets an isolated six-hour shard and still gates the aggregate.
+    timeout-minutes: ${{ matrix.timeout_minutes }}
     strategy:
       fail-fast: false
       matrix:
@@ -190,6 +191,7 @@ jobs:
       - name: Model-check the shard's configurations
         env:
           CONFIGURATIONS: ${{ matrix.configurations }}
+          JAVA_TOOL_OPTIONS: ${{ matrix.java_options }}
         run: |
           failed=()
           echo "| Configuration | Result | Seconds |" >> "$GITHUB_STEP_SUMMARY"

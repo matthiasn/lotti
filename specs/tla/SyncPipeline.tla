@@ -20,32 +20,36 @@ EXTENDS Naturals, FiniteSets
 CONSTANTS Family, Peers, MaxCounter, SeparateEntities, AbortCounters, ConcurrentWriters,
           MaxFaults, MaxCrashes, FaultKinds,
           DurableBurn, BindAfterEnqueue, ReceiptAfterApply, VerifyHints,
-          PrepareExactPayload, RetryReceipts, AnnounceHeads
+          PrepareExactPayload, RetryReceipts, AnnounceHeads, MixedFamilies, NamespacePayloads
 
 ASSUME /\ Family \in {"journal", "entryLink", "agentEntity", "agentLink",
                        "notification", "consumptionEvent"}
-       /\ MaxCounter \in 1..2
-       /\ ConcurrentWriters => MaxCounter = 2
+       /\ MaxCounter \in 1..3
+       /\ ConcurrentWriters => MaxCounter >= 2
+       /\ MixedFamilies => MaxCounter = 2 /\ Family # "notification"
        /\ AbortCounters \subseteq 1..MaxCounter
        /\ Peers # {} /\ Peers \cap {"sourceA", "sourceB"} = {}
        /\ MaxFaults \in Nat /\ MaxCrashes \in Nat
        /\ FaultKinds \subseteq {"stage", "burnStage", "send", "receive", "apply", "receipt"}
 
 Counters == 1..MaxCounter
-IsImmutable == Family = "consumptionEvent"
-Entities == IF SeparateEntities \/ IsImmutable THEN Counters ELSE {1}
-Entity(c) == IF SeparateEntities \/ IsImmutable THEN c ELSE 1
+FamilyAt(c) == IF MixedFamilies /\ c = MaxCounter THEN "notification" ELSE Family
+IsImmutable(c) == FamilyAt(c) = "consumptionEvent"
+Entity(c) == <<IF NamespacePayloads THEN FamilyAt(c) ELSE Family,
+               IF SeparateEntities \/ IsImmutable(c) THEN c ELSE 1>>
+Entities == {Entity(c) : c \in Counters}
 Origins == IF ConcurrentWriters THEN {"sourceA", "sourceB"} ELSE {"sourceA"}
 Origin(c) == IF ConcurrentWriters /\ c = 2 THEN "sourceB" ELSE "sourceA"
-Counter(c) == IF ConcurrentWriters THEN 1 ELSE c
+Counter(c) == IF ConcurrentWriters /\ c = 2 THEN 1
+              ELSE IF ConcurrentWriters /\ c >= 3 THEN c - 1 ELSE c
 Nodes == Peers \cup Origins
-IsNotification == Family = "notification"
-FileBacked == Family \in {"journal", "notification"}
-CanCollapse == Family \in {"journal", "entryLink", "agentEntity", "agentLink"}
-Kind(c) == IF IsNotification /\ ~ConcurrentWriters /\ ~SeparateEntities /\ c = 2 THEN "state" ELSE "full"
+IsNotification(c) == FamilyAt(c) = "notification"
+FileBacked(c) == FamilyAt(c) \in {"journal", "notification"}
+CanCollapse(c) == FamilyAt(c) \in {"journal", "entryLink", "agentEntity", "agentLink"}
+Kind(c) == IF IsNotification(c) /\ ~MixedFamilies /\ ~ConcurrentWriters /\ ~SeparateEntities /\ c = 2 THEN "state" ELSE "full"
 SameEntity(a, b) == Entity(a) = Entity(b)
 Covers(a, b) == SameEntity(a, b) /\
-    (IF ConcurrentWriters THEN a = b ELSE a >= b)
+    Origin(a) = Origin(b) /\ Counter(a) >= Counter(b)
 Max(S) == CHOOSE v \in S : \A w \in S : v >= w
 
 \* A data message names an immutable payload generation independently of
@@ -60,13 +64,13 @@ Head(c) == Message("head", Origin(c), "all", 0, c, {})
 Burn(c) == Message("burn", Origin(c), "all", 0, c, {})
 Coverable(v) == {c \in Counters : c # v /\ Covers(v, c)}
 DataCandidates ==
-    {Data(k, v, v, cov) : v \in Counters,
-       k \in (IF IsNotification THEN {"full", "state"} ELSE {"full"}),
-       cov \in SUBSET Counters}
-    \cup (IF Family = "journal"
-          THEN {Data("full", v, c, cov) : v \in Counters, c \in Counters,
+    UNION {{Data(k, v, v, cov) :
+              k \in (IF IsNotification(v) THEN {"full", "state"} ELSE {"full"}),
+              cov \in SUBSET Counters} : v \in Counters}
+    \cup {Data("full", v, c, cov) :
+                  v \in {x \in Counters : FamilyAt(x) = "journal"},
+                  c \in {x \in Counters : FamilyAt(x) = "journal"},
                   cov \in SUBSET Counters}
-          ELSE {})
 DataMessages == {m \in DataCandidates : m.covered \subseteq Coverable(m.counter)}
 Messages == DataMessages \cup {Request(p, c) : p \in Peers, c \in Counters}
             \cup {Hint(p, c) : p \in Peers, c \in Counters}
@@ -86,9 +90,10 @@ EmptyRow == [version |-> 0, content |-> 0, conflict |-> 0, marked |-> FALSE]
 Content(v) == IF Kind(v) = "state" THEN 1 ELSE v
 Marked(v) == Kind(v) = "state"
 Merge(row, m) ==
-    IF Family = "journal" /\ ConcurrentWriters /\ row.version # 0
+    IF FamilyAt(m.version) = "journal" /\ ConcurrentWriters /\ row.version # 0
        /\ ~Covers(m.version, row.version) /\ ~Covers(row.version, m.version)
-    THEN [row EXCEPT !.conflict = m.version]
+    THEN [row EXCEPT !.conflict =
+          IF @ = 0 \/ Covers(m.version, @) THEN m.version ELSE @]
     ELSE IF m.kind = "state"
     THEN [row EXCEPT !.version = IF m.version > @ THEN m.version ELSE @,
                       !.marked = TRUE]
@@ -162,7 +167,7 @@ Bind == /\ s.phase = "staged"
         /\ s' = [s EXCEPT !.own[s.next] = "bound", !.phase = "idle", !.next = @ + 1]
 \* Sidecar refresh is a separate durable write. Exact preparation below
 \* falls back to the retained canonical row if this descriptor is stale.
-Refresh(o, e) == /\ Family = "journal" /\ s.descriptor[o][e] < s.source[o][e]
+Refresh(o, e) == /\ e[1] = "journal" /\ s.descriptor[o][e] < s.source[o][e]
               /\ s' = [s EXCEPT !.descriptor[o][e] = s.source[o][e]]
 
 \* Own-counter recovery queues before binding, as separate durable steps.
@@ -192,10 +197,10 @@ BurnBind(c) ==
 \* traffic never collapses. This models a successful CAS; failed CAS retries.
 Claim(m) ==
     /\ Pending(m)
-    /\ ~CanCollapse \/ ~IsData(m) \/
+    /\ ~CanCollapse(m.version) \/ ~IsData(m) \/
           ~\E x \in DataMessages : Pending(x) /\ x.kind = m.kind
                     /\ Covers(x.version, m.version) /\ x.version > m.version
-    /\ LET members == IF CanCollapse /\ IsData(m)
+    /\ LET members == IF CanCollapse(m.version) /\ IsData(m)
                       THEN {x \in DataMessages : Pending(x) /\ x.kind = m.kind
                               /\ Covers(m.version, x.version)} ELSE {m}
            cov == UNION {Carries(x) : x \in members} \ {m.counter}
@@ -206,12 +211,12 @@ Claim(m) ==
                     ELSE IF x \in members THEN "folded" ELSE s.out[x]]]
 \* A file generation is uploaded independently of its envelope. A journal
 \* can send a fresher canonical snapshot while covering its claimed counter.
-Upload(m) == /\ s.out[m] = "claimed" /\ m.kind = "full" /\ FileBacked
+Upload(m) == /\ s.out[m] = "claimed" /\ m.kind = "full" /\ FileBacked(m.version)
              /\ m.version \notin s.files
              /\ s' = [s EXCEPT !.files = @ \cup {m.version}]
 Send(m) == /\ s.out[m] = "claimed"
-           /\ m.kind # "full" \/ ~FileBacked \/ m.version \in s.files
-           /\ LET actual == IF Family = "journal" /\ ~PrepareExactPayload
+           /\ m.kind # "full" \/ ~FileBacked(m.version) \/ m.version \in s.files
+           /\ LET actual == IF FamilyAt(m.version) = "journal" /\ ~PrepareExactPayload
                                 /\ s.descriptor[m.sender][Entity(m.version)] # 0
                             THEN [m EXCEPT !.version = s.descriptor[m.sender][Entity(m.version)]]
                             ELSE m
@@ -239,7 +244,7 @@ Abandon(n, m) == /\ Queued(n, m) /\ CanFault("receive")
                  /\ s' = [s EXCEPT !.inbox[n][m] = "abandoned", !.faults = @ + 1]
 Apply(p, m) ==
     /\ Queued(p, m) /\ IsData(m)
-    /\ ~FileBacked \/ m.kind = "state" \/ m.version \in s.downloaded[p]
+    /\ ~FileBacked(m.version) \/ m.kind = "state" \/ m.version \in s.downloaded[p]
     /\ m.kind # "state" \/ s.rows[p][Entity(m.version)].content # 0
     /\ s' = [s EXCEPT !.rows[p][Entity(m.version)] = Merge(@, m),
               !.applied[p] = @ \cup {m.version}, !.inbox[p][m] = "applied"]
@@ -372,6 +377,9 @@ TypeOK == /\ s.next \in 1..(MaxCounter + 1)
           /\ s.room \subseteq Messages /\ s.files \subseteq Counters
           /\ s.inbox \in [Nodes -> [Messages -> InStates]]
           /\ s.faults \in 0..MaxFaults /\ s.crashes \in 0..MaxCrashes
+PayloadFamilySafe == \A p \in Peers, e \in Entities :
+    \A v \in {s.rows[p][e].version, s.rows[p][e].content, s.rows[p][e].conflict} \ {0} :
+        FamilyAt(v) = e[1]
 NoFalseBurn == /\ \A c \in s.committed : s.own[c] # "burned"
                /\ \A p \in Peers : s.burned[p] \cap s.committed = {}
 BurnHasDurableMarker == \A c \in Counters : s.own[c] = "burned" =>
@@ -388,7 +396,7 @@ CausalCoverage == \A m \in s.room : IsData(m) =>
 NoContentlessState == \A p \in Peers, e \in Entities :
     s.rows[p][e].marked => s.rows[p][e].content # 0
 Represents(p, c) ==
-    IF Family = "journal"
+    IF FamilyAt(c) = "journal"
     THEN LET row == s.rows[p][Entity(c)] IN
          (row.version # 0 /\ Covers(row.version, c))
          \/ (row.conflict # 0 /\ Covers(row.conflict, c))
@@ -396,7 +404,7 @@ Represents(p, c) ==
          /\ Marked(c) => s.rows[p][Entity(c)].marked
 AcknowledgedPayload == \A p \in Peers, c \in s.committed :
     c \in s.received[p] => Represents(p, c)
-PayloadView(p, e) == IF Family = "journal"
+PayloadView(p, e) == IF e[1] = "journal"
     THEN {s.rows[p][e].version, s.rows[p][e].conflict} \ {0}
     ELSE {s.rows[p][e].content}
 SettledPeersAgree == (s.next > MaxCounter /\
