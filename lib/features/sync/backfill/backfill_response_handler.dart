@@ -161,7 +161,7 @@ class BackfillResponseHandler {
     required String hostId,
     required int counter,
     required SyncSequenceLogItem? row,
-    Set<String>? sentPayloads,
+    Set<VcPayloadRef>? sentPayloads,
   }) async {
     final status = row == null ? null : SyncSequenceStatus.values[row.status];
     if (status != null &&
@@ -234,7 +234,7 @@ class BackfillResponseHandler {
         // the next request or startup instead of hiding behind `received`.
         // A crash in between at worst sends the payload twice.
         final now = clock.now();
-        final durablePayloads = <String>{};
+        final durablePayloads = <VcPayloadRef>{};
         await _answerFromEntry(
           hostId: hostId,
           counter: counter,
@@ -455,7 +455,7 @@ class BackfillResponseHandler {
       var rateLimitSkipped = 0;
       // Track payloads already sent in this batch to avoid sending the same
       // entry multiple times when multiple counters map to the same payload.
-      final sentPayloads = <String>{};
+      final sentPayloads = <VcPayloadRef>{};
 
       for (final entry in entriesToProcess) {
         // Skip if recently responded to this (hostId, counter)
@@ -646,11 +646,12 @@ class BackfillResponseHandler {
   ///
   /// [sentPayloads] tracks payloads already sent in this batch to avoid
   /// sending the same entry multiple times when multiple counters map to
-  /// the same payload.
+  /// the same payload family and ID. Different families sharing an ID must
+  /// each send their payload.
   Future<bool> _processBackfillEntry({
     required String hostId,
     required int counter,
-    required Set<String> sentPayloads,
+    required Set<VcPayloadRef> sentPayloads,
   }) async {
     // Look up in our sequence log
     var logEntry = await _sequenceLogService.getEntryByHostAndCounter(
@@ -823,7 +824,7 @@ class BackfillResponseHandler {
     required String hostId,
     required int counter,
     required SyncSequenceLogItem entry,
-    required Set<String> sentPayloads,
+    required Set<VcPayloadRef> sentPayloads,
     bool durable = false,
   }) async {
     final resolvedLogEntry = entry;
@@ -869,7 +870,7 @@ class BackfillResponseHandler {
         // Only send the entry if not already sent in this batch.
         // This avoids sending the same entry multiple times when multiple
         // requested counters map to the same payload.
-        if (!sentPayloads.contains(payloadId)) {
+        if (!sentPayloads.contains((type: payloadType, id: payloadId))) {
           final jsonPath = relativeEntityPath(journalEntry);
 
           await _enqueuePayload(
@@ -886,7 +887,7 @@ class BackfillResponseHandler {
               includeAttachments: true,
             ),
           );
-          sentPayloads.add(payloadId);
+          sentPayloads.add((type: payloadType, id: payloadId));
         }
 
         // Check if the entry's current VC contains the exact requested counter.
@@ -923,7 +924,7 @@ class BackfillResponseHandler {
         }
 
         // Only send the link if not already sent in this batch.
-        if (!sentPayloads.contains(payloadId)) {
+        if (!sentPayloads.contains((type: payloadType, id: payloadId))) {
           await _enqueuePayload(
             durable: durable,
             SyncMessage.entryLink(
@@ -932,7 +933,7 @@ class BackfillResponseHandler {
               originatingHostId: originatingHostId,
             ),
           );
-          sentPayloads.add(payloadId);
+          sentPayloads.add((type: payloadType, id: payloadId));
         }
 
         // Check if the link's current VC contains the exact requested counter.
@@ -1022,13 +1023,13 @@ class BackfillResponseHandler {
           return true;
         }
 
-        if (!sentPayloads.contains(payloadId)) {
+        if (!sentPayloads.contains((type: payloadType, id: payloadId))) {
           await _outboxService.enqueueNotification(
             notification,
             originatingHostId: originatingHostId,
             rethrowFailure: durable,
           );
-          sentPayloads.add(payloadId);
+          sentPayloads.add((type: payloadType, id: payloadId));
         }
 
         final vcCounter = notification.meta.vectorClock.vclock[hostId];
@@ -1064,7 +1065,7 @@ class BackfillResponseHandler {
           return true;
         }
 
-        if (!sentPayloads.contains('state:$payloadId')) {
+        if (!sentPayloads.contains((type: payloadType, id: payloadId))) {
           await _outboxService.enqueueNotificationStateUpdate(
             id: notification.meta.id,
             seenAt: notification.meta.seenAt,
@@ -1074,7 +1075,7 @@ class BackfillResponseHandler {
             originatingHostId: originatingHostId,
             rethrowFailure: durable,
           );
-          sentPayloads.add('state:$payloadId');
+          sentPayloads.add((type: payloadType, id: payloadId));
         }
 
         final vcCounter = notification.meta.vectorClock.vclock[hostId];
@@ -1138,7 +1139,7 @@ class BackfillResponseHandler {
     required String payloadId,
     required SyncSequencePayloadType payloadType,
     required String originatingHostId,
-    required Set<String> sentPayloads,
+    required Set<VcPayloadRef> sentPayloads,
     required Future<T?> Function() loadPayload,
     required VectorClock? Function(T) getVectorClock,
     required SyncMessage Function(T) buildSyncMessage,
@@ -1156,9 +1157,9 @@ class BackfillResponseHandler {
       return true;
     }
 
-    if (!sentPayloads.contains(payloadId)) {
+    if (!sentPayloads.contains((type: payloadType, id: payloadId))) {
       await _enqueuePayload(durable: durable, buildSyncMessage(payload));
-      sentPayloads.add(payloadId);
+      sentPayloads.add((type: payloadType, id: payloadId));
     }
 
     final vc = getVectorClock(payload);

@@ -30,6 +30,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/test_utils.dart';
 import '../../ai_consumption/test_utils.dart';
+import 'sync_head_conformance.dart';
 
 part 'backfill_response_handler_model_conformance.dart';
 
@@ -946,6 +947,7 @@ void _stubRequestLookup(
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  registerMixedFamilyBackfillConformanceTests();
 
   late MockJournalDb mockJournalDb;
   late MockSyncSequenceLogService mockSequenceService;
