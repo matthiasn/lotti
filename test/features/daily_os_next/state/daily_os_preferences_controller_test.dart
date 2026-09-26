@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
@@ -143,9 +144,10 @@ void main() {
       final state = container.read(dailyOsPreferencesControllerProvider);
       expect(state.userName, 'Daily OS User');
       verify(
-        () => mocks.settingsDb.saveSettingsItem(
-          dailyOsUserNameSettingsKey,
-          'Daily OS User',
+        () => mocks.settingsDb.saveLocalSettingsGroup(
+          {dailyOsUserNameSettingsKey: 'Daily OS User'},
+          stampKey: dailyOsUserNameUpdatedAtSettingsKey,
+          timestamp: any(named: 'timestamp'),
         ),
       ).called(1);
     });
@@ -243,6 +245,103 @@ void main() {
       await tearDownTestGetIt();
     });
 
+    test('late local commit cannot enqueue into a replacement profile', () {
+      fakeAsync((async) {
+        final committed = Completer<SavedSettingsGroup>();
+        when(
+          () => mocks.settingsDb.saveLocalSettingsGroup(
+            any(),
+            stampKey: any(named: 'stampKey'),
+            timestamp: any(named: 'timestamp'),
+          ),
+        ).thenAnswer((_) => committed.future);
+        final controller = container.read(
+          dailyOsPreferencesControllerProvider.notifier,
+        );
+        async.flushMicrotasks();
+        controller.setUserName('Sam');
+        container.dispose();
+        final replacementOutbox = MockOutboxService();
+        when(
+          () => replacementOutbox.enqueueMessage(any<SyncMessage>()),
+        ).thenAnswer((_) async {});
+        GetIt.I.registerSingleton<OutboxService>(replacementOutbox);
+        committed.complete((
+          updatedAt: 2000,
+          values: {dailyOsUserNameSettingsKey: 'Sam'},
+        ));
+        async.elapse(const Duration(seconds: 1));
+        verifyNever(() => outboxService.enqueueMessage(any()));
+        verifyNever(() => replacementOutbox.enqueueMessage(any()));
+        // Teardown owns this replacement container, not the disposed profile.
+        container = ProviderContainer();
+      }, initialTime: DateTime(2026));
+    });
+
+    test('local name version waits for commit before publishing', () {
+      fakeAsync((async) {
+        final committed = Completer<SavedSettingsGroup>();
+        when(
+          () => mocks.settingsDb.saveLocalSettingsGroup(
+            any(),
+            stampKey: any(named: 'stampKey'),
+            timestamp: any(named: 'timestamp'),
+          ),
+        ).thenAnswer((_) => committed.future);
+        container
+            .read(dailyOsPreferencesControllerProvider.notifier)
+            .setUserName('Sam');
+        async.elapse(const Duration(seconds: 1));
+        verifyNever(() => outboxService.enqueueMessage(any()));
+        committed.complete((
+          updatedAt: 2000,
+          values: {dailyOsUserNameSettingsKey: 'Sam'},
+        ));
+        async
+          ..flushMicrotasks()
+          ..elapse(const Duration(milliseconds: 250));
+        final message =
+            verify(
+                  () => outboxService.enqueueMessage(captureAny()),
+                ).captured.single
+                as SyncDailyOsUserName;
+        expect(message.userName, 'Sam');
+        expect(message.updatedAt, 2000);
+      }, initialTime: DateTime(2026));
+    });
+
+    test('failed local name commit cannot publish or mark the name synced', () {
+      fakeAsync((async) {
+        final error = StateError('injected preference write failure');
+        when(
+          () => mocks.settingsDb.saveLocalSettingsGroup(
+            any(),
+            stampKey: any(named: 'stampKey'),
+            timestamp: any(named: 'timestamp'),
+          ),
+        ).thenAnswer((_) async => throw error);
+        container
+            .read(dailyOsPreferencesControllerProvider.notifier)
+            .setUserName('Sam');
+        async.elapse(const Duration(seconds: 1));
+        verifyNever(() => outboxService.enqueueMessage(any()));
+        verifyNever(
+          () => mocks.settingsDb.saveSettingsItem(
+            dailyOsUserNameSyncedAtSettingsKey,
+            any(),
+          ),
+        );
+        verify(
+          () => domainLogger.error(
+            LogDomain.dailyOs,
+            error,
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'persist',
+          ),
+        ).called(1);
+      }, initialTime: DateTime(2026));
+    });
+
     test('setUserName enqueues a debounced dailyOsUserName message', () {
       fakeAsync((async) {
         container
@@ -262,9 +361,10 @@ void main() {
         expect(message.updatedAt, greaterThan(0));
 
         verify(
-          () => mocks.settingsDb.saveSettingsItem(
-            dailyOsUserNameUpdatedAtSettingsKey,
-            message.updatedAt.toString(),
+          () => mocks.settingsDb.saveLocalSettingsGroup(
+            {dailyOsUserNameSettingsKey: 'Sam'},
+            stampKey: dailyOsUserNameUpdatedAtSettingsKey,
+            timestamp: message.updatedAt,
           ),
         ).called(1);
       });
@@ -380,9 +480,10 @@ void main() {
 
         verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
         verifyNever(
-          () => mocks.settingsDb.saveSettingsItem(
-            dailyOsUserNameSettingsKey,
+          () => mocks.settingsDb.saveLocalSettingsGroup(
             any(),
+            stampKey: dailyOsUserNameUpdatedAtSettingsKey,
+            timestamp: any(named: 'timestamp'),
           ),
         );
       });

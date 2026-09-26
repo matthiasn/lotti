@@ -30,13 +30,16 @@ default only when a stored name is absent.
 
 # The sync boundary
 
-A local mode selection writes the value key and schedules a debounced sync
-envelope. The debounce reads the retained legacy scheme names and stamps the
-outgoing message when it fires. It does **not** persist that outbound stamp in
-`THEME_PREFS_UPDATED_AT`; that key currently records received preferences only.
-Consequently, a delayed inbound message can still replace a more recent local
-pick if its stamp wins against the last received preference. This local-writer
-asymmetry remains outside the receive-register convergence guarantee.
+A local mode selection uses the
+[local settings group contract](../architecture/persistence.md#settings-groups)
+to commit its value, retained legacy names and version before scheduling sync.
+The debounce captures that committed snapshot; a remote reload during the wait
+cannot substitute a different mode into its envelope. Failed saves are logged
+and publish nothing. The screen still updates optimistically when the user picks.
+
+There is no durable theme-publication marker: disposal can cancel a pending
+debounce, and a failed or unavailable outbox does not automatically republish it.
+These source-publication windows remain outside the convergence guarantee.
 
 Inbound application normalizes an unknown mode to `system`, then uses the
 [versioned settings group contract](../architecture/persistence.md#settings-groups)
@@ -46,9 +49,10 @@ which reloads the theme without enqueuing an echo.
 
 ```mermaid
 flowchart TD
-  Pick["Local mode pick"] --> Save["Write mode value"]
-  Save --> Debounce["Debounce 250 ms"]
-  Debounce --> Enqueue["Read legacy names and enqueue with current time"]
+  Pick["Local mode pick"] --> Save["Commit local settings group"]
+  Save -->|success| Debounce["Debounce 250 ms"]
+  Debounce --> Enqueue["Enqueue committed snapshot"]
+  Save -->|failure| Log["Log error; do not enqueue"]
   Message["Incoming theme selection"] --> Normalize["Normalize mode"]
   Normalize --> Compare["Atomically compare stamp and payload"]
   Compare -->|loses| Ignore["Keep current settings"]

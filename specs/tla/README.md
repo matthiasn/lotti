@@ -2113,6 +2113,45 @@ deterministic regression for each switch, including every delivery order of an
 edit and two deletes; reverting any one of the Dart fixes fails at least one of
 them.
 
+## `SyncPreferenceEdits` — local edits and debounced publication
+
+This register model adds two peers that each make two local edits, interleaved
+with publishing and receiving. Each local wall clock stays at 1, so a second
+edit and an edit after a received future stamp must advance from persisted
+state. Payload ranks stand for the canonical tuple used by the receiver.
+Pending debounce snapshots can be replaced by a newer local commit. Receives
+merge by stamp and payload rank without changing the captured outbound snapshot.
+
+| Action | Implementation boundary |
+|---|---|
+| `LocalEdit` | `SettingsDb.saveLocalSettingsGroup`: atomic payload/stamp commit and immutable returned snapshot |
+| `Publish` | Theme/name controllers debounce and enqueue the saved snapshot |
+| `Receive` | `SettingsDb.saveSettingsItemsIfNewer`: compare the persisted register and commit the winning group |
+
+The checked profile explores **3,301 distinct states**. It checks that local
+versions advance, published payload/stamp pairs were actually committed, and
+settled peers agree on a version covering every committed edit. Fair edit,
+publication and delivery actions imply eventual settlement and eventual coverage
+of every edit, including local edits coalesced before publication.
+
+Guarded controls pass; disabling `MonotoneLocalStamps` violates
+`LocalVersionsAdvance`, and disabling `PublishCommittedSnapshot` violates
+`OnlyCommittedSnapshots`. A reachability check requires a stamp above two:
+with two edits per peer, this witnesses an edit after a received version.
+
+The database and controller tests cover real SQLite rollback, caller snapshots,
+future stored stamps, a delayed commit, failed saves, and a remote reload during
+debounce. Controller regressions fail with their changes reverted; database
+mutations independently remove stamp advancement, transactions and input copies.
+
+This is not a mechanically checked refinement or a combined proof with
+`SyncSettings` or the sequenced pipeline. Atomic commits are abstract here and
+opened by the receive model and SQLite tests. It excludes source crashes,
+cancelled debounce, outbox failure, lost delivery, legacy writers, normalization
+and platform effects. Theme has no restart publication marker; untracked
+preferences still lack sequence-gap repair. The model's delivery obligations
+must not be mistaken for implementation recovery from these exclusions.
+
 ## `EnvelopeChain` — signed provenance chains (a design model)
 
 **Written before the code, unlike every other spec here.** Record provenance

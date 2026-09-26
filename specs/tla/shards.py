@@ -102,6 +102,7 @@ SECONDS = {
     "GoalChatReply": 1,
     "OwnCounterSettlement": 1,
     "NotificationReplication": 15,
+    "SyncPreferenceEdits": 2,
     "SyncSettings": 1,
     "SyncSettingsEqualStamps": 1,
     "SyncSettingsNameEqualStamps": 1,

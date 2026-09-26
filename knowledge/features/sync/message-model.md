@@ -180,12 +180,22 @@ copies as no-ops.
 # Settings without sequence recovery
 
 `themingSelection` and `dailyOsUserName` use the versioned settings group
-comparison described below. `configFlag` overwrites on arrival without a version stamp.
+comparison in the [settings group contract](../../architecture/persistence.md#settings-groups). `configFlag` overwrites on arrival without a version stamp.
 They have no sequence-gap repair. Theme/name apply persists the values,
 freshness stamp and (for the name) bootstrap marker in one settings transaction.
 Failures propagate to the inbound queue's bounded retry policy; notifications
 are emitted only after successful persistence. Cache publication follows the
 [settings group contract](../../architecture/persistence.md#settings-groups).
+
+Local theme/name edits use that same serialized store before publishing their
+committed snapshot. The greeting's existing publication marker can bootstrap an
+unpublished name on reload; theme publication has the separate
+[controller lifetime boundary](../theming.md#the-sync-boundary).
+
+`SyncPreferenceEdits` checks local edits interleaved with remote receives and
+debounced publication, assuming publication and delivery eventually succeed.
+Its [bounds and mutation controls](../../../specs/tla/README.md#syncpreferenceedits--local-edits-and-debounced-publication)
+are separate from the receive transaction model.
 
 `SyncSettings` checks their conditional convergence, including equal timestamps
 and a failed write. Reordered unversioned flags remain a counterexample. The assumptions and

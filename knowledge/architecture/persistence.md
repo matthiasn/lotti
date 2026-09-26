@@ -152,6 +152,14 @@ state and cache untouched; identical payloads can still update their metadata.
 A queued newer group is therefore observed before an older conditional write
 makes its decision.
 
+`saveLocalSettingsGroup` commits a local edit with a stamp equal to the greater
+of the requested clock value and the persisted stamp plus one. Companion fields
+are read in that transaction with defaults for missing keys. The immutable
+returned snapshot is the only payload the caller publishes, so an intervening
+received update cannot change the payload paired with that stamp. Failed commits
+return no snapshot and publish neither cache nor outbound data. This API owns
+its transaction under the same restriction as the other group APIs.
+
 Single-key saves, removals and group saves share a write queue. Cache-based
 no-op checks run inside that queue, so a local save cannot skip against an old
 value while a group is still committing. Failed writes release the queue.
@@ -163,9 +171,11 @@ commit resolves to the newly published cache.
 
 ```mermaid
 flowchart LR
-  Queue[Serialized write] --> Guard{Versioned group?}
-  Guard -->|no| Write[Write transaction-local fields]
-  Guard -->|yes| Compare[Compare stored stamp and payload in transaction]
+  Queue[Serialized write] --> Guard{Write kind?}
+  Guard -->|unversioned| Write[Write transaction-local fields]
+  Guard -->|received version| Compare[Compare stored stamp and payload in transaction]
+  Guard -->|local edit| Stamp[Advance stamp and capture companion fields]
+  Stamp --> Write
   Compare -->|loses| Release[Release write queue]
   Compare -->|wins or identical| Write
   Write --> Commit[Commit group]

@@ -119,6 +119,21 @@ def check_settings():
           module="SyncSettings")
 
 
+def check_preference_edits():
+    for switch, assertion in (("MonotoneLocalStamps", "LocalVersionsAdvance"),
+                              ("PublishCommittedSnapshot", "OnlyCommittedSnapshots")):
+        for guarded, fails in (("TRUE", False), ("FALSE", True)):
+            check("preference-edits-" + switch + "-" + guarded,
+                  {switch: guarded}, assertion,
+                  module="SyncPreferenceEdits", fails=fails)
+    # With at most two edits per peer, a stamp above two requires a local
+    # edit after learning another peer's version, not only isolated edits.
+    check("preference-causal-edit-reachable", {}, "NoCausalEditWitness",
+          module="SyncPreferenceEdits",
+          extension='\nNoCausalEditWitness == \\A v \\in committed : v[1] <= MaxEdits\n')
+
+
 if __name__ == "__main__":
     main()
     check_settings()
+    check_preference_edits()

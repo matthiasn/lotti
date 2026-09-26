@@ -199,10 +199,32 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
     state = state.copyWith(userName: trimmed);
     // Persist the name and a fresh last-write timestamp together so the
     // outbound sync message and the local settings row agree on the winner.
-    final updatedAt = clock.now().millisecondsSinceEpoch;
-    _save(dailyOsUserNameSettingsKey, trimmed);
-    _save(dailyOsUserNameUpdatedAtSettingsKey, updatedAt.toString());
-    _enqueueUserNameSync(trimmed, updatedAt);
+    unawaited(_persistUserName(trimmed, clock.now().millisecondsSinceEpoch));
+  }
+
+  Future<void> _persistUserName(String userName, int timestamp) async {
+    if (!getIt.isRegistered<SettingsDb>()) return;
+    try {
+      final saved = await getIt<SettingsDb>().saveLocalSettingsGroup(
+        {dailyOsUserNameSettingsKey: userName},
+        stampKey: dailyOsUserNameUpdatedAtSettingsKey,
+        timestamp: timestamp,
+      );
+      if (!ref.mounted) return;
+      _enqueueUserNameSync(
+        saved.values[dailyOsUserNameSettingsKey]!,
+        saved.updatedAt,
+      );
+    } catch (error, stackTrace) {
+      if (getIt.isRegistered<DomainLogger>()) {
+        getIt<DomainLogger>().error(
+          LogDomain.dailyOs,
+          error,
+          stackTrace: stackTrace,
+          subDomain: 'persist',
+        );
+      }
+    }
   }
 
   /// Debounced outbound sync of the greeting name. Coalesces rapid keystrokes
@@ -222,6 +244,7 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
               status: SyncEntryStatus.update,
             ),
           );
+          if (!ref.mounted) return;
           // Record what we published so this name is not bootstrapped again.
           _save(dailyOsUserNameSyncedAtSettingsKey, updatedAt.toString());
         } catch (e, st) {
