@@ -264,6 +264,7 @@ void main() {
         'cachedCiphertext',
         'server',
         'serverCiphertext',
+        'serverCiphertextEmpty',
         'serverWrongId',
         'serverWrongRoom',
         'serverWrongPath',
@@ -305,7 +306,9 @@ void main() {
               () => descriptor.attachmentMimetype,
             ).thenReturn('application/json');
             when(() => descriptor.content).thenReturn({
-              if (lookup != 'encrypted' && lookup != 'serverMissingPath')
+              if (lookup != 'encrypted' &&
+                  lookup != 'serverMissingPath' &&
+                  lookup != 'serverCiphertextEmpty')
                 'relativePath':
                     lookup == 'wrongPath' || lookup == 'serverWrongPath'
                     ? '/outbox_bundles/different.json'
@@ -330,12 +333,20 @@ void main() {
                   : '!retained:example.org',
             );
             final ciphertext = MockEvent();
-            when(() => ciphertext.content).thenReturn({'ciphertext': 'test'});
+            when(() => ciphertext.content).thenReturn({
+              'ciphertext': 'test',
+              'session_id': 'test-session',
+            });
             when(() => ciphertext.type).thenReturn(EventTypes.Encrypted);
             when(() => ciphertext.eventId).thenReturn('exact-process-event');
             when(() => ciphertext.roomId).thenReturn('!retained:example.org');
             final client = MockMatrixClient();
             final encryption = MockEncryption();
+            final keyManager = MockKeyManager();
+            when(() => encryption.keyManager).thenReturn(keyManager);
+            when(
+              () => keyManager.getInboundGroupSession(any(), any()),
+            ).thenReturn(null);
             when(() => room.client).thenReturn(client);
             when(() => client.encryption).thenReturn(encryption);
             when(() => encryption.decryptRoomEvent(ciphertext)).thenAnswer(
@@ -371,7 +382,9 @@ void main() {
                   roomId: '!other:example.org',
                 );
               }
-              return lookup == 'serverCiphertext' ? ciphertext : descriptor;
+              return lookup.startsWith('serverCiphertext')
+                  ? ciphertext
+                  : descriptor;
             });
             when(() => room.getEventById('exact-process-event')).thenAnswer((
               _,
