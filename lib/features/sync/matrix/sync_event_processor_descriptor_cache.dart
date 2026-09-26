@@ -56,15 +56,26 @@ extension _DescriptorCache on SyncEventProcessor {
       var descriptor = await envelope.room
           .getEventById(id)
           .timeout(SyncTuning.attachmentDownloadTimeout);
-      // Room.getEventById decrypts server results, but returns cached database
-      // events as stored. Retry decryption here when a key arrived later.
-      if (descriptor?.type == EventTypes.Encrypted) {
-        final encryption = envelope.room.client.encryption;
-        if (encryption != null) {
-          descriptor = await encryption
-              .decryptRoomEvent(descriptor!)
-              .timeout(SyncTuning.attachmentDownloadTimeout);
-        }
+      descriptor = await _decryptDescriptor(descriptor, envelope.room);
+      var source = 'cacheOrServer';
+      // The SDK returns a cached event without consulting the server. An
+      // incomplete cached plaintext event otherwise makes every retry return
+      // the same unusable descriptor, even when the server has the file event.
+      final relativePath = descriptor?.content['relativePath'];
+      if (descriptor?.type == EventTypes.Message &&
+          (relativePath is! String || relativePath.isEmpty)) {
+        final remote = await envelope.room.client
+            .getOneRoomEvent(envelope.room.id, id)
+            .timeout(SyncTuning.attachmentDownloadTimeout);
+        // Event.fromMatrixEvent assigns the supplied room, so validate the
+        // wire room before conversion. The room-scoped API may omit room_id.
+        descriptor =
+            remote.eventId == id &&
+                (remote.roomId == null || remote.roomId == envelope.roomId)
+            ? Event.fromMatrixEvent(remote, envelope.room)
+            : null;
+        descriptor = await _decryptDescriptor(descriptor, envelope.room);
+        source = 'server';
       }
       if (descriptor != null &&
           descriptor.eventId == id &&
@@ -73,7 +84,8 @@ extension _DescriptorCache on SyncEventProcessor {
       }
       _trace(
         'descriptorLookup.result eventId=$id found=${descriptor != null} '
-        'type=${descriptor?.type} '
+        'source=$source type=${descriptor?.type} '
+        'msgtype=${descriptor?.content['msgtype']} '
         'roomMatches=${descriptor?.roomId == envelope.roomId} '
         'hasRelativePath=${descriptor?.content['relativePath'] is String} '
         'indexed=${index.findByEventId(id) != null}',
@@ -91,6 +103,18 @@ extension _DescriptorCache on SyncEventProcessor {
     // concurrent observation may already have recorded this same event.
     if (index.findByEventId(id) != null) return true;
     throw const PendingSyncDescriptorException();
+  }
+
+  /// The SDK decrypts server results, but cached events may still be ciphertext
+  /// when their key arrives later. Apply the same decryption to either source.
+  Future<Event?> _decryptDescriptor(Event? descriptor, Room room) async {
+    if (descriptor?.type != EventTypes.Encrypted) return descriptor;
+    final encryption = room.client.encryption;
+    return encryption == null
+        ? descriptor
+        : encryption
+              .decryptRoomEvent(descriptor!)
+              .timeout(SyncTuning.attachmentDownloadTimeout);
   }
 
   /// Fetches fresh JSON from the [AttachmentIndex] descriptor and writes it

@@ -121,9 +121,12 @@ malformed rather than a reason to read some other file.
 
 The index is volatile. If preparation needs an exact descriptor that is absent,
 `SyncEventProcessor` retrieves that event by ID from the envelope's room through
-the SDK's database/server lookup, retries decryption of cached ciphertext,
-verifies its event and room IDs, indexes it,
-and retries preparation once. This repairs a restart or missed file event even
+the SDK's database/server lookup and retries decryption of cached ciphertext.
+If cached plaintext lacks a nonempty attachment path, it fetches the same event
+directly from the room endpoint so an incomplete cache cannot trap every retry.
+The wire event ID and optional room ID are checked before constructing an SDK
+event (which assigns its supplied room), and the resulting descriptor's identity
+is checked again before indexing it and retrying preparation once. This repairs a restart or missed file event even
 when the durable cursor has already passed the descriptor. Existing canonical
 data that satisfies preparation needs no lookup. Missing, still-encrypted or
 temporarily unavailable descriptors produce `PendingSyncDescriptorException`.

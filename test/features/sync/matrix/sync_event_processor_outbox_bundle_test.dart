@@ -262,6 +262,14 @@ void main() {
         'indexed',
         'retained',
         'cachedCiphertext',
+        'server',
+        'serverCiphertext',
+        'serverWrongId',
+        'serverWrongRoom',
+        'serverWrongPath',
+        'serverMissingPath',
+        'serverError',
+        'serverTimeout',
         'missing',
         'error',
         'wrongId',
@@ -271,6 +279,7 @@ void main() {
         'timeout',
       ]) {
         final indexed = lookup == 'indexed';
+        final serverLookup = lookup.startsWith('server');
         test(
           'exact manifest descriptor recovery: $lookup',
           () async {
@@ -288,14 +297,17 @@ void main() {
             final descriptor = MockEvent();
             when(() => descriptor.type).thenReturn(EventTypes.Message);
             when(() => descriptor.eventId).thenReturn(
-              lookup == 'wrongId' ? 'other-event' : 'exact-process-event',
+              lookup == 'wrongId' || lookup == 'serverWrongId'
+                  ? 'other-event'
+                  : 'exact-process-event',
             );
             when(
               () => descriptor.attachmentMimetype,
             ).thenReturn('application/json');
             when(() => descriptor.content).thenReturn({
-              if (lookup != 'encrypted')
-                'relativePath': lookup == 'wrongPath'
+              if (lookup != 'encrypted' && lookup != 'serverMissingPath')
+                'relativePath':
+                    lookup == 'wrongPath' || lookup == 'serverWrongPath'
                     ? '/outbox_bundles/different.json'
                     : bundleRelativePath,
             });
@@ -309,15 +321,18 @@ void main() {
             addTearDown(index.dispose);
             if (indexed) index.record(descriptor);
             final room = MockRoom();
+            when(() => room.id).thenReturn('!retained:example.org');
             when(() => event.room).thenReturn(room);
             when(() => event.roomId).thenReturn('!retained:example.org');
             when(() => descriptor.roomId).thenReturn(
-              lookup == 'wrongRoom'
+              lookup == 'wrongRoom' || lookup == 'serverWrongRoom'
                   ? '!other:example.org'
                   : '!retained:example.org',
             );
             final ciphertext = MockEvent();
             when(() => ciphertext.type).thenReturn(EventTypes.Encrypted);
+            when(() => ciphertext.eventId).thenReturn('exact-process-event');
+            when(() => ciphertext.roomId).thenReturn('!retained:example.org');
             final client = MockMatrixClient();
             final encryption = MockEncryption();
             when(() => room.client).thenReturn(client);
@@ -325,11 +340,44 @@ void main() {
             when(() => encryption.decryptRoomEvent(ciphertext)).thenAnswer(
               (_) async => descriptor,
             );
+            final incomplete = MockEvent();
+            when(() => incomplete.type).thenReturn(EventTypes.Message);
+            when(() => incomplete.eventId).thenReturn('exact-process-event');
+            when(() => incomplete.roomId).thenReturn('!retained:example.org');
+            when(() => incomplete.content).thenReturn({});
+            when(() => incomplete.attachmentMimetype).thenReturn('');
+            when(
+              () => client.getOneRoomEvent(
+                '!retained:example.org',
+                'exact-process-event',
+              ),
+            ).thenAnswer((_) async {
+              if (lookup == 'serverError') {
+                throw const SocketException('offline');
+              }
+              if (lookup == 'serverTimeout') {
+                return Completer<MatrixEvent>().future;
+              }
+              if (lookup == 'serverWrongRoom') {
+                // A raw server event is rebound to the supplied room by the
+                // SDK constructor; validate its wire room before that happens.
+                return MatrixEvent(
+                  content: descriptor.content,
+                  type: EventTypes.Message,
+                  eventId: 'exact-process-event',
+                  senderId: '@sender:example.org',
+                  originServerTs: DateTime(2026),
+                  roomId: '!other:example.org',
+                );
+              }
+              return lookup == 'serverCiphertext' ? ciphertext : descriptor;
+            });
             when(() => room.getEventById('exact-process-event')).thenAnswer((
               _,
             ) async {
               if (lookup == 'error') throw const SocketException('offline');
               if (lookup == 'timeout') return Completer<Event?>().future;
+              if (serverLookup) return incomplete;
               if (lookup == 'cachedCiphertext') return ciphertext;
               return lookup == 'missing' ? null : descriptor;
             });
@@ -352,7 +400,9 @@ void main() {
 
             if (lookup == 'indexed' ||
                 lookup == 'retained' ||
-                lookup == 'cachedCiphertext') {
+                lookup == 'cachedCiphertext' ||
+                lookup == 'server' ||
+                lookup == 'serverCiphertext') {
               await exactProcessor.process(event: event, journalDb: journalDb);
               verify(
                 () => aiConfigRepository.deleteConfig(
@@ -365,7 +415,7 @@ void main() {
                 index.findByEventId('exact-process-event'),
                 same(descriptor),
               );
-            } else if (lookup == 'timeout') {
+            } else if (lookup == 'timeout' || lookup == 'serverTimeout') {
               fakeAsync((async) {
                 var settled = false;
                 Object? failure;
@@ -399,7 +449,7 @@ void main() {
                 event: event,
                 journalDb: journalDb,
               );
-              if (lookup == 'wrongPath') {
+              if (lookup == 'wrongPath' || lookup == 'serverWrongPath') {
                 // The exact event exists, but it cannot satisfy this envelope.
                 await attempt;
               } else {
@@ -414,6 +464,14 @@ void main() {
                 () => aiConfigRepository.deleteConfig(any(), fromSync: true),
               );
               verifyNever(descriptor.downloadAndDecryptAttachment);
+            }
+            if (serverLookup) {
+              verify(
+                () => client.getOneRoomEvent(
+                  '!retained:example.org',
+                  'exact-process-event',
+                ),
+              ).called(1);
             }
             if (indexed) {
               verifyNever(() => room.getEventById(any()));
