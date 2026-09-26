@@ -1202,11 +1202,10 @@ than per push.
 **Do not assume a green English run means the capture is healthy.** English is
 the fallback every other locale degrades to, so a rendering that only breaks
 once a translation is involved passes there — locale-specific quotation marks
-have already slipped through exactly this way. `manual-capture-check.yml`
-therefore defaults to capturing **German** on pull requests that touch `lib/`,
-`assets/`, a harness, or a registered screenshot test — override the locale
-with the `MANUAL_CHECK_LOCALE` repository variable. Check a second locale
-locally before concluding a harness change is safe.
+have already slipped through exactly this way. No pull request lane runs the
+capture, so before merging a change to a captured surface, run **German**
+locally (`make manual_screenshots_shard MANUAL_LOCALE=de`); otherwise the
+nightly capture is the first to notice.
 
 The case contract lives in `docs-site/metadata/screenshot-cases.json`. Each
 case must name a deterministic source test and provide all four inputs:
