@@ -192,6 +192,12 @@ entry link with the same raw ID, delayed/duplicate delivery, a dropped tail and
 a failed SQLite receipt insert. They drive real persistence, outbox claim/mark,
 processor/queue-adapter application and periodic head repair. Removing the
 backfill handler's family-qualified deduplication makes all eight traces fail.
+After the failed receipt write, both origin and lagging peer rebuild their
+sequence, repair, receiver and agent services over retained in-memory SQLite
+stores. This clears volatile repair state before the next head announcement;
+the domain winner survives and the missing receipts and colliding-family
+payload still recover. This models a quiescent process restart, not a torn
+filesystem write or an operating-system crash.
 These traces use inline envelopes: Matrix SDK encryption, uploads, downloads and
 server behavior are outside that harness. The formal mixed profile uses a full
 notification to additionally exercise the abstract attachment path, rather than

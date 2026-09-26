@@ -35,7 +35,7 @@ import '../queue/queue_apply_adapter_test_helpers.dart' show hBuildEntry;
 /// repair services and receive adapter. Only the outbox facade's scheduling and
 /// dispatch are replaced; no Matrix SDK/network or attachment loader is exercised.
 class _HeadReplica {
-  _HeadReplica(this.host, {int? maxBatchSize}) {
+  _HeadReplica(this.host, {this.maxBatchSize}) {
     when(
       () => logging.error(
         LogDomain.sync,
@@ -54,6 +54,10 @@ class _HeadReplica {
     );
     when(vc.getHost).thenAnswer((_) async => host);
     when(() => vc.initialized).thenAnswer((_) async {});
+    _startServices();
+  }
+
+  void _startServices() {
     sequence = SyncSequenceLogService(
       syncDatabase: database,
       vectorClockService: vc,
@@ -120,6 +124,7 @@ class _HeadReplica {
   }
 
   final String host;
+  final int? maxBatchSize;
   final database = SyncDatabase(inMemoryDatabase: true, background: false);
   final journal = JournalDb(inMemoryDatabase: true);
   final Directory directory = Directory.systemTemp.createTempSync(
@@ -130,11 +135,11 @@ class _HeadReplica {
   final logging = MockDomainLogger();
   final outbox = MockOutboxService();
   final room = MockRoom();
-  late final SyncSequenceLogService sequence;
-  late final OutboxEnqueueWriter writer;
-  late final BackfillRequestService requests;
-  late final BackfillResponseHandler responses;
-  late final InboundApplyFn apply;
+  late SyncSequenceLogService sequence;
+  late OutboxEnqueueWriter writer;
+  late BackfillRequestService requests;
+  late BackfillResponseHandler responses;
+  late InboundApplyFn apply;
   int eventCounter = 0;
   Object? lastError;
 
@@ -193,6 +198,15 @@ class _HeadReplica {
     ),
     room,
   );
+
+  /// Model a process restart at a quiescent boundary: durable stores survive,
+  /// while the repair services, receiver caches and agent services are rebuilt.
+  /// No writes are in flight and no filesystem crash durability is claimed.
+  Future<void> restart() async {
+    await requests.stopAndDrain();
+    agents.reboot();
+    _startServices();
+  }
 
   Future<void> close() async {
     await requests.stopAndDrain();
@@ -528,6 +542,19 @@ void registerMixedFamilyBackfillConformanceTests() {
               );
               await lagging.database.customStatement(
                 'DROP TRIGGER fail_mixed_receipt',
+              );
+              // Crash after domain apply but before its receipt is durable.
+              // Rebuild volatile services on both peers; the periodic head and
+              // repair now have to recover using only their retained stores.
+              final oldRequests = lagging.requests;
+              final oldReceiver = lagging.apply;
+              await lagging.restart();
+              await origin.restart();
+              expect(lagging.requests, isNot(same(oldRequests)));
+              expect(lagging.apply, isNot(same(oldReceiver)));
+              expect(
+                await lagging.agents.repository.getEntity(sharedId),
+                expectedAgent,
               );
               await origin.requests.announceOwnSequenceHead();
               final head = (await origin.drain()).single;
