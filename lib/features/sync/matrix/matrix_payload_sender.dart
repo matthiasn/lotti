@@ -188,11 +188,20 @@ class MatrixPayloadSender {
         (content.containsKey('file') &&
             !_hasValidEncryptedFileMetadata(encryptedFile)) ||
         url is! String ||
-        Uri.tryParse(url)?.scheme != 'mxc') {
+        !_hasValidMxcUri(url)) {
       throw StateError('Uploaded attachment descriptor is unusable');
     }
     return eventId;
   }
+
+  /// Requires a server name and one media ID, without URI normalization hiding
+  /// malformed paths. Uri parsing also rejects invalid bracketed IPv6 hosts.
+  static bool _hasValidMxcUri(String value) =>
+      RegExp(
+        r'^mxc://(?:[A-Za-z0-9.-]+|\[[0-9A-Fa-f:.]+\])'
+        r'(?::[0-9]+)?/[A-Za-z0-9_-]+$',
+      ).hasMatch(value) &&
+      Uri.tryParse(value) != null;
 
   /// Checks the v2 encryption metadata emitted by our SDK before acknowledging
   /// its upload. The ciphertext bytes and their hash are not downloaded here.

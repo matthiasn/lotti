@@ -247,7 +247,12 @@ new payload generation.
 Before accepting an upload, `MatrixPayloadSender` reads its exact event from
 `getOneRoomEvent`, bypassing the SDK's optimistic local echo. It decrypts an
 encrypted event and checks the event/room identity, the SDK's MIME-derived
-message type, relative path, encoding marker and Matrix media URL. An empty or
+message type, relative path, encoding marker and Matrix media URL. The URL must
+contain a server name (including optional port or bracketed IPv6) and one
+nonempty media ID using only letters, digits, `_` and `-`, as required by the
+[Matrix MXC URI format](https://spec.matrix.org/latest/client-server-api/#matrix-content-mxc-uris).
+User information, query strings, fragments and extra path segments are rejected
+for both plaintext and encrypted file URLs. An empty or
 mismatched descriptor, lookup failure, missing encryption service or decryption
 failure fails the send before publishing its referencing envelope or
 acknowledging the outbox row.

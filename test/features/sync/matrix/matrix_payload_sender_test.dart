@@ -184,6 +184,72 @@ void main() {
       });
     }
 
+    for (final encrypted in [false, true]) {
+      for (final scenario in <String, bool>{
+        'mxc:garbage': false,
+        'mxc:///upload': false,
+        'mxc://example.test': false,
+        'mxc://example.test/': false,
+        'mxc://example.test/upload/extra': false,
+        'mxc://example.test/upload?query=value': false,
+        'mxc://example.test/upload#fragment': false,
+        'mxc://user@example.test/upload': false,
+        'mxc://example.test/media%2Fid': false,
+        'mxc://example.test/media.id': false,
+        'mxc://bad host/upload': false,
+        'mxc://[invalid]/upload': false,
+        'https://example.test/upload': false,
+        'mxc://example.test/Upload_123-abc': true,
+        'mxc://example.test:8448/upload': true,
+        'mxc://192.0.2.1/upload': true,
+        'mxc://[2001:db8::1]:8448/upload': true,
+      }.entries) {
+        test(
+          'validates MXC structure encrypted=$encrypted: ${scenario.key}',
+          () async {
+            when(
+              () => room.sendFileEvent(
+                any<MatrixFile>(),
+                extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+              ),
+            ).thenAnswer(uploadStub.record((_) async => 'mxc-event'));
+            when(
+              () =>
+                  uploadStub.client.getOneRoomEvent('!room:test', 'mxc-event'),
+            ).thenAnswer(
+              (_) async => MatrixEvent(
+                content: {
+                  'msgtype': MessageTypes.File,
+                  'relativePath': 'note.txt',
+                  if (encrypted)
+                    'file': {
+                      ...MatrixUploadTestStub.encryptedFileDescriptor(),
+                      'url': scenario.key,
+                    }
+                  else
+                    'url': scenario.key,
+                },
+                type: EventTypes.Message,
+                eventId: 'mxc-event',
+                senderId: '@sender:example.test',
+                originServerTs: DateTime.utc(2026, 9, 26),
+              ),
+            );
+            expect(
+              await payloadSender.sendFile(
+                room: room,
+                fullPath: '${documentsDirectory.path}/note.txt',
+                relativePath: 'note.txt',
+                bytes: Uint8List.fromList([1]),
+              ),
+              scenario.value,
+            );
+            expect(sentEventRegistry.consume('mxc-event'), scenario.value);
+          },
+        );
+      }
+    }
+
     for (final fault in [
       'missingKey',
       'keyType',
