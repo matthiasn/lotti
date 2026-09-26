@@ -136,7 +136,7 @@ void main() {
 
   group('TimeWheelColumnDriver', () {
     late List<int> selected;
-    late List<int> wraps;
+    late List<(int, int)> wraps;
 
     TimeWheelColumnDriver driver({bool looping = true, int initial = 0}) {
       selected = [];
@@ -146,11 +146,11 @@ void main() {
         initialIndex: initial,
         looping: looping,
         onSelectedIndexChanged: selected.add,
-        onWrapped: wraps.add,
+        onWrapped: (index, direction) => wraps.add((index, direction)),
       );
     }
 
-    test('reports each wrap of a looping column once, with its direction', () {
+    test('reports a wrapping row once, together with its direction', () {
       final column = driver()
         ..handleSelectedItemChanged(59)
         ..handleSelectedItemChanged(58)
@@ -158,9 +158,21 @@ void main() {
         ..handleSelectedItemChanged(0);
       addTearDown(column.dispose);
 
-      expect(wraps, [-1, 1]);
-      expect(selected, [59, 58, 59, 0]);
+      expect(wraps, [(59, -1), (0, 1)]);
+      // Wrapping rows go only to onWrapped, never also as a plain change.
+      expect(selected, [58, 59]);
       expect(column.selectedIndex.value, 0);
+    });
+
+    test('without onWrapped a wrapping row is a plain change', () {
+      final column = TimeWheelColumnDriver(
+        itemCount: 60,
+        initialIndex: 0,
+        onSelectedIndexChanged: (selected = []).add,
+      )..handleSelectedItemChanged(59);
+      addTearDown(column.dispose);
+
+      expect(selected, [59]);
     });
 
     test('normalizes an absolute index without inventing a wrap', () {

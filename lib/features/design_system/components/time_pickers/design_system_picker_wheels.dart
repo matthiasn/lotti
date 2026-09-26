@@ -60,12 +60,14 @@ class _DesignSystemTimeWheelState extends State<DesignSystemTimeWheel> {
     _periodIndex = wheelHour.periodIndex;
   }
 
-  /// Carries a minute-drum wrap into the hour (and AM/PM) drums.
+  /// Records a minute that wrapped onto [minute] and carries the wrap into the
+  /// hour (and AM/PM) drums.
   ///
-  /// The new hour is recorded immediately, so a change reported before the
-  /// hour drum finishes animating is already correct, and a second wrap in
-  /// quick succession builds on the first one's target.
-  void _handleMinuteWrapped(int direction) {
+  /// Minute and hour are both recorded before the hour drum moves — moving it
+  /// can report the time synchronously — so no report pairs one with a stale
+  /// other, and a second wrap in quick succession builds on this one's target.
+  void _handleMinuteWrapped(int minute, int direction) {
+    _minuteIndex = minute;
     final rolled = rollTimeWheelHour(
       (hourIndex: _hourIndex, periodIndex: _periodIndex),
       direction,
@@ -239,9 +241,9 @@ class _FixedExtentWheelColumn extends StatefulWidget {
   final ValueChanged<int> onSelectedItemChanged;
   final VoidCallback onScrollEnd;
 
-  /// Called with 1 when a looping column moves forwards from its last row into
-  /// row 0, and with -1 when it moves backwards from row 0 into its last row.
-  final ValueChanged<int>? onWrapped;
+  /// Called instead of [onSelectedItemChanged] when a looping column wraps;
+  /// see [TimeWheelColumnDriver.onWrapped].
+  final TimeWheelWrapped? onWrapped;
   final bool looping;
 
   @override
@@ -267,7 +269,9 @@ class _FixedExtentWheelColumnState extends State<_FixedExtentWheelColumn> {
       initialIndex: widget.initialItem,
       looping: widget.looping,
       onSelectedIndexChanged: (index) => widget.onSelectedItemChanged(index),
-      onWrapped: (direction) => widget.onWrapped?.call(direction),
+      onWrapped: widget.onWrapped == null
+          ? null
+          : (index, direction) => widget.onWrapped!(index, direction),
     );
     _focusNode = FocusNode(debugLabel: widget.semanticsLabel);
     _visualState = Listenable.merge([_selectedItem, _focusNode]);

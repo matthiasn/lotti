@@ -831,8 +831,13 @@ The logic lives once, in `time_pickers/time_wheel_rollover.dart`:
 - Each column is a `TimeWheelColumnDriver`. The parent records the rolled hour
   **before** asking the hour column to animate, so the reported time is right
   at once and a second wrap builds on the first one's destination.
-- A column reports its own row **before** reporting a wrap: moving the hour
-  column can emit a scroll-end — and so a whole-time report — synchronously.
+- A wrapping row change arrives as **one** `onWrapped(index, direction)`
+  call, not a row report plus a wrap report. Either order of two callbacks
+  announces a half-updated time: `DesignSystemTimePicker` reports on every row
+  change (row first → 14:59 on the way from 14:00 to 13:59), and moving
+  `DesignSystemTimeWheel`'s hour column can emit a scroll-end — and so a
+  whole-time report — synchronously (wrap first → the stale minute). The owner
+  records minute and hour, then moves the hour column.
 
 ```mermaid
 stateDiagram-v2

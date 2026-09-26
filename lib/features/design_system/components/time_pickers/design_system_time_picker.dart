@@ -62,10 +62,12 @@ class _DesignSystemTimePickerState extends State<DesignSystemTimePicker> {
     widget.onTimeChanged(TimeOfDay(hour: hour, minute: _selectedMinute));
   }
 
-  /// Carries a minute-column wrap into the hour (and AM/PM) columns. The new
-  /// hour is recorded before the hour column animates, so the reported time
-  /// is right straight away and quick successive wraps chain.
-  void _handleMinuteWrapped(int direction) {
+  /// Records a minute that wrapped onto [minute], carries the wrap into the
+  /// hour (and AM/PM) columns and reports the result once. The hour is
+  /// recorded before its column animates, so the report is right straight
+  /// away and quick successive wraps chain.
+  void _handleMinuteWrapped(int minute, int direction) {
+    _selectedMinute = minute;
     final rolled = rollTimeWheelHour(
       (hourIndex: _selectedHour, periodIndex: _selectedPeriod),
       direction,
@@ -75,6 +77,7 @@ class _DesignSystemTimePickerState extends State<DesignSystemTimePicker> {
     _selectedPeriod = rolled.periodIndex;
     _hourColumn.currentState?.animateToIndex(rolled.hourIndex);
     _periodColumn.currentState?.animateToIndex(rolled.periodIndex);
+    _notifyTimeChanged();
   }
 
   @override
@@ -198,7 +201,7 @@ class _DrumColumn extends StatefulWidget {
   final int initialItem;
   final String Function(int index) labelBuilder;
   final ValueChanged<int> onSelectedItemChanged;
-  final ValueChanged<int>? onWrapped;
+  final TimeWheelWrapped? onWrapped;
   final bool looping;
 
   @override
@@ -216,7 +219,9 @@ class _DrumColumnState extends State<_DrumColumn> {
       initialIndex: widget.initialItem,
       looping: widget.looping,
       onSelectedIndexChanged: (index) => widget.onSelectedItemChanged(index),
-      onWrapped: (direction) => widget.onWrapped?.call(direction),
+      onWrapped: widget.onWrapped == null
+          ? null
+          : (index, direction) => widget.onWrapped!(index, direction),
     );
   }
 

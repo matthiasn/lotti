@@ -220,6 +220,34 @@ void main() {
         });
       }
 
+      testWidgets('never reports the new minute with the old hour', (
+        tester,
+      ) async {
+        final changes = <TimeOfDay>[];
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            DesignSystemTimePicker(
+              initialTime: const TimeOfDay(hour: 14, minute: 0),
+              onTimeChanged: changes.add,
+              semanticsLabel: 'Select time',
+            ),
+            theme: DesignSystemTheme.light(),
+          ),
+        );
+
+        // This picker reports every row change as it happens, so the wrap
+        // must already be in the hour when :59 is reported.
+        await tester.drag(
+          find.byType(ListWheelScrollView).at(1),
+          const Offset(0, 31),
+        );
+        await settle(tester);
+
+        expect(changes, isNotEmpty);
+        expect(changes, isNot(contains(const TimeOfDay(hour: 14, minute: 59))));
+        expect(changes.last, const TimeOfDay(hour: 13, minute: 59));
+      });
+
       testWidgets('rolling forward past :59 advances the hour', (
         tester,
       ) async {

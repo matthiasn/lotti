@@ -61,6 +61,11 @@ int shortestWheelDelta(int from, int to, int itemCount) {
   return forward > itemCount ~/ 2 ? forward - itemCount : forward;
 }
 
+/// A looping column moved onto row `index` by wrapping: `direction` is 1 when
+/// it went forwards from its last row into row 0, -1 when it went backwards
+/// from row 0 into its last row.
+typedef TimeWheelWrapped = void Function(int index, int direction);
+
 /// The state behind one drum column: its scroll controller, the selected row,
 /// how many times a looping column has wrapped, and the programmatic
 /// animation a neighbouring column's wrap asks for.
@@ -97,9 +102,11 @@ class TimeWheelColumnDriver {
   /// [animateToIndex] settled on.
   final ValueChanged<int> onSelectedIndexChanged;
 
-  /// Called with 1 when a looping column moves forwards from its last row into
-  /// row 0, and with -1 when it moves backwards from row 0 into its last row.
-  final ValueChanged<int>? onWrapped;
+  /// Called **instead of** [onSelectedIndexChanged] for a row change that
+  /// wraps, so the owner learns the new row and the wrap together and can
+  /// roll the hour before anything reports the time. Without it, a wrapping
+  /// change goes to [onSelectedIndexChanged] like any other.
+  final TimeWheelWrapped? onWrapped;
 
   late final FixedExtentScrollController controller;
 
@@ -138,19 +145,24 @@ class TimeWheelColumnDriver {
     return true;
   }
 
-  /// Records that the wheel now shows row [index], reporting a wrap and a
-  /// user-chosen row. Indices outside `0..itemCount-1` are normalized.
+  /// Records that the wheel now shows row [index], reporting a user-chosen
+  /// row — together with its wrap, when it wrapped. Indices outside
+  /// `0..itemCount-1` are normalized.
   void handleSelectedItemChanged(int index) {
     final normalized = looping ? index % itemCount : index;
     final previous = selectedIndex.value;
     if (previous == normalized) return;
     selectedIndex.value = normalized;
-    if (_programmaticTarget == null) onSelectedIndexChanged(normalized);
-    // Wrap last: the wrap moves a neighbouring column, which can report the
-    // whole time synchronously, and that report must already see this row.
-    if (looping) {
-      final wrap = wheelWrapBetween(previous, normalized, itemCount);
-      if (wrap != 0) onWrapped?.call(wrap);
+    final wrap = looping
+        ? wheelWrapBetween(previous, normalized, itemCount)
+        : 0;
+    final wrapped = onWrapped;
+    if (wrap != 0 && wrapped != null) {
+      // One callback for both: reporting the row and the wrap separately
+      // lets whichever goes first announce a time that is half updated.
+      wrapped(normalized, wrap);
+    } else if (_programmaticTarget == null) {
+      onSelectedIndexChanged(normalized);
     }
   }
 
