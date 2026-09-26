@@ -59,6 +59,28 @@ void main() {
     DevLogger.suppressOutput = false;
   });
 
+  /// Serves [entities] from the bulk read by id, as the journal does: an id
+  /// with no live entity is simply absent from the answer.
+  void stubJournal(List<JournalEntity> entities) {
+    when(
+      () => mockJournalDb.getJournalEntitiesForIdsUnordered(any()),
+    ).thenAnswer((invocation) async {
+      final ids = invocation.positionalArguments.first as Set<String>;
+      return entities.where((e) => ids.contains(e.meta.id)).toList();
+    });
+  }
+
+  LinkedDbEntry linkFrom(String fromId, String toId) => LinkedDbEntry(
+    id: 'link-$toId',
+    fromId: fromId,
+    toId: toId,
+    createdAt: DateTime(2024),
+    updatedAt: DateTime(2024),
+    hidden: false,
+    type: 'BasicLink',
+    serialized: '{}',
+  );
+
   group('VectorSearchRepository', () {
     test('returns tasks directly when search results are tasks', () async {
       when(
@@ -123,23 +145,20 @@ void main() {
 
         // The text entry links to a parent task via linked entries.
         final taskId = testTask.meta.id;
-        when(() => mockJournalDb.linksForIds(any())).thenReturn(
-          MockSelectable([
-            LinkedDbEntry(
-              id: 'link-1',
-              fromId: taskId,
-              toId: 'text-entry-1',
-              createdAt: DateTime(2024),
-              updatedAt: DateTime(2024),
-              hidden: false,
-              type: 'BasicLink',
-              serialized: '{}',
-            ),
+        when(() => mockJournalDb.linksForIds(any())).thenAnswer(
+          (i) => MockSelectable([
+            if ((i.positionalArguments.first as List<String>).contains(
+              'text-entry-1',
+            ))
+              linkFrom(taskId, 'text-entry-1'),
           ]),
         );
-        when(
-          () => mockJournalDb.getJournalEntitiesForIdsUnordered(any()),
-        ).thenAnswer((_) async => [testTask]);
+        stubJournal([
+          testTask,
+          testTextEntry.copyWith(
+            meta: testTextEntry.meta.copyWith(id: 'text-entry-1'),
+          ),
+        ]);
 
         final result = await sut.searchRelatedTasks(query: 'semantic query');
 
@@ -150,6 +169,42 @@ void main() {
         expect(result.distances, {taskId: 0.3});
       },
     );
+
+    test('a deleted entry no longer surfaces its parent task', () async {
+      when(
+        () => mockEmbeddingRepo.embed(
+          input: any(named: 'input'),
+          baseUrl: any(named: 'baseUrl'),
+        ),
+      ).thenAnswer((_) async => fakeVector);
+      // A vector left behind by an entry deleted before deletions dropped
+      // their vectors; its link to the task is still stored.
+      when(
+        () => mockEmbeddingStore.search(
+          queryVector: any(named: 'queryVector'),
+          k: any(named: 'k'),
+          categoryIds: any(named: 'categoryIds'),
+        ),
+      ).thenReturn([
+        const EmbeddingSearchResult(
+          entityId: 'deleted-entry',
+          distance: 0.2,
+          entityType: kEntityTypeJournalText,
+        ),
+      ]);
+      when(
+        () => mockJournalDb.linksForIds(any()),
+      ).thenReturn(
+        MockSelectable([linkFrom(testTask.meta.id, 'deleted-entry')]),
+      );
+      // The read hides the deleted entry; the task itself is live.
+      stubJournal([testTask]);
+
+      final result = await sut.searchRelatedTasks(query: 'deleted words');
+
+      expect(result.entities, isEmpty);
+      expect(result.distances, isEmpty);
+    });
 
     test('deduplicates when multiple results map to the same task', () async {
       when(

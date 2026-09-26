@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -9,6 +10,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
+import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:lotti/features/ai/service/embedding_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -888,6 +890,139 @@ void main() {
         });
       },
     );
+
+    group('failed ids are retried', () {
+      const entityId2 = 'ffffffff-bbbb-cccc-dddd-eeeeeeeeeeee';
+
+      FutureOr<void> Function() stored(String entityId) =>
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: entityId,
+            entityType: any(named: 'entityType'),
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+          );
+
+      Future<Float32List> anyEmbed() => mockEmbeddingRepo.embed(
+        input: any(named: 'input'),
+        baseUrl: any(named: 'baseUrl'),
+        model: any(named: 'model'),
+      );
+
+      test('edits made during an outage are embedded when it ends', () {
+        fakeAsync((async) {
+          stubEntity(
+            JournalEntry(
+              meta: _meta(),
+              entryText: const EntryText(plainText: _longText),
+            ),
+          );
+          stubEntity(
+            JournalEntry(
+              meta: _meta(id: entityId2),
+              entryText: const EntryText(
+                plainText: 'Another long enough text for embedding generation.',
+              ),
+            ),
+          );
+          // The endpoint is in its cooldown: every call fails fast.
+          final retryAt = clock.now().add(const Duration(minutes: 3));
+          when(
+            () => mockEmbeddingRepo.embed(
+              input: any(named: 'input'),
+              baseUrl: any(named: 'baseUrl'),
+              model: any(named: 'model'),
+            ),
+          ).thenAnswer(
+            (_) async => throw EmbeddingEndpointUnavailableException(
+              baseUrl: 'http://localhost:11434',
+              retryAt: retryAt,
+            ),
+          );
+          service.start();
+
+          sendAndProcess(async, {_entityId, entityId2, textEntryNotification});
+
+          // The first failure parks the other id without calling out.
+          verify(anyEmbed).called(1);
+          verifyNever(
+            () => mockEmbeddingStore.replaceEntityEmbeddings(
+              entityId: any(named: 'entityId'),
+              entityType: any(named: 'entityType'),
+              modelId: any(named: 'modelId'),
+              contentHash: any(named: 'contentHash'),
+              embeddings: any(named: 'embeddings'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          );
+
+          stubEmbedding();
+          async.elapse(const Duration(minutes: 3));
+
+          verify(stored(_entityId)).called(1);
+          verify(stored(entityId2)).called(1);
+          stopInZone(async);
+        });
+      });
+
+      test('any other failure is retried after the retry delay', () {
+        fakeAsync((async) {
+          stubEntity(
+            JournalEntry(
+              meta: _meta(),
+              entryText: const EntryText(plainText: _longText),
+            ),
+          );
+          when(
+            () => mockEmbeddingRepo.embed(
+              input: any(named: 'input'),
+              baseUrl: any(named: 'baseUrl'),
+              model: any(named: 'model'),
+            ),
+          ).thenAnswer((_) async => throw Exception('HTTP 500'));
+          service.start();
+
+          sendAndProcess(async, {_entityId, textEntryNotification});
+          stubEmbedding();
+          async.elapse(
+            EmbeddingService.retryDelay - const Duration(seconds: 1),
+          );
+          verifyNever(stored(_entityId));
+
+          async.elapse(const Duration(seconds: 1));
+          verify(stored(_entityId)).called(1);
+          stopInZone(async);
+        });
+      });
+
+      test('stop cancels a scheduled retry', () {
+        fakeAsync((async) {
+          stubEntity(
+            JournalEntry(
+              meta: _meta(),
+              entryText: const EntryText(plainText: _longText),
+            ),
+          );
+          when(
+            () => mockEmbeddingRepo.embed(
+              input: any(named: 'input'),
+              baseUrl: any(named: 'baseUrl'),
+              model: any(named: 'model'),
+            ),
+          ).thenAnswer((_) async => throw Exception('HTTP 500'));
+          service.start();
+          sendAndProcess(async, {_entityId, textEntryNotification});
+          verify(anyEmbed).called(1);
+
+          stopInZone(async);
+          async.elapse(EmbeddingService.retryDelay * 2);
+
+          verifyNever(anyEmbed);
+          expect(async.pendingTimers, isEmpty);
+        });
+      });
+    });
 
     test('stop cancels subscription and clears pending', () {
       fakeAsync((async) {

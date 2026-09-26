@@ -42,8 +42,8 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
     }
   }
 
-  /// Embeds an agent report for vector search and supersedes the previous
-  /// report's embedding if one exists.
+  /// Embeds an agent report for vector search, in its task's category, and
+  /// supersedes the previous report's embedding if one exists.
   ///
   /// Non-fatal: failures are logged but do not affect the wake cycle.
   /// Called as fire-and-forget via [unawaited] after report persistence.
@@ -61,16 +61,12 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
       final baseUrl = await this.aiConfigRepository.resolveOllamaBaseUrl();
       if (baseUrl == null) return;
 
-      // Resolve the task's category for category-scoped search.
-      final taskEntity = await journalDb.journalEntityById(taskId);
-      final categoryId = taskEntity?.meta.categoryId ?? '';
-
       final didEmbed = await EmbeddingProcessor.processAgentReport(
         reportId: reportId,
         reportContent: reportContent,
         taskId: taskId,
-        categoryId: categoryId,
         subtype: AgentReportScopes.current,
+        journalDb: journalDb,
         embeddingStore: store,
         embeddingRepository: repo,
         baseUrl: baseUrl,

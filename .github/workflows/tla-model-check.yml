@@ -163,6 +163,13 @@ on:
       - "lib/features/speech/helpers/automatic_prompt_trigger.dart"
       - "lib/features/sync/services/synced_audio_inference_dispatcher.dart"
       - "lib/features/relationships/service/check_in_transcription_service.dart"
+      - "lib/features/ai/service/embedding_service.dart"
+      - "lib/features/ai/service/embedding_processor.dart"
+      - "lib/features/ai/state/embedding_backfill_controller.dart"
+      - "lib/features/ai/database/sharded_embedding_store.dart"
+      - "lib/features/ai/repository/ollama_embedding_repository.dart"
+      - "lib/features/agents/workflow/task_agent_persistence_helpers.dart"
+      - "lib/services/db_notification.dart"
       - ".github/workflows/tla-model-check.yml"
 
 concurrency:

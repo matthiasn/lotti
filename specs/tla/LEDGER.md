@@ -100,6 +100,15 @@ success, and follow-ups, a second request and a concurrent edit each misbehaved
 around it. All four bugs were found by reading the code; TLC reproduces each
 through its switch, and found the residual it leaves open (a local edit inside
 the write's own window). Not included in the historical totals above.
+The `EmbeddingFreshness` model (pending) adds one spec, two configurations,
+four named properties and 712,647 distinct states. It came with fixes for a
+vector index that fell behind the journal: deleted and shortened entries kept
+their vectors, failures during an Ollama outage were dropped, concurrent runs
+could store an older version, reports stayed in a task's old category, and a
+crash recovery could bring back older content. All six were found by reading
+the code — five in the audit that prompted the model, one (a short task's
+reports) while writing it — and TLC reproduces each through its switch. Not
+included in the historical totals above.
 
 ## Timeline
 
@@ -171,6 +180,7 @@ counterexamples found. "Severity" grades each of those bugs; see
 | [#4506](https://github.com/matthiasn/lotti/pull/4506) | pending | tasks, sync | `SavedTaskFilterSync` | 2 | 9 (0) | P0×2 P1×3 P2 P3×3 | — | Saved filters created on a desktop never reached the phone: filters saved before they synced were never sent, and a reorder on the receiver wrote its stale list over the filters sync had just stored. Changes are now owed in a durable ledger until the outbox accepts them, and revisions and deletes have one total order |
 | pending | pending | ai, sync | `AiConfigReplication` | 2 | 8 (0) | P0 P1×4 P2×2 P3 | — | Two devices editing the same AI setting swapped edits for good, a replayed older delete undid a restore, and a deleted provider came back — API key and all — from any older copy a peer sent. Revisions and deletions of AI configs now have one total order, the provider cascade leaves tombstones, and a receiver deletes the models a deleted provider leaves behind. Also: a synced provider without a key wiped the key on peers, a replayed row blanked its type from the repository cache, and undoing a prompt deletion did nothing |
 | pending | pending | ai | `TranscriptionRun` | 2 | 4 (0) | P1×2 P2×2 | — | A skill transcription whose write the database refused — a synced edit landed between the re-read and the write, or the write threw — was reported as a success: status idle, attribution succeeded, the summary and the agent nudge ran, and the check-in waiter sat on its spinner until the timeout. Failed runs still summarized and woke the agent, two requests for one recording both paid for an inference, and text edited during the run was overwritten. Writes are now checked and retried, runs are single-flight per recording, and an edit made during the run wins |
+| pending | pending | ai | `EmbeddingFreshness` | 2 | 6 (0) | P1 P2×3 P3×2 | — | Semantic search kept finding deleted and shortened entries, and pulled up their tasks; edits made while Ollama was down were never indexed. Runs of one entity are now serialised end to end, gone entries lose their vectors, failures retry after the cooldown, reports follow their task, and a crash recovery keeps the newest copy |
 
 ## Severity
 
@@ -385,6 +395,12 @@ The P0 and P1 bugs:
 | pending | P1 | no | Text edited (here or on a peer) while a recording was being transcribed was overwritten by the transcript |
 | pending | P2 | no | A failed transcription still ran the paid audio summary over the old text and woke the subject's agent |
 | pending | P2 | no | Two requests for one recording on a device each paid for an inference and appended a transcript and a summary; the status showed idle or error while one still ran |
+| pending | P1 | no | A deleted or shortened entry kept its vectors, so its old text still found it and still surfaced its parent task |
+| pending | P2 | no | Every edit made while the Ollama endpoint was in its outage cooldown was dropped after one failed attempt and never indexed |
+| pending | P2 | no | A manual backfill running beside the background indexer could store an entry's older version after the newer one, and nothing corrected it |
+| pending | P2 | no | A task too short to embed never took its agent reports along when it changed category |
+| pending | P3 | no | A report embedded while its task changed category was filed under the old category |
+| pending | P3 | no | A crash between a recategorising write's two shards restored the copy in the shard whose name sorted last, which could be the older content |
 </details>
 
 ## Specs
