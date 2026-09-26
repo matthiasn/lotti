@@ -5,9 +5,13 @@ description: The Drift-backed inbound queue, the anchored catch-up bridge, per-r
 resource: ../../../lib/features/sync/queue
 tags: [sync, inbound-queue, catch-up, matrix]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-26T00:45:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-26T03:57:34Z }
 stale_after: 2026-12-25
 sources:
+  - id: descriptor-recovery
+    resource: ../../../lib/features/sync/matrix/sync_event_processor_descriptor_cache.dart
+    title: Exact attachment discovery after a restart or missed descriptor
+    last_modified: 2026-09-26
   - id: sdk-batch-barrier
     resource: ../../../lib/features/sync/queue/queue_sync_batch.dart
     title: Hold SDK slices until metadata protects their gap
@@ -114,6 +118,29 @@ The same rule is enforced for journal JSON, agent entity/link JSON,
 notifications, and outbox bundle manifests. Exact descriptors must also declare
 the same normalized `relativePath` as the envelope; a mismatched immutable id is
 malformed rather than a reason to read some other file.
+
+The index is volatile. If preparation needs an exact descriptor that is absent,
+`SyncEventProcessor` retrieves that event by ID from the envelope's room through
+the SDK's database/server lookup and retries decryption of cached ciphertext.
+If cached plaintext lacks a nonempty attachment path, it fetches the same event
+directly from the room endpoint so an incomplete cache cannot trap every retry.
+The wire event ID and optional room ID are checked before constructing an SDK
+event (which assigns its supplied room), and the resulting descriptor's identity
+is checked again before indexing it and retrying preparation once. This repairs a restart or missed file event even
+when the durable cursor has already passed the descriptor. Existing canonical
+data that satisfies preparation needs no lookup. Missing, still-encrypted or
+temporarily unavailable descriptors produce `PendingSyncDescriptorException`.
+`QueueApplyAdapter` maps this to `pendingDescriptor`: the worker retries every
+30 seconds without the generic attempt cap or the attachment-arrival age limit.
+Descriptor-cache download/decode failures after exact discovery use the same
+recovery state. Local cache writes preserve their original filesystem error and
+use bounded generic retries; a parent bundle descriptor does not turn a child
+cache-write failure into unlimited attachment recovery.
+An envelope already older than ten minutes at restart therefore stays active
+until exact-ID discovery succeeds; it does not depend on another timeline event
+or a manual retry. This requires the referenced event to remain retrievable and
+its decryption keys eventually to arrive. Neither a newer file at the same path
+nor the mutable disk cache may substitute for the named generation.
 
 Per-room markers advance only after a successful slice commit, so a crash
 mid-drain simply re-leases the same rows on restart. Resurrection flips a row
@@ -338,10 +365,14 @@ flowchart TD
     Outcome -->|applied| Commit["queue.commitApplied<br/>(status→applied, ledger row retained;<br/>marker advance if monotonic)"]
     Outcome -->|retriable/missingBase| Retry["scheduleRetry with backoff"]
     Outcome -->|decryptionPending| DecryptRetry["scheduleRetry (short backoff)"]
+    Outcome -->|pendingAttachment| AttachmentRetry["scheduleRetry until arrival deadline"]
+    Outcome -->|pendingDescriptor / pendingBarrier| PeriodicRetry["scheduleRetry without age or attempt cap"]
     Outcome -->|permanentSkip| Skip["markSkipped"]
     Commit --> NextEntry["next entry in batch"]
     Retry --> NextEntry
     DecryptRetry --> NextEntry
+    AttachmentRetry --> NextEntry
+    PeriodicRetry --> NextEntry
     Skip --> NextEntry
     NextEntry --> WindowClose{"batch drained?"}
     WindowClose -->|no| Apply
@@ -372,8 +403,8 @@ entry rather than the sum. With `inboundWorkerBatchSize = 1` there is nothing to
 parallelise at runtime; the hook remains for batch sizes above 1.
 
 Prepared payloads are cached by `eventId` and consumed one at a time by apply.
-Terminal outcomes caught at prepare time (`permanentSkip`, `pendingAttachment`,
-`retriable`) also survive in the cache, so apply surfaces them without re-running
+Outcomes caught at prepare time (`permanentSkip`, `pendingAttachment`,
+`pendingDescriptor`, `retriable`) also survive in the cache, so apply surfaces them without re-running
 prepare.
 
 Journal entities and entry links own their narrow JournalDb transactions.

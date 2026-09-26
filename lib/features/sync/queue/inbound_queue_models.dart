@@ -52,6 +52,10 @@ enum RetryReason {
   /// and a wall-clock timeout instead of the generic attempt cap —
   /// see `ApplyOutcome.pendingAttachment`.
   pendingAttachment,
+
+  /// Periodic exact-ID discovery, independent of the original enqueue age.
+  /// Unlike a timeline attachment race, it has no guaranteed arrival signal.
+  pendingDescriptor,
 }
 
 /// A queue row materialised for the worker. [rawJson] is the bytes the

@@ -1,15 +1,18 @@
 // ignore_for_file: cascade_invocations
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -255,62 +258,229 @@ void main() {
         },
       );
 
-      test(
-        'processes an exact outbox manifest through the bundle prepare callback',
-        () async {
-          const bundleRelativePath = '/outbox_bundles/exact-process.json';
-          final manifest = <String, dynamic>{
-            'version': 1,
-            'entries': [
-              <String, dynamic>{
-                'envelope': const SyncMessage.aiConfigDelete(
-                  id: 'exact-bundle-config',
-                ).toJson(),
-              },
-            ],
-          };
-          final descriptor = MockEvent();
-          when(() => descriptor.eventId).thenReturn('exact-process-event');
-          when(
-            () => descriptor.attachmentMimetype,
-          ).thenReturn('application/json');
-          when(() => descriptor.content).thenReturn({
-            'relativePath': bundleRelativePath,
-          });
-          when(descriptor.downloadAndDecryptAttachment).thenAnswer(
-            (_) async => MatrixFile(
-              bytes: Uint8List.fromList(utf8.encode(jsonEncode(manifest))),
-              name: 'exact-process.json',
-            ),
-          );
-          final exactProcessor = SyncEventProcessor(
-            loggingService: loggingService,
-            updateNotifications: updateNotifications,
-            aiConfigRepository: aiConfigRepository,
-            savedTaskFiltersRepository: savedTaskFiltersRepository,
-            settingsDb: settingsDb,
-            journalEntityLoader: journalEntityLoader,
-            documentsDirectory: tempDir,
-            attachmentIndex: AttachmentIndex()..record(descriptor),
-          );
-          const message = SyncMessage.outboxBundle(
-            children: [],
-            jsonPath: bundleRelativePath,
-            attachmentEventId: 'exact-process-event',
-          );
-          when(() => event.text).thenReturn(encodeMessage(message));
+      for (final lookup in [
+        'indexed',
+        'retained',
+        'cachedCiphertext',
+        'server',
+        'serverCiphertext',
+        'serverWrongId',
+        'serverWrongRoom',
+        'serverWrongPath',
+        'serverMissingPath',
+        'serverError',
+        'serverTimeout',
+        'missing',
+        'error',
+        'wrongId',
+        'wrongRoom',
+        'wrongPath',
+        'encrypted',
+        'timeout',
+      ]) {
+        final indexed = lookup == 'indexed';
+        final serverLookup = lookup.startsWith('server');
+        test(
+          'exact manifest descriptor recovery: $lookup',
+          () async {
+            const bundleRelativePath = '/outbox_bundles/exact-process.json';
+            final manifest = <String, dynamic>{
+              'version': 1,
+              'entries': [
+                <String, dynamic>{
+                  'envelope': const SyncMessage.aiConfigDelete(
+                    id: 'exact-bundle-config',
+                  ).toJson(),
+                },
+              ],
+            };
+            final descriptor = MockEvent();
+            when(() => descriptor.type).thenReturn(EventTypes.Message);
+            when(() => descriptor.eventId).thenReturn(
+              lookup == 'wrongId' || lookup == 'serverWrongId'
+                  ? 'other-event'
+                  : 'exact-process-event',
+            );
+            when(
+              () => descriptor.attachmentMimetype,
+            ).thenReturn('application/json');
+            when(() => descriptor.content).thenReturn({
+              if (lookup != 'encrypted' && lookup != 'serverMissingPath')
+                'relativePath':
+                    lookup == 'wrongPath' || lookup == 'serverWrongPath'
+                    ? '/outbox_bundles/different.json'
+                    : bundleRelativePath,
+            });
+            when(descriptor.downloadAndDecryptAttachment).thenAnswer(
+              (_) async => MatrixFile(
+                bytes: Uint8List.fromList(utf8.encode(jsonEncode(manifest))),
+                name: 'exact-process.json',
+              ),
+            );
+            final index = AttachmentIndex();
+            addTearDown(index.dispose);
+            if (indexed) index.record(descriptor);
+            final room = MockRoom();
+            when(() => room.id).thenReturn('!retained:example.org');
+            when(() => event.room).thenReturn(room);
+            when(() => event.roomId).thenReturn('!retained:example.org');
+            when(() => descriptor.roomId).thenReturn(
+              lookup == 'wrongRoom' || lookup == 'serverWrongRoom'
+                  ? '!other:example.org'
+                  : '!retained:example.org',
+            );
+            final ciphertext = MockEvent();
+            when(() => ciphertext.type).thenReturn(EventTypes.Encrypted);
+            when(() => ciphertext.eventId).thenReturn('exact-process-event');
+            when(() => ciphertext.roomId).thenReturn('!retained:example.org');
+            final client = MockMatrixClient();
+            final encryption = MockEncryption();
+            when(() => room.client).thenReturn(client);
+            when(() => client.encryption).thenReturn(encryption);
+            when(() => encryption.decryptRoomEvent(ciphertext)).thenAnswer(
+              (_) async => descriptor,
+            );
+            final incomplete = MockEvent();
+            when(() => incomplete.type).thenReturn(EventTypes.Message);
+            when(() => incomplete.eventId).thenReturn('exact-process-event');
+            when(() => incomplete.roomId).thenReturn('!retained:example.org');
+            when(() => incomplete.content).thenReturn({});
+            when(() => incomplete.attachmentMimetype).thenReturn('');
+            when(
+              () => client.getOneRoomEvent(
+                '!retained:example.org',
+                'exact-process-event',
+              ),
+            ).thenAnswer((_) async {
+              if (lookup == 'serverError') {
+                throw const SocketException('offline');
+              }
+              if (lookup == 'serverTimeout') {
+                return Completer<MatrixEvent>().future;
+              }
+              if (lookup == 'serverWrongRoom') {
+                // A raw server event is rebound to the supplied room by the
+                // SDK constructor; validate its wire room before that happens.
+                return MatrixEvent(
+                  content: descriptor.content,
+                  type: EventTypes.Message,
+                  eventId: 'exact-process-event',
+                  senderId: '@sender:example.org',
+                  originServerTs: DateTime(2026),
+                  roomId: '!other:example.org',
+                );
+              }
+              return lookup == 'serverCiphertext' ? ciphertext : descriptor;
+            });
+            when(() => room.getEventById('exact-process-event')).thenAnswer((
+              _,
+            ) async {
+              if (lookup == 'error') throw const SocketException('offline');
+              if (lookup == 'timeout') return Completer<Event?>().future;
+              if (serverLookup) return incomplete;
+              if (lookup == 'cachedCiphertext') return ciphertext;
+              return lookup == 'missing' ? null : descriptor;
+            });
+            final exactProcessor = SyncEventProcessor(
+              loggingService: loggingService,
+              updateNotifications: updateNotifications,
+              aiConfigRepository: aiConfigRepository,
+              savedTaskFiltersRepository: savedTaskFiltersRepository,
+              settingsDb: settingsDb,
+              journalEntityLoader: journalEntityLoader,
+              documentsDirectory: tempDir,
+              attachmentIndex: index,
+            );
+            const message = SyncMessage.outboxBundle(
+              children: [],
+              jsonPath: bundleRelativePath,
+              attachmentEventId: 'exact-process-event',
+            );
+            when(() => event.text).thenReturn(encodeMessage(message));
 
-          await exactProcessor.process(event: event, journalDb: journalDb);
-
-          verify(
-            () => aiConfigRepository.deleteConfig(
-              'exact-bundle-config',
-              fromSync: true,
-            ),
-          ).called(1);
-          verify(descriptor.downloadAndDecryptAttachment).called(1);
-        },
-      );
+            if (lookup == 'indexed' ||
+                lookup == 'retained' ||
+                lookup == 'cachedCiphertext' ||
+                lookup == 'server' ||
+                lookup == 'serverCiphertext') {
+              await exactProcessor.process(event: event, journalDb: journalDb);
+              verify(
+                () => aiConfigRepository.deleteConfig(
+                  'exact-bundle-config',
+                  fromSync: true,
+                ),
+              ).called(1);
+              verify(descriptor.downloadAndDecryptAttachment).called(1);
+              expect(
+                index.findByEventId('exact-process-event'),
+                same(descriptor),
+              );
+            } else if (lookup == 'timeout' || lookup == 'serverTimeout') {
+              fakeAsync((async) {
+                var settled = false;
+                Object? failure;
+                unawaited(
+                  exactProcessor
+                      .process(event: event, journalDb: journalDb)
+                      .then<void>(
+                        (_) => settled = true,
+                        onError: (Object error, StackTrace stackTrace) {
+                          failure = error;
+                          settled = true;
+                        },
+                      ),
+                );
+                async.flushMicrotasks();
+                async.elapse(
+                  SyncTuning.attachmentDownloadTimeout -
+                      const Duration(milliseconds: 1),
+                );
+                expect(settled, isFalse);
+                async.elapse(const Duration(milliseconds: 1));
+                expect(settled, isTrue);
+                expect(failure, isA<PendingSyncDescriptorException>());
+              });
+              verifyNever(descriptor.downloadAndDecryptAttachment);
+              verifyNever(
+                () => aiConfigRepository.deleteConfig(any(), fromSync: true),
+              );
+            } else {
+              final attempt = exactProcessor.process(
+                event: event,
+                journalDb: journalDb,
+              );
+              if (lookup == 'wrongPath' || lookup == 'serverWrongPath') {
+                // The exact event exists, but it cannot satisfy this envelope.
+                await attempt;
+              } else {
+                await expectLater(
+                  attempt,
+                  throwsA(isA<PendingSyncDescriptorException>()),
+                );
+                expect(index.findByEventId('exact-process-event'), isNull);
+                expect(index.find(bundleRelativePath), isNull);
+              }
+              verifyNever(
+                () => aiConfigRepository.deleteConfig(any(), fromSync: true),
+              );
+              verifyNever(descriptor.downloadAndDecryptAttachment);
+            }
+            if (serverLookup) {
+              verify(
+                () => client.getOneRoomEvent(
+                  '!retained:example.org',
+                  'exact-process-event',
+                ),
+              ).called(1);
+            }
+            if (indexed) {
+              verifyNever(() => room.getEventById(any()));
+            } else {
+              verify(() => room.getEventById('exact-process-event')).called(1);
+            }
+          },
+        );
+      }
 
       test(
         'exact manifest miss stays retryable and never falls back to a newer '

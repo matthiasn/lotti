@@ -407,6 +407,7 @@ class _EchoDomainLogger extends DomainLogger {
     'bootstrap',
     'mediaRepair',
     'mediaRequest',
+    'processor.resolve.descriptorLookup',
     'saveRoom',
   ];
 

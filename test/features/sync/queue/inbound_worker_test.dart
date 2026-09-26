@@ -103,6 +103,7 @@ class _ExpectedWorkerLifecycle {
         }
         return 0;
       case ApplyOutcome.pendingBarrier:
+      case ApplyOutcome.pendingDescriptor:
         attempts++;
         return 0;
       case ApplyOutcome.permanentSkip:
@@ -340,6 +341,48 @@ void main() {
         expect(stats.total, 0);
         expect(stats.retrying, 0);
         expect(stats.abandoned, 1);
+      });
+    },
+  );
+
+  test(
+    'aged descriptor lookup retries beyond attempt cap and recovers',
+    () async {
+      var virtualNow = DateTime(2024);
+      await withClock(Clock(() => virtualNow), () async {
+        await queue.enqueueLive(
+          _buildSyncEvent(
+            eventId: r'$aged-descriptor',
+            roomId: roomId,
+            originTsMs: 1,
+          ),
+        );
+        // Restart after the attachment's ten-minute arrival window has elapsed.
+        virtualNow = virtualNow.add(const Duration(days: 1));
+        var attempts = 0;
+        final worker = buildWorker(
+          apply: (entry) async {
+            attempts++;
+            return attempts <= 5
+                ? ApplyOutcome.pendingDescriptor
+                : ApplyOutcome.applied;
+          },
+        );
+        for (var i = 0; i < 5; i++) {
+          expect(await worker.drainToCompletion(), 0);
+          final stats = await queue.stats();
+          expect(stats.retrying, 1);
+          expect(stats.abandoned, 0);
+          virtualNow = virtualNow.add(const Duration(seconds: 29));
+          expect(await worker.drainToCompletion(), 0);
+          expect(attempts, i + 1);
+          virtualNow = virtualNow.add(const Duration(seconds: 1));
+        }
+        expect(await worker.drainToCompletion(), 1);
+        expect(attempts, 6);
+        final stats = await queue.stats();
+        expect(stats.total, 0);
+        expect(stats.abandoned, 0);
       });
     },
   );

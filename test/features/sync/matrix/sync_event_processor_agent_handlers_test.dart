@@ -6528,16 +6528,15 @@ void main() {
               attachmentEventId: 'agent-payload-not-yet-indexed',
             );
             when(() => event.text).thenReturn(encodeMessage(message));
+            final room = MockRoom();
+            when(() => event.room).thenReturn(room);
+            when(
+              () => room.getEventById('agent-payload-not-yet-indexed'),
+            ).thenAnswer((_) async => null);
 
             await expectLater(
               processorWithIndex.process(event: event, journalDb: journalDb),
-              throwsA(
-                isA<FileSystemException>().having(
-                  (error) => error.message,
-                  'message',
-                  contains('attachment descriptor not yet available'),
-                ),
-              ),
+              throwsA(isA<PendingSyncDescriptorException>()),
             );
 
             verifyNever(() => mockAgentRepo.upsertEntity(any()));

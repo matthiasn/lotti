@@ -163,7 +163,9 @@ jobs:
     permissions:
       contents: read
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # Runner variance doubled a measured profile in run 36217391296. Leave
+    # headroom above the packed estimates without dropping any configurations.
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
