@@ -109,9 +109,11 @@ def check_settings():
               module="SyncSettings", fails=False)
         check("settings-" + switch + "-mutated",
               {**constants, switch: "FALSE"}, assertion, module="SyncSettings")
-    # These protocol limits remain explicit even after persistence is atomic.
-    check("settings-equal-stamps", {"EqualStamps": "TRUE"}, "Converged",
-          module="SyncSettings")
+    for guarded, fails in (("TRUE", False), ("FALSE", True)):
+        check("settings-equal-stamps-" + guarded,
+              {"EqualStamps": "TRUE", "DeterministicTies": guarded}, "Converged",
+              module="SyncSettings", fails=fails)
+    # Unversioned flags still depend on delivery order.
     check("settings-unordered-flags",
           {"Timestamped": "FALSE", "FieldCount": "1"}, "Converged",
           module="SyncSettings")

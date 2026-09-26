@@ -162,20 +162,67 @@ class SettingsDb extends _$SettingsDb {
     final snapshot = Map<String, String>.of(values);
     return _write(() async {
       if (snapshot.isEmpty) return;
-      final updatedAt = clock.now();
-      await transaction(() async {
-        for (final entry in snapshot.entries) {
-          await into(settings).insertOnConflictUpdate(
-            SettingsItem(
-              configKey: entry.key,
-              value: entry.value,
-              updatedAt: updatedAt,
-            ),
-          );
-        }
-      });
+      await transaction(() => _persistSettingsItems(snapshot));
       snapshot.forEach(_publishValue);
     });
+  }
+
+  /// Atomically compares and persists a timestamped settings group.
+  ///
+  /// Equal stamps use the lexicographic payload tuple, ordered by key, so
+  /// receivers choose the same winner regardless of delivery order. Metadata
+  /// such as a bootstrap marker is excluded by [payloadKeys]. Every payload
+  /// key and [stampKey] must be present; the stamp is an integer epoch value.
+  /// Returns false for a losing version without changing storage or cache.
+  /// Like [saveSettingsItems], this owns its transaction.
+  Future<bool> saveSettingsItemsIfNewer(
+    Map<String, String> values, {
+    required String stampKey,
+    required Iterable<String> payloadKeys,
+  }) {
+    final snapshot = Map<String, String>.of(values);
+    final keys = payloadKeys.toSet().toList()..sort();
+    if (keys.isEmpty ||
+        keys.any((key) => key == stampKey || !snapshot.containsKey(key))) {
+      throw ArgumentError.value(payloadKeys, 'payloadKeys');
+    }
+    final incomingStamp = int.parse(snapshot[stampKey]!);
+    return _write(() async {
+      final applied = await transaction(() async {
+        // Read inside the same transaction as the write, bypassing the cache:
+        // a queued newer write must be visible before making this decision.
+        final rows = await (select(
+          settings,
+        )..where((table) => table.configKey.isIn([...keys, stampKey]))).get();
+        final stored = {for (final row in rows) row.configKey: row.value};
+        final localStamp = int.tryParse(stored[stampKey] ?? '') ?? 0;
+        var comparison = incomingStamp.compareTo(localStamp);
+        if (comparison == 0) {
+          for (final key in keys) {
+            comparison = snapshot[key]!.compareTo(stored[key] ?? '');
+            if (comparison != 0) break;
+          }
+        }
+        if (comparison < 0) return false;
+        await _persistSettingsItems(snapshot);
+        return true;
+      });
+      if (applied) snapshot.forEach(_publishValue);
+      return applied;
+    });
+  }
+
+  Future<void> _persistSettingsItems(Map<String, String> values) async {
+    final updatedAt = clock.now();
+    for (final entry in values.entries) {
+      await into(settings).insertOnConflictUpdate(
+        SettingsItem(
+          configKey: entry.key,
+          value: entry.value,
+          updatedAt: updatedAt,
+        ),
+      );
+    }
   }
 
   Future<void> removeSettingsItem(String configKey) => _write(() async {

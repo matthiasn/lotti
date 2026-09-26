@@ -1637,6 +1637,50 @@ void main() {
         },
       );
 
+      test(
+        '${scenario.name}: equal stamps converge in opposite delivery orders',
+        () async {
+          final winner = SyncMessage.fromJson({
+            ...scenario.message.toJson(),
+            if (scenario.name == 'theme') 'lightThemeName': 'Zulu',
+            if (scenario.name == 'name') 'userName': 'Zoe',
+          });
+          final winnerValues = {
+            ...scenario.values,
+            if (scenario.name == 'theme') 'LIGHT_SCHEME': 'Zulu',
+            if (scenario.name == 'name') 'DAILY_OS_USER_NAME': 'Zoe',
+          };
+          for (final messages in [
+            [scenario.message, winner],
+            [winner, scenario.message],
+          ]) {
+            final peerSettings = SettingsDb(inMemoryDatabase: true);
+            addTearDown(peerSettings.close);
+            final peerProcessor = SyncEventProcessor(
+              loggingService: loggingService,
+              updateNotifications: updateNotifications,
+              aiConfigRepository: aiConfigRepository,
+              savedTaskFiltersRepository: savedTaskFiltersRepository,
+              settingsDb: peerSettings,
+            );
+            for (final message in messages) {
+              when(() => event.text).thenReturn(encodeMessage(message));
+              await peerProcessor.process(event: event, journalDb: journalDb);
+            }
+            expect({
+              for (final row in await peerSettings.loadSettingsItems(
+                winnerValues.keys,
+              ))
+                row.configKey: row.value,
+            }, winnerValues);
+            expect(
+              await peerSettings.itemsByKeys(winnerValues.keys),
+              winnerValues,
+            );
+          }
+        },
+      );
+
       for (final localStamp in ['50', '100', 'invalid']) {
         test('${scenario.name}: accepts local stamp $localStamp', () async {
           await realSettings.saveSettingsItem(scenario.stampKey, localStamp);
