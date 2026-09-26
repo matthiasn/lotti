@@ -5,7 +5,7 @@ description: The eleven Drift/SQLite databases, attachment storage, how connecti
 resource: ../../lib/database
 tags: [architecture, persistence, drift, sqlite, migrations]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-26T09:39:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-26T10:14:00Z }
 stale_after: 2026-12-25
 sources:
   - id: adr-0079
@@ -144,6 +144,14 @@ prevents cache publication before the real commit. Raw SQL transactions remain
 available; cached write groups use `saveSettingsItems`. The transaction marker
 is scoped to this database instance, so another database is not restricted.
 
+`saveSettingsItemsIfNewer` compares the persisted stamp and incoming stamp inside
+that same write transaction. Equal stamps compare the payload values
+lexicographically in sorted-key order. Its explicit payload-key set excludes
+metadata such as a name's published marker. Losing versions leave both durable
+state and cache untouched; identical payloads can still update their metadata.
+A queued newer group is therefore observed before an older conditional write
+makes its decision.
+
 Single-key saves, removals and group saves share a write queue. Cache-based
 no-op checks run inside that queue, so a local save cannot skip against an old
 value while a group is still committing. Failed writes release the queue.
@@ -155,11 +163,15 @@ commit resolves to the newly published cache.
 
 ```mermaid
 flowchart LR
-  Queue[Serialized write] --> Write[Write transaction-local fields]
+  Queue[Serialized write] --> Guard{Versioned group?}
+  Guard -->|no| Write[Write transaction-local fields]
+  Guard -->|yes| Compare[Compare stored stamp and payload in transaction]
+  Compare -->|loses| Release[Release write queue]
+  Compare -->|wins or identical| Write
   Write --> Commit[Commit group]
   Write -->|failure| Rollback[Roll back and propagate error]
   Commit --> Cache[Publish cache]
-  Cache --> Release[Release write queue]
+  Cache --> Release
   Rollback --> Release
 ```
 

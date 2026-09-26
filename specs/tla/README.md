@@ -2035,7 +2035,8 @@ sequence-tracked payloads. This model opens the receive register: the timestamp
 guard, transaction-local writes, atomic group commit and successful
 return are distinct steps. Three envelopes reach two serial receivers in
 independently chosen orders. Flags overwrite on arrival; theme/name messages
-reject strictly older stamps and accept equal ones.
+order stamps, breaking ties by a canonical payload tuple. The model's version
+rank represents this deterministic payload order; it is not a sender counter.
 
 | Configuration | Register | Delivery assumption | Distinct states |
 |---|---|---|---:|
@@ -2044,10 +2045,12 @@ reject strictly older stamps and accept equal ones.
 | `SyncSettingsFlags` | One flag value | Same order on both receivers | 100 |
 | `SyncSettingsFailure` | Three theme fields plus stamp | Distinct stamps; one failed write, then retry | 2,592 |
 | `SyncSettingsNameFailure` | Greeting value plus stamp | Distinct stamps; one failed write, then retry | 968 |
+| `SyncSettingsEqualStamps` | Three theme fields plus stamp | Equal stamps; any order; one failed write, then retry | 2,592 |
+| `SyncSettingsNameEqualStamps` | Greeting value plus stamp | Equal stamps; any order; one failed write, then retry | 968 |
 
-All five check `CompletedCoherent` (a completed settings group agrees with its
+All seven check `CompletedCoherent` (a completed settings group agrees with its
 stamp), `Converged` (fully processed peers agree), `LatestWins` (the greatest
-stamp or shared ordered tail survives), and `EventuallyComplete` under fair
+stamp/payload rank or shared ordered tail survives), and `EventuallyComplete` under fair
 processing. All three envelopes must arrive. Failure profiles permit one
 transient write failure, within the inbound worker's bounded retry budget; they
 do not claim recovery after that budget is exhausted.
@@ -2056,18 +2059,20 @@ the journal's repair contract.
 
 The mutation check runs guarded controls and changes one switch at a time:
 `AtomicGroups = FALSE` breaks `CompletedCoherent`; `RetryFailures = FALSE`
-breaks `LatestWins`. It also checks two residual protocol counterexamples:
-
-- Equal timestamps: `EqualStamps = TRUE` allows different final values after
-  the same envelopes arrive in different orders (`Converged`).
-- Unordered flags: `OrderedDelivery = FALSE` in the flags configuration has the
-  same consequence. There is no version field to resolve the competing values.
+breaks `LatestWins`. A third pair passes with equal-stamp tie-breaking and
+violates `Converged` when only `DeterministicTies` is disabled. Unordered flags
+remain a residual counterexample: `OrderedDelivery = FALSE` has no version
+field to resolve competing values.
 
 The real SQLite regressions in `sync_event_processor_test.dart` fail each
 field write, verify the persisted group and cache are unchanged, then retry
 and verify all fields. Adapter cases check that failures yield `retriable`,
 never `applied`. `settings_db_test.dart` also checks that a queued single-key
 write cannot incorrectly skip against a cache predating an atomic group.
+Opposite-order theme/name traces with equal stamps verify the same persisted
+winner and cache; they fail against arrival-order overwrite. Conditional-group
+tests cover queued newer writes, tie tuple ordering, metadata exclusion,
+rollback/retry and caller snapshots.
 
 The model excludes concurrent local writers, platform effects, theme-mode
 normalization, the greeting's bootstrap published marker, source staging, and

@@ -197,6 +197,106 @@ void main() {
     });
   });
 
+  group('versioned settings groups', () {
+    const before = {'stamp': '100', 'first': 'A', 'second': 'Z', 'marker': '9'};
+    const after = {'stamp': '200', 'first': 'B', 'second': 'A', 'marker': '0'};
+    Future<bool> apply(Map<String, String> values) =>
+        db.saveSettingsItemsIfNewer(
+          values,
+          stampKey: 'stamp',
+          payloadKeys: ['second', 'first'],
+        );
+    Future<Map<String, String>> stored() async => {
+      for (final row in await db.loadSettingsItems(before.keys))
+        row.configKey: row.value,
+    };
+
+    test(
+      'stamp precedes canonical payload tuple and excludes metadata',
+      () async {
+        await db.saveSettingsItems(before);
+        expect(await apply({...after, 'stamp': '99'}), isFalse);
+        expect(await stored(), before);
+        // Keys are canonicalized: first wins despite second and marker being
+        // lexicographically lower. An equal payload may update its marker.
+        final tied = {...after, 'stamp': '100'};
+        expect(await apply(tied), isTrue);
+        expect(await apply(before), isFalse);
+        expect(await stored(), tied);
+        final marked = {...tied, 'marker': '1'};
+        expect(await apply(marked), isTrue);
+        expect(await stored(), marked);
+        expect(await db.itemsByKeys(marked.keys), marked);
+      },
+    );
+
+    test(
+      'queued newer group wins before an older conditional write checks',
+      () async {
+        await db.saveSettingsItems(before);
+        final entered = Completer<void>();
+        final release = Completer<void>();
+        final holding = db.transaction(() async {
+          await db.customSelect('SELECT 1').get();
+          entered.complete();
+          await release.future;
+        });
+        await entered.future;
+        final newer = {...after, 'stamp': '300'};
+        final first = db.saveSettingsItems(newer);
+        final second = apply(after);
+        release.complete();
+        await holding;
+        await first;
+        expect(await second, isFalse);
+        expect(await stored(), newer);
+        expect(await db.itemsByKeys(newer.keys), newer);
+      },
+    );
+
+    test('failure rolls back guard metadata and values before retry', () async {
+      await db.saveSettingsItems(before);
+      await db.customStatement(
+        'CREATE TRIGGER reject_group BEFORE INSERT ON settings '
+        "WHEN NEW.config_key = 'second' BEGIN "
+        "SELECT RAISE(ABORT, 'injected group failure'); END",
+      );
+      await expectLater(apply(after), throwsA(isA<Exception>()));
+      expect(await stored(), before);
+      expect(await db.itemsByKeys(before.keys), before);
+      await db.customStatement('DROP TRIGGER reject_group');
+      expect(await apply(after), isTrue);
+      expect(await stored(), after);
+    });
+
+    test('queued conditional write snapshots caller values', () async {
+      final input = {...after};
+      final result = apply(input);
+      input['first'] = 'mutated';
+      input['stamp'] = '999';
+      expect(await result, isTrue);
+      expect(await stored(), after);
+    });
+
+    test('invalid payload key sets cannot change a group', () async {
+      for (final keys in <List<String>>[
+        [],
+        ['stamp'],
+        ['missing'],
+      ]) {
+        expect(
+          () => db.saveSettingsItemsIfNewer(
+            after,
+            stampKey: 'stamp',
+            payloadKeys: keys,
+          ),
+          throwsArgumentError,
+        );
+      }
+      expect(await stored(), isEmpty);
+    });
+  });
+
   group('atomic settings groups', () {
     const before = {'first': 'old-first', 'second': 'old-second'};
     const after = {'first': 'new-first', 'second': 'new-second'};

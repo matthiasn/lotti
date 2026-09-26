@@ -107,6 +107,8 @@ SECONDS = {
     "OwnCounterSettlement": 1,
     "NotificationReplication": 15,
     "SyncSettings": 1,
+    "SyncSettingsEqualStamps": 1,
+    "SyncSettingsNameEqualStamps": 1,
     "SyncSettingsName": 1,
     "SyncSettingsFlags": 1,
     "SavedTaskFilterSyncThree": 200,

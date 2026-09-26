@@ -179,16 +179,16 @@ copies as no-ops.
 
 # Settings without sequence recovery
 
-`themingSelection` and `dailyOsUserName` reject strictly older timestamps but
-accept equal ones. `configFlag` overwrites on arrival without a version stamp.
+`themingSelection` and `dailyOsUserName` use the versioned settings group
+comparison described below. `configFlag` overwrites on arrival without a version stamp.
 They have no sequence-gap repair. Theme/name apply persists the values,
 freshness stamp and (for the name) bootstrap marker in one settings transaction.
 Failures propagate to the inbound queue's bounded retry policy; notifications
 are emitted only after successful persistence. Cache publication follows the
 [settings group contract](../../architecture/persistence.md#settings-groups).
 
-`SyncSettings` checks their conditional convergence and documents counterexamples
-for equal timestamps and reordered flags, with a guarded failed-write profile. The assumptions and
+`SyncSettings` checks their conditional convergence, including equal timestamps
+and a failed write. Reordered unversioned flags remain a counterexample. The assumptions and
 configurations are in the [formal specs](../../../specs/tla/README.md#syncsettings--the-boundary-for-settings-without-sequence-recovery).
 
 # File-backed payloads

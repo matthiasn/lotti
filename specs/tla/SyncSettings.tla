@@ -4,7 +4,7 @@
 (* dailyOsUserName, in SyncEventProcessor._applySyncMessage. Three fixed  *)
 (* envelopes are available to two receivers. A receiver applies one at  *)
 (* a time, but peers can choose different delivery orders. The timestamp *)
-(* guard is < (equal stamps overwrite); configFlag has no stamp at all. *)
+(* guard orders stamp then canonical payload; configFlag has no stamp. *)
 (*                                                                         *)
 (* Start/Write/Commit reflect guard, transaction-local writes, then the  *)
 (* atomic group commit (including stamp) and successful return. A failed *)
@@ -12,13 +12,14 @@
 (* AtomicGroups and RetryFailures expose the two old behaviors as mutants.*)
 (* The failure profile permits ONE transient failure, within the inbound *)
 (* worker's bounded retry budget; it does not assume unbounded retries.  *)
-(* EqualStamps and unordered flags remain residual counterexamples.      *)
+(* DeterministicTies exposes the old equal-stamp overwrite as a mutant. *)
+(* Unordered flags remain a residual counterexample.                    *)
 (* Local concurrent writes, platform effects, normalization and the name*)
 (* bootstrap-published marker are outside this register abstraction.    *)
 (***************************************************************************)
 EXTENDS Naturals, FiniteSets
 CONSTANTS Peers, FieldCount, Timestamped, EqualStamps, OrderedDelivery,
-          FailureBudget, AtomicGroups, RetryFailures
+          FailureBudget, AtomicGroups, RetryFailures, DeterministicTies
 Versions == 1..3
 Fields == 1..FieldCount
 Stamp(v) == IF v = 0 THEN 0 ELSE IF EqualStamps THEN 1 ELSE v
@@ -35,7 +36,8 @@ Eligible(p, v) == /\ v \notin done[p] /\ active[p] = 0
                  /\ (~OrderedDelivery \/ (1..(v-1)) \subseteq done[p])
 Start(p, v) ==
     /\ Eligible(p, v)
-    /\ IF Timestamped /\ Stamp(v) < stamp[p]
+    /\ IF Timestamped /\ (Stamp(v) < stamp[p] \/
+          (DeterministicTies /\ Stamp(v) = stamp[p] /\ v < rows[p][1]))
        THEN /\ done' = [done EXCEPT ![p] = @ \cup {v}]
             /\ UNCHANGED active
        ELSE /\ active' = [active EXCEPT ![p] = v]
@@ -81,7 +83,7 @@ CompletedCoherent == \A p \in Peers : active[p] = 0 =>
 Converged == \A p, q \in Peers :
     (done[p] = Versions /\ done[q] = Versions) => rows[p] = rows[q]
 LatestWins == \A p \in Peers :
-    (done[p] = Versions /\ (OrderedDelivery \/ (Timestamped /\ ~EqualStamps)))
+    (done[p] = Versions /\ (OrderedDelivery \/ (Timestamped /\ (~EqualStamps \/ DeterministicTies))))
     => \A f \in Fields : rows[p][f] = 3
 EventuallyComplete == \A p \in Peers : <> (done[p] = Versions)
 =============================================================================

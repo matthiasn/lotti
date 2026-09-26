@@ -177,27 +177,6 @@ extension SyncEventProcessorApply on SyncEventProcessor {
         :final updatedAt,
       ):
         try {
-          // Check if incoming update is newer than local
-          final localUpdatedAtStr = await _settingsDb.itemByKey(
-            themePrefsUpdatedAtKey,
-          );
-          final localUpdatedAt = localUpdatedAtStr != null
-              ? int.tryParse(localUpdatedAtStr)
-              : 0;
-
-          if (updatedAt < (localUpdatedAt ?? 0)) {
-            _trace(
-              'themingSync.ignored.stale incoming=$updatedAt local=$localUpdatedAt',
-              subDomain: 'processor.apply',
-            );
-            _loggingService.log(
-              LogDomain.theming,
-              'themingSync.ignored.stale incoming=$updatedAt local=$localUpdatedAt',
-              subDomain: 'apply',
-            );
-            return null;
-          }
-
           // Normalize themeMode value
           final normalizedMode =
               EnumToString.fromString(
@@ -207,12 +186,17 @@ extension SyncEventProcessorApply on SyncEventProcessor {
               ThemeMode.system;
 
           // The values and their freshness stamp must commit together.
-          await _settingsDb.saveSettingsItems({
-            lightSchemeNameKey: lightThemeName,
-            darkSchemeNameKey: darkThemeName,
-            themeModeKey: EnumToString.convertToString(normalizedMode),
-            themePrefsUpdatedAtKey: updatedAt.toString(),
-          });
+          final applied = await _settingsDb.saveSettingsItemsIfNewer(
+            {
+              lightSchemeNameKey: lightThemeName,
+              darkSchemeNameKey: darkThemeName,
+              themeModeKey: EnumToString.convertToString(normalizedMode),
+              themePrefsUpdatedAtKey: updatedAt.toString(),
+            },
+            stampKey: themePrefsUpdatedAtKey,
+            payloadKeys: [lightSchemeNameKey, darkSchemeNameKey, themeModeKey],
+          );
+          if (!applied) return null;
 
           _updateNotifications.notify(
             {settingsNotification},
@@ -240,30 +224,18 @@ extension SyncEventProcessorApply on SyncEventProcessor {
         return null;
       case SyncDailyOsUserName(:final userName, :final updatedAt):
         try {
-          // Last-write-wins on the persisted timestamp, mirroring theming.
-          final localUpdatedAtStr = await _settingsDb.itemByKey(
-            dailyOsUserNameUpdatedAtSettingsKey,
-          );
-          final localUpdatedAt = localUpdatedAtStr != null
-              ? int.tryParse(localUpdatedAtStr)
-              : 0;
-
-          if (updatedAt < (localUpdatedAt ?? 0)) {
-            _trace(
-              'dailyOsUserNameSync.ignored.stale incoming=$updatedAt '
-              'local=$localUpdatedAt',
-              subDomain: 'processor.apply',
-            );
-            return null;
-          }
-
           // A received name is already published. Its value, freshness stamp
           // and bootstrap marker belong to the same atomic settings group.
-          await _settingsDb.saveSettingsItems({
-            dailyOsUserNameSettingsKey: userName,
-            dailyOsUserNameUpdatedAtSettingsKey: updatedAt.toString(),
-            dailyOsUserNameSyncedAtSettingsKey: updatedAt.toString(),
-          });
+          final applied = await _settingsDb.saveSettingsItemsIfNewer(
+            {
+              dailyOsUserNameSettingsKey: userName,
+              dailyOsUserNameUpdatedAtSettingsKey: updatedAt.toString(),
+              dailyOsUserNameSyncedAtSettingsKey: updatedAt.toString(),
+            },
+            stampKey: dailyOsUserNameUpdatedAtSettingsKey,
+            payloadKeys: [dailyOsUserNameSettingsKey],
+          );
+          if (!applied) return null;
 
           _updateNotifications.notify(
             {settingsNotification},
