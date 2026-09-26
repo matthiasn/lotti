@@ -182,7 +182,7 @@ class MatrixPayloadSender {
     final encryptedFile = content['file'];
     final url = encryptedFile is Map ? encryptedFile['url'] : content['url'];
     if (descriptor.type != EventTypes.Message ||
-        content['msgtype'] != MessageTypes.File ||
+        content['msgtype'] != file.msgType ||
         content['relativePath'] != extraContent['relativePath'] ||
         content[attachmentEncodingKey] != extraContent[attachmentEncodingKey] ||
         url is! String ||
