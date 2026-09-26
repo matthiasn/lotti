@@ -2011,6 +2011,61 @@ writers, platform effects, theme-mode normalization, the greeting's bootstrap
 published marker, source staging, and transport loss; there is no automatic
 sequence-gap recovery for these families.
 
+## `SavedTaskFilterSync` — every saved filter reaches every device
+
+Saved task filters are not sequence-tracked, so no backfill repairs a lost one.
+The model covers the whole path: the user's create, edit and delete on a device
+(under the repository lock, stoppable by a crash after any step), the durable
+intent ledger, the outbox enqueue (which can fail), the startup/retry flush,
+receivers applying logged rows in any order and again, the controller's
+in-memory list and its reload, and a reorder. A pre-sync filter starts on
+device 1 only, with no ledger — the state a desktop that saved filters before
+they synced is in. The protocol is described in
+[the message model](../../knowledge/features/sync/message-model.md#saved-task-filters-per-item-not-sequence-tracked).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `Converged` | invariant | once nothing is in flight, owed or undelivered, every device stores the same filters |
+| `LatestWins` | invariant | ... and each is the greatest revision written, or absent when a delete at or past it was written |
+| `EventuallyEverywhere` | liveness | a filter somebody holds and nobody deleted reaches every device |
+| `EventuallyConverged` | liveness | the stores end up equal and stay so |
+| `ShowsWhatIsStored` | liveness | each device's on-screen list ends up being what it stores |
+
+| Configuration | Devices | Filters | Edits | Deletes | Reorders | Crashes | Enqueue failures | Distinct states |
+|---------------|---------|---------|-------|---------|----------|---------|------------------|-----------------|
+| `SavedTaskFilterSync` | 2 | a pre-sync one and one new | 2 | 1 | 1 | 1 | 1 | 570,646 |
+| `SavedTaskFilterSyncThree` | 3 | a pre-sync one and one new | 2 | 1 | 0 | 0 | 0 | 2,182,894 |
+
+Both check `TypeOK` and every property above, with stamps 1–3 chosen freely per
+write (device clocks are not synchronised). Each fix has a switch; setting one
+to `FALSE` in a temporary copy of `SavedTaskFilterSync.cfg` gives:
+
+| Mutation | Counterexample |
+|----------|----------------|
+| `DurableIntent = FALSE` | `Converged` in the **initial state**: the pre-sync filter is on device 1 only, nothing is owed and nothing is in flight, so nothing ever sends it — the reported bug. With a crash or an enqueue failure the same holds for any new write |
+| `StableReorder = FALSE` | `Converged` (4 states): the pre-sync filter is flushed, device 2 receives it, device 2 reorders before its list reloads, and `saveOrder` writes the stale list — erasing the filter, which nothing re-sends |
+| `RefreshOnSync = FALSE` | `ShowsWhatIsStored`: a synced change lands on a device and its list never shows it until a restart |
+| `TotalOrder = FALSE` | `Converged` (11 states): both devices edit the filter with the same stamp; each accepts the other's equal-stamped revision and they swap |
+| `Tombstones = FALSE` | `Converged` (7 states): device 1 sends the pre-sync filter and then deletes it; device 2 receives the delete first — a no-op, it holds nothing yet — and then the filter, which it keeps for good |
+| `MonotonicStamps = FALSE` | `Converged` (9 states, checking it alone): device 1 edits at stamp 2, then its clock runs behind and a second edit stamps 1; it keeps its own edit while the peer rejects it as stale |
+
+What the model leaves out:
+
+- **A row the receiver cannot decode** is skipped for good (`Drop`, which no
+  checked configuration grants). The code narrows it — unknown enum values
+  decode to the default, and one bad stored entry no longer blanks the list —
+  but a truly malformed message is still lost.
+- **The transport after the outbox.** `log` is the outbox and the room as one
+  durable set; the outbox's own retry and ordering are `Outbox.tla`'s.
+- **List order** is per-device and not modelled beyond the reorder's write.
+- **Tombstone collection.** Tombstones are kept forever, as the code keeps
+  them.
+
+The repository suite (`saved_task_filters_repository_test.dart`) has a
+deterministic regression for each switch, including every delivery order of an
+edit and two deletes; reverting any one of the Dart fixes fails at least one of
+them.
+
 ## `EnvelopeChain` — signed provenance chains (a design model)
 
 **Written before the code, unlike every other spec here.** Record provenance

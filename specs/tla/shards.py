@@ -99,6 +99,8 @@ SECONDS = {
     "SyncSettings": 1,
     "SyncSettingsName": 1,
     "SyncSettingsFlags": 1,
+    "SavedTaskFilterSyncThree": 200,
+    "SavedTaskFilterSync": 35,
     "OutboxCausality": 20,
     # Measured locally (20 workers) when added; refresh from CI.
     "JournalReplication": 33,

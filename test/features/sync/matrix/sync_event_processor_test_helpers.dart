@@ -125,6 +125,7 @@ void setUpProcessorMocks() {
     () => savedTaskFiltersRepository.delete(
       any<String>(),
       fromSync: any<bool>(named: 'fromSync'),
+      deletedAt: any<DateTime?>(named: 'deletedAt'),
     ),
   ).thenAnswer((_) async {});
 

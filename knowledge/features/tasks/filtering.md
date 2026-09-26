@@ -5,13 +5,13 @@ description: The browse page's shared query stack, the adaptive filter modal, sa
 resource: ../../../lib/features/tasks/state/saved_filters
 tags: [tasks, filters, saved-filters, keyboard]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-23T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-26T12:00:00Z }
 stale_after: 2027-03-15
 sources:
   - id: saved-filters
     resource: ../../../lib/features/tasks/state/saved_filters
     title: Saved-filter model, persistence, controller
-    last_modified: 2026-07-17
+    last_modified: 2026-09-26
   - id: ui
     resource: ../../../lib/features/tasks/ui/saved_filters
     title: Saved-filter surfaces
@@ -111,7 +111,14 @@ chips remain visible only for an ad-hoc `Custom` filter.
   order.**
 - **`savedTaskFiltersControllerProvider`** (`keepAlive: true` async notifier)
   exposes `create`, `rename`, `updateFilter`, `delete`, `reorder`; each mutation
-  persists.
+  persists through `SavedTaskFiltersRepository`, which also syncs every
+  definition to the other devices (see
+  [the message model](../sync/message-model.md#saved-task-filters-per-item-not-sequence-tracked)).
+  The controller reloads on `SAVED_TASK_FILTERS_CHANGED`, so a filter synced in
+  from another device appears without a restart, and `reorder` hands the
+  repository only the ids, which it applies to what is stored — order is
+  per-device, and a reorder must never overwrite a filter the controller has
+  not loaded yet.
 - **`SavedTaskFilterActivator`** applies a filter to the live controller via
   `applyBatchFilterUpdate`, and `clearToDefault()` resets every clause while
   **preserving the search query**.

@@ -4,6 +4,7 @@ import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:uuid/uuid.dart';
 
 /// Riverpod controller backing the user's saved task-filter list.
@@ -12,6 +13,9 @@ import 'package:uuid/uuid.dart';
 /// the sort order. Mutations are routed through [SavedTaskFiltersRepository] so
 /// every create/rename/update/delete persists locally *and* enqueues a
 /// per-item sync message for peers. Reorders stay local (order is per-device).
+///
+/// The list reloads whenever the repository reports a change, so a filter
+/// that arrives from another device shows up without a restart.
 class SavedTaskFiltersController extends AsyncNotifier<List<SavedTaskFilter>> {
   late final SavedTaskFiltersRepository _repository;
   final Uuid _uuid = const Uuid();
@@ -24,7 +28,17 @@ class SavedTaskFiltersController extends AsyncNotifier<List<SavedTaskFilter>> {
   @override
   Future<List<SavedTaskFilter>> build() async {
     _repository = getIt<SavedTaskFiltersRepository>();
+    final subscription = getIt<UpdateNotifications>().updateStream
+        .where((ids) => ids.contains(savedTaskFiltersNotification))
+        .listen((_) => _reload());
+    ref.onDispose(subscription.cancel);
     return _repository.load();
+  }
+
+  Future<void> _reload() async {
+    final next = await _repository.load();
+    if (!ref.mounted) return;
+    state = AsyncData(next);
   }
 
   /// Appends a new saved filter built from [filter] with the given [name].
@@ -99,6 +113,8 @@ class SavedTaskFiltersController extends AsyncNotifier<List<SavedTaskFilter>> {
   /// the rest. No-op when ids match or are missing.
   ///
   /// Order is per-device, so reorders persist locally without enqueuing sync.
+  /// Only the order is handed to the repository, which applies it to what is
+  /// stored — this list may predate a filter that sync just wrote.
   Future<void> reorder(String dragId, String targetId) async {
     if (dragId == targetId) return;
 
@@ -111,7 +127,7 @@ class SavedTaskFiltersController extends AsyncNotifier<List<SavedTaskFilter>> {
     final item = next.removeAt(fromIdx);
     next.insert(toIdx, item);
     state = AsyncData(next);
-    await _repository.saveOrder(next);
+    await _repository.saveOrder([for (final f in next) f.id]);
   }
 }
 

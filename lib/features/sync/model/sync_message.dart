@@ -163,16 +163,23 @@ sealed class SyncMessage with _$SyncMessage {
   /// A saved task-filter *definition* (id, name, filter shape) synced per
   /// item across devices. Carries no vector clock / `originatingHostId` —
   /// receivers upsert by `filter.id` under a last-write-wins guard
-  /// (`SavedTaskFiltersRepository`), and self-echoes are dropped via the
-  /// `fromSync` flag on the apply path. Derived task counts are never synced.
+  /// (`SavedTaskFiltersRepository`: `updatedAt`, ties broken by content), and
+  /// self-echoes are dropped via the `fromSync` flag on the apply path.
+  /// Derived task counts are never synced.
   const factory SyncMessage.savedTaskFilter({
     required SavedTaskFilter filter,
     required SyncEntryStatus status,
   }) = SyncSavedTaskFilter;
 
   /// Removal of a saved task-filter definition by id.
+  ///
+  /// [deletedAt] is the deletion's revision stamp: the receiver keeps it as a
+  /// tombstone, so a delete and a concurrent edit settle the same way on every
+  /// device (the later stamp wins, the delete on a tie). It is absent from
+  /// builds that predate it, whose deletes apply unconditionally.
   const factory SyncMessage.savedTaskFilterDelete({
     required String id,
+    DateTime? deletedAt,
   }) = SyncSavedTaskFilterDelete;
 
   const factory SyncMessage.configFlag({

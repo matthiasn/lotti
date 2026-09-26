@@ -62,15 +62,18 @@ void main() {
       }
     });
 
-    test('unknown enum string throws (malformed persisted state)', () {
-      expect(
-        () => TasksFilter.fromJson(const {'sortOption': 'byMagic'}),
-        throwsArgumentError,
-      );
-      expect(
-        () => TasksFilter.fromJson(const {'agentAssignmentFilter': 'maybe'}),
-        throwsArgumentError,
-      );
+    test('an option from a newer build decodes to the default', () {
+      // A saved filter synced from a newer build must still decode: a
+      // receiver skips an undecodable sync message for good.
+      final filter = TasksFilter.fromJson(const {
+        'selectedTaskStatuses': ['OPEN'],
+        'sortOption': 'byMagic',
+        'agentAssignmentFilter': 'maybe',
+      });
+
+      expect(filter.sortOption, TaskSortOption.byPriority);
+      expect(filter.agentAssignmentFilter, AgentAssignmentFilter.all);
+      expect(filter.selectedTaskStatuses, {'OPEN'});
     });
 
     test('malformed collection type throws instead of silently coercing', () {

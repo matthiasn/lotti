@@ -5,7 +5,7 @@ description: The twenty-five SyncMessage families, which seven are sequence-trac
 resource: ../../../lib/features/sync/model/sync_message.dart
 tags: [sync, wire-format, sync-message]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-25T18:55:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-26T12:00:00Z }
 stale_after: 2026-11-02
 sources:
   - id: sync-message
@@ -24,6 +24,14 @@ sources:
     resource: ../../../specs/tla/SyncSettings.tla
     title: Conditional convergence of untracked settings
     last_modified: 2026-09-25
+  - id: saved-filter-model
+    resource: ../../../specs/tla/SavedTaskFilterSync.tla
+    title: Saved task filter delivery and convergence
+    last_modified: 2026-09-26
+  - id: saved-filter-repository
+    resource: ../../../lib/features/tasks/state/saved_filters/saved_task_filters_repository.dart
+    title: SavedTaskFiltersRepository ledger, order and tombstones
+    last_modified: 2026-09-26
   - id: attachment-index
     resource: ../../../lib/features/sync/matrix/pipeline/attachment_index.dart
     title: AttachmentIndex exact and legacy lookup
@@ -107,37 +115,67 @@ bundle resurface through per-`(host, counter)` backfill on demand.
 
 # Saved task filters: per-item, not sequence-tracked
 
-Saved task-filter definitions sync like AI configs — fire-and-forget, no vector
-clock, no `originatingHostId`.
+Saved task-filter definitions carry no vector clock and no
+`originatingHostId`, and are not sequence-tracked, so backfill cannot repair a
+lost one. Delivery rests instead on a durable intent ledger in `SettingsDb`
+(`SAVED_TASK_FILTERS_SYNC_LEDGER`, beside the `SAVED_TASK_FILTERS` blob), and
+convergence on a total order of revisions. `specs/tla/SavedTaskFilterSync.tla`
+model-checks both: every filter reaches every device, and devices that have
+applied the same rows agree.
 
 ```mermaid
 flowchart TD
-  Edit["Local edit"] --> Enqueue["SavedTaskFiltersRepository enqueues SyncSavedTaskFilter"]
-  Enqueue --> Wire["Matrix"]
-  Wire --> Apply["SyncSavedTaskFilter apply path"]
-  Apply --> LWW{"incoming updatedAt strictly older?"}
-  LWW -->|yes| Drop["drop"]
-  LWW -->|no| Upsert["upsert by filter.id, fromSync: true"]
-  Upsert --> NoEcho["fromSync suppresses re-enqueue"]
+  Edit["Local create / rename / update / delete"] --> Owe["ledger: id owed"]
+  Owe --> Write["write blob (+ tombstone on delete)"]
+  Write --> Flush["flush: enqueueMessageOrThrow"]
+  Flush -->|accepted| Clear["ledger: id cleared"]
+  Flush -->|throws| Retry["stays owed; retry timer, next write, next start"]
+  Retry --> Flush
+  Clear --> Wire["Matrix"]
+  Wire --> Apply["apply path, fromSync: true"]
+  Apply --> Order{"newer than the stored revision<br/>and than its tombstone?"}
+  Order -->|no| Drop["drop"]
+  Order -->|yes| Upsert["store; notify; controller reloads"]
 ```
 
-Three details make this safe:
+What each piece guarantees:
 
-- **Last-write-wins on `updatedAt`.** A strictly older incoming revision is
-  dropped.
-- **`fromSync` breaks the echo.** The apply path passes the flag into
-  `SavedTaskFiltersRepository`, so an applied remote change never re-enqueues
-  itself.
-- **An in-class async lock serialises the read-modify-write.** Persistence is a
-  per-item update over a single `SettingsDb` JSON blob; without the lock a
-  concurrent local edit and inbound apply would clobber each other's slice.
+- **What is owed is durable.** The id enters the ledger before the write and
+  leaves it only once the outbox accepted its row. A failed enqueue or a crash
+  after the write leaves it owed; `flushPending` resends the current revision
+  (or tombstone) after every write, on a retry timer, and at startup. A device
+  with no ledger owes every filter it holds — the filters saved before saved
+  filters synced, which no build ever sent.
+- **One total order of revisions.** `updatedAt` first (a missing stamp ranks
+  lowest), then the filters' canonical JSON, so equal stamps from two devices
+  settle the same way on both. A local write is stamped past the revision it
+  replaces, so a device whose clock runs behind cannot write an edit its peers
+  would discard as stale.
+- **Deletes are tombstones.** `savedTaskFilterDelete` carries `deletedAt`,
+  stamped no earlier than the revision it removes. A receiver keeps the
+  tombstone even for an id it has not received yet, rejects any revision at or
+  before it, and ignores a delete older than the stored revision. A delete
+  without `deletedAt`, from an older build, removes unconditionally.
+  Tombstones are small and never collected.
+- **`fromSync` breaks the echo.** An applied remote change owes nothing.
+- **Reorders never touch content.** `saveOrder` takes ids and applies them to
+  what is stored, so a filter sync wrote after the controller loaded keeps its
+  place. Order is per-device and never synced; neither are the derived
+  per-filter task counts.
+- **The controller follows the store.** `SavedTaskFiltersController` reloads
+  on `SAVED_TASK_FILTERS_CHANGED`, so a synced filter appears without a
+  restart.
+- **An in-class async lock serialises every read-modify-write**, local and
+  inbound, over the single JSON blob.
+- **Decoding degrades rather than drops.** An enum value from a newer build
+  decodes to the default (`TasksFilter`'s `unknownEnumValue`), and one
+  undecodable stored entry is skipped rather than blanking the list. A message
+  that still cannot be decoded is skipped for good by the processor — the one
+  residual the model leaves unchecked.
 
-Local-only filters that predate sync converge through the
-`SyncStep.savedTaskFilters` maintenance step (*Settings → Sync → Sync
-Entities*), which re-enqueues every persisted definition.
-
-Per-device list order and derived per-filter task counts are computed locally
-and **never** synced.
+The `SyncStep.savedTaskFilters` maintenance step (*Settings → Sync → Sync
+Entities*) still re-enqueues every stored definition; receivers treat the
+copies as no-ops.
 
 # Settings without sequence recovery
 

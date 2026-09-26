@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +7,7 @@ import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_persistence.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -383,6 +385,101 @@ void main() {
       verifyNever(
         () => mocks.settingsDb.saveSettingsItem(any(), any()),
       );
+    });
+
+    test('keeps a filter that sync stored after the list loaded', () async {
+      stubPersisted(const [
+        SavedTaskFilter(id: 'sv-1', name: 'A', filter: _filterA),
+        SavedTaskFilter(id: 'sv-2', name: 'B', filter: _filterB),
+      ]);
+      final container = makeContainer();
+      await container.read(savedTaskFiltersControllerProvider.future);
+      // sv-3 arrives from another device; the controller has not reloaded.
+      stubPersisted(const [
+        SavedTaskFilter(id: 'sv-1', name: 'A', filter: _filterA),
+        SavedTaskFilter(id: 'sv-2', name: 'B', filter: _filterB),
+        SavedTaskFilter(id: 'sv-3', name: 'C', filter: _filterC),
+      ]);
+
+      await container
+          .read(savedTaskFiltersControllerProvider.notifier)
+          .reorder('sv-2', 'sv-1');
+
+      final written =
+          verify(
+                () => mocks.settingsDb.saveSettingsItem(
+                  SavedTaskFiltersPersistence.storageKey,
+                  captureAny(),
+                ),
+              ).captured.single
+              as String;
+      expect(
+        [
+          for (final item in jsonDecode(written) as List<dynamic>)
+            (item as Map<String, dynamic>)['id'],
+        ],
+        ['sv-2', 'sv-1', 'sv-3'],
+      );
+    });
+  });
+
+  group('sync', () {
+    late StreamController<Set<String>> updates;
+
+    setUp(() {
+      updates = StreamController<Set<String>>.broadcast();
+      addTearDown(updates.close);
+      when(
+        () => mocks.updateNotifications.updateStream,
+      ).thenAnswer((_) => updates.stream);
+    });
+
+    test('reloads when a synced change is reported', () async {
+      stubPersisted(const [
+        SavedTaskFilter(id: 'sv-1', name: 'A', filter: _filterA),
+      ]);
+      final container = makeContainer();
+      await container.read(savedTaskFiltersControllerProvider.future);
+      stubPersisted(const [
+        SavedTaskFilter(id: 'sv-1', name: 'A', filter: _filterA),
+        SavedTaskFilter(id: 'sv-2', name: 'From desktop', filter: _filterB),
+      ]);
+
+      // Another entity's change does not reload the list...
+      updates.add({'some-entry-id'});
+      await pumpEventQueue();
+      expect(
+        container
+            .read(savedTaskFiltersControllerProvider)
+            .value!
+            .map(
+              (e) => e.id,
+            ),
+        ['sv-1'],
+      );
+
+      // ...the saved-filter channel does.
+      updates.add({'sv-2', savedTaskFiltersNotification});
+      await pumpEventQueue();
+      expect(
+        container
+            .read(savedTaskFiltersControllerProvider)
+            .value!
+            .map(
+              (e) => e.name,
+            ),
+        ['A', 'From desktop'],
+      );
+    });
+
+    test('stops listening once disposed', () async {
+      final container = ProviderContainer();
+      await container.read(savedTaskFiltersControllerProvider.future);
+      expect(updates.hasListener, isTrue);
+
+      container.dispose();
+
+      expect(updates.hasListener, isFalse);
     });
   });
 }

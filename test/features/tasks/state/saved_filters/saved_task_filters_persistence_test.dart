@@ -111,6 +111,96 @@ void main() {
         expect(result, isEmpty);
       });
     });
+
+    test('drops only the entries it cannot decode', () {
+      fakeAsync((async) {
+        final stored = jsonEncode([
+          _saved[0].toJson(),
+          {'id': 'broken'},
+          _saved[1].toJson(),
+        ]);
+        when(
+          () => mockSettingsDb.itemByKey(any()),
+        ).thenAnswer((_) async => stored);
+
+        List<SavedTaskFilter>? result;
+        sut.load().then((v) => result = v);
+        async.flushMicrotasks();
+
+        expect(result!.map((f) => f.id), ['sv-1', 'sv-2']);
+      });
+    });
+  });
+
+  group('ledger', () {
+    test('is null when this device never wrote one', () {
+      fakeAsync((async) {
+        SavedTaskFilterSyncLedger? result = const SavedTaskFilterSyncLedger();
+        sut.loadLedger().then((v) => result = v);
+        async.flushMicrotasks();
+
+        expect(result, isNull);
+        verify(
+          () => mockSettingsDb.itemByKey(SavedTaskFiltersPersistence.ledgerKey),
+        ).called(1);
+      });
+    });
+
+    test('round-trips owed ids and tombstones', () {
+      fakeAsync((async) {
+        final deletedAt = DateTime.utc(2024, 3, 15, 12, 30);
+        sut.saveLedger(
+          SavedTaskFilterSyncLedger(
+            pending: const {'sv-2', 'sv-1'},
+            tombstones: {'sv-9': deletedAt},
+          ),
+        );
+        async.flushMicrotasks();
+        final written =
+            verify(
+                  () => mockSettingsDb.saveSettingsItem(
+                    SavedTaskFiltersPersistence.ledgerKey,
+                    captureAny(),
+                  ),
+                ).captured.single
+                as String;
+        expect(jsonDecode(written), {
+          'pending': ['sv-1', 'sv-2'],
+          'tombstones': {'sv-9': '2024-03-15T12:30:00.000Z'},
+        });
+
+        when(
+          () => mockSettingsDb.itemByKey(SavedTaskFiltersPersistence.ledgerKey),
+        ).thenAnswer((_) async => written);
+        SavedTaskFilterSyncLedger? result;
+        sut.loadLedger().then((v) => result = v);
+        async.flushMicrotasks();
+
+        expect(result!.pending, {'sv-1', 'sv-2'});
+        expect(result!.tombstones, {'sv-9': deletedAt});
+      });
+    });
+
+    test('reads an unreadable ledger as missing', () {
+      fakeAsync((async) {
+        when(
+          () => mockSettingsDb.itemByKey(SavedTaskFiltersPersistence.ledgerKey),
+        ).thenAnswer((_) async => '{"tombstones": {"sv-1": "not a date"}}');
+
+        SavedTaskFilterSyncLedger? result = const SavedTaskFilterSyncLedger();
+        sut.loadLedger().then((v) => result = v);
+        async.flushMicrotasks();
+
+        expect(result, isNull);
+      });
+    });
+
+    test('reads absent fields as empty', () {
+      final ledger = SavedTaskFilterSyncLedger.fromJson(const {});
+
+      expect(ledger.pending, isEmpty);
+      expect(ledger.tombstones, isEmpty);
+    });
   });
 
   group('save', () {

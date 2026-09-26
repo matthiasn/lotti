@@ -864,13 +864,37 @@ void main() {
 
   test('processes saved task filter delete messages', () async {
     const id = 'stf-1';
+    final deletedAt = DateTime.utc(2024, 3, 15, 12);
+    final message = SyncMessage.savedTaskFilterDelete(
+      id: id,
+      deletedAt: deletedAt,
+    );
+    when(() => event.text).thenReturn(encodeMessage(message));
+
+    await processor.process(event: event, journalDb: journalDb);
+
+    verify(
+      () => savedTaskFiltersRepository.delete(
+        id,
+        fromSync: true,
+        deletedAt: deletedAt,
+      ),
+    ).called(1);
+  });
+
+  test('processes an unstamped saved task filter delete', () async {
+    const id = 'stf-1';
     const message = SyncMessage.savedTaskFilterDelete(id: id);
     when(() => event.text).thenReturn(encodeMessage(message));
 
     await processor.process(event: event, journalDb: journalDb);
 
     verify(
-      () => savedTaskFiltersRepository.delete(id, fromSync: true),
+      () => savedTaskFiltersRepository.delete(
+        id,
+        fromSync: true,
+        deletedAt: null,
+      ),
     ).called(1);
   });
 
