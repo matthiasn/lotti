@@ -34,7 +34,7 @@ jobs:
         if: github.event_name == 'push'
       # On a feature branch the diff runs against the merge-base with the
       # default branch, i.e. the whole branch rather than only the last push.
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: filter
         if: github.event_name == 'push'
         with:
@@ -54,17 +54,28 @@ jobs:
               - 'lib/classes/**'
               - 'lib/services/**'
               - 'lib/utils/**'
-            # Drift databases and the persistence layer, plus the journal
-            # flow the persistence test drives through the app shell.
+            # Drift databases and the persistence layer, the journal flow the
+            # persistence test drives through the app shell, and the tutorial
+            # harness that boots that app on real databases, with the test
+            # fixtures it imports.
             database: &database
               - *core
               - 'lib/database/**'
-              - 'lib/logic/persistence_*.dart'
+              - 'lib/features/*/database/**'
+              - 'lib/logic/**'
+              - 'lib/providers/**'
               - 'test/database/**'
               - 'lib/features/journal/**'
               - 'test/features/journal/**'
               - 'lib/beamer/**'
+              - 'lib/features/ai/repository/**'
+              - 'lib/features/tasks/state/saved_filters/**'
+              - 'lib/features/user_activity/**'
               - 'integration_test/home_integration_test.dart'
+              - 'integration_test/tutorial/tutorial_harness.dart'
+              - 'test/helpers/fallbacks.dart'
+              - 'test/helpers/manual_demo_world.dart'
+              - 'test/mocks/mocks.dart'
             # Sync sits on top of the database layer, so it includes all of
             # it, plus the sync features and what the Matrix harness imports.
             sync:
@@ -74,10 +85,8 @@ jobs:
               - 'test/features/sync/**'
               - 'test/features/*/sync/**'
               - 'test/vector_clock*_test.dart'
-              - 'lib/features/ai/database/**'
-              - 'lib/features/ai/repository/**'
-              - 'lib/features/tasks/state/saved_filters/**'
-              - 'lib/features/user_activity/**'
+              - 'test/test_resources/test_audio_data.dart'
+              - 'test/utils/utils.dart'
               - 'integration_test/matrix_service_test.dart'
               - 'integration_test/matrix_test_room.dart'
               - 'integration_test/sync_resilience_test.dart'

@@ -104,8 +104,8 @@ Every push to every branch runs:
 homeserver sync tests run when sync code, the database or persistence layer,
 or shared core (dependencies, `lib/classes`, `lib/services`, `lib/utils`, the
 GetIt wiring, the Linux runner, the workflow itself) changed. The journal
-persistence test runs when the database, persistence or journal code changed,
-or shared core did. Scheduled and manual runs, and any run whose filter job
+persistence test runs when shared core, the database, persistence or journal
+code, or the tutorial harness and fixtures it boots the app with changed. Scheduled and manual runs, and any run whose filter job
 fails, execute everything. None of these jobs is a required status check.
 
 There is no build-only macOS or Android job on pull requests: tag pushes build
