@@ -330,6 +330,7 @@ void main() {
                   : '!retained:example.org',
             );
             final ciphertext = MockEvent();
+            when(() => ciphertext.content).thenReturn({'ciphertext': 'test'});
             when(() => ciphertext.type).thenReturn(EventTypes.Encrypted);
             when(() => ciphertext.eventId).thenReturn('exact-process-event');
             when(() => ciphertext.roomId).thenReturn('!retained:example.org');
