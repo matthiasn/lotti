@@ -658,6 +658,12 @@ candidate whose loaded payload clock covers the requested counter. A payload
 whose clock is ahead is a valid superseding answer and travels with a mapping
 hint.
 
+Within a response batch, resend deduplication uses `(payloadType, payloadId)`.
+An agent entity, journal entry, link, or notification with the same raw ID must
+not suppress another family's resend. Full notifications and state updates are
+also separate keys. Repeated counters for the same family and ID still share
+one payload resend; each counter keeps its own hint/receipt handling.
+
 The hint and payload may arrive in either order. A first-arriving hint remains
 `missing` or `requested` with its payload id until the payload is locally
 available. The later receive path verifies it with the decoded payload clock;
