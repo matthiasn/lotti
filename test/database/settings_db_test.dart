@@ -53,6 +53,69 @@ void main() {
     await db.close();
   });
 
+  test(
+    'close drains pending settings writes before closing the executor',
+    () async {
+      final first = db.saveSettingsItem('first', 'one');
+      final second = db.saveSettingsItems({'second': 'two', 'third': 'three'});
+      final closing = db.close();
+      await Future.wait<void>([first.then((_) {}), second, closing]);
+      expect(await db.itemsByKeys(['first', 'second', 'third']), {
+        'first': 'one',
+        'second': 'two',
+        'third': 'three',
+      });
+    },
+  );
+
+  test('close rejects new writes while draining accepted work', () async {
+    final accepted = db.saveSettingsItem('first', 'one');
+    final closing = db.close();
+    await expectLater(
+      db.saveSettingsItem('late', 'lost'),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'reason',
+          'SettingsDb is closing',
+        ),
+      ),
+    );
+    await accepted;
+    await closing;
+    expect(await db.itemByKey('first'), 'one');
+    await expectLater(
+      db.saveSettingsItem('after', 'closed'),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'reason',
+          'SettingsDb is closing',
+        ),
+      ),
+    );
+  });
+
+  test('close drains writes after a failed queued write', () async {
+    await db.saveSettingsItem('first', 'before');
+    await db.customStatement(
+      'CREATE TRIGGER reject_first BEFORE INSERT ON settings '
+      "WHEN NEW.config_key = 'first' BEGIN "
+      "SELECT RAISE(ABORT, 'injected close failure'); END",
+    );
+    final failed = expectLater(
+      db.saveSettingsItem('first', 'after'),
+      throwsA(isA<Exception>()),
+    );
+    final accepted = db.saveSettingsItem('second', 'two');
+    final closing = db.close();
+    await Future.wait<void>([failed, accepted.then((_) {}), closing]);
+    expect(await db.itemsByKeys(['first', 'second']), {
+      'first': 'before',
+      'second': 'two',
+    });
+  });
+
   group('atomic settings groups', () {
     const before = {'first': 'old-first', 'second': 'old-second'};
     const after = {'first': 'new-first', 'second': 'new-second'};

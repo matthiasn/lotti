@@ -42,6 +42,7 @@ class SettingsDb extends _$SettingsDb {
   final Map<String, int> _cacheGenerations = <String, int>{};
   bool _isPendingReadFlushScheduled = false;
   Future<void> _writeTail = Future<void>.value();
+  Future<void>? _closing;
 
   /// The schema this build writes. A restored backup may carry an
   /// older schema, which Drift migrates, but never a newer one.
@@ -80,6 +81,9 @@ class SettingsDb extends _$SettingsDb {
   // Serialize cache decisions with writes, including atomic groups. Otherwise a
   // single-key save can skip against an old cache while a group is committing.
   Future<T> _write<T>(Future<T> Function() action) {
+    if (_closing != null) {
+      return Future<T>.error(StateError('SettingsDb is closing'));
+    }
     final previous = _writeTail;
     final completed = Completer<void>();
     _writeTail = completed.future;
@@ -92,6 +96,14 @@ class SettingsDb extends _$SettingsDb {
       }
     })();
   }
+
+  /// Drains accepted writes before releasing the executor. New writes are
+  /// rejected once shutdown begins, so a queued preference cannot outlive it.
+  @override
+  Future<void> close() => _closing ??= (() async {
+    await _writeTail;
+    await super.close();
+  })();
 
   void _publishValue(String configKey, String? value) {
     // Reads may still return the prior value while a write is pending. Only a

@@ -140,6 +140,8 @@ cache publication belongs to the transaction it owns.
 Single-key saves, removals and group saves share a write queue. Cache-based
 no-op checks run inside that queue, so a local save cannot skip against an old
 value while a group is still committing. Failed writes release the queue.
+Closing rejects new writes, drains accepted writes (including successors to a
+failed write), then closes the executor. Repeated close calls share that shutdown.
 Cache generations advance at commit: a cold read racing a pending or failed
 write can still return the prior persisted value, while a read completing after
 commit resolves to the newly published cache.
