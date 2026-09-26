@@ -41,7 +41,8 @@ class SettingsDb extends _$SettingsDb {
   final Map<String, int> _pendingReadGenerations = <String, int>{};
   final Map<String, int> _cacheGenerations = <String, int>{};
   bool _isPendingReadFlushScheduled = false;
-  Future<void> _writeTail = Future<void>.value();
+  // Retain only outstanding work, not a completed future and its async zone.
+  Future<void>? _writeTail;
   Future<void>? _closing;
 
   /// The schema this build writes. A restored backup may carry an
@@ -88,10 +89,11 @@ class SettingsDb extends _$SettingsDb {
     final completed = Completer<void>();
     _writeTail = completed.future;
     return (() async {
-      await previous;
+      if (previous != null) await previous;
       try {
         return await action();
       } finally {
+        if (identical(_writeTail, completed.future)) _writeTail = null;
         completed.complete();
       }
     })();
