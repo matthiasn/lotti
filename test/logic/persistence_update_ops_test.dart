@@ -4,6 +4,7 @@ import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/logic/persistence_update_ops.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -174,10 +175,93 @@ void main() {
                 () => logic.updateDbEntity(
                   any(),
                   beforeNotify: captureAny(named: 'beforeNotify'),
+                  precondition: any(named: 'precondition'),
                 ),
               ).captured.single
               as Future<void> Function()?;
       expect(beforeNotify, isNotNull);
+    },
+  );
+
+  test(
+    'updateTaskImpl keeps the checklists the stored task lists, whatever the '
+    "caller's copy says — a screen saving a status from a copy read before a "
+    'checklist was added must not drop it (ChecklistMembership.tla)',
+    () async {
+      final stored = testTask.copyWith(
+        data: testTask.data.copyWith(checklistIds: ['kept', 'added-later']),
+      );
+      when(
+        () => mocks.journalDb.journalEntityById(stored.meta.id),
+      ).thenAnswer((_) async => stored);
+
+      final ok = await ops.updateTaskImpl(
+        journalEntityId: stored.meta.id,
+        taskData: testTask.data.copyWith(
+          checklistIds: ['kept'],
+          title: 'renamed',
+        ),
+      );
+
+      expect(ok, isTrue);
+      final written =
+          verify(
+                () => logic.updateDbEntity(
+                  captureAny(),
+                  beforeNotify: any(named: 'beforeNotify'),
+                  precondition: any(named: 'precondition'),
+                ),
+              ).captured.single
+              as Task;
+      expect(written.data.title, 'renamed');
+      expect(written.data.checklistIds, ['kept', 'added-later']);
+    },
+  );
+
+  test(
+    'updateTaskImpl builds a refused write again on the row stored meanwhile',
+    () async {
+      final first = testTask.copyWith(
+        data: testTask.data.copyWith(checklistIds: const []),
+      );
+      final synced = testTask.copyWith(
+        meta: testTask.meta.copyWith(
+          vectorClock: const VectorClock({'peer': 1}),
+        ),
+        data: testTask.data.copyWith(checklistIds: ['synced']),
+      );
+      final reads = [first, synced];
+      when(
+        () => mocks.journalDb.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => reads.removeAt(0));
+      final results = [false, true];
+      when(
+        () => logic.updateDbEntity(
+          any(),
+          linkedId: any(named: 'linkedId'),
+          enqueueSync: any(named: 'enqueueSync'),
+          beforeNotify: any(named: 'beforeNotify'),
+          precondition: any(named: 'precondition'),
+        ),
+      ).thenAnswer((_) async => results.removeAt(0));
+
+      final ok = await ops.updateTaskImpl(
+        journalEntityId: testTask.meta.id,
+        taskData: testTask.data.copyWith(title: 'renamed'),
+      );
+
+      expect(ok, isTrue);
+      final written = verify(
+        () => logic.updateDbEntity(
+          captureAny(),
+          beforeNotify: any(named: 'beforeNotify'),
+          precondition: any(named: 'precondition'),
+        ),
+      ).captured.cast<Task>();
+      expect(written.map((t) => t.data.checklistIds), [
+        const <String>[],
+        ['synced'],
+      ]);
     },
   );
 

@@ -115,6 +115,47 @@ void main() {
     },
   );
 
+  test(
+    "updateJournalEntity hands the caller's precondition to the write",
+    () async {
+      when(
+        () => mocks.journalDb.journalEntityById(any()),
+      ).thenAnswer((_) async => null);
+      when(() => logic.updateMetadata(any())).thenAnswer(
+        (invocation) async => invocation.positionalArguments.first as Metadata,
+      );
+      when(
+        () => logic.updateDbEntity(
+          any(),
+          beforeNotify: any(named: 'beforeNotify'),
+          precondition: any(named: 'precondition'),
+        ),
+      ).thenAnswer((_) async => false);
+      Future<bool> precondition() async => false;
+
+      final ok = await updates.updateJournalEntity(
+        testTextEntry,
+        testTextEntry.meta,
+        precondition: precondition,
+      );
+
+      // A write refused by its precondition is reported as not applied, and
+      // the label index is left alone.
+      expect(ok, isFalse);
+      expect(
+        verify(
+          () => logic.updateDbEntity(
+            any(),
+            beforeNotify: any(named: 'beforeNotify'),
+            precondition: captureAny(named: 'precondition'),
+          ),
+        ).captured.single,
+        same(precondition),
+      );
+      verifyNever(() => mocks.journalDb.addLabeled(any()));
+    },
+  );
+
   // ADR 0083: a conflict resolution that keeps an edit over a deletion made
   // here writes over the soft-deleted row, and must keep the entry's labels.
   test(

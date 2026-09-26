@@ -322,11 +322,9 @@ void _registerIdempotency(_Db Function() fixture) {
         expect(first.success, isTrue, reason: first.output);
         // Sync delivers the copy before the source's archive: the source
         // reads unarchived on the late device.
-        final source =
-            (await f.db.journalEntityById(f.checklistItemId))! as ChecklistItem;
         await ChecklistRepository().updateChecklistItem(
           checklistItemId: f.checklistItemId,
-          data: source.data.copyWith(isArchived: false),
+          change: (stored) => stored.copyWith(isArchived: false),
           taskId: f.task.meta.id,
         );
 

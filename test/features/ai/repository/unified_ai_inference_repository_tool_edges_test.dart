@@ -1118,10 +1118,18 @@ void main() {
         when(
           () => mockChecklistRepo.updateChecklistItem(
             checklistItemId: 'item-1',
-            data: any(named: 'data'),
+            change: any<ItemChange>(
+              named: 'change',
+            ),
             taskId: task.id,
           ),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer(
+          (invocation) async => checklistItem.copyWith(
+            data: (invocation.namedArguments[#change] as ItemChange)(
+              checklistItem.data,
+            ),
+          ),
+        );
 
         // After a successful update the handler re-fetches the task; returning
         // a Task triggers the onTaskUpdated callback (line 1085) which swaps
@@ -1149,18 +1157,19 @@ void main() {
         // update_checklist_items never sets language.
         expect(result, isFalse);
         // The write must have happened with the flipped, agent-stamped state.
-        verify(
-          () => mockChecklistRepo.updateChecklistItem(
-            checklistItemId: 'item-1',
-            data: any(
-              named: 'data',
-              that: isA<ChecklistItemData>()
-                  .having((d) => d.isChecked, 'isChecked', true)
-                  .having((d) => d.checkedBy, 'checkedBy', ChangeSource.agent),
-            ),
-            taskId: task.id,
-          ),
-        ).called(1);
+        final change =
+            verify(
+                  () => mockChecklistRepo.updateChecklistItem(
+                    checklistItemId: 'item-1',
+                    change: captureAny<ItemChange>(named: 'change'),
+                    taskId: task.id,
+                  ),
+                ).captured.single
+                as ItemChange;
+        final written = change(checklistItem.data);
+        expect(written.isChecked, isTrue);
+        expect(written.checkedBy, ChangeSource.agent);
+        expect(written.title, checklistItem.data.title);
         // The success branch re-fetched the task to refresh currentTask,
         // proving the onTaskUpdated callback path executed.
         verify(() => mockJournalDb.journalEntityById(task.id)).called(1);

@@ -28,6 +28,8 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
+import 'package:lotti/features/tasks/model/membership_list.dart';
+import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/image_import.dart';
@@ -771,31 +773,33 @@ class EntryController extends AsyncNotifier<EntryState?> {
     await ref.read(appClipboardProvider).writePlainText(md);
   }
 
-  /// Persists a reordered checklist list for a task, dropping any ids that no
-  /// longer resolve to a non-deleted entry so stale references are pruned on
-  /// save.
-  Future<void> updateChecklistOrder(List<String> checklistIds) async {
+  /// Persists the order [visibleOrder] shows a task's checklists in, applied
+  /// to the task's stored list ([inVisibleOrder]) so a checklist added since
+  /// the page last read the task keeps its place. Ids of the shown order that
+  /// no longer resolve to a non-deleted entry are pruned on save.
+  Future<void> updateChecklistOrder(List<String> visibleOrder) async {
     final task = state.value?.entry;
 
     if (task != null && task is Task) {
       final checklists = await _journalDb.getJournalEntitiesForIdsUnordered({
-        ...checklistIds,
+        ...visibleOrder,
       });
 
       final existingIds = checklists
           .where((item) => !item.isDeleted)
           .map((item) => item.meta.id)
           .toSet();
+      final gone = visibleOrder.where((id) => !existingIds.contains(id));
 
-      final filtered = checklistIds.where(existingIds.contains).toList();
-
-      await _persistenceLogic.updateTask(
-        entryText: entryTextFromController(controller),
-        journalEntityId: id,
-        taskData: task.data.copyWith(
-          checklistIds: filtered,
-        ),
-      );
+      await ref
+          .read(checklistRepositoryProvider)
+          .updateTaskChecklistIds(
+            taskId: id,
+            change: (stored) => gone.fold(
+              inVisibleOrder(stored, visibleOrder),
+              withoutMember,
+            ),
+          );
     }
   }
 

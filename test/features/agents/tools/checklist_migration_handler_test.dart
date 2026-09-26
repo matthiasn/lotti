@@ -14,6 +14,9 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart' show makeTestChecklistApproval;
 
+/// The field-level change the handler hands `updateChecklistItem`.
+typedef ItemChange = ChecklistItemData Function(ChecklistItemData stored);
+
 enum _GeneratedChecklistMigrationBranch {
   invalidItemId,
   invalidTargetTaskId,
@@ -375,16 +378,27 @@ void main() {
     );
   }
 
-  /// Stubs the archival update on the source item to return [result].
+  /// Stubs the archival update on the source item: an archived item when
+  /// [result] is true, `null` (the write failed) otherwise.
   void stubArchiveUpdate({bool result = true}) {
     when(
       () => mockChecklistRepository.updateChecklistItem(
         checklistItemId: any(named: 'checklistItemId'),
-        data: any(named: 'data'),
+        change: any<ItemChange>(named: 'change'),
         taskId: any(named: 'taskId'),
       ),
-    ).thenAnswer((_) async => result);
+    ).thenAnswer(
+      (_) async => result ? makeChecklistItem(isArchived: true) : null,
+    );
   }
+
+  /// A stored version of the source item that differs from the handler's
+  /// read in the fields the archival does not own: renamed and moved.
+  const storedSince = ChecklistItemData(
+    title: 'Buy oat milk',
+    isChecked: true,
+    linkedChecklists: ['checklist-003'],
+  );
 
   /// Stubs the copy-into-target call to return [created].
   void stubAddItemToChecklist(ChecklistItem created) {
@@ -433,15 +447,16 @@ void main() {
             ).captured.single
             as List<ChecklistItemProvenance>;
     expect(copied.single, approval.copyWith(isChecked: item.data.isChecked));
-    final source =
+    final change =
         verify(
               () => mockChecklistRepository.updateChecklistItem(
                 checklistItemId: item.id,
-                data: captureAny(named: 'data'),
+                change: captureAny<ItemChange>(named: 'change'),
                 taskId: sourceTaskId,
               ),
             ).captured.single
-            as ChecklistItemData;
+            as ItemChange;
+    final source = change(item.data);
     expect(source.isArchived, isTrue);
     expect(
       source.approvalHistory.single,
@@ -570,7 +585,7 @@ void main() {
         verifyNever(
           () => mockChecklistRepository.updateChecklistItem(
             checklistItemId: any(named: 'checklistItemId'),
-            data: any(named: 'data'),
+            change: any<ItemChange>(named: 'change'),
             taskId: any(named: 'taskId'),
           ),
         );
@@ -614,15 +629,20 @@ void main() {
         final archiveCaptured = verify(
           () => mockChecklistRepository.updateChecklistItem(
             checklistItemId: captureAny(named: 'checklistItemId'),
-            data: captureAny(named: 'data'),
+            change: captureAny<ItemChange>(named: 'change'),
             taskId: captureAny(named: 'taskId'),
           ),
         ).captured;
 
         expect(archiveCaptured[0], itemId);
-        final archivedData = archiveCaptured[1] as ChecklistItemData;
-        expect(archivedData.isArchived, isTrue);
+        final change = archiveCaptured[1] as ItemChange;
         expect(archiveCaptured[2], sourceTaskId);
+        // The archival is applied to the item as stored when it is written,
+        // so a rename or move made since the handler's read is kept.
+        expect(
+          change(storedSince),
+          storedSince.copyWith(isArchived: true),
+        );
 
         // Verify copy creation in target.
         verify(
@@ -808,7 +828,7 @@ void main() {
         verifyNever(
           () => mockChecklistRepository.updateChecklistItem(
             checklistItemId: any(named: 'checklistItemId'),
-            data: any(named: 'data'),
+            change: any<ItemChange>(named: 'change'),
             taskId: any(named: 'taskId'),
           ),
         );
@@ -990,13 +1010,15 @@ void main() {
             when(
               () => localChecklistRepository.updateChecklistItem(
                 checklistItemId: any(named: 'checklistItemId'),
-                data: any(named: 'data'),
+                change: any<ItemChange>(named: 'change'),
                 taskId: any(named: 'taskId'),
               ),
             ).thenAnswer(
               (_) async =>
                   scenario.branch ==
-                  _GeneratedChecklistMigrationBranch.archiveSucceeded,
+                      _GeneratedChecklistMigrationBranch.archiveSucceeded
+                  ? makeChecklistItem(isArchived: true)
+                  : null,
             );
           }
 
@@ -1095,22 +1117,22 @@ void main() {
             final archiveCaptured = verify(
               () => localChecklistRepository.updateChecklistItem(
                 checklistItemId: captureAny(named: 'checklistItemId'),
-                data: captureAny(named: 'data'),
+                change: captureAny<ItemChange>(named: 'change'),
                 taskId: captureAny(named: 'taskId'),
               ),
             ).captured;
             expect(archiveCaptured[0], itemId, reason: '$scenario');
             expect(archiveCaptured[2], sourceTaskId, reason: '$scenario');
             expect(
-              (archiveCaptured[1] as ChecklistItemData).isArchived,
-              isTrue,
+              (archiveCaptured[1] as ItemChange)(storedSince),
+              storedSince.copyWith(isArchived: true),
               reason: '$scenario',
             );
           } else {
             verifyNever(
               () => localChecklistRepository.updateChecklistItem(
                 checklistItemId: any(named: 'checklistItemId'),
-                data: any(named: 'data'),
+                change: any<ItemChange>(named: 'change'),
                 taskId: any(named: 'taskId'),
               ),
             );
@@ -1148,7 +1170,7 @@ void main() {
         verifyNever(
           () => mockChecklistRepository.updateChecklistItem(
             checklistItemId: any(named: 'checklistItemId'),
-            data: any(named: 'data'),
+            change: any<ItemChange>(named: 'change'),
             taskId: any(named: 'taskId'),
           ),
         );
@@ -1178,10 +1200,10 @@ void main() {
           when(
             () => mockChecklistRepository.updateChecklistItem(
               checklistItemId: any(named: 'checklistItemId'),
-              data: any(named: 'data'),
+              change: any<ItemChange>(named: 'change'),
               taskId: any(named: 'taskId'),
             ),
-          ).thenAnswer((_) async => false);
+          ).thenAnswer((_) async => null);
 
           final result = await handler.handle(
             sourceTaskId,
@@ -1343,7 +1365,7 @@ void main() {
         verifyNever(
           () => mockChecklistRepository.updateChecklistItem(
             checklistItemId: any(named: 'checklistItemId'),
-            data: any(named: 'data'),
+            change: any<ItemChange>(named: 'change'),
             taskId: any(named: 'taskId'),
           ),
         );
@@ -1462,20 +1484,16 @@ void main() {
           uuidV5Input: any(named: 'uuidV5Input'),
         ),
       );
-      verify(
-        () => mockChecklistRepository.updateChecklistItem(
-          checklistItemId: itemId,
-          data: any(
-            named: 'data',
-            that: isA<ChecklistItemData>().having(
-              (d) => d.isArchived,
-              'isArchived',
-              isTrue,
-            ),
-          ),
-          taskId: sourceTaskId,
-        ),
-      ).called(1);
+      final change =
+          verify(
+                () => mockChecklistRepository.updateChecklistItem(
+                  checklistItemId: itemId,
+                  change: captureAny<ItemChange>(named: 'change'),
+                  taskId: sourceTaskId,
+                ),
+              ).captured.single
+              as ItemChange;
+      expect(change(storedSince).isArchived, isTrue);
     });
   });
 }

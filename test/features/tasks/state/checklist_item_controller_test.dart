@@ -8,7 +8,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/checklist/services/correction_capture_service.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -18,6 +17,8 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+
+typedef ItemChange = ChecklistItemData Function(ChecklistItemData stored);
 
 void main() {
   late MockJournalDb mockDb;
@@ -53,7 +54,16 @@ void main() {
     color: '#FF0000',
   );
 
-  setUpAll(registerAllFallbackValues);
+  /// The items as the database holds them, keyed by id — what the
+  /// `updateChecklistItem` stub applies each change to.
+  late Map<String, ChecklistItem> storedItems;
+
+  setUpAll(() {
+    registerAllFallbackValues();
+    // The change `ChecklistRepository.updateChecklistItem` applies to the
+    // stored item data.
+    registerFallbackValue((ChecklistItemData stored) => stored);
+  });
 
   setUp(() async {
     mockDb = MockJournalDb();
@@ -79,13 +89,22 @@ void main() {
     when(
       () => mockUpdateNotifications.updateStream,
     ).thenAnswer((_) => updateStreamController.stream);
+    storedItems = {};
+    // Serves `updateChecklistItem` as the repository does: the change is
+    // applied to the item as stored and the written item returned.
     when(
       () => mockChecklistRepository.updateChecklistItem(
         checklistItemId: any(named: 'checklistItemId'),
-        data: any(named: 'data'),
+        change: any(named: 'change'),
         taskId: any(named: 'taskId'),
       ),
-    ).thenAnswer((_) async => true);
+    ).thenAnswer((invocation) async {
+      final id = invocation.namedArguments[#checklistItemId] as String;
+      final change = invocation.namedArguments[#change] as ItemChange;
+      final current = storedItems[id];
+      if (current == null) return null;
+      return storedItems[id] = current.copyWith(data: change(current.data));
+    });
   });
 
   tearDown(() async {
@@ -153,7 +172,7 @@ void main() {
         verify(
           () => mockChecklistRepository.updateChecklistItem(
             checklistItemId: 'item-1',
-            data: any(named: 'data'),
+            change: any(named: 'change'),
             taskId: 'task-1',
           ),
         ).called(1);
@@ -275,7 +294,7 @@ void main() {
         verify(
           () => mockChecklistRepository.updateChecklistItem(
             checklistItemId: 'item-no-cat',
-            data: any(named: 'data'),
+            change: any(named: 'change'),
             taskId: 'task-1',
           ),
         ).called(1);
@@ -321,7 +340,7 @@ void main() {
         verifyNever(
           () => mockChecklistRepository.updateChecklistItem(
             checklistItemId: any(named: 'checklistItemId'),
-            data: any(named: 'data'),
+            change: any(named: 'change'),
             taskId: any(named: 'taskId'),
           ),
         );
@@ -372,7 +391,7 @@ void main() {
         verify(
           () => mockChecklistRepository.updateChecklistItem(
             checklistItemId: 'item-1',
-            data: any(named: 'data'),
+            change: any(named: 'change'),
             taskId: 'task-1',
           ),
         ).called(1);
@@ -485,7 +504,7 @@ void main() {
           verify(
             () => mockChecklistRepository.updateChecklistItem(
               checklistItemId: 'item-1',
-              data: any(named: 'data'),
+              change: any(named: 'change'),
               taskId: 'task-1',
             ),
           ).called(1);
@@ -718,118 +737,161 @@ void main() {
       );
     });
 
-    group('delete', () {
-      late MockJournalRepository mockJournalRepository;
+    group('writes onto the item as stored', () {
+      final fixedTime = DateTime(2026, 3, 1, 9, 15);
+      const params = (id: 'item-1', taskId: 'task-1');
+
+      /// The item as stored after this controller loaded it: moved to
+      /// another checklist and renamed elsewhere — nothing the controller's
+      /// state knows about.
+      final movedMeanwhile = testChecklistItem.copyWith(
+        data: testChecklistItem.data.copyWith(
+          title: 'Renamed elsewhere',
+          linkedChecklists: const ['checklist-2'],
+        ),
+      );
+
+      Future<(ProviderContainer, ChecklistItemController)> load() async {
+        final container = ProviderContainer(
+          overrides: [
+            checklistRepositoryProvider.overrideWithValue(
+              mockChecklistRepository,
+            ),
+            clockProvider.overrideWithValue(() => fixedTime),
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+        await container.read(checklistItemControllerProvider(params).future);
+        return (
+          container,
+          container.read(checklistItemControllerProvider(params).notifier),
+        );
+      }
+
+      /// The change the controller sent for the item.
+      ItemChange capturedChange() =>
+          verify(
+                () => mockChecklistRepository.updateChecklistItem(
+                  checklistItemId: 'item-1',
+                  change: captureAny(named: 'change'),
+                  taskId: 'task-1',
+                ),
+              ).captured.single
+              as ItemChange;
+
+      ChecklistItem? stateOf(ProviderContainer container) =>
+          container.read(checklistItemControllerProvider(params)).value;
 
       setUp(() {
-        mockJournalRepository = MockJournalRepository();
         when(
-          () => mockJournalRepository.deleteJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+          () => mockCategoryRepository.getCategoryById(any()),
+        ).thenAnswer((_) async => null);
       });
 
       test(
-        'calls deleteJournalEntity and sets state to AsyncData(null) on success',
+        'a check from stale state keeps the stored back-link and title',
         () async {
-          final container = ProviderContainer(
-            overrides: [
-              checklistRepositoryProvider.overrideWithValue(
-                mockChecklistRepository,
-              ),
-              journalRepositoryProvider.overrideWithValue(
-                mockJournalRepository,
-              ),
-            ],
+          final (container, notifier) = await load();
+          storedItems['item-1'] = movedMeanwhile;
+
+          notifier.updateChecked(checked: true);
+          await pumpEventQueue();
+
+          final written = capturedChange()(movedMeanwhile.data);
+          expect(written.linkedChecklists, ['checklist-2']);
+          expect(written.title, 'Renamed elsewhere');
+          expect(written.isChecked, isTrue);
+          expect(written.checkedBy, ChangeSource.user);
+          expect(written.checkedAt, fixedTime);
+          // What was stored is published, not the stale optimistic state.
+          expect(stateOf(container)?.data, written);
+        },
+      );
+
+      test('a rename keeps the stored back-link and checked state', () async {
+        final (container, notifier) = await load();
+        final checkedAndMoved = movedMeanwhile.copyWith(
+          data: movedMeanwhile.data.copyWith(isChecked: true),
+        );
+        storedItems['item-1'] = checkedAndMoved;
+
+        notifier.updateTitle('My title');
+        await pumpEventQueue();
+
+        final written = capturedChange()(checkedAndMoved.data);
+        expect(written.title, 'My title');
+        expect(written.linkedChecklists, ['checklist-2']);
+        expect(written.isChecked, isTrue);
+        expect(stateOf(container)?.data, written);
+      });
+
+      test('archive and unarchive change only isArchived', () async {
+        final (container, notifier) = await load();
+        storedItems['item-1'] = movedMeanwhile;
+
+        notifier.archive();
+        await pumpEventQueue();
+
+        final archived = capturedChange()(movedMeanwhile.data);
+        expect(
+          archived,
+          movedMeanwhile.data.copyWith(isArchived: true),
+        );
+        expect(stateOf(container)?.data, archived);
+
+        notifier.unarchive();
+        await pumpEventQueue();
+
+        final restored = capturedChange()(archived);
+        expect(restored, movedMeanwhile.data.copyWith(isArchived: false));
+        expect(stateOf(container)?.data, restored);
+      });
+
+      test(
+        'publishes the change at once, then the item the write returns',
+        () async {
+          final write = Completer<ChecklistItem?>();
+          when(
+            () => mockChecklistRepository.updateChecklistItem(
+              checklistItemId: any(named: 'checklistItemId'),
+              change: any(named: 'change'),
+              taskId: any(named: 'taskId'),
+            ),
+          ).thenAnswer((_) => write.future);
+          final (container, notifier) = await load();
+
+          notifier.updateChecked(checked: true);
+
+          // Optimistic: the change applied to the state, before the write.
+          expect(stateOf(container)?.data.isChecked, isTrue);
+          expect(stateOf(container)?.data.linkedChecklists, ['checklist-1']);
+
+          write.complete(
+            movedMeanwhile.copyWith(
+              data: movedMeanwhile.data.copyWith(isChecked: true),
+            ),
           );
-          addTearDown(container.dispose);
+          await pumpEventQueue();
 
-          await container.read(
-            checklistItemControllerProvider((
-              id: 'item-1',
-              taskId: 'task-1',
-            )).future,
-          );
-
-          // State starts with the fetched item.
-          expect(
-            container
-                .read(
-                  checklistItemControllerProvider((
-                    id: 'item-1',
-                    taskId: 'task-1',
-                  )),
-                )
-                .value,
-            isNotNull,
-          );
-
-          final notifier = container.read(
-            checklistItemControllerProvider((
-              id: 'item-1',
-              taskId: 'task-1',
-            )).notifier,
-          );
-
-          final result = await notifier.delete();
-
-          // delete() must return the repository's return value.
-          expect(result, isTrue);
-
-          // State must be cleared to null after deletion.
-          final stateAfterDelete = container.read(
-            checklistItemControllerProvider((id: 'item-1', taskId: 'task-1')),
-          );
-          expect(stateAfterDelete.value, isNull);
-
-          verify(
-            () => mockJournalRepository.deleteJournalEntity('item-1'),
-          ).called(1);
+          expect(stateOf(container)?.data.isChecked, isTrue);
+          expect(stateOf(container)?.data.linkedChecklists, ['checklist-2']);
         },
       );
 
       test(
-        'returns false and clears state when repository returns false',
+        'keeps the optimistic state when the write stores nothing',
         () async {
-          when(
-            () => mockJournalRepository.deleteJournalEntity('item-1'),
-          ).thenAnswer((_) async => false);
+          final (container, notifier) = await load();
+          // Nothing stored: the stub returns null, as a refused write does.
 
-          final container = ProviderContainer(
-            overrides: [
-              checklistRepositoryProvider.overrideWithValue(
-                mockChecklistRepository,
-              ),
-              journalRepositoryProvider.overrideWithValue(
-                mockJournalRepository,
-              ),
-            ],
-          );
-          addTearDown(container.dispose);
+          notifier.archive();
+          await pumpEventQueue();
 
-          await container.read(
-            checklistItemControllerProvider((
-              id: 'item-1',
-              taskId: 'task-1',
-            )).future,
-          );
-
-          final notifier = container.read(
-            checklistItemControllerProvider((
-              id: 'item-1',
-              taskId: 'task-1',
-            )).notifier,
-          );
-
-          final result = await notifier.delete();
-
-          // Repository returned false, so delete() should propagate that.
-          expect(result, isFalse);
-
-          // State is still cleared to null even when the repo returns false.
-          final stateAfterDelete = container.read(
-            checklistItemControllerProvider((id: 'item-1', taskId: 'task-1')),
-          );
-          expect(stateAfterDelete.value, isNull);
+          expect(stateOf(container)?.data.isArchived, isTrue);
+          expect(stateOf(container)?.data.linkedChecklists, ['checklist-1']);
         },
       );
     });

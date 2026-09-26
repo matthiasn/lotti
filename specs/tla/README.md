@@ -1928,6 +1928,26 @@ backfill, the conflict page over a deletion — are examples in the suites of
 `persistence_updates.dart` and `conflict_detail_route.dart`, and each fails
 with its fix reverted.
 
+Checklist membership has one. In
+`test/features/tasks/repository/checklist_membership_model_conformance.dart`
+(a part of the `ChecklistRepository` suite), one task on a real in-memory
+`JournalDb` with the real `PersistenceLogic` is driven through generated
+traces of the spec's operations: the agent's `addItemToChecklist` and
+`createChecklist`; the screen's add, reorder and unlink as the controller
+sends them, from a snapshot taken earlier in the trace; a task field edit
+through `updateTask` and the agent's `JournalRepository.updateJournalEntity`,
+both from that stale snapshot; and another device's item or checklist
+landing through `JournalDb.updateJournalEntity` under a dominating clock —
+either between steps or armed to land right after a writer's first or second
+read of the row, the model's read/commit split. After every step
+`NoDuplicates`, `NoLostItem`, `NoStrayItem` and `NoLostChecklist` must hold,
+and `getChecklistItemsForTask` must return exactly the items the ghost state
+lists. Writing the caller's `TaskData` in `updateTaskImpl` fails it in two
+steps (a checklist lands, then a task edit), building `updateChecklist` on a
+copy read before `writeOnStored` in two (an armed landing, then the agent's
+add), and writing the caller's task in `JournalRepository.updateJournalEntity`
+in two.
+
 ## Changing a spec
 
 Keep the header's action-to-code map current. When a change is meant to fix a
@@ -2181,3 +2201,81 @@ Left out, deliberately: causal refs (I6) — a reference to an envelope that is
 lost or revoked could block its referrer forever, which a follow-up spec should
 settle — along with certificate delivery, signature forgery, content and its
 commitments, and the approval flow (to be modelled on `ChangeSetLifecycle`).
+
+## `ChecklistMembership` — which checklists a task shows, and which items
+
+A task's checklists and a checklist's items are stored as whole id lists on
+the parent — `TaskData.checklistIds` and `ChecklistData.linkedChecklistItems`
+— and every reader resolves membership from those lists, so an id missing
+from its parent's list is an item or a checklist nobody sees, though its row
+is alive. Each item also names its checklist
+(`ChecklistItemData.linkedChecklists`), which the agent's checklist tools
+read to authorise an update. One device: the stored rows; the screens'
+copies of them (the `ChecklistController` and `ChecklistItemController`
+state, the `EntryController` task, and the order `ChecklistsWidget` keeps
+after a drag), refreshed by update notifications at any time; the screen's
+operations (add, reorder, move and check an item, delete an item across its
+undo window, delete a checklist, edit a task field, sort the checklists) and
+the agent's (`addItemToChecklist`, `createChecklist`, its item and task field
+tools) split at every read and write; versions of any row landing by sync;
+and the app dying part-way through an operation, with the next start
+replaying what it recorded. Two devices writing the same row concurrently are
+`JournalReplication`'s subject. The decision is
+[ADR 0089](../../docs/adr/0089-checklist-membership-on-the-stored-row.md).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `NoDuplicates` | invariant | no list names an id twice |
+| `NoLostItem` | invariant | once quiet, every live item is listed by the checklist it was last put into, while that checklist lives — and an item the user deleted is deleted, not left alive and unlisted |
+| `NoStrayItem` | invariant | and by no other checklist: a move leaves the item in one place |
+| `BackLinkAgrees` | invariant | once quiet, every live item names the checklist that lists it |
+| `NoLostChecklist` | invariant | once quiet, every live checklist is listed by its task |
+| `PageShowsChecklists` | invariant | once the task page has re-read the task, it shows the task's live checklists |
+
+"Quiet" is: the app runs, no operation is running, and no recorded intent is
+left to replay.
+
+| Configuration | Checklists | Items | Operations | Receives | Crashes | Distinct states |
+|---------------|-----------:|------:|-----------:|---------:|--------:|----------------:|
+| `ChecklistMembership` | 2 | 3 | 4 | 2 | 0 | 3,660,131 |
+| `ChecklistMembershipThree` | 3 | 2 | 3 | 2 | 0 | 595,730 |
+| `ChecklistMembershipCrash` | 2 | 2 | 4 | 2 | 1 | 1,342,048 |
+
+Every write replaced a whole row under a clock built on the row read just
+before it, so the write decision took it as the newer version — however old
+the copy it was built from — and operations that write several rows left
+them half-written when the app died. The design switches are the fixes, and
+each has a counterexample when set to `FALSE`:
+
+| Switch | Old behaviour | Counterexample |
+|--------|---------------|----------------|
+| `RebaseLists` | a checklist's list was built from the screen's state or from a row the repository read before further awaits (`ChecklistRepository.updateChecklist` took the caller's data) | `NoLostItem`, six steps: the user types an item into a checklist, another device's item syncs into it before the write, and the screen writes the list it held plus its own item — the synced item is gone. The agent's `addItemToChecklist` does the same between its read and its write |
+| `RebaseTask` | every task write saved the caller's whole `TaskData`, `checklistIds` included; `createChecklist` read the task before it created the checklist; the agent's task field tools wrote the task they read when the tool call began | `NoLostChecklist`, five steps: the agent's status tool reads the task, a checklist syncs in with the task version listing it, and the tool writes its copy — the checklist is no longer listed. A task field edit from the task screen's copy does the same |
+| `RebaseItems` | the item screens and the agent's item tools wrote the whole item they held (`updateChecklistItem` took the caller's data) | `BackLinkAgrees`, eight steps: another device moves an item to a second checklist; the item screen, not yet refreshed, saves a check from its state — and writes the old checklist back into the item's back-link |
+| `WidgetFollowsTask` | `ChecklistsWidget` rendered the order of the last drag until the user left the task | `PageShowsChecklists`, eight steps (`ChecklistMembershipThree`): the user sorts two checklists, a third syncs in and is stored on the task, and the page never shows it — the next drag saved that order and dropped it |
+| `IntentLog` | an operation that writes several rows — create an item and list it, move an item, delete an item across its undo window, create or delete a checklist — was lost half-way if the app died | `NoLostItem`, five steps (`ChecklistMembershipCrash`): the agent creates an item and the app dies before the checklist lists it — the item lives, listed nowhere |
+
+With every switch on, a row is changed, not replaced: the intent — add an
+id, remove one, show these in this order, set these fields — is applied to
+the stored row by `writeOnStored`, under a precondition checked in the
+write's transaction that the row is still the version read, and built again
+when it is not, for as long as the row keeps moving. The spec's `commit` of
+a rebased write models exactly that. A multi-row operation records its intent
+in the settings database before its first write
+(`ChecklistMembershipIntents`) and removes it after its last; the next start
+applies every intent left behind (`ChecklistRepository.replayMembershipIntents`)
+— each is a set of idempotent changes to stored rows, so replaying one that
+did finish, or a replay that dies too, is harmless. The spec's `Replay` and
+`Restart` are that.
+
+Assumptions the model states rather than checks:
+
+- **Random ids never collide**; a derived one (ADR 0075) can, and a creation
+  over a live row is refused as concurrent, as in the code.
+- **A refusal with the row unchanged is not a race.** `writeOnStored` stops
+  when a refused write finds the row as it was: the write decision refused
+  it as concurrent with another device's version, which it records as a
+  conflict for the user (`JournalReplication`). In the model every refusal
+  follows a write to the row.
+- **The settings database commits an intent before the operation's first
+  write** (`saveSettingsItem` is awaited), and intent rows never sync.

@@ -5,6 +5,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/logic/persistence_collaborator_base.dart';
 import 'package:lotti/logic/persistence_logic.dart' show PersistenceLogic;
 import 'package:lotti/logic/persistence_logic_contract.dart';
+import 'package:lotti/logic/write_on_stored.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// Entry-update operations of [PersistenceLogic].
@@ -146,37 +147,37 @@ class PersistenceUpdateOps extends PersistenceCollaboratorBase {
     EntryText? entryText,
   }) async {
     try {
-      final journalEntity = await journalDb.journalEntityById(journalEntityId);
-
-      if (journalEntity == null) {
-        return false;
-      }
-
-      await journalEntity.maybeMap(
-        task: (Task task) async {
-          final priorityChanged = task.data.priority != taskData.priority;
-          await logic.updateDbEntity(
-            task.copyWith(
-              meta: await logic.updateMetadata(journalEntity.meta),
-              entryText: entryText ?? task.entryText,
-              data: taskData,
-            ),
-            beforeNotify: priorityChanged
-                ? () => journalDb.updateTaskPriorityColumn(
-                    id: journalEntityId,
-                    priority: taskData.priority.short,
-                    rank: taskData.priority.rank,
-                  )
-                : null,
+      // Written on the stored task, which keeps its own checklist list: the
+      // caller's [taskData] may be a screen's copy from before a checklist
+      // was added (ChecklistRepository.updateTaskChecklistIds owns that
+      // list; specs/tla/ChecklistMembership.tla).
+      return await writeOnStored(
+        journalDb: journalDb,
+        persistenceLogic: logic,
+        id: journalEntityId,
+        build: (stored) async {
+          if (stored is! Task) {
+            loggingService.error(
+              LogDomain.persistence,
+              'not a task',
+              subDomain: 'updateTask',
+            );
+            return null;
+          }
+          return stored.copyWith(
+            meta: await logic.updateMetadata(stored.meta),
+            entryText: entryText ?? stored.entryText,
+            data: taskData.copyWith(checklistIds: stored.data.checklistIds),
           );
         },
-        orElse: () async {
-          loggingService.error(
-            LogDomain.persistence,
-            'not a task',
-            subDomain: 'updateTask',
-          );
-        },
+        beforeNotify: (stored, _) =>
+            stored is Task && stored.data.priority != taskData.priority
+            ? () => journalDb.updateTaskPriorityColumn(
+                id: journalEntityId,
+                priority: taskData.priority.short,
+                rank: taskData.priority.rank,
+              )
+            : null,
       );
     } catch (exception, stackTrace) {
       loggingService.error(

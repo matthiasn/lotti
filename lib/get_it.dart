@@ -75,6 +75,7 @@ import 'package:lotti/features/sync/services/sync_node_capability_probe.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
 import 'package:lotti/features/sync/state/conflict_notification_observer.dart';
 import 'package:lotti/features/sync/tuning.dart';
+import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_persistence.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_repository.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
@@ -470,6 +471,11 @@ Future<void> registerSingletons({
         logger: domainLogger,
       ),
     );
+
+  // Finish checklist operations the app died in the middle of — an item
+  // created but not yet listed, a move or a deletion half done — from the
+  // intents they recorded (ADR 0089). Tracked, so a profile switch waits.
+  getIt<StartupTasks>().track(ChecklistRepository().replayMembershipIntents());
 
   // Awaited here, before `runApp`, so the app's first frame is already on the
   // screen the previous session was left on rather than flashing Tasks first.

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:drift/drift.dart' show Selectable;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -36,6 +37,9 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../ai_consumption/test_utils.dart';
 import '../test_utils.dart';
+
+/// The field-level change handed to `ChecklistRepository.updateChecklistItem`.
+typedef ItemChange = ChecklistItemData Function(ChecklistItemData stored);
 
 class MockPromptCapabilityFilter extends Mock
     implements PromptCapabilityFilter {}

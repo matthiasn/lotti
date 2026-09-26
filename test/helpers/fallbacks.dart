@@ -321,6 +321,15 @@ void registerAllFallbackValues() {
   registerFallbackValue(FakeChecklistData());
   registerFallbackValue(FakeChecklistItemData());
   registerFallbackValue(<ChecklistItemData>[]);
+  // The change `ChecklistRepository.updateChecklist` applies to the stored
+  // checklist data.
+  registerFallbackValue((ChecklistData stored) => stored);
+  // The change `ChecklistRepository.updateTaskChecklistIds` applies to the
+  // stored checklist ids of a task.
+  registerFallbackValue((List<String> stored) => stored);
+  // The change `ChecklistRepository.updateChecklistItem` applies to the
+  // stored item data.
+  registerFallbackValue((ChecklistItemData stored) => stored);
   registerFallbackValue(fallbackChecklist);
   registerFallbackValue(fallbackChecklistItem);
   registerFallbackValue(OnboardingEventName.appFirstSeen);

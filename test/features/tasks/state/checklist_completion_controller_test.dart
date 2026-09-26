@@ -154,16 +154,14 @@ void main() {
     when(
       () => mockChecklistRepository.updateChecklist(
         checklistId: any(named: 'checklistId'),
-        data: any(named: 'data'),
+        change: any(named: 'change'),
       ),
-    ).thenAnswer((_) async => true);
-    when(
-      () => mockChecklistRepository.updateChecklistItem(
-        checklistItemId: any(named: 'checklistItemId'),
-        data: any(named: 'data'),
-        taskId: any(named: 'taskId'),
-      ),
-    ).thenAnswer((_) async => true);
+    ).thenAnswer((invocation) async {
+      final change =
+          invocation.namedArguments[#change]
+              as ChecklistData Function(ChecklistData);
+      return checklist.copyWith(data: change(checklist.data));
+    });
 
     final container = ProviderContainer(
       overrides: [

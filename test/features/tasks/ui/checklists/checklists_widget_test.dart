@@ -87,6 +87,18 @@ class _MutableEntryController extends EntryController {
   );
 }
 
+/// A [_MutableEntryController] that records reorders instead of saving them.
+class _RecordingEntryController extends _MutableEntryController {
+  _RecordingEntryController(super._task);
+
+  final List<List<String>> updateChecklistOrderCalls = [];
+
+  @override
+  Future<void> updateChecklistOrder(List<String> visibleOrder) async {
+    updateChecklistOrderCalls.add(visibleOrder);
+  }
+}
+
 /// Returns a fixed `Checklist?` for a given checklist id, letting tests drive
 /// the per-card `checklist == null` branch in [ChecklistsWidget] (a deleted /
 /// stale checklist still listed in `checklistIds` collapses to
@@ -979,6 +991,92 @@ void main() {
         expect(
           controller.updateChecklistOrderCalls.first,
           ['checklist2', 'checklist1'],
+        );
+      },
+    );
+
+    testWidgets(
+      'a checklist the task lists after a drag is shown — the dragged order '
+      'does not hide it (ChecklistMembership.tla, PageShowsChecklists)',
+      (tester) async {
+        final dateTime = DateTime(2024);
+        when(
+          () => (getIt<JournalDb>() as MockJournalDb).journalEntityById(
+            'checklist3',
+          ),
+        ).thenAnswer(
+          (_) async => JournalEntity.checklist(
+            meta: Metadata(
+              id: 'checklist3',
+              createdAt: dateTime,
+              updatedAt: dateTime,
+              dateFrom: dateTime,
+              dateTo: dateTime,
+              starred: false,
+              private: false,
+            ),
+            data: const ChecklistData(
+              title: 'Checklist 3',
+              linkedChecklistItems: [],
+              linkedTasks: ['task1'],
+            ),
+          ),
+        );
+        final controller = _RecordingEntryController(mockTask);
+        Future<void> settle() async {
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+          await tester.pump(const Duration(milliseconds: 350));
+        }
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              entryControllerProvider('task1').overrideWith(() => controller),
+              checklistRepositoryProvider.overrideWithValue(
+                mockChecklistRepository,
+              ),
+            ],
+            child: WidgetTestBench(
+              child: ChecklistsWidget(entryId: 'task1', task: mockTask),
+            ),
+          ),
+        );
+        await settle();
+        await tester.tap(find.byKey(const Key('checklists-menu')));
+        await settle();
+        await tester.tap(find.byIcon(LottiIcons.sort));
+        await settle();
+        final secondItemNode = tester.getSemantics(find.text('Checklist 2'));
+        // ignore: deprecated_member_use
+        tester.binding.pipelineOwner.semanticsOwner!.performAction(
+          secondItemNode.id,
+          SemanticsAction.customAction,
+          CustomSemanticsAction.getIdentifier(
+            const CustomSemanticsAction(label: 'Move up'),
+          ),
+        );
+        await settle();
+        expect(controller.updateChecklistOrderCalls, [
+          ['checklist2', 'checklist1'],
+        ]);
+
+        // The drag's save lands, and the agent (or sync) lists a third
+        // checklist on the task.
+        controller.emit(
+          mockTask.copyWith(
+            data: mockTask.data.copyWith(
+              checklistIds: ['checklist2', 'checklist1', 'checklist3'],
+            ),
+          ),
+        );
+        await settle();
+
+        expect(find.text('Checklist 3'), findsOneWidget);
+        expect(
+          tester.getTopLeft(find.text('Checklist 2')).dy,
+          lessThan(tester.getTopLeft(find.text('Checklist 1')).dy),
+          reason: 'the stored order, which the drag saved, is kept',
         );
       },
     );

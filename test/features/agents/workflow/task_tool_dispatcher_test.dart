@@ -22,6 +22,9 @@ import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart' show makeTestChecklistApproval;
 
+/// The field-level change handed to `ChecklistRepository.updateChecklistItem`.
+typedef ItemChange = ChecklistItemData Function(ChecklistItemData stored);
+
 enum _GeneratedDispatchGuardTool {
   setTaskTitle,
   updateTaskDueDate,
@@ -387,10 +390,16 @@ void main() {
           when(
             () => mockChecklistRepository.updateChecklistItem(
               checklistItemId: 'item',
-              data: any(named: 'data'),
+              change: any<ItemChange>(named: 'change'),
               taskId: taskId,
             ),
-          ).thenAnswer((_) async => true);
+          ).thenAnswer(
+            (invocation) async => item.copyWith(
+              data: (invocation.namedArguments[#change] as ItemChange)(
+                item.data,
+              ),
+            ),
+          );
           final next = receipt.copyWith(
             decisionId: 'next',
             isChecked: null,
@@ -419,14 +428,14 @@ void main() {
           expect(result.nonRetryable, !approved);
           if (approved) {
             final written =
-                verify(
+                (verify(
                       () => mockChecklistRepository.updateChecklistItem(
                         checklistItemId: 'item',
-                        data: captureAny(named: 'data'),
+                        change: captureAny<ItemChange>(named: 'change'),
                         taskId: taskId,
                       ),
                     ).captured.single
-                    as ChecklistItemData;
+                    as ItemChange)(item.data);
             expect(
               written.checkedStateApproval,
               next.copyWith(isChecked: false),
@@ -436,7 +445,7 @@ void main() {
             verifyNever(
               () => mockChecklistRepository.updateChecklistItem(
                 checklistItemId: 'item',
-                data: any(named: 'data'),
+                change: any<ItemChange>(named: 'change'),
                 taskId: taskId,
               ),
             );

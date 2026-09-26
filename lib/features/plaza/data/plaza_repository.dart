@@ -8,6 +8,7 @@ import 'package:lotti/features/plaza/data/task_projection.dart';
 import 'package:lotti/features/plaza/domain/plaza_connection.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/write_on_stored.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/image_utils.dart';
@@ -160,15 +161,25 @@ class PlazaRepository {
       return false;
     }
     if (item.data.isChecked == checked) return true;
-    final updated = item.copyWith(
-      meta: await persistence.updateMetadata(item.meta),
-      data: item.data.copyWith(
-        isChecked: checked,
-        checkedBy: ChangeSource.user,
-        checkedAt: clock.now(),
-      ),
+    // Written onto the item as stored, so a rename or move that lands after
+    // the checks above is kept (ChecklistMembership.tla, RebaseItems).
+    return writeOnStored(
+      journalDb: db,
+      persistenceLogic: persistence,
+      id: itemId,
+      linkedId: taskId,
+      build: (stored) async =>
+          stored is ChecklistItem && stored.data.isChecked != checked
+          ? stored.copyWith(
+              meta: await persistence.updateMetadata(stored.meta),
+              data: stored.data.copyWith(
+                isChecked: checked,
+                checkedBy: ChangeSource.user,
+                checkedAt: clock.now(),
+              ),
+            )
+          : null,
     );
-    return await persistence.updateDbEntity(updated, linkedId: taskId) == true;
   }
 
   Future<ProjectPlazaData?> loadProject(String projectId) async {

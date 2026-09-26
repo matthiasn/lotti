@@ -4,15 +4,14 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/tasks/model/membership_list.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
-import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/cache_extension.dart';
 import 'package:meta/meta.dart';
 
@@ -95,70 +94,36 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
     }
   }
 
-  /// Soft-deletes the checklist and detaches it from its parent task.
-  ///
-  /// Removing the id from `task.data.checklistIds` is best-effort: a failure is
-  /// logged but does not roll back the delete (see the inline rationale).
-  /// Returns `false` only when the underlying entity delete itself fails.
+  /// Soft-deletes the checklist and detaches it from its parent task
+  /// ([ChecklistRepository.deleteChecklist], which records the operation so
+  /// the next start finishes it should the app die in between). Returns
+  /// `false` only when the underlying entity delete itself fails.
   Future<bool> delete() async {
-    final res = await ref
-        .read(journalRepositoryProvider)
-        .deleteJournalEntity(id);
-    if (!res) {
-      return false;
-    }
-
-    state = const AsyncData(null);
-
-    // Also remove this checklist from the parent task's checklistIds
-    if (taskId != null) {
-      try {
-        final taskEntry = await getIt<JournalDb>().journalEntityById(taskId!);
-        if (taskEntry is Task) {
-          final currentIds = taskEntry.data.checklistIds ?? [];
-          final updatedIds = currentIds.where((cid) => cid != id).toList();
-          if (updatedIds.length != currentIds.length) {
-            await getIt<PersistenceLogic>().updateTask(
-              journalEntityId: taskId!,
-              taskData: taskEntry.data.copyWith(checklistIds: updatedIds),
-            );
-          }
-        }
-      } catch (exception, stackTrace) {
-        getIt<DomainLogger>().error(
-          LogDomain.tasks,
-          'Failed to remove checklist ID ($id) from task ($taskId): $exception',
-          stackTrace: stackTrace,
-          subDomain: 'delete',
-        );
-        // Design decision: We log but don't fail/rollback for these reasons:
-        // 1. The checklist IS successfully deleted (soft-delete with deletedAt)
-        // 2. Rolling back would require "undeleting" which risks sync conflicts
-        // 3. The defensive UI filtering in ChecklistsWidget handles stale refs
-        // 4. True atomicity would require transaction support in PersistenceLogic
-        // The user experience is unaffected due to the UI-level filtering.
-      }
-    }
-
+    final deleted = taskId == null
+        ? await ref.read(journalRepositoryProvider).deleteJournalEntity(id)
+        : await ref
+              .read(checklistRepositoryProvider)
+              .deleteChecklist(checklistId: id, taskId: taskId!);
+    if (!deleted) return false;
+    if (ref.mounted) state = const AsyncData(null);
     return true;
   }
 
   /// Renames the checklist; a null title is persisted as the empty string.
-  Future<void> updateTitle(String? title) => updateChecklist(
-    (checklist) => checklist.copyWith(
-      data: checklist.data.copyWith(title: title ?? ''),
+  Future<void> updateTitle(String? title) =>
+      updateChecklist((data) => data.copyWith(title: title ?? ''));
+
+  /// Persists the order [visibleOrder] shows the checklist's items in
+  /// (drag-reorder), applied to the stored list ([inVisibleOrder]): an item
+  /// stored after this screen last read the checklist keeps its place.
+  Future<void> updateItemOrder(List<String> visibleOrder) => updateChecklist(
+    (data) => data.copyWith(
+      linkedChecklistItems: inVisibleOrder(
+        data.linkedChecklistItems,
+        visibleOrder,
+      ),
     ),
   );
-
-  /// Persists a new ordering of the checklist's linked item ids (drag-reorder).
-  Future<void> updateItemOrder(List<String> linkedChecklistItems) =>
-      updateChecklist(
-        (checklist) => checklist.copyWith(
-          data: checklist.data.copyWith(
-            linkedChecklistItems: linkedChecklistItems,
-          ),
-        ),
-      );
 
   /// Handles dropping a checklist item onto this checklist.
   ///
@@ -188,39 +153,24 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
         return;
       }
 
-      await ref
-          .read(
-            checklistItemControllerProvider((
-              id: droppedChecklistItemId,
-              taskId: taskId,
-            )).notifier,
-          )
-          .moveToChecklist(
-            linkedChecklistId: id,
-            fromChecklistId: fromChecklistId,
-          );
-
-      await updateChecklist(
-        (checklist) => checklist.copyWith(
-          data: checklist.data.copyWith(
-            linkedChecklistItems: _insertItemAt(
-              checklist.data.linkedChecklistItems,
+      // Across checklists: the item's back-link, this list and the source's
+      // are written as one recorded move; the source's controller and the
+      // item's pick theirs up from their update notifications.
+      final target = await ref
+          .read(checklistRepositoryProvider)
+          .moveItem(
+            itemId: droppedChecklistItemId,
+            fromId: fromChecklistId,
+            toId: id,
+            taskId: taskId,
+            place: (stored) => _insertItemAt(
+              stored,
               droppedChecklistItemId,
               targetIndex: targetIndex,
               targetItemId: targetItemId,
             ),
-          ),
-        ),
-      );
-
-      await ref
-          .read(
-            checklistControllerProvider((
-              id: fromChecklistId,
-              taskId: taskId,
-            )).notifier,
-          )
-          .unlinkItem(droppedChecklistItemId);
+          );
+      if (target != null && ref.mounted) state = AsyncData(target);
     }
   }
 
@@ -307,9 +257,9 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
 
   /// Handles dropping a *new* (not yet persisted) item onto this checklist.
   ///
-  /// [localData] carries the dragged title/status; the item is created via
-  /// [createChecklistItem] and appended to this checklist's linked items. A
-  /// no-op when the payload is empty or has no title.
+  /// [localData] carries the dragged title/status; the item is created and
+  /// listed by [createChecklistItem]. A no-op when the payload is empty or
+  /// has no title.
   Future<void> dropChecklistNewItem(
     Object? localData, {
     String? categoryId,
@@ -323,121 +273,97 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
         return;
       }
 
-      final createdItemId = await createChecklistItem(
+      await createChecklistItem(
         checklistItemTitle,
         isChecked: checklistItemStatus,
         categoryId: categoryId,
       );
-
-      if (createdItemId == null) {
-        return;
-      }
-
-      await updateChecklist(
-        (checklist) => checklist.copyWith(
-          data: checklist.data.copyWith(
-            linkedChecklistItems: {
-              ...checklist.data.linkedChecklistItems,
-              createdItemId,
-            }.toList(),
-          ),
-        ),
-      );
     }
   }
 
-  /// Re-adds an item to the checklist's linked items (undo for [unlinkItem]).
-  ///
-  /// Guards against duplicates so that calling this twice is harmless.
-  Future<void> relinkItem(String checklistItemId) => updateChecklist(
-    (checklist) {
-      final items = checklist.data.linkedChecklistItems;
-      if (items.contains(checklistItemId)) return checklist;
-      return checklist.copyWith(
-        data: checklist.data.copyWith(
-          linkedChecklistItems: [...items, checklistItemId],
-        ),
-      );
-    },
-  );
+  /// Starts deleting an item the user swiped away: it leaves this list at
+  /// once and is deleted when [undoWindow] has passed, unless the user undoes
+  /// first ([undoItemDeletion]). The repository times the window and records
+  /// the deletion, so it completes after the row has left the screen, and
+  /// even if the app dies meanwhile ([ChecklistRepository.beginItemDeletion]).
+  /// Returns the deletion's key for [undoItemDeletion], or `null` when it
+  /// could not be recorded.
+  Future<String?> beginItemDeletion(
+    String checklistItemId, {
+    required Duration undoWindow,
+  }) async {
+    final key = await ref
+        .read(checklistRepositoryProvider)
+        .beginItemDeletion(
+          itemId: checklistItemId,
+          checklistId: id,
+          undoWindow: undoWindow,
+        );
+    await _refresh();
+    return key;
+  }
 
-  /// Removes [checklistItemId] from this checklist's linked items without
-  /// deleting the item entity (it may be moving to another checklist).
-  /// Reversible via [relinkItem].
-  Future<void> unlinkItem(String checklistItemId) => updateChecklist(
-    (checklist) => checklist.copyWith(
-      data: checklist.data.copyWith(
-        linkedChecklistItems: checklist.data.linkedChecklistItems
-            .where((id) => id != checklistItemId)
-            .toList(),
-      ),
-    ),
-  );
+  /// Lists the item again — the user undid its deletion. Harmless if it is
+  /// listed already.
+  Future<void> undoItemDeletion({
+    required String key,
+    required String checklistItemId,
+  }) async {
+    final written = await ref
+        .read(checklistRepositoryProvider)
+        .undoItemDeletion(
+          key: key,
+          itemId: checklistItemId,
+          checklistId: id,
+        );
+    if (written != null && ref.mounted) state = AsyncData(written);
+  }
 
-  /// Applies [updateFn] to the current checklist, persists the result, and
-  /// optimistically publishes it as the new state. No-op when the checklist
+  /// Publishes the checklist as stored.
+  Future<void> _refresh() async {
+    final latest = await _fetch();
+    if (ref.mounted) state = AsyncData(latest);
+  }
+
+  /// Applies [change] to the checklist's data as stored — not to this
+  /// controller's state, which an update notification refreshes only some
+  /// time after the row changes — and publishes what was stored as the new
+  /// state ([ChecklistRepository.updateChecklist]). No-op when the checklist
   /// has not loaded yet. The single mutation funnel used by the helpers above.
-  Future<void> updateChecklist(Checklist Function(Checklist) updateFn) async {
-    final current = state.value;
-    final data = current?.data;
-    if (current != null && data != null) {
-      final updated = updateFn(current);
-      await ref
-          .read(checklistRepositoryProvider)
-          .updateChecklist(
-            checklistId: id,
-            data: updated.data,
-          );
-      state = AsyncData(updated);
+  Future<void> updateChecklist(
+    ChecklistData Function(ChecklistData stored) change,
+  ) async {
+    if (state.value == null) return;
+    final written = await ref
+        .read(checklistRepositoryProvider)
+        .updateChecklist(checklistId: id, change: change);
+    if (written != null && ref.mounted) {
+      state = AsyncData(written);
     }
   }
 
-  /// Creates a new item under this checklist and appends it to the linked
-  /// items list. Returns the created item's id, or `null` when the checklist
-  /// is not loaded or [title] is null.
+  /// Creates a new item under this checklist and lists it
+  /// ([ChecklistRepository.addItemToChecklist], which records the operation
+  /// so an item created just before the app died is listed at the next
+  /// start). Returns the created item's id, or `null` when the checklist is
+  /// not loaded, [title] is null, or the item could not be created.
   Future<String?> createChecklistItem(
     String? title, {
     required String? categoryId,
     required bool isChecked,
   }) async {
     final current = state.value;
-    final data = current?.data;
-    if (current != null && data != null && title != null) {
-      final created = await ref
-          .read(checklistRepositoryProvider)
-          .createChecklistItem(
-            title: title,
-            isChecked: isChecked,
-            checklistId: current.id,
-            categoryId: categoryId,
-          );
-
-      if (created != null) {
-        final updated = current.copyWith(
-          data: current.data.copyWith(
-            linkedChecklistItems: [
-              ...data.linkedChecklistItems,
-              created.id,
-            ],
-          ),
+    if (current == null || title == null) return null;
+    final created = await ref
+        .read(checklistRepositoryProvider)
+        .addItemToChecklist(
+          title: title,
+          isChecked: isChecked,
+          checklistId: current.id,
+          categoryId: categoryId,
         );
-
-        await ref
-            .read(checklistRepositoryProvider)
-            .updateChecklist(
-              checklistId: current.id,
-              data: updated.data.copyWith(
-                linkedChecklistItems: [
-                  ...data.linkedChecklistItems,
-                  created.id,
-                ],
-              ),
-            );
-
-        state = AsyncData(updated);
-        return created.id;
-      }
-    }
-    return null;
+    if (created == null) return null;
+    await _refresh();
+    return created.id;
   }
 }

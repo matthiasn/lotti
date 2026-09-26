@@ -499,7 +499,7 @@ class AiToolCallProcessor {
                 // Safe to auto-check: item is unchecked and agent-owned
                 await checklistRepository.updateChecklistItem(
                   checklistItemId: suggestion.checklistItemId,
-                  data: checklistItem.data.copyWith(
+                  change: (stored) => stored.copyWith(
                     isChecked: true,
                     checkedBy: ChangeSource.agent,
                     checkedAt: clock(),

@@ -15,6 +15,7 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/blocks_cycle_guard.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/write_on_stored.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/notification_service.dart';
@@ -231,10 +232,39 @@ class JournalRepository {
   }
 
   /// Persists `updated` (including its metadata) through `PersistenceLogic`.
-  /// Returns false on a logged failure.
+  ///
+  /// A task keeps the checklist list it has stored: `updated` is the
+  /// caller's copy, read before its change, and
+  /// `ChecklistRepository.updateTaskChecklistIds` owns that list. The list
+  /// is taken from the stored row and the write applies only while that row
+  /// is still the one read ([writeOnStored]), so a checklist listed in
+  /// between is never dropped (`specs/tla/ChecklistMembership.tla`,
+  /// agTaskEdit). Returns false on a logged failure.
   Future<bool> updateJournalEntity(JournalEntity updated) async {
     try {
-      return await getIt<PersistenceLogic>().updateJournalEntity(
+      final persistenceLogic = getIt<PersistenceLogic>();
+      final journalDb = getIt<JournalDb>();
+      if (updated is Task &&
+          await journalDb.journalEntityById(updated.id) is Task) {
+        return await writeOnStored(
+          journalDb: journalDb,
+          persistenceLogic: persistenceLogic,
+          id: updated.id,
+          build: (stored) async => stored is Task
+              ? updated.copyWith(
+                  data: updated.data.copyWith(
+                    checklistIds: stored.data.checklistIds,
+                  ),
+                )
+              : null,
+          write: (entity, precondition) => persistenceLogic.updateJournalEntity(
+            entity,
+            entity.meta,
+            precondition: precondition,
+          ),
+        );
+      }
+      return await persistenceLogic.updateJournalEntity(
         updated,
         updated.meta,
       );

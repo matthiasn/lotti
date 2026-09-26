@@ -156,3 +156,4 @@ Each ADR should contain:
 - [`0086-append-only-outbox.md`](./0086-append-only-outbox.md)
 - [`0087-journal-row-is-the-only-copy.md`](./0087-journal-row-is-the-only-copy.md)
 - [`0088-provenance-crypto-primitives.md`](./0088-provenance-crypto-primitives.md)
+- [`0089-checklist-membership-on-the-stored-row.md`](./0089-checklist-membership-on-the-stored-row.md)

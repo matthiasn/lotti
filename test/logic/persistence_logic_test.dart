@@ -2782,6 +2782,15 @@ void main() {
           overwrite: any<bool>(named: 'overwrite'),
         ),
       ).thenAnswer((_) async => result);
+      // Writes built on the stored row (writeOnStored — updateTask among
+      // them) carry a precondition.
+      when(
+        () => journalDb.updateJournalEntity(
+          any<JournalEntity>(),
+          overwrite: any<bool>(named: 'overwrite'),
+          precondition: any(named: 'precondition'),
+        ),
+      ).thenAnswer((_) async => result);
     }
 
     JournalEntity buildEntry({String id = 'entry-id', VectorClock? clock}) {

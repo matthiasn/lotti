@@ -32,6 +32,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/commit_evaluating_vector_clock_service.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
 import '../../sync/matrix/sync_event_processor_test_helpers.dart'
     as sync_harness;
@@ -855,6 +856,160 @@ void main() {
             testEntity.meta,
           ),
         ).called(1);
+      });
+
+      group('for a task', () {
+        final stale = testTask.copyWith(
+          data: testTask.data.copyWith(
+            checklistIds: ['kept'],
+            title: 'agent retitled',
+          ),
+        );
+        Task storedAt(int counter, List<String> checklistIds) =>
+            testTask.copyWith(
+              meta: testTask.meta.copyWith(
+                vectorClock: VectorClock({'host': counter}),
+              ),
+              data: testTask.data.copyWith(checklistIds: checklistIds),
+            );
+
+        /// Stubs the task's reads to answer [reads] in turn, the last one
+        /// from then on.
+        void stubReads(List<Task?> reads) {
+          final pending = [...reads];
+          when(
+            () => mockJournalDb.journalEntityById(testTask.meta.id),
+          ).thenAnswer(
+            (_) async =>
+                pending.length > 1 ? pending.removeAt(0) : pending.single,
+          );
+        }
+
+        /// Stubs the writes to answer [answers] in turn.
+        void stubWrites(List<bool> answers) {
+          final pending = [...answers];
+          when(
+            () => mockPersistenceLogic.updateJournalEntity(
+              any(),
+              any(),
+              precondition: any(named: 'precondition'),
+            ),
+          ).thenAnswer((_) async => pending.removeAt(0));
+        }
+
+        List<Object?> capturedWrites() => verify(
+          () => mockPersistenceLogic.updateJournalEntity(
+            captureAny(),
+            stale.meta,
+            precondition: captureAny(named: 'precondition'),
+          ),
+        ).captured;
+
+        test(
+          "keeps the checklists its stored row lists — the caller's copy "
+          'was read before a checklist was added, and saving its title must '
+          'not drop that checklist (ChecklistMembership.tla)',
+          () async {
+            stubReads([
+              storedAt(1, ['kept', 'new']),
+            ]);
+            stubWrites([true]);
+
+            final result = await repository.updateJournalEntity(stale);
+
+            expect(result, isTrue);
+            final written = capturedWrites().first! as Task;
+            expect(written.data.title, 'agent retitled');
+            expect(written.data.checklistIds, ['kept', 'new']);
+          },
+        );
+
+        test(
+          'writes only while the row it took the checklists from is still '
+          'stored',
+          () async {
+            stubReads([
+              storedAt(4, ['kept', 'new']),
+            ]);
+            stubWrites([true]);
+            when(
+              () => mockJournalDb.isStoredVersion(any(), any()),
+            ).thenAnswer((_) async => false);
+
+            await repository.updateJournalEntity(stale);
+
+            final precondition =
+                capturedWrites()[1]! as Future<bool> Function();
+            expect(await precondition(), isFalse);
+            verify(
+              () => mockJournalDb.isStoredVersion(
+                testTask.meta.id,
+                const VectorClock({'host': 4}),
+              ),
+            ).called(1);
+          },
+        );
+
+        test(
+          'a write refused because a checklist was listed meanwhile is '
+          'built again on the row that lists it',
+          () async {
+            stubReads([
+              storedAt(1, ['kept', 'new']),
+              storedAt(1, ['kept', 'new']),
+              storedAt(2, ['kept', 'new', 'newer']),
+            ]);
+            stubWrites([false, true]);
+
+            final result = await repository.updateJournalEntity(stale);
+
+            expect(result, isTrue);
+            final captured = capturedWrites();
+            final writes = [captured[0]! as Task, captured[2]! as Task];
+            expect(
+              writes.map((task) => task.data.checklistIds),
+              [
+                ['kept', 'new'],
+                ['kept', 'new', 'newer'],
+              ],
+            );
+            expect(writes.last.data.title, 'agent retitled');
+          },
+        );
+
+        test(
+          'without a stored task it is written as given, with no '
+          'precondition',
+          () async {
+            stubReads([null]);
+            when(
+              () => mockPersistenceLogic.updateJournalEntity(
+                stale,
+                stale.meta,
+              ),
+            ).thenAnswer((_) async => true);
+
+            final result = await repository.updateJournalEntity(stale);
+
+            expect(result, isTrue);
+            verify(
+              () => mockPersistenceLogic.updateJournalEntity(
+                stale,
+                stale.meta,
+              ),
+            ).called(1);
+            verifyNever(
+              () => mockPersistenceLogic.updateJournalEntity(
+                any(),
+                any(),
+                precondition: any(
+                  named: 'precondition',
+                  that: isNotNull,
+                ),
+              ),
+            );
+          },
+        );
       });
 
       test('handles exceptions and returns false', () async {

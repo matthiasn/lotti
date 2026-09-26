@@ -146,18 +146,22 @@ class ChecklistMigrationHandler {
     // Return success even if archival fails — the copy exists and a retry
     // would create a duplicate. The source staying unarchived is a minor
     // inconsistency that beats duplicate target items.
-    final archived = await _checklistRepository.updateChecklistItem(
-      checklistItemId: itemId,
-      data: itemEntity.data.copyWith(
-        isArchived: true,
-        approvalHistory: [
-          ...itemEntity.data.approvalHistory,
-          if (approval case final receipt?)
-            receipt.copyWith(isChecked: null, isArchived: true),
-        ],
-      ),
-      taskId: sourceTaskId,
-    );
+    // Archived on the item as stored: the item read above may predate an
+    // edit made while the copy was written.
+    final archived =
+        await _checklistRepository.updateChecklistItem(
+          checklistItemId: itemId,
+          change: (stored) => stored.copyWith(
+            isArchived: true,
+            approvalHistory: [
+              ...stored.approvalHistory,
+              if (approval case final receipt?)
+                receipt.copyWith(isChecked: null, isArchived: true),
+            ],
+          ),
+          taskId: sourceTaskId,
+        ) !=
+        null;
 
     final warning = archived ? '' : '. Warning: source item was not archived';
 
