@@ -115,20 +115,16 @@ that rarely changes is worth. **A UI change therefore ships before its manual
 media does**; dispatch the workflow when a screenshot needs to be current
 sooner.
 
-Whether the harness still *runs* is checked earlier and separately:
-`manual-capture-check.yml` captures one locale on any pull request touching
-`lib/`, `assets/`, a harness, or a registered screenshot test. It publishes
-nothing — it exists because these suites are opt-in, so no other *pull
-request* lane executes them and a UI change would otherwise only be found to
-have broken the catalog by the nightly capture.
-
-It defaults to **German**, not the authoring locale: every other locale falls
-back to English, so a rendering that only breaks once a translation is
-involved stays green there. That is not hypothetical — a proposal row whose
-quotation marks come from the locale (`„…“` in German and Czech, `"…"` in
-English) passed English and failed the other ten. Override with the
-`MANUAL_CHECK_LOCALE` repository variable. Run a single locale the same way CI
-does when iterating on one language:
+No pull request lane runs these suites: they are opt-in, so the unit shards
+skip them, and a per-PR capture cost more runner time than the breakages it
+caught were worth. A UI change that breaks the harness is found by the nightly
+capture instead, which reports every broken locale at once. Before merging a
+change to a captured surface, run one locale locally — **German** rather than
+the authoring locale: every other locale falls back to English, so a rendering
+that only breaks once a translation is involved stays green there. That is not
+hypothetical — a proposal row whose quotation marks come from the locale
+(`„…“` in German and Czech, `"…"` in English) passed English and failed the
+other ten. Run a single locale the same way CI does:
 
 ```bash
 make manual_screenshots_shard MANUAL_LOCALE=de
