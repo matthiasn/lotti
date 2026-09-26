@@ -61,7 +61,7 @@ extension QueueLifecycle on QueuePipelineCoordinator {
       // under a hold never moved the marker, and the claim above covers
       // what they did not seal.
       _liveHold.reset();
-      _limitedSinceSeal = false;
+      _limitedRoomsSinceSeal.clear();
       _syncStatusSub = _sessionManager.syncStatusUpdates.listen(
         _observeSyncStatus,
         onError: (Object error, StackTrace stackTrace) {

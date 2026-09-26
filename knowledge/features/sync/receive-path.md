@@ -178,8 +178,9 @@ The SDK's synthetic `handleSync` passes — a late Megolm key re-decrypting a
 room's last event, history, send and redaction fake syncs — emit `processing`
 and `onSync` inside a real response, but never `cleaningUp`, so none can release
 the hold. The seal snapshots the arrivals it covers; claims above the held
-marker when any `onSync` since the last seal was limited for the room, or after
-`SyncStatus.error`; and then seals the snapshot. Seals run one at a time, so a
+marker of every room an `onSync` since the last seal reported limited — the room
+that reported it, even if the sync room has changed since — or of the current
+room after `SyncStatus.error`; and then seals the snapshot. Seals run one at a time, so a
 quick seal cannot overtake a limited one still claiming. When nothing newer
 arrived meanwhile, `InboundQueue.catchUpMarker` moves the marker over the newest
 settled row, read from the database and clamped below the oldest active row. A

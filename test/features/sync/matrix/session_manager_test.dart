@@ -214,6 +214,17 @@ void main() {
       expect(await received, same(event));
     });
 
+    test('syncStatusUpdates relays the client sync status stream', () async {
+      final status = CachedStreamController<SyncStatusUpdate>();
+      addTearDown(status.close);
+      when(() => client.onSyncStatus).thenReturn(status);
+
+      final received = sessionManager.syncStatusUpdates.first;
+      status.add(const SyncStatusUpdate(SyncStatus.cleaningUp));
+
+      expect((await received).status, SyncStatus.cleaningUp);
+    });
+
     group('connect', () {
       test('returns false when matrixConfig is null', () async {
         sessionManager.matrixConfig = null;

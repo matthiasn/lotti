@@ -204,6 +204,79 @@ extension _LiveSealCases on _QueueCoordinatorTestSetup {
         await coordinator.stop();
       });
 
+      test('a seal claims the room that reported the limited timeline, even '
+          'after the sync room changed', () async {
+        const otherRoom = '!roomB:example.org';
+        final coordinator = await started();
+        arrive();
+        await deliverSync(limited: true);
+        when(() => roomManager.currentRoomId).thenReturn(otherRoom);
+
+        await finishResponse(coordinator);
+
+        verify(
+          () => queue.claimAboveMarker(
+            roomId: roomId,
+            readAppliedTs: any(named: 'readAppliedTs'),
+            walkLocal: any(named: 'walkLocal'),
+          ),
+        ).called(1);
+        verifyNever(
+          () => queue.claimAboveMarker(
+            roomId: otherRoom,
+            readAppliedTs: any(named: 'readAppliedTs'),
+            walkLocal: any(named: 'walkLocal'),
+          ),
+        );
+        verifyInOrder([
+          () => queue.ensureResumeFloorPersisted(otherRoom),
+          () => queue.catchUpMarker(otherRoom),
+        ]);
+        await coordinator.stop();
+      });
+
+      test('a catch-up that throws is logged; the hold stays released for '
+          'the next commit', () async {
+        final coordinator = await started();
+        final failure = StateError('database is locked');
+        when(() => queue.catchUpMarker(any())).thenThrow(failure);
+        arrive();
+
+        await finishResponse(coordinator);
+
+        expect(coordinator.liveArrivalsSealed, isTrue);
+        verify(
+          () => logging.error(
+            LogDomain.sync,
+            failure,
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'queue.coordinator.seal.catchUp',
+          ),
+        ).called(1);
+        await coordinator.stop();
+      });
+
+      test('an error on the sync status stream is logged and later '
+          'statuses still seal', () async {
+        final coordinator = await started();
+        final failure = StateError('status stream broke');
+        statusCtl.addError(failure);
+        await pumpEventQueue();
+        verify(
+          () => logging.error(
+            LogDomain.sync,
+            failure,
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'queue.coordinator.syncStatus',
+          ),
+        ).called(1);
+
+        arrive();
+        await finishResponse(coordinator);
+        verify(() => queue.catchUpMarker(roomId)).called(1);
+        await coordinator.stop();
+      });
+
       test('seals run one at a time: a quick seal waits for a limited one '
           'still claiming', () async {
         final coordinator = await started();

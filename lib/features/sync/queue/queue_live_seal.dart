@@ -21,14 +21,15 @@ extension QueueLiveSeal on QueuePipelineCoordinator {
   /// stream delivers every event to it before the response's `cleaningUp`.
   void _countLiveArrival(Event _) => _liveHold.noteArrival();
 
-  /// `onSync` listener: remembers a limited timeline for the current room
-  /// until the next seal claims it. A synthetic pass setting it only causes
-  /// an extra claim.
+  /// `onSync` listener: remembers the room whose timeline was limited until
+  /// the next seal claims it — the room that reported it, not whichever is
+  /// current when the seal runs. A synthetic pass reporting it only causes an
+  /// extra claim.
   void _observeSyncMetadata(SyncUpdate sync) {
     final roomId = _roomManager.currentRoomId;
     if (roomId != null &&
         sync.rooms?.join?[roomId]?.timeline?.limited == true) {
-      _limitedSinceSeal = true;
+      _limitedRoomsSinceSeal.add(roomId);
     }
     _maybePostLoadCurrentRoom();
   }
@@ -49,48 +50,57 @@ extension QueueLiveSeal on QueuePipelineCoordinator {
     }
   }
 
-  /// Snapshots what this seal covers — synchronously, so arrivals after this
-  /// point wait for the next one — and runs it after any seal in flight.
+  /// Snapshots what this seal covers — the arrivals, the current room and the
+  /// rooms to claim, synchronously, so arrivals after this point wait for the
+  /// next one — and runs it after any seal in flight.
   void _scheduleSeal({required bool conservative}) {
     final upTo = _liveHold.arrived;
     final generation = _liveHold.generation;
-    final claim = _limitedSinceSeal || conservative;
-    _limitedSinceSeal = false;
+    final roomId = _roomManager.currentRoomId;
+    final claimRooms = {
+      ..._limitedRoomsSinceSeal,
+      if (conservative && roomId != null) roomId,
+    };
+    _limitedRoomsSinceSeal.clear();
     final seal = _sealChain.then(
-      (_) => _seal(upTo: upTo, generation: generation, claim: claim),
+      (_) => _seal(
+        roomId: roomId,
+        claimRooms: claimRooms,
+        upTo: upTo,
+        generation: generation,
+      ),
     );
     _sealChain = seal.catchError((Object _) {});
     _trackEnqueue(seal);
   }
 
-  /// Claims the gap when the response was limited, or makes any retained
-  /// claim or floor durable, then covers [upTo] and — when nothing newer
-  /// arrived meanwhile — moves the marker over what settled while it was
-  /// held. A failed claim or floor write leaves the arrivals unsealed; the
-  /// next seal retries it.
+  /// Claims the gap of every room in [claimRooms], or makes any retained
+  /// claim or floor for [roomId] durable, then covers [upTo] and — when
+  /// nothing newer arrived meanwhile — moves [roomId]'s marker over what
+  /// settled while it was held. A failed claim or floor write leaves the
+  /// arrivals unsealed, and the claims owed to the next seal.
   Future<void> _seal({
+    required String? roomId,
+    required Set<String> claimRooms,
     required int upTo,
     required int generation,
-    required bool claim,
   }) async {
-    final roomId = _roomManager.currentRoomId;
-    if (roomId != null) {
-      try {
-        if (claim) {
-          await _claimCatchUpRange(roomId);
-        } else {
-          await _queue.ensureResumeFloorPersisted(roomId);
-        }
-      } catch (error, stackTrace) {
-        if (claim) _limitedSinceSeal = true;
-        _logging.error(
-          LogDomain.sync,
-          error,
-          stackTrace: stackTrace,
-          subDomain: '$_logSub.seal',
-        );
-        return;
+    try {
+      for (final room in claimRooms) {
+        await _claimCatchUpRange(room);
       }
+      if (roomId != null && !claimRooms.contains(roomId)) {
+        await _queue.ensureResumeFloorPersisted(roomId);
+      }
+    } catch (error, stackTrace) {
+      _limitedRoomsSinceSeal.addAll(claimRooms);
+      _logging.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: '$_logSub.seal',
+      );
+      return;
     }
     _liveHold.seal(upTo, generation: generation);
     if (roomId == null || !_liveHold.isSealed) return;

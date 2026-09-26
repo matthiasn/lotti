@@ -155,9 +155,9 @@ class QueuePipelineCoordinator {
   // ignore: cancel_subscriptions
   StreamSubscription<Event>? _arrivalSub;
 
-  /// Set by an `onSync` whose timeline for the current room was limited;
-  /// the next seal claims the gap before sealing. See [QueueLiveSeal].
-  bool _limitedSinceSeal = false;
+  /// Rooms whose timeline an `onSync` reported limited since the last seal;
+  /// the next seal claims each one's gap before sealing. See [QueueLiveSeal].
+  final Set<String> _limitedRoomsSinceSeal = <String>{};
 
   /// Seals run one at a time, so a quick seal cannot overtake a limited
   /// one still claiming.

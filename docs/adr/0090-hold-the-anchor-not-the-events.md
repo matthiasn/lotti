@@ -43,8 +43,10 @@ Hold the marker, never the events.
   after its timeline events and its `onSync`; `SyncStatus.error` seals
   conservatively. No synthetic pass emits either.
 - **A limited response is claimed before it is sealed.** When any `onSync`
-  since the last seal was limited for the room (or after an error), the seal
-  claims the range above the still-held marker, then seals its snapshot. A
+  since the last seal was limited for a room (or after an error, for the
+  current room), the seal claims the range above that room's still-held
+  marker — the room that reported it, not whichever is current when the seal
+  runs — then seals its snapshot. A
   failed claim leaves the arrivals unsealed for the next seal. Seals run one at
   a time.
 - **The marker catches up from the database.** After a seal, with nothing newer
