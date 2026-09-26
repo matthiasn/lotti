@@ -116,6 +116,15 @@ class UnrecoverableSyncPayloadException implements Exception {
   String toString() => 'Unrecoverable sync payload type=$payloadType';
 }
 
+/// An exact descriptor or its attachment is temporarily unavailable.
+/// The queue retries independently of the envelope's age: no future event is
+/// guaranteed
+/// to wake a descriptor that was already passed before a restart.
+class PendingSyncDescriptorException extends FileSystemException {
+  const PendingSyncDescriptorException()
+    : super('Exact sync descriptor lookup pending');
+}
+
 /// Decodes timeline events from Matrix and persists them locally.
 /// Where an apply parks work that must run only once the journal
 /// transaction the caller wrapped it in has committed — platform calls and
@@ -497,9 +506,9 @@ class SyncEventProcessor {
     _ => null,
   };
 
-  /// Dispatches the prepare phase per sync message family. Only
-  /// [SyncJournalEntity], [SyncAgentEntity], and [SyncAgentLink] need I/O
-  /// (attachment resolution); every other family is a passthrough.
+  /// Prepares typed payloads, recovering missing exact descriptors for journal,
+  /// agent, notification and bundle attachments. Failed exact preparation stays
+  /// periodically retryable even when the envelope predates the current run.
   Future<PreparedSyncEvent> _prepareForMessage({
     required Event event,
     required SyncMessage syncMessage,
@@ -516,11 +525,15 @@ class SyncEventProcessor {
       // passed the file event. Recover its exact identity from retained room
       // history; another forward walk cannot recover events behind the cursor.
       if (!await _recoverMissingDescriptor(event, syncMessage)) rethrow;
-      return _prepareMessageOnce(
-        event: event,
-        syncMessage: syncMessage,
-        rawMessageJson: rawMessageJson,
-      );
+      try {
+        return await _prepareMessageOnce(
+          event: event,
+          syncMessage: syncMessage,
+          rawMessageJson: rawMessageJson,
+        );
+      } on FileSystemException {
+        throw const PendingSyncDescriptorException();
+      }
     }
   }
 

@@ -29,6 +29,10 @@ enum ApplyOutcome {
   /// immediately when `AttachmentIndex` observes a new attachment so
   /// the event applies as soon as the descriptor is available.
   pendingAttachment,
+
+  /// Exact descriptor lookup or download is unavailable. Retry periodically
+  /// without an age/attempt cap: a past descriptor need not reappear live.
+  pendingDescriptor,
   permanentSkip,
 }
 
@@ -301,6 +305,8 @@ class InboundWorker {
               await _maybeRetry(pair.entry, RetryReason.decryptionPending);
             case ApplyOutcome.pendingBarrier:
               await _maybeRetry(pair.entry, RetryReason.pendingBarrier);
+            case ApplyOutcome.pendingDescriptor:
+              await _maybeRetry(pair.entry, RetryReason.pendingDescriptor);
             case ApplyOutcome.pendingAttachment:
               await _maybeRetry(pair.entry, RetryReason.pendingAttachment);
             case ApplyOutcome.permanentSkip:
@@ -334,10 +340,11 @@ class InboundWorker {
     RetryReason reason,
   ) async {
     final nextAttempts = entry.attempts + 1;
-    if (reason == RetryReason.pendingBarrier) {
+    if (reason == RetryReason.pendingBarrier ||
+        reason == RetryReason.pendingDescriptor) {
       await _queue.scheduleRetry(
         entry,
-        _pendingBarrierRetryInterval,
+        _backoff(entry.attempts, reason),
         reason: reason,
       );
       return;
@@ -405,6 +412,8 @@ class InboundWorker {
             _maxPendingAttachmentBackoff.inMilliseconds,
           ),
         );
+      case RetryReason.pendingDescriptor:
+        return _pendingAttachmentInitialBackoff;
       case RetryReason.pendingBarrier:
         return _pendingBarrierRetryInterval;
       case RetryReason.retriable:

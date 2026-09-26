@@ -156,6 +156,9 @@ class QueueApplyAdapter {
     try {
       prepared = await _processor.prepare(event: event);
     } on IOException catch (error, stackTrace) {
+      if (error is PendingSyncDescriptorException) {
+        return const _PreparedState.terminal(ApplyOutcome.pendingDescriptor);
+      }
       if (_looksLikePendingAttachment(error)) {
         _logging.error(
           LogDomain.sync,

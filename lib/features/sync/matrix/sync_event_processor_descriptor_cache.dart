@@ -4,7 +4,7 @@ part of 'sync_event_processor.dart';
 /// shared by the agent payload resolution and the outbox bundle resolver.
 extension _DescriptorCache on SyncEventProcessor {
   /// Rebuilds an exact descriptor after a restart or a missed file event.
-  /// Lookup failures retain the original retryable preparation failure.
+  /// Unavailable descriptors request periodic recovery, even for aged rows.
   Future<bool> _recoverMissingDescriptor(
     Event envelope,
     SyncMessage message,
@@ -18,22 +18,21 @@ extension _DescriptorCache on SyncEventProcessor {
       _ => null,
     };
     final index = _attachmentIndex;
-    if (id == null || index == null || index.findByEventId(id) != null) {
-      return false;
+    if (id == null || index == null) return false;
+    // Preparation already tried this exact descriptor. Its download may be
+    // temporarily unavailable; keep the same periodic recovery contract.
+    if (index.findByEventId(id) != null) {
+      throw const PendingSyncDescriptorException();
     }
     try {
       final descriptor = await envelope.room
           .getEventById(id)
           .timeout(SyncTuning.attachmentDownloadTimeout);
-      if (descriptor == null ||
-          descriptor.eventId != id ||
-          descriptor.roomId != envelope.roomId) {
-        return false;
+      if (descriptor != null &&
+          descriptor.eventId == id &&
+          descriptor.roomId == envelope.roomId) {
+        index.record(descriptor);
       }
-      index.record(descriptor);
-      // Existing resolvers still validate the path and causal payload. A
-      // concurrent observation may already have recorded this same event.
-      return index.findByEventId(id) != null;
     } catch (error, stackTrace) {
       _loggingService.error(
         LogDomain.sync,
@@ -41,8 +40,11 @@ extension _DescriptorCache on SyncEventProcessor {
         stackTrace: stackTrace,
         subDomain: 'processor.resolve.descriptorLookup',
       );
-      return false;
     }
+    // Existing resolvers still validate the path and causal payload. A
+    // concurrent observation may already have recorded this same event.
+    if (index.findByEventId(id) != null) return true;
+    throw const PendingSyncDescriptorException();
   }
 
   /// Fetches fresh JSON from the [AttachmentIndex] descriptor and writes it

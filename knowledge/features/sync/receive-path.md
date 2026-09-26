@@ -125,8 +125,15 @@ the SDK's database/server lookup, verifies its event and room IDs, indexes it,
 and retries preparation once. This repairs a restart or missed file event even
 when the durable cursor has already passed the descriptor. Existing canonical
 data that satisfies preparation needs no lookup. Missing, still-encrypted or
-temporarily unavailable descriptors remain retryable; neither a newer file at
-the same path nor the mutable disk cache may substitute for the named generation.
+temporarily unavailable descriptors produce `PendingSyncDescriptorException`.
+`QueueApplyAdapter` maps this to `pendingDescriptor`: the worker retries every
+30 seconds without the generic attempt cap or the attachment-arrival age limit.
+Attachment download failures after exact discovery use the same recovery state.
+An envelope already older than ten minutes at restart therefore stays active
+until exact-ID discovery succeeds; it does not depend on another timeline event
+or a manual retry. This requires the referenced event to remain retrievable and
+its decryption keys eventually to arrive. Neither a newer file at the same path
+nor the mutable disk cache may substitute for the named generation.
 
 Per-room markers advance only after a successful slice commit, so a crash
 mid-drain simply re-leases the same rows on restart. Resurrection flips a row
@@ -351,10 +358,14 @@ flowchart TD
     Outcome -->|applied| Commit["queue.commitApplied<br/>(status→applied, ledger row retained;<br/>marker advance if monotonic)"]
     Outcome -->|retriable/missingBase| Retry["scheduleRetry with backoff"]
     Outcome -->|decryptionPending| DecryptRetry["scheduleRetry (short backoff)"]
+    Outcome -->|pendingAttachment| AttachmentRetry["scheduleRetry until arrival deadline"]
+    Outcome -->|pendingDescriptor / pendingBarrier| PeriodicRetry["scheduleRetry without age or attempt cap"]
     Outcome -->|permanentSkip| Skip["markSkipped"]
     Commit --> NextEntry["next entry in batch"]
     Retry --> NextEntry
     DecryptRetry --> NextEntry
+    AttachmentRetry --> NextEntry
+    PeriodicRetry --> NextEntry
     Skip --> NextEntry
     NextEntry --> WindowClose{"batch drained?"}
     WindowClose -->|no| Apply
@@ -385,8 +396,8 @@ entry rather than the sum. With `inboundWorkerBatchSize = 1` there is nothing to
 parallelise at runtime; the hook remains for batch sizes above 1.
 
 Prepared payloads are cached by `eventId` and consumed one at a time by apply.
-Terminal outcomes caught at prepare time (`permanentSkip`, `pendingAttachment`,
-`retriable`) also survive in the cache, so apply surfaces them without re-running
+Outcomes caught at prepare time (`permanentSkip`, `pendingAttachment`,
+`pendingDescriptor`, `retriable`) also survive in the cache, so apply surfaces them without re-running
 prepare.
 
 Journal entities and entry links own their narrow JournalDb transactions.

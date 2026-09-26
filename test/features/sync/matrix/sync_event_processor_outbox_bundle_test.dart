@@ -374,7 +374,7 @@ void main() {
                 expect(settled, isFalse);
                 async.elapse(const Duration(milliseconds: 1));
                 expect(settled, isTrue);
-                expect(failure, isA<FileSystemException>());
+                expect(failure, isA<PendingSyncDescriptorException>());
               });
               verifyNever(descriptor.downloadAndDecryptAttachment);
               verifyNever(
@@ -389,7 +389,10 @@ void main() {
                 // The exact event exists, but it cannot satisfy this envelope.
                 await attempt;
               } else {
-                await expectLater(attempt, throwsA(isA<FileSystemException>()));
+                await expectLater(
+                  attempt,
+                  throwsA(isA<PendingSyncDescriptorException>()),
+                );
                 expect(index.findByEventId('exact-process-event'), isNull);
                 expect(index.find(bundleRelativePath), isNull);
               }

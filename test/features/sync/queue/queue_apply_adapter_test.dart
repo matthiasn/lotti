@@ -1,11 +1,16 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/matrix/consts.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
@@ -15,12 +20,14 @@ import 'package:lotti/features/sync/queue/queue_apply_adapter.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../ai_consumption/test_utils.dart';
 import '../matrix/sync_event_processor_test_helpers.dart' as processor_harness;
 import 'queue_apply_adapter_test_helpers.dart';
+import 'test_utils.dart';
 
 void main() {
   late AdapterMockSyncEventProcessor processor;
@@ -56,6 +63,145 @@ void main() {
   group('durable payload and receipt conformance', () {
     setUpAll(processor_harness.registerSyncProcessorFallbacks);
     setUp(processor_harness.setUpProcessorMocks);
+
+    for (final failure in ['lookup', 'download']) {
+      test(
+        'aged exact bundle recovers through the real queue after $failure failures',
+        () async {
+          final syncDb = SyncDatabase(
+            inMemoryDatabase: true,
+            background: false,
+          );
+          addTearDown(syncDb.close);
+          final queue = InboundQueue(db: syncDb, logging: logging);
+          addTearDown(queue.dispose);
+          final index = AttachmentIndex();
+          addTearDown(index.dispose);
+          final directory = await Directory.systemTemp.createTemp(
+            'aged-bundle-',
+          );
+          addTearDown(() => directory.delete(recursive: true));
+          final sequence = SyncSequenceLogService(
+            syncDatabase: syncDb,
+            vectorClockService: MockVectorClockService(),
+            loggingService: logging,
+          );
+          final receiver = SyncEventProcessor(
+            loggingService: logging,
+            updateNotifications: processor_harness.updateNotifications,
+            aiConfigRepository: processor_harness.aiConfigRepository,
+            savedTaskFiltersRepository:
+                processor_harness.savedTaskFiltersRepository,
+            settingsDb: processor_harness.settingsDb,
+            journalEntityLoader: processor_harness.journalEntityLoader,
+            documentsDirectory: directory,
+            attachmentIndex: index,
+          );
+          final link = EntryLink.basic(
+            id: 'recovered-bundle-link',
+            fromId: 'from',
+            toId: 'to',
+            createdAt: DateTime.utc(2026, 9, 25),
+            updatedAt: DateTime.utc(2026, 9, 25),
+            vectorClock: const VectorClock({'sender': 1}),
+          );
+          const path = '/outbox_bundles/aged.json';
+          final descriptor = MockEvent();
+          when(() => descriptor.eventId).thenReturn(r'$aged-file');
+          when(() => descriptor.roomId).thenReturn('!r:example.org');
+          when(() => descriptor.content).thenReturn({'relativePath': path});
+          when(
+            () => descriptor.attachmentMimetype,
+          ).thenReturn('application/json');
+          var downloads = 0;
+          when(descriptor.downloadAndDecryptAttachment).thenAnswer((_) async {
+            if (++downloads <= 5 && failure == 'download') {
+              throw const SocketException('offline');
+            }
+            return MatrixFile(
+              name: 'aged.json',
+              bytes: Uint8List.fromList(
+                utf8.encode(
+                  jsonEncode({
+                    'version': 1,
+                    'entries': [
+                      {
+                        'envelope': SyncMessage.entryLink(
+                          entryLink: link,
+                          status: SyncEntryStatus.update,
+                        ).toJson(),
+                      },
+                    ],
+                  }),
+                ),
+              ),
+            );
+          });
+          var lookups = 0;
+          when(() => room.getEventById(r'$aged-file')).thenAnswer((_) async {
+            if (++lookups <= 5 && failure == 'lookup') {
+              throw const SocketException('offline');
+            }
+            return descriptor;
+          });
+          final adapter = QueueApplyAdapter(
+            processor: receiver,
+            journalDb: journalDb,
+            logging: logging,
+            hasOlderActiveEntry: (_) async => false,
+          );
+          final worker = InboundWorker(
+            queue: queue,
+            sequenceLogService: sequence,
+            resolveRoom: () async => room,
+            apply: adapter.bind(),
+            prepareBatch: adapter.bindPrepareBatch(),
+            logging: logging,
+            maxAttempts: 4,
+          );
+          var now = DateTime.utc(2026, 9, 25);
+          await withClock(Clock(() => now), () async {
+            final envelope = buildSyncEvent(
+              eventId: r'$aged-envelope',
+              roomId: '!r:example.org',
+              originTsMs: 1,
+              content: {
+                'msgtype': syncMessageType,
+                'body': processor_harness.encodeMessage(
+                  const SyncMessage.outboxBundle(
+                    children: [],
+                    jsonPath: path,
+                    attachmentEventId: r'$aged-file',
+                  ),
+                ),
+              },
+            );
+            final raw = envelope.toJson();
+            when(
+              envelope.toJson,
+            ).thenReturn({...raw, 'sender': '@sender:example.org'});
+            await queue.enqueueLive(envelope);
+            now = now.add(const Duration(days: 1));
+            for (var i = 0; i < 5; i++) {
+              expect(await worker.drainToCompletion(), 0);
+              expect((await queue.stats()).retrying, 1);
+              expect((await queue.stats()).abandoned, 0);
+              expect(await journalDb.entryLinkById(link.id), isNull);
+              now = now.add(const Duration(seconds: 30));
+            }
+            // No index/timeline signal: only the scheduled lookup can recover it.
+            expect(await worker.drainToCompletion(), 1);
+            expect(await journalDb.entryLinkById(link.id), link);
+            expect((await queue.stats()).total, 0);
+            expect((await queue.stats()).abandoned, 0);
+            expect(lookups, failure == 'lookup' ? 6 : 1);
+            verify(descriptor.downloadAndDecryptAttachment).called(
+              failure == 'lookup' ? 1 : 6,
+            );
+          });
+        },
+      );
+    }
 
     for (final bundled in [false, true]) {
       for (final failCommit in [false, true]) {
@@ -482,6 +628,28 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
         ),
       ).called(1);
+    },
+  );
+
+  test(
+    'exact descriptor lookup has an age-independent retry outcome',
+    () async {
+      final entry = hBuildEntry(
+        eventId: r'$lookupPending',
+        roomId: '!r',
+        originTsMs: 1,
+      );
+      when(() => processor.prepare(event: any(named: 'event'))).thenAnswer(
+        (_) async => throw const PendingSyncDescriptorException(),
+      );
+      expect(await build().bind()(entry, room), ApplyOutcome.pendingDescriptor);
+      verifyNever(
+        () => processor.apply(
+          prepared: any(named: 'prepared'),
+          journalDb: journalDb,
+          afterCommit: any(named: 'afterCommit'),
+        ),
+      );
     },
   );
 
