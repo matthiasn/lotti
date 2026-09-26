@@ -285,6 +285,96 @@ void main() {
     },
   );
 
+  test('cold read returns the old value while a group awaits commit', () async {
+    final snapshot = Completer<SettingsItem?>();
+    final readStarted = Completer<void>();
+    await db.close();
+    db = _TestSettingsDb(
+      loader: (_) {
+        readStarted.complete();
+        return snapshot.future;
+      },
+    );
+    await db.customStatement(
+      'INSERT INTO settings (config_key, value, updated_at) VALUES (?, ?, ?)',
+      ['first', 'before', timestamp.millisecondsSinceEpoch ~/ 1000],
+    );
+    final read = db.itemByKey('first');
+    await readStarted.future;
+    final entered = Completer<void>();
+    final release = Completer<void>();
+    final blocker = db.transaction(() async {
+      entered.complete();
+      await release.future;
+    });
+    await entered.future;
+    final write = db.saveSettingsItems({'first': 'after'});
+    await Future<void>.microtask(() {});
+    snapshot.complete(
+      SettingsItem(
+        configKey: 'first',
+        value: 'before',
+        updatedAt: timestamp,
+      ),
+    );
+    try {
+      expect(await read, 'before');
+    } finally {
+      release.complete();
+      await blocker;
+      await write;
+    }
+    expect(await db.itemByKey('first'), 'after');
+  });
+
+  for (final operation in ['single', 'group', 'remove']) {
+    test('failed $operation write preserves an in-flight cold read', () async {
+      final snapshot = Completer<SettingsItem?>();
+      final started = Completer<void>();
+      await db.close();
+      db = _TestSettingsDb(
+        loader: (_) {
+          started.complete();
+          return snapshot.future;
+        },
+      );
+      await db.customStatement(
+        'INSERT INTO settings (config_key, value, updated_at) VALUES (?, ?, ?)',
+        ['first', 'before', timestamp.millisecondsSinceEpoch ~/ 1000],
+      );
+      final read = db.itemByKey('first');
+      await started.future;
+      final deleting = operation == 'remove';
+      final failingKey = operation == 'group' ? 'second' : 'first';
+      await db.customStatement(
+        'CREATE TRIGGER reject_write BEFORE ${deleting ? 'DELETE' : 'INSERT'} '
+        'ON settings WHEN ${deleting ? 'OLD' : 'NEW'}.config_key = '
+        "'$failingKey' BEGIN SELECT RAISE(ABORT, 'injected failure'); END",
+      );
+      final write = switch (operation) {
+        'single' => db.saveSettingsItem('first', 'after'),
+        'group' => db.saveSettingsItems({'first': 'after', 'second': 'after'}),
+        _ => db.removeSettingsItem('first'),
+      };
+      await expectLater(write, throwsA(isA<Exception>()));
+      snapshot.complete(
+        SettingsItem(
+          configKey: 'first',
+          value: 'before',
+          updatedAt: timestamp,
+        ),
+      );
+      expect(await read, 'before');
+      expect(await db.itemByKey('first'), 'before');
+      final persisted = await db
+          .customSelect(
+            "SELECT value FROM settings WHERE config_key = 'first'",
+          )
+          .getSingle();
+      expect(persisted.read<String>('value'), 'before');
+    });
+  }
+
   test('saveSettingsItem wins over stale in-flight reads', () async {
     final completer = Completer<SettingsItem?>();
     await db.close();

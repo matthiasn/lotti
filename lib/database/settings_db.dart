@@ -94,6 +94,9 @@ class SettingsDb extends _$SettingsDb {
   }
 
   void _publishValue(String configKey, String? value) {
+    // Reads may still return the prior value while a write is pending. Only a
+    // committed write invalidates their generation; a rollback invalidates none.
+    _bumpGeneration(configKey);
     _cache[configKey] = value;
     unawaited(_inFlightReads.remove(configKey));
     _resolveQueuedRead(configKey, value);
@@ -105,7 +108,6 @@ class SettingsDb extends _$SettingsDb {
           _publishValue(configKey, value);
           return 0;
         }
-        _bumpGeneration(configKey);
         final result = await into(settings).insertOnConflictUpdate(
           SettingsItem(
             configKey: configKey,
@@ -126,7 +128,6 @@ class SettingsDb extends _$SettingsDb {
     final snapshot = Map<String, String>.of(values);
     return _write(() async {
       if (snapshot.isEmpty) return;
-      snapshot.keys.forEach(_bumpGeneration);
       final updatedAt = clock.now();
       await transaction(() async {
         for (final entry in snapshot.entries) {
@@ -144,7 +145,6 @@ class SettingsDb extends _$SettingsDb {
   }
 
   Future<void> removeSettingsItem(String configKey) => _write(() async {
-    _bumpGeneration(configKey);
     await (delete(settings)..where((t) => t.configKey.equals(configKey))).go();
     _publishValue(configKey, null);
   });
