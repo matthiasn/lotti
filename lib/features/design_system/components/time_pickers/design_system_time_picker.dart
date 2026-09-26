@@ -1,3 +1,4 @@
+import 'package:lotti/features/design_system/components/time_pickers/time_wheel_rollover.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -13,6 +14,9 @@ enum DesignSystemTimeFormat {
 /// change via [onTimeChanged] as a [TimeOfDay]. [format] selects
 /// [DesignSystemTimeFormat] (12-hour with an AM/PM wheel or 24-hour);
 /// [semanticsLabel] labels the picker.
+///
+/// Rolling the minute column past 59 → 00 (or back past 00 → 59) animates the
+/// hour column (and AM/PM) along with it, like a continuous clock.
 class DesignSystemTimePicker extends StatefulWidget {
   const DesignSystemTimePicker({
     required this.onTimeChanged,
@@ -32,29 +36,48 @@ class DesignSystemTimePicker extends StatefulWidget {
 }
 
 class _DesignSystemTimePickerState extends State<DesignSystemTimePicker> {
+  final _hourColumn = GlobalKey<_DrumColumnState>();
+  final _periodColumn = GlobalKey<_DrumColumnState>();
   late int _selectedHour;
   late int _selectedMinute;
   late int _selectedPeriod; // 0 = AM, 1 = PM
+
+  bool get _use24h => widget.format == DesignSystemTimeFormat.twentyFourHour;
 
   @override
   void initState() {
     super.initState();
     final initial = widget.initialTime ?? TimeOfDay.now();
-    if (widget.format == DesignSystemTimeFormat.twelveHour) {
-      _selectedHour = initial.hourOfPeriod - 1;
-      _selectedPeriod = initial.period == DayPeriod.am ? 0 : 1;
-    } else {
-      _selectedHour = initial.hour;
-      _selectedPeriod = 0;
-    }
+    final wheelHour = timeWheelHourFrom24(initial.hour, use24h: _use24h);
+    _selectedHour = wheelHour.hourIndex;
+    _selectedPeriod = wheelHour.periodIndex;
     _selectedMinute = initial.minute;
   }
 
   void _notifyTimeChanged() {
-    final hour = widget.format == DesignSystemTimeFormat.twelveHour
-        ? ((_selectedHour + 1) % 12) + _selectedPeriod * 12
-        : _selectedHour;
+    final hour = timeWheelHourTo24(
+      (hourIndex: _selectedHour, periodIndex: _selectedPeriod),
+      use24h: _use24h,
+    );
     widget.onTimeChanged(TimeOfDay(hour: hour, minute: _selectedMinute));
+  }
+
+  /// Records a minute that wrapped onto [minute], carries the wrap into the
+  /// hour (and AM/PM) columns and reports the result once. The hour is
+  /// recorded before its column animates, so the report is right straight
+  /// away and quick successive wraps chain.
+  void _handleMinuteWrapped(int minute, int direction) {
+    _selectedMinute = minute;
+    final rolled = rollTimeWheelHour(
+      (hourIndex: _selectedHour, periodIndex: _selectedPeriod),
+      direction,
+      use24h: _use24h,
+    );
+    _selectedHour = rolled.hourIndex;
+    _selectedPeriod = rolled.periodIndex;
+    _hourColumn.currentState?.animateToIndex(rolled.hourIndex);
+    _periodColumn.currentState?.animateToIndex(rolled.periodIndex);
+    _notifyTimeChanged();
   }
 
   @override
@@ -63,7 +86,7 @@ class _DesignSystemTimePickerState extends State<DesignSystemTimePicker> {
     final materialLocalizations = MaterialLocalizations.of(context);
     final columnGap = // 27px
         tokens.spacing.step6 + tokens.spacing.step1 + tokens.spacing.step1 / 2;
-    final is12h = widget.format == DesignSystemTimeFormat.twelveHour;
+    final is12h = !_use24h;
     final hourCount = is12h ? 12 : 24;
 
     return Semantics(
@@ -83,6 +106,7 @@ class _DesignSystemTimePickerState extends State<DesignSystemTimePicker> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _DrumColumn(
+                  key: _hourColumn,
                   itemCount: hourCount,
                   initialItem: _selectedHour,
                   labelBuilder: (index) => is12h ? '${index + 1}' : '$index',
@@ -100,10 +124,12 @@ class _DesignSystemTimePickerState extends State<DesignSystemTimePicker> {
                     _selectedMinute = index;
                     _notifyTimeChanged();
                   },
+                  onWrapped: _handleMinuteWrapped,
                 ),
                 if (is12h) ...[
                   SizedBox(width: columnGap),
                   _DrumColumn(
+                    key: _periodColumn,
                     itemCount: 2,
                     initialItem: _selectedPeriod,
                     looping: false,
@@ -166,13 +192,16 @@ class _DrumColumn extends StatefulWidget {
     required this.initialItem,
     required this.labelBuilder,
     required this.onSelectedItemChanged,
+    this.onWrapped,
     this.looping = true,
+    super.key,
   });
 
   final int itemCount;
   final int initialItem;
   final String Function(int index) labelBuilder;
   final ValueChanged<int> onSelectedItemChanged;
+  final TimeWheelWrapped? onWrapped;
   final bool looping;
 
   @override
@@ -180,21 +209,33 @@ class _DrumColumn extends StatefulWidget {
 }
 
 class _DrumColumnState extends State<_DrumColumn> {
-  late final FixedExtentScrollController _controller;
+  late final TimeWheelColumnDriver _driver;
 
   @override
   void initState() {
     super.initState();
-    _controller = FixedExtentScrollController(
-      initialItem: widget.initialItem,
+    _driver = TimeWheelColumnDriver(
+      itemCount: widget.itemCount,
+      initialIndex: widget.initialItem,
+      looping: widget.looping,
+      onSelectedIndexChanged: (index) => widget.onSelectedItemChanged(index),
+      onWrapped: widget.onWrapped == null
+          ? null
+          : (index, direction) => widget.onWrapped!(index, direction),
     );
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _driver.dispose();
     super.dispose();
   }
+
+  /// Moves the column to row [index] because a neighbouring column wrapped.
+  void animateToIndex(int index) => _driver.animateToIndex(
+    index,
+    animate: !MediaQuery.disableAnimationsOf(context),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -203,7 +244,7 @@ class _DrumColumnState extends State<_DrumColumn> {
     return SizedBox(
       width: 50,
       child: ListWheelScrollView.useDelegate(
-        controller: _controller,
+        controller: _driver.controller,
         itemExtent: _kItemExtent,
         diameterRatio: _kDiameterRatio,
         magnification: _kMagnification,
@@ -211,7 +252,7 @@ class _DrumColumnState extends State<_DrumColumn> {
         squeeze: _kSqueeze,
         useMagnifier: true,
         physics: const FixedExtentScrollPhysics(),
-        onSelectedItemChanged: widget.onSelectedItemChanged,
+        onSelectedItemChanged: _driver.handleSelectedItemChanged,
         childDelegate: () {
           final children = List.generate(
             widget.itemCount,

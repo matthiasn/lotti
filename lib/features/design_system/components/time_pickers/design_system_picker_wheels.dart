@@ -1,6 +1,7 @@
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
+import 'package:lotti/features/design_system/components/time_pickers/time_wheel_rollover.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -8,6 +9,11 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// It keeps the platform wheel interaction while standardizing value type,
 /// row geometry, selected-row color, and settled-change reporting.
+///
+/// The drums behave like one continuous clock: rolling the minute drum past
+/// 59 → 00 animates the hour forwards, rolling it back past 00 → 59 animates
+/// the hour backwards (14:00 → 13:59), crossing AM/PM on a 12-hour wheel. The
+/// date of [initialDateTime] is kept even when the hour wraps past midnight.
 class DesignSystemTimeWheel extends StatefulWidget {
   const DesignSystemTimeWheel({
     required this.initialDateTime,
@@ -35,6 +41,8 @@ class _DesignSystemTimeWheelState extends State<DesignSystemTimeWheel> {
   static const _overAndUnderCenterOpacity = 0.447;
   static const _hourMaxFlingRowsPerSecond = 8.0;
   static const _minuteMaxFlingRowsPerSecond = 20.0;
+  final _hourColumn = GlobalKey<_FixedExtentWheelColumnState>();
+  final _periodColumn = GlobalKey<_FixedExtentWheelColumnState>();
   late int _hourIndex;
   late int _minuteIndex;
   late int _periodIndex;
@@ -42,18 +50,40 @@ class _DesignSystemTimeWheelState extends State<DesignSystemTimeWheel> {
   @override
   void initState() {
     super.initState();
-    final initial = TimeOfDay.fromDateTime(widget.initialDateTime);
-    _hourIndex = widget.use24hFormat
-        ? initial.hour
-        : (initial.hourOfPeriod == 0 ? 12 : initial.hourOfPeriod) - 1;
+    final initial = widget.initialDateTime;
+    final wheelHour = timeWheelHourFrom24(
+      initial.hour,
+      use24h: widget.use24hFormat,
+    );
+    _hourIndex = wheelHour.hourIndex;
     _minuteIndex = initial.minute;
-    _periodIndex = initial.period == DayPeriod.am ? 0 : 1;
+    _periodIndex = wheelHour.periodIndex;
+  }
+
+  /// Records a minute that wrapped onto [minute] and carries the wrap into the
+  /// hour (and AM/PM) drums.
+  ///
+  /// Minute and hour are both recorded before the hour drum moves — moving it
+  /// can report the time synchronously — so no report pairs one with a stale
+  /// other, and a second wrap in quick succession builds on this one's target.
+  void _handleMinuteWrapped(int minute, int direction) {
+    _minuteIndex = minute;
+    final rolled = rollTimeWheelHour(
+      (hourIndex: _hourIndex, periodIndex: _periodIndex),
+      direction,
+      use24h: widget.use24hFormat,
+    );
+    _hourIndex = rolled.hourIndex;
+    _periodIndex = rolled.periodIndex;
+    _hourColumn.currentState?.animateToIndex(rolled.hourIndex);
+    _periodColumn.currentState?.animateToIndex(rolled.periodIndex);
   }
 
   void _notifyChanged() {
-    final hour = widget.use24hFormat
-        ? _hourIndex
-        : ((_hourIndex + 1) % 12) + _periodIndex * 12;
+    final hour = timeWheelHourTo24(
+      (hourIndex: _hourIndex, periodIndex: _periodIndex),
+      use24h: widget.use24hFormat,
+    );
     final initial = widget.initialDateTime;
     final changed = initial.isUtc
         ? DateTime.utc(
@@ -105,9 +135,9 @@ class _DesignSystemTimeWheelState extends State<DesignSystemTimeWheel> {
               children: [
                 Expanded(
                   child: _FixedExtentWheelColumn(
+                    key: _hourColumn,
                     itemCount: widget.use24hFormat ? 24 : 12,
                     initialItem: _hourIndex,
-                    selectedItem: _hourIndex,
                     itemExtent: tokens.spacing.step8,
                     maxFlingRowsPerSecond: _hourMaxFlingRowsPerSecond,
                     semanticsLabel: materialLocalizations.timePickerHourLabel,
@@ -130,7 +160,6 @@ class _DesignSystemTimeWheelState extends State<DesignSystemTimeWheel> {
                   child: _FixedExtentWheelColumn(
                     itemCount: 60,
                     initialItem: _minuteIndex,
-                    selectedItem: _minuteIndex,
                     itemExtent: tokens.spacing.step8,
                     maxFlingRowsPerSecond: _minuteMaxFlingRowsPerSecond,
                     semanticsLabel: materialLocalizations.timePickerMinuteLabel,
@@ -143,15 +172,16 @@ class _DesignSystemTimeWheelState extends State<DesignSystemTimeWheel> {
                       color: tokens.colors.text.mediumEmphasis,
                     ),
                     onSelectedItemChanged: (index) => _minuteIndex = index,
+                    onWrapped: _handleMinuteWrapped,
                     onScrollEnd: _notifyChanged,
                   ),
                 ),
                 if (!widget.use24hFormat)
                   Expanded(
                     child: _FixedExtentWheelColumn(
+                      key: _periodColumn,
                       itemCount: 2,
                       initialItem: _periodIndex,
-                      selectedItem: _periodIndex,
                       itemExtent: tokens.spacing.step8,
                       maxFlingRowsPerSecond: 0,
                       semanticsLabel:
@@ -185,7 +215,6 @@ class _FixedExtentWheelColumn extends StatefulWidget {
   const _FixedExtentWheelColumn({
     required this.itemCount,
     required this.initialItem,
-    required this.selectedItem,
     required this.itemExtent,
     required this.maxFlingRowsPerSecond,
     required this.semanticsLabel,
@@ -195,12 +224,13 @@ class _FixedExtentWheelColumn extends StatefulWidget {
     required this.unselectedStyle,
     required this.onSelectedItemChanged,
     required this.onScrollEnd,
+    this.onWrapped,
     this.looping = true,
+    super.key,
   });
 
   final int itemCount;
   final int initialItem;
-  final int selectedItem;
   final double itemExtent;
   final double maxFlingRowsPerSecond;
   final String semanticsLabel;
@@ -210,6 +240,10 @@ class _FixedExtentWheelColumn extends StatefulWidget {
   final TextStyle unselectedStyle;
   final ValueChanged<int> onSelectedItemChanged;
   final VoidCallback onScrollEnd;
+
+  /// Called instead of [onSelectedItemChanged] when a looping column wraps;
+  /// see [TimeWheelColumnDriver.onWrapped].
+  final TimeWheelWrapped? onWrapped;
   final bool looping;
 
   @override
@@ -218,25 +252,28 @@ class _FixedExtentWheelColumn extends StatefulWidget {
 }
 
 class _FixedExtentWheelColumnState extends State<_FixedExtentWheelColumn> {
-  static const _loopingTurns = 1000;
-
-  late final FixedExtentScrollController _controller;
+  late final TimeWheelColumnDriver _driver;
   late final FocusNode _focusNode;
-  late final ValueNotifier<int> _selectedItem;
   late final Listenable _visualState;
   late List<Widget> _children;
   var _pointerScrollDistance = 0.0;
 
+  FixedExtentScrollController get _controller => _driver.controller;
+  ValueNotifier<int> get _selectedItem => _driver.selectedIndex;
+
   @override
   void initState() {
     super.initState();
-    _controller = FixedExtentScrollController(
-      initialItem: widget.looping
-          ? widget.itemCount * _loopingTurns + widget.initialItem
-          : widget.initialItem,
+    _driver = TimeWheelColumnDriver(
+      itemCount: widget.itemCount,
+      initialIndex: widget.initialItem,
+      looping: widget.looping,
+      onSelectedIndexChanged: (index) => widget.onSelectedItemChanged(index),
+      onWrapped: widget.onWrapped == null
+          ? null
+          : (index, direction) => widget.onWrapped!(index, direction),
     );
     _focusNode = FocusNode(debugLabel: widget.semanticsLabel);
-    _selectedItem = ValueNotifier(widget.selectedItem);
     _visualState = Listenable.merge([_selectedItem, _focusNode]);
     _children = _buildChildren();
   }
@@ -254,35 +291,19 @@ class _FixedExtentWheelColumnState extends State<_FixedExtentWheelColumn> {
 
   @override
   void dispose() {
-    _controller.dispose();
+    _driver.dispose();
     _focusNode.dispose();
-    _selectedItem.dispose();
     super.dispose();
   }
 
-  int? _adjustedIndex(int delta) {
-    if (widget.looping) {
-      return (_selectedItem.value + delta) % widget.itemCount;
-    }
-    final next = _selectedItem.value + delta;
-    return next >= 0 && next < widget.itemCount ? next : null;
-  }
-
-  void _handleSelectedItemChanged(int index) {
-    final normalizedIndex = widget.looping ? index % widget.itemCount : index;
-    if (_selectedItem.value == normalizedIndex) return;
-    _selectedItem.value = normalizedIndex;
-    widget.onSelectedItemChanged(normalizedIndex);
-  }
+  /// Moves the column to row [index] because a neighbouring column wrapped.
+  void animateToIndex(int index) => _driver.animateToIndex(
+    index,
+    animate: !MediaQuery.disableAnimationsOf(context),
+  );
 
   void _adjust(int delta) {
-    final next = _adjustedIndex(delta);
-    if (next == null) return;
-    _controller.jumpToItem(
-      widget.looping ? _controller.selectedItem + delta : next,
-    );
-    _handleSelectedItemChanged(next);
-    widget.onScrollEnd();
+    if (_driver.stepBy(delta)) widget.onScrollEnd();
   }
 
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
@@ -356,8 +377,8 @@ class _FixedExtentWheelColumnState extends State<_FixedExtentWheelColumn> {
           animation: _visualState,
           builder: (context, _) {
             final selectedItem = _selectedItem.value;
-            final increasedIndex = _adjustedIndex(1);
-            final decreasedIndex = _adjustedIndex(-1);
+            final increasedIndex = _driver.indexFor(1);
+            final decreasedIndex = _driver.indexFor(-1);
             return Semantics(
               container: true,
               label: widget.semanticsLabel,
@@ -392,7 +413,7 @@ class _FixedExtentWheelColumnState extends State<_FixedExtentWheelColumn> {
                     squeeze: _DesignSystemTimeWheelState._squeeze,
                     overAndUnderCenterOpacity:
                         _DesignSystemTimeWheelState._overAndUnderCenterOpacity,
-                    onSelectedItemChanged: _handleSelectedItemChanged,
+                    onSelectedItemChanged: _driver.handleSelectedItemChanged,
                     dragStartBehavior: DragStartBehavior.down,
                     childDelegate: widget.looping
                         ? ListWheelChildLoopingListDelegate(children: _children)

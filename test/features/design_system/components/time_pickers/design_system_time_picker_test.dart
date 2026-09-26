@@ -174,6 +174,113 @@ void main() {
       });
     }
 
+    group('minute column carries into the hour column', () {
+      Future<void> settle(WidgetTester tester) async {
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 800));
+        await tester.pump();
+      }
+
+      for (final (description, format, initialTime, expected) in [
+        (
+          '24h rolls 14:00 back to 13:59',
+          DesignSystemTimeFormat.twentyFourHour,
+          const TimeOfDay(hour: 14, minute: 0),
+          const TimeOfDay(hour: 13, minute: 59),
+        ),
+        (
+          '12h rolls 12:00 AM back to 11:59 PM',
+          DesignSystemTimeFormat.twelveHour,
+          const TimeOfDay(hour: 0, minute: 0),
+          const TimeOfDay(hour: 23, minute: 59),
+        ),
+      ]) {
+        testWidgets(description, (tester) async {
+          TimeOfDay? changedTime;
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              DesignSystemTimePicker(
+                format: format,
+                initialTime: initialTime,
+                onTimeChanged: (time) => changedTime = time,
+                semanticsLabel: 'Select time',
+              ),
+              theme: DesignSystemTheme.light(),
+            ),
+          );
+
+          // One row down on the minute column: :00 → :59.
+          await tester.drag(
+            find.byType(ListWheelScrollView).at(1),
+            const Offset(0, 31),
+          );
+          await settle(tester);
+
+          expect(changedTime, expected);
+        });
+      }
+
+      testWidgets('never reports the new minute with the old hour', (
+        tester,
+      ) async {
+        final changes = <TimeOfDay>[];
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            DesignSystemTimePicker(
+              initialTime: const TimeOfDay(hour: 14, minute: 0),
+              onTimeChanged: changes.add,
+              semanticsLabel: 'Select time',
+            ),
+            theme: DesignSystemTheme.light(),
+          ),
+        );
+
+        // This picker reports every row change as it happens, so the wrap
+        // must already be in the hour when :59 is reported.
+        await tester.drag(
+          find.byType(ListWheelScrollView).at(1),
+          const Offset(0, 31),
+        );
+        await settle(tester);
+
+        expect(changes, isNotEmpty);
+        expect(changes, isNot(contains(const TimeOfDay(hour: 14, minute: 59))));
+        expect(changes.last, const TimeOfDay(hour: 13, minute: 59));
+      });
+
+      testWidgets('rolling forward past :59 advances the hour', (
+        tester,
+      ) async {
+        TimeOfDay? changedTime;
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            DesignSystemTimePicker(
+              initialTime: const TimeOfDay(hour: 9, minute: 59),
+              onTimeChanged: (time) => changedTime = time,
+              semanticsLabel: 'Select time',
+            ),
+            theme: DesignSystemTheme.light(),
+          ),
+        );
+
+        await tester.drag(
+          find.byType(ListWheelScrollView).at(1),
+          const Offset(0, -31),
+        );
+        await settle(tester);
+
+        expect(changedTime, const TimeOfDay(hour: 10, minute: 0));
+        final hourController =
+            tester
+                    .widget<ListWheelScrollView>(
+                      find.byType(ListWheelScrollView).first,
+                    )
+                    .controller!
+                as FixedExtentScrollController;
+        expect(hourController.selectedItem % 24, 10);
+      });
+    });
+
     testWidgets('provides semantics label', (tester) async {
       const pickerKey = Key('semantics-picker');
 

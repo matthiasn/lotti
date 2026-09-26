@@ -1,9 +1,17 @@
+import 'package:clock/clock.dart';
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
+import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
+/// The wheel inside the shared date/time sheet.
+///
+/// Time-only [mode] uses the design system's [DesignSystemTimeWheel], whose
+/// minute drum carries into the hour (14:00 rolled back is 13:59); date and
+/// date-and-time modes use [CupertinoDatePicker]. Every value the wheel
+/// settles on goes to [onDateTimeSelected], starting with [initial].
 class DateTimeBottomSheet extends StatefulWidget {
   const DateTimeBottomSheet(
     this.initial, {
@@ -21,6 +29,8 @@ class DateTimeBottomSheet extends StatefulWidget {
 }
 
 class _DateTimeBottomSheetState extends State<DateTimeBottomSheet> {
+  static const _wheelBoxHeight = 265.0;
+
   @override
   void initState() {
     super.initState();
@@ -35,6 +45,20 @@ class _DateTimeBottomSheetState extends State<DateTimeBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    // Both wheels sit in the same box, so the sticky action bar the sheet
+    // lays over its bottom edge clears the selected row either way.
+    if (widget.mode == CupertinoDatePickerMode.time) {
+      return SizedBox(
+        height: _wheelBoxHeight,
+        child: Center(
+          child: DesignSystemTimeWheel(
+            initialDateTime: widget.initial ?? clock.now(),
+            use24hFormat: true,
+            onDateTimeChanged: widget.onDateTimeSelected,
+          ),
+        ),
+      );
+    }
     return CupertinoTheme(
       data: CupertinoThemeData(
         textTheme: CupertinoTextThemeData(
@@ -43,7 +67,7 @@ class _DateTimeBottomSheetState extends State<DateTimeBottomSheet> {
         ),
       ),
       child: SizedBox(
-        height: 265,
+        height: _wheelBoxHeight,
         child: CupertinoDatePicker(
           initialDateTime: widget.initial,
           mode: widget.mode,
