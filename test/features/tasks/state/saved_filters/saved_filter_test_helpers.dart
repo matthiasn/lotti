@@ -24,6 +24,7 @@ MockOutboxService registerSavedTaskFilterSyncDeps(TestGetItMocks mocks) {
   );
   final outbox = MockOutboxService();
   when(() => outbox.enqueueMessage(any())).thenAnswer((_) async {});
+  when(() => outbox.enqueueMessageOrThrow(any())).thenAnswer((_) async {});
   if (!getIt.isRegistered<OutboxService>()) {
     getIt.registerSingleton<OutboxService>(outbox);
   }

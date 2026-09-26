@@ -431,7 +431,10 @@ as Map<String, double>,
 /// @nodoc
 mixin _$TasksFilter {
 
- Set<String> get selectedCategoryIds; Set<String> get selectedProjectIds; Set<String> get selectedTaskStatuses; Set<String> get selectedLabelIds; Set<String> get selectedPriorities; TaskSortOption get sortOption; bool get showCreationDate; bool get showDueDate; bool get showCoverArt; bool get showProjectsHeader; bool get showDistances; AgentAssignmentFilter get agentAssignmentFilter;
+ Set<String> get selectedCategoryIds; Set<String> get selectedProjectIds; Set<String> get selectedTaskStatuses; Set<String> get selectedLabelIds; Set<String> get selectedPriorities;// An option a newer build added decodes to the default rather than
+// failing the whole filter: a saved filter synced from that build would
+// otherwise be an undecodable message, which the receiver skips for good.
+@JsonKey(unknownEnumValue: TaskSortOption.byPriority) TaskSortOption get sortOption; bool get showCreationDate; bool get showDueDate; bool get showCoverArt; bool get showProjectsHeader; bool get showDistances;@JsonKey(unknownEnumValue: AgentAssignmentFilter.all) AgentAssignmentFilter get agentAssignmentFilter;
 /// Create a copy of TasksFilter
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -464,7 +467,7 @@ abstract mixin class $TasksFilterCopyWith<$Res>  {
   factory $TasksFilterCopyWith(TasksFilter value, $Res Function(TasksFilter) _then) = _$TasksFilterCopyWithImpl;
 @useResult
 $Res call({
- Set<String> selectedCategoryIds, Set<String> selectedProjectIds, Set<String> selectedTaskStatuses, Set<String> selectedLabelIds, Set<String> selectedPriorities, TaskSortOption sortOption, bool showCreationDate, bool showDueDate, bool showCoverArt, bool showProjectsHeader, bool showDistances, AgentAssignmentFilter agentAssignmentFilter
+ Set<String> selectedCategoryIds, Set<String> selectedProjectIds, Set<String> selectedTaskStatuses, Set<String> selectedLabelIds, Set<String> selectedPriorities,@JsonKey(unknownEnumValue: TaskSortOption.byPriority) TaskSortOption sortOption, bool showCreationDate, bool showDueDate, bool showCoverArt, bool showProjectsHeader, bool showDistances,@JsonKey(unknownEnumValue: AgentAssignmentFilter.all) AgentAssignmentFilter agentAssignmentFilter
 });
 
 
@@ -580,7 +583,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Set<String> selectedCategoryIds,  Set<String> selectedProjectIds,  Set<String> selectedTaskStatuses,  Set<String> selectedLabelIds,  Set<String> selectedPriorities,  TaskSortOption sortOption,  bool showCreationDate,  bool showDueDate,  bool showCoverArt,  bool showProjectsHeader,  bool showDistances,  AgentAssignmentFilter agentAssignmentFilter)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Set<String> selectedCategoryIds,  Set<String> selectedProjectIds,  Set<String> selectedTaskStatuses,  Set<String> selectedLabelIds,  Set<String> selectedPriorities, @JsonKey(unknownEnumValue: TaskSortOption.byPriority)  TaskSortOption sortOption,  bool showCreationDate,  bool showDueDate,  bool showCoverArt,  bool showProjectsHeader,  bool showDistances, @JsonKey(unknownEnumValue: AgentAssignmentFilter.all)  AgentAssignmentFilter agentAssignmentFilter)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TasksFilter() when $default != null:
 return $default(_that.selectedCategoryIds,_that.selectedProjectIds,_that.selectedTaskStatuses,_that.selectedLabelIds,_that.selectedPriorities,_that.sortOption,_that.showCreationDate,_that.showDueDate,_that.showCoverArt,_that.showProjectsHeader,_that.showDistances,_that.agentAssignmentFilter);case _:
@@ -601,7 +604,7 @@ return $default(_that.selectedCategoryIds,_that.selectedProjectIds,_that.selecte
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Set<String> selectedCategoryIds,  Set<String> selectedProjectIds,  Set<String> selectedTaskStatuses,  Set<String> selectedLabelIds,  Set<String> selectedPriorities,  TaskSortOption sortOption,  bool showCreationDate,  bool showDueDate,  bool showCoverArt,  bool showProjectsHeader,  bool showDistances,  AgentAssignmentFilter agentAssignmentFilter)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Set<String> selectedCategoryIds,  Set<String> selectedProjectIds,  Set<String> selectedTaskStatuses,  Set<String> selectedLabelIds,  Set<String> selectedPriorities, @JsonKey(unknownEnumValue: TaskSortOption.byPriority)  TaskSortOption sortOption,  bool showCreationDate,  bool showDueDate,  bool showCoverArt,  bool showProjectsHeader,  bool showDistances, @JsonKey(unknownEnumValue: AgentAssignmentFilter.all)  AgentAssignmentFilter agentAssignmentFilter)  $default,) {final _that = this;
 switch (_that) {
 case _TasksFilter():
 return $default(_that.selectedCategoryIds,_that.selectedProjectIds,_that.selectedTaskStatuses,_that.selectedLabelIds,_that.selectedPriorities,_that.sortOption,_that.showCreationDate,_that.showDueDate,_that.showCoverArt,_that.showProjectsHeader,_that.showDistances,_that.agentAssignmentFilter);case _:
@@ -621,7 +624,7 @@ return $default(_that.selectedCategoryIds,_that.selectedProjectIds,_that.selecte
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Set<String> selectedCategoryIds,  Set<String> selectedProjectIds,  Set<String> selectedTaskStatuses,  Set<String> selectedLabelIds,  Set<String> selectedPriorities,  TaskSortOption sortOption,  bool showCreationDate,  bool showDueDate,  bool showCoverArt,  bool showProjectsHeader,  bool showDistances,  AgentAssignmentFilter agentAssignmentFilter)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Set<String> selectedCategoryIds,  Set<String> selectedProjectIds,  Set<String> selectedTaskStatuses,  Set<String> selectedLabelIds,  Set<String> selectedPriorities, @JsonKey(unknownEnumValue: TaskSortOption.byPriority)  TaskSortOption sortOption,  bool showCreationDate,  bool showDueDate,  bool showCoverArt,  bool showProjectsHeader,  bool showDistances, @JsonKey(unknownEnumValue: AgentAssignmentFilter.all)  AgentAssignmentFilter agentAssignmentFilter)?  $default,) {final _that = this;
 switch (_that) {
 case _TasksFilter() when $default != null:
 return $default(_that.selectedCategoryIds,_that.selectedProjectIds,_that.selectedTaskStatuses,_that.selectedLabelIds,_that.selectedPriorities,_that.sortOption,_that.showCreationDate,_that.showDueDate,_that.showCoverArt,_that.showProjectsHeader,_that.showDistances,_that.agentAssignmentFilter);case _:
@@ -636,7 +639,7 @@ return $default(_that.selectedCategoryIds,_that.selectedProjectIds,_that.selecte
 @JsonSerializable()
 
 class _TasksFilter implements TasksFilter {
-  const _TasksFilter({final  Set<String> selectedCategoryIds = const <String>{}, final  Set<String> selectedProjectIds = const <String>{}, final  Set<String> selectedTaskStatuses = const <String>{}, final  Set<String> selectedLabelIds = const <String>{}, final  Set<String> selectedPriorities = const <String>{}, this.sortOption = TaskSortOption.byPriority, this.showCreationDate = false, this.showDueDate = true, this.showCoverArt = true, this.showProjectsHeader = true, this.showDistances = false, this.agentAssignmentFilter = AgentAssignmentFilter.all}): _selectedCategoryIds = selectedCategoryIds,_selectedProjectIds = selectedProjectIds,_selectedTaskStatuses = selectedTaskStatuses,_selectedLabelIds = selectedLabelIds,_selectedPriorities = selectedPriorities;
+  const _TasksFilter({final  Set<String> selectedCategoryIds = const <String>{}, final  Set<String> selectedProjectIds = const <String>{}, final  Set<String> selectedTaskStatuses = const <String>{}, final  Set<String> selectedLabelIds = const <String>{}, final  Set<String> selectedPriorities = const <String>{}, @JsonKey(unknownEnumValue: TaskSortOption.byPriority) this.sortOption = TaskSortOption.byPriority, this.showCreationDate = false, this.showDueDate = true, this.showCoverArt = true, this.showProjectsHeader = true, this.showDistances = false, @JsonKey(unknownEnumValue: AgentAssignmentFilter.all) this.agentAssignmentFilter = AgentAssignmentFilter.all}): _selectedCategoryIds = selectedCategoryIds,_selectedProjectIds = selectedProjectIds,_selectedTaskStatuses = selectedTaskStatuses,_selectedLabelIds = selectedLabelIds,_selectedPriorities = selectedPriorities;
   factory _TasksFilter.fromJson(Map<String, dynamic> json) => _$TasksFilterFromJson(json);
 
  final  Set<String> _selectedCategoryIds;
@@ -674,13 +677,16 @@ class _TasksFilter implements TasksFilter {
   return EqualUnmodifiableSetView(_selectedPriorities);
 }
 
-@override@JsonKey() final  TaskSortOption sortOption;
+// An option a newer build added decodes to the default rather than
+// failing the whole filter: a saved filter synced from that build would
+// otherwise be an undecodable message, which the receiver skips for good.
+@override@JsonKey(unknownEnumValue: TaskSortOption.byPriority) final  TaskSortOption sortOption;
 @override@JsonKey() final  bool showCreationDate;
 @override@JsonKey() final  bool showDueDate;
 @override@JsonKey() final  bool showCoverArt;
 @override@JsonKey() final  bool showProjectsHeader;
 @override@JsonKey() final  bool showDistances;
-@override@JsonKey() final  AgentAssignmentFilter agentAssignmentFilter;
+@override@JsonKey(unknownEnumValue: AgentAssignmentFilter.all) final  AgentAssignmentFilter agentAssignmentFilter;
 
 /// Create a copy of TasksFilter
 /// with the given fields replaced by the non-null parameter values.
@@ -715,7 +721,7 @@ abstract mixin class _$TasksFilterCopyWith<$Res> implements $TasksFilterCopyWith
   factory _$TasksFilterCopyWith(_TasksFilter value, $Res Function(_TasksFilter) _then) = __$TasksFilterCopyWithImpl;
 @override @useResult
 $Res call({
- Set<String> selectedCategoryIds, Set<String> selectedProjectIds, Set<String> selectedTaskStatuses, Set<String> selectedLabelIds, Set<String> selectedPriorities, TaskSortOption sortOption, bool showCreationDate, bool showDueDate, bool showCoverArt, bool showProjectsHeader, bool showDistances, AgentAssignmentFilter agentAssignmentFilter
+ Set<String> selectedCategoryIds, Set<String> selectedProjectIds, Set<String> selectedTaskStatuses, Set<String> selectedLabelIds, Set<String> selectedPriorities,@JsonKey(unknownEnumValue: TaskSortOption.byPriority) TaskSortOption sortOption, bool showCreationDate, bool showDueDate, bool showCoverArt, bool showProjectsHeader, bool showDistances,@JsonKey(unknownEnumValue: AgentAssignmentFilter.all) AgentAssignmentFilter agentAssignmentFilter
 });
 
 

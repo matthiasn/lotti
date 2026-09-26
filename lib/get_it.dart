@@ -214,6 +214,7 @@ Future<void> registerSingletons({
   );
   getIt.registerSingleton<SavedTaskFiltersRepository>(
     savedTaskFiltersRepository,
+    dispose: (repository) => repository.dispose(),
   );
   final syncNodeProfileRepository = SyncNodeProfileRepository(
     settingsDb: settingsDb,
@@ -345,6 +346,11 @@ Future<void> registerSingletons({
   }
 
   final outboxService = getIt<OutboxService>();
+
+  // Send whatever saved-filter change a previous run still owed — a failed
+  // enqueue, a crash after the write, or filters saved before they synced.
+  // Failures are logged and retried by the repository itself.
+  unawaited(savedTaskFiltersRepository.flushPending());
 
   // Sync-aware consumption and attribution services, now that OutboxService
   // is available. In guest worlds these bind to the inert outbox and a null

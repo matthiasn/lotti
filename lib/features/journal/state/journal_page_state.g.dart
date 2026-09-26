@@ -33,7 +33,11 @@ _TasksFilter _$TasksFilterFromJson(Map<String, dynamic> json) => _TasksFilter(
           .toSet() ??
       const <String>{},
   sortOption:
-      $enumDecodeNullable(_$TaskSortOptionEnumMap, json['sortOption']) ??
+      $enumDecodeNullable(
+        _$TaskSortOptionEnumMap,
+        json['sortOption'],
+        unknownValue: TaskSortOption.byPriority,
+      ) ??
       TaskSortOption.byPriority,
   showCreationDate: json['showCreationDate'] as bool? ?? false,
   showDueDate: json['showDueDate'] as bool? ?? true,
@@ -44,6 +48,7 @@ _TasksFilter _$TasksFilterFromJson(Map<String, dynamic> json) => _TasksFilter(
       $enumDecodeNullable(
         _$AgentAssignmentFilterEnumMap,
         json['agentAssignmentFilter'],
+        unknownValue: AgentAssignmentFilter.all,
       ) ??
       AgentAssignmentFilter.all,
 );

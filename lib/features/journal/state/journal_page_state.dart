@@ -115,12 +115,18 @@ abstract class TasksFilter with _$TasksFilter {
     @Default(<String>{}) Set<String> selectedTaskStatuses,
     @Default(<String>{}) Set<String> selectedLabelIds,
     @Default(<String>{}) Set<String> selectedPriorities,
-    @Default(TaskSortOption.byPriority) TaskSortOption sortOption,
+    // An option a newer build added decodes to the default rather than
+    // failing the whole filter: a saved filter synced from that build would
+    // otherwise be an undecodable message, which the receiver skips for good.
+    @JsonKey(unknownEnumValue: TaskSortOption.byPriority)
+    @Default(TaskSortOption.byPriority)
+    TaskSortOption sortOption,
     @Default(false) bool showCreationDate,
     @Default(true) bool showDueDate,
     @Default(true) bool showCoverArt,
     @Default(true) bool showProjectsHeader,
     @Default(false) bool showDistances,
+    @JsonKey(unknownEnumValue: AgentAssignmentFilter.all)
     @Default(AgentAssignmentFilter.all)
     AgentAssignmentFilter agentAssignmentFilter,
   }) = _TasksFilter;

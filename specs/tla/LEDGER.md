@@ -76,6 +76,12 @@ design switches each have a counterexample, and it surfaced two open design
 questions (orphaned envelopes, where a revocation cuts). Not included in the
 historical totals above.
 
+The `SavedTaskFilterSync` model (#PRNUM) adds one spec, two configurations,
+five named properties and 2,753,540 distinct states. It came with a fix for
+saved filters that never reached a peer; all nine bugs were found by auditing
+the code, and TLC reproduces each through its switch. Not included in the
+historical totals above.
+
 ## Timeline
 
 ```mermaid
@@ -142,6 +148,7 @@ counterexamples found. "Severity" grades each of those bugs; see
 | [#4490](https://github.com/matthiasn/lotti/pull/4490) | pending | sync | `OutboxCausality` | 1 | 1 (0) | P1 | — | Checks concurrent inline versions through append, collapse and receipt after #4489; fixes missing/empty-clock snapshots being folded at send time. A deliberately unsound collapse violates causal coverage. Also restores TLC triggers for startup and profile teardown |
 | [#4494](https://github.com/matthiasn/lotti/pull/4494) | pending | sync | — | −2 | 0 | — | [0087](../../docs/adr/0087-journal-row-is-the-only-copy.md) | Removed the journal JSON sidecar, and with it `SidecarMatchesRow` and the `JournalReplicationSidecar` and `JournalReplicationSidecarRollback` configurations; the four other `JournalReplication` configurations pass with unchanged state counts |
 | [#4501](https://github.com/matthiasn/lotti/pull/4501) | pending | provenance | `EnvelopeChain` | 2 | 0 | — | — | A design model written before the code: per-store signed chains under crashes, restores, retention and revocation. Each of its four design switches has a counterexample, and it raised two open questions — envelopes orphaned by a restore, and where a revocation cuts |
+| [#PRNUM](https://github.com/matthiasn/lotti/pull/PRNUM) | pending | tasks, sync | `SavedTaskFilterSync` | 2 | 9 (0) | P0×2 P1×3 P2 P3×3 | — | Saved filters created on a desktop never reached the phone: filters saved before they synced were never sent, and a reorder on the receiver wrote its stale list over the filters sync had just stored. Changes are now owed in a durable ledger until the outbox accepts them, and revisions and deletes have one total order |
 
 ## Severity
 
@@ -329,6 +336,15 @@ The P0 and P1 bugs:
 | [#4480](https://github.com/matthiasn/lotti/pull/4480) | P1 | no | A removal sorted before the concurrent edit it followed, so the entity returned |
 | [#4480](https://github.com/matthiasn/lotti/pull/4480) | P1 | no | Removing parsed items, versions or change sets used a stale snapshot clock |
 | [#4480](https://github.com/matthiasn/lotti/pull/4480) | P1 | no | A project recommendation recorded again after an undo stayed removed on peers |
+| [#PRNUM](https://github.com/matthiasn/lotti/pull/PRNUM) | P0 | no | Saved filters created before they synced were never sent to any peer |
+| [#PRNUM](https://github.com/matthiasn/lotti/pull/PRNUM) | P0 | no | Reordering on a device wrote its stale list over filters sync had stored, deleting them there for good |
+| [#PRNUM](https://github.com/matthiasn/lotti/pull/PRNUM) | P1 | no | A failed enqueue, or a crash after the write, left a saved-filter change that was never sent |
+| [#PRNUM](https://github.com/matthiasn/lotti/pull/PRNUM) | P1 | no | A delete that arrived before its filter let the filter return for good |
+| [#PRNUM](https://github.com/matthiasn/lotti/pull/PRNUM) | P1 | no | An edit from a device whose clock ran behind was dropped as stale by its peers |
+| [#PRNUM](https://github.com/matthiasn/lotti/pull/PRNUM) | P2 | no | A synced saved filter did not appear until the app restarted |
+| [#PRNUM](https://github.com/matthiasn/lotti/pull/PRNUM) | P3 | no | Two revisions with the same stamp swapped between devices instead of converging |
+| [#PRNUM](https://github.com/matthiasn/lotti/pull/PRNUM) | P3 | no | A filter option added by a newer build made the whole synced filter undecodable and skipped for good |
+| [#PRNUM](https://github.com/matthiasn/lotti/pull/PRNUM) | P3 | no | One undecodable stored filter blanked the list, and the next save persisted it empty |
 </details>
 
 ## Specs

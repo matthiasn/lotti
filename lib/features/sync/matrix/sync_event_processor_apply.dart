@@ -129,10 +129,11 @@ extension SyncEventProcessorApply on SyncEventProcessor {
           fromSync: true,
         );
         return null;
-      case SyncSavedTaskFilterDelete(:final id):
+      case SyncSavedTaskFilterDelete(:final id, :final deletedAt):
         await _savedTaskFiltersRepository.delete(
           id,
           fromSync: true,
+          deletedAt: deletedAt,
         );
         return null;
       case SyncConfigFlag(:final name, :final description, :final status):

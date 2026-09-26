@@ -164,12 +164,19 @@ SyncSavedTaskFilterDelete _$SyncSavedTaskFilterDeleteFromJson(
   Map<String, dynamic> json,
 ) => SyncSavedTaskFilterDelete(
   id: json['id'] as String,
+  deletedAt: json['deletedAt'] == null
+      ? null
+      : DateTime.parse(json['deletedAt'] as String),
   $type: json['runtimeType'] as String?,
 );
 
 Map<String, dynamic> _$SyncSavedTaskFilterDeleteToJson(
   SyncSavedTaskFilterDelete instance,
-) => <String, dynamic>{'id': instance.id, 'runtimeType': instance.$type};
+) => <String, dynamic>{
+  'id': instance.id,
+  'deletedAt': instance.deletedAt?.toIso8601String(),
+  'runtimeType': instance.$type,
+};
 
 SyncConfigFlag _$SyncConfigFlagFromJson(Map<String, dynamic> json) =>
     SyncConfigFlag(
