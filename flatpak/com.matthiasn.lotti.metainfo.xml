@@ -40,6 +40,14 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.1.29" date="2026-09-26">
+      <description>
+        <p>Changed: working on a task from two devices at once rarely runs its agent twice any more. Starting a task update on the desktop and carrying on by dictating into the phone left each device to run the task agent on its own, usually over the same synced task - two model calls for one result, and two sets of suggestions to review. A device that starts an update now tells your other devices which state of the task it is working from. A device holding that same state waits, and drops its own update once the first finishes. A device that has newer changes still runs, and if the first device goes quiet, the other runs after two minutes. Two devices that start within moments of each other, before either hears from the other, can still both run.</p>
+        <p>Fixed: older synced preferences could replace a newer local choice. Theme mode and greeting-name edits now save their version before syncing, advance past previously received versions, and publish only successfully saved values.</p>
+        <p>Fixed: synced settings toggles agree when updates arrive out of order. Updated devices keep the same winning toggle and description, and failed saves no longer expose a change that was rolled back.</p>
+        <p>Fixed: sync no longer advances past a newly reported history gap. New payloads wait for their response’s recovery boundary, while attachment downloads continue immediately.</p>
+      </description>
+    </release>
     <release version="1.1.28" date="2026-09-26">
       <description>
         <p>Changed: rolling the minutes past the hour now moves the hour too. In every time picker, scrolling the minutes back past :00 turns 14:00 into 13:59 - and again into 12:59 - with the hour sliding along, so you can go back several hours without reaching for the hour wheel. Scrolling forward past :59 moves the hour up the same way, and 12-hour pickers switch between AM and PM when they cross noon or midnight. The habit editor's "show from" and alert times now use the same time wheel as the rest of the app.</p>
