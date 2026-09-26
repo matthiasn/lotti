@@ -4,6 +4,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.29]
+
+### Changed
+
+- **Working on a task from two devices at once rarely runs its agent twice
+  any more.** Starting a task update on the desktop and carrying on by
+  dictating into the phone left each device to run the task agent on its
+  own, usually over the same synced task — two model calls for one result,
+  and two sets of suggestions to review. A device that starts an update now
+  tells your other devices which state of the task it is working from. A
+  device holding that same state waits, and drops its own update once the
+  first finishes. A device that has newer changes still runs, and if the
+  first device goes quiet, the other runs after two minutes. Two devices
+  that start within moments of each other, before either hears from the
+  other, can still both run.
+
+### Fixed
+
+- **Older synced preferences could replace a newer local choice.** Theme mode
+  and greeting-name edits now save their version before syncing, advance past
+  previously received versions, and publish only successfully saved values.
+- **Synced settings toggles agree when updates arrive out of order.** Updated
+  devices keep the same winning toggle and description, and failed saves no
+  longer expose a change that was rolled back.
+- **Sync no longer advances past a newly reported history gap.** New payloads
+  wait for their response’s recovery boundary, while attachment downloads
+  continue immediately.
+
 ## [1.1.28]
 
 ### Changed
