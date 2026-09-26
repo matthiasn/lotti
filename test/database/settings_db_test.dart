@@ -197,6 +197,94 @@ void main() {
     });
   });
 
+  group('local versioned settings groups', () {
+    const before = {'stamp': '300', 'mode': 'light', 'scheme': 'custom'};
+    Future<Map<String, String>> stored() async => {
+      for (final row in await db.loadSettingsItems(before.keys))
+        row.configKey: row.value,
+    };
+    Future<SavedSettingsGroup> edit(String mode) => db.saveLocalSettingsGroup(
+      {'mode': mode},
+      stampKey: 'stamp',
+      timestamp: 200,
+      retainedDefaults: {'scheme': 'default'},
+    );
+
+    test(
+      'local edits advance a future stamp and retain companion values',
+      () async {
+        await db.saveSettingsItems(before);
+        final first = edit('dark');
+        final second = edit('system');
+        final a = await first;
+        final b = await second;
+        expect(a.updatedAt, 301);
+        expect(a.values, {'mode': 'dark', 'scheme': 'custom'});
+        expect(b.updatedAt, 302);
+        expect(b.values, {'mode': 'system', 'scheme': 'custom'});
+        expect(
+          await db.saveSettingsItemsIfNewer(
+            before,
+            stampKey: 'stamp',
+            payloadKeys: ['mode', 'scheme'],
+          ),
+          isFalse,
+        );
+        final expected = {'stamp': '302', ...b.values};
+        expect(await stored(), expected);
+        expect(await db.itemsByKeys(before.keys), expected);
+      },
+    );
+
+    test(
+      'local stamp failure rolls back values and leaves the next stamp usable',
+      () async {
+        await db.saveSettingsItems(before);
+        await db.customStatement(
+          'CREATE TRIGGER reject_local_stamp BEFORE INSERT ON settings '
+          "WHEN NEW.config_key = 'stamp' BEGIN "
+          "SELECT RAISE(ABORT, 'injected local stamp failure'); END",
+        );
+        await expectLater(edit('dark'), throwsA(isA<Exception>()));
+        expect(await stored(), before);
+        expect(await db.itemsByKeys(before.keys), before);
+        await db.customStatement('DROP TRIGGER reject_local_stamp');
+        final saved = await edit('dark');
+        expect(saved.updatedAt, 301);
+        expect(await stored(), {
+          'stamp': '301',
+          'mode': 'dark',
+          'scheme': 'custom',
+        });
+      },
+    );
+
+    test(
+      'local snapshot owns inputs and supplies missing companion defaults',
+      () async {
+        final values = {'mode': 'dark'};
+        final defaults = {'scheme': 'default'};
+        final pending = db.saveLocalSettingsGroup(
+          values,
+          stampKey: 'stamp',
+          timestamp: 200,
+          retainedDefaults: defaults,
+        );
+        values['mode'] = 'mutated';
+        defaults['scheme'] = 'mutated';
+        final saved = await pending;
+        expect(saved.updatedAt, 200);
+        expect(saved.values, {'mode': 'dark', 'scheme': 'default'});
+        expect(() => saved.values['mode'] = 'changed', throwsUnsupportedError);
+        expect(await stored(), {
+          'stamp': '200',
+          'mode': 'dark',
+          'scheme': 'default',
+        });
+      },
+    );
+  });
+
   group('versioned settings groups', () {
     const before = {'stamp': '100', 'first': 'A', 'second': 'Z', 'marker': '9'};
     const after = {'stamp': '200', 'first': 'B', 'second': 'A', 'marker': '0'};

@@ -14,6 +14,22 @@
 /// suffix, which raw SQLite rejects and which is removed here.
 library;
 
+/// Reads the schemaVersion getter's literal or referenced static integer.
+/// Historical revisions use a literal; current builds expose a named constant
+/// for backup compatibility checks. Unknown declarations are rejected.
+int? declaredJournalSchemaVersion(String dartSource) {
+  final value = RegExp(
+    r'int get schemaVersion => (\w+);',
+  ).firstMatch(dartSource)?.group(1);
+  if (value == null) return null;
+  final literal = int.tryParse(value);
+  if (literal != null) return literal;
+  final constant = RegExp(
+    'static const int ${RegExp.escape(value)} = ([0-9]+);',
+  ).firstMatch(dartSource)?.group(1);
+  return constant == null ? null : int.parse(constant);
+}
+
 /// Returns the DDL statements of [driftSource], one per entry, each ending
 /// with `;`, with comments and Drift data-class suffixes removed.
 ///

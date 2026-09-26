@@ -5,7 +5,7 @@ description: Outbox staging as one immutable row per version, the dequeue-time c
 resource: ../../../lib/features/sync/outbox
 tags: [sync, outbox, bundling, retries]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-25T19:33:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-26T12:59:31Z }
 stale_after: 2026-12-25
 sources:
   - id: outbox
@@ -243,6 +243,50 @@ Every JSON-backed send records the successful Matrix file-event id in the text
 envelope as `attachmentEventId`. The relative path remains the cache location
 and the compatibility key for older peers; it is no longer the identity of a
 new payload generation.
+
+Before accepting an upload, `MatrixPayloadSender` reads its exact event from
+`getOneRoomEvent`, bypassing the SDK's optimistic local echo. It decrypts an
+encrypted event and checks the event/room identity, the SDK's MIME-derived
+message type, relative path, encoding marker and Matrix media URL. The URL must
+contain a server name (including optional port or bracketed IPv6) and one
+nonempty media ID using only letters, digits, `_` and `-`, as required by the
+[Matrix MXC URI format](https://spec.matrix.org/latest/client-server-api/#matrix-content-mxc-uris).
+User information, query strings, fragments and extra path segments are rejected
+for both plaintext and encrypted file URLs. An empty or
+mismatched descriptor, lookup failure, missing encryption service or decryption
+failure fails the send before publishing its referencing envelope or
+acknowledging the outbox row.
+Lookup and decryption each use `SyncTuning.attachmentDownloadTimeout`; failures
+follow the existing retry budget. A later attempt uploads a new descriptor.
+
+For an encrypted attachment, a present `file` field must contain the complete
+v2 descriptor emitted by the SDK: the AES-256-CTR octet key and its operations,
+an extractable-key marker, a 32-byte key, a 16-byte IV and a 32-byte SHA-256 hash.
+Encoded lengths are checked after base64/base64url decoding. A malformed `file`
+field cannot fall back to a plaintext URL. Decode errors become a constant send
+failure without logging encryption material.
+
+This costs one server read per uploaded file, including bundle manifests and
+media. It validates descriptor metadata, not downloaded bytes or the correctness
+of the SDK's cryptography, and does not repair an already-published unusable
+descriptor. The model's successful-upload boundary relies on these runtime
+checks; eventual delivery still assumes a usable upload within the retry policy.
+
+```mermaid
+sequenceDiagram
+  participant Sender as "MatrixPayloadSender"
+  participant Room as "Matrix room"
+  Sender->>Room: sendFileEvent(bytes, metadata)
+  Room-->>Sender: eventId
+  Sender->>Room: getOneRoomEvent(roomId, eventId)
+  Room-->>Sender: stored event
+  Sender->>Sender: decrypt and validate descriptor
+  alt valid descriptor
+    Sender->>Room: referencing sync envelope
+  else unusable descriptor or failed lookup
+    Sender-->>Sender: fail send and leave outbox unacknowledged
+  end
+```
 
 Agent outbox rows make the send-side half explicit. A pending
 `SyncAgentEntity` retains the serialized entity inline even though the sender

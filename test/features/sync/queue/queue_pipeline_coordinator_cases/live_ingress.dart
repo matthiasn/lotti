@@ -2,6 +2,249 @@ part of '../queue_pipeline_coordinator_test.dart';
 
 extension _LiveIngressCases on _QueueCoordinatorTestSetup {
   void registerLiveIngress() {
+    for (final outcome in [
+      'decrypted',
+      'unresolved',
+      'noEncryption',
+      'localEcho',
+    ]) {
+      test('encrypted response admission: $outcome', () async {
+        final room = MockRoom();
+        when(() => room.id).thenReturn(roomId);
+        when(() => room.partial).thenReturn(false);
+        when(() => room.client).thenReturn(client);
+        when(() => roomManager.currentRoom).thenReturn(room);
+        final raw = MatrixEvent(
+          type: EventTypes.Encrypted,
+          eventId: r'$encrypted-response',
+          senderId: '@peer:example.org',
+          originServerTs: DateTime.fromMillisecondsSinceEpoch(6000),
+          content: {'ciphertext': 'opaque'},
+          unsigned: outcome == 'localEcho'
+              ? {messageSendingStatusKey: EventStatus.sending.intValue}
+              : null,
+        );
+        final encryption = MockEncryption();
+        if (outcome != 'noEncryption') {
+          when(() => client.encryption).thenReturn(encryption);
+          when(() => encryption.decryptRoomEvent(any())).thenAnswer(
+            (_) async => outcome == 'unresolved'
+                ? Event.fromMatrixEvent(raw, room)
+                : Event(
+                    type: EventTypes.Message,
+                    eventId: raw.eventId,
+                    senderId: raw.senderId,
+                    originServerTs: raw.originServerTs,
+                    room: room,
+                    content: {'msgtype': syncMessageType, 'body': 'decoded'},
+                  ),
+          );
+        }
+        final coordinator = build();
+        await coordinator.start();
+        verifyStartClaim();
+        syncCtl.add(
+          SyncUpdate(
+            nextBatch: 'encrypted-response',
+            rooms: RoomsUpdate(
+              join: {
+                roomId: JoinedRoomUpdate(
+                  timeline: TimelineUpdate(events: [raw]),
+                ),
+              },
+            ),
+          ),
+        );
+        await pumpEventQueue();
+        if (outcome == 'localEcho') {
+          verifyNever(() => encryption.decryptRoomEvent(any()));
+          verifyNever(() => queue.enqueueLive(any()));
+          verifyNever(
+            () => queue.lowerResumeFloor(
+              roomId: roomId,
+              originTs: 6000,
+            ),
+          );
+        } else if (outcome == 'decrypted') {
+          final captured =
+              verify(() => queue.enqueueLive(captureAny())).captured.single
+                  as Event;
+          expect(captured.eventId, raw.eventId);
+          expect(captured.content['body'], 'decoded');
+          expect(captured.type, EventTypes.Message);
+          verifyNever(
+            () => queue.lowerResumeFloor(
+              roomId: roomId,
+              originTs: 6000,
+            ),
+          );
+        } else {
+          verifyNever(() => queue.enqueueLive(any()));
+          verify(
+            () => queue.lowerResumeFloor(
+              roomId: roomId,
+              originTs: 6000,
+            ),
+          ).called(1);
+        }
+        await coordinator.stop();
+      });
+    }
+
+    test(
+      'response recovery failures leave later admissions usable',
+      () async {
+        final room = MockRoom();
+        when(() => room.id).thenReturn(roomId);
+        when(() => room.partial).thenReturn(false);
+        when(() => room.client).thenReturn(client);
+        when(() => roomManager.currentRoom).thenReturn(room);
+        final encryption = MockEncryption();
+        when(() => client.encryption).thenReturn(encryption);
+        when(() => encryption.decryptRoomEvent(any())).thenThrow(
+          StateError('decrypt failed'),
+        );
+        final coordinator = build();
+        await coordinator.start();
+        await pumpEventQueue();
+        when(
+          () => queue.lowerResumeFloor(roomId: roomId, originTs: 6000),
+        ).thenThrow(StateError('floor unavailable'));
+        when(bridge.bridgeNow).thenAnswer(
+          (_) async => throw StateError('repair unavailable'),
+        );
+        syncCtl.add(
+          SyncUpdate(
+            nextBatch: 'failed-response',
+            rooms: RoomsUpdate(
+              join: {
+                roomId: JoinedRoomUpdate(
+                  timeline: TimelineUpdate(
+                    events: [
+                      MatrixEvent(
+                        type: EventTypes.Encrypted,
+                        eventId: r'$failed-response',
+                        senderId: '@peer:example.org',
+                        originServerTs: DateTime.fromMillisecondsSinceEpoch(
+                          6000,
+                        ),
+                        content: {'ciphertext': 'opaque'},
+                      ),
+                    ],
+                  ),
+                ),
+              },
+            ),
+          ),
+        );
+        await pumpEventQueue();
+        verifyNever(() => queue.enqueueLive(any()));
+        // A failed recovery must not poison the serialized response tail.
+        deliverPayload(buildEvent(EventTypes.Message));
+        await pumpEventQueue();
+        final admitted = verify(
+          () => queue.enqueueLive(captureAny()),
+        ).captured.cast<Event>();
+        expect(admitted.map((event) => event.eventId), [r'$a']);
+        for (final suffix in ['floor', 'repair']) {
+          verify(
+            () => logging.error(
+              LogDomain.sync,
+              any(),
+              stackTrace: any(named: 'stackTrace'),
+              subDomain: 'queue.coordinator.responseAdmission.$suffix',
+            ),
+          ).called(1);
+        }
+        await coordinator.stop();
+        verify(worker.stop).called(1);
+      },
+    );
+
+    test(
+      'pending response claim leaves descriptors live and snapshots payloads',
+      () async {
+        final room = MockRoom();
+        when(() => room.id).thenReturn(roomId);
+        when(() => room.partial).thenReturn(false);
+        when(() => room.client).thenReturn(client);
+        when(() => roomManager.currentRoom).thenReturn(room);
+        final ingestor = _FakeAttachmentIngestor();
+        final coordinator = build(attachmentIngestor: ingestor);
+        await coordinator.start();
+        final claim = Completer<void>();
+        when(
+          () => queue.claimAboveMarker(
+            roomId: roomId,
+            readAppliedTs: any(named: 'readAppliedTs'),
+            walkLocal: any(named: 'walkLocal'),
+          ),
+        ).thenAnswer((_) => claim.future);
+        final raw = MatrixEvent(
+          type: EventTypes.Message,
+          eventId: r'$payload',
+          senderId: '@peer:example.org',
+          originServerTs: DateTime.utc(2026),
+          content: {
+            'msgtype': syncMessageType,
+            'nested': <String, dynamic>{'value': 'original'},
+          },
+        );
+        syncCtl.add(
+          SyncUpdate(
+            nextBatch: 'limited-response',
+            rooms: RoomsUpdate(
+              join: {
+                roomId: JoinedRoomUpdate(
+                  timeline: TimelineUpdate(limited: true, events: [raw]),
+                ),
+              },
+            ),
+          ),
+        );
+        await pumpEventQueue();
+        verifyNever(() => queue.enqueueLive(any()));
+        final descriptor = Event(
+          type: EventTypes.Message,
+          eventId: r'$descriptor',
+          senderId: '@peer:example.org',
+          originServerTs: DateTime.utc(2026),
+          room: room,
+          content: {
+            'msgtype': MessageTypes.File,
+            'relativePath': '/attachment.json',
+            'url': 'mxc://example.org/attachment',
+          },
+        );
+        timelineCtl.add(descriptor);
+        await pumpEventQueue();
+        try {
+          expect(
+            ingestor.processCalls.map(
+              (call) => (call[#event]! as Event).eventId,
+            ),
+            [r'$descriptor'],
+          );
+          final immediate = verify(
+            () => queue.enqueueLive(captureAny()),
+          ).captured.cast<Event>();
+          expect(immediate.map((event) => event.eventId), [r'$descriptor']);
+          // Later SDK processing mutates the original nested content while the
+          // asynchronous admission lane is blocked on its gap claim.
+          (raw.content['nested']! as Map<String, dynamic>)['value'] = 'mutated';
+        } finally {
+          claim.complete();
+        }
+        await pumpEventQueue();
+        final admitted = verify(
+          () => queue.enqueueLive(captureAny()),
+        ).captured.cast<Event>();
+        expect(admitted.map((event) => event.eventId), [r'$payload']);
+        expect(admitted.single.content['nested'], {'value': 'original'});
+        await coordinator.stop();
+      },
+    );
+
     test(
       'encrypted live event lowers the durable floor and is skipped',
       () async {
@@ -26,7 +269,7 @@ extension _LiveIngressCases on _QueueCoordinatorTestSetup {
         await coordinator.start();
         verifyStartClaim();
 
-        timelineCtl.add(buildEvent(EventTypes.Message));
+        deliverPayload(buildEvent(EventTypes.Message));
         await pumpEventQueue();
 
         verify(() => queue.enqueueLive(any())).called(1);
@@ -54,8 +297,8 @@ extension _LiveIngressCases on _QueueCoordinatorTestSetup {
         verifyStartClaim();
         final event = buildEvent(EventTypes.Message);
 
-        timelineCtl.add(event);
-        expect(await attachmentStarted.future, same(event));
+        deliverPayload(event);
+        expect((await attachmentStarted.future).eventId, event.eventId);
 
         when(
           () => roomManager.currentRoomId,
@@ -169,7 +412,11 @@ extension _LiveIngressCases on _QueueCoordinatorTestSetup {
         );
 
         Event selfEcho(String id) {
-          final e = MockEvent();
+          final e = _buildLiveSyncEvent(
+            eventId: id,
+            roomId: roomId,
+            originTsMs: 1234,
+          );
           when(() => e.eventId).thenReturn(id);
           when(() => e.roomId).thenReturn(roomId);
           when(() => e.type).thenReturn(EventTypes.Message);
@@ -190,21 +437,22 @@ extension _LiveIngressCases on _QueueCoordinatorTestSetup {
 
           // First suppressed echo: no previous flush -> logs count=1 and
           // starts the suppression window.
-          bench.timelineCtl.add(selfEcho(r'$echo-1'));
+          bench.deliverPayload(selfEcho(r'$echo-1'));
           await pumpEventQueue();
           expect(suppressionLogs(), hasLength(1));
           expect(suppressionLogs().single, contains('count=1'));
 
           // Echoes inside the 30s window accumulate silently.
-          bench.timelineCtl.add(selfEcho(r'$echo-2'));
-          bench.timelineCtl.add(selfEcho(r'$echo-3'));
+          bench
+            ..deliverPayload(selfEcho(r'$echo-2'))
+            ..deliverPayload(selfEcho(r'$echo-3'));
           await pumpEventQueue();
           expect(suppressionLogs(), hasLength(1));
 
           // First echo after the window flushes the accumulated count and
           // resets the counter.
           current = current.add(const Duration(seconds: 31));
-          bench.timelineCtl.add(selfEcho(r'$echo-4'));
+          bench.deliverPayload(selfEcho(r'$echo-4'));
           await pumpEventQueue();
           expect(suppressionLogs(), hasLength(2));
           expect(suppressionLogs().last, contains('count=3'));
@@ -239,7 +487,7 @@ extension _LiveIngressCases on _QueueCoordinatorTestSetup {
         verifyStartClaim();
         verify(bridge.bridgeNow).called(1);
 
-        timelineCtl.add(buildEvent(EventTypes.Message));
+        deliverPayload(buildEvent(EventTypes.Message));
         await pumpEventQueue();
 
         verify(
@@ -290,7 +538,7 @@ extension _LiveIngressCases on _QueueCoordinatorTestSetup {
           );
           await coordinator.start();
 
-          timelineCtl.add(buildEvent(EventTypes.Message));
+          deliverPayload(buildEvent(EventTypes.Message));
           await pumpEventQueue();
 
           expect(ingestor.processCalls, hasLength(1));
@@ -344,7 +592,7 @@ extension _LiveIngressCases on _QueueCoordinatorTestSetup {
           );
           await coordinator.start();
 
-          timelineCtl.add(buildEvent(EventTypes.Message));
+          deliverPayload(buildEvent(EventTypes.Message));
           await ingestorFailureLogged.future;
 
           // The enqueue path still fires despite the ingestor throwing.
@@ -395,14 +643,18 @@ extension _LiveIngressCases on _QueueCoordinatorTestSetup {
           );
           await coordinator.start();
 
-          final echoed = MockEvent();
+          final echoed = _buildLiveSyncEvent(
+            eventId: r'$self-echo',
+            roomId: roomId,
+            originTsMs: 1234,
+          );
           when(() => echoed.eventId).thenReturn(r'$self-echo');
           when(() => echoed.roomId).thenReturn(roomId);
           when(() => echoed.type).thenReturn(EventTypes.Message);
           when(() => echoed.status).thenReturn(EventStatus.synced);
           registry.register(r'$self-echo');
 
-          timelineCtl.add(echoed);
+          deliverPayload(echoed);
           await pumpEventQueue();
 
           // Neither the queue nor the attachment ingestor should see the
@@ -437,23 +689,47 @@ extension _LiveIngressCases on _QueueCoordinatorTestSetup {
           );
           await coordinator.start();
 
-          final peer = MockEvent();
+          final peer = _buildLiveSyncEvent(
+            eventId: r'$peer-event',
+            roomId: roomId,
+            originTsMs: 1234,
+          );
           when(() => peer.eventId).thenReturn(r'$peer-event');
           when(() => peer.roomId).thenReturn(roomId);
           when(() => peer.type).thenReturn(EventTypes.Message);
           when(() => peer.status).thenReturn(EventStatus.synced);
           final enqueued = Completer<void>();
-          when(() => queue.enqueueLive(peer)).thenAnswer((_) async {
+          when(
+            () => queue.enqueueLive(
+              any(
+                that: isA<Event>().having(
+                  (e) => e.eventId,
+                  'eventId',
+                  r'$peer-event',
+                ),
+              ),
+            ),
+          ).thenAnswer((_) async {
             if (!enqueued.isCompleted) {
               enqueued.complete();
             }
             return EnqueueResult.empty;
           });
 
-          timelineCtl.add(peer);
+          deliverPayload(peer);
           await enqueued.future;
 
-          verify(() => queue.enqueueLive(peer)).called(1);
+          verify(
+            () => queue.enqueueLive(
+              any(
+                that: isA<Event>().having(
+                  (e) => e.eventId,
+                  'eventId',
+                  r'$peer-event',
+                ),
+              ),
+            ),
+          ).called(1);
 
           await coordinator.stop();
         },

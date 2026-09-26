@@ -5,7 +5,7 @@ description: The Drift-backed inbound queue, the anchored catch-up bridge, per-r
 resource: ../../../lib/features/sync/queue
 tags: [sync, inbound-queue, catch-up, matrix]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-26T13:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-26T14:05:00Z }
 stale_after: 2026-12-25
 sources:
   - id: descriptor-recovery
@@ -147,21 +147,42 @@ worker applied or abandoned again in between must stay as it is.
 
 # Live ingestion
 
-`QueuePipelineCoordinator` subscribes to `MatrixSessionManager.timelineEvents`.
-The subscription uses `asyncMap`, so live events are handled in stream order,
-each as the SDK emits it: an attachment descriptor is recorded in the
-`AttachmentIndex` before the payload event that needs it is enqueued.
+`QueuePipelineCoordinator` uses two admission paths. Attachment descriptors and
+unresolved ciphertext are handled immediately, in `timelineEvents` stream order.
+Plaintext payloads are admitted from the corresponding complete `Client.onSync`
+room update. `QueueResponseAdmission` snapshots the response before awaiting,
+serializes response processing, and claims a limited response's missing range
+before enqueuing its payloads. A later payload therefore cannot advance the
+marker past an unclaimed gap.
 
-**Known gap: a limited SDK slice is admitted before its gap is claimed.** A
-`/sync` response whose room timeline is `limited` omits events between the old
-marker and the slice; the slice's events can advance the marker before
-catch-up has claimed that range. An admission barrier that held each response
-until `onSync` (#4502) closed this, but stranded attachment descriptors — the
-Matrix integration suite failed in 23 of 27 runs with it and 0 of 29 without —
-and was reverted. The Matrix SDK also runs synthetic `handleSync` passes (a late
-Megolm key re-decrypting the room's last event) that emit `processing` and
-`onSync` inside a real response, so any future barrier cannot key on those
-signals alone.
+```mermaid
+flowchart TD
+    Timeline[SDK timeline event] --> Kind{Event kind}
+    Kind -->|Descriptor| Index[Record descriptor and schedule download]
+    Kind -->|Ciphertext| Floor[Retain resume floor]
+    Kind -->|Payload| Response[Wait for its complete room response]
+    Sync[SDK onSync room update] --> Snapshot[Snapshot response events]
+    Snapshot --> Lane[Serialized response admission]
+    Lane --> Limited{Limited timeline?}
+    Limited -->|Yes| Claim[Claim range above applied marker]
+    Limited -->|No| Decode[Resolve room and decrypt events]
+    Claim --> Decode
+    Decode --> Queue[Enqueue payloads]
+    Decode -->|Failure| Repair[Retain entire response range and request bridge]
+```
+
+Response admission does not use SDK `processing` signals or release events from
+another response. Synthetic SDK sync passes (including late Megolm key updates)
+can only admit the events they contain. Descriptors remain immediate even while
+a response's gap claim is pending; the global barrier in reverted #4502 held
+those descriptors and correlated with Matrix integration failures.
+
+If room resolution is unavailable, admission retains a catch-up claim. If
+resolution, decryption or admission throws, it retains the oldest timestamp of
+the entire response and requests a bridge pass before the next response can
+advance the queue. Failed floor writes remain pending in memory and are retried
+before later inserts. Normal shutdown and failed-start unwind both wait for
+in-flight admissions before stopping the worker and bridge.
 
 For an event still typed `m.room.encrypted`, the coordinator first lowers the
 room's durable `queue_markers.resume_floor_ts`, then skips the event.
@@ -389,8 +410,9 @@ Their sequence receipt is written to SyncDatabase only after the domain commit
 returns. The adapter must not wrap these handlers or outbox bundles in another
 journal transaction: a nested savepoint can succeed before an outer commit
 fails, leaving a receipt whose payload rolled back. Other families use their
-own database; the adapter retains the outer journal transaction for definitions,
-config flags and backfill controls.
+own database. Config flags also own their commit so cache publication cannot
+precede an outer rollback; the adapter retains the outer journal transaction for
+definitions and backfill controls.
 
 Receipt write errors propagate to the queue's retriable outcome for journal
 entities, entry links, agents, notifications and consumption events. Replay

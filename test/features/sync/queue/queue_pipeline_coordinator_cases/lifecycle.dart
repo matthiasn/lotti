@@ -19,6 +19,97 @@ extension _QueueLifecycleCases on _QueueCoordinatorTestSetup {
 
   void registerStartUnwind() {
     test(
+      'startup unwind waits for response admission before stopping worker',
+      () async {
+        final startGate = Completer<void>();
+        final enqueueGate = Completer<EnqueueResult>();
+        when(worker.start).thenAnswer((_) => startGate.future);
+        when(
+          () => queue.enqueueLive(any()),
+        ).thenAnswer((_) => enqueueGate.future);
+        final coordinator = build();
+        final startFuture = coordinator.start();
+        var startFinished = false;
+        final result = expectLater(
+          startFuture,
+          throwsStateError,
+        ).then((_) => startFinished = true);
+        await pumpEventQueue();
+        deliverPayload(buildEvent(EventTypes.Message));
+        await pumpEventQueue();
+        verify(() => queue.enqueueLive(any())).called(1);
+        startGate.completeError(StateError('worker failed'));
+        await pumpEventQueue();
+        try {
+          expect(startFinished, isFalse);
+          verifyNever(worker.stop);
+          verifyNever(bridge.stop);
+        } finally {
+          enqueueGate.complete(EnqueueResult.empty);
+          await result;
+        }
+        verify(worker.stop).called(1);
+        verify(bridge.stop).called(1);
+        expect(coordinator.isRunning, isFalse);
+        when(worker.start).thenAnswer((_) async {});
+        await coordinator.start();
+        expect(coordinator.isRunning, isTrue);
+        await coordinator.stop();
+      },
+    );
+
+    test(
+      'startup unwind contains a pending ciphertext floor failure',
+      () async {
+        final startGate = Completer<void>();
+        final floorGate = Completer<void>();
+        when(worker.start).thenAnswer((_) => startGate.future);
+        when(
+          () => queue.lowerResumeFloor(roomId: roomId, originTs: 1234),
+        ).thenAnswer((_) => floorGate.future);
+        final coordinator = build();
+        final startFuture = coordinator.start();
+        final workerError = StateError('worker failed');
+        var finished = false;
+        final result = expectLater(
+          startFuture,
+          throwsA(same(workerError)),
+        ).then((_) => finished = true);
+        await pumpEventQueue();
+        timelineCtl.add(buildEvent(EventTypes.Encrypted));
+        await pumpEventQueue();
+        verify(
+          () => queue.lowerResumeFloor(roomId: roomId, originTs: 1234),
+        ).called(1);
+        startGate.completeError(workerError);
+        await pumpEventQueue();
+        try {
+          expect(finished, isFalse);
+          verifyNever(worker.stop);
+          verifyNever(bridge.stop);
+        } finally {
+          floorGate.completeError(StateError('floor failed'));
+          await result;
+        }
+        verify(worker.stop).called(1);
+        verify(bridge.stop).called(1);
+        expect(coordinator.isRunning, isFalse);
+        verify(
+          () => logging.error(
+            LogDomain.sync,
+            any(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'queue.coordinator.start.inFlightEnqueues',
+          ),
+        ).called(1);
+        when(worker.start).thenAnswer((_) async {});
+        await coordinator.start();
+        expect(coordinator.isRunning, isTrue);
+        await coordinator.stop();
+      },
+    );
+
+    test(
       'start() unwind awaits an in-flight attachment-path flush before '
       'tearing down and leaves the coordinator retryable',
       () async {
@@ -369,7 +460,7 @@ extension _QueueLifecycleCases on _QueueCoordinatorTestSetup {
         final coordinator = build();
         await coordinator.start();
 
-        timelineCtl.add(buildEvent(EventTypes.Message));
+        deliverPayload(buildEvent(EventTypes.Message));
         // Let _handleLiveEvent run through _safeEnqueue so the
         // gated enqueueLive future is registered in _inFlightEnqueues.
         await pumpEventQueue();

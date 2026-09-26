@@ -50,6 +50,40 @@ void main() {
   });
 
   test(
+    'v49 preserves flags and gives later edits durable version storage',
+    () async {
+      final file = File(path.join(testDirectory.path, 'flags_v48.db'));
+      final sqlite = sqlite3.open(file.path);
+      createJournalSchema(sqlite, 48);
+      sqlite
+        ..execute(
+          "INSERT INTO config_flags (name, description, status) VALUES ('private', 'Private', 1)",
+        )
+        ..close();
+      final db = JournalDb(overriddenFilename: 'flags_v48.db');
+      addTearDown(db.close);
+      final flag = await db.getConfigFlagByName('private');
+      expect(flag?.status, isTrue);
+      expect(
+        await db.customSelect('SELECT * FROM config_flag_versions').get(),
+        isEmpty,
+      );
+      final result = await db.saveLocalConfigFlag(
+        flag!.copyWith(status: false),
+        timestamp: 200,
+      );
+      expect(result.updatedAt, 200);
+      expect(result.statusChanged, isTrue);
+      final stamp = await db
+          .customSelect('SELECT updated_at FROM config_flag_versions')
+          .getSingle();
+      expect(stamp.read<int>('updated_at'), 200);
+      final version = await db.customSelect('PRAGMA user_version').getSingle();
+      expect(version.read<int>('user_version'), JournalDb.currentSchemaVersion);
+    },
+  );
+
+  test(
     'an install a pre-v48 app left mid-v45 finishes the step instead of '
     'failing on the column it already added',
     () async {
@@ -67,7 +101,7 @@ void main() {
       final db = JournalDb(overriddenFilename: 'half_v45.db');
       addTearDown(db.close);
       final version = await db.customSelect('PRAGMA user_version').getSingle();
-      expect(version.read<int>('user_version'), 48);
+      expect(version.read<int>('user_version'), JournalDb.currentSchemaVersion);
 
       final columns =
           (await db.customSelect('PRAGMA table_info(journal)').get())
@@ -126,7 +160,7 @@ void main() {
     addTearDown(db.close);
 
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 48);
+    expect(version.read<int>('user_version'), JournalDb.currentSchemaVersion);
     final rows = await db
         .customSelect(
           'SELECT id, day_id, recording_session_id FROM journal ORDER BY id',

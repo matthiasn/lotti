@@ -330,6 +330,9 @@ class _GladosBench {
     );
   }
 
+  void deliverPayload(Event event) =>
+      _deliverResponseEvent(event, timelineCtl, syncCtl, client);
+
   Future<void> dispose() async {
     await timelineCtl.close();
     await syncCtl.close();
@@ -400,7 +403,11 @@ extension _LiveIngressPropertyCases on _QueueCoordinatorTestSetup {
               bench.sentEventRegistry.register(eventId);
             }
 
-            final event = MockEvent();
+            final event = _buildLiveSyncEvent(
+              eventId: eventId,
+              roomId: scenario.eventRoomIdAt(i),
+              originTsMs: i,
+            );
             when(() => event.eventId).thenReturn(eventId);
             when(() => event.roomId).thenReturn(scenario.eventRoomIdAt(i));
             when(() => event.type).thenReturn(operation.type);
@@ -408,7 +415,11 @@ extension _LiveIngressPropertyCases on _QueueCoordinatorTestSetup {
             when(
               () => event.originServerTs,
             ).thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
-            bench.timelineCtl.add(event);
+            if (operation.eventKind == _GeneratedLiveEventKind.message) {
+              bench.deliverPayload(event);
+            } else {
+              bench.timelineCtl.add(event);
+            }
             await pumpEventQueue();
           }
           await coordinator.stop();

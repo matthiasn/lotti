@@ -183,6 +183,7 @@ SyncConfigFlag _$SyncConfigFlagFromJson(Map<String, dynamic> json) =>
       name: json['name'] as String,
       description: json['description'] as String,
       status: json['status'] as bool,
+      updatedAt: (json['updatedAt'] as num?)?.toInt(),
       originatingHostId: json['originatingHostId'] as String?,
       $type: json['runtimeType'] as String?,
     );
@@ -192,6 +193,7 @@ Map<String, dynamic> _$SyncConfigFlagToJson(SyncConfigFlag instance) =>
       'name': instance.name,
       'description': instance.description,
       'status': instance.status,
+      'updatedAt': instance.updatedAt,
       'originatingHostId': instance.originatingHostId,
       'runtimeType': instance.$type,
     };

@@ -111,9 +111,10 @@ class MatrixPayloadSender {
         if (shouldCompress) attachmentEncodingKey: attachmentEncodingGzip,
       };
 
-      final eventId = await room.sendFileEvent(
+      final eventId = await _sendVerifiedFile(
+        room,
         MatrixFile(bytes: uploadBytes, name: uploadName),
-        extraContent: extraContent,
+        extraContent,
       );
 
       if (eventId == null) {
@@ -145,6 +146,91 @@ class MatrixPayloadSender {
         subDomain: 'sendMatrixMsg',
       );
       return (eventId: null, succeeded: false);
+    }
+  }
+
+  /// Verifies the immutable wire descriptor before another message references
+  /// it. An SDK upload can return an event id whose decrypted content is empty;
+  /// acknowledging that upload would strand its payload on every receiver.
+  Future<String?> _sendVerifiedFile(
+    Room room,
+    MatrixFile file,
+    Map<String, dynamic> extraContent,
+  ) async {
+    final eventId = await room.sendFileEvent(file, extraContent: extraContent);
+    if (eventId == null) return null;
+    // The SDK cache may contain the intended local echo, rather than what was
+    // actually encrypted and stored. Always read the exact server event.
+    final remote = await room.client
+        .getOneRoomEvent(room.id, eventId)
+        .timeout(SyncTuning.attachmentDownloadTimeout);
+    if (remote.eventId != eventId ||
+        (remote.roomId != null && remote.roomId != room.id)) {
+      throw StateError('Uploaded attachment event identity mismatch');
+    }
+    var descriptor = Event.fromMatrixEvent(remote, room);
+    if (descriptor.type == EventTypes.Encrypted) {
+      final encryption = room.client.encryption;
+      if (encryption == null) {
+        throw StateError('Uploaded attachment encryption is unavailable');
+      }
+      descriptor = await encryption
+          .decryptRoomEvent(descriptor)
+          .timeout(SyncTuning.attachmentDownloadTimeout);
+    }
+    final content = descriptor.content;
+    final encryptedFile = content['file'];
+    final url = encryptedFile is Map ? encryptedFile['url'] : content['url'];
+    if (descriptor.type != EventTypes.Message ||
+        content['msgtype'] != file.msgType ||
+        content['relativePath'] != extraContent['relativePath'] ||
+        content[attachmentEncodingKey] != extraContent[attachmentEncodingKey] ||
+        (content.containsKey('file') &&
+            !_hasValidEncryptedFileMetadata(encryptedFile)) ||
+        url is! String ||
+        !_hasValidMxcUri(url)) {
+      throw StateError('Uploaded attachment descriptor is unusable');
+    }
+    return eventId;
+  }
+
+  /// Requires a server name and one media ID, without URI normalization hiding
+  /// malformed paths. Uri parsing also rejects invalid bracketed IPv6 hosts.
+  static bool _hasValidMxcUri(String value) =>
+      RegExp(
+        r'^mxc://(?:[A-Za-z0-9.-]+|\[[0-9A-Fa-f:.]+\])'
+        r'(?::[0-9]+)?/[A-Za-z0-9_-]+$',
+      ).hasMatch(value) &&
+      Uri.tryParse(value) != null;
+
+  /// Checks the v2 encryption metadata emitted by our SDK before acknowledging
+  /// its upload. The ciphertext bytes and their hash are not downloaded here.
+  static bool _hasValidEncryptedFileMetadata(Object? value) {
+    if (value is! Map || value['v'] != 'v2') return false;
+    final key = value['key'];
+    final hashes = value['hashes'];
+    if (key is! Map || hashes is! Map) return false;
+    final operations = key['key_ops'];
+    return key['alg'] == 'A256CTR' &&
+        key['kty'] == 'oct' &&
+        key['ext'] == true &&
+        operations is List &&
+        operations.every((operation) => operation is String) &&
+        operations.contains('encrypt') &&
+        operations.contains('decrypt') &&
+        _hasBase64ByteLength(key['k'], 32) &&
+        _hasBase64ByteLength(value['iv'], 16) &&
+        _hasBase64ByteLength(hashes['sha256'], 32);
+  }
+
+  static bool _hasBase64ByteLength(Object? value, int expectedLength) {
+    if (value is! String) return false;
+    try {
+      // normalize accepts the SDK's unpadded base64 and base64url forms.
+      return base64.decode(base64.normalize(value)).length == expectedLength;
+    } on FormatException {
+      // Do not propagate a decoding error containing key/IV material to logs.
+      return false;
     }
   }
 
@@ -535,9 +621,10 @@ class MatrixPayloadSender {
 
     String? uploadEventId;
     try {
-      uploadEventId = await room.sendFileEvent(
+      uploadEventId = await _sendVerifiedFile(
+        room,
         MatrixFile(bytes: gzipped, name: fileName),
-        extraContent: extraContent,
+        extraContent,
       );
     } catch (error, stackTrace) {
       _trace(

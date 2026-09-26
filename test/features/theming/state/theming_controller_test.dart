@@ -7,6 +7,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
@@ -163,6 +164,130 @@ void main() {
         });
       });
 
+      test('late local commit cannot enqueue into a replacement profile', () {
+        fakeAsync((async) {
+          final committed = Completer<SavedSettingsGroup>();
+          when(
+            () => settingsDb.saveLocalSettingsGroup(
+              any(),
+              stampKey: any(named: 'stampKey'),
+              timestamp: any(named: 'timestamp'),
+              retainedDefaults: any(named: 'retainedDefaults'),
+            ),
+          ).thenAnswer((_) => committed.future);
+          final controller = container.read(themingControllerProvider.notifier);
+          waitForInit(async);
+          controller.onThemeSelectionChanged({ThemeMode.dark});
+          container.dispose();
+          final replacementOutbox = MockOutboxService();
+          when(
+            () => replacementOutbox.enqueueMessage(any<SyncMessage>()),
+          ).thenAnswer((_) async {});
+          GetIt.I.registerSingleton<OutboxService>(replacementOutbox);
+          committed.complete((
+            updatedAt: 2000,
+            values: {
+              lightSchemeNameKey: 'Indigo',
+              darkSchemeNameKey: 'Shark',
+              themeModeKey: 'dark',
+            },
+          ));
+          async.elapse(const Duration(seconds: 1));
+          verifyNever(() => outboxService.enqueueMessage(any()));
+          verifyNever(() => replacementOutbox.enqueueMessage(any()));
+          // Teardown owns this replacement container, not the disposed profile.
+          container = ProviderContainer();
+        }, initialTime: DateTime(2026));
+      });
+
+      test('local theme version waits for commit before publishing', () {
+        fakeAsync((async) {
+          final committed = Completer<SavedSettingsGroup>();
+          when(
+            () => settingsDb.saveLocalSettingsGroup(
+              any(),
+              stampKey: any(named: 'stampKey'),
+              timestamp: any(named: 'timestamp'),
+              retainedDefaults: any(named: 'retainedDefaults'),
+            ),
+          ).thenAnswer((_) => committed.future);
+          final controller = container.read(themingControllerProvider.notifier);
+          waitForInit(async);
+          controller.onThemeSelectionChanged({ThemeMode.dark});
+          async.elapse(const Duration(seconds: 1));
+          verifyNever(() => outboxService.enqueueMessage(any()));
+          committed.complete((
+            updatedAt: 2000,
+            values: {
+              lightSchemeNameKey: 'Indigo',
+              darkSchemeNameKey: 'Shark',
+              themeModeKey: 'dark',
+            },
+          ));
+          async.flushMicrotasks();
+          async.elapse(const Duration(milliseconds: 250));
+          final message =
+              verify(
+                    () => outboxService.enqueueMessage(captureAny()),
+                  ).captured.single
+                  as SyncThemingSelection;
+          expect(message.updatedAt, 2000);
+          expect(message.lightThemeName, 'Indigo');
+          expect(message.darkThemeName, 'Shark');
+          expect(message.themeMode, 'dark');
+        }, initialTime: DateTime(2026));
+      });
+
+      test('failed local theme commit is logged without publishing', () {
+        fakeAsync((async) {
+          final error = StateError('injected preference write failure');
+          when(
+            () => settingsDb.saveLocalSettingsGroup(
+              any(),
+              stampKey: any(named: 'stampKey'),
+              timestamp: any(named: 'timestamp'),
+              retainedDefaults: any(named: 'retainedDefaults'),
+            ),
+          ).thenAnswer((_) async => throw error);
+          final controller = container.read(themingControllerProvider.notifier);
+          waitForInit(async);
+          controller.onThemeSelectionChanged({ThemeMode.dark});
+          async.elapse(const Duration(seconds: 1));
+          verifyNever(() => outboxService.enqueueMessage(any()));
+          verify(
+            () => mockDomainLogger.error(
+              LogDomain.theming,
+              error,
+              stackTrace: any(named: 'stackTrace'),
+              subDomain: 'persist',
+            ),
+          ).called(1);
+        }, initialTime: DateTime(2026));
+      });
+
+      test('theme debounce publishes its commit despite a remote reload', () {
+        fakeAsync((async) {
+          final controller = container.read(themingControllerProvider.notifier);
+          waitForInit(async);
+          controller.onThemeSelectionChanged({ThemeMode.dark});
+          async.flushMicrotasks();
+          themeModeLoader = () async => 'light';
+          notificationsController.add({settingsNotification});
+          async.flushMicrotasks();
+          expect(
+            container.read(themingControllerProvider).themeMode,
+            ThemeMode.light,
+          );
+          async.elapse(const Duration(milliseconds: 250));
+          final message =
+              verify(
+                    () => outboxService.enqueueMessage(captureAny()),
+                  ).captured.single
+                  as SyncThemingSelection;
+          expect(message.themeMode, 'dark');
+        }, initialTime: DateTime(2026));
+      });
+
       test('onThemeSelectionChanged updates mode and enqueues sync', () {
         fakeAsync((async) {
           final controller = container.read(themingControllerProvider.notifier);
@@ -180,7 +305,12 @@ void main() {
           expect(state.themeMode, equals(ThemeMode.dark));
 
           verify(
-            () => settingsDb.saveSettingsItem(themeModeKey, 'dark'),
+            () => settingsDb.saveLocalSettingsGroup(
+              {themeModeKey: 'dark'},
+              stampKey: themePrefsUpdatedAtKey,
+              timestamp: any(named: 'timestamp'),
+              retainedDefaults: any(named: 'retainedDefaults'),
+            ),
           ).called(1);
 
           final captured = verify(
@@ -256,7 +386,12 @@ void main() {
 
           // Nothing was persisted or enqueued on the failed call.
           verifyNever(
-            () => settingsDb.saveSettingsItem(themeModeKey, any<String>()),
+            () => settingsDb.saveLocalSettingsGroup(
+              any(),
+              stampKey: themePrefsUpdatedAtKey,
+              timestamp: any(named: 'timestamp'),
+              retainedDefaults: any(named: 'retainedDefaults'),
+            ),
           );
           async.elapse(const Duration(milliseconds: 400));
           async.flushMicrotasks();
@@ -449,7 +584,12 @@ void main() {
           final state = container.read(themingControllerProvider);
           expect(state.themeMode, ThemeMode.dark);
           verify(
-            () => settingsDb.saveSettingsItem(themeModeKey, 'dark'),
+            () => settingsDb.saveLocalSettingsGroup(
+              {themeModeKey: 'dark'},
+              stampKey: themePrefsUpdatedAtKey,
+              timestamp: any(named: 'timestamp'),
+              retainedDefaults: any(named: 'retainedDefaults'),
+            ),
           ).called(1);
         });
       });

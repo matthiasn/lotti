@@ -1,16 +1,14 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
-import 'package:lotti/database/database.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
 import 'package:lotti/features/theming/state/theming_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/l10n/app_localizations.dart';
-import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
@@ -23,55 +21,25 @@ import '../../../../../widget_test_utils.dart';
 void main() {
   late MockSettingsDb mockSettingsDb;
   late MockJournalDb mockJournalDb;
-  late MockUserActivityService mockUserActivityService;
-  late MockDomainLogger mockLoggingService;
-
-  setUpAll(() {
-    registerFallbackValue(StackTrace.empty);
-  });
-
-  setUp(() {
-    GetIt.I.reset();
-
-    mockSettingsDb = MockSettingsDb();
-    mockJournalDb = MockJournalDb();
-    mockUserActivityService = MockUserActivityService();
-    mockLoggingService = MockDomainLogger();
-
-    final mockUpdateNotifications = MockUpdateNotifications();
-    when(
-      () => mockUpdateNotifications.updateStream,
-    ).thenAnswer((_) => const Stream.empty());
-
+  setUp(() async {
+    final mocks = await setUpTestGetIt(
+      additionalSetup: () {
+        GetIt.I.registerSingleton<UserActivityService>(
+          MockUserActivityService(),
+        );
+      },
+    );
+    mockSettingsDb = mocks.settingsDb;
+    mockJournalDb = mocks.journalDb;
     when(
       () => mockSettingsDb.itemByKey('THEME_MODE'),
     ).thenAnswer((_) async => 'system');
     when(
-      () => mockSettingsDb.saveSettingsItem(any(), any()),
-    ).thenAnswer((_) async => 1);
-    when(
       () => mockJournalDb.watchConfigFlag(enableTooltipFlag),
     ).thenAnswer((_) => Stream.value(true));
-
-    when(
-      () => mockLoggingService.error(
-        any<LogDomain>(),
-        any<Object>(),
-        stackTrace: any<StackTrace>(named: 'stackTrace'),
-        subDomain: any<String>(named: 'subDomain'),
-      ),
-    ).thenAnswer((_) async {});
-
-    GetIt.I.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
-    GetIt.I.registerSingleton<SettingsDb>(mockSettingsDb);
-    GetIt.I.registerSingleton<JournalDb>(mockJournalDb);
-    GetIt.I.registerSingleton<UserActivityService>(mockUserActivityService);
-    GetIt.I.registerSingleton<DomainLogger>(mockLoggingService);
   });
 
-  tearDown(() {
-    GetIt.I.reset();
-  });
+  tearDown(tearDownTestGetIt);
 
   /// The page under a `MaterialApp` whose theme mode follows the controller,
   /// as `beamer_app` wires it — so a mode picked on the page re-themes the
@@ -141,13 +109,27 @@ void main() {
       // Tap on the light theme segment
       final lightThemeSegment = find.byIcon(LottiIcons.day);
       expect(lightThemeSegment, findsOneWidget);
-      await tester.tap(lightThemeSegment);
-      await tester.pumpAndSettle();
+      final editedAt = DateTime.utc(2026, 9, 26);
+      await withClock(Clock.fixed(editedAt), () async {
+        await tester.tap(lightThemeSegment);
+        await tester.pumpAndSettle();
+      });
 
-      // Verify the settings were saved
       verify(
-        () => mockSettingsDb.saveSettingsItem('THEME_MODE', 'light'),
+        () => mockSettingsDb.saveLocalSettingsGroup(
+          {themeModeKey: 'light'},
+          stampKey: themePrefsUpdatedAtKey,
+          timestamp: editedAt.millisecondsSinceEpoch,
+          retainedDefaults: {
+            lightSchemeNameKey: kLegacyDefaultThemeName,
+            darkSchemeNameKey: kLegacyDefaultThemeName,
+          },
+        ),
       ).called(1);
+      expect(
+        tester.widget<DsSegmentedToggle<ThemeMode>>(segmentedButton).selected,
+        ThemeMode.light,
+      );
     });
 
     testWidgets('theme mode segments show correct icons', (tester) async {

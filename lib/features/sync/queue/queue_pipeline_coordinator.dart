@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
@@ -9,6 +10,7 @@ import 'package:lotti/features/sync/matrix/last_read.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_ingestor.dart';
 import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
+import 'package:lotti/features/sync/matrix/pipeline/matrix_event_classifier.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
@@ -31,6 +33,7 @@ import 'package:meta/meta.dart';
 
 part 'queue_gap_recovery.dart';
 part 'queue_lifecycle.dart';
+part 'queue_response_admission.dart';
 
 const _logSub = 'queue.coordinator';
 
@@ -39,8 +42,8 @@ const _logSub = 'queue.coordinator';
 /// lifecycle that `MatrixService` manages.
 ///
 /// Responsibilities:
-/// - Subscribe the live-stream producer to the session manager's
-///   `timelineEvents` stream.
+/// - Process descriptors and ciphertext from `timelineEvents` immediately;
+///   admit payloads from their complete `onSync` response after its gap claim.
 /// - Skip still-encrypted events after durably lowering the room's resume
 ///   floor, so ciphertext never lands in `inbound_event_queue.raw_json` and
 ///   a later key-triggered bridge revisits it (F3).
@@ -142,6 +145,7 @@ class QueuePipelineCoordinator {
   StreamSubscription<void>? _liveSub;
   // ignore: cancel_subscriptions
   StreamSubscription<SyncUpdate>? _syncSub;
+  Future<void> _syncAdmissionTail = Future<void>.value();
   // ignore: cancel_subscriptions
   StreamSubscription<String>? _attachmentPathSub;
   // ignore: cancel_subscriptions
@@ -441,6 +445,15 @@ class QueuePipelineCoordinator {
   }
 
   Future<void> _handleTrackedLiveEvent(Event event) {
+    // SDK timeline callbacks precede their response's limited flag. Only
+    // descriptors and unresolved ciphertext may take this immediate path;
+    // payloads enter through the response that carries their gap metadata.
+    if (event.roomId != _roomManager.currentRoomId ||
+        event.status != EventStatus.synced ||
+        (event.type != EventTypes.Encrypted &&
+            MatrixEventClassifier.isSyncPayloadEvent(event))) {
+      return Future<void>.value();
+    }
     final future = _handleLiveEvent(event);
     _trackEnqueue(future);
     return future;

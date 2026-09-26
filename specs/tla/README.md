@@ -19,8 +19,8 @@ It downloads the pinned `tla2tools.jar` once, verifies its SHA-256, and caches
 it in `TLA_TOOLS_DIR` (default `~/.cache/lotti-tla`). A configuration
 `<Spec><Variant>.cfg` checks `<Spec>.tla`.
 
-CI packs every checked-in `.cfg` into eight shards (`shards.py`), balanced by
-each configuration's measured runtime, and runs them with `fail-fast: false`.
+CI packs every checked-in `.cfg` into runtime-balanced shards (`shards.py`)
+and runs them with `fail-fast: false`.
 A shard checks all of its configurations even after one fails, and lists each
 result in the job summary. A new configuration joins a shard automatically,
 counted at a pessimistic five minutes until its runtime is added to
@@ -192,6 +192,12 @@ entry link with the same raw ID, delayed/duplicate delivery, a dropped tail and
 a failed SQLite receipt insert. They drive real persistence, outbox claim/mark,
 processor/queue-adapter application and periodic head repair. Removing the
 backfill handler's family-qualified deduplication makes all eight traces fail.
+After the failed receipt write, both origin and lagging peer rebuild their
+sequence, repair, receiver and agent services over retained in-memory SQLite
+stores. This clears volatile repair state before the next head announcement;
+the domain winner survives and the missing receipts and colliding-family
+payload still recover. This models a quiescent process restart, not a torn
+filesystem write or an operating-system crash.
 These traces use inline envelopes: Matrix SDK encryption, uploads, downloads and
 server behavior are outside that harness. The formal mixed profile uses a full
 notification to additionally exercise the abstract attachment path, rather than
@@ -836,6 +842,25 @@ runs ahead. The terminal configuration claims only `LocalWriteTakesEffect`:
 such a write is a successor that ranks below its predecessor, the `RankDrop`
 residual below.
 
+The `InboundQueueSlice` profile enables `SliceRace`: the SDK emits the newest
+slice before announcing its missing middle. `AdmitResponses` requires the gap
+claim before payload delivery; with it disabled, `NoSilentLoss` has a
+counterexample. The positive profile checks all declared safety and liveness
+properties across 191,865 distinct states. `check_sync_pipeline.py` checks both
+the positive control and the counterexample. This models the payload admission
+boundary, not SDK cryptography or attachment download scheduling.
+
+Runtime conformance is covered in the coordinator tests, including the real
+Matrix SDK's `handleSync` paused at its storage boundary with a real inbound
+queue. A nested synthetic sync cannot release the real response's payload,
+and the limited slice preserves its gap through apply. A failed decrypt
+retains the whole unqueued response, and
+shutdown waits for admissions. A delayed claim test also proves descriptors
+remain immediate and nested payload content is snapshotted; disabling either
+protection makes that test fail. See the [receive path](../../knowledge/features/sync/receive-path.md#live-ingestion)
+for the response-specific implementation and why the reverted global barrier
+is not used.
+
 What the model leaves out, deliberately or as a residual:
 
 - **`RankDrop` — a successor that leaves the terminal status it built on.**
@@ -1388,7 +1413,8 @@ What the model leaves out, deliberately or as a residual:
 ## `InboundQueue` — Matrix events into the queue, and the marker that resumes them
 
 One room's inbound pipeline: timeline events reaching `inbound_event_queue`
-live (`QueuePipelineCoordinator._handleLiveEvent`, in stream order) and
+live (`QueuePipelineCoordinator._handleLiveEvent`, from serialized complete
+responses for payloads and immediate timeline ingress for ciphertext) and
 through catch-up walks (`BridgeCoordinator`, `QueueGapRecovery`: forward from
 the applied anchor, or backward from the tip), the worker leasing, applying,
 retrying and abandoning rows (`InboundWorker`, `InboundQueue`), the per-room
@@ -1420,6 +1446,7 @@ when `BridgeMarker.anchorIsSafe`, otherwise the backward walk down to
 | `InboundQueueCipher` | 3, event 2 encrypted until its key arrives | 1 | failed resume-floor write, failed enqueue | 1,607,563 |
 | `InboundQueueCrash` | 4 | 2 | incomplete walk, failed claim read | 3,484,605 |
 | `InboundQueueLiveness` | 3 | 1 | worker throw, incomplete walk, failed enqueue (fairness) | 410,386 |
+| `InboundQueueSlice` | 3 | 1 | limited-slice admission, failed claim read | 191,865 |
 
 The fixes are switches, so each one's old behaviour is a configuration away;
 every checked-in configuration sets them `TRUE`. "Claiming the range above
@@ -1452,24 +1479,6 @@ cleared).
 
 What the model leaves out, deliberately or as a residual:
 
-- **A limited sync's slice can apply before the bridge sees the sync
-  (`SliceRace`).** The Matrix SDK adds the slice's events to
-  `onTimelineEvent` before it publishes `onSync`, and awaits database writes
-  in between. If the live handler enqueues a post-gap event and the worker
-  applies it before `BridgeCoordinator` handles the sync and claims the gap,
-  the anchor passes the gap first. `SliceRace = TRUE` finds it in 10 steps,
-  and every checked-in configuration sets it `FALSE`. The window is the
-  worker's whole apply-and-commit against a few database reads, so it is
-  narrow, and the sequence-log backfill (`SyncSequence`) repairs a lost
-  sequenced payload from a peer. Closing it needs a decision: take live
-  events from `Client.onSync`'s room updates, where the `limited` flag and
-  the slice arrive together, so the claim precedes the enqueue; or let only
-  walk-contiguous rows move the anchor, with a durable captured-frontier
-  column and a migration; or accept the window and rely on backfill.
-  An admission barrier that held every live event until `onSync` (#4502) was
-  reverted: it stranded attachment descriptors, and the Matrix integration
-  suite failed in 23 of 27 runs with it. The SDK's synthetic `handleSync`
-  passes also emit `processing` and `onSync` mid-response.
 - **Equal milliseconds.** A claim is one millisecond above the marker and a
   checkpoint one above the walk's newest event. An uncaptured event in the
   same millisecond as the marker or the cursor, later in timeline order, is
@@ -2034,15 +2043,15 @@ Config flags, theme selection and the Daily OS greeting name are not
 sequence-tracked payloads. This model opens the receive register: the timestamp
 guard, transaction-local writes, atomic group commit and successful
 return are distinct steps. Three envelopes reach two serial receivers in
-independently chosen orders. Flags overwrite on arrival; theme/name messages
-order stamps, breaking ties by a canonical payload tuple. The model's version
+independently chosen orders. All three families order stamps, breaking ties by a
+canonical payload tuple. The model's version
 rank represents this deterministic payload order; it is not a sender counter.
 
 | Configuration | Register | Delivery assumption | Distinct states |
 |---|---|---|---:|
 | `SyncSettings` | Three theme fields plus stamp | Distinct stamps; any order | 1,296 |
 | `SyncSettingsName` | Greeting value plus stamp | Distinct stamps; any order | 484 |
-| `SyncSettingsFlags` | One flag value | Same order on both receivers | 100 |
+| `SyncSettingsFlags` | One flag payload plus stamp | Any order; one failed write, then retry | 968 |
 | `SyncSettingsFailure` | Three theme fields plus stamp | Distinct stamps; one failed write, then retry | 2,592 |
 | `SyncSettingsNameFailure` | Greeting value plus stamp | Distinct stamps; one failed write, then retry | 968 |
 | `SyncSettingsEqualStamps` | Three theme fields plus stamp | Equal stamps; any order; one failed write, then retry | 2,592 |
@@ -2060,9 +2069,9 @@ the journal's repair contract.
 The mutation check runs guarded controls and changes one switch at a time:
 `AtomicGroups = FALSE` breaks `CompletedCoherent`; `RetryFailures = FALSE`
 breaks `LatestWins`. A third pair passes with equal-stamp tie-breaking and
-violates `Converged` when only `DeterministicTies` is disabled. Unordered flags
-remain a residual counterexample: `OrderedDelivery = FALSE` has no version
-field to resolve competing values.
+violates `Converged` when only `DeterministicTies` is disabled. The flag profile
+passes with versioning and violates `Converged` when only `Timestamped` is
+disabled, reproducing the prior arrival-order overwrite.
 
 The real SQLite regressions in `sync_event_processor_test.dart` fail each
 field write, verify the persisted group and cache are unchanged, then retry
@@ -2072,7 +2081,10 @@ write cannot incorrectly skip against a cache predating an atomic group.
 Opposite-order theme/name traces with equal stamps verify the same persisted
 winner and cache; they fail against arrival-order overwrite. Conditional-group
 tests cover queued newer writes, tie tuple ordering, metadata exclusion,
-rollback/retry and caller snapshots.
+rollback/retry and caller snapshots. Flag traces cover distinct stamps, equal
+stamps and legacy event-timestamp fallback in opposite delivery orders. A
+deferred SQLite constraint reproduces an outer-commit failure: restoring the
+adapter wrap makes the cache expose a rolled-back flag.
 
 The model excludes concurrent local writers, platform effects, theme-mode
 normalization, the greeting's bootstrap published marker, source staging, and
@@ -2132,6 +2144,50 @@ The repository suite (`saved_task_filters_repository_test.dart`) has a
 deterministic regression for each switch, including every delivery order of an
 edit and two deletes; reverting any one of the Dart fixes fails at least one of
 them.
+
+## `SyncPreferenceEdits` — local edits and debounced publication
+
+This register model adds two peers that each make two local edits, interleaved
+with publishing and receiving. Each local wall clock stays at 1, so a second
+edit and an edit after a received future stamp must advance from persisted
+state. Payload ranks stand for the canonical tuple used by the receiver.
+Theme/name pending debounce snapshots can be replaced by a newer local commit.
+The flag profile retains every immediate publication and alternates two boolean
+payload ranks, including repeated values across versions. Receives
+merge by stamp and payload rank without changing the captured outbound snapshot.
+
+| Action | Implementation boundary |
+|---|---|
+| `LocalEdit` | `SettingsDb.saveLocalSettingsGroup` or `JournalDb.saveLocalConfigFlag`: atomic payload/stamp commit and returned snapshot |
+| `Publish` | Theme/name controllers debounce; `PersistenceDefinitionOps` immediately enqueues the committed flag snapshot |
+| `Receive` | `SettingsDb.saveSettingsItemsIfNewer` or `JournalDb.applyConfigFlagVersion`: compare the persisted register and commit the winner |
+
+The theme/name profile explores **3,301 distinct states**, and the immediate
+flag profile **2,981**. The flag profile retains every publication: outbox
+coalescing is a separate implementation boundary covered by regressions for
+reversed enqueue order and mixed legacy/stamped rows. Both check that local
+versions advance, published payload/stamp pairs were actually committed, and
+settled peers agree on a version covering every committed edit. Fair edit,
+publication and delivery actions imply eventual settlement and eventual coverage
+of every edit, including local edits coalesced before publication.
+
+Guarded controls pass for both profiles; disabling `MonotoneLocalStamps` violates
+`LocalVersionsAdvance`, and disabling `PublishCommittedSnapshot` violates
+`OnlyCommittedSnapshots`. A reachability check requires a stamp above two:
+with two edits per peer, this witnesses an edit after a received version.
+
+The database and controller tests cover real SQLite rollback, caller snapshots,
+future stored stamps, a delayed commit, failed saves, and a remote reload during
+debounce. Controller regressions fail with their changes reverted; database
+mutations independently remove stamp advancement, transactions and input copies.
+
+This is not a mechanically checked refinement or a combined proof with
+`SyncSettings` or the sequenced pipeline. Atomic commits are abstract here and
+opened by the receive model and SQLite tests. It excludes source crashes,
+cancelled debounce, outbox failure, lost delivery, legacy writers, normalization
+and platform effects. Theme has no restart publication marker; untracked
+preferences still lack sequence-gap repair. The model's delivery obligations
+must not be mistaken for implementation recovery from these exclusions.
 
 ## `EnvelopeChain` — signed provenance chains (a design model)
 

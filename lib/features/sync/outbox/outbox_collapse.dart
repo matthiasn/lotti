@@ -31,7 +31,7 @@ class CollapseCandidate {
   final SyncMessage message;
 
   /// The version this row carries, or null for a payload without a clock (a
-  /// config flag) — ordered by enqueue order instead.
+  /// config flag). Flags use their separate stamp/payload ordering below.
   VectorClock? get clock => switch (message) {
     final SyncJournalEntity m => m.vectorClock,
     final SyncEntryLink m => m.entryLink.vectorClock,
@@ -76,9 +76,11 @@ String? collapseKeyOf(CollapseCandidate candidate) {
 }
 
 /// Whether [a] is a newer version than [b]: by clock when both carry one and
-/// one dominates, otherwise by enqueue order. A clockless payload (a config
-/// flag, applied in arrival order) is therefore newest-by-enqueue.
+/// one dominates; versioned flags use their receive-side tuple order.
+/// Unordered candidates fall back to enqueue order.
 bool _isNewer(CollapseCandidate a, CollapseCandidate b) {
+  final flagOrder = _compareFlags(a.message, b.message);
+  if (flagOrder != null && flagOrder != 0) return flagOrder > 0;
   final ca = a.clock;
   final cb = b.clock;
   if (ca != null && cb != null) {
@@ -87,6 +89,18 @@ bool _isNewer(CollapseCandidate a, CollapseCandidate b) {
     if (order == VclockStatus.b_gt_a) return false;
   }
   return a.row.id > b.row.id;
+}
+
+/// The same (stamp, status, description) order as JournalDb flag application.
+/// Legacy rows have no durable version, so mixed pairs must remain separate.
+int? _compareFlags(SyncMessage a, SyncMessage b) {
+  if (a is! SyncConfigFlag || b is! SyncConfigFlag) return null;
+  final aStamp = a.updatedAt;
+  final bStamp = b.updatedAt;
+  if (aStamp == null || bStamp == null) return null;
+  var order = aStamp.compareTo(bStamp);
+  if (order == 0) order = (a.status ? 1 : 0).compareTo(b.status ? 1 : 0);
+  return order == 0 ? a.description.compareTo(b.description) : order;
 }
 
 VclockStatus _compare(VectorClock a, VectorClock b) {
@@ -105,9 +119,11 @@ CollapseCandidate newestOf(List<CollapseCandidate> candidates) =>
 /// the newest one or one the newest supersedes. A row whose clock is
 /// concurrent with the newest is not: covering it would tell peers they hold
 /// a version they do not. Missing or empty clocks cannot prove supersession;
-/// only config flags intentionally use enqueue order without a clock.
+/// legacy flags use enqueue order when both rows lack a version stamp.
 bool supersededBy(CollapseCandidate older, CollapseCandidate newest) {
   if (identical(older, newest)) return true;
+  final flagOrder = _compareFlags(newest.message, older.message);
+  if (flagOrder != null) return flagOrder >= 0;
   final co = older.clock;
   final cn = newest.clock;
   if (co != null &&
@@ -119,6 +135,8 @@ bool supersededBy(CollapseCandidate older, CollapseCandidate newest) {
   }
   return older.message is SyncConfigFlag &&
       newest.message is SyncConfigFlag &&
+      (older.message as SyncConfigFlag).updatedAt == null &&
+      (newest.message as SyncConfigFlag).updatedAt == null &&
       older.row.id < newest.row.id;
 }
 

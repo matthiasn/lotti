@@ -164,7 +164,7 @@ class JournalDb extends _$JournalDb
 
   /// The schema this build writes. A restored backup may carry an
   /// older schema, which Drift migrates, but never a newer one.
-  static const int currentSchemaVersion = 48;
+  static const int currentSchemaVersion = 49;
 
   @override
   int get schemaVersion => currentSchemaVersion;

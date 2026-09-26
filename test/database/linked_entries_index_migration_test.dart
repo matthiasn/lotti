@@ -95,7 +95,7 @@ void main() {
       // Schema version advanced to the current schema
       final version = await db.customSelect('PRAGMA user_version').get();
       expect(version.first.read<int>('user_version'), db.schemaVersion);
-      expect(db.schemaVersion, 48);
+      expect(db.schemaVersion, JournalDb.currentSchemaVersion);
 
       // The corrected index now references to_id in its column list
       final postMigrationIdx = await db.customSelect("""

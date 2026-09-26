@@ -89,8 +89,23 @@ void setUpProcessorMocks() {
     () => journalDb.upsertEntityDefinition(any<EntityDefinition>()),
   ).thenAnswer((_) async => 1);
   when(
-    () => journalDb.upsertConfigFlag(any<ConfigFlag>()),
-  ).thenAnswer((_) async => 1);
+    () => journalDb.getConfigFlagByName(any()),
+  ).thenAnswer((_) async => null);
+  when(
+    () => journalDb.applyConfigFlagVersion(
+      any(),
+      updatedAt: any(named: 'updatedAt'),
+    ),
+  ).thenAnswer((invocation) async {
+    final flag = invocation.positionalArguments.single as ConfigFlag;
+    final previous = await journalDb.getConfigFlagByName(flag.name);
+    return (
+      flag: flag,
+      updatedAt: invocation.namedArguments[#updatedAt] as int,
+      applied: true,
+      statusChanged: previous?.status != flag.status,
+    );
+  });
   when(
     () => updateNotifications.notify(
       any<Set<String>>(),
