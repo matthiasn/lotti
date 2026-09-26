@@ -90,6 +90,7 @@ void main() {
       'wrongId',
       'wrongRoom',
       'wrongType',
+      'wrongMessageType',
       'wrongPath',
       'wrongEncoding',
       'missingUrl',
@@ -108,7 +109,9 @@ void main() {
           ),
         ).thenAnswer(uploadStub.record((_) async => 'verified-event'));
         final content = <String, dynamic>{
-          'msgtype': MessageTypes.File,
+          'msgtype': fault == 'wrongMessageType'
+              ? MessageTypes.Text
+              : MessageTypes.File,
           'relativePath': fault == 'wrongPath' ? 'other.txt' : 'note.txt',
           if (fault == 'wrongEncoding') attachmentEncodingKey: 'gzip',
           if (fault != 'missingUrl')
@@ -178,6 +181,39 @@ void main() {
           fault == 'validEncrypted',
         );
         verifyNever(() => room.getEventById(any()));
+      });
+    }
+
+    for (final media in [
+      (name: 'photo.png', type: MessageTypes.Image),
+      (name: 'voice.wav', type: MessageTypes.Audio),
+      (name: 'clip.mp4', type: MessageTypes.Video),
+    ]) {
+      test('accepts the SDK media descriptor for ${media.name}', () async {
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenAnswer(uploadStub.record((_) async => 'media-event'));
+        final ok = await payloadSender.sendFile(
+          room: room,
+          fullPath: '${documentsDirectory.path}/${media.name}',
+          relativePath: media.name,
+          bytes: Uint8List.fromList([1, 2, 3]),
+        );
+        expect(
+          uploadStub.descriptors['media-event']!.content['msgtype'],
+          media.type,
+        );
+        expect(ok, isTrue);
+        expect(sentEventRegistry.consume('media-event'), isTrue);
+        verify(
+          () => uploadStub.client.getOneRoomEvent(
+            '!room:test',
+            'media-event',
+          ),
+        ).called(1);
       });
     }
 

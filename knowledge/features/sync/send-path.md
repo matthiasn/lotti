@@ -5,7 +5,7 @@ description: Outbox staging as one immutable row per version, the dequeue-time c
 resource: ../../../lib/features/sync/outbox
 tags: [sync, outbox, bundling, retries]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-26T12:15:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-26T12:28:37Z }
 stale_after: 2026-12-25
 sources:
   - id: outbox
@@ -246,9 +246,10 @@ new payload generation.
 
 Before accepting an upload, `MatrixPayloadSender` reads its exact event from
 `getOneRoomEvent`, bypassing the SDK's optimistic local echo. It decrypts an
-encrypted event and checks the event/room identity, file message type, relative
-path, encoding marker and Matrix media URL. An empty or mismatched descriptor,
-lookup failure, missing encryption service or decryption failure fails the send
+encrypted event and checks the event/room identity, the SDK's MIME-derived
+message type, relative path, encoding marker and Matrix media URL. An empty or
+mismatched descriptor, lookup failure, missing encryption service or decryption
+failure fails the send
 before publishing its referencing envelope or acknowledging the outbox row.
 Lookup and decryption each use `SyncTuning.attachmentDownloadTimeout`; failures
 follow the existing retry budget. A later attempt uploads a new descriptor.

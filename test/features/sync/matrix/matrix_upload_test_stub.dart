@@ -22,6 +22,7 @@ class MatrixUploadTestStub {
   Future<String?> Function(Invocation) record(
     Future<String?> Function(Invocation) upload,
   ) => (invocation) async {
+    final file = invocation.positionalArguments.first as MatrixFile;
     final extra = Map<String, dynamic>.from(
       invocation.namedArguments[#extraContent] as Map<String, dynamic>,
     );
@@ -29,7 +30,7 @@ class MatrixUploadTestStub {
     if (id != null) {
       descriptors[id] = MatrixEvent(
         content: {
-          'msgtype': MessageTypes.File,
+          'msgtype': file.msgType,
           'url': 'mxc://example.test/upload',
           ...extra,
         },
