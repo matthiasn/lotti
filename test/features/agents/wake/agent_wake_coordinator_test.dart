@@ -4,6 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/wake/agent_wake_coordinator.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart';
 
 part 'agent_wake_coordinator_model_conformance.dart';
 
@@ -532,6 +536,59 @@ void main() {
         async.elapse(AgentWakeCoordinator.heartbeatInterval * 2);
 
         expect(device.sent, isEmpty);
+      });
+    });
+
+    test('a failed broadcast is logged and does not hold back the next '
+        'one', () {
+      _fake((async) {
+        final sent = <AgentWakeCoordinationKind>[];
+        var failNext = true;
+        final logger = MockDomainLogger();
+        final coordinator =
+            AgentWakeCoordinator(
+                domainLogger: logger,
+                digestState: (_) async => _stateA,
+                send: (message) async {
+                  if (failNext) {
+                    failNext = false;
+                    throw StateError('outbox closed');
+                  }
+                  sent.add((message as SyncAgentWakeCoordination).kind);
+                },
+                localHostId: () async => 'me',
+              )
+              ..claim(agentId: _agent, runKey: 'run-1', stateHash: _stateA)
+              ..complete('run-1');
+        async.flushMicrotasks();
+
+        expect(sent, [AgentWakeCoordinationKind.done]);
+        verify(
+          () => logger.error(
+            LogDomain.agentRuntime,
+            any(that: isA<StateError>()),
+            message: 'failed to broadcast wake claim',
+            stackTrace: any(named: 'stackTrace'),
+          ),
+        ).called(1);
+        coordinator.dispose();
+      });
+    });
+
+    test('a throwing drain callback does not break message handling', () {
+      _fake((async) {
+        final device = _Device('me');
+        device.coordinator.onPeerStateChanged = (_) =>
+            throw StateError('orchestrator stopped');
+
+        device.coordinator.onMessage(
+          _message(kind: AgentWakeCoordinationKind.done),
+        );
+
+        expect(
+          _resolve(async, device.evaluate()),
+          isA<WakeCoordinationCancel>(),
+        );
       });
     });
 

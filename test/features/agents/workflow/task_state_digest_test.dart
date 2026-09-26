@@ -223,6 +223,21 @@ void main() {
     expect(await world.digest(), isNot(before));
   });
 
+  test('a report without a vector clock is versioned by createdAt', () async {
+    final world = _TaskWorld()
+      ..linkedReport = makeTestReport(
+        id: 'linked-report-1',
+        agentId: 'linked-agent-1',
+      );
+    final before = await world.digest();
+
+    world.linkedReport = world.linkedReport.copyWith(
+      createdAt: world.linkedReport.createdAt.add(const Duration(minutes: 1)),
+    );
+
+    expect(await world.digest(), isNot(before));
+  });
+
   test('is null for an id that is not a task', () async {
     final world = _TaskWorld()
       ..task = JournalEntity.journalEntry(meta: _meta('task-1', vc: _vc(1)));

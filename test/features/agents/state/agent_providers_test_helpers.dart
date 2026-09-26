@@ -351,6 +351,28 @@ ProviderContainer createTemplateTokenContainer({
   return container;
 }
 
+// ── Wake coordinator container ──────────────────────────────────────────────
+
+/// Creates a [ProviderContainer] for `agentWakeCoordinatorProvider`.
+ProviderContainer createCoordinatorContainer({
+  required MockAgentRepository mockRepo,
+  required MockJournalDb mockDb,
+  required MockOutboxService mockOutbox,
+}) {
+  final container = ProviderContainer(
+    overrides: [
+      agentRepositoryProvider.overrideWithValue(mockRepo),
+      journalDbProvider.overrideWithValue(mockDb),
+      outboxServiceProvider.overrideWithValue(mockOutbox),
+      domainLoggerProvider.overrideWithValue(
+        DomainLogger(loggingService: LoggingService()),
+      ),
+    ],
+  );
+  addTearDown(container.dispose);
+  return container;
+}
+
 // ── Task content checker container ──────────────────────────────────────────
 
 /// Creates a [ProviderContainer] suitable for testing the `taskContentChecker`

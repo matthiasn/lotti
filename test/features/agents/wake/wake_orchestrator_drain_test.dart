@@ -1785,6 +1785,7 @@ void main() {
       const stateB = 'sha256-v1:state-b';
 
       late String? digest;
+      Completer<String?>? heldDigest;
       late List<SyncAgentWakeCoordination> sent;
       late AgentWakeCoordinator coordinator;
       late int executions;
@@ -1795,10 +1796,15 @@ void main() {
       void coordinated(void Function(FakeAsync async) body) {
         fakeAsync((async) {
           digest = stateA;
+          heldDigest = null;
           sent = [];
           executions = 0;
           coordinator = AgentWakeCoordinator(
-            digestState: (_) async => digest,
+            digestState: (_) {
+              final held = heldDigest;
+              heldDigest = null;
+              return held?.future ?? Future.value(digest);
+            },
             send: (message) async =>
                 sent.add(message as SyncAgentWakeCoordination),
             localHostId: () async => 'this-device',
@@ -1961,6 +1967,49 @@ void main() {
           expect(sent, isEmpty);
         });
       });
+
+      test('a job cancelled while its digest is computed never runs', () {
+        coordinated((async) {
+          final held = heldDigest = Completer<String?>();
+          enqueueAutomaticWake();
+          drain(async);
+
+          orchestrator.cancelPendingWakes('agent-1');
+          held.complete(stateA);
+          async.flushMicrotasks();
+
+          expect(executions, 0);
+          expect(queue.length, 0);
+          expect(sent, isEmpty);
+        });
+      });
+
+      test(
+        'a drain superseded while its digest is computed hands the job to '
+        'the next drain',
+        () {
+          coordinated((async) {
+            final held = heldDigest = Completer<String?>();
+            enqueueAutomaticWake();
+            drain(async);
+
+            // The stuck drain is force-reset after its progress timeout.
+            async.elapse(const Duration(minutes: 13));
+            unawaited(orchestrator.processNext());
+            async.flushMicrotasks();
+            expect(executions, 0);
+
+            held.complete(stateA);
+            async.flushMicrotasks();
+
+            expect(executions, 1);
+            expect(sent.map((m) => m.kind), [
+              AgentWakeCoordinationKind.claim,
+              AgentWakeCoordinationKind.done,
+            ]);
+          });
+        },
+      );
 
       test('a wake the user asked for runs despite a peer claim', () {
         coordinated((async) {

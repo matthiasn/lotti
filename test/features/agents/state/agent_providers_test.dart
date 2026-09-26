@@ -13,6 +13,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -64,6 +65,7 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/consts.dart' show enableForkHealingFlag;
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/entity_factories.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
@@ -1832,6 +1834,138 @@ void main() {
 
       // Dispose should call runner.dispose() without error.
       container.dispose();
+    });
+  });
+
+  group('agentWakeCoordinatorProvider', () {
+    late MockAgentRepository mockRepo;
+    late MockJournalDb mockDb;
+    late MockOutboxService mockOutbox;
+
+    setUp(() async {
+      mockRepo = MockAgentRepository();
+      mockDb = MockJournalDb();
+      mockOutbox = MockOutboxService();
+      final vectorClock = MockVectorClockService();
+      when(() => vectorClock.initialized).thenAnswer((_) async {});
+      when(vectorClock.getHost).thenAnswer((_) async => 'host-self');
+      await setUpTestGetIt(
+        additionalSetup: () =>
+            getIt.registerSingleton<VectorClockService>(vectorClock),
+      );
+      when(() => mockOutbox.enqueueMessage(any())).thenAnswer((_) async {});
+    });
+
+    tearDown(tearDownTestGetIt);
+
+    Future<WakeCoordinationDecision> evaluate(String agentId) =>
+        createCoordinatorContainer(
+          mockRepo: mockRepo,
+          mockDb: mockDb,
+          mockOutbox: mockOutbox,
+        ).read(agentWakeCoordinatorProvider).evaluate(agentId);
+
+    test('a task agent is coordinated over its active task', () async {
+      when(() => mockRepo.getEntity(kTestAgentId)).thenAnswer(
+        (_) async => makeTestIdentity(),
+      );
+      when(() => mockRepo.getAgentState(kTestAgentId)).thenAnswer(
+        (_) async => makeTestState(
+          slots: const AgentSlots(activeTaskId: 'task-1'),
+        ),
+      );
+      when(() => mockDb.journalEntityById('task-1')).thenAnswer(
+        (_) async => TestTaskFactory.create(id: 'task-1'),
+      );
+      when(
+        () => mockDb.getLinkedEntities('task-1'),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockDb.getLinkedToEntities('task-1'),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockDb.getJournalEntitiesForIdsUnordered(any()),
+      ).thenAnswer((_) async => []);
+
+      final decision = await evaluate(kTestAgentId);
+
+      expect(
+        decision,
+        isA<WakeCoordinationProceed>().having(
+          (d) => d.stateHash,
+          'stateHash',
+          startsWith('sha256-v1:'),
+        ),
+      );
+    });
+
+    test('other agent kinds run uncoordinated', () async {
+      when(() => mockRepo.getEntity('project-agent')).thenAnswer(
+        (_) async => makeTestIdentity(
+          id: 'project-agent',
+          agentId: 'project-agent',
+          kind: AgentKinds.projectAgent,
+        ),
+      );
+
+      final decision = await evaluate('project-agent');
+
+      expect(
+        decision,
+        isA<WakeCoordinationProceed>().having(
+          (d) => d.stateHash,
+          'stateHash',
+          isNull,
+        ),
+      );
+      verifyNever(() => mockRepo.getAgentState(any()));
+    });
+
+    test('a task agent without an active task runs uncoordinated', () async {
+      when(() => mockRepo.getEntity(kTestAgentId)).thenAnswer(
+        (_) async => makeTestIdentity(),
+      );
+      when(() => mockRepo.getAgentState(kTestAgentId)).thenAnswer(
+        (_) async => makeTestState(),
+      );
+
+      final decision = await evaluate(kTestAgentId);
+
+      expect(
+        decision,
+        isA<WakeCoordinationProceed>().having(
+          (d) => d.stateHash,
+          'stateHash',
+          isNull,
+        ),
+      );
+      verifyNever(() => mockDb.journalEntityById(any()));
+    });
+
+    test('broadcasts go to the outbox stamped with this host', () async {
+      final coordinator = createCoordinatorContainer(
+        mockRepo: mockRepo,
+        mockDb: mockDb,
+        mockOutbox: mockOutbox,
+      ).read(agentWakeCoordinatorProvider);
+
+      // ignore: cascade_invocations — each step awaits the broadcast.
+      coordinator.claim(
+        agentId: kTestAgentId,
+        runKey: 'run-1',
+        stateHash: 'sha256-v1:state',
+      );
+      await pumpEventQueue();
+      coordinator.settle('run-1');
+      await pumpEventQueue();
+
+      final sent = verify(
+        () => mockOutbox.enqueueMessage(captureAny()),
+      ).captured.cast<SyncAgentWakeCoordination>();
+      expect(sent.map((m) => (m.kind, m.hostId)), [
+        (AgentWakeCoordinationKind.claim, 'host-self'),
+        (AgentWakeCoordinationKind.release, 'host-self'),
+      ]);
     });
   });
 
