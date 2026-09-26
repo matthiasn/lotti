@@ -1,22 +1,34 @@
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/projection/content_digest.dart';
 import 'package:lotti/features/ai/util/image_ai_responses.dart';
 
-/// The digest of the journal state a task agent's wake reads, which
+/// The digest of the state a task agent's wake reads, which
 /// `AgentWakeCoordinator` compares across devices: equal digests mean a wake
 /// on either device would read the same inputs.
 ///
 /// It covers the version — the vector clock, or `updatedAt` for an entity
-/// without one — of every journal entity the task context is built from: the
-/// task, the entities linked from it (log entries, linked tasks) and to it
-/// (its project, tasks linking to it), its checklists and their items, and
-/// the AI analyses of its images. Replicas that hold the same versions
-/// compute the same digest without coordinating, and any edit to one of
-/// those entities changes it. Versions rather than rendered content keep the
-/// digest cheap, and a spurious mismatch only costs a run that would have
-/// happened without coordination.
+/// without one — of every entity the task context is built from:
+///
+/// - the task, the entities linked from it (log entries, linked tasks) and to
+///   it (its project, tasks linking to it), its checklists and their items,
+///   and the AI analyses of its images;
+/// - for each linked task, the entities linked from it (the entries its time
+///   spent is summed from) and the current report of its task agent, which
+///   the linked-task context summarises.
+///
+/// Replicas that hold the same versions compute the same digest without
+/// coordinating, and any edit to one of those entities changes it. A peer's
+/// `done` for this digest cancels a wake, so an input the context reads but
+/// the digest missed could be dropped unprocessed; keep this in step with the
+/// context builders. Versions rather than rendered content keep the digest
+/// cheap, and a spurious mismatch only costs a run that would have happened
+/// without coordination.
 ///
 /// A wake's own journal writes are almost all change-set proposals, which
 /// live in the agent database and leave this digest alone, so a peer holding
@@ -27,6 +39,7 @@ import 'package:lotti/features/ai/util/image_ai_responses.dart';
 /// Returns `null` when [taskId] is not a task.
 Future<String?> taskStateDigest({
   required JournalDb journalDb,
+  required AgentRepository agentRepository,
   required String taskId,
 }) async {
   final task = await journalDb.journalEntityById(taskId);
@@ -35,7 +48,7 @@ Future<String?> taskStateDigest({
   final linkedFrom = await journalDb.getLinkedEntities(taskId);
   final linkedTo = (await journalDb.getLinkedToEntities(
     taskId,
-  )).map(fromDbEntity);
+  )).map(fromDbEntity).toList();
   final checklists = await journalDb.getJournalEntitiesForIdsUnordered(
     (task.data.checklistIds ?? const <String>[]).toSet(),
   );
@@ -48,6 +61,30 @@ Future<String?> taskStateDigest({
     linkedEntities: linkedFrom,
   );
 
+  final linkedTaskIds = {
+    for (final linked in [...linkedFrom, ...linkedTo])
+      if (linked is Task) linked.meta.id,
+  };
+  final linkedTaskInputs = linkedTaskIds.isEmpty
+      ? const <String, List<JournalEntity>>{}
+      : await journalDb.getBulkLinkedEntities(linkedTaskIds);
+  final linkedTaskAgentLinks = linkedTaskIds.isEmpty
+      ? const <String, List<AgentLink>>{}
+      : await agentRepository.getLinksToMultiple(
+          linkedTaskIds.toList(),
+          type: AgentLinkTypes.agentTask,
+        );
+  final linkedAgentIds = {
+    for (final links in linkedTaskAgentLinks.values)
+      for (final link in links) link.fromId,
+  };
+  final linkedReports = linkedAgentIds.isEmpty
+      ? const <String, AgentReportEntity>{}
+      : await agentRepository.getLatestReportsByAgentIds(
+          linkedAgentIds.toList(),
+          AgentReportScopes.current,
+        );
+
   return ContentDigest.of(<String, Object?>{
     for (final entity in [
       task,
@@ -56,8 +93,13 @@ Future<String?> taskStateDigest({
       ...checklists,
       ...items,
       for (final responses in analyses.values) ...responses,
+      for (final inputs in linkedTaskInputs.values) ...inputs,
     ])
       entity.meta.id: _version(entity.meta),
+    for (final report in linkedReports.values)
+      'report:${report.id}':
+          report.vectorClock?.vclock ??
+          report.createdAt.toUtc().toIso8601String(),
   });
 }
 

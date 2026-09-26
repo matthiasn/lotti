@@ -28,12 +28,15 @@ model-checked before it was implemented; `AgentWakeCoordinator` implements it
 action by action.
 
 - **The state digest** is `taskStateDigest`: a `ContentDigest` over the
-  vector clock (or `updatedAt`) of every journal entity the task context is
-  built from — the task, the entities linked from and to it, its checklists
-  and their items, its images' AI analyses. Replicas holding the same versions
-  compute the same digest without coordinating. A wake's own journal writes
-  are change-set proposals in the agent database, so they leave the digest
-  alone.
+  vector clock (or `updatedAt`) of every entity the task context is built
+  from — the task, the entities linked from and to it, its checklists and
+  their items, its images' AI analyses, and for each linked task the entries
+  its time is summed from and its agent's current report. Replicas holding
+  the same versions compute the same digest without coordinating. A wake's
+  own journal writes are change-set proposals in the agent database, so they
+  leave the digest alone. Because a matching `done` cancels a wake, an input
+  the context reads but the digest misses could be dropped unprocessed: the
+  digest has to follow the context builders.
 - **Claim at dispatch.** When the drain dispatches a wake, the device
   broadcasts `claim(h)` at once, and repeats it every 45 seconds while the
   run is live.
@@ -45,6 +48,11 @@ action by action.
   whose own digest is `h` drops its pending wake and settles its intent as
   covered. The digests of a peer's completed runs are kept apart from its
   live claim, so its next claim cannot erase them.
+- **Every event that frees a deferred job drains again**: a `done`, a
+  `release`, a lapse, and a claim that replaces the held one with another
+  digest (or a late claim that supersedes it). The model assumes a dispatch
+  is re-evaluated whenever its guard holds; these are the code's side of
+  that fairness.
 - **Release on failure.** A run that fails, is aborted, or never reaches its
   executor broadcasts `release(h)`, so peers proceed at once instead of
   waiting out the timer.

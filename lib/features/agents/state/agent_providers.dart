@@ -366,6 +366,7 @@ AgentWakeCoordinator agentWakeCoordinator(Ref ref) {
       if (taskId == null) return null;
       return taskStateDigest(
         journalDb: ref.read(journalDbProvider),
+        agentRepository: repository,
         taskId: taskId,
       );
     },

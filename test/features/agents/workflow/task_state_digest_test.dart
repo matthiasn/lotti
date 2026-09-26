@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/projection/content_digest.dart';
 import 'package:lotti/features/agents/workflow/task_state_digest.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -9,6 +11,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/entity_factories.dart';
 import '../../../mocks/mocks.dart';
+import '../test_utils.dart';
 
 VectorClock _vc(int counter) => VectorClock({'host-a': counter});
 
@@ -45,6 +48,17 @@ class _TaskWorld {
     analysis = TestAiResponseFactory.create(
       id: 'analysis-1',
     ).copyWith(meta: _meta('analysis-1', vc: _vc(7)));
+    linkedTask = TestTaskFactory.create(
+      id: 'linked-task-1',
+    ).copyWith(meta: _meta('linked-task-1', vc: _vc(8)));
+    childEntry = JournalEntity.journalEntry(
+      meta: _meta('child-entry-1', vc: _vc(9)),
+    );
+    linkedReport = makeTestReport(
+      id: 'linked-report-1',
+      agentId: 'linked-agent-1',
+      vectorClock: _vc(10),
+    );
   }
 
   late JournalEntity task;
@@ -54,18 +68,45 @@ class _TaskWorld {
   late JournalEntity checklist;
   late JournalEntity item;
   late JournalEntity analysis;
+  late JournalEntity linkedTask;
+  late JournalEntity childEntry;
+  late AgentReportEntity linkedReport;
 
   /// Serves linked lists in reverse, as another device's query might.
   bool reversed = false;
 
   List<T> _order<T>(List<T> list) => reversed ? list.reversed.toList() : list;
 
+  MockAgentRepository agents() {
+    final repository = MockAgentRepository();
+    when(
+      () => repository.getLinksToMultiple([
+        'linked-task-1',
+      ], type: AgentLinkTypes.agentTask),
+    ).thenAnswer(
+      (_) async => {
+        'linked-task-1': [
+          makeTestAgentTaskLink(
+            fromId: 'linked-agent-1',
+            toId: 'linked-task-1',
+          ),
+        ],
+      },
+    );
+    when(
+      () => repository.getLatestReportsByAgentIds([
+        'linked-agent-1',
+      ], AgentReportScopes.current),
+    ).thenAnswer((_) async => {'linked-agent-1': linkedReport});
+    return repository;
+  }
+
   MockJournalDb db() {
     final db = MockJournalDb();
     when(() => db.journalEntityById('task-1')).thenAnswer((_) async => task);
     when(
       () => db.getLinkedEntities('task-1'),
-    ).thenAnswer((_) async => _order([entry, image]));
+    ).thenAnswer((_) async => _order([entry, image, linkedTask]));
     when(
       () => db.getLinkedToEntities('task-1'),
     ).thenAnswer((_) async => [toDbEntity(project)]);
@@ -80,11 +121,19 @@ class _TaskWorld {
         'image-1': [analysis],
       },
     );
+    when(() => db.getBulkLinkedEntities({'linked-task-1'})).thenAnswer(
+      (_) async => {
+        'linked-task-1': [childEntry],
+      },
+    );
     return db;
   }
 
-  Future<String?> digest() =>
-      taskStateDigest(journalDb: db(), taskId: 'task-1');
+  Future<String?> digest() => taskStateDigest(
+    journalDb: db(),
+    agentRepository: agents(),
+    taskId: 'task-1',
+  );
 }
 
 void main() {
@@ -103,6 +152,9 @@ void main() {
           'checklist-1': {'host-a': 5},
           'item-1': {'host-a': 6},
           'analysis-1': {'host-a': 7},
+          'linked-task-1': {'host-a': 8},
+          'child-entry-1': {'host-a': 9},
+          'report:linked-report-1': {'host-a': 10},
         }),
       );
     },
@@ -136,6 +188,13 @@ void main() {
       "an image's AI analysis": (w) => w.analysis = w.analysis.copyWith(
         meta: w.analysis.meta.copyWith(vectorClock: _vc(10)),
       ),
+      // The linked-task context sums a linked task's time from its entries
+      // and summarises its agent's report.
+      "a linked task's time entry": (w) => w.childEntry = w.childEntry.copyWith(
+        meta: w.childEntry.meta.copyWith(vectorClock: _vc(20)),
+      ),
+      "a linked task's agent report": (w) =>
+          w.linkedReport = w.linkedReport.copyWith(vectorClock: _vc(20)),
     };
 
     for (final MapEntry(key: name, value: edit) in edits.entries) {

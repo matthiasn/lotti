@@ -544,17 +544,22 @@ The protocol is model-checked in
 each coordinator method names the action it implements.
 
 The comparison key is `taskStateDigest`: a `ContentDigest` over the vector
-clock of every journal entity the task context reads — the task, the entities
-linked from and to it, its checklists and items, its images' AI analyses.
-Replicas holding the same versions agree on it without coordinating, and a
-wake's own writes are change-set proposals in the agent database, so they
-leave it alone. Agent kinds without a digest run uncoordinated.
+clock of every entity the task context reads — the task, the entities linked
+from and to it, its checklists and items, its images' AI analyses, and for
+each linked task the entries its time is summed from and its agent's current
+report. Replicas holding the same versions agree on it without coordinating,
+and a wake's own writes are change-set proposals in the agent database, so
+they leave it alone. A matching `done` cancels a wake, so **the digest must
+follow the context builders**: an input the context reads but the digest
+misses could be dropped unprocessed. Agent kinds without a digest run
+uncoordinated.
 
 The drain asks the coordinator after the content gate. **Cancel** when a peer
 completed a run over this digest: the job is dropped and its intent settled,
 since the peer's run covers its triggers. **Defer** while a peer's claim for
 this digest is live: the job is held back and the coordinator asks for a
-drain when that claim ends or lapses. **Proceed** otherwise — a different
+drain when that claim ends, lapses, or is replaced by a claim over another
+digest — every event that can free the job. **Proceed** otherwise — a different
 digest is new work — and broadcast `claim(digest)`, repeated every 45 seconds
 while the run lives. A successful run broadcasts `done`; `_executeJob`'s
 outer `finally` broadcasts `release` for any run that ended otherwise, which

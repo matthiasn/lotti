@@ -103,8 +103,10 @@ class AgentWakeCoordinator with AgentErrorLogging {
   @override
   LogDomain get errorLogDomain => LogDomain.agentRuntime;
 
-  /// Called with an agent id when a peer's claim for it ends or lapses, so
-  /// deferred jobs are drained again. Set by the orchestrator.
+  /// Called with an agent id whenever a peer's claim for it ends, lapses or
+  /// is replaced by a claim over another digest — every event that can free
+  /// a deferred job — so deferred jobs are drained again. Set by the
+  /// orchestrator.
   void Function(String agentId)? onPeerStateChanged;
 
   final _peers = <String, Map<String, _PeerView>>{};
@@ -259,9 +261,17 @@ class AgentWakeCoordinator with AgentErrorLogging {
     final now = clock.now();
     switch (message.kind) {
       case AgentWakeCoordinationKind.claim:
+        final previous = view.claimHash;
         // A claim that arrives after it would have lapsed says nothing about
-        // a live run: the device was offline, or the queue was backed up.
-        if (now.difference(message.sentAt) >= coordinationTimeout) return;
+        // a live run: the device was offline, or the queue was backed up. It
+        // is still newer than the claim held, which it supersedes.
+        if (now.difference(message.sentAt) >= coordinationTimeout) {
+          if (previous != null) {
+            view.clearClaim();
+            _peerStateChanged(message.agentId);
+          }
+          return;
+        }
         view
           ..claimHash = message.stateHash
           ..claimExpiresAt = now.add(coordinationTimeout);
@@ -270,6 +280,10 @@ class AgentWakeCoordinator with AgentErrorLogging {
           coordinationTimeout,
           () => _peerStateChanged(message.agentId),
         );
+        // A job held back by the claim this one replaces may run now.
+        if (previous != null && previous != message.stateHash) {
+          _peerStateChanged(message.agentId);
+        }
       case AgentWakeCoordinationKind.done:
         view
           ..clearClaim()

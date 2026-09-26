@@ -286,6 +286,66 @@ void main() {
       });
     });
 
+    test(
+      'a claim over another digest replaces the held one and asks for a '
+      'drain',
+      () {
+        _fake((async) {
+          // The done for state A was lost; the peer has moved on to B.
+          final device = _Device('me');
+          device.coordinator.onMessage(
+            _message(kind: AgentWakeCoordinationKind.claim),
+          );
+          expect(
+            _resolve(async, device.evaluate()),
+            isA<WakeCoordinationDefer>(),
+          );
+
+          device.coordinator.onMessage(
+            _message(kind: AgentWakeCoordinationKind.claim, stateHash: _stateB),
+          );
+
+          expect(device.changed, [_agent]);
+          expect(
+            _resolve(async, device.evaluate()),
+            isA<WakeCoordinationProceed>(),
+          );
+        });
+      },
+    );
+
+    test('a lapsed claim newer than the held one supersedes it', () {
+      _fake((async) {
+        final device = _Device('me');
+        // Delivered late, but still inside its window.
+        device.coordinator.onMessage(
+          _message(
+            kind: AgentWakeCoordinationKind.claim,
+            sentAt: _start.subtract(const Duration(seconds: 100)),
+          ),
+        );
+        async.elapse(const Duration(seconds: 30));
+        expect(
+          _resolve(async, device.evaluate()),
+          isA<WakeCoordinationDefer>(),
+        );
+
+        // A heartbeat sent after it, arriving after its own window.
+        device.coordinator.onMessage(
+          _message(
+            kind: AgentWakeCoordinationKind.claim,
+            sentAt: _start.subtract(const Duration(seconds: 95)),
+          ),
+        );
+
+        expect(device.changed, [_agent]);
+        expect(
+          _resolve(async, device.evaluate()),
+          isA<WakeCoordinationProceed>(),
+        );
+      });
+    });
+
     test('a claim that arrives after it would have lapsed is ignored', () {
       _fake((async) {
         final device = _Device('me');
