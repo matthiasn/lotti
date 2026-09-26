@@ -335,6 +335,27 @@ void main() {
   });
 
   group('DateTimeField Modal Integration Tests', () {
+    testWidgets('time mode keeps a wheel row visible above the action bar', (
+      WidgetTester tester,
+    ) async {
+      await _pumpField(
+        tester,
+        dateTime: DateTime(2024, 1, 15, 14, 19),
+        mode: CupertinoDatePickerMode.time,
+      );
+      await tester.tap(find.text('14:19'));
+      await tester.pumpAndSettle();
+
+      // The sticky bar is laid over the sheet's bottom edge; the selected row
+      // must sit at least one full row (40) clear of it, or the wheel reads as
+      // cut off below the selection.
+      final selectedRowCenter = tester
+          .getCenter(find.byType(DesignSystemTimeWheel))
+          .dy;
+      final barTop = tester.getTopLeft(find.byType(DateTimeStickyActionBar)).dy;
+      expect(barTop - selectedRowCenter, greaterThanOrEqualTo(40));
+    });
+
     testWidgets('complete flow: open modal, select date, tap done', (
       WidgetTester tester,
     ) async {

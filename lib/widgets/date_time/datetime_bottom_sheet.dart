@@ -29,6 +29,8 @@ class DateTimeBottomSheet extends StatefulWidget {
 }
 
 class _DateTimeBottomSheetState extends State<DateTimeBottomSheet> {
+  static const _wheelBoxHeight = 265.0;
+
   @override
   void initState() {
     super.initState();
@@ -43,11 +45,18 @@ class _DateTimeBottomSheetState extends State<DateTimeBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    // Both wheels sit in the same box, so the sticky action bar the sheet
+    // lays over its bottom edge clears the selected row either way.
     if (widget.mode == CupertinoDatePickerMode.time) {
-      return DesignSystemTimeWheel(
-        initialDateTime: widget.initial ?? clock.now(),
-        use24hFormat: true,
-        onDateTimeChanged: widget.onDateTimeSelected,
+      return SizedBox(
+        height: _wheelBoxHeight,
+        child: Center(
+          child: DesignSystemTimeWheel(
+            initialDateTime: widget.initial ?? clock.now(),
+            use24hFormat: true,
+            onDateTimeChanged: widget.onDateTimeSelected,
+          ),
+        ),
       );
     }
     return CupertinoTheme(
@@ -58,7 +67,7 @@ class _DateTimeBottomSheetState extends State<DateTimeBottomSheet> {
         ),
       ),
       child: SizedBox(
-        height: 265,
+        height: _wheelBoxHeight,
         child: CupertinoDatePicker(
           initialDateTime: widget.initial,
           mode: widget.mode,
