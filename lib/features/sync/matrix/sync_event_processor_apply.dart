@@ -107,11 +107,10 @@ extension SyncEventProcessorApply on SyncEventProcessor {
         );
         return null;
       case SyncAiConfigDelete(:final id, :final hardDelete):
-        // Current builds only send this envelope for hard deletes — an
-        // orphaned-seed prune or a provider cascade — and mark it. Applying
-        // those softly would leave a tombstone that stops the peer re-seeding
-        // a profile the sender merely pruned, and keep cascaded rows as hidden
-        // records.
+        // Current builds only send this envelope, marked, for a deleted
+        // prompt or skill, whose content must not be kept; earlier builds
+        // also sent it for a provider cascade. Applying those softly would
+        // keep the deleted content as a hidden record.
         //
         // An absent flag is a *legacy* user deletion from 0.9.1068 or earlier,
         // which had no other way to express one. Hard-deleting it would let

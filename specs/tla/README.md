@@ -1351,9 +1351,9 @@ What the model leaves out, deliberately or as a residual:
 
 - **A timed-out send can land after a newer one** (ADR 0085's residual 1,
   unchanged). `OutboxGhost` allows it; with `NewestLandsLast` it fails in ten
-  steps. Payloads the receiver orders by vector clock drop the late copy; a
-  config flag or an AI configuration, applied in arrival order, is
-  overwritten on the peer. The options — a stable Matrix transaction id per
+  steps. Payloads the receiver orders by vector clock or stamp drop the late
+  copy (AI configurations since `AiConfigReplication`); a config flag,
+  applied in arrival order, is overwritten on the peer. The options — a stable Matrix transaction id per
   outbox row, a clock or timestamp for those payloads, no timeout while the
   SDK still retries — each change the wire or the protocol.
 - **Remove of the newer row, then Retry of an older one**, sends the older
@@ -2132,6 +2132,289 @@ The repository suite (`saved_task_filters_repository_test.dart`) has a
 deterministic regression for each switch, including every delivery order of an
 edit and two deletes; reverting any one of the Dart fixes fails at least one of
 them.
+
+## `AiConfigReplication` — AI settings converge, and deletions stick
+
+AI configurations — inference providers with their API keys, models, prompts,
+profiles and skills — replicate as whole rows (`SyncMessage.aiConfig`), are
+not sequence-tracked, and are re-sent wholesale by "Send settings". The model
+covers one provider and two models (one that exists everywhere, one that model
+backfill creates under its deterministic id): the user's edits, soft deletes
+and restores, the provider cascade, backfill on a device that still holds the
+provider, "Send settings" replaying every row a device holds (deleted ones
+included), and receivers applying any sent row in any order and again. Rows
+are `none`, `live` or `tomb` with a stamp (`updatedAt`) and content. The
+protocol is described in
+[seeding and lifecycle](../../knowledge/features/ai/seeding-and-lifecycle.md#replication-across-devices).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `Converged` | invariant | once every row sent has reached every device, all devices hold the same rows |
+| `LatestWins` | invariant | ... and each is the greatest revision written: a newer restore beats an older delete and the reverse, and a replayed or late older copy changes nothing |
+| `NoDanglingModel` | invariant | ... and no device holds a live model whose provider is deleted or missing |
+| `EventuallyConverged` | liveness | the devices end up holding the same rows and stay so |
+
+| Configuration | Devices | Edits | Soft deletes | Restores | Cascades | Backfills | Replays | Distinct states |
+|---------------|---------|-------|--------------|----------|----------|-----------|---------|-----------------|
+| `AiConfigReplication` | 2 | 2 | 1 | 1 | 0 | 0 | 1 | 37,789 |
+| `AiConfigReplicationCascade` | 2 | 0 | 0 | 0 | 1 | 2 | 1 | 34,641 |
+
+Both check `TypeOK` and every property above, with stamps 1–2 chosen freely per
+write (device clocks are not synchronised). Each fix has a switch; setting one
+to `FALSE` in a temporary copy of the configuration named gives:
+
+| Mutation | Configuration | Counterexample |
+|----------|---------------|----------------|
+| `OrderLiveRows = FALSE` | `AiConfigReplication` | `Converged` (5 states): both devices edit the provider with the same stamp; each applies the other's edit over its own and they swap for good. With different stamps a late or replayed older copy overwrites the newer one the same way |
+| `OrderTombstones = FALSE` | `AiConfigReplication` | `Converged` (5 states): device 1 deletes a model and then restores it; device 2 receives the restore first and the older delete second, and keeps the model deleted |
+| `MonotonicStamps = FALSE` | `AiConfigReplication` | `Converged` (5 states): device 1 edits the provider at stamp 2, then again at stamp 1 (its clock behind, or a writer that copied the old stamp); it keeps its own last edit while device 2 rejects it as older |
+| `SoftCascade = FALSE` | `AiConfigReplicationCascade` | `NoDanglingModel` (6 states): device 1 hard-deletes the provider and its model while device 2 backfills a new model for it; both end with a live model and no provider. Checking `Converged` alone (6 states): device 2's "Send settings", queued before the model's delete reached it, brings the model back on device 1 only. `LatestWins` fails at once, since a hard delete is not a revision |
+| `CascadeOnReceive = FALSE` | `AiConfigReplicationCascade` | `NoDanglingModel` (7 states): device 1 tombstones the provider and its model while device 2 backfills a second model; after every row is delivered both devices hold that model live under a deleted provider |
+
+What the model leaves out:
+
+- **Prompts and skills are still hard-deleted**, so their content is not kept
+  on any device, and a delete is sent as `aiConfigDelete(hardDelete: true)`.
+  An older copy a peer replays after that delete brings the prompt back; the
+  model's `SoftCascade = FALSE` trace is the same hole. Keeping a tombstone
+  would need one that holds no content.
+- **Orphaned-seed pruning** (`removeOrphanedDefaultSeeds`) hard-deletes locally
+  and sends nothing: whether a profile can be served is per device, and a
+  pruned profile is expected to come back.
+- **Legacy peers.** A build before this model sends unstamped rows, hard
+  cascade deletes and unordered applies; those are the `FALSE` switches.
+- **The enqueue.** A write and its enqueue are one step; a failed or lost
+  enqueue is `Outbox.tla`'s, and nothing records the owed row (no intent
+  ledger as in `SavedTaskFilterSync`). "Send settings" is the repair.
+- **API keys.** A live provider synced without a key keeps the receiver's key,
+  and a provider tombstone drops it everywhere; neither is modelled. So is the
+  repository's cache (its rebuild bug is a unit regression).
+
+The repository suite (`ai_config_repository_test.dart`, "replication across
+devices") drives two real repositories over in-memory databases through the
+traces above; reverting any one of the Dart fixes fails at least one of them.
+## `TranscriptionRun` — a recording's transcript, saved once and for real
+
+Skill-based transcription of one recording on one device, through
+`SkillInferenceRunner.runTranscription`: the requests that start it (the
+automatic trigger when a recording stops, the AI popup and the timelines'
+Retry through `triggerSkillProvider`, the synced-audio dispatcher on a pinned
+host, the check-in service), the provider call, the re-read and the write of
+the transcript back onto the `JournalAudio`, the audio summary, and what the
+callers do once the call returns — `AutomaticPromptTrigger` nudges the
+subject's agent, the check-in waiter gives up on `onError`. A peer's synced
+edit can land at any point; one landing between the re-read and the write
+makes the write's vector clock concurrent with the stored one, and
+`JournalDb.updateJournalEntity` refuses it. `JournalRepository` also turns a
+throw into `false`. A local edit only raises this host's counter, which the
+run's own write passes. The runner's contract is described in
+[AI execution paths](../../knowledge/features/ai/execution-paths.md#saving-a-transcript).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `OkMeansPersisted` | invariant | a caller told the run succeeded can find its transcript |
+| `AttributionTruthful` | invariant | an attribution is finalized as succeeded only when its transcript was saved |
+| `FollowUpsNeedTranscript` | invariant | the audio summary and the agent nudge follow a saved transcript only |
+| `SingleInference` | invariant | at most one paid inference of a recording is in flight on a device |
+| `StatusShowsRunning` | invariant | while a transcription is under way its status says so |
+| `NoLostEdit` | invariant | text edited while a run was under way survives its write |
+| `ConflictIsTransient` | invariant | a write that did not land fails the run only after `MaxAttempts` tries |
+| `EveryRequestSettles` | liveness | every request returns, succeeded or visibly failed |
+| `WaiterResolves` | liveness | the check-in waiter ends with the words or with the error, never only by its timeout |
+
+| Configuration | Requests | Peer edits | User edits | Provider failures | Write throws | Write attempts | Distinct states |
+|---------------|----------|------------|------------|-------------------|--------------|----------------|-----------------|
+| `TranscriptionRun` | 2 | 1 | 1 | 1 | 1 | 3 | 20,533 |
+| `TranscriptionRunExhaust` | 2 | 2 | 1 | 0 | 1 | 2 | 93,568 |
+
+The second lets a run use up its write attempts, so the failure path after the
+last retry is explored too. Each fix has a switch; setting one to `FALSE` in a
+temporary copy of `TranscriptionRun.cfg` gives:
+
+| Mutation | Counterexample |
+|----------|----------------|
+| `CheckWrite = FALSE` (the code before) | `OkMeansPersisted` (5 states): request, inference, re-read, and a write that does not land — the run reports success, status idle, an attribution finalized as succeeded (`AttributionTruthful`), and one step later the summary runs (`FollowUpsNeedTranscript`, 6 states). Checking `WaiterResolves` alone (10 states): the check-in joins, a write that does not land, both calls return without an error, and the waiter sees no words until its timeout |
+| `RetryConflict = FALSE` | `ConflictIsTransient` (5 states): the first write that does not land fails the run, which paid for an inference a second attempt would have saved |
+| `SettleOnOutcome = FALSE` | `FollowUpsNeedTranscript` (4 states): the provider fails and the summary runs anyway — over whatever the recording held before; the agent nudge after it likewise |
+| `SingleFlight = FALSE` | `SingleInference` (3 states): two requests for one recording both start an inference. Checking `StatusShowsRunning` alone (4 states): the second run fails and sets the status to error while the first is still running |
+| `KeepConcurrentEdit = FALSE` | `NoLostEdit` (6 states): a synced edit of the text lands during the inference, the re-read sees it, and the write replaces it with the transcript |
+| `EditInWriteWindow = TRUE` | `NoLostEdit` (6 states) — a residual, below |
+
+What the model leaves out:
+
+- **A local edit between the re-read and the write** (`EditInWriteWindow`). The
+  run compares the re-read text with the text at its first read; an edit that
+  commits after the re-read, with a smaller counter than the one the run's write
+  then reserves, is still overwritten. The window is a few local database
+  calls long.
+  Closing it means a compare-and-set write (`updateDbEntity`'s `precondition`),
+  which `JournalRepository.updateJournalEntity` does not expose.
+- **Re-transcription replaces text edited before the run.** That is the
+  request: the user asked for new words. The earlier transcripts stay in the
+  history, but typed corrections do not.
+- **Another device transcribing the same recording.** The model is one device.
+  The synced-audio dispatcher's self-echo, pin and transcript-count guards
+  decide which device transcribes a synced recording; a transcript that lands
+  from a peer during a run is a peer edit here, and the run keeps the peer's
+  text.
+- **A failed run's attribution** stays an unfinalized in-memory session, as an
+  image analysis whose response was not stored does: the consumption events are
+  the evidence and no output claims the work.
+- **The summary's own gates** (a task, an automated transcription, an automated
+  summary skill) and its failures, which never reach the transcription run.
+- **Daily OS capture**, which transcribes through `AudioTranscriptionService`,
+  not this runner.
+
+The runner suite (`skill_inference_runner_test.dart`, `transcription_save.dart`
+and `transcription_summary.dart`) and `automatic_prompt_trigger_test.dart` hold
+a deterministic regression for each switch; each fails with its fix reverted.
+## `EmbeddingFreshness` — the index keeps up with the journal
+
+The local vector index is a cache that nothing reconciles: a row stays as the
+last run left it until the entry is next edited. Three writers feed it with no
+shared queue — `EmbeddingService` (one id at a time from its pending set), the
+manual `EmbeddingBackfillController`, and the task agent's report writer — and
+each run reads the journal, waits on Ollama, then writes. The model has one
+task (text, deleted flag, category; `Short` stands for text under the minimum)
+and one agent report, two category shards, the store's in-memory index and
+the shard written last, an endpoint that goes into its cooldown and comes
+back, and a crash that can split a replace between its two shards. The
+runtime rules are in
+[the knowledge concept](../../knowledge/features/ai/embeddings-and-search.md#keeping-up-with-the-journal).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `Fresh` | invariant | once nothing is pending, retrying or running, a live entry has exactly one vector, of its current text, in its category's shard; a deleted or too-short one has none; an embedded report sits in its live task's category |
+| `OneShard` | invariant | the index rebuild leaves every key in at most one shard |
+| `NoRevert` | invariant | the index points at the copy written last: a recovery never brings back older content |
+| `EventuallyFresh` | liveness | with the endpoint back for good, every entry ends up as `Fresh` describes |
+
+Ids a crash dropped from memory (the pending and retry sets, a running job)
+are excused by the ghost `lost` until their next local change; see the
+residuals below.
+
+| Configuration | Entities | Edits | Recategorisations | Deletes | Outages | Crashes | Backfills | Reports | Distinct states |
+|---------------|----------|-------|-------------------|---------|---------|---------|-----------|---------|-----------------|
+| `EmbeddingFreshness` | one task | 2 | 1 | 1 | 1 | 1 | 1 | 1 | 207,435 |
+| `EmbeddingFreshnessTwo` | a task and an entry | 2 | 1 | 1 | 1 | 0 | 1 | 0 | 505,212 |
+
+Both check `TypeOK` and every property above, with edits choosing any of two
+texts or a short one. Each fix has a switch; setting one to `FALSE` in a
+temporary copy of `EmbeddingFreshness.cfg` gives:
+
+| Mutation | Counterexample |
+|----------|----------------|
+| `SerializeEntity = FALSE` | `Fresh` (11 states): the report race below, since the report writer's lock means nothing when `processEntity` takes none. Without the report (`ReportBudget = 0`), 12 states: the user edits, the backfill reads the edit, the user deletes the entry, the service drops its vectors, and the backfill's write lands — a deleted entry that search still finds. Without deletes either, 13 states: the backfill reads an edit, the user undoes it, the service finds the undone text equal to what is stored and skips, and the backfill stores the edit |
+| `RequeueFailures = FALSE` | `Fresh` (7 states): an edit, the service takes the id, the endpoint goes down, the embedding fails and the id is dropped. With `Fresh` removed, `EventuallyFresh` fails the same way: the endpoint recovers and the entry stays stale for good |
+| `DropStale = FALSE` | `Fresh` (5 states): the user deletes the entry, and the service reads it as gone and returns, leaving its vectors |
+| `ReportUnderTaskLock = FALSE` | `Fresh` (11 states): the report writer reads the task's category, the user moves the task, the service moves the task and its reports — the report is not stored yet — and the report lands in the old category |
+| `ReconcileReports = FALSE` | `Fresh` (11 states): the task's text drops under the minimum, the report is stored, the task moves, and the service, finding nothing to embed, never moves the report |
+| `RecoverNewest = FALSE` | `NoRevert` (8 states): an edit and a move out of the shard whose name sorts last; the process dies after the new copy is written and before the old one is deleted, and the rebuild keeps the old one |
+
+Residual counterexamples, found by changing constants in temporary copies:
+
+- **Synced edits are never embedded.** `SyncBudget = 1` fails `Fresh` in two
+  states: an edit arrives by sync, which notifies only `syncUpdateStream`. The
+  design note that each device embeds its own copy suggests the service should
+  hear them; embedding every synced write would also re-embed a whole initial
+  sync. Left open. Agent writes (`notifyUiOnly`) are missed the same way.
+- **A restart forgets pending and retrying ids.** The sets live in memory;
+  `lost` excuses them. The manual backfill is the repair.
+
+What the model leaves out:
+
+- **Reads inside a run.** The journal read, the length check, both store
+  reads and a hash-equal move are one step; under the lock nothing interleaves
+  with them, and without it the switch's counterexamples need no finer grain.
+- **Chunks.** A run embeds all chunks before it writes, so one network step
+  stands for them.
+- **A failed report is not retried**, and a report for a deleted task is not
+  checked (the code files it under the default shard).
+- **Two reports in flight.** A slow report embedding can land after its
+  successor deleted its predecessor, leaving a stale report vector beside the
+  new one. It needs two wakes of one task whose fire-and-forget embeddings
+  overlap, and is noted here rather than modelled or fixed.
+- **The model id.** Chunks record it but nothing compares it, so a different
+  model of the same dimension leaves old vectors until each entry changes.
+- **A crash during a move** splits it like a replace; with equal content it
+  can only leave the category stale, which `lost` excuses.
+
+`embedding_processor_test.dart` holds each race open on a `Completer` for the
+network call — the stale backfill write, the undone edit, the report racing a
+recategorisation, the short task's reports — and checks the deletion rules;
+`embedding_service_test.dart` retries through a cooldown and after an ordinary
+failure under fake time; `sharded_embedding_store_test.dart` pins the rebuild's
+choice and a move's re-stamped `createdAt`; `vector_search_repository_test.dart`
+skips a deleted entry's leftover vector. Each fails with its fix reverted.
+## `ConversationLoop` — the multi-turn tool-calling loop
+
+`ConversationRepository.sendMessage` drives every agent wake and evolution
+chat: it adds the user turn, asks the provider, records the assistant's tool
+calls, lets the `ConversationStrategy` run them, and either sends the
+strategy's continuation prompt as the next turn or stops.
+`ConversationManager` keeps the history, trims it to `maxHistorySize`, and
+refuses a turn past `maxTurns`. The model keeps the history as a sequence of
+roles and tool-call ids (`tool_turn<t>_<n>`, the ids the Gemini adapters and
+the repository synthesize from the turn index), lets the model answer each
+round with any number of tool calls up to `MaxCalls`, and lets the strategy
+continue for ever — a task agent continues until it calls `update_report`.
+The awaits inside one send (the stream, every tool execution) are where a
+second send on the same conversation interleaves, and a strategy can throw
+part-way through a round. The loop is described in
+[Conversations and tool calling](../../knowledge/features/ai/conversations-and-tools.md).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `BoundedRounds` | invariant | one send makes at most `maxTurns` requests, however the history is trimmed |
+| `UniqueToolCallIds` | invariant | no tool-call id is issued twice in a conversation (thought signatures and Gemini's result-to-function mapping are keyed by it) |
+| `NoOrphanResult` | invariant | no request carries a tool result without its call in the assistant turn before it |
+| `EveryCallAnswered` | invariant | no request carries a tool call without its result |
+| `OpensWithUserTurn` | invariant | after the system instructions, every request opens on a user turn (Gemini rejects a function call that follows neither a user turn nor a function response) |
+| `Terminates` | liveness | every send returns |
+
+| Configuration | Senders | Sends each | `maxTurns` | History | Calls a round | Throws | Distinct states |
+|---------------|---------|------------|------------|---------|---------------|--------|-----------------|
+| `ConversationLoop` | 1 | 2 | 6 | 9 | 0–3 | 1 | 21,926 |
+| `ConversationLoopConcurrent` | 2 | 2 | 5 | 8 | 0–2 | 1 | 35,319 |
+
+The second send of `ConversationLoop` is the task agent's forced
+`update_report` retry, or the next message of an evolution chat. Both
+configurations check `TypeOK` and every property above. Each fix has a switch;
+setting one to `FALSE` in a temporary copy of the configuration named gives:
+
+| Mutation | Counterexample |
+|----------|----------------|
+| `MonotonicTurns = FALSE` (`ConversationLoop`) | `BoundedRounds` (27 states): one tool call a round, and the trim at the third continuation leaves two user turns, so `turnCount` never reaches six and the seventh request goes out. `Terminates` fails on a lasso that returns to its 33rd state, and `UniqueToolCallIds` in 13 states: after the trim the turn index goes back to 2 and the next round reissues `tool_turn2_1`. In the code, a wake (`maxTurnsPerWake = 10`, 100 messages of history) never ends while every round has nine tool calls or more, and an evolution chat, whose strategy hands back to the user after each round, never reaches its 20-turn limit at four |
+| `TailFromUser = FALSE` (`ConversationLoop`) | `OpensWithUserTurn` (16 states): the fourth turn's trim cuts inside a tool round; the old strip dropped only the leading tool results and kept the assistant's tool call that followed as the first turn |
+| `AnswerPending = FALSE` (`ConversationLoop`) | `EveryCallAnswered` (8 states): the strategy throws before answering, the loop ends, and the retry sends a user turn after two unanswered calls |
+| `Serialize = FALSE` (`ConversationLoopConcurrent`) | `NoOrphanResult` (7 states): the second send's user turn lands between the first's tool call and its result. `EveryCallAnswered` (6 states): the second send's request goes out while the first's tools still run. `UniqueToolCallIds` (7 states): both sends read the same turn and issue `tool_turn2_1` twice |
+
+`Serialize = FALSE` has no counterexample in `ConversationLoop`, whose one
+sender never overlaps itself.
+
+What the model leaves out:
+
+- **Stream failures.** A failed stream ends the send before its assistant
+  turn, so it leaves no call open; the history then ends on a user turn, and
+  the next send adds a second one, which every provider accepts.
+- **Provider-sent ids.** OpenAI and Mistral send their own tool-call ids.
+  Melious's adapter falls back to `tool_<index>` when its provider sends none,
+  which repeats every round; that adapter is outside the loop. The model covers
+  the ids the conversation loop and the Gemini adapters synthesize.
+- **The turn budget across sends.** The count is per conversation, so a retry
+  sent after the loop used every turn is refused at once: the task agent's
+  forced `update_report` retry never runs after a wake that ran out of turns.
+  The model shows it (the second send ends in `Begin`) and checks nothing about
+  it.
+- **Streamed chunk assembly.** How OpenAI-style fragments become calls is a
+  pure function, checked by a Glados property in the repository suite instead.
+
+The repository suite (`conversation_repository_test.dart`) drives the real
+loop with an adversarial provider and strategy: a Glados property over the
+tool calls per round and `maxTurns` checks `BoundedRounds` (exactly
+`maxTurns - 1` requests), `UniqueToolCallIds` and the three request-time
+invariants on every request, and deterministic regressions cover each switch.
+Reverting any one of the Dart fixes fails at least one of them.
 
 ## `EnvelopeChain` — signed provenance chains (a design model)
 

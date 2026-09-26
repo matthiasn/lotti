@@ -223,8 +223,9 @@ class VectorSearchRepository {
   ///
   /// Returns the resolved tasks and a map of task ID → best (lowest) distance.
   /// If a result is already a Task, it is fetched directly. Otherwise, the
-  /// parent task is resolved via linked entries. Both direct and linked
-  /// entities are bulk-fetched to avoid N+1 queries.
+  /// parent task is resolved via linked entries, for an entry that still
+  /// exists. Direct, child and linked entities are bulk-fetched to avoid N+1
+  /// queries.
   Future<(List<JournalEntity>, Map<String, double>)> _resolveToTasks(
     List<EmbeddingSearchResult> results,
   ) async {
@@ -255,19 +256,29 @@ class VectorSearchRepository {
         e.meta.id: e,
     };
 
-    // 2. Batch-fetch linked entries for non-task, non-agent-report results.
+    // 2. Batch-fetch linked entries for non-task, non-agent-report results
+    // whose entry still exists. A vector can outlive its entry — one deleted
+    // before deletions dropped their vectors — and must not surface the
+    // deleted entry's parents.
     final nonTaskIds = results
         .where(
           (r) =>
               r.entityType != kEntityTypeTask &&
               r.entityType != kEntityTypeAgentReport,
         )
-        .toList();
+        .map((r) => r.entityId)
+        .toSet();
     final childToParentIds = <String, List<String>>{};
     if (nonTaskIds.isNotEmpty) {
-      final links = await _journalDb
-          .linksForIds(nonTaskIds.map((r) => r.entityId).toList())
-          .get();
+      final liveChildIds = [
+        for (final e in await _journalDb.getJournalEntitiesForIdsUnordered(
+          nonTaskIds,
+        ))
+          e.meta.id,
+      ];
+      final links = liveChildIds.isEmpty
+          ? const <LinkedDbEntry>[]
+          : await _journalDb.linksForIds(liveChildIds).get();
       for (final link in links) {
         (childToParentIds[link.toId] ??= []).add(link.fromId);
       }

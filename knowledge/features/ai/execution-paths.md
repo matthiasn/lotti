@@ -5,13 +5,21 @@ description: The legacy prompt path, the skill/profile path, the category consen
 resource: ../../../lib/features/ai/services/skill_inference_runner.dart
 tags: [ai, skills, automation, consent, overrides, diagnostics]
 status: stable
-generated: { by: claude-code/fable-5.1, at: 2026-09-15T18:30:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-26T13:00:00Z }
 stale_after: 2026-10-22
 sources:
   - id: runner
     resource: ../../../lib/features/ai/services/skill_inference_runner.dart
     title: SkillInferenceRunner
-    last_modified: 2026-09-12
+    last_modified: 2026-09-26
+  - id: auto-trigger
+    resource: ../../../lib/features/speech/helpers/automatic_prompt_trigger.dart
+    title: AutomaticPromptTrigger
+    last_modified: 2026-09-26
+  - id: transcription-model
+    resource: ../../../specs/tla/TranscriptionRun.tla
+    title: TranscriptionRun TLA+ model
+    last_modified: 2026-09-26
   - id: skill-modal
     resource: ../../../lib/features/ai/ui/unified_ai_skills_modal.dart
     title: Unified AI skills modal
@@ -249,21 +257,71 @@ default profile, whose `task.data.profileId` is null.
 
 | Skill type | Result |
 |------------|--------|
-| Transcription | Updates `JournalAudio.transcripts` and `entryText`, then runs the audio-summary skill when the profile automates it (see below) |
+| Transcription | Appends to `JournalAudio.transcripts` and sets `entryText` (see [saving a transcript](#saving-a-transcript)), then runs the audio-summary skill when the profile automates it (see below) |
 | Audio summary | Creates an `AiResponseEntry` linked from the `JournalAudio`, carrying `oneLiner` / `tldr` on `AiResponseData` plus the full markdown in `response` — **one per run**, newest wins |
 | Image analysis | Creates an `AiResponseEntry` linked from the `JournalImage` — **one per run**, so an image accumulates multiple analyses (a brief summary, a full OCR extraction), distinguished by model. Carries `oneLiner` / `tldr` when the vision model can call tools (see below) |
 | Prompt generation (coding/design/research) | Creates an `AiResponseEntry` linked to the parent task when one resolves, **and** back to the source audio/text entry so the prompt appears in both linked-entries lists (falling back to a single link on the source entry when no task resolves) |
 | Image-prompt generation | Keeps the entry link |
 | Image generation | Imports the generated image, sets it as task cover art, then triggers automatic image analysis on it |
 
+## Saving a transcript
+
+Every route to a skill transcription — the automatic trigger when a recording
+stops, the AI popup and the timelines' Retry through `triggerSkillProvider`
+(which a goal check-in also takes), the synced-audio dispatcher on a pinned
+host, and the relationship check-in service — ends in
+`SkillInferenceRunner.runTranscription`. Daily OS capture does not: it
+transcribes through `AudioTranscriptionService` ([batch
+transcription](batch-transcription.md)). Four rules hold the run together, each
+pinned by a switch in the `TranscriptionRun` TLA+ model
+([specs/tla/README.md](../../../specs/tla/README.md)):
+
+- **One run per recording on a device.** `TranscriptionRuns`
+  (`transcriptionRunsProvider`, outside the runner because the runner's provider
+  is rebuilt with its dependencies) keys the run by audio id. A request while one
+  is in flight joins it: no second paid inference, no second transcript or
+  summary, and the joiner's `onError` fires with the run's failure. The joiner's
+  own model override and known terms are not used.
+- **The write is checked.** The transcript is appended to the history of a fresh
+  re-read. `JournalRepository.updateJournalEntity` returns `false` both when the
+  database refuses the write on its vector clock — a synced edit landed between
+  the re-read and the write — and when it threw and logged. The runner re-reads
+  and tries again, up to three attempts, and then fails the run: status `error`,
+  `onError`, and no attribution finalized as succeeded (the in-memory session is
+  left unfinalized, as a failed image analysis leaves its own).
+- **An edit made during the run wins.** When the re-read text differs from the
+  text at the run's first read, it is kept and the transcript only joins the
+  history. Re-transcribing text that was there *before* the run replaces it, as
+  the user asked; earlier transcripts stay in the history, typed corrections do
+  not.
+- **Follow-ups need a saved transcript.** The audio summary runs only after a
+  successful run, and `AutomaticPromptTrigger` nudges the subject's agent only
+  when no `onError` fired. The synced-audio dispatcher already nudged only when
+  the transcript count grew; the check-in service reads the words back.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Joined: a run of this audio is in flight
+  [*] --> Inferring: first read, status running
+  Joined --> [*]: the run's outcome, onError on failure
+  Inferring --> Failed: provider error
+  Inferring --> Saving: usage recorded
+  Saving --> Saving: write refused or threw, re-read (up to 3 attempts)
+  Saving --> Failed: disappeared, or attempts used up
+  Saving --> Saved: write applied, attribution finalized
+  Saved --> Summary: status idle
+  Summary --> [*]: caller nudges its agent
+  Failed --> [*]: status error, onError, no summary, no nudge
+```
+
 ## Audio summaries
 
 `SkillInferenceRunner.runAudioSummary` summarizes a recording's transcript in
 three tiers. It hangs off the **end of `runTranscription`**
-(`_maybeRunAudioSummary`) rather than off each of that method's six callers, so
+(`_maybeRunAudioSummary`) rather than off each of that method's callers, so
 every route that produces a transcript — automatic recording trigger, synced-audio
-dispatcher, manual picker, relationship and goal check-ins, Daily OS capture —
-gets the same follow-up exactly once.
+dispatcher, manual picker and Retry, relationship and goal check-ins — gets the
+same follow-up exactly once, and only after the transcript was saved.
 
 Three gates, all deliberate:
 

@@ -147,14 +147,16 @@ sealed class SyncMessage with _$SyncMessage {
   /// [hardDelete] distinguishes the two senders that use this envelope, and is
   /// absent on anything sent by 0.9.1068 or earlier:
   ///
-  /// - `true` — the row is gone and must go on the peer too: an orphaned-seed
-  ///   prune or a provider cascade. Nothing is left behind to re-seed against.
+  /// - `true` — the row is gone and must go on the peer too: a deleted prompt
+  ///   or skill, or (from builds before the cascade kept tombstones) a
+  ///   provider cascade. Nothing is left behind to re-seed against.
   /// - absent (`null`) — a *legacy* user deletion, from a build that
   ///   hard-deleted user deletions. The receiver soft-deletes so the deletion
   ///   survives seeding, which is what that user meant.
   ///
-  /// Current builds send user deletions as `SyncMessage.aiConfig` carrying
-  /// `deletedAt`, never through this envelope.
+  /// Current builds send every other deletion — a provider with its models, a
+  /// model, a profile — as `SyncMessage.aiConfig` carrying `deletedAt`,
+  /// never through this envelope.
   const factory SyncMessage.aiConfigDelete({
     required String id,
     bool? hardDelete,

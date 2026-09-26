@@ -65,6 +65,40 @@ const _logTag = 'SkillInferenceRunner';
 /// recording of silence is not worth summarizing either.
 const _audioSummaryMinChars = 200;
 
+/// How many times a transcript write that did not land is re-read and tried
+/// before the run fails. A refusal means a synced edit landed between the
+/// re-read and the write; the next re-read carries it.
+const _transcriptSaveAttempts = 3;
+
+/// The transcriptions in flight on this device, one per recording.
+///
+/// Every entry point — the automatic trigger, the AI popup and Retry, the
+/// synced-audio dispatcher, the check-in service — ends in
+/// [SkillInferenceRunner.runTranscription], and a second request for a
+/// recording already being transcribed joins the run in flight instead of
+/// starting another. The runner is rebuilt whenever its provider's
+/// dependencies change, so the registry lives in its own provider.
+class TranscriptionRuns {
+  final _active = <String, Future<Object?>>{};
+
+  /// Runs [execute] for [audioEntryId], or returns the run already in flight
+  /// for it. The result is the run's failure, or null when it succeeded.
+  Future<Object?> run(
+    String audioEntryId,
+    Future<Object?> Function() execute,
+  ) => _active.putIfAbsent(
+    audioEntryId,
+    () => Future<Object?>.microtask(execute).whenComplete(() {
+      _active.remove(audioEntryId);
+    }),
+  );
+}
+
+final transcriptionRunsProvider = Provider<TranscriptionRuns>(
+  (ref) => TranscriptionRuns(),
+  name: 'transcriptionRunsProvider',
+);
+
 /// Service that invokes inference using skill-built prompts and
 /// profile-resolved models, bypassing the legacy prompt system entirely.
 ///
@@ -127,7 +161,15 @@ class SkillInferenceRunner {
   /// on the transcript needs more than that: a failed run writes no
   /// `entryText`, so silence is indistinguishable from a slow model and the
   /// caller sits on a spinner until its own timeout. [onError] is that
-  /// signal, and it fires for the same failures the error controller shows.
+  /// signal, and it fires for the same failures the error controller shows —
+  /// including a transcript the database would not save
+  /// ([_saveTranscript]). A failed run starts no audio summary.
+  ///
+  /// One run per recording is in flight on a device ([TranscriptionRuns]). A
+  /// call for a recording already being transcribed joins that run: it pays
+  /// for no second inference, sets no status of its own, and its [onError]
+  /// fires with the run's failure. Its own [overrideModelId], [knownTerms]
+  /// and [linkedTaskId] are not used.
   ///
   /// [knownTerms] are words the caller knows the recording is likely to
   /// contain — a person's name and the people around them. They lead the
@@ -172,12 +214,50 @@ class SkillInferenceRunner {
       return;
     }
 
+    // One run per recording at a time: a request while one is in flight
+    // joins it and gets its outcome, rather than paying for a second
+    // inference that would append a second transcript and summary.
+    final failure = await _ref
+        .read(transcriptionRunsProvider)
+        .run(
+          audioEntryId,
+          () => _transcribeAndSummarize(
+            audioEntryId: audioEntryId,
+            automationResult: automationResult,
+            skill: skill,
+            profile: profile,
+            provider: provider,
+            modelId: modelId,
+            effectiveThinkingMode: effectiveThinkingMode,
+            linkedTaskId: linkedTaskId,
+            knownTerms: knownTerms,
+          ),
+        );
+    if (failure != null) onError?.call(failure);
+  }
+
+  /// The body of [runTranscription] behind its single-flight registry:
+  /// transcribes, saves the transcript, and then runs the automated audio
+  /// summary. Returns the failure the status tracking reported, or null once
+  /// the transcript is saved; the summary follows only a saved transcript.
+  Future<Object?> _transcribeAndSummarize({
+    required String audioEntryId,
+    required AutomationResult automationResult,
+    required AiConfigSkill skill,
+    required ResolvedProfile profile,
+    required AiConfigInferenceProvider provider,
+    required String modelId,
+    required GeminiThinkingMode? effectiveThinkingMode,
+    required String? linkedTaskId,
+    required List<String> knownTerms,
+  }) async {
+    Object? failure;
     await _withStatusTracking(
       entityId: audioEntryId,
       responseType: skill.skillType.toResponseType,
       subDomain: 'runTranscription',
       linkedTaskId: linkedTaskId,
-      onError: onError,
+      onError: (error) => failure = error,
       body: () async {
         // 1. Fetch the audio entity.
         final entity = await _aiInputRepository.getEntity(audioEntryId);
@@ -357,17 +437,7 @@ class SkillInferenceRunner {
           throw StateError('Empty transcription response for $audioEntryId');
         }
 
-        // 7. Save result — create AudioTranscript + update entryText.
-        final currentAudio =
-            await EntityStateHelper.getCurrentEntityState<JournalAudio>(
-              entityId: audioEntryId,
-              aiInputRepo: _aiInputRepository,
-              entityTypeName: 'audio transcription',
-            );
-        if (currentAudio == null) {
-          throw StateError('Audio entity $audioEntryId disappeared mid-run');
-        }
-
+        // 7. Save result — append the AudioTranscript and set entryText.
         final transcript = AudioTranscript(
           created: DateTime.now(),
           library: provider.name,
@@ -379,17 +449,12 @@ class SkillInferenceRunner {
           aiAttribution: attributionEnvelope,
         );
 
-        final existingTranscripts = currentAudio.data.transcripts ?? [];
-        final updated = currentAudio.copyWith(
-          data: currentAudio.data.copyWith(
-            transcripts: [...existingTranscripts, transcript],
-          ),
-          entryText: EntryText(
-            plainText: text,
-            markdown: text,
-          ),
+        await _saveTranscript(
+          audioEntryId: audioEntryId,
+          textAtStart: entity.entryText,
+          transcript: transcript,
+          text: text,
         );
-        await _journalRepository.updateJournalEntity(updated);
         await _finalizeAttribution(attributionEnvelope);
 
         _loggingService.log(
@@ -400,6 +465,10 @@ class SkillInferenceRunner {
         );
       },
     );
+
+    // A failed run has no new transcript to summarize: a summary now would
+    // pay to restate whatever the recording held before.
+    if (failure != null) return failure;
 
     // Outside the status-tracking body on purpose. Inside it, the
     // transcription's own Siri-waveform bar kept animating through the summary
@@ -412,6 +481,67 @@ class SkillInferenceRunner {
       automationResult: automationResult,
       linkedTaskId: linkedTaskId,
     );
+    return null;
+  }
+
+  /// Appends [transcript] to the recording's history and sets its text to
+  /// [text], re-reading the recording first so a change made during the
+  /// inference is kept.
+  ///
+  /// Two rules decide what the write carries:
+  /// - **An edit made during the run wins.** When the recording's text is no
+  ///   longer [textAtStart] — the user, or a synced peer, changed it while the
+  ///   model was listening — that text is kept and the transcript only joins
+  ///   the history. A re-transcription of text edited *before* the run still
+  ///   replaces it, as the user asked.
+  /// - **A write that does not land is retried, then fails the run.**
+  ///   `updateJournalEntity` returns false when the database refuses the
+  ///   write — a synced edit landed between the re-read and the write, so the
+  ///   write's vector clock is concurrent with the stored one — or when it
+  ///   threw and logged. A fresh re-read carries the peer's change, so the
+  ///   next attempt normally lands. After [_transcriptSaveAttempts] this
+  ///   throws, so the run reports an error instead of claiming a transcript
+  ///   nobody can find.
+  Future<void> _saveTranscript({
+    required String audioEntryId,
+    required EntryText? textAtStart,
+    required AudioTranscript transcript,
+    required String text,
+  }) async {
+    for (var attempt = 1; ; attempt++) {
+      final currentAudio =
+          await EntityStateHelper.getCurrentEntityState<JournalAudio>(
+            entityId: audioEntryId,
+            aiInputRepo: _aiInputRepository,
+            entityTypeName: 'audio transcription',
+          );
+      if (currentAudio == null) {
+        throw StateError('Audio entity $audioEntryId disappeared mid-run');
+      }
+
+      final editedDuringRun = currentAudio.entryText != textAtStart;
+      final existingTranscripts = currentAudio.data.transcripts ?? [];
+      final updated = currentAudio.copyWith(
+        data: currentAudio.data.copyWith(
+          transcripts: [...existingTranscripts, transcript],
+        ),
+        entryText: editedDuringRun
+            ? currentAudio.entryText
+            : EntryText(plainText: text, markdown: text),
+      );
+      if (await _journalRepository.updateJournalEntity(updated)) return;
+      if (attempt >= _transcriptSaveAttempts) {
+        throw StateError(
+          'Transcript for $audioEntryId was not saved after $attempt attempts',
+        );
+      }
+      _loggingService.log(
+        LogDomain.ai,
+        'Transcript write for $audioEntryId did not land '
+        '(attempt $attempt); re-reading and retrying',
+        subDomain: 'runTranscription',
+      );
+    }
   }
 
   /// Run skill-based image analysis on an image entry.
@@ -699,10 +829,11 @@ class SkillInferenceRunner {
 
   /// Runs the profile's automated audio-summary skill, if it has one.
   ///
-  /// Hangs off the end of [runTranscription] rather than off each of its six
+  /// Hangs off the end of [runTranscription] rather than off each of its
   /// callers (automatic recording trigger, synced-audio dispatcher, manual
-  /// picker, relationship and goal check-ins, Daily OS capture) so every route
-  /// that produces a transcript gets the same follow-up exactly once.
+  /// picker and Retry, relationship and goal check-ins) so every route that
+  /// produces a transcript gets the same follow-up exactly once. It runs only
+  /// after the transcript was saved.
   ///
   /// Four gates, all deliberate:
   /// - **A task must be resolved.** The summary is framed by the task it

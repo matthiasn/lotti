@@ -265,9 +265,13 @@ class ShardedEmbeddingStore implements EmbeddingStore {
     if (chunks.isEmpty) return;
 
     // Prepare chunks for the new shard: update categoryId and reset IDs.
+    // The copy is stamped as written now, so if a crash leaves both copies
+    // behind, the rebuild keeps this one.
+    final movedAt = clock.now().toUtc();
     for (final chunk in chunks) {
       chunk
         ..categoryId = newCategoryId
+        ..createdAt = movedAt
         ..id = 0;
     }
 
@@ -407,7 +411,24 @@ class ShardedEmbeddingStore implements EmbeddingStore {
     }
   }
 
-  /// Rebuilds [_primaryIndex] and [_reverseTaskIndex] from all open shards.
+  /// Which of shards [earlier] and [later] holds the copy of [entityId]
+  /// written last, by its chunks' `createdAt`; [later] (the shard whose name
+  /// sorts later) on a tie. A shard without a copy — already cleaned up —
+  /// loses.
+  String _newerCopy(String entityId, String earlier, String later) {
+    final earlierAt = _shards[earlier]?.ops
+        .findFirstByEntityId(entityId)
+        ?.createdAt;
+    final laterAt = _shards[later]?.ops
+        .findFirstByEntityId(entityId)
+        ?.createdAt;
+    if (earlierAt == null) return later;
+    if (laterAt == null) return earlier;
+    return earlierAt.isAfter(laterAt) ? earlier : later;
+  }
+
+  /// Rebuilds [_primaryIndex] and [_reverseTaskIndex] from all open shards,
+  /// removing all but the newest copy of an entity found in several.
   void _rebuildIndexes() {
     _primaryIndex.clear();
     _reverseTaskIndex.clear();
@@ -420,11 +441,14 @@ class ShardedEmbeddingStore implements EmbeddingStore {
       for (final row in metadata) {
         final existingShardKey = _primaryIndex[row.entityId];
         if (existingShardKey != null && existingShardKey != shardKey) {
-          // Duplicate entity across shards — interrupted move. Keep in the
-          // later shard (alphabetically) and clean up the earlier one.
-          _shards[existingShardKey]?.store.deleteEntityEmbeddings(
-            row.entityId,
-          );
+          // Duplicate entity across shards — a replace or move interrupted
+          // between writing the new shard and deleting the old copy. Keep
+          // the copy written last; the other holds older content or an old
+          // category.
+          final kept = _newerCopy(row.entityId, existingShardKey, shardKey);
+          final dropped = kept == shardKey ? existingShardKey : shardKey;
+          _shards[dropped]?.store.deleteEntityEmbeddings(row.entityId);
+          if (kept == existingShardKey) continue;
         }
         _primaryIndex[row.entityId] = shardKey;
 

@@ -118,8 +118,9 @@ class _GeneratedConversationModel {
   final Map<String, String> signatures = {};
   String? lastError;
 
-  int get turnCount =>
-      roles.where((role) => role == _GeneratedConversationRole.user).length;
+  /// User turns ever added since the last initialize — not the ones the
+  /// trimmed history still holds.
+  int turnCount = 0;
 
   bool get canContinue => turnCount < maxTurns;
 
@@ -128,6 +129,7 @@ class _GeneratedConversationModel {
       case _GeneratedConversationOperationKind.initializeEmpty:
         roles.clear();
         signatures.clear();
+        turnCount = 0;
         lastError = null;
 
       case _GeneratedConversationOperationKind.initializeWithSystem:
@@ -135,10 +137,12 @@ class _GeneratedConversationModel {
           ..clear()
           ..add(_GeneratedConversationRole.system);
         signatures.clear();
+        turnCount = 0;
         lastError = null;
 
       case _GeneratedConversationOperationKind.addUser:
         roles.add(_GeneratedConversationRole.user);
+        turnCount++;
         _trimHistoryIfNeeded();
 
       case _GeneratedConversationOperationKind.addAssistantContent:
@@ -191,11 +195,11 @@ class _GeneratedConversationModel {
     if (tailStart == 0 && !hadTruncationNotice) return;
 
     final retainedTail = bodyRoles.skip(tailStart).toList();
-    // Mirror the real impl: the retained tail must not begin with an orphan
-    // `tool` role whose assistant parent was dropped, and an all-orphan strip
-    // aborts the trim rather than emitting a contentless history.
+    // Mirror the real impl: the retained tail opens on a user turn, and a
+    // strip that leaves nothing aborts the trim rather than emitting a
+    // contentless history.
     while (retainedTail.isNotEmpty &&
-        retainedTail.first == _GeneratedConversationRole.tool) {
+        retainedTail.first != _GeneratedConversationRole.user) {
       retainedTail.removeAt(0);
     }
     if (retainedTail.isEmpty) return;
@@ -423,12 +427,13 @@ void main() {
       });
 
       test(
-        'drops leading orphan tool messages so the retained tail starts on a '
-        'valid boundary (asm-3)',
+        'keeps the tail from its first user turn, so a cut through a tool '
+        'round leaves neither an orphan result nor an opening tool call',
         () {
-          // Body: u1, a1+tcA, toolA, a2+tcB, toolB — then a user message
-          // pushes past maxHistorySize and triggers the trim. The tail
-          // boundary lands on toolA, whose assistant parent (a1) is dropped.
+          // Body: u1, a1+tcA, toolA, a2+tcB, toolB — then u2 pushes past
+          // maxHistorySize. The four-message tail starts at toolA, whose call
+          // (a1) is cut; after it comes a2's call with no user turn before
+          // it, which Gemini rejects (`OpensWithUserTurn`).
           final m =
               ConversationManager(
                   maxHistorySize: 5,
@@ -437,40 +442,40 @@ void main() {
                 ..addAssistantMessage(toolCalls: [_generatedToolCall('tcA')])
                 ..addToolResponse(toolCallId: 'tcA', response: 'ORPHAN_A')
                 ..addAssistantMessage(toolCalls: [_generatedToolCall('tcB')])
-                ..addToolResponse(toolCallId: 'tcB', response: 'KEPT_B')
+                ..addToolResponse(toolCallId: 'tcB', response: 'OPENING_B')
                 ..addUserMessage('u2');
 
-          final messages = m.getMessagesForRequest();
+          expect(_conversationRoles(m.getMessagesForRequest()), [
+            _GeneratedConversationRole.truncationNotice,
+            _GeneratedConversationRole.user,
+          ]);
+          expect(m.messages.last.content?.toString(), contains('u2'));
+        },
+      );
 
-          // The orphaned tool result (its tool_use parent was trimmed) is gone.
-          expect(
-            messages.any(
-              (x) => x.content?.toString().contains('ORPHAN_A') ?? false,
-            ),
-            isFalse,
-          );
-          // …but the valid tool result (whose assistant parent survived) is
-          // kept — the strip is not over-eager.
-          expect(
-            messages.any(
-              (x) => x.content?.toString().contains('KEPT_B') ?? false,
-            ),
-            isTrue,
-          );
+      test(
+        'a trim that cuts a tool round keeps the calls and results it '
+        'retains together, after a user turn',
+        () {
+          final m = ConversationManager(maxHistorySize: 7)
+            ..initialize(systemMessage: 'system')
+            ..addUserMessage('u1')
+            ..addAssistantMessage(toolCalls: [_generatedToolCall('tcA')])
+            ..addToolResponse(toolCallId: 'tcA', response: 'A')
+            ..addUserMessage('u2')
+            ..addAssistantMessage(toolCalls: [_generatedToolCall('tcB')])
+            ..addToolResponse(toolCallId: 'tcB', response: 'B')
+            ..addUserMessage('u3');
 
-          // Every surviving tool message is preceded by an assistant message —
-          // no orphan tool result remains.
-          for (var i = 0; i < messages.length; i++) {
-            if (messages[i].role == ChatCompletionMessageRole.tool) {
-              expect(
-                messages
-                    .sublist(0, i)
-                    .any((x) => x.role == ChatCompletionMessageRole.assistant),
-                isTrue,
-                reason: 'tool message at $i has no preceding assistant',
-              );
-            }
-          }
+          expect(_conversationRoles(m.messages), [
+            _GeneratedConversationRole.system,
+            _GeneratedConversationRole.truncationNotice,
+            _GeneratedConversationRole.user,
+            _GeneratedConversationRole.assistant,
+            _GeneratedConversationRole.tool,
+            _GeneratedConversationRole.user,
+          ]);
+          expect(m.messages[2].content?.toString(), contains('u2'));
         },
       );
     });
@@ -648,6 +653,93 @@ void main() {
         }
 
         expect(limitedManager.canContinue(), false);
+      });
+
+      test(
+        'counts turns the trim dropped, so a wake whose tool calls fill the '
+        'history still reaches its limit (ConversationLoop BoundedRounds)',
+        () {
+          // A task wake: maxTurnsPerWake 10, the default history of 100, and
+          // a model that calls nine tools a round. Each round adds eleven
+          // messages, so the retained history never holds ten user turns.
+          final wake = ConversationManager(maxTurns: 10)
+            ..initialize(systemMessage: 'system')
+            ..addUserMessage('wake');
+          var rounds = 0;
+          while (wake.canContinue() && rounds < 50) {
+            rounds++;
+            final calls = [
+              for (var i = 0; i < 9; i++) _generatedToolCall('r${rounds}_$i'),
+            ];
+            wake.addAssistantMessage(toolCalls: calls);
+            for (final call in calls) {
+              wake.addToolResponse(toolCallId: call.id, response: 'ok');
+            }
+            wake.addUserMessage('Continue.');
+          }
+
+          expect(rounds, 9);
+          expect(wake.turnCount, 10);
+          expect(
+            wake.messages.first.content,
+            'system',
+            reason: 'the history was trimmed along the way',
+          );
+          expect(wake.messages[1].content, contains('truncated'));
+        },
+      );
+
+      test('initialize restarts the turn count', () {
+        manager
+          ..addUserMessage('one')
+          ..addUserMessage('two')
+          ..initialize();
+
+        expect(manager.turnCount, 0);
+      });
+    });
+
+    group('answerPendingToolCalls', () {
+      test(
+        'answers only the calls of the last tool round that have no result',
+        () {
+          manager
+            ..addUserMessage('go')
+            ..addAssistantMessage(
+              toolCalls: [
+                _generatedToolCall('a'),
+                _generatedToolCall('b'),
+                _generatedToolCall('c'),
+              ],
+            )
+            ..addToolResponse(toolCallId: 'b', response: 'done')
+            ..answerPendingToolCalls('not run');
+
+          final results = {
+            for (final message in manager.messages)
+              ...?message.mapOrNull(
+                tool: (tool) => {tool.toolCallId: tool.content},
+              ),
+          };
+          expect(results, {'b': 'done', 'a': 'not run', 'c': 'not run'});
+          expect(manager.messages, hasLength(5));
+        },
+      );
+
+      test('leaves a history without open calls unchanged', () {
+        manager
+          ..addUserMessage('go')
+          ..addAssistantMessage(toolCalls: [_generatedToolCall('a')])
+          ..addToolResponse(toolCallId: 'a', response: 'done')
+          ..addUserMessage('next')
+          ..addAssistantMessage(content: 'plain answer');
+        final before = manager.messages;
+
+        manager.answerPendingToolCalls('not run');
+
+        expect(manager.messages, before);
+        final empty = ConversationManager()..answerPendingToolCalls('not run');
+        expect(empty.messages, isEmpty);
       });
     });
 
@@ -972,9 +1064,10 @@ void main() {
             lessThanOrEqualTo(scenario.retainedMessageLimit),
             reason: '$scenario',
           );
+          // Every user turn counts, including the ones the trim dropped.
           expect(
             generatedManager.turnCount,
-            retainedUserMessages.length,
+            scenario.userMessageCount,
             reason: '$scenario',
           );
 

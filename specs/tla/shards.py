@@ -115,6 +115,9 @@ SECONDS = {
     "SavedTaskFilterSync": 35,
     "SyncSettingsFailure": 1,
     "SyncSettingsNameFailure": 1,
+    # Measured locally (4 shared cores) when added; refresh from CI.
+    "AiConfigReplication": 11,
+    "AiConfigReplicationCascade": 17,
     "OutboxCausality": 20,
     # Measured locally (20 workers) when added; refresh from CI.
     "JournalReplication": 33,
@@ -130,6 +133,14 @@ SECONDS = {
     "GoalRegisterCrash": 23,
     "GoalRegisterDeath": 4,
     "GoalRegisterDivergent": 1,
+    # Measured locally (4 shared cores) when added; refresh from CI.
+    "TranscriptionRun": 12,
+    "TranscriptionRunExhaust": 44,
+    # Measured locally (two workers, 2 GB heap) when added; refresh from CI.
+    "EmbeddingFreshness": 30,
+    "EmbeddingFreshnessTwo": 65,
+    "ConversationLoop": 10,
+    "ConversationLoopConcurrent": 11,
 }
 
 # Pessimistic, so an unmeasured configuration is not piled onto a full shard.

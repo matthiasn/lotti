@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
@@ -24,20 +25,59 @@ typedef LabelNameResolver =
       List<String> labelIds,
     );
 
-/// Shared embedding processing logic used by both the embedding service
-/// (real-time) and the backfill controller (batch backfill).
+/// Shared embedding processing logic used by the embedding service
+/// (real-time), the backfill controller (batch backfill) and the task
+/// agent's report writer.
 ///
 /// Extracts text from a journal entity, checks for content changes via
 /// SHA-256 hashing, generates an embedding via Ollama, and stores it.
+///
+/// **One run per entity at a time.** These callers run concurrently and do
+/// not know about each other, and a run spans a network call. Each run for
+/// an entity therefore holds that entity's lock from its journal read to its
+/// store write, so a run that read an older version can never write after a
+/// run that read a newer one; the model is `specs/tla/EmbeddingFreshness.tla`.
 abstract final class EmbeddingProcessor {
+  /// The tail of each entity's queue of runs, removed when it drains.
+  static final Map<String, Future<void>> _tails = {};
+
+  /// Runs [action] once every earlier run for [key] has finished.
+  static Future<T> _serialized<T>(
+    String key,
+    Future<T> Function() action,
+  ) async {
+    final previous = _tails[key] ?? Future<void>.value();
+    final done = Completer<void>();
+    final tail = done.future;
+    _tails[key] = tail;
+    await previous;
+    try {
+      return await action();
+    } finally {
+      done.complete();
+      if (identical(_tails[key], tail)) {
+        final _ = _tails.remove(key);
+      }
+    }
+  }
+
   /// Processes a single entity for embedding generation.
   ///
-  /// Returns `true` if an embedding was generated and stored, `false` if
-  /// the entity was skipped (not found, ineligible, unchanged, etc.).
+  /// Returns `true` if an embedding was generated and stored, or moved to
+  /// the entity's new category, and `false` otherwise (not found, deleted,
+  /// ineligible, unchanged, etc.).
+  ///
+  /// An entity that is gone — deleted, or with text under
+  /// [kMinEmbeddingTextLength] — has its stored vectors deleted, so search
+  /// can no longer find it by text it no longer has. A task's agent-report
+  /// embeddings are moved to the task's category on every run, whether or
+  /// not the task has a vector of its own.
   ///
   /// When [labelNameResolver] is provided, task entities are embedded using
   /// the enriched "tiny template" (title + labels + body) instead of plain
   /// title + body. This produces higher-quality embeddings for tasks.
+  ///
+  /// Serialized per entity with every other run of this processor.
   ///
   /// Does NOT catch exceptions from the embedding repository — callers
   /// are responsible for error handling.
@@ -48,18 +88,27 @@ abstract final class EmbeddingProcessor {
     required OllamaEmbeddingRepository embeddingRepository,
     required String baseUrl,
     LabelNameResolver? labelNameResolver,
-  }) async {
+  }) => _serialized(entityId, () async {
     final entity = await journalDb.journalEntityById(entityId);
-    if (entity == null) return false;
+    if (entity == null) {
+      // Deleted (the read hides soft-deleted rows) or never stored.
+      await embeddingStore.deleteEntityEmbeddings(entityId);
+      return false;
+    }
 
     final type = EmbeddingContentExtractor.entityType(entity);
     if (type == null) return false;
 
+    final categoryId = entity.meta.categoryId ?? '';
+
     // For tasks, try the enriched template with labels first.
     final text = await _extractText(entity, labelNameResolver);
-    if (text == null) return false;
+    if (text == null) {
+      await embeddingStore.deleteEntityEmbeddings(entityId);
+      await _moveReports(entity, categoryId, embeddingStore);
+      return false;
+    }
 
-    final categoryId = entity.meta.categoryId ?? '';
     final storedCategoryId = await embeddingStore.getCategoryId(entityId);
     final categoryChanged =
         storedCategoryId != null && storedCategoryId != categoryId;
@@ -70,15 +119,9 @@ abstract final class EmbeddingProcessor {
     if (existingHash == hash) {
       if (categoryChanged) {
         await embeddingStore.moveEntityToShard(entityId, categoryId);
-        if (entity is Task) {
-          await embeddingStore.moveRelatedReportEmbeddings(
-            entityId,
-            categoryId,
-          );
-        }
-        return true;
       }
-      return false;
+      await _moveReports(entity, categoryId, embeddingStore);
+      return categoryChanged;
     }
 
     await _embedChunks(
@@ -91,15 +134,21 @@ abstract final class EmbeddingProcessor {
       embeddingRepository: embeddingRepository,
       baseUrl: baseUrl,
     );
-
-    // When both content and category changed, the task embedding is already
-    // written to the correct shard by _embedChunks. But related report
-    // embeddings still live in the old shard and must be moved.
-    if (categoryChanged && entity is Task) {
-      await embeddingStore.moveRelatedReportEmbeddings(entityId, categoryId);
-    }
+    await _moveReports(entity, categoryId, embeddingStore);
 
     return true;
+  });
+
+  /// Moves a task's agent-report embeddings into [categoryId], the
+  /// category just read for it; a no-op for reports already there and for
+  /// any other entity.
+  static Future<void> _moveReports(
+    JournalEntity entity,
+    String categoryId,
+    EmbeddingStore embeddingStore,
+  ) async {
+    if (entity is! Task) return;
+    await embeddingStore.moveRelatedReportEmbeddings(entity.id, categoryId);
   }
 
   /// Builds a [LabelNameResolver] backed by a cached snapshot of all label
@@ -146,6 +195,13 @@ abstract final class EmbeddingProcessor {
   ///
   /// Agent reports live in the agent database (not the journal), so this
   /// method accepts the report content directly rather than looking it up.
+  /// The report is stored in the category of its task [taskId], read from
+  /// [journalDb] (the default shard when the task is gone).
+  ///
+  /// Runs under the task's lock, the one [processEntity] holds while it
+  /// moves the task's reports: a recategorisation of the task either lands
+  /// before this run reads the category, or is processed after the report
+  /// is stored and moves it along.
   ///
   /// Returns `true` if an embedding was generated and stored, `false` if
   /// skipped (too short, unchanged content hash, etc.).
@@ -153,18 +209,21 @@ abstract final class EmbeddingProcessor {
     required String reportId,
     required String reportContent,
     required String taskId,
-    required String categoryId,
     required String subtype,
+    required JournalDb journalDb,
     required EmbeddingStore embeddingStore,
     required OllamaEmbeddingRepository embeddingRepository,
     required String baseUrl,
-  }) async {
+  }) => _serialized(taskId, () async {
     final text = reportContent.trim();
     if (text.length < kMinEmbeddingTextLength) return false;
 
     final hash = EmbeddingContentExtractor.contentHash(text);
     final existingHash = await embeddingStore.getContentHash(reportId);
     if (existingHash == hash) return false;
+
+    final task = await journalDb.journalEntityById(taskId);
+    final categoryId = task?.meta.categoryId ?? '';
 
     await _embedChunks(
       text: text,
@@ -180,7 +239,7 @@ abstract final class EmbeddingProcessor {
     );
 
     return true;
-  }
+  });
 
   /// Chunks [text] and generates embeddings for each chunk.
   ///
