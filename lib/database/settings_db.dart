@@ -44,6 +44,7 @@ class SettingsDb extends _$SettingsDb {
   // Retain only outstanding work, not a completed future and its async zone.
   Future<void>? _writeTail;
   Future<void>? _closing;
+  final Object _transactionZoneKey = Object();
 
   /// The schema this build writes. A restored backup may carry an
   /// older schema, which Drift migrates, but never a newer one.
@@ -79,9 +80,28 @@ class SettingsDb extends _$SettingsDb {
     )..where((table) => table.configKey.isIn(keyList))).get();
   }
 
+  /// Runs raw settings SQL transactionally. Cached write APIs own their commit
+  /// boundary and cannot be called from this callback; use saveSettingsItems
+  /// for an atomic group whose cache is published after commit.
+  @override
+  Future<T> transaction<T>(
+    Future<T> Function() action, {
+    bool requireNew = false,
+  }) => super.transaction(
+    () => runZoned(action, zoneValues: {_transactionZoneKey: true}),
+    requireNew: requireNew,
+  );
+
   // Serialize cache decisions with writes, including atomic groups. Otherwise a
   // single-key save can skip against an old cache while a group is committing.
   Future<T> _write<T>(Future<T> Function() action) {
+    if (Zone.current[_transactionZoneKey] == true) {
+      return Future<T>.error(
+        StateError(
+          'Cached settings writes cannot run inside an outer transaction',
+        ),
+      );
+    }
     if (_closing != null) {
       return Future<T>.error(StateError('SettingsDb is closing'));
     }

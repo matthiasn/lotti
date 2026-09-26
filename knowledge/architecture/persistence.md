@@ -137,6 +137,13 @@ only after commit. On failure, both persisted and cached values remain at the
 previous group. Callers must not wrap this API in an outer settings transaction:
 cache publication belongs to the transaction it owns.
 
+Cached single-key saves, removals and group saves reject calls from an outer
+`SettingsDb.transaction` callback before entering their write queue. This avoids
+a callback waiting on an outside writer blocked by its own transaction, and
+prevents cache publication before the real commit. Raw SQL transactions remain
+available; cached write groups use `saveSettingsItems`. The transaction marker
+is scoped to this database instance, so another database is not restricted.
+
 Single-key saves, removals and group saves share a write queue. Cache-based
 no-op checks run inside that queue, so a local save cannot skip against an old
 value while a group is still committing. Failed writes release the queue.

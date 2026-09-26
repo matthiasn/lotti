@@ -53,6 +53,87 @@ void main() {
     await db.close();
   });
 
+  group('cached writes own their transaction', () {
+    test('another database retains its own commit boundary', () async {
+      final other = SettingsDb(inMemoryDatabase: true);
+      addTearDown(other.close);
+      await db.transaction(
+        () => other.saveSettingsItem('independent', 'saved'),
+      );
+      expect(await other.itemByKey('independent'), 'saved');
+      expect(
+        (await other.loadSettingsItems(['independent'])).single.value,
+        'saved',
+      );
+      expect(await db.loadSettingsItems(['independent']), isEmpty);
+    });
+
+    for (final kind in ['single', 'group', 'remove']) {
+      test(
+        '$kind rejects an outer transaction without changing data',
+        () async {
+          await db.saveSettingsItem('guarded', 'before');
+          await db.transaction(() async {
+            final Future<Object?> write = switch (kind) {
+              'single' => db.saveSettingsItem('guarded', 'after'),
+              'group' => db.saveSettingsItems({'guarded': 'after'}),
+              _ => db.removeSettingsItem('guarded'),
+            };
+            await expectLater(
+              write,
+              throwsA(
+                isA<StateError>().having(
+                  (e) => e.message,
+                  'reason',
+                  contains('outer transaction'),
+                ),
+              ),
+            );
+          });
+          expect(await db.itemByKey('guarded'), 'before');
+          expect(
+            (await db.loadSettingsItems(['guarded'])).single.value,
+            'before',
+          );
+          await db.saveSettingsItem('guarded', 'after');
+          expect(await db.itemByKey('guarded'), 'after');
+        },
+      );
+    }
+
+    test(
+      'rejects before waiting on an outside writer blocked by the transaction',
+      () async {
+        await db.saveSettingsItem('guarded', 'before');
+        final entered = Completer<void>();
+        final outsideQueued = Completer<void>();
+        final outer = db.transaction(() async {
+          entered.complete();
+          await outsideQueued.future;
+          await expectLater(
+            db.saveSettingsItem('guarded', 'inside'),
+            throwsA(
+              isA<StateError>().having(
+                (e) => e.message,
+                'reason',
+                contains('outer transaction'),
+              ),
+            ),
+          );
+        });
+        await entered.future;
+        final outside = db.saveSettingsItem('guarded', 'outside');
+        outsideQueued.complete();
+        await Future.wait<Object?>([outer, outside]);
+        expect(await db.itemByKey('guarded'), 'outside');
+        expect(
+          (await db.loadSettingsItems(['guarded'])).single.value,
+          'outside',
+        );
+      },
+    );
+  });
+
   test(
     'close drains pending settings writes before closing the executor',
     () async {
