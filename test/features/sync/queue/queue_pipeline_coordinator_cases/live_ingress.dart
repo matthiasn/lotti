@@ -92,6 +92,76 @@ extension _LiveIngressCases on _QueueCoordinatorTestSetup {
     }
 
     test(
+      'response recovery failures leave later admissions usable',
+      () async {
+        final room = MockRoom();
+        when(() => room.id).thenReturn(roomId);
+        when(() => room.partial).thenReturn(false);
+        when(() => room.client).thenReturn(client);
+        when(() => roomManager.currentRoom).thenReturn(room);
+        final encryption = MockEncryption();
+        when(() => client.encryption).thenReturn(encryption);
+        when(() => encryption.decryptRoomEvent(any())).thenThrow(
+          StateError('decrypt failed'),
+        );
+        final coordinator = build();
+        await coordinator.start();
+        await pumpEventQueue();
+        when(
+          () => queue.lowerResumeFloor(roomId: roomId, originTs: 6000),
+        ).thenThrow(StateError('floor unavailable'));
+        when(bridge.bridgeNow).thenAnswer(
+          (_) async => throw StateError('repair unavailable'),
+        );
+        syncCtl.add(
+          SyncUpdate(
+            nextBatch: 'failed-response',
+            rooms: RoomsUpdate(
+              join: {
+                roomId: JoinedRoomUpdate(
+                  timeline: TimelineUpdate(
+                    events: [
+                      MatrixEvent(
+                        type: EventTypes.Encrypted,
+                        eventId: r'$failed-response',
+                        senderId: '@peer:example.org',
+                        originServerTs: DateTime.fromMillisecondsSinceEpoch(
+                          6000,
+                        ),
+                        content: {'ciphertext': 'opaque'},
+                      ),
+                    ],
+                  ),
+                ),
+              },
+            ),
+          ),
+        );
+        await pumpEventQueue();
+        verifyNever(() => queue.enqueueLive(any()));
+        // A failed recovery must not poison the serialized response tail.
+        deliverPayload(buildEvent(EventTypes.Message));
+        await pumpEventQueue();
+        final admitted = verify(
+          () => queue.enqueueLive(captureAny()),
+        ).captured.cast<Event>();
+        expect(admitted.map((event) => event.eventId), [r'$a']);
+        for (final suffix in ['floor', 'repair']) {
+          verify(
+            () => logging.error(
+              LogDomain.sync,
+              any(),
+              stackTrace: any(named: 'stackTrace'),
+              subDomain: 'queue.coordinator.responseAdmission.$suffix',
+            ),
+          ).called(1);
+        }
+        await coordinator.stop();
+        verify(worker.stop).called(1);
+      },
+    );
+
+    test(
       'pending response claim leaves descriptors live and snapshots payloads',
       () async {
         final room = MockRoom();
