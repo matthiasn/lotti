@@ -836,6 +836,25 @@ runs ahead. The terminal configuration claims only `LocalWriteTakesEffect`:
 such a write is a successor that ranks below its predecessor, the `RankDrop`
 residual below.
 
+The `InboundQueueSlice` profile enables `SliceRace`: the SDK emits the newest
+slice before announcing its missing middle. `AdmitResponses` requires the gap
+claim before payload delivery; with it disabled, `NoSilentLoss` has a
+counterexample. The positive profile checks all declared safety and liveness
+properties across 191,865 distinct states. `check_sync_pipeline.py` checks both
+the positive control and the counterexample. This models the payload admission
+boundary, not SDK cryptography or attachment download scheduling.
+
+Runtime conformance is covered in the coordinator tests, including the real
+Matrix SDK's `handleSync` paused at its storage boundary with a real inbound
+queue. A nested synthetic sync cannot release the real response's payload,
+and the limited slice preserves its gap through apply. A failed decrypt
+retains the whole unqueued response, and
+shutdown waits for admissions. A delayed claim test also proves descriptors
+remain immediate and nested payload content is snapshotted; disabling either
+protection makes that test fail. See the [receive path](../../knowledge/features/sync/receive-path.md#live-ingestion)
+for the response-specific implementation and why the reverted global barrier
+is not used.
+
 What the model leaves out, deliberately or as a residual:
 
 - **`RankDrop` — a successor that leaves the terminal status it built on.**
@@ -1388,7 +1407,8 @@ What the model leaves out, deliberately or as a residual:
 ## `InboundQueue` — Matrix events into the queue, and the marker that resumes them
 
 One room's inbound pipeline: timeline events reaching `inbound_event_queue`
-live (`QueuePipelineCoordinator._handleLiveEvent`, in stream order) and
+live (`QueuePipelineCoordinator._handleLiveEvent`, from serialized complete
+responses for payloads and immediate timeline ingress for ciphertext) and
 through catch-up walks (`BridgeCoordinator`, `QueueGapRecovery`: forward from
 the applied anchor, or backward from the tip), the worker leasing, applying,
 retrying and abandoning rows (`InboundWorker`, `InboundQueue`), the per-room
@@ -1420,6 +1440,7 @@ when `BridgeMarker.anchorIsSafe`, otherwise the backward walk down to
 | `InboundQueueCipher` | 3, event 2 encrypted until its key arrives | 1 | failed resume-floor write, failed enqueue | 1,607,563 |
 | `InboundQueueCrash` | 4 | 2 | incomplete walk, failed claim read | 3,484,605 |
 | `InboundQueueLiveness` | 3 | 1 | worker throw, incomplete walk, failed enqueue (fairness) | 410,386 |
+| `InboundQueueSlice` | 3 | 1 | limited-slice admission, failed claim read | 191,865 |
 
 The fixes are switches, so each one's old behaviour is a configuration away;
 every checked-in configuration sets them `TRUE`. "Claiming the range above
@@ -1452,24 +1473,6 @@ cleared).
 
 What the model leaves out, deliberately or as a residual:
 
-- **A limited sync's slice can apply before the bridge sees the sync
-  (`SliceRace`).** The Matrix SDK adds the slice's events to
-  `onTimelineEvent` before it publishes `onSync`, and awaits database writes
-  in between. If the live handler enqueues a post-gap event and the worker
-  applies it before `BridgeCoordinator` handles the sync and claims the gap,
-  the anchor passes the gap first. `SliceRace = TRUE` finds it in 10 steps,
-  and every checked-in configuration sets it `FALSE`. The window is the
-  worker's whole apply-and-commit against a few database reads, so it is
-  narrow, and the sequence-log backfill (`SyncSequence`) repairs a lost
-  sequenced payload from a peer. Closing it needs a decision: take live
-  events from `Client.onSync`'s room updates, where the `limited` flag and
-  the slice arrive together, so the claim precedes the enqueue; or let only
-  walk-contiguous rows move the anchor, with a durable captured-frontier
-  column and a migration; or accept the window and rely on backfill.
-  An admission barrier that held every live event until `onSync` (#4502) was
-  reverted: it stranded attachment descriptors, and the Matrix integration
-  suite failed in 23 of 27 runs with it. The SDK's synthetic `handleSync`
-  passes also emit `processing` and `onSync` mid-response.
 - **Equal milliseconds.** A claim is one millisecond above the marker and a
   checkpoint one above the walk's newest event. An uncaptured event in the
   same millisecond as the marker or the cursor, later in timeline order, is

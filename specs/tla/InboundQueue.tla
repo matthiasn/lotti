@@ -20,9 +20,9 @@
 (*                                                                         *)
 (*   Arrive            a peer sends; the homeserver timeline grows         *)
 (*   LiveDeliver       QueuePipelineCoordinator._handleLiveEvent, run by   *)
-(*                     `asyncMap` in stream order: ciphertext lowers the   *)
-(*                     floor (InboundQueue.lowerResumeFloor), plaintext    *)
-(*                     goes through InboundQueue.enqueueLive, which first  *)
+(*                     response admission for payloads, timeline ingress  *)
+(*                     for ciphertext: ciphertext lowers the resume floor *)
+(*                     while plaintext uses InboundQueue.enqueueLive and  *)
 (*                     persists a retained floor                           *)
 (*   LiveGap,          a `timeline.limited` sync: the SDK drops the middle *)
 (*   GapTrigger        of the timeline, delivers the newest slice, and     *)
@@ -65,10 +65,9 @@
 (*                     stay until they expire, in-memory state is lost     *)
 (*                                                                         *)
 (* The fixes are switches, so a configuration with a switch FALSE is the   *)
-(* old code. Every checked-in configuration sets them TRUE. SliceRace is   *)
-(* the one residual: TRUE lets the worker apply a limited sync's slice     *)
-(* before BridgeCoordinator sees the sync, which the checked-in            *)
-(* configurations exclude (see the README).                                *)
+(* old code. AdmitResponses allows payload delivery only after the same   *)
+(* response supplies its limited flag and its gap claim has been retained. *)
+(* Attachments do not enter this payload queue or advance its marker.      *)
 (***************************************************************************)
 EXTENDS Integers, FiniteSets
 
@@ -93,8 +92,9 @@ CONSTANTS
     ResurrectRechecksCap, \* ... and still under the hard cap
     RetainFailedClaim, \* a claim whose marker read throws stays pending
     HardCap,        \* resurrections per row (`hardCap`)
-    \* The residual:
-    SliceRace       \* TRUE: the slice can apply before the trigger claims
+    \* Response ordering:
+    AdmitResponses, \* TRUE: admit payloads from their complete response
+    SliceRace       \* TRUE: SDK timeline emission precedes response metadata
 
 FaultKinds == {
     "enqueue",      \* an inbound_event_queue insert throws
@@ -275,6 +275,7 @@ KeyArrives(e) ==
 
 LiveDeliver ==
     /\ running
+    /\ ~(AdmitResponses /\ gapPending)
     /\ liveNext <= tip
     /\ LET e == liveNext IN
        /\ liveNext' = e + 1

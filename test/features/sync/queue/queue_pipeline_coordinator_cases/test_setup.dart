@@ -44,6 +44,44 @@ Event _buildLiveSyncEvent({
   return event;
 }
 
+/// Emits the SDK timeline callback followed by its complete room response.
+/// Tests of delayed metadata use the controllers directly instead.
+void _deliverResponseEvent(
+  Event event,
+  StreamController<Event> timeline,
+  CachedStreamController<SyncUpdate> sync,
+  MockMatrixClient client,
+) {
+  final roomId = event.roomId!;
+  final room = MockRoom();
+  when(() => room.id).thenReturn(roomId);
+  when(() => room.partial).thenReturn(false);
+  when(() => room.client).thenReturn(client);
+  when(() => client.getRoomById(roomId)).thenReturn(room);
+  timeline.add(event);
+  final json = event.toJson();
+  json['unsigned'] = <String, dynamic>{
+    ...?json['unsigned'] as Map<String, dynamic>?,
+    messageSendingStatusKey: event.status.intValue,
+  };
+  sync.add(
+    SyncUpdate(
+      nextBatch: 'response',
+      rooms: RoomsUpdate(
+        join: {
+          roomId: JoinedRoomUpdate(
+            timeline: TimelineUpdate(
+              events: [
+                MatrixEvent.fromJson(json),
+              ],
+            ),
+          ),
+        },
+      ),
+    ),
+  );
+}
+
 /// Completes when [matches] holds for the queue's stats, re-checking on every
 /// depth change. Hard 5s timeout so a stalled `depthChanges` fails fast
 /// instead of hanging the suite.
@@ -235,8 +273,15 @@ class _QueueCoordinatorTestSetup {
     seederOverride: seeder,
   );
 
+  void deliverPayload(Event event) =>
+      _deliverResponseEvent(event, timelineCtl, syncCtl, client);
+
   Event buildEvent(String type) {
-    final e = MockEvent();
+    final e = _buildLiveSyncEvent(
+      eventId: r'$a',
+      roomId: roomId,
+      originTsMs: 1234,
+    );
     when(() => e.eventId).thenReturn(r'$a');
     when(() => e.roomId).thenReturn(roomId);
     when(() => e.type).thenReturn(type);

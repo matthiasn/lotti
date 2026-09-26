@@ -70,8 +70,9 @@ extension QueueLifecycle on QueuePipelineCoordinator {
               );
             },
           );
-      // Subscribe to onSync so we can un-partial the current room
-      // (via `room.postLoad()`) the first time we see it. Without
+      // Admit each response's payloads only after claiming its limited gap.
+      // This also un-partials the current room via `room.postLoad()` the
+      // first time we see it. Without
       // this, Matrix SDK skips `RoomMember` state events on partial
       // rooms — so `_trackedUserIds` never grows to include new
       // joiners, `updateUserDeviceKeys` never queries their keys,
@@ -80,7 +81,7 @@ extension QueueLifecycle on QueuePipelineCoordinator {
       // side effect; the queue pipeline replicates the un-partial
       // step on its own, independent of timeline subscriptions.
       _syncSub = _sessionManager.client.onSync.stream.listen(
-        (_) => _maybePostLoadCurrentRoom(),
+        _admitSyncResponse,
         onError: (Object error, StackTrace stackTrace) {
           _logging.error(
             LogDomain.sync,
@@ -175,6 +176,19 @@ extension QueueLifecycle on QueuePipelineCoordinator {
       }
       await _journalUpdateSub?.cancel();
       _journalUpdateSub = null;
+      // A complete response may already be admitting payloads while worker
+      // startup fails. Drain those writes after cancelling producers and
+      // before stopping the worker/bridge, just as normal shutdown does.
+      try {
+        await Future.wait(_inFlightEnqueues.toList());
+      } catch (admissionError, admissionStack) {
+        _logging.error(
+          LogDomain.sync,
+          admissionError,
+          stackTrace: admissionStack,
+          subDomain: '$_logSub.start.inFlightEnqueues',
+        );
+      }
       try {
         await _bridge.stop();
       } catch (_) {

@@ -86,7 +86,7 @@ extension _PipelineIntegrationCases on _QueueCoordinatorTestSetup {
             roomId: roomId,
             originTsMs: 1000,
           );
-          timelineCtl.add(event);
+          deliverPayload(event);
 
           await applied.future;
           await coordinator.queue.waitForDrainAtMostTo(0);
@@ -182,7 +182,7 @@ extension _PipelineIntegrationCases on _QueueCoordinatorTestSetup {
             'content': content,
           });
 
-          timelineCtl.add(event);
+          deliverPayload(event);
 
           // Phase 1 - wait for the row to start retrying, then transition
           // it straight to abandoned so we can exercise resurrection
@@ -340,7 +340,7 @@ extension _PipelineIntegrationCases on _QueueCoordinatorTestSetup {
             'content': syncContent,
           });
 
-          timelineCtl.add(syncEvent);
+          deliverPayload(syncEvent);
 
           // Wait for the row to become retrying; then flip to abandoned
           // (shortcut past the production ladder).

@@ -18,6 +18,7 @@ extension _CatchUpClaimCases on _QueueCoordinatorTestSetup {
       ).thenReturn(DateTime.fromMillisecondsSinceEpoch(tsMs));
       when(event.toJson).thenReturn(<String, dynamic>{
         'event_id': id,
+        'sender': '@peer:example.org',
         'room_id': roomId,
         'origin_server_ts': tsMs,
         'type': EventTypes.Message,
@@ -64,6 +65,290 @@ extension _CatchUpClaimCases on _QueueCoordinatorTestSetup {
           bridgeOverride: bridge,
           seederOverride: seeder,
         );
+
+    test(
+      'real SDK emits payload before its limited response is admitted',
+      () async {
+        await seedMarker(ts: 5000, eventId: r'$anchor');
+        final sdkDb = MockMatrixDatabase();
+        final httpClient = MockHttpClient();
+        final sdk = Client(
+          'response-admission-test',
+          database: sdkDb,
+          httpClient: httpClient,
+        );
+        addTearDown(() => sdk.dispose(closeDatabase: false));
+        final room = Room(id: roomId, client: sdk)..partial = false;
+        sdk.rooms.add(room);
+        when(() => sessionManager.client).thenReturn(sdk);
+        when(
+          () => sessionManager.timelineEvents,
+        ).thenAnswer((_) => sdk.onTimelineEvent.stream);
+        when(() => roomManager.currentRoom).thenReturn(room);
+        final payload = MatrixEvent(
+          type: EventTypes.Message,
+          eventId: r'$sdk-payload',
+          senderId: '@peer:example.org',
+          originServerTs: DateTime.fromMillisecondsSinceEpoch(9000),
+          content: {'msgtype': syncMessageType},
+        );
+        final update = JoinedRoomUpdate(
+          timeline: TimelineUpdate(
+            limited: true,
+            prevBatch: 'before-gap',
+            events: [payload],
+          ),
+        );
+        when(
+          () => sdkDb.deleteTimelineForRoom(roomId),
+        ).thenAnswer((_) async {});
+        when(
+          () => sdkDb.getUser(payload.senderId, room),
+        ).thenAnswer((_) async => null);
+        when(
+          () => sdkDb.storeEventUpdate(
+            roomId,
+            payload,
+            EventUpdateType.timeline,
+            sdk,
+          ),
+        ).thenAnswer((_) async {});
+        final reachedStore = Completer<void>();
+        final releaseStore = Completer<void>();
+        when(
+          () => sdkDb.storeRoomUpdate(roomId, update, any(), sdk),
+        ).thenAnswer((_) async {
+          reachedStore.complete();
+          await releaseStore.future;
+        });
+        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        addTearDown(realQueue.dispose);
+        final coordinator = buildReal(realQueue);
+        await coordinator.start();
+        addTearDown(coordinator.stop);
+        await realQueue.completeResumeWalk(
+          roomId: roomId,
+          walkStartedAtFloorRevision: realQueue.resumeFloorRevision(roomId),
+          unresolvedFloorTs: null,
+        );
+        final timelineIds = <String>[];
+        final observed = sdk.onTimelineEvent.stream.listen(
+          (event) => timelineIds.add(event.eventId),
+        );
+        addTearDown(observed.cancel);
+        final response = sdk.handleSync(
+          SyncUpdate(
+            nextBatch: 'real-response',
+            rooms: RoomsUpdate(join: {roomId: update}),
+          ),
+        );
+        await reachedStore.future;
+        try {
+          await pumpEventQueue();
+          expect(timelineIds, [payload.eventId]);
+          expect(await syncDb.select(syncDb.inboundEventQueue).get(), isEmpty);
+          // A nested synthetic SDK pass emits onSync while the real room
+          // response is still parked after its timeline callbacks.
+          await sdk.handleSync(SyncUpdate(nextBatch: 'synthetic'));
+          await pumpEventQueue();
+          expect(await syncDb.select(syncDb.inboundEventQueue).get(), isEmpty);
+          expect((await readMarkerRow()).resumeFloorTs, isNull);
+        } finally {
+          releaseStore.complete();
+          await response;
+        }
+        await pumpEventQueue();
+        final batch = await realQueue.peekBatchReady(maxBatch: 1);
+        expect(batch.map((row) => row.eventId), [payload.eventId]);
+        await realQueue.commitApplied(batch.single);
+        final marker = await readMarkerRow();
+        expect(marker.lastAppliedTs, 9000);
+        expect(marker.resumeFloorTs, 5001);
+        verifyZeroInteractions(httpClient);
+      },
+    );
+
+    test(
+      'response admission claims a limited gap before its payload applies',
+      () async {
+        await seedMarker(ts: 5000, eventId: r'$anchor');
+        final room = MockRoom();
+        when(() => room.id).thenReturn(roomId);
+        when(() => room.partial).thenReturn(false);
+        when(() => room.client).thenReturn(client);
+        when(() => roomManager.currentRoom).thenReturn(room);
+        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        addTearDown(realQueue.dispose);
+        final coordinator = buildReal(realQueue);
+        await coordinator.start();
+        addTearDown(coordinator.stop);
+        await realQueue.completeResumeWalk(
+          roomId: roomId,
+          walkStartedAtFloorRevision: realQueue.resumeFloorRevision(roomId),
+          unresolvedFloorTs: null,
+        );
+        expect((await readMarkerRow()).resumeFloorTs, isNull);
+        final raw = MatrixEvent.fromJson({
+          'event_id': r'$slice',
+          'sender': '@peer:example.org',
+          'origin_server_ts': 9000,
+          'type': EventTypes.Message,
+          'content': {'msgtype': syncMessageType},
+        });
+        timelineCtl.add(Event.fromMatrixEvent(raw, room));
+        await pumpEventQueue();
+        expect(await syncDb.select(syncDb.inboundEventQueue).get(), isEmpty);
+        // A synthetic SDK pass must not admit another response's slice.
+        syncCtl.add(
+          SyncUpdate(
+            nextBatch: '',
+            rooms: RoomsUpdate(
+              join: {
+                roomId: JoinedRoomUpdate(),
+              },
+            ),
+          ),
+        );
+        await pumpEventQueue();
+        expect(await syncDb.select(syncDb.inboundEventQueue).get(), isEmpty);
+        syncCtl.add(
+          SyncUpdate(
+            nextBatch: 'limited',
+            rooms: RoomsUpdate(
+              join: {
+                roomId: JoinedRoomUpdate(
+                  timeline: TimelineUpdate(
+                    limited: true,
+                    events: [raw],
+                    prevBatch: 'before-gap',
+                  ),
+                ),
+              },
+            ),
+          ),
+        );
+        await pumpEventQueue();
+        final batch = await realQueue.peekBatchReady(maxBatch: 1);
+        expect(batch.map((row) => row.eventId), [r'$slice']);
+        expect((await readMarkerRow()).resumeFloorTs, 5001);
+        await realQueue.commitApplied(batch.single);
+        final marker = await readMarkerRow();
+        expect(marker.lastAppliedTs, 9000);
+        expect(marker.resumeFloorTs, 5001);
+      },
+    );
+
+    test(
+      'unavailable response room retains its range before later payloads',
+      () async {
+        await seedMarker(ts: 5000, eventId: r'$anchor');
+        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        addTearDown(realQueue.dispose);
+        final coordinator = buildReal(realQueue);
+        await coordinator.start();
+        addTearDown(coordinator.stop);
+        await realQueue.completeResumeWalk(
+          roomId: roomId,
+          walkStartedAtFloorRevision: realQueue.resumeFloorRevision(roomId),
+          unresolvedFloorTs: null,
+        );
+        syncCtl.add(
+          SyncUpdate(
+            nextBatch: 'room-unavailable',
+            rooms: RoomsUpdate(
+              join: {
+                roomId: JoinedRoomUpdate(
+                  timeline: TimelineUpdate(
+                    events: [
+                      MatrixEvent.fromJson(
+                        syncPayload(r'$unresolved-room', 6000).toJson(),
+                      ),
+                    ],
+                  ),
+                ),
+              },
+            ),
+          ),
+        );
+        await pumpEventQueue();
+        expect(await syncDb.select(syncDb.inboundEventQueue).get(), isEmpty);
+        expect((await readMarkerRow()).resumeFloorTs, 5001);
+        deliverPayload(syncPayload(r'$room-restored', 9000));
+        await pumpEventQueue();
+        final batch = await realQueue.peekBatchReady(maxBatch: 1);
+        expect(batch.map((row) => row.eventId), [r'$room-restored']);
+        await realQueue.commitApplied(batch.single);
+        final marker = await readMarkerRow();
+        expect(marker.lastAppliedTs, 9000);
+        expect(marker.resumeFloorTs, 5001);
+      },
+    );
+
+    test(
+      'failed response admission retains every unqueued event for repair',
+      () async {
+        await seedMarker(ts: 5000, eventId: r'$anchor');
+        final room = MockRoom();
+        when(() => room.id).thenReturn(roomId);
+        when(() => room.partial).thenReturn(false);
+        when(() => room.client).thenReturn(client);
+        when(() => roomManager.currentRoom).thenReturn(room);
+        final encryption = MockEncryption();
+        when(() => client.encryption).thenReturn(encryption);
+        when(
+          () => encryption.decryptRoomEvent(any()),
+        ).thenThrow(StateError('key store unavailable'));
+        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        addTearDown(realQueue.dispose);
+        final coordinator = buildReal(realQueue);
+        await coordinator.start();
+        addTearDown(coordinator.stop);
+        await realQueue.completeResumeWalk(
+          roomId: roomId,
+          walkStartedAtFloorRevision: realQueue.resumeFloorRevision(roomId),
+          unresolvedFloorTs: null,
+        );
+        verify(bridge.bridgeNow).called(1);
+        final encrypted = MatrixEvent.fromJson({
+          'event_id': r'$encrypted',
+          'sender': '@peer:example.org',
+          'origin_server_ts': 6000,
+          'type': EventTypes.Encrypted,
+          'content': <String, dynamic>{},
+        });
+        final unqueued = MatrixEvent.fromJson({
+          'event_id': r'$unqueued',
+          'sender': '@peer:example.org',
+          'origin_server_ts': 7000,
+          'type': EventTypes.Message,
+          'content': {'msgtype': syncMessageType},
+        });
+        syncCtl.add(
+          SyncUpdate(
+            nextBatch: 'failed',
+            rooms: RoomsUpdate(
+              join: {
+                roomId: JoinedRoomUpdate(
+                  timeline: TimelineUpdate(events: [encrypted, unqueued]),
+                ),
+              },
+            ),
+          ),
+        );
+        await pumpEventQueue();
+        expect((await readMarkerRow()).resumeFloorTs, 6000);
+        expect(await syncDb.select(syncDb.inboundEventQueue).get(), isEmpty);
+        verify(bridge.bridgeNow).called(1);
+        deliverPayload(syncPayload(r'$later', 9000));
+        await pumpEventQueue();
+        final batch = await realQueue.peekBatchReady(maxBatch: 1);
+        expect(batch.map((row) => row.eventId), [r'$later']);
+        await realQueue.commitApplied(batch.single);
+        final marker = await readMarkerRow();
+        expect(marker.lastAppliedTs, 9000);
+        expect(marker.resumeFloorTs, 6000);
+      },
+    );
 
     test(
       'start claims the range above the marker before the live stream '
@@ -125,7 +410,7 @@ extension _CatchUpClaimCases on _QueueCoordinatorTestSetup {
           ),
         ).called(1);
 
-        timelineCtl.add(syncPayload(r'$live', 9000));
+        deliverPayload(syncPayload(r'$live', 9000));
         await pumpEventQueue();
 
         row = await readMarkerRow();
@@ -177,7 +462,7 @@ extension _CatchUpClaimCases on _QueueCoordinatorTestSetup {
           () => queue.lowerResumeFloor(roomId: roomId, originTs: 1234),
         ).thenThrow(StateError('floor write failed'));
 
-        timelineCtl.add(buildEvent(EventTypes.Message));
+        deliverPayload(buildEvent(EventTypes.Message));
         await pumpEventQueue();
 
         verify(

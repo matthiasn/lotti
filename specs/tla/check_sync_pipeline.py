@@ -57,6 +57,10 @@ def check(name, constants, assertion, *, temporal=False, extension="", fails=Tru
 
 def main():
     for guarded, fails in (("TRUE", False), ("FALSE", True)):
+        check("response-admission-" + guarded, {"AdmitResponses": guarded},
+              "NoSilentLoss", module="InboundQueue",
+              profile="InboundQueueSlice", fails=fails)
+    for guarded, fails in (("TRUE", False), ("FALSE", True)):
         check("mixed-family-namespace-" + guarded,
               {"MixedFamilies": "TRUE", "MaxCounter": "2",
                "ConcurrentWriters": "TRUE", "NamespacePayloads": guarded},

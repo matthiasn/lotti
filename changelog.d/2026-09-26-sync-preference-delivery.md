@@ -6,3 +6,7 @@
 - **Synced settings toggles agree when updates arrive out of order.** Updated
   devices keep the same winning toggle and description, and failed saves no
   longer expose a change that was rolled back.
+
+- **Sync no longer advances past a newly reported history gap.** New payloads
+  wait for their response’s recovery boundary, while attachment downloads
+  continue immediately.
