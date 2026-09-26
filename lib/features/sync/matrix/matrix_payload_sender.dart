@@ -185,11 +185,44 @@ class MatrixPayloadSender {
         content['msgtype'] != file.msgType ||
         content['relativePath'] != extraContent['relativePath'] ||
         content[attachmentEncodingKey] != extraContent[attachmentEncodingKey] ||
+        (content.containsKey('file') &&
+            !_hasValidEncryptedFileMetadata(encryptedFile)) ||
         url is! String ||
         Uri.tryParse(url)?.scheme != 'mxc') {
       throw StateError('Uploaded attachment descriptor is unusable');
     }
     return eventId;
+  }
+
+  /// Checks the v2 encryption metadata emitted by our SDK before acknowledging
+  /// its upload. The ciphertext bytes and their hash are not downloaded here.
+  static bool _hasValidEncryptedFileMetadata(Object? value) {
+    if (value is! Map || value['v'] != 'v2') return false;
+    final key = value['key'];
+    final hashes = value['hashes'];
+    if (key is! Map || hashes is! Map) return false;
+    final operations = key['key_ops'];
+    return key['alg'] == 'A256CTR' &&
+        key['kty'] == 'oct' &&
+        key['ext'] == true &&
+        operations is List &&
+        operations.every((operation) => operation is String) &&
+        operations.contains('encrypt') &&
+        operations.contains('decrypt') &&
+        _hasBase64ByteLength(key['k'], 32) &&
+        _hasBase64ByteLength(value['iv'], 16) &&
+        _hasBase64ByteLength(hashes['sha256'], 32);
+  }
+
+  static bool _hasBase64ByteLength(Object? value, int expectedLength) {
+    if (value is! String) return false;
+    try {
+      // normalize accepts the SDK's unpadded base64 and base64url forms.
+      return base64.decode(base64.normalize(value)).length == expectedLength;
+    } on FormatException {
+      // Do not propagate a decoding error containing key/IV material to logs.
+      return false;
+    }
   }
 
   /// The entry's stored row. It must cover the queued version and every

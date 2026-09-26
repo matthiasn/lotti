@@ -3344,39 +3344,47 @@ void main() {
       },
     );
 
-    test(
-      'an empty uploaded descriptor cannot publish or acknowledge a bundle',
-      () async {
-        when(
-          () => uploadStub.client.getOneRoomEvent('!room:test', 'file-id'),
-        ).thenAnswer(
-          (_) async => MatrixEvent(
-            content: {},
-            type: EventTypes.Message,
-            eventId: 'file-id',
-            senderId: '@sender:example.test',
-            originServerTs: DateTime.utc(2026, 9, 26),
-          ),
-        );
-        var acknowledged = false;
-        final result = await sender.sendMatrixMessage(
-          message: bundleWith(3),
-          context: buildContext(),
-          onSent: (_, _) => acknowledged = true,
-        );
-        expect(result, isFalse);
-        expect(acknowledged, isFalse);
-        expect(sentEventRegistry.consume('file-id'), isFalse);
-        verifyNever(
-          () => room.sendTextEvent(
-            any<String>(),
-            msgtype: any<String>(named: 'msgtype'),
-            parseCommands: any<bool>(named: 'parseCommands'),
-            parseMarkdown: any<bool>(named: 'parseMarkdown'),
-          ),
-        );
-      },
-    );
+    for (final incomplete in [false, true]) {
+      test(
+        '${incomplete ? 'an incomplete encrypted' : 'an empty'} uploaded descriptor '
+        'cannot publish or acknowledge a bundle',
+        () async {
+          when(
+            () => uploadStub.client.getOneRoomEvent('!room:test', 'file-id'),
+          ).thenAnswer(
+            (_) async => MatrixEvent(
+              content: incomplete
+                  ? {
+                      ...uploadStub.descriptors['file-id']!.content,
+                      'file': {'url': 'mxc://example.test/upload'},
+                    }
+                  : {},
+              type: EventTypes.Message,
+              eventId: 'file-id',
+              senderId: '@sender:example.test',
+              originServerTs: DateTime.utc(2026, 9, 26),
+            ),
+          );
+          var acknowledged = false;
+          final result = await sender.sendMatrixMessage(
+            message: bundleWith(3),
+            context: buildContext(),
+            onSent: (_, _) => acknowledged = true,
+          );
+          expect(result, isFalse);
+          expect(acknowledged, isFalse);
+          expect(sentEventRegistry.consume('file-id'), isFalse);
+          verifyNever(
+            () => room.sendTextEvent(
+              any<String>(),
+              msgtype: any<String>(named: 'msgtype'),
+              parseCommands: any<bool>(named: 'parseCommands'),
+              parseMarkdown: any<bool>(named: 'parseMarkdown'),
+            ),
+          );
+        },
+      );
+    }
 
     test(
       'sendMatrixMessage returns false when the outboxBundle upload fails — '

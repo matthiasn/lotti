@@ -159,7 +159,7 @@ void main() {
                   : {
                       for (final entry in content.entries)
                         if (entry.key != 'url') entry.key: entry.value,
-                      'file': {'url': 'mxc://example.test/upload'},
+                      'file': MatrixUploadTestStub.encryptedFileDescriptor(),
                     },
               type: EventTypes.Message,
               eventId: 'verified-event',
@@ -181,6 +181,148 @@ void main() {
           fault == 'validEncrypted',
         );
         verifyNever(() => room.getEventById(any()));
+      });
+    }
+
+    for (final fault in [
+      'missingKey',
+      'keyType',
+      'missingIv',
+      'ivType',
+      'ivEncoding',
+      'ivLength',
+      'missingHashes',
+      'hashesType',
+      'missingHash',
+      'hashType',
+      'hashEncoding',
+      'hashLength',
+      'missingK',
+      'kType',
+      'kEncoding',
+      'kLength',
+      'missingOps',
+      'opsType',
+      'noDecrypt',
+      'noEncrypt',
+      'opType',
+      'algorithm',
+      'keyKind',
+      'extractable',
+      'version',
+      'fileType',
+      'fileNull',
+    ]) {
+      test('rejects unusable encrypted attachment metadata: $fault', () async {
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenAnswer(uploadStub.record((_) async => 'encrypted-file'));
+        final file = MatrixUploadTestStub.encryptedFileDescriptor();
+        final key = file['key'] as Map<String, dynamic>;
+        final hashes = file['hashes'] as Map<String, dynamic>;
+        switch (fault) {
+          case 'missingKey':
+            file.remove('key');
+          case 'keyType':
+            file['key'] = 'not a map';
+          case 'missingIv':
+            file.remove('iv');
+          case 'ivType':
+            file['iv'] = 42;
+          case 'ivEncoding':
+            file['iv'] = '!invalid-base64';
+          case 'ivLength':
+            file['iv'] = 'AA';
+          case 'missingHashes':
+            file.remove('hashes');
+          case 'hashesType':
+            file['hashes'] = 'not a map';
+          case 'missingHash':
+            hashes.remove('sha256');
+          case 'hashType':
+            hashes['sha256'] = 42;
+          case 'hashEncoding':
+            hashes['sha256'] = '!invalid-base64';
+          case 'hashLength':
+            hashes['sha256'] = 'AA';
+          case 'missingK':
+            key.remove('k');
+          case 'kType':
+            key['k'] = 42;
+          case 'kEncoding':
+            key['k'] = '!invalid-base64';
+          case 'kLength':
+            key['k'] = 'AA';
+          case 'missingOps':
+            key.remove('key_ops');
+          case 'opsType':
+            key['key_ops'] = 'decrypt';
+          case 'noDecrypt':
+            key['key_ops'] = ['encrypt'];
+          case 'noEncrypt':
+            key['key_ops'] = ['decrypt'];
+          case 'opType':
+            key['key_ops'] = ['encrypt', 'decrypt', 42];
+          case 'algorithm':
+            key['alg'] = 'A128CTR';
+          case 'keyKind':
+            key['kty'] = 'RSA';
+          case 'extractable':
+            key['ext'] = false;
+          case 'version':
+            file['v'] = 'unknown';
+        }
+        when(
+          () => uploadStub.client.getOneRoomEvent(
+            '!room:test',
+            'encrypted-file',
+          ),
+        ).thenAnswer(
+          (_) async => MatrixEvent(
+            content: {
+              'msgtype': MessageTypes.File,
+              'relativePath': 'note.txt',
+              // A plaintext URL must not mask malformed encryption metadata.
+              'url': 'mxc://example.test/upload',
+              'file': fault == 'fileNull'
+                  ? null
+                  : fault == 'fileType'
+                  ? 'not a map'
+                  : file,
+            },
+            type: EventTypes.Message,
+            eventId: 'encrypted-file',
+            senderId: '@sender:example.test',
+            originServerTs: DateTime.utc(2026, 9, 26),
+          ),
+        );
+        expect(
+          await payloadSender.sendFile(
+            room: room,
+            fullPath: '${documentsDirectory.path}/note.txt',
+            relativePath: 'note.txt',
+            bytes: Uint8List.fromList([1]),
+          ),
+          isFalse,
+        );
+        expect(sentEventRegistry.consume('encrypted-file'), isFalse);
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(
+              that: isA<StateError>().having(
+                (error) => error.message,
+                'constant metadata failure',
+                'Uploaded attachment descriptor is unusable',
+              ),
+            ),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'sendMatrixMsg',
+          ),
+        ).called(1);
       });
     }
 

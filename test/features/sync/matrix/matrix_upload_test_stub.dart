@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -15,6 +18,24 @@ class MatrixUploadTestStub {
       return descriptors[id]!;
     });
   }
+
+  /// Structurally valid v2 metadata with deterministic test key material.
+  /// This fixture does not claim that any uploaded bytes match its hash.
+  static Map<String, dynamic> encryptedFileDescriptor() => {
+    'url': 'mxc://example.test/upload',
+    'v': 'v2',
+    'key': <String, dynamic>{
+      'alg': 'A256CTR',
+      'ext': true,
+      'k': base64Url.encode(Uint8List(32)).replaceAll('=', ''),
+      'key_ops': ['encrypt', 'decrypt'],
+      'kty': 'oct',
+    },
+    'iv': base64.encode(Uint8List(16)).replaceAll('=', ''),
+    'hashes': <String, dynamic>{
+      'sha256': base64.encode(Uint8List(32)).replaceAll('=', ''),
+    },
+  };
 
   final client = MockMatrixClient();
   final descriptors = <String, MatrixEvent>{};
