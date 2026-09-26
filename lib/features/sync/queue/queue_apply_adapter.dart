@@ -232,7 +232,7 @@ class QueueApplyAdapter {
 
     // Step 3 — apply. Wrap in a JournalDb writer transaction ONLY for
     // payload families that need an outer transaction (entity-definition
-    // upserts and config flags). Journal entities and entry links own their
+    // upserts). Config flags, journal entities and entry links own their
     // transactions: their cross-database receipt must follow the real commit,
     // not a nested savepoint that a later outer rollback could undo. Other
     // families (theming, ai-config, agent entity/link/bundle, outbox
@@ -378,8 +378,9 @@ class QueueApplyAdapter {
       // settings_db (saved task filters).
       savedTaskFilter: (_) => false,
       savedTaskFilterDelete: (_) => false,
-      // config_flags table in JournalDb.
-      configFlag: (_) => true,
+      // The flag and its ordering stamp own their JournalDb transaction;
+      // its cache must publish after commit, not after a nested savepoint.
+      configFlag: (_) => false,
       // settings_db.
       themingSelection: (_) => false,
       // settings_db (Daily OS greeting name).

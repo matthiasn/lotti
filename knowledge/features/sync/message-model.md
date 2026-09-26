@@ -180,7 +180,11 @@ copies as no-ops.
 # Settings without sequence recovery
 
 `themingSelection` and `dailyOsUserName` use the versioned settings group
-comparison in the [settings group contract](../../architecture/persistence.md#settings-groups). `configFlag` overwrites on arrival without a version stamp.
+comparison in the [settings group contract](../../architecture/persistence.md#settings-groups).
+`configFlag` uses the [flag version contract](../../architecture/persistence.md#config-flag-versions).
+Its optional wire stamp falls back to the Matrix event timestamp for old senders.
+Older receivers still overwrite on arrival, so the convergence guarantee requires
+updated receivers.
 They have no sequence-gap repair. Theme/name apply persists the values,
 freshness stamp and (for the name) bootstrap marker in one settings transaction.
 Failures propagate to the inbound queue's bounded retry policy; notifications
@@ -193,12 +197,14 @@ unpublished name on reload; theme publication has the separate
 [controller lifetime boundary](../theming.md#the-sync-boundary).
 
 `SyncPreferenceEdits` checks local edits interleaved with remote receives and
-debounced publication, assuming publication and delivery eventually succeed.
+debounced theme/name publication or immediate flag publication, assuming
+publication and delivery eventually succeed.
 Its [bounds and mutation controls](../../../specs/tla/README.md#syncpreferenceedits--local-edits-and-debounced-publication)
 are separate from the receive transaction model.
 
 `SyncSettings` checks their conditional convergence, including equal timestamps
-and a failed write. Reordered unversioned flags remain a counterexample. The assumptions and
+and a failed write. Disabling flag versions reproduces the previous arrival-order
+divergence. The assumptions and
 configurations are in the [formal specs](../../../specs/tla/README.md#syncsettings--the-boundary-for-settings-without-sequence-recovery).
 
 # File-backed payloads

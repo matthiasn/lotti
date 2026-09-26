@@ -186,6 +186,8 @@ sealed class SyncMessage with _$SyncMessage {
     required String name,
     required String description,
     required bool status,
+    // Older senders omit this; receivers use the Matrix event's server stamp.
+    int? updatedAt,
     String? originatingHostId,
   }) = SyncConfigFlag;
 

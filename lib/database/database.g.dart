@@ -4835,6 +4835,231 @@ class ConfigFlagsCompanion extends UpdateCompanion<ConfigFlag> {
   }
 }
 
+class ConfigFlagVersions extends Table
+    with TableInfo<ConfigFlagVersions, ConfigFlagVersion> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  ConfigFlagVersions(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  @override
+  List<GeneratedColumn> get $columns => [name, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'config_flag_versions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ConfigFlagVersion> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {name};
+  @override
+  ConfigFlagVersion map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ConfigFlagVersion(
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  ConfigFlagVersions createAlias(String alias) {
+    return ConfigFlagVersions(attachedDatabase, alias);
+  }
+
+  @override
+  List<String> get customConstraints => const [
+    'PRIMARY KEY(name)',
+    'FOREIGN KEY(name)REFERENCES config_flags(name)ON DELETE CASCADE',
+  ];
+  @override
+  bool get dontWriteConstraints => true;
+}
+
+class ConfigFlagVersion extends DataClass
+    implements Insertable<ConfigFlagVersion> {
+  final String name;
+  final int updatedAt;
+  const ConfigFlagVersion({required this.name, required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['name'] = Variable<String>(name);
+    map['updated_at'] = Variable<int>(updatedAt);
+    return map;
+  }
+
+  ConfigFlagVersionsCompanion toCompanion(bool nullToAbsent) {
+    return ConfigFlagVersionsCompanion(
+      name: Value(name),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory ConfigFlagVersion.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ConfigFlagVersion(
+      name: serializer.fromJson<String>(json['name']),
+      updatedAt: serializer.fromJson<int>(json['updated_at']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'name': serializer.toJson<String>(name),
+      'updated_at': serializer.toJson<int>(updatedAt),
+    };
+  }
+
+  ConfigFlagVersion copyWith({String? name, int? updatedAt}) =>
+      ConfigFlagVersion(
+        name: name ?? this.name,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  ConfigFlagVersion copyWithCompanion(ConfigFlagVersionsCompanion data) {
+    return ConfigFlagVersion(
+      name: data.name.present ? data.name.value : this.name,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ConfigFlagVersion(')
+          ..write('name: $name, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(name, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ConfigFlagVersion &&
+          other.name == this.name &&
+          other.updatedAt == this.updatedAt);
+}
+
+class ConfigFlagVersionsCompanion extends UpdateCompanion<ConfigFlagVersion> {
+  final Value<String> name;
+  final Value<int> updatedAt;
+  final Value<int> rowid;
+  const ConfigFlagVersionsCompanion({
+    this.name = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ConfigFlagVersionsCompanion.insert({
+    required String name,
+    required int updatedAt,
+    this.rowid = const Value.absent(),
+  }) : name = Value(name),
+       updatedAt = Value(updatedAt);
+  static Insertable<ConfigFlagVersion> custom({
+    Expression<String>? name,
+    Expression<int>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (name != null) 'name': name,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ConfigFlagVersionsCompanion copyWith({
+    Value<String>? name,
+    Value<int>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return ConfigFlagVersionsCompanion(
+      name: name ?? this.name,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ConfigFlagVersionsCompanion(')
+          ..write('name: $name, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class Labeled extends Table with TableInfo<Labeled, LabeledWith> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -5774,6 +5999,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     'CREATE INDEX idx_dashboard_definitions_deleted_private_name ON dashboard_definitions (deleted COLLATE BINARY ASC, private COLLATE BINARY ASC, name COLLATE NOCASE ASC)',
   );
   late final ConfigFlags configFlags = ConfigFlags(this);
+  late final ConfigFlagVersions configFlagVersions = ConfigFlagVersions(this);
   late final Labeled labeled = Labeled(this);
   late final Index idxLabeledJournalId = Index(
     'idx_labeled_journal_id',
@@ -7493,6 +7719,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     idxDashboardDefinitionsPrivate,
     idxDashboardDefinitionsDeletedPrivateName,
     configFlags,
+    configFlagVersions,
     labeled,
     idxLabeledJournalId,
     idxLabeledLabelId,
@@ -7507,6 +7734,13 @@ abstract class _$JournalDb extends GeneratedDatabase {
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'config_flags',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('config_flag_versions', kind: UpdateKind.delete)],
+    ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
         'journal',
@@ -9883,6 +10117,149 @@ typedef $ConfigFlagsProcessedTableManager =
       ConfigFlag,
       PrefetchHooks Function()
     >;
+typedef $ConfigFlagVersionsCreateCompanionBuilder =
+    ConfigFlagVersionsCompanion Function({
+      required String name,
+      required int updatedAt,
+      Value<int> rowid,
+    });
+typedef $ConfigFlagVersionsUpdateCompanionBuilder =
+    ConfigFlagVersionsCompanion Function({
+      Value<String> name,
+      Value<int> updatedAt,
+      Value<int> rowid,
+    });
+
+class $ConfigFlagVersionsFilterComposer
+    extends Composer<_$JournalDb, ConfigFlagVersions> {
+  $ConfigFlagVersionsFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $ConfigFlagVersionsOrderingComposer
+    extends Composer<_$JournalDb, ConfigFlagVersions> {
+  $ConfigFlagVersionsOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $ConfigFlagVersionsAnnotationComposer
+    extends Composer<_$JournalDb, ConfigFlagVersions> {
+  $ConfigFlagVersionsAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $ConfigFlagVersionsTableManager
+    extends
+        RootTableManager<
+          _$JournalDb,
+          ConfigFlagVersions,
+          ConfigFlagVersion,
+          $ConfigFlagVersionsFilterComposer,
+          $ConfigFlagVersionsOrderingComposer,
+          $ConfigFlagVersionsAnnotationComposer,
+          $ConfigFlagVersionsCreateCompanionBuilder,
+          $ConfigFlagVersionsUpdateCompanionBuilder,
+          (
+            ConfigFlagVersion,
+            BaseReferences<_$JournalDb, ConfigFlagVersions, ConfigFlagVersion>,
+          ),
+          ConfigFlagVersion,
+          PrefetchHooks Function()
+        > {
+  $ConfigFlagVersionsTableManager(_$JournalDb db, ConfigFlagVersions table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $ConfigFlagVersionsFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $ConfigFlagVersionsOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $ConfigFlagVersionsAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> name = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ConfigFlagVersionsCompanion(
+                name: name,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String name,
+                required int updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => ConfigFlagVersionsCompanion.insert(
+                name: name,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $ConfigFlagVersionsProcessedTableManager =
+    ProcessedTableManager<
+      _$JournalDb,
+      ConfigFlagVersions,
+      ConfigFlagVersion,
+      $ConfigFlagVersionsFilterComposer,
+      $ConfigFlagVersionsOrderingComposer,
+      $ConfigFlagVersionsAnnotationComposer,
+      $ConfigFlagVersionsCreateCompanionBuilder,
+      $ConfigFlagVersionsUpdateCompanionBuilder,
+      (
+        ConfigFlagVersion,
+        BaseReferences<_$JournalDb, ConfigFlagVersions, ConfigFlagVersion>,
+      ),
+      ConfigFlagVersion,
+      PrefetchHooks Function()
+    >;
 typedef $LabeledCreateCompanionBuilder =
     LabeledCompanion Function({
       required String id,
@@ -10314,6 +10691,8 @@ class $JournalDbManager {
       $DashboardDefinitionsTableManager(_db, _db.dashboardDefinitions);
   $ConfigFlagsTableManager get configFlags =>
       $ConfigFlagsTableManager(_db, _db.configFlags);
+  $ConfigFlagVersionsTableManager get configFlagVersions =>
+      $ConfigFlagVersionsTableManager(_db, _db.configFlagVersions);
   $LabeledTableManager get labeled => $LabeledTableManager(_db, _db.labeled);
   $LinkedEntriesTableManager get linkedEntries =>
       $LinkedEntriesTableManager(_db, _db.linkedEntries);

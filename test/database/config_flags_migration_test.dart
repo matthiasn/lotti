@@ -79,7 +79,7 @@ void main() {
       addTearDown(db.close);
 
       final version = await db.customSelect('PRAGMA user_version').getSingle();
-      expect(version.read<int>('user_version'), 48);
+      expect(version.read<int>('user_version'), JournalDb.currentSchemaVersion);
 
       final flags = await db.listConfigFlags().get();
       expect(

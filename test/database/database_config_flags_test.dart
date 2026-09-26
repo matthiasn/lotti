@@ -234,6 +234,106 @@ void main() {
       await getIt.reset();
     });
 
+    group('versioned flag writes', () {
+      const before = ConfigFlag(
+        name: 'versioned',
+        description: 'A',
+        status: true,
+      );
+      const after = ConfigFlag(
+        name: 'versioned',
+        description: 'B',
+        status: false,
+      );
+
+      test('queued local edits advance past a future received stamp', () async {
+        await db!.applyConfigFlagVersion(before, updatedAt: 300);
+        final a = db!.saveLocalConfigFlag(after, timestamp: 200);
+        final b = db!.saveLocalConfigFlag(before, timestamp: 200);
+        expect((await a).updatedAt, 301);
+        expect((await b).updatedAt, 302);
+        final stale = await db!.applyConfigFlagVersion(after, updatedAt: 301);
+        expect(stale.applied, isFalse);
+        expect(await db!.getConfigFlagByName(before.name), before);
+        final stamp = await db!
+            .customSelect(
+              "SELECT updated_at FROM config_flag_versions WHERE name = 'versioned'",
+            )
+            .getSingle();
+        expect(stamp.read<int>('updated_at'), 302);
+        final noOp = await db!.saveLocalConfigFlag(before, timestamp: 999);
+        expect(noOp.applied, isFalse);
+        expect(noOp.updatedAt, 302);
+      });
+
+      test('stamp failure rolls back payload and cache before a retry', () async {
+        await db!.applyConfigFlagVersion(before, updatedAt: 100);
+        await db!.customStatement(
+          'CREATE TRIGGER reject_flag_stamp BEFORE INSERT ON config_flag_versions '
+          "WHEN NEW.name = 'versioned' BEGIN "
+          "SELECT RAISE(ABORT, 'injected flag stamp failure'); END",
+        );
+        addTearDown(
+          () => db!.customStatement('DROP TRIGGER IF EXISTS reject_flag_stamp'),
+        );
+        await expectLater(
+          db!.applyConfigFlagVersion(after, updatedAt: 200),
+          throwsA(isA<Exception>()),
+        );
+        expect(await db!.getConfigFlagByName(before.name), before);
+        final row = await (db!.select(
+          db!.configFlags,
+        )..where((row) => row.name.equals(before.name))).getSingle();
+        expect(row, before);
+        final stamp = await db!
+            .customSelect(
+              "SELECT updated_at FROM config_flag_versions WHERE name = 'versioned'",
+            )
+            .getSingle();
+        expect(stamp.read<int>('updated_at'), 100);
+        await db!.customStatement('DROP TRIGGER reject_flag_stamp');
+        expect(
+          (await db!.applyConfigFlagVersion(after, updatedAt: 200)).applied,
+          isTrue,
+        );
+        expect(await db!.getConfigFlagByName(before.name), after);
+      });
+
+      test(
+        'status wins a stamp tie before description and flags stay independent',
+        () async {
+          await db!.applyConfigFlagVersion(before, updatedAt: 100);
+          expect(
+            (await db!.applyConfigFlagVersion(after, updatedAt: 100)).applied,
+            isFalse,
+          );
+          final renamed = before.copyWith(description: 'Z');
+          expect(
+            (await db!.applyConfigFlagVersion(renamed, updatedAt: 100)).applied,
+            isTrue,
+          );
+          expect(
+            (await db!.applyConfigFlagVersion(before, updatedAt: 100)).applied,
+            isFalse,
+          );
+          final other = after.copyWith(name: 'other-versioned');
+          expect(
+            (await db!.applyConfigFlagVersion(other, updatedAt: 1)).applied,
+            isTrue,
+          );
+          expect(await db!.getConfigFlagByName(before.name), renamed);
+          expect(await db!.getConfigFlagByName(other.name), other);
+          expect(await db!.deleteConfigFlag(before.name), isTrue);
+          final remaining = await db!
+              .customSelect(
+                "SELECT name FROM config_flag_versions WHERE name = 'versioned'",
+              )
+              .get();
+          expect(remaining, isEmpty);
+        },
+      );
+    });
+
     group('watchConfigFlags before flags loaded -', () {
       test('emits flags after async bootstrap when not yet loaded', () async {
         // Create a fresh db that has NOT had initConfigFlags called yet.

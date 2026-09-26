@@ -101,7 +101,7 @@ migration work has to cover both, and embeddings are a third store again (below)
 
 | Database | File | Schema | Owns |
 |----------|------|--------|------|
-| `JournalDb` | `db.sqlite` | 48 | Journal entities, tasks, links, tags, config flags — the primary store |
+| `JournalDb` | `db.sqlite` | 49 | Journal entities, tasks, links, tags, config flags — the primary store |
 | `SyncDatabase` | `sync.sqlite` | 29 | Outbox, sequence log, host activity, inbound event queue, queue markers |
 | `AgentDatabase` | `agent.sqlite` | 19 | Agent state, reports, observations, change proposals, wake history |
 | `EditorDb` | `editor_drafts_db.sqlite` | 2 | Unsaved rich-text editor drafts |
@@ -183,6 +183,46 @@ flowchart LR
   Commit --> Cache[Publish cache]
   Cache --> Release
   Rollback --> Release
+```
+
+# Config flag versions
+
+Journal schema 49 adds `config_flag_versions`, keyed by the existing flag name;
+migration preserves flag values and leaves their prior version at zero.
+`applyConfigFlagVersion` compares `(updatedAt, status, description)`, with false
+before true and descriptions ordered lexicographically. Payload and stamp commit
+in one owned transaction. Losing or identical received versions change nothing.
+`saveLocalConfigFlag` advances beyond the persisted stamp even if the local clock
+has not advanced; an identical local edit does not create a new version.
+
+Both methods publish the flag cache only after their transaction commits. They
+must not run inside an outer journal transaction: releasing a nested savepoint
+would publish a cache value that the outer transaction could still roll back.
+The inbound queue therefore lets flags own their transaction. SQLite regressions
+exercise statement failure and a deferred constraint failing at the outer commit.
+
+`PersistenceDefinitionOps` publishes the returned committed flag and stamp,
+including description-only changes. Platform effects require a status change.
+Outbox coalescing uses the same version tuple even when enqueue order is
+reversed. Legacy and stamped rows remain separate because a legacy row has no
+comparable durable version.
+
+Maintenance callers of `upsertConfigFlag` (rollouts and demo seeding) advance the
+stored version without broadcasting; those deliberate local writes are outside
+the cross-device convergence claim. Removing a retired flag cascades its stamp.
+
+```mermaid
+flowchart LR
+  Input[Flag update] --> Read[Read flag and stamp in transaction]
+  Read --> Kind{Local or received?}
+  Kind -->|local change| Advance[Advance persisted stamp]
+  Kind -->|received winner| Write[Write flag and stamp]
+  Kind -->|no-op or losing version| Keep[Keep stored value]
+  Advance --> Write
+  Write --> Commit[Commit owned transaction]
+  Write -->|failure| Rollback[Roll back and retry through caller]
+  Commit --> Cache[Publish flag cache]
+  Cache --> Return[Return committed snapshot]
 ```
 
 # Opening a connection

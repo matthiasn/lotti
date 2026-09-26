@@ -132,7 +132,56 @@ void main() {
       }
     }
 
-    test('config flags still collapse by enqueue order', () {
+    test(
+      'versioned flags collapse by committed version, not enqueue order',
+      () {
+        for (final payloads in [
+          [(200, false, 'A'), (100, true, 'Z')],
+          [(100, true, 'A'), (100, false, 'Z')],
+          [(100, true, 'Z'), (100, true, 'A')],
+        ]) {
+          final rows = [
+            for (final (index, value) in payloads.indexed)
+              _candidate(
+                SyncMessage.configFlag(
+                  name: 'f',
+                  updatedAt: value.$1,
+                  status: value.$2,
+                  description: value.$3,
+                ),
+                id: index + 1,
+              ),
+          ];
+          expect(newestOf(rows), same(rows.first));
+          expect(newestOf(rows.reversed.toList()), same(rows.first));
+          expect(supersededBy(rows.last, rows.first), isTrue);
+          expect(supersededBy(rows.first, rows.last), isFalse);
+          expect(collapsedMessage(rows.first, rows), same(rows.first.message));
+        }
+      },
+    );
+
+    test('legacy and stamped flag rows cannot acknowledge one another', () {
+      final stamped = _candidate(
+        const SyncMessage.configFlag(
+          name: 'f',
+          description: 'd',
+          status: true,
+          updatedAt: 100,
+        ),
+      );
+      final legacy = _candidate(
+        const SyncMessage.configFlag(
+          name: 'f',
+          description: 'd',
+          status: false,
+        ),
+      );
+      expect(supersededBy(stamped, legacy), isFalse);
+      expect(supersededBy(legacy, stamped), isFalse);
+    });
+
+    test('legacy config flags collapse by enqueue order', () {
       final flags = [
         for (final status in [true, false])
           _candidate(

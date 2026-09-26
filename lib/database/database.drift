@@ -316,6 +316,14 @@ CREATE TABLE config_flags (
   PRIMARY KEY (name)
 );
 
+-- The ordering stamp belongs to the same transaction as its flag payload.
+CREATE TABLE config_flag_versions (
+  name TEXT NOT NULL,
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY (name),
+  FOREIGN KEY (name) REFERENCES config_flags(name) ON DELETE CASCADE
+);
+
 CREATE TABLE labeled (
   id TEXT NOT NULL UNIQUE,
   journal_id TEXT NOT NULL,
