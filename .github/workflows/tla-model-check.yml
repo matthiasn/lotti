@@ -24,7 +24,6 @@ on:
       - "lib/features/ai/database/ai_config_db.dart"
       - "lib/features/ai/util/model_prepopulation_service.dart"
       - "lib/features/ai/ui/settings/services/ai_config_delete_service.dart"
-      - "lib/features/sync/matrix/sync_event_processor_apply.dart"
       - "lib/features/sync/repository/sync_maintenance_repository.dart"
       - "lib/database/sync_db_outbox.dart"
       - "lib/database/sync_db_outbox_dedup.dart"
