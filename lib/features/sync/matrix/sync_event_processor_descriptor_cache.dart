@@ -67,6 +67,17 @@ extension _DescriptorCache on SyncEventProcessor {
         final remote = await envelope.room.client
             .getOneRoomEvent(envelope.room.id, id)
             .timeout(SyncTuning.attachmentDownloadTimeout);
+        // Log only protocol shape, never attachment contents or encryption
+        // material. This distinguishes a malformed server event from a
+        // descriptor whose metadata is lost during SDK decryption.
+        _trace(
+          'descriptorLookup.wire eventId=$id type=${remote.type} '
+          'hasCiphertext=${remote.content.containsKey('ciphertext')} '
+          'hasMessageType=${remote.content.containsKey('msgtype')} '
+          'hasRelativePath=${remote.content.containsKey('relativePath')} '
+          'redacted=${remote.unsigned?.containsKey('redacted_because') == true}',
+          subDomain: 'processor.resolve.descriptorLookup',
+        );
         // Event.fromMatrixEvent assigns the supplied room, so validate the
         // wire room before conversion. The room-scoped API may omit room_id.
         descriptor =
@@ -86,6 +97,10 @@ extension _DescriptorCache on SyncEventProcessor {
         'descriptorLookup.result eventId=$id found=${descriptor != null} '
         'source=$source type=${descriptor?.type} '
         'msgtype=${descriptor?.content['msgtype']} '
+        'emptyContent=${descriptor?.content.isEmpty} '
+        'hasNestedContent=${descriptor?.content.containsKey('content')} '
+        'hasBody=${descriptor?.content.containsKey('body')} '
+        'redacted=${descriptor?.unsigned?.containsKey('redacted_because') == true} '
         'roomMatches=${descriptor?.roomId == envelope.roomId} '
         'hasRelativePath=${descriptor?.content['relativePath'] is String} '
         'indexed=${index.findByEventId(id) != null}',
