@@ -164,8 +164,10 @@ each as the SDK emits it: an attachment descriptor is recorded in the
 `limited` omits the events between the old marker and its slice, and the SDK
 says so only in the response's `onSync`, after the slice's events. The slice is
 still admitted and applied at once; what waits is the applied marker.
-`LiveAnchorHold` counts each arrival synchronously in the listener, before
-`asyncMap`, and `QueueMarkerAdvancer.advanceIfNewer` settles a row without
+`LiveAnchorHold` counts each arrival in its own `onTimelineEvent` listener —
+not in the live handler's `asyncMap`, which pauses its upstream while a handler
+awaits and would leave a buffered event uncounted past its response's seal —
+and `QueueMarkerAdvancer.advanceIfNewer` settles a row without
 moving the marker while any arrival is unsealed — or while a claim or floor for
 the room is only retained in memory, since a retained claim resolves against the
 marker as it is when finally written.

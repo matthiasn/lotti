@@ -344,8 +344,8 @@ LiveDeliver ==
     /\ liveNext <= tip
     /\ LET e == liveNext IN
        /\ liveNext' = e + 1
-       \* The onTimelineEvent listener counts the arrival synchronously,
-       \* before asyncMap runs _handleLiveEvent.
+       \* The arrival counter's own onTimelineEvent listener has counted it
+       \* by now: it is never paused by the handler's asyncMap.
        /\ unsnapped' = (HoldAnchor \/ unsnapped)
        /\ UNCHANGED <<sealing, sealCovers, sealLimited>>
        /\ IF e \in enc

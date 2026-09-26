@@ -173,6 +173,37 @@ extension _LiveSealCases on _QueueCoordinatorTestSetup {
         await coordinator.stop();
       });
 
+      test('an event buffered behind a slow handler is counted before the '
+          "response's seal, so that seal releases it (asyncMap pauses its "
+          'upstream while a handler awaits)', () async {
+        final coordinator = await started();
+        final enqueueGate = Completer<void>();
+        var enqueues = 0;
+        when(() => queue.enqueueLive(any())).thenAnswer((_) async {
+          enqueues++;
+          if (enqueues == 1) await enqueueGate.future;
+          return EnqueueResult.empty;
+        });
+
+        // The first event's handler blocks; the second waits in asyncMap.
+        arrive();
+        arrive();
+        await pumpEventQueue();
+        expect(enqueues, 1);
+
+        await finishResponse(coordinator);
+        enqueueGate.complete();
+        await pumpEventQueue();
+
+        expect(enqueues, 2);
+        expect(
+          coordinator.liveArrivalsSealed,
+          isTrue,
+          reason: 'both arrivals were counted before the seal snapshot',
+        );
+        await coordinator.stop();
+      });
+
       test('seals run one at a time: a quick seal waits for a limited one '
           'still claiming', () async {
         final coordinator = await started();

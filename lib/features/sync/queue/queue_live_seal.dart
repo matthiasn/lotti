@@ -13,12 +13,13 @@ part of 'queue_pipeline_coordinator.dart';
 /// empty or a pagination `nextBatch`; none of them emits `cleaningUp`, so
 /// none can release the hold without the response's `limited` flag.
 extension QueueLiveSeal on QueuePipelineCoordinator {
-  /// `onTimelineEvent` listener hook: counts the arrival before `asyncMap`
-  /// starts any asynchronous handling.
-  Event _countLiveArrival(Event event) {
-    _liveHold.noteArrival();
-    return event;
-  }
+  /// The arrival counter's own `onTimelineEvent` listener. It must not sit in
+  /// the live handler's `asyncMap` chain: `asyncMap` pauses its upstream
+  /// while a handler awaits I/O, and an event buffered there would be counted
+  /// only after the response's seal, holding the marker until another
+  /// `/sync` completes. This subscription is never paused, and the broadcast
+  /// stream delivers every event to it before the response's `cleaningUp`.
+  void _countLiveArrival(Event _) => _liveHold.noteArrival();
 
   /// `onSync` listener: remembers a limited timeline for the current room
   /// until the next seal claims it. A synthetic pass setting it only causes

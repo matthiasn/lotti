@@ -152,6 +152,8 @@ class QueuePipelineCoordinator {
   StreamSubscription<SyncUpdate>? _syncSub;
   // ignore: cancel_subscriptions
   StreamSubscription<SyncStatusUpdate>? _syncStatusSub;
+  // ignore: cancel_subscriptions
+  StreamSubscription<Event>? _arrivalSub;
 
   /// Set by an `onSync` whose timeline for the current room was limited;
   /// the next seal claims the gap before sealing. See [QueueLiveSeal].
@@ -366,6 +368,10 @@ class QueuePipelineCoordinator {
   /// Completes once every live seal scheduled so far has run.
   @visibleForTesting
   Future<void> get liveSealsSettled => _sealChain;
+
+  /// Whether every live arrival so far is covered by a completed seal.
+  @visibleForTesting
+  bool get liveArrivalsSealed => _liveHold.isSealed;
 
   /// Stops every collaborator in the reverse order they were started.
   /// If [drainFirst] is true (the flag-off flow), the coordinator waits

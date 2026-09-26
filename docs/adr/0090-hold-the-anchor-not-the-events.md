@@ -33,8 +33,10 @@ Hold the marker, never the events.
 - **Events are admitted and applied at once**, as before #4502, descriptors
   included.
 - **A commit moves the marker only while every live arrival is sealed.**
-  `LiveAnchorHold` counts each arrival synchronously in the `onTimelineEvent`
-  listener, before `asyncMap`; `advanceIfNewer` settles the row and leaves the
+  `LiveAnchorHold` counts each arrival in its own `onTimelineEvent` listener
+  — outside the live handler's `asyncMap`, which pauses its upstream while a
+  handler awaits, so no event can wait there uncounted past its response's
+  seal; `advanceIfNewer` settles the row and leaves the
   marker while an arrival is unsealed.
 - **A seal belongs to the real sync loop.** `QueueLiveSeal` seals on
   `SyncStatus.cleaningUp`, which only `Client._sync` emits, once per response,

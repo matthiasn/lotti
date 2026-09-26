@@ -9,8 +9,9 @@
 /// past a gap that is not yet claimed. `HoldAnchor` in
 /// `specs/tla/InboundQueue.tla`.
 ///
-/// The coordinator counts each arrival synchronously as its listener receives
-/// it and seals up to a snapshot once the real sync loop finishes the
+/// The coordinator counts each arrival in a timeline listener of its own —
+/// never paused by the live handler's `asyncMap` — and seals up to a
+/// snapshot once the real sync loop finishes the
 /// response. `QueueMarkerAdvancer` consults [isSealed] before advancing. The
 /// state is in memory: a restart loses it, and the claim `startImpl` makes
 /// covers whatever a previous process had not sealed.
@@ -29,8 +30,9 @@ class LiveAnchorHold {
   /// Whether every arrival is covered by a completed seal.
   bool get isSealed => _sealed >= _arrived;
 
-  /// Records one live timeline event. Called synchronously by the listener,
-  /// before any asynchronous handling, so a later seal snapshot covers it.
+  /// Records one live timeline event. Called by a listener that is never
+  /// paused, as the event is delivered, so the seal of the response that
+  /// carried it covers it.
   void noteArrival() => _arrived++;
 
   /// Covers the arrivals up to [upTo], a snapshot taken in [generation].

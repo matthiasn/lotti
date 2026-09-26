@@ -73,8 +73,10 @@ extension QueueLifecycle on QueuePipelineCoordinator {
           );
         },
       );
+      // Counted before the live subscription attaches, so no event can be
+      // handled that the hold has not seen.
+      _arrivalSub = _sessionManager.timelineEvents.listen(_countLiveArrival);
       _liveSub = _sessionManager.timelineEvents
-          .map(_countLiveArrival)
           .asyncMap(_handleTrackedLiveEvent)
           .listen(
             (_) {},
@@ -170,6 +172,8 @@ extension QueueLifecycle on QueuePipelineCoordinator {
       );
       await _syncStatusSub?.cancel();
       _syncStatusSub = null;
+      await _arrivalSub?.cancel();
+      _arrivalSub = null;
       await _liveSub?.cancel();
       _liveSub = null;
       await _syncSub?.cancel();
@@ -322,6 +326,10 @@ extension QueueLifecycle on QueuePipelineCoordinator {
       await tryRun('syncStatusSub', () async {
         await _syncStatusSub?.cancel();
         _syncStatusSub = null;
+      });
+      await tryRun('arrivalSub', () async {
+        await _arrivalSub?.cancel();
+        _arrivalSub = null;
       });
       await tryRun('liveSub', () async {
         await _liveSub?.cancel();

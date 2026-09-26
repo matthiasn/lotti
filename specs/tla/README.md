@@ -1460,7 +1460,8 @@ A `/sync` response whose timeline is `limited` omits the events between the
 marker and its slice, and the SDK says so only in `onSync`, after the slice's
 events (`SliceRace`). The live path queues and applies the slice at once —
 descriptors included — and holds only the marker: the coordinator counts each
-arrival synchronously (`LiveAnchorHold`), a commit settles its row but moves
+arrival in a listener of its own (`LiveAnchorHold`), outside the handler's
+`asyncMap`, which pauses while a handler awaits; a commit settles its row but moves
 the marker only while every arrival is sealed and no claim or floor is merely
 retained, and `QueueLiveSeal` seals on the real sync loop's `cleaningUp`
 (`SyncEnd`, `SealDone`) — conservatively on `error` — claiming above the held
