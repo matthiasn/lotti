@@ -157,3 +157,4 @@ Each ADR should contain:
 - [`0087-journal-row-is-the-only-copy.md`](./0087-journal-row-is-the-only-copy.md)
 - [`0088-provenance-crypto-primitives.md`](./0088-provenance-crypto-primitives.md)
 - [`0089-checklist-membership-on-the-stored-row.md`](./0089-checklist-membership-on-the-stored-row.md)
+- [`0090-hold-the-anchor-not-the-events.md`](./0090-hold-the-anchor-not-the-events.md)

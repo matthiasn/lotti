@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/queue/inbound_queue_models.dart';
+import 'package:lotti/features/sync/queue/live_anchor_hold.dart';
 import 'package:lotti/features/sync/queue/queue_marker_advancer.dart';
 
 const _roomA = '!roomA:example.org';
@@ -552,5 +553,108 @@ void main() {
       }
       expect((await readMarker())?.lastAppliedCommitSeq, 3);
     });
+  });
+
+  group('holding the anchor, not the events (HoldAnchor)', () {
+    late LiveAnchorHold hold;
+    late QueueMarkerAdvancer held;
+
+    setUp(() {
+      hold = LiveAnchorHold();
+      held = QueueMarkerAdvancer(db, liveHold: hold);
+    });
+
+    void sealAll() => hold.seal(hold.arrived, generation: hold.generation);
+
+    test(
+      'an unsealed arrival holds the marker while its row settles; once '
+      'sealed, catchUpMarker moves it over the newest settled row',
+      () async {
+        hold.noteArrival();
+        final a = await insertRow(eventId: r'$a', originTs: 5000);
+        await markApplied(a);
+
+        final advanced = await held.advanceIfNewer(
+          _entry(queueId: a, eventId: r'$a', originTs: 5000),
+        );
+        expect(advanced, isFalse);
+        expect(held.isHeld(_roomA), isTrue);
+        expect(await readMarker(), isNull);
+        expect(
+          await held.catchUpMarker(_roomA),
+          isFalse,
+          reason: 'still held: nothing may catch up yet',
+        );
+
+        sealAll();
+        expect(held.isHeld(_roomA), isFalse);
+        expect(await held.catchUpMarker(_roomA), isTrue);
+        final marker = await readMarker();
+        expect(marker?.lastAppliedTs, 5000);
+        expect(marker?.lastAppliedEventId, r'$a');
+      },
+    );
+
+    test('catching up stays below the oldest row still active, and does '
+        'nothing without a settled row', () async {
+      expect(await held.catchUpMarker(_roomA), isFalse);
+
+      // A row whose commit rolled back is still active: the catch-up must
+      // not pass it.
+      await insertRow(
+        eventId: r'$b',
+        originTs: 3000,
+        status: InboundQueueStatuses.leased,
+      );
+      final a = await insertRow(eventId: r'$a', originTs: 5000);
+      await markApplied(a);
+
+      expect(await held.catchUpMarker(_roomA), isTrue);
+      final marker = await readMarker();
+      expect(marker?.lastAppliedTs, 2999);
+      expect(marker?.lastAppliedEventId, isNull);
+    });
+
+    test(
+      'a claim retained after its marker read threw holds the marker until '
+      'it is durable (HoldWhileRetained: a row queued behind a gap settled '
+      'first, moved the marker, and the claim then resolved above the gap)',
+      () async {
+        var reads = 0;
+        Future<int?> flakyRead() async {
+          reads++;
+          if (reads == 1) throw StateError('database is locked');
+          return null;
+        }
+
+        await expectLater(
+          advancer.claimAboveMarker(roomId: _roomA, readAppliedTs: flakyRead),
+          throwsStateError,
+        );
+        final a = await insertRow(eventId: r'$a', originTs: 5000);
+        await markApplied(a);
+
+        expect(advancer.isHeld(_roomA), isTrue);
+        expect(
+          await advancer.advanceIfNewer(
+            _entry(queueId: a, eventId: r'$a', originTs: 5000),
+          ),
+          isFalse,
+        );
+        expect(await readMarker(), isNull);
+
+        await advancer.ensureResumeFloorPersisted(_roomA);
+        expect(advancer.isHeld(_roomA), isFalse);
+        expect(await advancer.catchUpMarker(_roomA), isTrue);
+
+        final marker = await readMarker();
+        expect(marker?.lastAppliedTs, 5000);
+        expect(
+          marker?.resumeFloorTs,
+          1,
+          reason: 'the claim resolved against the marker before it moved',
+        );
+      },
+    );
   });
 }

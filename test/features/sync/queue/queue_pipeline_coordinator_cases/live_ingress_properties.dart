@@ -192,6 +192,9 @@ class _GladosBench {
     when(
       () => sessionManager.timelineEvents,
     ).thenAnswer((_) => timelineCtl.stream);
+    when(
+      () => sessionManager.syncStatusUpdates,
+    ).thenAnswer((_) => const Stream<SyncStatusUpdate>.empty());
     when(() => sessionManager.client).thenReturn(client);
     when(() => client.onSync).thenReturn(syncCtl);
     when(() => roomManager.currentRoomId).thenReturn(null);

@@ -7,6 +7,7 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_event_classifier.dart';
 import 'package:lotti/features/sync/queue/inbound_queue_models.dart';
 import 'package:lotti/features/sync/queue/inbound_queue_resurrection.dart';
+import 'package:lotti/features/sync/queue/live_anchor_hold.dart';
 import 'package:lotti/features/sync/queue/queue_depth_emitter.dart';
 import 'package:lotti/features/sync/queue/queue_marker_advancer.dart';
 import 'package:lotti/features/sync/tuning.dart';
@@ -32,17 +33,32 @@ class InboundQueue {
     required this._db,
     required this._logging,
     Duration? leaseDuration,
+    this._liveHold,
   }) : _leaseDuration = leaseDuration ?? SyncTuning.inboundWorkerLeaseDuration;
 
   final SyncDatabase _db;
   final DomainLogger _logging;
   final Duration _leaseDuration;
+  final LiveAnchorHold? _liveHold;
 
   late final QueueDepthEmitter _depthEmitter = QueueDepthEmitter(
     loadStats: _depthStats,
   );
 
-  late final QueueMarkerAdvancer _markerAdvancer = QueueMarkerAdvancer(_db);
+  late final QueueMarkerAdvancer _markerAdvancer = QueueMarkerAdvancer(
+    _db,
+    liveHold: _liveHold,
+  );
+
+  /// Moves the room's marker over its newest settled row once nothing holds
+  /// it. See [QueueMarkerAdvancer.catchUpMarker].
+  Future<bool> catchUpMarker(String roomId) =>
+      _markerAdvancer.catchUpMarker(roomId);
+
+  /// Makes a retained claim or floor for [roomId] durable. See
+  /// [QueueMarkerAdvancer.ensureResumeFloorPersisted].
+  Future<void> ensureResumeFloorPersisted(String roomId) =>
+      _markerAdvancer.ensureResumeFloorPersisted(roomId);
   late final InboundQueueResurrection _resurrection = InboundQueueResurrection(
     db: _db,
     logging: _logging,

@@ -5,12 +5,20 @@ description: The Drift-backed inbound queue, the anchored catch-up bridge, per-r
 resource: ../../../lib/features/sync/queue
 tags: [sync, inbound-queue, catch-up, matrix]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-26T13:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-26T17:00:00Z }
 stale_after: 2026-12-25
 sources:
   - id: descriptor-recovery
     resource: ../../../lib/features/sync/matrix/sync_event_processor_descriptor_cache.dart
     title: Exact attachment discovery after a restart or missed descriptor
+    last_modified: 2026-09-26
+  - id: live-anchor-hold
+    resource: ../../../lib/features/sync/queue/live_anchor_hold.dart
+    title: Hold the applied marker while live arrivals are unsealed
+    last_modified: 2026-09-26
+  - id: live-seal
+    resource: ../../../lib/features/sync/queue/queue_live_seal.dart
+    title: Seal live arrivals on the real sync loop's cleaningUp
     last_modified: 2026-09-26
   - id: tla-spec
     resource: ../../../specs/tla/InboundQueue.tla
@@ -152,16 +160,54 @@ The subscription uses `asyncMap`, so live events are handled in stream order,
 each as the SDK emits it: an attachment descriptor is recorded in the
 `AttachmentIndex` before the payload event that needs it is enqueued.
 
-**Known gap: a limited SDK slice is admitted before its gap is claimed.** A
-`/sync` response whose room timeline is `limited` omits events between the old
-marker and the slice; the slice's events can advance the marker before
-catch-up has claimed that range. An admission barrier that held each response
-until `onSync` (#4502) closed this, but stranded attachment descriptors — the
-Matrix integration suite failed in 23 of 27 runs with it and 0 of 29 without —
-and was reverted. The Matrix SDK also runs synthetic `handleSync` passes (a late
-Megolm key re-decrypting the room's last event) that emit `processing` and
-`onSync` inside a real response, so any future barrier cannot key on those
-signals alone.
+**Hold the anchor, not the events.** A `/sync` response whose room timeline is
+`limited` omits the events between the old marker and its slice, and the SDK
+says so only in the response's `onSync`, after the slice's events. The slice is
+still admitted and applied at once; what waits is the applied marker.
+`LiveAnchorHold` counts each arrival synchronously in the listener, before
+`asyncMap`, and `QueueMarkerAdvancer.advanceIfNewer` settles a row without
+moving the marker while any arrival is unsealed — or while a claim or floor for
+the room is only retained in memory, since a retained claim resolves against the
+marker as it is when finally written.
+
+`QueueLiveSeal` seals on the real sync loop's `SyncStatus.cleaningUp`, which
+`Client._sync` emits once per response after its timeline events and `onSync`.
+The SDK's synthetic `handleSync` passes — a late Megolm key re-decrypting a
+room's last event, history, send and redaction fake syncs — emit `processing`
+and `onSync` inside a real response, but never `cleaningUp`, so none can release
+the hold. The seal snapshots the arrivals it covers; claims above the held
+marker when any `onSync` since the last seal was limited for the room, or after
+`SyncStatus.error`; and then seals the snapshot. Seals run one at a time, so a
+quick seal cannot overtake a limited one still claiming. When nothing newer
+arrived meanwhile, `InboundQueue.catchUpMarker` moves the marker over the newest
+settled row, read from the database and clamped below the oldest active row. A
+failed claim leaves the arrivals unsealed for the next seal. The hold is in
+memory; the claim `startImpl` makes covers what a stopped process had not sealed.
+
+```mermaid
+sequenceDiagram
+  participant SDK as Matrix SDK sync loop
+  participant Live as Live listener
+  participant Queue as Inbound queue and worker
+  participant Seal as QueueLiveSeal
+  SDK->>Live: timeline events of one response
+  Live->>Live: count each arrival (hold)
+  Live->>Queue: enqueue, apply, settle row
+  Note over Queue: marker held while arrivals are unsealed
+  SDK->>Seal: onSync (limited?)
+  SDK->>Seal: SyncStatus.cleaningUp
+  alt limited since the last seal, or error
+    Seal->>Queue: claim above the held marker
+  end
+  Seal->>Seal: seal the snapshot
+  Seal->>Queue: catchUpMarker over settled rows
+```
+
+An admission barrier that held every live event until `onSync` (#4502) was
+reverted: it stranded attachment descriptors, and the Matrix integration suite
+failed in 23 of 27 runs with it. `HoldAnchor` in
+[`InboundQueue.tla`](../../../specs/tla/InboundQueue.tla) checks the design,
+with `IgnoreSyntheticSync` and `HoldWhileRetained` as its mutation switches.
 
 For an event still typed `m.room.encrypted`, the coordinator first lowers the
 room's durable `queue_markers.resume_floor_ts`, then skips the event.

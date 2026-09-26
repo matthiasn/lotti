@@ -87,6 +87,15 @@ saved filters that never reached a peer; all nine bugs were found by auditing
 the code, and TLC reproduces each through its switch. Not included in the
 historical totals above.
 
+The `HoldAnchor` change (#PRNUM) closes `InboundQueue`'s `SliceRace` residual
+in the code, after #4502's admission barrier was reverted (#4515). It adds three
+switches and `NoSilentLossAfterRestart`, drops no configuration, and turns
+`SliceRace` on in two of the four; their distinct states rise from 45,997,297
+to 136,156,582 in all. TLC also caught a hole in the first draft of the design —
+a retained startup claim resolving above a gap once a row from the previous
+process moved the marker — before any of it shipped. Not included in the
+historical totals above.
+
 ## Timeline
 
 ```mermaid
@@ -155,6 +164,7 @@ counterexamples found. "Severity" grades each of those bugs; see
 | [#4501](https://github.com/matthiasn/lotti/pull/4501) | pending | provenance | `EnvelopeChain` | 2 | 0 | — | — | A design model written before the code: per-store signed chains under crashes, restores, retention and revocation. Each of its four design switches has a counterexample, and it raised two open questions — envelopes orphaned by a restore, and where a revocation cuts |
 | [#4504](https://github.com/matthiasn/lotti/pull/4504) | pending | tasks | `ChecklistMembership` | 3 | 6 (5) | P1×3 P2×3 | [0089](../../docs/adr/0089-checklist-membership-on-the-stored-row.md) | The first spec of the tasks feature. A stale copy — a screen's state, or a row read several awaits before the write — replaced what sync or the agent had stored: an item dropped from its checklist, a checklist dropped from its task by a status change, an item's back-link reverted by a check; a checklist hidden behind a dragged order; and a crash left a multi-row operation half done, now finished at startup from a recorded intent. Auditing the undo window the model covers found swiped items were never deleted at all |
 | [#4506](https://github.com/matthiasn/lotti/pull/4506) | pending | tasks, sync | `SavedTaskFilterSync` | 2 | 9 (0) | P0×2 P1×3 P2 P3×3 | — | Saved filters created on a desktop never reached the phone: filters saved before they synced were never sent, and a reorder on the receiver wrote its stale list over the filters sync had just stored. Changes are now owed in a durable ledger until the outbox accepts them, and revisions and deletes have one total order |
+| [#PRNUM](https://github.com/matthiasn/lotti/pull/PRNUM) | pending | sync | — | — | 1 (1) | P2 | [0090](../../docs/adr/0090-hold-the-anchor-not-the-events.md) | A limited sync's slice could apply and move the catch-up marker past the gap before the gap was claimed, so the skipped events were never fetched (the `SliceRace` residual). The marker now waits for the real sync loop to seal the response, never the events. TLC also caught a hole in the design's first draft |
 
 ## Severity
 
@@ -357,6 +367,7 @@ The P0 and P1 bugs:
 | [#4506](https://github.com/matthiasn/lotti/pull/4506) | P3 | no | Two revisions with the same stamp swapped between devices instead of converging |
 | [#4506](https://github.com/matthiasn/lotti/pull/4506) | P3 | no | A filter option added by a newer build made the whole synced filter undecodable and skipped for good |
 | [#4506](https://github.com/matthiasn/lotti/pull/4506) | P3 | no | One undecodable stored filter blanked the list, and the next save persisted it empty |
+| [#PRNUM](https://github.com/matthiasn/lotti/pull/PRNUM) | P2 | yes | A limited sync's slice moved the catch-up marker past the gap before it was claimed, so the skipped events were never fetched |
 </details>
 
 ## Specs

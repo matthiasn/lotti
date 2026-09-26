@@ -32,6 +32,12 @@ class MatrixSessionManager {
   /// controller types to tests or call-sites.
   Stream<Event> get timelineEvents => _gateway.client.onTimelineEvent.stream;
 
+  /// Sync loop progress. `cleaningUp`, `finished` and `error` come only from
+  /// the real `/sync` loop, after a response's timeline events and `onSync`;
+  /// the queue seals its live arrivals on them.
+  Stream<SyncStatusUpdate> get syncStatusUpdates =>
+      _gateway.client.onSyncStatus.stream;
+
   /// Establishes a Matrix session and, if requested, performs an interactive
   /// login. Returns `true` when connectivity succeeded.
   Future<bool> connect({required bool shouldAttemptLogin}) async {

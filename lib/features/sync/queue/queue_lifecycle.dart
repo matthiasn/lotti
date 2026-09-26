@@ -57,7 +57,24 @@ extension QueueLifecycle on QueuePipelineCoordinator {
     // retry `start()`. The unwind catch below mops up whatever did
     // come up before the failure.
     try {
+      // A new session holds nothing: rows an earlier session committed
+      // under a hold never moved the marker, and the claim above covers
+      // what they did not seal.
+      _liveHold.reset();
+      _limitedSinceSeal = false;
+      _syncStatusSub = _sessionManager.syncStatusUpdates.listen(
+        _observeSyncStatus,
+        onError: (Object error, StackTrace stackTrace) {
+          _logging.error(
+            LogDomain.sync,
+            error,
+            stackTrace: stackTrace,
+            subDomain: '$_logSub.syncStatus',
+          );
+        },
+      );
       _liveSub = _sessionManager.timelineEvents
+          .map(_countLiveArrival)
           .asyncMap(_handleTrackedLiveEvent)
           .listen(
             (_) {},
@@ -80,7 +97,7 @@ extension QueueLifecycle on QueuePipelineCoordinator {
       // side effect; the queue pipeline replicates the un-partial
       // step on its own, independent of timeline subscriptions.
       _syncSub = _sessionManager.client.onSync.stream.listen(
-        (_) => _maybePostLoadCurrentRoom(),
+        _observeSyncMetadata,
         onError: (Object error, StackTrace stackTrace) {
           _logging.error(
             LogDomain.sync,
@@ -151,6 +168,8 @@ extension QueueLifecycle on QueuePipelineCoordinator {
         stackTrace: stackTrace,
         subDomain: '$_logSub.start',
       );
+      await _syncStatusSub?.cancel();
+      _syncStatusSub = null;
       await _liveSub?.cancel();
       _liveSub = null;
       await _syncSub?.cancel();
@@ -300,6 +319,10 @@ extension QueueLifecycle on QueuePipelineCoordinator {
     }
 
     try {
+      await tryRun('syncStatusSub', () async {
+        await _syncStatusSub?.cancel();
+        _syncStatusSub = null;
+      });
       await tryRun('liveSub', () async {
         await _liveSub?.cancel();
         _liveSub = null;

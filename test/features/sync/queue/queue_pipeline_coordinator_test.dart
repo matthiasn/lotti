@@ -35,6 +35,7 @@ part 'queue_pipeline_coordinator_cases/history_collection.dart';
 part 'queue_pipeline_coordinator_cases/lifecycle.dart';
 part 'queue_pipeline_coordinator_cases/live_ingress.dart';
 part 'queue_pipeline_coordinator_cases/live_ingress_properties.dart';
+part 'queue_pipeline_coordinator_cases/live_seal.dart';
 part 'queue_pipeline_coordinator_cases/pipeline_integration.dart';
 part 'queue_pipeline_coordinator_cases/reconnect_attachments.dart';
 part 'queue_pipeline_coordinator_cases/reconnect_routing.dart';
@@ -51,6 +52,7 @@ void main() {
     ..registerLiveIngress()
     ..registerStartUnwind()
     ..registerLiveIngressProperties()
+    ..registerLiveSeal()
     ..registerShutdown()
     ..registerBridgeFacade()
     ..registerStartErrors()

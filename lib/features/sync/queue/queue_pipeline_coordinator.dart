@@ -18,6 +18,7 @@ import 'package:lotti/features/sync/queue/bootstrap_sink.dart';
 import 'package:lotti/features/sync/queue/bridge_coordinator.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
+import 'package:lotti/features/sync/queue/live_anchor_hold.dart';
 import 'package:lotti/features/sync/queue/queue_apply_adapter.dart';
 import 'package:lotti/features/sync/queue/queue_bootstrap_sinks.dart';
 import 'package:lotti/features/sync/queue/queue_marker_seeder.dart';
@@ -31,6 +32,7 @@ import 'package:meta/meta.dart';
 
 part 'queue_gap_recovery.dart';
 part 'queue_lifecycle.dart';
+part 'queue_live_seal.dart';
 
 const _logSub = 'queue.coordinator';
 
@@ -64,14 +66,13 @@ class QueuePipelineCoordinator {
     this._updateNotifications,
     this._attachmentIngestor,
     this._sentEventRegistry,
-    InboundQueue? queueOverride,
+    this._queueOverride,
     InboundWorker? workerOverride,
     BridgeCoordinator? bridgeOverride,
     QueueMarkerSeeder? seederOverride,
   }) : _syncDb = syncDb,
        _settingsDb = settingsDb,
        _logging = logging,
-       _queue = queueOverride ?? InboundQueue(db: syncDb, logging: logging),
        _seeder =
            seederOverride ??
            QueueMarkerSeeder(
@@ -128,7 +129,14 @@ class QueuePipelineCoordinator {
   int _suppressedSelfEchoes = 0;
   DateTime? _lastSuppressedLogAt;
   static const Duration _suppressionLogInterval = Duration(seconds: 30);
-  final InboundQueue _queue;
+  final InboundQueue? _queueOverride;
+
+  /// Holds the applied marker while live arrivals are unsealed; shared with
+  /// the queue's marker advancer. See [LiveAnchorHold].
+  final LiveAnchorHold _liveHold = LiveAnchorHold();
+  late final InboundQueue _queue =
+      _queueOverride ??
+      InboundQueue(db: _syncDb, logging: _logging, liveHold: _liveHold);
   final QueueMarkerSeeder _seeder;
   late final QueueApplyAdapter _applyAdapter;
   late final InboundWorker _worker;
@@ -142,6 +150,16 @@ class QueuePipelineCoordinator {
   StreamSubscription<void>? _liveSub;
   // ignore: cancel_subscriptions
   StreamSubscription<SyncUpdate>? _syncSub;
+  // ignore: cancel_subscriptions
+  StreamSubscription<SyncStatusUpdate>? _syncStatusSub;
+
+  /// Set by an `onSync` whose timeline for the current room was limited;
+  /// the next seal claims the gap before sealing. See [QueueLiveSeal].
+  bool _limitedSinceSeal = false;
+
+  /// Seals run one at a time, so a quick seal cannot overtake a limited
+  /// one still claiming.
+  Future<void> _sealChain = Future<void>.value();
   // ignore: cancel_subscriptions
   StreamSubscription<String>? _attachmentPathSub;
   // ignore: cancel_subscriptions
@@ -344,6 +362,10 @@ class QueuePipelineCoordinator {
   /// and re-peeking until the queue is empty or time runs out.
   Future<void> drainUntilEmpty({Duration? timeout}) =>
       drainUntilEmptyImpl(timeout: timeout);
+
+  /// Completes once every live seal scheduled so far has run.
+  @visibleForTesting
+  Future<void> get liveSealsSettled => _sealChain;
 
   /// Stops every collaborator in the reverse order they were started.
   /// If [drainFirst] is true (the flag-off flow), the coordinator waits

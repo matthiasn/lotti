@@ -27,6 +27,16 @@
 (*   LiveGap,          a `timeline.limited` sync: the SDK drops the middle *)
 (*   GapTrigger        of the timeline, delivers the newest slice, and     *)
 (*                     BridgeCoordinator._handle schedules a bridge pass   *)
+(*   SyncEnd,          HoldAnchor: the real sync loop's cleaningUp (or     *)
+(*   SealDone          error) snapshots the arrivals QueueLiveSeal covers, *)
+(*                     claims above the held marker when an onSync since  *)
+(*                     the last seal was limited, seals, and catches the  *)
+(*                     marker up (InboundQueue.catchUpMarker). The        *)
+(*                     bridge's own claim on a limited sync is folded     *)
+(*                     into the seal: above a held marker it writes the   *)
+(*                     same floor                                         *)
+(*   FakeSeal          a synthetic handleSync's onSync, which the code    *)
+(*                     never seals on (IgnoreSyntheticSync)               *)
 (*   ManualBridge      "Catch up now" and forceRescan: bridgeNow           *)
 (*   KeyArrives        a late Megolm key; with a floor recorded, to-device *)
 (*                     traffic triggers a bridge (_bridgeIfResumeFloor)    *)
@@ -66,9 +76,11 @@
 (*                                                                         *)
 (* The fixes are switches, so a configuration with a switch FALSE is the   *)
 (* old code. Every checked-in configuration sets them TRUE. SliceRace is   *)
-(* the one residual: TRUE lets the worker apply a limited sync's slice     *)
-(* before BridgeCoordinator sees the sync, which the checked-in            *)
-(* configurations exclude (see the README).                                *)
+(* the environment, not a fix: TRUE lets the worker apply a limited sync's *)
+(* slice before the gap is known. HoldAnchor closes it by holding the      *)
+(* marker, never the events; with it the safety property is               *)
+(* NoSilentLossAfterRestart, since a limited response's claim waits in     *)
+(* memory for its seal while no marker moves (see the README).            *)
 (***************************************************************************)
 EXTENDS Integers, FiniteSets
 
@@ -93,8 +105,12 @@ CONSTANTS
     ResurrectRechecksCap, \* ... and still under the hard cap
     RetainFailedClaim, \* a claim whose marker read throws stays pending
     HardCap,        \* resurrections per row (`hardCap`)
-    \* The residual:
-    SliceRace       \* TRUE: the slice can apply before the trigger claims
+    \* The environment: the SDK reports `limited` only after the slice.
+    SliceRace,      \* TRUE: the slice can apply before the trigger claims
+    \* The fix for SliceRace (LiveAnchorHold, queue_live_seal.dart):
+    HoldAnchor,     \* live commits move the marker only once sealed
+    HoldWhileRetained, \* ... and not while a claim or floor is retained
+    IgnoreSyntheticSync \* a synthetic onSync (nextBatch '') seals nothing
 
 FaultKinds == {
     "enqueue",      \* an inbound_event_queue insert throws
@@ -145,15 +161,24 @@ VARIABLES
     bridgePending,  \* a bridge pass is requested (trigger or rerun)
     recovered,      \* the gap-recovery walk has run
     rsSel,          \* rows a resurrection pass selected, not yet updated
-    retries, resurrections, downs, faults
+    retries, resurrections, downs, faults,
+    \* HoldAnchor, all in memory and reset on stop or crash:
+    \* (LiveAnchorHold's counters, abstracted: seals are serialized, so the
+    \* marker is held exactly when an arrival is past the last snapshot or
+    \* covered by the seal still in flight)
+    unsnapped,      \* a live event arrived after the last seal snapshot
+    sealing,        \* a seal is in flight
+    sealCovers,     \* ... and its snapshot covers an arrival
+    sealLimited     \* ... and its response was limited
 
 vars == <<tip, enc, running, workerAlive, liveNext, gapPending, row, wk,
           wkPhase, mTs, mAnchor, floor, pend, pendClaim, resCount, dirty,
           walk, wCur, wBound,
           wUnres, bridgePending, recovered, rsSel, retries, resurrections,
-          downs, faults>>
+          downs, faults, unsnapped, sealing, sealCovers, sealLimited>>
 
 walkVars == <<walk, wCur, wBound, wUnres>>
+holdVars == <<unsnapped, sealing, sealCovers, sealLimited>>
 counters == <<retries, resurrections, downs, faults>>
 
 FaultOK(k) == k \in Faults /\ faults < FaultBudget
@@ -174,8 +199,17 @@ BackwardBound(f) ==
 
 \* The next catch-up, run from the durable state alone (after a crash, the
 \* retained floor is gone), fetches e.
-Recoverable(e) ==
-    IF AnchorSafe(floor) THEN e > mAnchor ELSE e >= BackwardBound(floor)
+RecoverableFrom(f, e) ==
+    IF AnchorSafe(f) THEN e > mAnchor ELSE e >= BackwardBound(f)
+
+Recoverable(e) == RecoverableFrom(floor, e)
+
+\* ... after the claim startImpl writes on the next start (ClaimOnStart).
+\* Under HoldAnchor a limited response's claim waits in memory for its
+\* seal, so the durable floor alone can be narrower than the gap; what must
+\* never happen is the marker passing an event the restart claim would
+\* then skip.
+RecoverableAfterRestart(e) == RecoverableFrom(Lower(floor, mTs + 1), e)
 
 Captured(e) == row[e] # "none"
 
@@ -227,6 +261,36 @@ AdvanceMarker(e) ==
                  IF tie THEN (IF mAnchor = 0 THEN {e} ELSE {mAnchor, e})
                  ELSE IF cand = e THEN {e} ELSE {mAnchor}
 
+\* HoldAnchor: a commit moves the marker only while every live arrival is
+\* sealed and no claim or floor is merely retained; otherwise the row
+\* settles and the marker waits. The second half matters after a restart:
+\* a row the previous process queued behind a gap can settle before the
+\* startup claim is durable, and a retained claim resolves against the
+\* marker as it is when it is finally written.
+Held == \/ unsnapped \/ sealCovers
+        \/ HoldWhileRetained /\ (pendClaim \/ pend # None)
+
+HeldAdvance(e) ==
+    IF HoldAnchor /\ Held
+      THEN UNCHANGED <<mTs, mAnchor>>
+      ELSE AdvanceMarker(e)
+
+MaxOf(S) == CHOOSE x \in S : \A y \in S : x >= y
+
+\* The hold is in memory: a stop or crash loses it. Rows committed before
+\* it never moved the marker past a gap, and startImpl's claim covers what
+\* the new process has not sealed.
+ResetHold ==
+    /\ unsnapped' = FALSE /\ sealing' = FALSE
+    /\ sealCovers' = FALSE /\ sealLimited' = FALSE
+
+\* After a seal: move the marker over the newest settled row, clamped by
+\* the active rows as a commit would be.
+CatchUpMarker ==
+    LET done == {x \in Events : row[x] \in Settled}
+    IN IF done = {} THEN UNCHANGED <<mTs, mAnchor>>
+       ELSE AdvanceMarker(MaxOf(done))
+
 -----------------------------------------------------------------------------
 
 Init ==
@@ -257,11 +321,13 @@ Init ==
     /\ resurrections = 0
     /\ downs = 0
     /\ faults = 0
+    /\ unsnapped = FALSE /\ sealing = FALSE /\ sealCovers = FALSE
+    /\ sealLimited = FALSE
 
 Arrive ==
     /\ tip < N
     /\ tip' = tip + 1
-    /\ UNCHANGED <<enc, running, workerAlive, liveNext, gapPending, row, wk, wkPhase, mTs, mAnchor, floor, pend, pendClaim, dirty, walkVars, bridgePending, recovered, rsSel, counters, resCount>>
+    /\ UNCHANGED <<enc, running, workerAlive, liveNext, gapPending, row, wk, wkPhase, mTs, mAnchor, floor, pend, pendClaim, dirty, walkVars, bridgePending, recovered, rsSel, counters, resCount, holdVars>>
 
 \* A key arrives. BridgeCoordinator reruns catch-up on to-device traffic
 \* while a floor exists; reading the marker persists a retained floor.
@@ -271,13 +337,17 @@ KeyArrives(e) ==
     /\ IF running /\ Flushed # None
          THEN bridgePending' = TRUE /\ floor' = Flushed /\ pend' = None /\ pendClaim' = FALSE
          ELSE UNCHANGED <<bridgePending, floor, pend, pendClaim, resCount>>
-    /\ UNCHANGED <<tip, running, workerAlive, liveNext, gapPending, row, wk, wkPhase, mTs, mAnchor, dirty, walkVars, recovered, rsSel, counters, resCount>>
+    /\ UNCHANGED <<tip, running, workerAlive, liveNext, gapPending, row, wk, wkPhase, mTs, mAnchor, dirty, walkVars, recovered, rsSel, counters, resCount, holdVars>>
 
 LiveDeliver ==
     /\ running
     /\ liveNext <= tip
     /\ LET e == liveNext IN
        /\ liveNext' = e + 1
+       \* The onTimelineEvent listener counts the arrival synchronously,
+       \* before asyncMap runs _handleLiveEvent.
+       /\ unsnapped' = (HoldAnchor \/ unsnapped)
+       /\ UNCHANGED <<sealing, sealCovers, sealLimited>>
        /\ IF e \in enc
             THEN \* ciphertext: lowerResumeFloor bumps the revision
                  /\ LowerFloor(e)
@@ -321,21 +391,71 @@ LiveGap ==
                    /\ UNCHANGED <<floor, pend, pendClaim, dirty, bridgePending, faults, resCount>>
               ELSE /\ GapClaimed
                    /\ UNCHANGED gapPending
-    /\ UNCHANGED <<tip, enc, running, workerAlive, row, wk, wkPhase, mTs, mAnchor, walkVars, recovered, rsSel, retries, resurrections, downs, resCount>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, row, wk, wkPhase, mTs, mAnchor, walkVars, recovered, rsSel, retries, resurrections, downs, resCount, holdVars>>
 
 \* "Catch up now", MatrixService.forceRescan: a pass with no gap known.
 ManualBridge ==
     /\ running
     /\ ~bridgePending
     /\ bridgePending' = TRUE
-    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row, wk, wkPhase, mTs, mAnchor, floor, pend, pendClaim, dirty, walkVars, recovered, rsSel, counters, resCount>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row, wk, wkPhase, mTs, mAnchor, floor, pend, pendClaim, dirty, walkVars, recovered, rsSel, counters, resCount, holdVars>>
 
 GapTrigger ==
+    /\ ~HoldAnchor      \* with the hold, the seal makes this claim
     /\ running
     /\ gapPending
     /\ gapPending' = FALSE
     /\ GapClaimed
-    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, row, wk, wkPhase, mTs, mAnchor, walkVars, recovered, rsSel, retries, resurrections, downs, resCount>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, row, wk, wkPhase, mTs, mAnchor, walkVars, recovered, rsSel, retries, resurrections, downs, resCount, holdVars>>
+
+\* HoldAnchor. A real onSync (the SDK emits it after every timeline event of
+\* its response): the handler snapshots the arrivals it covers and whether
+\* the response was limited. Seals run one at a time, so a quick seal of a
+\* later response cannot overtake a limited one still claiming.
+SyncEnd ==
+    /\ HoldAnchor
+    /\ running
+    /\ ~sealing
+    /\ gapPending \/ unsnapped
+    /\ sealing' = TRUE
+    /\ sealCovers' = unsnapped
+    /\ unsnapped' = FALSE
+    /\ sealLimited' = gapPending
+    /\ gapPending' = FALSE
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, row, wk, wkPhase, mTs, mAnchor, floor, pend, pendClaim, dirty, walkVars, bridgePending, recovered, rsSel, counters, resCount>>
+
+\* The seal completes once its claim (limited) or the retained floor is
+\* durable; only then are its arrivals sealed, and the marker catches up
+\* when nothing newer arrived meanwhile. A throw leaves it to retry.
+SealDone ==
+    /\ HoldAnchor
+    /\ running
+    /\ sealing
+    /\ \/ /\ floor' = IF sealLimited THEN Lower(Flushed, mTs + 1) ELSE Flushed
+          /\ pend' = None /\ pendClaim' = FALSE
+          /\ dirty' = IF sealLimited THEN TRUE ELSE dirty
+          /\ bridgePending' = IF sealLimited THEN TRUE ELSE bridgePending
+          /\ sealing' = FALSE /\ sealCovers' = FALSE /\ sealLimited' = FALSE
+          /\ IF unsnapped THEN UNCHANGED <<mTs, mAnchor>> ELSE CatchUpMarker
+          /\ UNCHANGED faults
+       \/ /\ \/ FaultOK("claimRead")
+             \/ FaultOK("floorWrite")
+          /\ faults' = faults + 1
+          /\ UNCHANGED <<floor, pend, pendClaim, dirty, bridgePending, sealing, sealCovers, sealLimited, mTs, mAnchor>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row, wk, wkPhase, walkVars, recovered, rsSel, retries, resurrections, downs, resCount, unsnapped>>
+
+\* A synthetic handleSync inside a real response (KeyManager re-decrypting
+\* a room's last event, a history, send or redaction fake sync) emits
+\* processing and onSync, never cleaningUp. Taken as a seal, it releases the
+\* hold without the response's limited flag.
+FakeSeal ==
+    /\ HoldAnchor
+    /\ ~IgnoreSyntheticSync
+    /\ running
+    /\ unsnapped \/ sealCovers
+    /\ unsnapped' = FALSE /\ sealCovers' = FALSE
+    /\ CatchUpMarker
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row, wk, wkPhase, floor, pend, pendClaim, dirty, walkVars, bridgePending, recovered, rsSel, counters, resCount, sealing, sealLimited>>
 
 \* A walk starts in the lane. The marker read persists a retained floor.
 \* The walk's own claim is walk-local: it does not move the revision.
@@ -356,7 +476,7 @@ WalkStart ==
     /\ bridgePending
     /\ bridgePending' = FALSE
     /\ BeginWalk(AnchorSafe(Flushed), FALSE)
-    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row, wk, wkPhase, mTs, mAnchor, recovered, rsSel, counters, resCount>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row, wk, wkPhase, mTs, mAnchor, recovered, rsSel, counters, resCount, holdVars>>
 
 GapRecoveryStart ==
     /\ GapRecovery
@@ -365,13 +485,13 @@ GapRecoveryStart ==
     /\ ~recovered
     /\ recovered' = TRUE
     /\ BeginWalk(FALSE, TRUE)
-    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row, wk, wkPhase, mTs, mAnchor, bridgePending, rsSel, counters, resCount>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row, wk, wkPhase, mTs, mAnchor, bridgePending, rsSel, counters, resCount, holdVars>>
 
 \* The walk ends incomplete; the bridge schedules its bounded retry.
 AbortWalk ==
     /\ walk' = "idle"
     /\ bridgePending' = TRUE
-    /\ UNCHANGED <<wCur, wBound, wUnres, resCount>>
+    /\ UNCHANGED <<wCur, wBound, wUnres, resCount, holdVars>>
 
 \* The sink handles event c of the walk.
 Emit(c) ==
@@ -399,7 +519,7 @@ WalkStepFwd ==
     /\ wCur < tip
     /\ wCur' = wCur + 1
     /\ Emit(wCur + 1)
-    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, wk, wkPhase, mTs, mAnchor, dirty, wBound, recovered, rsSel, retries, resurrections, downs, resCount>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, wk, wkPhase, mTs, mAnchor, dirty, wBound, recovered, rsSel, retries, resurrections, downs, resCount, holdVars>>
 
 WalkStepBwd ==
     /\ running
@@ -408,7 +528,7 @@ WalkStepBwd ==
     /\ wCur - 1 >= 1
     /\ wCur' = wCur - 1
     /\ Emit(wCur - 1)
-    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, wk, wkPhase, mTs, mAnchor, dirty, wBound, recovered, rsSel, retries, resurrections, downs, resCount>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, wk, wkPhase, mTs, mAnchor, dirty, wBound, recovered, rsSel, retries, resurrections, downs, resCount, holdVars>>
 
 \* After a forward page: every event after the anchor up to the cursor is
 \* queued, or is ciphertext the walk holds in wUnres, so the floor moves to
@@ -421,7 +541,7 @@ WalkCheckpoint ==
     /\ running
     /\ walk = "fwd"
     /\ floor' = Lower(wUnres, wCur + 1)
-    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row, wk, wkPhase, mTs, mAnchor, pend, pendClaim, dirty, walkVars, bridgePending, recovered, rsSel, counters, resCount>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row, wk, wkPhase, mTs, mAnchor, pend, pendClaim, dirty, walkVars, bridgePending, recovered, rsSel, counters, resCount, holdVars>>
 
 WalkComplete ==
     /\ running
@@ -429,7 +549,7 @@ WalkComplete ==
        \/ walk = "bwd" /\ (wCur - 1 < wBound \/ wCur - 1 < 1)
     /\ walk' = "idle"
     /\ floor' = IF dirty THEN floor ELSE wUnres
-    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row, wk, wkPhase, mTs, mAnchor, pend, pendClaim, dirty, wCur, wBound, wUnres, bridgePending, recovered, rsSel, counters, resCount>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row, wk, wkPhase, mTs, mAnchor, pend, pendClaim, dirty, wCur, wBound, wUnres, bridgePending, recovered, rsSel, counters, resCount, holdVars>>
 
 WalkFail ==
     /\ running
@@ -437,7 +557,7 @@ WalkFail ==
     /\ FaultOK("walk")
     /\ faults' = faults + 1
     /\ AbortWalk
-    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row, wk, wkPhase, mTs, mAnchor, floor, pend, pendClaim, dirty, recovered, rsSel, retries, resurrections, downs, resCount>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row, wk, wkPhase, mTs, mAnchor, floor, pend, pendClaim, dirty, recovered, rsSel, retries, resurrections, downs, resCount, holdVars>>
 
 -----------------------------------------------------------------------------
 (* The worker. A leased row that no worker holds is an expired lease.    *)
@@ -451,24 +571,24 @@ Peek(e) ==
     /\ row' = [row EXCEPT ![e] = "leased"]
     /\ wk' = e
     /\ wkPhase' = "leased"
-    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, mTs, mAnchor, floor, pend, pendClaim, dirty, walkVars, bridgePending, recovered, rsSel, counters, resCount>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, mTs, mAnchor, floor, pend, pendClaim, dirty, walkVars, bridgePending, recovered, rsSel, counters, resCount, holdVars>>
 
 ApplyOk ==
     /\ WorkerUp
     /\ wk # 0
     /\ wkPhase = "leased"
     /\ wkPhase' = "done"
-    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row, wk, mTs, mAnchor, floor, pend, pendClaim, dirty, walkVars, bridgePending, recovered, rsSel, counters, resCount>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row, wk, mTs, mAnchor, floor, pend, pendClaim, dirty, walkVars, bridgePending, recovered, rsSel, counters, resCount, holdVars>>
 
 Commit ==
     /\ WorkerUp
     /\ wk # 0
     /\ wkPhase = "done"
     /\ row' = [row EXCEPT ![wk] = "applied"]
-    /\ AdvanceMarker(wk)
+    /\ HeldAdvance(wk)
     /\ wk' = 0
     /\ wkPhase' = "none"
-    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, floor, pend, pendClaim, dirty, walkVars, bridgePending, recovered, rsSel, counters, resCount>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, floor, pend, pendClaim, dirty, walkVars, bridgePending, recovered, rsSel, counters, resCount, holdVars>>
 
 ApplyRetry ==
     /\ WorkerUp
@@ -479,7 +599,7 @@ ApplyRetry ==
     /\ row' = [row EXCEPT ![wk] = "retrying"]
     /\ wk' = 0
     /\ wkPhase' = "none"
-    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, mTs, mAnchor, floor, pend, pendClaim, dirty, walkVars, bridgePending, recovered, rsSel, resurrections, downs, faults, resCount>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, mTs, mAnchor, floor, pend, pendClaim, dirty, walkVars, bridgePending, recovered, rsSel, resurrections, downs, faults, resCount, holdVars>>
 
 \* permanentSkip, maxAttempts or the pending-attachment deadline.
 ApplyAbandon ==
@@ -487,10 +607,10 @@ ApplyAbandon ==
     /\ wk # 0
     /\ wkPhase = "leased"
     /\ row' = [row EXCEPT ![wk] = "abandoned"]
-    /\ AdvanceMarker(wk)
+    /\ HeldAdvance(wk)
     /\ wk' = 0
     /\ wkPhase' = "none"
-    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, floor, pend, pendClaim, dirty, walkVars, bridgePending, recovered, rsSel, counters, resCount>>
+    /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, floor, pend, pendClaim, dirty, walkVars, bridgePending, recovered, rsSel, counters, resCount, holdVars>>
 
 \* The batch's transaction rolls back; its row keeps its lease.
 WorkerError ==
@@ -500,7 +620,7 @@ WorkerError ==
     /\ wk' = 0
     /\ wkPhase' = "none"
     /\ workerAlive' = WorkerSurvivesErrors
-    /\ UNCHANGED <<tip, enc, running, liveNext, gapPending, row, mTs, mAnchor, floor, pend, pendClaim, dirty, walkVars, bridgePending, recovered, rsSel, retries, resurrections, downs, resCount>>
+    /\ UNCHANGED <<tip, enc, running, liveNext, gapPending, row, mTs, mAnchor, floor, pend, pendClaim, dirty, walkVars, bridgePending, recovered, rsSel, retries, resurrections, downs, resCount, holdVars>>
 
 -----------------------------------------------------------------------------
 
@@ -517,7 +637,7 @@ ResurrectSelect ==
     /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row,
                    wk, wkPhase, mTs, mAnchor, floor, pend, pendClaim, dirty,
                    walkVars, bridgePending, recovered, retries, downs, faults,
-                   resCount>>
+                   resCount, holdVars>>
 
 \* The UPDATE by queue id; the guard is what it re-checks of the SELECT.
 StillEligible(e) ==
@@ -535,7 +655,7 @@ ResurrectUpdate ==
     /\ rsSel' = {}
     /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, wk,
                    wkPhase, mTs, mAnchor, floor, pend, pendClaim, dirty,
-                   walkVars, bridgePending, recovered, counters>>
+                   walkVars, bridgePending, recovered, counters, holdVars>>
 
 ResurrectNow(e) ==
     /\ running
@@ -547,7 +667,7 @@ ResurrectNow(e) ==
     /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, wk,
                    wkPhase, mTs, mAnchor, floor, pend, pendClaim, dirty,
                    walkVars, bridgePending, recovered, rsSel, retries, downs,
-                   faults>>
+                   faults, holdVars>>
 
 -----------------------------------------------------------------------------
 
@@ -562,6 +682,7 @@ Stop ==
     /\ bridgePending' = FALSE
     /\ gapPending' = FALSE
     /\ rsSel' = {}
+    /\ ResetHold
     /\ UNCHANGED <<tip, enc, workerAlive, liveNext, row, wk, wkPhase, mTs, mAnchor, floor, pend, pendClaim, dirty, walkVars, recovered, retries, resurrections, faults, resCount>>
 
 Crash ==
@@ -576,6 +697,7 @@ Crash ==
     /\ bridgePending' = FALSE
     /\ gapPending' = FALSE
     /\ rsSel' = {}
+    /\ ResetHold
     /\ UNCHANGED <<tip, enc, workerAlive, liveNext, row, mTs, mAnchor, floor, dirty, wCur, wBound, wUnres, recovered, retries, resurrections, faults, resCount>>
 
 \* startImpl: events already on the homeserver never reach the live
@@ -587,7 +709,7 @@ Start ==
     /\ liveNext' = tip + 1
     /\ bridgePending' = TRUE
     /\ Claim(ClaimOnStart)
-    /\ UNCHANGED <<tip, enc, gapPending, row, wk, wkPhase, mTs, mAnchor, dirty, walkVars, recovered, rsSel, retries, resurrections, downs, resCount>>
+    /\ UNCHANGED <<tip, enc, gapPending, row, wk, wkPhase, mTs, mAnchor, dirty, walkVars, recovered, rsSel, retries, resurrections, downs, resCount, holdVars>>
 
 -----------------------------------------------------------------------------
 
@@ -597,6 +719,9 @@ Next ==
     \/ LiveDeliver
     \/ LiveGap
     \/ GapTrigger
+    \/ SyncEnd
+    \/ SealDone
+    \/ FakeSeal
     \/ ManualBridge
     \/ WalkStart
     \/ GapRecoveryStart
@@ -624,6 +749,8 @@ Next ==
 Fairness ==
     /\ WF_vars(LiveDeliver)
     /\ WF_vars(GapTrigger)
+    /\ WF_vars(SyncEnd)
+    /\ WF_vars(SealDone)
     /\ WF_vars(WalkStart)
     /\ WF_vars(WalkStepFwd)
     /\ WF_vars(WalkStepBwd)
@@ -655,11 +782,19 @@ TypeOK ==
     /\ rsSel \subseteq Events
     /\ pendClaim \in BOOLEAN
     /\ resCount \in [Events -> 0..MaxResurrections]
+    /\ unsnapped \in BOOLEAN /\ sealing \in BOOLEAN
+    /\ sealCovers \in BOOLEAN /\ sealLimited \in BOOLEAN
+    /\ (sealCovers \/ sealLimited) => sealing
 
 \* No silent loss: every event the homeserver holds is captured in the
 \* queue (in any status, abandoned included) or fetched by the catch-up
 \* the durable marker selects. A crash at any step loses nothing.
 NoSilentLoss == \A e \in 1..tip : Captured(e) \/ Recoverable(e)
+
+\* The HoldAnchor configurations' form of it: nothing is lost that the next
+\* start's claim would not recover. Requires ClaimOnStart.
+NoSilentLossAfterRestart ==
+    \A e \in 1..tip : Captured(e) \/ RecoverableAfterRestart(e)
 
 \* The worker holds at most the row it leased.
 HeldIsLeased == wk # 0 => row[wk] \in {"leased", "enqueued"}

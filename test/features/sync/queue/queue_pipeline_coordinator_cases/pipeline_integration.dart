@@ -106,11 +106,110 @@ extension _PipelineIntegrationCases on _QueueCoordinatorTestSetup {
           final stats = await coordinator.queue.stats();
           expect(stats.total, 0);
 
-          // Marker advanced under the monotonic guard (F2).
-          final marker = await (syncDb.select(
+          // Applied, but the marker is held: the response that delivered
+          // the event has not finished, so it may yet turn out limited.
+          Future<int?> appliedTs() async =>
+              (await (syncDb.select(
+                    syncDb.queueMarkers,
+                  )..where((t) => t.roomId.equals(roomId))).getSingleOrNull())
+                  ?.lastAppliedTs;
+          expect(await appliedTs(), anyOf(isNull, 0));
+
+          // The real sync loop finishes the response: the seal releases the
+          // hold and the marker catches up under the monotonic guard (F2).
+          statusCtl.add(const SyncStatusUpdate(SyncStatus.cleaningUp));
+          await coordinator.liveSealsSettled;
+          expect(await appliedTs(), 1000);
+        },
+      );
+
+      test(
+        'a limited slice applied before its onSync cannot move the marker '
+        'past the gap: the seal claims above the old marker first '
+        '(SliceRace, closed by HoldAnchor in InboundQueue.tla)',
+        () async {
+          final prepared = MockPreparedSyncEvent();
+          when(
+            () => liveProcessor.prepare(event: any(named: 'event')),
+          ).thenAnswer((_) async => prepared);
+          when(
+            () => liveProcessor.apply(
+              prepared: any(named: 'prepared'),
+              journalDb: journalDb,
+              afterCommit: any(named: 'afterCommit'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          final coordinator = buildIntegration();
+          await coordinator.start();
+          addTearDown(() => coordinator.stop(drainFirst: true));
+
+          Future<QueueMarkerItem?> marker() => (syncDb.select(
             syncDb.queueMarkers,
-          )..where((t) => t.roomId.equals(roomId))).getSingle();
-          expect(marker.lastAppliedTs, 1000);
+          )..where((t) => t.roomId.equals(roomId))).getSingleOrNull();
+
+          // An earlier response: applied and sealed, the marker at 1000.
+          timelineCtl.add(
+            _buildLiveSyncEvent(
+              eventId: r'$before',
+              roomId: roomId,
+              originTsMs: 1000,
+            ),
+          );
+          await _waitForQueueStats(
+            coordinator.queue,
+            (stats) => stats.applied == 1,
+          );
+          statusCtl.add(const SyncStatusUpdate(SyncStatus.cleaningUp));
+          await coordinator.liveSealsSettled;
+          expect((await marker())?.lastAppliedTs, 1000);
+          // A catch-up walk has since reconciled the start claim's floor.
+          await (syncDb.update(syncDb.queueMarkers)
+                ..where((t) => t.roomId.equals(roomId)))
+              .write(const QueueMarkersCompanion(resumeFloorTs: Value(null)));
+
+          // A limited response: the server skipped 2000 and delivers only
+          // the post-gap slice, which applies before onSync says limited.
+          timelineCtl.add(
+            _buildLiveSyncEvent(
+              eventId: r'$after',
+              roomId: roomId,
+              originTsMs: 3000,
+            ),
+          );
+          await _waitForQueueStats(
+            coordinator.queue,
+            (stats) => stats.applied == 2,
+          );
+          expect(
+            (await marker())?.lastAppliedTs,
+            1000,
+            reason: 'the slice applied, but its response is not sealed',
+          );
+
+          syncCtl.add(
+            SyncUpdate(
+              nextBatch: 'next',
+              rooms: RoomsUpdate(
+                join: {
+                  roomId: JoinedRoomUpdate(
+                    timeline: TimelineUpdate(limited: true, events: const []),
+                  ),
+                },
+              ),
+            ),
+          );
+          await pumpEventQueue();
+          statusCtl.add(const SyncStatusUpdate(SyncStatus.cleaningUp));
+          await coordinator.liveSealsSettled;
+
+          final sealed = await marker();
+          expect(
+            sealed?.resumeFloorTs,
+            1001,
+            reason: 'the claim covers the gap above the old marker',
+          );
+          expect(sealed?.lastAppliedTs, 3000);
         },
       );
 
@@ -257,6 +356,11 @@ extension _PipelineIntegrationCases on _QueueCoordinatorTestSetup {
           )..where((t) => t.eventId.equals(r'$pendingAttach'))).getSingle();
           expect(applied.status, 'applied');
           expect(applied.resurrectionCount, 1);
+
+          // The response that delivered it finishes; the seal releases the
+          // marker over the applied row.
+          statusCtl.add(const SyncStatusUpdate(SyncStatus.cleaningUp));
+          await coordinator.liveSealsSettled;
 
           final marker = await (syncDb.select(
             syncDb.queueMarkers,

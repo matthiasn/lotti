@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/queue/inbound_queue_models.dart';
+import 'package:lotti/features/sync/queue/live_anchor_hold.dart';
 
 /// Advances `queue_markers` after a queue row leaves the active set.
 ///
@@ -10,9 +11,10 @@ import 'package:lotti/features/sync/queue/inbound_queue_models.dart';
 /// (drift transactions are zone-based, so this class participates in
 /// the caller's ambient transaction through the shared [SyncDatabase]).
 class QueueMarkerAdvancer {
-  QueueMarkerAdvancer(this._db);
+  QueueMarkerAdvancer(this._db, {this._liveHold});
 
   final SyncDatabase _db;
+  final LiveAnchorHold? _liveHold;
   final Map<String, int> _resumeFloorRevisions = <String, int>{};
   final Map<String, int> _pendingResumeFloors = <String, int>{};
   final Map<String, Future<int?> Function()> _pendingClaims =
@@ -39,7 +41,11 @@ class QueueMarkerAdvancer {
   ///
   /// Must be called inside the transaction that also flips [entry]'s
   /// status out of the active set; the caller owns that status flip.
+  ///
+  /// While the marker [isHeld] the row still settles but the marker stays;
+  /// [catchUpMarker] moves it once the hold is released.
   Future<bool> advanceIfNewer(InboundQueueEntry entry) async {
+    if (isHeld(entry.roomId)) return false;
     final marker = await (_db.select(
       _db.queueMarkers,
     )..where((t) => t.roomId.equals(entry.roomId))).getSingleOrNull();
@@ -90,6 +96,49 @@ class QueueMarkerAdvancer {
         );
     return true;
   }
+
+  /// Whether [roomId]'s marker must stay where it is.
+  ///
+  /// Held while live arrivals are unsealed (a limited response's gap is
+  /// not yet claimed), and while a claim or floor for the room is only
+  /// retained in memory: a retained claim resolves against the marker as
+  /// it is when it is finally written, so a commit moving the marker first
+  /// — a row a previous process queued behind a gap, settling before the
+  /// startup claim is durable — would carry the claim past the gap.
+  /// `HoldAnchor` and `HoldWhileRetained` in `specs/tla/InboundQueue.tla`.
+  bool isHeld(String roomId) =>
+      !(_liveHold?.isSealed ?? true) ||
+      _pendingClaims.containsKey(roomId) ||
+      _pendingResumeFloors.containsKey(roomId);
+
+  /// Moves [roomId]'s marker over its newest settled row, once nothing
+  /// holds it: the commits made while the marker was held settled their
+  /// rows without moving it. The newest settled row is read from the
+  /// database, never remembered from a commit, so a commit that rolled
+  /// back cannot be passed. The usual clamp below the oldest active row
+  /// applies. Returns whether the marker moved.
+  Future<bool> catchUpMarker(String roomId) => _db.transaction(() async {
+    if (isHeld(roomId)) return false;
+    final table = _db.inboundEventQueue;
+    final newest =
+        await (_db.select(table)
+              ..where(
+                (t) =>
+                    t.roomId.equals(roomId) &
+                    t.status.isIn(const [
+                      InboundQueueStatuses.applied,
+                      InboundQueueStatuses.abandoned,
+                    ]),
+              )
+              ..orderBy([
+                (t) => OrderingTerm.desc(t.originTs),
+                (t) => OrderingTerm.desc(t.eventId),
+              ])
+              ..limit(1))
+            .getSingleOrNull();
+    if (newest == null) return false;
+    return advanceIfNewer(InboundQueueEntry.fromRow(newest));
+  });
 
   /// Observes unresolved ciphertext at [originTs], lowering
   /// `resume_floor_ts` when needed and always incrementing its revision.

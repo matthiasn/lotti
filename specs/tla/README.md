@@ -1407,6 +1407,7 @@ when `BridgeMarker.anchorIsSafe`, otherwise the backward walk down to
 | Property | Kind | Says |
 |----------|------|------|
 | `NoSilentLoss` | invariant | every event the homeserver holds is captured (a queue row in any status, abandoned included) or fetched by the catch-up the durable marker selects; a crash at any step loses nothing |
+| `NoSilentLossAfterRestart` | invariant | ... or fetched by the catch-up after the claim the next start makes; what the checked-in configurations check, since with `HoldAnchor` a limited response's claim waits in memory for its seal (see below) |
 | `HeldIsLeased` | invariant | the worker holds only a row it leased |
 | `CapHolds` | invariant | no row is resurrected past its hard cap |
 | `MarkerMonotone` | action | `last_applied_ts` and the anchor never move back |
@@ -1414,12 +1415,15 @@ when `BridgeMarker.anchorIsSafe`, otherwise the backward walk down to
 | `QueuedEventuallySettled` | liveness | every queued event is eventually applied or dead-lettered (abandoned) |
 | `EventuallyCaptured` | liveness | every plaintext event the homeserver holds is eventually captured |
 
-| Configuration | Events | Crashes/stops | Faults (one of) | Distinct states |
-|---------------|--------|---------------|-----------------|-----------------|
-| `InboundQueue` | 3, one on the server at the first start | 1 | failed enqueue, failed claim read, incomplete walk, worker throw; one retry, two resurrection passes (hard cap one), a gap-recovery walk | 40,494,743 |
-| `InboundQueueCipher` | 3, event 2 encrypted until its key arrives | 1 | failed resume-floor write, failed enqueue | 1,607,563 |
-| `InboundQueueCrash` | 4 | 2 | incomplete walk, failed claim read | 3,484,605 |
-| `InboundQueueLiveness` | 3 | 1 | worker throw, incomplete walk, failed enqueue (fairness) | 410,386 |
+| Configuration | Events | Crashes/stops | Faults (one of) | `SliceRace` | Distinct states |
+|---------------|--------|---------------|-----------------|-------------|-----------------|
+| `InboundQueue` | 3, one on the server at the first start | 1 | failed enqueue, failed claim read, incomplete walk, worker throw; one retry, two resurrection passes (hard cap one), a gap-recovery walk | off | 111,262,845 |
+| `InboundQueueCipher` | 3, event 2 encrypted until its key arrives | 1 | failed resume-floor write, failed enqueue | on | 6,685,213 |
+| `InboundQueueCrash` | 4 | 2 | incomplete walk, failed claim read | on | 17,143,804 |
+| `InboundQueueLiveness` | 3 | 1 | worker throw, incomplete walk, failed enqueue (fairness) | off | 1,064,720 |
+
+All four run with `HoldAnchor`. Before it (and with `SliceRace` off throughout)
+they explored 40,494,743, 1,607,563, 3,484,605 and 410,386 distinct states.
 
 The fixes are switches, so each one's old behaviour is a configuration away;
 every checked-in configuration sets them `TRUE`. "Claiming the range above
@@ -1450,26 +1454,47 @@ an event the walk has passed or has yet to reach. Without the completion's
 compare-and-set it fails in 8 steps (`ClaimOnGap`'s trace, with the claim
 cleared).
 
+### Holding the anchor, not the events (`HoldAnchor`)
+
+A `/sync` response whose timeline is `limited` omits the events between the
+marker and its slice, and the SDK says so only in `onSync`, after the slice's
+events (`SliceRace`). The live path queues and applies the slice at once —
+descriptors included — and holds only the marker: the coordinator counts each
+arrival synchronously (`LiveAnchorHold`), a commit settles its row but moves
+the marker only while every arrival is sealed and no claim or floor is merely
+retained, and `QueueLiveSeal` seals on the real sync loop's `cleaningUp`
+(`SyncEnd`, `SealDone`) — conservatively on `error` — claiming above the held
+marker first when an `onSync` since the last seal was limited. The marker then
+catches up over the settled rows (`InboundQueue.catchUpMarker`). The decision
+is [ADR 0090](../../docs/adr/0090-hold-the-anchor-not-the-events.md); #4502's
+admission barrier, which held the events, was reverted.
+
+The hold is in memory, and a limited response's claim waits for its seal, so
+the durable floor alone can briefly be narrower than the gap while no marker
+has moved past it. These configurations therefore check
+`NoSilentLossAfterRestart` — captured, or fetched by the catch-up after the
+next start's claim — in place of `NoSilentLoss`. The model folds the bridge's
+own claim on a limited sync (`GapTrigger`) into the seal: above a held marker
+both write the same floor. `LiveAnchorHold`'s counters are modelled as three
+booleans (`unsnapped`, `sealing`, `sealCovers`), exact because seals are
+serialized.
+
+`SliceRace` is on in `InboundQueueCrash` and `InboundQueueCipher`, where the
+hold is checked against crashes and late keys; `InboundQueue` and
+`InboundQueueLiveness` run with the hold on and `SliceRace` off, to keep them
+inside a CI shard. With `SliceRace` on, in temporary copies, the base
+configuration also holds (274,523,611 distinct states with the earlier counter
+encoding) and so do `QueuedEventuallySettled` and `EventuallyCaptured`
+(2,743,975).
+
+| Mutation | Configuration | Counterexample |
+|----------|---------------|----------------|
+| `HoldAnchor = FALSE` | `InboundQueueCrash` | `NoSilentLossAfterRestart`, 11 states: a gap, the slice delivered and settled, the marker past the gap, the walk completes without it — the race before the fix |
+| `IgnoreSyntheticSync = FALSE` | `InboundQueueCrash` | 12 states: a gap, the slice delivered, a synthetic `onSync` seals it without the limited flag, the slice settles past the gap |
+| `HoldWhileRetained = FALSE` | `InboundQueueCrash` | 15 states: a slice row queued behind a gap outlives a stop, the startup claim's marker read throws and is retained, the row settles in the new process and moves the marker, and the retained claim resolves above the gap. TLC found this while the design was checked |
+
 What the model leaves out, deliberately or as a residual:
 
-- **A limited sync's slice can apply before the bridge sees the sync
-  (`SliceRace`).** The Matrix SDK adds the slice's events to
-  `onTimelineEvent` before it publishes `onSync`, and awaits database writes
-  in between. If the live handler enqueues a post-gap event and the worker
-  applies it before `BridgeCoordinator` handles the sync and claims the gap,
-  the anchor passes the gap first. `SliceRace = TRUE` finds it in 10 steps,
-  and every checked-in configuration sets it `FALSE`. The window is the
-  worker's whole apply-and-commit against a few database reads, so it is
-  narrow, and the sequence-log backfill (`SyncSequence`) repairs a lost
-  sequenced payload from a peer. Closing it needs a decision: take live
-  events from `Client.onSync`'s room updates, where the `limited` flag and
-  the slice arrive together, so the claim precedes the enqueue; or let only
-  walk-contiguous rows move the anchor, with a durable captured-frontier
-  column and a migration; or accept the window and rely on backfill.
-  An admission barrier that held every live event until `onSync` (#4502) was
-  reverted: it stranded attachment descriptors, and the Matrix integration
-  suite failed in 23 of 27 runs with it. The SDK's synthetic `handleSync`
-  passes also emit `processing` and `onSync` mid-response.
 - **Equal milliseconds.** A claim is one millisecond above the marker and a
   checkpoint one above the walk's newest event. An uncaptured event in the
   same millisecond as the marker or the cursor, later in timeline order, is

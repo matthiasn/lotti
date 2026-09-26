@@ -29,6 +29,7 @@ on:
       - "lib/features/sync/client_runner.dart"
       - "lib/features/sync/ui/pages/outbox/outbox_monitor_page.dart"
       - "lib/features/sync/queue/**"
+      - "lib/features/sync/matrix/session_manager.dart"
       - "lib/features/sync/matrix/pipeline/catch_up_strategy.dart"
       - "lib/features/sync/matrix/pipeline/bootstrap_backward_strategy.dart"
       - "lib/features/sync/matrix/pipeline/bootstrap_forward_strategy.dart"
