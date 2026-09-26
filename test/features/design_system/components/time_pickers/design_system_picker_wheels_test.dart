@@ -584,6 +584,33 @@ void main() {
       },
     );
 
+    testWidgets('an hour step during the rollover animation is reported', (
+      tester,
+    ) async {
+      final semanticsHandle = tester.ensureSemantics();
+      final changes = await pumpWheel(tester, DateTime(2024, 6, 15, 14));
+
+      await focusMinutes(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Increase the hour while the drum is still rolling to 13.
+      final hour = tester.getSemantics(find.bySemanticsLabel('Hour'));
+      tester.binding.performSemanticsAction(
+        SemanticsActionEvent(
+          type: SemanticsAction.increase,
+          nodeId: hour.id,
+          viewId: tester.view.viewId,
+        ),
+      );
+      await settle(tester);
+
+      final shownHour = shownRow(tester, 0, 24);
+      expect(changes.last, DateTime(2024, 6, 15, shownHour, 59));
+      semanticsHandle.dispose();
+    });
+
     testWidgets(
       'rolling back past midnight wraps the hour but keeps the date',
       (

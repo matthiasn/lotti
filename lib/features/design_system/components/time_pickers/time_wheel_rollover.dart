@@ -138,6 +138,11 @@ class TimeWheelColumnDriver {
   bool stepBy(int delta) {
     final next = indexFor(delta);
     if (next == null) return false;
+    // A user step takes over from a rollover animation: its rows are the
+    // user's and get reported, and the interrupted animation's completion
+    // must not report on top of them.
+    _programmaticTarget = null;
+    _animationGeneration++;
     controller.jumpToItem(
       looping ? controller.selectedItem + delta : next,
     );

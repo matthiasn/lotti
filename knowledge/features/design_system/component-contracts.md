@@ -846,6 +846,7 @@ stateDiagram-v2
     Animating --> Animating: another wrap (chains from the pending target)
     Animating --> Idle: animation settles (reports the landed row)
     Animating --> Idle: user grabs the drum (reports where it stopped)
+    Animating --> Idle: keyboard or screen-reader step (reports the step)
     Idle --> Idle: reduced motion (jumps, reports at once)
 ```
 
