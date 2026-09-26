@@ -426,4 +426,220 @@ void main() {
     expect(semantics.label, 'Estimate: 0h 30m');
     expect(find.byType(CupertinoTimerPicker), findsOneWidget);
   });
+
+  group('minute drum carries into the hour drum', () {
+    Future<List<DateTime>> pumpWheel(
+      WidgetTester tester,
+      DateTime initial, {
+      bool use24hFormat = true,
+      MediaQueryData? mediaQueryData,
+    }) async {
+      final changes = <DateTime>[];
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          DesignSystemTimeWheel(
+            initialDateTime: initial,
+            use24hFormat: use24hFormat,
+            onDateTimeChanged: changes.add,
+          ),
+          mediaQueryData: mediaQueryData,
+        ),
+      );
+      return changes;
+    }
+
+    Finder wheelAt(int index) => find.byType(ListWheelScrollView).at(index);
+
+    int shownRow(WidgetTester tester, int wheel, int itemCount) =>
+        (tester.widget<ListWheelScrollView>(wheelAt(wheel)).controller!
+                as FixedExtentScrollController)
+            .selectedItem %
+        itemCount;
+
+    /// Runs every scroll animation to rest. The first frame starts their
+    /// tickers; a single long pump would render only that starting frame.
+    Future<void> settle(WidgetTester tester) async {
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 800));
+      await tester.pump();
+    }
+
+    Future<void> focusMinutes(WidgetTester tester) async {
+      await tester.tap(wheelAt(1));
+      await tester.pump();
+    }
+
+    testWidgets(
+      'dragging minutes back past :00 animates to the previous hour',
+      (
+        tester,
+      ) async {
+        final changes = await pumpWheel(tester, DateTime(2024, 6, 15, 14, 1));
+
+        // Two rows down: :01 → :00 → :59.
+        await tester.drag(wheelAt(1), const Offset(0, 80));
+        await settle(tester);
+
+        expect(changes.last, DateTime(2024, 6, 15, 13, 59));
+        expect(shownRow(tester, 0, 24), 13);
+        expect(shownRow(tester, 1, 60), 59);
+      },
+    );
+
+    testWidgets('the hour animates rather than jumping', (tester) async {
+      final changes = await pumpWheel(tester, DateTime(2024, 6, 15, 14));
+      final hourController =
+          tester.widget<ListWheelScrollView>(wheelAt(0)).controller!
+              as FixedExtentScrollController;
+      final startOffset = hourController.offset;
+
+      await focusMinutes(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.pump();
+      // The new hour is reported at once, while the drum is still moving.
+      expect(changes.last, DateTime(2024, 6, 15, 13, 59));
+      await tester.pump(const Duration(milliseconds: 100));
+      final midOffset = hourController.offset;
+      expect(midOffset, lessThan(startOffset));
+      expect(midOffset, greaterThan(startOffset - 40));
+
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(hourController.offset, startOffset - 40);
+      expect(shownRow(tester, 0, 24), 13);
+      expect(changes.last, DateTime(2024, 6, 15, 13, 59));
+    });
+
+    testWidgets('reduced motion moves the hour without animating', (
+      tester,
+    ) async {
+      final changes = await pumpWheel(
+        tester,
+        DateTime(2024, 6, 15, 14),
+        mediaQueryData: const MediaQueryData(disableAnimations: true),
+      );
+
+      await focusMinutes(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.pump();
+
+      expect(shownRow(tester, 0, 24), 13);
+      expect(changes.last, DateTime(2024, 6, 15, 13, 59));
+    });
+
+    testWidgets('rolling minutes forward past :59 advances the hour', (
+      tester,
+    ) async {
+      final changes = await pumpWheel(tester, DateTime(2024, 6, 15, 13, 59));
+
+      await focusMinutes(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await settle(tester);
+
+      expect(changes.last, DateTime(2024, 6, 15, 14));
+      expect(shownRow(tester, 0, 24), 14);
+    });
+
+    testWidgets('crossings in quick succession roll back one hour each', (
+      tester,
+    ) async {
+      final changes = await pumpWheel(tester, DateTime(2024, 6, 15, 14));
+      final minuteWheel = tester.widget<ListWheelScrollView>(wheelAt(1));
+
+      // Two backward crossings reported before the first hour animation has
+      // had a frame to run: :00 → :59 → :30 → :01 → :00 → :59.
+      minuteWheel.onSelectedItemChanged!(59);
+      minuteWheel.onSelectedItemChanged!(30);
+      minuteWheel.onSelectedItemChanged!(1);
+      minuteWheel.onSelectedItemChanged!(0);
+      minuteWheel.onSelectedItemChanged!(59);
+      await settle(tester);
+
+      expect(shownRow(tester, 0, 24), 12);
+      expect(changes.last, DateTime(2024, 6, 15, 12, 59));
+    });
+
+    testWidgets(
+      'an interrupted hour animation does not overwrite a newer one',
+      (
+        tester,
+      ) async {
+        final changes = await pumpWheel(tester, DateTime(2024, 6, 15, 14));
+        final minuteWheel = tester.widget<ListWheelScrollView>(wheelAt(1));
+
+        // Back, forward and back again: the third hour animation aims at the
+        // same row as the first, which it interrupted along with the second.
+        minuteWheel.onSelectedItemChanged!(59);
+        minuteWheel.onSelectedItemChanged!(0);
+        minuteWheel.onSelectedItemChanged!(59);
+        await tester.pump();
+        // One more forward crossing must build on 13:59, not on the 14 the
+        // drum still shows mid-animation.
+        minuteWheel.onSelectedItemChanged!(0);
+        await settle(tester);
+
+        expect(shownRow(tester, 0, 24), 14);
+        expect(changes.last, DateTime(2024, 6, 15, 14));
+        // No report ever pairs the rolled hour with the pre-wrap minute.
+        expect(changes, isNot(contains(DateTime(2024, 6, 15, 14, 59))));
+      },
+    );
+
+    testWidgets(
+      'rolling back past midnight wraps the hour but keeps the date',
+      (
+        tester,
+      ) async {
+        final changes = await pumpWheel(tester, DateTime(2024, 6, 15));
+
+        await focusMinutes(tester);
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+        await settle(tester);
+
+        expect(changes.last, DateTime(2024, 6, 15, 23, 59));
+      },
+    );
+
+    testWidgets('a 12-hour wheel crosses from 12 PM back into the morning', (
+      tester,
+    ) async {
+      final changes = await pumpWheel(
+        tester,
+        DateTime(2024, 6, 15, 12),
+        use24hFormat: false,
+      );
+
+      await focusMinutes(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await settle(tester);
+
+      expect(changes.last, DateTime(2024, 6, 15, 11, 59));
+      // Hour row 10 is the "11" label; period row 0 is AM.
+      expect(shownRow(tester, 0, 12), 10);
+      expect(shownRow(tester, 2, 2), 0);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await settle(tester);
+
+      expect(changes.last, DateTime(2024, 6, 15, 12));
+      expect(shownRow(tester, 2, 2), 1);
+    });
+
+    testWidgets('grabbing the hour drum mid-animation keeps where it lands', (
+      tester,
+    ) async {
+      final changes = await pumpWheel(tester, DateTime(2024, 6, 15, 14));
+
+      await focusMinutes(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // The user takes over the hour drum and drags it three rows up.
+      await tester.drag(wheelAt(0), const Offset(0, -120));
+      await settle(tester);
+
+      final shownHour = shownRow(tester, 0, 24);
+      expect(shownHour, isNot(13));
+      expect(changes.last, DateTime(2024, 6, 15, shownHour, 59));
+    });
+  });
 }

@@ -1,9 +1,17 @@
+import 'package:clock/clock.dart';
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
+import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
+/// The wheel inside the shared date/time sheet.
+///
+/// Time-only [mode] uses the design system's [DesignSystemTimeWheel], whose
+/// minute drum carries into the hour (14:00 rolled back is 13:59); date and
+/// date-and-time modes use [CupertinoDatePicker]. Every value the wheel
+/// settles on goes to [onDateTimeSelected], starting with [initial].
 class DateTimeBottomSheet extends StatefulWidget {
   const DateTimeBottomSheet(
     this.initial, {
@@ -35,6 +43,13 @@ class _DateTimeBottomSheetState extends State<DateTimeBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.mode == CupertinoDatePickerMode.time) {
+      return DesignSystemTimeWheel(
+        initialDateTime: widget.initial ?? clock.now(),
+        use24hFormat: true,
+        onDateTimeChanged: widget.onDateTimeSelected,
+      );
+    }
     return CupertinoTheme(
       data: CupertinoThemeData(
         textTheme: CupertinoTextThemeData(

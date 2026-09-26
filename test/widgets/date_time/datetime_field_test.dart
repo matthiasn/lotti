@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/date_time/datetime_bottom_sheet.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
@@ -263,8 +264,9 @@ void main() {
       expect(selectedDate, equals(initialDate));
     });
 
-    testWidgets('respects different picker modes', (WidgetTester tester) async {
-      // Test date-only mode
+    testWidgets('date mode keeps the Cupertino date wheel', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           DateTimeBottomSheet(
@@ -279,8 +281,12 @@ void main() {
         find.byType(CupertinoDatePicker),
       );
       expect(datePicker.mode, CupertinoDatePickerMode.date);
+      expect(find.byType(DesignSystemTimeWheel), findsNothing);
+    });
 
-      // Test time-only mode
+    testWidgets('time mode uses the 24-hour design-system time wheel', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           DateTimeBottomSheet(
@@ -291,27 +297,40 @@ void main() {
         ),
       );
 
-      final timePicker = tester.widget<CupertinoDatePicker>(
-        find.byType(CupertinoDatePicker),
+      expect(find.byType(CupertinoDatePicker), findsNothing);
+      final wheel = tester.widget<DesignSystemTimeWheel>(
+        find.byType(DesignSystemTimeWheel),
       );
-      expect(timePicker.mode, CupertinoDatePickerMode.time);
+      expect(wheel.use24hFormat, isTrue);
+      expect(wheel.initialDateTime, DateTime(2024, 3, 15, 16, 45));
     });
 
-    testWidgets('uses 24-hour format', (WidgetTester tester) async {
+    testWidgets('time mode rolls the hour back with the minutes', (
+      WidgetTester tester,
+    ) async {
+      final selected = <DateTime?>[];
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           DateTimeBottomSheet(
-            DateTime(2024, 3, 15, 14, 30),
+            DateTime(2024, 3, 15, 14),
             mode: CupertinoDatePickerMode.time,
-            onDateTimeSelected: (_) {},
+            onDateTimeSelected: selected.add,
           ),
         ),
       );
+      await tester.pump();
+      expect(selected, [DateTime(2024, 3, 15, 14)]);
 
-      final picker = tester.widget<CupertinoDatePicker>(
-        find.byType(CupertinoDatePicker),
+      // One row down on the minute drum: 14:00 → 13:59.
+      await tester.drag(
+        find.byType(ListWheelScrollView).at(1),
+        const Offset(0, 40),
       );
-      expect(picker.use24hFormat, isTrue);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 800));
+      await tester.pump();
+
+      expect(selected.last, DateTime(2024, 3, 15, 13, 59));
     });
   });
 

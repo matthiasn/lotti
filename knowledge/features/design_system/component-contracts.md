@@ -28,6 +28,10 @@ sources:
     resource: ../../../lib/widgets/date_time/datetime_field.dart
     title: pickDateTimeModal — the shared date/time sheet and its self-dismissal
     last_modified: 2026-08-22
+  - id: time-wheel-rollover
+    resource: ../../../lib/features/design_system/components/time_pickers/time_wheel_rollover.dart
+    title: TimeWheelColumnDriver — minute-to-hour rollover shared by every time drum
+    last_modified: 2026-09-26
   - id: navbar
     resource: ../../../lib/widgets/nav_bar/design_system_bottom_navigation_bar.dart
     title: Bottom navigation shell
@@ -807,6 +811,42 @@ The contract, therefore:
 
 This is the pop-time companion to `bottomNavSafeNavigatorOf`, which solves the
 same split at push time.
+
+# Time drums are one clock
+
+Every time-of-day drum — `DesignSystemTimeWheel` (the journal entry date/time
+modal, the measurement dialog, relationship check-in chips, and the time-only
+`pickDateTimeModal` sheet the habit editor opens) and `DesignSystemTimePicker` —
+rolls the hour with the minutes: dragging the minute drum back past `:00`
+animates the hour down one (14:00 → 13:59), forward past `:59` animates it up,
+and on a 12-hour drum the AM/PM column follows. The date is never touched; the
+hour wraps at midnight. Date and date-and-time sheets still use
+`CupertinoDatePicker`, which has no such hook.
+
+The logic lives once, in `time_pickers/time_wheel_rollover.dart`:
+
+- `ListWheelScrollView` only ever reports **normalized** rows, so a wrap is
+  read from the step between two reports (`wheelWrapBetween`: 0 → 59 is one
+  row backwards, hence a backward wrap), never from raw controller items.
+- Each column is a `TimeWheelColumnDriver`. The parent records the rolled hour
+  **before** asking the hour column to animate, so the reported time is right
+  at once and a second wrap builds on the first one's destination.
+- A column reports its own row **before** reporting a wrap: moving the hour
+  column can emit a scroll-end — and so a whole-time report — synchronously.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Animating: neighbour wrapped (animateToIndex)
+    Animating --> Animating: another wrap (chains from the pending target)
+    Animating --> Idle: animation settles (reports the landed row)
+    Animating --> Idle: user grabs the drum (reports where it stopped)
+    Idle --> Idle: reduced motion (jumps, reports at once)
+```
+
+While `Animating`, rows the drum passes are shown but not reported; a
+generation counter keeps an interrupted animation's completion from clearing a
+newer one that happens to aim at the same row.
 
 # Boundaries
 
