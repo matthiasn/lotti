@@ -375,7 +375,8 @@ class MatrixService {
   /// `notificationStateUpdate`, `onboardingSnapshotBegin`,
   /// `onboardingSnapshotAccepted`, `onboardingTerminalCounters`,
   /// `onboardingSnapshotEnd`, `consumptionEvent`, `backfillRequest`,
-  /// `mediaRequest`, `backfillResponse`, `agentEntity`, `agentLink`,
+  /// `mediaRequest`, `agentWakeCoordination`, `backfillResponse`,
+  /// `agentEntity`, `agentLink`,
   /// `agentBundle`, `outboxBundle`, and `syncNodeProfile`. When the SDK reports
   /// a successful send, the corresponding counter is incremented and
   /// debounced stats are emitted to the Matrix Stats UI.
@@ -427,6 +428,7 @@ class MatrixService {
       consumptionEvent: (_) => 'consumptionEvent',
       backfillRequest: (_) => 'backfillRequest',
       mediaRequest: (_) => 'mediaRequest',
+      agentWakeCoordination: (_) => 'agentWakeCoordination',
       backfillResponse: (_) => 'backfillResponse',
       agentEntity: (_) => 'agentEntity',
       agentLink: (_) => 'agentLink',

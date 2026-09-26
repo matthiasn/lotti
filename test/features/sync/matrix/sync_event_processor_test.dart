@@ -2069,6 +2069,54 @@ void main() {
     );
 
     test(
+      'SyncAgentWakeCoordination is handed to the agent wake coordinator',
+      () async {
+        final message =
+            SyncMessage.agentWakeCoordination(
+                  agentId: 'agent-1',
+                  kind: AgentWakeCoordinationKind.claim,
+                  stateHash: 'sha256-v1:state',
+                  runKey: 'run-1',
+                  hostId: 'host-peer',
+                  sentAt: DateTime.utc(2024, 3, 15),
+                )
+                as SyncAgentWakeCoordination;
+        final coordinator = MockAgentWakeCoordinator();
+        processor.agentWakeCoordinator = coordinator;
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verify(() => coordinator.onMessage(message)).called(1);
+      },
+    );
+
+    test(
+      'SyncAgentWakeCoordination without a coordinator is ignored',
+      () async {
+        // Agents off: the broadcast is runtime state nobody here consumes.
+        processor.agentWakeCoordinator = null;
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.agentWakeCoordination(
+              agentId: 'agent-1',
+              kind: AgentWakeCoordinationKind.done,
+              stateHash: 'sha256-v1:state',
+              runKey: 'run-1',
+              hostId: 'host-peer',
+              sentAt: DateTime.utc(2024, 3, 15),
+            ),
+          ),
+        );
+
+        await expectLater(
+          processor.process(event: event, journalDb: journalDb),
+          completes,
+        );
+      },
+    );
+
+    test(
       'SyncBackfillResponse is delegated to handler when configured',
       () async {
         const message = SyncBackfillResponse(
@@ -2548,6 +2596,41 @@ void main() {
         verify(
           () => aiConfigRepository.deleteConfig('cfg-peer', fromSync: true),
         ).called(1);
+      },
+    );
+
+    test(
+      "skips this device's own SyncAgentWakeCoordination echo — a device "
+      'never defers to its own claim',
+      () async {
+        final localVcService = MockVectorClockService();
+        when(localVcService.getHost).thenAnswer((_) async => 'host-self');
+        final coordinator = MockAgentWakeCoordinator();
+        final processorWithVc = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          savedTaskFiltersRepository: savedTaskFiltersRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          vectorClockService: localVcService,
+        )..agentWakeCoordinator = coordinator;
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.agentWakeCoordination(
+              agentId: 'agent-1',
+              kind: AgentWakeCoordinationKind.claim,
+              stateHash: 'sha256-v1:state',
+              runKey: 'run-1',
+              hostId: 'host-self',
+              sentAt: DateTime.utc(2024, 3, 15),
+            ),
+          ),
+        );
+
+        await processorWithVc.process(event: event, journalDb: journalDb);
+
+        verifyNever(() => coordinator.onMessage(any()));
       },
     );
 

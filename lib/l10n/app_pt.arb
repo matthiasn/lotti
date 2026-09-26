@@ -6173,6 +6173,7 @@
   "syncPayloadAgentBundle": "Pacote de agente",
   "syncPayloadAgentEntity": "Entidade agente",
   "syncPayloadAgentLink": "Link do agente",
+  "syncPayloadAgentWakeCoordination": "Coordenação de despertares do agente",
   "syncPayloadAiConfig": "Configuração de IA",
   "syncPayloadAiConfigDelete": "Exclusão de configuração de IA",
   "syncPayloadBackfillRequest": "Solicitação de preenchimento",

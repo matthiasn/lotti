@@ -281,6 +281,11 @@ extension SyncEventProcessorApply on SyncEventProcessor {
         // file simply stays quiet.
         await mediaRequestHandler?.handleMediaRequest(msg);
         return null;
+      case final SyncAgentWakeCoordination msg:
+        // A peer claims, completes or releases an agent wake. Runtime state
+        // only: nothing is persisted.
+        agentWakeCoordinator?.onMessage(msg);
+        return null;
       case SyncBackfillResponse():
         // Handle backfill response - another device responded to our request
         await backfillResponseHandler.handleBackfillResponse(syncMessage);

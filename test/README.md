@@ -928,6 +928,17 @@ in-memory map) for the pattern. Real-repository integration behavior (enqueue
 coalescing, claim/lease, retry backoff) still belongs in that repository's own
 test file, exercised with plain `async`/`await`, not fakeAsync.
 
+### Build what fakeAsync drives inside the fake zone
+
+A future keeps the zone it was created in. An object built in `setUp` — outside
+`fakeAsync` — that holds a future and chains work onto it (a send queue started
+as `Future<void>.value()` and extended with `.then`) schedules those callbacks
+in the real zone, and `async.flushMicrotasks()` never runs them: the test sees
+nothing sent, though the same code works in the app, where there is one zone.
+Construct such objects inside the `fakeAsync` body, behind a small helper when
+several tests share the setup — see the `coordinated` helper in
+`test/features/agents/wake/wake_orchestrator_drain_test.dart`.
+
 ## Retry & Timeout Testing
 
 ### Helpers

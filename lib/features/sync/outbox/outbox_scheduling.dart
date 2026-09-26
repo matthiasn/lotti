@@ -41,6 +41,9 @@ int priorityForMessage(SyncMessage message) {
     // A repair request is a peer waiting on a blob it cannot render without,
     // but it must not queue-jump the user's own writes.
     SyncMediaRequest() => OutboxPriority.normal.index,
+    // A claim only saves a peer's inference if it arrives before that peer's
+    // own wake dispatches, so it goes out with the user's writes.
+    SyncAgentWakeCoordination() => OutboxPriority.high.index,
     SyncBackfillResponse() => OutboxPriority.normal.index,
     SyncAgentEntity() => OutboxPriority.normal.index,
     SyncAgentLink() => OutboxPriority.normal.index,

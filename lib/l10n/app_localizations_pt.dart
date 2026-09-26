@@ -14858,6 +14858,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get syncPayloadMediaRequest => 'Pedido de multimédia';
 
   @override
+  String get syncPayloadAgentWakeCoordination =>
+      'Coordenação de despertares do agente';
+
+  @override
   String get syncPayloadNotification => 'Notificação';
 
   @override

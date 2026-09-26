@@ -6174,6 +6174,7 @@
   "syncPayloadAgentBundle": "Agentbunt",
   "syncPayloadAgentEntity": "Agentenhet",
   "syncPayloadAgentLink": "Agentlänk",
+  "syncPayloadAgentWakeCoordination": "Samordning av agentkörningar",
   "syncPayloadAiConfig": "AI-konfiguration",
   "syncPayloadAiConfigDelete": "AI-konfigurationsborttagning",
   "syncPayloadBackfillRequest": "Begäran om återfyllning",

@@ -48,6 +48,7 @@ on:
       - "lib/logic/persistence_create_ops.dart"
       - "lib/features/relationships/repository/relationship_repository.dart"
       - "lib/features/agents/wake/**"
+      - "lib/features/agents/workflow/task_state_digest.dart"
       - "lib/features/agents/service/change_set_confirmation_service.dart"
       - "lib/features/agents/service/change_set_resolution_store.dart"
       - "lib/features/agents/service/suggestion_retraction_service.dart"

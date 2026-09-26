@@ -5632,6 +5632,7 @@
   "syncPayloadAgentBundle": "Pachet agent",
   "syncPayloadAgentEntity": "Entitate agent",
   "syncPayloadAgentLink": "Legătură agent",
+  "syncPayloadAgentWakeCoordination": "Coordonarea activărilor agentului",
   "syncPayloadAiConfig": "Configurare AI",
   "syncPayloadAiConfigDelete": "Ștergere configurare AI",
   "syncPayloadBackfillRequest": "Cerere de completare",

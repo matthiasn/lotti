@@ -392,6 +392,44 @@ extension WakeDrainEngine on WakeOrchestrator {
             continue;
           }
 
+          // Cross-device coordination (specs/tla/AgentWakeCoordination.tla):
+          // a peer that completed a wake over this state covers the job; a
+          // peer running one holds it back until its claim ends or lapses.
+          final coordination = await _coordinate(job);
+          if (_discardCancelledDrainOwnedJob(
+            generation,
+            job,
+            lease: lease,
+          )) {
+            if (_drainGeneration != generation) return;
+            continue;
+          }
+          if (_drainGeneration != generation) {
+            _handOffSupersededJob(generation, job, lease: lease);
+            return;
+          }
+          switch (coordination) {
+            case WakeCoordinationCancel():
+              await _dropDrainOwnedJob(
+                job,
+                reason: 'wake covered by a peer device',
+                emitUnpersistedCompletion: false,
+              );
+              _releaseDrainLease(generation, lease);
+              continue;
+            case WakeCoordinationDefer():
+              _forgetDrainOwnedJob(job);
+              _releaseDrainLease(generation, lease);
+              _holdBack(deferred, job);
+              continue;
+            case WakeCoordinationProceed(:final stateHash):
+              coordinator?.claim(
+                agentId: job.agentId,
+                runKey: job.runKey,
+                stateHash: stateHash,
+              );
+          }
+
           activeExecutions[job.runKey] =
               _executeJob(
                 job,
@@ -406,6 +444,7 @@ extension WakeDrainEngine on WakeOrchestrator {
                   // throwing before `_executeJob` enters its outer try/finally).
                   _forgetDrainOwnedJob(job);
                   _releaseDrainLease(generation, lease);
+                  coordinator?.settle(job.runKey);
                   logError(
                     'unexpected wake execution failure for '
                     '${DomainLogger.sanitizeId(job.runKey)}',
@@ -479,6 +518,17 @@ extension WakeDrainEngine on WakeOrchestrator {
         queue.clearHistory();
       }
     }
+  }
+
+  /// Asks the [WakeOrchestrator.coordinator], if any, whether [job] may run.
+  /// A wake the user asked for explicitly is never deferred or cancelled.
+  Future<WakeCoordinationDecision> _coordinate(WakeJob job) async {
+    final coordinator = this.coordinator;
+    if (coordinator == null) return const WakeCoordinationProceed(null);
+    return coordinator.evaluate(
+      job.agentId,
+      deferrable: job.initiator != WakeInitiator.user,
+    );
   }
 
   Future<bool> _wakeAllowedByCurrentPolicy(WakeJob job) async {
@@ -781,6 +831,7 @@ extension WakeDrainEngine on WakeOrchestrator {
         }
 
         final mutated = winner as Map<String, VectorClock>?;
+        coordinator?.complete(job.runKey);
 
         // Clear pre-registered suppression and record only the actual
         // mutations.  The zone-based isAgentExecution in PersistenceLogic
@@ -895,6 +946,9 @@ extension WakeDrainEngine on WakeOrchestrator {
       }
     } finally {
       _releaseDrainLease(generation, lease);
+      // Releases the claim of a run that did not complete: failed, aborted,
+      // or handed back before its executor started. No-op after complete.
+      coordinator?.settle(job.runKey);
       // A started executor settles its intent when it actually settles —
       // after an abort, that is later than this — and a job handed back to
       // the queue is still owed. Otherwise the job ended here, without one.

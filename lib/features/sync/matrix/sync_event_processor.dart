@@ -29,6 +29,7 @@ import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/sync/agent_entity_receive.dart';
+import 'package:lotti/features/agents/wake/agent_wake_coordinator.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
@@ -308,6 +309,11 @@ class SyncEventProcessor {
   /// responder path, in which case requests are ignored.
   MediaRequestHandler? mediaRequestHandler;
 
+  /// Receives peers' [SyncAgentWakeCoordination] broadcasts. Wired by the
+  /// agent runtime; left null when agents are off, in which case the
+  /// broadcasts are ignored.
+  AgentWakeCoordinator? agentWakeCoordinator;
+
   Future<void> process({
     required Event event,
     required JournalDb journalDb,
@@ -502,6 +508,7 @@ class SyncEventProcessor {
     final SyncNotificationStateUpdate m => m.originatingHostId,
     final SyncAgentBundle m => m.originatingHostId,
     final SyncOutboxBundle m => m.originatingHostId,
+    final SyncAgentWakeCoordination m => m.hostId,
     _ => null,
   };
 

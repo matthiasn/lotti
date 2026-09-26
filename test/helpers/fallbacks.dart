@@ -365,6 +365,7 @@ void registerAllFallbackValues() {
 
   // Agent repository fallback (for setter verification with `any()`)
   registerFallbackValue(MockAgentRepository());
+  registerFallbackValue(MockAgentWakeCoordinator());
 
   // Captured input sources (compaction summarizer stubs with `any()`)
   registerFallbackValue(const <RenderedSource>[]);
@@ -418,6 +419,16 @@ void registerAllFallbackValues() {
   );
   registerFallbackValue(
     const SyncMessage.agentLink(status: SyncEntryStatus.initial),
+  );
+  registerFallbackValue(
+    SyncMessage.agentWakeCoordination(
+      agentId: '',
+      kind: AgentWakeCoordinationKind.claim,
+      stateHash: '',
+      runKey: '',
+      hostId: '',
+      sentAt: DateTime(2024, 3, 15),
+    ),
   );
 
   // Sync-related fallbacks

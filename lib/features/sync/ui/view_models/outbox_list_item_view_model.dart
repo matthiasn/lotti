@@ -109,6 +109,7 @@ class OutboxListItemViewModel {
         consumptionEvent: (_) => messages.syncPayloadConsumptionEvent,
         backfillRequest: (_) => messages.syncPayloadBackfillRequest,
         mediaRequest: (_) => messages.syncPayloadMediaRequest,
+        agentWakeCoordination: (_) => messages.syncPayloadAgentWakeCoordination,
         backfillResponse: (_) => messages.syncPayloadBackfillResponse,
         agentEntity: (_) => messages.syncPayloadAgentEntity,
         agentLink: (_) => messages.syncPayloadAgentLink,

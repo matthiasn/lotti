@@ -5639,6 +5639,7 @@
   "syncPayloadAgentBundle": "Balíček agenta",
   "syncPayloadAgentEntity": "Entita agenta",
   "syncPayloadAgentLink": "Propojení agenta",
+  "syncPayloadAgentWakeCoordination": "Koordinace probuzení agenta",
   "syncPayloadAiConfig": "Nastavení AI",
   "syncPayloadAiConfigDelete": "Smazání nastavení AI",
   "syncPayloadBackfillRequest": "Žádost o doplnění",

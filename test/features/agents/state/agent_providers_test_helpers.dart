@@ -16,7 +16,8 @@ import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.da
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_workflow_providers.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/providers/service_providers.dart'
+    show journalDbProvider, outboxServiceProvider;
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -58,6 +59,7 @@ class InitProviderBench {
     required this.mockProjectRepository,
     required this.mockSoulDocumentService,
     required this.mockSyncService,
+    required this.mockOutboxService,
   });
 
   /// Creates a fully-stubbed bench.  Calls [setUpTestGetIt] internally, so
@@ -83,6 +85,7 @@ class InitProviderBench {
       mockProjectRepository: MockProjectRepository(),
       mockSoulDocumentService: MockSoulDocumentService(),
       mockSyncService: MockAgentSyncService(),
+      mockOutboxService: MockOutboxService(),
     ).._stubDefaults();
     return bench;
   }
@@ -104,6 +107,9 @@ class InitProviderBench {
   final MockProjectRepository mockProjectRepository;
   final MockSoulDocumentService mockSoulDocumentService;
   final MockAgentSyncService mockSyncService;
+
+  /// Receives the wake coordinator's broadcasts.
+  final MockOutboxService mockOutboxService;
 
   void _stubDefaults() {
     when(() => mockOrchestrator.start(any())).thenAnswer((_) async {});
@@ -178,6 +184,7 @@ class InitProviderBench {
           mockSoulDocumentService,
         ),
         agentSyncServiceProvider.overrideWithValue(mockSyncService),
+        outboxServiceProvider.overrideWithValue(mockOutboxService),
         aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
         scheduledWakeManagerProvider.overrideWithValue(
           mockScheduledWakeManager,
@@ -337,6 +344,28 @@ ProviderContainer createTemplateTokenContainer({
       agentRepositoryProvider.overrideWithValue(repo),
       agentUpdateStreamProvider.overrideWith(
         (ref, agentId) => const Stream.empty(),
+      ),
+    ],
+  );
+  addTearDown(container.dispose);
+  return container;
+}
+
+// ── Wake coordinator container ──────────────────────────────────────────────
+
+/// Creates a [ProviderContainer] for `agentWakeCoordinatorProvider`.
+ProviderContainer createCoordinatorContainer({
+  required MockAgentRepository mockRepo,
+  required MockJournalDb mockDb,
+  required MockOutboxService mockOutbox,
+}) {
+  final container = ProviderContainer(
+    overrides: [
+      agentRepositoryProvider.overrideWithValue(mockRepo),
+      journalDbProvider.overrideWithValue(mockDb),
+      outboxServiceProvider.overrideWithValue(mockOutbox),
+      domainLoggerProvider.overrideWithValue(
+        DomainLogger(loggingService: LoggingService()),
       ),
     ],
   );

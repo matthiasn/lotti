@@ -53,6 +53,7 @@ import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/wake/agent_wake_coordinator.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
@@ -1254,6 +1255,8 @@ class MockBackfillResponseHandler extends Mock
     implements BackfillResponseHandler {}
 
 class MockMediaRequestHandler extends Mock implements MediaRequestHandler {}
+
+class MockAgentWakeCoordinator extends Mock implements AgentWakeCoordinator {}
 
 class MockSyncEventProcessor extends Mock implements SyncEventProcessor {
   // Default null/no-op so tests that stub only `process` keep working: a

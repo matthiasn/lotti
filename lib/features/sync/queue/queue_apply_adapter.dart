@@ -398,6 +398,8 @@ class QueueApplyAdapter {
       // The media-request handler reads JournalDb and enqueues outbox rows;
       // it writes no journal state of its own, so it needs no transaction.
       mediaRequest: (_) => false,
+      // In-memory coordination state only.
+      agentWakeCoordination: (_) => false,
       backfillResponse: (_) => true,
       // agent_db.
       agentEntity: (_) => false,

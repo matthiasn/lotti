@@ -14754,6 +14754,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get syncPayloadMediaRequest => 'Media-aanvraag';
 
   @override
+  String get syncPayloadAgentWakeCoordination => 'Coördinatie van agentruns';
+
+  @override
   String get syncPayloadNotification => 'Kennisgeving';
 
   @override

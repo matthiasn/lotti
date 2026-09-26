@@ -1343,6 +1343,35 @@ void main() {
       expect(decoded.requesterId, 'requester-device');
     });
 
+    test('SyncAgentWakeCoordination rides the inline enqueue path', () async {
+      final message = SyncMessage.agentWakeCoordination(
+        agentId: 'agent-1',
+        kind: AgentWakeCoordinationKind.done,
+        stateHash: 'sha256-v1:state',
+        runKey: 'run-1',
+        hostId: 'host-a',
+        sentAt: DateTime.utc(2024, 3, 15, 10),
+      );
+
+      await service.enqueueMessage(message);
+
+      final captured = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
+      expect(captured.length, 1);
+
+      final companion = captured.first as OutboxCompanion;
+      expect(companion.subject.value, 'agentWakeCoordination:done:run-1');
+      expect(companion.priority.value, OutboxPriority.high.index);
+      expect(companion.filePath.value, isNull);
+      // Round-trips intact: the receiver keys peers by host and orders their
+      // messages by sentAt.
+      final decoded = SyncMessage.fromJson(
+        jsonDecode(companion.message.value) as Map<String, dynamic>,
+      );
+      expect(decoded, message);
+    });
+
     test('SyncBackfillRequest with empty entries list', () async {
       const message = SyncMessage.backfillRequest(
         requesterId: 'requester-device',
