@@ -3,6 +3,48 @@ part of 'sync_event_processor.dart';
 /// Descriptor-driven attachment fetching with in-flight deduplication —
 /// shared by the agent payload resolution and the outbox bundle resolver.
 extension _DescriptorCache on SyncEventProcessor {
+  /// Rebuilds an exact descriptor after a restart or a missed file event.
+  /// Lookup failures retain the original retryable preparation failure.
+  Future<bool> _recoverMissingDescriptor(
+    Event envelope,
+    SyncMessage message,
+  ) async {
+    final id = switch (message) {
+      SyncJournalEntity(:final attachmentEventId) ||
+      SyncAgentEntity(:final attachmentEventId) ||
+      SyncAgentLink(:final attachmentEventId) ||
+      SyncNotification(:final attachmentEventId) ||
+      SyncOutboxBundle(:final attachmentEventId) => attachmentEventId,
+      _ => null,
+    };
+    final index = _attachmentIndex;
+    if (id == null || index == null || index.findByEventId(id) != null) {
+      return false;
+    }
+    try {
+      final descriptor = await envelope.room
+          .getEventById(id)
+          .timeout(SyncTuning.attachmentDownloadTimeout);
+      if (descriptor == null ||
+          descriptor.eventId != id ||
+          descriptor.roomId != envelope.roomId) {
+        return false;
+      }
+      index.record(descriptor);
+      // Existing resolvers still validate the path and causal payload. A
+      // concurrent observation may already have recorded this same event.
+      return index.findByEventId(id) != null;
+    } catch (error, stackTrace) {
+      _loggingService.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'processor.resolve.descriptorLookup',
+      );
+      return false;
+    }
+  }
+
   /// Fetches fresh JSON from the [AttachmentIndex] descriptor and writes it
   /// to [targetFile]. Returns the JSON string on success, or null if no
   /// descriptor is available (index missing or not initialized).

@@ -5,9 +5,13 @@ description: The Drift-backed inbound queue, the anchored catch-up bridge, per-r
 resource: ../../../lib/features/sync/queue
 tags: [sync, inbound-queue, catch-up, matrix]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-26T00:45:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-26T03:57:34Z }
 stale_after: 2026-12-25
 sources:
+  - id: descriptor-recovery
+    resource: ../../../lib/features/sync/matrix/sync_event_processor_descriptor_cache.dart
+    title: Exact attachment discovery after a restart or missed descriptor
+    last_modified: 2026-09-26
   - id: sdk-batch-barrier
     resource: ../../../lib/features/sync/queue/queue_sync_batch.dart
     title: Hold SDK slices until metadata protects their gap
@@ -114,6 +118,15 @@ The same rule is enforced for journal JSON, agent entity/link JSON,
 notifications, and outbox bundle manifests. Exact descriptors must also declare
 the same normalized `relativePath` as the envelope; a mismatched immutable id is
 malformed rather than a reason to read some other file.
+
+The index is volatile. If preparation needs an exact descriptor that is absent,
+`SyncEventProcessor` retrieves that event by ID from the envelope's room through
+the SDK's database/server lookup, verifies its event and room IDs, indexes it,
+and retries preparation once. This repairs a restart or missed file event even
+when the durable cursor has already passed the descriptor. Existing canonical
+data that satisfies preparation needs no lookup. Missing, still-encrypted or
+temporarily unavailable descriptors remain retryable; neither a newer file at
+the same path nor the mutable disk cache may substitute for the named generation.
 
 Per-room markers advance only after a successful slice commit, so a crash
 mid-drain simply re-leases the same rows on restart. Resurrection flips a row

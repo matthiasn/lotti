@@ -505,6 +505,30 @@ class SyncEventProcessor {
     required SyncMessage syncMessage,
     Map<String, dynamic>? rawMessageJson,
   }) async {
+    try {
+      return await _prepareMessageOnce(
+        event: event,
+        syncMessage: syncMessage,
+        rawMessageJson: rawMessageJson,
+      );
+    } on FileSystemException {
+      // The volatile descriptor index may have been lost after the cursor
+      // passed the file event. Recover its exact identity from retained room
+      // history; another forward walk cannot recover events behind the cursor.
+      if (!await _recoverMissingDescriptor(event, syncMessage)) rethrow;
+      return _prepareMessageOnce(
+        event: event,
+        syncMessage: syncMessage,
+        rawMessageJson: rawMessageJson,
+      );
+    }
+  }
+
+  Future<PreparedSyncEvent> _prepareMessageOnce({
+    required Event event,
+    required SyncMessage syncMessage,
+    Map<String, dynamic>? rawMessageJson,
+  }) async {
     // Self-echo short-circuit: every Matrix event the local host sends
     // loops back through `/sync` (and again on catch-up after a
     // reconnect). The `SentEventRegistry` already drops most of those at
