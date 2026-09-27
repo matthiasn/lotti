@@ -6399,6 +6399,8 @@
   "taskAgentUseCategoryDefault": "Standaard categorie kopiëren",
   "taskAgentUseCategoryDefaultDescription": "Kopieert de categorie . Huidige setup. Latere categorie wijzigingen zal dit agent niet beïnvloeden.",
   "taskAgentUseProfileDefault": "Standaardprofiel gebruiken",
+  "taskBlockedInCycleChipLabel": "Geblokkeerd in een cyclus",
+  "taskBlockedInCycleTooltip": "Deze taak en een taak waarop hij wacht blokkeren elkaar. Sluit er een af of verwijder een koppeling om de andere vrij te geven.",
   "taskCategoryAllLabel": "alle",
   "taskCategoryLabel": "Categorie:",
   "taskCategoryUnassignedLabel": "niet toegewezen",

@@ -25289,6 +25289,18 @@ abstract class AppLocalizations {
   /// **'Blocker not synced yet'**
   String get taskBlockedByUnresolvedLabel;
 
+  /// Header chip on a task that waits on a task it blocks, directly or through other tasks
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked in a cycle'**
+  String get taskBlockedInCycleChipLabel;
+
+  /// Tooltip of the header chip on a task in a blocking cycle
+  ///
+  /// In en, this message translates to:
+  /// **'This task and a task it waits on block each other. Close one of them, or remove a link, to release the other.'**
+  String get taskBlockedInCycleTooltip;
+
   /// No description provided for @taskBlockedReason.
   ///
   /// In en, this message translates to:

@@ -5855,6 +5855,8 @@
     }
   },
   "taskBlockedByUnresolvedLabel": "Blokující úkol není synchronizován",
+  "taskBlockedInCycleChipLabel": "Blokováno v cyklu",
+  "taskBlockedInCycleTooltip": "Tento úkol a úkol, na který čeká, se navzájem blokují. Dokonči jeden z nich nebo odeber propojení, a ten druhý se uvolní.",
   "taskBlockedReason": "Blokováno úkolem: {title}",
   "taskBlockerPickerTitle": "Co ho blokuje?",
   "taskCategoryAllLabel": "vše",

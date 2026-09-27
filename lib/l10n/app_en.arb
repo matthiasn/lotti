@@ -8738,6 +8738,14 @@
     }
   },
   "taskBlockedByUnresolvedLabel": "Blocker not synced yet",
+  "taskBlockedInCycleChipLabel": "Blocked in a cycle",
+  "@taskBlockedInCycleChipLabel": {
+    "description": "Header chip on a task that waits on a task it blocks, directly or through other tasks"
+  },
+  "taskBlockedInCycleTooltip": "This task and a task it waits on block each other. Close one of them, or remove a link, to release the other.",
+  "@taskBlockedInCycleTooltip": {
+    "description": "Tooltip of the header chip on a task in a blocking cycle"
+  },
   "taskBlockedReason": "Blocked by: {title}",
   "@taskBlockedReason": {
     "placeholders": {

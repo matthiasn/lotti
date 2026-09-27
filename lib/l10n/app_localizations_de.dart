@@ -15313,6 +15313,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Blockierende Aufgabe noch nicht synchronisiert';
 
   @override
+  String get taskBlockedInCycleChipLabel => 'In einem Zyklus blockiert';
+
+  @override
+  String get taskBlockedInCycleTooltip =>
+      'Diese Aufgabe und eine Aufgabe, auf die sie wartet, blockieren sich gegenseitig. Schließ eine davon ab oder entferne eine Verknüpfung, um die andere freizugeben.';
+
+  @override
   String taskBlockedReason(String title) {
     return 'Blockiert von: $title';
   }

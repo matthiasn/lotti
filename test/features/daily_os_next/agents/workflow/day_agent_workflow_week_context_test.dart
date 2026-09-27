@@ -451,6 +451,15 @@ void main() {
           conversationRepository.lastSystemMessage,
           contains('self-evident.\n\nBlocked-work rules'),
         );
+        // The resolver marks a blocker the task blocks in turn (ADR 0106),
+        // and the rules say what that marker means.
+        expect(
+          conversationRepository.lastSystemMessage,
+          contains(
+            '- A blocker marked `"cycle": true` is blocked by the task it '
+            'blocks, directly\n',
+          ),
+        );
 
         await execute(workflow());
         expect(

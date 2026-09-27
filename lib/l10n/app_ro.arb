@@ -5848,6 +5848,8 @@
     }
   },
   "taskBlockedByUnresolvedLabel": "Sarcina blocantă nu a fost încă sincronizată",
+  "taskBlockedInCycleChipLabel": "Blocată într-un ciclu",
+  "taskBlockedInCycleTooltip": "Această sarcină și o sarcină pe care o așteaptă se blochează reciproc. Închideți una dintre ele sau eliminați o legătură pentru a o elibera pe cealaltă.",
   "taskBlockedReason": "Blocată de: {title}",
   "taskBlockerPickerTitle": "Ce o blochează?",
   "taskCategoryAllLabel": "toate",

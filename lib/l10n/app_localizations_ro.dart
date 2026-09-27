@@ -15504,6 +15504,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Sarcina blocantă nu a fost încă sincronizată';
 
   @override
+  String get taskBlockedInCycleChipLabel => 'Blocată într-un ciclu';
+
+  @override
+  String get taskBlockedInCycleTooltip =>
+      'Această sarcină și o sarcină pe care o așteaptă se blochează reciproc. Închideți una dintre ele sau eliminați o legătură pentru a o elibera pe cealaltă.';
+
+  @override
   String taskBlockedReason(String title) {
     return 'Blocată de: $title';
   }

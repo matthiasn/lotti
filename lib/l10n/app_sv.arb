@@ -6400,6 +6400,8 @@
   "taskAgentUseCategoryDefault": "Kopiera kategori standard",
   "taskAgentUseCategoryDefaultDescription": "Kopierar kategorins nuvarande uppställning. Senare kategoriändringar påverkar inte denna agent.",
   "taskAgentUseProfileDefault": "Använd profilstandard",
+  "taskBlockedInCycleChipLabel": "Blockerad i en cykel",
+  "taskBlockedInCycleTooltip": "Den här uppgiften och en uppgift den väntar på blockerar varandra. Stäng en av dem eller ta bort en länk för att frigöra den andra.",
   "taskCategoryAllLabel": "alla",
   "taskCategoryLabel": "Kategori:",
   "taskCategoryUnassignedLabel": "ej tilldelad",

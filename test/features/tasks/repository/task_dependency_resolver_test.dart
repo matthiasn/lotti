@@ -325,6 +325,77 @@ void main() {
 
       expect(unresolved.toJson(), {'taskId': 'x'});
     });
+
+    test('a blocker on a cycle says so, and only then', () {
+      const onCycle = ResolvedBlocker(taskId: 'x', cycle: true);
+
+      expect(onCycle.toJson(), {'taskId': 'x', 'cycle': true});
+      expect(onCycle, isNot(const ResolvedBlocker(taskId: 'x')));
+      expect(
+        onCycle.hashCode,
+        isNot(const ResolvedBlocker(taskId: 'x').hashCode),
+      );
+    });
+  });
+
+  group('TaskDependencyResolver cycles (ADR 0106)', () {
+    test(
+      'two tasks that block each other are both blocked, each by a blocker '
+      'marked as a cycle; a blocker off the cycle is not marked',
+      () async {
+        final a = TestTaskFactory.create(id: 'a', title: 'A');
+        final b = TestTaskFactory.create(id: 'b', title: 'B');
+        final c = TestTaskFactory.create(id: 'c', title: 'C');
+        final links = [
+          blocksLink(id: 'ab', fromId: 'a', toId: 'b'),
+          blocksLink(id: 'ba', fromId: 'b', toId: 'a'),
+          blocksLink(id: 'ca', fromId: 'c', toId: 'a'),
+        ];
+        when(
+          () => journalRepository.getTypedLinksForTaskIds(
+            any(),
+            linkTypes: {'BlocksLink'},
+          ),
+        ).thenAnswer((invocation) async {
+          final ids = invocation.positionalArguments.first as Set<String>;
+          return [
+            for (final link in links)
+              if (ids.contains(link.fromId) || ids.contains(link.toId)) link,
+          ];
+        });
+        when(
+          () =>
+              journalRepository.getJournalEntitiesByIdsIncludingDeleted(any()),
+        ).thenAnswer((invocation) async {
+          final ids = (invocation.positionalArguments.first as Iterable<String>)
+              .toSet();
+          return [
+            for (final task in [a, b, c])
+              if (ids.contains(task.id)) task,
+          ];
+        });
+
+        final result = await resolver.resolveBlockedStatus({'a', 'b'});
+
+        expect(
+          {
+            for (final entry in result.entries)
+              entry.key: {
+                for (final blocker in entry.value)
+                  blocker.taskId: blocker.cycle,
+              },
+          },
+          {
+            'a': {'b': true, 'c': false},
+            'b': {'a': true},
+          },
+        );
+        expect(
+          result['b']!.single.toJson(),
+          containsPair('cycle', true),
+        );
+      },
+    );
   });
 
   group('taskDependencyResolverProvider', () {

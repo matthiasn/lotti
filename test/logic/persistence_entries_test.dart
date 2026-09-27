@@ -326,6 +326,46 @@ void main() {
     );
 
     test(
+      'checks the cycle again inside the write: a link stored after the '
+      'first check refuses the new one (ADR 0106)',
+      () async {
+        // The first check finds nothing; by the write, another writer on
+        // this device -- the user or the agent's link tool -- has stored
+        // b -> a.
+        var reads = 0;
+        when(
+          () => mocks.journalDb.typedLinksForTaskIds(
+            {'b'},
+            types: {'BlocksLink'},
+          ),
+        ).thenAnswer(
+          (_) async => [
+            if (++reads > 1)
+              EntryLink.blocks(
+                id: 'raced-in',
+                fromId: 'b',
+                toId: 'a',
+                createdAt: DateTime(2024),
+                updatedAt: DateTime(2024),
+                vectorClock: null,
+              ),
+          ],
+        );
+
+        final created = await entries.createLink(
+          fromId: 'a',
+          toId: 'b',
+          linkType: EntryLinkType.blocks,
+        );
+
+        expect(created, isFalse);
+        expect(reads, 2);
+        verifyNever(() => mocks.journalDb.upsertEntryLink(any()));
+        verifyNever(() => outboxService.enqueueMessage(any()));
+      },
+    );
+
+    test(
       'rejects a blocks edge that would close a transitive 2-hop cycle',
       () async {
         // b blocks c, and c already blocks a, so a-blocks-b would close the
@@ -416,7 +456,7 @@ void main() {
       'hop instead of re-querying it twice',
       () async {
         // b blocks both c and d; c and d both block e -- e must be queried
-        // exactly once as the next frontier, not twice.
+        // once per traversal as the next frontier, not once per node.
         when(
           () => mocks.journalDb.typedLinksForTaskIds(
             {'b'},
@@ -481,12 +521,14 @@ void main() {
         );
 
         expect(created, isTrue);
+        // Once per traversal -- the pre-check and the check again inside the
+        // write's transaction (ADR 0106) -- not once per frontier node.
         verify(
           () => mocks.journalDb.typedLinksForTaskIds(
             {'e'},
             types: {'BlocksLink'},
           ),
-        ).called(1);
+        ).called(2);
       },
     );
   });

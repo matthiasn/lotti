@@ -1387,6 +1387,69 @@ What the model leaves out:
   lost to another id is answered `deleted` by backfill, which settles the
   gap; the winner carries the link.
 
+## `TaskLinkGraph` — what the task links say together
+
+`EntryLinkIdentity` settles one link. This spec takes the rules that span
+links: a task's `blocks` links must not form a cycle on any one device, and a
+task is in at most one project. Three tasks and their projects on two devices;
+the user and the task agent's link tool writing at once on one of them (the
+agent's cycle check split from its write); links created, turned around
+(`updateLinkType`) and removed, tasks closed, tasks filed, moved and unfiled;
+every version delivered in any order, any number of times. A task's
+blockedness is derived at read time, one hop (ADR 0042 §4). The decision is
+[ADR 0106](../../docs/adr/0106-the-task-link-graph-across-devices.md):
+a cycle two devices close is kept and reported, never broken; the cycle check
+runs again inside the write's transaction and follows every path; a project
+move or unfile retires every live project link of the task.
+
+| Property | Kind | Says |
+|----------|------|------|
+| `NoLocalCycle` | invariant | no device writes a `blocks` link that closes a cycle it holds at that moment |
+| `OneWriterAcyclic` | invariant | once every version has arrived, the links one device wrote form no cycle: a cycle needs two devices |
+| `CycleSurfaced` | invariant | the readers report a task in a cycle exactly when it is on a cycle of live links between tasks that still block, on every device |
+| `ReleaseOnClose` | invariant | once every version has arrived, a task is blocked exactly while an open task blocks it: closing any task on a cycle releases the next |
+| `AtMostOneProject` | invariant | once every version has arrived, every device shows each task in the same project, or none |
+| `ProjectWriteSticks` | invariant | once every version has arrived, no device shows a task through a project link a move or unfile of that task had seen |
+| `FilingShows` | invariant | the device that files a task shows it in that project |
+
+| Configuration | Devices | Tasks | Projects | Writes | Clock | Distinct states |
+|---------------|--------:|------:|---------:|-------:|-------|----------------:|
+| `TaskLinkGraph` | 2 | 3 | 0 | 4 | 0 | 9,213,523 |
+| `TaskLinkGraphProjects` | 2 | 1 | 2 | 4 | 0..1, 1 tick skew | 163,378 |
+| `TaskLinkGraphProjectsThree` | 2 | 1 | 3 | 4 | 0..1, 1 tick skew | 1,384,808 |
+
+| Switch | Old behaviour | Counterexample |
+|--------|---------------|----------------|
+| `AtomicCheck` | `createLink` and `updateLinkType` checked for a cycle, then wrote several awaits later, outside any transaction | `NoLocalCycle`, three steps: the agent's check of t2 → t1 passes, the user creates t1 → t2, the agent writes t2 → t1 |
+| `Uncapped` | the check stopped after 64 hops (one in the model) | `NoLocalCycle`, three writes: t1 → t2, t2 → t3, and t3 → t1 passes a check that looks one hop out |
+| `DetectCycle` | nothing reported a cycle: each task showed "Blocked by 1 task" | `CycleSurfaced`: one device writes t2 → t1, the other t1 → t2, and one delivery closes the cycle unreported |
+| `RetireAll` | a move or unfile took out only the project link shown | `ProjectWriteSticks`, five steps: the devices file the task under p1 and p2, one receives the other's link (p2 shows) and unfiles, and p1 shows everywhere. `FilingShows`, four steps: filing it under p1 — the link underneath — does nothing. With three projects (`TaskLinkGraphProjectsThree`), a move to p3 stamped by a clock behind p1's still shows p1 |
+
+`ReleaseByStatus` and `DeterministicWinner` are today's code, not fixes: set
+to `FALSE`, a closed blocker keeps blocking once its status arrives (`ReleaseOnClose`)
+and a device prefers the project link it wrote (`AtMostOneProject`, four
+steps).
+`CycleSurfaced` and `ReleaseOnClose` define the readers the way the code
+computes them; the conformance trace checks the Dart readers against those
+definitions.
+
+Conformance: `test/features/tasks/repository/blocks_cycles_test.dart` runs two
+Glados properties — the blocks operations and the project ones, as the
+configurations split them — against the real writers over two in-memory
+`JournalDb`s, checking the properties after every step, plus a pinned test
+for each counterexample. Each fails with its fix reverted.
+
+What the model leaves out:
+
+- **Crashes.** Every write here is one transaction, so a crash loses an
+  operation whole.
+- **Loss and backfill** are `SyncPipeline`'s: a backfill answers with the
+  writer's stored version of the link, the lost one or its successor, which
+  is a later delivery here.
+- **Concurrent filings.** Two devices that file the task under different
+  projects both write; the later `updatedAt` shows until the next move or
+  unfile takes out the other (ADR 0106, residual).
+
 ## `OutboxCausality` — a version fork through the send and receive boundary
 
 `Outbox` models a causal chain using scalar versions. `OutboxCausality`

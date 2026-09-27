@@ -276,6 +276,27 @@ mixin _JournalDbProjectQueries
     if (res.isEmpty) return null;
     return entryLinkFromLinkedDbEntry(res.first);
   }
+
+  /// Every live ProjectLink of [taskId], the one the task shows first — the
+  /// order `_projectIdSubquery` and [getProjectLinkForTask] choose it by.
+  ///
+  /// A task belongs to one project, but two devices that file it under
+  /// different projects while offline each write a link, and both arrive
+  /// everywhere. Every device then shows the same one, since the order is a
+  /// function of the stored rows; the other stays live underneath it, so a
+  /// move or an unfile takes every one of them out (ADR 0106).
+  Future<List<EntryLink>> getLiveProjectLinksForTask(String taskId) async {
+    final rows = await customSelect(
+      'SELECT * FROM linked_entries le'
+      ' WHERE le.to_id = ?'
+      "  AND le.type = 'ProjectLink'"
+      '  AND COALESCE(le.hidden, false) = false'
+      '  ORDER BY COALESCE(le.updated_at, le.created_at) DESC, le.id DESC',
+      variables: [Variable.withString(taskId)],
+      readsFrom: {linkedEntries},
+    ).map((row) => linkedEntries.map(row.data)).get();
+    return rows.map(entryLinkFromLinkedDbEntry).toList();
+  }
 }
 
 /// In-flight coalescing wave for `getProjectForTask`. Concurrent callers

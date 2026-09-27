@@ -5848,6 +5848,8 @@
     }
   },
   "taskBlockedByUnresolvedLabel": "Blockierende Aufgabe noch nicht synchronisiert",
+  "taskBlockedInCycleChipLabel": "In einem Zyklus blockiert",
+  "taskBlockedInCycleTooltip": "Diese Aufgabe und eine Aufgabe, auf die sie wartet, blockieren sich gegenseitig. Schließ eine davon ab oder entferne eine Verknüpfung, um die andere freizugeben.",
   "taskBlockedReason": "Blockiert von: {title}",
   "taskBlockerPickerTitle": "Was blockiert sie?",
   "taskCategoryAllLabel": "Alle",

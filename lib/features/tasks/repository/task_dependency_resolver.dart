@@ -3,6 +3,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_helpers.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/tasks/repository/blocks_cycles.dart';
 import 'package:meta/meta.dart';
 
 /// One blocker of a task, as resolved by [TaskDependencyResolver].
@@ -26,6 +27,7 @@ class ResolvedBlocker {
     this.title,
     this.status,
     this.categoryId,
+    this.cycle = false,
   });
 
   final String taskId;
@@ -36,11 +38,18 @@ class ResolvedBlocker {
   /// correctly rather than inheriting the blocked task's category.
   final String? categoryId;
 
+  /// Whether the blocked task blocks this blocker in turn, directly or
+  /// through other tasks (ADR 0106): the two wait on each other, so
+  /// scheduling the blocker first cannot unblock anything. Serialized only
+  /// when true.
+  final bool cycle;
+
   Map<String, Object?> toJson() => {
     'taskId': taskId,
     if (title != null) 'title': title,
     if (status != null) 'status': status,
     if (categoryId != null) 'categoryId': categoryId,
+    if (cycle) 'cycle': true,
   };
 
   @override
@@ -49,17 +58,20 @@ class ResolvedBlocker {
       other.taskId == taskId &&
       other.title == title &&
       other.status == status &&
-      other.categoryId == categoryId;
+      other.categoryId == categoryId &&
+      other.cycle == cycle;
 
   @override
-  int get hashCode => Object.hash(taskId, title, status, categoryId);
+  int get hashCode => Object.hash(taskId, title, status, categoryId, cycle);
 }
 
-/// Batch, one-hop, bounded resolver for "which of these tasks are blocked,
-/// and by what" (ADR 0043 §2). Generalizes the single-task classification
-/// `TaskBlockersController._fetch` uses to N tasks in two bounded queries:
-/// one type-scoped link fetch + one batch blocker-status load for the
-/// distinct blocker ids. No transitive closure, no per-task fan-out.
+/// Batch, one-hop resolver for "which of these tasks are blocked, and by
+/// what" (ADR 0043 §2). Generalizes the single-task classification
+/// `TaskBlockersController._fetch` uses to N tasks: one type-scoped link
+/// fetch + one batch blocker-status load for the distinct blocker ids, with
+/// no per-task fan-out. Blockedness stays one hop; only the cycle report
+/// (`findBlockersInCycle`, ADR 0106) follows the links further, in one
+/// batch per hop for all the tasks together.
 class TaskDependencyResolver {
   TaskDependencyResolver({required this.journalRepository});
 
@@ -108,22 +120,32 @@ class TaskDependencyResolver {
         .getJournalEntitiesByIdsIncludingDeleted(blockerIds);
     final resolvedById = {for (final e in resolved) e.id: e};
 
+    final stillBlocking = {
+      for (final entry in blockerIdsByTarget.entries)
+        entry.key: {
+          for (final blockerId in entry.value)
+            if (!blockerReleases(resolvedById[blockerId])) blockerId,
+        },
+    };
+    final cycles = await findBlockersInCycle(
+      journalRepository,
+      blockersByTask: stillBlocking,
+    );
+
     final result = <String, List<ResolvedBlocker>>{};
-    for (final entry in blockerIdsByTarget.entries) {
+    for (final entry in stillBlocking.entries) {
+      final inCycle = cycles.of(entry.key);
       final blockers = <ResolvedBlocker>[];
       for (final blockerId in entry.value) {
         final entity = resolvedById[blockerId];
-        if (entity == null || entity is! Task) {
-          blockers.add(ResolvedBlocker(taskId: blockerId));
-          continue;
-        }
-        if (entity.meta.deletedAt != null) continue;
-        if (isClosedTask(entity)) continue;
-        // Still blocks, but says nothing about itself: the caller was never
-        // granted this category, so its title, status and category do not
-        // belong in whatever the caller is about to render.
-        if (!categoryAllowed(entity.meta.categoryId, allowedCategoryIds)) {
-          blockers.add(ResolvedBlocker(taskId: entity.id));
+        final cycle = inCycle.contains(blockerId);
+        // Still blocks, but says nothing about itself: it did not resolve to
+        // a task, or the caller was never granted its category, so its
+        // title, status and category do not belong in whatever the caller is
+        // about to render.
+        if (entity is! Task ||
+            !categoryAllowed(entity.meta.categoryId, allowedCategoryIds)) {
+          blockers.add(ResolvedBlocker(taskId: blockerId, cycle: cycle));
           continue;
         }
         blockers.add(
@@ -132,6 +154,7 @@ class TaskDependencyResolver {
             title: entity.data.title,
             status: entity.data.status.toDbString,
             categoryId: entity.meta.categoryId,
+            cycle: cycle,
           ),
         );
       }

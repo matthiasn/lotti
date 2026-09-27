@@ -228,6 +228,11 @@ void main() {
         types: {'BlocksLink'},
       ),
     ).thenAnswer((_) async => links);
+    // The cycle report reads the task itself too; a test that resolves an
+    // entity stubs it after this default.
+    when(
+      () => mockJournalDb.entriesForIds(any()),
+    ).thenReturn(MockSelectable<JournalDbEntity>([]));
   }
 
   EntryLink blocksLink({
@@ -1415,6 +1420,74 @@ void main() {
     );
 
     testWidgets(
+      'says the task is blocked in a cycle when its blocker waits on it in '
+      'turn, and still navigates to the blocker',
+      (tester) async {
+        final task = buildTask();
+        final blocker = Task(
+          meta: Metadata(
+            id: 'blocker-1',
+            createdAt: now,
+            updatedAt: now,
+            dateFrom: now,
+            dateTo: now,
+          ),
+          data: TaskData(
+            status: TaskStatus.open(id: 's', createdAt: now, utcOffset: 0),
+            dateFrom: now,
+            dateTo: now,
+            statusHistory: const [],
+            title: 'Fix the outage',
+          ),
+        );
+        // Two devices each wrote one direction while offline (ADR 0106).
+        final links = [
+          blocksLink(id: 'l1', fromId: 'blocker-1', toId: task.id),
+          blocksLink(id: 'l2', fromId: task.id, toId: 'blocker-1'),
+        ];
+        stubBlockers(task.id, links);
+        when(
+          () => mockJournalDb.typedLinksForTaskIds(
+            {'blocker-1'},
+            types: {'BlocksLink'},
+          ),
+        ).thenAnswer((_) async => links);
+        when(
+          () => mockJournalDb.entriesForIds([blocker.meta.id]),
+        ).thenReturn(MockSelectable([toDbEntity(blocker)]));
+        tester.view.physicalSize = const Size(1280, 720);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        await tester.pumpWidget(pumpConnector(task: task));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('Blocked in a cycle'), findsOneWidget);
+        expect(find.text('Blocked by 1 task'), findsNothing);
+        final tooltip = tester.widget<Tooltip>(
+          find.ancestor(
+            of: find.byIcon(LottiIcons.block),
+            matching: find.byType(Tooltip),
+          ),
+        );
+        expect(
+          tooltip.message,
+          'This task and a task it waits on block each other. Close one of '
+          'them, or remove a link, to release the other.',
+        );
+
+        await tester.tap(find.byIcon(LottiIcons.block));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        verify(
+          () => mockNavService.pushDesktopTaskDetail('blocker-1'),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
       'opens a read-only blockers sheet when there is more than one open '
       'blocker',
       (tester) async {
@@ -1528,6 +1601,34 @@ void main() {
           ),
         );
         expect(pill.onTap, isNull);
+      },
+    );
+
+    testWidgets(
+      'says the task is blocked in a cycle when its only, unresolved blocker '
+      'waits on it in turn',
+      (tester) async {
+        final task = buildTask();
+        final links = [
+          blocksLink(id: 'l1', fromId: 'missing-blocker', toId: task.id),
+          blocksLink(id: 'l2', fromId: task.id, toId: 'missing-blocker'),
+        ];
+        stubBlockers(task.id, links);
+        // A blocker that has not synced yet keeps blocking, so its own links
+        // count toward the cycle too.
+        when(
+          () => mockJournalDb.typedLinksForTaskIds(
+            {'missing-blocker'},
+            types: {'BlocksLink'},
+          ),
+        ).thenAnswer((_) async => links);
+
+        await tester.pumpWidget(pumpConnector(task: task));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('Blocked in a cycle'), findsOneWidget);
+        expect(find.text('Blocker not synced yet'), findsNothing);
       },
     );
   });

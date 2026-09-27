@@ -6400,6 +6400,8 @@
   "taskAgentUseCategoryDefault": "Copiare la categoria predefinita",
   "taskAgentUseCategoryDefaultDescription": "Copre la configurazione attuale della categoria. Le modifiche successive della categoria non influenzeranno questo agente.",
   "taskAgentUseProfileDefault": "Utilizzare il profilo predefinito",
+  "taskBlockedInCycleChipLabel": "Bloccata in un ciclo",
+  "taskBlockedInCycleTooltip": "Questa attività e un'attività che attende si bloccano a vicenda. Chiudine una o rimuovi un collegamento per sbloccare l'altra.",
   "taskCategoryAllLabel": "tutti quanti",
   "taskCategoryLabel": "Categoria:",
   "taskCategoryUnassignedLabel": "non firmata",

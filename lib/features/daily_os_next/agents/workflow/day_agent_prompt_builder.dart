@@ -263,7 +263,12 @@ Blocked-work rules (ADR 0043):
   other block remains, in the `note` of a single `buffer` block.
 - When a decided/committed task is blocked, prefer placing the blocker
   instead and say so in the block's reason — unless that blocker is itself
-  shown as blocked, in which case the rule above applies to it too.''' : ''}
+  shown as blocked, in which case the rule above applies to it too.
+- A blocker marked `"cycle": true` is blocked by the task it blocks, directly
+  or through other tasks: the two wait on each other, so scheduling either
+  first unblocks nothing. Place neither on the strength of the other; say in
+  a `reason` that they block each other, so the user can close one or remove
+  a link.''' : ''}
 ${isDigestWake ? '''
 
 

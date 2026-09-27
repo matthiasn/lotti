@@ -3766,6 +3766,96 @@ void main() {
       );
 
       test(
+        'checks the cycle again inside the write: a blocks link stored after '
+        'the first check refuses the retype (ADR 0106)',
+        () async {
+          final existing = EntryLink.followsUp(
+            id: 'retype-me',
+            fromId: 'a',
+            toId: 'b',
+            createdAt: DateTime(2023),
+            updatedAt: DateTime(2023),
+            vectorClock: null,
+          );
+          when(
+            () => collapsedMockJournalDb.entryLinkById('retype-me'),
+          ).thenAnswer((_) async => existing);
+          // The first check finds nothing; by the write, another writer on
+          // this device has stored b -> a.
+          var reads = 0;
+          when(
+            () => collapsedMockJournalDb.typedLinksForTaskIds(
+              {'b'},
+              types: {'BlocksLink'},
+            ),
+          ).thenAnswer(
+            (_) async => [
+              if (++reads > 1)
+                EntryLink.blocks(
+                  id: 'raced-in',
+                  fromId: 'b',
+                  toId: 'a',
+                  createdAt: DateTime(2023),
+                  updatedAt: DateTime(2023),
+                  vectorClock: null,
+                ),
+            ],
+          );
+          stubSuccessfulUpsert();
+
+          final result = await collapsedRepository.updateLinkType(
+            linkId: 'retype-me',
+            newType: EntryLinkType.blocks,
+            swapDirection: false,
+          );
+
+          expect(result, isFalse);
+          expect(reads, 2);
+          verifyNever(() => collapsedMockJournalDb.upsertEntryLink(any()));
+        },
+      );
+
+      test(
+        'refuses the retype when the link is no longer stored as it was read',
+        () async {
+          final existing = EntryLink.followsUp(
+            id: 'retype-me',
+            fromId: 'a',
+            toId: 'b',
+            createdAt: DateTime(2023),
+            updatedAt: DateTime(2023),
+            vectorClock: null,
+          );
+          // The retype and updateLink read the link as it was; by the write
+          // it has been removed.
+          var reads = 0;
+          when(
+            () => collapsedMockJournalDb.entryLinkById('retype-me'),
+          ).thenAnswer(
+            (_) async => ++reads > 2
+                ? existing.copyWith(deletedAt: DateTime(2023, 2))
+                : existing,
+          );
+          when(
+            () => collapsedMockJournalDb.typedLinksForTaskIds(
+              any(),
+              types: any(named: 'types'),
+            ),
+          ).thenAnswer((_) async => <EntryLink>[]);
+          stubSuccessfulUpsert();
+
+          final result = await collapsedRepository.updateLinkType(
+            linkId: 'retype-me',
+            newType: EntryLinkType.blocks,
+            swapDirection: false,
+          );
+
+          expect(result, isFalse);
+          verifyNever(() => collapsedMockJournalDb.upsertEntryLink(any()));
+        },
+      );
+
+      test(
         'refuses to move a link onto a relationship another live link is, '
         'and moves it onto a removed one',
         () async {

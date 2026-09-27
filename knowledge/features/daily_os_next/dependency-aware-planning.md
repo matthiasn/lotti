@@ -11,7 +11,7 @@ sources:
   - id: resolver
     resource: ../../../lib/features/tasks/repository/task_dependency_resolver.dart
     title: TaskDependencyResolver
-    last_modified: 2026-07-24
+    last_modified: 2026-09-27
   - id: prompt-builder
     resource: ../../../lib/features/daily_os_next/agents/workflow/day_agent_prompt_builder.dart
     title: Prompt gates
@@ -67,6 +67,7 @@ The resolver is stateless, plain Dart, and batch-shaped for a corpus of up to
 |------|----------------------|-----------------------------------|
 | Blocker resolves to a real, open task | Serializes with title, status and **its own `categoryId`** | Tappable chip |
 | Blocker link whose target cannot be loaded (a sync gap) | `{"taskId": "<id>"}` with no `title`/`status`/`categoryId` — **still a non-empty `blockedBy` entry** | A bare untappable "Blocked" pill |
+| Blocker the task blocks in turn (a cycle two devices closed, ADR 0106) | The blocker gains `"cycle": true` | "Blocked in a cycle" |
 
 The blocker's own `categoryId` is carried because the rule tells the model to
 schedule that blocker, and `draft_day_plan` requires a `categoryId` on every
@@ -160,6 +161,11 @@ prefix cache:
   `buffer` block's `note` (an open-window draft cannot be empty). Preferring
   to place the blocker of a decided task still holds, unless that blocker is
   itself shown as blocked, in which case the same rule applies to it.
+- **The cycle case**: a blocker marked `"cycle": true` is blocked by the task it
+  blocks, so scheduling either first unblocks nothing. The rule tells the model
+  to place neither on the strength of the other and to say in a `reason` that
+  they block each other, so the user can close one or remove a link
+  ([relationships](../tasks/relationships.md#cycles-guarded-on-one-device-reported-across-devices)).
 - **A digest-rule bullet**, appended to the digest rules on coordinator wakes
   only, and only when `directiveService` is also configured: a directive
   commitment on blocked-for-planning work should target the blocker instead, or

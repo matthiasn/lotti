@@ -130,6 +130,11 @@ void main() {
         types: any(named: 'types'),
       ),
     ).thenAnswer((_) async => <EntryLink>[]);
+    // The blockers' cycle report reads the task itself too; a test that
+    // resolves an entity stubs it after this default.
+    when(
+      () => mockJournalDb.entriesForIds(any()),
+    ).thenReturn(MockSelectable<JournalDbEntity>([]));
     when(
       () => mockUpdateNotifications.updateStream,
     ).thenAnswer((_) => const Stream<Set<String>>.empty());

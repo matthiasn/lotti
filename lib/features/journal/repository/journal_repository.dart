@@ -464,7 +464,14 @@ class JournalRepository {
   /// that version's, and its `updatedAt` is never older than that version's
   /// (see [linkEditTimestamp]), so a late copy of the replaced version — a
   /// peer's journal-entity message embeds its links — cannot undo it.
-  Future<bool> updateLink(EntryLink link) async {
+  ///
+  /// [precondition], when given, runs inside the transaction that writes the
+  /// link, and the link is written only when it holds: a check made before
+  /// the call can have been overtaken by another write on this device.
+  Future<bool> updateLink(
+    EntryLink link, {
+    Future<bool> Function()? precondition,
+  }) async {
     final journalDb = getIt<JournalDb>();
     final existing = await journalDb.entryLinkById(link.id);
 
@@ -490,7 +497,12 @@ class JournalRepository {
         ),
       );
 
-      final res = await journalDb.upsertEntryLink(updated);
+      final res = precondition == null
+          ? await journalDb.upsertEntryLink(updated)
+          : await journalDb.transaction(
+              () async =>
+                  await precondition() ? journalDb.upsertEntryLink(updated) : 0,
+            );
       if (res == 0) return false;
       getIt<UpdateNotifications>().notify({
         link.fromId,
@@ -593,6 +605,12 @@ class JournalRepository {
   /// per triple whatever its id (ADR 0096), so moving this link onto a triple
   /// another live link holds would replace that link rather than sit beside
   /// it. That is refused here, as the duplicate rule refused it before.
+  ///
+  /// Both refusals are checked before a clock is reserved and again inside
+  /// the transaction that writes the link, which also requires the link to
+  /// be stored as it was read: another writer on this device can have
+  /// changed it, or stored a link that closes the cycle, in between
+  /// (ADR 0106).
   Future<bool> updateLinkType({
     required String linkId,
     required EntryLinkType newType,
@@ -605,25 +623,26 @@ class JournalRepository {
     final newFromId = swapDirection ? existing.toId : existing.fromId;
     final newToId = swapDirection ? existing.fromId : existing.toId;
 
-    final occupant = (await db.linksBetween(
-      newFromId,
-      newToId,
-      type: entryLinkTypeDbName(newType),
-    )).where((link) => link.id != linkId).firstOrNull;
-    if (occupant != null &&
-        occupant.deletedAt == null &&
-        occupant.hidden != true) {
-      return false;
+    Future<bool> allowed() async {
+      final occupant = (await db.linksBetween(
+        newFromId,
+        newToId,
+        type: entryLinkTypeDbName(newType),
+      )).where((link) => link.id != linkId).firstOrNull;
+      if (occupant != null &&
+          occupant.deletedAt == null &&
+          occupant.hidden != true) {
+        return false;
+      }
+      return !(newType == EntryLinkType.blocks &&
+          await wouldCreateBlocksCycle(
+            fromId: newFromId,
+            toId: newToId,
+            excludeLinkId: linkId,
+          ));
     }
 
-    if (newType == EntryLinkType.blocks &&
-        await wouldCreateBlocksCycle(
-          fromId: newFromId,
-          toId: newToId,
-          excludeLinkId: linkId,
-        )) {
-      return false;
-    }
+    if (!await allowed()) return false;
 
     return updateLink(
       newType.buildLink(
@@ -637,6 +656,8 @@ class JournalRepository {
         collapsed: existing.collapsed,
         deletedAt: existing.deletedAt,
       ),
+      precondition: () async =>
+          await db.entryLinkById(linkId) == existing && await allowed(),
     );
   }
 

@@ -166,11 +166,12 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
     bool hidden = false,
     EntryLinkType linkType = EntryLinkType.basic,
   }) async {
-    // Creation-time cycle guard (ADR 0042 §5): best-effort, local. A cycle
-    // can still be created by concurrent offline writes on two devices, so
-    // read-time traversal must tolerate cycles regardless — this only stops
-    // the common single-device case from creating one in the first place.
-    if (linkType == EntryLinkType.blocks &&
+    // Creation-time cycle guard (ADR 0042 §5), checked here as a fast path
+    // before a clock is reserved, and again inside the write's transaction
+    // below (ADR 0106). A cycle can still be created by concurrent offline
+    // writes on two devices; the readers report it (`findBlockersInCycle`).
+    final guardCycle = linkType == EntryLinkType.blocks;
+    if (guardCycle &&
         await wouldCreateBlocksCycle(fromId: fromId, toId: toId)) {
       return false;
     }
@@ -208,7 +209,19 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
           ),
         );
 
-        final res = await journalDb.upsertEntryLink(link);
+        // The check before the write ran outside any transaction, so another
+        // writer on this device — the user and the task agent's link tool —
+        // can have stored a link since that closes a cycle with this one.
+        // Checked again in the write's transaction, the check and the write
+        // are one step (ADR 0106).
+        final res = guardCycle
+            ? await journalDb.transaction(
+                () async =>
+                    await wouldCreateBlocksCycle(fromId: fromId, toId: toId)
+                    ? 0
+                    : journalDb.upsertEntryLink(link),
+              )
+            : await journalDb.upsertEntryLink(link);
         if (res == 0) return false;
         updateNotifications.notify({
           link.fromId,

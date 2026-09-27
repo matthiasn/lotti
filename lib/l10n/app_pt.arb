@@ -6399,6 +6399,8 @@
   "taskAgentUseCategoryDefault": "Copiar categoria padrão",
   "taskAgentUseCategoryDefaultDescription": "Copia a configuração atual da categoria. Alterações posteriores de categoria não afetarão este agente.",
   "taskAgentUseProfileDefault": "Usar perfil padrão",
+  "taskBlockedInCycleChipLabel": "Bloqueada em um ciclo",
+  "taskBlockedInCycleTooltip": "Esta tarefa e uma tarefa pela qual ela espera se bloqueiam mutuamente. Conclua uma delas ou remova um vínculo para liberar a outra.",
   "taskCategoryAllLabel": "tudo",
   "taskCategoryLabel": "Categoria:",
   "taskCategoryUnassignedLabel": "não atribuído",

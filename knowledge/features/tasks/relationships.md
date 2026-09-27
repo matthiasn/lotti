@@ -3,7 +3,7 @@ type: Feature Module
 title: Typed relationships and blockedness
 description: Five typed link semantics stored as one row each, presented as one directed choice — and readiness computed at read time rather than stored.
 resource: ../../../lib/features/tasks/repository/task_dependency_resolver.dart
-tags: [tasks, links, dependencies, adr-0042]
+tags: [tasks, links, dependencies, adr-0042, adr-0106]
 status: stable
 generated: { by: claude-code/fable-5, at: 2026-07-26T21:00:00Z }
 stale_after: 2027-01-25
@@ -15,11 +15,23 @@ sources:
   - id: resolver
     resource: ../../../lib/features/tasks/repository/task_dependency_resolver.dart
     title: TaskDependencyResolver
-    last_modified: 2026-07-24
+    last_modified: 2026-09-27
   - id: adr-0042
     resource: ../../../docs/adr/0042-typed-task-relationship-links.md
     title: ADR 0042 — Typed task relationship links
     last_modified: 2026-07-24
+  - id: adr-0106
+    resource: ../../../docs/adr/0106-the-task-link-graph-across-devices.md
+    title: ADR 0106 — The task link graph across devices
+    last_modified: 2026-09-27
+  - id: cycles
+    resource: ../../../lib/features/tasks/repository/blocks_cycles.dart
+    title: findBlockersInCycle
+    last_modified: 2026-09-27
+  - id: spec
+    resource: ../../../specs/tla/TaskLinkGraph.tla
+    title: TaskLinkGraph TLA+ spec
+    last_modified: 2026-09-27
 ---
 
 # Five types, one row each
@@ -63,10 +75,8 @@ Picking an inverse phrase **swaps `fromId`/`toId` before persisting**, so the
 canonical stored direction is always the one the table lists — a `blocks` link's
 `fromId` is always the blocker.
 
-`PersistenceLogic.createLink` runs a best-effort local cycle guard for
-`EntryLinkType.blocks` only, surfaced as a snackbar on rejection. **Read-time
-traversal tolerates cycles regardless**, since two offline devices can always
-race one into existence.
+`PersistenceLogic.createLink` guards `EntryLinkType.blocks` against cycles,
+surfaced as a snackbar on rejection; see [cycles](#cycles-guarded-on-one-device-reported-across-devices).
 
 The candidate list excludes only tasks that already hold *the relation currently
 selected*, recomputed as that selection changes — not every task the anchor
@@ -101,7 +111,47 @@ An **unresolvable** blocker — the link row exists but its `fromId` task cannot
 loaded, typically a sync gap — keeps the dependent blocked conservatively. That is
 distinct from a **tombstoned** blocker (`deletedAt` set), which releases it.
 
-## Three readers, two of which resolve blockedness
+## Cycles: guarded on one device, reported across devices
+
+`wouldCreateBlocksCycle` refuses a `blocks` link when its target already
+reaches its source along live `blocks` links, over every path — the visited
+set bounds the traversal, there is no depth cap. `createLink` runs it before
+reserving a clock and **again inside the transaction that writes the link**;
+`JournalRepository.updateLinkType` does the same for a retype or a turn-around,
+through `updateLink`'s `precondition`, and also requires the link to be stored
+as it was read. The user and the task agent's link tool write on the same
+device at the same time; only the check inside the transaction sees the other
+one's link. So one device never closes a cycle.
+
+Two devices can: each writes one direction while offline, and both arrive.
+[ADR 0106](../../../docs/adr/0106-the-task-link-graph-across-devices.md) keeps
+both links — each was a sound decision where it was made, and dropping one
+would show a task as ready while its Linked Tasks card says it is blocked — and
+**reports the cycle** instead. `findBlockersInCycle`
+(`../../../lib/features/tasks/repository/blocks_cycles.dart`) follows live
+`blocks` links forward from each blocked task, one batch per hop, through tasks
+that still block (open, or not synced yet), and marks each blocker the task
+reaches back. It reads only the stored links and statuses, so every device
+holding the same rows reports the same cycles.
+
+```mermaid
+flowchart LR
+  A["device A: t1 blocks t2"] --> S[["sync"]]
+  B["device B: t2 blocks t1"] --> S
+  S --> C["both links live everywhere"]
+  C --> R["findBlockersInCycle marks each as the other's cycle blocker"]
+  R --> U["chip: Blocked in a cycle"]
+  R --> M["resolver: cycle: true"]
+  C --> X["close either task"]
+  X --> F["the other is released, on every device"]
+```
+
+Nothing is written to break a cycle; the user closes a task or removes a link.
+`specs/tla/TaskLinkGraph.tla` checks `NoLocalCycle`, `CycleSurfaced` and
+`ReleaseOnClose`, and `blocks_cycles_test.dart` runs the same checks against
+the real writers on two databases.
+
+# Three readers, two of which resolve blockedness
 
 The UI-facing and model-facing resolvers differ *deliberately*; the third reader
 only groups links for display and resolves nothing.
@@ -112,9 +162,13 @@ only groups links for display and resolves nothing.
 | `TaskLinkGroupsController` | Display grouping | Drops tombstoned and unresolvable identically — fine for display |
 | `TaskDependencyResolver` | Batch, model-facing, stateless plain Dart | Serializes a bare `{"taskId": …}` so "still blocked" is never downgraded |
 
-`TaskBlockersController` runs **two bounded queries** — one type-scoped link
-fetch, one batch status load for the distinct blocker ids. No transitive closure,
-no per-task fan-out.
+`TaskBlockersController` resolves blockedness in **two bounded queries** — one
+type-scoped link fetch, one batch status load for the distinct blocker ids. No
+transitive closure, no per-task fan-out. Only when the task has a blocker does
+it follow the links further, for the cycle report (`cycleBlockerIds`); it then
+watches every task that search read, since closing any of them can break the
+cycle. `TaskDependencyResolver` runs the same report once for all its tasks and
+serializes `"cycle": true` on a blocker the task blocks in turn.
 
 `TaskDependencyResolver` is deliberately **not shared code** with it: a UI-facing
 single-task controller and a model-facing batch resolver have different call
@@ -143,7 +197,9 @@ Spoken relationships ("this task is blocked by X", "this supersedes Y") become
   when not blocked; a **bare untappable "Blocked" pill** when every blocker is
   unresolved (nothing to name or navigate to); otherwise a tappable pill naming
   the single blocker or the count, opening the blocker's detail page directly or
-  a list sheet.
+  a list sheet. When the task waits on a task it blocks, the pill reads
+  **"Blocked in a cycle"**, and its tooltip says that closing either task or
+  removing a link releases the other.
 - **The status-enrichment prompt.** When the status picker sets a task's status
   to `BLOCKED` — a change, not a no-op — and the task is not already
   named-blocked, it opens `BlockingTaskPickerModal`: a search picker **fixed** to
