@@ -2814,3 +2814,75 @@ What the model leaves out, or shows as a residual:
   identity edit (a config change) can win the lifecycle merge and revive a
   retired agent. The pass then runs again on the next receive, wake or start,
   and retires the agent again.
+
+## `DeepBackfill` — an inventory round that repairs what counters cannot see
+
+**A design model, written before the code** (like `EnvelopeChain`). Counter
+backfill (`SyncSequence`) repairs a hole between `(hostId, counter)` pairs a
+device has recorded, answered only when the responder's sequence log maps the
+counter. Installations whose log was populated from current clocks, or that
+never heard of a record at all, miss history no counter request can name. A
+deep-backfill round, started by hand from the sync maintenance page, advertises
+every record a device holds — tombstones included — as `(id, clock)` in batches
+that also name their id range and their open conflicts. Each recipient diffs a
+batch in one batched read, requests from the advertiser what it lacks or holds
+older or concurrent, and pushes back what it holds newer, concurrent, or alone.
+Answers and pushes go through the one write decision (the journal's, ADR
+0083/0092; `Merge` swaps in the merge agent records use). The plan and the
+mapping to code are in
+[docs/implementation_plans/2026-09-27_deep_backfill.md](../../docs/implementation_plans/2026-09-27_deep_backfill.md).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `InventoryIsReal` | invariant | a batch advertises only versions its sender held |
+| `NoDuplicateRequest` | invariant | at most one request per record and advertiser is on its way, counting its answer |
+| `NoLostTombstone` | invariant | no row is a version the device has seen replaced: an answer or push never undoes a deletion |
+| `NothingDropped` | invariant | every version a device received or wrote is kept by its row or an open conflict |
+| `ConflictNotStale` | invariant | an open conflict is never a version its row or a seen version replaced |
+| `EventuallyConverged` | liveness | every device keeps every version ever written, tombstones included, and every record agrees everywhere or shows a conflict |
+| `EventuallyQuiet` | liveness | once the devices agree, rounds request and push nothing — no conflict ping-pong |
+| `RoundTerminates` | liveness | a started round finishes its batches or is lost to a crash |
+
+Liveness assumes every device in `Runners` runs maintenance again after the
+last write, loss and crash — the round is manual — and that every batch is
+processed: fairness is per batch, as the inbound queue's in-order processing
+gives it. With fairness per sender only, TLC starved batch 2, carrying a
+tombstone, behind batch 1 re-emitted round after round.
+
+| Configuration | Devices | Records (per batch) | Writes | Adds | Distinct states |
+|---------------|--------:|--------------------:|-------:|------|----------------:|
+| `DeepBackfill` | 2 | 1 (1) | 2 | edits, deletions, concurrent versions, resolutions; both run rounds | 179,118 |
+| `DeepBackfillPaged` | 2 | 2 (1) | 1 | a round of two batches | 537,602 |
+| `DeepBackfillBatch` | 2 | 3 (2) | 0 | several records per batch, a partial last batch | 48,145 |
+| `DeepBackfillOneSided` | 2 | 1 (1) | 2 | only device 1 runs rounds | 1,004 |
+| `DeepBackfillFaults` | 2 | 1 (1) | 1 | one lost message and one crash, anywhere | 23,970 |
+| `DeepBackfillIncremental` | 2 | 1 (1) | 2 | ordinary sync racing answers and pushes | 133,164 |
+| `DeepBackfillMerge` | 2 | 1 (1) | 2 | concurrent versions merge (agent records) | 300,030 |
+| `DeepBackfillThree` | 3 | 1 (1) | 1 | two recipients per batch, each answering its advertiser | 1,281,218 |
+
+Every configuration starts from arbitrary gaps: each record is on its creator
+and on any subset of the other devices. Each design switch is the proposed
+design; set to `FALSE` (in a copy outside this directory) it has a
+counterexample:
+
+| Switch | Alternative | Counterexample |
+|--------|-------------|----------------|
+| `AdvertiseTombstones` | the inventory lists live rows only | `EventuallyConverged`, one-sided, three steps: A deletes a record B never had; A's round lists nothing, so B never gets the record or its deletion. `EventuallyQuiet` fails too: a live copy B pushes is refused round after round |
+| `PushNewer` | the recipient only requests | `EventuallyConverged`, one-sided, nine steps: B catches up, then edits; only A runs rounds, and B's edit never travels |
+| `RangeBounds` | a batch does not name its id range | `EventuallyConverged`, one-sided: B holds a record A has no row for; no batch lists it, so B cannot tell "absent on A" from "not in this batch" |
+| `DedupeOutstanding` | a diff requests what is already requested | `NoDuplicateRequest`, nine steps: a second round re-requests a record whose answer is still on its way |
+| `DurableOutstanding` | the outstanding requests live in memory | `NoDuplicateRequest`, ten steps: a crash forgets them, and the next round requests the record again |
+| `SkipHeldConflict` | a concurrent version already held as a conflict is requested again | `EventuallyQuiet`: the pair is re-requested every round |
+| `AdvertiseConflicts` | a batch does not name its open conflicts | `EventuallyQuiet`: the recipient pushes a version the advertiser already holds as a conflict, every round |
+
+`StartRound` waits until the device's previous batches were read. That bounds
+the state space; it is not a rule of the protocol. A stale batch diffed late
+only requests what the answer, the advertiser's current row, supersedes, and
+pushes what the write decision refuses once it is no longer newer.
+
+Left out, deliberately: clockless legacy rows (they cannot be ordered and are
+not advertised); relays (only the advertiser answers its inventory; a third
+device's copy arrives in that device's own round); the sequence log (a
+deep-backfilled version is recorded like any received payload, but rows the log
+lacks are not reconstructed); and a request timeout shorter than a delivery,
+which can duplicate a request — harmless, since the answer applies idempotently.

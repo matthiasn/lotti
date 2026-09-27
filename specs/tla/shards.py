@@ -161,6 +161,16 @@ SECONDS = {
     "GoalRegisterCrash": 23,
     "GoalRegisterDeath": 4,
     "GoalRegisterDivergent": 1,
+    # Three times a local run with twenty workers, since a CI runner has
+    # fewer; refresh from CI measurements.
+    "DeepBackfill": 90,
+    "DeepBackfillPaged": 300,
+    "DeepBackfillBatch": 30,
+    "DeepBackfillOneSided": 6,
+    "DeepBackfillFaults": 12,
+    "DeepBackfillIncremental": 66,
+    "DeepBackfillMerge": 140,
+    "DeepBackfillThree": 870,
 }
 
 # Pessimistic, so an unmeasured configuration is not piled onto a full shard.
