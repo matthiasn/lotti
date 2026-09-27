@@ -17,6 +17,7 @@ import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
+import 'package:lotti/features/sync/ui/backfill_settings_stats.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -41,6 +42,7 @@ void main() {
   // and unique so finder-by-text can disambiguate.
   final populatedStats = BackfillStats.fromHostStats([
     const BackfillHostStats(
+      hostId: 'host-1',
       receivedCount: 100,
       missingCount: 5,
       requestedCount: 2,
@@ -103,6 +105,12 @@ void main() {
     WidgetTester tester, {
     List<Override> overrides = const [],
   }) async {
+    // Tall enough for the whole body, so every card can be tapped without
+    // scrolling it into view first.
+    tester.view
+      ..physicalSize = const Size(800, 2400)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     await tester.pumpWidget(
       RiverpodWidgetTestBench(
         overrides: overrides,
@@ -184,7 +192,7 @@ void main() {
       await pumpBody(tester);
       final messages = messagesOf(tester);
 
-      expect(find.text(messages.backfillStatsTotalEntries), findsOneWidget);
+      expect(find.text(messages.backfillStatsTrackedCounters), findsOneWidget);
       expect(find.text(messages.backfillStatsReceived), findsOneWidget);
       expect(find.text(messages.backfillStatsBackfilled), findsOneWidget);
       // `Missing` appears in both the status row and the ledger; both
@@ -201,8 +209,9 @@ void main() {
     testWidgets('shows correct values for each stat', (tester) async {
       await pumpBody(tester);
 
-      // Total entries = 100 + 5 + 2 + 11 + 7 + 3 + 9 = 137
-      expect(find.text('137'), findsOneWidget);
+      // Tracked counters = 100 + 5 + 2 + 11 + 7 + 3 + 9 = 137, once as the
+      // total and once as the only device's row.
+      expect(find.text('137'), findsNWidgets(2));
       expect(find.text('100'), findsOneWidget); // received
       expect(find.text('11'), findsOneWidget); // backfilled
       expect(find.text('2'), findsOneWidget); // requested
@@ -245,6 +254,7 @@ void main() {
       when(() => mockSequenceService.getBackfillStats()).thenAnswer(
         (_) async => BackfillStats.fromHostStats([
           const BackfillHostStats(
+            hostId: 'host-2',
             receivedCount: 715544,
             missingCount: 0,
             requestedCount: 0,
@@ -267,7 +277,12 @@ void main() {
       // Initial load already called once.
       clearInteractions(mockSequenceService);
 
-      await tester.tap(find.byIcon(LottiIcons.refresh));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(SyncStatsCard),
+          matching: find.byIcon(LottiIcons.refresh),
+        ),
+      );
       await tester.pump();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
@@ -330,6 +345,8 @@ void main() {
     testWidgets('tap flips the persisted preference', (tester) async {
       await pumpBody(tester);
 
+      await tester.ensureVisible(find.byType(DesignSystemToggle));
+      await tester.pump();
       await tester.tap(find.byType(DesignSystemToggle));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
@@ -382,6 +399,10 @@ void main() {
       await pumpBody(tester);
       final messages = messagesOf(tester);
 
+      await tester.ensureVisible(
+        find.text(messages.backfillAdvancedRecoveryTitle),
+      );
+      await tester.pump();
       await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
@@ -471,6 +492,7 @@ void main() {
         when(() => mockSequenceService.getBackfillStats()).thenAnswer(
           (_) async => BackfillStats.fromHostStats([
             const BackfillHostStats(
+              hostId: 'host-3',
               receivedCount: 100,
               missingCount: 0,
               requestedCount: 2,
@@ -504,6 +526,7 @@ void main() {
         when(() => mockSequenceService.getBackfillStats()).thenAnswer(
           (_) async => BackfillStats.fromHostStats([
             const BackfillHostStats(
+              hostId: 'host-4',
               receivedCount: 100,
               missingCount: 0,
               requestedCount: 0,
@@ -537,6 +560,7 @@ void main() {
         when(() => mockSequenceService.getBackfillStats()).thenAnswer(
           (_) async => BackfillStats.fromHostStats([
             const BackfillHostStats(
+              hostId: 'host-5',
               receivedCount: 100,
               missingCount: 0,
               requestedCount: 0,
@@ -1007,7 +1031,13 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
       final messages = messagesOf(tester);
 
-      expect(find.text(messages.backfillStatsNoData), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(SyncStatsCard),
+          matching: find.text(messages.backfillStatsNoData),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('refresh button is disabled while a load is in flight', (
@@ -1637,7 +1667,12 @@ void main() {
       when(
         () => mockSequenceService.getBackfillStats(),
       ).thenAnswer((_) async => emptyStats);
-      await tester.tap(find.byIcon(LottiIcons.refresh));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(SyncStatsCard),
+          matching: find.byIcon(LottiIcons.refresh),
+        ),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
 

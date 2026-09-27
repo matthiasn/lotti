@@ -35,6 +35,7 @@ class _GeneratedHostStats {
   final int burned;
 
   BackfillHostStats toHostStats() => BackfillHostStats(
+    hostId: 'host-1',
     receivedCount: received,
     missingCount: missing,
     requestedCount: requested,
@@ -86,7 +87,7 @@ extension _AnyBackfillHostStats on Any {
 void main() {
   group('BackfillStats.fromHostStats', () {
     Glados(any.backfillHostStatsList, ExploreConfig(numRuns: 150)).test(
-      'every total is the per-field fold and totalEntries sums all eight '
+      'every total is the per-field fold and trackedCounters sums all eight '
       'buckets',
       (generated) {
         final hostStats = [for (final g in generated) g.toHostStats()];
@@ -104,10 +105,10 @@ void main() {
         expect(stats.totalBurned, foldOf((h) => h.burnedCount));
         expect(stats.hostStats, hostStats);
 
-        // totalEntries is exactly the sum of every per-status total, so a
+        // trackedCounters is exactly the sum of every per-status total, so a
         // burned counter is counted once and never folded into unresolvable.
         expect(
-          stats.totalEntries,
+          stats.trackedCounters,
           stats.totalReceived +
               stats.totalMissing +
               stats.totalRequested +
@@ -115,6 +116,12 @@ void main() {
               stats.totalDeleted +
               stats.totalUnresolvable +
               stats.totalBurned,
+          reason: '$generated',
+        );
+        // The per-device breakdown adds up to the whole.
+        expect(
+          foldOf((h) => h.trackedCounters),
+          stats.trackedCounters,
           reason: '$generated',
         );
       },
@@ -131,7 +138,7 @@ void main() {
       expect(stats.totalDeleted, 0);
       expect(stats.totalUnresolvable, 0);
       expect(stats.totalBurned, 0);
-      expect(stats.totalEntries, 0);
+      expect(stats.trackedCounters, 0);
       expect(stats.hostStats, isEmpty);
     });
   });

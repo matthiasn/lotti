@@ -53,6 +53,7 @@ void main() {
 
   final testStats = BackfillStats.fromHostStats([
     const BackfillHostStats(
+      hostId: 'host-1',
       receivedCount: 100,
       missingCount: 5,
       requestedCount: 2,
@@ -782,6 +783,7 @@ void main() {
           fakeAsync((async) {
             final updatedStats = BackfillStats.fromHostStats([
               const BackfillHostStats(
+                hostId: 'host-2',
                 receivedCount: 200,
                 missingCount: 3,
                 requestedCount: 1,

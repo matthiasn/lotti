@@ -4608,6 +4608,54 @@ abstract class AppLocalizations {
   /// **'Request Missing Entries'**
   String get backfillManualTrigger;
 
+  /// No description provided for @backfillRecordsAgentEntities.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent entities'**
+  String get backfillRecordsAgentEntities;
+
+  /// No description provided for @backfillRecordsAgentLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent links'**
+  String get backfillRecordsAgentLinks;
+
+  /// No description provided for @backfillRecordsConsumptionEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'AI usage events'**
+  String get backfillRecordsConsumptionEvents;
+
+  /// No description provided for @backfillRecordsEntryLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'Entry links'**
+  String get backfillRecordsEntryLinks;
+
+  /// No description provided for @backfillRecordsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Deletions included. Devices that are in sync show the same numbers here; tracked counters can differ between them.'**
+  String get backfillRecordsHint;
+
+  /// No description provided for @backfillRecordsJournal.
+  ///
+  /// In en, this message translates to:
+  /// **'Journal entries'**
+  String get backfillRecordsJournal;
+
+  /// No description provided for @backfillRecordsNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get backfillRecordsNotifications;
+
+  /// No description provided for @backfillRecordsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Records on this device'**
+  String get backfillRecordsTitle;
+
   /// No description provided for @backfillReRequestDescription.
   ///
   /// In en, this message translates to:
@@ -4722,6 +4770,12 @@ abstract class AppLocalizations {
   /// **'Burned'**
   String get backfillStatsBurned;
 
+  /// No description provided for @backfillStatsByDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Tracked counters by device'**
+  String get backfillStatsByDevice;
+
   /// No description provided for @backfillStatsDeleted.
   ///
   /// In en, this message translates to:
@@ -4758,17 +4812,23 @@ abstract class AppLocalizations {
   /// **'Requested'**
   String get backfillStatsRequested;
 
+  /// No description provided for @backfillStatsThisDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} (this device)'**
+  String backfillStatsThisDevice(String name);
+
   /// No description provided for @backfillStatsTitle.
   ///
   /// In en, this message translates to:
   /// **'Sync statistics'**
   String get backfillStatsTitle;
 
-  /// No description provided for @backfillStatsTotalEntries.
+  /// No description provided for @backfillStatsTrackedCounters.
   ///
   /// In en, this message translates to:
-  /// **'Total entries'**
-  String get backfillStatsTotalEntries;
+  /// **'Tracked counters'**
+  String get backfillStatsTrackedCounters;
 
   /// No description provided for @backfillStatsUnresolvable.
   ///

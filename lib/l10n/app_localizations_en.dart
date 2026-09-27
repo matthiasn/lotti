@@ -2711,6 +2711,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backfillManualTrigger => 'Request Missing Entries';
 
   @override
+  String get backfillRecordsAgentEntities => 'Agent entities';
+
+  @override
+  String get backfillRecordsAgentLinks => 'Agent links';
+
+  @override
+  String get backfillRecordsConsumptionEvents => 'AI usage events';
+
+  @override
+  String get backfillRecordsEntryLinks => 'Entry links';
+
+  @override
+  String get backfillRecordsHint =>
+      'Deletions included. Devices that are in sync show the same numbers here; tracked counters can differ between them.';
+
+  @override
+  String get backfillRecordsJournal => 'Journal entries';
+
+  @override
+  String get backfillRecordsNotifications => 'Notifications';
+
+  @override
+  String get backfillRecordsTitle => 'Records on this device';
+
+  @override
   String get backfillReRequestDescription =>
       'Re-request entries that were requested but never received. Use this when responses are stuck.';
 
@@ -2789,6 +2814,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backfillStatsBurned => 'Burned';
 
   @override
+  String get backfillStatsByDevice => 'Tracked counters by device';
+
+  @override
   String get backfillStatsDeleted => 'Deleted';
 
   @override
@@ -2807,10 +2835,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backfillStatsRequested => 'Requested';
 
   @override
+  String backfillStatsThisDevice(String name) {
+    return '$name (this device)';
+  }
+
+  @override
   String get backfillStatsTitle => 'Sync statistics';
 
   @override
-  String get backfillStatsTotalEntries => 'Total entries';
+  String get backfillStatsTrackedCounters => 'Tracked counters';
 
   @override
   String get backfillStatsUnresolvable => 'Unresolvable';

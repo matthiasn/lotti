@@ -102,6 +102,27 @@ void main() {
     ).called(1);
   });
 
+  group('deepBackfillRecordCountsProvider', () {
+    test('reads the counts from the deep backfill service', () async {
+      when(service.recordCounts).thenAnswer(
+        (_) async => {SyncSequencePayloadType.journalEntity: 276711},
+      );
+
+      expect(await container.read(deepBackfillRecordCountsProvider.future), {
+        SyncSequencePayloadType.journalEntity: 276711,
+      });
+    });
+
+    test('is null where no sync stack runs', () async {
+      await setUpTestGetIt();
+
+      expect(
+        await container.read(deepBackfillRecordCountsProvider.future),
+        isNull,
+      );
+    });
+  });
+
   test('records the error that stops a round', () async {
     when(
       () => service.runRound(onProgress: any(named: 'onProgress')),

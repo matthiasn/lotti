@@ -2765,6 +2765,31 @@ class AppLocalizationsRo extends AppLocalizations {
   String get backfillManualTrigger => 'Solicitați intrările lipsă';
 
   @override
+  String get backfillRecordsAgentEntities => 'Entități ale agenților';
+
+  @override
+  String get backfillRecordsAgentLinks => 'Legături ale agenților';
+
+  @override
+  String get backfillRecordsConsumptionEvents => 'Evenimente de utilizare AI';
+
+  @override
+  String get backfillRecordsEntryLinks => 'Legături între intrări';
+
+  @override
+  String get backfillRecordsHint =>
+      'Inclusiv cele șterse. Dispozitivele sincronizate afișează aici aceleași numere; contoarele urmărite pot diferi între ele.';
+
+  @override
+  String get backfillRecordsJournal => 'Intrări în jurnal';
+
+  @override
+  String get backfillRecordsNotifications => 'Notificări';
+
+  @override
+  String get backfillRecordsTitle => 'Înregistrări pe acest dispozitiv';
+
+  @override
   String get backfillReRequestDescription =>
       'Solicitați din nou intrările cerute, dar care nu au fost primite niciodată. Folosiți această opțiune când răspunsurile sunt blocate.';
 
@@ -2851,6 +2876,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get backfillStatsBurned => 'Anulat';
 
   @override
+  String get backfillStatsByDevice => 'Contoare urmărite pe dispozitiv';
+
+  @override
   String get backfillStatsDeleted => 'Șters';
 
   @override
@@ -2870,10 +2898,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get backfillStatsRequested => 'Solicitat';
 
   @override
+  String backfillStatsThisDevice(String name) {
+    return '$name (acest dispozitiv)';
+  }
+
+  @override
   String get backfillStatsTitle => 'Statistici de sincronizare';
 
   @override
-  String get backfillStatsTotalEntries => 'Total intrări';
+  String get backfillStatsTrackedCounters => 'Contoare urmărite';
 
   @override
   String get backfillStatsUnresolvable => 'Nerezolvabil';

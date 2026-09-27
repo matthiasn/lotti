@@ -2730,6 +2730,31 @@ class AppLocalizationsSv extends AppLocalizations {
   String get backfillManualTrigger => 'Begär saknade poster';
 
   @override
+  String get backfillRecordsAgentEntities => 'Agententiteter';
+
+  @override
+  String get backfillRecordsAgentLinks => 'Agentlänkar';
+
+  @override
+  String get backfillRecordsConsumptionEvents => 'AI-användningshändelser';
+
+  @override
+  String get backfillRecordsEntryLinks => 'Länkar mellan poster';
+
+  @override
+  String get backfillRecordsHint =>
+      'Raderade ingår. Synkroniserade enheter visar samma siffror här; spårade räknare kan skilja sig mellan dem.';
+
+  @override
+  String get backfillRecordsJournal => 'Journalposter';
+
+  @override
+  String get backfillRecordsNotifications => 'Aviseringar';
+
+  @override
+  String get backfillRecordsTitle => 'Poster på den här enheten';
+
+  @override
   String get backfillReRequestDescription =>
       'Begär om bidrag som efterfrågats men aldrig mottagits. Använd detta när svaren fastnar.';
 
@@ -2810,6 +2835,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get backfillStatsBurned => 'Bränd';
 
   @override
+  String get backfillStatsByDevice => 'Spårade räknare per enhet';
+
+  @override
   String get backfillStatsDeleted => 'Raderad';
 
   @override
@@ -2828,10 +2856,15 @@ class AppLocalizationsSv extends AppLocalizations {
   String get backfillStatsRequested => 'Begärd';
 
   @override
+  String backfillStatsThisDevice(String name) {
+    return '$name (den här enheten)';
+  }
+
+  @override
   String get backfillStatsTitle => 'Synkstatistik';
 
   @override
-  String get backfillStatsTotalEntries => 'Totalt antal anmälningar';
+  String get backfillStatsTrackedCounters => 'Spårade räknare';
 
   @override
   String get backfillStatsUnresolvable => 'Olöslig';

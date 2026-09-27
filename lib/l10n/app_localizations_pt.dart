@@ -2747,6 +2747,31 @@ class AppLocalizationsPt extends AppLocalizations {
   String get backfillManualTrigger => 'Solicitar entradas ausentes';
 
   @override
+  String get backfillRecordsAgentEntities => 'Entidades de agentes';
+
+  @override
+  String get backfillRecordsAgentLinks => 'Ligações de agentes';
+
+  @override
+  String get backfillRecordsConsumptionEvents => 'Eventos de utilização de IA';
+
+  @override
+  String get backfillRecordsEntryLinks => 'Ligações entre entradas';
+
+  @override
+  String get backfillRecordsHint =>
+      'Inclui os eliminados. Dispositivos sincronizados mostram aqui os mesmos números; os contadores registados podem diferir entre eles.';
+
+  @override
+  String get backfillRecordsJournal => 'Entradas do diário';
+
+  @override
+  String get backfillRecordsNotifications => 'Notificações';
+
+  @override
+  String get backfillRecordsTitle => 'Registos neste dispositivo';
+
+  @override
   String get backfillReRequestDescription =>
       'Solicite novamente entradas que foram solicitadas, mas nunca recebidas. Use isto quando as respostas estiverem travadas.';
 
@@ -2829,6 +2854,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get backfillStatsBurned => 'Queimado';
 
   @override
+  String get backfillStatsByDevice => 'Contadores registados por dispositivo';
+
+  @override
   String get backfillStatsDeleted => 'Excluído';
 
   @override
@@ -2847,10 +2875,15 @@ class AppLocalizationsPt extends AppLocalizations {
   String get backfillStatsRequested => 'Solicitado';
 
   @override
+  String backfillStatsThisDevice(String name) {
+    return '$name (este dispositivo)';
+  }
+
+  @override
   String get backfillStatsTitle => 'Sincronizar estatísticas';
 
   @override
-  String get backfillStatsTotalEntries => 'Total de entradas';
+  String get backfillStatsTrackedCounters => 'Contadores registados';
 
   @override
   String get backfillStatsUnresolvable => 'Insolúvel';

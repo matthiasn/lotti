@@ -234,6 +234,7 @@ mixin _SyncDbBackfill on _$SyncDatabase {
     final hostStats = [
       for (final host in hostIds)
         BackfillHostStats(
+          hostId: host,
           receivedCount: perHost[host]![received] ?? 0,
           missingCount: perHost[host]![missing] ?? 0,
           requestedCount: perHost[host]![requested] ?? 0,

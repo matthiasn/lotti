@@ -185,6 +185,7 @@ void main() {
     test('delegates to database', () async {
       final mockStats = BackfillStats.fromHostStats([
         const BackfillHostStats(
+          hostId: 'host-1',
           receivedCount: 10,
           missingCount: 2,
           requestedCount: 1,

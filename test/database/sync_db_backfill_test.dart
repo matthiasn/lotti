@@ -401,7 +401,13 @@ void main() {
       expect(stats.hostStats, hasLength(2));
       expect(stats.totalReceived, 2);
       expect(stats.totalMissing, 3);
-      expect(stats.totalEntries, 5);
+      expect(stats.trackedCounters, 5);
+      // Each host keeps its id and its own total, so devices can be
+      // compared host by host.
+      expect(
+        {for (final h in stats.hostStats) h.hostId: h.trackedCounters},
+        {'host-1': 2, 'host-2': 3},
+      );
     });
 
     test('counts unresolvable entries correctly', () async {
@@ -485,7 +491,7 @@ void main() {
       // Burned is its own bucket — it must NOT inflate unresolvable.
       expect(stats.totalUnresolvable, 1);
       expect(stats.totalBurned, 3);
-      expect(stats.totalEntries, 4);
+      expect(stats.trackedCounters, 4);
     });
   });
 

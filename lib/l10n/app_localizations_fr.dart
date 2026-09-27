@@ -2759,6 +2759,32 @@ class AppLocalizationsFr extends AppLocalizations {
   String get backfillManualTrigger => 'Demander les entrées manquantes';
 
   @override
+  String get backfillRecordsAgentEntities => 'Entités d\'agents';
+
+  @override
+  String get backfillRecordsAgentLinks => 'Liens d\'agents';
+
+  @override
+  String get backfillRecordsConsumptionEvents =>
+      'Événements d\'utilisation de l\'IA';
+
+  @override
+  String get backfillRecordsEntryLinks => 'Liens entre entrées';
+
+  @override
+  String get backfillRecordsHint =>
+      'Suppressions comprises. Des appareils synchronisés affichent ici les mêmes chiffres ; les compteurs suivis peuvent différer entre eux.';
+
+  @override
+  String get backfillRecordsJournal => 'Entrées du journal';
+
+  @override
+  String get backfillRecordsNotifications => 'Notifications';
+
+  @override
+  String get backfillRecordsTitle => 'Enregistrements sur cet appareil';
+
+  @override
   String get backfillReRequestDescription =>
       'Redemande les entrées demandées mais jamais reçues. Utilise cette option lorsque les réponses sont bloquées.';
 
@@ -2841,6 +2867,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get backfillStatsBurned => 'Annulé';
 
   @override
+  String get backfillStatsByDevice => 'Compteurs suivis par appareil';
+
+  @override
   String get backfillStatsDeleted => 'Supprimé';
 
   @override
@@ -2860,10 +2889,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get backfillStatsRequested => 'Demandé';
 
   @override
+  String backfillStatsThisDevice(String name) {
+    return '$name (cet appareil)';
+  }
+
+  @override
   String get backfillStatsTitle => 'Statistiques de synchronisation';
 
   @override
-  String get backfillStatsTotalEntries => 'Total des entrées';
+  String get backfillStatsTrackedCounters => 'Compteurs suivis';
 
   @override
   String get backfillStatsUnresolvable => 'Non résoluble';
