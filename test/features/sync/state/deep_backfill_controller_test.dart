@@ -78,6 +78,30 @@ void main() {
     expect(done.error, isNull);
   });
 
+  test('ignores a second start while a round is running', () async {
+    final release = Completer<void>();
+    when(
+      () => service.runRound(onProgress: any(named: 'onProgress')),
+    ).thenAnswer((_) async {
+      await release.future;
+      return const DeepBackfillRoundSummary(
+        roundId: 'round-1',
+        batches: 1,
+        recordsByType: {},
+      );
+    });
+    final notifier = container.read(deepBackfillControllerProvider.notifier);
+
+    final first = notifier.runRound();
+    await notifier.runRound();
+    release.complete();
+    await first;
+
+    verify(
+      () => service.runRound(onProgress: any(named: 'onProgress')),
+    ).called(1);
+  });
+
   test('records the error that stops a round', () async {
     when(
       () => service.runRound(onProgress: any(named: 'onProgress')),

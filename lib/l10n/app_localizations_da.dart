@@ -9183,7 +9183,13 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String maintenanceDeepBackfillComplete(int count) {
-    return '$count poster listet til dine andre enheder';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count poster listet til dine andre enheder',
+      one: '1 post listet til dine andre enheder',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -9199,7 +9205,13 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String maintenanceDeepBackfillProgress(int advertised, int total) {
-    return '$advertised af $total poster listet';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: 'poster',
+      one: 'post',
+    );
+    return '$advertised af $total $_temp0 listet';
   }
 
   @override

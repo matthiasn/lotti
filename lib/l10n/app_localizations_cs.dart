@@ -9281,7 +9281,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String maintenanceDeepBackfillComplete(int count) {
-    return '$count záznamů uvedeno pro tvá další zařízení';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count záznamů uvedeno pro tvá další zařízení',
+      few: '$count záznamy uvedeny pro tvá další zařízení',
+      one: '1 záznam uveden pro tvá další zařízení',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -9297,7 +9304,13 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String maintenanceDeepBackfillProgress(int advertised, int total) {
-    return 'Uvedeno $advertised z $total záznamů';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$total záznamů',
+      one: '1 záznamu',
+    );
+    return 'Uvedeno $advertised z $_temp0';
   }
 
   @override

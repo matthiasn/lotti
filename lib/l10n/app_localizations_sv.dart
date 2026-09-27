@@ -9194,7 +9194,13 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String maintenanceDeepBackfillComplete(int count) {
-    return '$count poster listade för dina andra enheter';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count poster listade för dina andra enheter',
+      one: '1 post listad för dina andra enheter',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -9210,7 +9216,13 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String maintenanceDeepBackfillProgress(int advertised, int total) {
-    return '$advertised av $total poster listade';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: 'poster listade',
+      one: 'post listad',
+    );
+    return '$advertised av $total $_temp0';
   }
 
   @override

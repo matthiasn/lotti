@@ -15579,7 +15579,7 @@ abstract class AppLocalizations {
   /// No description provided for @maintenanceDeepBackfillComplete.
   ///
   /// In en, this message translates to:
-  /// **'{count} records listed for your other devices'**
+  /// **'{count, plural, =1{1 record listed for your other devices} other{{count} records listed for your other devices}}'**
   String maintenanceDeepBackfillComplete(int count);
 
   /// No description provided for @maintenanceDeepBackfillConfirm.
@@ -15603,7 +15603,7 @@ abstract class AppLocalizations {
   /// No description provided for @maintenanceDeepBackfillProgress.
   ///
   /// In en, this message translates to:
-  /// **'{advertised} of {total} records listed'**
+  /// **'{advertised} of {total} {total, plural, =1{record} other{records}} listed'**
   String maintenanceDeepBackfillProgress(int advertised, int total);
 
   /// No description provided for @maintenanceDeleteAgentDb.

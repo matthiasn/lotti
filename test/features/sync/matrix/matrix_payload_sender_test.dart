@@ -1018,6 +1018,98 @@ void main() {
     });
 
     test(
+      'serves a child that names an open conflict version with that '
+      'version, not the row — a deep-backfill answer inside a bundle',
+      () async {
+        final date = DateTime.utc(2026, 8);
+        JournalEntity version(VectorClock clock, String text) =>
+            JournalEntity.journalEntry(
+              meta: Metadata(
+                id: 'conflicted',
+                createdAt: date,
+                updatedAt: date,
+                dateFrom: date,
+                dateTo: date,
+                vectorClock: clock,
+              ),
+              entryText: EntryText(plainText: text),
+            );
+        final row = version(const VectorClock({'a': 2}), 'row');
+        final conflict = version(
+          const VectorClock({'a': 1, 'b': 1}),
+          'conflict',
+        );
+        when(
+          () => journalDb.journalEntityMapForIdsIncludingDeleted(
+            any<Iterable<String>>(),
+          ),
+        ).thenAnswer((_) async => {'conflicted': row});
+        when(
+          () => journalDb.openConflictVersion(
+            'conflicted',
+            conflict.meta.vectorClock!,
+          ),
+        ).thenAnswer((_) async => conflict);
+        MatrixFile? uploadedManifest;
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenAnswer(
+          uploadStub.record((invocation) async {
+            uploadedManifest =
+                invocation.positionalArguments.first as MatrixFile;
+            return 'manifest-event';
+          }),
+        );
+
+        final result = await payloadSender.sendOutboxBundlePayload(
+          room: room,
+          message: SyncOutboxBundle(
+            children: [
+              SyncMessage.journalEntity(
+                id: 'conflicted',
+                jsonPath: '/journal/conflicted.json',
+                vectorClock: row.meta.vectorClock,
+                status: SyncEntryStatus.update,
+              ),
+              SyncMessage.journalEntity(
+                id: 'conflicted',
+                jsonPath: '/journal/conflicted.json',
+                vectorClock: conflict.meta.vectorClock,
+                status: SyncEntryStatus.update,
+              ),
+            ],
+            jsonPath: '/outbox_bundles/conflicted.json',
+          ),
+        );
+
+        expect(result, isNotNull);
+        final entries =
+            ((json.decode(utf8.decode(gzip.decode(uploadedManifest!.bytes)))
+                        as Map<String, dynamic>)['entries']
+                    as List)
+                .cast<Map<String, dynamic>>();
+        final sent = [
+          for (final entry in entries)
+            (
+              (SyncMessage.fromJson(entry['envelope'] as Map<String, dynamic>)
+                      as SyncJournalEntity)
+                  .vectorClock,
+              JournalEntity.fromJson(
+                entry['payload'] as Map<String, dynamic>,
+              ).entryText?.plainText,
+            ),
+        ];
+        expect(sent, [
+          (row.meta.vectorClock, 'row'),
+          (conflict.meta.vectorClock, 'conflict'),
+        ]);
+      },
+    );
+
+    test(
       'replaces unsafe bundle paths before uploading the manifest',
       () async {
         final uploadedPaths = <String>[];

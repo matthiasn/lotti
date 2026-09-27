@@ -518,6 +518,25 @@ class MatrixPayloadSender {
 
     final host = await vectorClockService?.getHost();
 
+    // A child whose queued version the row does not cover names a concurrent
+    // version the entry keeps as an open conflict (a deep-backfill answer or
+    // push): serve exactly that version, as a standalone send does, instead
+    // of adopting the row's clock. Only such children cost a lookup.
+    final conflictVersionAt = <int, JournalEntity>{};
+    for (var index = 0; index < message.children.length; index++) {
+      final child = message.children[index];
+      if (child is! SyncJournalEntity) continue;
+      final row = journalEntityById[child.id];
+      final queued = child.vectorClock;
+      if (row == null ||
+          queued == null ||
+          _coversQueued(row.meta.vectorClock, child)) {
+        continue;
+      }
+      final conflict = await journalDb.openConflictVersion(child.id, queued);
+      if (conflict != null) conflictVersionAt[index] = conflict;
+    }
+
     // Track journal-entity children whose DB row was hard-purged between
     // enqueue and dequeue. Soft-deleted rows are deliberately included above
     // because their tombstones must sync. Silently dropping a hard-missing
@@ -530,17 +549,23 @@ class MatrixPayloadSender {
 
     final entries = <Map<String, dynamic>>[];
     final journalChildren = <SyncJournalEntity>[];
-    for (final child in message.children) {
-      final reconciled = _reconcileBundleChildEnvelope(
-        child,
-        host: host,
-        journalEntityById: journalEntityById,
-      );
+    for (var index = 0; index < message.children.length; index++) {
+      final child = message.children[index];
+      final conflict = conflictVersionAt[index];
+      final reconciled = conflict != null && child is SyncJournalEntity
+          ? (child.originatingHostId == null && host != null
+                ? child.copyWith(originatingHostId: host)
+                : child)
+          : _reconcileBundleChildEnvelope(
+              child,
+              host: host,
+              journalEntityById: journalEntityById,
+            );
       final record = <String, dynamic>{
         'envelope': reconciled.toJson(),
       };
       if (reconciled is SyncJournalEntity) {
-        final entity = journalEntityById[reconciled.id];
+        final entity = conflict ?? journalEntityById[reconciled.id];
         if (entity == null) {
           missingJournalEntityIds.add(reconciled.id);
           continue;

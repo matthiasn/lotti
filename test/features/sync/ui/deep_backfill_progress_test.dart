@@ -57,6 +57,23 @@ void main() {
     expect(find.byType(DesignSystemProgressBar), findsNothing);
   });
 
+  testWidgets('speaks of one record in the singular', (tester) async {
+    await pump(
+      tester,
+      const DeepBackfillState(isRunning: true, total: 1),
+    );
+    expect(find.text('0 of 1 record listed'), findsOneWidget);
+
+    await pump(
+      tester,
+      const DeepBackfillState(isDone: true, advertised: 1, total: 1),
+    );
+    expect(
+      find.text('1 record listed for your other devices'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('shows the error that stopped the round', (tester) async {
     await pump(tester, const DeepBackfillState(error: 'Bad state: no host'));
 

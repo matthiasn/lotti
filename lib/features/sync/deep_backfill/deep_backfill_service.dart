@@ -145,7 +145,9 @@ class DeepBackfillService {
         final end = page.length > _batchSize ? page[_batchSize].id : null;
         final conflicts = await store.openConflicts(start: start, end: end);
 
-        await _outbox.enqueueMessage(
+        // Throws: a batch that never reached the outbox leaves its range
+        // uncompared, and the round must not report success.
+        await _outbox.enqueueMessageOrThrow(
           SyncMessage.deepBackfillInventory(
             roundId: roundId,
             hostId: host,
@@ -233,14 +235,16 @@ class DeepBackfillService {
       outstanding: outstanding,
     );
 
-    if (diff.requests.isNotEmpty) {
-      await _request(inventory: inventory, host: host, diff: diff);
-    }
+    // Pushes first: a request that cannot be queued rethrows, and must not
+    // hold back what the advertiser is owed.
     if (diff.pushes.isNotEmpty) {
       await store.enqueueCurrent(
         diff.pushes,
         withMedia: diff.advertiserLacks,
       );
+    }
+    if (diff.requests.isNotEmpty) {
+      await _request(inventory: inventory, host: host, diff: diff);
     }
     _logging.log(
       LogDomain.sync,

@@ -9203,7 +9203,13 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String maintenanceDeepBackfillComplete(int count) {
-    return '$count records opgesomd voor je andere apparaten';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count records opgesomd voor je andere apparaten',
+      one: '1 record opgesomd voor je andere apparaten',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -9219,7 +9225,13 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String maintenanceDeepBackfillProgress(int advertised, int total) {
-    return '$advertised van $total records opgesomd';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: 'records',
+      one: 'record',
+    );
+    return '$advertised van $total $_temp0 opgesomd';
   }
 
   @override

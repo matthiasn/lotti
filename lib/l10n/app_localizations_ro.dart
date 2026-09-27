@@ -9362,7 +9362,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String maintenanceDeepBackfillComplete(int count) {
-    return '$count înregistrări listate pentru celelalte dispozitive';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de înregistrări listate pentru celelalte dispozitive',
+      few: '$count înregistrări listate pentru celelalte dispozitive',
+      one: '1 înregistrare listată pentru celelalte dispozitive',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -9378,7 +9385,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String maintenanceDeepBackfillProgress(int advertised, int total) {
-    return '$advertised din $total înregistrări listate';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$total de înregistrări listate',
+      few: '$total înregistrări listate',
+      one: '1 înregistrare listată',
+    );
+    return '$advertised din $_temp0';
   }
 
   @override

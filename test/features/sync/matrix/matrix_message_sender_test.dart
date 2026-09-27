@@ -482,6 +482,11 @@ void main() {
     );
     room = MockRoom();
     uploadStub = MatrixUploadTestStub(room);
+    // No entry keeps an open conflict unless a test says so: a queued version
+    // the row does not cover then falls back to the row, as it always did.
+    when(
+      () => journalDb.openConflictVersion(any(), any()),
+    ).thenAnswer((_) async => null);
 
     when(
       () => loggingService.log(

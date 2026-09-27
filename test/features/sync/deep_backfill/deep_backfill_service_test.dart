@@ -99,17 +99,19 @@ void main() {
     requestExpiry: const Duration(hours: 1),
   );
 
-  List<SyncMessage> enqueued() => [
+  /// Everything queued through the throwing enqueue: inventory batches and
+  /// requests, neither of which may be lost silently.
+  List<SyncMessage> queued() => [
     ...verify(
-      () => outbox.enqueueMessage(captureAny()),
+      () => outbox.enqueueMessageOrThrow(captureAny()),
     ).captured.cast<SyncMessage>(),
   ];
 
-  List<SyncDeepBackfillRequest> requestsSent() => [
-    ...verify(
-      () => outbox.enqueueMessageOrThrow(captureAny()),
-    ).captured.cast<SyncDeepBackfillRequest>(),
-  ];
+  List<SyncDeepBackfillInventory> enqueued() =>
+      queued().whereType<SyncDeepBackfillInventory>().toList();
+
+  List<SyncDeepBackfillRequest> requestsSent() =>
+      queued().whereType<SyncDeepBackfillRequest>().toList();
 
   SyncDeepBackfillInventory inventory({
     String hostId = _peer,
@@ -194,7 +196,7 @@ void main() {
         onProgress: (p) => progress.add((p.records, p.total)),
       );
 
-      final batches = enqueued().cast<SyncDeepBackfillInventory>();
+      final batches = enqueued();
       expect(
         batches.map((b) => (b.batch, b.rangeStart, b.rangeEnd)),
         [(0, null, 'c'), (1, 'c', 'e'), (2, 'e', null)],
@@ -238,7 +240,7 @@ void main() {
         ],
       ).runRound();
 
-      final batches = enqueued().cast<SyncDeepBackfillInventory>();
+      final batches = enqueued();
       expect(
         batches.map(
           (b) => (b.payloadType, b.rangeStart, b.rangeEnd, b.records.length),
@@ -260,7 +262,7 @@ void main() {
         ],
       ).runRound();
 
-      final batch = enqueued().cast<SyncDeepBackfillInventory>().single;
+      final batch = enqueued().single;
       expect(batch.records.map((r) => r.id), ['b']);
     });
 
@@ -271,7 +273,30 @@ void main() {
         service(stores: [_FakeStore(_journal)]).runRound(),
         throwsStateError,
       );
-      verifyNever(() => outbox.enqueueMessage(any()));
+      verifyNever(() => outbox.enqueueMessageOrThrow(any()));
+    });
+
+    test('fails the round when a batch cannot be queued, rather than report '
+        'its range as compared', () async {
+      when(
+        () => outbox.enqueueMessageOrThrow(any()),
+      ).thenThrow(StateError('outbox down'));
+      final progress = <int>[];
+
+      await expectLater(
+        service(
+          stores: [
+            _FakeStore(
+              _journal,
+              rows: {
+                'a': const VectorClock({'x': 1}),
+              },
+            ),
+          ],
+        ).runRound(onProgress: (p) => progress.add(p.records)),
+        throwsStateError,
+      );
+      expect(progress, isEmpty);
     });
   });
 
@@ -416,6 +441,31 @@ void main() {
         throwsStateError,
       );
       expect(await outstandingRows(), isEmpty);
+    });
+
+    test('still pushes what the advertiser is owed when the request cannot '
+        'be queued', () async {
+      when(
+        () => outbox.enqueueMessageOrThrow(any()),
+      ).thenThrow(StateError('outbox down'));
+      final store = _FakeStore(
+        _journal,
+        rows: {
+          'mine': const VectorClock({'x': 1}),
+        },
+      );
+
+      await expectLater(
+        service(stores: [store]).handleInventory(
+          inventory(
+            records: {
+              'theirs': const VectorClock({'x': 1}),
+            },
+          ),
+        ),
+        throwsStateError,
+      );
+      expect(store.resent.single.ids, {'mine'});
     });
 
     test('ignores its own inventory, lists never loaded from their '

@@ -9292,7 +9292,13 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String maintenanceDeepBackfillComplete(int count) {
-    return '$count record elencati per i tuoi altri dispositivi';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count record elencati per i tuoi altri dispositivi',
+      one: '1 record elencato per i tuoi altri dispositivi',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -9308,7 +9314,13 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String maintenanceDeepBackfillProgress(int advertised, int total) {
-    return '$advertised di $total record elencati';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: 'record elencati',
+      one: 'record elencato',
+    );
+    return '$advertised di $total $_temp0';
   }
 
   @override

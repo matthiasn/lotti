@@ -38,7 +38,10 @@ class DeepBackfillController extends Notifier<DeepBackfillState> {
   @override
   DeepBackfillState build() => const DeepBackfillState();
 
+  /// Starts a round, unless one is already running: the modal can be
+  /// dismissed and reopened while a round is still enqueueing its batches.
   Future<void> runRound() async {
+    if (state.isRunning) return;
     state = const DeepBackfillState(isRunning: true);
     try {
       final summary = await getIt<DeepBackfillService>().runRound(
