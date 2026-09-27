@@ -765,6 +765,64 @@ void main() {
           verifyNever(() => mockOutbox.enqueueMessage(any()));
         },
       );
+
+      test(
+        'a removed rating link for the pair is revived under its own id, as '
+        'the next version of the removed one (ADR 0096)',
+        () async {
+          stubCreateFlow();
+          const removedClock = VectorClock({'node1': 4});
+          const revivedClock = VectorClock({'node1': 5});
+          final removed = EntryLink.rating(
+            id: 'removed-rating-link',
+            fromId: testMetadata.id,
+            toId: testTimeEntryId,
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            vectorClock: removedClock,
+            deletedAt: DateTime(2024, 2),
+          );
+          when(
+            () => mockDb.linksBetween(
+              testMetadata.id,
+              testTimeEntryId,
+              type: 'RatingLink',
+            ),
+          ).thenAnswer((_) async => [removed]);
+          when(
+            () => mockVectorClock.getNextVectorClock(
+              previous: removedClock,
+              payload: any(named: 'payload'),
+            ),
+          ).thenAnswer((_) async => revivedClock);
+
+          await repository.createOrUpdateRating(
+            targetId: testTimeEntryId,
+            dimensions: testDimensions,
+          );
+
+          final written =
+              verify(
+                    () => mockDb.upsertEntryLink(captureAny()),
+                  ).captured.single
+                  as EntryLink;
+          expect(written.id, 'removed-rating-link');
+          // Built on the removed version's clock, so every device takes it
+          // as that link's successor rather than a concurrent version.
+          expect(written.vectorClock, revivedClock);
+          expect(written.deletedAt, isNull);
+          expect(written.hidden, isFalse);
+          verify(
+            () => mockVectorClock.getNextVectorClock(
+              previous: removedClock,
+              payload: (
+                id: 'removed-rating-link',
+                type: SyncSequencePayloadType.entryLink,
+              ),
+            ),
+          ).called(1);
+        },
+      );
     });
   });
 
