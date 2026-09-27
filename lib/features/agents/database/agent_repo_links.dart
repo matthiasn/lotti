@@ -404,6 +404,21 @@ class AgentRepoLinks {
     return rows.toSet();
   }
 
+  /// Returns the journal task IDs with non-deleted `agent_task` links from
+  /// more than one agent: the tasks the startup retirement pass
+  /// (`TaskAgentRetirement.retireSupersededEverywhere`) has to rank.
+  Future<Set<String>> getTaskIdsWithSeveralAgentLinks() async {
+    final rows = await _db
+        .customSelect(
+          'SELECT to_id FROM agent_links '
+          "WHERE type = 'agent_task' AND deleted_at IS NULL "
+          'GROUP BY to_id HAVING COUNT(DISTINCT from_id) > 1',
+          readsFrom: {_db.agentLinks},
+        )
+        .get();
+    return {for (final row in rows) row.read<String>('to_id')};
+  }
+
   /// Count agent links (including soft-deleted) whose serialized
   /// `vectorClock` is null.
   Future<int> countLinksWithNullVectorClock() {

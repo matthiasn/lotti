@@ -13,12 +13,17 @@ import 'package:riverpod/riverpod.dart';
 
 /// Wires the wake executor into the orchestrator, routing to the appropriate
 /// workflow based on the agent's `kind` field.
+///
+/// [retireIfSuperseded] is the task-agent wake gate
+/// (`TaskAgentRetirement.retireIfSuperseded`): it returns `true` when it
+/// retired the agent about to wake, which then does not run.
 void wireWakeExecutor(
   Ref ref,
   WakeOrchestrator orchestrator,
   TaskAgentWorkflow workflow,
-  UpdateNotifications updateNotifications,
-) {
+  UpdateNotifications updateNotifications, {
+  required Future<bool> Function(String agentId) retireIfSuperseded,
+}) {
   orchestrator.wakeExecutor = (agentId, runKey, triggers, threadId) async {
     final agentService = ref.read(agentServiceProvider);
     final identity = await agentService.getAgent(agentId);
@@ -140,7 +145,14 @@ void wireWakeExecutor(
           : result.mutatedEntries;
     }
 
-    // Default: task agent workflow.
+    // Default: task agent workflow. A task agent that lost its task to
+    // another agent (ADR 0104) is retired here instead of running: the sync
+    // pass may not have run yet on this device, and the loser must not write
+    // a report or proposals the task's agent also writes.
+    if (identity.kind == AgentKinds.taskAgent &&
+        await retireIfSuperseded(agentId)) {
+      return null;
+    }
     final result = await workflow.execute(
       agentIdentity: identity,
       runKey: runKey,
@@ -245,11 +257,16 @@ Future<void> _notifyWakeCompletion(
 /// [SyncEventProcessor] so that incoming agent data is persisted and incoming
 /// lifecycle changes (pause/destroy from another device) restore/remove
 /// subscriptions.
+///
+/// [retireSupersededTaskAgents] runs the retirement pass
+/// (`TaskAgentRetirement.retireSuperseded`) for a task whose `agent_task`
+/// link or task agent the processor has just applied.
 void wireSyncEventProcessor(
   Ref ref,
   WakeOrchestrator orchestrator,
-  SyncEventProcessor? processor,
-) {
+  SyncEventProcessor? processor, {
+  required Future<void> Function(String taskId) retireSupersededTaskAgents,
+}) {
   if (processor == null) return;
   final repository = ref.read(agentRepositoryProvider);
   processor
@@ -259,7 +276,8 @@ void wireSyncEventProcessor(
     // Feature-owned runtime mirrors (goal agents today): a synced-in
     // identity is offered to each contributor so subscriptions follow the
     // agent onto this device mid-session.
-    ..runtimeMaintenance = ref.read(agentRuntimeMaintenanceProvider);
+    ..runtimeMaintenance = ref.read(agentRuntimeMaintenanceProvider)
+    ..retireSupersededTaskAgents = retireSupersededTaskAgents;
   // Also wire the agent repository into the backfill handler so it can
   // look up agent entities and links when responding to backfill requests.
   processor.backfillResponseHandler.agentRepository = repository;
@@ -268,7 +286,8 @@ void wireSyncEventProcessor(
       ..agentRepository = null
       ..wakeOrchestrator = null
       ..agentWakeCoordinator = null
-      ..runtimeMaintenance = const [];
+      ..runtimeMaintenance = const []
+      ..retireSupersededTaskAgents = null;
     processor.backfillResponseHandler.agentRepository = null;
   });
 }

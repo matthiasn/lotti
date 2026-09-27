@@ -4716,6 +4716,51 @@ void main() {
     );
   });
 
+  group('getTaskIdsWithSeveralAgentLinks', () {
+    Future<void> link(
+      String id,
+      String fromId,
+      String taskId, {
+      DateTime? deletedAt,
+    }) => repo.upsertLink(
+      model.AgentLink.agentTask(
+        id: id,
+        fromId: fromId,
+        toId: taskId,
+        createdAt: testDate,
+        updatedAt: deletedAt ?? testDate,
+        deletedAt: deletedAt,
+        vectorClock: null,
+      ),
+    );
+
+    test('returns only tasks linked from more than one agent, counting live '
+        'links', () async {
+      await link('l-shared-1', testAgentId, 'task-shared');
+      await link('l-shared-2', otherAgentId, 'task-shared');
+      await link('l-single', testAgentId, 'task-single');
+      // A removed link does not count: this task has one live agent link.
+      await link('l-removed-1', testAgentId, 'task-removed');
+      await link(
+        'l-removed-2',
+        otherAgentId,
+        'task-removed',
+        deletedAt: testDate.add(const Duration(minutes: 1)),
+      );
+      // Links of another type never count.
+      await repo.upsertLink(makeBasicLink());
+
+      expect(await repo.getTaskIdsWithSeveralAgentLinks(), {'task-shared'});
+    });
+
+    test('returns an empty set when no task has two agents', () async {
+      await link('l-a', testAgentId, 'task-a');
+      await link('l-b', otherAgentId, 'task-b');
+
+      expect(await repo.getTaskIdsWithSeveralAgentLinks(), isEmpty);
+    });
+  });
+
   group('getTokenUsageForTemplate', () {
     const templateId = 'tpl-001';
     const agentA = 'agent-A';

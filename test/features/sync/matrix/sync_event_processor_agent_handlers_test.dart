@@ -5663,6 +5663,146 @@ void main() {
       });
     });
 
+    group('task agent retirement pass (TaskAgentAssignment.tla, ADR 0104)', () {
+      late List<String> passes;
+
+      setUp(() {
+        passes = [];
+        processor.retireSupersededTaskAgents = (taskId) async {
+          passes.add(taskId);
+        };
+        addTearDown(() => processor.retireSupersededTaskAgents = null);
+      });
+
+      Future<void> receive(SyncMessage message) async {
+        when(() => event.text).thenReturn(encodeMessage(message));
+        await processor.process(event: event, journalDb: journalDb);
+      }
+
+      AgentLink taskLink({DateTime? deletedAt}) => AgentLink.agentTask(
+        id: 'link-1',
+        fromId: 'agent-1',
+        toId: 'task-42',
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: deletedAt ?? DateTime(2024, 3, 15),
+        deletedAt: deletedAt,
+        vectorClock: null,
+      );
+
+      test('a live agent_task link runs the pass for its task', () async {
+        await receive(
+          SyncMessage.agentLink(
+            agentLink: taskLink(),
+            status: SyncEntryStatus.update,
+          ),
+        );
+
+        expect(passes, ['task-42']);
+      });
+
+      test('a removed agent_task link or another link type runs no '
+          'pass', () async {
+        await receive(
+          SyncMessage.agentLink(
+            agentLink: taskLink(deletedAt: DateTime(2024, 3, 16)),
+            status: SyncEntryStatus.update,
+          ),
+        );
+        await receive(
+          SyncMessage.agentLink(
+            agentLink: AgentLink.basic(
+              id: 'link-2',
+              fromId: 'agent-1',
+              toId: 'state-1',
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+              vectorClock: null,
+            ),
+            status: SyncEntryStatus.update,
+          ),
+        );
+
+        expect(passes, isEmpty);
+      });
+
+      test('a task agent identity runs the pass for every task it is linked '
+          'to: its link may have arrived first', () async {
+        when(
+          () => mockAgentRepo.getLinksFrom(
+            'agent-1',
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer((_) async => [taskLink()]);
+
+        await receive(
+          SyncMessage.agentEntity(
+            agentEntity: makeTestIdentity(
+              id: 'agent-1',
+              agentId: 'agent-1',
+              lifecycle: AgentLifecycle.destroyed,
+            ),
+            status: SyncEntryStatus.update,
+          ),
+        );
+
+        expect(passes, ['task-42']);
+      });
+
+      test('another kind of agent runs no pass', () async {
+        await receive(
+          SyncMessage.agentEntity(
+            agentEntity: makeTestIdentity(
+              id: 'agent-1',
+              agentId: 'agent-1',
+              kind: AgentKinds.projectAgent,
+            ),
+            status: SyncEntryStatus.update,
+          ),
+        );
+
+        expect(passes, isEmpty);
+        verifyNever(
+          () => mockAgentRepo.getLinksFrom(
+            'agent-1',
+            type: AgentLinkTypes.agentTask,
+          ),
+        );
+      });
+
+      test(
+        'a failing pass is logged and the receive still completes',
+        () async {
+          processor.retireSupersededTaskAgents = (_) async =>
+              throw StateError('retirement failed');
+          final link = taskLink();
+
+          await receive(
+            SyncMessage.agentLink(
+              agentLink: link,
+              status: SyncEntryStatus.update,
+            ),
+          );
+
+          verify(() => mockAgentRepo.upsertLink(link)).called(1);
+          verify(
+            () => loggingService.error(
+              LogDomain.sync,
+              any<Object>(that: isA<StateError>()),
+              subDomain: 'processor.taskAgentRetirement',
+              message: any(named: 'message'),
+              stackTrace: any(named: 'stackTrace'),
+            ),
+          ).called(1);
+          verify(
+            () => updateNotifications.notify(
+              {'agent-1', 'task-42', agentNotification},
+              fromSync: true,
+            ),
+          ).called(1);
+        },
+      );
+    });
+
     group('descriptor-only resolution (jsonPath)', () {
       late Directory tempDir;
 

@@ -281,6 +281,9 @@ void main() {
       () => mockRepository.getAgentStatesByAgentIds(any()),
     ).thenAnswer((_) async => const {});
     when(
+      mockRepository.getTaskIdsWithSeveralAgentLinks,
+    ).thenAnswer((_) async => const <String>{});
+    when(
       () => mockRepository.getLatestReport(any(), any()),
     ).thenAnswer((_) async => null);
     when(
@@ -1622,6 +1625,36 @@ void main() {
     });
 
     group('restoreSubscriptions', () {
+      test('first runs the retirement pass over every task with several '
+          'agents, so a superseded agent is not subscribed again', () async {
+        when(
+          mockRepository.getTaskIdsWithSeveralAgentLinks,
+        ).thenAnswer((_) async => {'task-dup'});
+        when(
+          () => mockRepository.getLinksTo(
+            'task-dup',
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer((_) async => const []);
+        when(
+          () => mockAgentService.listAgents(
+            lifecycle: AgentLifecycle.active,
+          ),
+        ).thenAnswer((_) async => const []);
+        await service.restoreSubscriptions();
+
+        verifyInOrder([
+          mockRepository.getTaskIdsWithSeveralAgentLinks,
+          () => mockRepository.getLinksTo(
+            'task-dup',
+            type: AgentLinkTypes.agentTask,
+          ),
+          () => mockAgentService.listAgents(lifecycle: AgentLifecycle.active),
+        ]);
+        expect(service.retirement.repository, same(mockRepository));
+        expect(service.retirement.orchestrator, same(mockOrchestrator));
+      });
+
       test('registers subscriptions for active task agents', () async {
         final taskAgent = makeIdentity(agentId: 'ta-1');
         final otherAgent = makeIdentity(
