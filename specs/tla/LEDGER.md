@@ -27,7 +27,6 @@ Historical snapshot of `main` at `ed4ef4340` (2026-09-25):
 | of which TLC produced the counterexample | 60 |
 | [By severity](#severity), P0 / P1 / P2 / P3 | 2 / 42 / 24 / 33 |
 | Architecture decision records | 14 (ADR 0065–0071, 0075–0078, 0080–0082) |
-| Source paths the specs model, each re-triggering the TLC workflow | 81 |
 
 How the figures are counted:
 
@@ -47,9 +46,6 @@ How the figures are counted:
   `TypeOK`, once per spec that checks it in any of its configurations. The
   same name can appear in several specs (`Converged` is in ten), and each of
   those is counted; there are 71 distinct names.
-- **Source paths** counts the distinct Dart files and globs in the workflow's
-  `paths:` filter (some are listed twice). A change to `specs/tla/` or to the
-  workflow file itself also triggers it.
 
 The notification/settings follow-up adds two specs, four configurations, ten
 named properties and 180,826 distinct states to `8428b0a479`. These are

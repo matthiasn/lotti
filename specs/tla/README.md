@@ -2,8 +2,11 @@
 
 TLA+ models of the protocols in this app that are too concurrent to trust to
 prose, model-checked with TLC. A spec here describes the code as it is: a
-change to the modelled code updates the spec in the same pull request, and CI
-(`.github/workflows/tla-model-check.yml`) re-checks it whenever either moves.
+change to the modelled code updates the spec in the same pull request. CI
+(`.github/workflows/tla-model-check.yml`) re-checks every configuration nightly
+against `main`; a pull request that touches a spec or the code it models
+should run it by hand first (Actions → TLA+ Model Check → Run workflow, on the
+branch) or run `make tla_check` locally.
 [LEDGER.md](LEDGER.md) records which pull request added each spec, what it
 caught, and the running totals.
 
