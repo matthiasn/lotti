@@ -288,6 +288,60 @@ class SyncMaintenanceRepository {
     );
   }
 
+  /// Backfill vector clocks on entry links saved before links carried one.
+  ///
+  /// Same pattern as [backfillAgentEntityClocks], with one difference: the
+  /// link keeps its `updatedAt`. Links order by `updatedAt` before their
+  /// clocks, so a stamp dated now would outrank a genuine edit made meanwhile
+  /// on another device. Two devices that stamp the same link produce
+  /// concurrent versions at the same `updatedAt`, which the links' total order
+  /// (`upsertEntryLink`) settles the same way everywhere.
+  Future<void> backfillEntryLinkClocks({
+    SyncProgressCallback? onProgress,
+    SyncDetailedProgressCallback? onDetailedProgress,
+  }) {
+    return _runWithLogging<void>(
+      () async {
+        final links = await _journalDb.entryLinksWithNullVectorClock();
+        final total = links.length;
+
+        if (total == 0) {
+          onDetailedProgress?.call(0, 0);
+          onProgress?.call(1);
+          return;
+        }
+
+        onDetailedProgress?.call(0, total);
+
+        var processed = 0;
+        for (final link in links) {
+          await _vectorClockService.withVcScope<void>(() async {
+            final stamped = link.copyWith(
+              vectorClock: await _vectorClockService.getNextVectorClock(
+                previous: link.vectorClock,
+                payload: (id: link.id, type: SyncSequencePayloadType.entryLink),
+              ),
+            );
+            // Enqueue before persisting — see backfillAgentEntityClocks.
+            // A throw here propagates and releases the reservation.
+            await _outboxService.enqueueMessage(
+              SyncMessage.entryLink(
+                entryLink: stamped,
+                status: SyncEntryStatus.update,
+              ),
+            );
+            await _journalDb.upsertEntryLink(stamped);
+          });
+
+          processed++;
+          onDetailedProgress?.call(processed, total);
+          onProgress?.call(processed / total);
+        }
+      },
+      'backfillEntryLinkClocks',
+    );
+  }
+
   Future<void> syncMeasurables({
     SyncProgressCallback? onProgress,
     SyncDetailedProgressCallback? onDetailedProgress,
@@ -401,6 +455,12 @@ class SyncMaintenanceRepository {
       return _runWithLogging<int>(
         _agentRepository.countLinksWithNullVectorClock,
         'fetchTotals_backfillAgentLinkClocks',
+      );
+    }
+    if (step == SyncStep.backfillEntryLinkClocks) {
+      return _runWithLogging<int>(
+        _journalDb.countEntryLinksWithNullVectorClock,
+        'fetchTotals_backfillEntryLinkClocks',
       );
     }
 
@@ -540,6 +600,7 @@ class SyncMaintenanceRepository {
     SyncStep.savedTaskFilters: 'syncSavedTaskFilters',
     SyncStep.backfillAgentEntityClocks: 'backfillAgentEntityClocks',
     SyncStep.backfillAgentLinkClocks: 'backfillAgentLinkClocks',
+    SyncStep.backfillEntryLinkClocks: 'backfillEntryLinkClocks',
   };
 
   String _syncDomainFor(SyncStep step) {

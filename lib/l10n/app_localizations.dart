@@ -4506,30 +4506,6 @@ abstract class AppLocalizations {
   /// **'Advanced recovery'**
   String get backfillAdvancedRecoveryTitle;
 
-  /// No description provided for @backfillAgentClocksDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Add a vector clock to agent entities and links that were saved without one, so your other devices can order and receive them.'**
-  String get backfillAgentClocksDescription;
-
-  /// No description provided for @backfillAgentClocksFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not repair agent vector clocks'**
-  String get backfillAgentClocksFailed;
-
-  /// No description provided for @backfillAgentClocksTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Agent vector clocks'**
-  String get backfillAgentClocksTitle;
-
-  /// No description provided for @backfillAgentClocksTrigger.
-  ///
-  /// In en, this message translates to:
-  /// **'Repair vector clocks'**
-  String get backfillAgentClocksTrigger;
-
   /// No description provided for @backfillAskPeersConfirmAccept.
   ///
   /// In en, this message translates to:
@@ -4577,6 +4553,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pull recent missing entries from peers right now.'**
   String get backfillCatchUpDescription;
+
+  /// No description provided for @backfillClocksDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a vector clock to entry links, agent entities and agent links that were saved without one, so your other devices can order and receive them.'**
+  String get backfillClocksDescription;
+
+  /// No description provided for @backfillClocksFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not repair vector clocks'**
+  String get backfillClocksFailed;
+
+  /// No description provided for @backfillClocksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vector clocks'**
+  String get backfillClocksTitle;
+
+  /// No description provided for @backfillClocksTrigger.
+  ///
+  /// In en, this message translates to:
+  /// **'Repair vector clocks'**
+  String get backfillClocksTrigger;
 
   /// No description provided for @backfillDevicesMeta.
   ///

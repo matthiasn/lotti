@@ -65,6 +65,10 @@ extension _DeepBackfillResolution on SyncEventProcessor {
           conflicts: list(
             'conflicts',
           ).map(DeepBackfillRecord.fromJson).toList(),
+          unclocked: [
+            for (final id in (document['unclocked'] as List<dynamic>? ?? []))
+              id as String,
+          ],
           jsonPath: null,
           attachmentEventId: null,
         ),

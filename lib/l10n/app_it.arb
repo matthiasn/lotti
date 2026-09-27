@@ -1366,10 +1366,6 @@
     }
   },
   "backfillAdvancedRecoveryTitle": "Recupero avanzato",
-  "backfillAgentClocksDescription": "Applica un orologio vettoriale alle entità e ai collegamenti degli agenti che ne sono privi, così i tuoi altri dispositivi possono ordinarli e riceverli.",
-  "backfillAgentClocksFailed": "Impossibile riparare gli orologi vettoriali degli agenti",
-  "backfillAgentClocksTitle": "Orologi vettoriali degli agenti",
-  "backfillAgentClocksTrigger": "Ripara gli orologi vettoriali",
   "backfillAskPeersConfirmAccept": "Chiedi ai colleghi",
   "backfillAskPeersConfirmContent": "{count, plural, =1{Questa operazione riporta 1 voce irrisolvibile del log di sequenza allo stato mancante, in modo che il normale ciclo di recupero richieda di nuovo i peer. I peer che hanno ancora il contenuto risponderanno; le voci realmente irrecuperabili saranno nuovamente ritirate dopo i 7 giorni di tolleranza.} other{Questa operazione riporta {count} voci irrisolvibili del log di sequenza allo stato mancante, in modo che il normale ciclo di recupero richieda di nuovo i peer. I peer che hanno ancora il contenuto risponderanno; le voci realmente irrecuperabili saranno nuovamente ritirate dopo i 7 giorni di tolleranza.}}",
   "@backfillAskPeersConfirmContent": {
@@ -1392,6 +1388,10 @@
     }
   },
   "backfillCatchUpDescription": "Tirare le ultime voci scomparse dai colleghi in questo momento.",
+  "backfillClocksDescription": "Aggiungi un orologio vettoriale ai collegamenti tra voci, alle entità e ai collegamenti degli agenti salvati senza, così i tuoi altri dispositivi possono ordinarli e riceverli.",
+  "backfillClocksFailed": "Impossibile riparare gli orologi vettoriali",
+  "backfillClocksTitle": "Orologi vettoriali",
+  "backfillClocksTrigger": "Ripara gli orologi vettoriali",
   "backfillDevicesMeta": "{count, plural, =1{1 ID dispositivo} other{{count} ID dispositivo}}",
   "@backfillDevicesMeta": {
     "placeholders": {

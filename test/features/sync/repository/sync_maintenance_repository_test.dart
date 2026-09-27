@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -13,6 +14,7 @@ import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_repository.dart';
@@ -37,6 +39,7 @@ void main() {
   late SyncMaintenanceRepository syncMaintenanceRepository;
 
   setUpAll(() {
+    registerAllFallbackValues();
     registerFallbackValue(StackTrace.empty);
     registerFallbackValue(fallbackSyncMessage);
     registerFallbackValue(Exception('fallback'));
@@ -572,6 +575,13 @@ void main() {
             ).thenThrow(testException),
             call: () => syncMaintenanceRepository.backfillAgentLinkClocks(),
           ),
+          (
+            subDomain: 'backfillEntryLinkClocks',
+            stubThrow: () => when(
+              () => mockJournalDb.entryLinksWithNullVectorClock(),
+            ).thenThrow(testException),
+            call: () => syncMaintenanceRepository.backfillEntryLinkClocks(),
+          ),
         ];
 
     for (final spec in agentErrorSpecs) {
@@ -792,6 +802,9 @@ void main() {
       ).thenAnswer((_) async => 0);
       when(
         () => mockAgentRepository.countLinksWithNullVectorClock(),
+      ).thenAnswer((_) async => 0);
+      when(
+        () => mockJournalDb.countEntryLinksWithNullVectorClock(),
       ).thenAnswer((_) async => 0);
     }
 
@@ -1197,7 +1210,97 @@ void main() {
     );
   });
 
+  group('backfillEntryLinkClocks', () {
+    test('stamps each clockless link, keeps its updatedAt, and enqueues then '
+        'stores it', () async {
+      final updatedAt = DateTime(2023, 6, 1, 9);
+      final link = EntryLink.basic(
+        id: 'old-link',
+        fromId: 'from',
+        toId: 'to',
+        createdAt: DateTime(2023, 6),
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+      when(
+        () => mockJournalDb.entryLinksWithNullVectorClock(),
+      ).thenAnswer((_) async => [link]);
+      when(
+        () => mockJournalDb.upsertEntryLink(any()),
+      ).thenAnswer((_) async => 1);
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockVectorClockService.getNextVectorClock(
+          previous: any(named: 'previous'),
+          payload: any(named: 'payload'),
+        ),
+      ).thenAnswer((_) async => const VectorClock({'host-1': 7}));
+      final progress = <double>[];
+
+      await syncMaintenanceRepository.backfillEntryLinkClocks(
+        onProgress: progress.add,
+      );
+
+      final stored =
+          verify(
+                () => mockJournalDb.upsertEntryLink(captureAny()),
+              ).captured.single
+              as EntryLink;
+      expect(stored.id, 'old-link');
+      expect(stored.vectorClock, const VectorClock({'host-1': 7}));
+      // A stamp dated now would outrank a genuine edit on another device.
+      expect(stored.updatedAt, updatedAt);
+      final sent =
+          verify(
+                () => mockOutboxService.enqueueMessage(captureAny()),
+              ).captured.single
+              as SyncEntryLink;
+      expect(sent.entryLink, stored);
+      expect(sent.status, SyncEntryStatus.update);
+      verify(
+        () => mockVectorClockService.getNextVectorClock(
+          payload: (
+            id: 'old-link',
+            type: SyncSequencePayloadType.entryLink,
+          ),
+        ),
+      ).called(1);
+      expect(progress, [1.0]);
+    });
+
+    test('reports completion at once when every link has a clock', () async {
+      when(
+        () => mockJournalDb.entryLinksWithNullVectorClock(),
+      ).thenAnswer((_) async => []);
+      final detailed = <List<int>>[];
+
+      await syncMaintenanceRepository.backfillEntryLinkClocks(
+        onDetailedProgress: (p, t) => detailed.add([p, t]),
+      );
+
+      expect(detailed, [
+        [0, 0],
+      ]);
+      verifyNever(() => mockJournalDb.upsertEntryLink(any()));
+      verifyNever(() => mockOutboxService.enqueueMessage(any()));
+    });
+  });
+
   group('fetchTotalsForSteps - backfill steps', () {
+    test('counts clockless entry links with the dedicated query', () async {
+      when(
+        () => mockJournalDb.countEntryLinksWithNullVectorClock(),
+      ).thenAnswer((_) async => 20000);
+
+      final totals = await syncMaintenanceRepository.fetchTotalsForSteps(
+        {SyncStep.backfillEntryLinkClocks},
+      );
+
+      expect(totals[SyncStep.backfillEntryLinkClocks], 20000);
+    });
+
     test(
       'returns count from dedicated query for backfill entity step',
       () async {
@@ -1321,6 +1424,7 @@ void main() {
       SyncStep.savedTaskFilters: 'syncSavedTaskFilters',
       SyncStep.backfillAgentEntityClocks: 'backfillAgentEntityClocks',
       SyncStep.backfillAgentLinkClocks: 'backfillAgentLinkClocks',
+      SyncStep.backfillEntryLinkClocks: 'backfillEntryLinkClocks',
     };
     const expectedTotalsDomains = <SyncStep, String>{
       SyncStep.measurables: 'fetchTotals_measurables',
@@ -1333,6 +1437,7 @@ void main() {
       SyncStep.backfillAgentEntityClocks:
           'fetchTotals_backfillAgentEntityClocks',
       SyncStep.backfillAgentLinkClocks: 'fetchTotals_backfillAgentLinkClocks',
+      SyncStep.backfillEntryLinkClocks: 'fetchTotals_backfillEntryLinkClocks',
     };
 
     test('maps every non-complete step to its sync and totals subDomain', () {

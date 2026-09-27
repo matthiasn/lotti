@@ -2666,20 +2666,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Pokročilé obnovení';
 
   @override
-  String get backfillAgentClocksDescription =>
-      'Doplň vektorové hodiny agentním entitám a odkazům, které byly uloženy bez nich, aby je tvá ostatní zařízení mohla seřadit a přijmout.';
-
-  @override
-  String get backfillAgentClocksFailed =>
-      'Vektorové hodiny agentů se nepodařilo opravit';
-
-  @override
-  String get backfillAgentClocksTitle => 'Vektorové hodiny agentů';
-
-  @override
-  String get backfillAgentClocksTrigger => 'Opravit vektorové hodiny';
-
-  @override
   String get backfillAskPeersConfirmAccept => 'Zeptat se peerů';
 
   @override
@@ -2726,6 +2712,19 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get backfillCatchUpDescription =>
       'Stáhni od peerů nedávné chybějící položky hned teď.';
+
+  @override
+  String get backfillClocksDescription =>
+      'Doplň vektorové hodiny odkazům mezi záznamy, entitám agentů a odkazům agentů, které byly uloženy bez nich, aby je tvá další zařízení mohla seřadit a přijmout.';
+
+  @override
+  String get backfillClocksFailed => 'Vektorové hodiny se nepodařilo opravit';
+
+  @override
+  String get backfillClocksTitle => 'Vektorové hodiny';
+
+  @override
+  String get backfillClocksTrigger => 'Opravit vektorové hodiny';
 
   @override
   String backfillDevicesMeta(int count) {

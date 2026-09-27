@@ -2679,20 +2679,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Recuperare avansată';
 
   @override
-  String get backfillAgentClocksDescription =>
-      'Completați entitățile și legăturile de agent salvate fără ceas vectorial, pentru ca celelalte dispozitive să le poată ordona și primi.';
-
-  @override
-  String get backfillAgentClocksFailed =>
-      'Ceasurile vectoriale ale agenților nu au putut fi reparate';
-
-  @override
-  String get backfillAgentClocksTitle => 'Ceasurile vectoriale ale agenților';
-
-  @override
-  String get backfillAgentClocksTrigger => 'Reparați ceasurile vectoriale';
-
-  @override
   String get backfillAskPeersConfirmAccept => 'Întreabă colegii';
 
   @override
@@ -2739,6 +2725,20 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get backfillCatchUpDescription =>
       'Solicitați acum colegilor intrările lipsă recente.';
+
+  @override
+  String get backfillClocksDescription =>
+      'Adăugați un ceas vectorial legăturilor între intrări, entităților și legăturilor agenților salvate fără unul, pentru ca celelalte dispozitive să le poată ordona și primi.';
+
+  @override
+  String get backfillClocksFailed =>
+      'Ceasurile vectoriale nu au putut fi reparate';
+
+  @override
+  String get backfillClocksTitle => 'Ceasuri vectoriale';
+
+  @override
+  String get backfillClocksTrigger => 'Reparați ceasurile vectoriale';
 
   @override
   String backfillDevicesMeta(int count) {

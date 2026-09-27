@@ -249,7 +249,8 @@ void main() {
       );
     });
 
-    test('leaves out rows without a clock, which cannot be ordered', () async {
+    test('names rows without a clock instead of listing them — they cannot '
+        'be ordered, but they exist', () async {
       await service(
         stores: [
           _FakeStore(
@@ -264,6 +265,7 @@ void main() {
 
       final batch = enqueued().single;
       expect(batch.records.map((r) => r.id), ['b']);
+      expect(batch.unclocked, ['a']);
     });
 
     test("needs this device's host id", () async {
@@ -363,6 +365,53 @@ void main() {
       expect(await outstandingRows(), isEmpty);
       verifyNever(() => outbox.enqueueMessageOrThrow(any()));
     });
+
+    test(
+      'does not push back a record the advertiser holds without a clock',
+      () async {
+        final store = _FakeStore(_journal, rows: {'old': null});
+
+        await service(stores: [store]).handleInventory(
+          const SyncMessage.deepBackfillInventory(
+                roundId: 'peer-round',
+                hostId: _peer,
+                payloadType: _journal,
+                batch: 0,
+                unclocked: ['old'],
+              )
+              as SyncDeepBackfillInventory,
+        );
+
+        expect(store.resent, isEmpty);
+        verifyNever(() => outbox.enqueueMessageOrThrow(any()));
+      },
+    );
+
+    test(
+      'asks for a clockless record it lacks, and settles on any row',
+      () async {
+        final store = _FakeStore(_journal);
+        final svc = service(stores: [store]);
+        const batch =
+            SyncMessage.deepBackfillInventory(
+                  roundId: 'peer-round',
+                  hostId: _peer,
+                  payloadType: _journal,
+                  batch: 0,
+                  unclocked: ['old'],
+                )
+                as SyncDeepBackfillInventory;
+
+        await svc.handleInventory(batch);
+        final asked = requestsSent().single.records.single;
+        expect(asked.id, 'old');
+        expect(asked.absent, isTrue);
+
+        store.rows['old'] = null;
+        await svc.handleInventory(batch);
+        expect(await outstandingRows(), isEmpty);
+      },
+    );
 
     test('keeps a request open when a version arrives that does not cover '
         'it', () async {

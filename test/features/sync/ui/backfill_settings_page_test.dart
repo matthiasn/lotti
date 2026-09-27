@@ -1110,7 +1110,7 @@ void main() {
       verify(() => mockSequenceService.resetUnresolvableEntries()).called(1);
     });
 
-    testWidgets('Agent vector clocks repair runs both backfills', (
+    testWidgets('Vector clocks repair runs all three backfills', (
       tester,
     ) async {
       final repo = MockSyncMaintenanceRepository();
@@ -1140,6 +1140,23 @@ void main() {
           syncLoggingServiceProvider.overrideWithValue(MockDomainLogger()),
         ],
       );
+      when(
+        () => repo.backfillEntryLinkClocks(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
+      ).thenAnswer((_) async {});
+
+      await pumpBody(
+        tester,
+        overrides: [
+          syncMaintenanceRepositoryProvider.overrideWithValue(repo),
+          // getIt<DomainLogger> is unregistered in this harness; without the
+          // override the controller's logger provider is in error state and
+          // syncAll dies before reaching the operations.
+          syncLoggingServiceProvider.overrideWithValue(MockDomainLogger()),
+        ],
+      );
       final messages = messagesOf(tester);
 
       await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
@@ -1148,7 +1165,7 @@ void main() {
 
       final btn = find.widgetWithText(
         DesignSystemButton,
-        messages.backfillAgentClocksTrigger,
+        messages.backfillClocksTrigger,
       );
       await tester.ensureVisible(btn);
       await tester.pump();
@@ -1158,14 +1175,15 @@ void main() {
       for (var i = 0; i < 12; i++) {
         await tester.pump(const Duration(milliseconds: 250));
       }
-      // The action requests exactly the two clock steps as one repair — they
-      // are the same fix over two tables, and each no-ops when nothing is
-      // missing a clock. The stamping itself is covered directly in
+      // The action requests exactly the three clock steps as one repair —
+      // they are the same fix over three tables, and each no-ops when nothing
+      // is missing a clock. The stamping itself is covered directly in
       // test/database/maintenance_test.dart.
       verify(
         () => repo.fetchTotalsForSteps({
           SyncStep.backfillAgentEntityClocks,
           SyncStep.backfillAgentLinkClocks,
+          SyncStep.backfillEntryLinkClocks,
         }),
       ).called(1);
       verify(
@@ -1180,9 +1198,15 @@ void main() {
           onDetailedProgress: any(named: 'onDetailedProgress'),
         ),
       ).called(1);
+      verify(
+        () => repo.backfillEntryLinkClocks(
+          onProgress: any(named: 'onProgress'),
+          onDetailedProgress: any(named: 'onDetailedProgress'),
+        ),
+      ).called(1);
     });
 
-    testWidgets('Agent vector clocks repair surfaces a localized failure', (
+    testWidgets('Vector clocks repair surfaces a localized failure', (
       tester,
     ) async {
       final repo = MockSyncMaintenanceRepository();
@@ -1214,7 +1238,7 @@ void main() {
 
       final btn = find.widgetWithText(
         DesignSystemButton,
-        messages.backfillAgentClocksTrigger,
+        messages.backfillClocksTrigger,
       );
       await tester.ensureVisible(btn);
       await tester.pump();
@@ -1231,7 +1255,7 @@ void main() {
           onDetailedProgress: any(named: 'onDetailedProgress'),
         ),
       ).called(1);
-      expect(find.text(messages.backfillAgentClocksFailed), findsOneWidget);
+      expect(find.text(messages.backfillClocksFailed), findsOneWidget);
       expect(find.text('Exception: boom'), findsNothing);
     });
 
@@ -1527,6 +1551,23 @@ void main() {
             syncLoggingServiceProvider.overrideWithValue(MockDomainLogger()),
           ],
         );
+        when(
+          () => repo.backfillEntryLinkClocks(
+            onProgress: any(named: 'onProgress'),
+            onDetailedProgress: any(named: 'onDetailedProgress'),
+          ),
+        ).thenAnswer((_) async {});
+
+        await pumpBody(
+          tester,
+          overrides: [
+            syncMaintenanceRepositoryProvider.overrideWithValue(repo),
+            // Without a logger the controller's build errors mid-syncAll
+            // (getIt<DomainLogger> is unregistered here) and every repair
+            // takes the failure path.
+            syncLoggingServiceProvider.overrideWithValue(MockDomainLogger()),
+          ],
+        );
         final messages = messagesOf(tester);
         await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
         await tester.pump();
@@ -1534,7 +1575,7 @@ void main() {
 
         final btn = find.widgetWithText(
           DesignSystemButton,
-          messages.backfillAgentClocksTrigger,
+          messages.backfillClocksTrigger,
         );
         await tester.ensureVisible(btn);
         await tester.pump();
@@ -1545,7 +1586,7 @@ void main() {
         // than minting its own.
         expectBusy(
           tester,
-          triggerLabel: messages.backfillAgentClocksTrigger,
+          triggerLabel: messages.backfillClocksTrigger,
           processingLabel: messages.backfillManualProcessing,
         );
 
@@ -1557,9 +1598,9 @@ void main() {
         // Success surfaces as a toast that reuses the action title — a
         // second occurrence beside the row's own — and never the failure
         // string.
-        expect(find.text(messages.backfillAgentClocksFailed), findsNothing);
+        expect(find.text(messages.backfillClocksFailed), findsNothing);
         expect(
-          find.text(messages.backfillAgentClocksTitle),
+          find.text(messages.backfillClocksTitle),
           findsNWidgets(2),
         );
       },

@@ -2674,20 +2674,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Recupero avanzato';
 
   @override
-  String get backfillAgentClocksDescription =>
-      'Applica un orologio vettoriale alle entità e ai collegamenti degli agenti che ne sono privi, così i tuoi altri dispositivi possono ordinarli e riceverli.';
-
-  @override
-  String get backfillAgentClocksFailed =>
-      'Impossibile riparare gli orologi vettoriali degli agenti';
-
-  @override
-  String get backfillAgentClocksTitle => 'Orologi vettoriali degli agenti';
-
-  @override
-  String get backfillAgentClocksTrigger => 'Ripara gli orologi vettoriali';
-
-  @override
   String get backfillAskPeersConfirmAccept => 'Chiedi ai colleghi';
 
   @override
@@ -2731,6 +2717,20 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get backfillCatchUpDescription =>
       'Tirare le ultime voci scomparse dai colleghi in questo momento.';
+
+  @override
+  String get backfillClocksDescription =>
+      'Aggiungi un orologio vettoriale ai collegamenti tra voci, alle entità e ai collegamenti degli agenti salvati senza, così i tuoi altri dispositivi possono ordinarli e riceverli.';
+
+  @override
+  String get backfillClocksFailed =>
+      'Impossibile riparare gli orologi vettoriali';
+
+  @override
+  String get backfillClocksTitle => 'Orologi vettoriali';
+
+  @override
+  String get backfillClocksTrigger => 'Ripara gli orologi vettoriali';
 
   @override
   String backfillDevicesMeta(int count) {

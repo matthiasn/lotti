@@ -268,11 +268,11 @@ class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
       ),
       _RecoveryAction(
         icon: LottiIcons.schedule,
-        title: messages.backfillAgentClocksTitle,
-        description: messages.backfillAgentClocksDescription,
+        title: messages.backfillClocksTitle,
+        description: messages.backfillClocksDescription,
         ctaLabel: _isRepairingAgentClocks
             ? messages.backfillManualProcessing
-            : messages.backfillAgentClocksTrigger,
+            : messages.backfillClocksTrigger,
         ctaIcon: LottiIcons.schedule,
         tone: _RecoveryTone.primary,
         isBusy: _isRepairingAgentClocks,
@@ -283,10 +283,10 @@ class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
     ];
   }
 
-  /// Stamps agent entities and links that were persisted without a vector
-  /// clock, then enqueues them.
+  /// Stamps agent entities, agent links and entry links that were persisted
+  /// without a vector clock, then enqueues them.
   ///
-  /// Both halves run together: they are the same repair over two tables, each
+  /// All three run together: they are the same repair over three tables, each
   /// no-ops when nothing is missing a clock, and there is no reason to offer a
   /// half-repaired state as a choice.
   Future<void> _repairAgentClocks(BuildContext context) async {
@@ -300,6 +300,7 @@ class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
         selectedSteps: const {
           SyncStep.backfillAgentEntityClocks,
           SyncStep.backfillAgentLinkClocks,
+          SyncStep.backfillEntryLinkClocks,
         },
       );
       // syncAll parks the shared controller at progress == 100 with these
@@ -309,7 +310,7 @@ class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
       if (!context.mounted) return;
       context.showToast(
         tone: DesignSystemToastTone.success,
-        title: messages.backfillAgentClocksTitle,
+        title: messages.backfillClocksTitle,
       );
     } catch (e) {
       if (!context.mounted) return;
@@ -317,7 +318,7 @@ class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
       // exception text.
       context.showToast(
         tone: DesignSystemToastTone.error,
-        title: messages.backfillAgentClocksFailed,
+        title: messages.backfillClocksFailed,
       );
     } finally {
       if (mounted) setState(() => _isRepairingAgentClocks = false);

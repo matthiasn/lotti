@@ -330,6 +330,29 @@ mixin _JournalDbLinksRatings
     return entryLinks.map(entryLinkFromLinkedDbEntry).toList();
   }
 
+  /// Links saved without a vector clock — written before links carried one —
+  /// oldest first, removals included. Nothing can order such a link against
+  /// another copy of it, so the clock repair stamps each one.
+  Future<List<EntryLink>> entryLinksWithNullVectorClock() async {
+    final rows =
+        await (select(linkedEntries)
+              ..where((_) => _linkHasNoClock)
+              ..orderBy([(t) => OrderingTerm(expression: t.createdAt)]))
+            .get();
+    return rows.map(entryLinkFromLinkedDbEntry).toList();
+  }
+
+  /// How many links [entryLinksWithNullVectorClock] would return.
+  Future<int> countEntryLinksWithNullVectorClock() async {
+    final count = countAll();
+    final row =
+        await (selectOnly(linkedEntries)
+              ..addColumns([count])
+              ..where(_linkHasNoClock))
+            .getSingle();
+    return row.read(count) ?? 0;
+  }
+
   Future<EntryLink?> entryLinkById(String id) async {
     final res = await (select(
       linkedEntries,
@@ -483,6 +506,11 @@ bool _entryLinkIsStale(EntryLink incoming, {required EntryLink than}) {
 }
 
 const _noClock = VectorClock(<String, int>{});
+
+/// A link row whose serialized payload carries no vector clock.
+const Expression<bool> _linkHasNoClock = CustomExpression<bool>(
+  r"json_extract(serialized, '$.vectorClock') IS NULL",
+);
 
 /// True for a link that has not been removed.
 ///

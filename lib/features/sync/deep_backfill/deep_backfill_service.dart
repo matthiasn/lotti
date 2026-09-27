@@ -164,15 +164,20 @@ class DeepBackfillService {
             rangeEnd: end,
             records: [
               for (final row in rows)
-                // A row without a clock cannot be ordered against anything;
-                // it is left out rather than advertised as newest.
-                if (row.clock != null)
-                  DeepBackfillRecord(id: row.id, vectorClock: row.clock!),
+                if (row.clock case final clock?)
+                  DeepBackfillRecord(id: row.id, vectorClock: clock),
             ],
             conflicts: [
               for (final MapEntry(key: id, value: clocks) in conflicts.entries)
                 for (final clock in clocks)
                   DeepBackfillRecord(id: id, vectorClock: clock),
+            ],
+            // A row without a clock cannot be ordered against anything, but
+            // it exists: named here, a peer neither pushes it back nor
+            // mistakes the range for one this device holds nothing in.
+            unclocked: [
+              for (final row in rows)
+                if (row.clock == null) row.id,
             ],
           ),
         );
@@ -237,6 +242,7 @@ class DeepBackfillService {
         for (final record in inventory.records) record.id: record.vectorClock,
       },
       advertisedConflicts: _groupById(inventory.conflicts),
+      advertisedUnclocked: inventory.unclocked.toSet(),
       local: local,
       localConflicts: localConflicts,
       outstanding: outstanding,
@@ -316,6 +322,7 @@ class DeepBackfillService {
           row.requestedAt.isBefore(expiredBefore) ||
           deepBackfillRequestSettled(
             asked: asked,
+            holdsRow: local.containsKey(row.entryId),
             local: local[row.entryId],
             openConflicts: localConflicts[row.entryId] ?? const [],
           );

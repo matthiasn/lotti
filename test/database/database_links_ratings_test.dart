@@ -2537,4 +2537,52 @@ void main() {
       });
     });
   });
+
+  group('JournalDb clockless entry links', () {
+    late JournalDb journalDb;
+
+    EntryLink link(String id, {VectorClock? clock, int day = 1}) =>
+        EntryLink.basic(
+          id: id,
+          fromId: 'from-$id',
+          toId: 'to-$id',
+          createdAt: DateTime(2023, 6, day),
+          updatedAt: DateTime(2023, 6, day),
+          vectorClock: clock,
+        );
+
+    setUp(() async {
+      journalDb = JournalDb(inMemoryDatabase: true);
+      await journalDb.upsertEntryLink(link('newer-clockless', day: 9));
+      await journalDb.upsertEntryLink(link('older-clockless', day: 2));
+      await journalDb.upsertEntryLink(
+        link('clocked', clock: const VectorClock({'h': 1})),
+      );
+      await journalDb.upsertEntryLink(
+        link('removed-clockless', day: 5).copyWith(
+          deletedAt: DateTime(2023, 6, 6),
+          hidden: true,
+        ),
+      );
+    });
+
+    tearDown(() => journalDb.close());
+
+    test(
+      'lists links without a clock, removals included, oldest first',
+      () async {
+        final links = await journalDb.entryLinksWithNullVectorClock();
+
+        expect(links.map((l) => l.id), [
+          'older-clockless',
+          'removed-clockless',
+          'newer-clockless',
+        ]);
+      },
+    );
+
+    test('counts the same links', () async {
+      expect(await journalDb.countEntryLinksWithNullVectorClock(), 3);
+    });
+  });
 }

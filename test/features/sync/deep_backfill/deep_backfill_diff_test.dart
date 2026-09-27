@@ -15,12 +15,14 @@ DeepBackfillDiff _diff({
   Map<String, VectorClock?> local = const {},
   Map<String, List<VectorClock>> localConflicts = const {},
   Set<String> outstanding = const {},
+  Set<String> advertisedUnclocked = const {},
 }) => diffDeepBackfillBatch(
   advertised: advertised,
   advertisedConflicts: advertisedConflicts,
   local: local,
   localConflicts: localConflicts,
   outstanding: outstanding,
+  advertisedUnclocked: advertisedUnclocked,
 );
 
 void main() {
@@ -189,11 +191,62 @@ void main() {
     });
   });
 
+  group(
+    'diffDeepBackfillBatch — rows the advertiser holds without a clock',
+    () {
+      test('a record both hold is neither pushed back nor requested — every '
+          'round used to push it again', () {
+        final diff = _diff(
+          local: {'clocked': _older, 'clockless': null},
+          advertisedUnclocked: {'clocked', 'clockless'},
+        );
+
+        expect(diff.pushes, isEmpty);
+        expect(diff.advertiserLacks, isEmpty);
+        expect(diff.requests, isEmpty);
+      });
+
+      test(
+        'a record this device lacks is asked for as any row, with media',
+        () {
+          final diff = _diff(advertisedUnclocked: {'x'});
+
+          expect(diff.requests, {
+            'x': [unclockedVersion],
+          });
+          expect(diff.absentLocally, {'x'});
+        },
+      );
+
+      test('is not asked for again while outstanding', () {
+        final diff = _diff(
+          advertisedUnclocked: {'x'},
+          outstanding: {'x'},
+        );
+
+        expect(diff.requests, isEmpty);
+      });
+
+      test('a record the range covers but the advertiser holds nowhere is '
+          'still pushed', () {
+        final diff = _diff(
+          local: {'mine': _older},
+          advertisedUnclocked: {'other'},
+        );
+
+        expect(diff.pushes, {'mine'});
+        expect(diff.advertiserLacks, {'mine'});
+        expect(diff.requests.keys, ['other']);
+      });
+    },
+  );
+
   group('deepBackfillRequestSettled', () {
     test('is settled once the row covers every version asked for', () {
       expect(
         deepBackfillRequestSettled(
           asked: const [_older],
+          holdsRow: true,
           local: _newer,
           openConflicts: const [],
         ),
@@ -205,6 +258,7 @@ void main() {
       expect(
         deepBackfillRequestSettled(
           asked: const [_theirsConcurrent, _mineConcurrent],
+          holdsRow: true,
           local: _theirsConcurrent,
           openConflicts: const [_mineConcurrent],
         ),
@@ -217,6 +271,7 @@ void main() {
       expect(
         deepBackfillRequestSettled(
           asked: const [_newer],
+          holdsRow: true,
           local: _older,
           openConflicts: const [],
         ),
@@ -225,6 +280,28 @@ void main() {
       expect(
         deepBackfillRequestSettled(
           asked: const [_newer],
+          holdsRow: false,
+          local: null,
+          openConflicts: const [],
+        ),
+        isFalse,
+      );
+    });
+
+    test('a request for a clockless row is settled by holding any row', () {
+      expect(
+        deepBackfillRequestSettled(
+          asked: const [unclockedVersion],
+          holdsRow: true,
+          local: null,
+          openConflicts: const [],
+        ),
+        isTrue,
+      );
+      expect(
+        deepBackfillRequestSettled(
+          asked: const [unclockedVersion],
+          holdsRow: false,
           local: null,
           openConflicts: const [],
         ),
@@ -236,6 +313,7 @@ void main() {
       expect(
         deepBackfillRequestSettled(
           asked: const [_malformed],
+          holdsRow: true,
           local: _newer,
           openConflicts: const [],
         ),
@@ -318,6 +396,7 @@ void main() {
       expect(
         deepBackfillRequestSettled(
           asked: asked,
+          holdsRow: scenario.holdsRow,
           local: scenario.mine,
           openConflicts: scenario.myConflicts,
         ),
