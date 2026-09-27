@@ -4,6 +4,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.32]
+
+### Changed
+
+- **Backfill sync now shows what each device actually holds.** A new "Records
+  on this device" section counts journal entries, links, agent records,
+  notifications and AI usage events, deletions included — the numbers that
+  should match on devices in sync. The figure formerly labelled "Total entries"
+  counts sync counters, not entries, so it is now called "Tracked counters",
+  broken down by device; it can differ between devices that hold the same
+  records.
+
+### Fixed
+
+- **A deleted agent could come back.** Deleting an agent removed its data on
+  this device, but when sync delivered an older update about it afterwards —
+  its creation arriving late, or a message from a run still going on another
+  device — the agent reappeared, sometimes as active again. A deleted agent
+  now stays deleted, whatever order its updates arrive in.
+- **A deep backfill no longer re-sends old links on every run.** Links saved
+  before links carried a sync clock were left out of the list a device sends,
+  so the other device took them for missing there and sent all of them back —
+  thousands of messages, every time, changing nothing. They are now listed as
+  what they are, and never sent back for that reason.
+- **Repair vector clocks now covers entry links too.** *Settings → Sync →
+  Backfill sync → Advanced recovery → Vector clocks* gives links saved before
+  links carried a clock one, as it already did for agent records, so they sync
+  and compare like everything else. Run it once on each device.
+
 ## [1.1.31]
 
 ### Added

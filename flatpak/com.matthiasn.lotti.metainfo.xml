@@ -40,6 +40,14 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.1.32" date="2026-09-27">
+      <description>
+        <p>Changed: backfill sync now shows what each device actually holds. A new "Records on this device" section counts journal entries, links, agent records, notifications and AI usage events, deletions included - the numbers that should match on devices in sync. The figure formerly labelled "Total entries" counts sync counters, not entries, so it is now called "Tracked counters", broken down by device; it can differ between devices that hold the same records.</p>
+        <p>Fixed: a deleted agent could come back. Deleting an agent removed its data on this device, but when sync delivered an older update about it afterwards - its creation arriving late, or a message from a run still going on another device - the agent reappeared, sometimes as active again. A deleted agent now stays deleted, whatever order its updates arrive in.</p>
+        <p>Fixed: a deep backfill no longer re-sends old links on every run. Links saved before links carried a sync clock were left out of the list a device sends, so the other device took them for missing there and sent all of them back - thousands of messages, every time, changing nothing. They are now listed as what they are, and never sent back for that reason.</p>
+        <p>Fixed: repair vector clocks now covers entry links too. Settings &gt; Sync &gt; Backfill sync &gt; Advanced recovery &gt; Vector clocks gives links saved before links carried a clock one, as it already did for agent records, so they sync and compare like everything else. Run it once on each device.</p>
+      </description>
+    </release>
     <release version="1.1.31" date="2026-09-27">
       <description>
         <p>Added: a deep backfill in sync maintenance brings devices that drifted apart back together. Ordinary repair can only ask for gaps a device can name, so history an older installation never recorded stayed missing for good. Settings &gt; Sync &gt; Maintenance &gt; Deep backfill sends your other devices a list of every entry, link, agent record, notification and usage record on this device, deletions included. Each one compares the list with its own records, asks for what it is missing and sends back what this device lacks, so both sides end up with everything either had. Entries edited on two devices at once come back as a conflict for you to resolve, never silently overwritten.</p>
