@@ -1003,7 +1003,7 @@ void main() {
         () => mockAgentRepository.upsertEntity(any()),
       ).thenAnswer((_) async {});
       when(
-        () => mockOutboxService.enqueueMessage(any()),
+        () => mockOutboxService.enqueueMessageOrThrow(any()),
       ).thenAnswer((_) async {});
       stubVectorClock(0);
 
@@ -1026,7 +1026,7 @@ void main() {
 
       // Verify entity was enqueued for sync
       final messages = verify(
-        () => mockOutboxService.enqueueMessage(captureAny()),
+        () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
       ).captured;
       expect(messages.length, 1);
       final msg = messages.first as SyncMessage;
@@ -1063,7 +1063,7 @@ void main() {
           [0, 0],
         ]);
         verifyNever(() => mockAgentRepository.upsertEntity(any()));
-        verifyNever(() => mockOutboxService.enqueueMessage(any()));
+        verifyNever(() => mockOutboxService.enqueueMessageOrThrow(any()));
       },
     );
 
@@ -1100,7 +1100,7 @@ void main() {
         () => mockAgentRepository.upsertEntity(any()),
       ).thenAnswer((_) async {});
       when(
-        () => mockOutboxService.enqueueMessage(any()),
+        () => mockOutboxService.enqueueMessageOrThrow(any()),
       ).thenAnswer((_) async {});
 
       final progressUpdates = <double>[];
@@ -1110,7 +1110,7 @@ void main() {
       );
 
       verify(() => mockAgentRepository.upsertEntity(any())).called(3);
-      verify(() => mockOutboxService.enqueueMessage(any())).called(3);
+      verify(() => mockOutboxService.enqueueMessageOrThrow(any())).called(3);
       expect(progressUpdates.length, 3);
       expect(progressUpdates.last, 1.0);
     });
@@ -1145,7 +1145,7 @@ void main() {
         () => mockAgentRepository.upsertLink(any()),
       ).thenAnswer((_) async {});
       when(
-        () => mockOutboxService.enqueueMessage(any()),
+        () => mockOutboxService.enqueueMessageOrThrow(any()),
       ).thenAnswer((_) async {});
       stubVectorClock(0);
 
@@ -1168,7 +1168,7 @@ void main() {
 
       // Verify link was enqueued for sync
       final messages = verify(
-        () => mockOutboxService.enqueueMessage(captureAny()),
+        () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
       ).captured;
       expect(messages.length, 1);
       final msg = messages.first as SyncMessage;
@@ -1205,7 +1205,7 @@ void main() {
           [0, 0],
         ]);
         verifyNever(() => mockAgentRepository.upsertLink(any()));
-        verifyNever(() => mockOutboxService.enqueueMessage(any()));
+        verifyNever(() => mockOutboxService.enqueueMessageOrThrow(any()));
       },
     );
   });
@@ -1229,7 +1229,7 @@ void main() {
         () => mockJournalDb.upsertEntryLink(any()),
       ).thenAnswer((_) async => 1);
       when(
-        () => mockOutboxService.enqueueMessage(any()),
+        () => mockOutboxService.enqueueMessageOrThrow(any()),
       ).thenAnswer((_) async {});
       when(
         () => mockVectorClockService.getNextVectorClock(
@@ -1254,7 +1254,7 @@ void main() {
       expect(stored.updatedAt, updatedAt);
       final sent =
           verify(
-                () => mockOutboxService.enqueueMessage(captureAny()),
+                () => mockOutboxService.enqueueMessageOrThrow(captureAny()),
               ).captured.single
               as SyncEntryLink;
       expect(sent.entryLink, stored);
@@ -1284,8 +1284,111 @@ void main() {
         [0, 0],
       ]);
       verifyNever(() => mockJournalDb.upsertEntryLink(any()));
-      verifyNever(() => mockOutboxService.enqueueMessage(any()));
+      verifyNever(() => mockOutboxService.enqueueMessageOrThrow(any()));
     });
+  });
+
+  group('a clock repair whose outbox write fails', () {
+    final failure = Exception('outbox write failed');
+    final repairs =
+        <
+          ({
+            String name,
+            void Function() stubClockless,
+            Future<void> Function() run,
+            void Function() verifyNotStored,
+          })
+        >[
+          (
+            name: 'backfillAgentEntityClocks',
+            stubClockless: () =>
+                when(
+                  () => mockAgentRepository.getEntitiesWithNullVectorClock(),
+                ).thenAnswer(
+                  (_) async => [
+                    AgentDomainEntity.agent(
+                      id: 'agent-1',
+                      agentId: 'agent-1',
+                      kind: 'task_agent',
+                      displayName: 'Test Agent',
+                      lifecycle: AgentLifecycle.active,
+                      mode: AgentInteractionMode.autonomous,
+                      allowedCategoryIds: const {},
+                      currentStateId: 'state-1',
+                      config: const AgentConfig(),
+                      createdAt: DateTime(2024, 3, 15),
+                      updatedAt: DateTime(2024, 3, 15),
+                      vectorClock: null,
+                    ),
+                  ],
+                ),
+            run: () => syncMaintenanceRepository.backfillAgentEntityClocks(),
+            verifyNotStored: () =>
+                verifyNever(() => mockAgentRepository.upsertEntity(any())),
+          ),
+          (
+            name: 'backfillAgentLinkClocks',
+            stubClockless: () =>
+                when(
+                  () => mockAgentRepository.getLinksWithNullVectorClock(),
+                ).thenAnswer(
+                  (_) async => [
+                    AgentLink.agentTask(
+                      id: 'link-1',
+                      fromId: 'agent-1',
+                      toId: 'task-1',
+                      createdAt: DateTime(2024, 3, 15),
+                      updatedAt: DateTime(2024, 3, 15),
+                      vectorClock: null,
+                    ),
+                  ],
+                ),
+            run: () => syncMaintenanceRepository.backfillAgentLinkClocks(),
+            verifyNotStored: () =>
+                verifyNever(() => mockAgentRepository.upsertLink(any())),
+          ),
+          (
+            name: 'backfillEntryLinkClocks',
+            stubClockless: () =>
+                when(
+                  () => mockJournalDb.entryLinksWithNullVectorClock(),
+                ).thenAnswer(
+                  (_) async => [
+                    EntryLink.basic(
+                      id: 'old-link',
+                      fromId: 'from',
+                      toId: 'to',
+                      createdAt: DateTime(2023, 6),
+                      updatedAt: DateTime(2023, 6),
+                      vectorClock: null,
+                    ),
+                  ],
+                ),
+            run: () => syncMaintenanceRepository.backfillEntryLinkClocks(),
+            verifyNotStored: () =>
+                verifyNever(() => mockJournalDb.upsertEntryLink(any())),
+          ),
+        ];
+
+    for (final repair in repairs) {
+      test('${repair.name} fails and stores no stamp, so the record stays '
+          'clockless and the next run retries it', () async {
+        repair.stubClockless();
+        when(
+          () => mockVectorClockService.getNextVectorClock(
+            previous: any(named: 'previous'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenAnswer((_) async => const VectorClock({'host-1': 1}));
+        when(
+          () => mockOutboxService.enqueueMessageOrThrow(any()),
+        ).thenThrow(failure);
+
+        await expectLater(repair.run, throwsA(failure));
+
+        repair.verifyNotStored();
+      });
+    }
   });
 
   group('fetchTotalsForSteps - backfill steps', () {

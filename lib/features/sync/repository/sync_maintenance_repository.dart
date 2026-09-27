@@ -217,11 +217,12 @@ class SyncMaintenanceRepository {
                 ),
               ),
             );
-            // Enqueue before persisting so the entity still has a null
-            // vector clock on disk if enqueueMessage throws — making the
-            // row retryable on the next backfill run. Any throw here will
-            // propagate and release the reservation via the scope.
-            await _outboxService.enqueueMessage(
+            // Enqueue before persisting, and with the variant that throws:
+            // the plain enqueueMessage logs and swallows a failed outbox
+            // write, which would store the stamp without ever sending it.
+            // A throw leaves the entity's clock null on disk, so the next
+            // run retries it, and releases the reservation via the scope.
+            await _outboxService.enqueueMessageOrThrow(
               SyncMessage.agentEntity(
                 agentEntity: stamped,
                 status: SyncEntryStatus.update,
@@ -270,7 +271,7 @@ class SyncMaintenanceRepository {
             );
             // Enqueue before persisting — see backfillAgentEntityClocks.
             // A throw here propagates and releases the reservation.
-            await _outboxService.enqueueMessage(
+            await _outboxService.enqueueMessageOrThrow(
               SyncMessage.agentLink(
                 agentLink: stamped,
                 status: SyncEntryStatus.update,
@@ -324,7 +325,7 @@ class SyncMaintenanceRepository {
             );
             // Enqueue before persisting — see backfillAgentEntityClocks.
             // A throw here propagates and releases the reservation.
-            await _outboxService.enqueueMessage(
+            await _outboxService.enqueueMessageOrThrow(
               SyncMessage.entryLink(
                 entryLink: stamped,
                 status: SyncEntryStatus.update,
