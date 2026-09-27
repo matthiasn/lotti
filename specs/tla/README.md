@@ -921,8 +921,10 @@ What the model leaves out, deliberately or as a residual:
   host's counter. A removal is an edit too: a tombstone with `deletedAt` set,
   written and synced like any other version, and linking the same pair again
   revives it under the same id. A tombstone is not terminal, so a link stays
-  one last-writer-wins register and nothing new is checked (ADR 0078,
-  2026-09-25 addendum).
+  one last-writer-wins register (ADR 0078, 2026-09-25 addendum). What that
+  register is keyed by, the triple rather than the id, is
+  `EntryLinkIdentity` below
+  ([ADR 0096](../../docs/adr/0096-an-entry-link-is-its-natural-key.md)).
 
 ## `AgentStateWrites` — the writers of one agent-state row
 
@@ -1283,6 +1285,55 @@ What the model leaves out, deliberately or as a residual:
   ([ADR 0080](../../docs/adr/0080-a-present-counter-ranks-above-an-absent-host.md)).
   The regression for a host's first relink and removal is in the
   `AgentSyncService` suite.
+
+## `EntryLinkIdentity` — one journal entry link under several ids
+
+One journal entry link, one `(fromId, toId, type)`, on three replicas. It is
+created, removed and created again on any of them, and every version is
+delivered in any order and any number of times: as its own `entryLink`
+message, as a backfill answer, and inside every journal-entity message, which
+embeds a snapshot of the entry's links. `linked_entries` holds one row per
+triple. Versions are ordered by ADR 0078's key (`updatedAt`, the canonical
+clock, the content), and the writers extend the stored row's clock and never
+stamp it earlier. What the model adds is the id: a fresh link takes the id
+derived from its triple (`entryLinkId`, `linkCreationBase`), and the receive
+(`JournalDb.upsertEntryLink`) orders the versions of a triple whatever their
+ids. A replica in `Legacy` runs the build before that change: it mints a
+random id and receives with the old duplicate rule. The guarantees cover the
+other replicas when it writes, and every replica when it only receives. The
+decision is
+[ADR 0096](../../docs/adr/0096-an-entry-link-is-its-natural-key.md).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `Converged` | invariant | once every write has reached every replica, all hold the same version |
+| `NoLostSuccessor` | invariant | a replica never holds a version that a write it received was made over, a ghost `saw` set per write: a removal takes away every version of the link its writer had seen, whatever id each carried |
+
+| Configuration | Replicas | Legacy | Writes | Clock | Distinct states |
+|---------------|----------|--------|--------|-------|-----------------|
+| `EntryLinkIdentity` | 3 | none | 3 | 0..2, 1 tick skew | 83,931 |
+| `EntryLinkIdentityLegacy` | 3 | replica 3, writes | 3 | 0..2, 1 tick skew | 88,547 |
+| `EntryLinkIdentityLegacyReceiver` | 3 | replica 3, receives only | 3 | 0..2, 1 tick skew | 19,187 |
+
+| Switch | Old behaviour | Counterexample |
+|--------|---------------|----------------|
+| `DerivedId` | a fresh link took a random id | with `TripleIsIdentity` also FALSE, `EntryLinkIdentity` violates `NoLostSuccessor` in five steps: A and B create the link, A receives B's and refuses it as a duplicate, A removes its own id, and B's live copy arrives again and replaces the tombstone. Alone, `EntryLinkIdentityLegacyReceiver` violates it in seven steps: the replica on the older build keeps the other id's live version that the removal covered |
+| `TripleIsIdentity` | the receive refused a live row's other id as a duplicate and let any version replace a hidden row | `EntryLinkIdentityLegacy` violates `NoLostSuccessor` in five steps: the replica on the older build creates the link under a random id, and the same resurrection follows |
+
+Either switch alone passes `EntryLinkIdentity`, where every replica runs this
+build. The two legacy configurations each need one of them.
+
+What the model leaves out:
+
+- **A retype.** `JournalRepository.updateLinkType` keeps the id and changes
+  the triple. When the moved version loses at its new triple, the receive
+  deletes its old row, as the replica where it lost did. A late copy of its
+  version from before the retype can then be inserted again at the old
+  triple. That needs a retype racing a concurrent creation of the same
+  relationship, and a delivery older than both (ADR 0096, residual).
+- Loss and backfill are `AgentLinks`' and `SyncPipeline`'s. A version that
+  lost to another id is answered `deleted` by backfill, which settles the
+  gap; the winner carries the link.
 
 ## `OutboxCausality` — a version fork through the send and receive boundary
 

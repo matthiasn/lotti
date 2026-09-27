@@ -22,6 +22,7 @@ import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/entry_link_creation.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -2633,6 +2634,15 @@ void main() {
           isTrue,
         );
         final original = (await db.getProjectLinkForTask('task-001'))!;
+        // The id every device derives for this membership (ADR 0096).
+        expect(
+          original.id,
+          entryLinkId(
+            fromId: 'project-001',
+            toId: 'task-001',
+            type: 'ProjectLink',
+          ),
+        );
         expect(await repository.unlinkTaskFromProject('task-001'), isTrue);
         final removal = (await db.entryLinkById(original.id))!;
         expect(

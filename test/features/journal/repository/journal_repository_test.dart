@@ -3678,6 +3678,65 @@ void main() {
         },
       );
 
+      test(
+        'refuses to move a link onto a relationship another live link is, '
+        'and moves it onto a removed one',
+        () async {
+          final existing = EntryLink.basic(
+            id: 'retype-me',
+            fromId: 'a',
+            toId: 'b',
+            createdAt: DateTime(2023),
+            updatedAt: DateTime(2023),
+            vectorClock: null,
+          );
+          final occupant = EntryLink.followsUp(
+            id: 'occupant',
+            fromId: 'a',
+            toId: 'b',
+            createdAt: DateTime(2023),
+            updatedAt: DateTime(2023),
+            vectorClock: null,
+          );
+          when(
+            () => collapsedMockJournalDb.entryLinkById('retype-me'),
+          ).thenAnswer((_) async => existing);
+          when(
+            () => collapsedMockJournalDb.linksBetween(
+              'a',
+              'b',
+              type: 'FollowsUpLink',
+            ),
+          ).thenAnswer((_) async => [occupant]);
+          stubSuccessfulUpsert();
+
+          Future<bool> retype() => collapsedRepository.updateLinkType(
+            linkId: 'retype-me',
+            newType: EntryLinkType.followsUp,
+            swapDirection: false,
+          );
+
+          // The receive keeps one version per relationship, so the retype
+          // would replace the occupant rather than sit beside it.
+          expect(await retype(), isFalse);
+          verifyNever(() => collapsedMockJournalDb.upsertEntryLink(any()));
+
+          when(
+            () => collapsedMockJournalDb.linksBetween(
+              'a',
+              'b',
+              type: 'FollowsUpLink',
+            ),
+          ).thenAnswer(
+            (_) async => [
+              occupant.copyWith(hidden: true, deletedAt: DateTime(2023)),
+            ],
+          );
+          expect(await retype(), isTrue);
+          verify(() => collapsedMockJournalDb.upsertEntryLink(any())).called(1);
+        },
+      );
+
       test('returns false when linkId no longer resolves to a link', () async {
         when(
           () => collapsedMockJournalDb.entryLinkById('missing'),
@@ -4045,6 +4104,70 @@ void main() {
         await expectConverged(live: true);
       },
     );
+
+    test(
+      'the same link created offline on both devices is one link: a removal '
+      "on either stays removed, and the other's snapshot does not bring it "
+      'back',
+      () async {
+        expect(await link(deviceA), isTrue);
+        expect(await link(deviceB), isTrue);
+        final fromA = deviceA.takeOutgoing();
+        final fromB = deviceB.takeOutgoing();
+        await deviceA.receiveAll(fromB);
+        await deviceB.receiveAll(fromA);
+        await expectConverged(live: true);
+
+        expect(await unlink(deviceA), 1);
+        // B has not heard of the removal yet and sends its snapshot.
+        await deviceA.receive(await deviceB.journalEntityMessage(entryId));
+        expect(
+          await deviceA.db.linksForEntryIdsBidirectional({entryId}),
+          isEmpty,
+        );
+
+        await deviceB.receiveAll(deviceA.takeOutgoing());
+        await expectConverged(live: false);
+        await deviceA.receive(await deviceB.journalEntityMessage(entryId));
+        await expectConverged(live: false);
+      },
+    );
+
+    for (final (label, stamp) in [
+      ('before', DateTime(2024)),
+      ('after', DateTime(2100)),
+    ]) {
+      test(
+        'a removal covers the copy an older build created under a random '
+        'id, stamped $label the removal',
+        () async {
+          // B runs a build before ADR 0096: its link has a random id.
+          final legacy = EntryLink.basic(
+            id: 'legacy-random-id',
+            fromId: entryId,
+            toId: 'note-id',
+            createdAt: stamp,
+            updatedAt: stamp,
+            vectorClock: const VectorClock({'legacy-host': 1}),
+          );
+          await deviceB.db.upsertEntryLink(legacy);
+
+          expect(await link(deviceA), isTrue);
+          await deviceA.receive(await deviceB.journalEntityMessage(entryId));
+          expect(await unlink(deviceA), 1);
+
+          // B's next snapshot still carries its live copy.
+          await deviceA.receive(await deviceB.journalEntityMessage(entryId));
+          expect(
+            await deviceA.db.linksForEntryIdsBidirectional({entryId}),
+            isEmpty,
+          );
+
+          await deviceB.receiveAll(deviceA.takeOutgoing());
+          await expectConverged(live: false);
+        },
+      );
+    }
 
     test(
       'a removal on the device that did not create the link reaches the '

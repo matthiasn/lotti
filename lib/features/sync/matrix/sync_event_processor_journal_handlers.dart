@@ -556,8 +556,16 @@ extension _JournalHandlers on SyncEventProcessor {
     if (_sequenceLogService != null &&
         entryLink.vectorClock != null &&
         originatingHostId != null) {
+      // A refused version is received too, once the link is stored here —
+      // under its own id, or under another one that outranks it (ADR 0096).
       final linkExists =
-          rows > 0 || await journalDb.entryLinkById(entryLink.id) != null;
+          rows > 0 ||
+          await journalDb.entryLinkById(entryLink.id) != null ||
+          (await journalDb.linksBetween(
+            entryLink.fromId,
+            entryLink.toId,
+            type: entryLinkTypeName(entryLink),
+          )).isNotEmpty;
       if (linkExists) {
         try {
           final gaps = await _sequenceLogService.recordReceivedEntryLink(

@@ -9,6 +9,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/blocks_cycle_guard.dart';
+import 'package:lotti/logic/entry_link_creation.dart';
 import 'package:lotti/logic/persistence_collaborator_base.dart';
 import 'package:lotti/logic/persistence_logic.dart' show PersistenceLogic;
 import 'package:lotti/logic/services/metadata_service.dart'
@@ -181,27 +182,29 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
       () async {
         final now = DateTime.now();
 
-        // Re-creating a removed link revives it (see [removedVersion]).
-        final removed = removedVersion(
-          await journalDb.linksBetween(
-            fromId,
-            toId,
-            type: entryLinkTypeDbName(linkType),
-          ),
+        // The link's derived id, or the next version of a removed or hidden
+        // row of the same link (see [linkCreationBase]). None when the link
+        // is already live here.
+        final base = await linkCreationBase(
+          journalDb,
+          fromId: fromId,
+          toId: toId,
+          type: entryLinkTypeDbName(linkType),
         );
+        if (base == null) return false;
+        final (:id, :predecessor) = base;
 
-        final linkId = removed?.id ?? uuid.v1();
         final link = linkType.buildLink(
-          id: linkId,
+          id: id,
           fromId: fromId,
           toId: toId,
           createdAt: now,
-          updatedAt: linkEditTimestamp(removed, now),
+          updatedAt: linkEditTimestamp(predecessor, now),
           hidden: hidden,
           collapsed: collapsed,
           vectorClock: await vectorClockService.getNextVectorClock(
-            previous: removed?.vectorClock,
-            payload: (id: linkId, type: SyncSequencePayloadType.entryLink),
+            previous: predecessor?.vectorClock,
+            payload: (id: id, type: SyncSequencePayloadType.entryLink),
           ),
         );
 
@@ -217,7 +220,7 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
           await outboxService.enqueueMessage(
             SyncMessage.entryLink(
               entryLink: link,
-              status: removed == null
+              status: predecessor == null
                   ? SyncEntryStatus.initial
                   : SyncEntryStatus.update,
             ),

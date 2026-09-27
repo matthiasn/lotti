@@ -53,6 +53,10 @@ SECONDS = {
     "AgentReplicationIntentTerminal": 627,
     "DayProcessingJobDraft": 358,
     "AgentLinksLossy": 323,
+    # Local runs, a few seconds each; refresh from CI measurements.
+    "EntryLinkIdentity": 10,
+    "EntryLinkIdentityLegacy": 10,
+    "EntryLinkIdentityLegacyReceiver": 5,
     "DayProcessingJob": 379,
     "AgentReplicationTerminal": 409,
     "VersionHeadsSoul": 277,

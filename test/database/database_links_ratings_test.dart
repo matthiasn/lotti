@@ -751,7 +751,7 @@ void main() {
 
       test(
         'concurrent inserts of one (from, to, type) with different ids are '
-        'serialised: one wins, the other is blocked rather than thrown',
+        'serialised: the greater version takes the row, neither throws',
         () async {
           final base = DateTime(2024, 8, 9);
           final a = buildEntryLink(
@@ -774,9 +774,9 @@ void main() {
             db!.upsertEntryLink(b),
           ]);
 
-          expect(results.where((r) => r != 0), hasLength(1));
-          expect(results, contains(0));
-          expect(await db!.linksForEntryIds({'race-to'}), hasLength(1));
+          expect(results, contains(isNot(0)));
+          // The two differ only in their id, so the content decides.
+          expect(await db!.linksForEntryIds({'race-to'}), [b]);
         },
       );
     });
@@ -1474,6 +1474,209 @@ void main() {
               ? shown
               : clockless;
           await expectWinnerInEveryOrder([shown, clockless], kept);
+        },
+      );
+    });
+
+    group('upsertEntryLink across ids -', () {
+      // One link — one (from, to, type) — under two ids: two devices created
+      // it offline, or a build before ADR 0096 minted a random id.
+      final early = DateTime(2024, 11, 10, 10);
+      final late = DateTime(2024, 11, 10, 11);
+
+      EntryLink version(
+        String id, {
+        required VectorClock clock,
+        required DateTime updatedAt,
+        bool removed = false,
+        String fromId = 'ids-from',
+        EntryLinkType type = EntryLinkType.basic,
+      }) => type.buildLink(
+        id: id,
+        fromId: fromId,
+        toId: 'ids-to',
+        createdAt: early,
+        updatedAt: updatedAt,
+        vectorClock: clock,
+        hidden: removed,
+        deletedAt: removed ? updatedAt : null,
+      );
+
+      Future<List<EntryLink>> stored() =>
+          db!.linksBetween('ids-from', 'ids-to', type: 'BasicLink');
+
+      Future<void> expectWinnerInEveryOrder(
+        List<EntryLink> versions,
+        EntryLink winner,
+      ) async {
+        for (final order in [versions, versions.reversed.toList()]) {
+          await clearAllTables(db!);
+          for (final link in order) {
+            await db!.upsertEntryLink(link);
+          }
+          expect(await stored(), [winner], reason: '$order');
+        }
+      }
+
+      test(
+        'the greater version takes the row whatever its id, in either '
+        'arrival order: a live row no longer refuses another id outright',
+        () async {
+          final older = version(
+            'device-a',
+            clock: const VectorClock({'a': 1}),
+            updatedAt: early,
+          );
+          final newer = version(
+            'device-b',
+            clock: const VectorClock({'b': 1}),
+            updatedAt: late,
+            removed: true,
+          );
+          await expectWinnerInEveryOrder([older, newer], newer);
+        },
+      );
+
+      test(
+        "a removal outranks the other id's live version it had seen, so a "
+        'late snapshot of that version does not bring the link back',
+        () async {
+          final mine = version(
+            'derived',
+            clock: const VectorClock({'a': 1}),
+            updatedAt: early,
+          );
+          final theirs = version(
+            'legacy',
+            clock: const VectorClock({'b': 1}),
+            updatedAt: early,
+          );
+          // Written over the row its device held after receiving `theirs`.
+          final removal = version(
+            'derived',
+            clock: const VectorClock({'a': 2}),
+            updatedAt: late,
+            removed: true,
+          );
+
+          await db!.upsertEntryLink(mine);
+          expect(await db!.upsertEntryLink(theirs), 0);
+          await db!.upsertEntryLink(removal);
+
+          // The peer that created `theirs` sends its snapshot: refused.
+          expect(await db!.upsertEntryLink(theirs), 0);
+          expect(await stored(), [removal]);
+          expect(await db!.linksForEntryIds({'ids-to'}), isEmpty);
+        },
+      );
+
+      test(
+        'a hidden row of another id is no longer replaced by an older '
+        'version: the order decides, not the hidden flag',
+        () async {
+          final removal = version(
+            'removed',
+            clock: const VectorClock({'a': 2}),
+            updatedAt: late,
+            removed: true,
+          );
+          final stale = version(
+            'stale',
+            clock: const VectorClock({'b': 1}),
+            updatedAt: early,
+          );
+          await expectWinnerInEveryOrder([removal, stale], removal);
+        },
+      );
+
+      test(
+        'a version moved onto a held triple that loses there takes its '
+        'superseded row along, as on the device where it lost',
+        () async {
+          // `moved` is at another triple, then retyped onto this one.
+          final before = version(
+            'moved',
+            clock: const VectorClock({'a': 1}),
+            updatedAt: early,
+            type: EntryLinkType.blocks,
+          );
+          final holder = version(
+            'holder',
+            clock: const VectorClock({'b': 1}),
+            updatedAt: late,
+          );
+          final after = version(
+            'moved',
+            clock: const VectorClock({'a': 2}),
+            updatedAt: early,
+          );
+          await db!.upsertEntryLink(before);
+          await db!.upsertEntryLink(holder);
+
+          expect(await db!.upsertEntryLink(after), 0);
+
+          expect(await db!.linksBetween('ids-from', 'ids-to'), [holder]);
+          expect(await db!.entryLinkById('moved'), isNull);
+        },
+      );
+
+      test(
+        'a project link replaced under another id, or displaced from the '
+        "triple it left, keeps the task's project id in step",
+        () async {
+          final task = _makeTask('ids-to');
+          await db!.upsertJournalDbEntity(toDbEntity(task));
+          Future<String?> projectId() async =>
+              (await db!
+                      .customSelect(
+                        "SELECT project_id FROM journal WHERE id = 'ids-to'",
+                      )
+                      .getSingle())
+                  .read<String?>('project_id');
+
+          final first = version(
+            'first',
+            fromId: 'project-1',
+            clock: const VectorClock({'a': 1}),
+            updatedAt: early,
+            type: EntryLinkType.project,
+          );
+          await db!.upsertEntryLink(first);
+          expect(await projectId(), 'project-1');
+
+          // The same membership under another id, later: it takes the row.
+          final second = version(
+            'second',
+            fromId: 'project-1',
+            clock: const VectorClock({'b': 1}),
+            updatedAt: late,
+            type: EntryLinkType.project,
+            removed: true,
+          );
+          expect(await db!.upsertEntryLink(second), isNot(0));
+          expect(await projectId(), isNull);
+
+          // A live project link moved from project-2 onto project-1 loses to
+          // `second` there, and its row at project-2 goes.
+          final elsewhere = version(
+            'moved',
+            fromId: 'project-2',
+            clock: const VectorClock({'c': 1}),
+            updatedAt: early,
+            type: EntryLinkType.project,
+          );
+          await db!.upsertEntryLink(elsewhere);
+          expect(await projectId(), 'project-2');
+          final moved = version(
+            'moved',
+            fromId: 'project-1',
+            clock: const VectorClock({'c': 2}),
+            updatedAt: early,
+            type: EntryLinkType.project,
+          );
+          expect(await db!.upsertEntryLink(moved), 0);
+          expect(await db!.entryLinkById('moved'), isNull);
+          expect(await projectId(), isNull);
         },
       );
     });
