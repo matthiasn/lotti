@@ -55,6 +55,15 @@ class TaskAgentRetirement {
   /// local write between them cannot make the pass retire against a view it
   /// no longer holds. Returns the ids of the agents it retired.
   Future<Set<String>> retireSuperseded(String taskId) async {
+    // Almost every task has one agent, and the sync receive runs this for
+    // every task link and task agent it applies: settle that case with one
+    // read, without taking the writer's transaction.
+    final candidates = await repository.getLinksTo(
+      taskId,
+      type: AgentLinkTypes.agentTask,
+    );
+    if (candidates.length < 2) return const <String>{};
+
     final retired = await syncService.runInTransaction(() async {
       final links = await repository.getLinksTo(
         taskId,
