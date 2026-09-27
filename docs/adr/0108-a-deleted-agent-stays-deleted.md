@@ -54,3 +54,8 @@ through the same function and pins the six-state trace.
   still insert rows, as before.
 - A link between two of a deleted agent's own entities names neither end as
   the agent and is written, pointing at two entities that were refused.
+- A deep backfill round (`DeepBackfillService`, run from the sync settings)
+  lists records by id and clock only, so a device that deleted an agent
+  cannot tell a peer's records of it apart and requests them; the peer
+  resends them and they are refused again. The cost is one refused resend
+  per record per round, while a peer still holds the agent.
