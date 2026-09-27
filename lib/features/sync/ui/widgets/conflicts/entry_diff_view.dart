@@ -319,11 +319,14 @@ String _displayValue(BuildContext context, EntryField field, String? raw) {
     case EntryField.priority:
       return taskPriorityFromString(raw).localizedLabel(context);
     case EntryField.estimate:
-      final minutes = int.tryParse(raw);
-      // As the task page shows an estimate.
-      return minutes == null
-          ? raw
-          : formatRangeDuration(Duration(minutes: minutes));
+      final micros = int.tryParse(raw);
+      if (micros == null) return raw;
+      final estimate = Duration(microseconds: micros);
+      // As the task page shows an estimate — to the second when it is not
+      // whole minutes, so two sides differing below the minute read apart.
+      return estimate.inSeconds % 60 == 0
+          ? formatRangeDuration(estimate)
+          : formatDuration(estimate);
     case EntryField.dueDate:
       final parsed = DateTime.tryParse(raw);
       return parsed == null ? raw : deviceDateLabel(context, parsed);

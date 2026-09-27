@@ -49,7 +49,11 @@ Two designs were weighed:
 
 - `EntryField` gains `status`, `priority`, `estimate` and `dueDate`. A
   task's status is compared with the reason a blocked or on-hold status
-  carries, so two reasons behind one status are a difference to show. The
+  carries, so two reasons behind one status are a difference to show. An
+  estimate is compared exactly, as stored, and shown to the second when it
+  is not whole minutes; a due date is compared by its calendar day — the
+  date picker stores midnight, the day agent's triage the end of the day,
+  and both mean the same due day. The
   screen labels them in every catalog and shows each as the task page does
   (the localized status and priority, the estimate as a duration, the due
   date in the device's date format).

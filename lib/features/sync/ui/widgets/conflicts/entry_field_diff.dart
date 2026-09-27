@@ -270,14 +270,13 @@ final List<_FieldSpec> _specs = <_FieldSpec>[
     EntryField.priority,
     (e) => e is Task ? e.data.priority.short : null,
   ),
+  // Exact, in microseconds as stored: an estimate that differs below the
+  // minute is still a difference (the view shows it to the second).
   _FieldSpec(
     EntryField.estimate,
-    (e) => e is Task ? e.data.estimate?.inMinutes.toString() : null,
+    (e) => e is Task ? e.data.estimate?.inMicroseconds.toString() : null,
   ),
-  _FieldSpec(
-    EntryField.dueDate,
-    (e) => e is Task ? e.data.due?.toIso8601String() : null,
-  ),
+  const _FieldSpec(EntryField.dueDate, _dueDayOf),
   _FieldSpec(EntryField.audioDuration, (e) {
     final d = audioDuration(e);
     return d == null ? null : formatDuration(d);
@@ -309,6 +308,18 @@ String? _statusOf(JournalEntity e) {
   return reason == null || reason.isEmpty
       ? status.toDbString
       : '${status.toDbString}$statusReasonSeparator$reason';
+}
+
+/// A task's due date as its calendar day (`YYYY-MM-DD`): a due date is a day
+/// — the date picker stores its midnight, the day agent's triage its end —
+/// so two times on one day are not a difference to show.
+String? _dueDayOf(JournalEntity e) {
+  if (e is! Task) return null;
+  final due = e.data.due;
+  if (due == null) return null;
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${due.year.toString().padLeft(4, '0')}-${two(due.month)}-'
+      '${two(due.day)}';
 }
 
 /// Separates a status from its reason in [EntryField.status] values.

@@ -272,11 +272,11 @@ void main() {
         {
           EntryField.status: ('OPEN', 'DONE'),
           EntryField.priority: ('P1', 'P3'),
-          EntryField.estimate: ('30', '120'),
-          EntryField.dueDate: (
-            DateTime(2024, 4).toIso8601String(),
-            DateTime(2024, 5).toIso8601String(),
+          EntryField.estimate: (
+            const Duration(minutes: 30).inMicroseconds.toString(),
+            const Duration(hours: 2).inMicroseconds.toString(),
           ),
+          EntryField.dueDate: ('2024-04-01', '2024-05-01'),
         },
       );
     });
@@ -290,6 +290,26 @@ void main() {
       expect(diff.fields.single.field, EntryField.status);
       expect(diff.fields.single.localValue, 'BLOCKED: waiting on design');
       expect(diff.fields.single.remoteValue, 'BLOCKED: waiting on review');
+    });
+
+    test('an estimate differing below the minute is still a difference', () {
+      final diff = computeEntryDiff(
+        taskOf(estimate: const Duration(minutes: 90)),
+        taskOf(estimate: const Duration(minutes: 90, seconds: 30)),
+      );
+
+      expect(diff.fields.single.field, EntryField.estimate);
+    });
+
+    test('two times on the same due day are not a difference', () {
+      final diff = computeEntryDiff(
+        // The date picker's midnight, and the day agent's end of day.
+        taskOf(due: DateTime(2024, 4, 2)),
+        taskOf(due: DateTime(2024, 4, 2, 23, 59, 59, 999)),
+      );
+
+      expect(diff.shape, ConflictShape.identical);
+      expect(diff.fields, isEmpty);
     });
 
     test('a due date set on one side only is onlyLocal / onlyRemote', () {
