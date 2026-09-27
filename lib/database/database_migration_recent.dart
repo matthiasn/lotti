@@ -346,6 +346,8 @@ CREATE TABLE config_flags_v48 (
     if (from < 50) {
       await _keyConflictsByVersion();
     }
+    // v51 declares idx_journal_checklist_item_home (ADR 0105); the index
+    // reconcile that ends every upgrade creates it, so no step is needed.
   }
 
   /// v50: one conflict row per concurrent version of an entry (ADR 0092).

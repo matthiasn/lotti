@@ -105,6 +105,11 @@ SECONDS = {
     "TaskFieldWrites": 20,
     "TaskFieldWritesAgents": 60,
     "TaskFieldWritesResolve": 25,
+    # Local runs with 20 workers took 222s, 225s and 6s; budgeted for a
+    # runner with fewer cores. Refresh from CI.
+    "ChecklistReplication": 600,
+    "ChecklistReplicationAdds": 600,
+    "ChecklistReplicationCrash": 20,
     "AgentWakeCoordination": 15,
     "AgentWakeCoordinationFailure": 75,
     "AgentWakeCoordinationCrash": 110,

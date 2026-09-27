@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:clock/clock.dart';
+import 'package:drift/drift.dart' show Variable;
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -18,10 +19,13 @@ import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/state/conflict_resolution_service.dart';
+import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_shared.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/tasks/model/membership_list.dart';
 import 'package:lotti/features/tasks/repository/checklist_membership_intents.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
+import 'package:lotti/features/tasks/repository/shown_checklist_items.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
@@ -45,6 +49,7 @@ import '../../../widget_test_utils.dart';
 import '../../agents/test_utils.dart' show makeTestChecklistApproval;
 
 part 'checklist_membership_model_conformance.dart';
+part 'checklist_replication_model_conformance.dart';
 
 void main() {
   final testDate = DateTime(2024, 3, 15, 10, 30);
@@ -130,6 +135,15 @@ void main() {
         subDomain: any(named: 'subDomain'),
       ),
     ).thenAnswer((_) async => true);
+
+    // Unless a test stores rows ([storeRows]), no deleted row is found, and
+    // no item names a checklist.
+    when(
+      () => mockJournalDb.journalEntityByIdIncludingDeleted(any()),
+    ).thenAnswer((_) async => null);
+    when(
+      () => mockJournalDb.checklistItemsNaming(any()),
+    ).thenAnswer((_) async => []);
 
     // Create ProviderContainer
     container = ProviderContainer();
@@ -250,6 +264,33 @@ void main() {
     when(() => mockJournalDb.journalEntityById(any())).thenAnswer((inv) async {
       final row = rows[inv.positionalArguments.first as String];
       return row?.meta.deletedAt == null ? row : null;
+    });
+    when(
+      () => mockJournalDb.journalEntityByIdIncludingDeleted(any()),
+    ).thenAnswer((inv) async => rows[inv.positionalArguments.first as String]);
+    when(
+      () => mockJournalDb.journalEntitiesByIdsUnorderedAllPrivate(any()),
+    ).thenAnswer(
+      (inv) => MockSelectable<JournalDbEntity>([
+        for (final id in inv.positionalArguments.first as List<String>)
+          if (rows[id] case final row? when row.meta.deletedAt == null)
+            toDbEntity(row),
+      ]),
+    );
+    // JournalDb.checklistItemsNaming: the live items whose back-link names
+    // one of the checklists first.
+    when(() => mockJournalDb.checklistItemsNaming(any())).thenAnswer((
+      inv,
+    ) async {
+      final checklistIds = (inv.positionalArguments.first as Iterable<String>)
+          .toSet();
+      return [
+        for (final row in rows.values)
+          if (row is ChecklistItem &&
+              row.meta.deletedAt == null &&
+              checklistIds.contains(row.data.linkedChecklists.firstOrNull))
+            row,
+      ];
     });
     stubUpdateMetadata();
     when(
@@ -2376,15 +2417,25 @@ void main() {
     }
 
     test(
-      'beginItemDeletion records a DeleteItemIntent, unlists the item at '
-      'once, keeps the item row, and returns the key',
+      'beginItemDeletion records a DeleteItemIntent, unlists the item and '
+      'clears its back-link at once, keeps the item row, and returns the key',
       () {
         fakeAsync((async) {
           final rows = listedItem();
 
           final key = begin(async);
 
-          expect(events, ['record deleteItem', 'write checklist']);
+          expect(events, [
+            'record deleteItem',
+            'write checklist',
+            'write item',
+          ]);
+          // Named by no checklist, it is shown by none — here, or on a device
+          // that receives the unlisting (ADR 0105).
+          expect(
+            (rows['item']! as ChecklistItem).data.linkedChecklists,
+            isEmpty,
+          );
           expect(jsonDecode(intentRows[key]!), {
             'op': 'deleteItem',
             'itemId': 'item',
@@ -2411,7 +2462,13 @@ void main() {
 
           async.elapse(undoWindow);
 
-          expect(events, ['delete item', 'clear deleteItem']);
+          // The intent takes its mark just before the delete (a replay reads
+          // only the delete's own write as landed).
+          expect(events, [
+            'record deleteItem',
+            'delete item',
+            'clear deleteItem',
+          ]);
           expect(rows['item']!.meta.deletedAt, isNotNull);
           expect(intentRows, isEmpty);
         });
@@ -2437,8 +2494,11 @@ void main() {
           ..flushMicrotasks()
           ..elapse(undoWindow * 2);
 
-        expect(events, ['write checklist', 'clear deleteItem']);
+        expect(events, ['write checklist', 'write item', 'clear deleteItem']);
         expect(listed(rows, 'checklist'), ['before', 'after', 'item']);
+        expect((rows['item']! as ChecklistItem).data.linkedChecklists, [
+          'checklist',
+        ]);
         expect(checklist, rows['checklist']);
         expect(rows['item']!.meta.deletedAt, isNull);
         expect(intentRows, isEmpty);
@@ -2446,7 +2506,9 @@ void main() {
     });
 
     test(
-      'undoItemDeletion clears the intent even when the checklist is gone',
+      'undoItemDeletion completes the deletion when the checklist is gone '
+      'meanwhile — its cascade no longer found the item, whose back-link '
+      'was cleared',
       () {
         fakeAsync((async) {
           final rows = listedItem();
@@ -2467,8 +2529,12 @@ void main() {
             ..elapse(undoWindow * 2);
 
           expect(checklist, isNull);
-          expect(events, ['clear deleteItem']);
-          expect(rows['item']!.meta.deletedAt, isNull);
+          expect(events, [
+            'record deleteItem',
+            'delete item',
+            'clear deleteItem',
+          ]);
+          expect(rows['item']!.meta.deletedAt, isNotNull);
           expect(intentRows, isEmpty);
         });
       },
@@ -2493,7 +2559,11 @@ void main() {
 
           expect(deleted, isTrue);
           // Deleted once: the window's timer no longer fires.
-          expect(events, ['delete item', 'clear deleteItem']);
+          expect(events, [
+            'record deleteItem',
+            'delete item',
+            'clear deleteItem',
+          ]);
           expect(rows['item']!.meta.deletedAt, isNotNull);
           expect(intentRows, isEmpty);
         });
@@ -2516,7 +2586,7 @@ void main() {
           async.flushMicrotasks();
 
           expect(deleted, isTrue);
-          expect(events, ['clear deleteItem']);
+          expect(events, ['record deleteItem', 'clear deleteItem']);
           expect(intentRows, isEmpty);
         });
       },
@@ -2544,7 +2614,7 @@ void main() {
           async.flushMicrotasks();
 
           expect(deleted, isFalse);
-          expect(events, isEmpty);
+          expect(events, ['record deleteItem']);
           expect(intentRows.keys, [key]);
         });
       },
@@ -2582,12 +2652,17 @@ void main() {
 
   group('deleteChecklist', () {
     test(
-      'deletes the checklist, then removes it from the task, under a '
-      'recorded DeleteChecklistIntent',
+      'removes the checklist from the task, then deletes it and the items '
+      'naming it, under a recorded DeleteChecklistIntent',
       () async {
         final rows = storeRows([
           taskWith(const ['first', 'doomed']),
-          checklistWith('doomed', const []),
+          checklistWith('doomed', const ['listed']),
+          itemIn('listed', const ['doomed']),
+          // Named but not listed: its listing had not arrived.
+          itemIn('unlisted', const ['doomed']),
+          // Listed but moved away since: it stays.
+          itemIn('moved', const ['first']),
         ]);
 
         final deleted = await repository.deleteChecklist(
@@ -2598,10 +2673,13 @@ void main() {
         expect(deleted, isTrue);
         expect(events, [
           'record deleteChecklist',
-          'delete doomed',
           'write ${testTask.id}',
+          'delete doomed',
+          'delete listed',
+          'delete unlisted',
           'clear deleteChecklist',
         ]);
+        expect(rows['moved']!.meta.deletedAt, isNull);
         expect(
           jsonDecode(
             verify(
@@ -2711,8 +2789,8 @@ void main() {
     );
 
     test(
-      'returns false and leaves the task alone when the checklist cannot be '
-      'deleted',
+      'returns false and keeps the intent when the checklist cannot be '
+      'deleted, the task having unlisted it first',
       () async {
         final rows = storeRows([
           taskWith(const ['first', 'doomed']),
@@ -2730,10 +2808,9 @@ void main() {
         );
 
         expect(deleted, isFalse);
-        expect((rows[testTask.id]! as Task).data.checklistIds, [
-          'first',
-          'doomed',
-        ]);
+        // Unlisted before the deletion (UnlistFirst); the recorded intent
+        // deletes it at the next start.
+        expect((rows[testTask.id]! as Task).data.checklistIds, ['first']);
         expect(
           intentRows.values.map(jsonDecode).single,
           containsPair('op', 'deleteChecklist'),
@@ -3271,7 +3348,619 @@ void main() {
         ).called(1);
       },
     );
+
+    test(
+      'returns an item two checklists list once, and one only its back-link '
+      'names (ADR 0105)',
+      () async {
+        final rows = storeRows([
+          taskWith(const ['first', 'second']),
+          checklistWith('first', const ['moved']),
+          checklistWith('second', const ['moved']),
+          itemIn('moved', const ['second']),
+          // Its listing has not arrived yet.
+          itemIn('unlisted', const ['first']),
+        ]);
+
+        final result = await repository.getChecklistItemsForTask(
+          task: rows[testTask.id]! as Task,
+        );
+
+        expect(
+          result.map((i) => i.meta.id),
+          unorderedEquals(['moved', 'unlisted']),
+        );
+      },
+    );
+  });
+
+  group('across devices (specs/tla/ChecklistReplication.tla, ADR 0105)', () {
+    test('a move names the target alone in the back-link', () async {
+      final rows = storeRows([
+        checklistWith('from', const ['item']),
+        checklistWith('to', const []),
+        itemIn('item', const ['from', 'stale']),
+      ]);
+
+      await repository.moveItem(
+        itemId: 'item',
+        fromId: 'from',
+        toId: 'to',
+        taskId: null,
+      );
+
+      expect((rows['item']! as ChecklistItem).data.linkedChecklists, ['to']);
+    });
+
+    test(
+      'an item added to a checklist deleted meanwhile is deleted with it, '
+      'and the add reports no item',
+      () async {
+        final rows = storeRows([
+          checklistWith('doomed', const []).copyWith(
+            meta: checklistWith('doomed', const []).meta.copyWith(
+              deletedAt: testDate,
+            ),
+          ),
+        ]);
+        when(() => mockPersistenceLogic.createMetadata()).thenAnswer(
+          (_) async => itemIn('new-item', const []).meta,
+        );
+
+        final added = await repository.addItemToChecklist(
+          checklistId: 'doomed',
+          title: 'Count the krill crates',
+          isChecked: false,
+          categoryId: null,
+        );
+
+        expect(added, isNull);
+        final item = rows.values.whereType<ChecklistItem>().single;
+        expect(item.meta.deletedAt, isNotNull);
+        expect(intentRows, isEmpty);
+      },
+    );
+
+    test(
+      'an item moved into a checklist deleted meanwhile goes with it',
+      () async {
+        final doomed = checklistWith('to', const []);
+        final rows = storeRows([
+          checklistWith('from', const ['item']),
+          doomed.copyWith(meta: doomed.meta.copyWith(deletedAt: testDate)),
+          itemIn('item', const ['from']),
+        ]);
+
+        final target = await repository.moveItem(
+          itemId: 'item',
+          fromId: 'from',
+          toId: 'to',
+          taskId: null,
+        );
+
+        expect(target, isNull);
+        expect(rows['item']!.meta.deletedAt, isNotNull);
+        expect(intentRows, isEmpty);
+      },
+    );
+
+    test(
+      'updateTaskChecklistIds with restate writes a new version even when the '
+      'list is unchanged',
+      () async {
+        final rows = storeRows([
+          taskWith(const ['first']),
+        ]);
+
+        final stored = await repository.updateTaskChecklistIds(
+          taskId: testTask.id,
+          change: (ids) => withMember(ids, 'first'),
+          restate: true,
+        );
+
+        expect(stored, isTrue);
+        expect(events, ['write ${testTask.id}']);
+        expect((rows[testTask.id]! as Task).data.checklistIds, ['first']);
+      },
+    );
+
+    group('settleReceived', () {
+      JournalEntity deleted(JournalEntity entity) => entity.copyWith(
+        meta: entity.meta.copyWith(deletedAt: testDate),
+      );
+
+      test(
+        "a checklist's deletion takes the live items still naming it, under "
+        'a recorded SweepChecklistIntent',
+        () async {
+          final rows = storeRows([
+            deleted(checklistWith('doomed', const ['listed'])),
+            itemIn('listed', const ['doomed']),
+            // Named, not listed: the device that deleted the checklist held
+            // an older version of it.
+            itemIn('unlisted', const ['doomed']),
+            itemIn('elsewhere', const ['kept']),
+          ]);
+
+          await repository.settleReceived(rows['doomed']!);
+
+          expect(rows['listed']!.meta.deletedAt, isNotNull);
+          expect(rows['unlisted']!.meta.deletedAt, isNotNull);
+          expect(rows['elsewhere']!.meta.deletedAt, isNull);
+          expect(events.first, 'record sweepChecklist');
+          expect(events.last, 'clear sweepChecklist');
+          expect(intentRows, isEmpty);
+        },
+      );
+
+      test('an item naming a deleted checklist is deleted', () async {
+        final rows = storeRows([
+          deleted(checklistWith('doomed', const [])),
+          itemIn('late', const ['doomed']),
+        ]);
+
+        await repository.settleReceived(rows['late']!);
+
+        expect(rows['late']!.meta.deletedAt, isNotNull);
+      });
+
+      test(
+        'leaves alone an item of a live checklist, a deletion no item names, '
+        'and every other entry — recording nothing',
+        () async {
+          final rows = storeRows([
+            checklistWith('live', const ['item']),
+            itemIn('item', const ['live']),
+            deleted(checklistWith('empty', const [])),
+            taskWith(const ['live']),
+          ]);
+
+          await repository.settleReceived(rows['item']!);
+          await repository.settleReceived(rows['empty']!);
+          await repository.settleReceived(rows[testTask.id]!);
+          await repository.settleReceived(itemIn('stray', const ['nowhere']));
+
+          expect(events, isEmpty);
+          expect(rows['item']!.meta.deletedAt, isNull);
+        },
+      );
+
+      test('logs a failure rather than throwing into the sync apply', () async {
+        final error = StateError('journal db closed');
+        when(
+          () => mockJournalDb.journalEntityByIdIncludingDeleted(any()),
+        ).thenThrow(error);
+
+        await repository.settleReceived(itemIn('item', const ['c']));
+
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.persistence,
+            error,
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'settleReceived',
+          ),
+        ).called(1);
+      });
+
+      test(
+        'settlerForReceived hands checklists and items to one repository, '
+        'built on first use, and ignores every other entry',
+        () async {
+          final built = <MockChecklistRepository>[];
+          final settle = ChecklistRepository.settlerForReceived(
+            create: () {
+              final mock = MockChecklistRepository();
+              when(() => mock.settleReceived(any())).thenAnswer((_) async {});
+              built.add(mock);
+              return mock;
+            },
+          );
+
+          await settle(taskWith(const []));
+          expect(built, isEmpty);
+
+          final checklist = checklistWith('c', const []);
+          final item = itemIn('i', const ['c']);
+          await settle(checklist);
+          await settle(item);
+
+          expect(built, hasLength(1));
+          verify(() => built.single.settleReceived(checklist)).called(1);
+          verify(() => built.single.settleReceived(item)).called(1);
+        },
+      );
+    });
+
+    group('resolveConflict', () {
+      /// A checklist of the stored task.
+      Checklist keptChecklist() {
+        final checklist = checklistWith('kept', const []);
+        return checklist.copyWith(
+          data: checklist.data.copyWith(linkedTasks: [testTask.id]),
+        );
+      }
+
+      test(
+        'a kept checklist is written onto its task in a new version, listed '
+        'or not, under a recorded ListChecklistIntent with restate',
+        () async {
+          final rows = storeRows([
+            taskWith(const ['kept']),
+            keptChecklist(),
+          ]);
+          var writes = 0;
+
+          final written = await repository.resolveConflict(
+            rows['kept']!,
+            () async {
+              writes++;
+              events.add('resolve kept');
+              return true;
+            },
+          );
+
+          expect(written, isTrue);
+          expect(writes, 1);
+          expect(events, [
+            'record listChecklist',
+            'resolve kept',
+            'write ${testTask.id}',
+            'clear listChecklist',
+          ]);
+          expect(
+            jsonDecode(
+              verify(
+                    () => mockSettingsDb.saveSettingsItem(any(), captureAny()),
+                  ).captured.single
+                  as String,
+            ),
+            containsPair('restate', true),
+          );
+          expect((rows[testTask.id]! as Task).data.checklistIds, ['kept']);
+        },
+      );
+
+      test(
+        'a kept deletion takes the items naming the checklist, the other '
+        "side's included",
+        () async {
+          final doomed = checklistWith('doomed', const ['mine', 'theirs']);
+          final rows = storeRows([
+            doomed.copyWith(meta: doomed.meta.copyWith(deletedAt: testDate)),
+            itemIn('mine', const ['doomed']),
+            itemIn('theirs', const ['doomed']),
+          ]);
+
+          final written = await repository.resolveConflict(
+            rows['doomed']!,
+            () async => true,
+          );
+
+          expect(written, isTrue);
+          expect(rows['mine']!.meta.deletedAt, isNotNull);
+          expect(rows['theirs']!.meta.deletedAt, isNotNull);
+          expect(intentRows, isEmpty);
+        },
+      );
+
+      test(
+        'a resolution that did not write leaves nothing to follow, and '
+        'reports it',
+        () async {
+          final rows = storeRows([
+            taskWith(const []),
+            keptChecklist(),
+          ]);
+
+          final written = await repository.resolveConflict(
+            rows['kept']!,
+            () async => false,
+          );
+
+          expect(written, isFalse);
+          expect(events, ['record listChecklist', 'clear listChecklist']);
+          expect((rows[testTask.id]! as Task).data.checklistIds, isEmpty);
+        },
+      );
+
+      test(
+        'anything but a checklist, or one naming no task, is only written',
+        () async {
+          storeRows([]);
+          final orphan = checklistWith('orphan', const []);
+
+          expect(
+            await repository.resolveConflict(
+              itemIn('item', const ['c']),
+              () async => true,
+            ),
+            isTrue,
+          );
+          expect(
+            await repository.resolveConflict(
+              orphan.copyWith(
+                data: orphan.data.copyWith(linkedTasks: const []),
+              ),
+              () async => true,
+            ),
+            isTrue,
+          );
+          expect(events, isEmpty);
+        },
+      );
+
+      test('logs a failure after the write and keeps the intent', () async {
+        final rows = storeRows([keptChecklist()]);
+        final error = StateError('journal db closed');
+        when(
+          () => mockJournalDb.journalEntityById(testTask.id),
+        ).thenThrow(error);
+
+        final written = await repository.resolveConflict(
+          rows['kept']!,
+          () async => true,
+        );
+
+        expect(written, isTrue);
+        expect(
+          intentRows.values.map(jsonDecode).single,
+          containsPair('op', 'listChecklist'),
+        );
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.persistence,
+            error,
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'resolveConflict',
+          ),
+        ).called(1);
+      });
+    });
+
+    group('replay does not repeat a write of its own that landed', () {
+      late MockVectorClockService vectorClock;
+
+      setUp(() {
+        vectorClock = MockVectorClockService();
+        when(vectorClock.getHost).thenAnswer((_) async => 'device');
+        getIt.registerSingleton<VectorClockService>(vectorClock);
+      });
+
+      test(
+        "deleteChecklist records its mark: this device's counter on the "
+        'checklist',
+        () async {
+          storeRows([
+            taskWith(const ['doomed']),
+            checklistWith(
+              'doomed',
+              const [],
+              clock: const VectorClock({'device': 4}),
+            ),
+          ]);
+
+          await repository.deleteChecklist(
+            checklistId: 'doomed',
+            taskId: testTask.id,
+          );
+
+          expect(
+            jsonDecode(
+              verify(
+                    () => mockSettingsDb.saveSettingsItem(any(), captureAny()),
+                  ).captured.first
+                  as String,
+            ),
+            containsPair('mark', 4),
+          );
+        },
+      );
+
+      test(
+        'a deletion that landed, of a checklist kept alive since by a '
+        "conflict's resolution, neither unlists nor deletes it again",
+        () async {
+          final rows = storeRows([
+            taskWith(const ['kept']),
+            // Deleted here at counter 2, then kept by the other device's
+            // resolution, whose version covers the deletion.
+            checklistWith(
+              'kept',
+              const ['item'],
+              clock: const VectorClock({'device': 2, 'other': 3}),
+            ),
+            itemIn('item', const ['kept']),
+          ]);
+          seedIntent(
+            DeleteChecklistIntent(
+              checklistId: 'kept',
+              taskId: testTask.id,
+              mark: 1,
+            ),
+          );
+
+          await repository.replayMembershipIntents();
+
+          expect(events, ['clear deleteChecklist']);
+          expect(rows['kept']!.meta.deletedAt, isNull);
+          expect(rows['item']!.meta.deletedAt, isNull);
+          expect((rows[testTask.id]! as Task).data.checklistIds, ['kept']);
+        },
+      );
+
+      test(
+        'a deletion that did not land yet is finished: unlisted, deleted, '
+        'swept',
+        () async {
+          final rows = storeRows([
+            taskWith(const ['doomed']),
+            checklistWith(
+              'doomed',
+              const [],
+            ),
+            itemIn('item', const ['doomed']),
+          ]);
+          seedIntent(
+            DeleteChecklistIntent(
+              checklistId: 'doomed',
+              taskId: testTask.id,
+              mark: 1,
+            ),
+          );
+
+          await repository.replayMembershipIntents();
+
+          expect(rows['doomed']!.meta.deletedAt, isNotNull);
+          expect(rows['item']!.meta.deletedAt, isNotNull);
+          expect((rows[testTask.id]! as Task).data.checklistIds, isEmpty);
+          expect(intentRows, isEmpty);
+        },
+      );
+
+      test(
+        'a move whose back-link write landed does not write it again: the '
+        'item has moved on since',
+        () async {
+          final rows = storeRows([
+            checklistWith('from', const ['item']),
+            checklistWith('to', const []),
+            itemIn(
+              'item',
+              const ['elsewhere'],
+              clock: const VectorClock({'device': 2}),
+            ),
+          ]);
+          seedIntent(
+            const MoveItemIntent(
+              itemId: 'item',
+              fromId: 'from',
+              toId: 'to',
+              mark: 1,
+            ),
+          );
+
+          await repository.replayMembershipIntents();
+
+          expect(
+            (rows['item']! as ChecklistItem).data.linkedChecklists,
+            ['elsewhere'],
+          );
+          expect(intentRows, isEmpty);
+        },
+      );
+
+      test(
+        'an item deletion that landed does not delete again an item a '
+        "conflict's resolution kept",
+        () async {
+          final rows = storeRows([
+            checklistWith('checklist', const []),
+            itemIn(
+              'item',
+              const ['checklist'],
+              clock: const VectorClock({'device': 2, 'other': 1}),
+            ),
+          ]);
+          seedIntent(
+            const DeleteItemIntent(
+              itemId: 'item',
+              checklistId: 'checklist',
+              mark: 1,
+            ),
+          );
+
+          await repository.replayMembershipIntents();
+
+          expect(rows['item']!.meta.deletedAt, isNull);
+          expect(intentRows, isEmpty);
+        },
+      );
+
+      test(
+        'an item deletion still in its undo window when the app died is '
+        'completed, even after an edit to the item moved the counter',
+        () async {
+          final rows = storeRows([
+            checklistWith('checklist', const []),
+            // Checked (or renamed by the agent) inside the undo window: this
+            // device's counter moved, but the delete never started.
+            itemIn(
+              'item',
+              const [],
+              clock: const VectorClock({'device': 5}),
+            ),
+          ]);
+          seedIntent(
+            const DeleteItemIntent(itemId: 'item', checklistId: 'checklist'),
+          );
+
+          await repository.replayMembershipIntents();
+
+          expect(rows['item']!.meta.deletedAt, isNotNull);
+          expect(intentRows, isEmpty);
+        },
+      );
+
+      test(
+        "completeItemDeletion marks the intent with this device's counter "
+        'just before the delete, not at the swipe',
+        () async {
+          final rows = storeRows([
+            checklistWith('checklist', const ['item']),
+            itemIn(
+              'item',
+              const ['checklist'],
+              clock: const VectorClock({'device': 3}),
+            ),
+          ]);
+          final key = await repository.beginItemDeletion(
+            itemId: 'item',
+            checklistId: 'checklist',
+            undoWindow: const Duration(days: 1),
+          );
+          // An edit inside the undo window moves the counter on.
+          rows['item'] = rows['item']!.copyWith(
+            meta: rows['item']!.meta.copyWith(
+              vectorClock: const VectorClock({'device': 7}),
+            ),
+          );
+
+          await repository.completeItemDeletion(key: key!, itemId: 'item');
+
+          final saved = verify(
+            () => mockSettingsDb.saveSettingsItem(key, captureAny()),
+          ).captured.map((json) => jsonDecode(json as String) as Map);
+          expect(saved.first.containsKey('mark'), isFalse);
+          expect(saved.last, containsPair('mark', 7));
+        },
+      );
+
+      test('without a readable host, nothing counts as landed', () async {
+        when(vectorClock.getHost).thenAnswer((_) async => null);
+        final rows = storeRows([
+          checklistWith('checklist', const []),
+          itemIn(
+            'item',
+            const ['checklist'],
+            clock: const VectorClock({'device': 2}),
+          ),
+        ]);
+        seedIntent(
+          const DeleteItemIntent(
+            itemId: 'item',
+            checklistId: 'checklist',
+            mark: 1,
+          ),
+        );
+
+        await repository.replayMembershipIntents();
+
+        expect(rows['item']!.meta.deletedAt, isNotNull);
+      });
+    });
   });
 
   _registerChecklistMembershipConformance();
+  _registerChecklistReplicationConformance();
 }

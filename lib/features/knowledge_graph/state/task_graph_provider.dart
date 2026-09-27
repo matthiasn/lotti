@@ -17,6 +17,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_layout_engine.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_models.dart';
+import 'package:lotti/features/tasks/repository/shown_checklist_items.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -243,19 +244,15 @@ final FutureProviderFamily<TaskGraphData?, String> taskGraphProvider =
           if (e != null) entities[e.id] = e;
         }
 
-        // Checklist items (one more embedded hop).
-        final itemWanted = <String>{};
-        for (final e in entities.values) {
-          if (e is Checklist) {
-            for (final it in e.data.linkedChecklistItems) {
-              if (!entities.containsKey(it)) itemWanted.add(it);
-            }
-          }
-        }
-        if (itemWanted.isNotEmpty) {
-          final items = await Future.wait(itemWanted.map(db.journalEntityById));
-          for (final e in items) {
-            if (e != null) entities[e.id] = e;
+        // Checklist items (one more embedded hop): the items each checklist
+        // shows — the live items naming it, whether or not its list holds
+        // them yet — as the checklist screen reads them (ADR 0105).
+        final shownItems = await readShownChecklistItems(db, [
+          ...entities.values.whereType<Checklist>(),
+        ]);
+        for (final items in shownItems.values) {
+          for (final item in items) {
+            entities[item.meta.id] = item;
           }
         }
 
@@ -274,12 +271,8 @@ final FutureProviderFamily<TaskGraphData?, String> taskGraphProvider =
             final cl = entities[cid];
             if (cl == null) continue;
             addEdge(task, cid, GraphEdgeKind.association);
-            if (cl is Checklist) {
-              for (final it in cl.data.linkedChecklistItems) {
-                if (entities.containsKey(it)) {
-                  addEdge(cid, it, GraphEdgeKind.checklist);
-                }
-              }
+            for (final item in shownItems[cid] ?? const <ChecklistItem>[]) {
+              addEdge(cid, item.meta.id, GraphEdgeKind.checklist);
             }
           }
         });

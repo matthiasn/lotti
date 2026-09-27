@@ -31,6 +31,7 @@ import '../../../helpers/entity_factories.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../agents/test_utils.dart' show makeTestChecklistApproval;
+import '../../tasks/shown_items_stub.dart';
 import '../test_utils.dart';
 
 // Local fake (not a plain mock): computes real union durations so the
@@ -236,6 +237,8 @@ void main() {
 
       // Set default return value for journalEntityById to avoid null subtype errors
       when(() => mockDb.journalEntityById(any())).thenAnswer((_) async => null);
+      // A checklist's items are read as each test stubs them by id.
+      stubListedItemsNameTheirChecklist(mockDb, () => const []);
       when(
         () => mockDb.getLinkedEntities(any()),
       ).thenAnswer((_) async => <JournalEntity>[]);

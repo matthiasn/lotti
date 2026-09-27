@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/query/query_task_action_planner.dart';
 import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
+import 'package:lotti/features/tasks/repository/shown_checklist_items.dart';
 
 /// Loads bounded, live task metadata for explicit user-requested changes.
 /// No report, transcript, neighbour body or historical instruction is included.
@@ -36,12 +37,17 @@ class QueryTaskActionContextLoader {
     }..remove(taskId);
     final checklistIds = task.data.checklistIds ?? const <String>[];
     final lists = await access.load(checklistIds);
-    final itemIds = <String>{
+    // The items each checklist shows: those naming it (ADR 0105).
+    final shown = await readShownChecklistItems(access.journal, [
       for (final checklist in lists.entries.values)
         if (checklist is Checklist &&
             lists.allowsEntry(checklist) &&
             checklist.meta.categoryId == task.meta.categoryId)
-          ...checklist.data.linkedChecklistItems,
+          checklist,
+    ]);
+    final itemIds = <String>{
+      for (final items in shown.values)
+        for (final item in items) item.meta.id,
     };
     final ids = <String>{
       taskId,
@@ -67,7 +73,8 @@ class QueryTaskActionContextLoader {
     final liveItemIds = <String>{
       for (final checklist in visible.whereType<Checklist>())
         if (home.data.checklistIds?.contains(checklist.meta.id) ?? false)
-          ...checklist.data.linkedChecklistItems,
+          for (final item in shown[checklist.meta.id] ?? <ChecklistItem>[])
+            item.meta.id,
     };
     final checklists = visible
         .whereType<ChecklistItem>()

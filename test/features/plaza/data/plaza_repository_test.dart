@@ -15,6 +15,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../projects/test_utils.dart';
+import '../../tasks/shown_items_stub.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -58,6 +59,7 @@ void main() {
         for (final id in ids) ?entities[id],
       ];
     });
+    stubShownChecklistReads(db, () => entities);
     when(
       () => db.getTasksForProject(project.meta.id),
     ).thenAnswer((_) async => [task]);

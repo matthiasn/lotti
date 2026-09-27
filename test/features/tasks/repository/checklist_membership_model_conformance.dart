@@ -539,10 +539,18 @@ class _MembershipBench {
     live.add(created.checklist!.meta.id);
   }
 
+  /// A deleted checklist takes its items with it (ADR 0105).
   void _deleteList(String checklistId) {
     live.remove(checklistId);
     deletedLists.add(checklistId);
     _screenLists.remove(checklistId);
+    for (final item in [
+      for (final MapEntry(key: item, value: itemHome) in home.entries)
+        if (itemHome == checklistId) item,
+    ]) {
+      home.remove(item);
+      deletedItems.add(item);
+    }
   }
 
   /// The app dies part-way through a multi-row operation: its intent is
@@ -679,7 +687,8 @@ class _MembershipBench {
           live.add(checklist.id);
         }
       case 4:
-        // deleteChecklist, before or after it deletes the checklist.
+        // deleteChecklist, before or after its first write: unlisting the
+        // checklist from the task.
         final candidates = live.skip(1).toList();
         if (candidates.isEmpty) return false;
         final checklistId = candidates[progress % candidates.length];
@@ -687,7 +696,10 @@ class _MembershipBench {
           DeleteChecklistIntent(checklistId: checklistId, taskId: taskId),
         );
         if (progress.isOdd) {
-          await JournalRepository().deleteJournalEntity(checklistId);
+          await repository.updateTaskChecklistIds(
+            taskId: taskId,
+            change: (ids) => withoutMember(ids, checklistId),
+          );
         }
         _deleteList(checklistId);
     }

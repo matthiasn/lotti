@@ -37,6 +37,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../../../widget_test_utils.dart';
+import '../../shown_items_stub.dart';
 
 class MockEntryController extends EntryController {
   MockEntryController({required this.mockEntry});
@@ -235,6 +236,9 @@ void main() {
       when(
         () => mockJournalDb.journalEntityById(mockTask.id),
       ).thenAnswer((_) async => mockTask);
+      // The checklist controllers resolve each checklist's items through
+      // readShownChecklistItems (ADR 0105); these checklists list none.
+      stubListedItemsNameTheirChecklist(mockJournalDb, () => const []);
 
       // Mock checklist entities
       when(() => mockJournalDb.journalEntityById('checklist1')).thenAnswer(

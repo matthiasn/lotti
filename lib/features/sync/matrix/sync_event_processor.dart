@@ -248,6 +248,12 @@ class SyncEventProcessor {
   /// directly (no outbox enqueue — prevents echo loops).
   ConsumptionRepository? consumptionRepository;
 
+  /// Run after a received journal entity is applied, for what storing it
+  /// leaves to do on other rows — the items of a deleted checklist
+  /// (`ChecklistRepository.settleReceived`, ADR 0105). Injected after
+  /// construction; must not throw.
+  Future<void> Function(JournalEntity applied)? onJournalEntityApplied;
+
   /// Wake orchestrator, injected after agent infrastructure starts. Used to
   /// remove subscriptions when an incoming sync message pauses or destroys
   /// an agent.

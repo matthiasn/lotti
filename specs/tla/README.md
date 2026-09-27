@@ -2182,6 +2182,26 @@ counterexample. Its fixed traces (the counterexample, the wake gate, and
 two agents an older build left) each fail too. Without the startup pass,
 the legacy trace fails.
 
+`ChecklistReplication` has its own trace,
+`test/features/tasks/repository/checklist_replication_model_conformance.dart`
+(a part of the `ChecklistRepository` suite): two devices, each a real
+in-memory `JournalDb` and `SettingsDb` behind its own real
+`ChecklistRepository`, with a persistence
+that stamps each device's own clock. The users add items (with random and
+with derived ids), move, check and swipe-delete them, add and delete
+checklists and edit the task; every stored version is sent and delivered to
+the other device in a generated order through the real write decision and
+the real receive hook (`settleReceived`); conflicts are resolved through the
+real `ConflictResolutionService`; a start replays what was recorded. After
+every step, on each device, `ShownOnce` and `NoDuplicates` hold, read through
+the real `readShownChecklistItems`; once everything is delivered and every
+conflict resolved, `NoLostItem`, `NoOrphanItem`, `NoLostChecklist` and the two
+devices' identical views. Reading a checklist's items from its list fails it
+in three steps (the derived copy on both devices), keeping one side's
+`checklistIds` in two (a checklist added on each), no receive hook in two (a
+checklist deleted on one device while its item is checked on the other), and
+no cascade in one.
+
 ## Changing a spec
 
 Keep the header's action-to-code map current. When a change is meant to fix a
@@ -2505,8 +2525,9 @@ undo window, delete a checklist, edit a task field, sort the checklists) and
 the agent's (`addItemToChecklist`, `createChecklist`, its item and task field
 tools) split at every read and write; versions of any row landing by sync;
 and the app dying part-way through an operation, with the next start
-replaying what it recorded. Two devices writing the same row concurrently are
-`JournalReplication`'s subject. The decision is
+replaying what it recorded. Two devices writing these rows at once are
+[`ChecklistReplication`](#checklistreplication--a-tasks-checklists-on-two-devices)'s
+subject. The decision is
 [ADR 0089](../../docs/adr/0089-checklist-membership-on-the-stored-row.md).
 
 | Property | Kind | Says |
@@ -2523,9 +2544,9 @@ left to replay.
 
 | Configuration | Checklists | Items | Operations | Receives | Crashes | Distinct states |
 |---------------|-----------:|------:|-----------:|---------:|--------:|----------------:|
-| `ChecklistMembership` | 2 | 3 | 4 | 2 | 0 | 3,660,131 |
-| `ChecklistMembershipThree` | 3 | 2 | 3 | 2 | 0 | 595,730 |
-| `ChecklistMembershipCrash` | 2 | 2 | 4 | 2 | 1 | 1,342,048 |
+| `ChecklistMembership` | 2 | 3 | 4 | 2 | 0 | 3,762,956 |
+| `ChecklistMembershipThree` | 3 | 2 | 3 | 2 | 0 | 621,434 |
+| `ChecklistMembershipCrash` | 2 | 2 | 4 | 2 | 1 | 1,412,624 |
 
 Every write replaced a whole row under a clock built on the row read just
 before it, so the write decision took it as the newer version — however old
@@ -2659,6 +2680,80 @@ What the model leaves out:
 - **Audio and image entries.** Transcripts and image analyses appended by
   the AI (`SkillInferenceRunner`, `UnifiedAiInferenceRepository`) write the
   entry they re-read, like the old task writers; they are not task fields.
+
+## `ChecklistReplication` — a task's checklists on two devices
+
+`ChecklistMembership` takes one device; this takes two. Membership is held
+three times over — the task lists its checklists, a checklist lists its
+items, each item names its checklist (`linkedChecklists`, its back-link) —
+and each is a journal row that sync replaces whole, one row at a time, in any
+order, with concurrent versions of one row a conflict the user resolves by
+keeping a side (`JournalReplication`). The one-device fixes are taken as
+given: every write is built on the stored row, every multi-row operation
+records its intent. Both devices' users add, move, check and delete items,
+add and delete checklists and edit the task; every row version is delivered
+on its own; the user resolves conflicts; an app dies mid-operation and
+replays. A lost delivery that backfill recovers is a late delivery of a
+version covering the lost one, which delivery in any order covers. The
+decision is [ADR 0105](../../docs/adr/0105-a-checklist-shows-the-items-naming-it.md).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `ShownOnce` | invariant | at every moment, whatever has arrived, no item is shown by two of the task's checklists — so none is counted twice in a checklist's completion |
+| `NoDuplicates` | invariant | no list names an id twice |
+| `NeverSilent` | invariant | once every version has arrived, both devices show the same checklists with the same items in the same order — or one shows the user a conflict |
+| `NoLostItem` | invariant | once settled (everything arrived, every conflict resolved, nothing left to replay), every live item is shown by the checklist it names |
+| `NoOrphanItem` | invariant | once settled, every live item names a live checklist: a deleted checklist took its items with it, those that arrived after the deletion too |
+| `NoLostChecklist` | invariant | once settled, every live checklist is on the task |
+
+| Configuration | Checklists | Items | Operations | Resolutions | Crashes | Adds | Distinct states |
+|---------------|-----------:|------:|-----------:|------------:|--------:|------|----------------:|
+| `ChecklistReplication` | 3 | 1 | 3 | 1 | 0 | moves, checks, item and checklist deletions | 19,015,764 |
+| `ChecklistReplicationAdds` | 2 | 2 | 3 | 2 | 0 | item and checklist adds, derived item ids (the migration handler's copy), checklist deletions, task edits | 23,910,105 |
+| `ChecklistReplicationCrash` | 2 | 1 | 2 | 2 | 1 | moves, checks, deletions, an app dying mid-operation | 838,395 |
+
+The first two take under four minutes each with 20 workers.
+
+The design switches are the fixes; each has a counterexample when set to
+`FALSE`, run from a copy of the configuration outside this directory. Step
+counts are TLC's, device A and B:
+
+| Switch | Old behaviour | Counterexample |
+|--------|---------------|----------------|
+| `ItemsByHome` | a checklist showed the live items its list names | `ShownOnce`, four steps: A moves an item from c1 to c2 — its back-link, then c2's list — and until c1's unlisting lands, on A or on a device that got c2's list first, the item is in both checklists. Thirteen steps, judged only once everything has arrived: A moves the item to c2, B to c3; the item's versions conflict, but c2 and c3 each list it, so it is shown and counted twice for good. Eight steps (`ChecklistReplicationAdds`): the migration handler's derived copy is created on A in c1 and on B in c2, the checklist each sees first — both list it |
+| `JoinOnResolve` | a resolution kept one side's list | `NoLostChecklist`, ten steps: A adds a checklist while B edits the task; the task conflicts, A keeps B's side, and the new checklist is on no task. With `ItemsByHome` off too, `NoLostItem`, fourteen steps: A and B add an item each to c1; c1 conflicts, A keeps its side, and B's item is listed nowhere |
+| `RelistOnResolve` | keeping a checklist in its conflict left the task as it was | `NoLostChecklist`, thirteen steps: A swipe-deletes an item (a write of c1) while B deletes c1 (unlisting it from the task, then deleting it); A keeps its own c1, which is live again and on no task |
+| `UnlistFirst` | `deleteChecklist` deleted the checklist, then unlisted it | `NoLostChecklist`, sixteen steps: A deletes c1 and, before it unlists c1, B keeps its concurrent version of c1 and writes it onto the task; A's unlisting, built on B's version of the task, is newer and wins |
+| `ReplayGuard` | a replay repeated every write | `NoLostChecklist`, twenty steps (`ChecklistReplicationCrash`): B deletes c1 and dies before clearing the intent; A keeps its concurrent c1 and writes it onto the task; B's replay unlists and deletes c1 again, over A's choice |
+| `Cascade` | deleting a checklist left its items alive | `NoOrphanItem`, five steps: A deletes c1; its item lives on, on both devices, naming a checklist nobody shows |
+
+Two fixes TLC showed insufficient on their way: relisting what a resolution
+revives writes nothing when the id is still listed, and loses to an unlisting
+in flight (eleven steps: A swipe-deletes an item, B checks it, B keeps the
+check before A's unlisting of c1 arrives); and deleting the items a deleted
+checklist lists misses one whose listing has not arrived, or whose listing
+was on the side a merged deletion dropped — two concurrent deletions of one
+checklist merge into one side's row (thirteen steps). So a checklist shows,
+and a deletion takes, the items naming it, found by their back-link
+(`JournalDb.checklistItemsNaming`); the lists only order.
+
+What the model leaves out, deliberately or as a residual:
+
+- **Items only.** The model's items have a back-link and nothing else; a check
+  is a new version of the item. Titles and archival don't bear on membership.
+- **The receive hook and its intent commit together.** `settleReceived` runs
+  after the sync processor applies a row and records its intent before its
+  first write; the app dying between the two leaves the item alive, naming a
+  deleted checklist — shown nowhere, but still in the journal — until another
+  version of the item or the checklist arrives.
+- **Other removals from the task's list.** `EntryController.updateChecklistOrder`
+  drops ids of checklists deleted on this device when the user sorts; racing
+  a resolution that keeps one of them elsewhere, that unlisting can win. It
+  is not modelled.
+- **An item naming no checklist** (from before back-links) is shown by every
+  checklist that lists it, as before.
+- **Two devices** only, and one task; the model's `DerivedIds` covers the
+  migration handler creating one item id on both.
 
 ## `AgentWakeCoordination` — one device wakes a task agent over what it holds
 

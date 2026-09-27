@@ -22,6 +22,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../shown_items_stub.dart';
 
 void main() {
   late MockJournalDb mockDb;
@@ -98,6 +99,8 @@ void main() {
     when(
       () => mockDb.journalEntityById('task-1'),
     ).thenAnswer((_) async => testTask);
+    // The checklist shows the items it lists, as each test stubs them.
+    stubListedItemsNameTheirChecklist(mockDb, () => const []);
     when(
       () => mockUpdateNotifications.updateStream,
     ).thenAnswer((_) => updateStreamController.stream);
@@ -305,6 +308,56 @@ void main() {
       expect(result.totalCount, 1);
       expect(result.completedCount, 1);
     });
+
+    test(
+      'counts only items naming this checklist: one another device moved '
+      'away is counted there, not here too (ADR 0105)',
+      () async {
+        final checklist = Checklist(
+          meta: Metadata(
+            id: 'checklist-comp',
+            createdAt: DateTime(2025),
+            updatedAt: DateTime(2025),
+            dateFrom: DateTime(2025),
+            dateTo: DateTime(2025),
+          ),
+          data: const ChecklistData(
+            title: 'Moved Test',
+            linkedChecklistItems: ['item-a', 'item-moved'],
+            linkedTasks: [],
+          ),
+        );
+        when(
+          () => mockDb.journalEntityById('checklist-comp'),
+        ).thenAnswer((_) async => checklist);
+        when(
+          () => mockDb.journalEntityById('item-a'),
+        ).thenAnswer(
+          (_) async => makeCompletionItem(id: 'item-a', isChecked: true),
+        );
+        final moved = makeCompletionItem(id: 'item-moved', isChecked: true);
+        when(() => mockDb.journalEntityById('item-moved')).thenAnswer(
+          (_) async => moved.copyWith(
+            data: moved.data.copyWith(linkedChecklists: const ['other']),
+          ),
+        );
+
+        final container = await buildCompletionContainer(
+          checklist: checklist,
+          itemIds: const ['item-a', 'item-moved'],
+        );
+
+        final result = await container.read(
+          checklistCompletionControllerProvider((
+            id: 'checklist-comp',
+            taskId: null,
+          )).future,
+        );
+
+        expect(result.totalCount, 1);
+        expect(result.completedCount, 1);
+      },
+    );
 
     test('returns zeros when checklist has no items', () async {
       final emptyChecklist = Checklist(

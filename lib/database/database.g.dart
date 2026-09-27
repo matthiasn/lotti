@@ -5982,6 +5982,10 @@ abstract class _$JournalDb extends GeneratedDatabase {
     'idx_journal_tasks_priority_date',
     'CREATE INDEX idx_journal_tasks_priority_date ON journal (task_priority_rank COLLATE BINARY ASC, date_from COLLATE BINARY DESC, id COLLATE BINARY ASC) WHERE type = \'Task\' AND task = 1 AND deleted = FALSE',
   );
+  late final Index idxJournalChecklistItemHome = Index(
+    'idx_journal_checklist_item_home',
+    'CREATE INDEX idx_journal_checklist_item_home ON journal (json_extract(serialized, \'\$.data.linkedChecklists[0]\')) WHERE type = \'ChecklistItem\' AND deleted = FALSE AND json_valid(serialized)',
+  );
   late final Index idxJournalQuantLatest = Index(
     'idx_journal_quant_latest',
     'CREATE INDEX idx_journal_quant_latest ON journal (subtype COLLATE BINARY ASC, date_from COLLATE BINARY DESC) WHERE type = \'QuantitativeEntry\' AND deleted = FALSE',
@@ -7751,6 +7755,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     idxJournalProjectTaskStatus,
     idxJournalTasksStatusPriorityDate,
     idxJournalTasksPriorityDate,
+    idxJournalChecklistItemHome,
     idxJournalQuantLatest,
     idxJournalInsightsTime,
     conflicts,

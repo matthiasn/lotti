@@ -7,9 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/model/membership_list.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
+import 'package:lotti/features/tasks/repository/shown_checklist_items.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/cache_extension.dart';
@@ -52,10 +52,17 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
 
     final checklist = await _fetch();
     if (checklist != null) {
-      subscribedIds.addAll(checklist.data.linkedChecklistItems);
+      subscribedIds
+        ..addAll(checklist.data.linkedChecklistItems)
+        ..addAll(_listed);
     }
     return checklist;
   }
+
+  /// The checklist's stored list as last read: an item it lists but does
+  /// not show — one now naming another checklist — is still watched, so the
+  /// checklist shows it again if it comes back.
+  List<String> _listed = const [];
 
   void _listen() {
     _updateSubscription = getIt<UpdateNotifications>().updateStream.listen((
@@ -74,7 +81,9 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
         ..clear()
         ..add(id);
       if (latest != null) {
-        subscribedIds.addAll(latest.data.linkedChecklistItems);
+        subscribedIds
+          ..addAll(latest.data.linkedChecklistItems)
+          ..addAll(_listed);
       }
       developer.log(
         'state updated id=$id items=${latest?.data.linkedChecklistItems.length}',
@@ -84,14 +93,35 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
     });
   }
 
+  /// The checklist as the screen shows it: the stored row with
+  /// `linkedChecklistItems` replaced by the ids of the items it shows, in
+  /// order ([readShownChecklistItems]: the live items naming it). Never the
+  /// base of a write — every write reads the stored row — so an item it
+  /// lists but does not show is never dropped by a reorder
+  /// ([inVisibleOrder] keeps it).
   Future<Checklist?> _fetch() async {
     final res = await getIt<JournalDb>().journalEntityById(id);
+    return res is Checklist && !res.isDeleted ? _shown(res) : null;
+  }
 
-    if (res is Checklist && !res.isDeleted) {
-      return res;
-    } else {
-      return null;
-    }
+  /// [stored] as the screen shows it (see [_fetch]).
+  Future<Checklist> _shown(Checklist stored) async {
+    _listed = stored.data.linkedChecklistItems;
+    final shown = await readShownChecklistItems(getIt<JournalDb>(), [stored]);
+    return stored.copyWith(
+      data: stored.data.copyWith(
+        linkedChecklistItems: [
+          for (final item in shown[id] ?? const <ChecklistItem>[]) item.meta.id,
+        ],
+      ),
+    );
+  }
+
+  /// Publishes [written] — a checklist a write returned as stored — as the
+  /// screen shows it.
+  Future<void> _publish(Checklist written) async {
+    final shown = await _shown(written);
+    if (ref.mounted) state = AsyncData(shown);
   }
 
   /// Soft-deletes the checklist and detaches it from its parent task
@@ -99,11 +129,14 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
   /// the next start finishes it should the app die in between). Returns
   /// `false` only when the underlying entity delete itself fails.
   Future<bool> delete() async {
-    final deleted = taskId == null
-        ? await ref.read(journalRepositoryProvider).deleteJournalEntity(id)
-        : await ref
-              .read(checklistRepositoryProvider)
-              .deleteChecklist(checklistId: id, taskId: taskId!);
+    // Opened on its own rather than on a task page, the checklist still
+    // takes its items with it, and leaves the task it names.
+    final deleted = await ref
+        .read(checklistRepositoryProvider)
+        .deleteChecklist(
+          checklistId: id,
+          taskId: taskId ?? state.value?.data.linkedTasks.firstOrNull,
+        );
     if (!deleted) return false;
     if (ref.mounted) state = const AsyncData(null);
     return true;
@@ -170,7 +203,7 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
               targetItemId: targetItemId,
             ),
           );
-      if (target != null && ref.mounted) state = AsyncData(target);
+      if (target != null) await _publish(target);
     }
   }
 
@@ -316,7 +349,7 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
           itemId: checklistItemId,
           checklistId: id,
         );
-    if (written != null && ref.mounted) state = AsyncData(written);
+    if (written != null) await _publish(written);
   }
 
   /// Publishes the checklist as stored.
@@ -337,9 +370,7 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
     final written = await ref
         .read(checklistRepositoryProvider)
         .updateChecklist(checklistId: id, change: change);
-    if (written != null && ref.mounted) {
-      state = AsyncData(written);
-    }
+    if (written != null) await _publish(written);
   }
 
   /// Creates a new item under this checklist and lists it

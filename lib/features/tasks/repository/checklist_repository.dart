@@ -13,11 +13,13 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/model/membership_list.dart';
 import 'package:lotti/features/tasks/repository/checklist_membership_intents.dart';
+import 'package:lotti/features/tasks/repository/shown_checklist_items.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/logic/write_on_stored.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 
 /// Keep-alive provider exposing the singleton [ChecklistRepository].
 final checklistRepositoryProvider = Provider<ChecklistRepository>(
@@ -169,17 +171,9 @@ class ChecklistRepository {
                 ));
               }
             }
-            return updateChecklist(
-              checklistId: newChecklist.meta.id,
-              change: (stored) => stored.copyWith(
-                linkedChecklistItems: createdIds.fold(
-                  stored.linkedChecklistItems,
-                  withMember,
-                ),
-              ),
-            );
+            return _listItems(newChecklist.meta.id, createdIds);
           },
-          done: (listed) => listed != null,
+          done: (listing) => listing.done,
         );
       }
 
@@ -367,9 +361,15 @@ class ChecklistRepository {
   /// estimate saved from a screen's copy of the task cannot drop a checklist
   /// added since (`specs/tla/ChecklistMembership.tla`). Returns whether the
   /// list is stored — `true` when [change] leaves it as it is.
+  ///
+  /// [restate] writes a new version even when [change] leaves the list as
+  /// it is, so an unlisting from another device not received yet meets it
+  /// as a concurrent version — a conflict — rather than replacing it
+  /// (`specs/tla/ChecklistReplication.tla`, `RelistOnResolve`).
   Future<bool> updateTaskChecklistIds({
     required String taskId,
     required List<String> Function(List<String> stored) change,
+    bool restate = false,
   }) async {
     try {
       var isTask = true;
@@ -384,7 +384,7 @@ class ChecklistRepository {
           }
           final current = entity.data.checklistIds ?? const <String>[];
           final next = change(current);
-          if (listEquals(next, current)) return null;
+          if (!restate && listEquals(next, current)) return null;
           return entity.copyWith(
             meta: await _persistenceLogic.updateMetadata(entity.meta),
             data: entity.data.copyWith(checklistIds: next),
@@ -486,25 +486,19 @@ class ChecklistRepository {
         approvalHistory: approvalHistory,
         uuidV5Input: uuidV5Input,
       );
-      return await _intents.run(
+      final added = await _intents.run(
         ListItemsIntent(checklistId: checklistId, itemIds: [newItem.id]),
         () async {
-          if (!await _createRow(newItem)) return null;
+          if (!await _createRow(newItem)) return (item: null, done: false);
           // Listed on the checklist as stored, so an item that synced in or
-          // was added by another writer meanwhile stays listed too.
-          final checklist = await updateChecklist(
-            checklistId: checklistId,
-            change: (stored) => stored.copyWith(
-              linkedChecklistItems: withMember(
-                stored.linkedChecklistItems,
-                newItem.id,
-              ),
-            ),
-          );
-          return checklist == null ? null : newItem;
+          // was added by another writer meanwhile stays listed too — or, if
+          // the checklist was deleted meanwhile, deleted with it.
+          final listing = await _listItems(checklistId, [newItem.id]);
+          return (item: listing.listed ? newItem : null, done: listing.done);
         },
-        done: (item) => item != null,
+        done: (result) => result.done,
       );
+      return added.item;
     } catch (exception, stackTrace) {
       _loggingService.error(
         LogDomain.persistence,
@@ -514,6 +508,52 @@ class ChecklistRepository {
       );
       return null;
     }
+  }
+
+  /// Lists [itemIds] on the stored checklist [checklistId]. A checklist
+  /// deleted meanwhile takes them with it: each still naming it is deleted,
+  /// as deleting the checklist would have (ADR 0105). `listed`: they are on
+  /// a live checklist; `done`: nothing is left to do.
+  Future<({bool listed, bool done})> _listItems(
+    String checklistId,
+    List<String> itemIds,
+  ) async {
+    final checklist = await _journalDb.journalEntityByIdIncludingDeleted(
+      checklistId,
+    );
+    if (checklist is Checklist && checklist.isDeleted) {
+      return (
+        listed: false,
+        done: await _deleteItemsNaming(checklistId, only: itemIds.toSet()),
+      );
+    }
+    final written = await updateChecklist(
+      checklistId: checklistId,
+      change: (stored) => stored.copyWith(
+        linkedChecklistItems: itemIds.fold(
+          stored.linkedChecklistItems,
+          withMember,
+        ),
+      ),
+    );
+    return (listed: written != null, done: written != null);
+  }
+
+  /// Deletes the live items naming the checklist [checklistId] — all of
+  /// them, or those of [only] — found by their back-link, not by its list:
+  /// a list can lack an item whose listing has not arrived, and two
+  /// concurrent deletions of a checklist merge into one side's row, whose
+  /// list can lack the other side's items. Returns whether all are deleted.
+  Future<bool> _deleteItemsNaming(
+    String checklistId, {
+    Set<String>? only,
+  }) async {
+    var deleted = true;
+    for (final item in await _journalDb.checklistItemsNaming([checklistId])) {
+      if (only != null && !only.contains(item.meta.id)) continue;
+      if (!await _deleteEntity(item.meta.id)) deleted = false;
+    }
+    return deleted;
   }
 
   /// Applies [change] to the stored checklist [checklistId]'s item list.
@@ -559,7 +599,12 @@ class ChecklistRepository {
   }) async {
     try {
       final moved = await _intents.run(
-        MoveItemIntent(itemId: itemId, fromId: fromId, toId: toId),
+        MoveItemIntent(
+          itemId: itemId,
+          fromId: fromId,
+          toId: toId,
+          mark: await _ownCounter(itemId),
+        ),
         () => _applyMove(
           itemId: itemId,
           fromId: fromId,
@@ -581,12 +626,15 @@ class ChecklistRepository {
     }
   }
 
+  /// [backLinked]: a replay found the move's back-link write landed, so the
+  /// item's back-link is not written again ([MembershipIntent]'s `mark`).
   Future<({Checklist? target, bool done})> _applyMove({
     required String itemId,
     required String fromId,
     required String toId,
     required String? taskId,
     List<String> Function(List<String> stored)? place,
+    bool backLinked = false,
   }) async {
     if (await _journalDb.journalEntityById(itemId) is! ChecklistItem) {
       // A deleted item is not moved; unlisting it from the source is all
@@ -597,29 +645,31 @@ class ChecklistRepository {
       );
       return (target: null, done: source.done);
     }
-    final backLinked =
+    // The back-link decides where the item is shown (ADR 0105): it names the
+    // target alone.
+    final linked =
+        backLinked ||
         await updateChecklistItem(
-          checklistItemId: itemId,
-          taskId: taskId,
-          change: (stored) => stored.copyWith(
-            linkedChecklists: withMember(
-              withoutMember(stored.linkedChecklists, fromId),
-              toId,
-            ),
-          ),
-        ) !=
-        null;
-    final target = await _changeItems(
-      toId,
-      place ?? (ids) => withMember(ids, itemId),
-    );
+              checklistItemId: itemId,
+              taskId: taskId,
+              change: (stored) => stored.copyWith(linkedChecklists: [toId]),
+            ) !=
+            null;
+    // A target deleted meanwhile takes the item with it.
+    final targetGone = await _journalDb.journalEntityByIdIncludingDeleted(toId);
+    final target = targetGone is Checklist && targetGone.isDeleted
+        ? (
+            written: null,
+            done: await _deleteItemsNaming(toId, only: {itemId}),
+          )
+        : await _changeItems(toId, place ?? (ids) => withMember(ids, itemId));
     final source = await _changeItems(
       fromId,
       (ids) => withoutMember(ids, itemId),
     );
     return (
       target: target.written,
-      done: backLinked && target.done && source.done,
+      done: linked && target.done && source.done,
     );
   }
 
@@ -627,12 +677,14 @@ class ChecklistRepository {
   final Map<String, Timer> _pendingDeletions = {};
 
   /// Starts deleting the item [itemId] the user removed from the checklist
-  /// [checklistId]: records a [DeleteItemIntent], unlists the item at once,
-  /// and deletes it when [undoWindow] has passed — unless the user undoes
-  /// first ([undoItemDeletion]). The window is timed here, not by the row
-  /// the user swiped, which leaves the screen with the item. Should the app
-  /// die in between, the next start deletes the item, as the user last saw
-  /// it. Returns the deletion's key, or `null` when it could not be
+  /// [checklistId]: records a [DeleteItemIntent], unlists the item and clears
+  /// its back-link at once — a checklist shows the items naming it (ADR
+  /// 0105), so unlisting alone would leave it shown, here and on every other
+  /// device — and deletes it when [undoWindow] has passed, unless the user
+  /// undoes first ([undoItemDeletion]). The window is timed here, not by the
+  /// row the user swiped, which leaves the screen with the item. Should the
+  /// app die in between, the next start deletes the item, as the user last
+  /// saw it. Returns the deletion's key, or `null` when it could not be
   /// recorded.
   Future<String?> beginItemDeletion({
     required String itemId,
@@ -644,6 +696,13 @@ class ChecklistRepository {
         DeleteItemIntent(itemId: itemId, checklistId: checklistId),
       );
       await _changeItems(checklistId, (ids) => withoutMember(ids, itemId));
+      await updateChecklistItem(
+        checklistItemId: itemId,
+        taskId: null,
+        change: (stored) => stored.copyWith(
+          linkedChecklists: withoutMember(stored.linkedChecklists, checklistId),
+        ),
+      );
       _pendingDeletions[key] = Timer(
         undoWindow,
         () => unawaited(completeItemDeletion(key: key, itemId: itemId)),
@@ -662,12 +721,25 @@ class ChecklistRepository {
 
   /// Deletes the item [itemId] once its undo window has closed, and drops
   /// the deletion recorded under [key] — kept for the next start if the
-  /// delete did not land.
+  /// delete did not land. The intent takes its mark here, just before the
+  /// delete, so a replay reads only the delete's own write as having landed
+  /// ([DeleteItemIntent]).
   Future<bool> completeItemDeletion({
     required String key,
     required String itemId,
   }) async {
     _pendingDeletions.remove(key)?.cancel();
+    final intent = (await _intents.pending())[key];
+    if (intent is DeleteItemIntent) {
+      await _intents.replace(
+        key,
+        DeleteItemIntent(
+          itemId: intent.itemId,
+          checklistId: intent.checklistId,
+          mark: await _ownCounter(itemId),
+        ),
+      );
+    }
     final deleted =
         await _journalDb.journalEntityById(itemId) == null ||
         await _deleteEntity(itemId);
@@ -683,44 +755,72 @@ class ChecklistRepository {
     required String itemId,
     required String checklistId,
   }) async {
+    final checklist = await _journalDb.journalEntityById(checklistId);
+    if (checklist is! Checklist) {
+      // The checklist was deleted meanwhile, on this device or another; its
+      // items went with it — all but this one, whose back-link no longer
+      // named it. It goes the way the user first chose.
+      await completeItemDeletion(key: key, itemId: itemId);
+      return null;
+    }
     _pendingDeletions.remove(key)?.cancel();
     final relisted = await _changeItems(
       checklistId,
       (ids) => withMember(ids, itemId),
     );
-    // Listed again, or its checklist is gone: either way the deletion is
-    // off, and a replay must not complete it.
+    await updateChecklistItem(
+      checklistItemId: itemId,
+      taskId: null,
+      change: (stored) => stored.copyWith(
+        linkedChecklists: [
+          checklistId,
+          ...withoutMember(stored.linkedChecklists, checklistId),
+        ],
+      ),
+    );
+    // Listed and named again: the deletion is off, and a replay must not
+    // complete it.
     await _intents.clear(key);
     return relisted.written;
   }
 
-  /// Deletes the checklist [checklistId] and removes it from the task
-  /// [taskId]'s list, under a recorded [DeleteChecklistIntent]. Returns
-  /// `false` only when the checklist itself could not be deleted.
+  /// Deletes the checklist [checklistId] with its items, and removes it from
+  /// the task [taskId]'s list, under a recorded [DeleteChecklistIntent].
+  /// Returns `false` only when the checklist itself could not be deleted.
+  ///
+  /// The task's list is changed first: a device that keeps the checklist
+  /// when it resolves the deletion's conflict can only have seen the
+  /// deletion, so this unlisting already exists and meets its relisting as
+  /// an older or a concurrent version, never a newer one
+  /// (`specs/tla/ChecklistReplication.tla`, `UnlistFirst`). The items go with
+  /// the checklist ([_deleteItemsNaming]). A `null` [taskId] — a checklist
+  /// naming no task — leaves the unlisting out.
   Future<bool> deleteChecklist({
     required String checklistId,
-    required String taskId,
+    required String? taskId,
   }) async {
     final result = await _intents.run(
-      DeleteChecklistIntent(checklistId: checklistId, taskId: taskId),
+      DeleteChecklistIntent(
+        checklistId: checklistId,
+        taskId: taskId,
+        mark: await _ownCounter(checklistId),
+      ),
       () => _applyDeleteChecklist(checklistId: checklistId, taskId: taskId),
-      done: (result) => result.deleted && result.detached,
+      done: (result) => result.deleted && result.detached && result.swept,
     );
     return result.deleted;
   }
 
-  Future<({bool deleted, bool detached})> _applyDeleteChecklist({
+  Future<({bool deleted, bool detached, bool swept})> _applyDeleteChecklist({
     required String checklistId,
-    required String taskId,
+    required String? taskId,
   }) async {
-    final deleted =
-        await _journalDb.journalEntityById(checklistId) == null ||
-        await _deleteEntity(checklistId);
-    if (!deleted) return (deleted: false, detached: false);
-    final detached = await _changeTaskChecklists(
-      taskId,
-      (ids) => withoutMember(ids, checklistId),
-    );
+    final detached =
+        taskId == null ||
+        await _changeTaskChecklists(
+          taskId,
+          (ids) => withoutMember(ids, checklistId),
+        );
     if (!detached) {
       _loggingService.error(
         LogDomain.tasks,
@@ -728,7 +828,131 @@ class ChecklistRepository {
         subDomain: 'deleteChecklist',
       );
     }
-    return (deleted: true, detached: detached);
+    final deleted =
+        await _journalDb.journalEntityById(checklistId) == null ||
+        await _deleteEntity(checklistId);
+    if (!deleted) return (deleted: false, detached: detached, swept: false);
+    return (
+      deleted: true,
+      detached: detached,
+      swept: await _sweep(checklistId),
+    );
+  }
+
+  /// Deletes the items naming [checklistId] while it is deleted; one kept
+  /// by a conflict's resolution meanwhile keeps its items. Returns whether
+  /// nothing is left to do.
+  Future<bool> _sweep(String checklistId) async {
+    final checklist = await _journalDb.journalEntityByIdIncludingDeleted(
+      checklistId,
+    );
+    if (checklist is Checklist && !checklist.isDeleted) return true;
+    return _deleteItemsNaming(checklistId);
+  }
+
+  /// [settleReceived] for the sync processor: it acts on checklists and
+  /// items only, and builds its repository on first use, since the
+  /// persistence it writes through is registered after the processor.
+  static Future<void> Function(JournalEntity) settlerForReceived({
+    ChecklistRepository Function()? create,
+  }) {
+    ChecklistRepository? repository;
+    return (entity) async {
+      if (entity is! Checklist && entity is! ChecklistItem) return;
+      await (repository ??= (create ?? ChecklistRepository.new)())
+          .settleReceived(entity);
+    };
+  }
+
+  /// What storing [entity] from another device leaves to do: a checklist
+  /// deletion takes the items still naming the checklist, and an item
+  /// naming a deleted checklist goes with it (ADR 0105). The item's version
+  /// and the deletion arrive in either order, and the device that deleted
+  /// the checklist may have held an older version of the item, naming
+  /// another checklist, when it did. Run by the sync processor after a
+  /// journal entity is applied; recorded ([SweepChecklistIntent]) before its
+  /// first write, like every operation here.
+  Future<void> settleReceived(JournalEntity entity) async {
+    try {
+      final checklistId = switch (entity) {
+        Checklist(isDeleted: true) => entity.meta.id,
+        final ChecklistItem item when !item.isDeleted => homeChecklistId(item),
+        _ => null,
+      };
+      if (checklistId == null) return;
+      final checklist = await _journalDb.journalEntityByIdIncludingDeleted(
+        checklistId,
+      );
+      if (checklist is! Checklist || !checklist.isDeleted) return;
+      if ((await _journalDb.checklistItemsNaming([checklistId])).isEmpty) {
+        return;
+      }
+      await _intents.run(
+        SweepChecklistIntent(checklistId: checklistId),
+        () => _sweep(checklistId),
+        done: (swept) => swept,
+      );
+    } catch (exception, stackTrace) {
+      _loggingService.error(
+        LogDomain.persistence,
+        exception,
+        stackTrace: stackTrace,
+        subDomain: 'settleReceived',
+      );
+    }
+  }
+
+  /// Writes [resolved] — the version a conflict's resolution keeps — with
+  /// [write], and what keeping it asks of the other rows (ADR 0105):
+  ///
+  /// - a kept checklist is written onto its task again, in a new version
+  ///   even when the task lists it: an unlisting this device has not
+  ///   received yet then meets it as a concurrent version — a conflict,
+  ///   whose resolution keeps both sides' checklists — instead of silently
+  ///   replacing it;
+  /// - a checklist whose deletion is kept takes the items naming it, those
+  ///   the other side put in it included.
+  ///
+  /// Recorded before the write ([ListChecklistIntent] with `restate`, or
+  /// [SweepChecklistIntent]), so the next start finishes it. Returns what
+  /// [write] returned.
+  Future<bool> resolveConflict(
+    JournalEntity resolved,
+    Future<bool> Function() write,
+  ) async {
+    final taskId = resolved is Checklist
+        ? resolved.data.linkedTasks.firstOrNull
+        : null;
+    final intent = switch (resolved) {
+      Checklist(isDeleted: false) when taskId != null => ListChecklistIntent(
+        checklistId: resolved.meta.id,
+        taskId: taskId,
+        restate: true,
+      ),
+      Checklist(isDeleted: true) => SweepChecklistIntent(
+        checklistId: resolved.meta.id,
+      ),
+      _ => null,
+    };
+    if (intent == null) return write();
+    final key = await _intents.record(intent);
+    final written = await write();
+    if (!written) {
+      // Nothing was kept, so nothing follows from it.
+      await _intents.clear(key);
+      return false;
+    }
+    try {
+      if (await _replayIntent(intent)) await _intents.clear(key);
+    } catch (exception, stackTrace) {
+      _loggingService.error(
+        LogDomain.persistence,
+        exception,
+        stackTrace: stackTrace,
+        subDomain: 'resolveConflict',
+      );
+    }
+    return true;
   }
 
   Future<bool> _deleteEntity(String id) =>
@@ -744,37 +968,8 @@ class ChecklistRepository {
     final pending = await _intents.pending();
     for (final MapEntry(:key, value: intent) in pending.entries) {
       try {
-        final done = switch (intent) {
-          ListItemsIntent(:final checklistId, :final itemIds) =>
-            await _replayListItems(checklistId, itemIds),
-          MoveItemIntent(:final itemId, :final fromId, :final toId) =>
-            (await _applyMove(
-              itemId: itemId,
-              fromId: fromId,
-              toId: toId,
-              taskId: null,
-            )).done,
-          DeleteItemIntent(:final itemId, :final checklistId) =>
-            (await _changeItems(
-                  checklistId,
-                  (ids) => withoutMember(ids, itemId),
-                )).done &&
-                (await _journalDb.journalEntityById(itemId) == null ||
-                    await _deleteEntity(itemId)),
-          ListChecklistIntent(:final checklistId, :final taskId) =>
-            await _journalDb.journalEntityById(checklistId) is! Checklist ||
-                await _changeTaskChecklists(
-                  taskId,
-                  (ids) => withMember(ids, checklistId),
-                ),
-          DeleteChecklistIntent(:final checklistId, :final taskId) =>
-            await _applyDeleteChecklist(
-              checklistId: checklistId,
-              taskId: taskId,
-            ).then((result) => result.deleted && result.detached),
-          // Written by a build that knew an operation this one does not.
-          null => true,
-        };
+        // Written by a build that knew an operation this one does not.
+        final done = intent == null || await _replayIntent(intent);
         if (done) await _intents.clear(key);
       } catch (exception, stackTrace) {
         // Kept for the next start.
@@ -788,7 +983,85 @@ class ChecklistRepository {
     }
   }
 
-  /// Lists the items of [itemIds] that exist on the checklist [checklistId].
+  /// Applies [intent] again on the stored rows; whether nothing of it is
+  /// left to do. A write of the operation's own that already landed is not
+  /// repeated ([MembershipIntent]'s `mark`): a later version of that row
+  /// is another device's choice.
+  Future<bool> _replayIntent(MembershipIntent intent) async => switch (intent) {
+    ListItemsIntent(:final checklistId, :final itemIds) =>
+      await _replayListItems(checklistId, itemIds),
+    MoveItemIntent(:final itemId, :final fromId, :final toId, :final mark) =>
+      (await _applyMove(
+        itemId: itemId,
+        fromId: fromId,
+        toId: toId,
+        taskId: null,
+        backLinked: await _landed(itemId, mark),
+      )).done,
+    DeleteItemIntent(:final itemId, :final checklistId, :final mark) =>
+      (await _changeItems(
+            checklistId,
+            (ids) => withoutMember(ids, itemId),
+          )).done &&
+          // A null mark: still in its undo window when the app died, so the
+          // delete never started and is completed now.
+          ((mark != null && await _landed(itemId, mark)) ||
+              await _journalDb.journalEntityById(itemId) == null ||
+              await _deleteEntity(itemId)),
+    ListChecklistIntent(
+      :final checklistId,
+      :final taskId,
+      :final restate,
+    ) =>
+      await _journalDb.journalEntityById(checklistId) is! Checklist ||
+          await _journalDb.journalEntityById(taskId) is! Task ||
+          await updateTaskChecklistIds(
+            taskId: taskId,
+            change: (ids) => withMember(ids, checklistId),
+            restate: restate,
+          ),
+    DeleteChecklistIntent(
+      :final checklistId,
+      :final taskId,
+      :final mark,
+    ) =>
+      // Deleted already: kept alive since by a conflict's resolution, it is
+      // neither unlisted nor deleted again — only swept, while deleted.
+      await _landed(checklistId, mark)
+          ? await _sweep(checklistId)
+          : await _applyDeleteChecklist(
+              checklistId: checklistId,
+              taskId: taskId,
+            ).then(
+              (result) => result.deleted && result.detached && result.swept,
+            ),
+    SweepChecklistIntent(:final checklistId) => await _sweep(checklistId),
+  };
+
+  /// This device's counter on the clock of the stored row [id], deleted or
+  /// not — an intent's `mark` — or `null` when it cannot be read.
+  Future<int?> _ownCounter(String id) async {
+    try {
+      if (!getIt.isRegistered<VectorClockService>()) return null;
+      final host = await getIt<VectorClockService>().getHost();
+      if (host == null) return null;
+      final row = await _journalDb.journalEntityByIdIncludingDeleted(id);
+      return row == null ? null : row.meta.vectorClock?.vclock[host] ?? 0;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Whether an operation recorded with [mark] on the row [id] wrote it:
+  /// this device's counter there has moved on since.
+  Future<bool> _landed(String id, int? mark) async {
+    if (mark == null) return false;
+    final now = await _ownCounter(id);
+    return now != null && now > mark;
+  }
+
+  /// Lists the items of [itemIds] that exist on the checklist [checklistId]
+  /// — or, the checklist deleted, deletes them with it.
   Future<bool> _replayListItems(
     String checklistId,
     List<String> itemIds,
@@ -798,18 +1071,16 @@ class ChecklistRepository {
         if (await _journalDb.journalEntityById(id) is ChecklistItem) id,
     ];
     if (live.isEmpty) return true;
-    return (await _changeItems(
-      checklistId,
-      (ids) => live.fold(ids, withMember),
-    )).done;
+    return (await _listItems(checklistId, live)).done;
   }
 
-  /// Loads every non-deleted [ChecklistItem] belonging to [task], newest
-  /// first.
+  /// Loads every [ChecklistItem] the checklists of [task] show, newest
+  /// first ([readShownChecklistItems]: the live items naming one of them).
   ///
-  /// Resolves the task's checklists, then their `linkedChecklistItems`, via two
-  /// indexed bulk-by-id lookups (see the inline note for the slow full-scan
-  /// shape this replaced). Returns `const []` when the task has no checklists.
+  /// Indexed lookups only — the checklists by id, their items by id and by
+  /// back-link (`idx_journal_checklist_item_home`) — never the full scan of
+  /// every item that once cost 558 ms on the agent hot path. Returns
+  /// `const []` when the task has no checklists.
   Future<List<ChecklistItem>> getChecklistItemsForTask({
     required Task task,
   }) async {
@@ -817,61 +1088,40 @@ class ChecklistRepository {
     if (checklistIds.isEmpty) {
       return const [];
     }
-
-    // The previous shape filtered only on `type='ChecklistItem'` and
-    // `deleted=false`, materialised every ChecklistItem the device
-    // had ever seen, JSON-decoded each one, and matched by
-    // `linkedChecklists` in Dart — 558 ms in the 2026-05-10
-    // super-slow log on the agent hot path. The Checklist entity
-    // already lists its child ChecklistItem ids in
-    // `data.linkedChecklistItems`, so two indexed bulk-by-id lookups
-    // give us exactly the items we need.
-    final checklistDbRows = await _journalDb
-        .journalEntitiesByIdsUnorderedAllPrivate(checklistIds)
-        .get();
-
-    final itemIds = <String>{};
-    for (final dbEntity in checklistDbRows) {
-      try {
-        final entity = fromDbEntity(dbEntity);
-        if (entity is Checklist) {
-          itemIds.addAll(entity.data.linkedChecklistItems);
-        }
-      } catch (error, stackTrace) {
+    // A row that cannot be read is logged and skipped: one corrupt row must
+    // not hide the rest of the task from the agent.
+    void unreadable(Object error, StackTrace stackTrace) =>
         _loggingService.error(
           LogDomain.tasks,
           error,
           stackTrace: stackTrace,
           subDomain: 'getChecklistItemsForTask',
         );
-      }
-    }
-    if (itemIds.isEmpty) return const [];
-
-    final itemDbRows = await _journalDb
-        .journalEntitiesByIdsUnorderedAllPrivate(
-          itemIds.toList(growable: false),
-        )
-        .get();
-
-    final items = <ChecklistItem>[];
-    for (final dbEntity in itemDbRows) {
+    final checklists = <Checklist>[];
+    for (final row
+        in await _journalDb
+            .journalEntitiesByIdsUnorderedAllPrivate(checklistIds)
+            .get()) {
       try {
-        final entity = fromDbEntity(dbEntity);
-        if (entity is ChecklistItem && entity.meta.deletedAt == null) {
-          items.add(entity);
+        if (fromDbEntity(row) case final Checklist checklist) {
+          checklists.add(checklist);
         }
       } catch (error, stackTrace) {
-        _loggingService.error(
-          LogDomain.tasks,
-          error,
-          stackTrace: stackTrace,
-          subDomain: 'getChecklistItemsForTask',
-        );
+        unreadable(error, stackTrace);
       }
     }
-
-    items.sort((a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom));
+    if (checklists.isEmpty) return const [];
+    final shown = await readShownChecklistItems(
+      _journalDb,
+      checklists,
+      onUnreadable: unreadable,
+    );
+    final items =
+        {
+            for (final list in shown.values)
+              for (final item in list) item.meta.id: item,
+          }.values.toList()
+          ..sort((a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom));
     return items;
   }
 }

@@ -3,6 +3,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_shared.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/entry_field_diff.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/features/tasks/model/membership_list.dart';
 
 /// Assembles the resolved [JournalEntity] for a conflict. Pure: callers feed it
 /// the two versions and the user's choices, and it returns the entity to write.
@@ -87,27 +88,59 @@ JournalEntity buildMergedEntity({
   return _resolved(result, local, remote);
 }
 
-/// [entity] as the resolution of [local] and [remote]: the merged clock, and
-/// for a task, every applied change either side records — whichever side's
+/// [entity] as the resolution of [local] and [remote]: the merged clock; for
+/// a task, every applied change either side records — whichever side's
 /// fields the user kept, a change that landed on either must not apply again
-/// (`TaskData.appliedChangeEffects`, ADR 0098) — and every status either
-/// side's history records (`TaskDataOnStored.withHistoryOf`).
+/// (`TaskData.appliedChangeEffects`, ADR 0098), every status either side's
+/// history records (`TaskDataOnStored.withHistoryOf`), and every checklist
+/// either side lists; for a checklist, every item either side lists (ADR
+/// 0105). Keeping one side's list would drop what the other device added: a
+/// checklist nobody sees any more, or an item listed nowhere.
 JournalEntity _resolved(
   JournalEntity entity,
   JournalEntity local,
   JournalEntity remote,
 ) {
-  final withEffects = switch ((entity, local, remote)) {
+  final joined = switch ((entity, local, remote)) {
     (final Task e, final Task l, final Task r) => e.copyWith(
       data: e.data
           .withEffectsOf(l.data)
           .withEffectsOf(r.data)
           .withHistoryOf(l.data)
-          .withHistoryOf(r.data),
+          .withHistoryOf(r.data)
+          .copyWith(
+            checklistIds: _joined(
+              e.data.checklistIds,
+              l.data.checklistIds,
+              r.data.checklistIds,
+            ),
+          ),
+    ),
+    (final Checklist e, final Checklist l, final Checklist r) => e.copyWith(
+      data: e.data.copyWith(
+        linkedChecklistItems: joinMembers(
+          joinMembers(e.data.linkedChecklistItems, l.data.linkedChecklistItems),
+          r.data.linkedChecklistItems,
+        ),
+      ),
     ),
     _ => entity,
   };
-  return _withMergedClock(withEffects, local, remote);
+  return _withMergedClock(joined, local, remote);
+}
+
+/// [kept] with every id [local] or [remote] lists appended ([joinMembers]);
+/// `null` only when all three are.
+List<String>? _joined(
+  List<String>? kept,
+  List<String>? local,
+  List<String>? remote,
+) {
+  if (kept == null && local == null && remote == null) return null;
+  return joinMembers(
+    joinMembers(kept ?? const [], local ?? const []),
+    remote ?? const [],
+  );
 }
 
 /// Copies the structured title from [source] onto [base]. Both are the same

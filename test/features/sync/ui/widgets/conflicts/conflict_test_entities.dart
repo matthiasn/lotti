@@ -65,6 +65,8 @@ JournalEntity taskOf({
   VectorClock? vectorClock,
   Set<String>? appliedChangeEffects,
   List<TaskStatus> statusHistory = const [],
+
+  List<String>? checklistIds,
 }) => Task(
   meta: metaOf(id: 'task-1', starred: true, vectorClock: vectorClock),
   data: TaskData(
@@ -81,6 +83,7 @@ JournalEntity taskOf({
         : statusHistory.last,
     estimate: estimate,
     appliedChangeEffects: appliedChangeEffects,
+    checklistIds: checklistIds,
   ),
   entryText: EntryText(plainText: text),
 );
