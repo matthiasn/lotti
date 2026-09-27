@@ -139,21 +139,16 @@ class AgentTemplateSeeding {
   /// version concurrent with it; the seed is stamped at `agentSeedInstant`,
   /// so the deletion wins on every device ([AgentTemplateCrud.createTemplate]).
   Future<void> seedDefaults() async {
-    final stored = await Future.wait(
-      _defaults.map((d) => crud.repository.getEntityIncludingDeleted(d.id)),
-    );
-    final missing = [
-      for (final (i, definition) in _defaults.indexed)
-        if (stored[i] == null) definition,
-    ];
-
-    if (missing.isEmpty) {
-      developer.log(
-        'Default templates already seeded, skipping',
-        name: 'AgentTemplateService',
-      );
-    } else {
-      for (final definition in missing) {
+    final seeded = <_DefaultTemplate>[];
+    for (final definition in _defaults) {
+      // The check and the write share one transaction: a peer's deletion
+      // received in between would otherwise be written over by a row built
+      // afresh, which the local write resolution takes as a re-creation.
+      final created = await syncService.runInTransaction(() async {
+        if (await crud.repository.getEntityIncludingDeleted(definition.id) !=
+            null) {
+          return false;
+        }
         await crud.createTemplate(
           templateId: definition.id,
           displayName: definition.displayName,
@@ -165,10 +160,20 @@ class AgentTemplateSeeding {
           authoredBy: 'system',
           seeded: true,
         );
-      }
+        return true;
+      });
+      if (created) seeded.add(definition);
+    }
+
+    if (seeded.isEmpty) {
+      developer.log(
+        'Default templates already seeded, skipping',
+        name: 'AgentTemplateService',
+      );
+    } else {
       developer.log(
         'Seeded default templates: '
-        '${missing.map((d) => d.displayName).join(', ')}',
+        '${seeded.map((d) => d.displayName).join(', ')}',
         name: 'AgentTemplateService',
       );
     }

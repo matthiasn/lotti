@@ -139,6 +139,12 @@ but it never undoes what the user did with a default:
   seeds before a peer's deletion, unassignment or rename has reached it
   writes a version concurrent with that change, and last-writer-wins gives
   the change the later instant on every device.
+- The seeded assignment yields to any other assignment row of its template
+  (`AgentRepoLinks.upsertLink`): an older build's assignment under a random
+  id, live or removed, keeps a received seed from being stored, and any
+  other assignment written retires a live seed at the epoch.
+- Each check and its write run in one transaction, so a peer's deletion
+  received meanwhile is never overwritten.
 
 ```mermaid
 stateDiagram-v2

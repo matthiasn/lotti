@@ -57,6 +57,18 @@ The user's choice about a seeded default is respected on every device.
    link, so one removal of it removes every device's seed; before, each
    device minted its own, and a removal covered only the ones its device had
    received.
+5. **The seeded assignment yields to any other assignment of its template**
+   (`AgentRepoLinks.upsertLink`). Devices on older builds hold their default
+   assignment under a random id, so a user's reassignment or unassignment
+   there is not a version of the seeded link and last-writer-wins never
+   compares the two. A live seed that arrives where the template has another
+   assignment row, live or removed, is not stored; any other assignment row
+   written for the template retires a live seed, stamping the removal at
+   `agentSeedInstant` so every device stores the same row.
+6. **The check and the seed share one transaction.** Sync runs before
+   seeding at startup; a peer's deletion received between a check that found
+   nothing and the write would otherwise be overwritten by a row built
+   afresh, which the local write resolution takes as a re-creation.
 
 `specs/tla/AgentReplication.tla` gains a fourth kind, `"seeded"`: a row that
 starts absent, is seeded by any replica, and is edited and deleted by the

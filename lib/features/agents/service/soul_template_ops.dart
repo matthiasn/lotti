@@ -302,22 +302,22 @@ class SoulTemplateOps {
   /// deterministic id ([seededSoulAssignmentLinkId]), so every device seeds
   /// the same link and removing it removes all of their seeds.
   Future<void> seedDefaults() async {
-    final stored = await Future.wait(
-      _seedConfigs.map((c) => repository.getEntityIncludingDeleted(c.id)),
-    );
-
-    for (final (i, c) in _seedConfigs.indexed) {
-      if (stored[i] != null) continue;
-      await versionOps.createSoul(
-        soulId: c.id,
-        displayName: c.name,
-        voiceDirective: c.voice,
-        toneBounds: c.tone,
-        coachingStyle: c.coaching,
-        antiSycophancyPolicy: c.antiSycophancy,
-        authoredBy: AgentAuthors.system,
-        seeded: true,
-      );
+    for (final c in _seedConfigs) {
+      // The check and the write share one transaction, so a peer's deletion
+      // received in between cannot be overwritten by a re-creation.
+      await syncService.runInTransaction(() async {
+        if (await repository.getEntityIncludingDeleted(c.id) != null) return;
+        await versionOps.createSoul(
+          soulId: c.id,
+          displayName: c.name,
+          voiceDirective: c.voice,
+          toneBounds: c.tone,
+          coachingStyle: c.coaching,
+          antiSycophancyPolicy: c.antiSycophancy,
+          authoredBy: AgentAuthors.system,
+          seeded: true,
+        );
+      });
     }
 
     for (final a in _seedAssignments) {

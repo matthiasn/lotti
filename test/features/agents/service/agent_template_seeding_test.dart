@@ -219,6 +219,27 @@ void main() {
       },
     );
 
+    test(
+      'a deletion received while the seeding runs is not written over',
+      () async {
+        await at(0, a.start);
+        await at(1, () => a.templates.deleteTemplate(lauraTemplateId));
+        final removal = a.device.sentEntities.firstWhere(
+          (e) => e.id == lauraTemplateId && e.deletedAt != null,
+        );
+
+        // B starts and receives the deletion at once: it must not find the
+        // default missing, receive the tombstone, then write the seed.
+        await at(
+          5,
+          () => Future.wait([b.start(), b.device.receiveEntity(removal)]),
+        );
+
+        // Whichever of the two runs first, the deletion stands.
+        expect(await b.templates.getTemplate(lauraTemplateId), isNull);
+      },
+    );
+
     test("a peer's rename is not reverted by a later seed", () async {
       await at(0, a.start);
       await at(

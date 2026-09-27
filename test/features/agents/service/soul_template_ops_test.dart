@@ -334,6 +334,69 @@ void main() {
       },
     );
 
+    /// A device on an older build: the templates seeded, the default soul
+    /// assigned under a random id, as `assignSoulToTemplate` did.
+    Future<void> legacyStart(DefaultSeedingDevice device) async {
+      await AgentTemplateSeeding(
+        syncService: device.device.sync,
+        crud: device.templates,
+      ).seedDefaults();
+      await device.soulAssignments.assignSoulToTemplate(
+        lauraTemplateId,
+        lauraSoulId,
+      );
+    }
+
+    test(
+      'a fresh device does not undo a reassignment made on an older build',
+      () async {
+        await at(0, () => legacyStart(a));
+        await at(
+          1,
+          () => a.soulAssignments.assignSoulToTemplate(
+            lauraTemplateId,
+            maxSoulId,
+          ),
+        );
+        await at(5, b.start);
+
+        await at(6, () => a.receiveAllFrom(b));
+        await at(6, () => b.receiveAllFrom(a));
+
+        for (final device in [a, b]) {
+          expect(
+            await assignedSouls(device, lauraTemplateId),
+            [maxSoulId],
+            reason: device.device.host,
+          );
+          final seed = await device.storedLink(
+            seededSoulAssignmentLinkId(lauraTemplateId),
+          );
+          expect(seed?.deletedAt, seed == null ? isNull : agentSeedInstant);
+        }
+      },
+    );
+
+    test(
+      'a fresh device does not undo an unassignment made on an older build',
+      () async {
+        await at(0, () => legacyStart(a));
+        await at(1, () => a.soulAssignments.unassignSoul(lauraTemplateId));
+        await at(5, b.start);
+
+        await at(6, () => b.receiveAllFrom(a));
+        await at(6, () => a.receiveAllFrom(b));
+
+        for (final device in [a, b]) {
+          expect(
+            await assignedSouls(device, lauraTemplateId),
+            isEmpty,
+            reason: device.device.host,
+          );
+        }
+      },
+    );
+
     test(
       "a peer's unassignment of a default soul wins over a later seed of the "
       'assignment',
