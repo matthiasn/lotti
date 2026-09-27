@@ -160,6 +160,36 @@ class AgentRepoLinks {
     return rows.map(AgentDbConversions.fromLinkRow).toList();
   }
 
+  /// Every link of [type] from or to any of [ids], removed ones included: a
+  /// removal is a write, and a reader comparing vector clocks must see it.
+  Future<List<model.AgentLink>> getLinksTouchingIncludingDeleted(
+    Iterable<String> ids, {
+    required String type,
+  }) async {
+    final result = <model.AgentLink>[];
+    for (final chunk in sqliteInClauseChunks(ids.toSet().toList())) {
+      final placeholders = List.filled(chunk.length, '?').join(', ');
+      final rows = await _db
+          .customSelect(
+            'SELECT * FROM agent_links WHERE type = ? '
+            'AND (from_id IN ($placeholders) OR to_id IN ($placeholders))',
+            variables: [
+              Variable.withString(type),
+              ...chunk.map(Variable.withString),
+              ...chunk.map(Variable.withString),
+            ],
+            readsFrom: {_db.agentLinks},
+          )
+          .get();
+      for (final row in rows) {
+        result.add(
+          AgentDbConversions.fromLinkRow(await _db.agentLinks.mapFromRow(row)),
+        );
+      }
+    }
+    return result;
+  }
+
   /// Batch-fetch non-deleted links pointing to any of [toIds] with a given
   /// [type], returned as a map from `toId` → links.
   ///

@@ -1907,13 +1907,17 @@ void main() {
         () => mockDb.getCategoryByIdForIntegrity(any()),
       ).thenAnswer((_) async => null);
       when(
-        () => mockRepo.getLinksTo(
-          kTestAgentId,
+        () => mockRepo.getLinksTouchingIncludingDeleted(
+          {kTestAgentId},
           type: AgentLinkTypes.templateAssignment,
         ),
       ).thenAnswer((_) async => []);
       when(
-        () => mockRepo.getChangeDecisions(kTestAgentId, taskId: 'task-1'),
+        () => mockRepo.getChangeDecisions(
+          kTestAgentId,
+          taskId: 'task-1',
+          limit: any(named: 'limit'),
+        ),
       ).thenAnswer((_) async => []);
       when(
         () => mockRepo.getAttentionClaimsForTarget(

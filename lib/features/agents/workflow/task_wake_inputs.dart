@@ -6,8 +6,10 @@ import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/projection/content_digest.dart';
 import 'package:lotti/features/agents/wake/agent_wake_coordinator.dart';
+import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
 /// The rows a wake of task agent [agentId] reads as input, with their vector
@@ -28,10 +30,11 @@ import 'package:lotti/features/sync/vector_clock.dart';
 /// context draws on:
 ///
 /// - for each linked task and the parent project, the agent link and that
-///   agent's current report, which the linked-task and parent-project context
-///   summarise;
-/// - the user's decisions on this agent's proposals for the task, which the
-///   proposal ledger shows and which stop a rejected proposal coming back;
+///   agent's current report and report head, which the linked-task and
+///   parent-project context summarise;
+/// - the user's decisions on this agent's proposals for the task, across the
+///   window the proposal ledger reads, which stop a rejected proposal coming
+///   back;
 /// - the agent's template assignment, the template's head and active version,
 ///   and its soul assignment, head and active version — the system prompt;
 /// - attention requests other agents raised on the task.
@@ -47,8 +50,9 @@ import 'package:lotti/features/sync/vector_clock.dart';
 /// cover them: [WakeInputs.definitions] digests the ones the context reads, and
 /// only a peer that read the same ones covers this wake.
 ///
-/// Removed links and deleted entities stay in: a removal is a write like any
-/// other, and only a row that is read has its clock checked. The reads are
+/// Removed links — journal and agent links alike — and deleted entities stay
+/// in: a removal is a write like any other, and only a row that is read has
+/// its clock checked. The reads are
 /// deliberately wider than the context builders' — a row that is read but
 /// never rendered can only cost a run, never drop one — so keep every input
 /// the context builders add inside these rows.
@@ -112,25 +116,44 @@ Future<WakeInputs?> taskWakeInputs({
       if (entity is JournalImage) entity.meta.id,
   });
 
-  // Other agents' reports: the linked tasks' task agents, the parent
-  // project's project agent.
-  final reportingLinks = [
-    if (linkedTaskIds.isNotEmpty)
-      ...(await agentRepository.getLinksToMultiple(
-        linkedTaskIds.toList(),
-        type: AgentLinkTypes.agentTask,
-      )).values.expand((links) => links),
-    for (final project in neighbours.values.whereType<ProjectEntry>())
-      ...await agentRepository.getLinksTo(
-        project.meta.id,
-        type: AgentLinkTypes.agentProject,
-      ),
-  ];
-  for (final link in reportingLinks) {
-    clocks['agentLink:${link.id}'] = link.vectorClock;
+  // Agent links are read with their tombstones: an unassignment is a write
+  // the peer's run must have seen.
+  Future<List<AgentLink>> links(Iterable<String> ids, String type) async {
+    if (ids.isEmpty) return const [];
+    final found = await agentRepository.getLinksTouchingIncludingDeleted(
+      ids,
+      type: type,
+    );
+    for (final link in found) {
+      clocks['agentLink:${link.id}'] = link.vectorClock;
+    }
+    return found;
   }
-  final reportingAgentIds = {for (final link in reportingLinks) link.fromId};
+
+  // Other agents' reports: the linked tasks' task agents, the parent
+  // project's project agent. A report is selected through its head, which
+  // moves separately, so both are inputs.
+  final reportingAgentIds = {
+    for (final link in [
+      ...await links(linkedTaskIds, AgentLinkTypes.agentTask),
+      ...await links(
+        {
+          for (final project in neighbours.values.whereType<ProjectEntry>())
+            project.meta.id,
+        },
+        AgentLinkTypes.agentProject,
+      ),
+    ])
+      link.fromId,
+  };
   if (reportingAgentIds.isNotEmpty) {
+    agentRows('reportHead', [
+      for (final reportingAgentId in reportingAgentIds)
+        await agentRepository.getReportHead(
+          reportingAgentId,
+          AgentReportScopes.current,
+        ),
+    ]);
     agentRows(
       'report',
       (await agentRepository.getLatestReportsByAgentIds(
@@ -144,27 +167,23 @@ Future<WakeInputs?> taskWakeInputs({
     for (final decision in await agentRepository.getChangeDecisions(
       agentId,
       taskId: taskId,
+      limit: TaskAgentWorkflow.resolvedDecisionWindow,
     ))
       if (decision.actor == DecisionActor.user) decision,
   ]);
 
-  final templateLinks = await agentRepository.getLinksTo(
+  for (final templateLink in await links({
     agentId,
-    type: AgentLinkTypes.templateAssignment,
-  );
-  for (final templateLink in templateLinks) {
+  }, AgentLinkTypes.templateAssignment)) {
     final templateId = templateLink.fromId;
-    clocks['agentLink:${templateLink.id}'] = templateLink.vectorClock;
     agentRows('template', [
       await agentRepository.getEntity(templateId),
       await agentRepository.getTemplateHead(templateId),
       await agentRepository.getActiveTemplateVersion(templateId),
     ]);
-    for (final soulLink in await agentRepository.getLinksFrom(
+    for (final soulLink in await links({
       templateId,
-      type: AgentLinkTypes.soulAssignment,
-    )) {
-      clocks['agentLink:${soulLink.id}'] = soulLink.vectorClock;
+    }, AgentLinkTypes.soulAssignment)) {
       agentRows('soul', [
         await agentRepository.getSoulDocumentHead(soulLink.toId),
         await agentRepository.getActiveSoulDocumentVersion(soulLink.toId),

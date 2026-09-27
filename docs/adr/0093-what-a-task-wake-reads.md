@@ -25,13 +25,18 @@ A wake's inputs are the rows its context reads that **someone other than
 this agent's wakes wrote**:
 
 - the task's journal neighbourhood, removed rows included (ADR 0091);
-- the agent link and current report of every linked task's task agent and
-  of the parent project's project agent;
-- the user's decisions on this agent's proposals for the task — not the
-  agent's own retractions;
+- the agent link, current report and report head of every linked task's
+  task agent and of the parent project's project agent — a report is
+  selected through its head, which moves separately;
+- the user's decisions on this agent's proposals for the task, across the
+  same 500-decision window the proposal ledger reads — not the agent's own
+  retractions;
 - the template assignment, the template's head and active version, the soul
   assignment and the soul's head and active version;
 - attention requests other agents raised on the task.
+
+Agent links are read with their tombstones, as journal links are: an
+unassigned soul or template is a write the peer's run must have seen.
 
 **This agent's own writes are not inputs**: its report, observations,
 messages, change sets, memory and its own attention requests. They are what

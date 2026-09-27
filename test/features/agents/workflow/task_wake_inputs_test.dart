@@ -8,8 +8,10 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/projection/content_digest.dart';
 import 'package:lotti/features/agents/wake/agent_wake_coordinator.dart';
+import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/task_wake_inputs.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
@@ -108,6 +110,14 @@ class _TaskWorld {
   bool showPrivate = false;
   List<LabelDefinition> labels = [testLabelDefinition1];
 
+  /// The template's soul assignment; a test can replace it by its tombstone.
+  AgentLink soulLink = makeTestSoulAssignmentLink(
+    id: 'soul-link-1',
+    fromId: 'template-1',
+    toId: 'soul-1',
+    vectorClock: _vc(30),
+  );
+
   late final List<EntryLink> taskLinks = [
     _link('link-entry', 'task-1', 'entry-1', _vc(12)),
     _link('link-image', 'task-1', 'image-1', _vc(13)),
@@ -131,25 +141,23 @@ class _TaskWorld {
   MockAgentRepository agents() {
     final repository = MockAgentRepository();
     when(
-      () => repository.getLinksToMultiple(
-        ['linked-task-1'],
+      () => repository.getLinksTouchingIncludingDeleted(
+        {'linked-task-1'},
         type: AgentLinkTypes.agentTask,
       ),
     ).thenAnswer(
-      (_) async => {
-        'linked-task-1': [
-          makeTestAgentTaskLink(
-            id: 'agent-link-1',
-            fromId: 'linked-agent-1',
-            toId: 'linked-task-1',
-            vectorClock: _vc(20),
-          ),
-        ],
-      },
+      (_) async => [
+        makeTestAgentTaskLink(
+          id: 'agent-link-1',
+          fromId: 'linked-agent-1',
+          toId: 'linked-task-1',
+          vectorClock: _vc(20),
+        ),
+      ],
     );
     when(
-      () => repository.getLinksTo(
-        'project-1',
+      () => repository.getLinksTouchingIncludingDeleted(
+        {'project-1'},
         type: AgentLinkTypes.agentProject,
       ),
     ).thenAnswer(
@@ -173,8 +181,29 @@ class _TaskWorld {
         'project-agent-1': projectReport,
       },
     );
+    for (final (reportingAgentId, counter) in [
+      ('linked-agent-1', 21),
+      ('project-agent-1', 22),
+    ]) {
+      when(
+        () => repository.getReportHead(
+          reportingAgentId,
+          AgentReportScopes.current,
+        ),
+      ).thenAnswer(
+        (_) async => makeTestReportHead(
+          id: 'head-$reportingAgentId',
+          agentId: reportingAgentId,
+          vectorClock: _vc(counter),
+        ),
+      );
+    }
     when(
-      () => repository.getChangeDecisions('agent-1', taskId: 'task-1'),
+      () => repository.getChangeDecisions(
+        'agent-1',
+        taskId: 'task-1',
+        limit: TaskAgentWorkflow.resolvedDecisionWindow,
+      ),
     ).thenAnswer(
       (_) async => [
         makeTestChangeDecision(
@@ -195,8 +224,8 @@ class _TaskWorld {
       ],
     );
     when(
-      () => repository.getLinksTo(
-        'agent-1',
+      () => repository.getLinksTouchingIncludingDeleted(
+        {'agent-1'},
         type: AgentLinkTypes.templateAssignment,
       ),
     ).thenAnswer(
@@ -231,20 +260,11 @@ class _TaskWorld {
       ),
     );
     when(
-      () => repository.getLinksFrom(
-        'template-1',
+      () => repository.getLinksTouchingIncludingDeleted(
+        {'template-1'},
         type: AgentLinkTypes.soulAssignment,
       ),
-    ).thenAnswer(
-      (_) async => [
-        makeTestSoulAssignmentLink(
-          id: 'soul-link-1',
-          fromId: 'template-1',
-          toId: 'soul-1',
-          vectorClock: _vc(30),
-        ),
-      ],
-    );
+    ).thenAnswer((_) async => [soulLink]);
     when(() => repository.getSoulDocumentHead('soul-1')).thenAnswer(
       (_) async => makeTestSoulDocumentHead(
         id: 'soul-head-1',
@@ -353,8 +373,10 @@ void main() {
       // current reports.
       'agentLink:agent-link-1': _vc(20),
       'report:linked-report-1': _vc(10),
+      'reportHead:head-linked-agent-1': _vc(21),
       'agentLink:project-agent-link-1': _vc(23),
       'report:project-report-1': _vc(24),
+      'reportHead:head-project-agent-1': _vc(22),
       // The user's decision; not the agent's retraction.
       'decision:user-decision-1': _vc(25),
       // The system prompt: template and soul.
@@ -424,6 +446,29 @@ void main() {
 
     world.labels = [testLabelDefinition1, testLabelDefinition2];
     expect((await world.inputs())!.definitions, isNot(inputs.definitions));
+  });
+
+  test('a peer that has not seen a soul unassignment does not cover the '
+      'wake', () async {
+    final world = _TaskWorld()
+      ..soulLink = makeTestSoulAssignmentLink(
+        id: 'soul-link-1',
+        fromId: 'template-1',
+        toId: 'soul-1',
+        vectorClock: _vcB(4),
+      ).copyWith(deletedAt: DateTime(2024, 3, 16));
+
+    final inputs = (await world.inputs())!;
+
+    expect(inputs.clocks, containsPair('agentLink:soul-link-1', _vcB(4)));
+    expect(
+      WakeCoverage(
+        watermark: const {'host-a': 40, 'host-b': 3},
+        readsPrivate: false,
+        definitions: inputs.definitions,
+      ).uncovered(inputs),
+      'agentLink [id:soul-l] needs [id:host-b]:4, peer holds 3',
+    );
   });
 
   test('reads private entries as the device is configured to', () async {

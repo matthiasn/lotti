@@ -492,6 +492,11 @@ class AgentRepository {
   Future<List<model.AgentLink>> getLinksTo(String toId, {String? type}) =>
       _links.getLinksTo(toId, type: type);
 
+  Future<List<model.AgentLink>> getLinksTouchingIncludingDeleted(
+    Iterable<String> ids, {
+    required String type,
+  }) => _links.getLinksTouchingIncludingDeleted(ids, type: type);
+
   Future<Map<String, List<model.AgentLink>>> getLinksToMultiple(
     List<String> toIds, {
     required String type,

@@ -2865,6 +2865,28 @@ void main() {
       });
     });
 
+    group('getLinksTouchingIncludingDeleted', () {
+      test('includes removed links of the type', () async {
+        await repo.upsertLink(
+          model.AgentLink.agentTask(
+            id: 'task-link-removed',
+            fromId: 'agent-1',
+            toId: 'task-1',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+            deletedAt: testDate,
+          ),
+        );
+
+        final found = await repo.getLinksTouchingIncludingDeleted({
+          'task-1',
+        }, type: AgentLinkTypes.agentTask);
+
+        expect(found.map((l) => l.id), ['task-link-removed']);
+      });
+    });
+
     group('getLinksToMultiple', () {
       test('returns empty map when no ids are requested', () async {
         final result = await repo.getLinksToMultiple(
