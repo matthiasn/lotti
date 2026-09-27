@@ -336,7 +336,6 @@ void main() {
       WidgetTester tester,
       Map<SyncSequencePayloadType, int>? counts, {
       bool isLoading = false,
-      VoidCallback? onRefresh,
     }) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -344,7 +343,6 @@ void main() {
             child: RecordCountsCard(
               counts: counts,
               isLoading: isLoading,
-              onRefresh: onRefresh ?? () {},
             ),
           ),
         ),
@@ -378,15 +376,23 @@ void main() {
       );
     });
 
-    testWidgets('says so while there is nothing to show, and refreshes on '
-        'tap', (tester) async {
-      var refreshed = 0;
-      await pumpCounts(tester, null, onRefresh: () => refreshed++);
+    testWidgets('says so while there is nothing to show, and offers no '
+        'refresh — the counts update on their own', (tester) async {
+      await pumpCounts(tester, null);
 
       final context = tester.element(find.byType(RecordCountsCard));
       expect(find.text(context.messages.backfillStatsNoData), findsOneWidget);
-      await tester.tap(find.byIcon(LottiIcons.refresh));
-      expect(refreshed, 1);
+      expect(find.byIcon(LottiIcons.refresh), findsNothing);
+    });
+
+    testWidgets('names the first count as in progress while loading', (
+      tester,
+    ) async {
+      await pumpCounts(tester, null, isLoading: true);
+
+      final context = tester.element(find.byType(RecordCountsCard));
+      expect(find.text(context.messages.backfillStatsRefresh), findsOneWidget);
+      expect(find.text(context.messages.backfillStatsNoData), findsNothing);
     });
   });
 }

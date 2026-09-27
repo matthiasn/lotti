@@ -9,11 +9,13 @@ import 'package:lotti/features/design_system/components/toggles/design_system_to
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
+import 'package:lotti/features/sync/deep_backfill/deep_backfill_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
@@ -184,6 +186,48 @@ void main() {
       await tester.pump();
 
       expect(find.text('4'), findsNWidgets(2));
+    });
+  });
+
+  group('BackfillSettingsBody · records on this device', () {
+    late MockDeepBackfillService deepBackfill;
+    late int counts;
+
+    setUp(() {
+      deepBackfill = MockDeepBackfillService();
+      counts = 0;
+      when(deepBackfill.recordCounts).thenAnswer((_) async {
+        counts++;
+        return {SyncSequencePayloadType.journalEntity: 1000 + counts};
+      });
+      getIt.registerSingleton<DeepBackfillService>(deepBackfill);
+    });
+
+    testWidgets('come first, above the status row', (tester) async {
+      await pumpBody(tester);
+
+      expect(
+        tester.getTopLeft(find.byType(RecordCountsCard)).dy,
+        lessThan(tester.getTopLeft(find.byType(StatusRow)).dy),
+      );
+    });
+
+    testWidgets('re-count every interval while shown, and stop once the '
+        'page is gone', (tester) async {
+      await pumpBody(tester);
+      final shown = counts;
+      expect(find.text('1,00$shown'), findsOneWidget);
+
+      await tester.pump(SyncTuning.recordCountsRefreshInterval);
+      await tester.pump();
+      expect(counts, shown + 1);
+      expect(find.text('1,00${shown + 1}'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+      final atExit = counts;
+      await tester.pump(SyncTuning.recordCountsRefreshInterval * 5);
+      expect(counts, atExit);
     });
   });
 
@@ -723,6 +767,32 @@ void main() {
       await pumpInScaffold(tester);
       await emitDepth(tester, total: 9, abandoned: 0);
       expect(find.text('9'), findsWidgets);
+    });
+
+    testWidgets('a depth signal rebuilds only the cells that show the queue, '
+        'not the statistics ledger', (tester) async {
+      await pumpInScaffold(tester);
+      final ledgerBefore = tester.widget<SyncStatsCard>(
+        find.byType(SyncStatsCard),
+      );
+      final statusBefore = tester.widget<StatusRow>(find.byType(StatusRow));
+
+      await emitDepth(tester, total: 9, abandoned: 1);
+
+      // A rebuilt parent creates a new widget instance; the ledger — every
+      // device's row — must survive a signal the queue emits several times
+      // a second during a sync.
+      expect(
+        identical(
+          tester.widget<SyncStatsCard>(find.byType(SyncStatsCard)),
+          ledgerBefore,
+        ),
+        isTrue,
+      );
+      final statusAfter = tester.widget<StatusRow>(find.byType(StatusRow));
+      expect(identical(statusAfter, statusBefore), isFalse);
+      expect(statusAfter.inbound, 9);
+      expect(statusAfter.skipped, 1);
     });
 
     testWidgets(
@@ -1701,25 +1771,20 @@ void main() {
       await tester.pump(const Duration(milliseconds: 250));
       expect(find.text('11'), findsWidgets);
 
-      // Swap to queue B and force a body rebuild via a stats refresh.
+      // Swap to queue B and rebuild the body, which reads the coordinator.
+      // A stats refresh no longer rebuilds it — each section watches only
+      // its own data — so the rebuild is forced here.
       useB = true;
       final messages = messagesOf(tester);
-      clearInteractions(mockSequenceService);
-      when(
-        () => mockSequenceService.getBackfillStats(),
-      ).thenAnswer((_) async => emptyStats);
-      await tester.tap(
-        find.descendant(
-          of: find.byType(SyncStatsCard),
-          matching: find.byIcon(LottiIcons.refresh),
-        ),
-      );
+      tester.element(find.byType(BackfillSettingsBody)).markNeedsBuild();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
 
+      int inbound() => tester.widget<StatusRow>(find.byType(StatusRow)).inbound;
+
       // After the rebind `_latest` was reset to null, so the inbound
-      // cell falls back to 0 — A's "11" is gone.
-      expect(find.text('11'), findsNothing);
+      // cell falls back to 0 — A's 11 is gone.
+      expect(inbound(), 0);
 
       // A late emission from the OLD queue must NOT update the row.
       ctlA.add(
@@ -1729,7 +1794,7 @@ void main() {
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
-      expect(find.text('99'), findsNothing);
+      expect(inbound(), 0);
 
       // The NEW queue B drives the row instead.
       ctlB.add(
@@ -1739,7 +1804,7 @@ void main() {
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
-      expect(find.text('42'), findsWidgets);
+      expect(inbound(), 42);
 
       // Sanity: messages bundle resolved from the live body.
       expect(messages.backfillStatusInboundQueue, isNotEmpty);

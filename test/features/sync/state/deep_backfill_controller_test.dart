@@ -1,10 +1,12 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/deep_backfill_controller.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -108,13 +110,57 @@ void main() {
         (_) async => {SyncSequencePayloadType.journalEntity: 276711},
       );
 
+      // An auto-dispose provider needs a listener to outlive its first read.
+      container.listen(deepBackfillRecordCountsProvider, (_, _) {});
+
       expect(await container.read(deepBackfillRecordCountsProvider.future), {
         SyncSequencePayloadType.journalEntity: 276711,
       });
     });
 
+    test('re-counts every interval while listened, keeps polling past a '
+        'failed count, and stops once nothing listens', () {
+      fakeAsync((async) {
+        var calls = 0;
+        when(service.recordCounts).thenAnswer((_) async {
+          calls++;
+          if (calls == 2) throw StateError('database busy');
+          return {SyncSequencePayloadType.journalEntity: calls};
+        });
+        final seen = <AsyncValue<Map<SyncSequencePayloadType, int>?>>[];
+        final subscription = container.listen(
+          deepBackfillRecordCountsProvider,
+          (_, next) => seen.add(next),
+        );
+
+        async.flushMicrotasks();
+        expect(calls, 1);
+        expect(seen.last.value, {SyncSequencePayloadType.journalEntity: 1});
+
+        async
+          ..elapse(SyncTuning.recordCountsRefreshInterval)
+          ..flushMicrotasks();
+        expect(calls, 2);
+        expect(seen.last.hasError, isTrue);
+
+        async
+          ..elapse(SyncTuning.recordCountsRefreshInterval)
+          ..flushMicrotasks();
+        expect(calls, 3);
+        expect(seen.last.value, {SyncSequencePayloadType.journalEntity: 3});
+
+        subscription.close();
+        async
+          ..flushMicrotasks()
+          ..elapse(SyncTuning.recordCountsRefreshInterval * 5)
+          ..flushMicrotasks();
+        expect(calls, 3);
+      });
+    });
+
     test('is null where no sync stack runs', () async {
       await setUpTestGetIt();
+      container.listen(deepBackfillRecordCountsProvider, (_, _) {});
 
       expect(
         await container.read(deepBackfillRecordCountsProvider.future),

@@ -1,19 +1,35 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/get_it.dart';
 
 /// Records of each synced type on this device, deletions included, or null
-/// where no sync stack runs (a demo world). Read on demand: counting a large
-/// journal is not free, so the page refreshes it explicitly.
-final FutureProvider<Map<SyncSequencePayloadType, int>?>
+/// where no sync stack runs (a demo world). Re-counted every
+/// [SyncTuning.recordCountsRefreshInterval] while something listens — the
+/// page, while it is shown — and not at all once nothing does. A count that
+/// fails surfaces as an error without ending the polling, so the next
+/// successful count replaces it.
+final StreamProvider<Map<SyncSequencePayloadType, int>?>
 deepBackfillRecordCountsProvider =
-    FutureProvider.autoDispose<Map<SyncSequencePayloadType, int>?>(
-      (ref) async => getIt.isRegistered<DeepBackfillService>()
-          ? getIt<DeepBackfillService>().recordCounts()
-          : null,
+    StreamProvider.autoDispose<Map<SyncSequencePayloadType, int>?>(
+      (ref) => getIt.isRegistered<DeepBackfillService>()
+          ? _pollRecordCounts(getIt<DeepBackfillService>())
+          : Stream.value(null),
       name: 'deepBackfillRecordCountsProvider',
     );
+
+/// Counts at once, then every interval after the previous count finished:
+/// `asyncMap` pauses the periodic stream while a count runs, so slow counts
+/// never pile up.
+Stream<Map<SyncSequencePayloadType, int>> _pollRecordCounts(
+  DeepBackfillService service,
+) async* {
+  yield* Stream.fromFuture(service.recordCounts());
+  yield* Stream<void>.periodic(
+    SyncTuning.recordCountsRefreshInterval,
+  ).asyncMap((_) => service.recordCounts());
+}
 
 final deepBackfillControllerProvider =
     NotifierProvider<DeepBackfillController, DeepBackfillState>(

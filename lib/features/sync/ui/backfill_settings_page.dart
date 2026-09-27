@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
@@ -8,6 +10,7 @@ import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
+import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/state/backfill_config_controller.dart';
 import 'package:lotti/features/sync/state/backfill_stats_controller.dart';
 import 'package:lotti/features/sync/state/deep_backfill_controller.dart';
@@ -47,40 +50,33 @@ class BackfillSettingsPage extends StatelessWidget {
 }
 
 /// Backfill Sync content. Layout follows the
-/// `option_c_preview` handoff:
-///   1. **Status row** — three welded cells (Inbound queue · Missing
+/// `option_c_preview` handoff, with the records first:
+///   1. **Records on this device** — per-type record counts, the numbers a
+///      deep backfill makes equal across devices: the direct answer to "do
+///      my devices hold the same data?". Re-counted while shown.
+///   2. **Status row** — three welded cells (Inbound queue · Missing
 ///      · Skipped) on a single rounded surface. Operator-critical
 ///      counters live here so they sit at eye level.
-///   2. **Sync statistics** — leader-dot ledger of eight counts, then the
+///   3. **Sync statistics** — leader-dot ledger of eight counts, then the
 ///      tracked counters per device.
-///   3. **Records on this device** — per-type record counts, the numbers a
-///      deep backfill makes equal across devices.
 ///   4. **Automatic backfill** — toggle card.
 ///   5. **Advanced recovery** — collapsed group containing every
 ///      manual recovery action.
 ///
+/// Each section watches only what it shows. The inbound queue and the
+/// record counts change several times a second during a sync; a rebuild of
+/// the whole body on every change, per-device ledger included, is what made
+/// the page stutter while scrolling.
+///
 /// The body owns no chrome (page title / scaffold) — both hosts
 /// (legacy [BackfillSettingsPage] and the Settings V2 detail pane)
 /// supply their own.
-class BackfillSettingsBody extends ConsumerWidget {
+class BackfillSettingsBody extends StatelessWidget {
   const BackfillSettingsBody({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final config = ref.watch(backfillConfigControllerProvider);
-    final stats = ref.watch(backfillStatsControllerProvider);
-    final liveMissing = ref.watch(backfillMissingCountProvider).value;
-    final recordCounts = ref.watch(deepBackfillRecordCountsProvider);
-    final self = ref.watch(localSyncNodeSelfProvider).value;
-    final hostNames = {
-      for (final node
-          in ref.watch(knownSyncNodesProvider).value ??
-              const <SyncNodeProfile>[])
-        node.hostId: node.displayName,
-      if (self != null) self.hostId: self.displayName,
-    };
-    final missing = liveMissing ?? stats.stats?.totalMissing ?? 0;
     final matrixService = getIt.isRegistered<MatrixService>()
         ? getIt<MatrixService>()
         : null;
@@ -91,48 +87,20 @@ class BackfillSettingsBody extends ConsumerWidget {
       builder: (context, depth) {
         return Padding(
           // Breathing room below the host's page title (V2 leaf panel
-          // or legacy `SettingsPageHeader`) before the status row.
+          // or legacy `SettingsPageHeader`) before the first card.
           padding: EdgeInsets.only(top: tokens.spacing.step4),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              StatusRow(
-                inbound: depth?.total ?? 0,
-                missing: missing,
-                skipped: depth?.abandoned ?? 0,
-              ),
+              const _RecordCountsSection(),
               SizedBox(height: tokens.spacing.step4),
-              SyncStatsCard(
-                stats: stats.stats,
-                missingCount: missing,
-                isLoading: stats.isLoading,
-                onRefresh: () => ref
-                    .read(backfillStatsControllerProvider.notifier)
-                    .refresh(),
-                hostNames: hostNames,
-                selfHostId: self?.hostId,
-              ),
+              _StatusSection(depth: depth),
               SizedBox(height: tokens.spacing.step4),
-              RecordCountsCard(
-                counts: recordCounts.value,
-                isLoading: recordCounts.isLoading,
-                onRefresh: () =>
-                    ref.invalidate(deepBackfillRecordCountsProvider),
-              ),
+              const _StatsSection(),
               SizedBox(height: tokens.spacing.step4),
-              _AutomaticBackfillCard(
-                isEnabled: config.value ?? true,
-                isBusy: config.isLoading,
-                onToggle: () => ref
-                    .read(backfillConfigControllerProvider.notifier)
-                    .toggle(),
-              ),
+              const _AutomaticBackfillSection(),
               SizedBox(height: tokens.spacing.step4),
-              AdvancedRecoveryGroup(
-                stats: stats,
-                skipped: depth?.abandoned ?? 0,
-                coordinator: coordinator,
-              ),
+              _RecoverySection(depth: depth, coordinator: coordinator),
             ],
           ),
         );
@@ -141,15 +109,119 @@ class BackfillSettingsBody extends ConsumerWidget {
   }
 }
 
-/// Listens to [InboundQueue.depthChanges] and rebuilds with the
-/// latest signal. Pulled out so the rest of the body stays a plain
-/// [ConsumerWidget] — only this scope needs the stateful subscription.
-/// Mirrors the binding pattern in `QueueDepthCard`.
+/// The live missing count, or the last statistics' total before the live
+/// count has arrived.
+int _missingCount(WidgetRef ref) =>
+    ref.watch(backfillMissingCountProvider).value ??
+    ref.watch(backfillStatsControllerProvider).stats?.totalMissing ??
+    0;
+
+class _RecordCountsSection extends ConsumerWidget {
+  const _RecordCountsSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final recordCounts = ref.watch(deepBackfillRecordCountsProvider);
+    return RecordCountsCard(
+      counts: recordCounts.value,
+      isLoading: recordCounts.isLoading,
+    );
+  }
+}
+
+class _StatusSection extends ConsumerWidget {
+  const _StatusSection({required this.depth});
+
+  final ValueListenable<QueueDepthSignal?> depth;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final missing = _missingCount(ref);
+    return ValueListenableBuilder<QueueDepthSignal?>(
+      valueListenable: depth,
+      builder: (context, depth, _) => StatusRow(
+        inbound: depth?.total ?? 0,
+        missing: missing,
+        skipped: depth?.abandoned ?? 0,
+      ),
+    );
+  }
+}
+
+class _StatsSection extends ConsumerWidget {
+  const _StatsSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stats = ref.watch(backfillStatsControllerProvider);
+    final self = ref.watch(localSyncNodeSelfProvider).value;
+    final hostNames = {
+      for (final node
+          in ref.watch(knownSyncNodesProvider).value ??
+              const <SyncNodeProfile>[])
+        node.hostId: node.displayName,
+      if (self != null) self.hostId: self.displayName,
+    };
+    return SyncStatsCard(
+      stats: stats.stats,
+      missingCount: _missingCount(ref),
+      isLoading: stats.isLoading,
+      onRefresh: () =>
+          ref.read(backfillStatsControllerProvider.notifier).refresh(),
+      hostNames: hostNames,
+      selfHostId: self?.hostId,
+    );
+  }
+}
+
+class _AutomaticBackfillSection extends ConsumerWidget {
+  const _AutomaticBackfillSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final config = ref.watch(backfillConfigControllerProvider);
+    return _AutomaticBackfillCard(
+      isEnabled: config.value ?? true,
+      isBusy: config.isLoading,
+      onToggle: () =>
+          ref.read(backfillConfigControllerProvider.notifier).toggle(),
+    );
+  }
+}
+
+class _RecoverySection extends ConsumerWidget {
+  const _RecoverySection({required this.depth, required this.coordinator});
+
+  final ValueListenable<QueueDepthSignal?> depth;
+  final QueuePipelineCoordinator? coordinator;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stats = ref.watch(backfillStatsControllerProvider);
+    return ValueListenableBuilder<QueueDepthSignal?>(
+      valueListenable: depth,
+      builder: (context, depth, _) => AdvancedRecoveryGroup(
+        stats: stats,
+        skipped: depth?.abandoned ?? 0,
+        coordinator: coordinator,
+      ),
+    );
+  }
+}
+
+/// Listens to [InboundQueue.depthChanges] and publishes the latest signal
+/// through a [ValueListenable]. The subtree is built once; only the
+/// listeners of that value rebuild on a signal — during a sync the queue
+/// emits several a second. Mirrors the binding pattern in `QueueDepthCard`.
 class _QueueDepthScope extends StatefulWidget {
   const _QueueDepthScope({required this.queue, required this.builder});
 
   final InboundQueue? queue;
-  final Widget Function(BuildContext context, QueueDepthSignal? depth) builder;
+  final Widget Function(
+    BuildContext context,
+    ValueListenable<QueueDepthSignal?> depth,
+  )
+  builder;
 
   @override
   State<_QueueDepthScope> createState() => _QueueDepthScopeState();
@@ -157,7 +229,7 @@ class _QueueDepthScope extends StatefulWidget {
 
 class _QueueDepthScopeState extends State<_QueueDepthScope> {
   StreamSubscription<QueueDepthSignal>? _sub;
-  QueueDepthSignal? _latest;
+  final ValueNotifier<QueueDepthSignal?> _latest = ValueNotifier(null);
   bool _liveSignalSeen = false;
 
   @override
@@ -171,7 +243,7 @@ class _QueueDepthScopeState extends State<_QueueDepthScope> {
     super.didUpdateWidget(oldWidget);
     if (!identical(oldWidget.queue, widget.queue)) {
       _sub?.cancel();
-      _latest = null;
+      _latest.value = null;
       _liveSignalSeen = false;
       _bind(widget.queue);
     }
@@ -188,10 +260,8 @@ class _QueueDepthScopeState extends State<_QueueDepthScope> {
     final boundQueue = queue;
     _sub = boundQueue.depthChanges.listen((signal) {
       if (!mounted || !identical(boundQueue, widget.queue)) return;
-      setState(() {
-        _latest = signal;
-        _liveSignalSeen = true;
-      });
+      _latest.value = signal;
+      _liveSignalSeen = true;
     });
     unawaited(_loadInitial(boundQueue));
   }
@@ -205,12 +275,10 @@ class _QueueDepthScopeState extends State<_QueueDepthScope> {
       // rebound to a different queue mid-flight.
       if (_liveSignalSeen) return;
       if (!identical(queue, widget.queue)) return;
-      setState(() {
-        _latest = QueueDepthSignal(
-          total: stats.total,
-          abandoned: stats.abandoned,
-        );
-      });
+      _latest.value = QueueDepthSignal(
+        total: stats.total,
+        abandoned: stats.abandoned,
+      );
     } catch (_) {
       // The depth subscription will refresh on its next emission;
       // a one-shot DB hiccup at paint time should not crash the page.
@@ -220,6 +288,7 @@ class _QueueDepthScopeState extends State<_QueueDepthScope> {
   @override
   void dispose() {
     _sub?.cancel();
+    _latest.dispose();
     super.dispose();
   }
 

@@ -355,19 +355,18 @@ class _Ledger extends StatelessWidget {
 
 /// Records of each synced type on this device, deletions included: the
 /// numbers a deep backfill makes equal, so two devices in sync show the same
-/// ones here — unlike the tracked counters above.
+/// ones here — unlike the tracked counters. The counts update on their own
+/// while shown, so the card has no refresh action.
 class RecordCountsCard extends StatelessWidget {
   const RecordCountsCard({
     required this.counts,
     required this.isLoading,
-    required this.onRefresh,
     super.key,
   });
 
   /// Null while loading, or where no sync stack runs.
   final Map<SyncSequencePayloadType, int>? counts;
   final bool isLoading;
-  final VoidCallback onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -405,12 +404,6 @@ class RecordCountsCard extends StatelessWidget {
                     color: tokens.colors.text.highEmphasis,
                   ),
                 ),
-              ),
-              DesignSystemIconAction(
-                icon: LottiIcons.refresh,
-                tooltip: messages.backfillStatsRefresh,
-                isBusy: isLoading,
-                onPressed: isLoading ? null : onRefresh,
               ),
             ],
           ),
