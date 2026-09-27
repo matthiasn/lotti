@@ -17,6 +17,7 @@ _ChangeItem _$ChangeItemFromJson(Map<String, dynamic> json) => _ChangeItem(
   revision: (json['revision'] as num?)?.toInt(),
   effectKey: json['effectKey'] as String?,
   base: json['base'] as Map<String, dynamic>?,
+  targetBase: json['targetBase'] as Map<String, dynamic>?,
 );
 
 Map<String, dynamic> _$ChangeItemToJson(_ChangeItem instance) =>
@@ -29,6 +30,7 @@ Map<String, dynamic> _$ChangeItemToJson(_ChangeItem instance) =>
       'revision': instance.revision,
       'effectKey': instance.effectKey,
       'base': instance.base,
+      'targetBase': instance.targetBase,
     };
 
 const _$ChangeItemStatusEnumMap = {

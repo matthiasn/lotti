@@ -263,7 +263,8 @@ class ChangeSetResolutionStore {
   /// `confirmed` again, and that dispatch's failure must not revert it.
   ///
   /// [args], when given, replace the item's arguments in the same write, as
-  /// one change of the item.
+  /// one change of the item, and [edit], when given, changes the item in the
+  /// same write too — an Undo's new effect key (ADR 0097).
   Future<ChangeSetEntity?> transitionChangeSetItem(
     ChangeSetEntity changeSet,
     int itemIndex, {
@@ -271,6 +272,7 @@ class ChangeSetResolutionStore {
     required ChangeItemStatus to,
     ChangeItem? observed,
     Map<String, dynamic>? args,
+    ChangeItem Function(ChangeItem item)? edit,
   }) => _syncService.runInTransaction(() async {
     // An unpersisted set is judged by the caller's snapshot, a deleted chat
     // set is gone.
@@ -286,23 +288,31 @@ class ChangeSetResolutionStore {
             current.items[itemIndex].revision != observed.revision)) {
       return null;
     }
-    final updated = _withItemStatus(current, itemIndex, to, args: args);
+    final updated = _withItemStatus(
+      current,
+      itemIndex,
+      to,
+      args: args,
+      edit: edit,
+    );
     await _syncService.upsertEntity(updated);
     return updated;
   });
 
   /// [current] with the item at [itemIndex] set to [newStatus] — and to
-  /// [args], when given — and the set status and `resolvedAt` derived from
-  /// it.
+  /// [args] and through [edit], when given — and the set status and
+  /// `resolvedAt` derived from it.
   static ChangeSetEntity _withItemStatus(
     ChangeSetEntity current,
     int itemIndex,
     ChangeItemStatus newStatus, {
     Map<String, dynamic>? args,
+    ChangeItem Function(ChangeItem item)? edit,
   }) {
     final updatedItems = List<ChangeItem>.from(current.items);
     final item = updatedItems[itemIndex];
-    updatedItems[itemIndex] = (args == null ? item : item.copyWith(args: args))
+    final withArgs = args == null ? item : item.copyWith(args: args);
+    updatedItems[itemIndex] = (edit == null ? withArgs : edit(withArgs))
         .withStatus(newStatus);
     final newSetStatus = ChangeItem.deriveSetStatus(updatedItems);
     return current.copyWith(

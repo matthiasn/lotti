@@ -116,6 +116,7 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
           args: args,
           humanSummary: _generateHumanSummary(toolName, args),
           base: await _proposalBase(toolName),
+          targetBase: await _proposalTargetBase(toolName, args),
         );
         if (addRedundancy != null) {
           response = 'Skipped: $addRedundancy';
@@ -450,15 +451,6 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
     };
   }
 
-  /// Check whether a non-batch deferred tool proposal is redundant against
-  /// the current task metadata.
-  ///
-  /// Returns a feedback message for the LLM if the proposal is redundant,
-  /// or `null` if the proposal should be kept.
-  ///
-  /// The snapshot is resolved once and cached for the lifetime of this
-  /// strategy instance to avoid repeated DB lookups when the LLM proposes
-  /// multiple deferred tools in the same wake.
   /// The task field a [toolName] proposal is made against
   /// (`ChangeItem.base`), read fresh rather than from the wake's cached
   /// snapshot: an initial title or language applied earlier in the wake has
@@ -475,6 +467,38 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
     }
   }
 
+  /// The fields of the time entry an `update_time_entry` proposal edits, as
+  /// the entry holds them now (`ChangeItem.targetBase`). `null` for any
+  /// other tool, or when the entry cannot be read — the change then applies
+  /// unconditionally, as it did before these were recorded.
+  Future<Map<String, dynamic>?> _proposalTargetBase(
+    String toolName,
+    Map<String, dynamic> args,
+  ) async {
+    final resolver = resolveTimeEntryFields;
+    final entryId = args['entryId'];
+    if (resolver == null ||
+        toolName != TaskAgentToolNames.updateTimeEntry ||
+        entryId is! String) {
+      return null;
+    }
+    try {
+      final fields = await resolver(entryId);
+      return fields == null ? null : targetBaseFor(args, fields);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Check whether a non-batch deferred tool proposal is redundant against
+  /// the current task metadata.
+  ///
+  /// Returns a feedback message for the LLM if the proposal is redundant,
+  /// or `null` if the proposal should be kept.
+  ///
+  /// The snapshot is resolved once and cached for the lifetime of this
+  /// strategy instance to avoid repeated DB lookups when the LLM proposes
+  /// multiple deferred tools in the same wake.
   Future<String?> _checkTaskMetadataRedundancy(
     String toolName,
     Map<String, dynamic> args,

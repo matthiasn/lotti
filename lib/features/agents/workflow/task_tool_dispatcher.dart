@@ -141,13 +141,13 @@ class TaskToolDispatcher {
       ),
     );
     if (changedField != null) {
-      return ToolExecutionResult(
-        success: true,
-        output:
-            "Nothing applied: the task's $changedField is no longer the "
-            'value this change was proposed against — it was applied '
-            'already, or edited since — so it stays as it is.',
-      );
+      return ChangeEffect.notApplied('task', changedField);
+    }
+    // The same for a proposal that edits a checklist item or a time entry
+    // rather than the task (ADR 0097).
+    if (await _targetMovedOn(resolvedName, normalizedArgs, effect)
+        case final ToolExecutionResult notApplied) {
+      return notApplied;
     }
 
     switch (resolvedName) {
@@ -272,5 +272,37 @@ class TaskToolDispatcher {
           errorMessage: 'Tool $toolName is not registered for the Task Agent',
         );
     }
+  }
+
+  /// What [effect]'s dispatch reports when the checklist item or time entry
+  /// [toolName] edits no longer holds the fields the proposal was made
+  /// against (`ChangeItem.targetBase`), or `null` when it holds them, when
+  /// nothing was recorded, or when the entity cannot be read — the handler
+  /// then reports that as it always has.
+  Future<ToolExecutionResult?> _targetMovedOn(
+    String toolName,
+    Map<String, dynamic> args,
+    ChangeEffect? effect,
+  ) async {
+    if (effect == null || effect.targetBase == null) return null;
+    Future<JournalEntity?> read(Object? id) async =>
+        id is String ? journalDb.journalEntityById(id.trim()) : null;
+    final String what;
+    final Map<String, Object?>? fields;
+    switch (toolName) {
+      case TaskAgentToolNames.updateChecklistItem:
+        what = 'checklist item';
+        final item = await read(args['id']);
+        fields = item is ChecklistItem ? checklistItemFields(item.data) : null;
+      case TaskAgentToolNames.updateTimeEntry:
+        what = 'time entry';
+        final entry = await read(args['entryId']);
+        fields = entry is JournalEntry ? timeEntryFields(entry) : null;
+      default:
+        return null;
+    }
+    if (fields == null) return null;
+    final changed = effect.changedIn(fields);
+    return changed == null ? null : ChangeEffect.notApplied(what, changed);
   }
 }

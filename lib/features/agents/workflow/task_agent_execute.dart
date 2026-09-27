@@ -410,6 +410,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         runKey: runKey,
         domainLogger: domainLogger,
         approvedChecklistItemResolver: journalChecklistItemResolver(journalDb),
+        checklistItemBaseResolver: journalChecklistItemResolver(journalDb),
         checklistItemStateResolver: (itemId) async {
           final entity = await journalDb.journalEntityById(itemId);
           if (entity is ChecklistItem) {
@@ -550,6 +551,11 @@ extension TaskAgentExecute on TaskAgentWorkflow {
           final current = timeService.getCurrent();
           if (current is! JournalEntry) return null;
           return timeService.linkedFrom?.id == taskId ? current.meta.id : null;
+        },
+        // The fields an `update_time_entry` proposal records as its base.
+        resolveTimeEntryFields: (entryId) async {
+          final entity = await journalDb.journalEntityById(entryId);
+          return entity is JournalEntry ? timeEntryFields(entity) : null;
         },
         // A `link_task` target must be a live task; anything else is a
         // hallucinated id. Returns the title for the proposal summary.

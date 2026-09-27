@@ -41,10 +41,11 @@ void _registerIdempotency(_Db Function() fixture) {
       Map<String, dynamic> args, {
       String key = 'set-1:0',
       Map<String, dynamic>? base,
+      Map<String, dynamic>? targetBase,
       String? taskId,
     }) => f.dispatcher.dispatch(
       tool,
-      ChangeEffect(key: key, base: base).addTo(args),
+      ChangeEffect(key: key, base: base, targetBase: targetBase).addTo(args),
       taskId ?? f.task.meta.id,
     );
 
@@ -73,6 +74,106 @@ void _registerIdempotency(_Db Function() fixture) {
         ),
       );
       return id;
+    }
+
+    Future<ChecklistItem> storedItem(String id) async =>
+        (await f.db.journalEntityById(id))! as ChecklistItem;
+
+    /// A new unchecked item in the task's checklist.
+    Future<String> newItem(String title) async =>
+        (await ChecklistRepository().addItemToChecklist(
+          checklistId: f.checklistId,
+          title: title,
+          isChecked: false,
+          categoryId: f.task.meta.categoryId,
+        ))!.meta.id;
+
+    /// The user edits the checklist item [id] on this device.
+    Future<void> userEditsItem(
+      String id,
+      ChecklistItemData Function(ChecklistItemData data) edit,
+    ) async {
+      final written = await ChecklistRepository().updateChecklistItem(
+        checklistItemId: id,
+        change: edit,
+        taskId: f.task.meta.id,
+      );
+      expect(written, isNotNull);
+    }
+
+    /// The `targetBase` an `update_checklist_item` proposal with [args]
+    /// records, read from the item as it is now.
+    Future<Map<String, dynamic>?> itemBase(Map<String, dynamic> args) async =>
+        targetBaseFor(
+          args,
+          checklistItemFields((await storedItem(args['id'] as String)).data),
+        );
+
+    /// A time entry linked from the task, holding [text].
+    Future<String> newTimeEntry(String id, String text) async {
+      when(() => getIt<TimeService>().getCurrent()).thenReturn(null);
+      await getIt<PersistenceLogic>().createDbEntity(
+        testTextEntryNoGeo.copyWith(
+          meta: testTextEntryNoGeo.meta.copyWith(
+            id: id,
+            categoryId: f.task.meta.categoryId,
+            dateFrom: DateTime(2026, 3, 17, 9),
+            dateTo: DateTime(2026, 3, 17, 10),
+          ),
+          entryText: EntryText(plainText: text),
+        ),
+        linkedId: f.task.meta.id,
+      );
+      return id;
+    }
+
+    Future<String?> entryText(String id) async =>
+        ((await f.db.journalEntityById(id))! as JournalEntry)
+            .entryText
+            ?.plainText;
+
+    /// The user rewrites the time entry [id] on this device.
+    Future<void> userEditsEntry(String id, String text) async {
+      expect(
+        await getIt<PersistenceLogic>().updateJournalEntry(
+          journalEntityId: id,
+          entryText: EntryText(plainText: text),
+        ),
+        isTrue,
+      );
+    }
+
+    Future<Map<String, dynamic>?> entryBase(Map<String, dynamic> args) async =>
+        targetBaseFor(
+          args,
+          timeEntryFields(
+            (await f.db.journalEntityById(args['entryId'] as String))!,
+          ),
+        );
+
+    /// A global label definition.
+    Future<String> newLabel(String id) async {
+      await getIt<PersistenceLogic>().upsertEntityDefinition(
+        testLabelDefinition1.copyWith(id: id, name: 'Label $id'),
+      );
+      return id;
+    }
+
+    Future<List<String>> taskLabels() async =>
+        (await storedTask()).meta.labelIds ?? const [];
+
+    /// The user takes [labelId] off the task in the label editor.
+    Future<void> userRemovesLabel(String labelId) async {
+      expect(
+        await f.dispatcher.labelsRepository.setLabels(
+          journalEntityId: f.task.meta.id,
+          labelIds: [
+            for (final id in await taskLabels())
+              if (id != labelId) id,
+          ],
+        ),
+        isTrue,
+      );
     }
 
     test('create_follow_up_task creates one task', () async {
@@ -456,6 +557,372 @@ void _registerIdempotency(_Db Function() fixture) {
       },
     );
 
+    group('tools that edit an entity other than the task (ADR 0097)', () {
+      test(
+        'update_checklist_item leaves a title the user edited after the '
+        'first application',
+        () async {
+          final itemId = await newItem('Draft release notes');
+          final args = {'id': itemId, 'title': 'Draft the release notes'};
+          final base = await itemBase(args);
+
+          await apply(
+            TaskAgentToolNames.updateChecklistItem,
+            args,
+            targetBase: base,
+          );
+          expect((await storedItem(itemId)).data.title, args['title']);
+          await userEditsItem(
+            itemId,
+            (data) => data.copyWith(title: 'Release notes by Friday'),
+          );
+
+          final late = await apply(
+            TaskAgentToolNames.updateChecklistItem,
+            args,
+            targetBase: base,
+          );
+
+          expect(late.success, isTrue);
+          expect(late.output, contains('Nothing applied'));
+          expect(
+            (await storedItem(itemId)).data.title,
+            'Release notes by Friday',
+          );
+        },
+      );
+
+      test(
+        'update_checklist_item leaves a check the user took back — though '
+        'the item is unchecked again, as the proposal found it',
+        () async {
+          final itemId = await newItem('Book the venue');
+          final args = {
+            'id': itemId,
+            'isChecked': true,
+            // Enough to override a state the user set, as the late device's
+            // dispatch would.
+            'reason': 'The log of 2026-03-17 says the venue is booked',
+          };
+          final base = await itemBase(args);
+
+          await apply(
+            TaskAgentToolNames.updateChecklistItem,
+            args,
+            targetBase: base,
+          );
+          expect((await storedItem(itemId)).data.isChecked, isTrue);
+          // The user unchecks it, as the checklist row does: a new stamp.
+          await userEditsItem(
+            itemId,
+            (data) => data.copyWith(
+              isChecked: false,
+              checkedBy: ChangeSource.user,
+              checkedAt: DateTime(2026, 3, 17, 16),
+            ),
+          );
+
+          final late = await apply(
+            TaskAgentToolNames.updateChecklistItem,
+            args,
+            targetBase: base,
+          );
+
+          expect(late.success, isTrue);
+          expect(late.output, contains('Nothing applied'));
+          expect((await storedItem(itemId)).data.isChecked, isFalse);
+        },
+      );
+
+      test(
+        'update_checklist_item without a recorded base applies as before',
+        () async {
+          final itemId = await newItem('Order the banners');
+          await userEditsItem(
+            itemId,
+            (data) => data.copyWith(title: 'Order two banners'),
+          );
+
+          final result = await apply(TaskAgentToolNames.updateChecklistItem, {
+            'id': itemId,
+            'title': 'Order the banners',
+          });
+
+          expect(result.success, isTrue, reason: result.output);
+          expect((await storedItem(itemId)).data.title, 'Order the banners');
+        },
+      );
+
+      test(
+        'update_time_entry leaves text the user wrote after the first '
+        'application',
+        () async {
+          final entryId = await newTimeEntry('entry-1', 'Worked on it');
+          final args = {'entryId': entryId, 'summary': 'Rotated the keys'};
+          final base = await entryBase(args);
+
+          final first = await apply(
+            TaskAgentToolNames.updateTimeEntry,
+            args,
+            targetBase: base,
+          );
+          expect(first.success, isTrue, reason: first.output);
+          expect(await entryText(entryId), 'Rotated the keys [generated]');
+          await userEditsEntry(entryId, 'Rotated the keys, then the certs');
+
+          final late = await apply(
+            TaskAgentToolNames.updateTimeEntry,
+            args,
+            targetBase: base,
+          );
+
+          expect(late.success, isTrue);
+          expect(late.output, contains('Nothing applied'));
+          expect(await entryText(entryId), 'Rotated the keys, then the certs');
+        },
+      );
+
+      test(
+        'update_time_entry leaves a range the user moved after the first '
+        'application',
+        () async {
+          final entryId = await newTimeEntry('entry-2', 'Pairing');
+          final args = {
+            'entryId': entryId,
+            'startTime': '2026-03-17T09:30:00',
+            'endTime': '2026-03-17T10:30:00',
+          };
+          final base = await entryBase(args);
+
+          await apply(
+            TaskAgentToolNames.updateTimeEntry,
+            args,
+            targetBase: base,
+          );
+          await getIt<PersistenceLogic>().updateJournalEntry(
+            journalEntityId: entryId,
+            dateFrom: DateTime(2026, 3, 17, 11),
+            dateTo: DateTime(2026, 3, 17, 12),
+          );
+
+          final late = await apply(
+            TaskAgentToolNames.updateTimeEntry,
+            args,
+            targetBase: base,
+          );
+
+          expect(late.success, isTrue);
+          final entry = (await f.db.journalEntityById(entryId))!;
+          expect(entry.meta.dateFrom, DateTime(2026, 3, 17, 11));
+          expect(entry.meta.dateTo, DateTime(2026, 3, 17, 12));
+        },
+      );
+
+      test(
+        'assign_task_label does not bring back a label the user removed '
+        'after the first application',
+        () async {
+          final labelId = await newLabel('label-release');
+          const confidence = 'very_high';
+          final args = {'id': labelId, 'confidence': confidence};
+
+          await apply(TaskAgentToolNames.assignTaskLabel, args);
+          expect(await taskLabels(), contains(labelId));
+          await userRemovesLabel(labelId);
+          expect(await taskLabels(), isNot(contains(labelId)));
+
+          final late = await apply(TaskAgentToolNames.assignTaskLabel, args);
+
+          // Not a failure: that would revert or retract the item.
+          expect(late.success, isTrue);
+          expect(await taskLabels(), isNot(contains(labelId)));
+          expect(
+            (await storedTask()).data.aiSuppressedLabelIds,
+            contains(labelId),
+          );
+        },
+      );
+    });
+
+    group("the project agent's tools (ADR 0097)", () {
+      late ProjectRepository repository;
+      late ProjectToolDispatcher projects;
+      late ProjectEntry project;
+
+      setUp(() async {
+        repository = ProjectRepository(
+          journalDb: f.db,
+          entitiesCacheService: getIt<EntitiesCacheService>(),
+          persistenceLogic: getIt<PersistenceLogic>(),
+          updateNotifications: getIt<UpdateNotifications>(),
+          vectorClockService: getIt<VectorClockService>(),
+        );
+        project = makeTestProject(
+          id: 'project-1',
+          categoryId: f.task.meta.categoryId,
+        );
+        await getIt<PersistenceLogic>().createDbEntity(project);
+        projects = ProjectToolDispatcher(
+          projectRepository: repository,
+          persistenceLogic: getIt<PersistenceLogic>(),
+          entitiesCacheService: getIt<EntitiesCacheService>(),
+          journalDb: f.db,
+        );
+      });
+
+      Future<ToolExecutionResult> applyToProject(
+        String tool,
+        Map<String, dynamic> args, {
+        String key = 'project-set:0',
+        Map<String, dynamic>? targetBase,
+      }) => projects.dispatch(
+        tool,
+        ChangeEffect(key: key, targetBase: targetBase).addTo(args),
+        project.meta.id,
+      );
+
+      Future<ProjectStatus> projectStatus() async =>
+          (await repository.getProjectById(project.meta.id))!.data.status;
+
+      /// The user sets the project's status on this device.
+      Future<void> userSetsStatus(ProjectStatus status) async {
+        final current = (await repository.getProjectById(project.meta.id))!;
+        expect(
+          await repository.updateProject(
+            current.copyWith(data: current.data.copyWith(status: status)),
+          ),
+          isTrue,
+        );
+      }
+
+      test('create_task creates one task, in the project', () async {
+        const args = {'title': 'Write the migration guide'};
+
+        final first = await applyToProject(
+          ProjectAgentToolNames.createTask,
+          args,
+        );
+        final second = await applyToProject(
+          ProjectAgentToolNames.createTask,
+          args,
+        );
+
+        expect(first.success, isTrue, reason: first.output);
+        expect(second.success, isTrue, reason: second.output);
+        expect(second.mutatedEntityId, first.mutatedEntityId);
+        expect(await idsOf('Task', 'Write the migration guide'), [
+          first.mutatedEntityId,
+        ]);
+        expect(
+          (await repository.getProjectForTask(first.mutatedEntityId!))?.meta.id,
+          project.meta.id,
+        );
+      });
+
+      test('create_task does not bring back a task the user deleted', () async {
+        const args = {'title': 'Retire the legacy importer'};
+        final first = await applyToProject(
+          ProjectAgentToolNames.createTask,
+          args,
+        );
+        expect(
+          await JournalRepository().deleteJournalEntity(first.mutatedEntityId!),
+          isTrue,
+        );
+
+        final late = await applyToProject(
+          ProjectAgentToolNames.createTask,
+          args,
+        );
+
+        expect(late.success, isTrue);
+        expect(await idsOf('Task', 'Retire the legacy importer'), isEmpty);
+      });
+
+      test(
+        'create_task confirmed again after an Undo creates the task anew, '
+        'under the key the Undo gave the item',
+        () async {
+          const args = {'title': 'Draft the rollout plan'};
+          const item = ChangeItem(
+            toolName: ProjectAgentToolNames.createTask,
+            args: args,
+            humanSummary: 'Create task: Draft the rollout plan',
+            revision: 1,
+          );
+          final first = await applyToProject(
+            ProjectAgentToolNames.createTask,
+            args,
+            key: item.effectKeyIn('project-set', 0),
+          );
+          // The Undo removes the task and reopens the item under a new key.
+          expect(
+            await JournalRepository().deleteJournalEntity(
+              first.mutatedEntityId!,
+            ),
+            isTrue,
+          );
+          final reopened = item.undoneIn('project-set', 0);
+
+          final again = await applyToProject(
+            ProjectAgentToolNames.createTask,
+            args,
+            key: reopened.effectKeyIn('project-set', 0),
+          );
+
+          expect(again.success, isTrue, reason: again.output);
+          expect(again.mutatedEntityId, isNot(first.mutatedEntityId));
+          expect(await idsOf('Task', 'Draft the rollout plan'), [
+            again.mutatedEntityId,
+          ]);
+        },
+      );
+
+      for (final restoresBase in [false, true]) {
+        test(
+          'update_project_status leaves a status the user set after the '
+          'first application${restoresBase ? ' — even the one the proposal '
+                    'found, set again' : ''}',
+          () async {
+            const args = {'status': 'active'};
+            final base = targetBaseFor(
+              args,
+              projectFields(await projectStatus()),
+            );
+
+            await applyToProject(
+              ProjectAgentToolNames.updateProjectStatus,
+              args,
+              targetBase: base,
+            );
+            expect(await projectStatus(), isA<ProjectActive>());
+            final userStatus = restoresBase
+                ? ProjectStatus.open(
+                    id: 'user-status',
+                    createdAt: DateTime(2026, 3, 17, 16),
+                    utcOffset: 0,
+                  )
+                : ProjectStatus.monitoring(
+                    id: 'user-status',
+                    createdAt: DateTime(2026, 3, 17, 16),
+                    utcOffset: 0,
+                  );
+            await userSetsStatus(userStatus);
+
+            final late = await applyToProject(
+              ProjectAgentToolNames.updateProjectStatus,
+              args,
+              targetBase: base,
+            );
+
+            expect(late.success, isTrue);
+            expect(late.output, contains('Nothing applied'));
+            expect(await projectStatus(), userStatus);
+          },
+        );
+      }
+    });
+
     // Every tool twice or more, on a replica that holds the other device's
     // writes, with the user editing in between — restoring a field to the
     // proposal's base included: the journal must equal applying each item
@@ -477,12 +944,20 @@ void _registerIdempotency(_Db Function() fixture) {
           ),
         );
         final baseTask = await storedTask();
+        // The entities the other three edit, new for this run.
+        final itemId = await newItem('Row base $r');
+        final itemArgs = {'id': itemId, 'title': 'Row agent $r'};
+        final itemTargetBase = await itemBase(itemArgs);
+        final entryId = await newTimeEntry('entry-run-$r', 'Log base $r');
+        final entryArgs = {'entryId': entryId, 'summary': 'Log agent $r'};
+        final entryTargetBase = await entryBase(entryArgs);
+        final labelId = await newLabel('label-run-$r');
         final creates = <int, (String, String)>{
           0: ('Task', 'Follow-up $r'),
           1: ('JournalEntry', 'Session $r'),
           2: ('ChecklistItem', 'Item $r'),
         };
-        final applied = List.filled(5, 0);
+        final applied = List.filled(8, 0);
         const baseEstimate = Duration(minutes: 30);
         final baseTitle = 'Base title $r';
         // The fields as applying each change once must leave them: a change
@@ -492,6 +967,9 @@ void _registerIdempotency(_Db Function() fixture) {
         var estimate = baseEstimate;
         var titleLanded = false;
         var estimateLanded = false;
+        String? userItemTitle;
+        String? userEntryText;
+        var userRemovedLabel = false;
 
         Future<void> applyItem(int item) async {
           final key = 'run-$r:$item';
@@ -515,12 +993,28 @@ void _registerIdempotency(_Db Function() fixture) {
               key: key,
               base: baseFor(TaskAgentToolNames.setTaskTitle, baseTask),
             ),
-            _ => await apply(
+            4 => await apply(
               TaskAgentToolNames.updateTaskEstimate,
               {'minutes': 90},
               key: key,
               base: baseFor(TaskAgentToolNames.updateTaskEstimate, baseTask),
             ),
+            5 => await apply(
+              TaskAgentToolNames.updateChecklistItem,
+              itemArgs,
+              key: key,
+              targetBase: itemTargetBase,
+            ),
+            6 => await apply(
+              TaskAgentToolNames.updateTimeEntry,
+              entryArgs,
+              key: key,
+              targetBase: entryTargetBase,
+            ),
+            _ => await apply(TaskAgentToolNames.assignTaskLabel, {
+              'id': labelId,
+              'confidence': 'very_high',
+            }, key: key),
           };
           expect(result.success, isTrue, reason: '$trace: ${result.output}');
           applied[item]++;
@@ -536,20 +1030,35 @@ void _registerIdempotency(_Db Function() fixture) {
 
         for (final (step, op) in trace.indexed) {
           switch (op) {
-            case < 5:
+            case < 8:
               await applyItem(op);
-            case 5:
+            case 8:
               final edited = title = 'User title $r.$step';
               await userEdit((data) => data.copyWith(title: edited));
-            case 6:
+            case 9:
               final edited = estimate = Duration(minutes: 7 + step);
               await userEdit((data) => data.copyWith(estimate: edited));
-            case 7:
+            case 10:
               title = baseTitle;
               await userEdit((data) => data.copyWith(title: baseTitle));
-            default:
+            case 11:
               estimate = baseEstimate;
               await userEdit((data) => data.copyWith(estimate: baseEstimate));
+            case 12:
+              final edited = userItemTitle = 'Row user $r.$step';
+              await userEditsItem(
+                itemId,
+                (data) => data.copyWith(title: edited),
+              );
+            case 13:
+              final text = userEntryText = 'Log user $r.$step';
+              await userEditsEntry(entryId, text);
+            default:
+              // Only a label on the task can be taken off it.
+              if ((await taskLabels()).contains(labelId)) {
+                await userRemovesLabel(labelId);
+                userRemovedLabel = true;
+              }
           }
 
           for (final MapEntry(key: item, value: (type, marker))
@@ -566,6 +1075,22 @@ void _registerIdempotency(_Db Function() fixture) {
             task.data.estimate,
             estimate,
             reason: 'NoClobber estimate: $trace',
+          );
+          expect(
+            (await storedItem(itemId)).data.title,
+            userItemTitle ?? (applied[5] > 0 ? 'Row agent $r' : 'Row base $r'),
+            reason: 'NoClobber checklist item: $trace',
+          );
+          expect(
+            await entryText(entryId),
+            userEntryText ??
+                (applied[6] > 0 ? 'Log agent $r [generated]' : 'Log base $r'),
+            reason: 'NoClobber time entry: $trace',
+          );
+          expect(
+            (await taskLabels()).contains(labelId),
+            applied[7] > 0 && !userRemovedLabel,
+            reason: 'NoResurrect label: $trace',
           );
         }
       },
@@ -640,11 +1165,14 @@ extension _AnyIdempotencyTrace on glados.Any {
     this,
   ).listWithLengthInRange(1, 8, glados.IntAnys(this).intInRange(0, 3));
 
-  /// Operations 0–4 apply one of five confirmed items — a follow-up task, a
-  /// time entry, a checklist item, a title and an estimate — 5 and 6 are
-  /// the user editing the title and the estimate, and 7 and 8 the user
-  /// putting either back to the value its proposal was made against.
+  /// Operations 0–7 apply one of eight confirmed items — a follow-up task, a
+  /// time entry, a checklist item, a title, an estimate, a checklist item's
+  /// new title, a time entry's new text and a label; 8 and 9 are the user
+  /// editing the title and the estimate, 10 and 11 the user putting either
+  /// back to the value its proposal was made against, 12 and 13 the user
+  /// editing the checklist item's title and the time entry's text, and 14
+  /// the user taking the label off the task.
   glados.Generator<List<int>> get idempotencyTrace => glados.ListAnys(
     this,
-  ).listWithLengthInRange(1, 10, glados.IntAnys(this).intInRange(0, 9));
+  ).listWithLengthInRange(1, 14, glados.IntAnys(this).intInRange(0, 15));
 }

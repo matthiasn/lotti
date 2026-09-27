@@ -1,10 +1,12 @@
 import 'package:json_schema_builder/json_schema_builder.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/model/retired_tool_calls.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
 import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/tasks/model/directed_relation.dart';
@@ -21,6 +23,7 @@ class QueryTaskActionContext {
     this.taskIds = const {},
     this.runningTimerId,
     this.metadata,
+    this.timeEntryFields = const {},
   });
 
   final String taskId;
@@ -46,6 +49,13 @@ class QueryTaskActionContext {
   /// before it applies (ADR 0075). `null` when unknown: such a proposal then
   /// applies unconditionally.
   final TaskMetadataSnapshot? metadata;
+
+  /// The fields of each entry in [timeEntryIds] as an `update_time_entry`
+  /// proposal records them in `ChangeItem.targetBase` (`timeEntryFields`),
+  /// by entry id — what a late confirmation on another device must still
+  /// find before it applies (ADR 0097). An entry missing here gets no base,
+  /// and its proposal applies unconditionally.
+  final Map<String, Map<String, Object?>> timeEntryFields;
 }
 
 /// Creates reviewable task-tool arguments. It has no mutation capability.
@@ -231,6 +241,14 @@ class QueryTaskActionPlanner {
       },
       labelNameResolver: (id) async =>
           contextItem('labels', id)?['name'] as String?,
+      // The context carries each item's data as stored, stamps included.
+      checklistItemBaseResolver: (id) async => switch (contextItem(
+        'checklistItems',
+        id,
+      )) {
+        final item? => ChecklistItemData.fromJson(item),
+        null => null,
+      },
     );
     String? newTaskId;
     for (final value in actions) {
@@ -275,6 +293,12 @@ class QueryTaskActionPlanner {
           args: args,
           humanSummary: summary,
           base: ChangeProposalFilter.proposalBase(name, context.metadata),
+          targetBase: switch ((name, args['entryId'])) {
+            (TaskAgentToolNames.updateTimeEntry, final String entryId)
+                when context.timeEntryFields[entryId] != null =>
+              targetBaseFor(args, context.timeEntryFields[entryId]!),
+            _ => null,
+          },
         );
       }
       if (builder.items.length > 12) {

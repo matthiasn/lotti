@@ -714,6 +714,104 @@ void main() {
     when(() => mockRepository.getEntity(any())).thenAnswer((_) async => null);
   });
 
+  group('target bases (ADR 0097)', () {
+    final item = ChecklistItemData(
+      title: 'Book the venue',
+      isChecked: false,
+      linkedChecklists: const [],
+      checkedAt: DateTime(2026, 3, 17, 16),
+    );
+
+    test(
+      'an exploded checklist update records the fields it sets, and their '
+      'stamps, as the item is now',
+      () async {
+        final basing = ChangeSetBuilder(
+          agentId: 'agent-1',
+          taskId: 'task-1',
+          threadId: 'thread-1',
+          runKey: 'run-1',
+          checklistItemBaseResolver: (id) async => id == 'item-1' ? item : null,
+        );
+
+        await basing.addBatchItem(
+          toolName: TaskAgentToolNames.updateChecklistItems,
+          args: {
+            'items': [
+              {'id': 'item-1', 'isChecked': true},
+              {'id': 'item-2', 'title': 'Unknown item'},
+            ],
+          },
+          summaryPrefix: 'Checklist',
+        );
+
+        expect(basing.items, hasLength(2));
+        expect(basing.items[0].targetBase, {
+          'isChecked': false,
+          'isChecked@': DateTime(2026, 3, 17, 16).toIso8601String(),
+        });
+        // An item that cannot be read records none: it applies as before.
+        expect(basing.items[1].targetBase, isNull);
+      },
+    );
+
+    test('records none without the resolver, or when it fails', () async {
+      final failing = ChangeSetBuilder(
+        agentId: 'agent-1',
+        taskId: 'task-1',
+        threadId: 'thread-1',
+        runKey: 'run-1',
+        checklistItemBaseResolver: (_) async => throw StateError('db closed'),
+      );
+
+      for (final b in [builder, failing]) {
+        await b.addBatchItem(
+          toolName: TaskAgentToolNames.updateChecklistItems,
+          args: {
+            'items': [
+              {'id': 'item-1', 'isChecked': true},
+            ],
+          },
+          summaryPrefix: 'Checklist',
+        );
+        expect(b.items.single.targetBase, isNull);
+      }
+    });
+
+    test('other batch tools record none', () async {
+      final basing = ChangeSetBuilder(
+        agentId: 'agent-1',
+        taskId: 'task-1',
+        threadId: 'thread-1',
+        runKey: 'run-1',
+        checklistItemBaseResolver: (_) async => item,
+      );
+
+      await basing.addBatchItem(
+        toolName: TaskAgentToolNames.addMultipleChecklistItems,
+        args: {
+          'items': [
+            {'title': 'Send invites'},
+          ],
+        },
+        summaryPrefix: 'Checklist',
+      );
+
+      expect(basing.items.single.targetBase, isNull);
+    });
+
+    test('addItem keeps the target base it is given', () async {
+      await builder.addItem(
+        toolName: TaskAgentToolNames.updateTimeEntry,
+        args: {'entryId': 'entry-1', 'summary': 'Paired'},
+        humanSummary: 'Revise time entry text: "Paired"',
+        targetBase: {'summary': 'Worked'},
+      );
+
+      expect(builder.items.single.targetBase, {'summary': 'Worked'});
+    });
+  });
+
   group('addItem', () {
     test('adds a single item to the builder', () async {
       await builder.addItem(

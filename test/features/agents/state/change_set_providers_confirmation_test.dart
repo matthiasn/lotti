@@ -301,6 +301,7 @@ void main() {
         final container = ProviderContainer(
           overrides: [
             agentSyncServiceProvider.overrideWithValue(mockSyncService),
+            journalDbProvider.overrideWithValue(MockJournalDb()),
             projectRepositoryProvider.overrideWithValue(mockProjectRepository),
             taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
             labelsRepositoryProvider.overrideWithValue(mockLabelsRepository),
@@ -371,6 +372,7 @@ void main() {
         final container = ProviderContainer(
           overrides: [
             agentSyncServiceProvider.overrideWithValue(mockSyncService),
+            journalDbProvider.overrideWithValue(MockJournalDb()),
             projectRepositoryProvider.overrideWithValue(mockProjectRepository),
             taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
             labelsRepositoryProvider.overrideWithValue(mockLabelsRepository),

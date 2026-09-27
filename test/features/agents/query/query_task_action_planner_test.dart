@@ -145,6 +145,79 @@ void main() {
     },
   );
 
+  test(
+    'a time entry edit and a checklist update record the fields they change, '
+    'as the context loaded them (ADR 0097)',
+    () async {
+      final result =
+          await QueryTaskActionPlanner(
+            inference: QueryTextInference(
+              generate: (_, _) => Stream.value(
+                jsonEncode({
+                  'answer': 'Review these changes.',
+                  'actions': [
+                    {
+                      'name': 'update_time_entry',
+                      'arguments': {
+                        'entryId': 'session',
+                        'summary': 'Corrected maintenance',
+                      },
+                      'summary': 'Corrected maintenance',
+                    },
+                    {
+                      'name': 'update_checklist_items',
+                      'arguments': {
+                        'items': [
+                          {'id': 'feeder', 'isChecked': true},
+                          {'id': 'legacy', 'isChecked': true},
+                        ],
+                      },
+                      'summary': 'Check off',
+                    },
+                  ],
+                }),
+              ),
+            ),
+          ).plan(
+            context: const QueryTaskActionContext(
+              taskId: 'habitat',
+              input: {
+                'checklistItems': [
+                  {
+                    'id': 'feeder',
+                    'title': 'Inspect feeder',
+                    'isChecked': false,
+                    'linkedChecklists': <String>[],
+                    'checkedAt': '2026-09-13T09:00:00.000',
+                  },
+                  // Not item data as stored: no base, applied as before.
+                  {'id': 'legacy', 'title': 'Legacy', 'isChecked': false},
+                ],
+              },
+              dependencies: [],
+              checklistIds: {'feeder', 'legacy'},
+              timeEntryIds: {'session'},
+              timeEntryFields: {
+                'session': {
+                  'startTime': '2026-09-13T10:00:00.000',
+                  'endTime': '2026-09-13T11:00:00.000',
+                  'summary': 'Maintenance',
+                },
+              },
+            ),
+            question: 'Fix the log and check the feeder.',
+            conversation: [],
+            cancellation: QueryCancellation(),
+          );
+
+      expect(result.items.map((i) => i.targetBase), [
+        {'summary': 'Maintenance'},
+        {'isChecked': false, 'isChecked@': '2026-09-13T09:00:00.000'},
+        null,
+      ]);
+    },
+  );
+
   for (final payload in <Map<String, Object?>>[
     {'actions': <Object?>[]},
     {'answer': ' ', 'actions': <Object?>[]},

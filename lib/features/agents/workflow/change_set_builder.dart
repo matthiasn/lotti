@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/proposal_ledger_status.dart';
 import 'package:lotti/features/agents/service/change_set_notification_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/agents/workflow/change_item_dedup.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -101,6 +102,7 @@ class ChangeSetBuilder {
     required this.runKey,
     this.checklistItemStateResolver,
     this.approvedChecklistItemResolver,
+    this.checklistItemBaseResolver,
     this.existingChecklistTitlesResolver,
     this.labelNameResolver,
     this.existingLabelIdsResolver,
@@ -130,6 +132,16 @@ class ChangeSetBuilder {
   /// Only background builders wire this; chat proposals still require approval.
   final Future<ChecklistItemData?> Function(String id)?
   approvedChecklistItemResolver;
+
+  /// The checklist item an `update_checklist_item` proposal edits, as it is
+  /// now: the proposal records the fields it changes, and their stamps, as
+  /// its `ChangeItem.targetBase`, so a late second application — the same
+  /// item confirmed on two devices — cannot overwrite an edit made after the
+  /// first (ADR 0097). Null means the item was not found; without this
+  /// resolver, or when it fails, the update records no base and applies
+  /// unconditionally.
+  final Future<ChecklistItemData?> Function(String id)?
+  checklistItemBaseResolver;
 
   Future<String?> _chatApprovalReversal(
     String toolName,
@@ -252,12 +264,14 @@ class ChangeSetBuilder {
   ///
   /// [base] is the task field the proposal was made against
   /// ([ChangeItem.base]); confirming applies it only while the task still
-  /// holds that value.
+  /// holds that value. [targetBase] is the same for a proposal that edits
+  /// another entity, such as a time entry ([ChangeItem.targetBase]).
   Future<String?> addItem({
     required String toolName,
     required Map<String, dynamic> args,
     required String humanSummary,
     Map<String, dynamic>? base,
+    Map<String, dynamic>? targetBase,
   }) async {
     final protected = await _chatApprovalReversal(toolName, args);
     if (protected != null) return protected;
@@ -290,6 +304,7 @@ class ChangeSetBuilder {
       args: args,
       humanSummary: humanSummary,
       base: base,
+      targetBase: targetBase,
     );
     _items.removeWhere((item) => supersedesTimeEntryEdit(proposal, item));
 

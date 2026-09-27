@@ -147,10 +147,11 @@ class ChangeSetConfirmationService {
     // item's effect — the same on every device — so the tool applies it once
     // however often it runs: a created entity gets an id derived from the
     // key, and a field is set only while it holds the value the proposal was
-    // made against (ADR 0075).
+    // made against — the task's, or the edited entity's (ADR 0075, 0097).
     final dispatchArgs = ChangeEffect(
       key: item.effectKeyIn(current.id, itemIndex),
       base: item.base,
+      targetBase: item.targetBase,
     ).addTo(resolvedArgs);
 
     _domainLogger?.log(
@@ -444,6 +445,10 @@ class ChangeSetConfirmationService {
   /// effect behind a confirmed row. If the revert refuses or throws, the
   /// record is put back the way it was — item status and verdict — and the
   /// method returns `false`, leaving the effect and the record in agreement.
+  /// A confirmed item reopened with a [revert] gets a new effect key
+  /// ([ChangeItemEffect.undoneIn]) — its effect is taken back, so the next
+  /// confirmation is a new one — and a refused revert restores the old key
+  /// with the status.
   ///
   /// Returns `false` when the item is out of range, still pending, or
   /// retracted by the agent (nothing of the user's to undo).
@@ -476,6 +481,11 @@ class ChangeSetConfirmationService {
     // The verdict is neutralised in the same transaction that moves the item
     // back to pending, and only while the item still holds the decision this
     // method read: a concurrent change leaves both untouched.
+    // An Undo that takes the effect back reopens the item under a key of its
+    // own, so confirming it again creates anew instead of finding the
+    // tombstone the revert leaves (ADR 0097). A plain reopen keeps the key:
+    // its effect stands, and confirming again must not apply it twice.
+    final rekey = revert != null && item.status == ChangeItemStatus.confirmed;
     final reopenedWith = await _syncService.runInTransaction(() async {
       final reopened = await _resolution.transitionChangeSetItem(
         current,
@@ -483,6 +493,9 @@ class ChangeSetConfirmationService {
         from: {item.status},
         to: ChangeItemStatus.pending,
         observed: item,
+        edit: rekey
+            ? (reopening) => reopening.undoneIn(current.id, itemIndex)
+            : null,
       );
       if (reopened == null) return null;
       final ChangeDecisionEntity decision;
@@ -535,6 +548,10 @@ class ChangeSetConfirmationService {
         from: const {ChangeItemStatus.pending},
         to: item.status,
         observed: reopenedWith.item,
+        // The effect stands under the key it was applied with.
+        edit: rekey
+            ? (restoring) => restoring.copyWith(effectKey: item.effectKey)
+            : null,
       );
       if (restored == null) return;
       await _syncService.upsertEntity(

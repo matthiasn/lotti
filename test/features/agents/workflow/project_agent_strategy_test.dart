@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
+import 'package:lotti/features/agents/workflow/deferred_change_items.dart';
 import 'package:lotti/features/agents/workflow/project_agent_strategy.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:mocktail/mocktail.dart';
@@ -862,7 +863,15 @@ void main() {
           manager: mockManager,
         );
 
-        expect(strategy.extractDeferredItems(), hasLength(1));
+        final deferred = strategy.extractDeferredItems().single;
+        // The status it was made against, for a late confirmation on another
+        // device to compare with (ADR 0097).
+        expect(deferred['targetBase'], {'status': 'active', 'status@': 's1'});
+        // Which a change item carries.
+        expect(
+          buildDeferredChangeItems([deferred], (_, _) => '').single.targetBase,
+          {'status': 'active', 'status@': 's1'},
+        );
       });
 
       test('queues everything when the wake did not supply a status', () async {
@@ -878,7 +887,11 @@ void main() {
           manager: mockManager,
         );
 
-        expect(strategy.extractDeferredItems(), hasLength(1));
+        // Nothing to record a base from: it applies unconditionally.
+        expect(
+          strategy.extractDeferredItems().single.containsKey('targetBase'),
+          isFalse,
+        );
       });
 
       test('leaves create_task alone', () async {
@@ -900,7 +913,8 @@ void main() {
           manager: mockManager,
         );
 
-        expect(strategy.extractDeferredItems(), hasLength(1));
+        final deferred = strategy.extractDeferredItems().single;
+        expect(deferred.containsKey('targetBase'), isFalse);
       });
     });
 

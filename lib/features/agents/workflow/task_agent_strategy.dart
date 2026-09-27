@@ -89,6 +89,7 @@ class TaskAgentStrategy extends ConversationStrategy {
     this.allowedRelatedTaskIds = const <String>{},
     this.resolveEditableTimeEntryIds,
     this.resolveRunningTimerId,
+    this.resolveTimeEntryFields,
     this.resolveLinkableTaskTitle,
     this.resolveExistingTaskRelations,
     this.flushChangeSet,
@@ -174,6 +175,14 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// `update_time_entry` that would move that timer's start or end is
   /// rejected: only its text can change while it runs.
   final Future<String?> Function()? resolveRunningTimerId;
+
+  /// Optional resolver for the fields an `update_time_entry` sets on the
+  /// entry with the given id (`timeEntryFields`), or null when it is not a
+  /// time entry. When provided, the proposal records the fields it changes
+  /// as they are now (`ChangeItem.targetBase`), so a late second
+  /// application cannot overwrite an edit made after the first (ADR 0097).
+  final Future<Map<String, Object?>?> Function(String entryId)?
+  resolveTimeEntryFields;
 
   /// Optional resolver mapping a task id to its title, or null when the id
   /// does not resolve to a live task. When provided, a `link_task` proposal

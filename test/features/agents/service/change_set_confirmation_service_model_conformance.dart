@@ -191,7 +191,210 @@ class _ConfirmBench {
   }
 }
 
+// Model conformance with `specs/tla/ChangeSetLifecycle.tla`'s `Undo` (ADR
+// 0097): the real confirmation service confirms, reopens and undoes one
+// create-style item, and a fake journal stands in for the tool — it creates
+// the entity the dispatch's effect key names unless that entity exists, as a
+// tombstone included, the way `ChangeEffect.created` reads the journal. An
+// Undo removes the entity its confirmation created. After every step, as
+// `NoDuplicateEffects` and `ConfirmedIsLive` say: at most one live entity,
+// and a settled confirmation has one.
+
+enum _UndoOp { confirm, dispatchOk, dispatchFails, undo, reopen }
+
+class _UndoBench {
+  _UndoBench() {
+    when(() => repository.getEntity(any())).thenAnswer((_) async => stored);
+    when(() => syncService.repository).thenReturn(repository);
+    when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
+      final entity = invocation.positionalArguments.first;
+      if (entity is ChangeSetEntity) stored = entity;
+    });
+    when(
+      () => repository.getEntitiesByAgentId(
+        any(),
+        type: any(named: 'type'),
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => const []);
+    syncService.transactionDelegate = driftLikeTransactions(
+      save: () => stored,
+      restore: (snapshot) => stored = snapshot,
+    );
+    service = ChangeSetConfirmationService(
+      syncService: syncService,
+      toolDispatcher: (_, args, _) {
+        final dispatch = (
+          key: args[ChangeEffect.keyArg] as String,
+          result: Completer<ToolExecutionResult>(),
+        );
+        inFlight.add(dispatch);
+        return dispatch.result.future;
+      },
+      labelsRepository: MockLabelsRepository(),
+    );
+  }
+
+  final syncService = MockAgentSyncService();
+  final repository = MockAgentRepository();
+  late final ChangeSetConfirmationService service;
+
+  ChangeSetEntity stored = makeTestChangeSet(
+    items: const [
+      ChangeItem(
+        toolName: 'create_task',
+        args: {'title': 'Draft the rollout plan'},
+        humanSummary: 'Create task: Draft the rollout plan',
+      ),
+    ],
+  );
+
+  final inFlight = <({String key, Completer<ToolExecutionResult> result})>[];
+  int running = 0;
+
+  /// The fake journal: every entity id ever written, and the deleted ones.
+  final written = <String>{};
+  final deleted = <String>{};
+
+  /// What the last successful confirmation created — the Undo's memo.
+  String? memo;
+
+  Set<String> get live => written.difference(deleted);
+
+  Future<void> run(_UndoOp op, int arg) async {
+    switch (op) {
+      case _UndoOp.confirm:
+        running++;
+        unawaited(service.confirmItem(stored, 0).whenComplete(() => running--));
+      case _UndoOp.dispatchOk:
+        await pumpEventQueue();
+        if (inFlight.isEmpty) return;
+        final dispatch = inFlight.removeAt(arg % inFlight.length);
+        // An entity under this id, deleted or not, is the effect applied.
+        written.add(dispatch.key);
+        memo = dispatch.key;
+        dispatch.result.complete(
+          ToolExecutionResult(
+            success: true,
+            output: 'ok',
+            mutatedEntityId: dispatch.key,
+          ),
+        );
+      case _UndoOp.dispatchFails:
+        await pumpEventQueue();
+        if (inFlight.isEmpty) return;
+        inFlight
+            .removeAt(arg % inFlight.length)
+            .result
+            .complete(
+              const ToolExecutionResult(success: false, output: 'failed'),
+            );
+      case _UndoOp.undo:
+        await pumpEventQueue();
+        final created = memo;
+        if (created == null) return;
+        if (await service.reopenItem(
+          stored,
+          0,
+          revert: () async {
+            deleted.add(created);
+            return true;
+          },
+        )) {
+          memo = null;
+        }
+      case _UndoOp.reopen:
+        // Reopened without taking the effect back: it stands.
+        await pumpEventQueue();
+        await service.reopenItem(stored, 0);
+    }
+    await pumpEventQueue();
+  }
+
+  void checkInvariants(List<(_UndoOp, int)> trace) {
+    expect(
+      live.length,
+      lessThanOrEqualTo(1),
+      reason: 'NoDuplicateEffects: $trace',
+    );
+    if (running == 0 &&
+        inFlight.isEmpty &&
+        stored.items.single.status == ChangeItemStatus.confirmed) {
+      expect(live, isNotEmpty, reason: 'ConfirmedIsLive: $trace');
+    }
+  }
+}
+
+extension _AnyUndoTrace on glados.Any {
+  glados.Generator<List<(_UndoOp, int)>> get undoTrace => glados.ListAnys(this)
+      .listWithLengthInRange(
+        1,
+        16,
+        glados.IntAnys(this).intInRange(0, _UndoOp.values.length * 2),
+      )
+      .map(
+        (codes) => [
+          for (final code in codes)
+            (
+              _UndoOp.values[code % _UndoOp.values.length],
+              code ~/ _UndoOp.values.length,
+            ),
+        ],
+      );
+}
+
 void _registerModelConformance() {
+  group('model conformance with specs/tla/ChangeSetLifecycle.tla Undo', () {
+    test(
+      'a confirmation undone and confirmed again creates the entity anew',
+      () async {
+        final bench = _UndoBench();
+        final trace = [
+          (_UndoOp.confirm, 0),
+          (_UndoOp.dispatchOk, 0),
+          (_UndoOp.undo, 0),
+          (_UndoOp.confirm, 0),
+          (_UndoOp.dispatchOk, 0),
+        ];
+        await withClock(Clock.fixed(DateTime(2024, 6, 15, 12)), () async {
+          for (final (op, arg) in trace) {
+            await bench.run(op, arg);
+            bench.checkInvariants(trace);
+          }
+        });
+        expect(bench.stored.items.single.status, ChangeItemStatus.confirmed);
+        expect(bench.written, hasLength(2));
+        expect(bench.live, hasLength(1));
+      },
+    );
+
+    glados.Glados(
+      glados.any.undoTrace,
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'generated confirms, undos and reopens keep NoDuplicateEffects and '
+      'ConfirmedIsLive',
+      (trace) async {
+        final bench = _UndoBench();
+        await withClock(Clock.fixed(DateTime(2024, 6, 15, 12)), () async {
+          try {
+            for (final (op, arg) in trace) {
+              await bench.run(op, arg);
+              bench.checkInvariants(trace);
+            }
+          } finally {
+            for (var i = 0; i < 8 && bench.inFlight.isNotEmpty; i++) {
+              await bench.run(_UndoOp.dispatchFails, 0);
+            }
+          }
+          expect(bench.running, 0, reason: 'a confirm never returned: $trace');
+          bench.checkInvariants(trace);
+        });
+      },
+      tags: 'glados',
+    );
+  });
+
   group('model conformance with specs/tla/ChangeSetConfirm.tla', () {
     glados.Glados(
       glados.any.confirmTrace,

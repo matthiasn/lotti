@@ -264,6 +264,10 @@ extension ChangeSetBatchExplosion on ChangeSetBuilder {
             args: element,
             humanSummary: summary,
             groupId: groupId,
+            targetBase: await _checklistUpdateBase(
+              singularToolName,
+              element,
+            ),
           ),
         );
 
@@ -300,6 +304,31 @@ extension ChangeSetBatchExplosion on ChangeSetBuilder {
       rejected: rejected,
       rejectedDetails: rejectedDetails,
     );
+  }
+
+  /// The `ChangeItem.targetBase` of an `update_checklist_item` [element]:
+  /// the fields it sets, and their stamps, as the item holds them now
+  /// ([checklistItemBaseResolver]). `null` for any other tool, or when the
+  /// item cannot be read; the update then applies unconditionally.
+  Future<Map<String, dynamic>?> _checklistUpdateBase(
+    String singularToolName,
+    Map<String, dynamic> element,
+  ) async {
+    final resolver = checklistItemBaseResolver;
+    final itemId = element['id'];
+    if (singularToolName != TaskAgentToolNames.updateChecklistItem ||
+        resolver == null ||
+        itemId is! String) {
+      return null;
+    }
+    try {
+      final data = await resolver(itemId);
+      return data == null
+          ? null
+          : targetBaseFor(element, checklistItemFields(data));
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Convert batch tool name to a singular form for individual items.

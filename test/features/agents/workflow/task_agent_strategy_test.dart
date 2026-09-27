@@ -165,6 +165,8 @@ ChatCompletionMessageToolCall _toolCall({
   bool withChangeSetBuilder = true,
   Future<Set<String>> Function()? resolveEditableTimeEntryIds,
   Future<String?> Function()? resolveRunningTimerId,
+  Future<Map<String, Object?>?> Function(String entryId)?
+  resolveTimeEntryFields,
   Future<String?> Function(String taskId)? resolveLinkableTaskTitle,
   Future<Set<String>> Function()? resolveExistingTaskRelations,
   Future<void> Function()? flushChangeSet,
@@ -208,6 +210,7 @@ ChatCompletionMessageToolCall _toolCall({
     allowedRelatedTaskIds: allowedRelatedTaskIds,
     resolveEditableTimeEntryIds: resolveEditableTimeEntryIds,
     resolveRunningTimerId: resolveRunningTimerId,
+    resolveTimeEntryFields: resolveTimeEntryFields,
     resolveLinkableTaskTitle: resolveLinkableTaskTitle,
     resolveExistingTaskRelations: resolveExistingTaskRelations,
     flushChangeSet: flushChangeSet,
@@ -1579,6 +1582,66 @@ void main() {
         expect(bench.builder.items, hasLength(1));
         expect(bench.builder.items.single.toolName, 'update_time_entry');
       });
+
+      test(
+        'records the fields an update_time_entry changes, as the entry holds '
+        'them, for a late confirmation to compare (ADR 0097)',
+        () async {
+          final bench = _createStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveEditableTimeEntryIds: () async => {'entry-1'},
+            resolveTimeEntryFields: (id) async => id == 'entry-1'
+                ? const {
+                    'startTime': '2026-03-17T09:00:00.000',
+                    'endTime': '2026-03-17T10:00:00.000',
+                    'summary': 'Worked',
+                  }
+                : null,
+          );
+
+          await bench.strategy.processToolCalls(
+            toolCalls: [
+              call('update_time_entry', {
+                'entryId': 'entry-1',
+                'summary': 'Worked on the API',
+              }),
+            ],
+            manager: mockManager,
+          );
+
+          expect(bench.builder.items.single.targetBase, {'summary': 'Worked'});
+        },
+      );
+
+      for (final (label, resolver) in [
+        ('cannot be read', (String _) async => null),
+        ('lookup fails', (String _) async => throw StateError('db down')),
+      ]) {
+        test(
+          'queues update_time_entry without a base when the entry $label',
+          () async {
+            final bench = _createStrategy(
+              executor: mockExecutor,
+              syncService: mockSyncService,
+              resolveEditableTimeEntryIds: () async => {'entry-1'},
+              resolveTimeEntryFields: resolver,
+            );
+
+            await bench.strategy.processToolCalls(
+              toolCalls: [
+                call('update_time_entry', {
+                  'entryId': 'entry-1',
+                  'summary': 'Worked on the API',
+                }),
+              ],
+              manager: mockManager,
+            );
+
+            expect(bench.builder.items.single.targetBase, isNull);
+          },
+        );
+      }
 
       test('rejects update_time_entry with a hallucinated entryId', () async {
         final bench = _createStrategy(

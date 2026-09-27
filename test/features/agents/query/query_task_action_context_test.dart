@@ -123,6 +123,8 @@ void main() {
         // The zero-length timer stays a target either way, so its text
         // proposal is approvable wherever it is confirmed.
         expect(context.timeEntryIds, {'completed', 'running'});
+        // Every editable entry's fields, for an edit's base (ADR 0097).
+        expect(context.timeEntryFields.keys, {'completed', 'running'});
         expect(context.runningTimerId, timerHere ? 'running' : isNull);
         expect(context.labelIds, {'visible'});
         expect(
