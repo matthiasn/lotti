@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:fake_async/fake_async.dart';
+import 'package:flutter/widgets.dart' show AppLifecycleState;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_service.dart';
@@ -14,6 +15,8 @@ import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
 void main() {
+  // The poller listens to the app lifecycle.
+  TestWidgetsFlutterBinding.ensureInitialized();
   late MockDeepBackfillService service;
   late ProviderContainer container;
 
@@ -155,6 +158,51 @@ void main() {
           ..elapse(SyncTuning.recordCountsRefreshInterval * 5)
           ..flushMicrotasks();
         expect(calls, 3);
+      });
+    });
+
+    test('stops counting while the app is hidden, and counts at once when '
+        'it shows again', () {
+      final binding = TestWidgetsFlutterBinding.instance
+        ..handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      addTearDown(
+        () => binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed),
+      );
+      fakeAsync((async) {
+        var calls = 0;
+        when(service.recordCounts).thenAnswer((_) async {
+          calls++;
+          return {SyncSequencePayloadType.journalEntity: calls};
+        });
+        final subscription = container.listen(
+          deepBackfillRecordCountsProvider,
+          (_, _) {},
+        );
+        async.flushMicrotasks();
+        expect(calls, 1);
+
+        binding
+          ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
+          ..handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+        async
+          ..elapse(SyncTuning.recordCountsRefreshInterval * 5)
+          ..flushMicrotasks();
+        // A route kept on the stack keeps the provider alive in the
+        // background; it must not keep counting there.
+        expect(calls, 1);
+
+        binding
+          ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
+          ..handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+        async.flushMicrotasks();
+        expect(calls, 2, reason: 'counts at once on return');
+        async
+          ..elapse(SyncTuning.recordCountsRefreshInterval)
+          ..flushMicrotasks();
+        expect(calls, 3, reason: 'and polls again');
+
+        subscription.close();
+        async.flushMicrotasks();
       });
     });
 

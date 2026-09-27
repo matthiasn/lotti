@@ -5,7 +5,7 @@ description: The Drift-backed inbound queue, the anchored catch-up bridge, per-r
 resource: ../../../lib/features/sync/queue
 tags: [sync, inbound-queue, catch-up, matrix]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-27T12:30:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-27T21:30:00Z }
 stale_after: 2026-12-25
 sources:
   - id: descriptor-recovery
@@ -513,11 +513,20 @@ Every committed apply emits
 `queue.commit pipeline=queue eventId=… originTs=… markerAdvanced=…` from
 `InboundQueue.commitApplied`, which a log analyser can use to track apply rates.
 
-The backfill settings page hosts the operator surface:
+The Sync health page (`BackfillSettingsBody`, still at
+`/settings/sync/backfill`) hosts the operator surface. Each section watches
+only what it shows, so a signal several times a second rebuilds one card, not
+the page:
 
+- `deepBackfillRecordCountsProvider` leads the page with the records per
+  synced type. It re-counts every `SyncTuning.recordCountsRefreshInterval`
+  (one second) while the page listens and the app is visible, skips a tick
+  whose previous count is still running, counts at once when the app shows
+  again, and stops when the page goes (auto-dispose).
 - `_QueueDepthScope` subscribes to `InboundQueue.depthChanges` (seeded by a
-  one-shot `depthSnapshot()`) and shows total, per-producer breakdown and
-  abandoned count.
+  one-shot `depthSnapshot()`) and publishes the latest signal through a
+  `ValueListenable`: its subtree builds once, and only the status row
+  (inbound total and abandoned count) and the recovery group listen.
 - The desktop Settings destination reuses the same live depth through
   `inboundQueueDepthProvider` for its neutral outlined `↓ count` badge.
 - `_AdvancedRecoveryGroup` drives
