@@ -71,7 +71,11 @@ class WakeCoverage {
       return 'label or category definitions differ';
     }
     for (final MapEntry(:key, value: clock) in inputs.clocks.entries) {
-      if (clock == null) return '${_describe(key)} has no vector clock';
+      // A row without a clock was saved before its type carried one, and has
+      // not been edited since — an edit stamps a clock. It holds no write any
+      // run could lack, like an empty clock. Refusing it made every task with
+      // one old link uncoverable on every device.
+      if (clock == null) continue;
       for (final MapEntry(key: host, value: counter) in clock.vclock.entries) {
         final held = watermark[host] ?? 0;
         if (counter > held) {

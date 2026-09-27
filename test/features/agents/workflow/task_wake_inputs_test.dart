@@ -477,16 +477,25 @@ void main() {
     expect(inputs!.readsPrivate, isTrue);
   });
 
-  test('a linked report without a vector clock is kept, uncovered', () async {
+  test('a row without a vector clock is read, and covered by any peer run '
+      'holding the rest', () async {
     final world = _TaskWorld()
       ..linkedReport = makeTestReport(
         id: 'linked-report-1',
         agentId: 'linked-agent-1',
       );
 
-    final inputs = await world.inputs();
+    final inputs = (await world.inputs())!;
 
-    expect(inputs!.clocks, containsPair('report:linked-report-1', isNull));
+    expect(inputs.clocks, containsPair('report:linked-report-1', isNull));
+    expect(
+      WakeCoverage(
+        watermark: const {'host-a': 40, 'host-b': 4},
+        readsPrivate: false,
+        definitions: inputs.definitions,
+      ).uncovered(inputs),
+      isNull,
+    );
   });
 
   test('is null for an id that is not a task', () async {

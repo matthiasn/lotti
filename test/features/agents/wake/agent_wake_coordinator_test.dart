@@ -19,11 +19,12 @@ const _definitions = 'sha256-v1:definitions';
 
 /// The inputs of a task whose rows were last written as host `desktop`'s
 /// counter 3 and host `phone`'s counter 5.
+const _inputsClocks = {
+  'entry:task-1': VectorClock({'desktop': 3}),
+  'entry:item-1': VectorClock({'desktop': 2, 'phone': 5}),
+};
 const _inputs = WakeInputs(
-  clocks: {
-    'entry:task-1': VectorClock({'desktop': 3}),
-    'entry:item-1': VectorClock({'desktop': 2, 'phone': 5}),
-  },
+  clocks: _inputsClocks,
   readsPrivate: false,
   definitions: _definitions,
 );
@@ -178,20 +179,35 @@ void main() {
       );
     });
 
-    test('never covers a row without a vector clock', () {
+    test('a row saved before its type carried a clock does not stand in '
+        'the way', () {
+      // An old task: one of its links predates link clocks. Everything else
+      // the wake reads is held by the peer's run.
+      const oldTask = WakeInputs(
+        clocks: {
+          ..._inputsClocks,
+          'link:link-from-2019': null,
+        },
+        readsPrivate: false,
+        definitions: _definitions,
+      );
+
       expect(
         const WakeCoverage(
           watermark: _held,
           readsPrivate: false,
           definitions: _definitions,
-        ).uncovered(
-          const WakeInputs(
-            clocks: {'report:report-1': null},
-            readsPrivate: false,
-            definitions: _definitions,
-          ),
-        ),
-        'report [id:report] has no vector clock',
+        ).uncovered(oldTask),
+        isNull,
+      );
+      // It does not hide a write the peer lacks elsewhere.
+      expect(
+        const WakeCoverage(
+          watermark: _behind,
+          readsPrivate: false,
+          definitions: _definitions,
+        ).uncovered(oldTask),
+        'entry [id:item-1] needs [id:phone]:5, peer holds 4',
       );
     });
 

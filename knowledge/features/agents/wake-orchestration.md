@@ -578,7 +578,10 @@ the rows the context reads that someone other than this agent's wakes wrote:
 - other agents' attention requests on the task.
 
 Removed links and deleted entities are read too, because a removal is a write
-and only a row that is read gets its clock checked. The agent's own outputs —
+and only a row that is read gets its clock checked. A row saved before its type carried a
+clock — old entry links are common — counts as covered: it holds no write any
+run could lack, and refusing it made every older task uncoverable
+([ADR 0110](../../../docs/adr/0110-a-clockless-row-counts-as-covered.md)). The agent's own outputs —
 its report, observations, messages, change sets and attention requests — are
 not inputs. A peer's run writes its own, above the watermark its claim
 carried, so counting them would make every completed run look uncovering.
