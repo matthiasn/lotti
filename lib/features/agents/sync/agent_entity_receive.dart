@@ -12,6 +12,18 @@ typedef AgentEntityReceipt = ({
   AgentDomainEntity? toWrite,
 });
 
+/// Whether a received write about [agentIds] — an agent entity's agent, or
+/// both ends of an agent link — must be refused because this device deleted
+/// one of those agents (`AgentService.deleteAgent`, ADR 0108). Its rows are
+/// gone, so writing the late version would bring the agent back
+/// (`specs/tla/TaskAgentAssignment.tla`, DeletedStaysDeleted). Call it in the
+/// receive's transaction, before [resolveReceivedAgentEntity] or the link's
+/// resolution.
+Future<bool> refusesWriteAboutDeletedAgent(
+  AgentRepository repository,
+  Set<String> agentIds,
+) async => (await repository.deletedAgentIdsAmong(agentIds)).isNotEmpty;
+
 /// Resolves a received agent entity against the stored version of its id.
 ///
 /// The stored version is read with its tombstone

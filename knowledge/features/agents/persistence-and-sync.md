@@ -143,10 +143,12 @@ sources:
 
 # One database, two shapes
 
-Agent persistence lives in `agent.sqlite` (schema version 22). Syncable domain
+Agent persistence lives in `agent.sqlite` (schema version 23). Syncable domain
 objects are modelled as **`AgentDomainEntity` variants** and **`AgentLink`
 variants**; wake-run history lives in a dedicated `wake_run_log` table outside
-that model.
+that model, and `deleted_agents` records the agents this device deleted, so
+sync refuses late writes about them (see
+[a deleted agent](#hard-delete-no-tombstone--and-no-inbound-guard) below).
 
 ## Entities
 
@@ -715,6 +717,22 @@ lifecycle is never applied and that peer can keep an agent this device
 destroyed. Reclaiming the sidecar does not cause that — the row is gone either
 way — but the sentence above should not be read as a promise that every device
 converges on the delete.
+
+**A deleted agent is the one exception to "nothing is dropped on ingest".**
+Retention prunes by a rule every device applies to the same rows, so a
+replayed row is pruned again. A deletion is one device's decision, and the
+rows it removed are the only record of the agent there: a late write about
+it — its creation, its link, a message from a run still going on a peer —
+would be inserted as new, and the agent would come back.
+`hardDeleteAgent` therefore records the agent in `deleted_agents` (schema
+v23) in the transaction that deletes its rows, and the agent entity and link
+receive paths refuse any write about a recorded agent
+(`refusesWriteAboutDeletedAgent`), inside the transaction that would write,
+and drop the JSON the refused message brought
+([ADR 0108](../../../docs/adr/0108-a-deleted-agent-stays-deleted.md);
+`specs/tla/TaskAgentAssignment.tla`, DeletedStaysDeleted). A deep backfill
+round still requests a peer's records of the agent — an inventory names
+records, not agents — and they are refused again.
 
 Reclamation is best-effort. A file that is already absent is the normal case —
 the entity may never have synced — and neither a missing documents directory

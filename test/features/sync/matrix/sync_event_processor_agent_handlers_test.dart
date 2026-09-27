@@ -63,7 +63,101 @@ void main() {
           type: any(named: 'type'),
         ),
       ).thenAnswer((_) async => const []);
+      when(
+        () => mockAgentRepo.deletedAgentIdsAmong(any()),
+      ).thenAnswer((_) async => const <String>{});
       processor.agentRepository = mockAgentRepo;
+    });
+
+    group('an agent this device deleted (ADR 0108)', () {
+      test('a link to or from it is refused', () async {
+        when(
+          () => mockAgentRepo.deletedAgentIdsAmong(any()),
+        ).thenAnswer((_) async => {'agent-gone'});
+        final link = AgentLink.agentTask(
+          id: 'link-gone',
+          fromId: 'agent-gone',
+          toId: 'task-1',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        );
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.agentLink(
+              agentLink: link,
+              status: SyncEntryStatus.update,
+            ),
+          ),
+        );
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verifyNever(() => mockAgentRepo.upsertLink(any()));
+        verifyNever(
+          () => updateNotifications.notify(any(), fromSync: true),
+        );
+        final asked =
+            verify(
+                  () => mockAgentRepo.deletedAgentIdsAmong(captureAny()),
+                ).captured.single
+                as Iterable<String>;
+        expect(asked.toSet(), {'agent-gone', 'task-1'});
+      });
+
+      test('an entity of it, sent inline, is refused', () async {
+        when(
+          () => mockAgentRepo.deletedAgentIdsAmong(any()),
+        ).thenAnswer((_) async => {'agent-gone'});
+        final entity = AgentDomainEntity.agentMessage(
+          id: 'msg-late',
+          agentId: 'agent-gone',
+          threadId: 'thread-1',
+          kind: AgentMessageKind.thought,
+          createdAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          metadata: const AgentMessageMetadata(),
+          tokensApprox: 1,
+        );
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.agentEntity(
+              agentEntity: entity,
+              status: SyncEntryStatus.update,
+            ),
+          ),
+        );
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verifyNever(() => mockAgentRepo.upsertEntity(any()));
+        verifyNever(
+          () => updateNotifications.notify(any(), fromSync: true),
+        );
+      });
+
+      test('a link between two agents it did not delete is applied', () async {
+        final link = AgentLink.basic(
+          id: 'link-live',
+          fromId: 'agent-1',
+          toId: 'state-1',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        );
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.agentLink(
+              agentLink: link,
+              status: SyncEntryStatus.update,
+            ),
+          ),
+        );
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verify(() => mockAgentRepo.upsertLink(link)).called(1);
+      });
     });
 
     group('change sets (ChangeSetLifecycle.tla)', () {
@@ -2652,6 +2746,9 @@ void main() {
           reset(mockAgentRepo);
           when(() => mockAgentRepo.upsertLink(any())).thenAnswer((_) async {});
           when(
+            () => mockAgentRepo.deletedAgentIdsAmong(any()),
+          ).thenAnswer((_) async => const <String>{});
+          when(
             () => mockAgentRepo.getLinkByIdIncludingDeleted(any()),
           ).thenAnswer((_) async => null);
 
@@ -2929,6 +3026,9 @@ void main() {
       setUp(() {
         mockSeqService = MockSyncSequenceLogService();
         mockAgentRepoSeq = MockAgentRepository();
+        when(
+          () => mockAgentRepoSeq.deletedAgentIdsAmong(any()),
+        ).thenAnswer((_) async => const <String>{});
         when(
           () => mockAgentRepoSeq.upsertEntity(any()),
         ).thenAnswer((_) async {});
@@ -5877,6 +5977,105 @@ void main() {
 
         verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
       });
+
+      test('a write about an agent this device deleted is refused, and the '
+          'JSON it brought is removed (ADR 0108)', () async {
+        when(
+          () => mockAgentRepo.deletedAgentIdsAmong(any()),
+        ).thenAnswer((_) async => {'agent-gone'});
+        final entity = AgentDomainEntity.agent(
+          id: 'agent-gone',
+          agentId: 'agent-gone',
+          kind: 'task_agent',
+          displayName: 'Deleted Agent',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        );
+        const relativePath = '/agent_entities/agent-gone.json';
+        final file = File(
+          path.join(tempDir.path, stripLeadingSlashes(relativePath)),
+        );
+        file.parent.createSync(recursive: true);
+        file.writeAsStringSync(jsonEncode(entity.toJson()));
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            const SyncMessage.agentEntity(
+              status: SyncEntryStatus.update,
+              jsonPath: relativePath,
+            ),
+          ),
+        );
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verifyNever(() => mockAgentRepo.upsertEntity(any()));
+        verifyNever(
+          () => updateNotifications.notify(any(), fromSync: true),
+        );
+        expect(file.existsSync(), isFalse);
+      });
+
+      test(
+        'a JSON file that cannot be removed is logged, and the write is '
+        'still refused',
+        () async {
+          when(
+            () => mockAgentRepo.deletedAgentIdsAmong(any()),
+          ).thenAnswer((_) async => {'agent-gone'});
+          final entity = AgentDomainEntity.agent(
+            id: 'agent-gone',
+            agentId: 'agent-gone',
+            kind: 'task_agent',
+            displayName: 'Deleted Agent',
+            lifecycle: AgentLifecycle.active,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: 'state-1',
+            config: const AgentConfig(),
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+          const relativePath = '/agent_entities_locked/agent-gone.json';
+          final file = File(
+            path.join(tempDir.path, stripLeadingSlashes(relativePath)),
+          );
+          file.parent.createSync(recursive: true);
+          file.writeAsStringSync(jsonEncode(entity.toJson()));
+          // A directory the process may read but not change: the file stays.
+          Process.runSync('chmod', ['555', file.parent.path]);
+          addTearDown(
+            () => Process.runSync('chmod', ['755', file.parent.path]),
+          );
+          when(() => event.text).thenReturn(
+            encodeMessage(
+              const SyncMessage.agentEntity(
+                status: SyncEntryStatus.update,
+                jsonPath: relativePath,
+              ),
+            ),
+          );
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          verifyNever(() => mockAgentRepo.upsertEntity(any()));
+          verify(
+            () => loggingService.error(
+              LogDomain.sync,
+              any<Object>(that: isA<FileSystemException>()),
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: 'apply.agentEntity.discardDeletedAgentJson',
+            ),
+          ).called(1);
+        },
+        skip: Platform.isWindows ? 'POSIX permissions' : null,
+      );
 
       test('file-backed irreparable week rollup is a permanent skip', () async {
         final entity = AgentDomainEntity.weekRollup(

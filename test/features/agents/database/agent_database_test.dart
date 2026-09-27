@@ -2414,6 +2414,35 @@ void main() {
       );
     });
     test(
+      'v22 to v23 adds deleted_agents, which remembers a deleted agent '
+      '(ADR 0108)',
+      () async {
+        final dbFile = path.join(testDirectory.path, agentDbFileName);
+        sqlite3.open(dbFile)
+          ..execute(_agentLinksV21Sql)
+          ..execute('PRAGMA user_version = 22')
+          ..close();
+
+        final db = AgentDatabase(
+          background: false,
+          documentsDirectoryProvider: () async => testDirectory,
+          tempDirectoryProvider: () async => testDirectory,
+        );
+        addTearDown(db.close);
+
+        final version = await db
+            .customSelect('PRAGMA user_version')
+            .getSingle();
+        expect(version.read<int>('user_version'), 23);
+        await db.recordDeletedAgent('agent-1', DateTime(2026, 9, 27));
+        await db.recordDeletedAgent('agent-1', DateTime(2026, 9, 28));
+        expect(
+          await db.deletedAgentIdsAmong(['agent-1', 'agent-2']).get(),
+          ['agent-1'],
+        );
+      },
+    );
+    test(
       'v21 to v22 lets slot links share a natural key and keeps it unique '
       'for other links',
       () async {
@@ -2446,7 +2475,10 @@ void main() {
         final version = await db
             .customSelect('PRAGMA user_version')
             .getSingle();
-        expect(version.read<int>('user_version'), 22);
+        expect(
+          version.read<int>('user_version'),
+          AgentDatabase.currentSchemaVersion,
+        );
 
         // A concurrent assignment of the same soul under another id: kept.
         await db.customStatement(
