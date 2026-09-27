@@ -1,4 +1,4 @@
-# ADR 0100: Equal Milliseconds at the Catch-Up Boundary
+# ADR 0101: Equal Milliseconds at the Catch-Up Boundary
 
 - Status: Accepted
 - Date: 2026-09-27

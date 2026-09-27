@@ -161,4 +161,3 @@ Each ADR should contain:
 - [`0091-wake-coordination-by-vector-clock-coverage.md`](./0091-wake-coordination-by-vector-clock-coverage.md)
 - [`0092-one-conflict-row-per-version.md`](./0092-one-conflict-row-per-version.md)
 - [`0093-what-a-task-wake-reads.md`](./0093-what-a-task-wake-reads.md)
-- [`0100-equal-milliseconds-at-the-catch-up-boundary.md`](./0100-equal-milliseconds-at-the-catch-up-boundary.md)
