@@ -65,6 +65,10 @@ const _ungatedDeclarations = <String, String>{
   'lib/database/database_journal_queries.dart:'
           'getJournalEntitiesForIdsIncludingDeleted':
       'ids the caller holds, tombstones included (demo reseed inventory)',
+  'lib/database/database_journal_queries.dart:checklistItemsNaming':
+      'the items of checklists the caller holds, found by their back-link '
+      '(ADR 0105) — the same rows the checklist read already resolves by id '
+      'through journalEntitiesByIdsUnorderedAllPrivate',
   'lib/database/database_task_queries.dart:getTaskEstimatesByIds':
       'estimates for task ids the caller holds',
   'lib/database/database_project_queries.dart:getTaskIdsForProjects':

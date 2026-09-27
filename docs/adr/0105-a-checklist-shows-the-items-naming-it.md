@@ -76,7 +76,13 @@ row, whose list lacks the other side's items.
 - **A replay does not repeat a write of its own that landed.** A move and the
   two deletions record this device's counter on the row that decides them
   (`mark`); a replay that finds it has moved on skips that write, because a
-  later version there is another device's choice.
+  later version there is another device's choice. The mark is taken right
+  before that write — an item deletion's when its undo window closes — so no
+  other write of this device's to the row can pass for it.
+- **A swiped item is named by no checklist during its undo window.**
+  `beginItemDeletion` unlists it and clears its back-link, so no device shows
+  it while the deletion is pending; Undo names and lists it again, or, its
+  checklist deleted meanwhile, completes the deletion.
 
 Each is a design switch in the spec (`ItemsByHome`, `JoinOnResolve`,
 `RelistOnResolve`, `UnlistFirst`, `Cascade`, `ReplayGuard`); turning one off

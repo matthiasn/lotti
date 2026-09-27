@@ -101,9 +101,13 @@ final class MoveItemIntent extends MembershipIntent {
   };
 }
 
-/// An item the user deleted: unlisted at once, deleted when its undo window
-/// closes, and relisted (the intent dropped) if the user undoes. [mark] is
-/// on the item.
+/// An item the user deleted: unlisted and its back-link cleared at once,
+/// deleted when its undo window closes, and relisted (the intent dropped) if
+/// the user undoes. [mark] is on the item, and taken only once the delete
+/// itself starts (`ChecklistRepository.completeItemDeletion`): a `null` mark
+/// is a deletion still in its undo window, which a replay completes — an
+/// edit to the item inside the window must not read as the deletion having
+/// landed.
 final class DeleteItemIntent extends MembershipIntent {
   const DeleteItemIntent({
     required this.itemId,
@@ -221,6 +225,11 @@ class ChecklistMembershipIntents {
     if (done(result)) await clear(key);
     return result;
   }
+
+  /// Records [intent] in place of the one under [key] — the same operation,
+  /// further along.
+  Future<void> replace(String key, MembershipIntent intent) =>
+      _settingsDb.saveSettingsItem(key, jsonEncode(intent.toJson()));
 
   /// Removes the intent recorded under [key]: its operation is complete.
   Future<void> clear(String key) => _settingsDb.removeSettingsItem(key);

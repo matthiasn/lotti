@@ -25,6 +25,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/entity_factories.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../tasks/shown_items_stub.dart';
 
 void main() {
   final date = DateTime(2026, 6, 15);
@@ -326,12 +327,14 @@ void main() {
       });
     }
 
-    // Resolve entities by id from a fixed map.
+    // Resolve entities by id from a fixed map — by id, and a checklist's
+    // items by the checklist they name (readShownChecklistItems, ADR 0105).
     void stubEntities(Map<String, JournalEntity> entities) {
       when(() => db.journalEntityById(any())).thenAnswer((invocation) async {
         final id = invocation.positionalArguments.first as String;
         return entities[id];
       });
+      stubShownChecklistReads(db, () => entities);
     }
 
     CategoryDefinition category({
@@ -417,9 +420,15 @@ void main() {
           ),
         );
 
-    ChecklistItem checklistItemEntity({required String id}) => ChecklistItem(
+    ChecklistItem checklistItemEntity({
+      required String id,
+      String checklistId = 'cl',
+    }) => ChecklistItem(
       meta: TestMetadataFactory.create(id: id, createdAt: date),
-      data: TestChecklistItemFactory.create(title: 'Item $id', id: id),
+      data: TestChecklistItemFactory.create(
+        title: 'Item $id',
+        id: id,
+      ).copyWith(linkedChecklists: [checklistId]),
     );
 
     EntryLink basicLink({
@@ -619,6 +628,40 @@ void main() {
       expect(taskNode.oneLiner, isNull);
       expect(taskNode.tldr, 'Full report body');
     });
+
+    test(
+      'a checklist shows the items naming it, including one its list does '
+      'not hold yet, and not one listed that names another checklist',
+      () async {
+        final focus = TestTaskFactory.create(
+          id: 'task',
+          title: 'Focus',
+          checklistIds: ['cl'],
+        );
+        stubEntities({
+          'task': focus,
+          // Listed on 'cl', but moved to another checklist since.
+          'cl': checklist(id: 'cl', itemIds: ['moved']),
+          'moved': checklistItemEntity(id: 'moved', checklistId: 'other'),
+          // Names 'cl'; its listing has not arrived.
+          'late': checklistItemEntity(id: 'late'),
+        });
+
+        final data = await makeContainer().read(
+          taskGraphProvider('task').future,
+        );
+
+        final edges = {
+          for (final e in data!.scenario.edges)
+            if (e.kind == GraphEdgeKind.checklist) '${e.fromId}->${e.toId}',
+        };
+        expect(edges, {'cl->late'});
+        expect(
+          data.scenario.nodes.map((n) => n.id),
+          isNot(contains('moved')),
+        );
+      },
+    );
 
     test('returns null when the focus id is not a journal entity', () async {
       // journalEntityById defaults to null for every id.

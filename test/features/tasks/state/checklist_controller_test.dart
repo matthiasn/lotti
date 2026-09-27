@@ -736,6 +736,29 @@ void main() {
 
     group('_listen / update notifications', () {
       test(
+        'shows an item that arrives naming this checklist before its list '
+        'holds it: the item notifies the checklist its back-link names',
+        () async {
+          final container = await loaded();
+          final late = makeItem('item-late');
+          when(
+            () => mockDb.checklistItemsNaming(any()),
+          ).thenAnswer((_) async => [late]);
+
+          // What the sync receive (and every local write) notifies for an
+          // item: its own id and the checklists it names.
+          expect(late.affectedIds, contains('checklist-1'));
+          updateStreamController.add(late.affectedIds);
+          await pumpEventQueue();
+
+          expect(
+            stateOf(container)?.data.linkedChecklistItems,
+            contains('item-late'),
+          );
+        },
+      );
+
+      test(
         'refreshes state when a subscribed ID appears in update stream',
         () async {
           final container = await loaded();

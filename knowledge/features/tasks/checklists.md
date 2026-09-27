@@ -160,11 +160,14 @@ stateDiagram-v2
 ```
 
 A swipe-deleted item's intent spans the undo window: `beginItemDeletion`
-records it, unlists the item and times the window in the (keep-alive)
-repository — not in the row, which leaves the screen with the item and used
+records it, unlists the item, clears its back-link — a checklist shows the
+items naming it, so unlisting alone would leave it shown here and on every
+other device — and times the window in the (keep-alive) repository — not in the row, which leaves the screen with the item and used
 to cancel the delete with it, leaving swiped items alive forever. Either
-`completeItemDeletion` (window closed) or `undoItemDeletion` (Undo) clears
-it; a crash in between completes the deletion the user last saw. An
+`completeItemDeletion` (window closed) or `undoItemDeletion` (Undo, which
+lists and names the item again — or, its checklist deleted meanwhile,
+completes the deletion) clears it; a crash in between completes the deletion
+the user last saw. An
 operation whose writes were refused or failed keeps its intent too, and the
 next start finishes it.
 
@@ -216,7 +219,11 @@ flowchart TD
 
 A replayed move or deletion does not repeat a write of its own that landed:
 the intent records this device's counter on the row that decides it (`mark`),
-and a later version there is another device's choice.
+and a later version there is another device's choice. The mark is taken
+right before the write it stands for — for an item deletion when the undo
+window closes, not at the swipe, so an edit to the item inside the window is
+never read as the deletion having landed; a deletion without a mark is one
+the app died inside the window of, and its replay deletes the item.
 
 When a user renames an item, `ChecklistItemController.updateTitle` fires a
 fire-and-forget `correctionCaptureService.captureCorrection(...)` with the

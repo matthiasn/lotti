@@ -2417,15 +2417,25 @@ void main() {
     }
 
     test(
-      'beginItemDeletion records a DeleteItemIntent, unlists the item at '
-      'once, keeps the item row, and returns the key',
+      'beginItemDeletion records a DeleteItemIntent, unlists the item and '
+      'clears its back-link at once, keeps the item row, and returns the key',
       () {
         fakeAsync((async) {
           final rows = listedItem();
 
           final key = begin(async);
 
-          expect(events, ['record deleteItem', 'write checklist']);
+          expect(events, [
+            'record deleteItem',
+            'write checklist',
+            'write item',
+          ]);
+          // Named by no checklist, it is shown by none — here, or on a device
+          // that receives the unlisting (ADR 0105).
+          expect(
+            (rows['item']! as ChecklistItem).data.linkedChecklists,
+            isEmpty,
+          );
           expect(jsonDecode(intentRows[key]!), {
             'op': 'deleteItem',
             'itemId': 'item',
@@ -2452,7 +2462,13 @@ void main() {
 
           async.elapse(undoWindow);
 
-          expect(events, ['delete item', 'clear deleteItem']);
+          // The intent takes its mark just before the delete (a replay reads
+          // only the delete's own write as landed).
+          expect(events, [
+            'record deleteItem',
+            'delete item',
+            'clear deleteItem',
+          ]);
           expect(rows['item']!.meta.deletedAt, isNotNull);
           expect(intentRows, isEmpty);
         });
@@ -2478,8 +2494,11 @@ void main() {
           ..flushMicrotasks()
           ..elapse(undoWindow * 2);
 
-        expect(events, ['write checklist', 'clear deleteItem']);
+        expect(events, ['write checklist', 'write item', 'clear deleteItem']);
         expect(listed(rows, 'checklist'), ['before', 'after', 'item']);
+        expect((rows['item']! as ChecklistItem).data.linkedChecklists, [
+          'checklist',
+        ]);
         expect(checklist, rows['checklist']);
         expect(rows['item']!.meta.deletedAt, isNull);
         expect(intentRows, isEmpty);
@@ -2487,7 +2506,9 @@ void main() {
     });
 
     test(
-      'undoItemDeletion clears the intent even when the checklist is gone',
+      'undoItemDeletion completes the deletion when the checklist is gone '
+      'meanwhile — its cascade no longer found the item, whose back-link '
+      'was cleared',
       () {
         fakeAsync((async) {
           final rows = listedItem();
@@ -2508,8 +2529,12 @@ void main() {
             ..elapse(undoWindow * 2);
 
           expect(checklist, isNull);
-          expect(events, ['clear deleteItem']);
-          expect(rows['item']!.meta.deletedAt, isNull);
+          expect(events, [
+            'record deleteItem',
+            'delete item',
+            'clear deleteItem',
+          ]);
+          expect(rows['item']!.meta.deletedAt, isNotNull);
           expect(intentRows, isEmpty);
         });
       },
@@ -2534,7 +2559,11 @@ void main() {
 
           expect(deleted, isTrue);
           // Deleted once: the window's timer no longer fires.
-          expect(events, ['delete item', 'clear deleteItem']);
+          expect(events, [
+            'record deleteItem',
+            'delete item',
+            'clear deleteItem',
+          ]);
           expect(rows['item']!.meta.deletedAt, isNotNull);
           expect(intentRows, isEmpty);
         });
@@ -2557,7 +2586,7 @@ void main() {
           async.flushMicrotasks();
 
           expect(deleted, isTrue);
-          expect(events, ['clear deleteItem']);
+          expect(events, ['record deleteItem', 'clear deleteItem']);
           expect(intentRows, isEmpty);
         });
       },
@@ -2585,7 +2614,7 @@ void main() {
           async.flushMicrotasks();
 
           expect(deleted, isFalse);
-          expect(events, isEmpty);
+          expect(events, ['record deleteItem']);
           expect(intentRows.keys, [key]);
         });
       },
@@ -3845,6 +3874,65 @@ void main() {
 
           expect(rows['item']!.meta.deletedAt, isNull);
           expect(intentRows, isEmpty);
+        },
+      );
+
+      test(
+        'an item deletion still in its undo window when the app died is '
+        'completed, even after an edit to the item moved the counter',
+        () async {
+          final rows = storeRows([
+            checklistWith('checklist', const []),
+            // Checked (or renamed by the agent) inside the undo window: this
+            // device's counter moved, but the delete never started.
+            itemIn(
+              'item',
+              const [],
+              clock: const VectorClock({'device': 5}),
+            ),
+          ]);
+          seedIntent(
+            const DeleteItemIntent(itemId: 'item', checklistId: 'checklist'),
+          );
+
+          await repository.replayMembershipIntents();
+
+          expect(rows['item']!.meta.deletedAt, isNotNull);
+          expect(intentRows, isEmpty);
+        },
+      );
+
+      test(
+        "completeItemDeletion marks the intent with this device's counter "
+        'just before the delete, not at the swipe',
+        () async {
+          final rows = storeRows([
+            checklistWith('checklist', const ['item']),
+            itemIn(
+              'item',
+              const ['checklist'],
+              clock: const VectorClock({'device': 3}),
+            ),
+          ]);
+          final key = await repository.beginItemDeletion(
+            itemId: 'item',
+            checklistId: 'checklist',
+            undoWindow: const Duration(days: 1),
+          );
+          // An edit inside the undo window moves the counter on.
+          rows['item'] = rows['item']!.copyWith(
+            meta: rows['item']!.meta.copyWith(
+              vectorClock: const VectorClock({'device': 7}),
+            ),
+          );
+
+          await repository.completeItemDeletion(key: key!, itemId: 'item');
+
+          final saved = verify(
+            () => mockSettingsDb.saveSettingsItem(key, captureAny()),
+          ).captured.map((json) => jsonDecode(json as String) as Map);
+          expect(saved.first.containsKey('mark'), isFalse);
+          expect(saved.last, containsPair('mark', 7));
         },
       );
 

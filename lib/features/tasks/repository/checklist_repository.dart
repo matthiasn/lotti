@@ -677,12 +677,14 @@ class ChecklistRepository {
   final Map<String, Timer> _pendingDeletions = {};
 
   /// Starts deleting the item [itemId] the user removed from the checklist
-  /// [checklistId]: records a [DeleteItemIntent], unlists the item at once,
-  /// and deletes it when [undoWindow] has passed — unless the user undoes
-  /// first ([undoItemDeletion]). The window is timed here, not by the row
-  /// the user swiped, which leaves the screen with the item. Should the app
-  /// die in between, the next start deletes the item, as the user last saw
-  /// it. Returns the deletion's key, or `null` when it could not be
+  /// [checklistId]: records a [DeleteItemIntent], unlists the item and clears
+  /// its back-link at once — a checklist shows the items naming it (ADR
+  /// 0105), so unlisting alone would leave it shown, here and on every other
+  /// device — and deletes it when [undoWindow] has passed, unless the user
+  /// undoes first ([undoItemDeletion]). The window is timed here, not by the
+  /// row the user swiped, which leaves the screen with the item. Should the
+  /// app die in between, the next start deletes the item, as the user last
+  /// saw it. Returns the deletion's key, or `null` when it could not be
   /// recorded.
   Future<String?> beginItemDeletion({
     required String itemId,
@@ -691,13 +693,16 @@ class ChecklistRepository {
   }) async {
     try {
       final key = await _intents.record(
-        DeleteItemIntent(
-          itemId: itemId,
-          checklistId: checklistId,
-          mark: await _ownCounter(itemId),
-        ),
+        DeleteItemIntent(itemId: itemId, checklistId: checklistId),
       );
       await _changeItems(checklistId, (ids) => withoutMember(ids, itemId));
+      await updateChecklistItem(
+        checklistItemId: itemId,
+        taskId: null,
+        change: (stored) => stored.copyWith(
+          linkedChecklists: withoutMember(stored.linkedChecklists, checklistId),
+        ),
+      );
       _pendingDeletions[key] = Timer(
         undoWindow,
         () => unawaited(completeItemDeletion(key: key, itemId: itemId)),
@@ -716,12 +721,25 @@ class ChecklistRepository {
 
   /// Deletes the item [itemId] once its undo window has closed, and drops
   /// the deletion recorded under [key] — kept for the next start if the
-  /// delete did not land.
+  /// delete did not land. The intent takes its mark here, just before the
+  /// delete, so a replay reads only the delete's own write as having landed
+  /// ([DeleteItemIntent]).
   Future<bool> completeItemDeletion({
     required String key,
     required String itemId,
   }) async {
     _pendingDeletions.remove(key)?.cancel();
+    final intent = (await _intents.pending())[key];
+    if (intent is DeleteItemIntent) {
+      await _intents.replace(
+        key,
+        DeleteItemIntent(
+          itemId: intent.itemId,
+          checklistId: intent.checklistId,
+          mark: await _ownCounter(itemId),
+        ),
+      );
+    }
     final deleted =
         await _journalDb.journalEntityById(itemId) == null ||
         await _deleteEntity(itemId);
@@ -737,13 +755,31 @@ class ChecklistRepository {
     required String itemId,
     required String checklistId,
   }) async {
+    final checklist = await _journalDb.journalEntityById(checklistId);
+    if (checklist is! Checklist) {
+      // The checklist was deleted meanwhile, on this device or another; its
+      // items went with it — all but this one, whose back-link no longer
+      // named it. It goes the way the user first chose.
+      await completeItemDeletion(key: key, itemId: itemId);
+      return null;
+    }
     _pendingDeletions.remove(key)?.cancel();
     final relisted = await _changeItems(
       checklistId,
       (ids) => withMember(ids, itemId),
     );
-    // Listed again, or its checklist is gone: either way the deletion is
-    // off, and a replay must not complete it.
+    await updateChecklistItem(
+      checklistItemId: itemId,
+      taskId: null,
+      change: (stored) => stored.copyWith(
+        linkedChecklists: [
+          checklistId,
+          ...withoutMember(stored.linkedChecklists, checklistId),
+        ],
+      ),
+    );
+    // Listed and named again: the deletion is off, and a replay must not
+    // complete it.
     await _intents.clear(key);
     return relisted.written;
   }
@@ -967,7 +1003,9 @@ class ChecklistRepository {
             checklistId,
             (ids) => withoutMember(ids, itemId),
           )).done &&
-          (await _landed(itemId, mark) ||
+          // A null mark: still in its undo window when the app died, so the
+          // delete never started and is completed now.
+          ((mark != null && await _landed(itemId, mark)) ||
               await _journalDb.journalEntityById(itemId) == null ||
               await _deleteEntity(itemId)),
     ListChecklistIntent(

@@ -517,8 +517,14 @@ class _ReplicaChecklistBench {
   ];
 
   Future<void> checkSettled(Object trace) async {
+    // settle() resolves every conflict it meets; one left means it did not
+    // finish, and the invariants below would go unchecked.
     for (final device in devices) {
-      if ((await _openConflicts(device)).isNotEmpty) return;
+      expect(
+        await _openConflicts(device),
+        isEmpty,
+        reason: 'settled with a conflict open on ${device.host}: $trace',
+      );
     }
     final views = [for (final device in devices) await view(device)];
     expect(views.first, views.last, reason: 'NeverSilent: $trace');
