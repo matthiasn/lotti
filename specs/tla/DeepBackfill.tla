@@ -22,7 +22,11 @@
 (*      of, or holds while the advertiser does not.                        *)
 (*   3. The advertiser answers a request with its current row (Answer),   *)
 (*      and every receive -- answer, push, or incremental sync -- goes    *)
-(*      through the one write decision (Receive, DecideOn).                *)
+(*      through the one write decision (Receive, DecideOn). A request is  *)
+(*      outstanding until the recipient holds a version covering the one *)
+(*      it asked for, whoever sent it: an answer does not say which      *)
+(*      request it answers (its originatingHostId names the version's     *)
+(*      origin, not the responder).                                        *)
 (*                                                                         *)
 (* Records are abstract: `Ids` stands for any synced record with a vector *)
 (* clock (journal entries, entry links, agent entities and links,          *)
@@ -47,6 +51,9 @@
 (*   DurableOutstanding   the outstanding requests survive a crash         *)
 (*   SkipHeldConflict     no request for a version held as a conflict      *)
 (*   AdvertiseConflicts   no push of a version the advertiser holds as one *)
+(*   ClearOnlyCovered     a receive settles only the requests it covers    *)
+(*   ConflictsTravel      open conflict versions are requested and pushed *)
+(*                        like rows, not only named to suppress pushes     *)
 (*                                                                         *)
 (* The round is started by the user (manual only, for now): the liveness  *)
 (* properties assume every device in `Runners` runs maintenance again     *)
@@ -75,7 +82,9 @@ CONSTANTS
     DedupeOutstanding,
     DurableOutstanding,
     SkipHeldConflict,
-    AdvertiseConflicts
+    AdvertiseConflicts,
+    ClearOnlyCovered,
+    ConflictsTravel
 
 R == 1..N
 Ids == 1..NI
@@ -86,9 +95,16 @@ ASSUME MaxWrites \in Nat /\ LossBudget \in Nat /\ MaxCrashes \in Nat
 ASSUME Runners \subseteq R /\ Runners # {}
 ASSUME \A b \in {Incremental, Merge, AdvertiseTombstones, PushNewer,
                  RangeBounds, DedupeOutstanding, DurableOutstanding,
-                 SkipHeldConflict, AdvertiseConflicts} : b \in BOOLEAN
+                 SkipHeldConflict, AdvertiseConflicts, ClearOnlyCovered,
+                 ConflictsTravel} :
+        b \in BOOLEAN
 
-\* Batches page the records by id: batch k covers Range(k).
+\* Batches page the records by id: batch k covers Range(k). The ranges
+\* partition the whole keyspace and every one is emitted, empty or not. The
+\* code must do the same: the first batch's range is unbounded below, the
+\* last's unbounded above, each starts where the previous ended, and a table
+\* with no rows still emits one batch covering everything -- or a record
+\* only the recipient holds, outside every page, never travels.
 NB == (NI + BatchSize - 1) \div BatchSize
 Range(k) == {i \in Ids : (i - 1) \div BatchSize + 1 = k}
 
@@ -120,17 +136,19 @@ Covers(a, b) == Status(a, b) \in {"b_gt_a", "equal"}
 \* Messages. Every message has the same fields so TLC can compare them.
 \*   inv: batch `k` of `from`'s inventory for `to`; `vs` its rows in
 \*        Range(k), `held` its open conflicts there
-\*   req: `from` asks `to` for the records `ids`
-\*   pay: one version `vs` from `from` to `to`; `ans` answers a request for
-\*        `ids` (empty `vs`: no row), otherwise a push or ordinary sync --
-\*        the same journalEntity / agentEntity message on the wire
+\*   req: `from` asks `to` for the records `ids`; `vs` the advertised
+\*        versions it asks about (a ghost: the wire carries only the ids)
+\*   pay: one version `vs` from `from` to `to` -- an answer, a push or
+\*        ordinary sync, the same journalEntity / agentEntity message on the
+\*        wire. `ans` and `held` (the version asked about) are ghosts: an
+\*        answer carries nothing that ties it to its request.
 Msg(t, f, to, k, vs, held, ids, ans) ==
     [type |-> t, from |-> f, to |-> to, k |-> k, vs |-> vs, held |-> held,
      ids |-> ids, ans |-> ans]
 Inv(f, to, k, vs, held) == Msg("inv", f, to, k, vs, held, {}, FALSE)
-Req(f, to, ids) == Msg("req", f, to, 0, {}, {}, ids, FALSE)
-Ans(f, to, i, v) ==
-    Msg("pay", f, to, 0, IF Has(v) THEN {v} ELSE {}, {}, {i}, TRUE)
+Req(f, to, asked) ==
+    Msg("req", f, to, 0, asked, {}, {a.item : a \in asked}, FALSE)
+Ans(f, to, v, a) == Msg("pay", f, to, 0, {v}, {a}, {v.item}, TRUE)
 Push(f, to, v) == Msg("pay", f, to, 0, {v}, {}, {v.item}, FALSE)
 
 VARIABLES
@@ -143,7 +161,8 @@ VARIABLES
     nid,       \* the next write id
     rnd,       \* per device: 0 idle, else the next batch to emit
     net,       \* messages enqueued or in the room, not yet consumed
-    out,       \* per device: outstanding requests, as <<advertiser, id>>
+    out,       \* per device: outstanding requests, as <<advertiser, id,
+               \* the advertised version asked for>>
     losses,    \* messages lost so far
     crashes    \* crashes so far
 
@@ -309,6 +328,31 @@ Owes(e, i, m) ==
                      /\ ~(AdvertiseConflicts
                           /\ \E h \in m.held : h.item = i /\ Covers(l, h))
 
+\* Device e keeps version h: its row or an open conflict is h or newer.
+KeptHere(e, h) ==
+    \/ Has(row[e][h.item]) /\ Covers(h, row[e][h.item])
+    \/ \E c \in conf[e][h.item] : Covers(h, c)
+
+\* The advertiser of batch m keeps version c: its advertised row or one of
+\* its listed conflicts is c or newer.
+KeptThere(m, c) ==
+    \/ \E a \in AdvOf(m, c.item) : Covers(c, a)
+    \/ \E h \in m.held : h.item = c.item /\ Covers(c, h)
+
+\* The versions of batch m the recipient asks for: the advertised row it
+\* needs, and (ConflictsTravel) each listed conflict it does not keep. A
+\* conflict version held on one device only otherwise never reaches a third:
+\* the row both others hold is equal, and nobody pushes the conflict.
+Wanted(e, m) ==
+    {a \in m.vs : Needs(e, a.item, a)}
+    \cup (IF ConflictsTravel THEN {h \in m.held : ~KeptHere(e, h)} ELSE {})
+
+\* The recipient's own conflict versions the advertiser does not keep.
+OwedConflicts(e, m) ==
+    IF ConflictsTravel
+    THEN {c \in UNION {conf[e][i] : i \in Range(m.k)} : ~KeptThere(m, c)}
+    ELSE {}
+
 \* One batched read of the recipient's rows for the batch's range, compared
 \* in memory; the requests, the pushes and the outstanding set are written
 \* in one transaction with the outbox.
@@ -316,50 +360,69 @@ Diff(e, m) ==
     /\ m \in net /\ m.type = "inv" /\ m.to = e
     /\ LET d == m.from
            need == {i \in Range(m.k) :
-                      /\ \E a \in AdvOf(m, i) : Needs(e, i, a)
-                      /\ ~DedupeOutstanding \/ <<d, i>> \notin out[e]}
+                      /\ \E a \in Wanted(e, m) : a.item = i
+                      /\ ~DedupeOutstanding
+                         \/ ~\E x \in out[e] : x[1] = d /\ x[2] = i}
+           asked == {a \in Wanted(e, m) : a.item \in need}
            owed == {i \in Range(m.k) : Owes(e, i, m)}
        IN /\ net' = (net \ {m})
-                    \cup (IF need # {} THEN {Req(e, d, need)} ELSE {})
+                    \cup (IF need # {} THEN {Req(e, d, asked)} ELSE {})
                     \cup {Push(e, d, row[e][i]) : i \in owed}
-          /\ out' = [out EXCEPT ![e] = @ \cup {<<d, i>> : i \in need}]
+                    \cup {Push(e, d, c) : c \in OwedConflicts(e, m)}
+          /\ out' = [out EXCEPT ![e] = @ \cup {<<d, a.item, a>> : a \in asked}]
     /\ UNCHANGED <<row, conf, seen, written, hc, nid, rnd, losses, crashes>>
 
-\* The advertiser answers with its current row, tombstones included
-\* (BackfillResponseHandler._answerFromEntry, loading with deletions).
+\* What answers a request for version a: the advertiser's row, unless only
+\* an open conflict keeps a -- then that conflict. (The code resends the
+\* row and every open conflict of the record; the others are receives the
+\* write decision handles like any.)
+AnswerFor(d, a) ==
+    IF ~Covers(a, row[d][a.item]) /\ \E c \in conf[d][a.item] : Covers(a, c)
+    THEN CHOOSE c \in conf[d][a.item] : Covers(a, c)
+    ELSE row[d][a.item]
+
+\* The advertiser answers with its current row, tombstones included, or the
+\* open conflict that keeps the version asked for.
 Answer(d, m) ==
     /\ m \in net /\ m.type = "req" /\ m.to = d
-    /\ net' = (net \ {m}) \cup {Ans(d, m.from, i, row[d][i]) : i \in m.ids}
+    /\ net' = (net \ {m}) \cup {Ans(d, m.from, AnswerFor(d, a), a) : a \in m.vs}
     /\ UNCHANGED <<row, conf, seen, written, hc, nid, rnd, out, losses,
                    crashes>>
+
+\* A receive settles an outstanding request once the row, or an open
+\* conflict, holds the version asked for or a newer one. Not settling it by
+\* sender: nothing on the wire says which request a version answers.
+\* (~ClearOnlyCovered: any receive of the record settles every request.)
+Settles(a, d) ==
+    \/ ~ClearOnlyCovered
+    \/ Covers(a, d.row)
+    \/ \E c \in d.conf : Covers(a, c)
 
 \* Every version arrives through the one write decision.
 Receive(e, m) ==
     /\ m \in net /\ m.type = "pay" /\ m.to = e
     /\ net' = net \ {m}
-    /\ out' = IF m.ans
-              THEN [out EXCEPT ![e] = @ \ {<<m.from, i>> : i \in m.ids}]
-              ELSE out
-    /\ IF m.vs = {}
-       THEN UNCHANGED <<row, conf, seen>>
-       ELSE LET v == CHOOSE x \in m.vs : TRUE
-                d == DecideOn(row[e][v.item], conf[e][v.item], v)
-            IN /\ row' = [row EXCEPT ![e][v.item] = d.row]
-               /\ conf' = [conf EXCEPT ![e][v.item] = d.conf]
-               /\ seen' = [seen EXCEPT ![e] = @ \cup {v, d.row}]
+    /\ LET v == CHOOSE x \in m.vs : TRUE
+           d == DecideOn(row[e][v.item], conf[e][v.item], v)
+       IN /\ row' = [row EXCEPT ![e][v.item] = d.row]
+          /\ conf' = [conf EXCEPT ![e][v.item] = d.conf]
+          /\ seen' = [seen EXCEPT ![e] = @ \cup {v, d.row}]
+          /\ out' = [out EXCEPT ![e] =
+                       {x \in @ : ~(x[2] = v.item /\ Settles(x[3], d))}]
     /\ UNCHANGED <<written, hc, nid, rnd, losses, crashes>>
 
 \* A request, or its answer, is gone: the requester's timeout frees the
 \* record for the next round. (The timeout is assumed longer than a
 \* delivery: it only fires once neither is still on its way.)
-InFlight(e, d, i) ==
-    \/ \E m \in net : m.type = "req" /\ m.from = e /\ m.to = d /\ i \in m.ids
-    \/ \E m \in net : m.type = "pay" /\ m.ans /\ m.from = d /\ m.to = e
-                      /\ i \in m.ids
-Expire(e, d, i) ==
-    /\ <<d, i>> \in out[e]
-    /\ ~InFlight(e, d, i)
-    /\ out' = [out EXCEPT ![e] = @ \ {<<d, i>>}]
+InFlight(e, x) ==
+    \/ \E m \in net : m.type = "req" /\ m.from = e /\ m.to = x[1]
+                      /\ x[3] \in m.vs
+    \/ \E m \in net : m.type = "pay" /\ m.ans /\ m.from = x[1] /\ m.to = e
+                      /\ x[3] \in m.held
+Expire(e, x) ==
+    /\ x \in out[e]
+    /\ ~InFlight(e, x)
+    /\ out' = [out EXCEPT ![e] = @ \ {x}]
     /\ UNCHANGED <<row, conf, seen, written, hc, nid, rnd, net, losses,
                    crashes>>
 
@@ -383,7 +446,7 @@ Next ==
     \/ \E r \in R : StartRound(r) \/ EmitBatch(r) \/ Crash(r)
     \/ \E m \in net : Diff(m.to, m) \/ Answer(m.to, m) \/ Receive(m.to, m)
                       \/ Lose(m)
-    \/ \E e, d \in R, i \in Ids : Expire(e, d, i)
+    \/ \E e \in R : \E x \in out[e] : Expire(e, x)
 
 \* Fairness: the protocol's own steps are taken; the user runs maintenance
 \* again (Runners); writes, losses and crashes are not forced. Fairness is
@@ -401,7 +464,8 @@ Fairness ==
         /\ \A i \in Ids :
             /\ WF_vars(\E m \in net : m.from = d /\ m.ids = {i}
                                       /\ Receive(e, m))
-            /\ WF_vars(Expire(e, d, i))
+            /\ WF_vars(\E x \in out[e] : x[1] = d /\ x[2] = i
+                                          /\ Expire(e, x))
 
 Spec == Init /\ [][Next]_vars
 FairSpec == Spec /\ Fairness
@@ -419,15 +483,16 @@ TypeOK ==
 InventoryIsReal ==
     \A m \in net : m.type = "inv" => m.vs \subseteq seen[m.from]
 
-\* At most one request per record and advertiser is on its way at a time,
-\* counting its answer.
+\* A version is asked for at most once per advertiser while the request, or
+\* its answer, is on its way.
 NoDuplicateRequest ==
-    \A e, d \in R, i \in Ids :
-        Cardinality({m \in net :
-                       \/ m.type = "req" /\ m.from = e /\ m.to = d
-                          /\ i \in m.ids
-                       \/ m.type = "pay" /\ m.ans /\ m.from = d /\ m.to = e
-                          /\ i \in m.ids}) <= 1
+    \A e, d \in R :
+        \A a \in UNION {m.vs \cup m.held : m \in net} :
+            Cardinality({m \in net :
+                           \/ m.type = "req" /\ m.from = e /\ m.to = d
+                              /\ a \in m.vs
+                           \/ m.type = "pay" /\ m.ans /\ m.from = d
+                              /\ m.to = e /\ a \in m.held}) <= 1
 
 \* `m` causally replaced `v`.
 Replaced(v, m) == v.hist \subseteq m.hist /\ v.hist # m.hist
