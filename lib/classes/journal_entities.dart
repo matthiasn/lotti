@@ -46,10 +46,45 @@ abstract class Metadata with _$Metadata {
     EntryFlag? flag,
     bool? starred,
     bool? private,
+
+    /// When `JournalDb.purgeDeleted` compacted this deleted entry to a
+    /// tombstone ([JournalEntityTombstone]). Null on every entry that holds
+    /// its own fields. Left out of the JSON while null, so every other
+    /// entry serializes as it did before the field existed.
+    @JsonKey(includeIfNull: false) DateTime? purgedAt,
   }) = _Metadata;
 
   factory Metadata.fromJson(Map<String, dynamic> json) =>
       _$MetadataFromJson(json);
+}
+
+/// The tombstone a purge leaves of a deleted entry (ADR 0095).
+///
+/// A purge removes a deleted entry's files and fields but keeps its id, its
+/// dates, its vector clock and its deletion, so the deletion stays a version
+/// like any other: backfill still serves it to a device that missed it, and a
+/// late copy of an older version is still refused. The tombstone is a
+/// [JournalEntry] whatever the entry was, since only that variant has no
+/// required fields to keep, and [Metadata.purgedAt] marks it.
+extension JournalEntityTombstone on JournalEntity {
+  /// Whether this is a purge's tombstone rather than an entry with fields.
+  bool get isPurgedTombstone => meta.purgedAt != null;
+
+  /// This deleted entry reduced to its tombstone, purged at [purgedAt]: the
+  /// id, dates, clock and deletion, nothing else.
+  JournalEntity toPurgedTombstone(DateTime purgedAt) =>
+      JournalEntity.journalEntry(
+        meta: Metadata(
+          id: meta.id,
+          createdAt: meta.createdAt,
+          updatedAt: meta.updatedAt,
+          dateFrom: meta.dateFrom,
+          dateTo: meta.dateTo,
+          vectorClock: meta.vectorClock,
+          deletedAt: meta.deletedAt ?? purgedAt,
+          purgedAt: purgedAt,
+        ),
+      );
 }
 
 /// The one definition of "this entry carries the user-facing flag".

@@ -84,8 +84,8 @@ const _ungatedDeclarations = <String, String>{
       'sequence-log population walks every row for sync',
   'lib/database/database_journal_queries.dart:allNonDeletedJournalEntityIds':
       'ids only, for the demo reseed guard',
-  'lib/database/database_entity_ops.dart:purgeDeletedFiles':
-      'the purge walk over deleted rows',
+  'lib/database/database_entity_ops.dart:_unpurgedDeletedChunk':
+      'the purge walks over deleted rows, private ones included',
   'lib/database/maintenance.dart:recreateFts5':
       'reindexes every row; search hits resolve through the gated id-batch '
       'read',

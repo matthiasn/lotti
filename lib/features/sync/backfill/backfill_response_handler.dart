@@ -847,8 +847,10 @@ class BackfillResponseHandler {
     switch (payloadType) {
       case SyncSequencePayloadType.journalEntity:
         // A soft-deleted entry is served like any version: a deletion the
-        // requester lost must reach it (ADR 0083). Only a row that is gone
-        // altogether — purged — is answered `deleted`.
+        // requester lost must reach it (ADR 0083). So is a purge's tombstone
+        // of one, which keeps the deletion's clock (ADR 0095). Only a row
+        // that is gone altogether — purged by an older build — is answered
+        // `deleted`.
         final journalEntry = await _journalDb.journalEntityByIdIncludingDeleted(
           payloadId,
         );

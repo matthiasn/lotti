@@ -54,6 +54,7 @@ classDiagram
     EntryFlag? flag
     bool? starred
     bool? private
+    DateTime? purgedAt
   }
   JournalEntity *-- Metadata : every variant carries one
 
@@ -116,6 +117,7 @@ concerns live:
 | `deletedAt` | **Soft delete** — the row is the tombstone, which is what lets deletion replicate |
 | `flag` | `EntryFlag` — **three-valued, and not a nullable bool**. `import` is the only member the app ever sets, and the only one every reader treats as *flagged*. Clearing the flag writes `none`, so `flag != null` is **not** "is flagged" |
 | `starred`, `private` | User-facing markers |
+| `purgedAt` | Set only on a purge's tombstone (below). Left out of the JSON while null |
 
 A few consequences worth stating:
 
@@ -135,12 +137,19 @@ A few consequences worth stating:
 - **Deletion is a stamp, not a row removal.** That is what makes "deleted"
   distinguishable from "never existed" on a peer, and it is the same pattern the
   [AI config lifecycle](../features/ai/seeding-and-lifecycle.md) adopted later.
-- **But the tombstone is not permanent.** `JournalDb.purgeDeleted` — reachable
-  from *Settings → Advanced → Maintenance*, and irreversible by its own
-  confirmation copy — hard-deletes every row flagged `deleted`, along with their
-  files. After a purge this device can no longer tell "deleted" from "never
-  existed", so do not build a sync or backup invariant on the tombstone always
-  being there.
+- **A purge keeps the tombstone and drops the rest.** `JournalDb.purgeDeleted`
+  — reachable from *Settings → Advanced → Maintenance*, and irreversible by its
+  own confirmation copy — deletes the files of every row flagged `deleted` and
+  compacts the row to a tombstone: a `JournalEntry` with no text, whatever the
+  entry was, holding only the id, the dates, the vector clock, `deletedAt` and
+  `purgedAt` (`JournalEntityTombstone.toPurgedTombstone`). The clock is the
+  deletion's, so it is still the deletion: backfill serves it, a late copy is
+  refused, and a concurrent edit is a conflict
+  ([ADR 0095](../../docs/adr/0095-a-purge-keeps-the-deletion.md)). A tombstone
+  received over a copy that still has its fields deletes that copy and keeps
+  its fields; a deletion received over a tombstone is compacted. Rows purged
+  by a build before ADR 0095 are gone, so an id can still have no row and a
+  past deletion.
 
 # Where variant data lives
 

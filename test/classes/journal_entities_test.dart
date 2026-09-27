@@ -93,6 +93,56 @@ void main() {
     });
   });
 
+  group('JournalEntityTombstone', () {
+    final deletedAt = DateTime(2024, 3, 15, 9);
+    final purgedAt = DateTime(2024, 4, 1, 10);
+
+    test('a tombstone keeps the id, dates, clock and deletion of the task, '
+        'and nothing else', () {
+      final task = testTask.copyWith(
+        meta: testTask.meta.copyWith(
+          deletedAt: deletedAt,
+          labelIds: const ['label-1'],
+          categoryId: 'category-1',
+          starred: true,
+        ),
+      );
+
+      final tombstone = task.toPurgedTombstone(purgedAt);
+
+      expect(tombstone, isA<JournalEntry>());
+      expect(tombstone.entryText, isNull);
+      expect(tombstone.isPurgedTombstone, isTrue);
+      expect(task.isPurgedTombstone, isFalse);
+      expect(
+        tombstone.meta,
+        Metadata(
+          id: task.meta.id,
+          createdAt: task.meta.createdAt,
+          updatedAt: task.meta.updatedAt,
+          dateFrom: task.meta.dateFrom,
+          dateTo: task.meta.dateTo,
+          vectorClock: task.meta.vectorClock,
+          deletedAt: deletedAt,
+          purgedAt: purgedAt,
+        ),
+      );
+    });
+
+    test('purgedAt round-trips through JSON and is left out while null', () {
+      final tombstone = testTask
+          .copyWith(meta: testTask.meta.copyWith(deletedAt: deletedAt))
+          .toPurgedTombstone(purgedAt);
+
+      final json = jsonDecode(jsonEncode(tombstone)) as Map<String, dynamic>;
+      final meta =
+          jsonDecode(jsonEncode(testTask.meta)) as Map<String, dynamic>;
+
+      expect(JournalEntity.fromJson(json), tombstone);
+      expect(meta.containsKey('purgedAt'), isFalse);
+    });
+  });
+
   group('ImageData.thumbHash', () {
     const hash = 'EMYFFIIHmId8iIZwh4a1kF0J6A==';
 

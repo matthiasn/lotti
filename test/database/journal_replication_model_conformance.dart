@@ -4,8 +4,8 @@ part of 'database_entity_ops_test.dart';
 // on three devices, each a real in-memory JournalDb, written by the
 // product's writers -- an edit or a deletion of the entry the live read
 // returns, an edit of an entry a screen read earlier, a restore of a deleted
-// entry, and the user's resolution of an open conflict (the real
-// resolveToSide) -- and exchanged in generated orders through the real write
+// entry, the user's resolution of an open conflict (the real
+// resolveToSide) and the real purge of deleted entries -- and exchanged in generated orders through the real write
 // decision, JournalDb.updateJournalEntity. Deliveries repeat, arrive late or
 // are lost and recovered from the writer's stored row, as the backfill
 // responder serves it. Every version carries the ghost history the model's
@@ -20,6 +20,7 @@ enum _ReplicaOp {
   staleEdit,
   restore,
   resolve,
+  purge,
   deliver,
   lose,
   backfill,
@@ -65,9 +66,12 @@ const _maxReplicaWrites = 5;
 const _replicaEntryId = 'replicated';
 
 /// A version as the model sees it: its content, which names the write that
-/// made it, and its clock.
-String _keyOf(JournalEntity v) =>
-    '${v.entryText?.plainText}|${v.meta.vectorClock?.vclock}';
+/// made it, and its clock. A deletion is named by its clock alone, since a
+/// purge's tombstone of it has no content, and a tombstone applied over a
+/// stored copy keeps that copy's (ADR 0095); every write has its own clock.
+String _keyOf(JournalEntity v) => v.meta.deletedAt != null
+    ? 'deleted|${v.meta.vectorClock?.vclock}'
+    : '${v.entryText?.plainText}|${v.meta.vectorClock?.vclock}';
 
 /// [a] is covered by [b], component-wise.
 bool _clockLeq(VectorClock? a, VectorClock? b) {
@@ -234,7 +238,13 @@ class _ReplicaBench {
         );
       case _ReplicaOp.restore:
         final stored = await _stored(d);
-        if (!writesLeft || stored.meta.deletedAt == null) return;
+        // A purged entry is no longer what it was, so the dispatcher creates
+        // one under the id instead; the model leaves that out too.
+        if (!writesLeft ||
+            stored.meta.deletedAt == null ||
+            stored.isPurgedTombstone) {
+          return;
+        }
         await _write(d, _versionOn(d, stored, deleted: false), [stored]);
       case _ReplicaOp.resolve:
         final open = await _openConflicts(d);
@@ -247,6 +257,9 @@ class _ReplicaBench {
           side: step.arg.isEven ? ConflictSide.local : ConflictSide.remote,
         );
         await _write(d, _versionOn(d, chosen), [local, remote]);
+      case _ReplicaOp.purge:
+        // JournalDb.purgeDeleted: the deletion stays, as its tombstone.
+        await dbs[d].purgeDeleted(backup: false).drain<void>();
       case _ReplicaOp.deliver:
         final pending = _pendingFor(d);
         if (pending.isEmpty) return;
@@ -354,7 +367,8 @@ void registerJournalReplicationConformance(List<JournalDb> Function() dbs) {
     glados.any.replicaTrace,
     glados.ExploreConfig(numRuns: 400),
   ).test(
-    'a journal entry edited, deleted, restored and resolved on three devices '
+    'a journal entry edited, deleted, restored, resolved and purged on three '
+    'devices '
     'never diverges silently, and nothing received is dropped without a '
     'conflict (specs/tla/JournalReplication.tla)',
     (trace) async {

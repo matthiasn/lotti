@@ -28,12 +28,13 @@ import 'package:lotti/utils/image_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
+import '../test_data/test_data.dart';
 import 'test_utils.dart';
 
 part 'journal_replication_model_conformance.dart';
 
 /// Writes the JSON file an older build kept beside every entry. Nothing
-/// writes one now, but [JournalDb.purgeDeletedFiles] still removes those
+/// writes one now, but [JournalDb.purgeDeleted] still removes those
 /// left on disk.
 void _leaveLegacyJson(String path) {
   File(path)
@@ -327,7 +328,7 @@ void main() {
       );
     });
 
-    group('purgeDeletedFiles -', () {
+    group('purgeDeleted files -', () {
       test(
         'missing media file does not prevent JSON descriptor cleanup',
         () async {
@@ -353,7 +354,7 @@ void main() {
           _leaveLegacyJson(jsonPath);
           expect(File(imagePath).existsSync(), isFalse);
 
-          await db!.purgeDeletedFiles();
+          await db!.purgeDeleted(backup: false).drain<void>();
 
           expect(File(jsonPath).existsSync(), isFalse);
         },
@@ -382,7 +383,7 @@ void main() {
         final jsonPath = '$imagePath.json';
         _leaveLegacyJson(jsonPath);
 
-        await db!.purgeDeletedFiles();
+        await db!.purgeDeleted(backup: false).drain<void>();
 
         expect(File(imagePath).existsSync(), isFalse);
         expect(File(jsonPath).existsSync(), isFalse);
@@ -407,7 +408,7 @@ void main() {
         final jsonPath = '$audioPath.json';
         _leaveLegacyJson(jsonPath);
 
-        await db!.purgeDeletedFiles();
+        await db!.purgeDeleted(backup: false).drain<void>();
 
         expect(File(audioPath).existsSync(), isFalse);
         expect(File(jsonPath).existsSync(), isFalse);
@@ -427,7 +428,7 @@ void main() {
         final jsonPath = entityPath(textEntry, docDir);
         _leaveLegacyJson(jsonPath);
 
-        await db!.purgeDeletedFiles();
+        await db!.purgeDeleted(backup: false).drain<void>();
 
         expect(File(jsonPath).existsSync(), isFalse);
       });
@@ -462,17 +463,22 @@ void main() {
           final textJsonPath = entityPath(textEntry, docDir);
           _leaveLegacyJson(textJsonPath);
 
-          await db!.purgeDeletedFiles();
+          await db!.purgeDeleted(backup: false).drain<void>();
 
           verify(
             () => mockLoggingService.error(
               LogDomain.database,
               any<Object>(),
               stackTrace: any<StackTrace?>(named: 'stackTrace'),
-              subDomain: 'purgeDeletedFiles',
+              subDomain: 'purgeDeleted',
             ),
           ).called(1);
           expect(File(textJsonPath).existsSync(), isFalse);
+          // An unreadable row cannot be compacted, and is removed as before.
+          expect(
+            await db!.entityByIdIncludingDeleted('malformed-purge-row'),
+            isNull,
+          );
         },
       );
     });
@@ -524,7 +530,12 @@ void main() {
 
         expect(await db!.select(db!.dashboardDefinitions).get(), isEmpty);
         expect(await db!.select(db!.measurableTypes).get(), isEmpty);
-        expect(await db!.select(db!.journal).get(), isEmpty);
+        // The journal row stays, compacted to the deletion's tombstone.
+        final rows = await db!.select(db!.journal).get();
+        expect(rows, hasLength(1));
+        final tombstone = fromDbEntity(rows.single);
+        expect(tombstone.isPurgedTombstone, isTrue);
+        expect(tombstone.entryText, isNull);
       });
 
       test('reports progress accurately', () async {
@@ -561,7 +572,12 @@ void main() {
           final progress = await db!.purgeDeleted(backup: false).toList();
 
           expect(progress, equals([0.33, 0.66, 1.0]));
-          expect(await db!.select(db!.journal).get(), isEmpty);
+          final rows = await db!.select(db!.journal).get();
+          expect(rows, hasLength(total));
+          expect(
+            rows.map(fromDbEntity).where((e) => !e.isPurgedTombstone),
+            isEmpty,
+          );
           expect(paths.where((p) => File(p).existsSync()), isEmpty);
         },
       );
@@ -570,6 +586,220 @@ void main() {
         final progress = await db!.purgeDeleted(backup: false).toList();
         expect(progress, equals([1.0]));
       });
+    });
+
+    group('purge keeps a tombstone (ADR 0095) -', () {
+      final purgedAt = DateTime(2024, 3, 1, 12);
+      final deletedAt = DateTime(2024, 2, 1, 9);
+      const deletionClock = VectorClock({'a': 2});
+
+      /// A task with labels, deleted under [deletionClock] on this device.
+      JournalEntity deletedTask() {
+        final task = testTask;
+        return task.copyWith(
+          meta: task.meta.copyWith(
+            id: 'purged-task',
+            vectorClock: deletionClock,
+            deletedAt: deletedAt,
+            labelIds: const ['label-1'],
+          ),
+        );
+      }
+
+      Future<JournalEntity> purgeDeletedTask() async {
+        await db!.updateJournalEntity(deletedTask());
+        await withClock(
+          Clock.fixed(purgedAt),
+          () => db!.purgeDeleted(backup: false).drain<void>(),
+        );
+        return (await db!.journalEntityByIdIncludingDeleted('purged-task'))!;
+      }
+
+      test('a purge compacts the deleted row to its id, dates, clock and '
+          'deletion, and drops its labels', () async {
+        final tombstone = await purgeDeletedTask();
+        final task = deletedTask();
+
+        expect(tombstone, isA<JournalEntry>());
+        expect(tombstone.entryText, isNull);
+        expect(tombstone.meta.vectorClock, deletionClock);
+        expect(tombstone.meta.deletedAt, deletedAt);
+        expect(tombstone.meta.purgedAt, purgedAt);
+        expect(tombstone.meta.dateFrom, task.meta.dateFrom);
+        expect(tombstone.meta.labelIds, isNull);
+        expect(tombstone.meta.categoryId, isNull);
+        final labeled = await db!
+            .customSelect(
+              'SELECT label_id FROM labeled WHERE journal_id = ?',
+              variables: [Variable.withString('purged-task')],
+            )
+            .get();
+        expect(labeled, isEmpty);
+        final row = await db!.entityByIdIncludingDeleted('purged-task');
+        expect(row!.deleted, isTrue);
+        expect(row.task, isFalse);
+      });
+
+      test('a later purge leaves a tombstone as it is', () async {
+        await purgeDeletedTask();
+
+        final progress = await withClock(
+          Clock.fixed(purgedAt.add(const Duration(days: 1))),
+          () => db!.purgeDeleted(backup: false).toList(),
+        );
+
+        expect(progress, [1.0]);
+        final tombstone = await db!.journalEntityByIdIncludingDeleted(
+          'purged-task',
+        );
+        expect(tombstone!.meta.purgedAt, purgedAt);
+      });
+
+      test('a late copy of the version the deletion replaced is refused, '
+          'not brought back', () async {
+        await purgeDeletedTask();
+        final older = deletedTask().copyWith(
+          meta: deletedTask().meta.copyWith(
+            vectorClock: const VectorClock({'a': 1}),
+            deletedAt: null,
+          ),
+        );
+
+        final result = await db!.updateJournalEntity(older);
+
+        expect(result.applied, isFalse);
+        expect(result.skipReason, JournalUpdateSkipReason.olderOrEqual);
+        expect(await db!.journalEntityById('purged-task'), isNull);
+      });
+
+      test('an edit made concurrently with the deletion is a conflict for '
+          'the user, not a resurrection', () async {
+        await purgeDeletedTask();
+        final concurrent = deletedTask().copyWith(
+          meta: deletedTask().meta.copyWith(
+            vectorClock: const VectorClock({'a': 1, 'b': 1}),
+            deletedAt: null,
+          ),
+        );
+
+        final result = await db!.updateJournalEntity(concurrent);
+
+        expect(result.applied, isFalse);
+        expect(result.skipReason, JournalUpdateSkipReason.conflict);
+        expect(await db!.journalEntityById('purged-task'), isNull);
+        final conflicts = await db!.conflictsForEntry('purged-task');
+        expect(conflicts, hasLength(1));
+      });
+
+      test('a tombstone received over a live copy deletes that copy, which '
+          'keeps its own fields under the tombstone clock', () async {
+        final live = buildImageEntry(
+          id: 'peer-image',
+          timestamp: deletedAt,
+          imageDirectory: '/images/2024/02/01/',
+          imageFile: 'peer.jpg',
+        );
+        await db!.updateJournalEntity(
+          live.copyWith(
+            meta: live.meta.copyWith(
+              vectorClock: const VectorClock({'a': 1}),
+            ),
+          ),
+        );
+        final tombstone = live
+            .copyWith(
+              meta: live.meta.copyWith(
+                vectorClock: const VectorClock({'a': 2}),
+                deletedAt: deletedAt,
+              ),
+            )
+            .toPurgedTombstone(purgedAt);
+
+        final result = await db!.updateJournalEntity(tombstone);
+
+        expect(result.applied, isTrue);
+        final stored = await db!.journalEntityByIdIncludingDeleted(
+          'peer-image',
+        );
+        expect(stored, isA<JournalImage>());
+        expect((stored! as JournalImage).data.imageFile, 'peer.jpg');
+        expect(stored.meta.deletedAt, deletedAt);
+        expect(stored.meta.vectorClock, const VectorClock({'a': 2}));
+        expect(stored.isPurgedTombstone, isFalse);
+      });
+
+      test('a tombstone received where the entry never was is stored as '
+          'the deletion', () async {
+        final tombstone = deletedTask().toPurgedTombstone(purgedAt);
+
+        final result = await db!.updateJournalEntity(tombstone);
+
+        expect(result.applied, isTrue);
+        final stored = await db!.journalEntityByIdIncludingDeleted(
+          'purged-task',
+        );
+        expect(stored, tombstone);
+      });
+
+      test("a peer's newer copy of a deletion stays compacted over a "
+          'tombstone', () async {
+        await purgeDeletedTask();
+        final peerDeletion = deletedTask().copyWith(
+          meta: deletedTask().meta.copyWith(
+            vectorClock: const VectorClock({'a': 2, 'b': 1}),
+          ),
+        );
+
+        final result = await db!.updateJournalEntity(peerDeletion);
+
+        expect(result.applied, isTrue);
+        final stored = await db!.journalEntityByIdIncludingDeleted(
+          'purged-task',
+        );
+        expect(stored, isA<JournalEntry>());
+        expect(stored!.entryText, isNull);
+        expect(stored.meta.purgedAt, purgedAt);
+        expect(stored.meta.vectorClock, const VectorClock({'a': 2, 'b': 1}));
+      });
+
+      test('two concurrent deletions, one purged, merge into a tombstone '
+          'under both clocks', () async {
+        await purgeDeletedTask();
+        final peerDeletion = deletedTask().copyWith(
+          meta: deletedTask().meta.copyWith(
+            vectorClock: const VectorClock({'a': 1, 'b': 1}),
+          ),
+        );
+
+        await db!.updateJournalEntity(peerDeletion);
+
+        final stored = await db!.journalEntityByIdIncludingDeleted(
+          'purged-task',
+        );
+        expect(stored!.isPurgedTombstone, isTrue);
+        expect(stored.entryText, isNull);
+        expect(stored.meta.vectorClock, const VectorClock({'a': 2, 'b': 1}));
+      });
+
+      test(
+        'a live version newer than the deletion replaces the tombstone',
+        () async {
+          await purgeDeletedTask();
+          final restored = deletedTask().copyWith(
+            meta: deletedTask().meta.copyWith(
+              vectorClock: const VectorClock({'a': 2, 'b': 1}),
+              deletedAt: null,
+            ),
+          );
+
+          final result = await db!.updateJournalEntity(restored);
+
+          expect(result.applied, isTrue);
+          final stored = await db!.journalEntityById('purged-task');
+          expect(stored, isA<Task>());
+          expect(stored!.isPurgedTombstone, isFalse);
+        },
+      );
     });
 
     group('Journal Entity Operations -', () {

@@ -190,6 +190,36 @@ mixin _JournalDbEntityOps
     );
   }
 
+  /// What an applied [written] version leaves stored over [stored], where one
+  /// of them is a purge's tombstone (ADR 0095).
+  ///
+  /// A tombstone applied over a copy that still holds its fields deletes that
+  /// copy: the row keeps its own fields — and its files, for this device's
+  /// own purge to remove — deleted under the tombstone's clock. A deletion
+  /// applied over a tombstone is compacted in turn, so fields a purge removed
+  /// do not come back with a peer's copy of the deletion. Anything else — a
+  /// live version over a tombstone included — is stored as it came.
+  static JournalEntity _overStored(
+    JournalEntity stored,
+    JournalEntity written,
+  ) {
+    final deletedAt = written.meta.deletedAt;
+    if (deletedAt == null) return written;
+    if (written.isPurgedTombstone && !stored.isPurgedTombstone) {
+      return stored.copyWith(
+        meta: stored.meta.copyWith(
+          updatedAt: written.meta.updatedAt,
+          vectorClock: written.meta.vectorClock,
+          deletedAt: deletedAt,
+        ),
+      );
+    }
+    if (stored.isPurgedTombstone && !written.isPurgedTombstone) {
+      return written.toPurgedTombstone(stored.meta.purgedAt!);
+    }
+    return written;
+  }
+
   /// Applies [updated] to the journal after a vector-clock comparison with
   /// the stored row.
   ///
@@ -209,7 +239,9 @@ mixin _JournalDbEntityOps
   /// The stored row is read with its soft deletion
   /// ([entityByIdIncludingDeleted]): a deletion is a version like any other,
   /// so a late copy of the version it replaced is refused, and an edit made
-  /// concurrently with it is a conflict. Only a creation ([overwrite] false)
+  /// concurrently with it is a conflict. A purge's tombstone is such a row
+  /// too: [_overStored] keeps it compacted, or applies an incoming one to the
+  /// stored copy's own fields (ADR 0095). Only a creation ([overwrite] false)
   /// replaces a deleted row outright, as it always has. Two concurrent
   /// deletions are merged ([_mergeDeletions]). An applied write marks the
   /// entry's conflict resolved only when it includes the conflict's version
@@ -254,12 +286,15 @@ mixin _JournalDbEntityOps
           skipReason = JournalUpdateSkipReason.conflict;
         }
 
-        if (status == VclockStatus.concurrent &&
-            _bothDeleted(existing, updated)) {
+        final merged =
+            status == VclockStatus.concurrent &&
+            _bothDeleted(existing, updated);
+        if (merged) {
           written = _mergeDeletions(existing, updated);
         }
 
-        if (status == VclockStatus.b_gt_a || !identical(written, updated)) {
+        if (status == VclockStatus.b_gt_a || merged) {
+          written = _overStored(existing, written);
           rowsWritten = await upsertJournalDbEntity(_toRow(written));
           applied = true;
           await _settleConflictCoveredBy(written);
@@ -298,29 +333,78 @@ mixin _JournalDbEntityOps
   Future<List<Conflict>> conflictsForEntry(String entryId) =>
       conflictsById(entryId).get();
 
-  /// How many soft-deleted rows [purgeDeletedFiles] reads per round trip.
+  /// How many soft-deleted rows [purgeDeleted] compacts per transaction.
   /// Keyed on rowid so the walk never re-reads what it has already visited,
   /// and never holds every deleted entity's JSON in memory at once.
   static const int _purgeChunk = 500;
 
-  /// Deletes the files — media and JSON sidecars — of every soft-deleted
-  /// journal entity, in rowid chunks of [_purgeChunk].
-  Future<void> purgeDeletedFiles() async {
+  /// Selects the soft-deleted journal rows a purge has not yet compacted to
+  /// tombstones. A tombstone carries `meta.purgedAt`; no other row does. A
+  /// row whose JSON does not parse is selected too, without handing it to
+  /// `json_extract`, which would fail the whole statement.
+  static const String _unpurgedDeleted =
+      'deleted = 1 AND CASE WHEN json_valid(serialized) '
+      r"THEN json_extract(serialized, '$.meta.purgedAt') END IS NULL";
+
+  /// Reads the next chunk of soft-deleted, not yet purged journal rows after
+  /// [afterRowId], in rowid order.
+  Future<List<QueryRow>> _unpurgedDeletedChunk(int afterRowId) => customSelect(
+    'SELECT rowid AS rid, id, serialized FROM journal '
+    'WHERE $_unpurgedDeleted AND rowid > ? ORDER BY rowid LIMIT ?',
+    variables: [
+      Variable.withInt(afterRowId),
+      Variable.withInt(_purgeChunk),
+    ],
+    readsFrom: {journal},
+  ).get();
+
+  /// Compacts every soft-deleted journal row not yet purged to its tombstone
+  /// ([JournalEntityTombstone.toPurgedTombstone]), purged at [purgedAt], and
+  /// then deletes the files — media and any JSON an older build wrote beside
+  /// the entry — of the rows it compacted.
+  ///
+  /// The tombstone keeps the deletion's id and clock, so it stays the
+  /// deletion: backfill serves it to a device that missed it, and a late copy
+  /// of an older version is refused (ADR 0095). Nothing is sent — it is the
+  /// same version. A row whose JSON no longer parses cannot be compacted and
+  /// is removed, as every purge did before.
+  ///
+  /// Each chunk of [_purgeChunk] rows is read and rewritten in one
+  /// transaction, so a row restored, edited or replaced by a newer version
+  /// since the read cannot be overwritten with a tombstone of the stale one.
+  /// Files are deleted only after the chunk commits, and only for the rows it
+  /// compacted: an entry restored meanwhile keeps its media.
+  Future<void> _compactDeletedJournalRows(DateTime purgedAt) async {
     var lastRowId = 0;
     while (true) {
-      final rows = await customSelect(
-        'SELECT rowid AS rid, serialized FROM journal '
-        'WHERE deleted = 1 AND rowid > ? ORDER BY rowid LIMIT ?',
-        variables: [
-          Variable.withInt(lastRowId),
-          Variable.withInt(_purgeChunk),
-        ],
-        readsFrom: {journal},
-      ).get();
-      if (rows.isEmpty) return;
-      for (final row in rows) {
-        lastRowId = row.read<int>('rid');
-        await _deleteFilesOf(row.read<String>('serialized'));
+      final compacted = await transaction(() async {
+        final rows = await _unpurgedDeletedChunk(lastRowId);
+        final serialized = <String>[];
+        for (final row in rows) {
+          lastRowId = row.read<int>('rid');
+          final json = row.read<String>('serialized');
+          serialized.add(json);
+          final JournalEntity entity;
+          try {
+            entity = JournalEntity.fromJson(
+              jsonDecode(json) as Map<String, dynamic>,
+            );
+          } catch (_) {
+            // Reported once, by the file walk below, which reads it too.
+            await (delete(
+              journal,
+            )..where((t) => t.id.equals(row.read<String>('id')))).go();
+            continue;
+          }
+          final tombstone = entity.toPurgedTombstone(purgedAt);
+          await upsertJournalDbEntity(_toRow(tombstone));
+          await addLabeled(tombstone);
+        }
+        return serialized;
+      });
+      if (compacted.isEmpty) return;
+      for (final json in compacted) {
+        await _deleteFilesOf(json);
       }
     }
   }
@@ -353,7 +437,7 @@ mixin _JournalDbEntityOps
       getIt<DomainLogger>().error(
         LogDomain.database,
         e,
-        subDomain: 'purgeDeletedFiles',
+        subDomain: 'purgeDeleted',
       );
     }
   }
@@ -368,19 +452,28 @@ mixin _JournalDbEntityOps
     }
   }
 
-  Future<int> _countDeleted(TableInfo<Table, Object?> table) async {
+  Future<int> _countDeleted(
+    TableInfo<Table, Object?> table, {
+    String where = 'deleted = 1',
+  }) async {
     final row = await customSelect(
-      'SELECT COUNT(*) AS c FROM ${table.actualTableName} WHERE deleted = 1',
+      'SELECT COUNT(*) AS c FROM ${table.actualTableName} WHERE $where',
       readsFrom: {table},
     ).getSingle();
     return row.read<int>('c');
   }
 
-  /// Removes every soft-deleted dashboard, measurable and journal row, after
-  /// deleting the journal rows' files, reporting progress as it goes.
+  /// Removes every soft-deleted dashboard and measurable row and compacts
+  /// every soft-deleted journal row to its tombstone, deleting the journal
+  /// rows' files, reporting progress as it goes.
   ///
-  /// Counts come from `COUNT(*)`, not from loading the rows, and the file
-  /// walk streams in rowid chunks, so the purge costs the same memory on a
+  /// A journal row is not removed: a device that never received the deletion
+  /// would keep the entry for good, and a late copy of an older version would
+  /// bring it back here (ADR 0095). Its tombstone holds the id, dates, clock
+  /// and deletion and nothing else, and a later purge skips it.
+  ///
+  /// Counts come from `COUNT(*)`, not from loading the rows, and the walks
+  /// stream in rowid chunks, so the purge costs the same memory on a
   /// journal with a hundred deleted entries and one with a hundred thousand.
   /// Progress is emitted after each table; nothing sleeps to make it
   /// visible.
@@ -389,12 +482,9 @@ mixin _JournalDbEntityOps
       await createDbBackup(journalDbFileName);
     }
 
-    // First delete the actual files
-    await purgeDeletedFiles();
-
     final dashboardCount = await _countDeleted(dashboardDefinitions);
     final measurableCount = await _countDeleted(measurableTypes);
-    final journalCount = await _countDeleted(journal);
+    final journalCount = await _countDeleted(journal, where: _unpurgedDeleted);
 
     if (dashboardCount + measurableCount + journalCount == 0) {
       yield 1.0; // Already empty
@@ -416,7 +506,7 @@ mixin _JournalDbEntityOps
     yield 0.66; // 66% complete after measurables
 
     if (journalCount > 0) {
-      await (delete(journal)..where((tbl) => tbl.deleted.equals(true))).go();
+      await _compactDeletedJournalRows(clock.now());
     }
     yield 1.0; // 100% complete after journal entries
   }

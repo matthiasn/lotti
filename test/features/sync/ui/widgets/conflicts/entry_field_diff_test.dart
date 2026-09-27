@@ -48,6 +48,33 @@ void main() {
       expect(diff.fields, isEmpty);
     });
 
+    test("a purge's tombstone against an edit of another type is a "
+        'deletion, not a type change (ADR 0095)', () {
+      final deletedAt = DateTime(2024, 3, 15, 13);
+      final tombstone = taskOf()
+          .copyWith(meta: taskOf().meta.copyWith(deletedAt: deletedAt))
+          .toPurgedTombstone(DateTime(2024, 3, 16));
+
+      final local = computeEntryDiff(tombstone, taskOf());
+      final remote = computeEntryDiff(taskOf(), tombstone);
+
+      expect(tombstone, isA<JournalEntry>());
+      expect(local.shape, ConflictShape.deletedOnLocal);
+      expect(local.fields, isEmpty);
+      expect(remote.shape, ConflictShape.deletedOnRemote);
+      expect(remote.fields, isEmpty);
+    });
+
+    test('two tombstones of one entry are not a type change either', () {
+      final tombstone = entryOf(
+        deletedAt: DateTime(2024, 3, 15, 13),
+      ).toPurgedTombstone(DateTime(2024, 3, 16));
+
+      final diff = computeEntryDiff(tombstone, tombstone);
+
+      expect(diff.shape, ConflictShape.identical);
+    });
+
     test('soft-delete on the local side is classified, not diffed', () {
       final diff = computeEntryDiff(
         entryOf(text: 'hello', deletedAt: DateTime(2024, 3, 15, 13)),
