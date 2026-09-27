@@ -3074,6 +3074,21 @@ void main() {
       },
     );
 
+    test(
+      'a stamped createdAt keeps an updatedAt that is already later',
+      () async {
+        await device.sync.upsertLink(assignment('first', 'soul-1', at));
+        final later = at.add(const Duration(minutes: 3));
+        await device.sync.upsertLink(
+          assignment('second', 'soul-2', at).copyWith(updatedAt: later),
+        );
+
+        final stamped = device.sentLinks.last;
+        expect(stamped.createdAt, at.add(const Duration(microseconds: 1)));
+        expect(stamped.updatedAt, later);
+      },
+    );
+
     test('a tombstone in the slot is outranked too', () async {
       final removed = assignment('removed', 'soul-1', at);
       await device.sync.upsertLink(removed);

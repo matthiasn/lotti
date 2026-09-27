@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
+import 'package:lotti/features/agents/model/agent_link_slot.dart';
 import 'agent_repository_soul_test_helpers.dart';
 
 void main() {
@@ -248,6 +249,51 @@ void main() {
       expect(result.first, isA<model.SoulAssignmentLink>());
       expect(result.first.toId, soulId);
     });
+
+    test(
+      'getSlotLinks and getLinksToIncludingHidden return the hidden '
+      'assignment the visible reads skip',
+      () async {
+        await repo.upsertLink(
+          model.AgentLink.soulAssignment(
+            id: 'link-sa-shown',
+            fromId: 'tpl-001',
+            toId: 'soul-shown',
+            createdAt: testDate.add(const Duration(minutes: 1)),
+            updatedAt: testDate.add(const Duration(minutes: 1)),
+            vectorClock: null,
+          ),
+        );
+        await repo.upsertLink(
+          model.AgentLink.soulAssignment(
+            id: 'link-sa-hidden',
+            fromId: 'tpl-001',
+            toId: soulId,
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          ),
+        );
+
+        expect(
+          await repo.getLinksTo(soulId, type: AgentLinkTypes.soulAssignment),
+          isEmpty,
+        );
+        expect(
+          (await repo.getLinksToIncludingHidden(
+            soulId,
+            type: AgentLinkTypes.soulAssignment,
+          )).map((l) => l.id),
+          ['link-sa-hidden'],
+        );
+        expect(
+          (await repo.getSlotLinks(
+            const AgentLinkSlot.soul('tpl-001'),
+          )).map((l) => l.id).toSet(),
+          {'link-sa-shown', 'link-sa-hidden'},
+        );
+      },
+    );
 
     test('getLinksTo returns reverse soul assignment links', () async {
       final link = model.AgentLink.soulAssignment(

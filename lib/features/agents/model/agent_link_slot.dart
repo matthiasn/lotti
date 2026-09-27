@@ -63,7 +63,4 @@ class AgentLinkSlot {
 
   @override
   int get hashCode => Object.hash(type, keyId, keyedByFromId);
-
-  @override
-  String toString() => 'AgentLinkSlot($type, $keyId)';
 }
