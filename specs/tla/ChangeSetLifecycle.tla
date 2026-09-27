@@ -30,6 +30,9 @@
 (*   Reopen        reopenItem: a decided item back to pending, in one      *)
 (*                 transaction. Record only: the task tools have no Undo   *)
 (*                 of their effect, so the effect stays where it landed    *)
+(*   Undo          the project agent's Undo (service/                      *)
+(*                 project_proposal_service.dart undo): reopenItem with a  *)
+(*                 revert that deletes the entity the confirmation created *)
 (*   Retract       service/suggestion_retraction_service.dart applyStaged, *)
 (*                 inside the wake's transaction                           *)
 (*   Consolidate   workflow/change_set_builder.dart build: the final       *)
@@ -48,7 +51,10 @@
 (*                 is kept aside as a Conflict row while the local         *)
 (*                 version stays. Entities are modelled by id only: two    *)
 (*                 devices that create the same id hold one entity         *)
-(*   UserEdit      the user editing the field a set-style tool writes      *)
+(*   UserEdit      the user editing the field a set-style tool writes, or, *)
+(*                 with AddStyle, taking the added label off the task      *)
+(*                 (labels/repository/labels_repository.dart setLabels,    *)
+(*                 which suppresses what it removes)                       *)
 (*                                                                         *)
 (* A change set syncs as one row. Every local write stamps the row with    *)
 (* the next counter of its device on top of the clock it read, and sends   *)
@@ -60,9 +66,14 @@
 (* second, concurrent operation on the same item.                          *)
 (*                                                                         *)
 (* An item is create-style (it creates an entity: a follow-up task, a      *)
-(* time entry, a checklist item) or, when in SetItems, set-style (it       *)
-(* writes one field, modelled as a register that starts at "base" and     *)
-(* that the change sets to "target").                                      *)
+(* time entry, a checklist item, a project's task) or, when in SetItems,   *)
+(* set-style (it writes one field, modelled as a register that starts at   *)
+(* "base" and that the change sets to "target"). The register stands for   *)
+(* every field a set-style tool writes: a task field, a checklist item's   *)
+(* title or check, a time entry's range or text, a project's status        *)
+(* (ADR 0075, ADR 0097). With AddStyle it is a label's membership of the   *)
+(* task instead: "target" is the label on the task, and the user's edit    *)
+(* takes it off, leaving a tombstone (the task's aiSuppressedLabelIds).    *)
 (*                                                                         *)
 (* The switches are fixes, and each is a mutation point: set one to FALSE *)
 (* to check the design without it. ADR 0067:                               *)
@@ -111,6 +122,25 @@
 (*                      on its way. Without it, it takes the id as spent   *)
 (*                      and creates another                                *)
 (*                                                                         *)
+(* ADR 0097:                                                               *)
+(*                                                                         *)
+(*   RemoveWins         with AddStyle, an add applies only while the label  *)
+(*                      carries no tombstone: a label the user took off     *)
+(*                      stays off (label_assignment_processor.dart reads    *)
+(*                      the suppressed set); without it, a late add brings  *)
+(*                      it back                                             *)
+(*   UndoOwnKey         an Undo acts only while the item carries the key    *)
+(*                      the undoing device's confirmation used              *)
+(*                      (project_proposal_service.dart undo, reopenItem's   *)
+(*                      effectKey); without it, a device undoes a later     *)
+(*                      decision synced from another device, deleting its   *)
+(*                      own, older entity and leaving the later one live    *)
+(*   UndoRekeys         an Undo that deletes a created entity reopens the   *)
+(*                      item under a new key (ChangeItemEffect.undoneIn),   *)
+(*                      so confirming it again creates anew; without it,    *)
+(*                      the confirmation finds the tombstone of the undone  *)
+(*                      entity and creates nothing — confirmed, no effect   *)
+(*                                                                         *)
 (* CrashBeforeLink is not a fix: it lets the creating device stop between  *)
 (* the entity and its link — createChecklist's two writes — the residual   *)
 (* EffectsLinked then shows.                                               *)
@@ -148,14 +178,17 @@ CONSTANTS
     MaxAgentOps,   \* retractions and consolidations per device
     MaxReopens,    \* reopens per device
     MaxUserEdits,  \* user edits of the set-style field per device, 0 or 1
+    MaxUndos,      \* Undos per device
     UserRestoresBase,
+    AddStyle,      \* the set-style item adds a label rather than set a field
     EffectMark,
     RaceFree,      \* no item is decided on two devices before they synced
     AtomicWrites, AtomicReceive, ItemMerge, PendingCopiesOnly,
     RevisionGuard, ClaimResolvesTarget, DerivedIds, CopyCarriesKey, CasGuard,
     SeparateAttach, \* a created entity and its link to its parent sync apart
     ReuseLive,
-    CrashBeforeLink
+    CrashBeforeLink,
+    RemoveWins, UndoRekeys, UndoOwnKey
 
 ASSUME
     /\ Faults \subseteq {"dispatchFails", "nonRetryable"}
@@ -164,7 +197,8 @@ ASSUME
     /\ {UserRestoresBase, EffectMark, RaceFree, AtomicWrites, AtomicReceive, ItemMerge,
         PendingCopiesOnly, RevisionGuard, ClaimResolvesTarget, DerivedIds,
         CopyCarriesKey, CasGuard, SeparateAttach, ReuseLive,
-        CrashBeforeLink} \subseteq BOOLEAN
+        CrashBeforeLink, AddStyle, RemoveWins, UndoRekeys,
+        UndoOwnKey} \subseteq BOOLEAN
 
 \* The older set is row 2, the surviving set row 1.
 Rows == IF CopyDst # NoItem THEN {1, 2} ELSE {1}
@@ -193,13 +227,14 @@ Pc == {"idle", "claimed", "failP", "failPW", "failR", "failRW",
 
 InitItem(i) == [st |-> IF i = CopyDst THEN "absent" ELSE "pending",
                 rev |-> 0,
-                res |-> i # Migration]  \* targetTaskId resolved
+                res |-> i # Migration,  \* targetTaskId resolved
+                gen |-> 0]              \* Undos its effect key went through
 InitRow(r) == [items |-> [i \in ItemsIn(r) |-> InitItem(i)],
                vc |-> [e \in Devices |-> 0]]
 
 \* The user's value for the set-style field. Strings, so that TLC compares
 \* like with like.
-UserVal(d) == IF UserRestoresBase THEN "base"
+UserVal(d) == IF UserRestoresBase \/ AddStyle THEN "base"
               ELSE IF d = 1 THEN "u1" ELSE "u2"
 
 VARIABLES
@@ -214,11 +249,16 @@ VARIABLES
     attempts,  \* attempts[d][i]: user decisions started
     agentOps,  \* agentOps[d]: retractions and consolidations run
     reopens,   \* reopens[d]: reopens run
-    ents,      \* ents[d]: the entity ids device d's journal holds
+    undos,     \* undos[d]: Undos run
+    okey,      \* okey[d][i][k]: the key generation attempt k's claim read
+    ents,      \* ents[d]: the entity ids device d's journal holds, deleted
+               \* ones included
     emsgs,     \* entity sync messages in flight
     atts,      \* atts[d]: the entity ids device d's journal links to their
                \* parent (a checklist in its task's checklistIds)
     amsgs,     \* link sync messages in flight
+    dels,      \* dels[d]: the entity ids device d's journal holds deleted
+    dmsgs,     \* deletion sync messages in flight
     reg,       \* reg[d]: device d's version of the set-style field
     rhc,       \* rhc[d]: the last counter device d stamped on the field
     rmsgs,     \* field sync messages in flight
@@ -231,9 +271,9 @@ VARIABLES
     clobbered, \* ghost: a dispatch overwrote a value the user wrote
     appVcs     \* ghost: the clocks of the versions a dispatch wrote
 
-entVars == <<ents, emsgs, atts, amsgs>>
+entVars == <<ents, emsgs, atts, amsgs, dels, dmsgs>>
 effVars == <<entVars, reg, rhc, rmsgs, userEdits, conflict, clobbered, appVcs>>
-claimVars == <<obs, latest, lastOk, reopens>>
+claimVars == <<obs, okey, latest, lastOk, reopens, undos>>
 
 vars == <<rows, hc, msgs, pc, snap, recv, mem, attempts, agentOps,
           applied, early, effVars, claimVars>>
@@ -252,12 +292,17 @@ Init ==
     /\ attempts = [d \in Devices |-> [i \in Items |-> 0]]
     /\ agentOps = [d \in Devices |-> 0]
     /\ reopens = [d \in Devices |-> 0]
+    /\ undos = [d \in Devices |-> 0]
+    /\ okey = [d \in Devices |-> [i \in Items |-> [k \in Slots |-> 0]]]
     /\ ents = [d \in Devices |-> {}]
     /\ emsgs = {}
     /\ atts = [d \in Devices |-> {}]
     /\ amsgs = {}
+    /\ dels = [d \in Devices |-> {}]
+    /\ dmsgs = {}
     /\ reg = [d \in Devices |->
-                [val |-> "base", user |-> FALSE, mark |-> FALSE, vc |-> ZeroVc]]
+                [val |-> "base", user |-> FALSE, mark |-> FALSE, tomb |-> FALSE,
+                 vc |-> ZeroVc]]
     /\ rhc = [d \in Devices |-> 0]
     /\ rmsgs = {}
     /\ userEdits = [d \in Devices |-> 0]
@@ -316,11 +361,13 @@ CanonGreater(a, b) ==
     /\ LET e0 == CHOOSE e \in diff : \A f \in diff : e <= f IN a[e0] > b[e0]
 
 \* mergeConcurrentChangeSets: the later revision, then the more final
-\* status, then a fixed order on content (here: a resolved target first) —
-\* never the clock order, so the merge does not depend on arrival order.
+\* status, then a fixed order on content (here: the later key generation,
+\* then a resolved target first) — never the clock order, so the merge does
+\* not depend on arrival order.
 MergeItem(a, b) ==
     IF a.rev # b.rev THEN (IF a.rev > b.rev THEN a ELSE b)
     ELSE IF Rank(a.st) # Rank(b.st) THEN (IF Rank(a.st) > Rank(b.st) THEN a ELSE b)
+    ELSE IF a.gen # b.gen THEN (IF a.gen > b.gen THEN a ELSE b)
     ELSE IF a.res THEN a ELSE b
 
 \* The version a receiving device keeps.
@@ -347,11 +394,12 @@ RaceGuard(d, i) ==
 -----------------------------------------------------------------------------
 (* The effect of a dispatch on the journal *)
 
-\* The entity a create-style dispatch writes: derived from the item's
-\* effect key (which a consolidated copy inherits from its original), or
-\* a fresh id per dispatch.
+\* The entity a create-style dispatch writes: derived from the effect key
+\* the claim read (which a consolidated copy inherits from its original,
+\* and an Undo moves on), or a fresh id per dispatch.
 EntityId(d, i, k) ==
-    IF DerivedIds THEN (IF CopyCarriesKey THEN <<Effect(i)>> ELSE <<i>>)
+    IF DerivedIds
+    THEN <<IF CopyCarriesKey THEN Effect(i) ELSE i, okey[d][i][k]>>
     ELSE <<i, d, k>>
 EffOf(id) == Effect(id[1])
 
@@ -362,8 +410,8 @@ Create(d, i, k) ==
        THEN UNCHANGED <<ents, emsgs>>
        ELSE /\ ents' = [ents EXCEPT ![d] = @ \cup {id}]
             /\ emsgs' = emsgs \cup {[to |-> e, id |-> id] : e \in Devices \ {d}}
-    /\ UNCHANGED <<atts, amsgs, reg, rhc, rmsgs, userEdits, conflict,
-                   clobbered, appVcs>>
+    /\ UNCHANGED <<atts, amsgs, dels, dmsgs, reg, rhc, rmsgs, userEdits,
+                   conflict, clobbered, appVcs>>
 
 \* ... and link it to its parent: two writes that sync apart, so a device
 \* can hold the entity another device created without its link. A device
@@ -389,14 +437,16 @@ CreateLinked(d, i, k) ==
        ELSE IF ReuseLive \/ ~DerivedIds
        THEN UNCHANGED <<ents, emsgs, atts, amsgs>>
        ELSE new(fresh) /\ Link(d, fresh)
-    /\ UNCHANGED <<reg, rhc, rmsgs, userEdits, conflict, clobbered, appVcs>>
+    /\ UNCHANGED <<dels, dmsgs, reg, rhc, rmsgs, userEdits, conflict,
+                   clobbered, appVcs>>
 
 \* Device d writes the field: its next counter on the clock it holds.
 \* `mark` is the task's record of the change having been applied
 \* (TaskData.appliedChangeEffects), written in the same version as the
 \* field, so it syncs with the value it describes.
-RegPut(d, val, user, mark) ==
-    LET v == [val |-> val, user |-> user, mark |-> mark,
+\* `tomb`, with AddStyle, is the label's suppression: the user took it off.
+RegPut(d, val, user, mark, tomb) ==
+    LET v == [val |-> val, user |-> user, mark |-> mark, tomb |-> tomb,
               vc |-> [reg[d].vc EXCEPT ![d] = rhc[d] + 1]] IN
     /\ reg' = [reg EXCEPT ![d] = v]
     /\ rhc' = [rhc EXCEPT ![d] = @ + 1]
@@ -416,12 +466,17 @@ AfterApply(v) == \E a \in appVcs : Leq(a, v.vc)
 \* change applied. A user write of the base value on a version that never
 \* held the change left nothing to overwrite: applying over it is the
 \* serial order "edit, then confirm".
+\*
+\* An add (AddStyle) has no base and records no mark: it adds a label not
+\* on the task, and with RemoveWins only one the user has not taken off;
+\* adding clears the tombstone, as a label added by hand is unsuppressed.
 SetField(d) ==
     LET r == reg[d]
-        write == IF CasGuard THEN r.val = "base" /\ ~(EffectMark /\ r.mark)
+        write == IF AddStyle THEN r.val # "target" /\ (RemoveWins => ~r.tomb)
+                 ELSE IF CasGuard THEN r.val = "base" /\ ~(EffectMark /\ r.mark)
                  ELSE r.val # "target"
     IN /\ IF write
-          THEN /\ RegPut(d, "target", FALSE, EffectMark)
+          THEN /\ RegPut(d, "target", FALSE, EffectMark /\ ~AddStyle, FALSE)
                /\ appVcs' = appVcs \cup {[r.vc EXCEPT ![d] = rhc[d] + 1]}
                /\ clobbered' = (clobbered \/
                     (r.user /\ (r.val # "base" \/ AfterApply(r))))
@@ -447,11 +502,12 @@ Confirm(d, i) ==
     /\ PutItem(d, i, rec, rows[d][RowOf(i)])
     /\ pc' = [pc EXCEPT ![d][i][k] = "claimed"]
     /\ obs' = [obs EXCEPT ![d][i][k] = rec.rev]
+    /\ okey' = [okey EXCEPT ![d][i][k] = rec.gen]
     /\ attempts' = [attempts EXCEPT ![d][i] = @ + 1]
     /\ latest' = [latest EXCEPT ![d][i] = k]
     /\ lastOk' = [lastOk EXCEPT ![d][i] = FALSE]
     /\ UNCHANGED <<snap, recv, mem, agentOps, applied, early, effVars,
-                   reopens>>
+                   reopens, undos>>
 
 DispatchOk(d, i, k) ==
     /\ pc[d][i][k] = "claimed"
@@ -467,7 +523,7 @@ DispatchOk(d, i, k) ==
        ELSE IF SeparateAttach THEN CreateLinked(d, i, k)
        ELSE Create(d, i, k)
     /\ UNCHANGED <<rows, hc, msgs, snap, recv, attempts, agentOps, obs,
-                   latest, reopens>>
+                   okey, latest, reopens, undos>>
 
 \* A retryable failure reverts to pending; a non-retryable one retracts.
 DispatchFails(d, i, k) ==
@@ -561,7 +617,7 @@ Reject(d, i) ==
     /\ latest' = [latest EXCEPT ![d][i] = k]
     /\ lastOk' = [lastOk EXCEPT ![d][i] = FALSE]
     /\ UNCHANGED <<snap, recv, mem, agentOps, applied, early, effVars, obs,
-                   reopens>>
+                   okey, reopens, undos>>
 
 \* A rejected follow-up rejects its pending migration.
 CascadeAtomic(d, k) ==
@@ -606,7 +662,38 @@ Reopen(d, i) ==
     /\ latest' = [latest EXCEPT ![d][i] = 0]
     /\ lastOk' = [lastOk EXCEPT ![d][i] = FALSE]
     /\ UNCHANGED <<pc, snap, recv, mem, attempts, agentOps, applied, early,
-                   effVars, obs>>
+                   effVars, obs, okey, undos>>
+
+\* The project agent's Undo of a confirmed create-style item, offered by
+\* the device whose own confirmation succeeded (the session's memo of the
+\* entity it created): that entity is deleted and the item reopened, in
+\* the order reopenItem runs them folded into one step. With UndoOwnKey the
+\* Undo acts only while the item still carries the key that confirmation
+\* used — the item may show a later decision, synced from another device,
+\* whose entity the memo does not name. With UndoRekeys the reopened item
+\* carries a new key generation, the same on every device that undoes this
+\* decision.
+Undo(d, i) ==
+    LET k == latest[d][i]
+        id == EntityId(d, i, k)
+    IN
+    /\ undos[d] < MaxUndos
+    /\ i \notin SetItems
+    /\ Item(d, i).st = "confirmed"
+    /\ lastOk[d][i]
+    /\ UndoOwnKey => Item(d, i).gen = okey[d][i][k]
+    /\ dels' = [dels EXCEPT ![d] = @ \cup {id}]
+    /\ dmsgs' = dmsgs \cup {[to |-> e, id |-> id] : e \in Devices \ {d}}
+    /\ LET reopened == Bump(Item(d, i), "pending")
+       IN PutItem(d, i,
+                  [reopened EXCEPT !.gen = IF UndoRekeys THEN @ + 1 ELSE @],
+                  rows[d][RowOf(i)])
+    /\ undos' = [undos EXCEPT ![d] = @ + 1]
+    /\ latest' = [latest EXCEPT ![d][i] = 0]
+    /\ lastOk' = [lastOk EXCEPT ![d][i] = FALSE]
+    /\ UNCHANGED <<pc, snap, recv, mem, attempts, agentOps, applied, early,
+                   ents, emsgs, atts, amsgs, reg, rhc, rmsgs, userEdits,
+                   conflict, clobbered, appVcs, obs, okey, reopens>>
 
 -----------------------------------------------------------------------------
 (* The agent *)
@@ -634,7 +721,7 @@ Consolidate(d) ==
     /\ LET src == Item(d, CopySrc)
            copy == ~PendingCopiesOnly \/ src.st = "pending"
            dst == [st |-> src.st, rev |-> IF ItemMerge THEN 1 ELSE 0,
-                   res |-> TRUE]
+                   res |-> TRUE, gen |-> src.gen]
            survivor == [items |-> [rows[d][1].items EXCEPT ![CopyDst] = dst],
                         base |-> rows[d][1].vc]
            retired == [items |-> [rows[d][2].items EXCEPT ![CopySrc] =
@@ -650,13 +737,15 @@ Consolidate(d) ==
 -----------------------------------------------------------------------------
 (* The user *)
 
-\* The user edits the field a set-style item proposes to change. The
+\* The user edits the field a set-style item proposes to change — or,
+\* with AddStyle, takes the label off the task, which suppresses it. The
 \* write is built on the stored task, so it keeps the stored mark
 \* (persistence_update_ops.dart updateTaskImpl, journal_repository.dart
 \* updateJournalEntity).
 UserEdit(d) ==
     /\ userEdits[d] < MaxUserEdits
-    /\ RegPut(d, UserVal(d), TRUE, reg[d].mark)
+    /\ AddStyle => reg[d].val = "target"
+    /\ RegPut(d, UserVal(d), TRUE, reg[d].mark, AddStyle)
     /\ userEdits' = [userEdits EXCEPT ![d] = @ + 1]
     /\ UNCHANGED <<rows, hc, msgs, pc, snap, recv, mem, attempts, agentOps,
                    applied, early, entVars, conflict, clobbered, appVcs,
@@ -703,8 +792,19 @@ ReceiveEnt(d) ==
           /\ ents' = [ents EXCEPT ![d] = @ \cup {m.id}]
           /\ emsgs' = emsgs \ {m}
     /\ UNCHANGED <<rows, hc, msgs, pc, snap, recv, mem, attempts, agentOps,
-                   applied, early, atts, amsgs, reg, rhc, rmsgs, userEdits,
-                   conflict, clobbered, appVcs, claimVars>>
+                   applied, early, atts, amsgs, dels, dmsgs, reg, rhc, rmsgs,
+                   userEdits, conflict, clobbered, appVcs, claimVars>>
+
+\* A deletion arrives: the tombstone, which carries the entity with it.
+ReceiveDel(d) ==
+    /\ \E m \in dmsgs :
+          /\ m.to = d
+          /\ ents' = [ents EXCEPT ![d] = @ \cup {m.id}]
+          /\ dels' = [dels EXCEPT ![d] = @ \cup {m.id}]
+          /\ dmsgs' = dmsgs \ {m}
+    /\ UNCHANGED <<rows, hc, msgs, pc, snap, recv, mem, attempts, agentOps,
+                   applied, early, emsgs, atts, amsgs, reg, rhc, rmsgs,
+                   userEdits, conflict, clobbered, appVcs, claimVars>>
 
 \* A link arrives: the parent's update that lists the entity.
 ReceiveLink(d) ==
@@ -713,8 +813,8 @@ ReceiveLink(d) ==
           /\ atts' = [atts EXCEPT ![d] = @ \cup {m.id}]
           /\ amsgs' = amsgs \ {m}
     /\ UNCHANGED <<rows, hc, msgs, pc, snap, recv, mem, attempts, agentOps,
-                   applied, early, ents, emsgs, reg, rhc, rmsgs, userEdits,
-                   conflict, clobbered, appVcs, claimVars>>
+                   applied, early, ents, emsgs, dels, dmsgs, reg, rhc, rmsgs,
+                   userEdits, conflict, clobbered, appVcs, claimVars>>
 
 \* updateJournalEntity: an older or equal version is dropped, a newer one
 \* taken, and a concurrent one — equal content or not — is kept aside as a
@@ -742,11 +842,12 @@ Next ==
     \/ \E d \in Devices :
           \/ ReceiveAtomic(d) \/ ReceiveRead(d) \/ ReceiveWrite(d)
           \/ ReceiveEnt(d) \/ ReceiveLink(d) \/ ReceiveReg(d)
+          \/ ReceiveDel(d)
           \/ UserEdit(d)
           \/ Consolidate(d)
           \/ \E i \in Items :
                 \/ Confirm(d, i) \/ Reject(d, i) \/ Retract(d, i)
-                \/ Reopen(d, i)
+                \/ Reopen(d, i) \/ Undo(d, i)
                 \/ \E k \in Slots :
                       \/ DispatchOk(d, i, k) \/ DispatchFails(d, i, k)
                       \/ FailAtomic(d, i, k) \/ FailRead(d, i, k)
@@ -774,6 +875,8 @@ TypeOK ==
           /\ mem[d] \in BOOLEAN
           /\ reg[d].val \in {"base", "target", "u1", "u2"}
           /\ reg[d].mark \in BOOLEAN
+          /\ reg[d].tomb \in BOOLEAN
+          /\ dels[d] \subseteq ents[d]
           /\ \A id \in ents[d] : EffOf(id) \in CreateEffects
     /\ conflict \in BOOLEAN
     /\ clobbered \in BOOLEAN
@@ -792,7 +895,8 @@ Quiescent ==
     /\ \A d \in Devices, i \in Items : Idle(d, i)
 
 \* ... and every journal write delivered as well.
-QuiescentAll == Quiescent /\ emsgs = {} /\ amsgs = {} /\ rmsgs = {}
+QuiescentAll ==
+    Quiescent /\ emsgs = {} /\ amsgs = {} /\ rmsgs = {} /\ dmsgs = {}
 
 \* A confirmed change is dispatched at most once, on any device. It holds
 \* only where no item is decided on two devices before they sync; where
@@ -835,10 +939,21 @@ SucceededClaimStands ==
 AllIds == UNION {ents[d] \cup atts[d] : d \in Devices}
               \cup {m.id : m \in emsgs \cup amsgs}
 
+\* The entities an Undo deleted, anywhere.
+Dead == UNION {dels[d] : d \in Devices} \cup {m.id : m \in dmsgs}
+
 \* However often a change is dispatched, and wherever, it creates at most
-\* one entity.
+\* one entity that is not deleted: an Undo takes one back, and only then
+\* may a new confirmation create another.
 NoDuplicateEffects ==
-    \A x \in Effects : Cardinality({id \in AllIds : EffOf(id) = x}) <= 1
+    \A x \in Effects : Cardinality({id \in AllIds \ Dead : EffOf(id) = x}) <= 1
+
+\* A confirmation whose dispatch succeeded has its entity, alive, on the
+\* device that confirmed it — also a confirmation made after an Undo took
+\* the first one back. Checked where no other device can delete it.
+ConfirmedIsLive ==
+    \A d \in Devices, i \in Items \ SetItems :
+        lastOk[d][i] => \E id \in ents[d] \ dels[d] : EffOf(id) = Effect(i)
 
 \* A dispatch never overwrites a value the user wrote to the field.
 NoClobber == ~clobbered
@@ -849,7 +964,7 @@ NoClobber == ~clobbered
 \* landed as a Conflict row for the user to resolve.
 EffectsConverge ==
     QuiescentAll =>
-        /\ \A d, e \in Devices : ents[d] = ents[e]
+        /\ \A d, e \in Devices : ents[d] = ents[e] /\ dels[d] = dels[e]
         /\ ~conflict => \A d, e \in Devices : reg[d].val = reg[e].val
         /\ \A d \in Devices, x \in CreateEffects :
               (\E id \in ents[d] : EffOf(id) = x) <=> (Total(x) >= 1)

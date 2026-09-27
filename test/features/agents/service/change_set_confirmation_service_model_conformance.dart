@@ -300,6 +300,8 @@ class _UndoBench {
             deleted.add(created);
             return true;
           },
+          // The Undo names the decision whose entity it deletes.
+          effectKey: created,
         )) {
           memo = null;
         }

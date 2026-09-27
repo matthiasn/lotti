@@ -1978,6 +1978,53 @@ void main() {
         },
       );
 
+      test(
+        'an Undo that names another decision than the item shows reopens '
+        'nothing and runs no revert (ADR 0097)',
+        () async {
+          final changeSet = decidedSet();
+          stubDecisions(const []);
+          var reverts = 0;
+          Future<bool> revert() async {
+            reverts++;
+            return true;
+          }
+
+          // The item shows a decision under the key an Undo on another
+          // device gave it; this device's memo is of the one before.
+          final later = changeSet.copyWith(
+            items: [
+              changeSet.items[0].undoneIn(changeSet.id, 0),
+              changeSet.items[1],
+            ],
+          );
+          expect(
+            await service.reopenItem(
+              later,
+              0,
+              revert: revert,
+              effectKey: '${changeSet.id}:0',
+            ),
+            isFalse,
+          );
+          expect(reverts, 0);
+          verifyNever(() => mockSyncService.upsertEntity(any()));
+
+          await withClock(testClock, () async {
+            expect(
+              await service.reopenItem(
+                changeSet,
+                0,
+                revert: revert,
+                effectKey: '${changeSet.id}:0',
+              ),
+              isTrue,
+            );
+          });
+          expect(reverts, 1);
+        },
+      );
+
       for (final (label, revert) in [
         ('refuses', () async => false),
         ('throws', () async => throw StateError('offline')),

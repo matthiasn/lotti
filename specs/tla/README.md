@@ -387,16 +387,21 @@ user's reopen — and the sync that carries each write to the other devices as
 a message delivered in any order, applied through the vector-clock comparison
 and the concurrent resolver. It also models what a confirmed change does to
 the journal on each device: a create-style item creates an entity (modelled
-by id), a set-style item writes one task field (a register the user can edit
-too), and both replicate by message and are received the way the journal
-receives them — a concurrent version is kept aside as a `Conflict` row. Every
-user decision runs in its own attempt slot, so a confirm of an item reopened
-while an earlier dispatch still runs is a second, concurrent operation. The
-ghost `applied` counts, per device, how often each change was dispatched and
-took effect. The decisions are
+by id), a set-style item writes one field (a register the user can edit
+too: a task field, a checklist item's title or check, a time entry's range or
+text, a project's status — or, with `AddStyle`, a label's membership of the
+task, which the user's edit takes off and suppresses), and both replicate by
+message and are received the way the journal receives them — a concurrent
+version is kept aside as a `Conflict` row. The project agent's Undo deletes
+the entity its confirmation created and reopens the item; deletions sync as
+tombstones. Every user decision runs in its own attempt slot, so a confirm of
+an item reopened while an earlier dispatch still runs is a second, concurrent
+operation. The ghost `applied` counts, per device, how often each change was
+dispatched and took effect. The decisions are
 [ADR 0067](../../docs/adr/0067-model-checked-change-set-lifecycle.md),
-[ADR 0075](../../docs/adr/0075-idempotent-change-set-tools.md) and
-[ADR 0098](../../docs/adr/0098-field-changes-record-their-effect.md).
+[ADR 0075](../../docs/adr/0075-idempotent-change-set-tools.md),
+[ADR 0098](../../docs/adr/0098-field-changes-record-their-effect.md) and
+[ADR 0097](../../docs/adr/0097-idempotent-effects-for-every-change-set-tool.md).
 
 The switches are the fixes, and each is a mutation point. From ADR 0067:
 `AtomicWrites` (every local write of a set re-reads it in its transaction and
@@ -417,7 +422,13 @@ creator's link is on its way; switched on by `SeparateAttach`). From
 ADR 0098: `EffectMark` (a set-style tool records its effect key on the task
 in the write that sets the field, and applies only while the task does not
 record it — so a base the user restored after the change landed is left
-alone). `CrashBeforeLink` is not a fix: it lets the creator stop between the entity
+alone). From
+ADR 0097: `RemoveWins` (with `AddStyle`, an add applies only to a label the
+user has not taken off — the task's suppressed labels), `UndoRekeys` (an Undo
+that deletes a created entity reopens the item under a new effect key, so
+confirming it again creates anew) and `UndoOwnKey` (an Undo acts only while
+the item carries the key its own device's confirmation used).
+`CrashBeforeLink` is not a fix: it lets the creator stop between the entity
 and its link. `RaceFree` restricts the environment: no item is
 decided on two devices before they have synced. `UserRestoresBase` lets the
 user's edit restore the base value, the ABA a value compare-and-set alone
@@ -431,7 +442,8 @@ cannot see.
 | `StatusMatchesEffect` | invariant | once everything is delivered, every device shows `confirmed` exactly when the change was applied, and never `pending` or `rejected` for an applied one |
 | `Converged` | invariant | once everything is delivered, the replicas of the set agree |
 | `MigrationAfterTarget` | invariant | a checklist migration never runs before its follow-up task exists |
-| `NoDuplicateEffects` | invariant | every change creates at most one entity id, across all replicas and the messages in flight |
+| `NoDuplicateEffects` | invariant | every change has at most one entity that no Undo deleted, across all replicas and the messages in flight |
+| `ConfirmedIsLive` | invariant | a device whose confirmation of a create-style change succeeded holds its entity, not deleted — also after an Undo and a new confirmation |
 | `NoClobber` | invariant | no dispatch overwrites a value the user wrote into the field — one the user changed, or the base the user wrote back on a version that had seen the change applied (its clock covers a dispatch's write, the ghost `appVcs`) |
 | `EffectsConverge` | invariant | once everything, entities and fields included, is delivered, every replica holds the same entities, the field agrees unless a `Conflict` row holds a concurrent version, and a change's entity exists exactly when the change was applied somewhere |
 | `SucceededClaimStands` | invariant | an item whose latest claim's dispatch succeeded reads `confirmed` |
@@ -449,6 +461,9 @@ cannot see.
 | `ChangeSetLifecycleReopen` | 1 | one item, two confirms, one reopen, both failure kinds | `SucceededClaimStands`, `NoDuplicateEffects` | 90 |
 | `ChangeSetLifecycleConsolidateSync` | 2 | an item consolidated on one device while confirmed on the other, `RaceFree` | `NoDuplicateEffects`, `EffectsConverge` | 147,557 |
 | `ChangeSetLifecycleRaceLink` | 2 | one create-style item decided on both devices, whose entity and link to its parent sync apart | `Converged`, `NoDuplicateEffects`, `EffectsConverge`, `EffectsLinked` | 241 |
+| `ChangeSetLifecycleRaceAdd` | 2 | one label suggestion decided on both devices, the label taken off once per device, retryable failures | `Converged`, `NoClobber`, `EffectsConverge` | 197,946 |
+| `ChangeSetLifecycleUndo` | 1 | one create-style item confirmed, undone and confirmed again; retryable failures | `SucceededClaimStands`, `NoDuplicateEffects`, `ConfirmedIsLive` | 18 |
+| `ChangeSetLifecycleRaceUndo` | 2 | one create-style item decided on both devices, one Undo per device, retryable failures | `Converged`, `NoDuplicateEffects`, `EffectsConverge` | 1,582,818 |
 
 Every configuration also checks `TypeOK`. Each switch set to `FALSE` fails a
 configuration with a short trace (kept outside this directory, as for
@@ -469,6 +484,9 @@ configuration with a short trace (kept outside this directory, as for
 | `ReuseLive = FALSE` | `ChangeSetLifecycleRaceLink` | `NoDuplicateEffects` (6 states): one device confirms, creates the checklist and lists it; the other receives the checklist but not the task update listing it, confirms, and creates a second checklist |
 | `CasGuard = FALSE` | `ChangeSetLifecycleRaceSet` | `NoClobber` (4 states): the change is confirmed, the user edits the field, and the dispatch overwrites the edit |
 | `EffectMark = FALSE` | `ChangeSetLifecycleRaceRestore` | `NoClobber` (7 states): device 1 confirms and applies the change, and the user restores the base there; device 2 receives the restored field before the change set, confirms the item it still shows pending, and applies the change over the restore |
+| `RemoveWins = FALSE` | `ChangeSetLifecycleRaceAdd` | `NoClobber` (7 states): one device confirms and adds the label, the user takes it off, the other device — which confirmed the same suggestion — receives the removal and adds the label back |
+| `UndoRekeys = FALSE` | `ChangeSetLifecycleUndo` | `ConfirmedIsLive` (6 states): confirm, apply, Undo (the entity deleted), confirm, apply — the dispatch finds the deleted entity under the same key and creates nothing |
+| `UndoOwnKey = FALSE` | `ChangeSetLifecycleRaceUndo` | `NoDuplicateEffects` (12 states): both devices confirm; one applies, undoes, confirms and applies again under the new key; the other applies the first decision, receives the later one and undoes it — deleting its own, already deleted entity and reopening the item under a third key, whose confirmation creates a second live entity beside the first device's |
 
 What stays open — the residuals, each confirmed by TLC:
 
@@ -484,6 +502,13 @@ What stays open — the residuals, each confirmed by TLC:
     merge would need identical content and a journal rule that merges
     identical concurrent versions — a product decision. Two concurrent
     applications of a field change land as a conflict the same way.
+  - **The field's ABA** is closed for task fields by ADR 0098's mark, and
+    for checklist items, project statuses and labels by ADR 0097: a
+    checklist item's base records the stamp of the field's last change, a
+    project status's base the status entry's id — both of which a restoring
+    edit moves on — and a label taken off stays suppressed. A time entry
+    keeps no such stamp, so a range or text restored to the proposal's base
+    between the two applications gets the proposed value again.
   - **The status records the dispatch, not the effect.** When one device's
     dispatch fails and reverts while the other's applied, the merged item
     reads pending though its change landed; confirming it again applies
@@ -491,10 +516,10 @@ What stays open — the residuals, each confirmed by TLC:
     not checked under the race. A confirm beating a concurrent rejection or
     retraction (the merge rank) is *not* part of this residual: it is
     checked.
-  - Tools without an effect key or a base — label assignment (a set-add, so
-    a late add can bring back a label removed in between), checklist item
-    updates, time entry updates, and the project agent's tools — are listed
-    per tool in ADR 0075.
+  - Every change-set tool has an idempotent effect since ADR 0097, or needs
+    none. The project agent's next steps turned into tasks through
+    `ProjectRecommendationService.createTask` are not change items and keep
+    random ids.
 - **Consolidation on one device racing a decision on another** no longer
   applies anything twice: the copy carries its original's key. It stays
   pending beside the original applied elsewhere
@@ -1897,19 +1922,31 @@ generated concurrent histories of a two-item set on two devices must merge to
 the same row in either direction, keeping the item a device changed last and
 a confirm neither side superseded. ADR 0075's effects have a third, in
 `test/features/agents/workflow/task_tool_dispatcher_idempotency.dart` (a part
-of the dispatcher's real-database suite): generated sequences apply five
-confirmed items — a follow-up task, a time entry, a checklist item, a title
-and an estimate — any number of times, on a real journal database, with the
-user editing the title and the estimate in between. A second application on a
-replica that already holds the first's writes is what the late device runs,
-so after every step the journal must hold one entity per applied create
-(`NoDuplicateEffects`) and each field must hold the user's latest edit, or
-else the proposed value if applied, or else its base (`NoClobber`). Reverting
-the compare-and-set, or deriving random ids for the follow-up task, the time
-entry or the checklist item, fails it; each tool also has its own regression
-there, and the migration's claim with its resolved target has one in the
-confirmation service's suite that holds the sibling rewrite back until the
-migration is claimed.
+of the dispatcher's real-database suite): generated sequences apply eight
+confirmed items — a follow-up task, a time entry, a checklist item, a title,
+an estimate, a checklist item's new title, a time entry's new text and a
+label — any number of times, on a real journal database, with the user
+editing the title, the estimate, the checklist item and the time entry, and
+taking the label off, in between. A second application on a replica that
+already holds the first's writes is what the late device runs, so after every
+step the journal must hold one entity per applied create
+(`NoDuplicateEffects`), each field must hold the user's latest edit, or else
+the proposed value if applied, or else its base (`NoClobber`), and a label the
+user took off must stay off. Reverting the compare-and-set, or deriving random
+ids for the follow-up task, the time entry or the checklist item, fails it;
+each tool also has its own regression there — the project agent's
+`create_task` and `update_project_status` included — and the migration's
+claim with its resolved target has one in the confirmation service's suite
+that holds the sibling rewrite back until the migration is claimed. ADR
+0097's Undo has a fourth, in
+`test/features/agents/service/change_set_confirmation_service_model_conformance.dart`:
+generated confirms, dispatch outcomes, Undos and plain reopens drive the real
+confirmation service over one create-style item against a fake journal that
+creates the entity the dispatch's key names unless it exists, deleted ones
+included; after every step at most one entity is live
+(`NoDuplicateEffects`), and a settled confirmation has one
+(`ConfirmedIsLive`). Reopening an undone item under its old key fails it in
+five steps.
 
 Convergence has its own trace. In
 `test/features/agents/sync/agent_replication_model_conformance.dart` (a part

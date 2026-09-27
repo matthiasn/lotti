@@ -78,6 +78,7 @@ void main() {
         any(),
         any(),
         revert: any(named: 'revert'),
+        effectKey: any(named: 'effectKey'),
       ),
     ).thenAnswer((invocation) async {
       final revert =
@@ -161,6 +162,7 @@ void main() {
         applied,
         0,
         revert: any(named: 'revert', that: isNotNull),
+        effectKey: any(named: 'effectKey'),
       ),
     ).called(1);
     verifyNever(() => repository.getProjectById(any()));
@@ -371,12 +373,49 @@ void main() {
     verifyNever(() => repository.updateProject(any()));
   });
 
+  test(
+    'an Undo names the decision it undoes, and a later decision synced from '
+    'another device is not undoable here (ADR 0097)',
+    () async {
+      when(() => confirmation.confirmItem(any(), any())).thenAnswer(
+        (_) async => const ToolExecutionResult(
+          success: true,
+          output: '',
+          mutatedEntityId: 'task-9',
+        ),
+      );
+      await service.confirm(setWith(createTask), 0);
+      final applied = decided(createTask, ChangeItemStatus.confirmed);
+      // Another device undid it and confirmed it again: the item now shows
+      // that decision, under the key its Undo gave it.
+      final later = setWith(
+        createTask
+            .undoneIn('set-1', 0)
+            .copyWith(status: ChangeItemStatus.confirmed),
+      );
+
+      expect(service.canUndo(applied, 0), isTrue);
+      expect(service.canUndo(later, 0), isFalse);
+
+      expect(await service.undo(applied, 0), isTrue);
+      verify(
+        () => confirmation.reopenItem(
+          applied,
+          0,
+          revert: any(named: 'revert'),
+          effectKey: 'set-1:0',
+        ),
+      ).called(1);
+    },
+  );
+
   test('a refused reopen keeps the memo for another try', () async {
     when(
       () => confirmation.reopenItem(
         any(),
         any(),
         revert: any(named: 'revert'),
+        effectKey: any(named: 'effectKey'),
       ),
     ).thenAnswer((_) async => false);
     when(() => confirmation.confirmItem(any(), any())).thenAnswer(

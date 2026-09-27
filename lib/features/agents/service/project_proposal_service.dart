@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
@@ -14,8 +15,16 @@ typedef ProjectTaskRemover = Future<bool> Function(String taskId);
 
 /// What a confirmed proposal changed, kept so it can be put back.
 class _AppliedProposal {
-  const _AppliedProposal({this.createdTaskId, this.previousStatus});
+  const _AppliedProposal({
+    required this.effectKey,
+    this.createdTaskId,
+    this.previousStatus,
+  });
 
+  /// The effect key the confirmation applied the item under
+  /// (`ChangeItemEffect.effectKeyIn`): the Undo puts back only this
+  /// decision, not a later one synced from another device (ADR 0097).
+  final String effectKey;
   final String? createdTaskId;
   final ProjectStatus? previousStatus;
 }
@@ -66,6 +75,7 @@ class ProjectProposalService {
     final result = await confirmation.confirmItem(changeSet, itemIndex);
     if (result.success) {
       _applied[_key(changeSet, itemIndex)] = _AppliedProposal(
+        effectKey: item.effectKeyIn(changeSet.id, itemIndex),
         createdTaskId: item.toolName == ProjectAgentToolNames.createTask
             ? result.mutatedEntityId
             : null,
@@ -81,15 +91,18 @@ class ProjectProposalService {
 
   /// Whether [undo] can still put the item at [itemIndex] back: always for a
   /// rejection, and for a confirmation only while this session remembers
-  /// what it changed.
-  bool canUndo(ChangeSetEntity changeSet, int itemIndex) =>
-      switch (changeSet.items[itemIndex].status) {
-        ChangeItemStatus.rejected => true,
-        ChangeItemStatus.confirmed => _applied.containsKey(
-          _key(changeSet, itemIndex),
-        ),
-        _ => false,
-      };
+  /// what it changed — and the item still shows that confirmation, not a
+  /// later one synced from another device.
+  bool canUndo(ChangeSetEntity changeSet, int itemIndex) {
+    final item = changeSet.items[itemIndex];
+    return switch (item.status) {
+      ChangeItemStatus.rejected => true,
+      ChangeItemStatus.confirmed =>
+        _applied[_key(changeSet, itemIndex)]?.effectKey ==
+            item.effectKeyIn(changeSet.id, itemIndex),
+      _ => false,
+    };
+  }
 
   /// Reopens the item at [itemIndex] and, once the record says pending
   /// again, reverts what confirming it did: the created task is removed, or
@@ -106,6 +119,7 @@ class ProjectProposalService {
       revert: applied == null
           ? null
           : () => _revert(applied, changeSet, itemIndex),
+      effectKey: applied?.effectKey,
     );
     if (reopened) _applied.remove(key);
     return reopened;

@@ -445,7 +445,12 @@ class ChangeSetConfirmationService {
   /// effect behind a confirmed row. If the revert refuses or throws, the
   /// record is put back the way it was — item status and verdict — and the
   /// method returns `false`, leaving the effect and the record in agreement.
-  /// A confirmed item reopened with a [revert] gets a new effect key
+  /// [effectKey], when given, is the key of the decision [revert] undoes:
+  /// the item is reopened only while it still carries that key. An Undo
+  /// remembers the decision its own device made, and the item may show a
+  /// later one synced from another device — confirmed again after an Undo
+  /// there — whose effect [revert] does not know (ADR 0097).
+  /// An item reopened with a [revert] gets a new effect key
   /// ([ChangeItemEffect.undoneIn]) — its effect is taken back, so the next
   /// confirmation is a new one — and a refused revert restores the old key
   /// with the status.
@@ -456,6 +461,7 @@ class ChangeSetConfirmationService {
     ChangeSetEntity changeSet,
     int itemIndex, {
     Future<bool> Function()? revert,
+    String? effectKey,
   }) async {
     final current = await _resolution.freshChangeSet(changeSet);
     if (itemIndex < 0 || itemIndex >= current.items.length) return false;
@@ -466,6 +472,16 @@ class ChangeSetConfirmationService {
         LogDomain.agentWorkflow,
         'Skipping reopen for item $itemIndex (${item.toolName}) — '
         '${item.status.name}',
+        subDomain: _sub,
+      );
+      return false;
+    }
+    if (effectKey != null &&
+        item.effectKeyIn(current.id, itemIndex) != effectKey) {
+      _domainLogger?.log(
+        LogDomain.agentWorkflow,
+        'Skipping reopen for item $itemIndex (${item.toolName}) — it shows '
+        'a later decision than the one to undo',
         subDomain: _sub,
       );
       return false;
@@ -485,7 +501,7 @@ class ChangeSetConfirmationService {
     // own, so confirming it again creates anew instead of finding the
     // tombstone the revert leaves (ADR 0097). A plain reopen keeps the key:
     // its effect stands, and confirming again must not apply it twice.
-    final rekey = revert != null && item.status == ChangeItemStatus.confirmed;
+    final rekey = revert != null;
     final reopenedWith = await _syncService.runInTransaction(() async {
       final reopened = await _resolution.transitionChangeSetItem(
         current,
