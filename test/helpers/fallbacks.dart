@@ -424,7 +424,8 @@ void registerAllFallbackValues() {
     SyncMessage.agentWakeCoordination(
       agentId: '',
       kind: AgentWakeCoordinationKind.claim,
-      stateHash: '',
+      watermark: const {},
+      readsPrivate: false,
       runKey: '',
       hostId: '',
       sentAt: DateTime(2024, 3, 15),

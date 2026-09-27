@@ -11,11 +11,15 @@ sources:
   - id: wake
     resource: ../../../lib/features/agents/wake
     title: WakeOrchestrator, WakeQueue, WakeRunner, drain engine, AgentWakeCoordinator
-    last_modified: 2026-09-26
-  - id: task-state-digest
-    resource: ../../../lib/features/agents/workflow/task_state_digest.dart
-    title: The task state digest devices compare
-    last_modified: 2026-09-26
+    last_modified: 2026-09-27
+  - id: task-wake-inputs
+    resource: ../../../lib/features/agents/workflow/task_wake_inputs.dart
+    title: The rows a task agent's wake reads, with their vector clocks
+    last_modified: 2026-09-27
+  - id: sync-watermarks
+    resource: ../../../lib/database/sync_db_watermarks.dart
+    title: Per-host gap-free watermarks a claim carries
+    last_modified: 2026-09-27
   - id: enums
     resource: ../../../lib/features/agents/model/agent_enums.dart
     title: WakeReason
@@ -64,6 +68,10 @@ sources:
     resource: ../../../docs/adr/0090-cross-device-agent-wake-coordination.md
     title: ADR 0090 — One device wakes a task agent over a given state
     last_modified: 2026-09-26
+  - id: adr-0091
+    resource: ../../../docs/adr/0091-wake-coordination-by-vector-clock-coverage.md
+    title: ADR 0091 — Wake coordination by vector-clock coverage
+    last_modified: 2026-09-27
 ---
 
 # Why the design is this defensive
@@ -101,11 +109,11 @@ flowchart TD
   KeepQueued --> Capacity
   Busy -->|no| Content{"awaitingContent gate?"}
   Content -->|skip| Wait["Leave agent dormant until content exists"]
-  Content -->|run| Coord{"Peer device on the same state?"}
-  Coord -->|completed it| Covered["Drop job, intent settled as covered"]
-  Coord -->|running it| Defer["Hold back until the claim ends or lapses"]
+  Content -->|run| Coord{"Does a peer's run cover this device?"}
+  Coord -->|a completed one| Covered["Drop job, intent settled as covered"]
+  Coord -->|a running one| Defer["Hold back until the claim ends or lapses"]
   Defer --> Capacity
-  Coord -->|no| Claim["Broadcast claim(state digest)"]
+  Coord -->|no| Claim["Broadcast claim(watermark)"]
   Claim --> Persist["Persist wake_run_log row"]
   Persist --> Exec["Dispatch workflow by agent kind in a capacity slot"]
   Exec --> Capacity
@@ -534,34 +542,43 @@ for agents whose automation remains allowed.
 # One device per state: cross-device coordination
 
 Each device wakes a task agent on its own local edits, so edits made on two
-devices at once — typing on the desktop, dictating into the phone — leave a
-wake on each. By the time their throttle windows elapse, sync has usually
-merged both edits, and both devices would run the agent over the same
-inputs. `AgentWakeCoordinator` lets one of them run
-([ADR 0090](../../../docs/adr/0090-cross-device-agent-wake-coordination.md)).
+devices close together — a change on the desktop, a checklist item checked
+off on the phone — leave a wake on each. The first to run has usually synced
+the other's edit, and then the second run reads nothing the first did not.
+`AgentWakeCoordinator` lets the second stand down
+([ADR 0090](../../../docs/adr/0090-cross-device-agent-wake-coordination.md),
+amended by
+[ADR 0091](../../../docs/adr/0091-wake-coordination-by-vector-clock-coverage.md)).
 The protocol is model-checked in
 [`AgentWakeCoordination.tla`](../../../specs/tla/AgentWakeCoordination.tla);
 each coordinator method names the action it implements.
 
-The comparison key is `taskStateDigest`: a `ContentDigest` over the vector
-clock of every entity the task context reads — the task, the entities linked
-from and to it, its checklists and items, its images' AI analyses, and for
-each linked task the entries its time is summed from and its agent's current
-report, keyed by that linked task. Replicas holding the same versions agree on it without coordinating,
-and a wake's own writes are change-set proposals in the agent database, so
-they leave it alone. A matching `done` cancels a wake, so **the digest must
-follow the context builders**: an input the context reads but the digest
-misses could be dropped unprocessed. Agent kinds without a digest run
-uncoordinated.
+A peer's run **covers** a device when it read every write the device's inputs
+rest on. The claim carries the sender's **watermark** when the run started:
+per host, the counter up to which it holds all of that host's writes
+(`SyncDatabase.contiguousWatermarks`, the sync sequence log's gap-free prefix;
+for its own host, `VectorClockService.lastReservedCounter`), and whether its
+context reads private entries. Journal entities, links and agent entities
+share one counter per host, so a handful of integers describe the run. The
+receiver checks the vector clocks of its own inputs against it —
+`taskWakeInputs`: the task, every link from or to it and the entity at the
+other end, its checklists and items, one ring further for linked images and
+linked tasks, and linked tasks' agent links and current reports. Removed links
+and deleted entities are read too, because a removal is a write and only a row
+that is read gets its clock checked. **Keep the context builders' inputs
+inside that neighbourhood**: a row the context reads but the inputs miss could
+be dropped unprocessed. A wake's own writes are change-set proposals in the
+agent database, so they are not inputs. Agent kinds without an inputs reader
+run uncoordinated.
 
 The drain asks the coordinator after the content gate. **Cancel** when a peer
-completed a run over this digest: the job is dropped and its intent settled,
-since the peer's run covers its triggers. **Defer** while a peer's claim for
-this digest is live: the job is held back and the coordinator asks for a
-drain when that claim ends, lapses, or is replaced by a claim over another
-digest — every event that can free the job. **Proceed** otherwise — a different
-digest is new work — and broadcast `claim(digest)`, repeated every 45 seconds
-while the run lives. A successful run broadcasts `done`; `_executeJob`'s
+completed a run covering this device: the job is dropped and its intent
+settled, since the peer's run covers its triggers. **Defer** while a live
+peer claim covers it: the job is held back and the coordinator asks for a
+drain when that claim ends, lapses, or is replaced by a claim with another
+watermark — every event that can free the job. **Proceed** otherwise — a write
+the peer's run lacks is new work — and broadcast `claim`, repeated every 45
+seconds while the run lives. A successful run broadcasts `done`; `_executeJob`'s
 outer `finally` broadcasts `release` for any run that ended otherwise, which
 is a no-op after `done`. A wake the user asked for explicitly is never
 deferred or cancelled, but still claims.
@@ -571,23 +588,32 @@ What a device holds about one peer's wakes of one agent:
 ```mermaid
 stateDiagram-v2
   [*] --> NoClaim
-  NoClaim --> Claimed: claim(h) received
+  NoClaim --> Claimed: claim(w) received
   Claimed --> Claimed: claim received (timer re-armed)
-  Claimed --> NoClaim: done(h), h added to completed digests
-  Claimed --> NoClaim: release(h)
+  Claimed --> NoClaim: done(w), w added to completed runs
+  Claimed --> NoClaim: release(w)
   Claimed --> NoClaim: two minutes without a message
-  NoClaim --> NoClaim: done(h), h added to completed digests
+  NoClaim --> NoClaim: done(w), w added to completed runs
 ```
 
-The completed digests (the last eight) are kept apart from the claim, so a
+The completed runs (the last eight) are kept apart from the claim, so a
 peer's next claim cannot erase them: TLC found that a device still at the
 older state otherwise ran it again. A receiver drops a peer's message older
 than the last it applied, by that peer's own timestamps; the timer runs from
 receipt on the receiver's clock, so clock skew between devices does not
 matter.
 
-Everything fails open. The coordination state is in memory, a digest that
-throws proceeds uncoordinated, and a crash, a lost message, a peer that
+Every decision is logged in the agent-runtime domain under `coordination`,
+with, for a proceed, the first write each known peer run lacks — and every
+claim, done and release sent and received. That is what tells a duplicate
+caused by late sync from one the protocol should have caught.
+
+The message goes over the wire as `agentWakeCoverage`: 1.1.29 sent a digest
+under `agentWakeCoordination` and would retry, not skip, a message missing it.
+Each version skips the other's, so a mixed pair runs uncoordinated.
+
+Everything fails open. The coordination state is in memory, inputs that
+cannot be read proceed uncoordinated, and a crash, a lost message, a peer that
 never returns or claims that cross within one delivery delay can each cost a
 duplicate run — never a lost one, which the model's `CancelCovered` and
 `NoLostEdit` check.

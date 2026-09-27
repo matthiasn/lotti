@@ -2075,7 +2075,8 @@ void main() {
             SyncMessage.agentWakeCoordination(
                   agentId: 'agent-1',
                   kind: AgentWakeCoordinationKind.claim,
-                  stateHash: 'sha256-v1:state',
+                  watermark: const {'host-a': 7},
+                  readsPrivate: false,
                   runKey: 'run-1',
                   hostId: 'host-peer',
                   sentAt: DateTime.utc(2024, 3, 15),
@@ -2092,6 +2093,32 @@ void main() {
     );
 
     test(
+      "a 1.1.29 peer's wake coordination message is skipped, not applied",
+      () async {
+        final coordinator = MockAgentWakeCoordinator();
+        processor.agentWakeCoordinator = coordinator;
+        when(() => event.text).thenReturn(
+          base64.encode(
+            utf8.encode(
+              json.encode({
+                'runtimeType': 'agentWakeCoordination',
+                'agentId': 'agent-1',
+                'kind': 'claim',
+                'stateHash': 'sha256-v1:state',
+                'runKey': 'run-1',
+                'hostId': 'host-peer',
+                'sentAt': '2024-03-15T00:00:00.000Z',
+              }),
+            ),
+          ),
+        );
+
+        expect(await processor.prepare(event: event), isNull);
+        verifyNever(() => coordinator.onMessage(any()));
+      },
+    );
+
+    test(
       'SyncAgentWakeCoordination without a coordinator is ignored',
       () async {
         // Agents off: the broadcast is runtime state nobody here consumes.
@@ -2101,7 +2128,8 @@ void main() {
             SyncMessage.agentWakeCoordination(
               agentId: 'agent-1',
               kind: AgentWakeCoordinationKind.done,
-              stateHash: 'sha256-v1:state',
+              watermark: const {'host-a': 7},
+              readsPrivate: false,
               runKey: 'run-1',
               hostId: 'host-peer',
               sentAt: DateTime.utc(2024, 3, 15),
@@ -2620,7 +2648,8 @@ void main() {
             SyncMessage.agentWakeCoordination(
               agentId: 'agent-1',
               kind: AgentWakeCoordinationKind.claim,
-              stateHash: 'sha256-v1:state',
+              watermark: const {'host-a': 7},
+              readsPrivate: false,
               runKey: 'run-1',
               hostId: 'host-self',
               sentAt: DateTime.utc(2024, 3, 15),

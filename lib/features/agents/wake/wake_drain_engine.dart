@@ -393,8 +393,9 @@ extension WakeDrainEngine on WakeOrchestrator {
           }
 
           // Cross-device coordination (specs/tla/AgentWakeCoordination.tla):
-          // a peer that completed a wake over this state covers the job; a
-          // peer running one holds it back until its claim ends or lapses.
+          // a peer that completed a wake reading everything this one would
+          // covers the job; a peer running one holds it back until its claim
+          // ends or lapses.
           final coordination = await _coordinate(job);
           if (_discardCancelledDrainOwnedJob(
             generation,
@@ -422,11 +423,11 @@ extension WakeDrainEngine on WakeOrchestrator {
               _releaseDrainLease(generation, lease);
               _holdBack(deferred, job);
               continue;
-            case WakeCoordinationProceed(:final stateHash):
+            case WakeCoordinationProceed(:final coverage):
               coordinator?.claim(
                 agentId: job.agentId,
                 runKey: job.runKey,
-                stateHash: stateHash,
+                coverage: coverage,
               );
           }
 

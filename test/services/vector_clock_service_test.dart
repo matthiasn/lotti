@@ -169,6 +169,17 @@ void main() {
       await db.close();
     }, tags: 'glados');
 
+    test('lastReservedCounter is the highest counter handed out', () async {
+      expect(await service.lastReservedCounter(), firstVectorClockCounter - 1);
+
+      final host = await service.getHost();
+      final first = await service.getNextVectorClock();
+      final second = await service.getNextVectorClock();
+
+      expect(await service.lastReservedCounter(), second.vclock[host]);
+      expect(second.vclock[host], first.vclock[host]! + 1);
+    });
+
     test('getNextVectorClock uses counter value in clock', () async {
       await service.setNextAvailableCounter(100);
       final host = await service.getHost();

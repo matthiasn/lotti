@@ -1781,11 +1781,17 @@ void main() {
     // Cross-device coordination (specs/tla/AgentWakeCoordination.tla): the
     // drain asks the coordinator before it runs a job.
     group('cross-device coordination', () {
-      const stateA = 'sha256-v1:state-a';
-      const stateB = 'sha256-v1:state-b';
+      /// The task this device's wake reads was last written as its own
+      /// counter [counter]; its watermark holds exactly that.
+      WakeInputs inputsAt(int counter) => WakeInputs(
+        clocks: {
+          'entry:task-1': VectorClock({'this-device': counter}),
+        },
+        readsPrivate: false,
+      );
 
-      late String? digest;
-      Completer<String?>? heldDigest;
+      late int counter;
+      Completer<WakeInputs?>? heldInputs;
       late List<SyncAgentWakeCoordination> sent;
       late AgentWakeCoordinator coordinator;
       late int executions;
@@ -1795,16 +1801,17 @@ void main() {
       /// broadcasts run on fake microtasks.
       void coordinated(void Function(FakeAsync async) body) {
         fakeAsync((async) {
-          digest = stateA;
-          heldDigest = null;
+          counter = 3;
+          heldInputs = null;
           sent = [];
           executions = 0;
           coordinator = AgentWakeCoordinator(
-            digestState: (_) {
-              final held = heldDigest;
-              heldDigest = null;
-              return held?.future ?? Future.value(digest);
+            readInputs: (_) {
+              final held = heldInputs;
+              heldInputs = null;
+              return held?.future ?? Future.value(inputsAt(counter));
             },
+            readWatermark: (_) async => {'this-device': counter},
             send: (message) async =>
                 sent.add(message as SyncAgentWakeCoordination),
             localHostId: () async => 'this-device',
@@ -1840,12 +1847,15 @@ void main() {
         );
       }
 
-      void peer(AgentWakeCoordinationKind kind, {String stateHash = stateA}) {
+      /// A message from a peer whose run holds this device's writes up to
+      /// counter 3.
+      void peer(AgentWakeCoordinationKind kind) {
         coordinator.onMessage(
           SyncMessage.agentWakeCoordination(
                 agentId: 'agent-1',
                 kind: kind,
-                stateHash: stateHash,
+                watermark: const {'this-device': 3},
+                readsPrivate: false,
                 runKey: 'peer-run',
                 hostId: 'peer-device',
                 sentAt: clock.now(),
@@ -1865,9 +1875,13 @@ void main() {
           drain(async);
 
           expect(executions, 1);
-          expect(sent.map((m) => (m.kind, m.stateHash, m.runKey)), [
-            (AgentWakeCoordinationKind.claim, stateA, 'run-1'),
-            (AgentWakeCoordinationKind.done, stateA, 'run-1'),
+          expect(sent.map((m) => (m.kind, m.runKey)), [
+            (AgentWakeCoordinationKind.claim, 'run-1'),
+            (AgentWakeCoordinationKind.done, 'run-1'),
+          ]);
+          expect(sent.map((m) => m.watermark), [
+            {'this-device': 3},
+            {'this-device': 3},
           ]);
         });
       });
@@ -1946,13 +1960,13 @@ void main() {
 
       test('a job over a newer state runs beside the peer', () {
         coordinated((async) {
-          digest = stateB;
+          counter = 4;
           peer(AgentWakeCoordinationKind.claim);
           enqueueAutomaticWake();
           drain(async);
 
           expect(executions, 1);
-          expect(sent.first.stateHash, stateB);
+          expect(sent.first.watermark, {'this-device': 4});
         });
       });
 
@@ -1968,14 +1982,14 @@ void main() {
         });
       });
 
-      test('a job cancelled while its digest is computed never runs', () {
+      test('a job cancelled while its inputs are read never runs', () {
         coordinated((async) {
-          final held = heldDigest = Completer<String?>();
+          final held = heldInputs = Completer<WakeInputs?>();
           enqueueAutomaticWake();
           drain(async);
 
           orchestrator.cancelPendingWakes('agent-1');
-          held.complete(stateA);
+          held.complete(inputsAt(3));
           async.flushMicrotasks();
 
           expect(executions, 0);
@@ -1985,11 +1999,11 @@ void main() {
       });
 
       test(
-        'a drain superseded while its digest is computed hands the job to '
+        'a drain superseded while its inputs are read hands the job to '
         'the next drain',
         () {
           coordinated((async) {
-            final held = heldDigest = Completer<String?>();
+            final held = heldInputs = Completer<WakeInputs?>();
             enqueueAutomaticWake();
             drain(async);
 
@@ -1999,7 +2013,7 @@ void main() {
             async.flushMicrotasks();
             expect(executions, 0);
 
-            held.complete(stateA);
+            held.complete(inputsAt(3));
             async.flushMicrotasks();
 
             expect(executions, 1);

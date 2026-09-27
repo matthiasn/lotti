@@ -487,7 +487,8 @@ SyncAgentWakeCoordination _$SyncAgentWakeCoordinationFromJson(
 ) => SyncAgentWakeCoordination(
   agentId: json['agentId'] as String,
   kind: $enumDecode(_$AgentWakeCoordinationKindEnumMap, json['kind']),
-  stateHash: json['stateHash'] as String,
+  watermark: Map<String, int>.from(json['watermark'] as Map),
+  readsPrivate: json['readsPrivate'] as bool,
   runKey: json['runKey'] as String,
   hostId: json['hostId'] as String,
   sentAt: DateTime.parse(json['sentAt'] as String),
@@ -499,7 +500,8 @@ Map<String, dynamic> _$SyncAgentWakeCoordinationToJson(
 ) => <String, dynamic>{
   'agentId': instance.agentId,
   'kind': _$AgentWakeCoordinationKindEnumMap[instance.kind]!,
-  'stateHash': instance.stateHash,
+  'watermark': instance.watermark,
+  'readsPrivate': instance.readsPrivate,
   'runKey': instance.runKey,
   'hostId': instance.hostId,
   'sentAt': instance.sentAt.toIso8601String(),

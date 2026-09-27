@@ -59,11 +59,11 @@ enum OnboardingSyncEndReason { complete, aborted }
 
 /// What a [SyncAgentWakeCoordination] broadcast announces about one wake.
 enum AgentWakeCoordinationKind {
-  /// The sender is running a wake over the state digest; repeated as a
+  /// The sender is running a wake with the carried watermark; repeated as a
   /// heartbeat while the run is live.
   claim,
 
-  /// The sender's wake over the state digest completed successfully.
+  /// The sender's wake with the carried watermark completed successfully.
   done,
 
   /// The sender's wake failed or was aborted; peers need not wait for it.
@@ -378,12 +378,17 @@ sealed class SyncMessage with _$SyncMessage {
   }) = SyncMediaRequest;
 
   /// Cross-device coordination of one agent's wakes, so that one device runs
-  /// a wake over a given state and its peers stand down (see
-  /// `AgentWakeCoordinator` and `specs/tla/AgentWakeCoordination.tla`).
+  /// a wake and the peers it covers stand down (see `AgentWakeCoordinator`
+  /// and `specs/tla/AgentWakeCoordination.tla`).
   ///
   /// Broadcast like [SyncMediaRequest]. Carries no vector clock and is not
   /// sequence-tracked: it is transient runtime coordination, not state. An
-  /// older client, which cannot deserialize it, simply skips it.
+  /// older client, which cannot deserialize it, simply skips it. The wire
+  /// name is not the factory's: 1.1.29 sent a state digest under
+  /// `agentWakeCoordination`, and a digest-less message under that name would
+  /// fail its decoder with an error the sync pipeline retries instead of
+  /// skipping. Under a name it does not know, each version skips the other's.
+  @FreezedUnionValue('agentWakeCoverage')
   const factory SyncMessage.agentWakeCoordination({
     /// The agent whose wake this describes.
     required String agentId,
@@ -391,9 +396,14 @@ sealed class SyncMessage with _$SyncMessage {
     /// Claim, done or release.
     required AgentWakeCoordinationKind kind,
 
-    /// Digest of the state the wake reads, as `ContentDigest` renders it.
-    /// Peers compare it with their own digest of the same state.
-    required String stateHash,
+    /// What the wake reads: per host UUID, the highest counter up to which
+    /// the sender held every one of that host's writes when the wake started.
+    /// A peer whose own inputs rest only on writes under it is covered.
+    required Map<String, int> watermark,
+
+    /// Whether the sender's context includes private entries. A sender that
+    /// hides them does not cover a peer that reads them.
+    required bool readsPrivate,
 
     /// The sender's run key, for correlation in logs.
     required String runKey,

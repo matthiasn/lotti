@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:json_annotation/json_annotation.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -9,9 +10,54 @@ import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+
 import 'sync_message_test_helpers.dart';
 
 void main() {
+  group('SyncMessage.agentWakeCoordination', () {
+    final wire = <String, dynamic>{
+      'runtimeType': 'agentWakeCoverage',
+      'agentId': 'agent-1',
+      'kind': 'done',
+      'watermark': {'host-a': 7, 'host-b': 0},
+      'readsPrivate': true,
+      'runKey': 'run-1',
+      'hostId': 'host-a',
+      'sentAt': '2024-03-15T10:00:00.000Z',
+    };
+
+    test('travels under its own wire name with the watermark', () {
+      final message = SyncMessage.agentWakeCoordination(
+        agentId: 'agent-1',
+        kind: AgentWakeCoordinationKind.done,
+        watermark: const {'host-a': 7, 'host-b': 0},
+        readsPrivate: true,
+        runKey: 'run-1',
+        hostId: 'host-a',
+        sentAt: DateTime.utc(2024, 3, 15, 10),
+      );
+
+      expect(jsonDecode(jsonEncode(message.toJson())), wire);
+      expect(SyncMessage.fromJson(wire), message);
+    });
+
+    test("1.1.29's digest message is an unknown type, which the sync "
+        'pipeline skips instead of retrying', () {
+      expect(
+        () => SyncMessage.fromJson({
+          'runtimeType': 'agentWakeCoordination',
+          'agentId': 'agent-1',
+          'kind': 'done',
+          'stateHash': 'sha256-v1:state',
+          'runKey': 'run-1',
+          'hostId': 'host-a',
+          'sentAt': '2024-03-15T10:00:00.000Z',
+        }),
+        throwsA(isA<CheckedFromJsonException>()),
+      );
+    });
+  });
+
   group('SyncMessage.backfillRequest', () {
     test('preserves an announced sequence head without inventing entries', () {
       final wire = <String, dynamic>{

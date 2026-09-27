@@ -834,7 +834,8 @@ void main() {
           SyncMessage.agentWakeCoordination(
                 agentId: kTestAgentId,
                 kind: AgentWakeCoordinationKind.done,
-                stateHash: 'sha256-v1:state',
+                watermark: const {'peer-device': 3},
+                readsPrivate: false,
                 runKey: 'peer-run',
                 hostId: 'peer-device',
                 sentAt: DateTime(2024, 3, 15),
@@ -1841,14 +1842,17 @@ void main() {
     late MockAgentRepository mockRepo;
     late MockJournalDb mockDb;
     late MockOutboxService mockOutbox;
+    late MockSyncDatabase mockSyncDb;
 
     setUp(() async {
       mockRepo = MockAgentRepository();
       mockDb = MockJournalDb();
       mockOutbox = MockOutboxService();
+      mockSyncDb = MockSyncDatabase();
       final vectorClock = MockVectorClockService();
       when(() => vectorClock.initialized).thenAnswer((_) async {});
       when(vectorClock.getHost).thenAnswer((_) async => 'host-self');
+      when(vectorClock.lastReservedCounter).thenAnswer((_) async => 9);
       await setUpTestGetIt(
         additionalSetup: () =>
             getIt.registerSingleton<VectorClockService>(vectorClock),
@@ -1863,9 +1867,11 @@ void main() {
           mockRepo: mockRepo,
           mockDb: mockDb,
           mockOutbox: mockOutbox,
+          mockSyncDb: mockSyncDb,
         ).read(agentWakeCoordinatorProvider).evaluate(agentId);
 
-    test('a task agent is coordinated over its active task', () async {
+    test('a task agent is coordinated over its active task, with the sync '
+        "log's watermarks and this host's last counter", () async {
       when(() => mockRepo.getEntity(kTestAgentId)).thenAnswer(
         (_) async => makeTestIdentity(),
       );
@@ -1874,27 +1880,37 @@ void main() {
           slots: const AgentSlots(activeTaskId: 'task-1'),
         ),
       );
+      final task = TestTaskFactory.create(id: 'task-1');
       when(() => mockDb.journalEntityById('task-1')).thenAnswer(
-        (_) async => TestTaskFactory.create(id: 'task-1'),
+        (_) async => task.copyWith(
+          meta: task.meta.copyWith(
+            vectorClock: const VectorClock({'host-self': 8, 'peer': 4}),
+          ),
+        ),
       );
       when(
-        () => mockDb.getLinkedEntities('task-1'),
+        () => mockDb.linksForEntryIdsBidirectionalIncludingRemoved(any()),
       ).thenAnswer((_) async => []);
       when(
-        () => mockDb.getLinkedToEntities('task-1'),
-      ).thenAnswer((_) async => []);
+        () => mockDb.journalEntityMapForIdsIncludingDeleted(any()),
+      ).thenAnswer((_) async => {});
+      when(() => mockDb.getConfigFlag('private')).thenAnswer((_) async => true);
       when(
-        () => mockDb.getJournalEntitiesForIdsUnordered(any()),
-      ).thenAnswer((_) async => []);
+        () => mockSyncDb.contiguousWatermarks({'host-self', 'peer'}),
+      ).thenAnswer((_) async => {'peer': 4, 'host-self': 2});
 
       final decision = await evaluate(kTestAgentId);
 
+      // This host's own entry is replaced by its last reserved counter.
       expect(
         decision,
         isA<WakeCoordinationProceed>().having(
-          (d) => d.stateHash,
-          'stateHash',
-          startsWith('sha256-v1:'),
+          (d) => d.coverage,
+          'coverage',
+          const WakeCoverage(
+            watermark: {'peer': 4, 'host-self': 9},
+            readsPrivate: true,
+          ),
         ),
       );
     });
@@ -1913,8 +1929,8 @@ void main() {
       expect(
         decision,
         isA<WakeCoordinationProceed>().having(
-          (d) => d.stateHash,
-          'stateHash',
+          (d) => d.coverage,
+          'coverage',
           isNull,
         ),
       );
@@ -1934,8 +1950,8 @@ void main() {
       expect(
         decision,
         isA<WakeCoordinationProceed>().having(
-          (d) => d.stateHash,
-          'stateHash',
+          (d) => d.coverage,
+          'coverage',
           isNull,
         ),
       );
@@ -1947,13 +1963,17 @@ void main() {
         mockRepo: mockRepo,
         mockDb: mockDb,
         mockOutbox: mockOutbox,
+        mockSyncDb: mockSyncDb,
       ).read(agentWakeCoordinatorProvider);
 
       // ignore: cascade_invocations — each step awaits the broadcast.
       coordinator.claim(
         agentId: kTestAgentId,
         runKey: 'run-1',
-        stateHash: 'sha256-v1:state',
+        coverage: const WakeCoverage(
+          watermark: {'host-self': 9},
+          readsPrivate: false,
+        ),
       );
       await pumpEventQueue();
       coordinator.settle('run-1');
