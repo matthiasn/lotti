@@ -4,6 +4,59 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.30]
+
+### Changed
+
+- **Duration pickers now carry the minutes into the hours too.** When you set a
+  task's estimate or how long a check-in lasted, scrolling the minutes back
+  past :00 now slides the hours down with them (1:05 becomes 0:59), and
+  scrolling forward past :59 moves them up. The time pickers already worked
+  this way. At zero and at 23:59 the hours stay put instead of jumping to the
+  other end.
+
+### Fixed
+
+- **An edit saved while another device's change was syncing in could vanish
+  for good.** If an entry changed on another device while you had it open,
+  your save was held back as a sync conflict for you to decide. When a third
+  version arrived before you had resolved it, that conflict was replaced and
+  your edit was lost on every device, with no warning. Each version now keeps
+  its own conflict. An entry can appear more than once under Settings →
+  Advanced → Conflicts, and you decide one version at a time.
+- **An entry you deleted could survive, or come back, after you purged deleted
+  items.** Purge deleted items (Settings → Advanced → Maintenance) removed every
+  trace of a deleted entry. A device that had not yet received the deletion
+  then kept the entry for good, and an older copy arriving from another device
+  could bring it back on this one. A purge now keeps a small record of each
+  deletion. It still removes the entry's content and files, and the deletion
+  now reaches every device.
+- **An accepted task suggestion no longer undoes you changing the field
+  back.** Say you accepted the agent's new title on one device, didn't like
+  it and put the old title back, and the same suggestion was then accepted
+  on another device that hadn't caught up yet. The agent's title came back,
+  because the field looked untouched again. The task now remembers which
+  suggestions have already changed it, so each one changes a field at most
+  once. The same goes for status, priority, estimate, due date and
+  language. Accepting a suggestion again after reopening it no longer
+  re-applies it either. To get its value back, edit the field or accept a
+  new suggestion. Both devices need this version.
+- **Working on a task from two devices now really runs its agent once.** In
+  1.1.29 a device only stood down when its task was exactly as the other
+  device's had been, which in practice it never was: change a task on the
+  desktop, check off one of its items on the phone before the desktop's
+  update starts, and both devices still ran the agent. A device now stands
+  down whenever the other device's update already included everything it has.
+  An edit that reaches the other device only after its update has started is
+  still processed by its own update. Both devices need this version; with an
+  older one on the other side, each runs on its own as before.
+- **Catch-up after a sync gap could skip a change that arrived in the same
+  millisecond as another.** When several synced changes carried the same
+  server timestamp and some of them were missed live, catch-up could start or
+  stop inside that millisecond and never fetch the rest. Only the periodic
+  backfill between devices would recover them, later. Catch-up now covers the
+  whole boundary millisecond.
+
 ## [1.1.29]
 
 ### Changed
