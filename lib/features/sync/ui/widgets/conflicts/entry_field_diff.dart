@@ -358,8 +358,8 @@ const Set<String> _coveredPaths = <String>{
 };
 
 /// A task's paths the registry reports individually, or the resolution
-/// joins from both sides whatever the user picks (the status history and
-/// the applied agent changes, `conflict_merge.dart`). Stripped only when both
+/// joins from both sides whatever the user picks (the status history, the
+/// applied agent changes and the checklist list, `conflict_merge.dart`). Stripped only when both
 /// sides are tasks: an event's or a project's `data.status` stays unmodelled.
 const Set<String> _taskCoveredPaths = <String>{
   'data.status',
@@ -368,6 +368,9 @@ const Set<String> _taskCoveredPaths = <String>{
   'data.estimate',
   'data.due',
   'data.appliedChangeEffects',
+  // Joined too (ADR 0105): the kept side's order, with every checklist the
+  // other side lists appended.
+  'data.checklistIds',
 };
 
 /// True when the two entities differ in a field the registry does not model,

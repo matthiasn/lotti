@@ -342,6 +342,16 @@ void main() {
       expect(diff.fields, isEmpty);
     });
 
+    test('a difference only in the checklist list, which the resolution '
+        'joins, is not reported', () {
+      final diff = computeEntryDiff(
+        taskOf(checklistIds: ['c1']),
+        taskOf(checklistIds: ['c1', 'c2']),
+      );
+
+      expect(diff.shape, ConflictShape.identical);
+    });
+
     test("an event's status is not a task field: it stays in other", () {
       JournalEntity event(EventStatus status) => JournalEvent(
         meta: metaOf(id: 'ev'),
