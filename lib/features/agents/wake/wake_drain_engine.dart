@@ -264,10 +264,13 @@ extension WakeDrainEngine on WakeOrchestrator {
               // The throttle is per-agent but the drain policy is per-job:
               // an immediate-drain job dispatches past a deadline that a
               // deferred job for the SAME agent legitimately armed.
+              // A peer's run may cover a job whose countdown still runs:
+              // it is checked, and held back again unless covered.
               return suppressed ||
                   preRegistered ||
                   candidate.drainImmediately ||
-                  !_isThrottled(candidate.agentId);
+                  !_isThrottled(candidate.agentId) ||
+                  _peerCoverageChecks.contains(candidate.agentId);
             },
           );
           if (job == null) break;
@@ -354,6 +357,51 @@ extension WakeDrainEngine on WakeOrchestrator {
             // it up after the throttle window expires. Immediate-drain jobs
             // ignore the agent-level deadline (see the candidate filter).
             if (!job.drainImmediately && _isThrottled(job.agentId)) {
+              // A peer completed a run covering this job while its countdown
+              // runs: drop it now, and the countdown with it. The peer's run
+              // read everything this device holds, so its report is fresh
+              // here as of the check.
+              if (_peerCoverageChecks.remove(job.agentId)) {
+                final coordinatedAt = clock.now();
+                final coordination = await _coordinate(job);
+                if (_discardCancelledDrainOwnedJob(
+                  generation,
+                  job,
+                  lease: lease,
+                )) {
+                  if (_drainGeneration != generation) return;
+                  continue;
+                }
+                if (_drainGeneration != generation) {
+                  _handOffSupersededJob(generation, job, lease: lease);
+                  return;
+                }
+                if (coordination is WakeCoordinationCancel) {
+                  await _dropDrainOwnedJob(
+                    job,
+                    reason: 'wake covered by a peer device',
+                    emitUnpersistedCompletion: false,
+                  );
+                  _releaseDrainLease(generation, lease);
+                  // Awaited before the countdown is cleared: both rewrite the
+                  // agent state, and neither may write back the other's old
+                  // value.
+                  await _markReportFresh(
+                    job.agentId,
+                    refreshStartedAt: coordinatedAt,
+                  );
+                  if (!queue.hasQueuedJobForAgent(job.agentId) &&
+                      !deferred.any((held) => held.agentId == job.agentId)) {
+                    clearThrottle(job.agentId);
+                  }
+                  _log(
+                    'countdown ended: a peer covered '
+                    '${DomainLogger.sanitizeId(job.agentId)}',
+                    subDomain: 'drain',
+                  );
+                  continue;
+                }
+              }
               _log(
                 'drain re-check: throttled=true '
                 'for ${DomainLogger.sanitizeId(job.agentId)}',
@@ -396,6 +444,7 @@ extension WakeDrainEngine on WakeOrchestrator {
           // a peer that completed a wake reading everything this one would
           // covers the job; a peer running one holds it back until its claim
           // ends or lapses.
+          final coordinatedAt = clock.now();
           final coordination = await _coordinate(job);
           if (_discardCancelledDrainOwnedJob(
             generation,
@@ -417,6 +466,10 @@ extension WakeDrainEngine on WakeOrchestrator {
                 emitUnpersistedCompletion: false,
               );
               _releaseDrainLease(generation, lease);
+              await _markReportFresh(
+                job.agentId,
+                refreshStartedAt: coordinatedAt,
+              );
               continue;
             case WakeCoordinationDefer():
               _forgetDrainOwnedJob(job);

@@ -1816,7 +1816,7 @@ void main() {
             send: (message) async =>
                 sent.add(message as SyncAgentWakeCoordination),
             localHostId: () async => 'this-device',
-          )..onPeerStateChanged = (_) => unawaited(orchestrator.processNext());
+          )..onPeerStateChanged = orchestrator.onPeerWakeStateChanged;
           orchestrator
             ..coordinator = coordinator
             ..wakeExecutor = (_, _, _, _) async {
@@ -1833,10 +1833,11 @@ void main() {
 
       void enqueueAutomaticWake({
         WakeInitiator initiator = WakeInitiator.automation,
+        String runKey = 'run-1',
       }) {
         queue.enqueue(
           WakeJob(
-            runKey: 'run-1',
+            runKey: runKey,
             agentId: 'agent-1',
             reason: initiator == WakeInitiator.user
                 ? WakeReason.reanalysis.name
@@ -1870,6 +1871,72 @@ void main() {
         unawaited(orchestrator.processNext());
         async.flushMicrotasks();
       }
+
+      /// The agent's persisted state, as the pending-wakes row and the
+      /// report's outdated label read it: stale since a local edit, counting
+      /// down to its wake.
+      late AgentStateEntity state;
+
+      /// A queued automatic wake whose throttle countdown is running, over a
+      /// report the edit made outdated.
+      void countingDown(FakeAsync async) {
+        final deadline = clock.now().add(WakeOrchestrator.throttleWindow);
+        state = makeTestState(
+          agentId: 'agent-1',
+          nextWakeAt: deadline,
+        ).copyWith(reportStaleAt: clock.now());
+        when(
+          () => mockRepository.getAgentState('agent-1'),
+        ).thenAnswer((_) async => state);
+        when(() => mockRepository.upsertEntity(any())).thenAnswer((
+          invocation,
+        ) async {
+          final entity = invocation.positionalArguments.single;
+          if (entity is AgentStateEntity) state = entity;
+        });
+        orchestrator.setThrottleDeadline('agent-1', deadline);
+        enqueueAutomaticWake();
+        drain(async);
+        expect(queue.length, 1, reason: 'held back by the countdown');
+      }
+
+      test("a peer's covering done ends the countdown and marks the report "
+          'fresh at once', () {
+        coordinated((async) {
+          countingDown(async);
+          async.elapse(const Duration(seconds: 30));
+          final coveredAt = clock.now();
+
+          peer(AgentWakeCoordinationKind.done);
+          async.flushMicrotasks();
+
+          expect(queue.isEmpty, isTrue);
+          expect(state.nextWakeAt, isNull, reason: 'no countdown row');
+          expect(state.reportFreshAt, coveredAt, reason: 'not outdated');
+
+          // Nothing fires later either: the wake is gone, not postponed.
+          async.elapse(WakeOrchestrator.throttleWindow);
+          drain(async);
+          expect(executions, 0);
+        });
+      });
+
+      test('a done that does not cover leaves the countdown running', () {
+        coordinated((async) {
+          counter = 4;
+          countingDown(async);
+
+          peer(AgentWakeCoordinationKind.done);
+          async.flushMicrotasks();
+
+          expect(queue.length, 1);
+          expect(executions, 0);
+
+          async.elapse(WakeOrchestrator.throttleWindow);
+          drain(async);
+          expect(executions, 1);
+        });
+      });
 
       test('a run claims its state and announces completion', () {
         coordinated((async) {
@@ -1972,15 +2039,21 @@ void main() {
         });
       });
 
-      test('a job over a state a peer already completed never runs', () {
+      test('a job over a state a peer already completed never runs, and its '
+          'report is fresh', () {
         coordinated((async) {
+          countingDown(async);
           peer(AgentWakeCoordinationKind.done);
-          enqueueAutomaticWake();
+          async.flushMicrotasks();
+          // The same, reached when the countdown runs out rather than early.
+          state = state.copyWith(reportFreshAt: null);
+          enqueueAutomaticWake(runKey: 'run-2');
           drain(async);
 
           expect(executions, 0);
           expect(queue.length, 0);
           expect(sent, isEmpty);
+          expect(state.reportFreshAt, clock.now());
         });
       });
 

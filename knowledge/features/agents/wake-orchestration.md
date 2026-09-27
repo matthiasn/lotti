@@ -592,7 +592,14 @@ run uncoordinated.
 
 The drain asks the coordinator after the content gate. **Cancel** when a peer
 completed a run covering this device: the job is dropped and its intent
-settled, since the peer's run covers its triggers. **Defer** while a live
+settled, since the peer's run covers its triggers, and the report is marked
+fresh as of the check — the peer's run read everything this device holds.
+The drain does not wait for the countdown to find out: every peer event that
+can free a job (`AgentWakeCoordinator.onPeerStateChanged`, wired to
+`WakeOrchestrator.onPeerWakeStateChanged`) has the next drain check that
+agent's queued wake even while its throttle runs. A covered wake is dropped
+there, its countdown cleared and its outdated label with it; any other stays
+held back by the throttle. **Defer** while a live
 peer claim covers it: the job is held back and the coordinator asks for a
 drain when that claim ends, lapses, or is replaced by a claim with another
 watermark — every event that can free the job. **Proceed** otherwise — a write
