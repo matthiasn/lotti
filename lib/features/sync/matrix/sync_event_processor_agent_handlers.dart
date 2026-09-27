@@ -204,12 +204,14 @@ extension _AgentHandlers on SyncEventProcessor {
               ),
       );
       if (outcome == null) {
-        await _discardReceivedAgentJson(msg.jsonPath, kind: 'agentEntity');
         _trace(
           'apply.agentEntity.refusedDeletedAgent id=${resolvedEntity.id}',
           subDomain: 'processor.apply',
         );
+        // Receipt first: if it fails, the queue retries the event, which
+        // must still find its JSON.
         await _recordReceivedAgentEntity(msg: msg, entity: resolvedEntity);
+        await _discardReceivedAgentJson(msg.jsonPath, kind: 'agentEntity');
         return;
       }
       final entityToApply = outcome.written;
@@ -460,12 +462,13 @@ extension _AgentHandlers on SyncEventProcessor {
               ),
       );
       if (applied == null) {
-        await _discardReceivedAgentJson(msg.jsonPath, kind: 'agentLink');
         _trace(
           'apply.agentLink.refusedDeletedAgent id=${resolvedLink.id}',
           subDomain: 'processor.apply',
         );
+        // Receipt first, as for an entity.
         await _recordReceivedAgentLink(msg: msg, link: resolvedLink);
+        await _discardReceivedAgentJson(msg.jsonPath, kind: 'agentLink');
         return;
       }
       if (!applied) {

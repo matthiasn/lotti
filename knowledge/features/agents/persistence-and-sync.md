@@ -143,10 +143,12 @@ sources:
 
 # One database, two shapes
 
-Agent persistence lives in `agent.sqlite` (schema version 22). Syncable domain
+Agent persistence lives in `agent.sqlite` (schema version 23). Syncable domain
 objects are modelled as **`AgentDomainEntity` variants** and **`AgentLink`
 variants**; wake-run history lives in a dedicated `wake_run_log` table outside
-that model.
+that model, and `deleted_agents` records the agents this device deleted, so
+sync refuses late writes about them (see
+[a deleted agent](#hard-delete-no-tombstone--and-no-inbound-guard) below).
 
 ## Entities
 
