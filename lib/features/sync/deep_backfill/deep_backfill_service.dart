@@ -184,6 +184,10 @@ class DeepBackfillService {
               for (final row in rows)
                 if (row.clock == null) row.id,
             ],
+            unclockedMediaSizes: {
+              for (final row in rows)
+                if (row.clock == null) row.id: ?media[row.id],
+            },
           ),
         );
         batches++;
@@ -255,6 +259,7 @@ class DeepBackfillService {
       outstanding: outstanding,
       advertisedMedia: {
         for (final record in inventory.records) record.id: ?record.mediaSize,
+        ...inventory.unclockedMediaSizes,
       },
       localMedia: localMedia,
     );

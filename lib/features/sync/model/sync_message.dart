@@ -405,6 +405,12 @@ sealed class SyncMessage with _$SyncMessage {
     /// range as "the advertiser has no such row" and push them back on every
     /// round. Absent from peers on 1.1.31, which ignore it.
     @Default(<String>[]) List<String> unclocked,
+
+    /// The file size of each id in `unclocked` that is a live image or
+    /// audio entry (0: the advertiser holds no file). Files are compared
+    /// whatever the clocks say, so a legacy row's file is repaired like any
+    /// other. Absent from peers on 1.1.33 or older.
+    @Default(<String, int>{}) Map<String, int> unclockedMediaSizes,
     String? jsonPath,
     String? attachmentEventId,
   }) = SyncDeepBackfillInventory;

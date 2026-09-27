@@ -484,7 +484,7 @@ void main() {
           );
         }
       }
-    });
+    }, tags: 'glados');
 
     glados.Glados(
       glados.any.recordScenario,

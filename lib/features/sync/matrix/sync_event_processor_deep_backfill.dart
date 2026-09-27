@@ -69,6 +69,13 @@ extension _DeepBackfillResolution on SyncEventProcessor {
             for (final id in (document['unclocked'] as List<dynamic>? ?? []))
               id as String,
           ],
+          unclockedMediaSizes: {
+            for (final MapEntry(:key, :value)
+                in (document['unclockedMediaSizes'] as Map<String, dynamic>? ??
+                        const <String, dynamic>{})
+                    .entries)
+              key: value as int,
+          },
           jsonPath: null,
           attachmentEventId: null,
         ),

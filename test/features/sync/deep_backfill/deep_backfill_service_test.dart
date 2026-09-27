@@ -295,14 +295,20 @@ void main() {
             rows: {
               'a': null,
               'b': const VectorClock({'x': 1}),
+              'c': null,
             },
+            media: {'a': 5, 'b': 7},
           ),
         ],
+        batchSize: 10,
       ).runRound();
 
       final batch = enqueued().single;
       expect(batch.records.map((r) => r.id), ['b']);
-      expect(batch.unclocked, ['a']);
+      expect(batch.unclocked, ['a', 'c']);
+      // A legacy row's file is compared like any other: its size travels
+      // next to its name. 'c' carries no media.
+      expect(batch.unclockedMediaSizes, {'a': 5});
     });
 
     test("needs this device's host id", () async {
@@ -642,6 +648,30 @@ void main() {
       await svc.handleInventory(batch);
       expect(await outstandingRows(), isEmpty);
       verifyNever(() => outbox.enqueueMessageOrThrow(any()));
+    });
+
+    test('asks for the file of a clockless record both devices hold', () async {
+      final store = _FakeStore(
+        _journal,
+        rows: {'old': null},
+        media: {'old': 3},
+      );
+
+      await service(stores: [store]).handleInventory(
+        const SyncMessage.deepBackfillInventory(
+              roundId: 'peer-round',
+              hostId: _peer,
+              payloadType: _journal,
+              batch: 0,
+              unclocked: ['old'],
+              unclockedMediaSizes: {'old': 10},
+            )
+            as SyncDeepBackfillInventory,
+      );
+
+      expect(requestsSent().single.records, [
+        const DeepBackfillRequestRecord(id: 'old', media: true),
+      ]);
     });
 
     test('compares no files with a peer that lists no sizes', () async {

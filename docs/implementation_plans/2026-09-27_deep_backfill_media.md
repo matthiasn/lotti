@@ -27,7 +27,8 @@ notices a truncated file or an entry nobody opens.
 
 1. **Inventory.** Each record of a batch carries `mediaSize`: the length of
    the advertiser's file, 0 when it has none, for live image and audio entries
-   only. A deletion makes no claim on its file. The field is left out of the
+   only. A deletion makes no claim on its file. A clockless legacy row, named
+   only in `unclocked`, has its size in `unclockedMediaSizes`. The field is left out of the
    JSON when null, since most records have no media.
 2. **Diff.** The recipient reads its own sizes for the batch's range and
    compares them with the advertised ones, whatever the clocks say.

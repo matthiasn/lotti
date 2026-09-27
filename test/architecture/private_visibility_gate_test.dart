@@ -86,6 +86,9 @@ const _ungatedDeclarations = <String, String>{
       'outbound sync payloads, tombstones included',
   'lib/database/database_journal_queries.dart:streamEntriesWithVectorClock':
       'sequence-log population walks every row for sync',
+  'lib/features/sync/deep_backfill/deep_backfill_stores.dart:mediaSizes':
+      'a deep-backfill round sizes the file of every image and audio entry '
+      'it advertises, private ones included; only lengths leave the device',
   'lib/database/database_journal_queries.dart:allNonDeletedJournalEntityIds':
       'ids only, for the demo reseed guard',
   'lib/database/database_entity_ops.dart:_unpurgedDeletedChunk':

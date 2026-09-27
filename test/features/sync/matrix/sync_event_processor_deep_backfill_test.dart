@@ -85,6 +85,7 @@ void main() {
         const DeepBackfillRecord(id: 'b', vectorClock: _clock).toJson(),
       ],
       'unclocked': ['legacy'],
+      'unclockedMediaSizes': {'legacy': 42},
     });
 
     final resolved =
@@ -95,6 +96,7 @@ void main() {
     expect(resolved.records.single.vectorClock, _clock);
     expect(resolved.conflicts.single.id, 'b');
     expect(resolved.unclocked, ['legacy']);
+    expect(resolved.unclockedMediaSizes, {'legacy': 42});
     expect(resolved.attachmentEventId, isNull);
     expect(resolved.jsonPath, isNull);
     expect(resolved.hostId, 'host-a');

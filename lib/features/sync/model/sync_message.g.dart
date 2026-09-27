@@ -488,6 +488,11 @@ SyncDeepBackfillInventory _$SyncDeepBackfillInventoryFromJson(
   unclocked:
       (json['unclocked'] as List<dynamic>?)?.map((e) => e as String).toList() ??
       const <String>[],
+  unclockedMediaSizes:
+      (json['unclockedMediaSizes'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, (e as num).toInt()),
+      ) ??
+      const <String, int>{},
   jsonPath: json['jsonPath'] as String?,
   attachmentEventId: json['attachmentEventId'] as String?,
   $type: json['runtimeType'] as String?,
@@ -505,6 +510,7 @@ Map<String, dynamic> _$SyncDeepBackfillInventoryToJson(
   'records': instance.records.map((e) => e.toJson()).toList(),
   'conflicts': instance.conflicts.map((e) => e.toJson()).toList(),
   'unclocked': instance.unclocked,
+  'unclockedMediaSizes': instance.unclockedMediaSizes,
   'jsonPath': instance.jsonPath,
   'attachmentEventId': instance.attachmentEventId,
   'runtimeType': instance.$type,

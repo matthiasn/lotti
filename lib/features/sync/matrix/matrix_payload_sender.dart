@@ -715,11 +715,13 @@ class MatrixPayloadSender {
         :final records,
         :final conflicts,
         :final unclocked,
+        :final unclockedMediaSizes,
       ):
         document = {
           'records': [for (final r in records) r.toJson()],
           'conflicts': [for (final c in conflicts) c.toJson()],
           'unclocked': unclocked,
+          'unclockedMediaSizes': unclockedMediaSizes,
         };
         detail =
             'records=${records.length} conflicts=${conflicts.length} '
@@ -748,6 +750,7 @@ class MatrixPayloadSender {
         records: const [],
         conflicts: const [],
         unclocked: const [],
+        unclockedMediaSizes: const {},
       ),
       final SyncDeepBackfillRequest m => m.copyWith(
         jsonPath: relativePath,

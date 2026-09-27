@@ -812,8 +812,10 @@ the file's size, as model-checked in
 - **The inventory lists each file's size.** `DeepBackfillStore.mediaSizes`
   reads, for every live image and audio entry in a batch's range, the length of
   its file — 0 when it is missing — and `runRound` sets it as the record's
-  `DeepBackfillRecord.mediaSize`. A deletion makes no claim on its file and is
-  left out. The path is resolved by `entryMedia`
+  `DeepBackfillRecord.mediaSize`. A row without a clock is only named in
+  `unclocked`, so its size travels in `unclockedMediaSizes`: files are
+  compared whatever the clocks say, legacy rows included. A deletion makes no
+  claim on its file and is left out. The path is resolved by `entryMedia`
   (`lib/features/sync/media/entry_media.dart`), the one resolution the enqueue,
   the upload and the media request answer share, so the size advertised is the
   size of the file an answer would carry.
