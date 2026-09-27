@@ -49,10 +49,12 @@ import 'package:matrix/matrix.dart';
 /// indefinitely. Requests are the honest unit for the network
 /// bound and events for the work bound.
 ///
-/// Only events that sort strictly after the anchor under the
-/// `(timestamp, eventId)` ordering are emitted, so the anchor itself
-/// and any already-emitted overlap are filtered while same-millisecond
-/// events retain deterministic ordering.
+/// An event is emitted when it is newer than everything emitted so far
+/// (the anchor included), or when it shares the newest timestamp and has
+/// not been emitted yet. Event ids say nothing about how a millisecond's
+/// events are ordered in the timeline, so a same-millisecond event is
+/// emitted whatever its id; re-sending one the queue already holds is
+/// dropped by its `event_id` constraint (`_ForwardFrontier`, ADR 0093).
 ///
 /// Returns `BootstrapStopReason.serverExhausted` when the walk
 /// reaches the tip, `boundaryReached` when a budget trips,
@@ -129,6 +131,7 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
     );
   }
   final anchorTs = TimelineEventOrdering.timestamp(anchor);
+  final frontier = _ForwardFrontier(anchor);
 
   // What the context actually returned. A forward walk that emits nothing is
   // indistinguishable from a healthy "already at the tip" unless we can see
@@ -139,20 +142,20 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
   // What the context actually returned, so an empty walk can be told apart
   // from a healthy one.
   //
-  // `strictlyAfter` is the load-bearing number, not `newestTs`. Ordering here
-  // is by `(timestamp, eventId)`, so a burst can put later events on the same
-  // millisecond as the anchor — and then `newestTs == anchorTs` even though
-  // events genuinely sort after it. Reporting timestamps alone would show the
-  // "caught up" signature for precisely the missing-forward-window case this
-  // exists to identify. Counting through the same predicate the page filter
-  // uses cannot drift from it.
+  // `unseen` is the load-bearing number, not `newestTs`. A burst can put
+  // later events on the same millisecond as the anchor — and then
+  // `newestTs == anchorTs` even though there are events the walk has not
+  // emitted. Reporting timestamps alone would show the "caught up" signature
+  // for precisely the missing-forward-window case this exists to identify.
+  // Counting through the same predicate the page filter uses cannot drift
+  // from it.
   //
   // Unguarded on purpose: Dart builds the message eagerly, but the list is one
   // `/context` window (`Room.defaultHistoryCount` is 30) and it follows the
   // network round trip that produced it, so the cost is noise.
   num? newestTs;
   String? newestEventId;
-  var strictlyAfter = 0;
+  var unseen = 0;
   for (final event in timeline.events) {
     final ts = TimelineEventOrdering.timestamp(event);
     if (newestTs == null ||
@@ -163,12 +166,8 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
       newestTs = ts;
       newestEventId = event.eventId;
     }
-    if (CatchUpStrategy.isStrictlyAfter(
-      event,
-      anchorTs: anchorTs,
-      anchorEventId: anchorEventId,
-    )) {
-      strictlyAfter++;
+    if (frontier.isUnseen(event)) {
+      unseen++;
     }
   }
   logging.log(
@@ -176,7 +175,7 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
     'bootstrap.forward.context '
     'anchor=$anchorEventId '
     'events=${timeline.events.length} '
-    'strictlyAfter=$strictlyAfter '
+    'unseen=$unseen '
     'canRequestFuture=${timeline.canRequestFuture} '
     'anchorTs=$anchorTs '
     'newestTs=$newestTs newestEventId=$newestEventId',
@@ -187,11 +186,10 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
   var totalEventsSoFar = 0;
   // Every `/messages` and `/context` call the walk makes, starting at 1 for
   // the anchor context fetch above. Distinct from `pageIndex`, which only
-  // counts pages that survived the strictly-after filter and reached the sink
+  // counts pages that survived the frontier filter and reached the sink
   // — a request whose events all filter out costs the same network round trip
   // but no page.
   var roundTrips = 1;
-  num? newestTsSoFar;
   String? newestEventIdSoFar;
   var contextAnchorEventId = anchorEventId;
   var stopReason = BootstrapStopReason.serverExhausted;
@@ -217,30 +215,13 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
         timeline.events,
       );
 
-      // Build the page: events strictly newer than the anchor AND
-      // strictly newer than what we've already emitted. On the
-      // first iteration `newestTsSoFar` is null so the filter only
-      // strips the anchor itself and ties; on subsequent
-      // iterations the filter strips everything we already sent.
-      final page = <Event>[];
-      for (final event in sorted) {
-        if (!CatchUpStrategy.isStrictlyAfter(
-          event,
-          anchorTs: anchorTs,
-          anchorEventId: anchorEventId,
-        )) {
-          continue;
-        }
-        if (newestTsSoFar != null &&
-            !CatchUpStrategy.isStrictlyAfter(
-              event,
-              anchorTs: newestTsSoFar,
-              anchorEventId: newestEventIdSoFar,
-            )) {
-          continue;
-        }
-        page.add(event);
-      }
+      // Build the page: events past the frontier. On the first iteration
+      // the frontier is the anchor, so the filter strips the anchor and
+      // anything older; after that it strips everything already sent.
+      final page = <Event>[
+        for (final event in sorted)
+          if (frontier.isUnseen(event)) event,
+      ];
 
       // The budget bounds fetching, but a budget-capped context response
       // without a forward token gets one final, un-emitted context
@@ -262,21 +243,15 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
 
       if (page.isNotEmpty) {
         totalEventsSoFar += page.length;
-        final lastTs = TimelineEventOrdering.timestamp(page.last);
-        if (newestTsSoFar == null || lastTs > newestTsSoFar) {
-          newestTsSoFar = lastTs;
-          newestEventIdSoFar = page.last.eventId;
-        } else if (lastTs == newestTsSoFar) {
-          final lastId = page.last.eventId;
-          if (newestEventIdSoFar == null ||
-              lastId.compareTo(newestEventIdSoFar) > 0) {
-            newestEventIdSoFar = lastId;
-          }
-        }
+        page.forEach(frontier.add);
+        // A re-anchoring context lookup starts from here. Any event of the
+        // newest millisecond will do: the frontier, not the anchor, decides
+        // what the next window still has to emit.
+        newestEventIdSoFar = page.last.eventId;
         final info = BootstrapPageInfo(
           pageIndex: pageIndex,
           totalEventsSoFar: totalEventsSoFar,
-          oldestTimestampSoFar: newestTsSoFar,
+          oldestTimestampSoFar: frontier.timestamp,
           // When the context contains a productive final window but
           // omits its forward token, we probe a new context from its
           // newest event before declaring the server exhausted.
@@ -297,8 +272,8 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
         // homeservers can return a capped `events_after` window
         // without one, which used to strand the tail after that first
         // window. Re-anchor on the newest event and make one more
-        // server-context request. A context with no strictly newer
-        // events proves that we have reached the tip.
+        // server-context request. A context with no unseen events
+        // proves that we have reached the tip.
         // A terminal context whose anchor already matches the newest
         // emitted event is our confirmation that the server has no
         // more events. Otherwise the immediately preceding
@@ -370,4 +345,42 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
     totalEvents: totalEventsSoFar,
     stopReason: stopReason,
   );
+}
+
+/// How far a forward walk has emitted: the newest timestamp, and every event
+/// id emitted at it. It starts at the anchor.
+///
+/// Matrix orders a millisecond's events by timeline position, which event ids
+/// do not reflect, so the frontier remembers the ids of its newest
+/// millisecond instead of comparing them. Older ids are dropped as the
+/// timestamp advances, which keeps the set to one millisecond's events.
+final class _ForwardFrontier {
+  _ForwardFrontier(Event anchor)
+    : timestamp = TimelineEventOrdering.timestamp(anchor),
+      _emittedAtTimestamp = {anchor.eventId};
+
+  /// The newest timestamp emitted, or the anchor's before the first page.
+  num timestamp;
+  final Set<String> _emittedAtTimestamp;
+
+  /// Whether [event] is past the frontier: newer, or in its millisecond and
+  /// not emitted yet.
+  bool isUnseen(Event event) {
+    final ts = TimelineEventOrdering.timestamp(event);
+    return ts > timestamp ||
+        (ts == timestamp && !_emittedAtTimestamp.contains(event.eventId));
+  }
+
+  /// Records [event] as emitted.
+  void add(Event event) {
+    final ts = TimelineEventOrdering.timestamp(event);
+    if (ts > timestamp) {
+      timestamp = ts;
+      _emittedAtTimestamp
+        ..clear()
+        ..add(event.eventId);
+    } else if (ts == timestamp) {
+      _emittedAtTimestamp.add(event.eventId);
+    }
+  }
 }

@@ -57,6 +57,22 @@ configuration):
   fetched again, and the `event_id` UNIQUE constraint drops what the queue
   already holds.
 
+A fourth rule brings the code in line with the model, which has no event
+ids. **The forward walk never compares event ids.**
+`collectForwardForBootstrapImpl` ordered a millisecond by id: it dropped an
+event after the anchor in its millisecond whose id sorted before the anchor's,
+and, across pages, a later event whose id sorted before the newest one already
+emitted. It now keeps a frontier, made of the newest timestamp emitted (at
+first the anchor's) and the ids emitted at it. An event is emitted when it is
+newer, or when it shares that timestamp and is not among those ids. The
+model's forward walk, "everything after the anchor in the timeline", is
+therefore a subset of what the app fetches. The regressions are unit tests of
+the strategy.
+
+The marker treats a row as "no marker" only when it has neither a timestamp
+nor an event id. Before, a zero timestamp alone counted, so a second event at
+timestamp zero could still replace an anchor stored at zero.
+
 The claim stays one millisecond above the marker. A claim at the marker's own
 millisecond would make every claimed catch-up walk backward, because
 `anchorIsSafe` needs the floor strictly above the marker, so it would give up
@@ -75,7 +91,7 @@ No schema change is needed.
   again, and a backward walk fetches one millisecond more than before. The
   queue drops both as duplicates.
 - After an interrupted forward walk whose rows applied up to its cursor's
-  millisecond, the retry walks backward to that millisecond instead of
+  millisecond, the retry walks backward to just below that millisecond instead of
   forward from the anchor. The retry still fetches only the part the walk had
   not reached.
 - The model's backward walk stops at the first event below its bound. A real

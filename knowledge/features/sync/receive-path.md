@@ -328,10 +328,16 @@ applies past it, the next walk goes backward to the claim.
   and otherwise walks backward only over the remainder.
 
 **Equal milliseconds.** Several events can share an `originServerTs`, and
-event ids say nothing about their timeline order. Three rules keep an
+event ids say nothing about their timeline order. Four rules keep an
 uncaptured event in the boundary millisecond inside the next walk
 ([ADR 0093](../../../docs/adr/0093-equal-milliseconds-at-the-catch-up-boundary.md)):
 
+- The forward walk never compares event ids. It emits an event that is newer
+  than everything it has emitted, the anchor included, or that shares the
+  newest timestamp and has not been emitted yet; it remembers only the ids
+  of that newest millisecond. A walk that ordered a millisecond by id dropped
+  an event after the anchor whose id sorted before it, and, across pages, a
+  later event whose id sorted before the page's newest.
 - The marker moves only to a newer millisecond. A commit in the marker's own
   millisecond leaves it alone, so the anchor is the first event applied in
   its millisecond, and a forward walk from it cannot step over an event of

@@ -404,7 +404,8 @@ class _ExpectedQueueMarker {
         ? entry.originTs
         : oldestActiveTs - 1;
 
-    final shouldAdvance = lastAppliedTs == 0 || candidateTs > lastAppliedTs;
+    final hasMarker = lastAppliedTs != 0 || lastAppliedEventId != null;
+    final shouldAdvance = !hasMarker || candidateTs > lastAppliedTs;
 
     if (!shouldAdvance) return;
 

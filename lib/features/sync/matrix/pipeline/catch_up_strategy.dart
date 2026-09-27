@@ -1,6 +1,5 @@
 import 'package:lotti/features/sync/matrix/pipeline/bootstrap_backward_strategy.dart';
 import 'package:lotti/features/sync/matrix/pipeline/bootstrap_forward_strategy.dart';
-import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
@@ -52,22 +51,6 @@ class CatchUpStrategy {
     overallTimeout: overallTimeout,
     now: now,
   );
-
-  /// True when [event] sorts strictly after the anchor (timestamp, then event
-  /// id as the deterministic tie-breaker). A null [anchorTs] means there is no
-  /// anchor, so every event counts as after it.
-  static bool isStrictlyAfter(
-    Event event, {
-    required num? anchorTs,
-    required String? anchorEventId,
-  }) {
-    if (anchorTs == null) return true;
-    final ts = TimelineEventOrdering.timestamp(event);
-    if (ts > anchorTs) return true;
-    if (ts < anchorTs) return false;
-    if (anchorEventId == null) return false;
-    return event.eventId.compareTo(anchorEventId) > 0;
-  }
 }
 
 /// Sink contract for [CatchUpStrategy.collectHistoryForBootstrap].

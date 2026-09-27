@@ -600,15 +600,21 @@ extension _CatchUpClaimCases on _QueueCoordinatorTestSetup {
           resumeFloorTs: row.resumeFloorTs,
         );
         expect(marker.anchorIsSafe, isFalse);
-        expect(marker.backwardWalkBound, 101);
+        expect(
+          marker.backwardWalkBound,
+          100,
+          reason:
+              "the claimed marker's own millisecond can still hold an "
+              'event after its anchor (WalkBelowFloor)',
+        );
       },
     );
 
     test(
-      'an incomplete forward walk checkpoints its floor at its cursor: '
-      'the retry resumes forward while nothing newer applied, and walks '
-      'back to the cursor, not to the old anchor, once something did '
-      '(CheckpointForward)',
+      "an incomplete forward walk checkpoints its floor at its cursor's "
+      'millisecond: the retry resumes forward while the marker stays below '
+      'it, and walks back to just below the cursor, not to the old anchor, '
+      'once the marker reaches it (CheckpointForward, CheckpointAtCursor)',
       () async {
         await seedMarker(ts: 100, eventId: r'$anchor');
         final realQueue = InboundQueue(db: syncDb, logging: logging);
@@ -642,34 +648,40 @@ extension _CatchUpClaimCases on _QueueCoordinatorTestSetup {
         expect(completed, isFalse);
 
         var row = await readMarkerRow();
-        expect(row.resumeFloorTs, 111);
-
-        // The walk's own row applies: the anchor reaches the cursor and
-        // the retry can keep walking forward from it.
-        final walked = await realQueue.peekBatchReady(maxBatch: 1);
-        await realQueue.commitApplied(walked.single);
-        row = await readMarkerRow();
-        expect(row.lastAppliedEventId, r'$e1');
-        expect(
-          BridgeMarker(
-            lastAppliedTs: row.lastAppliedTs,
-            lastAppliedEventId: row.lastAppliedEventId,
-            resumeFloorTs: row.resumeFloorTs,
-          ).anchorIsSafe,
-          isTrue,
-        );
-
-        // A newer live event applies past the unfetched remainder.
-        await applyLive(realQueue, syncPayload(r'$live', 900));
-        row = await readMarkerRow();
-        final marker = BridgeMarker(
+        expect(row.resumeFloorTs, 110);
+        BridgeMarker markerOf(QueueMarkerItem row) => BridgeMarker(
           lastAppliedTs: row.lastAppliedTs,
           lastAppliedEventId: row.lastAppliedEventId,
           resumeFloorTs: row.resumeFloorTs,
         );
+        expect(
+          markerOf(row).anchorIsSafe,
+          isTrue,
+          reason: 'nothing the walk queued has applied yet',
+        );
+
+        // The walk's own row applies and the marker reaches the cursor's
+        // millisecond. The rest of it may still be ahead of the walk, and
+        // an anchor there is not known to precede it, so the retry walks
+        // back to just below the cursor instead of forward.
+        final walked = await realQueue.peekBatchReady(maxBatch: 1);
+        await realQueue.commitApplied(walked.single);
+        row = await readMarkerRow();
+        expect(row.lastAppliedEventId, r'$e1');
+        expect(markerOf(row).anchorIsSafe, isFalse);
+        expect(markerOf(row).backwardWalkBound, 109);
+
+        // A newer live event applies past the unfetched remainder.
+        await applyLive(realQueue, syncPayload(r'$live', 900));
+        row = await readMarkerRow();
+        final marker = markerOf(row);
         expect(marker.lastAppliedEventId, r'$live');
         expect(marker.anchorIsSafe, isFalse);
-        expect(marker.backwardWalkBound, 111);
+        expect(
+          marker.backwardWalkBound,
+          109,
+          reason: 'not back to the old anchor at 100',
+        );
       },
     );
   }

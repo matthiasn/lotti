@@ -64,7 +64,11 @@ class QueueMarkerAdvancer {
         : (entry.originTs < oldestActive ? entry.originTs : oldestActive - 1);
 
     final storedTs = marker?.lastAppliedTs ?? 0;
-    final shouldAdvance = storedTs == 0 || clampedCandidateTs > storedTs;
+    // A row the resume floor created carries a zero timestamp and no event
+    // id; that is "no marker". A stored event id at timestamp zero is a
+    // marker like any other, and an equal timestamp must not replace it.
+    final hasMarker = storedTs != 0 || marker?.lastAppliedEventId != null;
+    final shouldAdvance = !hasMarker || clampedCandidateTs > storedTs;
 
     if (!shouldAdvance) return false;
 

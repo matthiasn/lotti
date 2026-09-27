@@ -1501,9 +1501,17 @@ What the model leaves out, deliberately or as a residual:
   carries older events, which only fetches more. The bound itself must cover
   every millisecond that can hold a missing event, and with the fixes of
   ADR 0093 it does.
-- **Timestamps are positions.** The marker, the floor and the walks all
-  order by `originServerTs`; homeservers assign it, and the model assumes it
-  follows timeline order.
+- **Timestamps follow the timeline.** The marker, the floor and the backward
+  walk order by `originServerTs`; homeservers assign it, and the model
+  assumes it never decreases along the timeline. Events may share one
+  (`SameMs`).
+- **The forward walk is positional.** The model's forward walk fetches every
+  event after the anchor in timeline order. Event ids are not modelled: the
+  app's forward walk (`collectForwardForBootstrapImpl`) emits everything past
+  the newest timestamp it has emitted, and the unseen ids of that
+  millisecond, so it fetches at least that (ADR 0093). Before ADR 0093 it
+  ordered a millisecond by event id, a divergence the model could not show;
+  the regressions are in `catch_up_strategy_test.dart`.
 - **The bridge gives up after three incomplete passes in a row.** The model
   retries until a walk completes. In the app the durable floor stays, and the
   next trigger — to-device traffic, a limited sync, a restart, "Catch up now"

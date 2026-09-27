@@ -521,6 +521,34 @@ void main() {
     );
 
     test(
+      'an anchor at timestamp zero is a marker, so a later commit at zero '
+      'keeps it, while a floor-only row is no marker at all',
+      () async {
+        // The resume floor alone creates the row: no applied timestamp,
+        // no event id.
+        await advancer.lowerResumeFloor(roomId: _roomA, originTs: 1);
+        final firstId = await insertRow(eventId: r'$b', originTs: 0);
+        expect(
+          await advancer.advanceIfNewer(
+            _entry(queueId: firstId, eventId: r'$b', originTs: 0),
+          ),
+          isTrue,
+          reason: 'a floor-only row carries no marker to keep',
+        );
+        await markApplied(firstId);
+
+        final laterId = await insertRow(eventId: r'$c', originTs: 0);
+        expect(
+          await advancer.advanceIfNewer(
+            _entry(queueId: laterId, eventId: r'$c', originTs: 0),
+          ),
+          isFalse,
+        );
+        expect((await readMarker())?.lastAppliedEventId, r'$b');
+      },
+    );
+
+    test(
       r'placeholder (non-$) event id advances the ts but is never '
       'written into the durable event id slot',
       () async {
