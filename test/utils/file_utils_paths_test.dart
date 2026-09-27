@@ -147,6 +147,30 @@ void main() {
   // We parameterise over generated ids and creation dates and verify the
   // structural invariants without re-implementing DateFormat.
   // ---------------------------------------------------------------------------
+  group('deep backfill payload paths', () {
+    test('live under the deep backfill segment as JSON', () {
+      expect(relativeDeepBackfillPath('abc-123'), '/deep_backfill/abc-123.json');
+    });
+
+    glados.Glados(
+      glados.any.payloadId,
+      glados.ExploreConfig(numRuns: 160),
+    ).test(
+      'URI-encodes generated upload ids under the deep backfill segment',
+      (payloadId) {
+        final path = relativeDeepBackfillPath(payloadId.text);
+
+        expect(
+          path,
+          '$deepBackfillSegment${payloadId.encoded}.json',
+          reason: '$payloadId',
+        );
+        expect(isAgentPayloadPath(path), isFalse, reason: '$payloadId');
+      },
+      tags: 'glados',
+    );
+  });
+
   group('relativeEntityPath — properties', () {
     // Shared generator that produces (year, month, day, id) tuples.
     // Day is capped at 28 to avoid dealing with month-end edge cases.

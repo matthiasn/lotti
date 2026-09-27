@@ -180,6 +180,7 @@ import 'package:lotti/features/sync/matrix/sync_engine.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
+import 'package:lotti/features/sync/deep_backfill/deep_backfill_service.dart';
 import 'package:lotti/features/sync/media/media_request_handler.dart';
 import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
@@ -1277,6 +1278,9 @@ class MockSoulDocumentService extends Mock implements SoulDocumentService {}
 
 class MockBackfillResponseHandler extends Mock
     implements BackfillResponseHandler {}
+
+class MockDeepBackfillService extends Mock
+    implements DeepBackfillService {}
 
 class MockMediaRequestHandler extends Mock implements MediaRequestHandler {}
 

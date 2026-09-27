@@ -19,9 +19,7 @@ void main() {
           'from-$id',
           'to-$id',
           'BasicLink',
-          clockJson == null
-              ? '{"id":"$id"}'
-              : '{"id":"$id","vectorClock":$clockJson}',
+          if (clockJson == null) '{"id":"$id"}' else '{"id":"$id","vectorClock":$clockJson}',
         ],
       );
 

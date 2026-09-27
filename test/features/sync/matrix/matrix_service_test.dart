@@ -15,6 +15,7 @@ import 'package:lotti/features/sync/matrix/stats.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -1348,6 +1349,17 @@ void main() {
       'mediaRequest': const SyncMessage.mediaRequest(
         entryIds: ['img-1'],
         requesterId: 'host-1',
+      ),
+      'deepBackfillInventory': const SyncMessage.deepBackfillInventory(
+        roundId: 'round-1',
+        hostId: 'host-1',
+        payloadType: SyncSequencePayloadType.journalEntity,
+        batch: 0,
+      ),
+      'deepBackfillRequest': const SyncMessage.deepBackfillRequest(
+        requesterId: 'host-2',
+        targetHostId: 'host-1',
+        payloadType: SyncSequencePayloadType.journalEntity,
       ),
       'agentWakeCoordination': SyncMessage.agentWakeCoordination(
         agentId: 'agent-1',

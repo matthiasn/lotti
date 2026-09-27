@@ -1343,6 +1343,48 @@ void main() {
       expect(decoded.requesterId, 'requester-device');
     });
 
+    test('deep-backfill inventories and requests ride the inline enqueue '
+        'path, one subject per batch and per request', () async {
+      const inventory = SyncMessage.deepBackfillInventory(
+        roundId: 'round-1',
+        hostId: 'host-a',
+        payloadType: SyncSequencePayloadType.agentEntity,
+        batch: 3,
+        records: [
+          DeepBackfillRecord(id: 'e-1', vectorClock: VectorClock({'a': 1})),
+        ],
+      );
+      const request = SyncMessage.deepBackfillRequest(
+        requesterId: 'host-b',
+        targetHostId: 'host-a',
+        payloadType: SyncSequencePayloadType.journalEntity,
+        records: [
+          DeepBackfillRequestRecord(id: 'x'),
+          DeepBackfillRequestRecord(id: 'y', absent: true),
+        ],
+      );
+
+      await service.enqueueMessage(inventory);
+      await service.enqueueMessage(request);
+
+      final companions = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured.cast<OutboxCompanion>();
+      expect(companions.map((c) => c.subject.value), [
+        'deepBackfillInventory:round-1:agentEntity:3',
+        'deepBackfillRequest:host-a:journalEntity:2',
+      ]);
+      expect(companions.map((c) => c.filePath.value), [null, null]);
+      expect(
+        companions.map(
+          (c) => SyncMessage.fromJson(
+            jsonDecode(c.message.value) as Map<String, dynamic>,
+          ),
+        ),
+        [inventory, request],
+      );
+    });
+
     test('SyncAgentWakeCoordination rides the inline enqueue path', () async {
       final message = SyncMessage.agentWakeCoordination(
         agentId: 'agent-1',

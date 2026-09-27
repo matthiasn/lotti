@@ -60,6 +60,21 @@ void registerSyncProcessorFallbacks() {
     const SyncMediaRequest(entryIds: [], requesterId: ''),
   );
   registerFallbackValue(
+    const SyncDeepBackfillInventory(
+      roundId: '',
+      hostId: '',
+      payloadType: SyncSequencePayloadType.journalEntity,
+      batch: 0,
+    ),
+  );
+  registerFallbackValue(
+    const SyncDeepBackfillRequest(
+      requesterId: '',
+      targetHostId: '',
+      payloadType: SyncSequencePayloadType.journalEntity,
+    ),
+  );
+  registerFallbackValue(
     const SyncBackfillResponse(hostId: '', counter: 0, deleted: false),
   );
   registerFallbackValue(const VectorClock({'fallback': 1}));

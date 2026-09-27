@@ -15,8 +15,8 @@ import '../../../mocks/mocks.dart';
 
 const _me = 'host-me';
 const _peer = 'host-peer';
-const _journal = SyncSequencePayloadType.journalEntity;
-const _links = SyncSequencePayloadType.entryLink;
+const SyncSequencePayloadType _journal = SyncSequencePayloadType.journalEntity;
+const SyncSequencePayloadType _links = SyncSequencePayloadType.entryLink;
 
 /// An in-memory store: rows by id, open conflicts, and every resend asked
 /// of it.
@@ -252,7 +252,7 @@ void main() {
       expect(batch.records.map((r) => r.id), ['b']);
     });
 
-    test('needs this device\'s host id', () async {
+    test("needs this device's host id", () async {
       when(() => vectorClock.getHost()).thenAnswer((_) async => null);
 
       await expectLater(
@@ -344,7 +344,7 @@ void main() {
       expect(requestsSent(), hasLength(2));
     });
 
-    test('settles only the outstanding rows in the batch\'s range', () async {
+    test("settles only the outstanding rows in the batch's range", () async {
       final svc = service(
         stores: [_FakeStore(_journal, rows: {'m': const VectorClock({'x': 9})})],
       );
@@ -437,7 +437,7 @@ void main() {
     });
   });
 
-  test('registerStore replaces a type\'s store and unregisterStore removes '
+  test("registerStore replaces a type's store and unregisterStore removes "
       'it', () async {
     final first = _FakeStore(_journal);
     final second = _FakeStore(_journal, rows: {'a': const VectorClock({'x': 1})});

@@ -213,7 +213,7 @@ void main() {
     });
 
     test('stays open while any asked version is not kept — another '
-        'advertiser\'s older answer does not settle it', () {
+        "advertiser's older answer does not settle it", () {
       expect(
         deepBackfillRequestSettled(
           asked: const [_newer],
@@ -283,15 +283,13 @@ void main() {
     glados.Glados(
       glados.any.recordScenario,
       glados.ExploreConfig(numRuns: 400),
-    ).test('pushes exactly when the advertiser does not keep this device\'s '
+    ).test("pushes exactly when the advertiser does not keep this device's "
         'row or one of its conflicts', (scenario) {
       final diff = scenario.diff();
       final mine = scenario.mine;
       final owesRow =
           scenario.holdsRow &&
-          (scenario.theirs == null
-              ? true
-              : mine != null && !scenario.keptThere(mine));
+          (scenario.theirs == null || mine != null && !scenario.keptThere(mine));
       final owesConflict = scenario.myConflicts.any(
         (c) => !scenario.keptThere(c),
       );

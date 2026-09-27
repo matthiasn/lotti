@@ -22,6 +22,7 @@ import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
 import 'package:lotti/features/sync/queue/queue_apply_adapter.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/get_it.dart';
@@ -2110,6 +2111,59 @@ void main() {
         );
       },
     );
+
+    group('deep backfill', () {
+      const inventory = SyncDeepBackfillInventory(
+        roundId: 'round-1',
+        hostId: 'peer-host',
+        payloadType: SyncSequencePayloadType.journalEntity,
+        batch: 0,
+        records: [
+          DeepBackfillRecord(id: 'e-1', vectorClock: VectorClock({'p': 1})),
+        ],
+      );
+      const request = SyncDeepBackfillRequest(
+        requesterId: 'peer-host',
+        targetHostId: 'this-host',
+        payloadType: SyncSequencePayloadType.entryLink,
+        records: [DeepBackfillRequestRecord(id: 'l-1')],
+      );
+
+      test('an inventory batch is diffed by the deep backfill service', () async {
+        final service = MockDeepBackfillService();
+        when(() => service.handleInventory(any())).thenAnswer((_) async {});
+        processor.deepBackfillService = service;
+        when(() => event.text).thenReturn(encodeMessage(inventory));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verify(() => service.handleInventory(inventory)).called(1);
+        verifyNever(() => service.handleRequest(any()));
+      });
+
+      test('a request is answered by the deep backfill service', () async {
+        final service = MockDeepBackfillService();
+        when(() => service.handleRequest(any())).thenAnswer((_) async {});
+        processor.deepBackfillService = service;
+        when(() => event.text).thenReturn(encodeMessage(request));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verify(() => service.handleRequest(request)).called(1);
+        verifyNever(() => service.handleInventory(any()));
+      });
+
+      test('without a service both are dropped rather than retried', () async {
+        processor.deepBackfillService = null;
+        for (final message in <SyncMessage>[inventory, request]) {
+          when(() => event.text).thenReturn(encodeMessage(message));
+          await expectLater(
+            processor.process(event: event, journalDb: journalDb),
+            completes,
+          );
+        }
+      });
+    });
 
     test(
       'SyncAgentWakeCoordination is handed to the agent wake coordinator',

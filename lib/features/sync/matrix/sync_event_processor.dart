@@ -679,6 +679,11 @@ class SyncEventProcessor {
   }
 
   @visibleForTesting
+  Future<SyncMessage> resolveDeepBackfillMessageForTesting(
+    SyncMessage message,
+  ) => _resolveDeepBackfillMessage(message);
+
+  @visibleForTesting
   Future<SyncOutboxBundle?> resolveOutboxBundleManifestForTesting(
     String? jsonPath, {
     String? attachmentEventId,
