@@ -91,6 +91,50 @@ void main() {
       });
 
       test(
+        'getAllLabelDefinitionsIncludingPrivate ignores the privacy toggle, '
+        'not deletion',
+        () async {
+          await db!.upsertConfigFlag(
+            const ConfigFlag(
+              name: privateFlag,
+              description: 'Show private entries?',
+              status: false,
+            ),
+          );
+          LabelDefinition label(
+            String id, {
+            bool? private,
+            DateTime? deleted,
+          }) => LabelDefinition(
+            id: id,
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            name: id,
+            color: '#FF0000',
+            vectorClock: null,
+            private: private,
+            deletedAt: deleted,
+          );
+          await db!.upsertLabelDefinition(label('public'));
+          await db!.upsertLabelDefinition(label('secret', private: true));
+          await db!.upsertLabelDefinition(
+            label('gone', deleted: DateTime(2024, 3, 16)),
+          );
+
+          expect(
+            (await db!.getAllLabelDefinitions()).map((l) => l.id),
+            ['public'],
+          );
+          expect(
+            (await db!.getAllLabelDefinitionsIncludingPrivate()).map(
+              (l) => l.id,
+            ),
+            unorderedEquals(['public', 'secret']),
+          );
+        },
+      );
+
+      test(
         'allLabelDefinitions streams name order from the deleted/name index',
         () async {
           for (final name in ['Zulu', 'alpha', 'Beta']) {

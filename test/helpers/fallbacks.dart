@@ -426,6 +426,7 @@ void registerAllFallbackValues() {
       kind: AgentWakeCoordinationKind.claim,
       watermark: const {},
       readsPrivate: false,
+      definitionsDigest: 'sha256-v1:definitions',
       runKey: '',
       hostId: '',
       sentAt: DateTime(2024, 3, 15),

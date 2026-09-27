@@ -4,6 +4,7 @@ import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/sync/g_counter.dart';
@@ -403,4 +404,31 @@ WeekRollupEntity makeTestWeekRollup({
         bucketingRule: bucketingRule,
       )
       as WeekRollupEntity;
+}
+
+AttentionRequestEntity makeTestAttentionRequest({
+  String id = 'attention-request-001',
+  String agentId = kTestAgentId,
+  String? targetId = 'task-001',
+  String? targetKind = 'task',
+  VectorClock? vectorClock,
+}) {
+  return AgentDomainEntity.attentionRequest(
+        id: id,
+        agentId: agentId,
+        kind: AttentionRequestKind.task,
+        title: 'Focus block',
+        categoryId: 'work',
+        requestedMinutes: 45,
+        impact: 4,
+        urgency: 3,
+        energyFit: AttentionEnergyFit.high,
+        evidenceRefs: const [],
+        scopeKind: AttentionClaimScopeKind.dateRange,
+        targetId: targetId,
+        targetKind: targetKind,
+        createdAt: kAgentTestDate,
+        vectorClock: vectorClock,
+      )
+      as AttentionRequestEntity;
 }

@@ -14,7 +14,7 @@ sources:
     last_modified: 2026-09-27
   - id: task-wake-inputs
     resource: ../../../lib/features/agents/workflow/task_wake_inputs.dart
-    title: The rows a task agent's wake reads, with their vector clocks
+    title: The rows a task agent's wake reads as input, with their vector clocks
     last_modified: 2026-09-27
   - id: sync-watermarks
     resource: ../../../lib/database/sync_db_watermarks.dart
@@ -71,6 +71,10 @@ sources:
   - id: adr-0091
     resource: ../../../docs/adr/0091-wake-coordination-by-vector-clock-coverage.md
     title: ADR 0091 — Wake coordination by vector-clock coverage
+    last_modified: 2026-09-27
+  - id: adr-0093
+    resource: ../../../docs/adr/0093-what-a-task-wake-reads.md
+    title: ADR 0093 — What a task agent's wake reads as input
     last_modified: 2026-09-27
 ---
 
@@ -548,7 +552,8 @@ the other's edit, and then the second run reads nothing the first did not.
 `AgentWakeCoordinator` lets the second stand down
 ([ADR 0090](../../../docs/adr/0090-cross-device-agent-wake-coordination.md),
 amended by
-[ADR 0091](../../../docs/adr/0091-wake-coordination-by-vector-clock-coverage.md)).
+[ADR 0091](../../../docs/adr/0091-wake-coordination-by-vector-clock-coverage.md)
+and [ADR 0093](../../../docs/adr/0093-what-a-task-wake-reads.md)).
 The protocol is model-checked in
 [`AgentWakeCoordination.tla`](../../../specs/tla/AgentWakeCoordination.tla);
 each coordinator method names the action it implements.
@@ -557,18 +562,32 @@ A peer's run **covers** a device when it read every write the device's inputs
 rest on. The claim carries the sender's **watermark** when the run started:
 per host, the counter up to which it holds all of that host's writes
 (`SyncDatabase.contiguousWatermarks`, the sync sequence log's gap-free prefix;
-for its own host, `VectorClockService.lastReservedCounter`), and whether its
-context reads private entries. Journal entities, links and agent entities
-share one counter per host, so a handful of integers describe the run. The
-receiver checks the vector clocks of its own inputs against it —
-`taskWakeInputs`: the task, every link from or to it and the entity at the
-other end, its checklists and items, one ring further for linked images and
-linked tasks, and linked tasks' agent links and current reports. Removed links
-and deleted entities are read too, because a removal is a write and only a row
-that is read gets its clock checked. **Keep the context builders' inputs
-inside that neighbourhood**: a row the context reads but the inputs miss could
-be dropped unprocessed. A wake's own writes are change-set proposals in the
-agent database, so they are not inputs. Agent kinds without an inputs reader
+for its own host, `VectorClockService.lastReservedCounter`), whether its
+context reads private entries, and a digest of the label and category
+definitions it reads. Journal entities, links and agent entities share one
+counter per host, so a handful of integers describe the run. The receiver
+checks the vector clocks of its own inputs against it. `taskWakeInputs` reads
+the rows the context reads that someone other than this agent's wakes wrote:
+
+- the task, every link from or to it and the entity at the other end, its
+  checklists and items, and one ring further for linked images and linked
+  tasks;
+- the agent link and current report of each linked task's agent and of the
+  parent project's agent;
+- the user's decisions on this agent's proposals for the task;
+- the template and soul assignments, heads and active versions;
+- other agents' attention requests on the task.
+
+Removed links and deleted entities are read too, because a removal is a write
+and only a row that is read gets its clock checked. The agent's own outputs —
+its report, observations, messages, change sets and attention requests — are
+not inputs. A peer's run writes its own, above the watermark its claim
+carried, so counting them would make every completed run look uncovering.
+Definitions carry no host counter, so for them only an equal digest covers.
+**Keep every row the context builders read among these inputs**: a row the
+context reads but the inputs miss could be dropped unprocessed. The running
+timer, the "changed since last wake" hints and the model choice are
+device-local and not inputs (ADR 0093). Agent kinds without an inputs reader
 run uncoordinated.
 
 The drain asks the coordinator after the content gate. **Cancel** when a peer

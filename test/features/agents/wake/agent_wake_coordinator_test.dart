@@ -14,6 +14,9 @@ part 'agent_wake_coordinator_model_conformance.dart';
 
 const _agent = 'agent-1';
 
+/// The label and category definitions both devices read.
+const _definitions = 'sha256-v1:definitions';
+
 /// The inputs of a task whose rows were last written as host `desktop`'s
 /// counter 3 and host `phone`'s counter 5.
 const _inputs = WakeInputs(
@@ -22,6 +25,7 @@ const _inputs = WakeInputs(
     'entry:item-1': VectorClock({'desktop': 2, 'phone': 5}),
   },
   readsPrivate: false,
+  definitions: _definitions,
 );
 
 /// A watermark holding exactly what [_inputs] rests on.
@@ -82,6 +86,7 @@ SyncAgentWakeCoordination _message({
   required AgentWakeCoordinationKind kind,
   Map<String, int> watermark = _held,
   bool readsPrivate = false,
+  String definitions = _definitions,
   String hostId = 'peer',
   DateTime? sentAt,
   String runKey = 'peer-run',
@@ -91,6 +96,7 @@ SyncAgentWakeCoordination _message({
           kind: kind,
           watermark: watermark,
           readsPrivate: readsPrivate,
+          definitionsDigest: definitions,
           runKey: runKey,
           hostId: hostId,
           sentAt: sentAt ?? clock.now(),
@@ -116,7 +122,11 @@ void main() {
   group('WakeCoverage.uncovered', () {
     test('is null when every write the inputs rest on is held', () {
       expect(
-        const WakeCoverage(watermark: _held, readsPrivate: false).uncovered(
+        const WakeCoverage(
+          watermark: _held,
+          readsPrivate: false,
+          definitions: _definitions,
+        ).uncovered(
           _inputs,
         ),
         isNull,
@@ -128,6 +138,7 @@ void main() {
         const WakeCoverage(
           watermark: {'desktop': 40, 'phone': 9, 'tablet': 2},
           readsPrivate: false,
+          definitions: _definitions,
         ).uncovered(_inputs),
         isNull,
       );
@@ -135,7 +146,11 @@ void main() {
 
     test('names the first write above the watermark', () {
       expect(
-        const WakeCoverage(watermark: _behind, readsPrivate: false).uncovered(
+        const WakeCoverage(
+          watermark: _behind,
+          readsPrivate: false,
+          definitions: _definitions,
+        ).uncovered(
           _inputs,
         ),
         'entry [id:item-1] needs [id:phone]:5, peer holds 4',
@@ -147,6 +162,7 @@ void main() {
         const WakeCoverage(
           watermark: {'desktop': 3},
           readsPrivate: false,
+          definitions: _definitions,
         ).uncovered(_inputs),
         'entry [id:item-1] needs [id:phone]:5, peer holds 0',
       );
@@ -154,10 +170,15 @@ void main() {
 
     test('never covers a row without a vector clock', () {
       expect(
-        const WakeCoverage(watermark: _held, readsPrivate: false).uncovered(
+        const WakeCoverage(
+          watermark: _held,
+          readsPrivate: false,
+          definitions: _definitions,
+        ).uncovered(
           const WakeInputs(
             clocks: {'report:report-1': null},
             readsPrivate: false,
+            definitions: _definitions,
           ),
         ),
         'report [id:report] has no vector clock',
@@ -165,43 +186,120 @@ void main() {
     });
 
     test('a run hiding private entries does not cover one reading them', () {
-      const reading = WakeInputs(clocks: {}, readsPrivate: true);
+      const reading = WakeInputs(
+        clocks: {},
+        readsPrivate: true,
+        definitions: _definitions,
+      );
       expect(
-        const WakeCoverage(watermark: _held, readsPrivate: false).uncovered(
+        const WakeCoverage(
+          watermark: _held,
+          readsPrivate: false,
+          definitions: _definitions,
+        ).uncovered(
           reading,
         ),
         'private entries',
       );
       expect(
-        const WakeCoverage(watermark: _held, readsPrivate: true).uncovered(
+        const WakeCoverage(
+          watermark: _held,
+          readsPrivate: true,
+          definitions: _definitions,
+        ).uncovered(
           reading,
         ),
         isNull,
       );
       expect(
-        const WakeCoverage(watermark: _held, readsPrivate: true).uncovered(
+        const WakeCoverage(
+          watermark: _held,
+          readsPrivate: true,
+          definitions: _definitions,
+        ).uncovered(
           _inputs,
         ),
         isNull,
       );
     });
 
-    test('is equal by watermark and private flag', () {
+    test('a run over other label or category definitions does not cover', () {
       expect(
-        const WakeCoverage(watermark: {'a': 1}, readsPrivate: false),
-        WakeCoverage(watermark: Map.of({'a': 1}), readsPrivate: false),
+        const WakeCoverage(
+          watermark: _held,
+          readsPrivate: false,
+          definitions: 'sha256-v1:other',
+        ).uncovered(_inputs),
+        'label or category definitions differ',
+      );
+    });
+
+    test('is equal by watermark, private flag and definitions', () {
+      expect(
+        const WakeCoverage(
+          watermark: {'a': 1},
+          readsPrivate: false,
+          definitions: _definitions,
+        ),
+        WakeCoverage(
+          watermark: Map.of({'a': 1}),
+          readsPrivate: false,
+          definitions: _definitions,
+        ),
       );
       expect(
-        const WakeCoverage(watermark: {'a': 1}, readsPrivate: false).hashCode,
-        WakeCoverage(watermark: Map.of({'a': 1}), readsPrivate: false).hashCode,
+        const WakeCoverage(
+          watermark: {'a': 1},
+          readsPrivate: false,
+          definitions: _definitions,
+        ).hashCode,
+        WakeCoverage(
+          watermark: Map.of({'a': 1}),
+          readsPrivate: false,
+          definitions: _definitions,
+        ).hashCode,
       );
       expect(
-        const WakeCoverage(watermark: {'a': 1}, readsPrivate: false),
-        isNot(const WakeCoverage(watermark: {'a': 2}, readsPrivate: false)),
+        const WakeCoverage(
+          watermark: {'a': 1},
+          readsPrivate: false,
+          definitions: _definitions,
+        ),
+        isNot(
+          const WakeCoverage(
+            watermark: {'a': 2},
+            readsPrivate: false,
+            definitions: _definitions,
+          ),
+        ),
       );
       expect(
-        const WakeCoverage(watermark: {'a': 1}, readsPrivate: false),
-        isNot(const WakeCoverage(watermark: {'a': 1}, readsPrivate: true)),
+        const WakeCoverage(
+          watermark: {'a': 1},
+          readsPrivate: false,
+          definitions: _definitions,
+        ),
+        isNot(
+          const WakeCoverage(
+            watermark: {'a': 1},
+            readsPrivate: true,
+            definitions: _definitions,
+          ),
+        ),
+      );
+      expect(
+        const WakeCoverage(
+          watermark: {'a': 1},
+          readsPrivate: false,
+          definitions: _definitions,
+        ),
+        isNot(
+          const WakeCoverage(
+            watermark: {'a': 1},
+            readsPrivate: false,
+            definitions: 'x',
+          ),
+        ),
       );
     });
   });
@@ -218,7 +316,11 @@ void main() {
           isA<WakeCoordinationProceed>().having(
             (d) => d.coverage,
             'coverage',
-            const WakeCoverage(watermark: _held, readsPrivate: false),
+            const WakeCoverage(
+              watermark: _held,
+              readsPrivate: false,
+              definitions: _definitions,
+            ),
           ),
         );
         // The watermark is read for at least every host the inputs rest on.
@@ -392,6 +494,7 @@ void main() {
               'entry:task-1': VectorClock({'desktop': 2, 'phone': 1}),
             },
             readsPrivate: false,
+            definitions: _definitions,
           );
         expect(
           _resolve(async, device.evaluate()),
@@ -587,7 +690,11 @@ void main() {
           isA<WakeCoordinationProceed>().having(
             (d) => d.coverage,
             'coverage',
-            const WakeCoverage(watermark: _held, readsPrivate: false),
+            const WakeCoverage(
+              watermark: _held,
+              readsPrivate: false,
+              definitions: _definitions,
+            ),
           ),
         );
 
@@ -652,7 +759,11 @@ void main() {
   });
 
   group('claim, complete and settle', () {
-    const coverage = WakeCoverage(watermark: _held, readsPrivate: true);
+    const coverage = WakeCoverage(
+      watermark: _held,
+      readsPrivate: true,
+      definitions: _definitions,
+    );
 
     test('a claim is broadcast at once and repeated as a heartbeat', () {
       _fake((async) {
@@ -668,6 +779,7 @@ void main() {
         expect(device.sent.single.kind, AgentWakeCoordinationKind.claim);
         expect(device.sent.single.watermark, _held);
         expect(device.sent.single.readsPrivate, isTrue);
+        expect(device.sent.single.definitionsDigest, _definitions);
         expect(device.sent.single.hostId, 'me');
         expect(device.sent.single.runKey, 'run-1');
         expect(device.sent.single.sentAt, _start);
@@ -906,7 +1018,11 @@ void main() {
           isA<WakeCoordinationProceed>().having(
             (d) => d.coverage,
             'coverage',
-            const WakeCoverage(watermark: _held, readsPrivate: false),
+            const WakeCoverage(
+              watermark: _held,
+              readsPrivate: false,
+              definitions: _definitions,
+            ),
           ),
         );
       });
