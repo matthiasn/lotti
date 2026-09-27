@@ -305,7 +305,8 @@ void main() {
 
       expect(await retirement.retireIfSuperseded('agent-winner'), isFalse);
       expect(await lifecycleOf('agent-loser'), AgentLifecycle.destroyed);
-      expect(await retirement.retireIfSuperseded('agent-loser'), isFalse);
+      // Already retired: it stays stopped.
+      expect(await retirement.retireIfSuperseded('agent-loser'), isTrue);
 
       await seedAgent(
         'agent-late',
@@ -313,6 +314,22 @@ void main() {
       );
       expect(await retirement.retireIfSuperseded('agent-late'), isTrue);
       expect(await lifecycleOf('agent-late'), AgentLifecycle.destroyed);
+    });
+
+    test('stops a loser another pass already retired, after the drain '
+        'engine read its policy', () async {
+      await seedAgent(
+        'agent-winner',
+        linkedAt: _t0.add(const Duration(seconds: 1)),
+      );
+      await seedAgent(
+        'agent-retired',
+        linkedAt: _t0,
+        lifecycle: AgentLifecycle.destroyed,
+      );
+
+      expect(await retirement.retireIfSuperseded('agent-retired'), isTrue);
+      expect(device.sentEntities, isEmpty);
     });
 
     test('an agent without a task link runs', () async {
