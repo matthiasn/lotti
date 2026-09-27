@@ -2814,3 +2814,92 @@ What the model leaves out, or shows as a residual:
   identity edit (a config change) can win the lifecycle merge and revive a
   retired agent. The pass then runs again on the next receive, wake or start,
   and retires the agent again.
+
+## `DeepBackfill` — an inventory round that repairs what counters cannot see
+
+**A design model, written before the code** (like `EnvelopeChain`). Counter
+backfill (`SyncSequence`) repairs a hole between `(hostId, counter)` pairs a
+device has recorded, answered only when the responder's sequence log maps the
+counter. Installations whose log was populated from current clocks, or that
+never heard of a record at all, miss history no counter request can name. A
+deep-backfill round, started by hand from the sync maintenance page, advertises
+every record a device holds — tombstones included — as `(id, clock)` in batches
+that also name their id range and their open conflicts. The ranges of a round
+partition the whole keyspace, empty ones included. Each recipient diffs a batch
+in one batched read, requests from the advertiser what it lacks or holds older
+or concurrent — its row and any open conflict version it does not keep — and
+pushes back what it holds newer, concurrent, or alone, its own conflict
+versions included. Answers and pushes go through the one write decision (the
+journal's, ADR 0083/0092; `Merge` swaps in the merge agent records use). A
+request stays outstanding until the recipient keeps every version it asked
+for, whoever delivered it: an answer carries nothing that ties it to its
+request. The plan and the mapping to code are in
+[docs/implementation_plans/2026-09-27_deep_backfill.md](../../docs/implementation_plans/2026-09-27_deep_backfill.md).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `InventoryIsReal` | invariant | a batch advertises only versions its sender held |
+| `NoDuplicateRequest` | invariant | a version is asked of an advertiser at most once while the request, or its answer, is on its way |
+| `NoLostTombstone` | invariant | no row is a version the device has seen replaced: an answer or push never undoes a deletion |
+| `NothingDropped` | invariant | every version a device received or wrote is kept by its row or an open conflict |
+| `ConflictNotStale` | invariant | an open conflict is never a version its row or a seen version replaced |
+| `EventuallyConverged` | liveness | every device keeps every version ever written, tombstones included, and every record agrees everywhere or shows a conflict |
+| `EventuallyQuiet` | liveness | once the devices agree, rounds request and push nothing — no conflict ping-pong |
+| `RoundTerminates` | liveness | a started round finishes its batches or is lost to a crash |
+
+Liveness assumes every device in `Runners` runs maintenance again after the
+last write, loss and crash — the round is manual — and that every batch is
+processed: fairness is per batch, as the inbound queue's in-order processing
+gives it. With fairness per sender only, TLC starved batch 2, carrying a
+tombstone, behind batch 1 re-emitted round after round.
+
+| Configuration | Devices | Records (per batch) | Writes | Adds | Distinct states |
+|---------------|--------:|--------------------:|-------:|------|----------------:|
+| `DeepBackfill` | 2 | 1 (1) | 2 | edits, deletions, concurrent versions, resolutions; both run rounds | 534,478 |
+| `DeepBackfillPaged` | 2 | 2 (1) | 1 | a round of two batches | 725,844 |
+| `DeepBackfillBatch` | 2 | 3 (2) | 0 | several records per batch, a partial last batch | 48,145 |
+| `DeepBackfillOneSided` | 2 | 1 (1) | 2 | only device 1 runs rounds | 1,082 |
+| `DeepBackfillFaults` | 2 | 1 (1) | 1 | one lost message and one crash, anywhere | 28,916 |
+| `DeepBackfillIncremental` | 2 | 1 (1) | 2 | ordinary sync racing answers and pushes | 414,684 |
+| `DeepBackfillMerge` | 2 | 1 (1) | 2 | concurrent versions merge (agent records) | 1,106,272 |
+| `DeepBackfillThree` | 3 | 1 (1) | 2 | only device 1 runs rounds; a concurrent version held elsewhere only as a conflict must still reach device 3 | 63,602 |
+
+Every configuration starts from arbitrary gaps: each record is on its creator
+and on any subset of the other devices. Each design switch is the proposed
+design; set to `FALSE` (in a copy outside this directory) it has a
+counterexample:
+
+| Switch | Alternative | Counterexample |
+|--------|-------------|----------------|
+| `AdvertiseTombstones` | the inventory lists live rows only | `EventuallyConverged`, one-sided, three steps: A deletes a record B never had; A's round lists nothing, so B never gets the record or its deletion |
+| `PushNewer` | the recipient only requests | `EventuallyConverged`, one-sided: B catches up, then edits; only A runs rounds, and B's edit never travels |
+| `RangeBounds` | a batch does not name its id range | `EventuallyConverged`, one-sided: B holds a record A has no row for; no batch lists it, so B cannot tell "absent on A" from "not in this batch" |
+| `DedupeOutstanding` | a diff requests what is already requested | `NoDuplicateRequest`: a second round re-requests a record whose answer is still on its way |
+| `DurableOutstanding` | the outstanding requests live in memory | `NoDuplicateRequest`: a crash forgets them, and the next round requests the record again |
+| `SkipHeldConflict` | a concurrent version already held as a conflict is requested again | `NoDuplicateRequest`: a push settles the request by coverage while its answer is still on its way, and the next round asks for the same version again |
+| `AdvertiseConflicts` | a batch does not name its open conflicts | `EventuallyQuiet`: the recipient pushes a version the advertiser already holds as a conflict, every round |
+| `ClearOnlyCovered` | any receive of a record settles every request for it | `NoDuplicateRequest`, three devices: C has requests out to A and B; B's answer, an older version, clears the request to A too, and the next round asks A again while A's answer is still on its way |
+| `ConflictsTravel` | conflict versions are only named, to suppress pushes | `EventuallyConverged`, three devices, only A running rounds: A and B hold each other's concurrent edit as a conflict, C holds A's edit; C's row equals A's, nobody pushes B's edit to C, and C never keeps it |
+
+`ConflictsTravel` is why the journal send path serves a queued version from
+the entry's open conflict of that exact version when the row does not cover
+it: the answer to a request for a conflict version is that version, not the
+row.
+
+`StartRound` waits until the device's previous batches were read. That bounds
+the state space; it is not a rule of the protocol. A stale batch diffed late
+only requests what the answer, the advertiser's current row, supersedes, and
+pushes what the write decision refuses once it is no longer newer.
+
+Requests and pushes are addressed to the advertiser in the model. The code
+sends answers and pushes to the room like any payload, so other devices
+receive them too — extra receives through the write decision, which, like
+ordinary sync in `DeepBackfillIncremental`, only settle requests they cover.
+
+Left out, deliberately: clockless legacy rows (they cannot be ordered and are
+not advertised); relays (only the advertiser answers its inventory; a third
+device's newer copy travels as that device's push when it diffs another's
+inventory, so a device needs no round of its own); the sequence log (a
+deep-backfilled version is recorded like any received payload, but rows the log
+lacks are not reconstructed); and a request timeout shorter than a delivery,
+which can duplicate a request — harmless, since the answer applies idempotently.
