@@ -11,12 +11,14 @@ import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
+import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_stats.dart';
@@ -332,6 +334,55 @@ void main() {
       await tester.pump(const Duration(milliseconds: 250));
 
       verify(() => mockSequenceService.getBackfillStats()).called(1);
+    });
+
+    testWidgets('names each device in the per-device ledger from the sync '
+        'node profiles, marking this one', (tester) async {
+      BackfillHostStats host(String id) => BackfillHostStats(
+        hostId: id,
+        receivedCount: 10,
+        missingCount: 0,
+        requestedCount: 0,
+        backfilledCount: 0,
+        deletedCount: 0,
+        unresolvableCount: 0,
+        burnedCount: 0,
+      );
+      SyncNodeProfile node(String id, String name) => SyncNodeProfile(
+        hostId: id,
+        displayName: name,
+        platform: 'linux',
+        capabilities: const [],
+        updatedAt: DateTime(2024, 3, 15),
+      );
+      when(() => mockSequenceService.getBackfillStats()).thenAnswer(
+        (_) async => BackfillStats.fromHostStats([
+          host('11111111-laptop'),
+          host('22222222-phone'),
+        ]),
+      );
+
+      await pumpBody(
+        tester,
+        overrides: [
+          knownSyncNodesProvider.overrideWith(
+            (ref) => Stream.value([node('22222222-phone', 'Phone')]),
+          ),
+          localSyncNodeSelfProvider.overrideWith(
+            (ref) => Stream.value(node('11111111-laptop', 'Laptop')),
+          ),
+        ],
+      );
+
+      final messages = messagesOf(tester);
+      expect(find.text('Phone'), findsOneWidget);
+      expect(
+        find.text(messages.backfillStatsThisDevice('Laptop')),
+        findsOneWidget,
+      );
+      // Named, so neither falls back to its truncated host id.
+      expect(find.text('11111111'), findsNothing);
+      expect(find.text('22222222'), findsNothing);
     });
 
     testWidgets('shows device-id meta with host count', (tester) async {
