@@ -4,6 +4,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/project_tool_dispatcher.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -21,6 +22,7 @@ void main() {
   late MockPersistenceLogic mockPersistenceLogic;
   late MockEntitiesCacheService mockEntitiesCacheService;
   late MockTaskAgentService mockTaskAgentService;
+  late MockJournalDb mockJournalDb;
   late ProjectToolDispatcher dispatcher;
 
   const projectId = 'project-001';
@@ -35,11 +37,13 @@ void main() {
     mockPersistenceLogic = MockPersistenceLogic();
     mockEntitiesCacheService = MockEntitiesCacheService();
     mockTaskAgentService = MockTaskAgentService();
+    mockJournalDb = MockJournalDb();
 
     dispatcher = ProjectToolDispatcher(
       projectRepository: mockProjectRepository,
       persistenceLogic: mockPersistenceLogic,
       entitiesCacheService: mockEntitiesCacheService,
+      journalDb: mockJournalDb,
       taskAgentService: mockTaskAgentService,
     );
   });
@@ -492,6 +496,7 @@ void main() {
           projectRepository: mockProjectRepository,
           persistenceLogic: mockPersistenceLogic,
           entitiesCacheService: mockEntitiesCacheService,
+          journalDb: mockJournalDb,
           taskAgentService: mockTaskAgentService,
           domainLogger: domainLogger,
         );
@@ -883,6 +888,7 @@ void main() {
         projectRepository: mockProjectRepository,
         persistenceLogic: mockPersistenceLogic,
         entitiesCacheService: mockEntitiesCacheService,
+        journalDb: mockJournalDb,
         taskAgentService: mockTaskAgentService,
         domainLogger: domainLogger,
       );
@@ -952,6 +958,7 @@ void main() {
         projectRepository: mockProjectRepository,
         persistenceLogic: mockPersistenceLogic,
         entitiesCacheService: mockEntitiesCacheService,
+        journalDb: mockJournalDb,
       );
       final createdTask = makeTestTask(id: taskId, title: 'Write docs');
 
@@ -1142,6 +1149,219 @@ void main() {
         );
       },
     );
+
+    group("a confirmed change item's effect (ADR 0097)", () {
+      const effect = ChangeEffect(key: 'project-set:0');
+      final derivedId = effect.entityId('task');
+
+      void stubCreated({required bool created}) {
+        when(
+          () => mockJournalDb.journalEntityMapForIdsIncludingDeleted([
+            derivedId,
+          ]),
+        ).thenAnswer(
+          (_) async => created
+              ? {derivedId: makeTestTask(id: derivedId)}
+              : const <String, JournalEntity>{},
+        );
+      }
+
+      void stubCreateTask(Task? created) {
+        when(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+            private: any(named: 'private'),
+            uuidV5Input: any(named: 'uuidV5Input'),
+          ),
+        ).thenAnswer((_) async => created);
+      }
+
+      setUp(() {
+        when(
+          () => mockProjectRepository.getProjectById(projectId),
+        ).thenAnswer((_) async => project);
+        when(
+          () => mockEntitiesCacheService.getCategoryById('cat-001'),
+        ).thenReturn(null);
+      });
+
+      test(
+        'create_task derives the task id from the item and strips the '
+        'reserved arguments',
+        () async {
+          stubCreated(created: false);
+          final created = makeTestTask(id: derivedId, title: 'Write docs');
+          stubCreateTask(created);
+          when(
+            () => mockProjectRepository.linkTaskToProject(
+              projectId: projectId,
+              taskId: derivedId,
+            ),
+          ).thenAnswer((_) async => true);
+
+          final result = await dispatcher.dispatch(
+            ProjectAgentToolNames.createTask,
+            effect.addTo({'title': 'Write docs'}),
+            projectId,
+          );
+
+          expect(result.success, isTrue, reason: result.output);
+          expect(result.mutatedEntityId, derivedId);
+          verify(
+            () => mockPersistenceLogic.createTaskEntry(
+              data: any(named: 'data'),
+              entryText: any(named: 'entryText'),
+              categoryId: any(named: 'categoryId'),
+              private: any(named: 'private'),
+              uuidV5Input: effect.entityInput('task'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'create_task writes nothing when the task exists, and names it',
+        () async {
+          stubCreated(created: true);
+
+          final result = await dispatcher.dispatch(
+            ProjectAgentToolNames.createTask,
+            effect.addTo({'title': 'Write docs'}),
+            projectId,
+          );
+
+          expect(result.success, isTrue);
+          expect(result.mutatedEntityId, derivedId);
+          expect(result.output, contains('already exists'));
+          verifyNever(
+            () => mockPersistenceLogic.createTaskEntry(
+              data: any(named: 'data'),
+              entryText: any(named: 'entryText'),
+              categoryId: any(named: 'categoryId'),
+              private: any(named: 'private'),
+              uuidV5Input: any(named: 'uuidV5Input'),
+            ),
+          );
+          verifyNever(
+            () => mockProjectRepository.linkTaskToProject(
+              projectId: any(named: 'projectId'),
+              taskId: any(named: 'taskId'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'create_task takes a refused insert for the task that arrived '
+        'meanwhile',
+        () async {
+          var reads = 0;
+          when(
+            () => mockJournalDb.journalEntityMapForIdsIncludingDeleted([
+              derivedId,
+            ]),
+          ).thenAnswer(
+            (_) async => reads++ == 0
+                ? const <String, JournalEntity>{}
+                : {derivedId: makeTestTask(id: derivedId)},
+          );
+          stubCreateTask(null);
+
+          final result = await dispatcher.dispatch(
+            ProjectAgentToolNames.createTask,
+            effect.addTo({'title': 'Write docs'}),
+            projectId,
+          );
+
+          expect(result.success, isTrue);
+          expect(result.mutatedEntityId, derivedId);
+        },
+      );
+
+      test(
+        'a rolled-back create_task is final: its derived id is spent',
+        () async {
+          stubCreated(created: false);
+          final created = makeTestTask(id: derivedId, title: 'Write docs');
+          stubCreateTask(created);
+          when(
+            () => mockProjectRepository.linkTaskToProject(
+              projectId: projectId,
+              taskId: derivedId,
+            ),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockPersistenceLogic.updateMetadata(
+              any(),
+              deletedAt: any(named: 'deletedAt'),
+            ),
+          ).thenAnswer((_) async => created.meta);
+          when(
+            () => mockPersistenceLogic.updateDbEntity(any()),
+          ).thenAnswer((_) async => true);
+
+          final result = await dispatcher.dispatch(
+            ProjectAgentToolNames.createTask,
+            effect.addTo({'title': 'Write docs'}),
+            projectId,
+          );
+
+          expect(result.success, isFalse);
+          expect(result.output, contains('Rolled back'));
+          expect(result.nonRetryable, isTrue);
+        },
+      );
+
+      test(
+        'update_project_status leaves a status that moved on from the one '
+        'the proposal was made against',
+        () async {
+          final result = await dispatcher.dispatch(
+            ProjectAgentToolNames.updateProjectStatus,
+            const ChangeEffect(
+              key: 'project-set:1',
+              targetBase: {'status': 'open', 'status@': 'an-older-status'},
+            ).addTo({'status': 'active'}),
+            projectId,
+          );
+
+          expect(result.success, isTrue);
+          expect(result.output, contains('Nothing applied'));
+          verifyNever(() => mockProjectRepository.updateProject(any()));
+        },
+      );
+
+      test(
+        'update_project_status applies while the project holds its base',
+        () async {
+          when(
+            () => mockProjectRepository.updateProject(any()),
+          ).thenAnswer((_) async => true);
+
+          final result = await dispatcher.dispatch(
+            ProjectAgentToolNames.updateProjectStatus,
+            ChangeEffect(
+              key: 'project-set:1',
+              targetBase: targetBaseFor({
+                'status': 'active',
+              }, projectFields(project.data.status)),
+            ).addTo({'status': 'active'}),
+            projectId,
+          );
+
+          expect(result.success, isTrue, reason: result.output);
+          expect(result.mutatedEntityId, projectId);
+          final updated =
+              verify(
+                    () => mockProjectRepository.updateProject(captureAny()),
+                  ).captured.single
+                  as ProjectEntry;
+          expect(updated.data.status, isA<ProjectActive>());
+        },
+      );
+    });
   });
 
   group('parseProjectStatus / isSameSemanticStatus properties', () {

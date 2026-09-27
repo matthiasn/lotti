@@ -6,8 +6,10 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -17,11 +19,18 @@ import 'package:uuid/uuid.dart';
 
 /// Dispatches confirmed project-agent change-set items to project-domain
 /// mutations.
+///
+/// A confirmed change item names its effect ([ChangeEffect]), so the same
+/// proposal confirmed on two devices before they sync changes the journal
+/// once (ADR 0097): `create_task` derives the task's id from the item, and
+/// `update_project_status` applies only while the project still holds the
+/// status the proposal was made against.
 class ProjectToolDispatcher {
   ProjectToolDispatcher({
     required this.projectRepository,
     required this.persistenceLogic,
     required this.entitiesCacheService,
+    required this.journalDb,
     this.domainLogger,
     this.taskAgentService,
   });
@@ -29,6 +38,7 @@ class ProjectToolDispatcher {
   final ProjectRepository projectRepository;
   final PersistenceLogic persistenceLogic;
   final EntitiesCacheService entitiesCacheService;
+  final JournalDb journalDb;
   final DomainLogger? domainLogger;
   final TaskAgentService? taskAgentService;
 
@@ -45,13 +55,17 @@ class ProjectToolDispatcher {
       name: 'ProjectToolDispatcher',
     );
 
+    // A confirmed change item names its effect; no handler sees the reserved
+    // arguments that carry it.
+    final (:effect, args: toolArgs) = ChangeEffect.takeFrom(args);
+
     switch (toolName) {
       case ProjectAgentToolNames.recommendNextSteps:
-        return _handleRecommendNextSteps(args);
+        return _handleRecommendNextSteps(toolArgs);
       case ProjectAgentToolNames.updateProjectStatus:
-        return _handleUpdateProjectStatus(args, projectId);
+        return _handleUpdateProjectStatus(toolArgs, projectId, effect);
       case ProjectAgentToolNames.createTask:
-        return _handleCreateTask(args, projectId);
+        return _handleCreateTask(toolArgs, projectId, effect);
       default:
         return ToolExecutionResult(
           success: false,
@@ -83,6 +97,7 @@ class ProjectToolDispatcher {
   Future<ToolExecutionResult> _handleUpdateProjectStatus(
     Map<String, dynamic> args,
     String projectId,
+    ChangeEffect? effect,
   ) async {
     final statusValue = args['status'];
     if (statusValue is! String || statusValue.trim().isEmpty) {
@@ -120,6 +135,14 @@ class ProjectToolDispatcher {
       );
     }
 
+    // A status that moved on from the one the proposal was made against was
+    // applied already — on another device that confirmed the same item — or
+    // set since, and either way it stands.
+    if (effect?.changedIn(projectFields(project.data.status))
+        case final field?) {
+      return ChangeEffect.notApplied('project', field);
+    }
+
     if (isSameSemanticStatus(project.data.status, parsedStatus)) {
       return ToolExecutionResult(
         success: true,
@@ -150,9 +173,15 @@ class ProjectToolDispatcher {
     );
   }
 
+  /// Creates a task in the project. With an [effect] — a confirmed change
+  /// item — the task's id is derived from the item, so the same item
+  /// confirmed on two devices creates one task: when it already exists
+  /// (written here, synced from the other device, or deleted since), nothing
+  /// is written and its id is returned.
   Future<ToolExecutionResult> _handleCreateTask(
     Map<String, dynamic> args,
     String projectId,
+    ChangeEffect? effect,
   ) async {
     final title = args['title'];
     if (title is! String || title.trim().isEmpty) {
@@ -185,6 +214,10 @@ class ProjectToolDispatcher {
       );
     }
 
+    if (await _createdBefore(effect, title) case final existing?) {
+      return existing;
+    }
+
     final categoryId = project.meta.categoryId;
     final category = entitiesCacheService.getCategoryById(categoryId);
     final entryText = EntryText(
@@ -210,9 +243,15 @@ class ProjectToolDispatcher {
       entryText: entryText,
       categoryId: categoryId,
       private: project.meta.private,
+      uuidV5Input: effect?.entityInput(_taskRole),
     );
 
     if (task == null) {
+      // The insert refuses an id that exists: the other device's task can
+      // have arrived between the check above and the write.
+      if (await _createdBefore(effect, title) case final existing?) {
+        return existing;
+      }
       return const ToolExecutionResult(
         success: false,
         output: 'Error: failed to create task',
@@ -229,9 +268,11 @@ class ProjectToolDispatcher {
     );
     if (!linked) {
       final rolledBack = await _rollbackCreatedTask(task);
+      // A derived id stays spent once rolled back: a retry would find its
+      // tombstone and create nothing, so with an effect the failure is final.
       return ToolExecutionResult(
         success: false,
-        nonRetryable: !rolledBack,
+        nonRetryable: !rolledBack || effect != null,
         output: rolledBack
             ? 'Error: failed to link task "$title" to the project. '
                   'Rolled back the created task.'
@@ -261,6 +302,28 @@ class ProjectToolDispatcher {
       output: output.toString(),
       mutatedEntityId: taskId,
       errorMessage: warningMessage,
+    );
+  }
+
+  /// The role of the task in its [ChangeEffect]'s derived ids.
+  static const _taskRole = 'task';
+
+  /// The result for a task an earlier application of [effect] created, or
+  /// `null` when there is none (or no effect). Its project link and agent
+  /// were written by that application, so nothing more is done here — a
+  /// link written again would race the creator's own on its way here.
+  Future<ToolExecutionResult?> _createdBefore(
+    ChangeEffect? effect,
+    String title,
+  ) async {
+    if (effect == null || !await effect.created(journalDb, _taskRole)) {
+      return null;
+    }
+    final taskId = effect.entityId(_taskRole);
+    return ToolExecutionResult(
+      success: true,
+      output: 'Task "$title" already exists ($taskId)',
+      mutatedEntityId: taskId,
     );
   }
 

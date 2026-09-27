@@ -1,7 +1,11 @@
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 
 /// What a confirmed change item's dispatch knows about its own effect, so
@@ -20,13 +24,16 @@ import 'package:lotti/logic/services/metadata_service.dart';
 ///   write ([recordOn]), and applies only while the task does not record it
 ///   ([recordedOn]): a value restored to the base after the first
 ///   application passes the value compare, but not this one (ADR 0098).
+/// - [targetBase] does what [base] does for a tool that edits another entity — a
+///   checklist item, a time entry, a project (`ChangeItem.targetBase`,
+///   ADR 0097): the tool compares it with that entity ([changedIn]).
 ///
-/// The dispatch carries both as reserved arguments. Only
+/// The dispatch carries them as reserved arguments. Only
 /// `ChangeSetConfirmationService` writes them ([addTo]), replacing whatever a
 /// proposal's arguments carried under those names, and the dispatcher strips
 /// them before any handler reads the arguments ([takeFrom]).
 class ChangeEffect {
-  const ChangeEffect({required this.key, this.base});
+  const ChangeEffect({required this.key, this.base, this.targetBase});
 
   /// The reserved argument carrying [key].
   static const keyArg = '_effectKey';
@@ -34,15 +41,25 @@ class ChangeEffect {
   /// The reserved argument carrying [base].
   static const baseArg = '_base';
 
+  /// The reserved argument carrying [targetBase].
+  static const targetBaseArg = '_targetBase';
+
+  static const List<String> _reserved = [keyArg, baseArg, targetBaseArg];
+
   final String key;
   final Map<String, dynamic>? base;
+  final Map<String, dynamic>? targetBase;
 
   /// [args] carrying this effect, and nothing else under the reserved names.
   Map<String, dynamic> addTo(Map<String, dynamic> args) {
     final withEffect = Map<String, dynamic>.of(args)
       ..remove(baseArg)
+      ..remove(targetBaseArg)
       ..[keyArg] = key;
     if (base case final base?) withEffect[baseArg] = base;
+    if (targetBase case final targetBase?) {
+      withEffect[targetBaseArg] = targetBase;
+    }
     return withEffect;
   }
 
@@ -52,21 +69,22 @@ class ChangeEffect {
   static ({ChangeEffect? effect, Map<String, dynamic> args}) takeFrom(
     Map<String, dynamic> args,
   ) {
-    if (!args.containsKey(keyArg) && !args.containsKey(baseArg)) {
+    if (!_reserved.any(args.containsKey)) {
       return (effect: null, args: args);
     }
     final key = args[keyArg];
-    final base = args[baseArg];
+    Map<String, dynamic>? asMap(Object? value) =>
+        value is Map ? Map<String, dynamic>.from(value) : null;
     return (
       effect: key is String && key.isNotEmpty
           ? ChangeEffect(
               key: key,
-              base: base is Map ? Map<String, dynamic>.from(base) : null,
+              base: asMap(args[baseArg]),
+              targetBase: asMap(args[targetBaseArg]),
             )
           : null,
       args: Map<String, dynamic>.of(args)
-        ..remove(keyArg)
-        ..remove(baseArg),
+        ..removeWhere((name, _) => _reserved.contains(name)),
     );
   }
 
@@ -109,12 +127,99 @@ class ChangeEffect {
   /// The first field of [base] whose value in [current] differs from the one
   /// the proposal was made against, or `null` when every field still holds
   /// it (or nothing was recorded). [current] is keyed as [base].
-  String? changedField(Map<String, Object?> current) {
-    for (final MapEntry(:key, :value) in (base ?? const {}).entries) {
+  String? changedField(Map<String, Object?> current) =>
+      _firstChanged(base, current);
+
+  /// The first field of [targetBase] whose value in [current] — the edited
+  /// entity's fields, keyed as [targetBase] — differs from the one the
+  /// proposal was made against, or `null` when every field still holds it
+  /// (or nothing was recorded). A field that moved on was applied already,
+  /// on another device that confirmed the same item, or edited since.
+  String? changedIn(Map<String, Object?> current) =>
+      _firstChanged(targetBase, current);
+
+  static String? _firstChanged(
+    Map<String, dynamic>? recorded,
+    Map<String, Object?> current,
+  ) {
+    for (final MapEntry(:key, :value) in (recorded ?? const {}).entries) {
       if (current[key] != value) return key;
     }
     return null;
   }
+
+  /// The success a tool reports when [changedIn] (or [changedField]) found
+  /// [field] of [what] moved on: nothing is written, and it is not a
+  /// failure, which would put the item back to pending, or retract it over a
+  /// confirm that did land elsewhere.
+  static ToolExecutionResult notApplied(String what, String field) =>
+      ToolExecutionResult(
+        success: true,
+        output:
+            "Nothing applied: the $what's $field is no longer the value "
+            'this change was proposed against — it was applied already, or '
+            'edited since — so it stays as it is.',
+      );
+}
+
+/// The key under which the fields of an entity record when [field] last
+/// changed, for an entity that keeps such a stamp. A stamp moves on every
+/// write of the field, so a base that records it sees an edit the value
+/// alone cannot — the user restoring the value the proposal was made against
+/// (ADR 0097).
+String changedAtKey(String field) => '$field@';
+
+/// The fields of the checklist item [data] `update_checklist_item` sets,
+/// keyed as its arguments, with the stamps the item keeps of their last
+/// change ([changedAtKey]): `checkedAt` for the check, `titleSetAt` for
+/// the title, `archivedSetAt` for the archive. What `ChangeItem.targetBase`
+/// records for it.
+Map<String, Object?> checklistItemFields(ChecklistItemData data) => {
+  'title': data.title,
+  changedAtKey('title'): data.titleSetAt?.toIso8601String(),
+  'isChecked': data.isChecked,
+  changedAtKey('isChecked'): data.checkedAt?.toIso8601String(),
+  'isArchived': data.isArchived,
+  changedAtKey('isArchived'): data.archivedSetAt?.toIso8601String(),
+};
+
+/// The fields of the time entry [entry] `update_time_entry` sets, keyed as
+/// its arguments: the range as the journal holds it, and the text. A time
+/// entry keeps no stamp of their last change, so a base of these values
+/// cannot see the user restoring one of them.
+Map<String, Object?> timeEntryFields(JournalEntity entry) => {
+  'startTime': entry.meta.dateFrom.toIso8601String(),
+  'endTime': entry.meta.dateTo.toIso8601String(),
+  'summary': switch (entry) {
+    JournalEntry(:final entryText) => entryText?.plainText,
+    _ => null,
+  },
+};
+
+/// The field `update_project_status` sets on a project whose status is
+/// [status]: the status, as the canonical word the tool's arguments carry,
+/// and the id of the status entry, which every status change mints anew
+/// ([changedAtKey]) — and an Undo puts back.
+Map<String, Object?> projectFields(ProjectStatus status) => {
+  'status': canonicalProjectStatusOf(status),
+  changedAtKey('status'): status.id,
+};
+
+/// The `ChangeItem.targetBase` of a proposal with [args] against an entity
+/// whose fields are [fields]: the fields [args] sets, and their stamps, as
+/// the entity holds them. `null` when [args] sets none of them.
+Map<String, dynamic>? targetBaseFor(
+  Map<String, dynamic> args,
+  Map<String, Object?> fields,
+) {
+  bool sets(String key) =>
+      args.containsKey(key) ||
+      (key.endsWith('@') && args.containsKey(key.substring(0, key.length - 1)));
+  final recorded = <String, dynamic>{
+    for (final MapEntry(:key, :value) in fields.entries)
+      if (sets(key)) key: value,
+  };
+  return recorded.isEmpty ? null : recorded;
 }
 
 /// The task field [toolName] sets, keyed as in `TaskMetadataSnapshot`, or

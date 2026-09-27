@@ -63,7 +63,7 @@ sources:
   - id: confirmation
     resource: ../../../lib/features/agents/service/change_set_confirmation_service.dart
     title: ChangeSetConfirmationService
-    last_modified: 2026-09-22
+    last_modified: 2026-09-27
   - id: resolution-store
     resource: ../../../lib/features/agents/service/change_set_resolution_store.dart
     title: Shared confirmation state, one-item transitions and chat-deletion fence
@@ -82,7 +82,7 @@ sources:
     last_modified: 2026-09-24
   - id: change-effect
     resource: ../../../lib/features/agents/tools/change_effect.dart
-    title: ChangeEffect — the effect key, derived entity ids, the field base and the applied record
+    title: ChangeEffect — the effect key, derived entity ids, the field bases and the applied record
     last_modified: 2026-09-27
   - id: task-tool-dispatcher
     resource: ../../../lib/features/agents/workflow/task_tool_dispatcher.dart
@@ -95,6 +95,10 @@ sources:
   - id: adr-0098
     resource: ../../../docs/adr/0098-field-changes-record-their-effect.md
     title: ADR 0098 — Field changes record their effect on the task
+    last_modified: 2026-09-27
+  - id: adr-0097
+    resource: ../../../docs/adr/0097-idempotent-effects-for-every-change-set-tool.md
+    title: ADR 0097 — Idempotent effects for every change-set tool
     last_modified: 2026-09-27
   - id: directed-relation
     resource: ../../../lib/features/tasks/model/directed_relation.dart
@@ -1080,24 +1084,27 @@ reopen with each decision in its own attempt slot (ADR 0067).
 
 No local transaction stops two devices that have not synced from both
 claiming the same item, and both dispatch. Instead of coordinating them, the
-effect of the tools below is idempotent across devices (ADR 0075), so for
-them the second dispatch changes nothing:
+effect of every change-set tool is idempotent across devices (ADR 0075,
+ADR 0097), so the second dispatch changes nothing:
 
 - **create-style:** `create_follow_up_task`, `create_time_entry`,
-  `add_checklist_item(s)`, `migrate_checklist_item(s)` and the event agent's
-  `suggest_follow_up_task`;
+  `add_checklist_item(s)`, `migrate_checklist_item(s)`, the event agent's
+  `suggest_follow_up_task` and the project agent's `create_task`;
 - **task fields:** `set_task_title`, `set_task_status`,
   `update_task_priority`, `update_task_estimate`, `update_task_due_date` and
-  `set_task_language`, when the proposal recorded its base — task-agent and
-  query-chat proposals do.
-
-The other tools carry no effect key or base, and a second dispatch of them
-can still repeat or overwrite (listed at the end of this section).
+  `set_task_language`, when the proposal recorded its `base` — task-agent and
+  query-chat proposals do;
+- **other entities' fields:** `update_checklist_item`, `update_time_entry`
+  and the project agent's `update_project_status`, when the proposal
+  recorded its `targetBase`;
+- **labels:** `assign_task_label(s)` adds nothing the user has taken off the
+  task, because taking a label off suppresses it;
+- `link_task` needs nothing — one link per endpoints and type.
 
 ```mermaid
 flowchart TD
   Confirm[claim on this device] --> Key["effect key: item.effectKey, else changeSetId:index"]
-  Key --> Dispatch[dispatch with ChangeEffect: key and base]
+  Key --> Dispatch[dispatch with ChangeEffect: key, base and targetBase]
   Dispatch --> Kind{tool}
   Kind -->|creates an entity| Derived["id = uuidV5 of change-effect:key:role"]
   Derived --> Exists{"id already in the journal, deleted included?"}
@@ -1109,25 +1116,35 @@ flowchart TD
   Mark -->|no| Cas{"field still holds the proposal's base?"}
   Cas -->|yes| Apply["set the field and record the key, in one write"]
   Cas -->|no: applied elsewhere, or edited since| Skip
+  Kind -->|sets another entity's field| TCas{"field and its stamp still hold the proposal's targetBase?"}
+  TCas -->|yes| TApply[apply]
+  TCas -->|no| Skip
+  Kind -->|adds a label| Supp{"label suppressed: the user took it off?"}
+  Supp -->|no| Add[add]
+  Supp -->|yes| Skip
 ```
 
 - **The key is the item, not the decision.** Each device mints its own
   decision; what both share is the synced row. `ChangeItemEffect.effectKeyIn`
   is the item's `effectKey` — set only on a copy a wake consolidates, to its
   original's key — or else `<change set id>:<index>`.
-  `ChangeSetConfirmationService` passes it with the item's `base` as
-  `ChangeEffect`'s reserved dispatch arguments, replacing whatever a
-  proposal carried under those names; `TaskToolDispatcher` strips them before
-  any handler sees its arguments.
+  `ChangeSetConfirmationService` passes it with the item's `base` and
+  `targetBase` as `ChangeEffect`'s reserved dispatch arguments, replacing
+  whatever a proposal carried under those names; `TaskToolDispatcher` and
+  `ProjectToolDispatcher` strip them before any handler sees its arguments.
+  The key stays the same for every decision of the item — except after an
+  Undo that takes the effect back (below).
 - **Create-style tools derive their ids** through
   `MetadataService.deterministicId`: `create_follow_up_task` (the task — the
   late device reports the same id, so its migrations resolve to it),
   `create_time_entry` (no second timer starts), `add_checklist_item(s)` (one
   id per position, and the first checklist of a task that has none),
   `migrate_checklist_item(s)` (the copy and the target's first checklist; the
-  source is archived either way) and the event agent's
-  `suggest_follow_up_task`. An entity deleted since counts as created: a late
-  application must not bring back what the user removed. The first checklist
+  source is archived either way), the event agent's `suggest_follow_up_task`
+  and the project agent's `create_task` (whose failed project link rolls the
+  task back and retracts the item: the derived id is spent). An entity
+  deleted since counts as created: a late application must not bring back
+  what the user removed. The first checklist
   is the exception, since items need somewhere to go:
   `ChecklistRepository.derivedChecklistFor` reuses a live one under the
   derived id — listing it on the task, whose update can arrive after the
@@ -1164,15 +1181,39 @@ flowchart TD
   drop it. Resolving a journal conflict keeps both sides' records, whichever
   side's fields the user keeps. A reopened field item confirmed again is a no-op once its change
   landed, as a reopened create-style item already was (ADR 0098).
+- **Proposals that edit another entity compare and set there**
+  (`ChangeItem.targetBase`, ADR 0097): an `update_checklist_item` records the
+  title, check or archive it changes with the stamp the item keeps of that
+  field's last change (`titleSetAt`, `checkedAt`, `archivedSetAt`), an `update_time_entry` the range
+  and text it changes, and the project agent's `update_project_status` the
+  status with its entry's id. The stamps close the ABA a value cannot see: a
+  user who unchecks an item the agent checked has restored the value, but not
+  the stamp. The task agent reads the base through the builder's
+  `checklistItemBaseResolver` and the strategy's `resolveTimeEntryFields`;
+  the query chat from the item data and `timeEntryFields` it loaded. It is a
+  field of its own, not part of `base`, because a build that predates it
+  would read an unknown `base` entry as an edit and apply nothing.
+- **A label add is remove-wins.** Taking a label off a task
+  (`LabelsRepository.setLabels`) suppresses it, and
+  `LabelAssignmentProcessor` reads the suppressed set fresh and skips it, so
+  a late add on a device that received the removal adds nothing.
+- **An Undo that takes the effect back rekeys the item.** The project agent's
+  Undo deletes the task its confirmation created and reopens the item through
+  `reopenItem` with a revert, which writes the item under
+  `ChangeItemEffect.undoneIn` — `<key>/undone@<revision>` — so confirming it
+  again creates a new task instead of finding the deleted one. The Undo names
+  the decision it undoes by its key: `reopenItem(effectKey:)` reopens
+  nothing when the item shows a later decision synced from another device,
+  whose task the memo does not name.
 
-What stays open, from ADR 0075: both devices creating the entity before
+What stays open, from ADR 0075, ADR 0097 and ADR 0098: both devices creating the entity before
 either has received the other's leaves one id with a journal `Conflict` row
 (their creation timestamps differ); an item whose
 dispatch failed and reverted on one device reads pending though the other
 device applied it (confirming again is a no-op); a consolidated copy stays
-pending beside its applied original. Label assignment, checklist item and
-time entry updates and the project agent's tools carry no key or base, and
-`link_task` needs none — one link per endpoints and type.
+pending beside its applied original. The ABA stays open only for time
+entries, which keep no stamp of a field's last change and record no applied
+key (ADR 0097).
 
 For [chat-owned approvals](query-chat.md#task-actions-and-inline-approval), a
 missing persisted set is terminal: the resolution store returns an empty

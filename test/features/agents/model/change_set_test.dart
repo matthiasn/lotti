@@ -119,6 +119,54 @@ void main() {
         expect(copy.effectKeyIn('cs-1', 2), 'cs-0:4');
       });
 
+      test(
+        'an Undo gives a new key, derived from the key and the revision it '
+        'read, so concurrent Undos agree (ADR 0097)',
+        () {
+          const item = ChangeItem(
+            toolName: 'create_task',
+            args: {'title': 'Draft the plan'},
+            humanSummary: 'Create task',
+            revision: 3,
+          );
+
+          final undone = item.undoneIn('cs-1', 2);
+
+          expect(undone.effectKeyIn('cs-1', 2), 'cs-1:2/undone@3');
+          expect(
+            undone.undoneIn('cs-1', 2).effectKey,
+            'cs-1:2/undone@3/undone@3',
+          );
+          expect(
+            const ChangeItem(
+              toolName: 'create_task',
+              args: {},
+              humanSummary: 'Create task',
+              effectKey: 'cs-0:4',
+            ).undoneIn('cs-1', 2).effectKey,
+            'cs-0:4/undone@0',
+          );
+          // Nothing else of the item changes.
+          expect(undone.copyWith(effectKey: null), item);
+        },
+      );
+
+      test('keeps the target base through the synced row', () {
+        const item = ChangeItem(
+          toolName: 'update_checklist_item',
+          args: {'id': 'item-1', 'isChecked': true},
+          humanSummary: 'Check off',
+          targetBase: {'isChecked': false, 'isChecked@': null},
+        );
+
+        final synced = ChangeItem.fromJson(
+          jsonDecode(jsonEncode(item.toJson())) as Map<String, dynamic>,
+        );
+
+        expect(synced, item);
+        expect(synced.targetBase, {'isChecked': false, 'isChecked@': null});
+      });
+
       test('survives the synced row, with the base the proposal saw', () {
         const item = ChangeItem(
           toolName: 'set_task_title',

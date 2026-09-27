@@ -163,7 +163,11 @@ class LabelAssignmentProcessor {
         effectiveCategoryId = null;
       }
     }
-    // Fetch suppressed set for defense-in-depth (callers already filter)
+    // The task's suppressed set, read fresh. Callers filter on an earlier
+    // read, but this one is load-bearing: a label the user removed is
+    // suppressed, and a confirmed proposal applied late — the same item
+    // confirmed on another device before they synced — must not bring it
+    // back (ADR 0097).
     var suppressedSet = const <String>{};
     try {
       final db = _db ?? getIt<JournalDb>();

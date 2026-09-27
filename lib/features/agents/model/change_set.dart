@@ -61,6 +61,18 @@ abstract class ChangeItem with _$ChangeItem {
     /// overwrite an edit the user made after the first. `null` when nothing
     /// was recorded; the change then applies unconditionally.
     Map<String, dynamic>? base,
+
+    /// The fields of the entity this proposal edits, when that entity is not
+    /// the task — a checklist item, a time entry, a project — as the proposal
+    /// saw them, keyed as the tool's own arguments (`isChecked`, `title`,
+    /// `startTime`, `endTime`, `summary`, `status`). Only the fields the
+    /// proposal changes are recorded. Confirming applies the change only
+    /// while the entity still holds them, as [base] does for the task
+    /// (ADR 0097). Kept apart from [base] because a build that predates this
+    /// field compares every entry of [base] with the task and would take an
+    /// entry it does not know as an edit, applying nothing; such a build
+    /// drops this field and applies the change unconditionally, as before.
+    Map<String, dynamic>? targetBase,
   }) = _ChangeItem;
 
   factory ChangeItem.fromJson(Map<String, dynamic> json) =>
@@ -200,4 +212,17 @@ extension ChangeItemEffect on ChangeItem {
   /// one effect (`lib/features/agents/tools/change_effect.dart`).
   String effectKeyIn(String changeSetId, int index) =>
       effectKey ?? '$changeSetId:$index';
+
+  /// This item, reopened by an Undo that removes its effect, under a key of
+  /// its own: confirming it again is a new effect, not a second application
+  /// of the one the user took back — whose entity is a tombstone now, which
+  /// the old key would find and create nothing. A late application of the
+  /// undone decision, on a device that confirmed it before they synced,
+  /// still carries the old key and still finds that tombstone (ADR 0097).
+  ///
+  /// Derived from the key and the revision the Undo read, so two devices
+  /// that undo the same decision concurrently arrive at the same key.
+  ChangeItem undoneIn(String changeSetId, int index) => copyWith(
+    effectKey: '${effectKeyIn(changeSetId, index)}/undone@${revision ?? 0}',
+  );
 }

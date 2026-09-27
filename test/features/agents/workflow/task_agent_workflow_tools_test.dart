@@ -667,6 +667,41 @@ void main() {
         ).called(1);
       });
 
+      test('update_time_entry records the text it replaces as its base, read '
+          'through the real resolver closure (ADR 0097)', () async {
+        final historical = makeLinkedTimeEntry(
+          id: 'historical-entry',
+          dateFrom: DateTime(2024, 6, 13, 10),
+          dateTo: DateTime(2024, 6, 13, 11),
+          text: 'past work',
+        );
+        when(
+          () => mockJournalDb.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => [historical]);
+        when(
+          () => mockJournalDb.journalEntityById('historical-entry'),
+        ).thenAnswer((_) async => historical);
+
+        final result = await executeWithToolCallOnRealTask(
+          'update_time_entry',
+          '{"entryId":"historical-entry","summary":"Refined"}',
+        );
+
+        expect(result.success, isTrue);
+        final items = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured.whereType<ChangeSetEntity>().expand((s) => s.items);
+        expect(
+          items
+              .where((i) => i.toolName == 'update_time_entry')
+              .map((i) => i.targetBase)
+              .toSet(),
+          {
+            {'summary': 'past work'},
+          },
+        );
+      });
+
       test('update_time_entry accepts the running timer through the real '
           'resolver closures', () async {
         final timeService = getIt<TimeService>();
@@ -1289,10 +1324,18 @@ void main() {
 
             expect(result.success, isTrue);
 
-            // Verify the resolver looked up the checklist item.
+            // The state, approval and base resolvers each read the item.
             verify(
               () => mockJournalDb.journalEntityById('cl-item-1'),
-            ).called(2);
+            ).called(3);
+            // The proposal records the check it changes, as the item holds
+            // it, for a late confirmation to compare (ADR 0097).
+            final items = verify(
+              () => mockSyncService.upsertEntity(captureAny()),
+            ).captured.whereType<ChangeSetEntity>().expand((s) => s.items);
+            expect(items.map((i) => i.targetBase).toSet(), {
+              {'isChecked': false, 'isChecked@': null},
+            });
           },
         );
 
@@ -1379,7 +1422,8 @@ void main() {
                 'the duplicate visible proposal must not create or merge a '
                 'change set',
           );
-          verify(() => mockJournalDb.journalEntityById('cl-new')).called(2);
+          // The state, approval and base resolvers each read the item.
+          verify(() => mockJournalDb.journalEntityById('cl-new')).called(3);
         });
       });
 

@@ -52,6 +52,18 @@ sources:
     resource: ../../../lib/features/projects/state/project_detail_record_provider.dart
     title: Project detail report read model
     last_modified: 2026-09-05
+  - id: project-tool-dispatcher
+    resource: ../../../lib/features/agents/workflow/project_tool_dispatcher.dart
+    title: ProjectToolDispatcher — derived task ids and the status compare-and-set
+    last_modified: 2026-09-27
+  - id: project-proposal-service
+    resource: ../../../lib/features/agents/service/project_proposal_service.dart
+    title: ProjectProposalService — Undo of the decision its session made
+    last_modified: 2026-09-27
+  - id: adr-0097
+    resource: ../../../docs/adr/0097-idempotent-effects-for-every-change-set-tool.md
+    title: ADR 0097 — Idempotent effects for every change-set tool
+    last_modified: 2026-09-27
 ---
 
 Project recommendation replacement owns retirement of the previous recommendation
@@ -341,7 +353,16 @@ rather than relegating internal navigation to the external Links block.
 Immediate local tools: `update_project_report`, `record_observations`, and —
 only on a wake that has open proposals — `retract_suggestions`.
 
-Deferred mutations: `update_project_status`, `create_task`.
+Deferred mutations: `update_project_status`, `create_task`. Both are
+idempotent across devices (ADR 0097): `create_task` derives its task's id
+from the item's effect key and writes nothing when that task exists, and
+`update_project_status` records the status it was proposed against — the
+canonical word and the status entry's id — and applies only while the
+project still holds it. The Undo (`ProjectProposalService`) deletes the
+created task or restores the replaced status, reopens the item under a new
+effect key so confirming it again creates anew, and acts only while the item
+still shows the decision its own session made; see
+[task agents](task-agents.md#applying-an-item-on-two-devices).
 
 ### Proposals do not accumulate
 

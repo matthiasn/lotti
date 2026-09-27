@@ -631,6 +631,102 @@ void main() {
         },
       );
 
+      test(
+        "dispatches the item's target base, never what the proposal carried "
+        'under that name (ADR 0097)',
+        () async {
+          final stored = persistUpsertedChangeSets(
+            makeChangeSetWith(
+              items: const [
+                ChangeItem(
+                  toolName: TaskAgentToolNames.updateChecklistItem,
+                  args: {
+                    'id': 'item-1',
+                    'isChecked': true,
+                    ChangeEffect.targetBaseArg: {'isChecked': true},
+                  },
+                  humanSummary: 'Check off: "Book the venue"',
+                  targetBase: {'isChecked': false, 'isChecked@': null},
+                ),
+                ChangeItem(
+                  toolName: TaskAgentToolNames.updateTimeEntry,
+                  args: {
+                    'entryId': 'entry-1',
+                    'summary': 'x',
+                    ChangeEffect.targetBaseArg: {'summary': 'forged'},
+                  },
+                  humanSummary: 'Revise time entry text',
+                ),
+              ],
+            ),
+          );
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(success: true, output: ''),
+          );
+
+          await withClock(testClock, () async {
+            await service.confirmItem(stored(), 0);
+            await service.confirmItem(stored(), 1);
+          });
+
+          final dispatched = verify(
+            () => mockToolDispatcher.dispatch(any(), captureAny(), any()),
+          ).captured;
+          expect(dispatched, [
+            {
+              'id': 'item-1',
+              'isChecked': true,
+              ChangeEffect.keyArg: 'cs-001:0',
+              ChangeEffect.targetBaseArg: {
+                'isChecked': false,
+                'isChecked@': null,
+              },
+            },
+            {
+              'entryId': 'entry-1',
+              'summary': 'x',
+              ChangeEffect.keyArg: 'cs-001:1',
+            },
+          ]);
+        },
+      );
+
+      test(
+        'tells the caller the key the stored item was claimed under, not '
+        "the caller's snapshot's (ADR 0097)",
+        () async {
+          const item = ChangeItem(
+            toolName: 'create_task',
+            args: {'title': 'Draft the plan'},
+            humanSummary: 'Create task',
+            revision: 2,
+          );
+          final snapshot = makeChangeSetWith(items: const [item]);
+          // Stored: undone and rekeyed on another device since.
+          persistUpsertedChangeSets(
+            snapshot.copyWith(items: [item.undoneIn(snapshot.id, 0)]),
+          );
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(success: true, output: ''),
+          );
+          String? claimedKey;
+
+          await withClock(testClock, () async {
+            await service.confirmItem(
+              snapshot,
+              0,
+              onClaimed: (key) => claimedKey = key,
+            );
+          });
+
+          expect(claimedKey, '${snapshot.id}:0/undone@2');
+        },
+      );
+
       for (final nonRetryable in [false, true]) {
         test(
           'a failed dispatch leaves a later confirm of the same item alone '
@@ -1875,6 +1971,94 @@ void main() {
         verifyNever(() => mockSyncService.upsertEntity(any()));
       });
 
+      test(
+        'an Undo that takes the effect back reopens the item under a new '
+        'effect key, the same on every device; a plain reopen keeps it '
+        '(ADR 0097)',
+        () async {
+          final changeSet = decidedSet();
+          stubDecisions(const []);
+          final item = changeSet.items[0];
+
+          await withClock(testClock, () async {
+            expect(
+              await service.reopenItem(
+                changeSet,
+                0,
+                revert: () async => true,
+              ),
+              isTrue,
+            );
+            expect(await service.reopenItem(changeSet, 1), isTrue);
+          });
+
+          final sets = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured.whereType<ChangeSetEntity>().toList();
+          final undone = sets[0].items[0];
+          expect(undone.status, ChangeItemStatus.pending);
+          expect(
+            undone.effectKeyIn(changeSet.id, 0),
+            '${item.effectKeyIn(changeSet.id, 0)}/undone@${item.revision ?? 0}',
+          );
+          // Derived from what both devices read, not from who undid it.
+          expect(
+            undone.effectKey,
+            item.undoneIn(changeSet.id, 0).effectKey,
+          );
+          final reopened = sets[1].items[1];
+          expect(reopened.status, ChangeItemStatus.pending);
+          expect(reopened.effectKey, changeSet.items[1].effectKey);
+        },
+      );
+
+      test(
+        'an Undo that names another decision than the item shows reopens '
+        'nothing and runs no revert (ADR 0097)',
+        () async {
+          final changeSet = decidedSet();
+          stubDecisions(const []);
+          var reverts = 0;
+          Future<bool> revert() async {
+            reverts++;
+            return true;
+          }
+
+          // The item shows a decision under the key an Undo on another
+          // device gave it; this device's memo is of the one before.
+          final later = changeSet.copyWith(
+            items: [
+              changeSet.items[0].undoneIn(changeSet.id, 0),
+              changeSet.items[1],
+            ],
+          );
+          expect(
+            await service.reopenItem(
+              later,
+              0,
+              revert: revert,
+              effectKey: '${changeSet.id}:0',
+            ),
+            isFalse,
+          );
+          expect(reverts, 0);
+          verifyNever(() => mockSyncService.upsertEntity(any()));
+
+          await withClock(testClock, () async {
+            expect(
+              await service.reopenItem(
+                changeSet,
+                0,
+                revert: revert,
+                effectKey: '${changeSet.id}:0',
+              ),
+              isTrue,
+            );
+          });
+          expect(reverts, 1);
+        },
+      );
+
       for (final (label, revert) in [
         ('refuses', () async => false),
         ('throws', () async => throw StateError('offline')),
@@ -1902,6 +2086,15 @@ void main() {
           expect(restoredDecision.verdict, ChangeDecisionVerdict.confirmed);
           final restoredSet = captured[2] as ChangeSetEntity;
           expect(restoredSet.items[0].status, ChangeItemStatus.confirmed);
+          // The effect stands under the key it was applied with.
+          expect(
+            (captured[0] as ChangeSetEntity).items[0].effectKey,
+            isNotNull,
+          );
+          expect(
+            restoredSet.items[0].effectKey,
+            changeSet.items[0].effectKey,
+          );
         });
       }
 

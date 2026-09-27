@@ -91,16 +91,28 @@ class ChangeSetConfirmationService {
   /// and persisting the decision.
   ///
   /// Returns the [ToolExecutionResult] from the tool dispatch.
+  ///
+  /// [onClaimed], when given, learns the effect key the item was claimed and
+  /// dispatched under — read from the persisted set, which may have moved on
+  /// from [changeSet] (an Undo on another device rekeys it). An Undo that
+  /// remembers this confirmation names it by that key (ADR 0097).
   Future<ToolExecutionResult> confirmItem(
     ChangeSetEntity changeSet,
-    int itemIndex,
-  ) => _confirmItem(changeSet, itemIndex, ChecklistApprovalMode.individual);
+    int itemIndex, {
+    void Function(String effectKey)? onClaimed,
+  }) => _confirmItem(
+    changeSet,
+    itemIndex,
+    ChecklistApprovalMode.individual,
+    onClaimed: onClaimed,
+  );
 
   Future<ToolExecutionResult> _confirmItem(
     ChangeSetEntity changeSet,
     int itemIndex,
-    ChecklistApprovalMode approvalMode,
-  ) async {
+    ChecklistApprovalMode approvalMode, {
+    void Function(String effectKey)? onClaimed,
+  }) async {
     // Re-read persisted state to guard against stale snapshots from the
     // caller (e.g. rapid repeated taps or concurrent clients).
     final current = await _resolution.freshChangeSet(changeSet);
@@ -147,10 +159,11 @@ class ChangeSetConfirmationService {
     // item's effect — the same on every device — so the tool applies it once
     // however often it runs: a created entity gets an id derived from the
     // key, and a field is set only while it holds the value the proposal was
-    // made against (ADR 0075).
+    // made against — the task's, or the edited entity's (ADR 0075, 0097).
     final dispatchArgs = ChangeEffect(
       key: item.effectKeyIn(current.id, itemIndex),
       base: item.base,
+      targetBase: item.targetBase,
     ).addTo(resolvedArgs);
 
     _domainLogger?.log(
@@ -194,6 +207,7 @@ class ChangeSetConfirmationService {
       );
     }
     final (changeSet: confirmedSet, :decision) = claim;
+    onClaimed?.call(item.effectKeyIn(current.id, itemIndex));
 
     // 2. Execute the tool call. If dispatch fails, either revert the status
     //    back to pending so the user can retry, or retract non-retryable stale
@@ -444,6 +458,15 @@ class ChangeSetConfirmationService {
   /// effect behind a confirmed row. If the revert refuses or throws, the
   /// record is put back the way it was — item status and verdict — and the
   /// method returns `false`, leaving the effect and the record in agreement.
+  /// [effectKey], when given, is the key of the decision [revert] undoes:
+  /// the item is reopened only while it still carries that key. An Undo
+  /// remembers the decision its own device made, and the item may show a
+  /// later one synced from another device — confirmed again after an Undo
+  /// there — whose effect [revert] does not know (ADR 0097).
+  /// An item reopened with a [revert] gets a new effect key
+  /// ([ChangeItemEffect.undoneIn]) — its effect is taken back, so the next
+  /// confirmation is a new one — and a refused revert restores the old key
+  /// with the status.
   ///
   /// Returns `false` when the item is out of range, still pending, or
   /// retracted by the agent (nothing of the user's to undo).
@@ -451,6 +474,7 @@ class ChangeSetConfirmationService {
     ChangeSetEntity changeSet,
     int itemIndex, {
     Future<bool> Function()? revert,
+    String? effectKey,
   }) async {
     final current = await _resolution.freshChangeSet(changeSet);
     if (itemIndex < 0 || itemIndex >= current.items.length) return false;
@@ -461,6 +485,16 @@ class ChangeSetConfirmationService {
         LogDomain.agentWorkflow,
         'Skipping reopen for item $itemIndex (${item.toolName}) — '
         '${item.status.name}',
+        subDomain: _sub,
+      );
+      return false;
+    }
+    if (effectKey != null &&
+        item.effectKeyIn(current.id, itemIndex) != effectKey) {
+      _domainLogger?.log(
+        LogDomain.agentWorkflow,
+        'Skipping reopen for item $itemIndex (${item.toolName}) — it shows '
+        'a later decision than the one to undo',
         subDomain: _sub,
       );
       return false;
@@ -476,6 +510,11 @@ class ChangeSetConfirmationService {
     // The verdict is neutralised in the same transaction that moves the item
     // back to pending, and only while the item still holds the decision this
     // method read: a concurrent change leaves both untouched.
+    // An Undo that takes the effect back reopens the item under a key of its
+    // own, so confirming it again creates anew instead of finding the
+    // tombstone the revert leaves (ADR 0097). A plain reopen keeps the key:
+    // its effect stands, and confirming again must not apply it twice.
+    final rekey = revert != null;
     final reopenedWith = await _syncService.runInTransaction(() async {
       final reopened = await _resolution.transitionChangeSetItem(
         current,
@@ -483,6 +522,9 @@ class ChangeSetConfirmationService {
         from: {item.status},
         to: ChangeItemStatus.pending,
         observed: item,
+        edit: rekey
+            ? (reopening) => reopening.undoneIn(current.id, itemIndex)
+            : null,
       );
       if (reopened == null) return null;
       final ChangeDecisionEntity decision;
@@ -535,6 +577,10 @@ class ChangeSetConfirmationService {
         from: const {ChangeItemStatus.pending},
         to: item.status,
         observed: reopenedWith.item,
+        // The effect stands under the key it was applied with.
+        edit: rekey
+            ? (restoring) => restoring.copyWith(effectKey: item.effectKey)
+            : null,
       );
       if (restored == null) return;
       await _syncService.upsertEntity(

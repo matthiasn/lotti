@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/model/project_agent_report_contract.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/agent_message_recording.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
@@ -155,13 +156,20 @@ class ProjectAgentStrategy extends ConversationStrategy
           await recordToolResultMessage(toolName: toolName);
           continue;
         }
+        final normalized = normalizeProjectProposalArgs(toolName, args);
         _deferredItems.add({
           'toolName': toolName,
           // Canonicalized here, where the model's word enters: a status alias
           // renders and applies as its canonical status, so storing the alias
           // would make two identical-looking proposals compare as different
           // everywhere downstream.
-          'args': normalizeProjectProposalArgs(toolName, args),
+          'args': normalized,
+          // The status the proposal was made against: a late confirmation on
+          // another device applies only while the project still holds it
+          // (ADR 0097).
+          if (toolName == ProjectAgentToolNames.updateProjectStatus &&
+              status != null)
+            'targetBase': targetBaseFor(normalized, projectFields(status)),
         });
         final response = 'Queued $toolName for user review.';
         manager.addToolResponse(toolCallId: call.id, response: response);
