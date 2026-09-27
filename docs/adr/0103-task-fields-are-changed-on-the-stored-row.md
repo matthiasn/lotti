@@ -73,8 +73,11 @@ and model-checked it. TLC found:
   nothing applied — the newer value stands — which is how the dispatcher
   already reports a change whose base moved (ADR 0075). Every field tool
   and handler, the AI tool processor's language write, and the day agent's
-  triage (which needs no comparison: it acts on the task it just read, at
-  the user's request) write through it or through `updateTask`.
+  triage write through it or through `updateTask`. The triage compares no
+  field — it acts on the task it just read, at the user's request — but it
+  may only touch tasks in its planner's categories, so it passes that
+  condition as `onlyIf`, which `updateTask` asks of the stored task inside
+  the same write: a task moved out of scope since the read is left alone.
 - **Every status is recorded.** `TaskData.withStatus` sets a status and
   appends it to `statusHistory` when it changes the status, and every status
   writer uses it: the task screen, the agent's status tool, the triage.

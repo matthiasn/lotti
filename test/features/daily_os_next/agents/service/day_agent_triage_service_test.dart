@@ -308,7 +308,42 @@ void main() {
       ),
       throwsA(isA<DayAgentCaptureException>()),
     );
-    verifyNever(() => journalRepository.updateTask(any(), any()));
+    verifyNever(
+      () => journalRepository.updateTask(
+        any(),
+        any(),
+        onlyIf: any(named: 'onlyIf'),
+      ),
+    );
+  });
+
+  test('leaves a task moved outside the allowed categories since the read '
+      'alone', () async {
+    final read = _task(id: 't-moved', status: _openStatus());
+    // Sync (or the user) files the task under a category the planner does
+    // not own after the triage read it, before its write.
+    final row = stubTask(read)
+      ..task = read.copyWith(meta: read.meta.copyWith(categoryId: 'life'));
+
+    await withClock(Clock.fixed(_now), () async {
+      await expectLater(
+        createService().applyTriage(
+          agentId: _agentId,
+          taskId: 't-moved',
+          action: 'done',
+        ),
+        throwsA(
+          isA<DayAgentCaptureException>().having(
+            (e) => e.message,
+            'message',
+            contains('outside the allowed categories'),
+          ),
+        ),
+      );
+    });
+    expect(row.writes, isEmpty);
+    expect(row.task.data.status, isA<TaskOpen>());
+    expect(notifications, isEmpty);
   });
 
   test('throws an unknown-action error for an unrecognized action', () async {
@@ -327,7 +362,11 @@ void main() {
   test('throws when the persistence update fails', () async {
     stubTask(_task(id: 't7', status: _openStatus()));
     when(
-      () => journalRepository.updateTask(any(), any()),
+      () => journalRepository.updateTask(
+        any(),
+        any(),
+        onlyIf: any(named: 'onlyIf'),
+      ),
     ).thenAnswer((_) async => null);
 
     await withClock(Clock.fixed(_now), () async {

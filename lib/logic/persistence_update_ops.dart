@@ -153,13 +153,19 @@ class PersistenceUpdateOps extends PersistenceCollaboratorBase {
   /// updateTaskChecklistIds` owns it — and the stored record of applied
   /// agent changes is kept ([TaskDataOnStored.onStored], ADR 0098).
   ///
+  /// [onlyIf], when given, is asked of the stored task in the same build,
+  /// so a condition on the task — its category, say — holds for the row the
+  /// change is written on, not only for one read earlier; when it answers
+  /// false nothing is written.
+  ///
   /// Returns the task as stored afterwards — unchanged when [change] leaves
-  /// it as it is — or `null` when it does not exist, is not a task, or the
-  /// write failed.
+  /// it as it is or [onlyIf] refuses it — or `null` when it does not exist,
+  /// is not a task, or the write failed.
   Future<Task?> updateTaskImpl({
     required String journalEntityId,
     required TaskData Function(TaskData stored) change,
     EntryText? entryText,
+    bool Function(Task stored)? onlyIf,
   }) async {
     try {
       Task? result;
@@ -175,6 +181,10 @@ class PersistenceUpdateOps extends PersistenceCollaboratorBase {
               'not a task',
               subDomain: 'updateTask',
             );
+            return null;
+          }
+          if (onlyIf != null && !onlyIf(stored)) {
+            result = stored;
             return null;
           }
           final data = change(stored.data).onStored(stored.data);

@@ -322,10 +322,12 @@ class PersistenceLogic implements PersistenceLogicContract {
     required String journalEntityId,
     required TaskData Function(TaskData stored) change,
     EntryText? entryText,
+    bool Function(Task stored)? onlyIf,
   }) => _updates.updateTask(
     journalEntityId: journalEntityId,
     change: change,
     entryText: entryText,
+    onlyIf: onlyIf,
   );
 
   Future<bool> updateEvent({
@@ -398,10 +400,12 @@ class PersistenceLogic implements PersistenceLogicContract {
     required String journalEntityId,
     required TaskData Function(TaskData stored) change,
     EntryText? entryText,
+    bool Function(Task stored)? onlyIf,
   }) => _updateOps.updateTaskImpl(
     journalEntityId: journalEntityId,
     change: change,
     entryText: entryText,
+    onlyIf: onlyIf,
   );
 
   @override

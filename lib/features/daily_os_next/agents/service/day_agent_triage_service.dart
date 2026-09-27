@@ -60,9 +60,23 @@ class DayAgentTriageService {
     }
 
     final change = _triage(action.trim(), clock.now(), deferTo);
-    final updated = await journalRepository.updateTask(taskId, change);
+    // The scope is checked again on the task the change is written on: a
+    // move to a category outside it — by sync or the user — after the read
+    // above leaves the task alone.
+    bool inScope(Task task) =>
+        categoryAllowed(task.meta.categoryId, identity.allowedCategoryIds);
+    final updated = await journalRepository.updateTask(
+      taskId,
+      change,
+      onlyIf: inScope,
+    );
     if (updated == null) {
       throw DayAgentCaptureException('failed to update task $taskId');
+    }
+    if (!inScope(updated)) {
+      throw DayAgentCaptureException(
+        'task $taskId is outside the allowed categories for this planner',
+      );
     }
     onPersistedStateChanged?.call(taskId);
     return updated;

@@ -801,7 +801,11 @@ void seedScenarioCorpus({
   // out loud and doing nothing.
   if (journalRepository != null) {
     when(
-      () => journalRepository.updateTask(any(), any()),
+      () => journalRepository.updateTask(
+        any(),
+        any(),
+        onlyIf: any(named: 'onlyIf'),
+      ),
     ).thenAnswer((invocation) async {
       final id = invocation.positionalArguments[0] as String;
       final change =

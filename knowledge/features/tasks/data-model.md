@@ -131,7 +131,8 @@ sequenceDiagram
   did not decide against. A moved field is reported as nothing applied. The
   status, title, language, priority, estimate and due-date tools, and the AI
   tool processor's language write, go this way; the day agent's triage uses
-  `updateTask` directly.
+  `updateTask` directly, with its planner's category scope as `onlyIf`, which
+  is asked of the stored task inside the write.
 - **Every status is recorded.** `TaskData.withStatus` appends a status to
   `statusHistory` whenever it changes the status, and every status writer
   uses it; resolving a conflict keeps both sides' histories

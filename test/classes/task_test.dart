@@ -295,6 +295,21 @@ void main() {
         expect(local.withHistoryOf(withHistory(const [])), same(local));
       });
 
+      test('orders statuses set at the same instant by id, so both '
+          'directions of a join agree', () {
+        final local = withHistory([at('b', 9), at('z', 10)]);
+        final remote = withHistory([at('a', 9), at('c', 9)]);
+
+        final ids = local.withHistoryOf(remote).statusHistory.map((s) => s.id);
+        final reversed = remote
+            .withHistoryOf(local)
+            .statusHistory
+            .map((s) => s.id);
+
+        expect(ids, ['a', 'b', 'c', 'z']);
+        expect(reversed, ids);
+      });
+
       test('keeps its own entry for an id both sides hold', () {
         final local = withHistory([at('a', 9)]);
         final remote = withHistory([at('a', 9, done: true), at('b', 10)]);

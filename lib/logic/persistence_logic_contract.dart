@@ -132,6 +132,7 @@ abstract class PersistenceLogicContract {
     required String journalEntityId,
     required TaskData Function(TaskData stored) change,
     EntryText? entryText,
+    bool Function(Task stored)? onlyIf,
   });
 
   Future<bool> updateEventImpl({

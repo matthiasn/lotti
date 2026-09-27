@@ -275,7 +275,11 @@ class DayAgentPipelineHarness {
     // the task missing before it writes; the stub only keeps an unexpected
     // write from arriving as a Dart type error.
     when(
-      () => journalRepository.updateTask(any(), any()),
+      () => journalRepository.updateTask(
+        any(),
+        any(),
+        onlyIf: any(named: 'onlyIf'),
+      ),
     ).thenAnswer((_) async => null);
 
     final planService = DayAgentPlanService(

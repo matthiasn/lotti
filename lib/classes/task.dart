@@ -216,7 +216,9 @@ extension TaskDataOnStored on TaskData {
       : copyWith(status: next, statusHistory: [...statusHistory, next]);
 
   /// This data with its status history holding every status [other]'s
-  /// holds, too, each once (by id), in the order they were set. Resolving a
+  /// holds, too, each once (by id), in the order they were set — by id
+  /// where two were set at the same instant, so both directions of a join
+  /// order the history the same way. Resolving a
   /// conflict keeps one side's fields, but a status either side was set to
   /// was set, so the history keeps both sides'
   /// (`specs/tla/TaskFieldWrites.tla`, HistoryComplete).
@@ -228,7 +230,11 @@ extension TaskDataOnStored on TaskData {
     ];
     if (joined.length == statusHistory.length) return this;
     return copyWith(
-      statusHistory: joined..sort((a, b) => a.createdAt.compareTo(b.createdAt)),
+      statusHistory: joined
+        ..sort((a, b) {
+          final byTime = a.createdAt.compareTo(b.createdAt);
+          return byTime != 0 ? byTime : a.id.compareTo(b.id);
+        }),
     );
   }
 }

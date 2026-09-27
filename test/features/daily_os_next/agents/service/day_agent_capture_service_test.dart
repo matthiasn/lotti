@@ -305,7 +305,13 @@ void main() {
     });
     // A task write applies its change to the task as stored in
     // [journalEntities], the way `PersistenceLogic.updateTask` does.
-    when(() => journalRepository.updateTask(any(), any())).thenAnswer((
+    when(
+      () => journalRepository.updateTask(
+        any(),
+        any(),
+        onlyIf: any(named: 'onlyIf'),
+      ),
+    ).thenAnswer((
       invocation,
     ) async {
       final id = invocation.positionalArguments[0] as String;
@@ -1169,7 +1175,11 @@ void main() {
         status: _openStatus(),
       );
       when(
-        () => journalRepository.updateTask(any(), any()),
+        () => journalRepository.updateTask(
+          any(),
+          any(),
+          onlyIf: any(named: 'onlyIf'),
+        ),
       ).thenAnswer((_) async => null);
 
       await expectLater(
@@ -2148,7 +2158,13 @@ void main() {
             ),
           ),
         );
-        verifyNever(() => journalRepository.updateTask(any(), any()));
+        verifyNever(
+          () => journalRepository.updateTask(
+            any(),
+            any(),
+            onlyIf: any(named: 'onlyIf'),
+          ),
+        );
       },
     );
 
@@ -2179,7 +2195,11 @@ void main() {
 
         expect(task.data.status, isA<TaskDone>());
         verify(
-          () => journalRepository.updateTask('task-home', any()),
+          () => journalRepository.updateTask(
+            'task-home',
+            any(),
+            onlyIf: any(named: 'onlyIf'),
+          ),
         ).called(1);
       },
     );

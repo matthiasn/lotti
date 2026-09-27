@@ -332,6 +332,36 @@ void main() {
     ).called(2);
   });
 
+  test('updateTaskImpl asks onlyIf of the stored task and writes nothing '
+      'when it refuses', () async {
+    final stored = testTask.copyWith(
+      meta: testTask.meta.copyWith(categoryId: 'moved-away'),
+    );
+    when(
+      () => mocks.journalDb.journalEntityById(stored.meta.id),
+    ).thenAnswer((_) async => stored);
+    Task? asked;
+
+    final result = await ops.updateTaskImpl(
+      journalEntityId: stored.meta.id,
+      change: (data) => data.copyWith(title: 'renamed'),
+      onlyIf: (task) {
+        asked = task;
+        return task.meta.categoryId == 'allowed';
+      },
+    );
+
+    expect(asked, stored);
+    expect(result, stored);
+    verifyNever(
+      () => logic.updateDbEntity(
+        any(),
+        beforeNotify: any(named: 'beforeNotify'),
+        precondition: any(named: 'precondition'),
+      ),
+    );
+  });
+
   group('updateTaskImpl returns null', () {
     Future<void> expectNothingWritten(Task? result) async {
       expect(result, isNull);
