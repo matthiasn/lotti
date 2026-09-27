@@ -54,6 +54,21 @@ void main() {
   ChangeSetEntity decided(ChangeItem item, ChangeItemStatus status) =>
       setWith(item.copyWith(status: status));
 
+  /// [result], as the real service returns it — having told the caller, on
+  /// a claim, the key the item was claimed under: the stored set's.
+  ToolExecutionResult claimed(
+    Invocation invocation,
+    ToolExecutionResult result, {
+    String key = 'set-1:0',
+  }) {
+    if (result.success) {
+      (invocation.namedArguments[#onClaimed] as void Function(String)?)?.call(
+        key,
+      );
+    }
+    return result;
+  }
+
   setUpAll(registerAllFallbackValues);
   setUp(() {
     confirmation = MockChangeSetConfirmationService();
@@ -116,11 +131,20 @@ void main() {
         isFalse,
       );
 
-      when(() => confirmation.confirmItem(any(), any())).thenAnswer(
-        (_) async => const ToolExecutionResult(
-          success: true,
-          output: '',
-          mutatedEntityId: 'task-9',
+      when(
+        () => confirmation.confirmItem(
+          any(),
+          any(),
+          onClaimed: any(named: 'onClaimed'),
+        ),
+      ).thenAnswer(
+        (invocation) async => claimed(
+          invocation,
+          const ToolExecutionResult(
+            success: true,
+            output: '',
+            mutatedEntityId: 'task-9',
+          ),
         ),
       );
       final set = setWith(createTask);
@@ -133,8 +157,17 @@ void main() {
   );
 
   test('a failed confirmation remembers nothing', () async {
-    when(() => confirmation.confirmItem(any(), any())).thenAnswer(
-      (_) async => const ToolExecutionResult(success: false, output: 'no'),
+    when(
+      () => confirmation.confirmItem(
+        any(),
+        any(),
+        onClaimed: any(named: 'onClaimed'),
+      ),
+    ).thenAnswer(
+      (invocation) async => claimed(
+        invocation,
+        const ToolExecutionResult(success: false, output: 'no'),
+      ),
     );
     expect((await service.confirm(setWith(createTask), 0)).success, isFalse);
     expect(
@@ -144,11 +177,20 @@ void main() {
   });
 
   test('undoing a created task removes it, then reopens the item', () async {
-    when(() => confirmation.confirmItem(any(), any())).thenAnswer(
-      (_) async => const ToolExecutionResult(
-        success: true,
-        output: '',
-        mutatedEntityId: 'task-9',
+    when(
+      () => confirmation.confirmItem(
+        any(),
+        any(),
+        onClaimed: any(named: 'onClaimed'),
+      ),
+    ).thenAnswer(
+      (invocation) async => claimed(
+        invocation,
+        const ToolExecutionResult(
+          success: true,
+          output: '',
+          mutatedEntityId: 'task-9',
+        ),
       ),
     );
     final set = setWith(createTask);
@@ -178,11 +220,20 @@ void main() {
     when(
       () => repository.getProjectById(projectId),
     ).thenAnswer((_) async => before);
-    when(() => confirmation.confirmItem(any(), any())).thenAnswer(
-      (_) async => const ToolExecutionResult(
-        success: true,
-        output: '',
-        mutatedEntityId: projectId,
+    when(
+      () => confirmation.confirmItem(
+        any(),
+        any(),
+        onClaimed: any(named: 'onClaimed'),
+      ),
+    ).thenAnswer(
+      (invocation) async => claimed(
+        invocation,
+        const ToolExecutionResult(
+          success: true,
+          output: '',
+          mutatedEntityId: projectId,
+        ),
       ),
     );
     final set = setWith(setStatus);
@@ -229,11 +280,20 @@ void main() {
   test(
     'a task that will not go, or a project that will not save, stops the undo',
     () async {
-      when(() => confirmation.confirmItem(any(), any())).thenAnswer(
-        (_) async => const ToolExecutionResult(
-          success: true,
-          output: '',
-          mutatedEntityId: 'task-9',
+      when(
+        () => confirmation.confirmItem(
+          any(),
+          any(),
+          onClaimed: any(named: 'onClaimed'),
+        ),
+      ).thenAnswer(
+        (invocation) async => claimed(
+          invocation,
+          const ToolExecutionResult(
+            success: true,
+            output: '',
+            mutatedEntityId: 'task-9',
+          ),
         ),
       );
       await service.confirm(setWith(createTask), 0);
@@ -287,11 +347,20 @@ void main() {
     when(
       () => repository.getProjectById(projectId),
     ).thenAnswer((_) async => before);
-    when(() => confirmation.confirmItem(any(), any())).thenAnswer(
-      (_) async => const ToolExecutionResult(
-        success: true,
-        output: '',
-        mutatedEntityId: projectId,
+    when(
+      () => confirmation.confirmItem(
+        any(),
+        any(),
+        onClaimed: any(named: 'onClaimed'),
+      ),
+    ).thenAnswer(
+      (invocation) async => claimed(
+        invocation,
+        const ToolExecutionResult(
+          success: true,
+          output: '',
+          mutatedEntityId: projectId,
+        ),
       ),
     );
     await service.confirm(setWith(setStatus), 0);
@@ -334,8 +403,17 @@ void main() {
     when(
       () => repository.getProjectById(projectId),
     ).thenAnswer((_) async => already);
-    when(() => confirmation.confirmItem(any(), any())).thenAnswer(
-      (_) async => const ToolExecutionResult(success: true, output: ''),
+    when(
+      () => confirmation.confirmItem(
+        any(),
+        any(),
+        onClaimed: any(named: 'onClaimed'),
+      ),
+    ).thenAnswer(
+      (invocation) async => claimed(
+        invocation,
+        const ToolExecutionResult(success: true, output: ''),
+      ),
     );
     await service.confirm(setWith(setStatus), 0);
 
@@ -351,8 +429,17 @@ void main() {
     when(
       () => repository.getProjectById(projectId),
     ).thenAnswer((_) async => before);
-    when(() => confirmation.confirmItem(any(), any())).thenAnswer(
-      (_) async => const ToolExecutionResult(success: true, output: ''),
+    when(
+      () => confirmation.confirmItem(
+        any(),
+        any(),
+        onClaimed: any(named: 'onClaimed'),
+      ),
+    ).thenAnswer(
+      (invocation) async => claimed(
+        invocation,
+        const ToolExecutionResult(success: true, output: ''),
+      ),
     );
     const odd = ChangeItem(
       toolName: 'update_project_status',
@@ -377,11 +464,20 @@ void main() {
     'an Undo names the decision it undoes, and a later decision synced from '
     'another device is not undoable here (ADR 0097)',
     () async {
-      when(() => confirmation.confirmItem(any(), any())).thenAnswer(
-        (_) async => const ToolExecutionResult(
-          success: true,
-          output: '',
-          mutatedEntityId: 'task-9',
+      when(
+        () => confirmation.confirmItem(
+          any(),
+          any(),
+          onClaimed: any(named: 'onClaimed'),
+        ),
+      ).thenAnswer(
+        (invocation) async => claimed(
+          invocation,
+          const ToolExecutionResult(
+            success: true,
+            output: '',
+            mutatedEntityId: 'task-9',
+          ),
         ),
       );
       await service.confirm(setWith(createTask), 0);
@@ -409,6 +505,45 @@ void main() {
     },
   );
 
+  test(
+    "remembers the key the item was claimed under, not the caller's stale "
+    'snapshot of it',
+    () async {
+      // Another device undid the item and synced it rekeyed after this
+      // snapshot was rendered; the service claims the stored, rekeyed item.
+      final rekeyed = createTask.undoneIn('set-1', 0);
+      final rekey = rekeyed.effectKeyIn('set-1', 0);
+      when(
+        () => confirmation.confirmItem(
+          any(),
+          any(),
+          onClaimed: any(named: 'onClaimed'),
+        ),
+      ).thenAnswer(
+        (invocation) async => claimed(
+          invocation,
+          const ToolExecutionResult(
+            success: true,
+            output: '',
+            mutatedEntityId: 'task-9',
+          ),
+          key: rekey,
+        ),
+      );
+
+      await service.confirm(setWith(createTask), 0);
+
+      final applied = setWith(
+        rekeyed.copyWith(status: ChangeItemStatus.confirmed),
+      );
+      expect(service.canUndo(applied, 0), isTrue);
+      expect(
+        service.canUndo(decided(createTask, ChangeItemStatus.confirmed), 0),
+        isFalse,
+      );
+    },
+  );
+
   test('a refused reopen keeps the memo for another try', () async {
     when(
       () => confirmation.reopenItem(
@@ -418,11 +553,20 @@ void main() {
         effectKey: any(named: 'effectKey'),
       ),
     ).thenAnswer((_) async => false);
-    when(() => confirmation.confirmItem(any(), any())).thenAnswer(
-      (_) async => const ToolExecutionResult(
-        success: true,
-        output: '',
-        mutatedEntityId: 'task-9',
+    when(
+      () => confirmation.confirmItem(
+        any(),
+        any(),
+        onClaimed: any(named: 'onClaimed'),
+      ),
+    ).thenAnswer(
+      (invocation) async => claimed(
+        invocation,
+        const ToolExecutionResult(
+          success: true,
+          output: '',
+          mutatedEntityId: 'task-9',
+        ),
       ),
     );
     await service.confirm(setWith(createTask), 0);

@@ -635,6 +635,37 @@ void _registerIdempotency(_Db Function() fixture) {
       );
 
       test(
+        'update_checklist_item leaves an item the user restored after the '
+        'first application archived it',
+        () async {
+          final itemId = await newItem('Old venue shortlist');
+          final args = {'id': itemId, 'isArchived': true};
+          final base = await itemBase(args);
+
+          await apply(
+            TaskAgentToolNames.updateChecklistItem,
+            args,
+            targetBase: base,
+          );
+          expect((await storedItem(itemId)).data.isArchived, isTrue);
+          await userEditsItem(
+            itemId,
+            (data) => data.copyWith(isArchived: false),
+          );
+
+          final late = await apply(
+            TaskAgentToolNames.updateChecklistItem,
+            args,
+            targetBase: base,
+          );
+
+          expect(late.success, isTrue);
+          expect(late.output, contains('Nothing applied'));
+          expect((await storedItem(itemId)).data.isArchived, isFalse);
+        },
+      );
+
+      test(
         'update_checklist_item without a recorded base applies as before',
         () async {
           final itemId = await newItem('Order the banners');

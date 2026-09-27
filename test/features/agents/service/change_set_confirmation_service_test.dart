@@ -693,6 +693,40 @@ void main() {
         },
       );
 
+      test(
+        'tells the caller the key the stored item was claimed under, not '
+        "the caller's snapshot's (ADR 0097)",
+        () async {
+          const item = ChangeItem(
+            toolName: 'create_task',
+            args: {'title': 'Draft the plan'},
+            humanSummary: 'Create task',
+            revision: 2,
+          );
+          final snapshot = makeChangeSetWith(items: const [item]);
+          // Stored: undone and rekeyed on another device since.
+          persistUpsertedChangeSets(
+            snapshot.copyWith(items: [item.undoneIn(snapshot.id, 0)]),
+          );
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(success: true, output: ''),
+          );
+          String? claimedKey;
+
+          await withClock(testClock, () async {
+            await service.confirmItem(
+              snapshot,
+              0,
+              onClaimed: (key) => claimedKey = key,
+            );
+          });
+
+          expect(claimedKey, '${snapshot.id}:0/undone@2');
+        },
+      );
+
       for (final nonRetryable in [false, true]) {
         test(
           'a failed dispatch leaves a later confirm of the same item alone '

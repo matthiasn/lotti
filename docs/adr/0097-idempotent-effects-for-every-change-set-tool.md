@@ -73,9 +73,10 @@ therefore adds nothing. The processor's comment called the read
    `ChangeItem.targetBase` holds the fields the proposal changes, as the
    edited entity held them when it was proposed, keyed as the tool's
    arguments, next to ADR 0075's `base` for the task:
-   - `update_checklist_item`: `title` and `isChecked`, each with the stamp
-     the item keeps of its last change — `titleSetAt`, `checkedAt` — under
-     `title@` and `isChecked@`;
+   - `update_checklist_item`: `title`, `isChecked` and `isArchived`, each
+     with the stamp the item keeps of its last change — `titleSetAt`,
+     `checkedAt`, `archivedSetAt` — under `title@`, `isChecked@` and
+     `isArchived@`;
    - `update_time_entry`: `startTime`, `endTime` and `summary`, as the
      journal holds them;
    - `update_project_status`: the canonical status word, with the id of the
@@ -121,7 +122,9 @@ therefore adds nothing. The processor's comment called the read
    it has it. A refused revert restores the old key with the status. A plain
    reopen keeps the key, as ADR 0075 requires.
 7. **An Undo names the decision it undoes.** `ProjectProposalService`
-   remembers the effect key its confirmation applied the item under, offers
+   remembers the effect key its confirmation claimed the item under — read
+   from the stored set through `confirmItem(onClaimed:)`, not from the
+   caller's snapshot, which may predate a rekey — offers
    the Undo only while the item still carries it, and passes it to
    `reopenItem`, which reopens nothing — and runs no revert — when the item
    shows another key: a later decision, synced from another device, whose

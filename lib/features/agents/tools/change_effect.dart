@@ -172,12 +172,15 @@ String changedAtKey(String field) => '$field@';
 /// The fields of the checklist item [data] `update_checklist_item` sets,
 /// keyed as its arguments, with the stamps the item keeps of their last
 /// change ([changedAtKey]): `checkedAt` for the check, `titleSetAt` for
-/// the title. What `ChangeItem.targetBase` records for it.
+/// the title, `archivedSetAt` for the archive. What `ChangeItem.targetBase`
+/// records for it.
 Map<String, Object?> checklistItemFields(ChecklistItemData data) => {
   'title': data.title,
   changedAtKey('title'): data.titleSetAt?.toIso8601String(),
   'isChecked': data.isChecked,
   changedAtKey('isChecked'): data.checkedAt?.toIso8601String(),
+  'isArchived': data.isArchived,
+  changedAtKey('isArchived'): data.archivedSetAt?.toIso8601String(),
 };
 
 /// The fields of the time entry [entry] `update_time_entry` sets, keyed as

@@ -72,10 +72,18 @@ class ProjectProposalService {
       );
       previousStatus = project?.data.status;
     }
-    final result = await confirmation.confirmItem(changeSet, itemIndex);
-    if (result.success) {
+    // The key the item was claimed under, read from the persisted set: the
+    // caller's snapshot may predate an Undo on another device that rekeyed
+    // it.
+    String? claimedKey;
+    final result = await confirmation.confirmItem(
+      changeSet,
+      itemIndex,
+      onClaimed: (key) => claimedKey = key,
+    );
+    if (result.success && claimedKey != null) {
       _applied[_key(changeSet, itemIndex)] = _AppliedProposal(
-        effectKey: item.effectKeyIn(changeSet.id, itemIndex),
+        effectKey: claimedKey!,
         createdTaskId: item.toolName == ProjectAgentToolNames.createTask
             ? result.mutatedEntityId
             : null,

@@ -198,6 +198,10 @@ void main() {
         'title': 'Book the venue',
         'title@': titleSetAt.toIso8601String(),
       });
+      expect(targetBaseFor({'id': 'i', 'isArchived': true}, fields), {
+        'isArchived': false,
+        'isArchived@': null,
+      });
       expect(targetBaseFor({'id': 'i'}, fields), isNull);
     });
 

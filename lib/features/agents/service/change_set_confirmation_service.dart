@@ -91,16 +91,28 @@ class ChangeSetConfirmationService {
   /// and persisting the decision.
   ///
   /// Returns the [ToolExecutionResult] from the tool dispatch.
+  ///
+  /// [onClaimed], when given, learns the effect key the item was claimed and
+  /// dispatched under — read from the persisted set, which may have moved on
+  /// from [changeSet] (an Undo on another device rekeys it). An Undo that
+  /// remembers this confirmation names it by that key (ADR 0097).
   Future<ToolExecutionResult> confirmItem(
     ChangeSetEntity changeSet,
-    int itemIndex,
-  ) => _confirmItem(changeSet, itemIndex, ChecklistApprovalMode.individual);
+    int itemIndex, {
+    void Function(String effectKey)? onClaimed,
+  }) => _confirmItem(
+    changeSet,
+    itemIndex,
+    ChecklistApprovalMode.individual,
+    onClaimed: onClaimed,
+  );
 
   Future<ToolExecutionResult> _confirmItem(
     ChangeSetEntity changeSet,
     int itemIndex,
-    ChecklistApprovalMode approvalMode,
-  ) async {
+    ChecklistApprovalMode approvalMode, {
+    void Function(String effectKey)? onClaimed,
+  }) async {
     // Re-read persisted state to guard against stale snapshots from the
     // caller (e.g. rapid repeated taps or concurrent clients).
     final current = await _resolution.freshChangeSet(changeSet);
@@ -195,6 +207,7 @@ class ChangeSetConfirmationService {
       );
     }
     final (changeSet: confirmedSet, :decision) = claim;
+    onClaimed?.call(item.effectKeyIn(current.id, itemIndex));
 
     // 2. Execute the tool call. If dispatch fails, either revert the status
     //    back to pending so the user can retry, or retract non-retryable stale
