@@ -1438,7 +1438,7 @@ forward walk from the anchor when `BridgeMarker.anchorIsSafe`, otherwise the
 backward walk down to `BridgeMarker.backwardWalkBound`. The decision is
 [ADR 0084](../../docs/adr/0084-model-checked-inbound-queue.md); the
 equal-millisecond rules are
-[ADR 0093](../../docs/adr/0093-equal-milliseconds-at-the-catch-up-boundary.md).
+[ADR 0100](../../docs/adr/0100-equal-milliseconds-at-the-catch-up-boundary.md).
 
 | Property | Kind | Says |
 |----------|------|------|
@@ -1479,9 +1479,9 @@ newer applies past it the next walk goes backward to the claim.
 | `RetainFailedClaim` | a claim whose marker read threw was logged and dropped, and start and the limited-sync handler carried on | `NoSilentLoss`, 5 steps: the start claim's read fails, a live event applies, and what arrived while the app was down is behind the anchor. A retained claim is resolved against the marker as it then is, before any queue insert |
 | `GuardedResurrect` | the resurrection UPDATE flipped the selected rows by id | `AppliedIsFinal`, 11 steps: a second pass re-arms the row, the worker applies it, and the first pass's UPDATE flips the applied row back to `enqueued` |
 | `ResurrectRechecksCap` | the UPDATE re-checked only `status = 'abandoned'` | `CapHolds`, 12 steps: a second pass re-arms the selected row, the worker abandons it again, and the first pass resurrects it past its hard cap. The same holds for the reason filter of `resurrectByReason`, which the model leaves out |
-| `TieKeepsAnchor` (ADR 0093) | a commit in the marker's millisecond moved the anchor to the larger event id | `InboundQueueSameMs`, `NoSilentLoss`, 16 steps: the anchor is event 2; a limited sync drops event 3, the gap claim is 3, and event 4 — the same millisecond, a larger id — applies and becomes the anchor. The claim still reads as safe, and the forward walk from event 4 never fetches event 3 |
-| `CheckpointAtCursor` (ADR 0093) | a forward walk checkpointed one millisecond above its newest event | `InboundQueueSameMs`, `NoSilentLoss`, 16 steps: a limited sync drops events 2 and 3 and event 4, in their millisecond, applies first and becomes the anchor; the forward walk from event 1 queues event 2 and checkpoints one above it, which makes event 4 a safe anchor, and the retry walks forward past event 3 |
-| `WalkBelowFloor` (ADR 0093) | the backward walk stopped at the lower of the floor and `last_applied_ts` | `InboundQueueSameMs`, `NoSilentLoss`, 17 steps: the anchor is event 2; a limited sync drops events 3 and 4 in its millisecond, the claim is one above it, and event 5 applies in the next millisecond. The walk bounded at the claim stops inside the claimed millisecond; a real page that crosses the bound carries event 4 at most, and event 3 is lost |
+| `TieKeepsAnchor` (ADR 0100) | a commit in the marker's millisecond moved the anchor to the larger event id | `InboundQueueSameMs`, `NoSilentLoss`, 16 steps: the anchor is event 2; a limited sync drops event 3, the gap claim is 3, and event 4 — the same millisecond, a larger id — applies and becomes the anchor. The claim still reads as safe, and the forward walk from event 4 never fetches event 3 |
+| `CheckpointAtCursor` (ADR 0100) | a forward walk checkpointed one millisecond above its newest event | `InboundQueueSameMs`, `NoSilentLoss`, 16 steps: a limited sync drops events 2 and 3 and event 4, in their millisecond, applies first and becomes the anchor; the forward walk from event 1 queues event 2 and checkpoints one above it, which makes event 4 a safe anchor, and the retry walks forward past event 3 |
+| `WalkBelowFloor` (ADR 0100) | the backward walk stopped at the lower of the floor and `last_applied_ts` | `InboundQueueSameMs`, `NoSilentLoss`, 17 steps: the anchor is event 2; a limited sync drops events 3 and 4 in its millisecond, the claim is one above it, and event 5 applies in the next millisecond. The walk bounded at the claim stops inside the claimed millisecond; a real page that crosses the bound carries event 4 at most, and event 3 is lost |
 | `CheckpointForward` | an incomplete forward walk left its claim at the old marker | no violation (34,784,361 states): the checkpoint is efficiency, not safety. Without it, a retry after a capped or failed forward walk whose rows applied walks backward over everything the walk already fetched |
 
 Two spec mutants also pass, and say which parts are load-bearing. Without
@@ -1500,7 +1500,7 @@ What the model leaves out, deliberately or as a residual:
   stops at the first event below its bound; a real page that crosses it also
   carries older events, which only fetches more. The bound itself must cover
   every millisecond that can hold a missing event, and with the fixes of
-  ADR 0093 it does.
+  ADR 0100 it does.
 - **Timestamps follow the timeline.** The marker, the floor and the backward
   walk order by `originServerTs`; homeservers assign it, and the model
   assumes it never decreases along the timeline. Events may share one
@@ -1509,7 +1509,7 @@ What the model leaves out, deliberately or as a residual:
   event after the anchor in timeline order. Event ids are not modelled: the
   app's forward walk (`collectForwardForBootstrapImpl`) emits everything past
   the newest timestamp it has emitted, and the unseen ids of that
-  millisecond, so it fetches at least that (ADR 0093). Before ADR 0093 it
+  millisecond, so it fetches at least that (ADR 0100). Before ADR 0100 it
   ordered a millisecond by event id, a divergence the model could not show;
   the regressions are in `catch_up_strategy_test.dart`.
 - **The bridge gives up after three incomplete passes in a row.** The model
@@ -1945,7 +1945,7 @@ their direction with the real `BridgeMarker`. After every step
 durable marker row. Dropping the completion's compare-and-set, ignoring the
 walk's unresolved ciphertext in a checkpoint, or dropping a claim whose
 marker read failed fails it; so does leaving out the gap claim in the
-driver, and so does reverting any of ADR 0093's rules: an equal-millisecond
+driver, and so does reverting any of ADR 0100's rules: an equal-millisecond
 commit that moves the anchor, a checkpoint one above the cursor, or a
 backward walk bounded at the floor.
 The coordinator's wiring — the claims on start, on a limited sync and at

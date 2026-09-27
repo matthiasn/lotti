@@ -54,7 +54,7 @@ import 'package:matrix/matrix.dart';
 /// not been emitted yet. Event ids say nothing about how a millisecond's
 /// events are ordered in the timeline, so a same-millisecond event is
 /// emitted whatever its id; re-sending one the queue already holds is
-/// dropped by its `event_id` constraint (`_ForwardFrontier`, ADR 0093).
+/// dropped by its `event_id` constraint (`_ForwardFrontier`, ADR 0100).
 ///
 /// Returns `BootstrapStopReason.serverExhausted` when the walk
 /// reaches the tip, `boundaryReached` when a budget trips,

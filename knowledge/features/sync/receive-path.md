@@ -20,9 +20,9 @@ sources:
     resource: ../../../docs/adr/0084-model-checked-inbound-queue.md
     title: ADR 0084 — model-checked inbound queue
     last_modified: 2026-09-25
-  - id: adr-0093
-    resource: ../../../docs/adr/0093-equal-milliseconds-at-the-catch-up-boundary.md
-    title: ADR 0093 — equal milliseconds at the catch-up boundary
+  - id: adr-0100
+    resource: ../../../docs/adr/0100-equal-milliseconds-at-the-catch-up-boundary.md
+    title: ADR 0100 — equal milliseconds at the catch-up boundary
     last_modified: 2026-09-27
   - id: metrics-panel
     resource: ../../../lib/features/sync/ui/matrix_stats/matrix_metrics_panel.dart
@@ -330,7 +330,7 @@ applies past it, the next walk goes backward to the claim.
 **Equal milliseconds.** Several events can share an `originServerTs`, and
 event ids say nothing about their timeline order. Four rules keep an
 uncaptured event in the boundary millisecond inside the next walk
-([ADR 0093](../../../docs/adr/0093-equal-milliseconds-at-the-catch-up-boundary.md)):
+([ADR 0100](../../../docs/adr/0100-equal-milliseconds-at-the-catch-up-boundary.md)):
 
 - The forward walk never compares event ids. It emits an event that is newer
   than everything it has emitted, the anchor included, or that shares the
