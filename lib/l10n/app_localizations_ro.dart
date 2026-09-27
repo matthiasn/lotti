@@ -15508,7 +15508,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get taskBlockedInCycleTooltip =>
-      'Această sarcină face parte dintr-un ciclu de blocare: prin sarcinile care o blochează, se așteaptă pe sine. Închideți o sarcină din ciclu sau eliminați una dintre legăturile sale pentru a-l întrerupe.';
+      'Această sarcină face parte dintr-un ciclu de blocare: prin sarcinile care o blochează, ajunge să depindă de ea însăși. Închideți o sarcină din ciclu sau eliminați una dintre legăturile sale pentru a-l întrerupe.';
 
   @override
   String taskBlockedReason(String title) {

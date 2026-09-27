@@ -452,6 +452,7 @@ The P0 and P1 bugs:
 | [#4549](https://github.com/matthiasn/lotti/pull/4549) | P2 | yes | A cycle two devices closed was never reported, and the day agent was told to schedule each task's blocker first |
 | [#4549](https://github.com/matthiasn/lotti/pull/4549) | P2 | no | Privacy cleanup removed only the project link shown, leaving a mismatched one underneath |
 | [#4549](https://github.com/matthiasn/lotti/pull/4549) | P3 | yes | The cycle check stopped after 64 hops, so a longer chain could close a cycle |
+
 </details>
 
 ## Specs
