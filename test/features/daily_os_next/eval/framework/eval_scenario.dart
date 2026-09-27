@@ -812,6 +812,8 @@ void seedScenarioCorpus({
           invocation.positionalArguments[1] as TaskData Function(TaskData);
       final stored = currentEvalJournal.byId(id);
       if (stored is! Task) return null;
+      final onlyIf = invocation.namedArguments[#onlyIf] as bool Function(Task)?;
+      if (onlyIf != null && !onlyIf(stored)) return stored;
       final updated = stored.copyWith(
         data: change(stored.data).onStored(stored.data),
       );
