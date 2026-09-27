@@ -118,7 +118,9 @@ class ProjectProposalService {
   /// revert runs, so it cannot be confirmed again beside the effect being
   /// taken back (see [ChangeSetConfirmationService.reopenItem]). A refused
   /// revert changes nothing and returns `false`, leaving the memo for
-  /// another try.
+  /// another try. So does a reopen that fails after the revert: the revert
+  /// is idempotent — a task already removed reports removed, a status
+  /// already restored needs no restore — so the retry reopens the item.
   Future<bool> undo(ChangeSetEntity changeSet, int itemIndex) async {
     final key = _key(changeSet, itemIndex);
     final applied = _applied[key];

@@ -126,6 +126,7 @@ SECONDS = {
     "ChangeSetLifecycleRaceUndo": 40,
     "ChangeSetLifecycleRaceAdd": 5,
     "ChangeSetLifecycleUndo": 1,
+    "ChangeSetLifecycleUndoRetry": 1,
     "Outbox": 12,
     "ChangeSetLifecycle": 2,
     "OutboxConcurrent": 3,

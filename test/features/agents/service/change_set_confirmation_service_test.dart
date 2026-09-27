@@ -2163,6 +2163,59 @@ void main() {
         }
       }
 
+      test(
+        'a reopen that fails after its revert succeeded leaves the item '
+        'confirmed under its key, and the retry — its revert finding the '
+        'effect already taken back — reopens it (ADR 0097)',
+        () async {
+          final initial = decidedSet();
+          final stored = persistUpsertedChangeSets(
+            initial,
+            decisionWriteError: StateError('agent database unavailable'),
+          );
+          stubDecisions([
+            decisionFor(
+              initial,
+              0,
+              verdict: ChangeDecisionVerdict.confirmed,
+            ),
+          ]);
+          // The effect as an idempotent revert sees it: taken back once,
+          // and reported taken back on every later run.
+          var effectLive = true;
+          var reverts = 0;
+          Future<bool> revert() async {
+            reverts++;
+            effectLive = false;
+            return true;
+          }
+
+          await withClock(testClock, () async {
+            await expectLater(
+              service.reopenItem(initial, 0, revert: revert),
+              throwsStateError,
+            );
+          });
+          expect(effectLive, isFalse);
+          // The transaction rolled back: still confirmed, under its key.
+          expect(stored(), initial);
+
+          final retried = persistUpsertedChangeSets(stored());
+          await withClock(testClock, () async {
+            expect(
+              await service.reopenItem(retried(), 0, revert: revert),
+              isTrue,
+            );
+          });
+          expect(reverts, 2);
+          expect(retried().items[0].status, ChangeItemStatus.pending);
+          expect(
+            retried().items[0].effectKey,
+            initial.items[0].undoneIn(initial.id, 0).effectKey,
+          );
+        },
+      );
+
       test('refuses a pending or retracted item and a bad index', () async {
         final changeSet = makeChangeSetWith(
           items: [

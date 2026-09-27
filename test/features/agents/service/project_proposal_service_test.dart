@@ -575,4 +575,109 @@ void main() {
     expect(await service.undo(applied, 0), isFalse);
     expect(service.canUndo(applied, 0), isTrue);
   });
+
+  group('an Undo retried after its reopen failed', () {
+    /// The real reopen as the mock plays it: the revert runs first, and on
+    /// the first call the reopen transaction then throws.
+    void failFirstReopen() {
+      var reopenFails = true;
+      when(
+        () => confirmation.reopenItem(
+          any(),
+          any(),
+          revert: any(named: 'revert'),
+          effectKey: any(named: 'effectKey'),
+        ),
+      ).thenAnswer((invocation) async {
+        final revert =
+            invocation.namedArguments[#revert] as Future<bool> Function()?;
+        if (revert != null && !await revert()) return false;
+        if (reopenFails) {
+          reopenFails = false;
+          throw StateError('agent database unavailable');
+        }
+        return true;
+      });
+    }
+
+    test('reopens the item once the created task is gone', () async {
+      failFirstReopen();
+      when(
+        () => confirmation.confirmItem(
+          any(),
+          any(),
+          onClaimed: any(named: 'onClaimed'),
+        ),
+      ).thenAnswer(
+        (invocation) async => claimed(
+          invocation,
+          const ToolExecutionResult(
+            success: true,
+            output: '',
+            mutatedEntityId: 'task-9',
+          ),
+        ),
+      );
+      await service.confirm(setWith(createTask), 0);
+      final applied = decided(createTask, ChangeItemStatus.confirmed);
+
+      await expectLater(service.undo(applied, 0), throwsStateError);
+      expect(
+        service.canUndo(applied, 0),
+        isTrue,
+        reason: 'the failed reopen keeps the memo for a retry',
+      );
+
+      expect(await service.undo(applied, 0), isTrue);
+      // The retry asks the remover again, which reports a task already
+      // gone as removed (projectTaskRemover).
+      expect(removed, ['task-9', 'task-9']);
+      expect(service.canUndo(applied, 0), isFalse);
+    });
+
+    test('reopens the item once the status is restored', () async {
+      failFirstReopen();
+      final before = makeTestProject(id: projectId, status: open);
+      when(
+        () => repository.getProjectById(projectId),
+      ).thenAnswer((_) async => before);
+      when(
+        () => confirmation.confirmItem(
+          any(),
+          any(),
+          onClaimed: any(named: 'onClaimed'),
+        ),
+      ).thenAnswer(
+        (invocation) async => claimed(
+          invocation,
+          const ToolExecutionResult(
+            success: true,
+            output: '',
+            mutatedEntityId: projectId,
+          ),
+        ),
+      );
+      await service.confirm(setWith(setStatus), 0);
+      when(() => repository.getProjectById(projectId)).thenAnswer(
+        (_) async => before.copyWith(
+          data: before.data.copyWith(
+            status: monitoring,
+            statusHistory: [open],
+          ),
+        ),
+      );
+      final applied = decided(setStatus, ChangeItemStatus.confirmed);
+
+      await expectLater(service.undo(applied, 0), throwsStateError);
+      final restored =
+          verify(() => repository.updateProject(captureAny())).captured.single
+              as ProjectEntry;
+      when(
+        () => repository.getProjectById(projectId),
+      ).thenAnswer((_) async => restored);
+
+      expect(await service.undo(applied, 0), isTrue);
+      verifyNever(() => repository.updateProject(any()));
+    });
+  });
 }

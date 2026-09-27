@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/relationships/service/relationship_proposal_service.dart';
 import 'package:lotti/features/relationships/workflow/relationship_tool_dispatcher.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -159,6 +160,100 @@ void main() {
       );
     },
   );
+  group('an Undo retried after its reopen failed', () {
+    // The tombstone the removal leaves: the receipt, deleted, with the
+    // stamps every write moves on.
+    final tombstone = testTask.copyWith(
+      meta: testTask.meta.copyWith(
+        deletedAt: DateTime(2024, 3, 15, 10),
+        updatedAt: DateTime(2024, 3, 15, 10),
+        vectorClock: const VectorClock({'device': 7}),
+      ),
+    );
+
+    /// Runs one Undo whose revert removes the task and whose reopen then
+    /// throws, and leaves the journal as the removal left it: the live read
+    /// no longer finds the task, the deleted-including read finds [stored].
+    Future<void> failReopenAfterRevert(JournalEntity? stored) async {
+      when(
+        () => confirmation.reopenItem(
+          any(),
+          any(),
+          revert: any(named: 'revert'),
+        ),
+      ).thenAnswer((invocation) async {
+        final revert =
+            invocation.namedArguments[#revert] as Future<bool> Function();
+        if (!await revert()) return false;
+        throw StateError('agent database unavailable');
+      });
+      await expectLater(service.undo(confirmed, 0), throwsStateError);
+      expect(removed, [testTask]);
+      when(
+        () => db.journalEntityById(testTask.id),
+      ).thenAnswer((_) async => null);
+      when(
+        () => db.journalEntityByIdIncludingDeleted(testTask.id),
+      ).thenAnswer((_) async => stored);
+      when(
+        () => confirmation.reopenItem(
+          any(),
+          any(),
+          revert: any(named: 'revert'),
+        ),
+      ).thenAnswer((invocation) async {
+        final revert =
+            invocation.namedArguments[#revert] as Future<bool> Function();
+        return revert();
+      });
+    }
+
+    test(
+      'finds its own tombstone and reopens the item without removing again',
+      () async {
+        await failReopenAfterRevert(tombstone);
+
+        expect(await service.undo(confirmed, 0), isTrue);
+        // The retry removed nothing more; it cleaned up the link again.
+        expect(removed, [testTask]);
+        verify(
+          () => relationships.unlinkTask(
+            relationshipId: set.taskId,
+            taskId: testTask.id,
+          ),
+        ).called(2);
+      },
+    );
+
+    final changed = <String, JournalEntity?>{
+      'the task was edited before it was deleted': tombstone.copyWith(
+        data: tombstone.data.copyWith(title: 'Edited'),
+      ),
+      'its metadata was changed before it was deleted': tombstone.copyWith(
+        meta: tombstone.meta.copyWith(starred: false),
+      ),
+      'the stored row is not deleted': testTask.copyWith(
+        meta: testTask.meta.copyWith(updatedAt: DateTime(2024, 3, 15, 10)),
+      ),
+      'the task is missing altogether': null,
+      'the stored entity is no task': testTextEntry,
+    };
+    for (final MapEntry(key: reason, value: stored) in changed.entries) {
+      test('refuses when $reason', () async {
+        await failReopenAfterRevert(stored);
+
+        expect(await service.undo(confirmed, 0), isFalse);
+        expect(removed, [testTask]);
+        // Only the first, successful revert cleaned up the link.
+        verify(
+          () => relationships.unlinkTask(
+            relationshipId: set.taskId,
+            taskId: testTask.id,
+          ),
+        ).called(1);
+      });
+    }
+  });
   test('rejection makes no journal mutation', () async {
     when(() => confirmation.rejectItem(set, 0)).thenAnswer((_) async => true);
     expect(await service.reject(set, 0), isTrue);

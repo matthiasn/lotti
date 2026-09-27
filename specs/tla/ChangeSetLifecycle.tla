@@ -32,10 +32,13 @@
 (*                 of their effect, so the effect stays where it landed    *)
 (*   UndoBegin,    the project agent's Undo (service/                      *)
 (*   UndoRevert,   project_proposal_service.dart undo): reopenItem with a  *)
-(*   UndoReopen    revert that deletes the entity the confirmation         *)
-(*                 created. Two steps: the revert, which may be refused    *)
+(*   UndoReopen,   revert that deletes the entity the confirmation         *)
+(*   UndoRetry     created. Two steps: the revert, which may be refused    *)
 (*                 (taskRemover), and the reopen, in the order RevertFirst *)
-(*                 says                                                    *)
+(*                 says. The reopen may fail after the revert              *)
+(*                 ("reopenFails": the decision read or its transaction    *)
+(*                 throws); the Undo is then offered again, and its retry  *)
+(*                 runs the revert once more                               *)
 (*   Retract       service/suggestion_retraction_service.dart applyStaged, *)
 (*                 inside the wake's transaction                           *)
 (*   Consolidate   workflow/change_set_builder.dart build: the final       *)
@@ -152,6 +155,14 @@
 (*                      the one not yet deleted — for good when the revert  *)
 (*                      is then refused, as it can no longer restore an     *)
 (*                      item that is not pending                            *)
+(*   RevertIdempotent   a revert run again over the state it left reports   *)
+(*                      success: the retry of an Undo whose reopen failed   *)
+(*                      finds the entity it deleted and reopens the item    *)
+(*                      (relationship_proposal_service.dart undo reads the  *)
+(*                      tombstone; projectTaskRemover reports a task that   *)
+(*                      is gone as removed). Without it, the retry is       *)
+(*                      refused for good: the item stays confirmed, its     *)
+(*                      entity deleted, and can never be reopened           *)
 (*                                                                         *)
 (* CrashBeforeLink is not a fix: it lets the creating device stop between  *)
 (* the entity and its link — createChecklist's two writes — the residual   *)
@@ -186,7 +197,7 @@ CONSTANTS
     CopyDst,       \* its slot in the surviving set, or NoItem
     NoItem,
     Faults,        \* subset of {"dispatchFails", "nonRetryable",
-                   \*            "revertRefused"}
+                   \*            "revertRefused", "reopenFails"}
     MaxAttempts,   \* user decisions per device and item
     MaxAgentOps,   \* retractions and consolidations per device
     MaxReopens,    \* reopens per device
@@ -201,17 +212,18 @@ CONSTANTS
     SeparateAttach, \* a created entity and its link to its parent sync apart
     ReuseLive,
     CrashBeforeLink,
-    RemoveWins, UndoRekeys, UndoOwnKey, RevertFirst
+    RemoveWins, UndoRekeys, UndoOwnKey, RevertFirst, RevertIdempotent
 
 ASSUME
-    /\ Faults \subseteq {"dispatchFails", "nonRetryable", "revertRefused"}
+    /\ Faults \subseteq {"dispatchFails", "nonRetryable", "revertRefused",
+                         "reopenFails"}
     /\ SetItems \subseteq Items
     /\ MaxUserEdits \in {0, 1}
     /\ {UserRestoresBase, EffectMark, RaceFree, AtomicWrites, AtomicReceive, ItemMerge,
         PendingCopiesOnly, RevisionGuard, ClaimResolvesTarget, DerivedIds,
         CopyCarriesKey, CasGuard, SeparateAttach, ReuseLive,
         CrashBeforeLink, AddStyle, RemoveWins, UndoRekeys,
-        UndoOwnKey, RevertFirst} \subseteq BOOLEAN
+        UndoOwnKey, RevertFirst, RevertIdempotent} \subseteq BOOLEAN
 
 \* The older set is row 2, the surviving set row 1.
 Rows == IF CopyDst # NoItem THEN {1, 2} ELSE {1}
@@ -238,7 +250,8 @@ Rank(s) == CASE s = "absent" -> 0 [] s = "pending" -> 1
 Pc == {"idle", "claimed", "failP", "failPW", "failR", "failRW",
        "sib", "sibW", "cascade", "cascadeW",
        "undoRevert",   \* an Undo reopened the item; its revert still to run
-       "undoReopen"}   \* an Undo reverted the effect; its reopen still to run
+       "undoReopen",   \* an Undo reverted the effect; its reopen still to run
+       "undoRetry"}    \* its reopen failed; the Undo is offered again
 
 InitItem(i) == [st |-> IF i = CopyDst THEN "absent" ELSE "pending",
                 rev |-> 0,
@@ -743,15 +756,44 @@ UndoBegin(d, i) ==
                    conflict, clobbered, appVcs, okey, reopens>>
 
 \* With RevertFirst: the reopen after a revert that succeeded, only while
-\* the item still holds the revision the Undo read.
+\* the item still holds the revision the Undo read. The reopen may fail
+\* ("reopenFails": the decision read or its transaction throws; each
+\* failure spends one of the device's Undos), writing nothing: the item
+\* stays confirmed with its entity deleted, and the session's memo offers
+\* the Undo again.
 UndoReopen(d, i, k) ==
     /\ pc[d][i][k] = "undoReopen"
-    /\ pc' = [pc EXCEPT ![d][i][k] = "idle"]
-    /\ IF Item(d, i).st = "confirmed" /\ Item(d, i).rev = obs[d][i][k]
-       THEN PutItem(d, i, UndoReopened(d, i), rows[d][RowOf(i)])
-       ELSE UNCHANGED <<rows, hc, msgs>>
+    /\ \/ /\ pc' = [pc EXCEPT ![d][i][k] = "idle"]
+          /\ IF Item(d, i).st = "confirmed" /\ Item(d, i).rev = obs[d][i][k]
+             THEN PutItem(d, i, UndoReopened(d, i), rows[d][RowOf(i)])
+             ELSE UNCHANGED <<rows, hc, msgs>>
+          /\ UNCHANGED undos
+       \/ /\ "reopenFails" \in Faults
+          /\ undos[d] < MaxUndos
+          /\ undos' = [undos EXCEPT ![d] = @ + 1]
+          /\ pc' = [pc EXCEPT ![d][i][k] = "undoRetry"]
+          /\ UNCHANGED <<rows, hc, msgs>>
     /\ UNCHANGED <<snap, recv, mem, attempts, agentOps, applied, early,
-                   effVars, claimVars>>
+                   effVars, obs, okey, latest, lastOk, reopens>>
+
+\* The retry of an Undo whose reopen failed. While the item still shows the
+\* decision the Undo names, the Undo is offered again and its revert runs
+\* once more, over the entity it already deleted: with RevertIdempotent it
+\* succeeds, and the reopen follows; without it, it is refused and changes
+\* nothing, for good. An item that shows another decision meanwhile no
+\* longer offers the Undo.
+UndoRetry(d, i, k) ==
+    /\ pc[d][i][k] = "undoRetry"
+    /\ IF /\ Item(d, i).st = "confirmed"
+          /\ UndoOwnKey => Item(d, i).gen = okey[d][i][k]
+       THEN /\ RevertIdempotent
+            /\ pc' = [pc EXCEPT ![d][i][k] = "undoReopen"]
+            /\ obs' = [obs EXCEPT ![d][i][k] = Item(d, i).rev]
+       ELSE /\ pc' = [pc EXCEPT ![d][i][k] = "idle"]
+            /\ UNCHANGED obs
+    /\ UNCHANGED <<rows, hc, msgs, snap, recv, mem, attempts, agentOps,
+                   applied, early, effVars, okey, latest, lastOk, reopens,
+                   undos>>
 
 \* Without RevertFirst: the revert after the reopen. A refused one puts
 \* the item back to confirmed under its old key — only while the item is
@@ -931,6 +973,7 @@ Next ==
                 \/ \E k \in Slots :
                       \/ DispatchOk(d, i, k) \/ DispatchFails(d, i, k)
                       \/ UndoRevert(d, i, k) \/ UndoReopen(d, i, k)
+                      \/ UndoRetry(d, i, k)
                       \/ FailAtomic(d, i, k) \/ FailRead(d, i, k)
                       \/ FailWrite(d, i, k)
           \/ /\ FollowUp # NoItem
@@ -941,6 +984,14 @@ Next ==
                    \/ CascadeWrite(d, k)
 
 Spec == Init /\ [][Next]_vars
+
+\* The user retries an Undo that is offered again, and a reopen that can
+\* run does.
+FairSpec ==
+    /\ Spec
+    /\ \A d \in Devices, i \in Items, k \in Slots :
+          /\ WF_vars(UndoReopen(d, i, k))
+          /\ WF_vars(UndoRetry(d, i, k))
 
 -----------------------------------------------------------------------------
 (* Properties *)
@@ -1038,6 +1089,13 @@ ConfirmedIsLive ==
 
 \* A dispatch never overwrites a value the user wrote to the field.
 NoClobber == ~clobbered
+
+\* An Undo whose revert succeeded finishes: the item is reopened, or found
+\* to show a later decision — never left confirmed, its entity deleted,
+\* with an Undo that can no longer run. A liveness property, under FairSpec.
+UndoFinishes ==
+    \A d \in Devices, i \in Items, k \in Slots :
+        pc[d][i][k] \in {"undoReopen", "undoRetry"} ~> pc[d][i][k] = "idle"
 
 \* Once everything has been delivered, every journal holds the same
 \* entities — one for each change that took effect anywhere, none for one

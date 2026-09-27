@@ -1282,6 +1282,16 @@ flowchart TD
   good if the revert is then refused. A refused revert writes nothing; after
   one that succeeded, the item is reopened only while it still holds the
   revision read before the revert.
+- **Every revert is idempotent.** A reopen can still fail after its revert
+  succeeded — the decision read or the transaction throws — leaving the item
+  confirmed with its effect taken back and the Undo offered again. The
+  retry runs the revert once more, over the state it left, and it reports
+  success: `projectTaskRemover` reports a task that is already gone as
+  removed, a status already restored needs no restore, and the relationship
+  agent's Undo recognises the tombstone of its unchanged receipt. A task the
+  user changed before it was deleted still refuses. Without this, the item
+  would stay confirmed for good with its task gone (`RevertIdempotent`,
+  `UndoFinishes` in `ChangeSetLifecycleUndoRetry`).
 
 What stays open, from ADR 0075, ADR 0097 and ADR 0098: both devices creating the entity before
 either has received the other's leaves one id with a journal `Conflict` row

@@ -362,7 +362,9 @@ project still holds it. The Undo (`ProjectProposalService`) deletes the
 created task or restores the replaced status — while the item still shows it
 confirmed, so it cannot be confirmed again meanwhile — then reopens the item
 under a new effect key so confirming it again creates anew; a refused revert
-leaves the item confirmed. It acts only while the item still shows the
+leaves the item confirmed. A reopen that fails after the revert keeps the
+memo, and the retry finds the task already gone or the status already
+restored and reopens the item. It acts only while the item still shows the
 decision its own session made; see
 [task agents](task-agents.md#applying-an-item-on-two-devices).
 
