@@ -128,8 +128,9 @@ pipeline without injecting crashes. Neither profile claims the full product of
 three-version forks, mixed families, multiple receivers and every fault.
 
 The fork/successor exploration took about 164 minutes locally and gets an
-isolated CI shard with a six-hour deadline and 12 GiB heap. It still runs on
-every applicable push and gates the same aggregate `TLC` check; regular shards
+isolated CI shard with a six-hour deadline and 12 GiB heap. It runs with every
+other configuration, nightly or on demand, and gates the same aggregate `TLC`
+check; regular shards
 retain their one-hour deadline. `shards_test.py` protects complete configuration
 assignment and isolation of the long profile.
 

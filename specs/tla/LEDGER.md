@@ -436,8 +436,7 @@ The P0 and P1 bugs:
   `.cfg`; #4448 gave each its own job, and #4474 packs them into eight shards
   balanced by measured runtime (see [README.md](README.md#running)). An
   aggregate `TLC` check requires all of them to pass. The workflow runs
-  whenever a spec changes, or when any of the 73 source paths the specs
-  model changes.
+  nightly against `main` and on demand for a branch.
 - **Every fix is pinned by a switch.** Each fix gets a boolean switch in its
   spec. Turning the switch off in a temporary copy must reproduce the original
   counterexample. The README lists each switch together with its trace.
