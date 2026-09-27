@@ -527,6 +527,11 @@ sealed class SyncMessage with _$SyncMessage {
     /// from 1.1.30, whose completions all come from task-agent runs, which
     /// always refresh it.
     @Default(true) bool reportUpdated,
+
+    /// Keys of the rows the sender's wake reads that were saved before their
+    /// type carried a vector clock: no watermark covers them, so the sender
+    /// names them. Absent from 1.1.33, whose peers then cover none.
+    @Default(<String>[]) List<String> clocklessInputs,
   }) = SyncAgentWakeCoordination;
 
   const factory SyncMessage.agentEntity({

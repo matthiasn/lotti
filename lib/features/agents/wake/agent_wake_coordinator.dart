@@ -41,6 +41,13 @@ class WakeInputs {
   /// covers them.
   final String definitions;
 
+  /// The rows saved before their type carried a clock. No watermark covers
+  /// them; a peer covers them by naming them ([WakeCoverage.clockless]).
+  Set<String> get clockless => {
+    for (final MapEntry(:key, :value) in clocks.entries)
+      if (value == null) key,
+  };
+
   /// Every host a write under these rows came from.
   Set<String> get hosts => {
     for (final clock in clocks.values) ...?clock?.vclock.keys,
@@ -56,11 +63,17 @@ class WakeCoverage {
     required this.watermark,
     required this.readsPrivate,
     required this.definitions,
+    this.clockless = const {},
   });
 
   final Map<String, int> watermark;
   final bool readsPrivate;
   final String definitions;
+
+  /// The clockless rows the run read, by input key. Such a row has not
+  /// changed since it was saved, so reading it is holding it — but a peer may
+  /// never have received it, and no watermark says whether it did.
+  final Set<String> clockless;
 
   /// Why a run over this coverage would not read everything in [inputs], or
   /// `null` when it reads all of it. This is the model's `Covers`: the run's
@@ -72,10 +85,14 @@ class WakeCoverage {
     }
     for (final MapEntry(:key, value: clock) in inputs.clocks.entries) {
       // A row without a clock was saved before its type carried one, and has
-      // not been edited since — an edit stamps a clock. It holds no write any
-      // run could lack, like an empty clock. Refusing it made every task with
-      // one old link uncoverable on every device.
-      if (clock == null) continue;
+      // not been edited since — an edit stamps a clock. The run covers it if
+      // it read it too. Refusing every such row made each task with one old
+      // link uncoverable on every device.
+      if (clock == null) {
+        if (clockless.contains(key)) continue;
+        return '${_describe(key)} predates clocks and the peer did not read '
+            'it';
+      }
       for (final MapEntry(key: host, value: counter) in clock.vclock.entries) {
         final held = watermark[host] ?? 0;
         if (counter > held) {
@@ -92,12 +109,14 @@ class WakeCoverage {
       other is WakeCoverage &&
       other.readsPrivate == readsPrivate &&
       other.definitions == definitions &&
+      const SetEquality<String>().equals(other.clockless, clockless) &&
       const MapEquality<String, int>().equals(other.watermark, watermark);
 
   @override
   int get hashCode => Object.hash(
     readsPrivate,
     definitions,
+    const SetEquality<String>().hash(clockless),
     const MapEquality<String, int>().hash(watermark),
   );
 }
@@ -240,6 +259,7 @@ class AgentWakeCoordinator with AgentErrorLogging {
         watermark: await _readWatermark(inputs.hosts),
         readsPrivate: inputs.readsPrivate,
         definitions: inputs.definitions,
+        clockless: inputs.clockless,
       );
     } catch (error, stackTrace) {
       // Coordination only ever saves work; failing open costs a duplicate.
@@ -381,6 +401,7 @@ class AgentWakeCoordinator with AgentErrorLogging {
             watermark: coverage.watermark,
             readsPrivate: coverage.readsPrivate,
             definitionsDigest: coverage.definitions,
+            clocklessInputs: coverage.clockless.toList()..sort(),
             runKey: runKey,
             hostId: hostId,
             sentAt: sentAt,
@@ -424,6 +445,7 @@ class AgentWakeCoordinator with AgentErrorLogging {
       watermark: message.watermark,
       readsPrivate: message.readsPrivate,
       definitions: message.definitionsDigest,
+      clockless: message.clocklessInputs.toSet(),
     );
     final now = clock.now();
     switch (message.kind) {

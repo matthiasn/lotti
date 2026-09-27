@@ -179,10 +179,9 @@ void main() {
       );
     });
 
-    test('a row saved before its type carried a clock does not stand in '
-        'the way', () {
-      // An old task: one of its links predates link clocks. Everything else
-      // the wake reads is held by the peer's run.
+    test('a row saved before its type carried a clock is covered by a run '
+        'that read it, and only by one', () {
+      // An old task: one of its links predates link clocks.
       const oldTask = WakeInputs(
         clocks: {
           ..._inputsClocks,
@@ -192,20 +191,32 @@ void main() {
         definitions: _definitions,
       );
 
+      expect(oldTask.clockless, {'link:link-from-2019'});
+      expect(
+        const WakeCoverage(
+          watermark: _held,
+          readsPrivate: false,
+          definitions: _definitions,
+          clockless: {'link:link-from-2019'},
+        ).uncovered(oldTask),
+        isNull,
+      );
+      // A peer that never received the old link did not read it.
       expect(
         const WakeCoverage(
           watermark: _held,
           readsPrivate: false,
           definitions: _definitions,
         ).uncovered(oldTask),
-        isNull,
+        'link [id:link-f] predates clocks and the peer did not read it',
       );
-      // It does not hide a write the peer lacks elsewhere.
+      // Naming it does not hide a write the peer lacks elsewhere.
       expect(
         const WakeCoverage(
           watermark: _behind,
           readsPrivate: false,
           definitions: _definitions,
+          clockless: {'link:link-from-2019'},
         ).uncovered(oldTask),
         'entry [id:item-1] needs [id:phone]:5, peer holds 4',
       );
@@ -819,6 +830,7 @@ void main() {
       watermark: _held,
       readsPrivate: true,
       definitions: _definitions,
+      clockless: {'link:b', 'link:a'},
     );
 
     test('a claim is broadcast at once and repeated as a heartbeat', () {
@@ -836,6 +848,7 @@ void main() {
         expect(device.sent.single.watermark, _held);
         expect(device.sent.single.readsPrivate, isTrue);
         expect(device.sent.single.definitionsDigest, _definitions);
+        expect(device.sent.single.clocklessInputs, ['link:a', 'link:b']);
         expect(device.sent.single.hostId, 'me');
         expect(device.sent.single.runKey, 'run-1');
         expect(device.sent.single.sentAt, _start);
