@@ -6,6 +6,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/tasks/repository/task_field_write.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Result of processing a priority update tool call.
@@ -172,30 +173,37 @@ class TaskPriorityHandler {
       }
 
       // Update the task
-      final updatedTask = task.copyWith(
-        data: task.data.copyWith(priority: priority),
-      );
-
       try {
-        final success = await journalRepository.updateJournalEntity(
-          updatedTask,
+        final write = await writeTaskField(
+          journalRepository: journalRepository,
+          task: task,
+          field: (data) => data.priority,
+          set: (stored) => stored.copyWith(priority: priority),
         );
 
-        if (!success) {
-          const message =
-              'Failed to update priority: repository returned false.';
-          developer.log(message, name: 'TaskPriorityHandler');
-          _sendResponse(call.id, message, manager);
-          return const TaskPriorityResult(
-            success: false,
-            message: message,
-            error: message,
-          );
+        switch (write) {
+          case TaskFieldWriteFailed():
+            const message =
+                'Failed to update priority: repository returned false.';
+            developer.log(message, name: 'TaskPriorityHandler');
+            _sendResponse(call.id, message, manager);
+            return const TaskPriorityResult(
+              success: false,
+              message: message,
+              error: message,
+            );
+          case TaskFieldMoved(task: final stored):
+            task = stored;
+            const message =
+                "Nothing applied: the task's priority changed since this "
+                'call read it, so it stays as it is.';
+            developer.log(message, name: 'TaskPriorityHandler');
+            _sendResponse(call.id, message, manager);
+            return const TaskPriorityResult(success: true, message: message);
+          case TaskFieldWritten(task: final stored):
+            task = stored;
+            onTaskUpdated?.call(stored);
         }
-
-        // Update local state
-        task = updatedTask;
-        onTaskUpdated?.call(updatedTask);
 
         final message = 'Task priority updated to ${priority.short}.';
         developer.log(

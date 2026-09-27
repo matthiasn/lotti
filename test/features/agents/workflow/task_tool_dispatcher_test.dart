@@ -311,14 +311,6 @@ extension _AnyGeneratedValidDispatchScenario on glados.Any {
       );
 }
 
-/// Stubs the journal write the scalar task-mutation handlers perform —
-/// previously repeated verbatim in every delegation test.
-void stubJournalWrite(MockJournalRepository journalRepository) {
-  when(
-    () => journalRepository.updateJournalEntity(any()),
-  ).thenAnswer((_) async => true);
-}
-
 void main() {
   setUpAll(registerAllFallbackValues);
 
@@ -692,7 +684,7 @@ void main() {
             dateTo: any(named: 'dateTo'),
           ),
         ).thenAnswer((_) async => true);
-        stubJournalWrite(mockJournalRepository);
+        final row = stubTaskRow(mockJournalRepository, _makeTestTask(taskId));
 
         final result = await dispatcher.dispatch(
           'set_task_title',
@@ -702,9 +694,7 @@ void main() {
 
         expect(result.success, isTrue);
         expect(result.output, isNotEmpty);
-        verify(
-          () => mockJournalRepository.updateJournalEntity(any()),
-        ).called(1);
+        expect(row.writes.single.data.title, 'Updated Title');
       });
 
       // The five scalar mutations share one shape: stub the journal write,
@@ -721,14 +711,15 @@ void main() {
         ('update_task_priority', 'TaskPriorityHandler', {'priority': 'P1'}),
       ]) {
         test('$toolName delegates to $handler', () async {
-          stubJournalWrite(mockJournalRepository);
+          final task = _makeTestTask(taskId);
+          final row = stubTaskRow(mockJournalRepository, task);
 
           final result = await dispatcher.dispatch(toolName, args, taskId);
 
           expect(result.success, isTrue, reason: toolName);
-          verify(
-            () => mockJournalRepository.updateJournalEntity(any()),
-          ).called(1);
+          expect(result.mutatedEntityId, taskId, reason: toolName);
+          expect(row.writes, hasLength(1), reason: toolName);
+          expect(row.writes.single.data, isNot(task.data), reason: toolName);
         });
       }
 
@@ -752,7 +743,10 @@ void main() {
           when(
             () => localJournalDb.journalEntityById(taskId),
           ).thenAnswer((_) async => _makeTestTask(taskId));
-          stubJournalWrite(localJournalRepository);
+          final row = stubTaskRow(
+            localJournalRepository,
+            _makeTestTask(taskId),
+          );
 
           final result = await localDispatcher.dispatch(
             scenario.toolName,
@@ -763,13 +757,7 @@ void main() {
           expect(result.success, isTrue, reason: '$scenario');
           expect(result.mutatedEntityId, taskId, reason: '$scenario');
 
-          final captured =
-              verify(
-                    () => localJournalRepository.updateJournalEntity(
-                      captureAny(),
-                    ),
-                  ).captured.single
-                  as Task;
+          final captured = row.writes.single;
           expect(captured.id, taskId, reason: '$scenario');
           scenario.expectMutation(captured);
         },

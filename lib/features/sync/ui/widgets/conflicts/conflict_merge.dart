@@ -90,7 +90,8 @@ JournalEntity buildMergedEntity({
 /// [entity] as the resolution of [local] and [remote]: the merged clock, and
 /// for a task, every applied change either side records — whichever side's
 /// fields the user kept, a change that landed on either must not apply again
-/// (`TaskData.appliedChangeEffects`, ADR 0098).
+/// (`TaskData.appliedChangeEffects`, ADR 0098) — and every status either
+/// side's history records (`TaskDataOnStored.withHistoryOf`).
 JournalEntity _resolved(
   JournalEntity entity,
   JournalEntity local,
@@ -98,7 +99,11 @@ JournalEntity _resolved(
 ) {
   final withEffects = switch ((entity, local, remote)) {
     (final Task e, final Task l, final Task r) => e.copyWith(
-      data: e.data.withEffectsOf(l.data).withEffectsOf(r.data),
+      data: e.data
+          .withEffectsOf(l.data)
+          .withEffectsOf(r.data)
+          .withHistoryOf(l.data)
+          .withHistoryOf(r.data),
     ),
     _ => entity,
   };

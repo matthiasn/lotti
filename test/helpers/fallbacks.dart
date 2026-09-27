@@ -16,6 +16,7 @@ import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -328,6 +329,9 @@ void registerAllFallbackValues() {
   // The change `ChecklistRepository.updateTaskChecklistIds` applies to the
   // stored checklist ids of a task.
   registerFallbackValue((List<String> stored) => stored);
+  // The change `PersistenceLogic.updateTask` and
+  // `JournalRepository.updateTask` apply to the stored task data.
+  registerFallbackValue((TaskData stored) => stored);
   // The change `ChecklistRepository.updateChecklistItem` applies to the
   // stored item data.
   registerFallbackValue((ChecklistItemData stored) => stored);

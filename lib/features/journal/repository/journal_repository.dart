@@ -69,7 +69,9 @@ class JournalRepository {
       if (entity is Task && entity.data.coverArtId == imageId) {
         await persistenceLogic.updateTask(
           journalEntityId: entity.id,
-          taskData: entity.data.copyWith(coverArtId: null),
+          change: (stored) => stored.coverArtId == imageId
+              ? stored.copyWith(coverArtId: null)
+              : stored,
         );
       }
       if (entity is RelationshipEntry) {
@@ -277,6 +279,20 @@ class JournalRepository {
       return false;
     }
   }
+
+  /// Applies [change] to the data of the stored task [taskId] and writes the
+  /// result on that row (`PersistenceLogic.updateTask`): the agent's field
+  /// tools and the day agent's triage set a field this way, so a field set
+  /// since their tool call read the task is kept
+  /// (`specs/tla/TaskFieldWrites.tla`). Returns the task as stored
+  /// afterwards, or `null` when it does not exist or the write failed.
+  Future<Task?> updateTask(
+    String taskId,
+    TaskData Function(TaskData stored) change,
+  ) => getIt<PersistenceLogic>().updateTask(
+    journalEntityId: taskId,
+    change: change,
+  );
 
   /// Updates an entity's `dateFrom`/`dateTo` and, if it is the running timer,
   /// pushes the new range into the time service so the live duration stays in

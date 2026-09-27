@@ -61,7 +61,6 @@ void main() {
   late MockJournalRepository journalRepository;
   late MockAgentRepository agentRepository;
   late List<String> notifications;
-  late List<JournalEntity> updates;
 
   DayAgentTriageService createService() => DayAgentTriageService(
     journalDb: journalDb,
@@ -70,10 +69,14 @@ void main() {
     onPersistedStateChanged: notifications.add,
   );
 
-  void stubTask(Task task) {
+  /// The task as the triage reads it, and its stored row behind
+  /// `JournalRepository.updateTask`, which a test may move on to model a
+  /// write landing between the read and the triage's write.
+  StubTaskRow stubTask(Task task) {
     when(
       () => journalDb.journalEntityById(task.id),
     ).thenAnswer((_) async => task);
+    return stubTaskRow(journalRepository, task);
   }
 
   setUp(() {
@@ -81,7 +84,6 @@ void main() {
     journalRepository = MockJournalRepository();
     agentRepository = MockAgentRepository();
     notifications = <String>[];
-    updates = <JournalEntity>[];
     when(() => agentRepository.getEntity(_agentId)).thenAnswer(
       (_) async => makeTestIdentity(
         id: _agentId,
@@ -89,16 +91,10 @@ void main() {
         allowedCategoryIds: {'work'},
       ),
     );
-    when(() => journalRepository.updateJournalEntity(any())).thenAnswer((
-      invocation,
-    ) async {
-      updates.add(invocation.positionalArguments.single as JournalEntity);
-      return true;
-    });
   });
 
   test('done action appends a done status and notifies', () async {
-    stubTask(_task(id: 't1', status: _openStatus()));
+    final row = stubTask(_task(id: 't1', status: _openStatus()));
 
     await withClock(Clock.fixed(_now), () async {
       final updated = await createService().applyTriage(
@@ -107,11 +103,126 @@ void main() {
         action: 'done',
       );
       expect(updated.data.status, isA<TaskDone>());
-      expect(updated.data.statusHistory.last, isA<TaskDone>());
+      expect(
+        updated.data.statusHistory.map((s) => s.toDbString),
+        ['OPEN', 'DONE'],
+      );
+      expect(updated, row.writes.single);
     });
 
     expect(notifications, ['t1']);
-    expect(updates, hasLength(1));
+  });
+
+  for (final (action, dbString) in [
+    ('doNow', 'IN PROGRESS'),
+    ('do_now', 'IN PROGRESS'),
+    ('drop', 'REJECTED'),
+  ]) {
+    test('$action action records $dbString in the history once', () async {
+      final row = stubTask(_task(id: 't-$action', status: _openStatus()));
+
+      await withClock(Clock.fixed(_now), () async {
+        final updated = await createService().applyTriage(
+          agentId: _agentId,
+          taskId: 't-$action',
+          action: action,
+        );
+        expect(updated.data.status.toDbString, dbString);
+        expect(updated.data.status.createdAt, _now);
+        expect(
+          updated.data.statusHistory.map((s) => s.toDbString),
+          ['OPEN', dbString],
+        );
+        expect(row.writes.single, updated);
+      });
+    });
+  }
+
+  test('done on a task stored as done meanwhile adds no history entry and '
+      'writes nothing', () async {
+    final read = _task(id: 't-done', status: _openStatus());
+    final userDone = TaskStatus.done(
+      id: 'status-user-done',
+      createdAt: DateTime(2026, 5, 24),
+      utcOffset: 120,
+    );
+    final row = stubTask(read)
+      ..task = read.copyWith(
+        data: read.data.copyWith(
+          status: userDone,
+          statusHistory: [...read.data.statusHistory, userDone],
+        ),
+      );
+    final stored = row.task;
+
+    await withClock(Clock.fixed(_now), () async {
+      final updated = await createService().applyTriage(
+        agentId: _agentId,
+        taskId: 't-done',
+        action: 'done',
+      );
+      expect(updated, stored);
+      expect(updated.data.status.id, 'status-user-done');
+      expect(
+        updated.data.statusHistory.map((s) => s.id),
+        ['status-open', 'status-user-done'],
+      );
+    });
+    expect(row.writes, isEmpty);
+  });
+
+  test('applies the triage on the task as stored: a field set since the '
+      'read survives', () async {
+    final read = _task(id: 't-kept', status: _openStatus());
+    final row = stubTask(read)
+      ..task = read.copyWith(
+        data: read.data.copyWith(
+          priority: TaskPriority.p0Urgent,
+          title: 'Renamed meanwhile',
+        ),
+      );
+
+    await withClock(Clock.fixed(_now), () async {
+      final updated = await createService().applyTriage(
+        agentId: _agentId,
+        taskId: 't-kept',
+        action: 'defer',
+        deferTo: DateTime(2026, 5, 28, 10),
+      );
+      expect(updated.data.due, DateTime(2026, 5, 28, 23, 59, 59, 999));
+      expect(updated.data.priority, TaskPriority.p0Urgent);
+      expect(updated.data.title, 'Renamed meanwhile');
+      expect(row.writes.single, updated);
+    });
+  });
+
+  test('a status set since the read is built on, not replaced', () async {
+    final read = _task(id: 't-status', status: _openStatus());
+    final userStatus = TaskStatus.groomed(
+      id: 'status-user-groomed',
+      createdAt: DateTime(2026, 5, 24),
+      utcOffset: 120,
+    );
+    final row = stubTask(read)
+      ..task = read.copyWith(
+        data: read.data.copyWith(
+          status: userStatus,
+          statusHistory: [...read.data.statusHistory, userStatus],
+        ),
+      );
+
+    await withClock(Clock.fixed(_now), () async {
+      final updated = await createService().applyTriage(
+        agentId: _agentId,
+        taskId: 't-status',
+        action: 'done',
+      );
+      expect(
+        updated.data.statusHistory.map((s) => s.toDbString),
+        ['OPEN', 'GROOMED', 'DONE'],
+      );
+      expect(row.writes.single, updated);
+    });
   });
 
   test('today action sets due to end of day for an open task', () async {
@@ -139,6 +250,35 @@ void main() {
         action: 'today',
       );
       expect(updated.data.status, isA<TaskOpen>());
+      expect(
+        updated.data.statusHistory.map((s) => s.toDbString),
+        ['BLOCKED', 'OPEN'],
+      );
+    });
+  });
+
+  test('today reopens a task the user blocked since the read', () async {
+    final read = _task(id: 't3b', status: _openStatus());
+    final row = stubTask(read)
+      ..task = read.copyWith(
+        data: read.data.copyWith(
+          status: _blockedStatus(),
+          statusHistory: [...read.data.statusHistory, _blockedStatus()],
+        ),
+      );
+
+    await withClock(Clock.fixed(_now), () async {
+      final updated = await createService().applyTriage(
+        agentId: _agentId,
+        taskId: 't3b',
+        action: 'today',
+      );
+      expect(updated.data.status, isA<TaskOpen>());
+      expect(
+        updated.data.statusHistory.map((s) => s.toDbString),
+        ['OPEN', 'BLOCKED', 'OPEN'],
+      );
+      expect(row.writes.single, updated);
     });
   });
 
@@ -168,7 +308,7 @@ void main() {
       ),
       throwsA(isA<DayAgentCaptureException>()),
     );
-    verifyNever(() => journalRepository.updateJournalEntity(any()));
+    verifyNever(() => journalRepository.updateTask(any(), any()));
   });
 
   test('throws an unknown-action error for an unrecognized action', () async {
@@ -187,8 +327,8 @@ void main() {
   test('throws when the persistence update fails', () async {
     stubTask(_task(id: 't7', status: _openStatus()));
     when(
-      () => journalRepository.updateJournalEntity(any()),
-    ).thenAnswer((_) async => false);
+      () => journalRepository.updateTask(any(), any()),
+    ).thenAnswer((_) async => null);
 
     await withClock(Clock.fixed(_now), () async {
       await expectLater(

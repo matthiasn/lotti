@@ -8,6 +8,7 @@ import 'package:lotti/features/ai/functions/task_estimate_handler.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
 enum _GeneratedCurrentEstimateKind { none, zero, same, different }
@@ -144,6 +145,7 @@ void main() {
   final fixedDate = DateTime(2024, 1, 15);
 
   setUpAll(() {
+    registerAllFallbackValues();
     registerFallbackValue(
       Task(
         meta: Metadata(
@@ -243,9 +245,7 @@ void main() {
           confidence: 'high',
         );
 
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         Task? capturedTask;
         final handler = TaskEstimateHandler(
@@ -263,7 +263,7 @@ void main() {
         expect(capturedTask, isNotNull);
         expect(capturedTask!.data.estimate, const Duration(minutes: 120));
 
-        verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+        verify(() => mockJournalRepo.updateTask(any(), any())).called(1);
         verify(
           () => mockManager.addToolResponse(
             toolCallId: 'call_estimate_123',
@@ -278,9 +278,7 @@ void main() {
           final task = createTask(estimate: Duration.zero);
           final toolCall = createEstimateToolCall(minutes: 60);
 
-          when(
-            () => mockJournalRepo.updateJournalEntity(any()),
-          ).thenAnswer((_) async => true);
+          stubTaskRow(mockJournalRepo, task);
 
           final handler = TaskEstimateHandler(
             task: task,
@@ -296,7 +294,7 @@ void main() {
             const Duration(minutes: 60),
           );
 
-          verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+          verify(() => mockJournalRepo.updateTask(any(), any())).called(1);
         },
       );
 
@@ -304,9 +302,7 @@ void main() {
         final task = createTask();
         final toolCall = createEstimateToolCall(minutes: 90);
 
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskEstimateHandler(
           task: task,
@@ -326,9 +322,7 @@ void main() {
           final task = createTask();
           final toolCall = createEstimateToolCall(minutes: 45);
 
-          when(
-            () => mockJournalRepo.updateJournalEntity(any()),
-          ).thenAnswer((_) async => true);
+          stubTaskRow(mockJournalRepo, task);
 
           final handler = TaskEstimateHandler(
             task: task,
@@ -340,7 +334,7 @@ void main() {
 
           expect(result.success, isTrue);
           expect(handler.task.data.estimate?.inMinutes, 45);
-          verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+          verify(() => mockJournalRepo.updateTask(any(), any())).called(1);
           // Manager methods should not be called
           verifyNever(
             () => mockManager.addToolResponse(
@@ -373,7 +367,7 @@ void main() {
         expect(handler.task.data.estimate?.inMinutes, 60);
         expect(result.message, contains('No change needed'));
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
       });
 
       test('should not call onTaskUpdated when same estimate', () async {
@@ -402,9 +396,7 @@ void main() {
           confidence: 'high',
         );
 
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskEstimateHandler(
           task: task,
@@ -421,7 +413,7 @@ void main() {
           const Duration(minutes: 120),
         );
 
-        verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+        verify(() => mockJournalRepo.updateTask(any(), any())).called(1);
       });
     });
 
@@ -449,7 +441,7 @@ void main() {
         expect(result.error, contains('positive integer'));
         expect(handler.task.data.estimate?.inMinutes, isNull);
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
       });
 
       test('should reject zero minutes', () async {
@@ -467,7 +459,7 @@ void main() {
         expect(result.error, isNotNull);
         expect(result.error, contains('positive integer'));
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
       });
 
       test('should reject negative minutes', () async {
@@ -485,7 +477,7 @@ void main() {
         expect(result.error, isNotNull);
         expect(result.error, contains('positive integer'));
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
       });
 
       test('should reject minutes exceeding max bound', () async {
@@ -511,7 +503,7 @@ void main() {
         expect(result.error, isNotNull);
         expect(result.error, contains('1440'));
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
       });
 
       test('should handle malformed JSON', () async {
@@ -535,7 +527,7 @@ void main() {
         expect(result.success, isFalse);
         expect(result.error, isNotNull);
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
         verify(
           () => mockManager.addToolResponse(
             toolCallId: 'call_estimate_123',
@@ -551,7 +543,7 @@ void main() {
         final toolCall = createEstimateToolCall(minutes: 90);
 
         when(
-          () => mockJournalRepo.updateJournalEntity(any()),
+          () => mockJournalRepo.updateTask(any(), any()),
         ).thenThrow(Exception('Database connection lost'));
 
         final handler = TaskEstimateHandler(
@@ -580,7 +572,7 @@ void main() {
         final toolCall = createEstimateToolCall(minutes: 90);
 
         when(
-          () => mockJournalRepo.updateJournalEntity(any()),
+          () => mockJournalRepo.updateTask(any(), any()),
         ).thenThrow(Exception('Database error'));
 
         var callbackCalled = false;
@@ -602,7 +594,7 @@ void main() {
           final toolCall = createEstimateToolCall(minutes: 90);
 
           when(
-            () => mockJournalRepo.updateJournalEntity(any()),
+            () => mockJournalRepo.updateTask(any(), any()),
           ).thenThrow(Exception('Database error'));
 
           final handler = TaskEstimateHandler(
@@ -625,11 +617,13 @@ void main() {
       'matches generated estimate validation, no-op, and repository semantics',
       (scenario) async {
         final repo = MockJournalRepository();
-        when(
-          () => repo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => scenario.repositorySucceeds);
-
         final initialTask = createTask(estimate: scenario.currentEstimate);
+        final row = stubTaskRow(repo, initialTask);
+        if (!scenario.repositorySucceeds) {
+          when(
+            () => repo.updateTask(any(), any()),
+          ).thenAnswer((_) async => null);
+        }
         Task? callbackTask;
         final handler = TaskEstimateHandler(
           task: initialTask,
@@ -651,7 +645,7 @@ void main() {
           );
           expect(handler.task, initialTask, reason: '$scenario');
           expect(callbackTask, isNull, reason: '$scenario');
-          verifyNever(() => repo.updateJournalEntity(any()));
+          verifyNever(() => repo.updateTask(any(), any()));
           return;
         }
 
@@ -660,18 +654,18 @@ void main() {
           expect(result.didWrite, isFalse, reason: '$scenario');
           expect(handler.task, initialTask, reason: '$scenario');
           expect(callbackTask, isNull, reason: '$scenario');
-          verifyNever(() => repo.updateJournalEntity(any()));
+          verifyNever(() => repo.updateTask(any(), any()));
           return;
         }
 
         expect(scenario.shouldAttemptWrite, isTrue, reason: '$scenario');
-        final captured =
+        final change =
             verify(
-                  () => repo.updateJournalEntity(captureAny()),
+                  () => repo.updateTask(initialTask.id, captureAny()),
                 ).captured.single
-                as Task;
+                as TaskData Function(TaskData);
         expect(
-          captured.data.estimate,
+          change(initialTask.data).estimate,
           Duration(minutes: scenario.parsedMinutes!),
           reason: '$scenario',
         );
@@ -685,13 +679,87 @@ void main() {
           return;
         }
 
+        final written = row.writes.single;
+        expect(
+          written.data,
+          initialTask.data.copyWith(
+            estimate: Duration(minutes: scenario.parsedMinutes!),
+          ),
+          reason: '$scenario',
+        );
         expect(result.success, isTrue, reason: '$scenario');
         expect(result.didWrite, isTrue, reason: '$scenario');
-        expect(handler.task, captured, reason: '$scenario');
-        expect(callbackTask, captured, reason: '$scenario');
+        expect(handler.task, written, reason: '$scenario');
+        expect(callbackTask, written, reason: '$scenario');
       },
       tags: 'glados',
     );
+
+    group('field changed since the call read the task', () {
+      test(
+        'writes on the task as stored, keeping a field set meanwhile',
+        () async {
+          final task = createTask();
+          final row = stubTaskRow(mockJournalRepo, task)
+            ..task = task.copyWith(
+              data: task.data.copyWith(priority: TaskPriority.p0Urgent),
+            );
+          Task? callbackTask;
+          final handler = TaskEstimateHandler(
+            task: task,
+            journalRepository: mockJournalRepo,
+            onTaskUpdated: (t) => callbackTask = t,
+          );
+
+          final result = await handler.processToolCall(
+            createEstimateToolCall(minutes: 90),
+            mockManager,
+          );
+
+          expect(result.didWrite, isTrue);
+          final written = row.writes.single;
+          expect(written.data.estimate, const Duration(minutes: 90));
+          expect(written.data.priority, TaskPriority.p0Urgent);
+          expect(handler.task, written);
+          expect(callbackTask, written);
+        },
+      );
+
+      test('applies nothing when the stored estimate changed', () async {
+        final task = createTask();
+        final row = stubTaskRow(mockJournalRepo, task)
+          ..task = task.copyWith(
+            data: task.data.copyWith(estimate: const Duration(minutes: 30)),
+          );
+        final stored = row.task;
+        var callbackCalled = false;
+        final handler = TaskEstimateHandler(
+          task: task,
+          journalRepository: mockJournalRepo,
+          onTaskUpdated: (_) => callbackCalled = true,
+        );
+
+        final result = await handler.processToolCall(
+          createEstimateToolCall(minutes: 90),
+          mockManager,
+        );
+
+        expect(result.success, isTrue);
+        expect(result.didWrite, isFalse);
+        expect(result.error, isNull);
+        expect(result.message, startsWith('Nothing applied'));
+        expect(row.writes, isEmpty);
+        expect(row.task.data.estimate, const Duration(minutes: 30));
+        expect(handler.task, stored);
+        expect(callbackCalled, isFalse);
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call_estimate_123',
+            response: result.message,
+          ),
+        ).called(1);
+      });
+    });
 
     group('edge cases', () {
       test('should handle max allowed minute value (24 hours)', () async {
@@ -699,9 +767,7 @@ void main() {
         // 24 hours in minutes (max allowed)
         final toolCall = createEstimateToolCall(minutes: 1440);
 
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskEstimateHandler(
           task: task,
@@ -722,9 +788,7 @@ void main() {
         final task = createTask();
         final toolCall = createEstimateToolCall(minutes: 1);
 
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskEstimateHandler(
           task: task,
@@ -766,9 +830,7 @@ void main() {
           );
           final toolCall = createEstimateToolCall(minutes: 60);
 
-          when(
-            () => mockJournalRepo.updateJournalEntity(any()),
-          ).thenAnswer((_) async => true);
+          stubTaskRow(mockJournalRepo, task);
 
           final handler = TaskEstimateHandler(
             task: task,
@@ -799,9 +861,7 @@ void main() {
           ),
         );
 
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskEstimateHandler(
           task: task,
@@ -833,9 +893,7 @@ void main() {
           ),
         );
 
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskEstimateHandler(
           task: task,
@@ -871,7 +929,7 @@ void main() {
         expect(result.error, isNotNull);
         expect(result.error, contains('two hours'));
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
       });
     });
   });

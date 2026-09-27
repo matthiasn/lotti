@@ -5,6 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/tasks/repository/task_field_write.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -218,30 +219,37 @@ class TaskDueDateHandler {
       }
 
       // Update the task
-      final updatedTask = task.copyWith(
-        data: task.data.copyWith(due: dueDate),
-      );
-
       try {
-        final success = await journalRepository.updateJournalEntity(
-          updatedTask,
+        final write = await writeTaskField(
+          journalRepository: journalRepository,
+          task: task,
+          field: (data) => data.due,
+          set: (stored) => stored.copyWith(due: dueDate),
         );
 
-        if (!success) {
-          const message =
-              'Failed to update due date: repository returned false.';
-          developer.log(message, name: 'TaskDueDateHandler');
-          _sendResponse(call.id, message, manager);
-          return const TaskDueDateResult(
-            success: false,
-            message: message,
-            error: message,
-          );
+        switch (write) {
+          case TaskFieldWriteFailed():
+            const message =
+                'Failed to update due date: repository returned false.';
+            developer.log(message, name: 'TaskDueDateHandler');
+            _sendResponse(call.id, message, manager);
+            return const TaskDueDateResult(
+              success: false,
+              message: message,
+              error: message,
+            );
+          case TaskFieldMoved(task: final stored):
+            task = stored;
+            const message =
+                "Nothing applied: the task's due date changed since this "
+                'call read it, so it stays as it is.';
+            developer.log(message, name: 'TaskDueDateHandler');
+            _sendResponse(call.id, message, manager);
+            return const TaskDueDateResult(success: true, message: message);
+          case TaskFieldWritten(task: final stored):
+            task = stored;
+            onTaskUpdated?.call(stored);
         }
-
-        // Update local state
-        task = updatedTask;
-        onTaskUpdated?.call(updatedTask);
 
         final message = 'Task due date updated to $dueDateStr.';
         developer.log(

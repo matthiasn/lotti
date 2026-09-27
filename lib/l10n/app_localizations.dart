@@ -24413,6 +24413,12 @@ abstract class AppLocalizations {
   /// **'Agent link'**
   String get syncPayloadAgentLink;
 
+  /// Outbox list label for a cross-device broadcast that tells peers which device runs an agent wake.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent wake coordination'**
+  String get syncPayloadAgentWakeCoordination;
+
   /// No description provided for @syncPayloadAiConfig.
   ///
   /// In en, this message translates to:
@@ -24478,12 +24484,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Media request'**
   String get syncPayloadMediaRequest;
-
-  /// Outbox list label for a cross-device broadcast that tells peers which device runs an agent wake.
-  ///
-  /// In en, this message translates to:
-  /// **'Agent wake coordination'**
-  String get syncPayloadAgentWakeCoordination;
 
   /// No description provided for @syncPayloadNotification.
   ///

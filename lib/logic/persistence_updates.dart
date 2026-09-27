@@ -44,15 +44,13 @@ class PersistenceUpdates extends PersistenceCollaboratorBase {
     dateTo: dateTo,
   );
 
-  Future<bool> updateTask({
+  Future<Task?> updateTask({
     required String journalEntityId,
-    required TaskData taskData,
-    String? categoryId,
+    required TaskData Function(TaskData stored) change,
     EntryText? entryText,
   }) => logic.updateTaskImpl(
     journalEntityId: journalEntityId,
-    taskData: taskData,
-    categoryId: categoryId,
+    change: change,
     entryText: entryText,
   );
 

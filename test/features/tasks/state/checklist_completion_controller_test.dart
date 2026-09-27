@@ -107,10 +107,10 @@ void main() {
     when(
       () => mockPersistenceLogic.updateTask(
         journalEntityId: any(named: 'journalEntityId'),
-        taskData: any(named: 'taskData'),
+        change: any(named: 'change'),
         entryText: any(named: 'entryText'),
       ),
-    ).thenAnswer((_) async => true);
+    ).thenAnswer((_) async => testTask);
   });
 
   tearDown(() async {

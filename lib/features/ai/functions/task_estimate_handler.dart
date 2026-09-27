@@ -5,6 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/tasks/repository/task_field_write.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Maximum allowed estimate in minutes (24 hours).
@@ -204,30 +205,37 @@ class TaskEstimateHandler {
 
       // Update the task
       final newEstimate = Duration(minutes: minutes);
-      final updatedTask = task.copyWith(
-        data: task.data.copyWith(estimate: newEstimate),
-      );
-
       try {
-        final success = await journalRepository.updateJournalEntity(
-          updatedTask,
+        final write = await writeTaskField(
+          journalRepository: journalRepository,
+          task: task,
+          field: (data) => data.estimate,
+          set: (stored) => stored.copyWith(estimate: newEstimate),
         );
 
-        if (!success) {
-          const message =
-              'Failed to update estimate: repository returned false.';
-          developer.log(message, name: 'TaskEstimateHandler');
-          _sendResponse(call.id, message, manager);
-          return const TaskEstimateResult(
-            success: false,
-            message: message,
-            error: message,
-          );
+        switch (write) {
+          case TaskFieldWriteFailed():
+            const message =
+                'Failed to update estimate: repository returned false.';
+            developer.log(message, name: 'TaskEstimateHandler');
+            _sendResponse(call.id, message, manager);
+            return const TaskEstimateResult(
+              success: false,
+              message: message,
+              error: message,
+            );
+          case TaskFieldMoved(task: final stored):
+            task = stored;
+            const message =
+                "Nothing applied: the task's estimate changed since this "
+                'call read it, so it stays as it is.';
+            developer.log(message, name: 'TaskEstimateHandler');
+            _sendResponse(call.id, message, manager);
+            return const TaskEstimateResult(success: true, message: message);
+          case TaskFieldWritten(task: final stored):
+            task = stored;
+            onTaskUpdated?.call(stored);
         }
-
-        // Update local state
-        task = updatedTask;
-        onTaskUpdated?.call(updatedTask);
 
         final message = 'Task estimate updated to $minutes minutes.';
         developer.log(

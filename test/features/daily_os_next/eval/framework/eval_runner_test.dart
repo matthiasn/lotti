@@ -1182,34 +1182,36 @@ void main() {
       );
     });
 
-    test('an update mutates the store instead of only reporting success', () {
-      // apply_triage updates a task through this. A stub that answers true
-      // without changing anything leaves the model reading stale state after
-      // its own write — the harness agreeing out loud and doing nothing.
-      final scenario = evalScenarios.firstWhere((s) => s.id == 'crowdedDay');
-      final journalDb = MockJournalDb();
-      final journalRepository = MockJournalRepository();
-      seedScenarioCorpus(
-        journalDb: journalDb,
-        scenario: scenario,
-        planDate: evalPlanDateFor(scenario, today),
-        journalRepository: journalRepository,
-      );
+    test(
+      'an update mutates the store instead of only reporting success',
+      () async {
+        // apply_triage updates a task through this. A stub that answers true
+        // without changing anything leaves the model reading stale state after
+        // its own write — the harness agreeing out loud and doing nothing.
+        final scenario = evalScenarios.firstWhere((s) => s.id == 'crowdedDay');
+        final journalDb = MockJournalDb();
+        final journalRepository = MockJournalRepository();
+        seedScenarioCorpus(
+          journalDb: journalDb,
+          scenario: scenario,
+          planDate: evalPlanDateFor(scenario, today),
+          journalRepository: journalRepository,
+        );
 
-      final original = currentEvalJournal.byId('task-overdue-invoice')! as Task;
-      final renamed = original.copyWith(
-        data: original.data.copyWith(title: 'Renamed by triage'),
-      );
+        final updated = await journalRepository.updateTask(
+          'task-overdue-invoice',
+          (stored) => stored.copyWith(title: 'Renamed by triage'),
+        );
 
-      expect(
-        journalRepository.updateJournalEntity(renamed),
-        completion(isTrue),
-      );
-      expect(
-        (currentEvalJournal.byId('task-overdue-invoice')! as Task).data.title,
-        'Renamed by triage',
-      );
-    });
+        expect(updated?.data.title, 'Renamed by triage');
+        expect(currentEvalJournal.byId('task-overdue-invoice'), updated);
+        expect(
+          await journalRepository.updateTask('task-never-existed', (s) => s),
+          isNull,
+          reason: 'a write to a task the corpus lacks must fail, not succeed',
+        );
+      },
+    );
 
     test('corpus reads reflect a task the run updated', () {
       // A model that runs apply_triage and then rechecks pending work must see

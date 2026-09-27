@@ -1241,7 +1241,14 @@ flowchart TD
   (`TaskDataOnStored.withEffectsOf`, joined in by `updateTaskImpl`,
   `JournalRepository.updateJournalEntity` and the common writer
   `PersistenceUpdates.updateJournalEntity`), so a screen's stale copy cannot
-  drop it. Resolving a journal conflict keeps both sides' records, whichever
+  drop it.
+- **A field tool compares on the stored row.** The dispatcher's compare runs
+  on the task it read for the call; the handler's write runs later, so it
+  goes through `writeTaskField`, which applies the change only while the
+  field on the stored row still reads what the tool's copy read, in the same
+  transaction as the write, and reports "nothing applied" otherwise
+  (`specs/tla/TaskFieldWrites.tla`, ADR 0103). The write sets that one field
+  on the stored task, so a field the user or sync set meanwhile is kept. Resolving a journal conflict keeps both sides' records, whichever
   side's fields the user keeps. A reopened field item confirmed again is a no-op once its change
   landed, as a reopened create-style item already was (ADR 0098).
 - **Proposals that edit another entity compare and set there**

@@ -8,7 +8,7 @@ part of 'checklist_repository_test.dart';
 // The screen writes from a copy it took earlier — its lists (add, reorder),
 // its items (check: uiCheck), a move between two checklists it shows
 // (uiMove), an item deletion across its undo window (uiDropItem), a checklist
-// deletion (uiDelete) and a task field edit of the stale TaskData
+// deletion (uiDelete) and a task field edit on the stored task
 // (uiTaskEdit). The agent adds items (agAdd), creates a checklist (agList),
 // renames an item (agCheck) and edits the task from a stale copy
 // (agTaskEdit). Sync lands newer versions from another device — between
@@ -466,15 +466,15 @@ class _MembershipBench {
         expect(deleted, isTrue, reason: 'deleteChecklist($checklistId)');
         _deleteList(checklistId);
       case _MembershipOp.taskEdit:
-        // A task field saved from the screen's copy of the task.
-        final screenTask = _screenTask;
-        if (screenTask == null) return;
+        // A task field saved from the screen, which shows the task — the
+        // save sets only that field, on the task as stored.
+        if (_screenTask == null) return;
         final title = _nextTitle('title');
         final saved = await persistence.updateTask(
           journalEntityId: taskId,
-          taskData: screenTask.data.copyWith(title: title),
+          change: (stored) => stored.copyWith(title: title),
         );
-        expect(saved, isTrue, reason: 'updateTask');
+        expect(saved?.data.title, title, reason: 'updateTask');
         expect((await _storedTask()).data.title, title);
       case _MembershipOp.agentTaskEdit:
         // The agent's task-field tools: the whole task as read earlier,

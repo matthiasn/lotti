@@ -303,9 +303,22 @@ void main() {
           if (journalEntities[id] != null) journalEntities[id]!,
       ];
     });
-    when(() => journalRepository.updateJournalEntity(any())).thenAnswer(
-      (_) async => true,
-    );
+    // A task write applies its change to the task as stored in
+    // [journalEntities], the way `PersistenceLogic.updateTask` does.
+    when(() => journalRepository.updateTask(any(), any())).thenAnswer((
+      invocation,
+    ) async {
+      final id = invocation.positionalArguments[0] as String;
+      final change =
+          invocation.positionalArguments[1] as TaskData Function(TaskData);
+      final stored = journalEntities[id];
+      if (stored is! Task) return null;
+      final updated = stored.copyWith(
+        data: change(stored.data).onStored(stored.data),
+      );
+      journalEntities[id] = updated;
+      return updated;
+    });
     when(() => fts5Db.watchFullTextMatches(any())).thenAnswer(
       (_) => Stream.value(const <String>[]),
     );
@@ -1118,14 +1131,6 @@ void main() {
         status: _openStatus(),
       );
 
-      Task? updatedTask;
-      when(() => journalRepository.updateJournalEntity(any())).thenAnswer((
-        invocation,
-      ) async {
-        updatedTask = invocation.positionalArguments.single as Task;
-        return true;
-      });
-
       final task = await withClock(Clock.fixed(_now), () {
         return createService().applyTriage(
           agentId: _agentId,
@@ -1135,8 +1140,9 @@ void main() {
       });
 
       expect(task.data.status, isA<TaskDone>());
-      expect(updatedTask?.data.status, isA<TaskDone>());
-      expect(updatedTask?.data.statusHistory.last, isA<TaskDone>());
+      final stored = journalEntities['task-1']! as Task;
+      expect(stored, task);
+      expect(stored.data.statusHistory.last, isA<TaskDone>());
     });
 
     test('applyTriage requires deferTo for defer actions', () async {
@@ -1162,9 +1168,9 @@ void main() {
         title: 'Prep demo',
         status: _openStatus(),
       );
-      when(() => journalRepository.updateJournalEntity(any())).thenAnswer(
-        (_) async => false,
-      );
+      when(
+        () => journalRepository.updateTask(any(), any()),
+      ).thenAnswer((_) async => null);
 
       await expectLater(
         createService().applyTriage(
@@ -2142,7 +2148,7 @@ void main() {
             ),
           ),
         );
-        verifyNever(() => journalRepository.updateJournalEntity(any()));
+        verifyNever(() => journalRepository.updateTask(any(), any()));
       },
     );
 
@@ -2172,7 +2178,9 @@ void main() {
         });
 
         expect(task.data.status, isA<TaskDone>());
-        verify(() => journalRepository.updateJournalEntity(any())).called(1);
+        verify(
+          () => journalRepository.updateTask('task-home', any()),
+        ).called(1);
       },
     );
 

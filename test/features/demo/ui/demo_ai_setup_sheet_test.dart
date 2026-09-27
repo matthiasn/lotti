@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
@@ -361,9 +362,9 @@ void main() {
     when(
       () => persistence.updateTask(
         journalEntityId: any(named: 'journalEntityId'),
-        taskData: any(named: 'taskData'),
+        change: any(named: 'change'),
       ),
-    ).thenAnswer((_) async => true);
+    ).thenAnswer((_) async => TestTaskFactory.create(id: 'seeded-task'));
     getIt
       ..registerSingleton<JournalDb>(db)
       ..registerSingleton<PersistenceLogic>(persistence);
@@ -391,12 +392,16 @@ void main() {
             ).captured.single
             as CategoryDefinition;
     expect(upserted.defaultProfileId, profileGeminiFlashId);
-    verify(
-      () => persistence.updateTask(
-        journalEntityId: 'seeded-task',
-        taskData: any(named: 'taskData'),
-      ),
-    ).called(1);
+    final change =
+        verify(
+              () => persistence.updateTask(
+                journalEntityId: 'seeded-task',
+                change: captureAny(named: 'change'),
+              ),
+            ).captured.single
+            as TaskData Function(TaskData);
+    final stored = TestTaskFactory.create(id: 'seeded-task').data;
+    expect(change(stored).profileId, profileGeminiFlashId);
   });
 
   group('DemoAiSetupSheet.show', () {

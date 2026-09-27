@@ -64,18 +64,21 @@ JournalEntity taskOf({
   Duration? estimate,
   VectorClock? vectorClock,
   Set<String>? appliedChangeEffects,
+  List<TaskStatus> statusHistory = const [],
 }) => Task(
   meta: metaOf(id: 'task-1', starred: true, vectorClock: vectorClock),
   data: TaskData(
     title: title,
     dateFrom: DateTime(2024, 3, 15, 9),
     dateTo: DateTime(2024, 3, 15, 11),
-    statusHistory: const [],
-    status: TaskStatus.open(
-      id: 'st-1',
-      createdAt: DateTime(2024, 3, 15, 9),
-      utcOffset: 0,
-    ),
+    statusHistory: statusHistory,
+    status: statusHistory.isEmpty
+        ? TaskStatus.open(
+            id: 'st-1',
+            createdAt: DateTime(2024, 3, 15, 9),
+            utcOffset: 0,
+          )
+        : statusHistory.last,
     estimate: estimate,
     appliedChangeEffects: appliedChangeEffects,
   ),

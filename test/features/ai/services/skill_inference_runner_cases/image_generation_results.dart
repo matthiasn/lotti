@@ -79,9 +79,9 @@ extension _ImageGenerationResultCases on _SkillInferenceTestSetup {
         when(
           () => mockPersistenceLogic.updateTask(
             journalEntityId: any(named: 'journalEntityId'),
-            taskData: any(named: 'taskData'),
+            change: any(named: 'change'),
           ),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((_) async => taskEntity as Task);
         stubLoggingEvent();
 
         await runner.runImageGeneration(
@@ -192,9 +192,9 @@ extension _ImageGenerationResultCases on _SkillInferenceTestSetup {
         when(
           () => mockPersistenceLogic.updateTask(
             journalEntityId: any(named: 'journalEntityId'),
-            taskData: any(named: 'taskData'),
+            change: any(named: 'change'),
           ),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((_) async => taskEntity as Task);
         stubLoggingEvent();
 
         await runner.runImageGeneration(
@@ -203,19 +203,24 @@ extension _ImageGenerationResultCases on _SkillInferenceTestSetup {
           linkedTaskId: 'task-cover-id',
         );
 
-        final capturedTaskData =
+        final change =
             verify(
                   () => mockPersistenceLogic.updateTask(
                     journalEntityId: 'task-cover-id',
-                    taskData: captureAny(named: 'taskData'),
+                    change: captureAny(named: 'change'),
                   ),
                 ).captured.single
-                as TaskData;
-
-        expect(
-          capturedTaskData.coverArtId,
-          'the-real-persisted-image-entity-id',
+                as TaskData Function(TaskData);
+        // The change is applied to the task as stored: it sets the cover
+        // art and keeps a field set there since the runner read the task.
+        final stored = (taskEntity as Task).data.copyWith(
+          title: 'Renamed meanwhile',
+          priority: TaskPriority.p0Urgent,
         );
+        final written = change(stored);
+
+        expect(written.coverArtId, 'the-real-persisted-image-entity-id');
+        expect(written.copyWith(coverArtId: stored.coverArtId), stored);
       },
     );
   }
@@ -327,9 +332,9 @@ extension _ImageGenerationResultCases on _SkillInferenceTestSetup {
         when(
           () => mockPersistenceLogic.updateTask(
             journalEntityId: any(named: 'journalEntityId'),
-            taskData: any(named: 'taskData'),
+            change: any(named: 'change'),
           ),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((_) async => taskEntity as Task);
 
         stubLoggingEvent();
 
@@ -390,7 +395,7 @@ extension _ImageGenerationResultCases on _SkillInferenceTestSetup {
         verify(
           () => mockPersistenceLogic.updateTask(
             journalEntityId: 'task-gen',
-            taskData: any(named: 'taskData'),
+            change: any(named: 'change'),
           ),
         ).called(1);
 
@@ -515,9 +520,9 @@ extension _ImageGenerationResultCases on _SkillInferenceTestSetup {
         when(
           () => mockPersistenceLogic.updateTask(
             journalEntityId: any(named: 'journalEntityId'),
-            taskData: any(named: 'taskData'),
+            change: any(named: 'change'),
           ),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((_) async => taskEntity as Task);
 
         getIt
           ..unregister<DomainLogger>()

@@ -140,23 +140,35 @@ class PersistenceUpdateOps extends PersistenceCollaboratorBase {
     }
   }
 
-  Future<bool> updateTaskImpl({
+  /// Applies [change] to the data of the stored task [journalEntityId], and
+  /// [entryText] when given, and writes the result on that row
+  /// ([writeOnStored]).
+  ///
+  /// [change] is handed the data as stored, never a copy a screen or a tool
+  /// call read earlier, and sets only the fields its writer sets: a version
+  /// stored meanwhile — by sync, the agent, or another screen — is built on
+  /// again rather than replaced, so a field another writer set is never
+  /// silently put back (`specs/tla/TaskFieldWrites.tla`, NoLostFieldEdit).
+  /// The checklist list stays the stored one — `ChecklistRepository.
+  /// updateTaskChecklistIds` owns it — and the stored record of applied
+  /// agent changes is kept ([TaskDataOnStored.onStored], ADR 0098).
+  ///
+  /// Returns the task as stored afterwards — unchanged when [change] leaves
+  /// it as it is — or `null` when it does not exist, is not a task, or the
+  /// write failed.
+  Future<Task?> updateTaskImpl({
     required String journalEntityId,
-    required TaskData taskData,
-    String? categoryId,
+    required TaskData Function(TaskData stored) change,
     EntryText? entryText,
   }) async {
     try {
-      // Written on the stored task, which keeps its own checklist list and
-      // its record of applied changes: the caller's [taskData] may be a
-      // screen's copy from before a checklist was added
-      // (ChecklistRepository.updateTaskChecklistIds owns that list;
-      // specs/tla/ChecklistMembership.tla) or a change was applied (ADR 0098).
-      return await writeOnStored(
+      Task? result;
+      final stored = await writeOnStored(
         journalDb: journalDb,
         persistenceLogic: logic,
         id: journalEntityId,
         build: (stored) async {
+          result = null;
           if (stored is! Task) {
             loggingService.error(
               LogDomain.persistence,
@@ -165,21 +177,30 @@ class PersistenceUpdateOps extends PersistenceCollaboratorBase {
             );
             return null;
           }
-          return stored.copyWith(
+          final data = change(stored.data).onStored(stored.data);
+          final text = entryText ?? stored.entryText;
+          if (data == stored.data && text == stored.entryText) {
+            result = stored;
+            return null;
+          }
+          return result = stored.copyWith(
             meta: await logic.updateMetadata(stored.meta),
-            entryText: entryText ?? stored.entryText,
-            data: taskData.onStored(stored.data),
+            entryText: text,
+            data: data,
           );
         },
-        beforeNotify: (stored, _) =>
-            stored is Task && stored.data.priority != taskData.priority
+        beforeNotify: (stored, updated) =>
+            stored is Task &&
+                updated is Task &&
+                stored.data.priority != updated.data.priority
             ? () => journalDb.updateTaskPriorityColumn(
                 id: journalEntityId,
-                priority: taskData.priority.short,
-                rank: taskData.priority.rank,
+                priority: updated.data.priority.short,
+                rank: updated.data.priority.rank,
               )
             : null,
       );
+      return stored ? result : null;
     } catch (exception, stackTrace) {
       loggingService.error(
         LogDomain.persistence,
@@ -187,8 +208,8 @@ class PersistenceUpdateOps extends PersistenceCollaboratorBase {
         stackTrace: stackTrace,
         subDomain: 'updateTask',
       );
+      return null;
     }
-    return true;
   }
 
   Future<bool> updateEventImpl({

@@ -850,8 +850,8 @@ void main() {
       await getIt<PersistenceLogic>().updateTask(
         journalEntityId: task.meta.id,
         entryText: task.entryText,
-        taskData: taskData.copyWith(
-          status: TaskStatus.inProgress(
+        change: (stored) => stored.withStatus(
+          TaskStatus.inProgress(
             id: uuid.v1(),
             createdAt: testDate,
             utcOffset: 60,
@@ -871,8 +871,8 @@ void main() {
       await getIt<PersistenceLogic>().updateTask(
         journalEntityId: task.meta.id,
         entryText: task.entryText,
-        taskData: taskData.copyWith(
-          status: TaskStatus.done(
+        change: (stored) => stored.withStatus(
+          TaskStatus.done(
             id: uuid.v1(),
             createdAt: testDate,
             utcOffset: 60,
@@ -1513,25 +1513,18 @@ void main() {
       },
     );
 
-    test('updateTask returns false for non-existent entity', () async {
-      final taskData = TaskData(
-        status: TaskStatus.open(
-          id: uuid.v1(),
-          createdAt: DateTime(2024, 3, 15, 10, 30),
-          utcOffset: 60,
-        ),
-        title: 'test',
-        statusHistory: [],
-        dateTo: DateTime(2024, 3, 15, 10, 30),
-        dateFrom: DateTime(2024, 3, 15, 10, 30),
-      );
-
+    test('updateTask returns null for non-existent entity', () async {
+      var changed = false;
       final result = await getIt<PersistenceLogic>().updateTask(
         journalEntityId: 'non-existent-id',
-        taskData: taskData,
+        change: (stored) {
+          changed = true;
+          return stored;
+        },
       );
 
-      expect(result, false);
+      expect(result, isNull);
+      expect(changed, isFalse);
     });
 
     test('updateEvent returns false for non-existent entity', () async {
@@ -1561,25 +1554,13 @@ void main() {
       );
       await persistenceLogic.createDbEntity(entry);
 
-      final taskData = TaskData(
-        status: TaskStatus.open(
-          id: uuid.v1(),
-          createdAt: DateTime(2024, 3, 15),
-          utcOffset: 60,
-        ),
-        title: 'test',
-        statusHistory: [],
-        dateTo: DateTime(2024, 3, 15),
-        dateFrom: DateTime(2024, 3, 15),
-      );
-
-      // Should succeed (returns true) and hit the orElse branch which logs
+      // Nothing to apply the change to: logged, and no task comes back.
       final result = await persistenceLogic.updateTask(
         journalEntityId: entry.meta.id,
-        taskData: taskData,
+        change: (stored) => stored.copyWith(title: 'test'),
       );
 
-      expect(result, true);
+      expect(result, isNull);
 
       // The entity should remain a journal entry (not converted to a task)
       final unchanged = await getIt<JournalDb>().journalEntityById(
@@ -2308,29 +2289,18 @@ void main() {
       verifyLogged(LogDomain.persistence, 'updateJournalEntry');
     });
 
-    test('updateTask logs and returns true on failure', () async {
+    test('updateTask logs and returns null on failure', () async {
       when(
         () => journalDb.journalEntityById(any<String>()),
       ).thenThrow(StateError(boom));
 
       final result = await logic.updateTask(
         journalEntityId: 'entry-id',
-        taskData: TaskData(
-          status: TaskStatus.open(
-            id: 'status-id',
-            createdAt: DateTime(2024, 3, 15, 10),
-            utcOffset: 60,
-          ),
-          title: 'title',
-          statusHistory: const [],
-          dateTo: DateTime(2024, 3, 15, 10),
-          dateFrom: DateTime(2024, 3, 15, 10),
-        ),
+        change: (stored) => stored.copyWith(title: 'title'),
       );
 
-      // Documented contract: updateTask returns true even when the lookup
-      // throws and the failure is logged.
-      expect(result, isTrue);
+      // A failed write is reported as no task, and the failure is logged.
+      expect(result, isNull);
       verifyLogged(LogDomain.persistence, 'updateTask');
     });
 
@@ -3788,24 +3758,12 @@ void main() {
           () => journalDb.journalEntityById('not-a-task-id'),
         ).thenAnswer((_) async => journalEntry);
 
-        final taskData = TaskData(
-          status: TaskStatus.open(
-            id: 'status-id',
-            createdAt: testDate,
-            utcOffset: 60,
-          ),
-          title: 'test task',
-          statusHistory: [],
-          dateTo: testDate,
-          dateFrom: testDate,
-        );
-
         final result = await logic.updateTask(
           journalEntityId: 'not-a-task-id',
-          taskData: taskData,
+          change: (stored) => stored.copyWith(title: 'test task'),
         );
 
-        expect(result, isTrue);
+        expect(result, isNull);
         verify(
           () => loggingService.error(
             LogDomain.persistence,
@@ -3869,15 +3827,14 @@ void main() {
             notifiedIds = invocation.positionalArguments.first as Set<String>;
           });
 
-          final updatedTaskData = task.data.copyWith(
-            priority: TaskPriority.p0Urgent,
-          );
-
-          await logic.updateTask(
+          final written = await logic.updateTask(
             journalEntityId: 'task-id',
-            taskData: updatedTaskData,
+            change: (stored) => stored.copyWith(
+              priority: TaskPriority.p0Urgent,
+            ),
           );
 
+          expect(written?.data.priority, TaskPriority.p0Urgent);
           expect(callOrder, equals(['priority-column', 'notify']));
           expect(notifiedIds, contains('task-id'));
         },

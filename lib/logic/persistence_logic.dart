@@ -315,15 +315,16 @@ class PersistenceLogic implements PersistenceLogicContract {
     dateTo: dateTo,
   );
 
-  Future<bool> updateTask({
+  /// Applies [change] to the stored task's data, and [entryText] when
+  /// given ([PersistenceUpdateOps.updateTaskImpl]). Returns the task as
+  /// stored afterwards, or `null` when it does not exist or the write failed.
+  Future<Task?> updateTask({
     required String journalEntityId,
-    required TaskData taskData,
-    String? categoryId,
+    required TaskData Function(TaskData stored) change,
     EntryText? entryText,
   }) => _updates.updateTask(
     journalEntityId: journalEntityId,
-    taskData: taskData,
-    categoryId: categoryId,
+    change: change,
     entryText: entryText,
   );
 
@@ -393,15 +394,13 @@ class PersistenceLogic implements PersistenceLogicContract {
   );
 
   @override
-  Future<bool> updateTaskImpl({
+  Future<Task?> updateTaskImpl({
     required String journalEntityId,
-    required TaskData taskData,
-    String? categoryId,
+    required TaskData Function(TaskData stored) change,
     EntryText? entryText,
   }) => _updateOps.updateTaskImpl(
     journalEntityId: journalEntityId,
-    taskData: taskData,
-    categoryId: categoryId,
+    change: change,
     entryText: entryText,
   );
 

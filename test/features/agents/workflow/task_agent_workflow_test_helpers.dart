@@ -385,9 +385,10 @@ String captureDeferredToolResponse(
 }
 
 /// Verifies that a deferred tool call was NOT executed immediately (no
-/// journal update).
+/// journal update, and no task field written).
 void verifyNotExecutedImmediately(MockJournalRepository mockJournalRepository) {
   verifyNever(() => mockJournalRepository.updateJournalEntity(any()));
+  verifyNever(() => mockJournalRepository.updateTask(any(), any()));
 }
 
 /// Combines [verifyNotExecutedImmediately] and [verifyDeferredToolResponse].

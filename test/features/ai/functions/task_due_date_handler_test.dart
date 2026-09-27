@@ -8,6 +8,7 @@ import 'package:lotti/features/ai/functions/task_due_date_handler.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_utils/glados_generators.dart';
 
@@ -153,6 +154,7 @@ void main() {
   final fixedDate = DateTime(2024, 1, 15);
 
   setUpAll(() {
+    registerAllFallbackValues();
     registerFallbackValue(
       Task(
         meta: Metadata(
@@ -252,9 +254,7 @@ void main() {
           confidence: 'high',
         );
 
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         Task? capturedTask;
         final handler = TaskDueDateHandler(
@@ -272,7 +272,7 @@ void main() {
         expect(capturedTask, isNotNull);
         expect(capturedTask!.data.due, DateTime(2024, 1, 19));
 
-        verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+        verify(() => mockJournalRepo.updateTask(any(), any())).called(1);
         verify(
           () => mockManager.addToolResponse(
             toolCallId: 'call_due_date_456',
@@ -285,9 +285,7 @@ void main() {
         final task = createTask();
         final toolCall = createDueDateToolCall(dueDate: '2024-02-01');
 
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskDueDateHandler(
           task: task,
@@ -307,9 +305,7 @@ void main() {
           final task = createTask();
           final toolCall = createDueDateToolCall(dueDate: '2024-03-15');
 
-          when(
-            () => mockJournalRepo.updateJournalEntity(any()),
-          ).thenAnswer((_) async => true);
+          stubTaskRow(mockJournalRepo, task);
 
           final handler = TaskDueDateHandler(
             task: task,
@@ -321,7 +317,7 @@ void main() {
 
           expect(result.success, isTrue);
           expect(handler.task.data.due, DateTime(2024, 3, 15));
-          verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+          verify(() => mockJournalRepo.updateTask(any(), any())).called(1);
           // Manager methods should not be called
           verifyNever(
             () => mockManager.addToolResponse(
@@ -340,9 +336,7 @@ void main() {
           reason: 'Task was due last week',
         );
 
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskDueDateHandler(
           task: task,
@@ -378,7 +372,7 @@ void main() {
         expect(handler.task.data.due, DateTime(2024, 1, 20));
         expect(result.message, contains('No change needed'));
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
       });
 
       test('should not call onTaskUpdated when same date', () async {
@@ -407,9 +401,7 @@ void main() {
           confidence: 'high',
         );
 
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskDueDateHandler(
           task: task,
@@ -423,7 +415,7 @@ void main() {
         expect(handler.task.data.due, DateTime(2024, 1, 25));
         expect(handler.task.data.due, DateTime(2024, 1, 25));
 
-        verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+        verify(() => mockJournalRepo.updateTask(any(), any())).called(1);
       });
     });
 
@@ -471,7 +463,7 @@ void main() {
         expect(result.error, contains('date string is required'));
         expect(handler.task.data.due, isNull);
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
       });
 
       test('should reject empty dueDate string', () async {
@@ -489,7 +481,7 @@ void main() {
         expect(result.error, isNotNull);
         expect(result.error, contains('date string is required'));
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
         verify(
           () => mockManager.addToolResponse(
             toolCallId: 'call_due_date_456',
@@ -518,7 +510,7 @@ void main() {
         expect(result.error, contains('YYYY-MM-DD'));
         expect(handler.task.data.due, isNull);
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
       });
 
       test('should reject partial date format', () async {
@@ -536,7 +528,7 @@ void main() {
         expect(result.error, isNotNull);
         expect(result.error, contains('YYYY-MM-DD'));
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
       });
 
       test('should handle malformed JSON', () async {
@@ -560,7 +552,7 @@ void main() {
         expect(result.success, isFalse);
         expect(result.error, isNotNull);
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
         verify(
           () => mockManager.addToolResponse(
             toolCallId: 'call_due_date_456',
@@ -576,7 +568,7 @@ void main() {
         final toolCall = createDueDateToolCall(dueDate: '2024-01-25');
 
         when(
-          () => mockJournalRepo.updateJournalEntity(any()),
+          () => mockJournalRepo.updateTask(any(), any()),
         ).thenThrow(Exception('Database connection lost'));
 
         final handler = TaskDueDateHandler(
@@ -605,7 +597,7 @@ void main() {
         final toolCall = createDueDateToolCall(dueDate: '2024-01-25');
 
         when(
-          () => mockJournalRepo.updateJournalEntity(any()),
+          () => mockJournalRepo.updateTask(any(), any()),
         ).thenThrow(Exception('Database error'));
 
         var callbackCalled = false;
@@ -627,7 +619,7 @@ void main() {
           final toolCall = createDueDateToolCall(dueDate: '2024-01-25');
 
           when(
-            () => mockJournalRepo.updateJournalEntity(any()),
+            () => mockJournalRepo.updateTask(any(), any()),
           ).thenThrow(Exception('Database error'));
 
           final handler = TaskDueDateHandler(
@@ -650,11 +642,13 @@ void main() {
       'matches generated due-date validation, no-op, and repository semantics',
       (scenario) async {
         final repo = MockJournalRepository();
-        when(
-          () => repo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => scenario.repositorySucceeds);
-
         final initialTask = createTask(due: scenario.currentDue);
+        final row = stubTaskRow(repo, initialTask);
+        if (!scenario.repositorySucceeds) {
+          when(
+            () => repo.updateTask(any(), any()),
+          ).thenAnswer((_) async => null);
+        }
         Task? callbackTask;
         final handler = TaskDueDateHandler(
           task: initialTask,
@@ -679,7 +673,7 @@ void main() {
           );
           expect(handler.task, initialTask, reason: '$scenario');
           expect(callbackTask, isNull, reason: '$scenario');
-          verifyNever(() => repo.updateJournalEntity(any()));
+          verifyNever(() => repo.updateTask(any(), any()));
           return;
         }
 
@@ -688,17 +682,21 @@ void main() {
           expect(result.didWrite, isFalse, reason: '$scenario');
           expect(handler.task, initialTask, reason: '$scenario');
           expect(callbackTask, isNull, reason: '$scenario');
-          verifyNever(() => repo.updateJournalEntity(any()));
+          verifyNever(() => repo.updateTask(any(), any()));
           return;
         }
 
         expect(scenario.shouldAttemptWrite, isTrue, reason: '$scenario');
-        final captured =
+        final change =
             verify(
-                  () => repo.updateJournalEntity(captureAny()),
+                  () => repo.updateTask(initialTask.id, captureAny()),
                 ).captured.single
-                as Task;
-        expect(captured.data.due, scenario.parsedDate, reason: '$scenario');
+                as TaskData Function(TaskData);
+        expect(
+          change(initialTask.data).due,
+          scenario.parsedDate,
+          reason: '$scenario',
+        );
 
         if (!scenario.repositorySucceeds) {
           expect(result.success, isFalse, reason: '$scenario');
@@ -709,10 +707,16 @@ void main() {
           return;
         }
 
+        final written = row.writes.single;
+        expect(
+          written.data,
+          initialTask.data.copyWith(due: scenario.parsedDate),
+          reason: '$scenario',
+        );
         expect(result.success, isTrue, reason: '$scenario');
         expect(result.didWrite, isTrue, reason: '$scenario');
-        expect(handler.task, captured, reason: '$scenario');
-        expect(callbackTask, captured, reason: '$scenario');
+        expect(handler.task, written, reason: '$scenario');
+        expect(callbackTask, written, reason: '$scenario');
       },
       tags: 'glados',
     );
@@ -738,7 +742,7 @@ void main() {
           expect(result.error, isNotNull);
           expect(result.error, contains('YYYY-MM-DD'));
 
-          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+          verifyNever(() => mockJournalRepo.updateTask(any(), any()));
         },
       );
 
@@ -761,7 +765,7 @@ void main() {
           expect(result.error, isNotNull);
           expect(result.error, contains('YYYY-MM-DD'));
 
-          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+          verifyNever(() => mockJournalRepo.updateTask(any(), any()));
         },
       );
 
@@ -769,9 +773,7 @@ void main() {
         final task = createTask();
         final toolCall = createDueDateToolCall(dueDate: '2024-12-31');
 
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskDueDateHandler(
           task: task,
@@ -788,9 +790,7 @@ void main() {
         final task = createTask();
         final toolCall = createDueDateToolCall(dueDate: '2024-02-29');
 
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskDueDateHandler(
           task: task,
@@ -807,9 +807,7 @@ void main() {
         final task = createTask();
         final toolCall = createDueDateToolCall(dueDate: '2024-01-19');
 
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskDueDateHandler(
           task: task,
@@ -824,6 +822,72 @@ void main() {
         expect(handler.task.data.due!.hour, 0);
         expect(handler.task.data.due!.minute, 0);
         expect(handler.task.data.due!.second, 0);
+      });
+    });
+
+    group('field changed since the call read the task', () {
+      test(
+        'writes on the task as stored, keeping a field set meanwhile',
+        () async {
+          final task = createTask();
+          final row = stubTaskRow(mockJournalRepo, task)
+            ..task = task.copyWith(
+              data: task.data.copyWith(priority: TaskPriority.p0Urgent),
+            );
+          Task? callbackTask;
+          final handler = TaskDueDateHandler(
+            task: task,
+            journalRepository: mockJournalRepo,
+            onTaskUpdated: (t) => callbackTask = t,
+          );
+
+          final result = await handler.processToolCall(
+            createDueDateToolCall(dueDate: '2024-01-19'),
+            mockManager,
+          );
+
+          expect(result.didWrite, isTrue);
+          final written = row.writes.single;
+          expect(written.data.due, DateTime(2024, 1, 19));
+          expect(written.data.priority, TaskPriority.p0Urgent);
+          expect(handler.task, written);
+          expect(callbackTask, written);
+        },
+      );
+
+      test('applies nothing when the stored due changed', () async {
+        final task = createTask();
+        final row = stubTaskRow(mockJournalRepo, task)
+          ..task = task.copyWith(
+            data: task.data.copyWith(due: DateTime(2024, 2)),
+          );
+        final stored = row.task;
+        var callbackCalled = false;
+        final handler = TaskDueDateHandler(
+          task: task,
+          journalRepository: mockJournalRepo,
+          onTaskUpdated: (_) => callbackCalled = true,
+        );
+
+        final result = await handler.processToolCall(
+          createDueDateToolCall(dueDate: '2024-01-19'),
+          mockManager,
+        );
+
+        expect(result.success, isTrue);
+        expect(result.didWrite, isFalse);
+        expect(result.error, isNull);
+        expect(result.message, startsWith('Nothing applied'));
+        expect(row.writes, isEmpty);
+        expect(row.task.data.due, DateTime(2024, 2));
+        expect(handler.task, stored);
+        expect(callbackCalled, isFalse);
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call_due_date_456',
+            response: result.message,
+          ),
+        ).called(1);
       });
     });
 
@@ -856,9 +920,7 @@ void main() {
           );
           final toolCall = createDueDateToolCall(dueDate: '2024-01-25');
 
-          when(
-            () => mockJournalRepo.updateJournalEntity(any()),
-          ).thenAnswer((_) async => true);
+          stubTaskRow(mockJournalRepo, task);
 
           final handler = TaskDueDateHandler(
             task: task,
@@ -881,9 +943,7 @@ void main() {
         final task = createTask();
         final toolCall = createDueDateToolCall(dueDate: '2030-12-31');
 
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskDueDateHandler(
           task: task,

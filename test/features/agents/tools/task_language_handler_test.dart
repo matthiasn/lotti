@@ -137,9 +137,7 @@ void main() {
   group('TaskLanguageHandler', () {
     group('handle', () {
       test('sets language and returns success with didWrite=true', () async {
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskLanguageHandler(
           task: task,
@@ -155,13 +153,11 @@ void main() {
         expect(handler.task.data.languageCode, 'de');
         expect(result.error, isNull);
 
-        verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+        verify(() => mockJournalRepo.updateTask(any(), any())).called(1);
       });
 
       test('trims and lowercases language code', () async {
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskLanguageHandler(
           task: task,
@@ -187,7 +183,7 @@ void main() {
         expect(result.didWrite, isFalse);
         expect(result.error, contains('empty'));
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
       });
 
       test('rejects unsupported language code', () async {
@@ -203,7 +199,7 @@ void main() {
         expect(result.error, contains('Unsupported'));
         expect(result.error, contains('xx'));
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
       });
 
       test(
@@ -227,21 +223,18 @@ void main() {
           expect(result.didWrite, isFalse);
           expect(result.message, contains('already'));
 
-          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+          verifyNever(() => mockJournalRepo.updateTask(any(), any()));
         },
       );
 
       test('allows changing agent-set language to another', () async {
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
-
         final taskWithLang = task.copyWith(
           data: task.data.copyWith(
             languageCode: 'en',
             languageSource: ChangeSource.agent,
           ),
         );
+        final row = stubTaskRow(mockJournalRepo, taskWithLang);
 
         final handler = TaskLanguageHandler(
           task: taskWithLang,
@@ -254,12 +247,13 @@ void main() {
         expect(result.didWrite, isTrue);
         expect(handler.task.data.languageCode, 'de');
         expect(handler.task.data.languageSource, ChangeSource.agent);
+        expect(row.writes, [handler.task]);
       });
 
       test('returns error when repository returns false', () async {
         when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => false);
+          () => mockJournalRepo.updateTask(any(), any()),
+        ).thenAnswer((_) async => null);
 
         final handler = TaskLanguageHandler(
           task: task,
@@ -275,7 +269,7 @@ void main() {
 
       test('returns error when repository throws', () async {
         when(
-          () => mockJournalRepo.updateJournalEntity(any()),
+          () => mockJournalRepo.updateTask(any(), any()),
         ).thenThrow(Exception('DB error'));
 
         final handler = TaskLanguageHandler(
@@ -291,9 +285,7 @@ void main() {
       });
 
       test('updates local task field after successful write', () async {
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskLanguageHandler(
           task: task,
@@ -327,7 +319,7 @@ void main() {
         expect(result.message, contains('manually set by user'));
         expect(result.message, contains('de'));
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
       });
 
       test(
@@ -351,14 +343,12 @@ void main() {
           expect(result.didWrite, isFalse);
           expect(result.message, contains('already'));
 
-          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+          verifyNever(() => mockJournalRepo.updateTask(any(), any()));
         },
       );
 
       test('sets languageSource to agent on successful write', () async {
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskLanguageHandler(
           task: task,
@@ -374,7 +364,7 @@ void main() {
 
       test('does not update local task field when write fails', () async {
         when(
-          () => mockJournalRepo.updateJournalEntity(any()),
+          () => mockJournalRepo.updateTask(any(), any()),
         ).thenThrow(Exception('fail'));
 
         final handler = TaskLanguageHandler(
@@ -387,6 +377,79 @@ void main() {
         expect(handler.task.data.languageCode, isNull);
       });
 
+      test('writes the language on the task as stored, keeping a field set '
+          'since the call read the task', () async {
+        final row = stubTaskRow(mockJournalRepo, task)
+          ..task = task.copyWith(
+            data: task.data.copyWith(title: 'Renamed by the user'),
+          );
+        final handler = TaskLanguageHandler(
+          task: task,
+          journalRepository: mockJournalRepo,
+        );
+
+        final result = await handler.handle('de');
+
+        expect(result.didWrite, isTrue);
+        final written = row.writes.single;
+        expect(written.data.title, 'Renamed by the user');
+        expect(written.data.languageCode, 'de');
+        expect(written.data.languageSource, ChangeSource.agent);
+        expect(handler.task, written);
+      });
+
+      test('applies nothing when the user set the language since the call '
+          'read the task', () async {
+        final row = stubTaskRow(mockJournalRepo, task)
+          ..task = task.copyWith(
+            data: task.data.copyWith(
+              languageCode: 'fr',
+              languageSource: ChangeSource.user,
+            ),
+          );
+        final stored = row.task;
+        final handler = TaskLanguageHandler(
+          task: task,
+          journalRepository: mockJournalRepo,
+        );
+
+        final result = await handler.handle('de');
+
+        expect(result.success, isTrue);
+        expect(result.didWrite, isFalse);
+        expect(result.error, isNull);
+        expect(result.message, startsWith('Nothing applied'));
+        expect(row.writes, isEmpty);
+        expect(row.task.data.languageCode, 'fr');
+        expect(row.task.data.languageSource, ChangeSource.user);
+        expect(handler.task, stored);
+      });
+
+      test('applies nothing when only the stored language source changed '
+          'since the call read the task', () async {
+        final agentSet = task.copyWith(
+          data: task.data.copyWith(
+            languageCode: 'en',
+            languageSource: ChangeSource.agent,
+          ),
+        );
+        final row = stubTaskRow(mockJournalRepo, agentSet)
+          ..task = agentSet.copyWith(
+            data: agentSet.data.copyWith(languageSource: ChangeSource.user),
+          );
+        final handler = TaskLanguageHandler(
+          task: agentSet,
+          journalRepository: mockJournalRepo,
+        );
+
+        final result = await handler.handle('de');
+
+        expect(result.didWrite, isFalse);
+        expect(result.message, startsWith('Nothing applied'));
+        expect(row.writes, isEmpty);
+        expect(handler.task.data.languageSource, ChangeSource.user);
+      });
+
       glados.Glados(
         glados.any.taskLanguageScenario,
         glados.ExploreConfig(numRuns: 180),
@@ -394,10 +457,6 @@ void main() {
         'matches generated language validation, no-op, and write semantics',
         (scenario) async {
           final repo = MockJournalRepository();
-          when(
-            () => repo.updateJournalEntity(any()),
-          ).thenAnswer((_) async => true);
-
           final initialTask = task.copyWith(
             data: scenario.currentKind == _GeneratedCurrentLanguageKind.none
                 ? task.data.copyWith(languageCode: null)
@@ -406,6 +465,7 @@ void main() {
                     languageSource: scenario.currentSource!,
                   ),
           );
+          final row = stubTaskRow(repo, initialTask);
           final handler = TaskLanguageHandler(
             task: initialTask,
             journalRepository: repo,
@@ -424,7 +484,7 @@ void main() {
               reason: '$scenario',
             );
             expect(handler.task, initialTask, reason: '$scenario');
-            verifyNever(() => repo.updateJournalEntity(any()));
+            verifyNever(() => repo.updateTask(any(), any()));
             return;
           }
 
@@ -434,7 +494,7 @@ void main() {
           if (scenario.isNoOp || scenario.userBlocksWrite) {
             expect(result.didWrite, isFalse, reason: '$scenario');
             expect(handler.task, initialTask, reason: '$scenario');
-            verifyNever(() => repo.updateJournalEntity(any()));
+            verifyNever(() => repo.updateTask(any(), any()));
             return;
           }
 
@@ -450,12 +510,7 @@ void main() {
             ChangeSource.agent,
             reason: '$scenario',
           );
-          final captured =
-              verify(
-                    () => repo.updateJournalEntity(captureAny()),
-                  ).captured.single
-                  as Task;
-          expect(captured, handler.task, reason: '$scenario');
+          expect(row.writes, [handler.task], reason: '$scenario');
         },
         tags: 'glados',
       );

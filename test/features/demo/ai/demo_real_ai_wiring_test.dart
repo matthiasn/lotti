@@ -69,9 +69,13 @@ void main() {
     when(
       () => persistence.updateTask(
         journalEntityId: any(named: 'journalEntityId'),
-        taskData: any(named: 'taskData'),
+        change: any(named: 'change'),
       ),
-    ).thenAnswer((_) async => true);
+    ).thenAnswer(
+      (invocation) async => tasks.firstWhere(
+        (t) => t.id == invocation.namedArguments[#journalEntityId],
+      ),
+    );
     return (db: db, persistence: persistence);
   }
 
@@ -101,20 +105,25 @@ void main() {
       expect(upserted.single.id, manualDemoCategoryId);
 
       final stampedIds = <String>[];
-      final stampedData = <TaskData>[];
+      final changes = <TaskData Function(TaskData)>[];
       final calls = verify(
         () => h.persistence.updateTask(
           journalEntityId: captureAny(named: 'journalEntityId'),
-          taskData: captureAny(named: 'taskData'),
+          change: captureAny(named: 'change'),
         ),
       ).captured;
       for (var i = 0; i < calls.length; i += 2) {
         stampedIds.add(calls[i] as String);
-        stampedData.add(calls[i + 1] as TaskData);
+        changes.add(calls[i + 1] as TaskData Function(TaskData));
       }
       expect(stampedIds, ['seeded-1', 'seeded-2']);
-      for (final data in stampedData) {
-        expect(data.profileId, 'real-profile');
+      final stored = task('stored').data;
+      for (final change in changes) {
+        // Stamped on the task as stored, every other field kept.
+        expect(change(stored), stored.copyWith(profileId: 'real-profile'));
+        // A profile the user picked since the task was listed stands.
+        final picked = stored.copyWith(profileId: 'picked-meanwhile');
+        expect(change(picked), same(picked));
       }
     });
 
@@ -163,9 +172,13 @@ void main() {
       when(
         () => persistence.updateTask(
           journalEntityId: any(named: 'journalEntityId'),
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
-      ).thenAnswer((_) async => true);
+      ).thenAnswer(
+        (invocation) async => tasks.firstWhere(
+          (t) => t.id == invocation.namedArguments[#journalEntityId],
+        ),
+      );
 
       await wireDemoWorldToRealProfile(
         profileId: 'real-profile',
@@ -176,7 +189,7 @@ void main() {
       verify(
         () => persistence.updateTask(
           journalEntityId: any(named: 'journalEntityId'),
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
       ).called(201);
     });
@@ -195,7 +208,7 @@ void main() {
       verify(
         () => h.persistence.updateTask(
           journalEntityId: 'seeded-1',
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
       ).called(1);
     });

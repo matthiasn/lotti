@@ -59,71 +59,60 @@ class DayAgentTriageService {
       );
     }
 
-    final now = clock.now();
-    final updated = switch (action.trim()) {
-      'today' => _withDueToday(entity, now),
-      'doNow' || 'do_now' => _withStatus(
-        entity,
-        TaskStatus.inProgress(
-          id: _uuid.v4(),
-          createdAt: now,
-          utcOffset: now.timeZoneOffset.inMinutes,
-        ),
-      ),
-      'defer' => entity.copyWith(
-        data: entity.data.copyWith(
-          due: endOfDay(
-            deferTo ??
-                (throw const DayAgentCaptureException(
-                  'deferTo is required for defer',
-                )),
-          ),
-        ),
-      ),
-      'done' => _withStatus(
-        entity,
-        TaskStatus.done(
-          id: _uuid.v4(),
-          createdAt: now,
-          utcOffset: now.timeZoneOffset.inMinutes,
-        ),
-      ),
-      'drop' => _withStatus(
-        entity,
-        TaskStatus.rejected(
-          id: _uuid.v4(),
-          createdAt: now,
-          utcOffset: now.timeZoneOffset.inMinutes,
-        ),
-      ),
-      _ => throw DayAgentCaptureException('unknown triage action "$action"'),
-    };
-
-    final applied = await journalRepository.updateJournalEntity(updated);
-    if (!applied) {
+    final change = _triage(action.trim(), clock.now(), deferTo);
+    final updated = await journalRepository.updateTask(taskId, change);
+    if (updated == null) {
       throw DayAgentCaptureException('failed to update task $taskId');
     }
     onPersistedStateChanged?.call(taskId);
     return updated;
   }
 
-  Task _withStatus(Task task, TaskStatus status) {
-    return task.copyWith(
-      data: task.data.copyWith(
-        status: status,
-        statusHistory: [...task.data.statusHistory, status],
-      ),
+  /// The change triage [action] makes to the task as stored, so a field set
+  /// since the task was read — by sync, the user or the task agent — is
+  /// kept, and a status it sets is recorded in the status history
+  /// (`specs/tla/TaskFieldWrites.tla`).
+  TaskData Function(TaskData stored) _triage(
+    String action,
+    DateTime now,
+    DateTime? deferTo,
+  ) {
+    TaskStatus status(
+      TaskStatus Function({
+        required String id,
+        required DateTime createdAt,
+        required int utcOffset,
+      })
+      make,
+    ) => make(
+      id: _uuid.v4(),
+      createdAt: now,
+      utcOffset: now.timeZoneOffset.inMinutes,
     );
+    return switch (action) {
+      'today' => (stored) => _withDueToday(stored, now),
+      'doNow' ||
+      'do_now' => (stored) => stored.withStatus(status(TaskStatus.inProgress)),
+      'defer' => _deferTo(
+        deferTo ??
+            (throw const DayAgentCaptureException(
+              'deferTo is required for defer',
+            )),
+      ),
+      'done' => (stored) => stored.withStatus(status(TaskStatus.done)),
+      'drop' => (stored) => stored.withStatus(status(TaskStatus.rejected)),
+      _ => throw DayAgentCaptureException('unknown triage action "$action"'),
+    };
   }
 
-  Task _withDueToday(Task task, DateTime now) {
-    final updated = task.copyWith(
-      data: task.data.copyWith(due: endOfDay(now)),
-    );
-    final status = task.data.status.toDbString;
+  TaskData Function(TaskData stored) _deferTo(DateTime day) =>
+      (stored) => stored.copyWith(due: endOfDay(day));
+
+  TaskData _withDueToday(TaskData stored, DateTime now) {
+    final updated = stored.copyWith(due: endOfDay(now));
+    final status = stored.status.toDbString;
     if (status == 'BLOCKED' || status == 'ON HOLD') {
-      return _withStatus(
-        updated,
+      return updated.withStatus(
         TaskStatus.open(
           id: _uuid.v4(),
           createdAt: now,

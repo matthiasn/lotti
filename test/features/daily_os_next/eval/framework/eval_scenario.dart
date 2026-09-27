@@ -801,11 +801,18 @@ void seedScenarioCorpus({
   // out loud and doing nothing.
   if (journalRepository != null) {
     when(
-      () => journalRepository.updateJournalEntity(any()),
+      () => journalRepository.updateTask(any(), any()),
     ).thenAnswer((invocation) async {
-      final updated = invocation.positionalArguments.first as JournalEntity;
+      final id = invocation.positionalArguments[0] as String;
+      final change =
+          invocation.positionalArguments[1] as TaskData Function(TaskData);
+      final stored = currentEvalJournal.byId(id);
+      if (stored is! Task) return null;
+      final updated = stored.copyWith(
+        data: change(stored.data).onStored(stored.data),
+      );
       currentEvalJournal.add(updated);
-      return true;
+      return updated;
     });
   }
 }

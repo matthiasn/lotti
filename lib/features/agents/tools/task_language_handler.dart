@@ -4,6 +4,7 @@ import 'package:lotti/classes/change_source.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/tasks/repository/task_field_write.dart';
 
 /// Result of processing a task language update.
 class TaskLanguageResult {
@@ -103,27 +104,37 @@ class TaskLanguageHandler {
       );
     }
 
-    final updatedTask = task.copyWith(
-      data: task.data.copyWith(
-        languageCode: trimmed,
-        languageSource: ChangeSource.agent,
-      ),
-    );
-
     try {
-      final success = await journalRepository.updateJournalEntity(updatedTask);
+      final write = await writeTaskField(
+        journalRepository: journalRepository,
+        task: task,
+        field: (data) => (data.languageCode, data.languageSource),
+        set: (stored) => stored.copyWith(
+          languageCode: trimmed,
+          languageSource: ChangeSource.agent,
+        ),
+      );
 
-      if (!success) {
-        const message = 'Failed to update language: repository returned false.';
-        developer.log(message, name: 'TaskLanguageHandler');
-        return const TaskLanguageResult(
-          success: false,
-          message: message,
-          error: message,
-        );
+      switch (write) {
+        case TaskFieldWriteFailed():
+          const message =
+              'Failed to update language: repository returned false.';
+          developer.log(message, name: 'TaskLanguageHandler');
+          return const TaskLanguageResult(
+            success: false,
+            message: message,
+            error: message,
+          );
+        case TaskFieldMoved(task: final stored):
+          task = stored;
+          const message =
+              "Nothing applied: the task's language changed since this "
+              'call read it, so it stays as it is.';
+          developer.log(message, name: 'TaskLanguageHandler');
+          return const TaskLanguageResult(success: true, message: message);
+        case TaskFieldWritten(task: final stored):
+          task = stored;
       }
-
-      task = updatedTask;
 
       final message = 'Task language set to "$trimmed" (${supported.name}).';
       developer.log(

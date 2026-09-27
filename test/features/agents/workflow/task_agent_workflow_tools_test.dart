@@ -411,10 +411,7 @@ void main() {
           ),
         );
 
-        when(
-          () => mockJournalRepository.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
-        registerFallbackValue(taskNoTitle);
+        final row = stubTaskRow(mockJournalRepository, taskNoTitle);
 
         final result = await executeWithToolCallOnRealTask(
           'set_task_title',
@@ -424,12 +421,9 @@ void main() {
         expect(result.success, isTrue);
         // Empty title takes the initial-title auto-apply shortcut: the
         // handler writes immediately instead of queuing a proposal.
-        final written =
-            verify(
-                  () => mockJournalRepository.updateJournalEntity(captureAny()),
-                ).captured.single
-                as Task;
+        final written = row.writes.single;
         expect(written.data.title, 'My New Task');
+        expect(written.data.status, taskNoTitle.data.status);
       });
 
       // ── Deferred tool calls ──────────────────────────────────────────
@@ -831,10 +825,6 @@ void main() {
       );
 
       test('update_task_estimate accepts numeric string minutes', () async {
-        when(
-          () => mockJournalRepository.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
-
         final result = await executeWithToolCallOnRealTask(
           'update_task_estimate',
           '{"minutes":"120"}',

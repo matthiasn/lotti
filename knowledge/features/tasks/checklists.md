@@ -106,9 +106,9 @@ sequenceDiagram
 
 **`ChecklistRepository.updateTaskChecklistIds` is the one writer of a task's
 checklist list.** Every other task write keeps the stored list:
-`PersistenceLogic.updateTask` writes on the stored task with its own
-`checklistIds`, and `JournalRepository.updateJournalEntity` (the agent's task
-field tools) keeps the list read just before the write. So a status or
+`PersistenceLogic.updateTask` — which every task field write goes through,
+the agent's field tools included — applies its change to the stored task and
+keeps its `checklistIds`. So a status or
 estimate saved from a screen's copy of the task cannot drop a checklist the
 agent or sync added since. Conflict resolution writes through
 `PersistenceLogic` directly and keeps the side the user chose.

@@ -61,7 +61,9 @@ Future<void> wireDemoWorldToRealProfile({
       }
       await persistence.updateTask(
         journalEntityId: task.meta.id,
-        taskData: task.data.copyWith(profileId: profileId),
+        change: (stored) => stored.profileId == null
+            ? stored.copyWith(profileId: profileId)
+            : stored,
       );
     }
     if (batch.length < _taskPageSize) break;
