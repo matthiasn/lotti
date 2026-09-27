@@ -126,19 +126,20 @@ class TaskAgentRetirement {
   }
 
   /// The wake gate: runs the pass for every task [agentId] is linked to and
-  /// returns whether it retired [agentId], whose wake must then not run.
-  /// (An agent destroyed before the wake never gets here: the drain engine
-  /// never runs a destroyed agent.)
+  /// returns whether [agentId] must not run — it is destroyed once the pass
+  /// is done. That covers a loser this pass retired and one a pass before it
+  /// retired after the drain engine last read the agent's policy.
   Future<bool> retireIfSuperseded(String agentId) async {
     final links = await repository.getLinksFrom(
       agentId,
       type: AgentLinkTypes.agentTask,
     );
-    var retired = false;
     for (final taskId in {for (final link in links) link.toId}) {
-      if ((await retireSuperseded(taskId)).contains(agentId)) retired = true;
+      await retireSuperseded(taskId);
     }
-    return retired;
+    final identity = await repository.getEntity(agentId);
+    return identity is! AgentIdentityEntity ||
+        identity.lifecycle == AgentLifecycle.destroyed;
   }
 
   /// The startup pass: every task holding links from more than one agent.

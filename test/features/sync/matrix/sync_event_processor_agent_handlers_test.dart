@@ -5679,10 +5679,14 @@ void main() {
         await processor.process(event: event, journalDb: journalDb);
       }
 
-      AgentLink taskLink({DateTime? deletedAt}) => AgentLink.agentTask(
-        id: 'link-1',
+      AgentLink taskLink({
+        String id = 'link-1',
+        String taskId = 'task-42',
+        DateTime? deletedAt,
+      }) => AgentLink.agentTask(
+        id: id,
         fromId: 'agent-1',
-        toId: 'task-42',
+        toId: taskId,
         createdAt: DateTime(2024, 3, 15),
         updatedAt: deletedAt ?? DateTime(2024, 3, 15),
         deletedAt: deletedAt,
@@ -5732,7 +5736,9 @@ void main() {
             'agent-1',
             type: AgentLinkTypes.agentTask,
           ),
-        ).thenAnswer((_) async => [taskLink()]);
+        ).thenAnswer(
+          (_) async => [taskLink(), taskLink(id: 'link-2', taskId: 'task-43')],
+        );
 
         await receive(
           SyncMessage.agentEntity(
@@ -5745,7 +5751,7 @@ void main() {
           ),
         );
 
-        expect(passes, ['task-42']);
+        expect(passes, unorderedEquals(['task-42', 'task-43']));
       });
 
       test('another kind of agent runs no pass', () async {
