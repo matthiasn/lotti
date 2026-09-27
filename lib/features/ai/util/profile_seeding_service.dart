@@ -223,7 +223,9 @@ class ProfileSeedingService {
       // must leave no `deletedAt` behind.
       // fromSync: true keeps the removal local. Whether a provider is usable
       // is a per-device fact, so propagating this delete would strip the
-      // profile from a peer that can still serve it.
+      // profile from a peer that can still serve it. Without a version stamp
+      // the device also forgets the version it held, so a peer's next copy
+      // of the profile applies again (ADR 0094).
       await _repo.hardDeleteConfig(config.id, fromSync: true);
       removedCount++;
     }

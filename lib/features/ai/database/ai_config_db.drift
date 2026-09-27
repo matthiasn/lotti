@@ -7,6 +7,14 @@ CREATE TABLE ai_configs (
   updated_at DATETIME
 ) as AiConfigDbEntity;
 
+-- The stamp of the version each config last took (ADR 0094). A row here
+-- without its config is a deletion: it outlives a hard delete, so a copy of
+-- the deleted config that lands late cannot bring it back.
+CREATE TABLE ai_config_versions (
+  id TEXT NOT NULL PRIMARY KEY,
+  stamp INTEGER NOT NULL
+) as AiConfigVersionEntity;
+
 /* Queries ----------------------------------------------------- */
 configById:
 SELECT * FROM ai_configs
@@ -16,6 +24,10 @@ configsByType:
 SELECT * FROM ai_configs
   WHERE type = :type
   ORDER BY created_at DESC;
+
+versionStampById:
+SELECT stamp FROM ai_config_versions
+  WHERE id = :id;
 
 allConfigs:
 SELECT * FROM ai_configs

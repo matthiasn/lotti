@@ -50,6 +50,7 @@ void main() {
           () => aiConfigRepository.deleteConfig(
             captureAny<String>(),
             fromSync: true,
+            versionStamp: any(named: 'versionStamp'),
           ),
         ).captured;
         expect(captured, ['cfg-1', 'cfg-2']);
@@ -408,6 +409,7 @@ void main() {
                 () => aiConfigRepository.deleteConfig(
                   'exact-bundle-config',
                   fromSync: true,
+                  versionStamp: any(named: 'versionStamp'),
                 ),
               ).called(1);
               verify(descriptor.downloadAndDecryptAttachment).called(1);
@@ -442,7 +444,11 @@ void main() {
               });
               verifyNever(descriptor.downloadAndDecryptAttachment);
               verifyNever(
-                () => aiConfigRepository.deleteConfig(any(), fromSync: true),
+                () => aiConfigRepository.deleteConfig(
+                  any(),
+                  fromSync: true,
+                  versionStamp: any(named: 'versionStamp'),
+                ),
               );
             } else {
               final attempt = exactProcessor.process(
@@ -461,7 +467,11 @@ void main() {
                 expect(index.find(bundleRelativePath), isNull);
               }
               verifyNever(
-                () => aiConfigRepository.deleteConfig(any(), fromSync: true),
+                () => aiConfigRepository.deleteConfig(
+                  any(),
+                  fromSync: true,
+                  versionStamp: any(named: 'versionStamp'),
+                ),
               );
               verifyNever(descriptor.downloadAndDecryptAttachment);
             }

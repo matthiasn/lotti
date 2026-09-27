@@ -173,9 +173,18 @@ Two paths must **not** leave a stamp and use `hardDeleteConfig`:
 - **A provider cascade** removes the provider's model rows, which must come back
   if the user re-adds that provider.
 
-`restoreConfig` clears the stamp for the one case where the user asks for
-something back: re-running onboarding for a provider whose bundled profile they
-had deleted, which happens before FTUE setup seeds.
+Hard delete leaves no `deletedAt`, but it does leave a *version stamp*
+(`ai_config_versions`, [ADR 0094](../../../docs/adr/0094-ai-config-versions-are-stamped.md)):
+the id and the deletion's stamp, none of the content. That is what stops a
+copy of the config sent before the deletion from bringing it back when it
+lands late on a peer; the seeding passes never read it. The orphaned-seed
+prune stays on this device and sends nothing, so it also forgets the stamp
+(`forgetConfig`), and a peer's next copy of the profile applies again as
+before.
+
+`restoreConfig` clears the `deletedAt` stamp for the one case where the user
+asks for something back: re-running onboarding for a provider whose bundled
+profile they had deleted, which happens before FTUE setup seeds.
 
 # Upgrades never overwrite a choice
 

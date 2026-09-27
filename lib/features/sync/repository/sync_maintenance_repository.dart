@@ -138,10 +138,13 @@ class SyncMaintenanceRepository {
       _createOperation<AiConfig>(
         step: SyncStep.aiSettings,
         fetchEntities: _fetchAiConfigsSafely,
-        enqueueEntity: (config) => _outboxService.enqueueMessage(
+        // A resend carries the stamp the stored version holds, so a peer
+        // with a newer version drops it (ADR 0094).
+        enqueueEntity: (config) async => _outboxService.enqueueMessage(
           SyncMessage.aiConfig(
             aiConfig: config,
             status: SyncEntryStatus.update,
+            versionStamp: await _aiConfigRepository.versionStamp(config.id),
           ),
         ),
         shouldSync: (_) => true,

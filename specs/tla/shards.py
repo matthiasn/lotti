@@ -69,6 +69,8 @@ SECONDS = {
     "ScheduledWakeLeaseCrashRearm": 61,
     "SyncSequenceCrashUnnamed": 48,
     "OutboxGhost": 178,
+    # Local exhaustive run; refresh from CI measurements.
+    "OutboxGhostRows": 242,
     "LogCompaction": 30,
     "InboundQueueLiveness": 124,
     "VersionHeadsGoal": 26,

@@ -100,13 +100,24 @@ extension SyncEventProcessorApply on SyncEventProcessor {
           fromSync: true,
         );
         return null;
-      case SyncAiConfig(:final aiConfig):
+      case SyncAiConfig(:final aiConfig, :final versionStamp):
+        // Ordered by stamp, not by arrival: a send that timed out and lands
+        // after a newer version is dropped (ADR 0094). Older senders carry no
+        // stamp; the server's timestamp stands in, as for config flags.
         await _aiConfigRepository.saveConfig(
           aiConfig,
           fromSync: true,
+          versionStamp:
+              versionStamp ?? event.originServerTs.millisecondsSinceEpoch,
         );
         return null;
-      case SyncAiConfigDelete(:final id, :final hardDelete):
+      case SyncAiConfigDelete(
+        :final id,
+        :final hardDelete,
+        :final versionStamp,
+      ):
+        final stamp =
+            versionStamp ?? event.originServerTs.millisecondsSinceEpoch;
         // Current builds only send this envelope for hard deletes — an
         // orphaned-seed prune or a provider cascade — and mark it. Applying
         // those softly would leave a tombstone that stops the peer re-seeding
@@ -118,9 +129,17 @@ extension SyncEventProcessorApply on SyncEventProcessor {
         // seeding recreate the row, undoing that user's deletion, so it
         // becomes a tombstone instead.
         if (hardDelete ?? false) {
-          await _aiConfigRepository.hardDeleteConfig(id, fromSync: true);
+          await _aiConfigRepository.hardDeleteConfig(
+            id,
+            fromSync: true,
+            versionStamp: stamp,
+          );
         } else {
-          await _aiConfigRepository.deleteConfig(id, fromSync: true);
+          await _aiConfigRepository.deleteConfig(
+            id,
+            fromSync: true,
+            versionStamp: stamp,
+          );
         }
         return null;
       case SyncSavedTaskFilter(:final filter):

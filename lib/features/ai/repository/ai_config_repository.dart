@@ -72,10 +72,17 @@ class AiConfigRepository {
   Future<void> _watchDecodeQueue = Future<void>.value();
   bool _allConfigsLoaded = false;
 
-  /// Save or update an AI configuration
+  /// Save or update an AI configuration.
+  ///
+  /// A local save stamps a new version and, unless [fromSync] is set, sends
+  /// it with that stamp. A received version passes its [versionStamp] and is
+  /// written only if it is newer than the version held here, so a late or
+  /// replayed copy never overwrites a newer one (ADR 0094). [fromSync]
+  /// without a stamp is a local write that is not sent.
   Future<void> saveConfig(
     AiConfig config, {
     bool fromSync = false,
+    int? versionStamp,
   }) async {
     // Only inbound writes are screened: a local edit of a deleted row is the
     // user acting on this device, and `restoreConfig` is the deliberate way
@@ -83,17 +90,30 @@ class AiConfigRepository {
     if (fromSync && await _isStaleReplayOfTombstone(config)) {
       return;
     }
-    await _db.saveConfig(config);
+    if (fromSync && versionStamp != null) {
+      final applied = await _db.applyConfigVersion(
+        config,
+        stamp: versionStamp,
+      );
+      if (applied) _storeConfig(config);
+      return;
+    }
+    final stamp = await _db.saveConfig(config);
     _storeConfig(config);
     if (!fromSync) {
       await getIt<OutboxService>().enqueueMessage(
         SyncMessage.aiConfig(
           aiConfig: config,
           status: SyncEntryStatus.initial,
+          versionStamp: stamp,
         ),
       );
     }
   }
+
+  /// The stamp of the version held for [id], which a resend of the stored
+  /// config must carry; see [AiConfigDb.versionStamp].
+  Future<int?> versionStamp(String id) => _db.versionStamp(id);
 
   /// Soft-deletes an AI configuration: the row stays and gains a `deletedAt`
   /// stamp, and the change replicates through the normal config sync path.
@@ -111,9 +131,13 @@ class AiConfigRepository {
   ///
   /// This mirrors how the journal domain deletes synced entities — see
   /// `CategoryRepository.deleteCategory`.
+  ///
+  /// A received legacy deletion passes its [versionStamp] and is ordered like
+  /// any received version.
   Future<void> deleteConfig(
     String id, {
     bool fromSync = false,
+    int? versionStamp,
   }) async {
     final config = await getConfigById(id, includeDeleted: true);
     if (config == null) {
@@ -122,7 +146,11 @@ class AiConfigRepository {
       // tombstone anyway — otherwise seeding recreates exactly what the peer's
       // user deleted. Nothing else is seeded by id, so nothing else can be
       // resurrected this way.
-      await _tombstoneUnseenSeed(id, fromSync: fromSync);
+      await _tombstoneUnseenSeed(
+        id,
+        fromSync: fromSync,
+        versionStamp: versionStamp,
+      );
       return;
     }
     if (config.deletedAt != null) return;
@@ -133,7 +161,11 @@ class AiConfigRepository {
     // and user messages, say — and replicate it to peers, which the delete
     // dialog explicitly promises not to do.
     if (!_isSeededType(config)) {
-      await hardDeleteConfig(id, fromSync: fromSync);
+      await hardDeleteConfig(
+        id,
+        fromSync: fromSync,
+        versionStamp: versionStamp,
+      );
       return;
     }
 
@@ -141,6 +173,7 @@ class AiConfigRepository {
     await saveConfig(
       config.copyWith(deletedAt: now, updatedAt: now),
       fromSync: fromSync,
+      versionStamp: versionStamp,
     );
   }
 
@@ -154,7 +187,11 @@ class AiConfigRepository {
   );
 
   /// Writes a tombstone for a bundled profile this device has not seeded yet.
-  Future<void> _tombstoneUnseenSeed(String id, {required bool fromSync}) async {
+  Future<void> _tombstoneUnseenSeed(
+    String id, {
+    required bool fromSync,
+    required int? versionStamp,
+  }) async {
     final template = ProfileSeedingService.defaultProfiles
         .where((profile) => profile.id == id)
         .firstOrNull;
@@ -163,6 +200,7 @@ class AiConfigRepository {
     await saveConfig(
       template.copyWith(deletedAt: now, updatedAt: now),
       fromSync: fromSync,
+      versionStamp: versionStamp,
     );
   }
 
@@ -173,16 +211,36 @@ class AiConfigRepository {
   /// provider type has no usable provider and deliberately re-seeds them if
   /// that provider returns, so a soft delete there would make the removal
   /// permanent — the opposite of what that pass means.
+  ///
+  /// A local delete stamps the deletion and sends it with that stamp. A
+  /// received one passes its [versionStamp] and is skipped when this device
+  /// holds a newer version (ADR 0094). [fromSync] without a stamp is that
+  /// prune: it stays on this device, so the device also forgets the version
+  /// it held and a peer's next copy of the config applies again.
   Future<void> hardDeleteConfig(
     String id, {
     bool fromSync = false,
+    int? versionStamp,
   }) async {
-    await _db.deleteConfig(id);
-    _invalidateConfig(id);
     if (!fromSync) {
+      final stamp = await _db.deleteConfig(id);
+      _invalidateConfig(id);
       await getIt<OutboxService>().enqueueMessage(
-        SyncMessage.aiConfigDelete(id: id, hardDelete: true),
+        SyncMessage.aiConfigDelete(
+          id: id,
+          hardDelete: true,
+          versionStamp: stamp,
+        ),
       );
+      return;
+    }
+    if (versionStamp == null) {
+      await _db.forgetConfig(id);
+      _invalidateConfig(id);
+      return;
+    }
+    if (await _db.applyConfigDeletion(id, stamp: versionStamp)) {
+      _invalidateConfig(id);
     }
   }
 
@@ -241,7 +299,7 @@ class AiConfigRepository {
     String providerId, {
     bool fromSync = false,
   }) async {
-    final deletedIds = <String>[];
+    final deletedIds = <String, int>{};
 
     final result = await _db.transaction(() async {
       try {
@@ -255,15 +313,13 @@ class AiConfigRepository {
         // Hard deletes: re-adding this provider must bring its models back, so
         // the cascade must not leave tombstones behind.
         for (final model in associatedModels) {
-          await _db.deleteConfig(model.id);
-          deletedIds.add(model.id);
+          deletedIds[model.id] = await _db.deleteConfig(model.id);
         }
 
         // Delete the provider itself. Nothing seeds providers, so there is
         // no tombstone to keep.
         try {
-          await _db.deleteConfig(providerId);
-          deletedIds.add(providerId);
+          deletedIds[providerId] = await _db.deleteConfig(providerId);
         } catch (e) {
           throw Exception('Failed to delete provider $providerId: $e');
         }
@@ -286,17 +342,21 @@ class AiConfigRepository {
 
     // Committed: only now are the rows really gone, so only now may the caches
     // drop them and the peers hear about it.
-    deletedIds.forEach(_invalidateConfig);
+    deletedIds.keys.forEach(_invalidateConfig);
     if (!fromSync) {
       // Best effort, and deliberately non-fatal. The rows are already gone
       // locally, so throwing here would tell the user the deletion failed and
       // withdraw the undo affordance for work that did happen. One failed
       // enqueue must also not skip the rest — a hard delete leaves no row for
       // the maintenance pass to replay, so every id we can queue, we queue.
-      for (final id in deletedIds) {
+      for (final MapEntry(key: id, value: stamp) in deletedIds.entries) {
         try {
           await getIt<OutboxService>().enqueueMessage(
-            SyncMessage.aiConfigDelete(id: id, hardDelete: true),
+            SyncMessage.aiConfigDelete(
+              id: id,
+              hardDelete: true,
+              versionStamp: stamp,
+            ),
           );
         } catch (error, stackTrace) {
           if (getIt.isRegistered<DomainLogger>()) {

@@ -7,6 +7,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -137,7 +138,7 @@ void main() {
     test('deleteConfig is a no-op for a row that does not exist', () async {
       // Arrange
       const id = 'test-id';
-      when(() => mockDb.deleteConfig(any())).thenAnswer((_) async {});
+      when(() => mockDb.deleteConfig(any())).thenAnswer((_) async => 1);
       // Deletion reads the row first: it stamps `deletedAt` and re-saves,
       // rather than removing the row, so there is nothing to stamp here.
       when(() => mockDb.getConfigById(any())).thenAnswer((_) async => null);
@@ -156,7 +157,7 @@ void main() {
     // "never seeded", and it replicates on the normal config sync path.
     group('soft delete', () {
       setUp(() {
-        when(() => mockDb.deleteConfig(any())).thenAnswer((_) async {});
+        when(() => mockDb.deleteConfig(any())).thenAnswer((_) async => 1);
       });
 
       test(
@@ -615,6 +616,115 @@ void main() {
     tearDown(() async {
       await repository.close();
       await db.close();
+    });
+
+    // ADR 0094: versions are stamped, and the receiver keeps the newest.
+    group('version stamps', () {
+      AiConfig profile(String name) => AiConfig.inferenceProfile(
+        id: 'profile-stamped',
+        name: name,
+        createdAt: fixedDate,
+        thinkingModelId: 'model-1',
+      );
+
+      List<SyncMessage> sent() => verify(
+        () => mockOutboxService.enqueueMessage(captureAny()),
+      ).captured.cast<SyncMessage>();
+
+      test('a local save sends the stamp its version took', () async {
+        await repository.saveConfig(profile('local'));
+
+        final message = sent().single as SyncAiConfig;
+        expect(message.versionStamp, isNotNull);
+        expect(
+          message.versionStamp,
+          await repository.versionStamp('profile-stamped'),
+        );
+      });
+
+      test('a late copy of an older version does not overwrite a newer '
+          'one', () async {
+        await repository.saveConfig(
+          profile('newer'),
+          fromSync: true,
+          versionStamp: 20,
+        );
+
+        // The timed-out send of the older version lands last.
+        await repository.saveConfig(
+          profile('older'),
+          fromSync: true,
+          versionStamp: 10,
+        );
+
+        expect(
+          (await repository.getConfigById('profile-stamped'))!.name,
+          'newer',
+        );
+        verifyNever(() => mockOutboxService.enqueueMessage(any()));
+      });
+
+      test('a copy sent before a hard delete does not bring the config '
+          'back', () async {
+        await repository.saveConfig(
+          profile('v1'),
+          fromSync: true,
+          versionStamp: 10,
+        );
+        await repository.hardDeleteConfig(
+          'profile-stamped',
+          fromSync: true,
+          versionStamp: 20,
+        );
+
+        await repository.saveConfig(
+          profile('v1'),
+          fromSync: true,
+          versionStamp: 10,
+        );
+
+        expect(
+          await repository.getConfigById(
+            'profile-stamped',
+            includeDeleted: true,
+          ),
+          isNull,
+        );
+      });
+
+      test('a local hard delete sends the stamp the deletion took', () async {
+        await repository.saveConfig(profile('v1'));
+
+        await repository.hardDeleteConfig('profile-stamped');
+
+        final deletion = sent().last as SyncAiConfigDelete;
+        expect(deletion.hardDelete, isTrue);
+        expect(
+          deletion.versionStamp,
+          await repository.versionStamp('profile-stamped'),
+        );
+      });
+
+      test('the local-only prune forgets the version, so a peer copy of it '
+          'applies again', () async {
+        await repository.saveConfig(
+          profile('seed'),
+          fromSync: true,
+          versionStamp: 10,
+        );
+
+        await repository.hardDeleteConfig('profile-stamped', fromSync: true);
+        await repository.saveConfig(
+          profile('seed'),
+          fromSync: true,
+          versionStamp: 10,
+        );
+
+        expect(
+          (await repository.getConfigById('profile-stamped'))!.name,
+          'seed',
+        );
+      });
     });
 
     test('saveConfig and getConfigById work correctly', () async {
@@ -1100,7 +1210,7 @@ void main() {
       repository = AiConfigRepository(mockDb);
 
       when(() => mockDb.saveConfig(any())).thenAnswer((_) async => 1);
-      when(() => mockDb.deleteConfig(any())).thenAnswer((_) async {});
+      when(() => mockDb.deleteConfig(any())).thenAnswer((_) async => 1);
       when(() => mockDb.getAllConfigs()).thenAnswer((_) async => []);
       when(
         () => mockDb.watchAllConfigs(),
@@ -1629,7 +1739,7 @@ void main() {
 
         // Make getAllConfigs return the entity so the snapshot is populated.
         when(() => mockDb.getAllConfigs()).thenAnswer((_) async => [entity]);
-        when(() => mockDb.deleteConfig(any())).thenAnswer((_) async {});
+        when(() => mockDb.deleteConfig(any())).thenAnswer((_) async => 1);
 
         // Trigger snapshot load.
         await repository
@@ -1645,9 +1755,19 @@ void main() {
         // loaded, and must filter the snapshot rather than touch the type
         // caches. `deleteConfig` would short-circuit on the missing row, so
         // the replay goes through `hardDeleteConfig` as sync does.
-        await repository.hardDeleteConfig('inv-target', fromSync: true);
+        when(
+          () => mockDb.applyConfigDeletion('inv-target', stamp: 1),
+        ).thenAnswer((_) async => true);
+        await repository.hardDeleteConfig(
+          'inv-target',
+          fromSync: true,
+          versionStamp: 1,
+        );
 
-        verify(() => mockDb.deleteConfig('inv-target')).called(2);
+        verify(() => mockDb.deleteConfig('inv-target')).called(1);
+        verify(
+          () => mockDb.applyConfigDeletion('inv-target', stamp: 1),
+        ).called(1);
         final result = await repository.getConfigById('inv-target');
         expect(result, isNull);
         expect(
@@ -1709,7 +1829,7 @@ void main() {
         // Simulate a DB-side removal of B: the next getConfigsByType only
         // returns [A].  But the type cache was populated, so we must clear it
         // first (as deleteConfig would) to force a re-fetch.
-        when(() => mockDb.deleteConfig('stale-b')).thenAnswer((_) async {});
+        when(() => mockDb.deleteConfig('stale-b')).thenAnswer((_) async => 1);
         await repository.deleteConfig('stale-b');
 
         // After deleteConfig the type cache is cleared; next call fetches from
@@ -1850,7 +1970,7 @@ void main() {
         ],
       );
 
-      when(() => mockDb.deleteConfig(any())).thenAnswer((_) async {});
+      when(() => mockDb.deleteConfig(any())).thenAnswer((_) async => 1);
 
       // Act
       final result = await repository.deleteInferenceProviderWithModels(
@@ -1886,7 +2006,7 @@ void main() {
         () => mockDb.getConfigsByType(AiConfigType.model.name),
       ).thenAnswer((_) async => []);
 
-      when(() => mockDb.deleteConfig(any())).thenAnswer((_) async {});
+      when(() => mockDb.deleteConfig(any())).thenAnswer((_) async => 1);
 
       // Act
       final result = await repository.deleteInferenceProviderWithModels(
@@ -1929,7 +2049,7 @@ void main() {
         ],
       );
 
-      when(() => mockDb.deleteConfig(any())).thenAnswer((_) async {});
+      when(() => mockDb.deleteConfig(any())).thenAnswer((_) async => 1);
 
       // Act
       final result = await repository.deleteInferenceProviderWithModels(
@@ -2004,7 +2124,7 @@ void main() {
             .toList(),
       );
 
-      when(() => mockDb.deleteConfig(any())).thenAnswer((_) async {});
+      when(() => mockDb.deleteConfig(any())).thenAnswer((_) async => 1);
 
       // Act
       final result = await repository.deleteInferenceProviderWithModels(
@@ -2074,7 +2194,7 @@ void main() {
       );
 
       // Mock first model deletion to succeed, second to fail
-      when(() => mockDb.deleteConfig('model-1')).thenAnswer((_) async {});
+      when(() => mockDb.deleteConfig('model-1')).thenAnswer((_) async => 1);
       when(
         () => mockDb.deleteConfig('model-2'),
       ).thenThrow(Exception('Model deletion failed'));
@@ -2124,7 +2244,7 @@ void main() {
       );
 
       // Mock model deletion to succeed, provider deletion to fail
-      when(() => mockDb.deleteConfig('model-1')).thenAnswer((_) async {});
+      when(() => mockDb.deleteConfig('model-1')).thenAnswer((_) async => 1);
       when(
         () => mockDb.deleteConfig(providerId),
       ).thenThrow(Exception('Provider deletion failed'));
@@ -2173,7 +2293,7 @@ void main() {
         ],
       );
 
-      when(() => mockDb.deleteConfig(any())).thenAnswer((_) async {});
+      when(() => mockDb.deleteConfig(any())).thenAnswer((_) async => 1);
 
       // Act
       final result = await repository.deleteInferenceProviderWithModels(

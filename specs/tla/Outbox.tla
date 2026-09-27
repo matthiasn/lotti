@@ -14,13 +14,22 @@
 (* reuses SyncSequence's convention that a payload announces one counter   *)
 (* (`ver`) and carries the counters it superseded (`cov`).                 *)
 (*                                                                         *)
-(* A key is one entity whose rows collapse: a journal entry, an entry      *)
-(* link, an agent entity or link, a config flag. Version v of a key stands *)
-(* for the write that took the device's counter v for that entity, so its  *)
-(* versions are ordered like their vector clocks. A version in             *)
+(* A key is one entity with versions: a journal entry, an entry link, an   *)
+(* agent entity or link, a config flag, an AI configuration. Version v of  *)
+(* a key stands for the write that took the device's counter (or stamp) v  *)
+(* for that entity, so its versions are ordered like their vector clocks   *)
+(* (or stamps). A version in                                               *)
 (* MediaVersions owes the peers the entry's attachment (the row's          *)
 (* `filePath`). A simple message (a backfill request, a node profile) is   *)
-(* sent row by row and never collapses.                                    *)
+(* sent row by row and never collapses. A key in RowKeys has versions but  *)
+(* no collapse: an AI configuration, whose rows collapseKeyOf leaves       *)
+(* alone, so each version is its own send.                                 *)
+(*                                                                         *)
+(* The receiver is a function of the room: HeldAfter folds the payloads    *)
+(* of a key in arrival order. A stamped receiver keeps a payload only if   *)
+(* its stamp is greater than the one it holds; one writer stamps its       *)
+(* versions monotonically (SyncPreferenceEdits' MonotoneLocalStamps), so   *)
+(* the stamp order is the version order here.                              *)
 (*                                                                         *)
 (* A key is one object: its payload family and its id together. The rows  *)
 (* store only the id, which two families can share (an agent entity and an *)
@@ -68,6 +77,9 @@
 (*   ReleaseBeforeDrain  a drain first returns orphaned `sending` rows to  *)
 (*                       `pending` (ADR 0085)                              *)
 (*   QuiesceOnDispose    dispose waits for the drain in flight (ADR 0085)  *)
+(*   StampedReceiver     the receiver drops a payload whose stamp is not   *)
+(*                       greater than the one it holds (config flags,     *)
+(*                       AI configurations; ADR 0094)                      *)
 (*                                                                         *)
 (* Abstractions: claim order is row id order (priority is fixed per        *)
 (* message type, and createdAt follows the id while the clock does not     *)
@@ -78,7 +90,8 @@
 EXTENDS Naturals, Sequences, FiniteSets
 
 CONSTANTS
-    Keys,               \* entities whose rows collapse
+    Keys,               \* entities with versions
+    RowKeys,            \* the keys whose rows never collapse
     SimpleMsgs,         \* messages that are sent row by row
     MaxVersion,         \* versions enqueued per key
     MediaVersions,      \* versions whose row owes the attachment
@@ -95,7 +108,8 @@ CONSTANTS
     CarryMedia,
     AbsorbErrorRows,
     ReleaseBeforeDrain,
-    QuiesceOnDispose
+    QuiesceOnDispose,
+    StampedReceiver
 
 FaultKinds == {
     "sendFail",     \* the sender returns false or throws
@@ -108,9 +122,10 @@ ASSUME MaxVersion \in Nat \ {0} /\ MaxRetries \in Nat \ {0}
 ASSUME MaxBundle \in Nat \ {0} /\ MaxCrashes \in Nat /\ FaultBudget \in Nat
 ASSUME MediaVersions \subseteq 1..MaxVersion
 ASSUME Keys \cap SimpleMsgs = {}
+ASSUME RowKeys \subseteq Keys
 ASSUME \A b \in {InOrderEnqueue, UserActions, UserRemoves, NewestByClock,
                  CoverCollapsed, CarryMedia, AbsorbErrorRows,
-                 ReleaseBeforeDrain, QuiesceOnDispose} :
+                 ReleaseBeforeDrain, QuiesceOnDispose, StampedReceiver} :
           b \in BOOLEAN
 
 Versions == 1..MaxVersion
@@ -241,6 +256,9 @@ Folded(M) ==
         IF CoverCollapsed THEN {rows[r].ver : r \in M} \ {rows[n].ver} ELSE {},
         IF CarryMedia THEN \E r \in M : rows[r].media ELSE rows[n].media)
 
+\* Rows of these keys are sent one by one: collapseKeyOf gives them no key.
+Solo(k) == k \in SimpleMsgs \/ k \in RowKeys
+
 \* Claim the prefix and collapse each entity's rows. A bundle ships JSON
 \* only, so it does not fold in the rows that owe an attachment; they go
 \* out alone later.
@@ -248,15 +266,21 @@ Claim ==
     /\ phase = "idle"
     /\ LET B == Prefix(Sorted({r \in Ids : Eligible(r)}))
            BS == {B[i] : i \in 1..Len(B)}
-           keys == {rows[r].key : r \in BS}
            Extra(k) ==
-               IF k \in SimpleMsgs THEN {}
+               IF Solo(k) THEN {}
                ELSE {r \in Collapsible(k, BS) :
                         Len(B) = 1 \/ ~rows[r].media}
-           Group(k) == {r \in BS : rows[r].key = k} \cup Extra(k)
-           \* One send per key, in the order of each key's first claimed row.
-           Heads == Sorted({Min({r \in BS : rows[r].key = k}) : k \in keys})
-           All == UNION {Group(k) : k \in keys}
+           \* One send per collapsing key, in the order of its first claimed
+           \* row, and one per row of the others.
+           IsHead(h) ==
+               \/ Solo(rows[h].key)
+               \/ h = Min({r \in BS : rows[r].key = rows[h].key})
+           Heads == Sorted({h \in BS : IsHead(h)})
+           Group(h) ==
+               IF Solo(rows[h].key) THEN {h}
+               ELSE {r \in BS : rows[r].key = rows[h].key}
+                        \cup Extra(rows[h].key)
+           All == UNION {Group(h) : h \in {h2 \in BS : IsHead(h2)}}
        IN
        IF Len(B) = 0
        THEN /\ phase' = "off"
@@ -266,8 +290,7 @@ Claim ==
                           ELSE rows[r]]
             /\ expired' = expired \ All
             /\ inflight' = All
-            /\ msgs' = [i \in 1..Len(Heads) |->
-                          Folded(Group(rows[Heads[i]].key))]
+            /\ msgs' = [i \in 1..Len(Heads) |-> Folded(Group(Heads[i]))]
             /\ phase' = "sending"
     /\ UNCHANGED <<enq, wire, ghosts, abandoned, faults, crashes>>
 
@@ -490,12 +513,32 @@ PruneOnlySent ==
             => rows[r].st = "sent"]_vars
 
 \* The last payload of a key in the room is the newest one the room holds.
-\* A receiver that applies in arrival order (a config flag, an AI
-\* configuration) ends on that payload.
+\* A receiver that applied in arrival order would end on that payload; no
+\* receiver of a key does any more (PeerHoldsNewest).
 NewestLandsLast ==
     \A k \in Keys :
         LET I == {i \in 1..Len(wire) : wire[i].key = k} IN
         I # {} => wire[Max(I)].ver = Max({wire[i].ver : i \in I})
+
+\* The version a peer holds for key k after applying the first n payloads
+\* of the room in arrival order; 0 is nothing yet. A stamped receiver keeps
+\* a payload only when its stamp is greater (applyConfigFlagVersion,
+\* AiConfigDb.applyConfigVersion); otherwise the payload that lands last
+\* wins.
+RECURSIVE HeldAfter(_, _)
+HeldAfter(k, n) ==
+    IF n = 0 THEN 0
+    ELSE LET held == HeldAfter(k, n - 1) IN
+         IF wire[n].key # k THEN held
+         ELSE IF StampedReceiver /\ wire[n].ver <= held THEN held
+         ELSE wire[n].ver
+
+\* A peer holds the newest version of each key the room carries, however
+\* late an older send lands.
+PeerHoldsNewest ==
+    \A k \in Keys :
+        LET V == {wire[i].ver : i \in {j \in 1..Len(wire) : wire[j].key = k}}
+        IN V # {} => HeldAfter(k, Len(wire)) = Max(V)
 
 \* Every row leaves the queue: sent, failed for good, or removed.
 EveryRowSettles ==

@@ -141,9 +141,17 @@ sealed class SyncMessage with _$SyncMessage {
     List<VectorClock>? coveredVectorClocks,
   }) = SyncEntryLink;
 
+  /// A version of an AI configuration.
+  ///
+  /// [versionStamp] is the stamp the sender's `AiConfigDb` gave this version.
+  /// The receiver keeps a version only if its stamp is greater than the one
+  /// it holds, so a copy that lands late cannot overwrite a newer one
+  /// (ADR 0094). Senders from before that omit it; receivers use the Matrix
+  /// event's server timestamp instead.
   const factory SyncMessage.aiConfig({
     required AiConfig aiConfig,
     required SyncEntryStatus status,
+    int? versionStamp,
   }) = SyncAiConfig;
 
   /// A node's self-description (name, platform, capabilities).
@@ -168,9 +176,13 @@ sealed class SyncMessage with _$SyncMessage {
   ///
   /// Current builds send user deletions as `SyncMessage.aiConfig` carrying
   /// `deletedAt`, never through this envelope.
+  ///
+  /// [versionStamp] is the stamp the deletion took, ordered against config
+  /// versions like [SyncAiConfig.versionStamp]; absent from older senders.
   const factory SyncMessage.aiConfigDelete({
     required String id,
     bool? hardDelete,
+    int? versionStamp,
   }) = SyncAiConfigDelete;
 
   /// A saved task-filter *definition* (id, name, filter shape) synced per

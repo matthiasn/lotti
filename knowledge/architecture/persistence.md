@@ -110,7 +110,7 @@ migration work has to cover both, and embeddings are a third store again (below)
 | `Fts5Db` | `fts5_db.sqlite` | 1 | Full-text search index |
 | `NotificationsDb` | `notifications.sqlite` | 1 | Scheduled and delivered notifications |
 | `OnboardingMetricsDb` | `onboarding_metrics.sqlite` | 1 | First-run and activation measurement |
-| `AiConfigDb` | `ai_config.sqlite` | 1 | Providers, models, prompts, inference profiles |
+| `AiConfigDb` | `ai_config.sqlite` | 2 | Providers, models, prompts, inference profiles, skills and their version stamps |
 | `DayProcessingDb` | `day_processing.sqlite` | 1 | Daily OS day-processing outbox |
 
 Splitting by concern is what makes a heavy background writer — sync ingestion,
@@ -225,6 +225,26 @@ flowchart LR
   Cache --> Return[Return committed snapshot]
 ```
 
+
+# AI config versions
+
+AI config schema 2 adds `ai_config_versions (id, stamp)`: the stamp of the
+version each AI configuration last took, in epoch milliseconds
+([ADR 0094](../../docs/adr/0094-ai-config-versions-are-stamped.md)). It is not
+a foreign key of `ai_configs`: a stamp without its config is a deletion, and
+it outlives the hard delete so a late copy of the deleted config cannot bring
+it back. The migration stamps every existing row with its last local write
+(`COALESCE(updated_at, created_at)`).
+
+`AiConfigDb.saveConfig` and `deleteConfig` stamp a local version with the
+current time, or one past the held stamp when the clock has not moved beyond
+it, in the same transaction as the write, and return the stamp for the sync
+message. `applyConfigVersion` writes a received version only when its stamp is
+greater; on a tie a held deletion wins and two configs are ordered by their
+payload JSON without the credential. `applyConfigDeletion` applies unless a
+newer stamp is held. Nothing is written for a dropped version, the provider
+credential included. `forgetConfig` removes the row and its stamp together,
+for a removal that is never sent.
 # Opening a connection
 
 Every database goes through `openDbConnection()`, so they share one set of

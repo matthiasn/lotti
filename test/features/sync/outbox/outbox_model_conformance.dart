@@ -15,6 +15,14 @@ part of 'outbox_enqueue_writer_test.dart';
 // crash is a fresh writer, repository and processor over the same database,
 // sent rows are pruned, and the monitor retries a failed row. A drain releases
 // orphaned claims first, as `MatrixOutboxService.sendNext` does.
+//
+// A third entity is an AI configuration: its rows never collapse, each version
+// carries the stamp the sender's real `AiConfigDb` gave it, and a real
+// receiving `AiConfigDb` applies what lands in arrival order. A drain can time
+// out while its send still lands later (a ghost), so the room's order is not
+// the newest-last order; the receiver must still end on the newest version
+// (`PeerHoldsNewest`, ADR 0094). `NewestLandsLast` is only checked while no
+// ghost has landed, as `OutboxGhost` does not claim it.
 
 enum _OutboxOp {
   enqueueNext,
@@ -27,6 +35,9 @@ enum _OutboxOp {
   drainFail,
   drainMarksThrow,
   drainMarkSentThrows,
+  aiEdit,
+  drainGhost,
+  ghostLand,
   tick,
   crash,
   prune,
@@ -57,6 +68,15 @@ extension _AnyOutboxTrace on glados.Any {
 
 const _agentId = 'agent-1';
 const _journalId = 'journal-1';
+const _aiConfigId = 'ai-config-1';
+
+/// Version [version] of the AI configuration; its name carries the version.
+AiConfig _aiConfig(int version) => AiConfig.inferenceProfile(
+  id: _aiConfigId,
+  name: 'v$version',
+  createdAt: DateTime(2026, 9, 25),
+  thinkingModelId: 'model-1',
+);
 
 /// A payload as it left the device: its entity, the counter it announces, the
 /// counters it covers, and whether it carries the attachment.
@@ -81,6 +101,12 @@ _Sent _sentOf(SyncMessage message) => switch (message) {
     },
     media:
         m.status == SyncEntryStatus.initial || (m.includeAttachments ?? false),
+  ),
+  final SyncAiConfig m => (
+    entity: _aiConfigId,
+    payload: int.parse(m.aiConfig.name.substring(1)),
+    covered: const <int>{},
+    media: false,
   ),
   final other => throw StateError('unexpected $other'),
 };
@@ -177,11 +203,15 @@ class _OutboxBench {
     when(() => sender.send(any())).thenAnswer((invocation) async {
       if (sendFails) return false;
       final message = invocation.positionalArguments.single as SyncMessage;
-      wire.addAll(
-        message is SyncOutboxBundle
-            ? message.children.map(_sentOf)
-            : [_sentOf(message)],
-      );
+      final children = message is SyncOutboxBundle
+          ? message.children
+          : [message];
+      if (sendTimesOut) {
+        // The processor gives up on the send; the SDK lands it later.
+        ghosts.add(children);
+        return false;
+      }
+      land(children);
       return true;
     });
     boot();
@@ -192,6 +222,27 @@ class _OutboxBench {
   final wire = <_Sent>[];
   DateTime now = DateTime(2026, 9, 25, 12);
   bool sendFails = false;
+  bool sendTimesOut = false;
+
+  /// Sends that timed out but have not landed yet, oldest first.
+  final ghosts = <List<SyncMessage>>[];
+  bool ghostLanded = false;
+
+  /// The sender's and the receiver's AI config stores.
+  final senderAiDb = AiConfigDb(
+    inMemoryDatabase: true,
+    apiKeyStorage: AiApiKeyStorage.inMemory(),
+  );
+  final receiverAiDb = AiConfigDb(
+    inMemoryDatabase: true,
+    apiKeyStorage: AiApiKeyStorage.inMemory(),
+  );
+
+  /// AI config payloads in the order they landed; the receiver applies them
+  /// in that order.
+  final aiLanded = <SyncAiConfig>[];
+  int aiApplied = 0;
+  int aiVersion = 0;
 
   late OutboxEnqueueWriter writer;
   late _FaultyRepository repository;
@@ -202,7 +253,11 @@ class _OutboxBench {
   final inFlight = <Future<void>>[];
 
   /// Versions whose enqueue finished, per entity.
-  final done = <String, Set<int>>{_agentId: {}, _journalId: {}};
+  final done = <String, Set<int>>{
+    _agentId: {},
+    _journalId: {},
+    _aiConfigId: {},
+  };
   final launched = <int>{};
   int journalVersion = 0;
 
@@ -278,6 +333,46 @@ class _OutboxBench {
     done[_journalId]!.add(version);
   }
 
+  /// Payloads reaching the room, in order.
+  void land(List<SyncMessage> messages) {
+    wire.addAll(messages.map(_sentOf));
+    aiLanded.addAll(messages.whereType<SyncAiConfig>());
+  }
+
+  /// A local edit of the AI configuration: the sender's store stamps the
+  /// version, and the row carries that stamp, as `AiConfigRepository` does.
+  Future<void> aiEdit() async {
+    final version = ++aiVersion;
+    final stamp = await senderAiDb.saveConfig(_aiConfig(version));
+    final msg =
+        SyncMessage.aiConfig(
+              aiConfig: _aiConfig(version),
+              status: SyncEntryStatus.update,
+              versionStamp: stamp,
+            )
+            as SyncAiConfig;
+    await writer.enqueueAiConfig(msg: msg, commonFields: _commonFields(msg));
+    done[_aiConfigId]!.add(version);
+  }
+
+  /// The receiver applies what landed since it last looked, in arrival
+  /// order.
+  Future<void> receive() async {
+    for (; aiApplied < aiLanded.length; aiApplied++) {
+      final msg = aiLanded[aiApplied];
+      await receiverAiDb.applyConfigVersion(
+        msg.aiConfig,
+        stamp: msg.versionStamp!,
+      );
+    }
+  }
+
+  Future<void> close() async {
+    await db.close();
+    await senderAiDb.close();
+    await receiverAiDb.close();
+  }
+
   Future<void> settle() async {
     await Future.wait(inFlight);
     inFlight.clear();
@@ -334,6 +429,17 @@ class _OutboxBench {
         repository.markSentThrows = true;
         await drain();
         repository.markSentThrows = false;
+      case _OutboxOp.aiEdit:
+        await aiEdit();
+      case _OutboxOp.drainGhost:
+        sendTimesOut = true;
+        await drain();
+        sendTimesOut = false;
+      case _OutboxOp.ghostLand:
+        if (ghosts.isNotEmpty) {
+          land(ghosts.removeAt(0));
+          ghostLanded = true;
+        }
       case _OutboxOp.tick:
         now = now.add(const Duration(minutes: 2));
       case _OutboxOp.crash:
@@ -424,7 +530,11 @@ class _OutboxBench {
       }
     }
 
+    // An AI configuration's rows never collapse, so a Retry of an older
+    // failed row can land after a newer one; the model does not claim this
+    // for them either.
     for (final entity in [_agentId, _journalId]) {
+      if (ghostLanded) break;
       if (entity == _agentId && !inOrder) continue;
       final sent = wire.where((m) => m.entity == entity).toList();
       if (sent.isEmpty) continue;
@@ -433,6 +543,17 @@ class _OutboxBench {
         sent.last.payload,
         newest,
         reason: 'NewestLandsLast $entity ${sent.map((m) => m.payload)}: $trace',
+      );
+    }
+
+    await receive();
+    final aiSent = wire.where((m) => m.entity == _aiConfigId);
+    if (aiSent.isNotEmpty) {
+      final newest = aiSent.map((m) => m.payload).reduce(math.max);
+      expect(
+        (await receiverAiDb.getConfigById(_aiConfigId))?.name,
+        'v$newest',
+        reason: 'PeerHoldsNewest ${aiSent.map((m) => m.payload)}: $trace',
       );
     }
   }
@@ -445,18 +566,48 @@ void _registerOutboxModelConformance() {
       glados.ExploreConfig(numRuns: 250),
     ).test(
       'generated traces keep NoLostCounter, CoversOnlyOlder, RowsImmutable, '
-      'SentWasDelivered, MediaNotDropped, PruneOnlySent and NewestLandsLast, '
-      'and deliver every enqueued version',
+      'SentWasDelivered, MediaNotDropped, PruneOnlySent, NewestLandsLast and '
+      'PeerHoldsNewest, and deliver every enqueued version',
       (trace) async {
         final bench = _OutboxBench();
         try {
           await withClock(Clock(() => bench.now), () => _playOut(bench, trace));
         } finally {
-          await bench.db.close();
+          await bench.close();
         }
       },
       tags: 'glados',
     );
+
+    // OutboxGhostRows' ten-step counterexample with StampedReceiver off: v1 is
+    // claimed, v2 is written, v1's send times out and is retried, v1 and v2
+    // go out, and the abandoned v1 lands last. The receiver keeps v2.
+    test('a timed-out AI config send that lands last does not overwrite the '
+        'newer version on the peer', () async {
+      final bench = _OutboxBench();
+      const trace = [
+        _OutboxStep(_OutboxOp.aiEdit),
+        _OutboxStep(_OutboxOp.drainGhost),
+        _OutboxStep(_OutboxOp.aiEdit),
+        _OutboxStep(_OutboxOp.drainOk),
+        _OutboxStep(_OutboxOp.ghostLand),
+      ];
+      try {
+        await withClock(Clock(() => bench.now), () => _playOut(bench, trace));
+        expect(
+          bench.wire
+              .where((m) => m.entity == _aiConfigId)
+              .map((m) => m.payload),
+          [1, 2, 1],
+        );
+        expect(
+          (await bench.receiverAiDb.getConfigById(_aiConfigId))!.name,
+          'v2',
+        );
+      } finally {
+        await bench.close();
+      }
+    });
   });
 }
 
@@ -469,12 +620,18 @@ Future<void> _playOut(_OutboxBench bench, List<_OutboxStep> trace) async {
   } finally {
     await bench.settle();
   }
-  // Every held-back write is enqueued, and the queue drains cleanly.
+  // Every held-back write is enqueued, late sends land, and the queue drains
+  // cleanly.
   List.of(bench.heldBack).forEach(bench.launch);
   bench.heldBack.clear();
   await bench.settle();
   for (var i = 0; i < 6; i++) {
     await bench.drain();
+  }
+  while (bench.ghosts.isNotEmpty) {
+    bench
+      ..land(bench.ghosts.removeAt(0))
+      ..ghostLanded = true;
   }
   await bench.checkInvariants(trace);
 

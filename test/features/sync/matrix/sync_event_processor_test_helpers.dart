@@ -116,18 +116,21 @@ void setUpProcessorMocks() {
     () => aiConfigRepository.saveConfig(
       any<AiConfig>(),
       fromSync: any<bool>(named: 'fromSync'),
+      versionStamp: any<int?>(named: 'versionStamp'),
     ),
   ).thenAnswer((_) async {});
   when(
     () => aiConfigRepository.deleteConfig(
       any<String>(),
       fromSync: any<bool>(named: 'fromSync'),
+      versionStamp: any<int?>(named: 'versionStamp'),
     ),
   ).thenAnswer((_) async {});
   when(
     () => aiConfigRepository.hardDeleteConfig(
       any<String>(),
       fromSync: any<bool>(named: 'fromSync'),
+      versionStamp: any<int?>(named: 'versionStamp'),
     ),
   ).thenAnswer((_) async {});
   when(
