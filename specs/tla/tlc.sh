@@ -20,26 +20,34 @@ tools_dir="${TLA_TOOLS_DIR:-$HOME/.cache/lotti-tla}"
 jar="$tools_dir/tla2tools-$TLA_VERSION.jar"
 java_bin="${JAVA:-java}"
 
-# macOS ships shasum but not GNU sha256sum.
-if command -v sha256sum >/dev/null; then
-  sha256_check() { sha256sum --check --quiet; }
-else
-  sha256_check() { shasum -a 256 --check --quiet; }
-fi
+# Compare digests directly: GNU sha256sum, macOS's BSD sha256sum and shasum
+# disagree on --check flags, but all print "<digest>  <file>".
+sha256_matches() {
+  local digest
+  if command -v shasum >/dev/null; then
+    digest="$(shasum -a 256 "$1")"
+  else
+    digest="$(sha256sum "$1")"
+  fi
+  [[ "${digest%% *}" == "$TLA_SHA256" ]]
+}
 
 if [[ ! -f "$jar" ]]; then
   mkdir -p "$tools_dir"
   curl -fsSL -o "$jar.part" \
     "https://github.com/tlaplus/tlaplus/releases/download/v$TLA_VERSION/tla2tools.jar"
   # Verify before caching: a bad download must not poison later runs.
-  if ! echo "$TLA_SHA256  $jar.part" | sha256_check; then
+  if ! sha256_matches "$jar.part"; then
     rm -f "$jar.part"
     echo "tla2tools.jar checksum mismatch" >&2
     exit 1
   fi
   mv "$jar.part" "$jar"
 fi
-echo "$TLA_SHA256  $jar" | sha256_check
+if ! sha256_matches "$jar"; then
+  echo "cached $jar fails its checksum; delete it and rerun" >&2
+  exit 1
+fi
 
 spec_for() {
   local config="$1" best=""
