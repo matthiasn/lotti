@@ -73,9 +73,8 @@ lose or duplicate your data — the sync log that proves no change was lost
 between devices, how agents are woken and recover after a crash, how a
 suggestion you confirm is applied when two devices race, how synced agent state
 converges, the agents' message log, and the Daily OS jobs — are written down as
-[16 TLA+ models](specs/tla/README.md) and model-checked with TLC on every change
-to them: about 114 million distinct states across 42 configurations, under
-crashes, injected failures, clock skew and messages arriving in any order. The
+[16 TLA+ models](specs/tla/README.md) and model-checked with TLC every night:
+about 114 million distinct states across 42 configurations, under crashes, injected failures, clock skew and messages arriving in any order. The
 properties are the ones that matter. No saved change is ever declared lost, and
 as long as devices keep reconnecting and a failed send is retried, every saved
 change reaches every device, even with a crash at any point. A double tap never

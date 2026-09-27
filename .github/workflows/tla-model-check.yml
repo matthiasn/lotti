@@ -1,164 +1,19 @@
 name: TLA+ Model Check
 
-# Model-checks the formal specs under specs/tla with TLC. Runs when a spec or
-# the code it models changes; the spec is only worth having while it keeps
-# describing that code.
+# Model-checks the formal specs under specs/tla with TLC. The full set takes
+# too long to gate every push, so it runs nightly against main; run it by hand
+# (Actions -> TLA+ Model Check -> Run workflow) on a branch that changes a spec
+# or the code it models. A failed scheduled run is reported by GitHub to
+# whoever last edited the cron line below.
 on:
-  push:
-    branches: ["**"]
-    paths:
-      - "specs/tla/**"
-      - "lib/features/sync/sequence/**"
-      - "lib/features/sync/backfill/**"
-      - "lib/features/sync/outbox/**"
-      - "lib/classes/notification_entity.dart"
-      - "lib/database/notifications_db.dart"
-      - "lib/features/notifications/model/notification_merge.dart"
-      - "lib/features/sync/matrix/sync_event_processor_notification_handlers.dart"
-      - "lib/features/sync/matrix/sync_event_processor_consumption_handlers.dart"
-      - "lib/database/settings_db.dart"
-      - "lib/features/tasks/state/saved_filters/saved_task_filters_repository.dart"
-      - "lib/features/tasks/state/saved_filters/saved_task_filters_persistence.dart"
-      - "lib/features/tasks/state/saved_filters/saved_task_filters_controller.dart"
-      - "lib/database/database_config_flags.dart"
-      - "lib/logic/persistence_definition_ops.dart"
-      - "lib/features/theming/state/theming_controller.dart"
-      - "lib/features/daily_os_next/state/daily_os_preferences_controller.dart"
-      - "lib/database/sync_db_outbox.dart"
-      - "lib/database/sync_db_outbox_dedup.dart"
-      - "lib/database/sync_db_backfill.dart"
-      - "lib/database/sync_db_lifecycle.dart"
-      - "lib/features/sync/model/sync_message.dart"
-      - "lib/database/sync_db_outbox_prune.dart"
-      - "lib/features/sync/client_runner.dart"
-      - "lib/features/sync/ui/pages/outbox/outbox_monitor_page.dart"
-      - "lib/features/sync/queue/**"
-      - "lib/features/sync/matrix/pipeline/catch_up_strategy.dart"
-      - "lib/features/sync/matrix/pipeline/bootstrap_backward_strategy.dart"
-      - "lib/features/sync/matrix/pipeline/bootstrap_forward_strategy.dart"
-      - "lib/features/sync/matrix/matrix_payload_sender.dart"
-      - "lib/database/sync_db_sequence.dart"
-      - "lib/database/sync_db_watermarks.dart"
-      - "lib/features/sync/vector_clock.dart"
-      - "lib/services/vector_clock_service.dart"
-      - "lib/get_it_sync.dart"
-      - "lib/services/service_disposer.dart"
-      - "lib/features/profiles/service/profile_switcher.dart"
-      - "lib/logic/services/metadata_service.dart"
-      - "lib/logic/persistence_create_ops.dart"
-      - "lib/features/relationships/repository/relationship_repository.dart"
-      - "lib/features/agents/wake/**"
-      - "lib/features/agents/workflow/task_state_digest.dart"
-      - "lib/features/agents/service/change_set_confirmation_service.dart"
-      - "lib/features/agents/service/change_set_resolution_store.dart"
-      - "lib/features/agents/service/suggestion_retraction_service.dart"
-      - "lib/features/agents/workflow/change_set_builder.dart"
-      - "lib/features/agents/workflow/change_item_dedup.dart"
-      - "lib/features/agents/model/change_set.dart"
-      - "lib/features/agents/tools/change_effect.dart"
-      - "lib/features/agents/tools/follow_up_task_handler.dart"
-      - "lib/features/agents/tools/time_entry_handler.dart"
-      - "lib/features/agents/tools/checklist_migration_handler.dart"
-      - "lib/features/agents/workflow/task_tool_dispatcher.dart"
-      - "lib/features/agents/workflow/task_tool_handlers.dart"
-      - "lib/features/agents/workflow/event_tool_dispatcher.dart"
-      - "lib/features/ai/functions/lotti_batch_checklist_handler.dart"
-      - "lib/features/tasks/repository/checklist_repository.dart"
-      - "lib/features/tasks/state/checklist_controller.dart"
-      - "lib/features/tasks/ui/checklists/checklists_widget.dart"
-      - "lib/features/tasks/model/membership_list.dart"
-      - "lib/features/journal/state/entry_controller.dart"
-      - "lib/features/journal/repository/journal_repository.dart"
-      - "lib/logic/persistence_update_ops.dart"
-      - "lib/logic/write_on_stored.dart"
-      - "lib/features/tasks/repository/checklist_membership_intents.dart"
-      - "lib/features/tasks/state/checklist_item_controller.dart"
-      - "lib/features/tasks/ui/checklists/checklist_item_row_state.dart"
-      - "lib/features/ai/functions/lotti_checklist_update_handler.dart"
-      - "lib/features/ai/repository/ai_tool_call_processor.dart"
-      - "lib/features/plaza/data/plaza_repository.dart"
-      - "lib/logic/persistence_updates.dart"
-      - "lib/database/database_entity_ops.dart"
-      - "lib/database/database_links_ratings.dart"
-      - "lib/features/ai_consumption/repository/consumption_repository.dart"
-      - "lib/features/ai_consumption/sync/consumption_sync_service.dart"
-      - "lib/features/ai_consumption/database/consumption_database.dart"
-      - "lib/features/agents/sync/agent_concurrent_resolver.dart"
-      - "lib/features/agents/state/agent_providers.dart"
-      - "lib/features/goals/runtime/goal_agent_phase_a.dart"
-      - "lib/features/goals/runtime/goal_wake_facts.dart"
-      - "lib/features/goals/runtime/goal_runtime_maintenance.dart"
-      - "lib/features/goals/sync/goal_signal_sync_dispatcher.dart"
-      - "lib/features/goals/service/goal_agent_service.dart"
-      - "lib/features/goals/workflow/goal_agent_workflow.dart"
-      - "lib/features/goals/service/goal_chat_service.dart"
-      - "lib/features/goals/state/goal_agent_providers.dart"
-      - "lib/features/relationships/runtime/relationship_agent_phase_a.dart"
-      - "lib/classes/goal_trigger_tokens.dart"
-      - "lib/features/sync/matrix/sync_event_processor_agent_handlers.dart"
-      - "lib/features/agents/sync/agent_lww_timestamp.dart"
-      - "lib/features/daily_os_next/agents/service/day_agent_service.dart"
-      - "lib/features/daily_os_next/services/day_agent_job_executor.dart"
-      - "lib/features/daily_os_next/services/day_processing_outbox_repository.dart"
-      - "lib/features/daily_os_next/services/day_processing_outbox_processor.dart"
-      - "lib/features/daily_os_next/services/day_processing_runtime.dart"
-      - "lib/features/daily_os_next/state/day_agent_job_wiring.dart"
-      - "lib/features/agents/sync/agent_sync_service.dart"
-      - "lib/features/sync/matrix/sync_event_processor_agent_handlers.dart"
-      - "lib/features/agents/workflow/wake_output_writer.dart"
-      - "lib/features/agents/workflow/task_agent_execute.dart"
-      - "lib/features/agents/workflow/project_agent_workflow.dart"
-      - "lib/features/daily_os_next/agents/workflow/day_agent_workflow.dart"
-      - "lib/features/daily_os_next/agents/workflow/day_agent_tool_handlers.dart"
-      - "lib/features/sync/matrix/sync_event_processor.dart"
-      - "lib/features/agents/service/soul_version_ops.dart"
-      - "lib/features/agents/service/agent_template_crud.dart"
-      - "lib/features/goals/service/goal_spec_revision_service.dart"
-      - "lib/features/goals/runtime/goal_agent_phase_a.dart"
-      - "lib/features/goals/runtime/goal_wake_facts.dart"
-      - "lib/features/goals/runtime/goal_runtime_maintenance.dart"
-      - "lib/features/goals/sync/goal_signal_sync_dispatcher.dart"
-      - "lib/features/goals/service/goal_agent_service.dart"
-      - "lib/features/goals/workflow/goal_agent_workflow.dart"
-      - "lib/features/goals/workflow/goal_agent_workflow.dart"
-      - "lib/features/relationships/workflow/relationship_agent_workflow.dart"
-      - "lib/features/agents/workflow/event_agent_workflow.dart"
-      - "lib/features/agents/workflow/project_agent_execute.dart"
-      - "lib/features/agents/sync/fork_healer.dart"
-      - "lib/features/agents/sync/agent_log_compactor.dart"
-      - "lib/features/agents/sync/agent_message_dag.dart"
-      - "lib/features/agents/projection/join_plan.dart"
-      - "lib/features/agents/projection/canonical_order.dart"
-      - "lib/features/agents/projection/agent_projection.dart"
-      - "lib/features/agents/projection/compaction_summary.dart"
-      - "lib/features/agents/projection/compaction_plan.dart"
-      - "lib/features/agents/projection/input_events.dart"
-      - "lib/features/agents/workflow/template_evolution_workflow.dart"
-      - "lib/features/agents/workflow/template_evolution_helpers.dart"
-      - "lib/features/agents/workflow/template_evolution_session.dart"
-      - "lib/features/agents/workflow/soul_evolution_workflow.dart"
-      - "lib/features/agents/database/agent_repo_evolution.dart"
-      - "lib/features/agents/database/agent_repo_links.dart"
-      - "lib/features/agents/model/agent_link.dart"
-      - "lib/features/agents/service/soul_template_ops.dart"
-      - "lib/features/agents/sync/agent_entity_receive.dart"
-      - "lib/features/agents/database/agent_repo_core.dart"
-      - "lib/features/sync/matrix/sync_event_processor_apply.dart"
-      - "lib/features/sync/matrix/outbox_bundle_unpacker.dart"
-      - "lib/features/agents/service/project_recommendation_service.dart"
-      - "lib/database/database_journal_queries.dart"
-      - "lib/features/sync/matrix/sync_event_processor_journal_handlers.dart"
-      - "lib/features/sync/matrix/smart_journal_entity_loader.dart"
-      - "lib/features/sync/ui/widgets/conflicts/conflict_merge.dart"
-      - "lib/features/sync/state/conflict_resolution_service.dart"
-      - "lib/features/sync/ui/pages/conflicts/conflict_detail_route.dart"
-      - "lib/features/labels/repository/labels_repository.dart"
-      - "lib/features/journal/repository/journal_repository.dart"
-      - "lib/logic/persistence_updates.dart"
-      - ".github/workflows/tla-model-check.yml"
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
 
+# Keyed by event too, so a manual run on main and the nightly run never cancel
+# each other.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -240,8 +95,8 @@ jobs:
         run: python3 specs/tla/check_sync_pipeline.py
 
   tlc:
-    # Keep the stable aggregate check for branch protection. A failed,
-    # cancelled or skipped shard must never turn this check green.
+    # One aggregate result for the whole run. A failed, cancelled or skipped
+    # shard must never turn this check green.
     name: TLC
     if: always()
     needs: [configurations, model-check]

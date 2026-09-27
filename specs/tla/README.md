@@ -2,8 +2,11 @@
 
 TLA+ models of the protocols in this app that are too concurrent to trust to
 prose, model-checked with TLC. A spec here describes the code as it is: a
-change to the modelled code updates the spec in the same pull request, and CI
-(`.github/workflows/tla-model-check.yml`) re-checks it whenever either moves.
+change to the modelled code updates the spec in the same pull request. CI
+(`.github/workflows/tla-model-check.yml`) re-checks every configuration nightly
+against `main`; a pull request that touches a spec or the code it models
+should run it by hand first (Actions → TLA+ Model Check → Run workflow, on the
+branch) or run `make tla_check` locally.
 [LEDGER.md](LEDGER.md) records which pull request added each spec, what it
 caught, and the running totals.
 
@@ -125,8 +128,9 @@ pipeline without injecting crashes. Neither profile claims the full product of
 three-version forks, mixed families, multiple receivers and every fault.
 
 The fork/successor exploration took about 164 minutes locally and gets an
-isolated CI shard with a six-hour deadline and 12 GiB heap. It still runs on
-every applicable push and gates the same aggregate `TLC` check; regular shards
+isolated CI shard with a six-hour deadline and 12 GiB heap. It runs with every
+other configuration, nightly or on demand, and gates the same aggregate `TLC`
+check; regular shards
 retain their one-hour deadline. `shards_test.py` protects complete configuration
 assignment and isolation of the long profile.
 

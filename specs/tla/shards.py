@@ -16,7 +16,7 @@ from pathlib import Path
 SHARDS = 8
 
 # Keep measured multi-hour profiles out of the one-hour regular shards. They
-# still run on every applicable push and feed the same required TLC check.
+# run in the same nightly or manual workflow and feed the same TLC check.
 EXTENDED_CONFIGURATIONS = {"SyncPipelineForkSuccessor"}
 
 # Seconds TLC spent on each configuration in CI runs 36198815983 and
