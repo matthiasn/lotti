@@ -2055,6 +2055,31 @@ void main() {
         });
       });
 
+      // The peer's done may land at any point while the hand-over is being
+      // recorded; wherever it lands, it must mark the report fresh.
+      for (var delay = 0; delay <= 12; delay++) {
+        test("a peer's done landing $delay microtasks into the hand-over still "
+            'marks the report fresh', () {
+          coordinated((async) {
+            countingDown(async);
+            final held = heldInputs = Completer<WakeInputs?>();
+            peer(AgentWakeCoordinationKind.claim);
+            async.flushMicrotasks();
+
+            final doneAt = clock.now();
+            held.complete(inputsAt(3));
+            void deliverAfter(int microtasks) => microtasks == 0
+                ? peer(AgentWakeCoordinationKind.done)
+                : scheduleMicrotask(() => deliverAfter(microtasks - 1));
+            deliverAfter(delay);
+            async.flushMicrotasks();
+
+            expect(queue.isEmpty, isTrue);
+            expect(state.reportFreshAt, doneAt);
+          });
+        });
+      }
+
       test('a job reaching dispatch while a peer runs a covering wake is '
           'dropped', () {
         coordinated((async) {

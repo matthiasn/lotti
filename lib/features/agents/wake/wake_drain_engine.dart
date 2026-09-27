@@ -572,6 +572,10 @@ extension WakeDrainEngine on WakeOrchestrator {
     required DateTime coordinatedAt,
     required List<WakeJob> deferred,
   }) async {
+    // Recorded before anything yields, and settled again once the job is
+    // gone: the peer's done may already have arrived since [coverage] was
+    // decided, and its notification finds a hand-over only once it exists.
+    if (!coverage.completed) _handedToPeer.add(job.agentId);
     await _dropDrainOwnedJob(
       job,
       reason: 'wake covered by a peer device',
@@ -579,7 +583,7 @@ extension WakeDrainEngine on WakeOrchestrator {
     );
     _releaseDrainLease(generation, lease);
     if (!coverage.completed) {
-      _handedToPeer.add(job.agentId);
+      await settleHandOver(job.agentId);
     } else if (coverage.reportUpdated) {
       await _markReportFresh(job.agentId, refreshStartedAt: coordinatedAt);
     }
