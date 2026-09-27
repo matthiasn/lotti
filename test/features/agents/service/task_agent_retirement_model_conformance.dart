@@ -9,8 +9,10 @@ part of 'task_agent_retirement_test.dart';
 // crashes a device (the startup pass), and wakes agents through the wake
 // gate. After every wake that is let run it checks NoSupersededWake; once
 // everything has arrived and every scheduled pass has run it checks
-// AtMostOneLive, LiveAgreed and KeepsAgent. The clock only moves forward,
-// as in the model without Skew.
+// AtMostOneLive, LiveAgreed, KeepsAgent and DeletedStaysDeleted — a delete
+// may run while writes about the agent are still on their way
+// (EarlyHardDelete), and none of them brings the agent back. The clock only
+// moves forward, as in the model without Skew.
 
 enum _AssignOp { auto, manual, destroy, delete, deliver, retire, crash, wake }
 
@@ -48,14 +50,6 @@ const _maxCreations = 3;
 const _maxDestroys = 1;
 const _maxCrashes = 1;
 
-/// Is [write] about agent [agentId]: its identity, state, or a link from it?
-bool _concerns(ReplicaWrite write, String agentId) =>
-    write.message.mapOrNull(
-      agentEntity: (m) => m.agentEntity?.agentId == agentId,
-      agentLink: (m) => m.agentLink?.fromId == agentId,
-    ) ??
-    false;
-
 /// Does applying [write] schedule the pass, as `SyncEventProcessor` does:
 /// a live `agent_task` link, or a task agent's identity?
 bool _schedulesPass(ReplicaWrite write) =>
@@ -84,6 +78,9 @@ class _AssignDevice {
 
   /// A receive scheduled the pass, which has not run yet.
   bool pending = false;
+
+  /// Ghost (`gone`): the agents this device deleted.
+  final deleted = <String>{};
 
   /// The follow-up's auto-assignment has run on this device.
   bool autoDone = false;
@@ -221,19 +218,22 @@ class _AssignWorld {
         );
         lastDestroy = _now;
       case _AssignOp.delete:
-        // Only once every write about the agent has arrived (the model's
-        // guard; see its residual in the README).
-        final pending = network.pendingFor(device.replica);
-        final dead = [
-          for (final e in (await device.held()).values)
-            if (e.lifecycle == AgentLifecycle.destroyed &&
-                !pending.any((i) => _concerns(network.sent[i], e.agentId)))
-              e.agentId,
-        ]..sort();
+        // Any agent whose identity this device holds destroyed — its link
+        // need not have arrived — whether or not every write about it has
+        // (EarlyHardDelete): a late one is refused (DeletedStaysDeleted).
+        final dead = <String>[];
+        for (final agentId in born.keys) {
+          final identity = await device.replica.repository.getEntity(agentId);
+          if (identity is AgentIdentityEntity &&
+              identity.lifecycle == AgentLifecycle.destroyed) {
+            dead.add(agentId);
+          }
+        }
+        dead.sort();
         if (dead.isEmpty) return;
-        await _at(
-          () => device.agents.deleteAgent(dead[step.arg % dead.length]),
-        );
+        final agentId = dead[step.arg % dead.length];
+        await _at(() => device.agents.deleteAgent(agentId));
+        device.deleted.add(agentId);
       case _AssignOp.deliver:
         final pending = network.pendingFor(device.replica);
         if (pending.isEmpty) return;
@@ -303,6 +303,30 @@ class _AssignWorld {
     if (assignedSince) {
       expect(live.first, isNotEmpty, reason: 'KeepsAgent: $trace');
     }
+    await checkDeletedStaysDeleted(trace);
+  }
+
+  /// DeletedStaysDeleted: a device holds no row of an agent it deleted —
+  /// neither the agent's entities nor a link to or from it.
+  Future<void> checkDeletedStaysDeleted(Object trace) async {
+    for (final device in devices) {
+      for (final agentId in device.deleted) {
+        final repository = device.replica.repository;
+        expect(
+          await repository.getEntityIncludingDeleted(agentId),
+          isNull,
+          reason: 'DeletedStaysDeleted on ${device.replica.host}: $trace',
+        );
+        expect(
+          [
+            ...await repository.getLinksFrom(agentId),
+            ...await repository.getLinksTo(agentId),
+          ],
+          isEmpty,
+          reason: 'DeletedStaysDeleted on ${device.replica.host}: $trace',
+        );
+      }
+    }
   }
 
   Future<void> close() => network.close();
@@ -355,6 +379,48 @@ void _registerTaskAgentAssignmentConformance() {
         for (final device in world.devices) {
           expect(await device.live(), {later});
         }
+      } finally {
+        await world.close();
+      }
+    });
+
+    test('DeletedStaysDeleted: a device that deletes an agent before the '
+        'rest of its writes arrive never holds it again', () async {
+      final world = _AssignWorld();
+      try {
+        await world.setUp();
+        final a = world.devices[0];
+        final b = world.devices[1];
+        final trace = [
+          const _AssignStep(auto, 0, 0),
+          const _AssignStep(_AssignOp.destroy, 0, 0),
+        ];
+        for (final step in trace) {
+          await world.run(step, trace);
+        }
+        final agentId = world.born.keys.single;
+        // B receives the destroy before the agent's creation and its link,
+        // and deletes the agent; everything else arrives afterwards.
+        final destroyed = world.network
+            .pendingFor(b.replica)
+            .lastWhere(
+              (i) =>
+                  world.network.sent[i].message.mapOrNull(
+                    agentEntity: (m) =>
+                        m.agentEntity is AgentIdentityEntity &&
+                        (m.agentEntity! as AgentIdentityEntity).lifecycle ==
+                            AgentLifecycle.destroyed,
+                  ) ??
+                  false,
+            );
+        await b.replica.receive(destroyed);
+        await world.run(const _AssignStep(_AssignOp.delete, 1, 0), trace);
+        expect(b.deleted, {agentId});
+
+        await world.settle();
+        await world.checkQuiescent(trace);
+        expect(await b.live(), isEmpty);
+        expect(await a.live(), isEmpty);
       } finally {
         await world.close();
       }

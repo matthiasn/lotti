@@ -641,6 +641,11 @@ class AgentRepository {
     return removed;
   }
 
+  /// The ids among [agentIds] of agents this device deleted
+  /// ([hardDeleteAgent]): sync refuses every write about them (ADR 0108).
+  Future<Set<String>> deletedAgentIdsAmong(Iterable<String> agentIds) =>
+      _links.deletedAgentIdsAmong(agentIds);
+
   // ── Retention ───────────────────────────────────────────────────────────
 
   /// Deletes day-status events created before [cutoff], keeping each day's

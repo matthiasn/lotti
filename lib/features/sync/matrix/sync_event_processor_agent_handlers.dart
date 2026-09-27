@@ -185,14 +185,33 @@ extension _AgentHandlers on SyncEventProcessor {
       // the case ADR 0081's addendum closes for the remaining types. The
       // stored row is read with its tombstone, so a removal is never
       // replaced by a late copy of the live entity it removed.
+      //
+      // A write about an agent this device deleted is refused in the same
+      // transaction: its rows are gone, and inserting them again would bring
+      // the agent back (ADR 0108, `TaskAgentAssignment.tla`
+      // DeletedStaysDeleted).
       final outcome = await agentRepository!.runInTransaction(
-        () => _resolveAndPersistAgentEntity(
-          incoming: resolvedEntity,
-          jsonPath: msg.jsonPath,
-          pendingProjectActivityAtWasPresent:
-              pendingProjectActivityAtWasPresent,
-        ),
+        () async =>
+            await refusesWriteAboutDeletedAgent(agentRepository!, {
+              resolvedEntity.agentId,
+            })
+            ? null
+            : await _resolveAndPersistAgentEntity(
+                incoming: resolvedEntity,
+                jsonPath: msg.jsonPath,
+                pendingProjectActivityAtWasPresent:
+                    pendingProjectActivityAtWasPresent,
+              ),
       );
+      if (outcome == null) {
+        await _discardReceivedAgentJson(msg.jsonPath, kind: 'agentEntity');
+        _trace(
+          'apply.agentEntity.refusedDeletedAgent id=${resolvedEntity.id}',
+          subDomain: 'processor.apply',
+        );
+        await _recordReceivedAgentEntity(msg: msg, entity: resolvedEntity);
+        return;
+      }
       final entityToApply = outcome.written;
       if (entityToApply == null) {
         AgentIdentityEntity? projectIdentity;
@@ -426,12 +445,29 @@ extension _AgentHandlers on SyncEventProcessor {
       return;
     }
     if (agentRepository != null) {
+      // A link to or from an agent this device deleted is refused, as its
+      // entities are (ADR 0108).
       final applied = await agentRepository!.runInTransaction(
-        () => _resolveAndPersistAgentLink(
-          incoming: resolvedLink,
-          jsonPath: msg.jsonPath,
-        ),
+        () async =>
+            await refusesWriteAboutDeletedAgent(agentRepository!, {
+              resolvedLink.fromId,
+              resolvedLink.toId,
+            })
+            ? null
+            : await _resolveAndPersistAgentLink(
+                incoming: resolvedLink,
+                jsonPath: msg.jsonPath,
+              ),
       );
+      if (applied == null) {
+        await _discardReceivedAgentJson(msg.jsonPath, kind: 'agentLink');
+        _trace(
+          'apply.agentLink.refusedDeletedAgent id=${resolvedLink.id}',
+          subDomain: 'processor.apply',
+        );
+        await _recordReceivedAgentLink(msg: msg, link: resolvedLink);
+        return;
+      }
       if (!applied) {
         await _recordReceivedAgentLink(msg: msg, link: resolvedLink);
         return;
@@ -826,6 +862,27 @@ extension _AgentHandlers on SyncEventProcessor {
     }
     await agentRepository!.upsertLink(incoming);
     return true;
+  }
+
+  /// Removes the JSON a refused write about a deleted agent brought with it:
+  /// the deletion took the agent's own files (`AgentSidecarReclaimer`), and a
+  /// late copy must not leave its content on disk after all.
+  Future<void> _discardReceivedAgentJson(
+    String? jsonPath, {
+    required String kind,
+  }) async {
+    if (jsonPath == null) return;
+    try {
+      final file = _resolveJsonCandidateFile(jsonPath);
+      if (file.existsSync()) await file.delete();
+    } on FileSystemException catch (e, st) {
+      _loggingService.error(
+        LogDomain.sync,
+        e,
+        stackTrace: st,
+        subDomain: 'apply.$kind.discardDeletedAgentJson',
+      );
+    }
   }
 
   Future<void> _restoreDominantAgentCache({

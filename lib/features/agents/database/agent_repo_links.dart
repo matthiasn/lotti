@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:drift/drift.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_db_conversions.dart';
@@ -629,7 +630,9 @@ class AgentRepoLinks {
   // ── Hard delete ─────────────────────────────────────────────────────────
 
   /// Permanently delete **all** data for [agentId]: entities, links, saga ops,
-  /// and wake-run log entries.
+  /// and wake-run log entries — and record the agent as deleted, in the same
+  /// transaction, so a write about it that sync delivers afterwards is
+  /// refused rather than inserted again ([deletedAgentIdsAmong], ADR 0108).
   ///
   /// This is irreversible. Only call for agents whose lifecycle is
   /// [AgentLifecycle.destroyed].
@@ -678,7 +681,16 @@ class AgentRepoLinks {
       await _db.deleteAgentWakeRuns(agentId);
       await _db.deleteAgentLinks(agentId);
       await _db.deleteAgentEntities(agentId);
+      await _db.recordDeletedAgent(agentId, clock.now());
       return (entityIds: entityIds, linkIds: linkIds);
     });
+  }
+
+  /// The ids among [agentIds] of agents this device deleted
+  /// ([hardDeleteAgent]).
+  Future<Set<String>> deletedAgentIdsAmong(Iterable<String> agentIds) async {
+    final ids = agentIds.toSet().toList();
+    if (ids.isEmpty) return const {};
+    return (await _db.deletedAgentIdsAmong(ids).get()).toSet();
   }
 }

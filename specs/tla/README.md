@@ -2928,12 +2928,16 @@ here, is
 | `KeepsAgent` | invariant | no over-retirement: when an agent was assigned after the user's last destroy (or the user destroyed none), the task keeps a live agent |
 | `KeepsAgentUndestroyed` | invariant | the weaker form that holds under clock skew: when the user destroyed no agent of the task, one stays |
 | `NoSupersededWake` | invariant | a wake runs only for the agent its device ranks first |
+| `DeletedStaysDeleted` | invariant | a device that deleted an agent never holds its identity or its link again, whatever arrives late ([ADR 0108](../../docs/adr/0108-a-deleted-agent-stays-deleted.md)) |
 
 | Configuration | Devices | Agent ids | Destroys | Crashes | Start | Clock | Distinct states |
 |---------------|---------|-----------|----------|---------|-------|-------|-----------------|
-| `TaskAgentAssignment` | 2 | 3 | 1 | 1 | empty | creation order | 2,715,340 |
-| `TaskAgentAssignmentSkew` | 2 | 3 | 1 | 0 | empty | any order (`KeepsAgentUndestroyed` only) | 11,181,541 |
-| `TaskAgentAssignmentLegacy` | 2 | 3 | 1 | 1 | two live agents on both devices | creation order | 5,296 |
+| `TaskAgentAssignment` | 2 | 3 | 1 | 1 | empty | creation order | 3,195,988 |
+| `TaskAgentAssignmentSkew` | 2 | 3 | 1 | 0 | empty | any order (`KeepsAgentUndestroyed` only) | 14,340,301 |
+| `TaskAgentAssignmentLegacy` | 2 | 3 | 1 | 1 | two live agents on both devices | creation order | 3,880 |
+
+Every configuration lets a hard delete run while writes about the agent are
+still on their way (`EarlyHardDelete`).
 
 Each rule has a switch. To see a counterexample, copy the spec and a
 configuration to a directory outside this one, set the switch to `FALSE`,
@@ -2947,6 +2951,17 @@ mutation must never be checked in.
 | `StartupRetire` | no pass at startup | `TaskAgentAssignmentLegacy` fails `AtMostOneLive` in its initial state: nothing arrives, so nothing ranks the two agents an older build left. With two crashes allowed, the base configuration fails in 9 states: each device dies between a receive and its pass |
 | `WakeGate` | a wake runs without a pass | `NoSupersededWake`, 6 states: A holds B's later agent, its pass not yet run, and wakes its own |
 | `SharedRank` | each device keeps the agent it created | `KeepsAgent`, 12 states: each device retires the other's agent, the two retirements cross, and the task is left with none. `NoSupersededWake` fails first, in 6 states |
+| `DeletedTombstone` | `AgentService.deleteAgent` hard-deleted the agent's rows and kept nothing, so nothing remembered the deletion | `DeletedStaysDeleted`, 6 states: A creates an agent and destroys it; B receives the destroy before the agent's creation and its link, deletes the agent, and the late link (or creation) inserts it again. Before ADR 0108 the model's `HardDelete` waited for every write about the agent, and relaxing that broke `LiveAgreed` in 8 states |
+
+The tombstone is `deleted_agents` in the agent database (schema v23):
+`hardDeleteAgent` records the agent in the transaction that deletes its
+rows, and the two receive paths — `SyncEventProcessor`'s agent entity and
+agent link handlers — ask `refusesWriteAboutDeletedAgent` inside the
+transaction that would write, then drop the JSON the refused message brought.
+The conformance trace (`task_agent_retirement_model_conformance.dart`) lets
+its delete step run early and checks `DeletedStaysDeleted` once settled,
+receiving through `AgentTestDevice`, which calls the same function; it pins
+the six-state trace, which fails with the check switched off.
 
 What the model leaves out, or shows as a residual:
 
@@ -2957,17 +2972,18 @@ What the model leaves out, or shows as a residual:
   and retires it in favour of the destroyed a1. The skew has to exceed the
   time between the two assignments, and the user assigns again.
   `KeepsAgentUndestroyed` holds under any skew.
-- **A hard delete leaves no tombstone.** `AgentService.deleteAgent` deletes
-  an agent's rows locally. With the delete allowed before every write about
-  the agent has arrived, TLC breaks `LiveAgreed` in 8 states. B receives
-  a1's destroy before its creation, deletes it, and the late creation inserts
-  it again as live. This affects every agent kind and predates this spec, so
-  the model's `HardDelete` waits for every write about the agent.
+- **Agents deleted before ADR 0108** are not recorded as deleted: their
+  late writes still insert rows. Every deletion from then on is.
 - **A loser may run before its device sees the winner.** The model's wakes
   are decisions, not inference. A wake that ran before its device held the
   winner keeps its report and proposals. The retirement stops the next one.
 - **Three devices** add only arrival orders. The rule is pairwise, and a
   three-device configuration outgrows a CI shard.
+- **The tombstone is checked per write, by agent id.** A link between two
+  of a deleted agent's own entities (`messagePrev`) names neither end as the
+  agent, so it is not refused: it is written, and points at two entities
+  that were (every entity names its agent). A row joining nothing, read by
+  nothing.
 - The model's lifecycle only moves from live to destroyed. A concurrent
   identity edit (a config change) can win the lifecycle merge and revive a
   retired agent. The pass then runs again on the next receive, wake or start,

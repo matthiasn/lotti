@@ -73,8 +73,15 @@ CONSTANTS
     RetireOnReceive, \* a received link or identity schedules the pass
     StartupRetire,   \* the next start runs the pass
     WakeGate,        \* a wake runs the pass first; a retired agent stops
-    SharedRank       \* the pass ranks by replicated data; FALSE keeps the
+    SharedRank,      \* the pass ranks by replicated data; FALSE keeps the
                      \* agent this device created
+    EarlyHardDelete, \* a hard delete may run while writes about the agent
+                     \* are still on their way (FALSE: only after every
+                     \* write about it arrived — the assumption before ADR
+                     \* 0108)
+    DeletedTombstone \* a hard delete records the agent as deleted, and a
+                     \* device refuses every write about an agent it deleted
+                     \* (ADR 0108)
 
 ASSUME /\ LegacyAgents \subseteq Agents
        /\ Cardinality(LegacyAgents) = 2
@@ -97,10 +104,12 @@ VARIABLES
     lastDestroy, \* ghost: when the user last destroyed an agent
     destroyed,   \* ghost: agents the user destroyed
     badWake,     \* ghost: a wake ran for an agent its device ranks second
+    gone,        \* per device: the agents it hard-deleted (the tombstone;
+                 \* recorded whether or not the device consults it)
     crashes
 
 vars == <<link, ident, inbox, pending, rank, creator, autoDone, now, born,
-          lastDestroy, destroyed, badWake, crashes>>
+          lastDestroy, destroyed, badWake, gone, crashes>>
 
 LegacyRank(a) == IF a = CHOOSE x \in LegacyAgents : TRUE THEN 1 ELSE 2
 
@@ -123,6 +132,7 @@ Init ==
     /\ lastDestroy = 0
     /\ destroyed = {}
     /\ badWake = FALSE
+    /\ gone = [d \in Devices |-> {}]
     /\ crashes = 0
 
 -----------------------------------------------------------------------------
@@ -173,7 +183,7 @@ Create(d, how) ==
     /\ now' = now + 1
     /\ autoDone' = IF how = "auto"
                    THEN [autoDone EXCEPT ![d] = TRUE] ELSE autoDone
-    /\ UNCHANGED <<pending, lastDestroy, destroyed, badWake, crashes>>
+    /\ UNCHANGED <<pending, lastDestroy, destroyed, badWake, gone, crashes>>
 
 Destroy(d, a) ==
     /\ Cardinality(destroyed) < MaxDestroys
@@ -184,22 +194,28 @@ Destroy(d, a) ==
     /\ now' = now + 1
     /\ lastDestroy' = now + 1
     /\ UNCHANGED <<link, pending, rank, creator, autoDone, born, badWake,
-                   crashes>>
+                   gone, crashes>>
 
-\* Only once every write about the agent has arrived: a hard delete before
-\* a late live copy lets that copy insert the agent again (see README).
+\* AgentService.deleteAgent: the agent's rows go, and the agent is recorded
+\* as deleted in the same transaction (DeletedTombstone). Without
+\* EarlyHardDelete it waits until every write about the agent has arrived.
 HardDelete(d, a) ==
     /\ ident[d][a] = "dead"
-    /\ \A m \in inbox[d] : m.a # a
+    /\ ~EarlyHardDelete => \A m \in inbox[d] : m.a # a
     /\ ident' = [ident EXCEPT ![d][a] = "none"]
     /\ link' = [link EXCEPT ![d] = @ \ {a}]
+    /\ gone' = [gone EXCEPT ![d] = @ \cup {a}]
     /\ UNCHANGED <<inbox, pending, rank, creator, autoDone, now, born,
                    lastDestroy, destroyed, badWake, crashes>>
 
+\* A write about an agent this device deleted is refused (the receive
+\* resolvers, inside the write's transaction).
 Receive(d, m) ==
     /\ m \in inbox[d]
     /\ inbox' = [inbox EXCEPT ![d] = @ \ {m}]
-    /\ IF m.kind = "link"
+    /\ IF DeletedTombstone /\ m.a \in gone[d]
+       THEN UNCHANGED <<link, ident>>
+       ELSE IF m.kind = "link"
        THEN /\ link' = [link EXCEPT ![d] = @ \cup {m.a}]
             /\ UNCHANGED ident
        ELSE /\ ident' = [ident EXCEPT ![d][m.a] =
@@ -208,14 +224,14 @@ Receive(d, m) ==
             /\ UNCHANGED link
     /\ pending' = [pending EXCEPT ![d] = RetireOnReceive]
     /\ UNCHANGED <<rank, creator, autoDone, now, born, lastDestroy,
-                   destroyed, badWake, crashes>>
+                   destroyed, badWake, gone, crashes>>
 
 Retire(d) ==
     /\ pending[d]
     /\ pending' = [pending EXCEPT ![d] = FALSE]
     /\ RetireOn(d)
     /\ UNCHANGED <<link, rank, creator, autoDone, now, born, lastDestroy,
-                   destroyed, badWake, crashes>>
+                   destroyed, badWake, gone, crashes>>
 
 \* A wake of a live agent. The gate's pass and its verdict are one step: the
 \* pass commits before the wake reads anything, and the wake runs only if
@@ -226,14 +242,14 @@ Wake(d, a) ==
        badWake' = (badWake \/ (runs /\ a # Top(Ranked(d))))
     /\ IF WakeGate THEN RetireOn(d) ELSE UNCHANGED <<ident, inbox>>
     /\ UNCHANGED <<link, pending, rank, creator, autoDone, now, born,
-                   lastDestroy, destroyed, crashes>>
+                   lastDestroy, destroyed, gone, crashes>>
 
 Crash(d) ==
     /\ crashes < MaxCrashes
     /\ crashes' = crashes + 1
     /\ pending' = [pending EXCEPT ![d] = StartupRetire]
     /\ UNCHANGED <<link, ident, inbox, rank, creator, autoDone, now, born,
-                   lastDestroy, destroyed, badWake>>
+                   lastDestroy, destroyed, badWake, gone>>
 
 Next ==
     \E d \in Devices :
@@ -257,6 +273,7 @@ TypeOK ==
     /\ creator \in [Agents -> Devices \cup {"none"}]
     /\ destroyed \subseteq Created
     /\ badWake \in BOOLEAN
+    /\ gone \in [Devices -> SUBSET Agents]
 
 \* Every write has arrived everywhere and every pass it scheduled has run.
 Quiescent == \A d \in Devices : inbox[d] = {} /\ ~pending[d]
@@ -284,4 +301,11 @@ KeepsAgentUndestroyed ==
 \* link of the task: the loser of a race stops at its next wake, whatever
 \* the sync has delivered.
 NoSupersededWake == ~badWake
+
+\* A device that deleted an agent never holds it again: no late write about
+\* it — its creation, a link, a lifecycle — brings back its identity or its
+\* link.
+DeletedStaysDeleted ==
+    \A d \in Devices : \A a \in gone[d] :
+        ident[d][a] = "none" /\ a \notin link[d]
 =============================================================================

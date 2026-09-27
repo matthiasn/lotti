@@ -111,13 +111,20 @@ class AgentTestDevice {
   ];
 
   /// Receives [incoming] the way `SyncEventProcessor` applies an agent
-  /// entity: through [resolveReceivedAgentEntity] — the stored row, a
+  /// entity: refused when this device deleted its agent
+  /// ([refusesWriteAboutDeletedAgent]), else through
+  /// [resolveReceivedAgentEntity] — the stored row, a
   /// tombstone included, resolved by [resolveAgentEntityVersions] (for two
   /// agent-state rows, with the order of their heads in the local message
   /// DAG) — and written in the same transaction. A malformed clock fails the
   /// test rather than being logged.
   Future<void> receiveEntity(AgentDomainEntity incoming) =>
       repository.runInTransaction(() async {
+        if (await refusesWriteAboutDeletedAgent(repository, {
+          incoming.agentId,
+        })) {
+          return;
+        }
         final receipt = await resolveReceivedAgentEntity(
           repository,
           incoming,
@@ -128,10 +135,17 @@ class AgentTestDevice {
       });
 
   /// Receives [incoming] the way `SyncEventProcessor` applies an agent link:
-  /// the stored version, a tombstone included, read and written in one
+  /// refused when this device deleted an agent at either end, else the
+  /// stored version, a tombstone included, read and written in one
   /// transaction, resolved by [resolveAgentLinkVersions].
   Future<void> receiveLink(AgentLink incoming) =>
       repository.runInTransaction(() async {
+        if (await refusesWriteAboutDeletedAgent(repository, {
+          incoming.fromId,
+          incoming.toId,
+        })) {
+          return;
+        }
         final local = await repository.getLinkByIdIncludingDeleted(
           incoming.id,
         );

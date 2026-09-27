@@ -37,7 +37,7 @@ class AgentDatabase extends _$AgentDatabase {
 
   /// The schema this build writes. A restored backup may carry an
   /// older schema, which Drift migrates, but never a newer one.
-  static const int currentSchemaVersion = 22;
+  static const int currentSchemaVersion = 23;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -511,6 +511,12 @@ class AgentDatabase extends _$AgentDatabase {
             "WHERE type NOT IN ('message_payload', 'soul_assignment', "
             "'improver_target')",
           );
+        }
+        if (from < 23) {
+          // What remembers an agent deletion once its rows are gone (ADR
+          // 0108). Agents deleted before this build are not recorded: their
+          // late writes behave as before.
+          await m.createTable(deletedAgents);
         }
       },
     );

@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:drift/drift.dart' show Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
@@ -672,6 +673,29 @@ void main() {
 
       expect(await links.getLinksFrom('agent-del'), isEmpty);
       expect(await getWakeRun(db, 'run-del'), isNull);
+    });
+
+    test('records the agent as deleted, for sync to refuse its late writes '
+        '(ADR 0108)', () async {
+      expect(await links.deletedAgentIdsAmong(['agent-del']), isEmpty);
+
+      await withClock(
+        Clock.fixed(testDate),
+        () => links.hardDeleteAgent('agent-del'),
+      );
+
+      expect(
+        await links.deletedAgentIdsAmong(['agent-del', 'agent-other']),
+        {'agent-del'},
+      );
+      expect(await links.deletedAgentIdsAmong(const []), isEmpty);
+      // Deleting again keeps the one record.
+      await links.hardDeleteAgent('agent-del');
+      final rows = await db
+          .customSelect('SELECT agent_id, deleted_at FROM deleted_agents')
+          .get();
+      expect(rows.map((r) => r.read<String>('agent_id')), ['agent-del']);
+      expect(rows.single.read<DateTime>('deleted_at'), testDate);
     });
 
     test('reports links between two of the agent-owned entities', () async {

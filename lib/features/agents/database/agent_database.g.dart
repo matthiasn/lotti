@@ -4375,6 +4375,225 @@ class SagaLogCompanion extends UpdateCompanion<SagaLogData> {
   }
 }
 
+class DeletedAgents extends Table with TableInfo<DeletedAgents, DeletedAgent> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  DeletedAgents(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _agentIdMeta = const VerificationMeta(
+    'agentId',
+  );
+  late final GeneratedColumn<String> agentId = GeneratedColumn<String>(
+    'agent_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL PRIMARY KEY',
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  @override
+  List<GeneratedColumn> get $columns => [agentId, deletedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'deleted_agents';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DeletedAgent> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('agent_id')) {
+      context.handle(
+        _agentIdMeta,
+        agentId.isAcceptableOrUnknown(data['agent_id']!, _agentIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_agentIdMeta);
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_deletedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {agentId};
+  @override
+  DeletedAgent map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DeletedAgent(
+      agentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}agent_id'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      )!,
+    );
+  }
+
+  @override
+  DeletedAgents createAlias(String alias) {
+    return DeletedAgents(attachedDatabase, alias);
+  }
+
+  @override
+  bool get dontWriteConstraints => true;
+}
+
+class DeletedAgent extends DataClass implements Insertable<DeletedAgent> {
+  final String agentId;
+  final DateTime deletedAt;
+  const DeletedAgent({required this.agentId, required this.deletedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['agent_id'] = Variable<String>(agentId);
+    map['deleted_at'] = Variable<DateTime>(deletedAt);
+    return map;
+  }
+
+  DeletedAgentsCompanion toCompanion(bool nullToAbsent) {
+    return DeletedAgentsCompanion(
+      agentId: Value(agentId),
+      deletedAt: Value(deletedAt),
+    );
+  }
+
+  factory DeletedAgent.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DeletedAgent(
+      agentId: serializer.fromJson<String>(json['agent_id']),
+      deletedAt: serializer.fromJson<DateTime>(json['deleted_at']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'agent_id': serializer.toJson<String>(agentId),
+      'deleted_at': serializer.toJson<DateTime>(deletedAt),
+    };
+  }
+
+  DeletedAgent copyWith({String? agentId, DateTime? deletedAt}) => DeletedAgent(
+    agentId: agentId ?? this.agentId,
+    deletedAt: deletedAt ?? this.deletedAt,
+  );
+  DeletedAgent copyWithCompanion(DeletedAgentsCompanion data) {
+    return DeletedAgent(
+      agentId: data.agentId.present ? data.agentId.value : this.agentId,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DeletedAgent(')
+          ..write('agentId: $agentId, ')
+          ..write('deletedAt: $deletedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(agentId, deletedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DeletedAgent &&
+          other.agentId == this.agentId &&
+          other.deletedAt == this.deletedAt);
+}
+
+class DeletedAgentsCompanion extends UpdateCompanion<DeletedAgent> {
+  final Value<String> agentId;
+  final Value<DateTime> deletedAt;
+  final Value<int> rowid;
+  const DeletedAgentsCompanion({
+    this.agentId = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DeletedAgentsCompanion.insert({
+    required String agentId,
+    required DateTime deletedAt,
+    this.rowid = const Value.absent(),
+  }) : agentId = Value(agentId),
+       deletedAt = Value(deletedAt);
+  static Insertable<DeletedAgent> custom({
+    Expression<String>? agentId,
+    Expression<DateTime>? deletedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (agentId != null) 'agent_id': agentId,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DeletedAgentsCompanion copyWith({
+    Value<String>? agentId,
+    Value<DateTime>? deletedAt,
+    Value<int>? rowid,
+  }) {
+    return DeletedAgentsCompanion(
+      agentId: agentId ?? this.agentId,
+      deletedAt: deletedAt ?? this.deletedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (agentId.present) {
+      map['agent_id'] = Variable<String>(agentId.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DeletedAgentsCompanion(')
+          ..write('agentId: $agentId, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AgentDatabase extends GeneratedDatabase {
   _$AgentDatabase(QueryExecutor e) : super(e);
   _$AgentDatabase.connect(DatabaseConnection c) : super.connect(c);
@@ -4504,6 +4723,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     'idx_saga_log_agent',
     'CREATE INDEX idx_saga_log_agent ON saga_log (agent_id)',
   );
+  late final DeletedAgents deletedAgents = DeletedAgents(this);
   Selectable<AgentEntity> getAgentEntitiesByAgentId(String agentId, int limit) {
     return customSelect(
       'SELECT * FROM agent_entities WHERE agent_id = ?1 AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
@@ -4655,6 +4875,25 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
       updates: {agentEntities},
       updateKind: UpdateKind.delete,
     );
+  }
+
+  Future<int> recordDeletedAgent(String agentId, DateTime deletedAt) {
+    return customInsert(
+      'INSERT OR IGNORE INTO deleted_agents (agent_id, deleted_at) VALUES (?1, ?2)',
+      variables: [Variable<String>(agentId), Variable<DateTime>(deletedAt)],
+      updates: {deletedAgents},
+    );
+  }
+
+  Selectable<String> deletedAgentIdsAmong(List<String> agentIds) {
+    var $arrayStartIndex = 1;
+    final expandedagentIds = $expandVar($arrayStartIndex, agentIds.length);
+    $arrayStartIndex += agentIds.length;
+    return customSelect(
+      'SELECT agent_id FROM deleted_agents WHERE agent_id IN ($expandedagentIds)',
+      variables: [for (var $ in agentIds) Variable<String>($)],
+      readsFrom: {deletedAgents},
+    ).map((QueryRow row) => row.read<String>('agent_id'));
   }
 
   Future<int> deleteAgentLinks(String agentId) {
@@ -5055,6 +5294,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     idxWakeRunLogAgentThread,
     sagaLog,
     idxSagaLogAgent,
+    deletedAgents,
   ];
 }
 
@@ -7105,6 +7345,149 @@ typedef $SagaLogProcessedTableManager =
       SagaLogData,
       PrefetchHooks Function()
     >;
+typedef $DeletedAgentsCreateCompanionBuilder =
+    DeletedAgentsCompanion Function({
+      required String agentId,
+      required DateTime deletedAt,
+      Value<int> rowid,
+    });
+typedef $DeletedAgentsUpdateCompanionBuilder =
+    DeletedAgentsCompanion Function({
+      Value<String> agentId,
+      Value<DateTime> deletedAt,
+      Value<int> rowid,
+    });
+
+class $DeletedAgentsFilterComposer
+    extends Composer<_$AgentDatabase, DeletedAgents> {
+  $DeletedAgentsFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get agentId => $composableBuilder(
+    column: $table.agentId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $DeletedAgentsOrderingComposer
+    extends Composer<_$AgentDatabase, DeletedAgents> {
+  $DeletedAgentsOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get agentId => $composableBuilder(
+    column: $table.agentId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $DeletedAgentsAnnotationComposer
+    extends Composer<_$AgentDatabase, DeletedAgents> {
+  $DeletedAgentsAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get agentId =>
+      $composableBuilder(column: $table.agentId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+}
+
+class $DeletedAgentsTableManager
+    extends
+        RootTableManager<
+          _$AgentDatabase,
+          DeletedAgents,
+          DeletedAgent,
+          $DeletedAgentsFilterComposer,
+          $DeletedAgentsOrderingComposer,
+          $DeletedAgentsAnnotationComposer,
+          $DeletedAgentsCreateCompanionBuilder,
+          $DeletedAgentsUpdateCompanionBuilder,
+          (
+            DeletedAgent,
+            BaseReferences<_$AgentDatabase, DeletedAgents, DeletedAgent>,
+          ),
+          DeletedAgent,
+          PrefetchHooks Function()
+        > {
+  $DeletedAgentsTableManager(_$AgentDatabase db, DeletedAgents table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $DeletedAgentsFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $DeletedAgentsOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $DeletedAgentsAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> agentId = const Value.absent(),
+                Value<DateTime> deletedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DeletedAgentsCompanion(
+                agentId: agentId,
+                deletedAt: deletedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String agentId,
+                required DateTime deletedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => DeletedAgentsCompanion.insert(
+                agentId: agentId,
+                deletedAt: deletedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $DeletedAgentsProcessedTableManager =
+    ProcessedTableManager<
+      _$AgentDatabase,
+      DeletedAgents,
+      DeletedAgent,
+      $DeletedAgentsFilterComposer,
+      $DeletedAgentsOrderingComposer,
+      $DeletedAgentsAnnotationComposer,
+      $DeletedAgentsCreateCompanionBuilder,
+      $DeletedAgentsUpdateCompanionBuilder,
+      (
+        DeletedAgent,
+        BaseReferences<_$AgentDatabase, DeletedAgents, DeletedAgent>,
+      ),
+      DeletedAgent,
+      PrefetchHooks Function()
+    >;
 
 class $AgentDatabaseManager {
   final _$AgentDatabase _db;
@@ -7120,6 +7503,8 @@ class $AgentDatabaseManager {
   $WakeRunLogTableManager get wakeRunLog =>
       $WakeRunLogTableManager(_db, _db.wakeRunLog);
   $SagaLogTableManager get sagaLog => $SagaLogTableManager(_db, _db.sagaLog);
+  $DeletedAgentsTableManager get deletedAgents =>
+      $DeletedAgentsTableManager(_db, _db.deletedAgents);
 }
 
 class AggregateWakeRunMetricsByTemplateIdResult {
