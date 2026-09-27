@@ -134,6 +134,20 @@ therefore adds nothing. The processor's comment called the read
    one that succeeded, the item is reopened only while it still holds the
    revision read before the revert, since a change meanwhile is a later
    decision synced from another device.
+   Every revert is idempotent: run again over the state it left, it reports
+   success. The reopen can fail after a revert that succeeded — the decision
+   read or its transaction throws — leaving the item confirmed with its
+   effect taken back and the Undo offered again; the retry must reach the
+   reopen. The project agent's task removal already reports a task that is
+   gone as removed, and a status already restored needs no restore. The
+   relationship agent's Undo compared the live task with its receipt, so a
+   retry found no task and refused for good — the item stayed confirmed and
+   its task was gone (found in review of #4543). It now reads the tombstone
+   and takes the task as removed when that is the receipt as the removal
+   leaves it, apart from `deletedAt`, `updatedAt` and the vector clock; a
+   task edited before it was deleted still refuses. TLC confirms the
+   stranded item with `RevertIdempotent = FALSE`
+   (`ChangeSetLifecycleUndoRetry` violates `UndoFinishes`).
 7. **An Undo names the decision it undoes.** `ProjectProposalService`
    remembers the effect key its confirmation claimed the item under — read
    from the stored set through `confirmItem(onClaimed:)`, not from the
@@ -145,12 +159,16 @@ therefore adds nothing. The processor's comment called the read
 8. As before, the model gates the code. `ChangeSetLifecycle` gains the key
    generation of an item, deletions and their sync, the Undo in its two
    steps (the revert, which may be refused, and the reopen), and `AddStyle`
-   for a label; the switches `RemoveWins`, `UndoRekeys`, `UndoOwnKey` and
-   `RevertFirst` are mutation points; `NoDuplicateEffects` counts entities that are not deleted, and
-   `ConfirmedIsLive` is new. Three configurations are added:
-   `ChangeSetLifecycleRaceAdd` (a label added on two devices and taken off),
-   `ChangeSetLifecycleUndo` (confirm, Undo, confirm again) and
-   `ChangeSetLifecycleRaceUndo` (an Undo under the race). The Glados
+   for a label; the switches `RemoveWins`, `UndoRekeys`, `UndoOwnKey`,
+   `RevertFirst` and `RevertIdempotent` are mutation points;
+   `NoDuplicateEffects` counts entities that are not deleted, and
+   `ConfirmedIsLive` is new, as are the `"reopenFails"` fault and the
+   liveness property `UndoFinishes` under `FairSpec`. Four configurations
+   are added: `ChangeSetLifecycleRaceAdd` (a label added on two devices and
+   taken off), `ChangeSetLifecycleUndo` (confirm, Undo, confirm again),
+   `ChangeSetLifecycleRaceUndo` (an Undo under the race) and
+   `ChangeSetLifecycleUndoRetry` (an Undo whose reopen fails after its
+   revert, then retried). The Glados
    trace over a real journal database applies eight confirmed items, the new
    ones included, any number of times with the user's edits in between, and a
    generated trace of confirms, Undos — their reverts held, then let
@@ -179,6 +197,10 @@ therefore adds nothing. The processor's comment called the read
 - The project agent's `create_task` whose project link fails is retracted,
   not reverted to pending: the user cannot retry that suggestion, and the
   agent can propose it again.
+- A relationship task deleted untouched by other means — the user deleting it
+  by hand, or on another device — reads as undone too: its Undo reopens the
+  item. The effect is gone either way; a task edited before it was deleted
+  keeps the Undo refused.
 - The Undo's key suffix grows with each Undo of the same item; an item is
   undone a handful of times at most.
 - A device whose confirmation was superseded by a later one from another

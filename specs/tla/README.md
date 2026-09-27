@@ -394,8 +394,9 @@ task, which the user's edit takes off and suppresses), and both replicate by
 message and are received the way the journal receives them — a concurrent
 version is kept aside as a `Conflict` row. The project agent's Undo deletes
 the entity its confirmation created and reopens the item, in two steps — the
-revert, which may be refused (`"revertRefused"` in `Faults`), and the reopen;
-deletions sync as tombstones. Every user decision runs in its own attempt slot, so a confirm of
+revert, which may be refused (`"revertRefused"` in `Faults`), and the reopen,
+which may fail after the revert (`"reopenFails"`), leaving the Undo to be
+retried; deletions sync as tombstones. Every user decision runs in its own attempt slot, so a confirm of
 an item reopened while an earlier dispatch still runs is a second, concurrent
 operation. The ghost `applied` counts, per device, how often each change was
 dispatched and took effect. The decisions are
@@ -428,10 +429,12 @@ ADR 0097: `RemoveWins` (with `AddStyle`, an add applies only to a label the
 user has not taken off — the task's suppressed labels), `UndoRekeys` (an Undo
 that deletes a created entity reopens the item under a new effect key, so
 confirming it again creates anew), `UndoOwnKey` (an Undo acts only while
-the item carries the key its own device's confirmation used) and
+the item carries the key its own device's confirmation used),
 `RevertFirst` (an Undo reverts the effect while the item still shows it
 confirmed, and reopens it only after a revert that succeeded; a refused
-revert writes nothing).
+revert writes nothing) and `RevertIdempotent` (a revert run again over the
+state it left succeeds, so the retry of an Undo whose reopen failed reaches
+the reopen).
 `CrashBeforeLink` is not a fix: it lets the creator stop between the entity
 and its link. `RaceFree` restricts the environment: no item is
 decided on two devices before they have synced. `UserRestoresBase` lets the
@@ -452,6 +455,7 @@ cannot see.
 | `EffectsConverge` | invariant | once everything, entities and fields included, is delivered, every replica holds the same entities, the field agrees unless a `Conflict` row holds a concurrent version, and a change's entity exists exactly when the change was applied somewhere |
 | `SucceededClaimStands` | invariant | an item whose latest claim's dispatch succeeded reads `confirmed` |
 | `EffectsLinked` | invariant | with `SeparateAttach`: once everything is delivered, every created entity is linked to its parent on every device |
+| `UndoFinishes` | liveness (`FairSpec`) | an Undo whose revert succeeded finishes: the item is reopened, or found to show a later decision — never left confirmed with its entity deleted and an Undo that can no longer run. `FairSpec` assumes the user retries an Undo offered again |
 
 | Configuration | Devices | Items | Checks | Distinct states |
 |---------------|---------|-------|--------|-----------------|
@@ -468,6 +472,7 @@ cannot see.
 | `ChangeSetLifecycleRaceAdd` | 2 | one label suggestion decided on both devices, the label taken off once per device, retryable failures | `Converged`, `NoClobber`, `EffectsConverge` | 197,946 |
 | `ChangeSetLifecycleUndo` | 1 | one create-style item confirmed, undone and confirmed again; retryable failures, refused reverts | `SucceededClaimStands`, `NoDuplicateEffects`, `ConfirmedIsLive` | 22 |
 | `ChangeSetLifecycleRaceUndo` | 2 | one create-style item decided on both devices, one Undo per device, retryable failures, refused reverts | `Converged`, `NoDuplicateEffects`, `EffectsConverge` | 2,351,210 |
+| `ChangeSetLifecycleUndoRetry` | 1 | as `ChangeSetLifecycleUndo`, the reopen failing after its revert (`"reopenFails"`, two Undos per device), then retried | `SucceededClaimStands`, `NoDuplicateEffects`, `ConfirmedIsLive`, `UndoFinishes` | 37 |
 
 Every configuration also checks `TypeOK`. Each switch set to `FALSE` fails a
 configuration with a short trace (kept outside this directory, as for
@@ -491,6 +496,7 @@ configuration with a short trace (kept outside this directory, as for
 | `RemoveWins = FALSE` | `ChangeSetLifecycleRaceAdd` | `NoClobber` (7 states): one device confirms and adds the label, the user takes it off, the other device — which confirmed the same suggestion — receives the removal and adds the label back |
 | `UndoRekeys = FALSE` | `ChangeSetLifecycleUndo` | `ConfirmedIsLive` (7 states): confirm, apply, Undo (the entity deleted, then the item reopened), confirm, apply — the dispatch finds the deleted entity under the same key and creates nothing |
 | `UndoOwnKey = FALSE` | `ChangeSetLifecycleRaceUndo` | `NoDuplicateEffects` (14 states): both devices confirm; one applies, undoes, confirms and applies again under the new key; the other applies the first decision, receives the later one and undoes it — deleting its own, already deleted entity and reopening the item under a third key, whose confirmation creates a second live entity beside the first device's |
+| `RevertIdempotent = FALSE` | `ChangeSetLifecycleUndoRetry` | `UndoFinishes` (9 states, the last stuttering): the item is confirmed and applied (TLC's trace fails a first dispatch before that); the Undo's revert deletes the entity and its reopen fails; the retry's revert finds no live entity and is refused, for good — the item stays confirmed, its entity deleted, and can never be reopened |
 | `RevertFirst = FALSE` | `ChangeSetLifecycleUndo` | `NoDuplicateEffects` (6 states): confirm, apply; the Undo reopens the item under its new key before its revert runs; the item is confirmed again and the dispatch creates a second entity beside the one not yet deleted. Refusing the revert next (7 states) leaves both for good: the refused revert can no longer put back an item that is not pending |
 
 What stays open — the residuals, each confirmed by TLC:

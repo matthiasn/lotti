@@ -153,6 +153,9 @@ class RelationshipProposalService {
   /// Reopens a rejection, or removes an untouched task and its relationship
   /// link, in that order. Failed cleanup can leave a link to a tombstoned task;
   /// failed deletion always preserves the live link. Changed tasks are refused.
+  /// The removal is retry-safe: when an earlier Undo tombstoned the task but
+  /// failed to reopen the item, a retry finds the untouched tombstone, takes
+  /// the task as removed and reopens the item.
   Future<bool> undo(ChangeSetEntity set, int index) async {
     final key = _key(set.id, index);
     if (set.agentId != relationshipAgentIdFor(set.taskId) || !_busy.add(key)) {
@@ -177,6 +180,9 @@ class RelationshipProposalService {
         index,
         revert: () async {
           final current = await journalDb.journalEntityById(original.id);
+          if (current == null) {
+            return _alreadyRemoved(original, fresh.taskId);
+          }
           if (current != original ||
               current is! Task ||
               current.isDeleted ||
@@ -195,25 +201,7 @@ class RelationshipProposalService {
           // A refused deletion must never detach a live task. Once tombstoned,
           // a leftover link is invisible to relationship task queries and is
           // safe to clean up independently.
-          try {
-            final unlinked = await relationshipRepository.unlinkTask(
-              relationshipId: fresh.taskId,
-              taskId: original.id,
-            );
-            if (!unlinked) {
-              developer.log(
-                'Task removed; relationship link cleanup was refused',
-                name: 'RelationshipProposalService',
-              );
-            }
-          } catch (error, stackTrace) {
-            developer.log(
-              'Task removed; relationship link cleanup failed',
-              name: 'RelationshipProposalService',
-              error: error,
-              stackTrace: stackTrace,
-            );
-          }
+          await _unlinkRemoved(original.id, fresh.taskId);
           return true;
         },
       );
@@ -221,6 +209,67 @@ class RelationshipProposalService {
       return reopened;
     } finally {
       _busy.remove(key);
+    }
+  }
+
+  /// The revert of an Undo whose task is no longer live: a retry after a
+  /// revert that tombstoned the task but whose reopen then failed, leaving
+  /// the item confirmed (ADR 0097). The effect is already taken back when
+  /// the stored tombstone is [original] as the removal leaves it — nothing
+  /// changed but the deletion and its stamps — so the revert succeeds and
+  /// the retry proceeds to the reopen. A purge between the two attempts
+  /// compacts that tombstone to a type-erased row marked `purgedAt` (ADR
+  /// 0095): its content can no longer be compared, but it records that the
+  /// task is gone for good, which is all the Undo takes back, so it counts
+  /// too. A live task changed after the receipt, or one that is missing
+  /// altogether, still refuses.
+  Future<bool> _alreadyRemoved(Task original, String personId) async {
+    final stored = await journalDb.journalEntityByIdIncludingDeleted(
+      original.id,
+    );
+    final removed = stored != null && stored.isPurgedTombstone
+        ? stored.isDeleted
+        : stored is Task && _isRemovedReceipt(stored, original);
+    if (!removed) return false;
+    await _unlinkRemoved(original.id, personId);
+    return true;
+  }
+
+  /// Whether [stored] is the tombstone removing [original] leaves: deleted,
+  /// and equal to [original] apart from the metadata every write restamps
+  /// (`updatedAt`, `vectorClock`) and the deletion itself.
+  static bool _isRemovedReceipt(Task stored, Task original) {
+    if (!stored.isDeleted) return false;
+    final meta = stored.meta.copyWith(
+      updatedAt: original.meta.updatedAt,
+      vectorClock: original.meta.vectorClock,
+      deletedAt: original.meta.deletedAt,
+    );
+    return stored.copyWith(meta: meta) == original;
+  }
+
+  /// Removes the relationship's link to the tombstoned task [taskId]. Best
+  /// effort: the task is gone either way, and a leftover link to it is
+  /// invisible to relationship task queries.
+  Future<void> _unlinkRemoved(String taskId, String personId) async {
+    try {
+      final unlinked = await relationshipRepository.unlinkTask(
+        relationshipId: personId,
+        taskId: taskId,
+      );
+      if (!unlinked) {
+        developer.log(
+          'Task removed; relationship link cleanup was refused',
+          name: 'RelationshipProposalService',
+        );
+      }
+    } catch (error, stackTrace) {
+      developer.log(
+        'Task removed; relationship link cleanup failed',
+        name: 'RelationshipProposalService',
+        error: error,
+        stackTrace: stackTrace,
+      );
     }
   }
 

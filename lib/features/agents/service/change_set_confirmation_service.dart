@@ -462,6 +462,11 @@ class ChangeSetConfirmationService {
   /// a revert that succeeded, the item is reopened only while it still holds
   /// the revision read before it; one that moved on meanwhile shows a later
   /// decision, synced from another device, and is left alone.
+  /// A reopen that fails after the revert succeeded — the decision read or
+  /// the transaction throws — leaves the item confirmed with its effect
+  /// already taken back, and the caller's Undo offered again. [revert] must
+  /// therefore be idempotent: run again over the state it left, it reports
+  /// success, so the retry proceeds to the reopen (ADR 0097).
   /// [effectKey], when given, is the key of the decision [revert] undoes:
   /// the item is reopened only while it still carries that key. An Undo
   /// remembers the decision its own device made, and the item may show a
@@ -518,6 +523,9 @@ class ChangeSetConfirmationService {
     if (revert != null && !await _revertEffect(revert, item, itemIndex)) {
       return false;
     }
+    // From here a failure leaves the effect taken back and the item
+    // confirmed; the Undo's retry runs [revert] again, which then finds its
+    // own result and succeeds (`RevertIdempotent` in the model).
     final standing = await _latestUserDecision(current, itemIndex);
     // The verdict is neutralised in the same transaction that moves the item
     // back to pending, and only while the item still holds the decision this
