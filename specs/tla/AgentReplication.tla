@@ -21,6 +21,10 @@
 (*               field -- a day plan deleted and redrafted, a parsed       *)
 (*               capture item replaced by a re-parse, a template or soul   *)
 (*               deleted, a recommendation set or query chat row cleared   *)
+(*   "seeded"    a default the app seeds under a well-known id at every    *)
+(*               start -- a default template, soul or soul assignment --   *)
+(*               that the user may edit or delete. It starts with no row,  *)
+(*               and `term` is its tombstone, as on the removal kind       *)
 (*                                                                         *)
 (* What is modelled, and where it lives in the Dart code:                  *)
 (*                                                                         *)
@@ -50,6 +54,11 @@
 (*             its current row for the id, or with `deleted` when it has   *)
 (*             none to send                                                *)
 (*   Tick      the wall clock                                              *)
+(*   Seed      AgentTemplateSeeding.seedDefaults and                       *)
+(*             SoulTemplateOps.seedDefaults: a default created under its   *)
+(*             id, built afresh, when the device holds no row for it --    *)
+(*             or, before ADR 0100, when `getEntity` read none, which a    *)
+(*             tombstone is too                                            *)
 (*                                                                         *)
 (* The five design switches are the fixes of ADR 0068; setting one to      *)
 (* FALSE restores the old behaviour and its counterexample (README).       *)
@@ -70,6 +79,12 @@
 (* AtomicReceive) are the fixes of ADR 0081's addendum; they matter only   *)
 (* to the removal kind and to lossy delivery, and leave the other          *)
 (* configurations' state spaces as they were.                              *)
+(*                                                                         *)
+(* The two seed switches (SeedSeesTombstones, SeedYields) are ADR 0100:    *)
+(* a default is seeded only where no row for its id is stored, tombstone   *)
+(* included, and stamped at `SeedTs`, an instant below every write a user  *)
+(* makes, so a deletion concurrent with a seed wins over it. They matter   *)
+(* only to the seeded kind.                                                *)
 (*                                                                         *)
 (* A clock maps each replica to a counter or to `Absent`: a host that has  *)
 (* never written the entity has no entry. `FirstCounter` is the first      *)
@@ -111,15 +126,19 @@ CONSTANTS
     BackfillServesTombstones,  \* backfill answers with a tombstone
     WriteSeesTombstones,       \* the local write resolves against one
     RecreateKeepsFields,       \* a row built afresh over one keeps its fields
-    AtomicReceive              \* the receive reads and writes in one transaction
+    AtomicReceive,             \* the receive reads and writes in one transaction
+    \* Design switches: TRUE is the code after ADR 0100.
+    SeedSeesTombstones,        \* a seed skips an id whose tombstone is stored
+    SeedYields                 \* a seed is stamped below every user write
 
-ASSUME Kind \in {"state", "terminal", "removal"}
+ASSUME Kind \in {"state", "terminal", "removal", "seeded"}
 ASSUME \A b \in {StaleWrites, Throttle, RankDrop, Lossy,
                  ThrottleKeepsTimestamp, CountersJoinAlways,
                  ResolveLocalWrites, ClampTimestamp, IntentWrites,
                  IntentCarriesClock, AbsentBelowZero, CanonAbsentBelowZero,
                  ReceiveSeesTombstones, BackfillServesTombstones,
-                 WriteSeesTombstones, RecreateKeepsFields, AtomicReceive} :
+                 WriteSeesTombstones, RecreateKeepsFields, AtomicReceive,
+                 SeedSeesTombstones, SeedYields} :
             b \in BOOLEAN
 ASSUME FirstCounter \in {0, 1}
 
@@ -149,15 +168,22 @@ CanonGt(a, b) ==
     \E k \in R : /\ CanonRead(a[k]) > CanonRead(b[k])
                 /\ \A j \in R : j < k => CanonRead(a[j]) = CanonRead(b[j])
 
-\* A version: its write id, the replica that wrote it, clock, updatedAt,
-\* override status (on the removal kind, its tombstone), G-counter. A merged
-\* row keeps the id and writer of the version whose fields won. The first
-\* version was written by a host outside R.
-V0 == [id |-> 0, host |-> 0, vc |-> NoClock, ts |-> 0, term |-> FALSE,
-       g |-> Zero]
+\* The instant a seed is stamped at (`agentSeedInstant`, the epoch): below
+\* every instant a user's write can carry.
+SeedTs == -1
 
-\* A removed row.
-Tomb(v) == Kind = "removal" /\ v.term
+\* A version: its write id, the replica that wrote it, clock, updatedAt,
+\* override status (on the removal and seeded kinds, its tombstone),
+\* G-counter, and whether a seed wrote it. A merged row keeps the id, writer
+\* and seed flag of the version whose fields won. The first version was
+\* written by a host outside R; on the seeded kind it stands for no row at
+\* all, which the typed reads cannot tell from a tombstone.
+V0 == [id |-> 0, host |-> 0, vc |-> NoClock,
+       ts |-> IF Kind = "seeded" THEN SeedTs ELSE 0,
+       term |-> Kind = "seeded", g |-> Zero, seed |-> FALSE]
+
+\* A removed row (on the seeded kind, also the row that is not there).
+Tomb(v) == Kind \in {"removal", "seeded"} /\ v.term
 
 VARIABLES
     row,        \* per replica: the persisted row
@@ -232,7 +258,7 @@ BaseRow(r, b) ==
 \* may remove the removal kind's row, or write it live.
 Terms(base) ==
     IF Kind = "state" THEN {FALSE}
-    ELSE IF Kind = "removal" \/ RankDrop THEN BOOLEAN
+    ELSE IF Kind \in {"removal", "seeded"} \/ RankDrop THEN BOOLEAN
     ELSE {base.term, TRUE}
 
 \* A G-counter is only bumped on the row the writer re-read; the snapshot
@@ -275,7 +301,7 @@ NewVersion(r, B, t, tm, inc) ==
         \* clock, so a base that covers P's clock can still lack them.
         g == IF succeeds THEN Join(fields.g, P.g) ELSE fields.g
     IN [id |-> Cardinality(sent) + 1, host |-> r, vc |-> vc,
-        ts |-> ts, term |-> fields.term, g |-> g]
+        ts |-> ts, term |-> fields.term, g |-> g, seed |-> FALSE]
 
 Commit(r, w, inc) ==
     /\ sent' = sent \cup {w}
@@ -292,7 +318,28 @@ Write(r) ==
         LET B == BaseRow(r, b)
         IN /\ tm \in Terms(B)
            /\ inc \in Incs(b)
+           \* A user edits or deletes a default only through a typed read
+           \* (updateTemplate, deleteTemplate, deleteSoul), which finds no
+           \* row where none is stored or the stored one is removed.
+           /\ Kind = "seeded" => ~Tomb(B)
            /\ Commit(r, NewVersion(r, B, t, tm, inc), inc)
+    /\ UNCHANGED <<snap, now, intentLost>>
+
+\* A seed creates the default afresh under its id. Before ADR 0100 it asked
+\* `getEntity`, which reads a tombstone as no row, so a default the user
+\* deleted was built again over its removal -- a re-creation, which succeeds
+\* the removal on every device -- and it was stamped at the wall clock,
+\* where a deletion made concurrently on a device it had not heard from yet
+\* could sort before it. After: only where no row is stored, and at SeedTs.
+Seed(r) ==
+    /\ Kind = "seeded"
+    /\ Cardinality(sent) < MaxWrites
+    /\ IF SeedSeesTombstones THEN row[r].id = 0 ELSE Tomb(row[r])
+    /\ \E t \in IF SeedYields THEN {SeedTs}
+                ELSE (IF now > Skew THEN now - Skew ELSE 0)..now :
+        LET B == [row[r] EXCEPT !.vc = NoClock]
+            w == [NewVersion(r, B, t, FALSE, FALSE) EXCEPT !.seed = TRUE]
+        IN Commit(r, w, FALSE)
     /\ UNCHANGED <<snap, now, intentLost>>
 
 \* A write whose whole point is to move the row against the resolver's
@@ -306,6 +353,7 @@ Write(r) ==
 \* with `getEntity`, sees no row, and builds it afresh.
 Intend(r) ==
     /\ IntentWrites
+    /\ Kind # "seeded"
     /\ Cardinality(sent) < MaxWrites
     /\ Kind = "state" \/ row[r].term
     /\ LET P == row[r]
@@ -397,7 +445,7 @@ Tick ==
 
 Next ==
     \/ Tick
-    \/ \E r \in R : \/ Write(r) \/ Intend(r) \/ Snapshot(r)
+    \/ \E r \in R : \/ Write(r) \/ Intend(r) \/ Seed(r) \/ Snapshot(r)
                    \/ ThrottleDeadline(r) \/ Deliver(r)
                    \/ ReceiveRead(r) \/ ReceiveWrite(r)
                    \/ Lose(r) \/ Backfill(r)
@@ -440,4 +488,12 @@ NoLostIncrement ==
 
 \* A write meant to move the row keeps its fields on the writing device.
 LocalWriteTakesEffect == ~intentLost
+
+\* A deletion of a default is never undone by a seed: a replica that has
+\* received a removal -- its own included -- never holds a seeded version.
+\* A user's edit made concurrently with the removal may still win over it,
+\* by last-writer-wins on their instants, as on the removal kind.
+SeedYieldsToRemoval ==
+    Kind = "seeded" =>
+        \A r \in R : row[r].seed => \A m \in delivered[r] : ~m.term
 =============================================================================

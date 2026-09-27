@@ -142,6 +142,8 @@ SECONDS = {
     "EnvelopeChainRevocation": 15,
     "AgentReplicationRemoval": 596,
     "AgentReplicationRemovalLossy": 61,
+    "AgentReplicationSeed": 60,
+    "AgentReplicationSeedLossy": 10,
     "GoalRegister": 3,
     "GoalRegisterCrash": 23,
     "GoalRegisterDeath": 4,

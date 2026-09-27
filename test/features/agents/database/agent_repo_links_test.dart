@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' show Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_db_conversions.dart';
 import 'package:lotti/features/agents/database/agent_repo_core.dart';
 import 'package:lotti/features/agents/database/agent_repo_links.dart';
 import 'package:lotti/features/agents/database/agent_repository_exception.dart';
@@ -202,6 +203,132 @@ void main() {
         expect(byTask.keys, containsAll(['task-1', 'task-2']));
         expect(byTask['task-1']!.single.fromId, 'agent-1');
         expect(byTask.containsKey('task-3'), isFalse);
+      },
+    );
+  });
+
+  group('upsertLink: a seeded soul assignment yields (ADR 0100)', () {
+    final seedId = seededSoulAssignmentLinkId('template-1');
+    model.AgentLink seed() => makeTestSoulAssignmentLink(
+      id: seedId,
+      fromId: 'template-1',
+      toId: 'soul-default',
+      createdAt: agentSeedInstant,
+      updatedAt: agentSeedInstant,
+    );
+
+    test('is not stored where the template has a removed assignment', () async {
+      final legacy = makeTestSoulAssignmentLink(
+        id: 'legacy',
+        fromId: 'template-1',
+        toId: 'soul-default',
+        createdAt: testDate,
+        updatedAt: testDate,
+      );
+      await links.upsertLink(legacy);
+      await links.upsertLink(legacy.softDeleted(testDate));
+
+      await links.upsertLink(seed());
+
+      expect(
+        await links.getLinksFrom(
+          'template-1',
+          type: AgentLinkTypes.soulAssignment,
+        ),
+        isEmpty,
+      );
+    });
+
+    test(
+      'is retired at the seed instant by any other assignment row',
+      () async {
+        await links.upsertLink(seed());
+        expect(
+          (await links.getLinksFrom('template-1')).map((l) => l.id),
+          [seedId],
+        );
+
+        // A removal made under another id — an older build's — retires it.
+        await links.upsertLink(
+          makeTestSoulAssignmentLink(
+            id: 'legacy',
+            fromId: 'template-1',
+            toId: 'soul-other',
+            createdAt: testDate,
+            updatedAt: testDate,
+          ).softDeleted(testDate),
+        );
+
+        final stored = AgentDbConversions.fromLinkRow(
+          await (db.select(
+            db.agentLinks,
+          )..where((t) => t.id.equals(seedId))).getSingle(),
+        );
+        expect(stored.deletedAt, agentSeedInstant);
+        expect(stored.updatedAt, agentSeedInstant);
+      },
+    );
+  });
+
+  group('hasAnyLinkFrom', () {
+    test(
+      'counts a removed link, and only links of the type from the id',
+      () async {
+        expect(
+          await links.hasAnyLinkFrom(
+            'template-1',
+            type: AgentLinkTypes.soulAssignment,
+          ),
+          isFalse,
+        );
+
+        final assignment = makeTestSoulAssignmentLink(
+          id: 'sa-1',
+          fromId: 'template-1',
+          toId: 'soul-1',
+          createdAt: testDate,
+          updatedAt: testDate,
+        );
+        await links.upsertLink(assignment);
+        await links.upsertLink(assignment.softDeleted(testDate));
+        // A link of another type from the same id, and one of the same type
+        // from another id, are not the template's soul assignment.
+        await links.upsertLink(
+          makeTestBasicLink(
+            id: 'basic-1',
+            fromId: 'template-2',
+            toId: 'soul-1',
+            createdAt: testDate,
+            updatedAt: testDate,
+          ),
+        );
+
+        expect(
+          await links.getLinksFrom(
+            'template-1',
+            type: AgentLinkTypes.soulAssignment,
+          ),
+          isEmpty,
+          reason: 'the typed read hides the removal',
+        );
+        expect(
+          await links.hasAnyLinkFrom(
+            'template-1',
+            type: AgentLinkTypes.soulAssignment,
+          ),
+          isTrue,
+        );
+        expect(
+          await links.hasAnyLinkFrom('template-1', type: AgentLinkTypes.basic),
+          isFalse,
+        );
+        expect(
+          await links.hasAnyLinkFrom(
+            'template-2',
+            type: AgentLinkTypes.soulAssignment,
+          ),
+          isFalse,
+        );
       },
     );
   });

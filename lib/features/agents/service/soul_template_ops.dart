@@ -285,17 +285,28 @@ class SoulTemplateOps {
 
   /// Seed the default soul documents and assign them to seeded templates.
   ///
-  /// Idempotent — checks existence before creating. Safe to call on every
-  /// app startup.
+  /// Idempotent and safe to call on every app startup. A user's choice about
+  /// a default is never undone (ADR 0100):
+  ///
+  /// - A soul is created only when no row is stored under its id, **a
+  ///   removed one included**, so a default soul the user deleted stays
+  ///   deleted and a default that ships in a later release is still seeded.
+  /// - A default assignment is made only for a template that has never had
+  ///   a soul assignment — a removed one counts — and only while the
+  ///   template and the soul both exist. A soul the user unassigned or
+  ///   replaced stays that way.
+  ///
+  /// Both are stamped at `agentSeedInstant`, so a deletion, an unassignment
+  /// or a reassignment made concurrently on a device this one has not heard
+  /// from yet wins over the seed on every device. The assignment has a
+  /// deterministic id ([seededSoulAssignmentLinkId]), so every device seeds
+  /// the same link and removing it removes all of their seeds.
   Future<void> seedDefaults() async {
-    final existing = await Future.wait(
-      _seedConfigs.map((c) => versionOps.getSoul(c.id)),
-    );
-
-    // Seed missing soul documents.
-    for (var i = 0; i < _seedConfigs.length; i++) {
-      if (existing[i] == null) {
-        final c = _seedConfigs[i];
+    for (final c in _seedConfigs) {
+      // The check and the write share one transaction, so a peer's deletion
+      // received in between cannot be overwritten by a re-creation.
+      await syncService.runInTransaction(() async {
+        if (await repository.getEntityIncludingDeleted(c.id) != null) return;
         await versionOps.createSoul(
           soulId: c.id,
           displayName: c.name,
@@ -304,17 +315,47 @@ class SoulTemplateOps {
           coachingStyle: c.coaching,
           antiSycophancyPolicy: c.antiSycophancy,
           authoredBy: AgentAuthors.system,
+          seeded: true,
         );
-      }
+      });
     }
 
-    // Always run assignments — assignSoulToTemplate is idempotent (no-op when
-    // already assigned), so this repairs stale or missing links on existing
-    // installs without creating churn.
     for (final a in _seedAssignments) {
-      await assignSoulToTemplate(a.templateId, a.soulId);
+      await _seedAssignment(templateId: a.templateId, soulId: a.soulId);
     }
 
     developer.log('Seeded default souls and assignments', name: _logTag);
+  }
+
+  /// Links [soulId] to [templateId] as a seeded default, unless the
+  /// template has ever had a soul assignment or either side is gone.
+  Future<void> _seedAssignment({
+    required String templateId,
+    required String soulId,
+  }) async {
+    await syncService.runInTransaction(() async {
+      if (await repository.hasAnyLinkFrom(
+        templateId,
+        type: AgentLinkTypes.soulAssignment,
+      )) {
+        return;
+      }
+      final template = (await repository.getEntity(
+        templateId,
+      ))?.mapOrNull(agentTemplate: (t) => t);
+      if (template == null || await versionOps.getSoul(soulId) == null) {
+        return;
+      }
+      await syncService.upsertLink(
+        AgentLink.soulAssignment(
+          id: seededSoulAssignmentLinkId(templateId),
+          fromId: templateId,
+          toId: soulId,
+          createdAt: agentSeedInstant,
+          updatedAt: agentSeedInstant,
+          vectorClock: null,
+        ),
+      );
+    });
   }
 }

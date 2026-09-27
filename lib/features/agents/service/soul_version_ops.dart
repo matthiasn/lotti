@@ -2,6 +2,7 @@ import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/soul_template_ops.dart'
@@ -36,6 +37,11 @@ class SoulVersionOps {
 
   /// Create a new soul document with its initial version and head pointer.
   ///
+  /// A [seeded] soul is a default the app creates under a well-known
+  /// [soulId]: its document row is stamped at [agentSeedInstant], so a
+  /// deletion or edit a user made concurrently on another device wins over
+  /// it (ADR 0100). The version and head keep the current instant.
+  ///
   /// Throws [StateError] if a soul with the given [soulId] already exists.
   /// Throws [ArgumentError] if required text fields are blank.
   Future<SoulDocumentEntity> createSoul({
@@ -46,6 +52,7 @@ class SoulVersionOps {
     String coachingStyle = '',
     String antiSycophancyPolicy = '',
     String? soulId,
+    bool seeded = false,
   }) async {
     _requireNonBlank('displayName', displayName);
     _requireNonBlank('voiceDirective', voiceDirective);
@@ -55,6 +62,7 @@ class SoulVersionOps {
     final versionId = _uuid.v4();
     final headId = _uuid.v4();
     final now = clock.now();
+    final stampedAt = seeded ? agentSeedInstant : now;
 
     return syncService.runInTransaction(() async {
       final existing = await getSoul(id);
@@ -67,8 +75,8 @@ class SoulVersionOps {
                 id: id,
                 agentId: id,
                 displayName: displayName,
-                createdAt: now,
-                updatedAt: now,
+                createdAt: stampedAt,
+                updatedAt: stampedAt,
                 vectorClock: null,
               )
               as SoulDocumentEntity;

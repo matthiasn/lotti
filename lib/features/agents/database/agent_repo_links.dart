@@ -22,7 +22,64 @@ class AgentRepoLinks {
   final AgentDatabase _db;
   final DomainLogger? _domainLogger;
 
+  /// Writes [link], locally made or received.
+  ///
+  /// A soul assignment the seeding made
+  /// ([seededSoulAssignmentLinkId]) yields to every other assignment of its
+  /// template (ADR 0100). A live seed that arrives where the template has
+  /// another assignment row — live or removed, for instance one an older
+  /// build made under a random id and the user then removed or replaced — is
+  /// not stored; and any other assignment row that is written retires a live
+  /// seed of the same template, stamping its removal at [agentSeedInstant] so
+  /// every device that retires it stores the same row. Without this, a
+  /// device that seeded afresh would put the default soul back over the
+  /// user's choice on a device that made that choice before the seed had a
+  /// fixed id.
   Future<void> upsertLink(model.AgentLink link) async {
+    if (AgentDbConversions.linkType(link) != AgentLinkTypes.soulAssignment) {
+      return _upsertLinkRow(link);
+    }
+    await _db.transaction(() async {
+      final seedId = seededSoulAssignmentLinkId(link.fromId);
+      if (link.id != seedId) {
+        await _retireSeededSoulAssignment(link.fromId, seedId);
+      } else if (link.deletedAt == null &&
+          await _hasSoulAssignmentOtherThan(link.fromId, seedId)) {
+        return;
+      }
+      await _upsertLinkRow(link);
+    });
+  }
+
+  Future<bool> _hasSoulAssignmentOtherThan(String fromId, String id) async {
+    final row = await _db
+        .customSelect(
+          'SELECT 1 FROM agent_links '
+          'INDEXED BY idx_agent_links_from '
+          "WHERE from_id = ? AND type = 'soul_assignment' AND id != ? "
+          'LIMIT 1',
+          variables: [Variable.withString(fromId), Variable.withString(id)],
+          readsFrom: {_db.agentLinks},
+        )
+        .getSingleOrNull();
+    return row != null;
+  }
+
+  Future<void> _retireSeededSoulAssignment(String fromId, String seedId) async {
+    final iso = agentSeedInstant.toIso8601String();
+    final seconds = agentSeedInstant.millisecondsSinceEpoch ~/ 1000;
+    await _db.customStatement(
+      'UPDATE agent_links '
+      'SET deleted_at = ?, updated_at = ?, '
+      '    serialized = json_set(serialized, '
+      r"      '$.deletedAt', ?, "
+      r"      '$.updatedAt', ?) "
+      'WHERE id = ? AND from_id = ? AND deleted_at IS NULL',
+      [seconds, seconds, iso, iso, seedId, fromId],
+    );
+  }
+
+  Future<void> _upsertLinkRow(model.AgentLink link) async {
     final companion = AgentDbConversions.toLinkCompanion(link);
     final type = AgentDbConversions.linkType(link);
     final needsUniqueSlotHandoff =
@@ -131,6 +188,22 @@ class AgentRepoLinks {
       rows = await _db.getAgentLinksByFromId(fromId).get();
     }
     return rows.map(AgentDbConversions.fromLinkRow).toList();
+  }
+
+  /// Whether any link of [type] originates from [fromId], **a removed one
+  /// included**: a seeding pass that asks whether the user has ever had one
+  /// must not read a removal as never having had it (ADR 0100).
+  Future<bool> hasAnyLinkFrom(String fromId, {required String type}) async {
+    final row = await _db
+        .customSelect(
+          'SELECT 1 FROM agent_links '
+          'INDEXED BY idx_agent_links_from '
+          'WHERE from_id = ? AND type = ? LIMIT 1',
+          variables: [Variable.withString(fromId), Variable.withString(type)],
+          readsFrom: {_db.agentLinks},
+        )
+        .getSingleOrNull();
+    return row != null;
   }
 
   /// Fetch non-deleted links pointing to [toId], optionally filtered by

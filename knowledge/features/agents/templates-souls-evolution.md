@@ -11,7 +11,7 @@ sources:
   - id: seeding
     resource: ../../../lib/features/agents/service/agent_template_seeding.dart
     title: Seeded default templates
-    last_modified: 2026-06-22
+    last_modified: 2026-09-27
   - id: evolution
     resource: ../../../lib/features/agents/workflow/template_evolution_workflow.dart
     title: TemplateEvolutionWorkflow
@@ -23,7 +23,7 @@ sources:
   - id: soul-ops
     resource: ../../../lib/features/agents/service/soul_template_ops.dart
     title: Soul document service operations
-    last_modified: 2026-06-13
+    last_modified: 2026-09-27
   - id: adr-0012
     resource: ../../../docs/adr/0012-recursive-self-improvement-depth-policy.md
     title: ADR 0012 — Recursive self-improvement depth policy
@@ -121,6 +121,48 @@ Six seeded souls form a personality palette — Laura, Tom, Max, Iris, Sage and
 Kit — with three default assignments: Laura soul → Laura task template, Tom soul
 → Tom task template, Laura soul → Project Analyst. Max, Iris, Sage and Kit are
 available for manual assignment.
+
+**A deleted default stays deleted** (ADR 0100). Seeding runs at every start,
+but it never undoes what the user did with a default:
+
+- A default template or soul is created only when no row is stored under
+  its id, **a tombstone included** (`getEntityIncludingDeleted`). A default a
+  later release adds has no row yet and is seeded as usual.
+- A default assignment is made only for a template that has never had a soul
+  assignment — a removed one counts (`AgentRepository.hasAnyLinkFrom`) — and
+  only while the template and the soul both exist. A soul the user
+  unassigned or replaced stays that way; the seed no longer repairs
+  assignments.
+- The template row, the soul document row and the assignment link are
+  stamped at `agentSeedInstant` (the epoch), and the assignment has the
+  deterministic id `seededSoulAssignmentLinkId(templateId)`. A device that
+  seeds before a peer's deletion, unassignment or rename has reached it
+  writes a version concurrent with that change, and last-writer-wins gives
+  the change the later instant on every device.
+- The seeded assignment yields to any other assignment row of its template
+  (`AgentRepoLinks.upsertLink`): an older build's assignment under a random
+  id, live or removed, keeps a received seed from being stored, and any
+  other assignment written retires a live seed at the epoch.
+- Each check and its write run in one transaction, so a peer's deletion
+  received meanwhile is never overwritten.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Absent
+  Absent --> Seeded: start, no row stored (stamped at the epoch)
+  Seeded --> Edited: the user edits it
+  Seeded --> Deleted: the user deletes it
+  Edited --> Deleted: the user deletes it
+  Deleted --> Deleted: start — the tombstone is a stored row, the seed skips
+  Seeded --> Deleted: a peer's deletion arrives (it wins the later instant)
+  Deleted --> Edited: a peer's edit made concurrently at a later instant arrives
+  note right of Deleted
+    A default a device seeded before the
+    deletion reached it loses to it too.
+  end note
+```
+
+The checked model is the seeded kind of `specs/tla/AgentReplication.tla`.
 
 `SoulDocumentService` manages the lifecycle: `createSoul()` (entity + initial
 version + head), `createVersion()` (archive every non-archived version, create

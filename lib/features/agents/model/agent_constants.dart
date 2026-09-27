@@ -232,3 +232,20 @@ String relationshipAgentIdFor(String relationshipId) =>
 /// Deterministic id of the agent→relationship link — one per agent, so
 /// concurrent creates write the same row.
 String relationshipAgentLinkId(String agentId) => 'agent_relationship:$agentId';
+
+/// The instant the rows that stand for a seeded default — a default
+/// template, a default soul, a default soul assignment — are stamped at
+/// (ADR 0100): the epoch, below every instant a user's write carries.
+///
+/// A device can seed a default before it has received a peer's deletion of
+/// it. The seed and the deletion are then concurrent, and last-writer-wins
+/// orders them by instant, so the deletion always wins and the default stays
+/// deleted on every device. For the same reason a user's edit made
+/// concurrently with another device's seed is never reverted by it.
+final agentSeedInstant = DateTime.utc(1970);
+
+/// Deterministic id of the soul assignment the seeding gives a default
+/// template, one per template (ADR 0100): two devices that seed it write the
+/// same row, so the user's removal of it removes every device's seed.
+String seededSoulAssignmentLinkId(String templateId) =>
+    'soul_assignment_seed:$templateId';

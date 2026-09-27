@@ -1,15 +1,25 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/seeded_directives.dart';
 import 'package:lotti/features/agents/service/agent_template_crud.dart';
 import 'package:lotti/features/agents/service/agent_template_seeding.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../agent_test_device.dart';
+import '../sync/agent_replica_bench.dart';
 import '../test_data/template_factories.dart';
+import 'default_seeding_device.dart';
+
+part 'agent_seeding_model_conformance.dart';
 
 /// Mirror test for the [AgentTemplateSeeding] collaborator. Verifies the
 /// idempotent default-template seeding and the directive-field backfill, both
@@ -113,7 +123,148 @@ void main() {
       // created or backfilled — no entity writes at all.
       verifyNever(() => mockSync.upsertEntity(any()));
     });
+
+    test(
+      'skips a default whose removal is stored, and seeds a missing one at '
+      'the seed instant',
+      () async {
+        when(() => mockRepo.getEntity(any())).thenAnswer((_) async => null);
+        when(() => mockRepo.getEntityIncludingDeleted(any())).thenAnswer((
+          invocation,
+        ) async {
+          final id = invocation.positionalArguments.single as String;
+          // Tom is missing: a default a later release added, say.
+          if (id == tomTemplateId) return null;
+          // Every other default was deleted by the user.
+          return makeTestTemplate(
+            id: id,
+            agentId: id,
+          ).copyWith(deletedAt: DateTime(2026, 9, 26));
+        });
+        when(() => mockRepo.getAllTemplates()).thenAnswer((_) async => []);
+
+        await withClock(
+          Clock.fixed(DateTime(2026, 9, 27, 9)),
+          seeding.seedDefaults,
+        );
+
+        final captured = verify(
+          () => mockSync.upsertEntity(captureAny()),
+        ).captured.cast<AgentDomainEntity>();
+        final template = captured.whereType<AgentTemplateEntity>().single;
+        expect(template.id, tomTemplateId);
+        expect(template.createdAt, agentSeedInstant);
+        expect(template.updatedAt, agentSeedInstant);
+        final version = captured.whereType<AgentTemplateVersionEntity>().single;
+        expect(version.createdAt, DateTime(2026, 9, 27, 9));
+      },
+    );
   });
+
+  group('seedDefaults across restarts and devices (ADR 0100)', () {
+    final start = DateTime(2026, 9, 27, 9);
+    late DefaultSeedingDevice a;
+    late DefaultSeedingDevice b;
+
+    setUp(() {
+      a = DefaultSeedingDevice(AgentTestDevice('host-a', background: false));
+      b = DefaultSeedingDevice(AgentTestDevice('host-b', background: false));
+      addTearDown(a.device.close);
+      addTearDown(b.device.close);
+    });
+
+    Future<void> at(int minutes, Future<void> Function() action) =>
+        withClock(Clock.fixed(start.add(Duration(minutes: minutes))), action);
+
+    test('a default template the user deleted stays deleted at the next '
+        'start', () async {
+      await at(0, a.start);
+      await at(1, () => a.templates.deleteTemplate(lauraTemplateId));
+
+      a.device.reboot();
+      await at(2, a.start);
+
+      expect(await a.templates.getTemplate(lauraTemplateId), isNull);
+      expect((await a.stored(lauraTemplateId))!.deletedAt, isNotNull);
+      expect(
+        (await a.templates.listTemplates()).map((t) => t.id),
+        isNot(contains(lauraTemplateId)),
+      );
+    });
+
+    test(
+      "a peer's deletion wins over a later seed on a device that had not "
+      'received it',
+      () async {
+        await at(0, a.start);
+        await at(1, () => a.templates.deleteTemplate(lauraTemplateId));
+        // B starts later, before anything of A's reaches it.
+        await at(5, b.start);
+
+        await at(6, () => b.receiveAllFrom(a));
+        await at(6, () => a.receiveAllFrom(b));
+
+        for (final device in [a, b]) {
+          expect(
+            await device.templates.getTemplate(lauraTemplateId),
+            isNull,
+            reason: device.device.host,
+          );
+        }
+        await at(7, a.start);
+        await at(7, b.start);
+        for (final device in [a, b]) {
+          expect(await device.templates.getTemplate(lauraTemplateId), isNull);
+        }
+      },
+    );
+
+    test(
+      'a deletion received while the seeding runs is not written over',
+      () async {
+        await at(0, a.start);
+        await at(1, () => a.templates.deleteTemplate(lauraTemplateId));
+        final removal = a.device.sentEntities.firstWhere(
+          (e) => e.id == lauraTemplateId && e.deletedAt != null,
+        );
+
+        // B starts and receives the deletion at once: it must not find the
+        // default missing, receive the tombstone, then write the seed.
+        await at(
+          5,
+          () => Future.wait([b.start(), b.device.receiveEntity(removal)]),
+        );
+
+        // Whichever of the two runs first, the deletion stands.
+        expect(await b.templates.getTemplate(lauraTemplateId), isNull);
+      },
+    );
+
+    test("a peer's rename is not reverted by a later seed", () async {
+      await at(0, a.start);
+      await at(
+        1,
+        () => a.templates.updateTemplate(
+          templateId: tomTemplateId,
+          displayName: 'Tomás',
+        ),
+      );
+      await at(5, b.start);
+
+      await at(6, () => b.receiveAllFrom(a));
+      await at(6, () => a.receiveAllFrom(b));
+
+      for (final device in [a, b]) {
+        expect(
+          (await device.templates.getTemplate(tomTemplateId))!.displayName,
+          'Tomás',
+          reason: device.device.host,
+        );
+      }
+    });
+  });
+
+  registerSeedingModelConformance();
 
   group('seedDirectiveFields', () {
     const directivesByKind = {

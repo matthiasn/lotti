@@ -261,58 +261,59 @@ void main() {
   });
 
   group('seedDefaults', () {
-    test('creates all 6 souls when none exist', () async {
-      // All getSoul calls return null (nothing seeded yet).
+    // The seeding against a real database — deleted defaults, unassigned
+    // and reassigned souls, a peer's deletion — is in
+    // soul_template_ops_test.dart; this covers the facade's delegation.
+    test('creates all 6 souls, stamped at the seed instant, when none are '
+        'stored', () async {
       when(
         () => mockRepo.getSoulDocument(any()),
       ).thenAnswer((_) async => null);
-
-      // assignSoulToTemplate needs link lookups.
       when(
-        () => mockRepo.getLinksFrom(any(), type: AgentLinkTypes.soulAssignment),
-      ).thenAnswer((_) async => []);
+        () => mockRepo.getEntityIncludingDeleted(any()),
+      ).thenAnswer((_) async => null);
+      // Every default template has had an assignment already.
+      when(
+        () => mockRepo.hasAnyLinkFrom(
+          any(),
+          type: AgentLinkTypes.soulAssignment,
+        ),
+      ).thenAnswer((_) async => true);
 
       await service.seedDefaults();
 
-      // 6 souls × 3 entities each (soul + version + head) = 18 upserts,
-      // plus 3 assignment links.
+      // 6 souls × 3 entities each (soul + version + head) = 18 upserts.
       final entityCalls = verify(
         () => mockSync.upsertEntity(captureAny()),
       ).captured;
       expect(entityCalls, hasLength(18));
-
-      final linkCalls = verify(
-        () => mockSync.upsertLink(captureAny()),
-      ).captured;
-      expect(linkCalls, hasLength(3));
+      final souls = entityCalls.whereType<SoulDocumentEntity>().toList();
+      expect(souls, hasLength(6));
+      expect(
+        souls.every(
+          (s) =>
+              s.createdAt == agentSeedInstant &&
+              s.updatedAt == agentSeedInstant,
+        ),
+        isTrue,
+      );
+      verifyNever(() => mockSync.upsertLink(any()));
     });
 
-    test('skips soul creation but runs assignments when all exist', () async {
+    test('writes nothing when every soul and assignment is stored', () async {
       when(
-        () => mockRepo.getSoulDocument(any()),
+        () => mockRepo.getEntityIncludingDeleted(any()),
       ).thenAnswer((_) async => makeTestSoulDocument());
-
-      // Return a link whose toId matches the soulId being assigned, so
-      // the idempotency check in assignSoulToTemplate returns early.
       when(
-        () => mockRepo.getLinksFrom(any(), type: AgentLinkTypes.soulAssignment),
-      ).thenAnswer((invocation) async {
-        final templateId = invocation.positionalArguments.first as String;
-        // Map template → expected soul for the seed assignments.
-        final soulId = switch (templateId) {
-          'template-laura-001' => 'soul-laura-001',
-          'template-tom-001' => 'soul-tom-001',
-          'template-project-001' => 'soul-laura-001',
-          _ => 'unknown',
-        };
-        return [makeTestSoulAssignmentLink(fromId: templateId, toId: soulId)];
-      });
+        () => mockRepo.hasAnyLinkFrom(
+          any(),
+          type: AgentLinkTypes.soulAssignment,
+        ),
+      ).thenAnswer((_) async => true);
 
       await service.seedDefaults();
 
-      // No soul entities created.
       verifyNever(() => mockSync.upsertEntity(any()));
-      // Assignments checked but no writes (idempotent no-op).
       verifyNever(() => mockSync.upsertLink(any()));
     });
   });

@@ -602,9 +602,11 @@ addendum; `specs/tla/AgentReplication.tla`, the removal kind):
 - **A row built afresh over a tombstone is a re-creation.** Its writer read no
   row, so it has no clock; it keeps its fields, and its stamp covers the
   tombstone, so it succeeds the removal on every device. A day plan drafted
-  again for a deleted day, a recommendation decision recorded again after an
-  undo, and the default templates and souls that seeding restores are
-  re-created this way.
+  again for a deleted day and a recommendation decision recorded again after
+  an undo are re-created this way. Seeding is not: a default template, soul
+  or soul assignment is seeded only where no row, tombstone included, is
+  stored, and stamped at the epoch, so a removal concurrent with a seed wins
+  over it (ADR 0100).
 
 ```mermaid
 flowchart TD
@@ -789,8 +791,5 @@ These cases stay open, recorded in `specs/tla/README.md` and ADRs 0068 and
   tombstones the other locally, without a clock bump or a sync message, so
   two devices that reassign concurrently swap the assignments (ADR 0081).
   The fix needs a decision.
-- Seeding restores a default template or soul the user deleted, at the next
-  start. The re-creation wins on every device; whether a deleted default
-  should stay deleted is a product decision (ADR 0081, addendum).
 - A hard delete (`hardDeleteAgent`, retention pruning) leaves no tombstone and
   is not synced, so a late copy can restore such a row.
