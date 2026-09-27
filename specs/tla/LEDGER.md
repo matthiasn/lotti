@@ -90,6 +90,12 @@ rejected its first draft, and each of its six switches and its timing
 assumption has a counterexample. Not included in the historical totals
 above.
 
+The `EntryLinkIdentity` follow-up (#4535) adds one spec, three
+configurations, two named properties (`Converged`, `NoLostSuccessor`) and
+191,665 distinct states. The bug was ADR 0078's recorded residual; the model
+reproduces it with its switches off. Not included in the historical totals
+above.
+
 ## Timeline
 
 ```mermaid
@@ -162,6 +168,7 @@ counterexamples found. "Severity" grades each of those bugs; see
 | [#4523](https://github.com/matthiasn/lotti/pull/4523) | 09-26 | agents, sync | `AgentWakeCoordination` | 4 | 1 (0) | P2 | [0090](../../docs/adr/0090-cross-device-agent-wake-coordination.md) | Two devices ran the same task agent over the same synced state, an inference paid twice for one result. Modelled before it was built: a claim broadcast with the state digest defers a matching peer, `done` cancels it, a heartbeat carries runs past the two-minute timer. TLC rejected the first draft, where a peer's next claim erased its completion and a device still at the older state ran it again |
 | [#4526](https://github.com/matthiasn/lotti/pull/4526) | pending | agents, sync | — | 0 | 1 (0) | P1 | [0091](../../docs/adr/0091-wake-coordination-by-vector-clock-coverage.md) | #4523 stood down only over an exactly equal state, and on two real devices never did: a checklist item checked off on B before A's countdown ran out still ran on B after A completed. A peer's run now covers a device when it read every write the device's inputs rest on — a claim carries the sender's gap-free sync watermark per host, and the receiver checks its inputs' vector clocks against it. With the old equality restored (`CoverSuperset = FALSE`), `Exclusive` fails in nine states |
 | [#4527](https://github.com/matthiasn/lotti/pull/4527) | pending | sync | — | 0 | 1 (0) | P0 | [0092](../../docs/adr/0092-one-conflict-row-per-version.md) | Closed the one-conflict-row residual of ADR 0083: a save built on a stale read is refused and parked as the entry's conflict, never sent, and a later concurrent version replaced it in the one-row table, losing it on every device. Conflicts are now keyed by entry and version; the `displaced` ghost is gone, `NothingDropped` and `ConflictNotStale` hold without exception, and the `ConflictPerVersion` switch brings back a five-step counterexample. `JournalReplication` 700,231 and `JournalReplicationLabels` 167,673 distinct states, the other two unchanged |
+| [#4535](https://github.com/matthiasn/lotti/pull/4535) | pending | sync | `EntryLinkIdentity` | 3 | 1 (0) | P1 | [0096](../../docs/adr/0096-an-entry-link-is-its-natural-key.md) | Closed ADR 0078's two-ids residual: the same entry link created offline on two devices got two random ids, the receive refused the other id as a duplicate, and the other device's snapshot replaced a removal with its live copy. A new link takes the id derived from its natural key and the receive orders a triple's versions across ids; `DerivedId` and `TripleIsIdentity` off reproduce it in five steps. 83,931, 88,547 and 19,187 distinct states |
 
 ## Sync follow-up evidence, 2026-09-26
 
@@ -403,6 +410,7 @@ The P0 and P1 bugs:
 | [#4506](https://github.com/matthiasn/lotti/pull/4506) | P3 | no | One undecodable stored filter blanked the list, and the next save persisted it empty |
 | [#4523](https://github.com/matthiasn/lotti/pull/4523) | P2 | no | Edits on two devices at once made both run the same task agent over the same state |
 | [#4527](https://github.com/matthiasn/lotti/pull/4527) | P0 | no | A save made while another device's version synced in was lost for good when a third version replaced its conflict |
+| [#4535](https://github.com/matthiasn/lotti/pull/4535) | P1 | no | A link created offline on two devices came back after it was removed on one |
 </details>
 
 ## Specs
