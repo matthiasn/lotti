@@ -68,6 +68,9 @@ still writes links the rule understands.
    and `unassignSoul` tombstone every live assignment `getSlotLinks` returns,
    hidden ones included. A concurrent assignment ranked below the visible one
    therefore does not appear when the user removes or replaces the soul.
+   `deleteSoul` likewise removes the hidden assignments that point at the
+   soul it deletes (`getLinksToIncludingHidden`). Otherwise one could appear
+   later pointing at a deleted soul.
 
 The TLA+ model carries the handoff behind a switch. `AgentLinks.tla` gains
 `Slot` (two fresh-id assignments of one slot), `SlotRule` and

@@ -464,6 +464,12 @@ void main() {
         () => mockRepo.getLinksTo('soul-del', type: any(named: 'type')),
       ).thenAnswer((_) async => []);
       when(
+        () => mockRepo.getLinksToIncludingHidden(
+          'soul-del',
+          type: any(named: 'type'),
+        ),
+      ).thenAnswer((_) async => []);
+      when(
         () => mockRepo.getSoulDocument('soul-del'),
       ).thenAnswer((_) async => soul);
       when(

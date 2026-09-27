@@ -193,6 +193,27 @@ class AgentRepoLinks {
     return rows.map(AgentDbConversions.fromLinkRow).toList();
   }
 
+  /// Every stored version of a [type] link pointing to [toId], as written:
+  /// tombstones and the live slot links an [AgentLinkSlot] hides included.
+  ///
+  /// `getLinksTo` sees only what reads show, one visible assignment per slot;
+  /// this is for a writer that must also reach the hidden ones, such as
+  /// deleting the soul they point at.
+  Future<List<model.AgentLink>> getLinksToIncludingHidden(
+    String toId, {
+    required String type,
+  }) async {
+    final rows = await _db
+        .customSelect(
+          'SELECT * FROM agent_links WHERE to_id = ? AND type = ?',
+          variables: [Variable.withString(toId), Variable.withString(type)],
+          readsFrom: {_db.agentLinks},
+        )
+        .asyncMap(_db.agentLinks.mapFromRow)
+        .get();
+    return rows.map(AgentDbConversions.fromLinkRow).toList();
+  }
+
   /// Fetch non-deleted links originating from [fromId], optionally filtered
   /// by [type] (the string stored in the `agent_links.type` column, e.g.
   /// `'agent_state'`).

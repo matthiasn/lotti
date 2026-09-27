@@ -529,6 +529,30 @@ void main() {
       },
     );
 
+    test(
+      'getLinksToIncludingHidden reaches a hidden assignment that getLinksTo '
+      'does not show',
+      () async {
+        await links.upsertLink(soul('link-a', 'soul-a', late));
+        await links.upsertLink(soul('link-b', 'soul-b', early));
+
+        expect(
+          await links.getLinksTo(
+            'soul-b',
+            type: AgentLinkTypes.soulAssignment,
+          ),
+          isEmpty,
+        );
+        expect(
+          (await links.getLinksToIncludingHidden(
+            'soul-b',
+            type: AgentLinkTypes.soulAssignment,
+          )).map((l) => (l.id, l.deletedAt)),
+          [('link-b', null)],
+        );
+      },
+    );
+
     test('the improver slot is keyed by the template in toId', () async {
       await links.upsertLink(
         makeTestImproverTargetLink(

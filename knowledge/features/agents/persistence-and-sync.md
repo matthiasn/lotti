@@ -143,7 +143,7 @@ sources:
 
 # One database, two shapes
 
-Agent persistence lives in `agent.sqlite` (schema version 19). Syncable domain
+Agent persistence lives in `agent.sqlite` (schema version 22). Syncable domain
 objects are modelled as **`AgentDomainEntity` variants** and **`AgentLink`
 variants**; wake-run history lives in a dedicated `wake_run_log` table outside
 that model.
@@ -273,7 +273,9 @@ stamps a new slot link's `createdAt` just past the newest link of the slot this
 device holds, tombstones and hidden links included, when its own clock is not
 already later. `SoulTemplateOps` tombstones every live assignment it finds with
 `getSlotLinks` — hidden ones too — before assigning, and when unassigning, so a
-hidden assignment does not surface once the visible one is removed. Because
+hidden assignment does not surface once the visible one is removed; deleting a
+soul also removes the hidden assignments that point at it
+(`getLinksToIncludingHidden`). Because
 nothing about the ranking is written as a version, replicas that hold the same
 versions show the same assignment in any arrival order (ADR 0099,
 `specs/tla/AgentLinks.tla` with `Slot`).

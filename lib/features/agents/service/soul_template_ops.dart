@@ -179,7 +179,10 @@ class SoulTemplateOps {
   /// Soft-delete a soul document and all its versions, head, and links.
   ///
   /// Checks that no templates are currently using this soul. If any template
-  /// still has an active assignment, throws [StateError].
+  /// still has an active assignment, throws [StateError]. Assignments of this
+  /// soul that a template's slot ranks below its visible one ([AgentLinkSlot])
+  /// are removed with it, so none can surface later pointing at a deleted
+  /// soul.
   Future<void> deleteSoul(String soulId) async {
     final templateIds = await getTemplatesUsingSoul(soulId);
     if (templateIds.isNotEmpty) {
@@ -194,6 +197,15 @@ class SoulTemplateOps {
     final deleted = await syncService.runInTransaction(() async {
       final soul = await versionOps.getSoul(soulId);
       if (soul == null) return false;
+
+      for (final hidden in await repository.getLinksToIncludingHidden(
+        soulId,
+        type: AgentLinkTypes.soulAssignment,
+      )) {
+        if (hidden.deletedAt == null) {
+          await syncService.upsertLink(hidden.softDeleted(now));
+        }
+      }
 
       final versions = await versionOps.getVersionHistory(soulId, limit: -1);
       for (final version in versions) {

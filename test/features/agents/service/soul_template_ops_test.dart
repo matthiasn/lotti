@@ -192,6 +192,22 @@ void main() {
           ),
         ).thenAnswer((_) async => []);
         when(
+          () => mockRepo.getLinksToIncludingHidden(
+            kTestSoulId,
+            type: AgentLinkTypes.soulAssignment,
+          ),
+        ).thenAnswer(
+          (_) async => [
+            // A concurrent assignment the template's slot ranks below its
+            // visible one, and an assignment already removed.
+            makeTestSoulAssignmentLink(id: 'hidden', fromId: 'tpl-other'),
+            makeTestSoulAssignmentLink(
+              id: 'removed',
+              fromId: 'tpl-old',
+            ).softDeleted(DateTime(2026, 3, 15)),
+          ],
+        );
+        when(
           () => mockRepo.getSoulDocument(kTestSoulId),
         ).thenAnswer((_) async => makeTestSoulDocument());
         when(
@@ -217,6 +233,16 @@ void main() {
         );
         expect((captured[1] as SoulDocumentHeadEntity).deletedAt, isNotNull);
         expect((captured[2] as SoulDocumentEntity).deletedAt, isNotNull);
+
+        // The hidden assignment goes with the soul, so it cannot surface
+        // pointing at a deleted soul (ADR 0099); the tombstone is left alone.
+        final links = verify(
+          () => mockSync.upsertLink(captureAny()),
+        ).captured.cast<AgentLink>();
+        expect(
+          [for (final l in links) (l.id, l.deletedAt != null)],
+          [('hidden', true)],
+        );
       },
     );
   });

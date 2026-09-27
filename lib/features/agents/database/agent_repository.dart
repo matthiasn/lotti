@@ -490,6 +490,11 @@ class AgentRepository {
   Future<List<model.AgentLink>> getSlotLinks(AgentLinkSlot slot) =>
       _links.getSlotLinks(slot);
 
+  Future<List<model.AgentLink>> getLinksToIncludingHidden(
+    String toId, {
+    required String type,
+  }) => _links.getLinksToIncludingHidden(toId, type: type);
+
   Future<List<model.AgentLink>> getLinksFrom(String fromId, {String? type}) =>
       _links.getLinksFrom(fromId, type: type);
 
