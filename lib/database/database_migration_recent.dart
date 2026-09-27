@@ -380,6 +380,9 @@ CREATE TABLE conflicts_v50 (
     );
     await customStatement('DROP TABLE conflicts');
     await customStatement('ALTER TABLE conflicts_v50 RENAME TO conflicts');
+    // Dropping the table dropped its index; recreate it with the table, so
+    // the index reconcile that ends the upgrade finds nothing to add.
+    await customStatement(_createIdxConflictsStatusCreatedSql);
 
     final rows = await customSelect(
       'SELECT id, serialized FROM conflicts',
