@@ -30,9 +30,12 @@
 (*   Reopen        reopenItem: a decided item back to pending, in one      *)
 (*                 transaction. Record only: the task tools have no Undo   *)
 (*                 of their effect, so the effect stays where it landed    *)
-(*   Undo          the project agent's Undo (service/                      *)
-(*                 project_proposal_service.dart undo): reopenItem with a  *)
-(*                 revert that deletes the entity the confirmation created *)
+(*   UndoBegin,    the project agent's Undo (service/                      *)
+(*   UndoRevert,   project_proposal_service.dart undo): reopenItem with a  *)
+(*   UndoReopen    revert that deletes the entity the confirmation         *)
+(*                 created. Two steps: the revert, which may be refused    *)
+(*                 (taskRemover), and the reopen, in the order RevertFirst *)
+(*                 says                                                    *)
 (*   Retract       service/suggestion_retraction_service.dart applyStaged, *)
 (*                 inside the wake's transaction                           *)
 (*   Consolidate   workflow/change_set_builder.dart build: the final       *)
@@ -140,6 +143,15 @@
 (*                      so confirming it again creates anew; without it,    *)
 (*                      the confirmation finds the tombstone of the undone  *)
 (*                      entity and creates nothing — confirmed, no effect   *)
+(*   RevertFirst        an Undo reverts the effect while the item still     *)
+(*                      shows it confirmed, and reopens the item only once  *)
+(*                      the revert succeeded; a refused revert changes      *)
+(*                      nothing. Without it, the item is reopened (under    *)
+(*                      its new key) first: until the revert runs, it can   *)
+(*                      be confirmed again, creating a second entity beside *)
+(*                      the one not yet deleted — for good when the revert  *)
+(*                      is then refused, as it can no longer restore an     *)
+(*                      item that is not pending                            *)
 (*                                                                         *)
 (* CrashBeforeLink is not a fix: it lets the creating device stop between  *)
 (* the entity and its link — createChecklist's two writes — the residual   *)
@@ -173,7 +185,8 @@ CONSTANTS
     CopySrc,       \* an item of an older set that a wake consolidates
     CopyDst,       \* its slot in the surviving set, or NoItem
     NoItem,
-    Faults,        \* subset of {"dispatchFails", "nonRetryable"}
+    Faults,        \* subset of {"dispatchFails", "nonRetryable",
+                   \*            "revertRefused"}
     MaxAttempts,   \* user decisions per device and item
     MaxAgentOps,   \* retractions and consolidations per device
     MaxReopens,    \* reopens per device
@@ -188,17 +201,17 @@ CONSTANTS
     SeparateAttach, \* a created entity and its link to its parent sync apart
     ReuseLive,
     CrashBeforeLink,
-    RemoveWins, UndoRekeys, UndoOwnKey
+    RemoveWins, UndoRekeys, UndoOwnKey, RevertFirst
 
 ASSUME
-    /\ Faults \subseteq {"dispatchFails", "nonRetryable"}
+    /\ Faults \subseteq {"dispatchFails", "nonRetryable", "revertRefused"}
     /\ SetItems \subseteq Items
     /\ MaxUserEdits \in {0, 1}
     /\ {UserRestoresBase, EffectMark, RaceFree, AtomicWrites, AtomicReceive, ItemMerge,
         PendingCopiesOnly, RevisionGuard, ClaimResolvesTarget, DerivedIds,
         CopyCarriesKey, CasGuard, SeparateAttach, ReuseLive,
         CrashBeforeLink, AddStyle, RemoveWins, UndoRekeys,
-        UndoOwnKey} \subseteq BOOLEAN
+        UndoOwnKey, RevertFirst} \subseteq BOOLEAN
 
 \* The older set is row 2, the surviving set row 1.
 Rows == IF CopyDst # NoItem THEN {1, 2} ELSE {1}
@@ -223,7 +236,9 @@ Rank(s) == CASE s = "absent" -> 0 [] s = "pending" -> 1
              [] s = "confirmed" -> 4
 
 Pc == {"idle", "claimed", "failP", "failPW", "failR", "failRW",
-       "sib", "sibW", "cascade", "cascadeW"}
+       "sib", "sibW", "cascade", "cascadeW",
+       "undoRevert",   \* an Undo reopened the item; its revert still to run
+       "undoReopen"}   \* an Undo reverted the effect; its reopen still to run
 
 InitItem(i) == [st |-> IF i = CopyDst THEN "absent" ELSE "pending",
                 rev |-> 0,
@@ -666,34 +681,99 @@ Reopen(d, i) ==
 
 \* The project agent's Undo of a confirmed create-style item, offered by
 \* the device whose own confirmation succeeded (the session's memo of the
-\* entity it created): that entity is deleted and the item reopened, in
-\* the order reopenItem runs them folded into one step. With UndoOwnKey the
-\* Undo acts only while the item still carries the key that confirmation
-\* used — the item may show a later decision, synced from another device,
-\* whose entity the memo does not name. With UndoRekeys the reopened item
-\* carries a new key generation, the same on every device that undoes this
-\* decision.
-Undo(d, i) ==
+\* entity it created, in attempt slot k): that entity is deleted and the
+\* item reopened. With UndoOwnKey the Undo acts only while the item still
+\* carries the key that confirmation used — the item may show a later
+\* decision, synced from another device, whose entity the memo does not
+\* name. With UndoRekeys the reopened item carries a new key generation,
+\* the same on every device that undoes this decision.
+\*
+\* The revert (taskRemover) and the reopen (one transaction of the change
+\* set) are two steps, the Undo's slot k holding its progress between
+\* them. The revert may be refused ("revertRefused": the task changed, or
+\* its removal failed). With RevertFirst the revert runs first, while the
+\* item still shows it confirmed; a refused one changes nothing, and the
+\* reopen runs only while the item still holds the revision the Undo read.
+\* Without it, reopenItem as first written: the item is reopened first, and
+\* a refused revert puts it back only while it is still the pending item
+\* the reopen wrote.
+UndoDelete(d, id) ==
+    /\ dels' = [dels EXCEPT ![d] = @ \cup {id}]
+    /\ dmsgs' = dmsgs \cup {[to |-> e, id |-> id] : e \in Devices \ {d}}
+
+UndoReopened(d, i) ==
+    LET reopened == Bump(Item(d, i), "pending")
+    IN [reopened EXCEPT !.gen = IF UndoRekeys THEN @ + 1 ELSE @]
+
+UndoBegin(d, i) ==
     LET k == latest[d][i]
         id == EntityId(d, i, k)
+        rec == UndoReopened(d, i)
     IN
     /\ undos[d] < MaxUndos
     /\ i \notin SetItems
     /\ Item(d, i).st = "confirmed"
     /\ lastOk[d][i]
+    /\ pc[d][i][k] = "idle"
     /\ UndoOwnKey => Item(d, i).gen = okey[d][i][k]
-    /\ dels' = [dels EXCEPT ![d] = @ \cup {id}]
-    /\ dmsgs' = dmsgs \cup {[to |-> e, id |-> id] : e \in Devices \ {d}}
-    /\ LET reopened == Bump(Item(d, i), "pending")
-       IN PutItem(d, i,
-                  [reopened EXCEPT !.gen = IF UndoRekeys THEN @ + 1 ELSE @],
-                  rows[d][RowOf(i)])
     /\ undos' = [undos EXCEPT ![d] = @ + 1]
-    /\ latest' = [latest EXCEPT ![d][i] = 0]
-    /\ lastOk' = [lastOk EXCEPT ![d][i] = FALSE]
-    /\ UNCHANGED <<pc, snap, recv, mem, attempts, agentOps, applied, early,
+    /\ \/ \* The revert is refused before anything was written.
+          /\ RevertFirst
+          /\ "revertRefused" \in Faults
+          /\ UNCHANGED <<rows, hc, msgs, pc, obs, latest, lastOk, dels, dmsgs>>
+       \/ \* The revert deletes the entity; the item still shows it
+          \* confirmed, and the Undo's claim no longer stands.
+          /\ RevertFirst
+          /\ UndoDelete(d, id)
+          /\ pc' = [pc EXCEPT ![d][i][k] = "undoReopen"]
+          /\ obs' = [obs EXCEPT ![d][i][k] = Item(d, i).rev]
+          /\ latest' = [latest EXCEPT ![d][i] = 0]
+          /\ lastOk' = [lastOk EXCEPT ![d][i] = FALSE]
+          /\ UNCHANGED <<rows, hc, msgs>>
+       \/ \* As first written: the item is reopened before the revert.
+          /\ ~RevertFirst
+          /\ PutItem(d, i, rec, rows[d][RowOf(i)])
+          /\ pc' = [pc EXCEPT ![d][i][k] = "undoRevert"]
+          /\ obs' = [obs EXCEPT ![d][i][k] = rec.rev]
+          /\ latest' = [latest EXCEPT ![d][i] = 0]
+          /\ lastOk' = [lastOk EXCEPT ![d][i] = FALSE]
+          /\ UNCHANGED <<dels, dmsgs>>
+    /\ UNCHANGED <<snap, recv, mem, attempts, agentOps, applied, early,
                    ents, emsgs, atts, amsgs, reg, rhc, rmsgs, userEdits,
-                   conflict, clobbered, appVcs, obs, okey, reopens>>
+                   conflict, clobbered, appVcs, okey, reopens>>
+
+\* With RevertFirst: the reopen after a revert that succeeded, only while
+\* the item still holds the revision the Undo read.
+UndoReopen(d, i, k) ==
+    /\ pc[d][i][k] = "undoReopen"
+    /\ pc' = [pc EXCEPT ![d][i][k] = "idle"]
+    /\ IF Item(d, i).st = "confirmed" /\ Item(d, i).rev = obs[d][i][k]
+       THEN PutItem(d, i, UndoReopened(d, i), rows[d][RowOf(i)])
+       ELSE UNCHANGED <<rows, hc, msgs>>
+    /\ UNCHANGED <<snap, recv, mem, attempts, agentOps, applied, early,
+                   effVars, claimVars>>
+
+\* Without RevertFirst: the revert after the reopen. A refused one puts
+\* the item back to confirmed under its old key — only while the item is
+\* still the pending one the reopen wrote.
+UndoRevert(d, i, k) ==
+    LET id == EntityId(d, i, k) IN
+    /\ pc[d][i][k] = "undoRevert"
+    /\ pc' = [pc EXCEPT ![d][i][k] = "idle"]
+    /\ \/ /\ UndoDelete(d, id)
+          /\ UNCHANGED <<rows, hc, msgs, latest, lastOk>>
+       \/ /\ "revertRefused" \in Faults
+          /\ UNCHANGED <<dels, dmsgs>>
+          /\ IF Item(d, i).st = "pending" /\ Item(d, i).rev = obs[d][i][k]
+             THEN LET back == Bump(Item(d, i), "confirmed")
+                  IN /\ PutItem(d, i, [back EXCEPT !.gen = okey[d][i][k]],
+                                rows[d][RowOf(i)])
+                     /\ latest' = [latest EXCEPT ![d][i] = k]
+                     /\ lastOk' = [lastOk EXCEPT ![d][i] = TRUE]
+             ELSE UNCHANGED <<rows, hc, msgs, latest, lastOk>>
+    /\ UNCHANGED <<snap, recv, mem, attempts, agentOps, applied, early,
+                   ents, emsgs, atts, amsgs, reg, rhc, rmsgs, userEdits,
+                   conflict, clobbered, appVcs, obs, okey, reopens, undos>>
 
 -----------------------------------------------------------------------------
 (* The agent *)
@@ -847,9 +927,10 @@ Next ==
           \/ Consolidate(d)
           \/ \E i \in Items :
                 \/ Confirm(d, i) \/ Reject(d, i) \/ Retract(d, i)
-                \/ Reopen(d, i) \/ Undo(d, i)
+                \/ Reopen(d, i) \/ UndoBegin(d, i)
                 \/ \E k \in Slots :
                       \/ DispatchOk(d, i, k) \/ DispatchFails(d, i, k)
+                      \/ UndoRevert(d, i, k) \/ UndoReopen(d, i, k)
                       \/ FailAtomic(d, i, k) \/ FailRead(d, i, k)
                       \/ FailWrite(d, i, k)
           \/ /\ FollowUp # NoItem

@@ -1941,35 +1941,94 @@ void main() {
         });
       });
 
-      test('runs the revert only once the record is pending again', () async {
-        final changeSet = decidedSet();
-        stubDecisions([
-          decisionFor(changeSet, 0, verdict: ChangeDecisionVerdict.confirmed),
-        ]);
-        var upsertsBeforeRevert = -1;
-        var reverts = 0;
+      test(
+        'runs the revert while the item still shows it confirmed, so it '
+        'cannot be confirmed again beside the effect not yet taken back '
+        '(ADR 0097)',
+        () async {
+          // The create-task dispatcher derives the task from the item's key.
+          // Were the item reopened — under its new key — before the revert
+          // ran, a confirmation in that window would create a second task
+          // while the first still exists.
+          final stored = persistUpsertedChangeSets(decidedSet());
+          stubDecisions([
+            decisionFor(
+              stored(),
+              0,
+              verdict: ChangeDecisionVerdict.confirmed,
+            ),
+          ]);
+          ChangeItem? seenByRevert;
+          ToolExecutionResult? confirmDuringRevert;
 
-        final result = await service.reopenItem(
-          changeSet,
-          0,
-          revert: () async {
-            reverts++;
-            upsertsBeforeRevert = verify(
-              () => mockSyncService.upsertEntity(captureAny()),
-            ).captured.length;
-            return true;
-          },
-        );
+          await withClock(testClock, () async {
+            final result = await service.reopenItem(
+              stored(),
+              0,
+              revert: () async {
+                seenByRevert = stored().items[0];
+                confirmDuringRevert = await service.confirmItem(stored(), 0);
+                return true;
+              },
+            );
+            expect(result, isTrue);
+          });
 
-        expect(result, isTrue);
-        expect(reverts, 1);
-        expect(
-          upsertsBeforeRevert,
-          2,
-          reason: 'decision and item were written before the revert ran',
-        );
-        verifyNever(() => mockSyncService.upsertEntity(any()));
-      });
+          expect(seenByRevert?.status, ChangeItemStatus.confirmed);
+          expect(
+            seenByRevert?.effectKey,
+            decidedSet().items[0].effectKey,
+            reason: 'still under the key the effect was applied with',
+          );
+          expect(confirmDuringRevert?.success, isFalse);
+          verifyNever(() => mockToolDispatcher.dispatch(any(), any(), any()));
+          // Reopened, under the new key, only after the revert.
+          expect(stored().items[0].status, ChangeItemStatus.pending);
+          expect(
+            stored().items[0].effectKey,
+            decidedSet().items[0].undoneIn(stored().id, 0).effectKey,
+          );
+        },
+      );
+
+      test(
+        'a revert that succeeded while the item moved on leaves the later '
+        'decision alone',
+        () async {
+          final stored = persistUpsertedChangeSets(decidedSet());
+          stubDecisions([
+            decisionFor(
+              stored(),
+              0,
+              verdict: ChangeDecisionVerdict.confirmed,
+            ),
+          ]);
+          // Another device undid the same decision and confirmed it again;
+          // the item arrives while this device's revert runs.
+          final later = decidedSet().items[0]
+              .undoneIn(stored().id, 0)
+              .withStatus(ChangeItemStatus.confirmed);
+
+          late bool result;
+          await withClock(testClock, () async {
+            result = await service.reopenItem(
+              stored(),
+              0,
+              revert: () async {
+                await mockSyncService.upsertEntity(
+                  stored().copyWith(items: [later, stored().items[1]]),
+                );
+                clearInteractions(mockSyncService);
+                return true;
+              },
+            );
+          });
+
+          expect(result, isFalse);
+          expect(stored().items[0], later);
+          verifyNever(() => mockSyncService.upsertEntity(any()));
+        },
+      );
 
       test(
         'an Undo that takes the effect back reopens the item under a new '
@@ -2063,62 +2122,46 @@ void main() {
         ('refuses', () async => false),
         ('throws', () async => throw StateError('offline')),
       ]) {
-        test('puts the record back when the revert $label', () async {
-          final changeSet = decidedSet();
-          persistUpsertedChangeSets(changeSet);
-          stubDecisions([
-            decisionFor(changeSet, 0, verdict: ChangeDecisionVerdict.confirmed),
-          ]);
+        for (final index in [0, 1]) {
+          test(
+            'writes nothing when the revert $label: the '
+            '${index == 0 ? 'confirmation' : 'rejection'} stands under its '
+            'key (ADR 0097)',
+            () async {
+              final initial = decidedSet();
+              final stored = persistUpsertedChangeSets(initial);
+              stubDecisions([
+                decisionFor(
+                  initial,
+                  index,
+                  verdict: index == 0
+                      ? ChangeDecisionVerdict.confirmed
+                      : ChangeDecisionVerdict.rejected,
+                ),
+              ]);
 
-          await withClock(testClock, () async {
-            expect(
-              await service.reopenItem(changeSet, 0, revert: revert),
-              isFalse,
-            );
-          });
+              await withClock(testClock, () async {
+                expect(
+                  await service.reopenItem(initial, index, revert: revert),
+                  isFalse,
+                );
+              });
 
-          final captured = verify(
-            () => mockSyncService.upsertEntity(captureAny()),
-          ).captured;
-          expect(captured, hasLength(4));
-          final restoredDecision = captured[3] as ChangeDecisionEntity;
-          expect(restoredDecision.id, 'decision-1');
-          expect(restoredDecision.verdict, ChangeDecisionVerdict.confirmed);
-          final restoredSet = captured[2] as ChangeSetEntity;
-          expect(restoredSet.items[0].status, ChangeItemStatus.confirmed);
-          // The effect stands under the key it was applied with.
-          expect(
-            (captured[0] as ChangeSetEntity).items[0].effectKey,
-            isNotNull,
+              verifyNever(() => mockSyncService.upsertEntity(any()));
+              expect(stored(), initial);
+              // The item is not claimable: a confirmation still finds it
+              // decided and dispatches nothing.
+              expect(
+                (await service.confirmItem(stored(), index)).success,
+                isFalse,
+              );
+              verifyNever(
+                () => mockToolDispatcher.dispatch(any(), any(), any()),
+              );
+            },
           );
-          expect(
-            restoredSet.items[0].effectKey,
-            changeSet.items[0].effectKey,
-          );
-        });
+        }
       }
-
-      test('a refused revert on a rejection restores the rejection', () async {
-        final changeSet = decidedSet();
-        persistUpsertedChangeSets(changeSet);
-        stubDecisions(const []);
-
-        expect(
-          await service.reopenItem(changeSet, 1, revert: () async => false),
-          isFalse,
-        );
-        final captured = verify(
-          () => mockSyncService.upsertEntity(captureAny()),
-        ).captured;
-        final fresh = captured[1] as ChangeDecisionEntity;
-        final restored = captured[3] as ChangeDecisionEntity;
-        expect(restored.id, fresh.id, reason: 'the fresh record is reused');
-        expect(restored.verdict, ChangeDecisionVerdict.rejected);
-        expect(
-          (captured[2] as ChangeSetEntity).items[1].status,
-          ChangeItemStatus.rejected,
-        );
-      });
 
       test('refuses a pending or retracted item and a bad index', () async {
         final changeSet = makeChangeSetWith(
