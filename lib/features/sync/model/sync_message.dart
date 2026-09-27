@@ -49,6 +49,12 @@ abstract class DeepBackfillRecord with _$DeepBackfillRecord {
   const factory DeepBackfillRecord({
     required String id,
     required VectorClock vectorClock,
+
+    /// The size in bytes of the advertiser's file for this record (0: it
+    /// holds none), for a live image or audio entry. Null for records
+    /// without media, and from peers on 1.1.33 or older, which never
+    /// compare files.
+    @JsonKey(includeIfNull: false) int? mediaSize,
   }) = _DeepBackfillRecord;
 
   factory DeepBackfillRecord.fromJson(Map<String, dynamic> json) =>
@@ -64,6 +70,11 @@ abstract class DeepBackfillRequestRecord with _$DeepBackfillRequestRecord {
     /// The requester holds no row for the record at all, so the answer
     /// carries its media too.
     @Default(false) bool absent,
+
+    /// The requester holds the record but its file is missing or smaller
+    /// than the one advertised, so the answer carries the file. Ignored by
+    /// peers on 1.1.33 or older, which never advertise a size to prompt it.
+    @Default(false) bool media,
   }) = _DeepBackfillRequestRecord;
 
   factory DeepBackfillRequestRecord.fromJson(Map<String, dynamic> json) =>

@@ -285,7 +285,11 @@ as int,
 /// @nodoc
 mixin _$DeepBackfillRecord {
 
- String get id; VectorClock get vectorClock;
+ String get id; VectorClock get vectorClock;/// The size in bytes of the advertiser's file for this record (0: it
+/// holds none), for a live image or audio entry. Null for records
+/// without media, and from peers on 1.1.33 or older, which never
+/// compare files.
+@JsonKey(includeIfNull: false) int? get mediaSize;
 /// Create a copy of DeepBackfillRecord
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -298,16 +302,16 @@ $DeepBackfillRecordCopyWith<DeepBackfillRecord> get copyWith => _$DeepBackfillRe
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DeepBackfillRecord&&(identical(other.id, id) || other.id == id)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DeepBackfillRecord&&(identical(other.id, id) || other.id == id)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.mediaSize, mediaSize) || other.mediaSize == mediaSize));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,vectorClock);
+int get hashCode => Object.hash(runtimeType,id,vectorClock,mediaSize);
 
 @override
 String toString() {
-  return 'DeepBackfillRecord(id: $id, vectorClock: $vectorClock)';
+  return 'DeepBackfillRecord(id: $id, vectorClock: $vectorClock, mediaSize: $mediaSize)';
 }
 
 
@@ -318,7 +322,7 @@ abstract mixin class $DeepBackfillRecordCopyWith<$Res>  {
   factory $DeepBackfillRecordCopyWith(DeepBackfillRecord value, $Res Function(DeepBackfillRecord) _then) = _$DeepBackfillRecordCopyWithImpl;
 @useResult
 $Res call({
- String id, VectorClock vectorClock
+ String id, VectorClock vectorClock,@JsonKey(includeIfNull: false) int? mediaSize
 });
 
 
@@ -335,11 +339,12 @@ class _$DeepBackfillRecordCopyWithImpl<$Res>
 
 /// Create a copy of DeepBackfillRecord
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? vectorClock = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? vectorClock = null,Object? mediaSize = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,vectorClock: null == vectorClock ? _self.vectorClock : vectorClock // ignore: cast_nullable_to_non_nullable
-as VectorClock,
+as VectorClock,mediaSize: freezed == mediaSize ? _self.mediaSize : mediaSize // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 
@@ -424,10 +429,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  VectorClock vectorClock)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  VectorClock vectorClock, @JsonKey(includeIfNull: false)  int? mediaSize)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _DeepBackfillRecord() when $default != null:
-return $default(_that.id,_that.vectorClock);case _:
+return $default(_that.id,_that.vectorClock,_that.mediaSize);case _:
   return orElse();
 
 }
@@ -445,10 +450,10 @@ return $default(_that.id,_that.vectorClock);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  VectorClock vectorClock)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  VectorClock vectorClock, @JsonKey(includeIfNull: false)  int? mediaSize)  $default,) {final _that = this;
 switch (_that) {
 case _DeepBackfillRecord():
-return $default(_that.id,_that.vectorClock);case _:
+return $default(_that.id,_that.vectorClock,_that.mediaSize);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -465,10 +470,10 @@ return $default(_that.id,_that.vectorClock);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  VectorClock vectorClock)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  VectorClock vectorClock, @JsonKey(includeIfNull: false)  int? mediaSize)?  $default,) {final _that = this;
 switch (_that) {
 case _DeepBackfillRecord() when $default != null:
-return $default(_that.id,_that.vectorClock);case _:
+return $default(_that.id,_that.vectorClock,_that.mediaSize);case _:
   return null;
 
 }
@@ -480,11 +485,16 @@ return $default(_that.id,_that.vectorClock);case _:
 @JsonSerializable()
 
 class _DeepBackfillRecord implements DeepBackfillRecord {
-  const _DeepBackfillRecord({required this.id, required this.vectorClock});
+  const _DeepBackfillRecord({required this.id, required this.vectorClock, @JsonKey(includeIfNull: false) this.mediaSize});
   factory _DeepBackfillRecord.fromJson(Map<String, dynamic> json) => _$DeepBackfillRecordFromJson(json);
 
 @override final  String id;
 @override final  VectorClock vectorClock;
+/// The size in bytes of the advertiser's file for this record (0: it
+/// holds none), for a live image or audio entry. Null for records
+/// without media, and from peers on 1.1.33 or older, which never
+/// compare files.
+@override@JsonKey(includeIfNull: false) final  int? mediaSize;
 
 /// Create a copy of DeepBackfillRecord
 /// with the given fields replaced by the non-null parameter values.
@@ -499,16 +509,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DeepBackfillRecord&&(identical(other.id, id) || other.id == id)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DeepBackfillRecord&&(identical(other.id, id) || other.id == id)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.mediaSize, mediaSize) || other.mediaSize == mediaSize));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,vectorClock);
+int get hashCode => Object.hash(runtimeType,id,vectorClock,mediaSize);
 
 @override
 String toString() {
-  return 'DeepBackfillRecord(id: $id, vectorClock: $vectorClock)';
+  return 'DeepBackfillRecord(id: $id, vectorClock: $vectorClock, mediaSize: $mediaSize)';
 }
 
 
@@ -519,7 +529,7 @@ abstract mixin class _$DeepBackfillRecordCopyWith<$Res> implements $DeepBackfill
   factory _$DeepBackfillRecordCopyWith(_DeepBackfillRecord value, $Res Function(_DeepBackfillRecord) _then) = __$DeepBackfillRecordCopyWithImpl;
 @override @useResult
 $Res call({
- String id, VectorClock vectorClock
+ String id, VectorClock vectorClock,@JsonKey(includeIfNull: false) int? mediaSize
 });
 
 
@@ -536,11 +546,12 @@ class __$DeepBackfillRecordCopyWithImpl<$Res>
 
 /// Create a copy of DeepBackfillRecord
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? vectorClock = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? vectorClock = null,Object? mediaSize = freezed,}) {
   return _then(_DeepBackfillRecord(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,vectorClock: null == vectorClock ? _self.vectorClock : vectorClock // ignore: cast_nullable_to_non_nullable
-as VectorClock,
+as VectorClock,mediaSize: freezed == mediaSize ? _self.mediaSize : mediaSize // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 
@@ -553,7 +564,10 @@ mixin _$DeepBackfillRequestRecord {
 
  String get id;/// The requester holds no row for the record at all, so the answer
 /// carries its media too.
- bool get absent;
+ bool get absent;/// The requester holds the record but its file is missing or smaller
+/// than the one advertised, so the answer carries the file. Ignored by
+/// peers on 1.1.33 or older, which never advertise a size to prompt it.
+ bool get media;
 /// Create a copy of DeepBackfillRequestRecord
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -566,16 +580,16 @@ $DeepBackfillRequestRecordCopyWith<DeepBackfillRequestRecord> get copyWith => _$
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DeepBackfillRequestRecord&&(identical(other.id, id) || other.id == id)&&(identical(other.absent, absent) || other.absent == absent));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DeepBackfillRequestRecord&&(identical(other.id, id) || other.id == id)&&(identical(other.absent, absent) || other.absent == absent)&&(identical(other.media, media) || other.media == media));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,absent);
+int get hashCode => Object.hash(runtimeType,id,absent,media);
 
 @override
 String toString() {
-  return 'DeepBackfillRequestRecord(id: $id, absent: $absent)';
+  return 'DeepBackfillRequestRecord(id: $id, absent: $absent, media: $media)';
 }
 
 
@@ -586,7 +600,7 @@ abstract mixin class $DeepBackfillRequestRecordCopyWith<$Res>  {
   factory $DeepBackfillRequestRecordCopyWith(DeepBackfillRequestRecord value, $Res Function(DeepBackfillRequestRecord) _then) = _$DeepBackfillRequestRecordCopyWithImpl;
 @useResult
 $Res call({
- String id, bool absent
+ String id, bool absent, bool media
 });
 
 
@@ -603,10 +617,11 @@ class _$DeepBackfillRequestRecordCopyWithImpl<$Res>
 
 /// Create a copy of DeepBackfillRequestRecord
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? absent = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? absent = null,Object? media = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,absent: null == absent ? _self.absent : absent // ignore: cast_nullable_to_non_nullable
+as bool,media: null == media ? _self.media : media // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }
@@ -692,10 +707,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  bool absent)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  bool absent,  bool media)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _DeepBackfillRequestRecord() when $default != null:
-return $default(_that.id,_that.absent);case _:
+return $default(_that.id,_that.absent,_that.media);case _:
   return orElse();
 
 }
@@ -713,10 +728,10 @@ return $default(_that.id,_that.absent);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  bool absent)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  bool absent,  bool media)  $default,) {final _that = this;
 switch (_that) {
 case _DeepBackfillRequestRecord():
-return $default(_that.id,_that.absent);case _:
+return $default(_that.id,_that.absent,_that.media);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -733,10 +748,10 @@ return $default(_that.id,_that.absent);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  bool absent)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  bool absent,  bool media)?  $default,) {final _that = this;
 switch (_that) {
 case _DeepBackfillRequestRecord() when $default != null:
-return $default(_that.id,_that.absent);case _:
+return $default(_that.id,_that.absent,_that.media);case _:
   return null;
 
 }
@@ -748,13 +763,17 @@ return $default(_that.id,_that.absent);case _:
 @JsonSerializable()
 
 class _DeepBackfillRequestRecord implements DeepBackfillRequestRecord {
-  const _DeepBackfillRequestRecord({required this.id, this.absent = false});
+  const _DeepBackfillRequestRecord({required this.id, this.absent = false, this.media = false});
   factory _DeepBackfillRequestRecord.fromJson(Map<String, dynamic> json) => _$DeepBackfillRequestRecordFromJson(json);
 
 @override final  String id;
 /// The requester holds no row for the record at all, so the answer
 /// carries its media too.
 @override@JsonKey() final  bool absent;
+/// The requester holds the record but its file is missing or smaller
+/// than the one advertised, so the answer carries the file. Ignored by
+/// peers on 1.1.33 or older, which never advertise a size to prompt it.
+@override@JsonKey() final  bool media;
 
 /// Create a copy of DeepBackfillRequestRecord
 /// with the given fields replaced by the non-null parameter values.
@@ -769,16 +788,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DeepBackfillRequestRecord&&(identical(other.id, id) || other.id == id)&&(identical(other.absent, absent) || other.absent == absent));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DeepBackfillRequestRecord&&(identical(other.id, id) || other.id == id)&&(identical(other.absent, absent) || other.absent == absent)&&(identical(other.media, media) || other.media == media));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,absent);
+int get hashCode => Object.hash(runtimeType,id,absent,media);
 
 @override
 String toString() {
-  return 'DeepBackfillRequestRecord(id: $id, absent: $absent)';
+  return 'DeepBackfillRequestRecord(id: $id, absent: $absent, media: $media)';
 }
 
 
@@ -789,7 +808,7 @@ abstract mixin class _$DeepBackfillRequestRecordCopyWith<$Res> implements $DeepB
   factory _$DeepBackfillRequestRecordCopyWith(_DeepBackfillRequestRecord value, $Res Function(_DeepBackfillRequestRecord) _then) = __$DeepBackfillRequestRecordCopyWithImpl;
 @override @useResult
 $Res call({
- String id, bool absent
+ String id, bool absent, bool media
 });
 
 
@@ -806,10 +825,11 @@ class __$DeepBackfillRequestRecordCopyWithImpl<$Res>
 
 /// Create a copy of DeepBackfillRequestRecord
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? absent = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? absent = null,Object? media = null,}) {
   return _then(_DeepBackfillRequestRecord(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,absent: null == absent ? _self.absent : absent // ignore: cast_nullable_to_non_nullable
+as bool,media: null == media ? _self.media : media // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }

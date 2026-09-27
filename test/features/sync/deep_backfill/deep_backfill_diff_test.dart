@@ -16,6 +16,8 @@ DeepBackfillDiff _diff({
   Map<String, List<VectorClock>> localConflicts = const {},
   Set<String> outstanding = const {},
   Set<String> advertisedUnclocked = const {},
+  Map<String, int> advertisedMedia = const {},
+  Map<String, int> localMedia = const {},
 }) => diffDeepBackfillBatch(
   advertised: advertised,
   advertisedConflicts: advertisedConflicts,
@@ -23,6 +25,8 @@ DeepBackfillDiff _diff({
   localConflicts: localConflicts,
   outstanding: outstanding,
   advertisedUnclocked: advertisedUnclocked,
+  advertisedMedia: advertisedMedia,
+  localMedia: localMedia,
 );
 
 void main() {
@@ -241,7 +245,126 @@ void main() {
     },
   );
 
+  group('diffDeepBackfillBatch — files behind media records', () {
+    test('requests a missing or truncated file at equal clocks, asking for '
+        'no version', () {
+      final diff = _diff(
+        advertised: {'missing': _newer, 'short': _newer, 'whole': _newer},
+        local: {'missing': _newer, 'short': _newer, 'whole': _newer},
+        advertisedMedia: {'missing': 10, 'short': 10, 'whole': 10},
+        localMedia: {'missing': 0, 'short': 4, 'whole': 10},
+      );
+
+      expect(diff.requests, {'missing': isEmpty, 'short': isEmpty});
+      expect(diff.mediaRequests, {'missing': 10, 'short': 10});
+      expect(diff.absentLocally, isEmpty);
+      expect(diff.pushes, isEmpty);
+    });
+
+    test('pushes a larger file back, at equal clocks', () {
+      final diff = _diff(
+        advertised: {'x': _newer},
+        local: {'x': _newer},
+        advertisedMedia: {'x': 3},
+        localMedia: {'x': 10},
+      );
+
+      expect(diff.pushes, {'x'});
+      expect(diff.mediaPushes, {'x'});
+      expect(diff.advertiserLacks, isEmpty);
+      expect(diff.requests, isEmpty);
+    });
+
+    test('asks for the file in the same request as a newer version', () {
+      final diff = _diff(
+        advertised: {'x': _newer},
+        local: {'x': _older},
+        advertisedMedia: {'x': 10},
+        localMedia: {'x': 0},
+      );
+
+      expect(diff.requests, {
+        'x': [_newer],
+      });
+      expect(diff.mediaRequests, {'x': 10});
+    });
+
+    test('pushes a newer version with its file when the file is larger', () {
+      final diff = _diff(
+        advertised: {'x': _older},
+        local: {'x': _newer},
+        advertisedMedia: {'x': 0},
+        localMedia: {'x': 10},
+      );
+
+      expect(diff.pushes, {'x'});
+      expect(diff.mediaPushes, {'x'});
+    });
+
+    test('compares nothing for a peer that lists no sizes, a record deleted '
+        'here, or one held nowhere here', () {
+      final diff = _diff(
+        advertised: {'old-peer': _newer, 'deleted': _newer, 'absent': _newer},
+        local: {'old-peer': _newer, 'deleted': _newer},
+        advertisedMedia: {'deleted': 10, 'absent': 10},
+        localMedia: {'old-peer': 0},
+      );
+
+      expect(diff.mediaRequests, isEmpty);
+      expect(diff.mediaPushes, isEmpty);
+      // The absent record travels with its media through `absentLocally`.
+      expect(diff.requests.keys, ['absent']);
+      expect(diff.absentLocally, {'absent'});
+    });
+
+    test('does not ask for a file already requested, but still pushes', () {
+      final diff = _diff(
+        advertised: {'short': _newer, 'long': _newer},
+        local: {'short': _newer, 'long': _newer},
+        advertisedMedia: {'short': 10, 'long': 1},
+        localMedia: {'short': 2, 'long': 5},
+        outstanding: {'short', 'long'},
+      );
+
+      expect(diff.requests, isEmpty);
+      expect(diff.mediaRequests, isEmpty);
+      expect(diff.mediaPushes, {'long'});
+    });
+  });
+
   group('deepBackfillRequestSettled', () {
+    test('a request for a file waits for a local copy at least as large as '
+        'the one asked for', () {
+      bool settled(int? localMediaSize) => deepBackfillRequestSettled(
+        asked: const [],
+        holdsRow: true,
+        local: _newer,
+        openConflicts: const [],
+        askedMediaSize: 10,
+        localMediaSize: localMediaSize,
+      );
+
+      expect(settled(4), isFalse);
+      expect(settled(10), isTrue);
+      expect(settled(12), isTrue);
+      // No live media row here any more: a deletion makes no claim.
+      expect(settled(null), isTrue);
+    });
+
+    test('a request for a version and its file needs both', () {
+      expect(
+        deepBackfillRequestSettled(
+          asked: const [_newer],
+          holdsRow: true,
+          local: _older,
+          openConflicts: const [],
+          askedMediaSize: 10,
+          localMediaSize: 10,
+        ),
+        isFalse,
+      );
+    });
+
     test('is settled once the row covers every version asked for', () {
       expect(
         deepBackfillRequestSettled(
@@ -323,6 +446,46 @@ void main() {
   });
 
   group('properties', () {
+    glados.Glados(
+      glados.any.mediaScenario,
+      glados.ExploreConfig(numRuns: 400),
+    ).test('a smaller copy is requested and a larger one pushed, never '
+        'both, and a request is settled exactly by a copy as large as the '
+        "advertiser's", (scenario) {
+      final (theirs, mine, outstanding) = scenario;
+      final diff = _diff(
+        advertised: {'x': _newer},
+        local: {'x': _newer},
+        advertisedMedia: {'x': ?theirs},
+        localMedia: {'x': ?mine},
+        outstanding: {if (outstanding) 'x'},
+      );
+
+      final compared = theirs != null && mine != null;
+      expect(
+        diff.mediaRequests.containsKey('x'),
+        compared && mine < theirs && !outstanding,
+      );
+      expect(diff.mediaPushes.contains('x'), compared && mine > theirs);
+      expect(diff.pushes.contains('x'), diff.mediaPushes.contains('x'));
+      if (diff.mediaRequests['x'] case final asked?) {
+        expect(asked, theirs);
+        for (var received = 0; received <= 3; received++) {
+          expect(
+            deepBackfillRequestSettled(
+              asked: diff.requests['x']!,
+              holdsRow: true,
+              local: _newer,
+              openConflicts: const [],
+              askedMediaSize: asked,
+              localMediaSize: received,
+            ),
+            received >= asked,
+          );
+        }
+      }
+    });
+
     glados.Glados(
       glados.any.recordScenario,
       glados.ExploreConfig(numRuns: 400),
@@ -464,6 +627,19 @@ List<VectorClock> _openConflictsOf(
           .toList();
 
 extension _AnyRecordScenario on glados.Any {
+  /// A file size 0–3, or -1 for none listed.
+  glados.Generator<int?> get mediaSize =>
+      glados.IntAnys(this).intInRange(-1, 4).map((s) => s < 0 ? null : s);
+
+  /// The advertiser's size, this device's, and whether a request is out.
+  glados.Generator<(int?, int?, bool)> get mediaScenario =>
+      glados.CombinableAny(this).combine3(
+        mediaSize,
+        mediaSize,
+        glados.BoolAny(this).bool,
+        (theirs, mine, outstanding) => (theirs, mine, outstanding),
+      );
+
   /// A clock over hosts a and b, each counter 0–2; `[-1, _]` is no clock.
   glados.Generator<VectorClock?> get twoHostClock => glados.ListAnys(this)
       .listWithLength(2, glados.IntAnys(this).intInRange(-1, 3))

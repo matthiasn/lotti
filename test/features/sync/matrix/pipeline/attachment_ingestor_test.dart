@@ -521,6 +521,106 @@ void main() {
       // Original placeholder bytes remain untouched.
       expect(File(filePath).readAsStringSync(), 'placeholder');
     });
+
+    group('a media file against the size its event declares', () {
+      const relativePath = '/images/2024-01-01/a.jpg';
+      late String filePath;
+      var downloads = 0;
+
+      setUp(() {
+        filePath = '${tempDir.path}$relativePath';
+        downloads = 0;
+      });
+
+      void haveLocal(int bytes) => File(filePath)
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(List<int>.filled(bytes, 1));
+
+      Event mediaEvent({required int declared, required int delivered}) =>
+          _makeEvent(
+            eventId: 'ev-media',
+            mime: 'image/jpeg',
+            downloadBytes: List<int>.filled(delivered, 2),
+            onDownload: () => downloads++,
+            content: <String, dynamic>{
+              'relativePath': relativePath,
+              'info': {'mimetype': 'image/jpeg', 'size': declared},
+            },
+          );
+
+      Future<bool> receive(Event event) => AttachmentIngestor(
+        documentsDirectory: tempDir,
+      ).process(event: event, logging: logging, attachmentIndex: index);
+
+      test('replaces a truncated local copy with the whole file', () async {
+        haveLocal(4);
+
+        final wrote = await receive(mediaEvent(declared: 10, delivered: 10));
+
+        expect(wrote, isTrue);
+        expect(File(filePath).readAsBytesSync(), List<int>.filled(10, 2));
+      });
+
+      test(
+        'keeps a local copy as large as declared, without downloading',
+        () async {
+          haveLocal(10);
+
+          final wrote = await receive(mediaEvent(declared: 10, delivered: 10));
+
+          expect(wrote, isFalse);
+          expect(downloads, 0);
+          expect(File(filePath).readAsBytesSync(), List<int>.filled(10, 1));
+        },
+      );
+
+      test(
+        'never replaces a file with a smaller one, whatever was declared',
+        () async {
+          haveLocal(6);
+
+          final wrote = await receive(mediaEvent(declared: 10, delivered: 5));
+
+          expect(wrote, isFalse);
+          expect(downloads, 1);
+          expect(File(filePath).readAsBytesSync(), List<int>.filled(6, 1));
+          verify(
+            () => logging.log(
+              LogDomain.sync,
+              any<String>(that: contains('skip.notLarger')),
+              subDomain: 'attachment.download.skip',
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'ignores the declared size of a JSON payload, uploaded gzipped',
+        () async {
+          final jsonPath = '${tempDir.path}/text_entries/a.json';
+          File(jsonPath)
+            ..createSync(recursive: true)
+            ..writeAsStringSync('{}');
+
+          final wrote = await receive(
+            _makeEvent(
+              eventId: 'ev-json',
+              mime: 'application/json',
+              downloadBytes: utf8.encode('{"newer":true}'),
+              onDownload: () => downloads++,
+              content: <String, dynamic>{
+                'relativePath': '/text_entries/a.json',
+                'info': {'mimetype': 'application/json', 'size': 999},
+              },
+            ),
+          );
+
+          expect(wrote, isFalse);
+          expect(downloads, 0);
+          expect(File(jsonPath).readAsStringSync(), '{}');
+        },
+      );
+    });
   });
 
   group('AttachmentIngestor.process — VC dominance for agent payloads', () {

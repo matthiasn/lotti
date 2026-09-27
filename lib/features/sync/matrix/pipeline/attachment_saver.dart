@@ -7,7 +7,10 @@ extension _AttachmentSaver on AttachmentIngestor {
   /// Downloads and saves an attachment.
   ///
   /// For non-agent payloads, an existing non-empty local file is treated as
-  /// up-to-date and download is skipped.
+  /// up-to-date and download is skipped — unless it is a media file smaller
+  /// than the size the event declares: a truncated copy, which the whole one
+  /// replaces. A download never replaces a file with a smaller one
+  /// (`specs/tla/DeepBackfillMedia.tla`, `NeverShrink`).
   /// For `agent_entities`/`agent_links`, downloads are always re-attempted to
   /// avoid stale reads (these files can be legitimately updated in-place).
   ///
@@ -95,11 +98,15 @@ extension _AttachmentSaver on AttachmentIngestor {
       // Note: We don't validate the file's vector clock here because
       // SmartJournalEntityLoader.load() will do that validation and
       // re-download via DescriptorDownloader if the local file is stale.
+      // A media file shorter than the event declares is the exception.
+      var existingLength = 0;
       // ignore: avoid_slow_async_io
       if (!isAgentPayload && await file.exists()) {
         try {
-          final len = await file.length();
-          if (len > 0) {
+          existingLength = await file.length();
+          final declared = _declaredMediaSize(event, relativePath);
+          if (existingLength > 0 &&
+              (declared == null || existingLength >= declared)) {
             return false; // already present
           }
         } catch (_) {
@@ -133,6 +140,16 @@ extension _AttachmentSaver on AttachmentIngestor {
         relativePath: relativePath,
         logging: logging,
       );
+
+      if (bytes.length <= existingLength) {
+        logging.log(
+          LogDomain.sync,
+          'skip.notLarger path=$relativePath bytes=${bytes.length} '
+          'local=$existingLength',
+          subDomain: 'attachment.download.skip',
+        );
+        return false;
+      }
 
       await atomicWriteBytes(
         bytes: bytes,
@@ -219,5 +236,17 @@ extension _AttachmentSaver on AttachmentIngestor {
     } catch (_) {
       return null;
     }
+  }
+
+  /// The size the sender declared for a media file (`info.size`, the
+  /// plaintext length), or null for JSON payloads — uploaded gzipped, so
+  /// their declared size is not the local file's — and for events without
+  /// one.
+  int? _declaredMediaSize(Event event, String relativePath) {
+    if (relativePath.toLowerCase().endsWith('.json')) return null;
+    final info = event.content['info'];
+    if (info is! Map) return null;
+    final size = info['size'];
+    return size is int ? size : null;
   }
 }

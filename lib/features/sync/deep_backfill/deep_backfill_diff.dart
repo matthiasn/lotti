@@ -4,7 +4,9 @@ import 'package:lotti/features/sync/vector_clock.dart';
 ///
 /// This is `Diff` of `specs/tla/DeepBackfill.tla`, computed in memory from a
 /// single range read of the local rows: the model's `Wanted` decides
-/// [requests], its `Owes` and `OwedConflicts` decide [pushes].
+/// [requests], its `Owes` and `OwedConflicts` decide [pushes]. The files
+/// behind image and audio entries are `Diff` of
+/// `specs/tla/DeepBackfillMedia.tla`: [mediaRequests] and [mediaPushes].
 class DeepBackfillDiff {
   const DeepBackfillDiff({
     required this.requests,
@@ -12,6 +14,8 @@ class DeepBackfillDiff {
     required this.pushes,
     required this.advertiserLacks,
     required this.incomparable,
+    this.mediaRequests = const {},
+    this.mediaPushes = const {},
   });
 
   /// Records to request from the advertiser, each with the advertised
@@ -35,6 +39,17 @@ class DeepBackfillDiff {
   /// Records whose clocks could not be compared (a malformed counter). They
   /// are neither requested nor pushed, and are reported instead.
   final Set<String> incomparable;
+
+  /// Requested records whose file this device lacks or holds smaller than
+  /// the advertiser's, each with the advertised size: their answers carry
+  /// the file, and the request is settled once the local copy is at least
+  /// that large. Every one is also a key of [requests].
+  final Map<String, int> mediaRequests;
+
+  /// Pushed records whose file the advertiser lacks or holds smaller than
+  /// this device: their pushes carry the file. Every one is also in
+  /// [pushes].
+  final Set<String> mediaPushes;
 }
 
 /// `b` is `a` or a newer version of it.
@@ -49,15 +64,27 @@ bool vectorClockCovers(VectorClock a, VectorClock b) {
 /// settles a request: nothing on the wire ties an answer to the request it
 /// answers (the model's `ClearOnlyCovered`). An empty clock asks for a row
 /// the advertiser holds without one, and any row settles it.
+///
+/// A request for the record's file too ([askedMediaSize]) also waits for the
+/// local copy to be at least that large. [localMediaSize] is null once the
+/// record is no live media row here any more — a deletion makes no claim on
+/// its file — which settles that part.
 bool deepBackfillRequestSettled({
   required Iterable<VectorClock> asked,
   required bool holdsRow,
   required VectorClock? local,
   required Iterable<VectorClock> openConflicts,
-}) => asked.every(
-  (version) =>
-      version.vclock.isEmpty ? holdsRow : _keeps(local, openConflicts, version),
-);
+  int? askedMediaSize,
+  int? localMediaSize,
+}) =>
+    asked.every(
+      (version) => version.vclock.isEmpty
+          ? holdsRow
+          : _keeps(local, openConflicts, version),
+    ) &&
+    (askedMediaSize == null ||
+        localMediaSize == null ||
+        localMediaSize >= askedMediaSize);
 
 /// What a request for a row the advertiser holds without a clock asks for.
 const VectorClock unclockedVersion = VectorClock(<String, int>{});
@@ -76,6 +103,16 @@ const VectorClock unclockedVersion = VectorClock(<String, int>{});
 /// - [localConflicts]: this device's open conflict versions there.
 /// - [outstanding]: records already requested from this advertiser and not
 ///   yet settled — they are not requested again.
+/// - [advertisedMedia]: the size of the advertiser's file for each live
+///   media record it listed with one. A peer that predates media backfill
+///   lists none, and no file is compared.
+/// - [localMedia]: the size of this device's file for each of its live
+///   media rows in the range; 0 when the file is missing.
+///
+/// Files are compared by size alone, whatever the clocks say: a smaller copy
+/// is requested, a larger one pushed. A record this device holds no row for
+/// travels with its file already (`absentLocally`); a deletion on either
+/// side makes no claim on its file.
 DeepBackfillDiff diffDeepBackfillBatch({
   required Map<String, VectorClock> advertised,
   required Map<String, List<VectorClock>> advertisedConflicts,
@@ -83,6 +120,8 @@ DeepBackfillDiff diffDeepBackfillBatch({
   required Map<String, List<VectorClock>> localConflicts,
   required Set<String> outstanding,
   Set<String> advertisedUnclocked = const {},
+  Map<String, int> advertisedMedia = const {},
+  Map<String, int> localMedia = const {},
 }) {
   final requests = <String, List<VectorClock>>{};
   final absentLocally = <String>{};
@@ -169,12 +208,29 @@ DeepBackfillDiff diffDeepBackfillBatch({
     }
   }
 
+  final mediaRequests = <String, int>{};
+  final mediaPushes = <String>{};
+  for (final MapEntry(key: id, value: theirs) in advertisedMedia.entries) {
+    final mine = localMedia[id];
+    if (mine == null) continue;
+    if (mine > theirs) {
+      pushes.add(id);
+      mediaPushes.add(id);
+    } else if (mine < theirs && !outstanding.contains(id)) {
+      // Equal clocks ask for no version: the request is for the file alone.
+      requests.putIfAbsent(id, () => const []);
+      mediaRequests[id] = theirs;
+    }
+  }
+
   return DeepBackfillDiff(
     requests: requests,
     absentLocally: absentLocally,
     pushes: pushes,
     advertiserLacks: advertiserLacks,
     incomparable: incomparable,
+    mediaRequests: mediaRequests,
+    mediaPushes: mediaPushes,
   );
 }
 

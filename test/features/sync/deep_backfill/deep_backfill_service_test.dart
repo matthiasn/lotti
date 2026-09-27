@@ -18,19 +18,22 @@ const _peer = 'host-peer';
 const SyncSequencePayloadType _journal = SyncSequencePayloadType.journalEntity;
 const SyncSequencePayloadType _links = SyncSequencePayloadType.entryLink;
 
-/// An in-memory store: rows by id, open conflicts, and every resend asked
-/// of it.
+/// An in-memory store: rows by id, open conflicts, file sizes, and every
+/// resend asked of it.
 class _FakeStore extends DeepBackfillStore {
   _FakeStore(
     this.payloadType, {
     Map<String, VectorClock?> rows = const {},
     this.conflicts = const {},
-  }) : rows = SplayTreeMap.of(rows);
+    Map<String, int> media = const {},
+  }) : rows = SplayTreeMap.of(rows),
+       media = Map.of(media);
 
   @override
   final SyncSequencePayloadType payloadType;
   final SplayTreeMap<String, VectorClock?> rows;
   final Map<String, List<VectorClock>> conflicts;
+  final Map<String, int> media;
   final resent = <({Set<String> ids, Set<String> withMedia})>[];
 
   bool _inRange(String id, String? start, String? end) =>
@@ -65,6 +68,15 @@ class _FakeStore extends DeepBackfillStore {
   }) async => {
     for (final MapEntry(key: id, value: clocks) in conflicts.entries)
       if (_inRange(id, start, end)) id: clocks,
+  };
+
+  @override
+  Future<Map<String, int>> mediaSizes({
+    required String? start,
+    required String? end,
+  }) async => {
+    for (final MapEntry(key: id, value: size) in media.entries)
+      if (_inRange(id, start, end)) id: size,
   };
 
   @override
@@ -120,6 +132,7 @@ void main() {
     String? end,
     Map<String, VectorClock> records = const {},
     Map<String, VectorClock> conflicts = const {},
+    Map<String, int> mediaSizes = const {},
     String? attachmentEventId,
   }) =>
       SyncMessage.deepBackfillInventory(
@@ -131,7 +144,11 @@ void main() {
             rangeEnd: end,
             records: [
               for (final MapEntry(key: id, value: clock) in records.entries)
-                DeepBackfillRecord(id: id, vectorClock: clock),
+                DeepBackfillRecord(
+                  id: id,
+                  vectorClock: clock,
+                  mediaSize: mediaSizes[id],
+                ),
             ],
             conflicts: [
               for (final MapEntry(key: id, value: clock) in conflicts.entries)
@@ -224,6 +241,26 @@ void main() {
       expect(summary.batches, 3);
       expect(summary.records, 5);
       expect(summary.recordsByType, {_journal: 5});
+    });
+
+    test("lists each live media record's file size next to its clock, and "
+        'none for a record without media', () async {
+      final store = _FakeStore(
+        _journal,
+        rows: {
+          'image': const VectorClock({'x': 1}),
+          'missing': const VectorClock({'x': 2}),
+          'text': const VectorClock({'x': 3}),
+        },
+        media: {'image': 5, 'missing': 0},
+      );
+
+      await service(stores: [store], batchSize: 10).runRound();
+
+      expect(
+        enqueued().single.records.map((r) => (r.id, r.mediaSize)),
+        [('image', 5), ('missing', 0), ('text', null)],
+      );
     });
 
     test('a store without rows still sends one empty batch covering '
@@ -543,6 +580,86 @@ void main() {
     });
   });
 
+  group('handleInventory — files', () {
+    const clock = VectorClock({'x': 1});
+
+    test('asks for a missing or truncated file at equal clocks, and pushes a '
+        'larger one back with its file', () async {
+      final store = _FakeStore(
+        _journal,
+        rows: {'missing': clock, 'short': clock, 'long': clock, 'same': clock},
+        media: {'missing': 0, 'short': 2, 'long': 9, 'same': 4},
+      );
+
+      await service(stores: [store]).handleInventory(
+        inventory(
+          records: {
+            'missing': clock,
+            'short': clock,
+            'long': clock,
+            'same': clock,
+          },
+          mediaSizes: {'missing': 7, 'short': 10, 'long': 3, 'same': 4},
+        ),
+      );
+
+      expect(requestsSent().single.records, [
+        const DeepBackfillRequestRecord(id: 'missing', media: true),
+        const DeepBackfillRequestRecord(id: 'short', media: true),
+      ]);
+      final rows = await syncDb.deepBackfillRequestsInRange(
+        targetHostId: _peer,
+        payloadType: _journal,
+        start: null,
+        end: null,
+      );
+      expect(rows.map((r) => (r.entryId, r.vectorClocks, r.mediaSize)), [
+        ('missing', '[]', 7),
+        ('short', '[]', 10),
+      ]);
+      expect(store.resent.single.ids, {'long'});
+      expect(store.resent.single.withMedia, {'long'});
+    });
+
+    test('keeps a file request open until the local copy is as large as the '
+        'one asked for, then asks nothing more', () async {
+      final store = _FakeStore(
+        _journal,
+        rows: {'r': clock},
+        media: {'r': 0},
+      );
+      final svc = service(stores: [store]);
+      final batch = inventory(records: {'r': clock}, mediaSizes: {'r': 10});
+
+      await svc.handleInventory(batch);
+      // A truncated copy arrives from somewhere: not enough.
+      store.media['r'] = 4;
+      await svc.handleInventory(batch);
+      expect(requestsSent(), hasLength(1));
+      expect((await outstandingRows()).keys, ['r']);
+
+      store.media['r'] = 10;
+      await svc.handleInventory(batch);
+      expect(await outstandingRows(), isEmpty);
+      verifyNever(() => outbox.enqueueMessageOrThrow(any()));
+    });
+
+    test('compares no files with a peer that lists no sizes', () async {
+      final store = _FakeStore(
+        _journal,
+        rows: {'r': clock},
+        media: {'r': 0},
+      );
+
+      await service(stores: [store]).handleInventory(
+        inventory(records: {'r': clock}),
+      );
+
+      verifyNever(() => outbox.enqueueMessageOrThrow(any()));
+      expect(store.resent, isEmpty);
+    });
+  });
+
   group('handleRequest', () {
     SyncDeepBackfillRequest request({
       String target = _me,
@@ -568,6 +685,28 @@ void main() {
       await service(stores: [store]).handleRequest(request());
 
       expect(store.resent.single.ids, {'a', 'b'});
+      expect(store.resent.single.withMedia, {'a'});
+    });
+
+    test('answers a request for a file with the file, whatever the '
+        'resend-attachments setting says', () async {
+      final store = _FakeStore(_journal, rows: {'a': null, 'b': null});
+
+      await service(stores: [store]).handleRequest(
+        const SyncMessage.deepBackfillRequest(
+              requesterId: _peer,
+              targetHostId: _me,
+              payloadType: _journal,
+              records: [
+                DeepBackfillRequestRecord(id: 'a', media: true),
+                DeepBackfillRequestRecord(id: 'b'),
+              ],
+            )
+            as SyncDeepBackfillRequest,
+      );
+
+      // The store enqueues with includeAttachments, which the attachment
+      // policy honours without consulting the flag.
       expect(store.resent.single.withMedia, {'a'});
     });
 

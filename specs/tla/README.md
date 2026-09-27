@@ -3105,3 +3105,62 @@ inventory, so a device needs no round of its own); the sequence log (a
 deep-backfilled version is recorded like any received payload, but rows the log
 lacks are not reconstructed); and a request timeout shorter than a delivery,
 which can duplicate a request — harmless, since the answer applies idempotently.
+
+## `DeepBackfillMedia` — the files behind image and audio entries
+
+**A design model, written before the code**, on top of `DeepBackfill`. A record
+a device holds no row for already travels with its file. What the record round
+cannot see is a record both devices hold at the same version while one lacks
+the file or holds it cut short: the clocks are equal, so nothing is requested
+and nothing is pushed. The receive side made that worse: an existing non-empty
+file was never replaced, so a truncated copy stayed truncated whatever arrived.
+
+The round now carries the file's size. The inventory lists, next to each
+record's clock, the size of the advertiser's file (0: none). A recipient whose
+copy is smaller asks the advertiser for it; one whose copy is larger pushes it
+back. The advertiser answers with its current file whatever the
+resend-attachments setting says, and a received file replaces the local one
+only when it is larger. A file is its size in the model: files are written once
+and a copy can only lose bytes. Same-size corruption is out of scope — sizes
+only, no hashing of every file on every round. `Truncate` is the loss being
+repaired. Every device holds every record's row: the record protocol is
+`DeepBackfill`'s, assumed done.
+
+| Property | Kind | Says |
+|----------|------|------|
+| `NoDuplicateRequest` | invariant | a file is asked of an advertiser at most once while the request or its answer is on its way, unless it was lost again meanwhile |
+| `NoShrink` | action | only a fault makes a copy smaller: no receive replaces a file with a shorter one |
+| `EventuallyComplete` | liveness | every device ends up with the largest copy any device holds |
+| `EventuallyQuiet` | liveness | once the copies agree, a round moves no files |
+| `RoundTerminates` | liveness | a started round finishes its batches or is lost to a crash |
+
+`NoDuplicateRequest` allows one more request per fault: a push can deliver the
+file and settle the request while the answer is still coming, and a copy
+truncated after that is a new loss, rightly asked for again.
+
+| Configuration | Devices | Records | Sizes | Adds | Distinct states |
+|---------------|--------:|--------:|------:|------|----------------:|
+| `DeepBackfillMedia` | 2 | 1 | 0–2 | any starting copies, one truncation, both run rounds | 21,766 |
+| `DeepBackfillMediaOneSided` | 2 | 1 | 0–2 | only device 1 runs rounds | 333 |
+| `DeepBackfillMediaThree` | 3 | 1 | 0–1 | only device 1 runs rounds; a file only device 3 holds reaches device 2 through device 1 | 804 |
+| `DeepBackfillMediaPaged` | 2 | 2 | 0–1 | a round of two batches | 373,072 |
+| `DeepBackfillMediaFaults` | 2 | 1 | 0–2 | one lost message and one crash, on top of a truncation | 93,848 |
+| `DeepBackfillMediaResend` | 2 | 1 | 0–2 | resending switched on: ordinary sync carries any copy, whole or not, at any time (no `EventuallyQuiet`: resends are unbounded) | 52,074 |
+
+Each design switch set to `FALSE` has a counterexample:
+
+| Switch | Alternative | Counterexample |
+|--------|-------------|----------------|
+| `AdvertiseMedia` | the inventory carries clocks only | `EventuallyComplete`, one-sided: A has no file, B has it; the clocks are equal, and nothing ever moves |
+| `ReplaceShorter` | an existing non-empty file is kept (the old receive rule) | `EventuallyComplete`, one-sided: A's copy is truncated; B pushes the whole file every round, and A keeps its truncated copy |
+| `NeverShrink` | any received file replaces the local one | `NoShrink`, resending on: B resends its truncated copy, and it overwrites A's whole one |
+| `AnswerIgnoresFlag` | an answer carries the file only with resending on | `EventuallyComplete`, one-sided, resending off: B asks A for the file, and the answer never carries it |
+| `DedupeOutstanding` | a diff requests a file already requested | `NoDuplicateRequest`, no faults: a second round asks again while the first answer is on its way |
+
+Left out, deliberately: tombstones (a deleted record's file is neither
+advertised nor asked for); peers that predate the size (their inventory has
+none, so they neither ask nor are asked: the round degrades to records only);
+and the relay of a file between two recipients (as in `DeepBackfill`, a third
+device's larger copy travels as its push when it diffs another's inventory).
+The plan and the mapping to code are in
+[docs/implementation_plans/2026-09-27_deep_backfill_media.md](../../docs/implementation_plans/2026-09-27_deep_backfill_media.md).

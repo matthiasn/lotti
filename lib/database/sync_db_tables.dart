@@ -298,6 +298,11 @@ class DeepBackfillRequests extends Table {
   /// JSON list of the vector clocks asked for: the advertiser's row and any
   /// of its open conflict versions this device did not keep.
   TextColumn get vectorClocks => text().named('vector_clocks')();
+
+  /// The size of the advertiser's file the request asked for, when the
+  /// request is for the record's media too; null when it is not. The
+  /// request is settled once the local copy is at least this large.
+  IntColumn get mediaSize => integer().named('media_size').nullable()();
   DateTimeColumn get requestedAt => dateTime().named('requested_at')();
 
   @override

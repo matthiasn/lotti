@@ -10,6 +10,7 @@ import 'package:lotti/features/sync/matrix/matrix_message_sender.dart'
     show MatrixMessageSender;
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
+import 'package:lotti/features/sync/media/entry_media.dart';
 import 'package:lotti/features/sync/model/sync_attachment_policy.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/tuning.dart';
@@ -17,10 +18,8 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/sync/vector_clock_logging.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
-import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/matrix.dart';
 import 'package:path/path.dart' as p;
 
@@ -403,37 +402,17 @@ class MatrixPayloadSender {
       );
     }
 
-    await journalEntity.maybeMap(
-      journalAudio: (JournalAudio journalAudio) async {
-        if (sendAttachments) {
-          final audioPath = AudioUtils.getAudioPath(
-            journalAudio,
-            documentsDirectory,
-          );
-          final sent = await sendFile(
-            room: room,
-            fullPath: audioPath,
-            relativePath: AudioUtils.getRelativeAudioPath(journalAudio),
-          );
-          attachmentsOk = attachmentsOk && sent;
-        }
-      },
-      journalImage: (JournalImage journalImage) async {
-        if (sendAttachments) {
-          final imagePath = getFullImagePath(
-            journalImage,
-            documentsDirectory: documentsDirectory.path,
-          );
-          final sent = await sendFile(
-            room: room,
-            fullPath: imagePath,
-            relativePath: getRelativeImagePath(journalImage),
-          );
-          attachmentsOk = attachmentsOk && sent;
-        }
-      },
-      orElse: () async {},
-    );
+    final media = sendAttachments
+        ? entryMedia(journalEntity, documentsDirectory: documentsDirectory)
+        : null;
+    if (media != null) {
+      final sent = await sendFile(
+        room: room,
+        fullPath: media.file.path,
+        relativePath: media.relativePath,
+      );
+      attachmentsOk = attachmentsOk && sent;
+    }
 
     if (!attachmentsOk) {
       return null;
@@ -797,23 +776,13 @@ class MatrixPayloadSender {
 
     bool? resendFlag;
     for (final child in children) {
-      // The type test and the path resolution are one step, so there is no
-      // unreachable "entity has media but is neither" branch to carry.
+      // The type test and the path resolution are one step (entryMedia), so
+      // there is no unreachable "has media but is neither" branch to carry.
       final entity = journalEntityById[child.id];
-      final (String fullPath, String relativePath) media;
-      if (entity is JournalImage) {
-        media = (
-          getFullImagePath(entity, documentsDirectory: documentsDirectory.path),
-          getRelativeImagePath(entity),
-        );
-      } else if (entity is JournalAudio) {
-        media = (
-          AudioUtils.getAudioPath(entity, documentsDirectory),
-          AudioUtils.getRelativeAudioPath(entity),
-        );
-      } else {
-        continue;
-      }
+      final media = entity == null
+          ? null
+          : entryMedia(entity, documentsDirectory: documentsDirectory);
+      if (media == null) continue;
 
       // Read the flag lazily: bundles are text-only in the normal case, so
       // most sends never need it.
@@ -835,8 +804,8 @@ class MatrixPayloadSender {
 
       final sent = await sendFile(
         room: room,
-        fullPath: media.$1,
-        relativePath: media.$2,
+        fullPath: media.file.path,
+        relativePath: media.relativePath,
       );
       if (!sent) return false;
     }

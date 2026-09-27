@@ -158,7 +158,7 @@ sequenceDiagram
   Peer->>Peer: entry known? blob on disk?
   Peer->>Room: SyncJournalEntity(includeAttachments: true)
   Room->>Ingest: m.file (the blob)
-  Ingest->>Ingest: write to disk
+  Ingest->>Ingest: write to disk unless the local copy is as large
 ```
 
 Three properties are load-bearing:
@@ -176,6 +176,13 @@ Three properties are load-bearing:
   blob may answer, because the device that created the entry is often the one
   that is offline. A peer that lacks the file stays silent rather than
   answering with nothing.
+
+This loop sees only a file that is missing when its entry is loaded. A file
+that is truncated, or belongs to an entry nobody opens, is found by the manual
+deep-backfill round instead, which compares file sizes between devices
+([files behind image and audio entries](sequence-and-backfill.md#files-behind-image-and-audio-entries)).
+Both paths resolve the file through `entryMedia`
+(`lib/features/sync/media/entry_media.dart`), as the enqueue and the upload do.
 
 Bounds live in `SyncTuning` (`mediaRepair*`): a debounce window so a catch-up's
 burst of misses becomes one request, a batch cap so a backlog drains across
