@@ -395,7 +395,7 @@ extension _AgentHandlers on SyncEventProcessor {
   }
 
   /// Fails the apply of an agent record that arrived before the agent
-  /// repository was wired (`wireSyncEventProcessor`). A failed apply is
+  /// repository was wired (`wireAgentSyncRepository`). A failed apply is
   /// retried and, past the retry cap, kept as a skipped event that can be
   /// retried again — dropping it instead lost another device's agent data
   /// for as long as the agent runtime had not started.

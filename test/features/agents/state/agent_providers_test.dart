@@ -1809,6 +1809,33 @@ void main() {
       sub.close();
     });
 
+    test('hands sync the repository even when a runtime provider fails to '
+        'build', () async {
+      final mockProcessor = MockSyncEventProcessor();
+      final mockHandler = MockBackfillResponseHandler();
+      when(() => mockProcessor.backfillResponseHandler).thenReturn(mockHandler);
+      getIt.registerSingleton<SyncEventProcessor>(mockProcessor);
+
+      final container = bench.createContainer(
+        taskAgentWorkflow: (ref) => throw StateError('workflow failed'),
+      );
+      final sub = container.listen(agentInitializationProvider, (_, _) {});
+      await expectLater(
+        container.read(agentInitializationProvider.future),
+        throwsA(anything),
+      );
+
+      verify(
+        () => mockProcessor.agentRepository = any(that: isNotNull),
+      ).called(1);
+      verify(
+        () => mockHandler.agentRepository = any(that: isNotNull),
+      ).called(1);
+      // The runtime half never ran.
+      verifyNever(() => mockProcessor.wakeOrchestrator = any());
+      sub.close();
+    });
+
     test('clears SyncEventProcessor fields on dispose', () async {
       final mockProcessor = MockSyncEventProcessor();
       final mockHandler = MockBackfillResponseHandler();

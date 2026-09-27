@@ -253,10 +253,30 @@ Future<void> _notifyWakeCompletion(
   });
 }
 
-/// Wires the agent repository and wake orchestrator into the
-/// [SyncEventProcessor] so that incoming agent data is persisted and incoming
+/// Hands the agent repository to the [SyncEventProcessor] and its backfill
+/// handler, so incoming agent entities and links are stored and backfill
+/// requests for them answered.
+///
+/// This is sync's only hard dependency on the agent feature, and it needs
+/// nothing but the agent database: `agentInitialization` calls it before it
+/// resolves any runtime provider, so a runtime that fails to build or start
+/// can never leave sync unable to store another device's agents. The runtime
+/// half is [wireSyncEventProcessor].
+void wireAgentSyncRepository(Ref ref, SyncEventProcessor? processor) {
+  if (processor == null) return;
+  final repository = ref.read(agentRepositoryProvider);
+  processor.agentRepository = repository;
+  processor.backfillResponseHandler.agentRepository = repository;
+  ref.onDispose(() {
+    processor.agentRepository = null;
+    processor.backfillResponseHandler.agentRepository = null;
+  });
+}
+
+/// Wires the wake runtime into the [SyncEventProcessor] so that incoming
 /// lifecycle changes (pause/destroy from another device) restore/remove
-/// subscriptions.
+/// subscriptions. The repository comes earlier, from
+/// [wireAgentSyncRepository].
 ///
 /// [retireSupersededTaskAgents] runs the retirement pass
 /// (`TaskAgentRetirement.retireSuperseded`) for a task whose `agent_task`
@@ -268,9 +288,7 @@ void wireSyncEventProcessor(
   required Future<void> Function(String taskId) retireSupersededTaskAgents,
 }) {
   if (processor == null) return;
-  final repository = ref.read(agentRepositoryProvider);
   processor
-    ..agentRepository = repository
     ..wakeOrchestrator = orchestrator
     ..agentWakeCoordinator = ref.read(agentWakeCoordinatorProvider)
     // Feature-owned runtime mirrors (goal agents today): a synced-in
@@ -278,16 +296,11 @@ void wireSyncEventProcessor(
     // agent onto this device mid-session.
     ..runtimeMaintenance = ref.read(agentRuntimeMaintenanceProvider)
     ..retireSupersededTaskAgents = retireSupersededTaskAgents;
-  // Also wire the agent repository into the backfill handler so it can
-  // look up agent entities and links when responding to backfill requests.
-  processor.backfillResponseHandler.agentRepository = repository;
   ref.onDispose(() {
     processor
-      ..agentRepository = null
       ..wakeOrchestrator = null
       ..agentWakeCoordinator = null
       ..runtimeMaintenance = const []
       ..retireSupersededTaskAgents = null;
-    processor.backfillResponseHandler.agentRepository = null;
   });
 }

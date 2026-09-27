@@ -572,9 +572,9 @@ ImproverAgentService improverAgentService(Ref ref) {
 /// every device, from app start (`beamer_app.dart` listens to it).
 ///
 /// This provider:
-/// 1. Wires the [SyncEventProcessor] for agent data, before anything that
-///    can await or throw, so a failure further down never leaves sync unable
-///    to store another device's agents.
+/// 1. Hands the agent repository to the [SyncEventProcessor] before it
+///    builds any runtime provider, so a runtime that fails to build or start
+///    never leaves sync unable to store another device's agents.
 /// 2. Starts the [WakeOrchestrator] listening to
 ///    `UpdateNotifications.updateStream`.
 /// 3. Restores task agent subscriptions from persisted state.
@@ -591,12 +591,17 @@ Future<void> agentInitialization(Ref ref) async {
     name: 'agentInitialization',
   );
 
+  // Sync first, before any runtime provider is built: building one can
+  // throw, and until the repository is wired every agent entity and link
+  // arriving from another device fails to apply.
+  final syncEventProcessor = ref.watch(maybeSyncEventProcessorProvider);
+  wireAgentSyncRepository(ref, syncEventProcessor);
+
   final orchestrator = ref.watch(wakeOrchestratorProvider);
   final workflow = ref.watch(taskAgentWorkflowProvider);
   final taskAgentService = ref.watch(taskAgentServiceProvider);
   final templateService = ref.watch(agentTemplateServiceProvider);
   final updateNotifications = ref.watch(updateNotificationsProvider);
-  final syncEventProcessor = ref.watch(maybeSyncEventProcessorProvider);
   final projectActivityMonitor = ref.watch(projectActivityMonitorProvider);
 
   // Register the dispose callback before any async work so it is always
@@ -609,11 +614,8 @@ Future<void> agentInitialization(Ref ref) async {
     orchestrator.stop();
   });
 
-  // 0. Wire the sync event processor for cross-device agent data first,
-  //    before anything below can await or throw. Until it is wired, every
-  //    agent entity and link arriving from another device fails to apply; a
-  //    later step that failed used to leave it unwired for the whole run,
-  //    with sync unable to store another device's agents.
+  // 0. Wire the wake runtime into the sync event processor, before anything
+  //    below can await or throw, so synced lifecycle changes reach it.
   wireSyncEventProcessor(
     ref,
     orchestrator,
