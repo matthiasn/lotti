@@ -376,6 +376,57 @@ void _registerIdempotency(_Db Function() fixture) {
     );
 
     test(
+      'set_task_title leaves the base title the user restored after the '
+      'first application — the value alone cannot tell it from an untouched '
+      'field (ADR 0098)',
+      () async {
+        final base = baseFor(TaskAgentToolNames.setTaskTitle, f.task);
+        const args = {'title': 'Rotate the signing certificate'};
+
+        await apply(TaskAgentToolNames.setTaskTitle, args, base: base);
+        expect(
+          (await storedTask()).data.appliedChangeEffects,
+          {'set-1:0'},
+        );
+        await userEdit((data) => data.copyWith(title: f.task.data.title));
+
+        final late = await apply(
+          TaskAgentToolNames.setTaskTitle,
+          args,
+          base: base,
+        );
+
+        expect(late.success, isTrue);
+        expect(late.output, contains('applied to the task already'));
+        expect((await storedTask()).data.title, f.task.data.title);
+      },
+    );
+
+    test(
+      'a different change proposed against the restored base still applies',
+      () async {
+        final base = baseFor(TaskAgentToolNames.setTaskTitle, f.task);
+
+        await apply(TaskAgentToolNames.setTaskTitle, {
+          'title': 'Rotate the signing certificate',
+        }, base: base);
+        await userEdit((data) => data.copyWith(title: f.task.data.title));
+
+        final next = await apply(
+          TaskAgentToolNames.setTaskTitle,
+          {'title': 'Renew the signing certificate'},
+          key: 'set-2:0',
+          base: base,
+        );
+
+        expect(next.success, isTrue, reason: next.output);
+        final task = await storedTask();
+        expect(task.data.title, 'Renew the signing certificate');
+        expect(task.data.appliedChangeEffects, {'set-1:0', 'set-2:0'});
+      },
+    );
+
+    test(
       'set_task_status leaves a status the user chose after the first '
       'application',
       () async {
@@ -406,8 +457,9 @@ void _registerIdempotency(_Db Function() fixture) {
     );
 
     // Every tool twice or more, on a replica that holds the other device's
-    // writes, with the user editing in between: the journal must equal
-    // applying each item once, and no edit may be overwritten.
+    // writes, with the user editing in between — restoring a field to the
+    // proposal's base included: the journal must equal applying each item
+    // once, and no edit may be overwritten (ADR 0075, ADR 0098).
     var run = 0;
     glados.Glados(
       glados.any.idempotencyTrace,
@@ -431,8 +483,15 @@ void _registerIdempotency(_Db Function() fixture) {
           2: ('ChecklistItem', 'Item $r'),
         };
         final applied = List.filled(5, 0);
-        String? userTitle;
-        Duration? userEstimate;
+        const baseEstimate = Duration(minutes: 30);
+        final baseTitle = 'Base title $r';
+        // The fields as applying each change once must leave them: a change
+        // takes effect over its base value, once — never again after it
+        // landed, whatever the user wrote since.
+        var title = baseTitle;
+        var estimate = baseEstimate;
+        var titleLanded = false;
+        var estimateLanded = false;
 
         Future<void> applyItem(int item) async {
           final key = 'run-$r:$item';
@@ -465,6 +524,14 @@ void _registerIdempotency(_Db Function() fixture) {
           };
           expect(result.success, isTrue, reason: '$trace: ${result.output}');
           applied[item]++;
+          if (item == 3 && !titleLanded && title == baseTitle) {
+            title = 'Agent title $r';
+            titleLanded = true;
+          }
+          if (item == 4 && !estimateLanded && estimate == baseEstimate) {
+            estimate = const Duration(minutes: 90);
+            estimateLanded = true;
+          }
         }
 
         for (final (step, op) in trace.indexed) {
@@ -472,13 +539,17 @@ void _registerIdempotency(_Db Function() fixture) {
             case < 5:
               await applyItem(op);
             case 5:
-              final title = userTitle = 'User title $r.$step';
-              await userEdit((data) => data.copyWith(title: title));
+              final edited = title = 'User title $r.$step';
+              await userEdit((data) => data.copyWith(title: edited));
+            case 6:
+              final edited = estimate = Duration(minutes: 7 + step);
+              await userEdit((data) => data.copyWith(estimate: edited));
+            case 7:
+              title = baseTitle;
+              await userEdit((data) => data.copyWith(title: baseTitle));
             default:
-              userEstimate = Duration(minutes: 7 + step);
-              await userEdit(
-                (data) => data.copyWith(estimate: userEstimate),
-              );
+              estimate = baseEstimate;
+              await userEdit((data) => data.copyWith(estimate: baseEstimate));
           }
 
           for (final MapEntry(key: item, value: (type, marker))
@@ -490,15 +561,69 @@ void _registerIdempotency(_Db Function() fixture) {
             );
           }
           final task = await storedTask();
-          expect(
-            task.data.title,
-            userTitle ?? (applied[3] > 0 ? 'Agent title $r' : 'Base title $r'),
-            reason: 'NoClobber title: $trace',
-          );
+          expect(task.data.title, title, reason: 'NoClobber title: $trace');
           expect(
             task.data.estimate,
-            userEstimate ?? Duration(minutes: applied[4] > 0 ? 90 : 30),
+            estimate,
             reason: 'NoClobber estimate: $trace',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+
+    // The field's ABA on its own (ChangeSetLifecycleRaceRestore): one title
+    // change applied any number of times while the user edits the title and
+    // puts it back to the proposal's base. The change lands at most once,
+    // and only over the base; nothing the user wrote after it landed is
+    // overwritten (ADR 0098).
+    var abaRun = 0;
+    glados.Glados(
+      glados.any.fieldAbaTrace,
+      glados.ExploreConfig(numRuns: 25),
+    ).test(
+      'generated applications of one field change never overwrite the base '
+      'the user restored after it landed',
+      (trace) async {
+        final r = abaRun++;
+        final baseTitle = 'ABA base $r';
+        await userEdit((data) => data.copyWith(title: baseTitle));
+        final base = baseFor(
+          TaskAgentToolNames.setTaskTitle,
+          await storedTask(),
+        );
+        var title = baseTitle;
+        var landed = false;
+
+        for (final (step, op) in trace.indexed) {
+          switch (op) {
+            case 0:
+              final result = await apply(
+                TaskAgentToolNames.setTaskTitle,
+                {'title': 'ABA agent $r'},
+                key: 'aba-$r:0',
+                base: base,
+              );
+              expect(
+                result.success,
+                isTrue,
+                reason: '$trace: ${result.output}',
+              );
+              if (!landed && title == baseTitle) {
+                title = 'ABA agent $r';
+                landed = true;
+              }
+            case 1:
+              final edited = title = 'ABA user $r.$step';
+              await userEdit((data) => data.copyWith(title: edited));
+            default:
+              title = baseTitle;
+              await userEdit((data) => data.copyWith(title: baseTitle));
+          }
+          expect(
+            (await storedTask()).data.title,
+            title,
+            reason: 'NoClobber: $trace',
           );
         }
       },
@@ -508,10 +633,18 @@ void _registerIdempotency(_Db Function() fixture) {
 }
 
 extension _AnyIdempotencyTrace on glados.Any {
+  /// 0 applies one confirmed title change, 1 is the user editing the title
+  /// and 2 the user putting it back to the value the change was proposed
+  /// against.
+  glados.Generator<List<int>> get fieldAbaTrace => glados.ListAnys(
+    this,
+  ).listWithLengthInRange(1, 8, glados.IntAnys(this).intInRange(0, 3));
+
   /// Operations 0–4 apply one of five confirmed items — a follow-up task, a
-  /// time entry, a checklist item, a title and an estimate — and 5 and 6 are
-  /// the user editing the title and the estimate.
+  /// time entry, a checklist item, a title and an estimate — 5 and 6 are
+  /// the user editing the title and the estimate, and 7 and 8 the user
+  /// putting either back to the value its proposal was made against.
   glados.Generator<List<int>> get idempotencyTrace => glados.ListAnys(
     this,
-  ).listWithLengthInRange(1, 10, glados.IntAnys(this).intInRange(0, 7));
+  ).listWithLengthInRange(1, 10, glados.IntAnys(this).intInRange(0, 9));
 }

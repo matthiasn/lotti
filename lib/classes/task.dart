@@ -168,10 +168,42 @@ abstract class TaskData with _$TaskData {
     /// Inference profile ID inherited from the category at task creation.
     /// Enables speech-to-text and image analysis independently of any agent.
     String? profileId,
+
+    /// The effect keys of the confirmed agent changes that set one of this
+    /// task's fields, each written in the same version as the value it set
+    /// (ADR 0098). A second application of the same change — confirmed on
+    /// another device before the two synced, or confirmed again after a
+    /// reopen — finds its key here and does nothing, even where the user has
+    /// since put the field back to the value the change was proposed
+    /// against. Only grows: every write over a stored task keeps the stored
+    /// keys ([TaskDataOnStored.onStored]).
+    Set<String>? appliedChangeEffects,
   }) = _TaskData;
 
   factory TaskData.fromJson(Map<String, dynamic> json) =>
       _$TaskDataFromJson(json);
+}
+
+/// Writing a task's data over the version stored in the journal.
+extension TaskDataOnStored on TaskData {
+  /// This data as written over [stored]: the checklist list stays the stored
+  /// one — `ChecklistRepository.updateTaskChecklistIds` owns it — and the
+  /// applied change effects are joined ([withEffectsOf]).
+  TaskData onStored(TaskData stored) =>
+      withEffectsOf(stored).copyWith(checklistIds: stored.checklistIds);
+
+  /// This data recording every change [other] records as applied, too. The
+  /// record only grows ([TaskData.appliedChangeEffects]): whatever a write
+  /// keeps of the fields — a screen's copy read before a change was applied,
+  /// or one side of a resolved conflict — it keeps every record, so no
+  /// applied change can apply again (ADR 0098).
+  TaskData withEffectsOf(TaskData other) {
+    final effects = {
+      ...?other.appliedChangeEffects,
+      ...?appliedChangeEffects,
+    };
+    return copyWith(appliedChangeEffects: effects.isEmpty ? null : effects);
+  }
 }
 
 TaskStatus taskStatusFromString(String status) {

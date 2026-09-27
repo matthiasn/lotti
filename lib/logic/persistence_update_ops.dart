@@ -147,10 +147,11 @@ class PersistenceUpdateOps extends PersistenceCollaboratorBase {
     EntryText? entryText,
   }) async {
     try {
-      // Written on the stored task, which keeps its own checklist list: the
-      // caller's [taskData] may be a screen's copy from before a checklist
-      // was added (ChecklistRepository.updateTaskChecklistIds owns that
-      // list; specs/tla/ChecklistMembership.tla).
+      // Written on the stored task, which keeps its own checklist list and
+      // its record of applied changes: the caller's [taskData] may be a
+      // screen's copy from before a checklist was added
+      // (ChecklistRepository.updateTaskChecklistIds owns that list;
+      // specs/tla/ChecklistMembership.tla) or a change was applied (ADR 0098).
       return await writeOnStored(
         journalDb: journalDb,
         persistenceLogic: logic,
@@ -167,7 +168,7 @@ class PersistenceUpdateOps extends PersistenceCollaboratorBase {
           return stored.copyWith(
             meta: await logic.updateMetadata(stored.meta),
             entryText: entryText ?? stored.entryText,
-            data: taskData.copyWith(checklistIds: stored.data.checklistIds),
+            data: taskData.onStored(stored.data),
           );
         },
         beforeNotify: (stored, _) =>

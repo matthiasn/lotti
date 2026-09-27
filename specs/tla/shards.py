@@ -72,6 +72,7 @@ SECONDS = {
     "VersionHeadsGoal": 26,
     "OutboxOperator": 223,
     "ChangeSetLifecycleRaceSet": 20,
+    "ChangeSetLifecycleRaceRestore": 25,
     "OutboxConcurrentLive": 119,
     "ScheduledWakeLeaseCrash": 16,
     "ChangeSetLifecycleSync": 18,

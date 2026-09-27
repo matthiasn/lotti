@@ -1,4 +1,5 @@
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_shared.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/entry_field_diff.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -18,7 +19,7 @@ JournalEntity resolveToSide({
   required ConflictSide side,
 }) {
   final chosen = side == ConflictSide.local ? local : remote;
-  return _withMergedClock(chosen, local, remote);
+  return _resolved(chosen, local, remote);
 }
 
 /// "Combine": starts from [baseSide]'s entity — which supplies the structural
@@ -83,7 +84,25 @@ JournalEntity buildMergedEntity({
     result = _withTitleFrom(result, entityFor(titleChoice));
   }
 
-  return _withMergedClock(result, local, remote);
+  return _resolved(result, local, remote);
+}
+
+/// [entity] as the resolution of [local] and [remote]: the merged clock, and
+/// for a task, every applied change either side records — whichever side's
+/// fields the user kept, a change that landed on either must not apply again
+/// (`TaskData.appliedChangeEffects`, ADR 0098).
+JournalEntity _resolved(
+  JournalEntity entity,
+  JournalEntity local,
+  JournalEntity remote,
+) {
+  final withEffects = switch ((entity, local, remote)) {
+    (final Task e, final Task l, final Task r) => e.copyWith(
+      data: e.data.withEffectsOf(l.data).withEffectsOf(r.data),
+    ),
+    _ => entity,
+  };
+  return _withMergedClock(withEffects, local, remote);
 }
 
 /// Copies the structured title from [source] onto [base]. Both are the same

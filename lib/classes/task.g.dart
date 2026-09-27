@@ -188,6 +188,9 @@ _TaskData _$TaskDataFromJson(Map<String, dynamic> json) => _TaskData(
   coverArtId: json['coverArtId'] as String?,
   coverArtCropX: (json['coverArtCropX'] as num?)?.toDouble() ?? 0.5,
   profileId: json['profileId'] as String?,
+  appliedChangeEffects: (json['appliedChangeEffects'] as List<dynamic>?)
+      ?.map((e) => e as String)
+      .toSet(),
 );
 
 Map<String, dynamic> _$TaskDataToJson(_TaskData instance) => <String, dynamic>{
@@ -206,6 +209,7 @@ Map<String, dynamic> _$TaskDataToJson(_TaskData instance) => <String, dynamic>{
   'coverArtId': instance.coverArtId,
   'coverArtCropX': instance.coverArtCropX,
   'profileId': instance.profileId,
+  'appliedChangeEffects': instance.appliedChangeEffects?.toList(),
 };
 
 const _$ChangeSourceEnumMap = {

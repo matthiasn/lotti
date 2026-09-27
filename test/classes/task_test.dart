@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:glados/glados.dart' show AnyUtils, ExploreConfig, Glados, any;
@@ -99,6 +101,68 @@ void main() {
         makeTask(languageCode: 'fr'),
         isNot(makeTask(languageCode: 'de')),
       );
+    });
+
+    group('onStored (ADR 0098)', () {
+      TaskData data({
+        String title = 'Test Task',
+        List<String>? checklistIds,
+        Set<String>? effects,
+      }) => TaskData(
+        status: testStatus,
+        dateFrom: testDate,
+        dateTo: testDate,
+        statusHistory: const [],
+        title: title,
+        checklistIds: checklistIds,
+        appliedChangeEffects: effects,
+      );
+
+      test(
+        'takes the stored checklists and joins both records of applied '
+        "changes, keeping the caller's own fields",
+        () {
+          final written =
+              data(
+                title: 'Renamed',
+                checklistIds: ['stale'],
+                effects: {'set-2:0'},
+              ).onStored(
+                data(checklistIds: ['kept', 'new'], effects: {'set-1:0'}),
+              );
+
+          expect(written.title, 'Renamed');
+          expect(written.checklistIds, ['kept', 'new']);
+          expect(written.appliedChangeEffects, {'set-1:0', 'set-2:0'});
+        },
+      );
+
+      test(
+        'keeps the stored record when the caller copied the task before a '
+        'change was applied',
+        () {
+          final written = data(title: 'Renamed').onStored(
+            data(effects: {'set-1:0'}),
+          );
+
+          expect(written.appliedChangeEffects, {'set-1:0'});
+        },
+      );
+
+      test('records nothing where neither side records a change', () {
+        expect(data().onStored(data()).appliedChangeEffects, isNull);
+      });
+
+      test('survives the JSON round trip that sync and storage take', () {
+        final original = data(effects: {'set-1:0', 'set-1:1'});
+
+        expect(
+          TaskData.fromJson(
+            jsonDecode(jsonEncode(original)) as Map<String, dynamic>,
+          ).appliedChangeEffects,
+          {'set-1:0', 'set-1:1'},
+        );
+      });
     });
   });
 

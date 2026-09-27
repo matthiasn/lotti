@@ -219,6 +219,37 @@ void main() {
   );
 
   test(
+    'updateTaskImpl keeps the stored record of applied agent changes — the '
+    "screen's copy read before a change was applied must not let that "
+    'change apply again over the user restoring its field (ADR 0098)',
+    () async {
+      final stored = testTask.copyWith(
+        data: testTask.data.copyWith(appliedChangeEffects: {'set-1:0'}),
+      );
+      when(
+        () => mocks.journalDb.journalEntityById(stored.meta.id),
+      ).thenAnswer((_) async => stored);
+
+      await ops.updateTaskImpl(
+        journalEntityId: stored.meta.id,
+        taskData: testTask.data.copyWith(title: 'restored'),
+      );
+
+      final written =
+          verify(
+                () => logic.updateDbEntity(
+                  captureAny(),
+                  beforeNotify: any(named: 'beforeNotify'),
+                  precondition: any(named: 'precondition'),
+                ),
+              ).captured.single
+              as Task;
+      expect(written.data.title, 'restored');
+      expect(written.data.appliedChangeEffects, {'set-1:0'});
+    },
+  );
+
+  test(
     'updateTaskImpl builds a refused write again on the row stored meanwhile',
     () async {
       final first = testTask.copyWith(

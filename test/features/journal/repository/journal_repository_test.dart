@@ -925,6 +925,31 @@ void main() {
         );
 
         test(
+          'joins the applied agent changes its stored row records with the '
+          "ones the caller's copy adds (ADR 0098)",
+          () async {
+            final stored = storedAt(1, ['kept']);
+            stubReads([
+              stored.copyWith(
+                data: stored.data.copyWith(appliedChangeEffects: {'set-1:0'}),
+              ),
+            ]);
+            stubWrites([true]);
+
+            final result = await repository.updateJournalEntity(
+              stale.copyWith(
+                data: stale.data.copyWith(appliedChangeEffects: {'set-2:0'}),
+              ),
+            );
+
+            expect(result, isTrue);
+            final written = capturedWrites().first! as Task;
+            expect(written.data.title, 'agent retitled');
+            expect(written.data.appliedChangeEffects, {'set-1:0', 'set-2:0'});
+          },
+        );
+
+        test(
           'writes only while the row it took the checklists from is still '
           'stored',
           () async {
