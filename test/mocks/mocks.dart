@@ -255,10 +255,15 @@ import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 
 /// Generic mock for drift Selectable queries used in widget tests.
 class MockSelectable<T> extends Mock implements drift.Selectable<T> {
-  MockSelectable(this._values);
-  final List<T> _values;
+  MockSelectable(List<T> values) : _read = (() async => values);
+
+  /// Reads its rows only when [get] is called — for a stub whose rows depend
+  /// on other stubs at that time.
+  MockSelectable.lazy(this._read);
+
+  final Future<List<T>> Function() _read;
   @override
-  Future<List<T>> get() async => _values;
+  Future<List<T>> get() => _read();
 }
 
 class MockJournalDb extends Mock implements JournalDb {

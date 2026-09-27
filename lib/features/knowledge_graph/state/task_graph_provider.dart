@@ -17,6 +17,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_layout_engine.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_models.dart';
+import 'package:lotti/features/tasks/model/membership_list.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -276,7 +277,9 @@ final FutureProviderFamily<TaskGraphData?, String> taskGraphProvider =
             addEdge(task, cid, GraphEdgeKind.association);
             if (cl is Checklist) {
               for (final it in cl.data.linkedChecklistItems) {
-                if (entities.containsKey(it)) {
+                // An item listed by two checklists hangs off the one it
+                // names (ADR 0105).
+                if (isShownIn(entities[it], cid)) {
                   addEdge(cid, it, GraphEdgeKind.checklist);
                 }
               }

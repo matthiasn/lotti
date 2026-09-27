@@ -7,6 +7,8 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/plaza/data/task_projection.dart';
 import 'package:lotti/features/plaza/domain/plaza_connection.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
+import 'package:lotti/features/tasks/model/membership_list.dart';
+import 'package:lotti/features/tasks/repository/shown_checklist_items.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/write_on_stored.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -154,9 +156,7 @@ class PlazaRepository {
     }
     final checklists = await _readEntities({...?task.data.checklistIds});
     if (!checklists.whereType<Checklist>().any(
-      (checklist) =>
-          !checklist.isDeleted &&
-          checklist.data.linkedChecklistItems.contains(itemId),
+      (checklist) => checklistShowsItem(checklist, item),
     )) {
       return false;
     }
@@ -205,9 +205,15 @@ class PlazaRepository {
       for (final entity in related.whereType<JournalImage>())
         if (entity.meta.deletedAt == null) entity.meta.id: entity,
     };
+    // Which items each checklist shows is read from the items' back-links
+    // (ADR 0105); the listed ones are watched too, so an item moving back is
+    // seen. Each is then read through this page's own filters.
+    final shown = await readShownChecklistItems(db, checklists.values);
     final itemIds = {
       for (final checklist in checklists.values)
         ...checklist.data.linkedChecklistItems,
+      for (final list in shown.values)
+        for (final item in list) item.meta.id,
     };
     final items = {
       for (final entity in (await _readEntities(
@@ -254,10 +260,8 @@ class PlazaRepository {
             task: task,
             checklistItems: [
               for (final checklistId in task.data.checklistIds ?? <String>[])
-                for (final itemId
-                    in checklists[checklistId]?.data.linkedChecklistItems ??
-                        <String>[])
-                  ?items[itemId],
+                for (final item in shown[checklistId] ?? <ChecklistItem>[])
+                  ?items[item.meta.id],
             ],
             linkedTaskIds: linksByTask[task.meta.id] ?? const {},
             categoryColor: _categoryColor(task.meta.categoryId),

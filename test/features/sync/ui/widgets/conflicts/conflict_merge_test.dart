@@ -176,6 +176,88 @@ void main() {
     });
   });
 
+  group(
+    'membership lists keep every id either side lists, whichever side is '
+    'kept (ADR 0105)',
+    () {
+      Checklist checklistOf(List<String> items, VectorClock clock) => Checklist(
+        meta: metaOf(id: 'checklist-1', vectorClock: clock),
+        data: ChecklistData(
+          title: 'Todos',
+          linkedChecklistItems: items,
+          linkedTasks: const ['task-1'],
+        ),
+      );
+
+      for (final side in ConflictSide.values) {
+        test("a task's checklists, keeping the ${side.name} side", () {
+          final result =
+              resolveToSide(
+                    local: taskOf(
+                      vectorClock: localClock,
+                      checklistIds: const ['shared', 'mine'],
+                    ),
+                    remote: taskOf(
+                      vectorClock: remoteClock,
+                      checklistIds: const ['theirs', 'shared'],
+                    ),
+                    side: side,
+                  )
+                  as Task;
+
+          expect(
+            result.data.checklistIds,
+            side == ConflictSide.local
+                ? ['shared', 'mine', 'theirs']
+                : ['theirs', 'shared', 'mine'],
+          );
+        });
+
+        test("a checklist's items, keeping the ${side.name} side", () {
+          final result =
+              resolveToSide(
+                    local: checklistOf(const ['a', 'mine'], localClock),
+                    remote: checklistOf(const ['theirs', 'a'], remoteClock),
+                    side: side,
+                  )
+                  as Checklist;
+
+          expect(
+            result.data.linkedChecklistItems,
+            side == ConflictSide.local
+                ? ['a', 'mine', 'theirs']
+                : ['theirs', 'a', 'mine'],
+          );
+        });
+      }
+
+      test('a task no side lists checklists for keeps none', () {
+        final result =
+            resolveToSide(
+                  local: taskOf(vectorClock: localClock),
+                  remote: taskOf(vectorClock: remoteClock),
+                  side: ConflictSide.remote,
+                )
+                as Task;
+
+        expect(result.data.checklistIds, isNull);
+      });
+
+      test('combining two checklists keeps every item too', () {
+        final result =
+            buildMergedEntity(
+                  local: checklistOf(const ['mine'], localClock),
+                  remote: checklistOf(const ['theirs'], remoteClock),
+                  baseSide: ConflictSide.remote,
+                  choices: const {},
+                )
+                as Checklist;
+
+        expect(result.data.linkedChecklistItems, ['theirs', 'mine']);
+      });
+    },
+  );
+
   group('buildMergedEntity', () {
     test('overrides the body from the non-base side', () {
       final result = buildMergedEntity(

@@ -420,6 +420,15 @@ remote)`, so the written entity dominates both clocks;
 labels, a deleted one's included — and the write decision marks the row
 resolved, because the written clock covers the conflict's.
 
+Whichever side is kept, some fields are the union of both. A task keeps every
+applied change either side records (`appliedChangeEffects`, ADR 0098) and
+every checklist either side lists, and a checklist every item either side
+lists (`joinMembers`, ADR 0105): keeping one side's list would drop what the
+other device added. A resolved checklist is written through
+`ChecklistRepository.resolveConflict`, which lists a kept checklist on its
+task again or deletes the items of one whose deletion was kept
+([checklists](../tasks/checklists.md#which-checklist-shows-an-item)).
+
 With several versions open, the page decides one pair at a time: the stored
 row against one open version. The list shows each version as its own row and
 opens the page on it with a `version` query parameter

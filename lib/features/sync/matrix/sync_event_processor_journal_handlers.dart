@@ -430,6 +430,9 @@ extension _JournalHandlers on SyncEventProcessor {
       {...journalEntity.affectedIds, labelUsageNotification},
       fromSync: true,
     );
+    if (updateResult.applied) {
+      await onJournalEntityApplied?.call(journalEntity);
+    }
 
     // (3) POST — sequence-log gap detection. Writes to *sync_db* (a
     //     separate SQLite database), so it cannot be atomic with the

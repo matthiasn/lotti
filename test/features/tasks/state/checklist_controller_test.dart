@@ -18,6 +18,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../shown_items_stub.dart';
 
 typedef ChecklistChange = ChecklistData Function(ChecklistData stored);
 typedef ChecklistIdsChange = List<String> Function(List<String> stored);
@@ -74,6 +75,10 @@ void main() {
   /// the controller has not been notified of yet.
   late Map<String, Checklist> stored;
 
+  /// The checklist each moved item names, by item id: the `moveItem` stub
+  /// sets it, as the repository rewrites the item's back-link.
+  late Map<String, String> homes;
+
   final testChecklist = makeChecklist(
     'checklist-1',
     const ['item-1', 'item-2'],
@@ -90,6 +95,7 @@ void main() {
     mockDomainLogger = MockDomainLogger();
     updateStreamController = StreamController<Set<String>>.broadcast();
     stored = {'checklist-1': testChecklist};
+    homes = {};
 
     await setUpTestGetIt(
       additionalSetup: () {
@@ -109,6 +115,13 @@ void main() {
       () => mockDb.journalEntityById(any()),
     ).thenAnswer(
       (invocation) async => stored[invocation.positionalArguments[0]],
+    );
+    // Every listed id is a live item naming the checklist that lists it, so
+    // a checklist shows its list as stored unless a test says otherwise.
+    stubListedItemsNameTheirChecklist(
+      mockDb,
+      () => stored.values,
+      homeOf: (itemId) => homes[itemId],
     );
     when(
       () => mockUpdateNotifications.updateStream,
@@ -302,7 +315,8 @@ void main() {
       );
 
       test(
-        'deletes a checklist without a task through the journal repository',
+        'opened without a task, deletes through the repository too — the '
+        'items go with it — leaving the task the checklist names',
         () async {
           const params = (id: 'checklist-1', taskId: null);
           final container = await loaded(params);
@@ -311,14 +325,12 @@ void main() {
 
           expect(result, isTrue);
           verify(
-            () => mockJournalRepository.deleteJournalEntity('checklist-1'),
-          ).called(1);
-          verifyNever(
             () => mockChecklistRepository.deleteChecklist(
-              checklistId: any(named: 'checklistId'),
-              taskId: any(named: 'taskId'),
+              checklistId: 'checklist-1',
+              taskId: 'task-1',
             ),
-          );
+          ).called(1);
+          verifyNever(() => mockJournalRepository.deleteJournalEntity(any()));
           expect(stateOf(container, params), isNull);
         },
       );
@@ -342,7 +354,10 @@ void main() {
         'returns false and keeps the state when a task-less delete fails',
         () async {
           when(
-            () => mockJournalRepository.deleteJournalEntity(any()),
+            () => mockChecklistRepository.deleteChecklist(
+              checklistId: any(named: 'checklistId'),
+              taskId: any(named: 'taskId'),
+            ),
           ).thenAnswer((_) async => false);
           const params = (id: 'checklist-1', taskId: null);
           final container = await loaded(params);
@@ -527,6 +542,7 @@ void main() {
             final place = args[#place] as ChecklistIdsChange;
             final target = stored[args[#toId] as String]!;
             final source = stored[args[#fromId] as String]!;
+            homes[itemId] = target.id;
             stored[target.id] = target.copyWith(
               data: target.data.copyWith(
                 linkedChecklistItems: place(target.data.linkedChecklistItems),
@@ -678,6 +694,46 @@ void main() {
       });
     });
 
+    group('what it shows (ADR 0105)', () {
+      test(
+        'the items naming it: a listed item now naming another checklist '
+        'leaves, and one naming it that no list holds yet joins, after the '
+        'listed ones',
+        () async {
+          homes['item-2'] = 'other-checklist';
+          when(() => mockDb.checklistItemsNaming(any())).thenAnswer(
+            (_) async => [makeItem('item-late')],
+          );
+
+          final container = await loaded();
+
+          expect(stateOf(container)?.data.linkedChecklistItems, [
+            'item-1',
+            'item-late',
+          ]);
+        },
+      );
+
+      test(
+        'a listed item it does not show is still watched: when it names this '
+        'checklist again, the checklist shows it',
+        () async {
+          homes['item-2'] = 'other-checklist';
+          final container = await loaded();
+          expect(stateOf(container)?.data.linkedChecklistItems, ['item-1']);
+
+          homes.remove('item-2');
+          updateStreamController.add({'item-2'});
+          await pumpEventQueue();
+
+          expect(stateOf(container)?.data.linkedChecklistItems, [
+            'item-1',
+            'item-2',
+          ]);
+        },
+      );
+    });
+
     group('_listen / update notifications', () {
       test(
         'refreshes state when a subscribed ID appears in update stream',
@@ -691,9 +747,7 @@ void main() {
               linkedTasks: ['task-1'],
             ),
           );
-          when(
-            () => mockDb.journalEntityById('checklist-1'),
-          ).thenAnswer((_) async => updatedChecklist);
+          stored['checklist-1'] = updatedChecklist;
 
           updateStreamController.add({'checklist-1'});
 
@@ -832,7 +886,7 @@ void main() {
               itemId: any(named: 'itemId'),
               checklistId: any(named: 'checklistId'),
             ),
-          ).thenAnswer((_) async => relisted);
+          ).thenAnswer((_) async => stored['checklist-1'] = relisted);
           final container = await loaded();
 
           await notifierOf(container).undoItemDeletion(

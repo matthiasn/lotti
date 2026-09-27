@@ -1,11 +1,11 @@
 ---
 type: Feature Module
 title: Checklists
-description: The checklist subsystem, how its membership lists are written, its celebration and collapse motion contract, and the sorting state machine.
+description: The checklist subsystem, how its membership lists are written and read across devices, its celebration and collapse motion contract, and the sorting state machine.
 resource: ../../../lib/features/tasks/ui/checklists
 tags: [tasks, checklists, motion, accessibility, tla]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-26T11:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-27T15:00:00Z }
 stale_after: 2027-01-25
 sources:
   - id: ui
@@ -43,7 +43,19 @@ sources:
   - id: membership-spec
     resource: ../../../specs/tla/ChecklistMembership.tla
     title: ChecklistMembership TLA+ spec
-    last_modified: 2026-09-26
+    last_modified: 2026-09-27
+  - id: shown-items
+    resource: ../../../lib/features/tasks/repository/shown_checklist_items.dart
+    title: The items a checklist shows
+    last_modified: 2026-09-27
+  - id: replication-spec
+    resource: ../../../specs/tla/ChecklistReplication.tla
+    title: ChecklistReplication TLA+ spec
+    last_modified: 2026-09-27
+  - id: conflict-merge
+    resource: ../../../lib/features/sync/ui/widgets/conflicts/conflict_merge.dart
+    title: A conflict's resolution joins membership lists
+    last_modified: 2026-09-27
 ---
 
 Checklists are one of the main reasons the tasks feature exists as a feature
@@ -54,7 +66,9 @@ rather than a loose set of task helper widgets.
 `ChecklistController` loads a checklist entity, subscribes to it and to all
 linked item ids, updates title and item order, handles dropping existing and new
 items into a checklist, unlinks and relinks items, and deletes the checklist —
-removing its id from the parent task when possible.
+removing its id from the parent task, then the checklist and its items. Its
+state is the checklist as the screen shows it: `linkedChecklistItems` replaced
+by the items it shows (see below), never the base of a write.
 
 ```mermaid
 flowchart TD
@@ -71,11 +85,12 @@ flowchart TD
 
 # Membership is changed on the stored row
 
-Which checklists a task shows is `TaskData.checklistIds`; which items a
-checklist shows is `ChecklistData.linkedChecklistItems`. Every reader — the
-task page, `ChecklistRepository.getChecklistItemsForTask`, the agent's context
-— resolves membership from those lists alone, so an id dropped from its
-parent's list is an item or checklist nobody sees, though its row lives on.
+Which checklists a task shows is `TaskData.checklistIds`, in its order. Which
+items a checklist shows is read from the items: the live ones whose back-link
+names it (see [which checklist shows an item](#which-checklist-shows-an-item)),
+in the order `ChecklistData.linkedChecklistItems` gives. So a checklist id
+dropped from the task's list is a checklist nobody sees, though its row lives
+on; the item lists only order.
 
 **A membership write states an intent, never a whole list.** Add an id
 (`withMember`), remove one (`withoutMember`), or show these in this order
@@ -124,8 +139,9 @@ task's own list changes, so a checklist that arrives later is shown.
 
 **An operation that writes several rows records its intent first.** Creating
 and listing items, moving an item (its back-link, the target's list, the
-source's), deleting an item across its swipe-undo window, and creating or
-deleting a checklist each save a device-local settings row
+source's), deleting an item across its swipe-undo window, creating or
+deleting a checklist, resolving a checklist's conflict, and sweeping the items
+of a deleted checklist each save a device-local settings row
 (`ChecklistMembershipIntents`) before their first write and remove it after
 their last. At startup `ChecklistRepository.replayMembershipIntents` finishes
 whatever the app died in the middle of; each intent is a set of idempotent
@@ -155,6 +171,52 @@ next start finishes it.
 Why each rule exists — the counterexamples TLC found when it was missing — is
 in `specs/tla/ChecklistMembership.tla` and its README section, and the
 decision in [ADR 0089](../../../docs/adr/0089-checklist-membership-on-the-stored-row.md).
+
+# Which checklist shows an item
+
+Membership is held three times over, in three kinds of journal row, and sync
+replaces each whole, one row at a time and in any order; two devices' versions
+of one row become a conflict the user resolves by keeping a side. So a
+checklist's list can name an item that has moved on, lack one whose listing
+has not arrived, or lose one to a resolution. The rules that make two devices
+agree (`specs/tla/ChecklistReplication.tla`,
+[ADR 0105](../../../docs/adr/0105-a-checklist-shows-the-items-naming-it.md)):
+
+- **An item is in the checklist its back-link names first**
+  (`homeChecklistId`). A checklist shows those items — found through
+  `JournalDb.checklistItemsNaming` and the index
+  `idx_journal_checklist_item_home` — listed ones first in list order, the
+  others after, oldest first (`shownItemIds`,
+  `readShownChecklistItems` in
+  `lib/features/tasks/repository/shown_checklist_items.dart`). Every reader
+  goes through it: the checklist screen, completion counts,
+  `getChecklistItemsForTask`, the Plaza, the AI and agent contexts, the graph.
+  An item names one checklist, so it is shown and counted once. A move writes
+  the back-link naming the target alone.
+- **A resolved membership list keeps what either side listed**
+  (`joinMembers` in the conflict page's `_resolved`).
+- **Keeping a checklist in a conflict writes it onto its task again**, in a
+  new version even when listed (`ChecklistRepository.resolveConflict`), so an
+  unlisting not received yet becomes a conflict instead of winning.
+- **A checklist's items go with it.** Deleting a checklist unlists it from its
+  task, deletes it, then deletes the live items naming it — found by
+  back-link, not by its list. The same sweep follows a resolution that keeps a
+  deletion, an item listed on a checklist deleted meanwhile, and, on the
+  receiving device, either the deletion or the item arriving
+  (`settleReceived`, run by the sync processor after it applies a row).
+
+```mermaid
+flowchart TD
+  Del["deleteChecklist"] --> Unlist["unlist from task"] --> Kill["delete checklist"] --> Sweep
+  Res["resolution keeps a deletion"] --> Sweep
+  Late["item listed on a checklist deleted meanwhile"] --> Sweep
+  Rx["sync applies a checklist deletion, or an item naming a deleted checklist"] --> Settle["settleReceived"] --> Sweep
+  Sweep["delete live items naming it (checklistItemsNaming)"]
+```
+
+A replayed move or deletion does not repeat a write of its own that landed:
+the intent records this device's counter on the row that decides it (`mark`),
+and a later version there is another device's choice.
 
 When a user renames an item, `ChecklistItemController.updateTitle` fires a
 fire-and-forget `correctionCaptureService.captureCorrection(...)` with the

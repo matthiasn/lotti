@@ -14,6 +14,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
+import '../../tasks/shown_items_stub.dart';
 
 /// Real agent persistence and sync wrapper, with the shared fake journal
 /// corpus and centrally maintained infrastructure mocks at the boundaries.
@@ -72,6 +73,7 @@ class QueryTestBench {
         for (final id in ids) id: ?entries[id],
       };
     });
+    stubShownChecklistReads(db, () => entries);
     when(() => db.linksForEntryIdsBidirectional(any())).thenAnswer((
       call,
     ) async {

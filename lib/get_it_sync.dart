@@ -56,33 +56,37 @@ Future<String? Function()> _registerMatrixSyncStack({
   // (a `late final`) is assigned below once BackfillResponseHandler exists.
   // The chain BackfillResponseHandler → OutboxService → MatrixService →
   // SyncEventProcessor prevents constructor-time injection.
-  final syncEventProcessor = SyncEventProcessor(
-    loggingService: domainLogger,
-    domainLogger: domainLogger,
-    updateNotifications: getIt<UpdateNotifications>(),
-    aiConfigRepository: aiConfigRepository,
-    savedTaskFiltersRepository: savedTaskFiltersRepository,
-    settingsDb: settingsDb,
-    journalEntityLoader: SmartJournalEntityLoader(
-      attachmentIndex: attachmentIndex,
-      loggingService: domainLogger,
-    ),
-    attachmentIndex: attachmentIndex,
-    sequenceLogService: syncSequenceLogService,
-    journalDb: journalDb,
-    vectorClockService: vectorClockService,
-    notificationsDb: notificationsDb,
-    notificationScheduler: notificationScheduler,
-    notificationPreferenceEffects: (journalDb) => NotificationPreferenceEffects(
-      journalDb: journalDb,
-      // ignore: unnecessary_lambdas
-      notificationService: () => getIt<NotificationService>(),
-      scheduler: () => notificationScheduler,
-      logger: domainLogger,
-    ),
-    syncNodeProfileRepository: syncNodeProfileRepository,
-    fts5Db: getIt<Fts5Db>(),
-  )..consumptionRepository = consumptionRepository;
+  final syncEventProcessor =
+      SyncEventProcessor(
+          loggingService: domainLogger,
+          domainLogger: domainLogger,
+          updateNotifications: getIt<UpdateNotifications>(),
+          aiConfigRepository: aiConfigRepository,
+          savedTaskFiltersRepository: savedTaskFiltersRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: SmartJournalEntityLoader(
+            attachmentIndex: attachmentIndex,
+            loggingService: domainLogger,
+          ),
+          attachmentIndex: attachmentIndex,
+          sequenceLogService: syncSequenceLogService,
+          journalDb: journalDb,
+          vectorClockService: vectorClockService,
+          notificationsDb: notificationsDb,
+          notificationScheduler: notificationScheduler,
+          notificationPreferenceEffects: (journalDb) =>
+              NotificationPreferenceEffects(
+                journalDb: journalDb,
+                // ignore: unnecessary_lambdas
+                notificationService: () => getIt<NotificationService>(),
+                scheduler: () => notificationScheduler,
+                logger: domainLogger,
+              ),
+          syncNodeProfileRepository: syncNodeProfileRepository,
+          fts5Db: getIt<Fts5Db>(),
+        )
+        ..consumptionRepository = consumptionRepository
+        ..onJournalEntityApplied = ChecklistRepository.settlerForReceived();
 
   final collectSyncMetrics = await journalDb.getConfigFlag(enableLoggingFlag);
 

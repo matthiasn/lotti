@@ -221,6 +221,52 @@ WHERE type = 'Task'
     );
 
     test(
+      'v51 indexes checklist items by the checklist they name, and a row '
+      'holding corrupt JSON neither fails the upgrade nor is indexed',
+      () async {
+        final dbFile = File(p.join(testDirectory.path, 'items.db'));
+        final sqlite = sqlite3.open(dbFile.path);
+        createJournalSchema(sqlite, 50);
+        void insertItem(String id, String serialized) => sqlite.execute(
+          'INSERT INTO journal (id, serialized, created_at, updated_at, '
+          'date_from, date_to, type, deleted, category) '
+          "VALUES (?, ?, 0, 0, 0, 0, 'ChecklistItem', 0, '')",
+          [id, serialized],
+        );
+        insertItem(
+          'named',
+          '{"meta":{"id":"named"},"data":{"linkedChecklists":["c1"]}}',
+        );
+        insertItem('corrupt', '{not json');
+        sqlite.close();
+
+        final db = JournalDb(overriddenFilename: 'items.db');
+        addTearDown(db.close);
+        final named = await db
+            .customSelect(
+              'SELECT id FROM journal '
+              "WHERE type = 'ChecklistItem' AND deleted = FALSE "
+              'AND json_valid(serialized) '
+              r"AND json_extract(serialized, '$.data.linkedChecklists[0]') "
+              '= ?',
+              variables: [Variable.withString('c1')],
+            )
+            .get();
+
+        expect(named.map((row) => row.read<String>('id')), ['named']);
+        expect(
+          await db
+              .customSelect(
+                "SELECT name FROM sqlite_master WHERE type = 'index' "
+                "AND name = 'idx_journal_checklist_item_home'",
+              )
+              .get(),
+          hasLength(1),
+        );
+      },
+    );
+
+    test(
       'an install whose indexes already match is not rebuilt for spelling',
       () async {
         final dbFile = File(p.join(testDirectory.path, 'matching.db'));
@@ -232,7 +278,8 @@ WHERE type = 'Task'
         addTearDown(db.close);
         await db.customSelect('PRAGMA user_version').get();
 
-        // v47 declares one new index; nothing that already existed is touched.
+        // v47 and v51 each declare one new index; nothing that already
+        // existed is touched.
         expect(
           DevLogger.capturedLogs.where(
             (line) =>
@@ -246,7 +293,7 @@ WHERE type = 'Task'
           DevLogger.capturedLogs.where(
             (line) => line.contains('Creating declared index'),
           ),
-          hasLength(1),
+          hasLength(2),
         );
       },
     );

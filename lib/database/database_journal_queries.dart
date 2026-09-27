@@ -149,6 +149,41 @@ mixin _JournalDbJournalQueries on _$JournalDb, _JournalDbConfigFlags {
     return result;
   }
 
+  /// The live checklist items whose back-link names one of [checklistIds]
+  /// first — the items those checklists show, whatever their lists hold
+  /// (ADR 0105). Private items included, as for every checklist read. A row
+  /// that cannot be read is skipped rather than failing the read. Chunked
+  /// like [journalEntityMapForIds].
+  Future<List<ChecklistItem>> checklistItemsNaming(
+    Iterable<String> checklistIds,
+  ) async {
+    final idList = checklistIds.toSet().toList(growable: false);
+    final result = <ChecklistItem>[];
+    for (var i = 0; i < idList.length; i += _sqliteInListChunk) {
+      final end = (i + _sqliteInListChunk).clamp(0, idList.length);
+      final chunk = idList.sublist(i, end);
+      // The expression and the WHERE repeat idx_journal_checklist_item_home's,
+      // so the planner serves this from the index.
+      final rows = await customSelect(
+        'SELECT * FROM journal '
+        "WHERE type = 'ChecklistItem' AND deleted = FALSE "
+        'AND json_valid(serialized) '
+        r"AND json_extract(serialized, '$.data.linkedChecklists[0]') "
+        'IN (${List.filled(chunk.length, '?').join(', ')})',
+        variables: [for (final id in chunk) Variable.withString(id)],
+        readsFrom: {journal},
+      ).asyncMap(journal.mapFromRow).get();
+      for (final row in rows) {
+        try {
+          if (fromDbEntity(row) case final ChecklistItem item) result.add(item);
+        } catch (_) {
+          // An unreadable row names no checklist a reader can show.
+        }
+      }
+    }
+    return result;
+  }
+
   /// Bulk-fetches journal entities for outbound sync, including soft-deleted
   /// rows so deletion tombstones can be serialized and delivered to peers.
   ///

@@ -17,6 +17,12 @@ void main() {
     DeleteItemIntent(itemId: 'i1', checklistId: 'c1'),
     ListChecklistIntent(checklistId: 'c1', taskId: 't1'),
     DeleteChecklistIntent(checklistId: 'c1', taskId: 't1'),
+    SweepChecklistIntent(checklistId: 'c1'),
+    // What ADR 0105 adds: marks, restating, a checklist naming no task.
+    MoveItemIntent(itemId: 'i1', fromId: 'c1', toId: 'c2', mark: 3),
+    DeleteItemIntent(itemId: 'i1', checklistId: 'c1', mark: 4),
+    ListChecklistIntent(checklistId: 'c1', taskId: 't1', restate: true),
+    DeleteChecklistIntent(checklistId: 'c1', taskId: null, mark: 5),
   ];
 
   group('MembershipIntent', () {
@@ -39,9 +45,47 @@ void main() {
           'deleteItem',
           'listChecklist',
           'deleteChecklist',
+          'sweepChecklist',
+          'moveItem',
+          'deleteItem',
+          'listChecklist',
+          'deleteChecklist',
         ],
       );
     });
+
+    test(
+      'an intent an older build wrote, without marks, reads with none — its '
+      'replay repeats every write, as that build did',
+      () {
+        final move =
+            MembershipIntent.fromJson({
+                  'op': 'moveItem',
+                  'itemId': 'i1',
+                  'fromId': 'c1',
+                  'toId': 'c2',
+                })
+                as MoveItemIntent?;
+        final deletion =
+            MembershipIntent.fromJson({
+                  'op': 'deleteChecklist',
+                  'checklistId': 'c1',
+                  'taskId': 't1',
+                })
+                as DeleteChecklistIntent?;
+        final listing =
+            MembershipIntent.fromJson({
+                  'op': 'listChecklist',
+                  'checklistId': 'c1',
+                  'taskId': 't1',
+                })
+                as ListChecklistIntent?;
+
+        expect(move?.mark, isNull);
+        expect(deletion?.mark, isNull);
+        expect(listing?.restate, isFalse);
+      },
+    );
 
     test('an op this build does not know reads as null', () {
       expect(

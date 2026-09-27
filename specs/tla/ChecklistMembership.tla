@@ -20,7 +20,7 @@
 (* replaces the whole row under a clock built on the stored row, so the    *)
 (* write decision (JournalDb.updateJournalEntity) accepts it as the newer  *)
 (* version: a row built on an older value silently drops what landed in    *)
-(* between. Two devices writing concurrently are JournalReplication's      *)
+(* between. Two devices writing concurrently are ChecklistReplication's    *)
 (* subject (the user resolves a conflict); this spec is about one device   *)
 (* overwriting what it has already stored, and leaving an operation half   *)
 (* done.                                                                   *)
@@ -43,8 +43,9 @@
 (*                writes (ChecklistRepository.updateChecklistItem)         *)
 (*   uiDropItem   deleting an item: ChecklistItemRow unlinks it, and       *)
 (*                deletes it when the undo window closes                   *)
-(*   uiDelete     ChecklistController.delete: the checklist is deleted,    *)
-(*                then removed from the task's list                        *)
+(*   uiDelete     ChecklistController.delete: the checklist is removed     *)
+(*                from the task's list, then deleted (its items with it:   *)
+(*                ChecklistReplication, which also says why this order)   *)
 (*   uiTaskEdit   any task field edit that saves the whole TaskData —      *)
 (*                status, priority, due date, estimate — through           *)
 (*                PersistenceLogic.updateTask (updateTaskImpl)             *)
@@ -168,10 +169,10 @@ UiCheck(i) ==
     << Read(i, ItemSrc), Commit(i, D("keep", "none"), RebaseItems) >>
 UiDropItem(i, c) ==
     << Read(c, ListSrc), Commit(c, D("remove", i), RebaseLists), KillItem(i) >>
-\* delete() reads the task after the checklist is gone.
+\* deleteChecklist unlists the checklist from the task, then deletes it.
 UiDelete(c) ==
-    << Kill(c), Read("task", "stored"),
-       Commit("task", D("remove", c), RebaseTask) >>
+    << Read("task", "stored"), Commit("task", D("remove", c), RebaseTask),
+       Kill(c) >>
 UiTaskEdit ==
     << Read("task", IF RebaseTask THEN "stored" ELSE "screen"),
        Commit("task", D("keep", "none"), RebaseTask) >>

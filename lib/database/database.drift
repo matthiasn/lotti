@@ -173,6 +173,18 @@ WHERE type = 'Task'
   AND task = 1
   AND deleted = FALSE;
 
+-- Live checklist items by the checklist their back-link names first: which
+-- items a checklist shows is read from the items (ADR 0105, v51). Only rows
+-- holding valid JSON: json_extract raises on anything else, which would fail
+-- the index build on an install with a corrupt row, and every later write
+-- of one.
+CREATE INDEX idx_journal_checklist_item_home ON journal(
+  json_extract(serialized, '$.data.linkedChecklists[0]')
+)
+WHERE type = 'ChecklistItem'
+  AND deleted = FALSE
+  AND json_valid(serialized);
+
 -- Latest quantitative entry per subtype (health imports). Declared here so a
 -- fresh install and an upgraded one agree; `beforeOpen` also re-asserts it
 -- as a self-heal for a partially applied migration.

@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/tasks/model/membership_list.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:meta/meta.dart';
@@ -32,7 +33,8 @@ final checklistCompletionControllerProvider = AsyncNotifierProvider.autoDispose
 /// It listens to the parent [ChecklistController] (for the set of linked item
 /// ids) and to each [ChecklistItemController] in that set (for checked/archive
 /// state), recomputing on any change. Only *active* items — neither deleted
-/// nor archived — are counted (see [aggregateCompletion]).
+/// nor archived — are counted (see [aggregateCompletion]), and each only by
+/// the checklist it names ([isShownIn]).
 class ChecklistCompletionController
     extends AsyncNotifier<ChecklistCompletionState> {
   ChecklistCompletionController(this.params);
@@ -80,6 +82,9 @@ class ChecklistCompletionController
       }
     }
 
+    // Only items naming this checklist: an item that has just moved away
+    // counts in its new checklist alone, even before this one re-reads its
+    // list (ADR 0105).
     final items = linkedIds
         .map(
           (itemId) => ref
@@ -88,7 +93,8 @@ class ChecklistCompletionController
               )
               .value,
         )
-        .nonNulls;
+        .nonNulls
+        .where((item) => isShownIn(item, id));
 
     return aggregateCompletion(items);
   }

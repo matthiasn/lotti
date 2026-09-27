@@ -131,6 +131,56 @@ void main() {
     );
   });
 
+  group('SyncEventProcessor - what an applied entry leaves to do', () {
+    void receiveImage() {
+      when(
+        () => journalEntityLoader.load(jsonPath: '/image.json'),
+      ).thenAnswer((_) async => testImageEntry);
+      when(() => event.text).thenReturn(
+        encodeMessage(
+          SyncMessage.journalEntity(
+            id: testImageEntry.meta.id,
+            jsonPath: '/image.json',
+            vectorClock: null,
+            status: SyncEntryStatus.initial,
+          ),
+        ),
+      );
+    }
+
+    test(
+      'hands an applied entry to onJournalEntityApplied — the items of a '
+      'deleted checklist (ADR 0105)',
+      () async {
+        final applied = <JournalEntity>[];
+        processor.onJournalEntityApplied = (entity) async =>
+            applied.add(entity);
+        receiveImage();
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        expect(applied, [testImageEntry]);
+      },
+    );
+
+    test('not an entry the write decision refused', () async {
+      final applied = <JournalEntity>[];
+      processor.onJournalEntityApplied = (entity) async => applied.add(entity);
+      receiveImage();
+      when(
+        () => journalDb.updateJournalEntity(any<JournalEntity>()),
+      ).thenAnswer(
+        (_) async => JournalUpdateResult.skipped(
+          reason: JournalUpdateSkipReason.olderOrEqual,
+        ),
+      );
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      expect(applied, isEmpty);
+    });
+  });
+
   group('SyncEventProcessor - Embedded Entry Links', () {
     test(
       'passes an exact attachment event id into journal payload resolution',

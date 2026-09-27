@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/sync/state/conflict_resolution_service.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_shared.dart';
@@ -78,6 +79,84 @@ void main() {
       // Body follows the base (local); category was pulled from remote.
       expect(written.entryText?.plainText, 'local body');
       expect(written.meta.categoryId, 'cat-r');
+    });
+  });
+
+  group('a checklist (ADR 0105)', () {
+    late MockChecklistRepository checklists;
+
+    Checklist checklistOf(String title, VectorClock clock) => Checklist(
+      meta: Metadata(
+        id: 'checklist-1',
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        dateFrom: DateTime(2024, 3, 15),
+        dateTo: DateTime(2024, 3, 15),
+        vectorClock: clock,
+      ),
+      data: ChecklistData(
+        title: title,
+        linkedChecklistItems: const [],
+        linkedTasks: const ['task-1'],
+      ),
+    );
+
+    setUp(() {
+      checklists = MockChecklistRepository();
+      when(() => checklists.resolveConflict(any(), any())).thenAnswer(
+        (invocation) =>
+            (invocation.positionalArguments[1] as Future<bool> Function())(),
+      );
+      service = ConflictResolutionService(
+        persistenceLogic: persistence,
+        checklistRepository: checklists,
+      );
+    });
+
+    test(
+      'is written through ChecklistRepository.resolveConflict, which lists a '
+      'kept checklist on its task',
+      () async {
+        final ok = await service.keepSide(
+          ConflictPair(
+            local: checklistOf('local', const VectorClock({'a': 2})),
+            remote: checklistOf('remote', const VectorClock({'b': 3})),
+          ),
+          ConflictSide.remote,
+        );
+
+        expect(ok, isTrue);
+        final resolved =
+            verify(
+                  () => checklists.resolveConflict(captureAny(), any()),
+                ).captured.single
+                as Checklist;
+        expect(resolved.data.title, 'remote');
+        expect(capturedWrite(), resolved);
+      },
+    );
+
+    test('a combined one too', () async {
+      await service.combine(
+        ConflictPair(
+          local: checklistOf('local', const VectorClock({'a': 2})),
+          remote: checklistOf('remote', const VectorClock({'b': 3})),
+        ),
+        baseSide: ConflictSide.local,
+        choices: const {},
+      );
+
+      verify(() => checklists.resolveConflict(any(), any())).called(1);
+    });
+
+    test('any other entry is written directly', () async {
+      await service.keepSide(
+        ConflictPair(local: local, remote: remote),
+        ConflictSide.local,
+      );
+
+      verifyNever(() => checklists.resolveConflict(any(), any()));
+      capturedWrite();
     });
   });
 }

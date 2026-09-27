@@ -19,6 +19,7 @@ import 'package:lotti/features/categories/domain/category_knowledge_brief.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/labels/utils/assigned_labels_util.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
+import 'package:lotti/features/tasks/repository/shown_checklist_items.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -179,20 +180,18 @@ class AiInputRepository {
 
     final checklistIds = task.data.checklistIds ?? [];
 
-    final checklistItems = <ChecklistItemData>[];
-    for (final checklistId in checklistIds) {
-      final checklist = await _db.journalEntityById(checklistId);
-      if (checklist != null && checklist is Checklist) {
-        final checklistItemIds = checklist.data.linkedChecklistItems;
-        for (final checklistItemId in checklistItemIds) {
-          final checklistItem = await _db.journalEntityById(checklistItemId);
-          if (checklistItem != null && checklistItem is ChecklistItem) {
-            final data = checklistItem.data.copyWith(id: checklistItemId);
-            checklistItems.add(data);
-          }
-        }
-      }
-    }
+    final checklists = [
+      for (final checklistId in checklistIds)
+        if (await _db.journalEntityById(checklistId) case final Checklist c) c,
+    ];
+    // The items each checklist shows: those naming it (ADR 0105), so an item
+    // two checklists list reaches the model once.
+    final shown = await readShownChecklistItems(_db, checklists);
+    final checklistItems = <ChecklistItemData>[
+      for (final checklist in checklists)
+        for (final item in shown[checklist.meta.id] ?? <ChecklistItem>[])
+          item.data.copyWith(id: item.meta.id),
+    ];
 
     final actionItems = checklistItems
         .map(
