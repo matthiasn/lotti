@@ -667,6 +667,41 @@ void main() {
         ).called(1);
       });
 
+      test('update_time_entry records the text it replaces as its base, read '
+          'through the real resolver closure (ADR 0097)', () async {
+        final historical = makeLinkedTimeEntry(
+          id: 'historical-entry',
+          dateFrom: DateTime(2024, 6, 13, 10),
+          dateTo: DateTime(2024, 6, 13, 11),
+          text: 'past work',
+        );
+        when(
+          () => mockJournalDb.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => [historical]);
+        when(
+          () => mockJournalDb.journalEntityById('historical-entry'),
+        ).thenAnswer((_) async => historical);
+
+        final result = await executeWithToolCallOnRealTask(
+          'update_time_entry',
+          '{"entryId":"historical-entry","summary":"Refined"}',
+        );
+
+        expect(result.success, isTrue);
+        final items = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured.whereType<ChangeSetEntity>().expand((s) => s.items);
+        expect(
+          items
+              .where((i) => i.toolName == 'update_time_entry')
+              .map((i) => i.targetBase)
+              .toSet(),
+          {
+            {'summary': 'past work'},
+          },
+        );
+      });
+
       test('update_time_entry accepts the running timer through the real '
           'resolver closures', () async {
         final timeService = getIt<TimeService>();
