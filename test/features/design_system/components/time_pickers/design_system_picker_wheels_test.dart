@@ -1,4 +1,3 @@
-import 'package:cupertino_ui/cupertino_ui.dart' show CupertinoTimerPicker;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
@@ -424,7 +423,7 @@ void main() {
       ),
     );
     expect(semantics.label, 'Estimate: 0h 30m');
-    expect(find.byType(CupertinoTimerPicker), findsOneWidget);
+    expect(find.byType(ListWheelScrollView), findsNWidgets(2));
   });
 
   group('minute drum carries into the hour drum', () {
@@ -667,6 +666,213 @@ void main() {
       final shownHour = shownRow(tester, 0, 24);
       expect(shownHour, isNot(13));
       expect(changes.last, DateTime(2024, 6, 15, shownHour, 59));
+    });
+  });
+
+  group('duration minute drum carries into the hour drum', () {
+    Future<List<Duration>> pumpWheel(
+      WidgetTester tester,
+      Duration initial, {
+      MediaQueryData? mediaQueryData,
+    }) async {
+      final changes = <Duration>[];
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          DesignSystemDurationWheel(
+            initialDuration: initial,
+            onDurationChanged: changes.add,
+          ),
+          mediaQueryData: mediaQueryData,
+        ),
+      );
+      return changes;
+    }
+
+    Finder wheelAt(int index) => find.byType(ListWheelScrollView).at(index);
+
+    FixedExtentScrollController controllerOf(WidgetTester tester, int wheel) =>
+        tester.widget<ListWheelScrollView>(wheelAt(wheel)).controller!
+            as FixedExtentScrollController;
+
+    /// The hour drum does not loop, so its item is its row.
+    int shownHour(WidgetTester tester) => controllerOf(tester, 0).selectedItem;
+
+    int shownMinute(WidgetTester tester) =>
+        controllerOf(tester, 1).selectedItem % 60;
+
+    /// Runs every scroll animation to rest. The first frame starts their
+    /// tickers; a single long pump would render only that starting frame.
+    Future<void> settle(WidgetTester tester) async {
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 800));
+      await tester.pump();
+    }
+
+    Future<void> focusMinutes(WidgetTester tester) async {
+      await tester.tap(wheelAt(1));
+      await tester.pump();
+    }
+
+    testWidgets(
+      'dragging minutes back past :00 animates to the previous hour',
+      (
+        tester,
+      ) async {
+        final changes = await pumpWheel(
+          tester,
+          const Duration(hours: 1, minutes: 1),
+        );
+
+        // Two rows down: :01 → :00 → :59.
+        await tester.drag(wheelAt(1), const Offset(0, 96));
+        await settle(tester);
+
+        expect(changes.last, const Duration(minutes: 59));
+        expect(shownHour(tester), 0);
+        expect(shownMinute(tester), 59);
+      },
+    );
+
+    testWidgets('the hour animates rather than jumping', (tester) async {
+      final changes = await pumpWheel(tester, const Duration(hours: 2));
+      final hourController = controllerOf(tester, 0);
+      final startOffset = hourController.offset;
+      final rowExtent = tester
+          .widget<ListWheelScrollView>(wheelAt(0))
+          .itemExtent;
+
+      await focusMinutes(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      // The duration is reported at once, while the hour drum still moves.
+      expect(changes.last, const Duration(hours: 1, minutes: 59));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      final midOffset = hourController.offset;
+      expect(midOffset, lessThan(startOffset));
+      expect(midOffset, greaterThan(startOffset - rowExtent));
+
+      await settle(tester);
+      expect(hourController.offset, startOffset - rowExtent);
+      expect(shownHour(tester), 1);
+    });
+
+    testWidgets('reduced motion moves the hour without animating', (
+      tester,
+    ) async {
+      final changes = await pumpWheel(
+        tester,
+        const Duration(hours: 2),
+        mediaQueryData: const MediaQueryData(disableAnimations: true),
+      );
+
+      await focusMinutes(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.pump();
+
+      expect(shownHour(tester), 1);
+      expect(changes.last, const Duration(hours: 1, minutes: 59));
+    });
+
+    testWidgets('rolling minutes forward past :59 advances the hour', (
+      tester,
+    ) async {
+      final changes = await pumpWheel(tester, const Duration(minutes: 59));
+
+      await focusMinutes(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await settle(tester);
+
+      expect(changes.last, const Duration(hours: 1));
+      expect(shownHour(tester), 1);
+    });
+
+    testWidgets('crossings in quick succession roll back one hour each', (
+      tester,
+    ) async {
+      final changes = await pumpWheel(tester, const Duration(hours: 3));
+      final minuteWheel = tester.widget<ListWheelScrollView>(wheelAt(1));
+
+      // Two backward crossings reported before the first hour animation has
+      // had a frame to run: :00 → :59 → :30 → :01 → :00 → :59.
+      minuteWheel.onSelectedItemChanged!(59);
+      minuteWheel.onSelectedItemChanged!(30);
+      minuteWheel.onSelectedItemChanged!(1);
+      minuteWheel.onSelectedItemChanged!(0);
+      minuteWheel.onSelectedItemChanged!(59);
+      await settle(tester);
+
+      expect(shownHour(tester), 1);
+      expect(changes.last, const Duration(hours: 1, minutes: 59));
+    });
+
+    testWidgets('rolling back from zero keeps the hour at zero', (
+      tester,
+    ) async {
+      final changes = await pumpWheel(tester, Duration.zero);
+
+      await focusMinutes(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await settle(tester);
+
+      // A duration has no midnight: no wrap to 23 hours.
+      expect(shownHour(tester), 0);
+      expect(changes.last, const Duration(minutes: 59));
+    });
+
+    testWidgets('rolling forward from 23:59 keeps the hour at 23', (
+      tester,
+    ) async {
+      final changes = await pumpWheel(
+        tester,
+        const Duration(hours: 23, minutes: 59),
+      );
+
+      await focusMinutes(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await settle(tester);
+
+      expect(shownHour(tester), 23);
+      expect(changes.last, const Duration(hours: 23));
+    });
+
+    testWidgets('a duration past the last row opens on 23:59', (tester) async {
+      await pumpWheel(tester, const Duration(hours: 30));
+
+      expect(shownHour(tester), 23);
+      expect(shownMinute(tester), 59);
+    });
+
+    testWidgets('columns read their unit and step through semantics', (
+      tester,
+    ) async {
+      final semanticsHandle = tester.ensureSemantics();
+      final changes = await pumpWheel(
+        tester,
+        const Duration(hours: 1, minutes: 5),
+      );
+
+      final hour = tester.getSemantics(find.bySemanticsLabel('Hour'));
+      expect(hour.value, endsWith('hour'));
+      expect(hour.increasedValue, endsWith('hours'));
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('Minute')).value,
+        endsWith('min.'),
+      );
+      expect(find.text('hour'), findsOneWidget);
+
+      tester.binding.performSemanticsAction(
+        SemanticsActionEvent(
+          type: SemanticsAction.increase,
+          nodeId: hour.id,
+          viewId: tester.view.viewId,
+        ),
+      );
+      await tester.pump();
+
+      expect(changes.last, const Duration(hours: 2, minutes: 5));
+      // The unit's plural follows the settled hour.
+      expect(find.text('hours'), findsOneWidget);
+      semanticsHandle.dispose();
     });
   });
 }

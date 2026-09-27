@@ -32,6 +32,10 @@ sources:
     resource: ../../../lib/features/design_system/components/time_pickers/time_wheel_rollover.dart
     title: TimeWheelColumnDriver — minute-to-hour rollover shared by every time drum
     last_modified: 2026-09-26
+  - id: picker-wheels
+    resource: ../../../lib/features/design_system/components/time_pickers/design_system_picker_wheels.dart
+    title: DesignSystemTimeWheel and DesignSystemDurationWheel — the drums built on the driver
+    last_modified: 2026-09-27
   - id: navbar
     resource: ../../../lib/widgets/nav_bar/design_system_bottom_navigation_bar.dart
     title: Bottom navigation shell
@@ -820,8 +824,16 @@ modal, the measurement dialog, relationship check-in chips, and the time-only
 rolls the hour with the minutes: dragging the minute drum back past `:00`
 animates the hour down one (14:00 → 13:59), forward past `:59` animates it up,
 and on a 12-hour drum the AM/PM column follows. The date is never touched; the
-hour wraps at midnight. Date and date-and-time sheets still use
-`CupertinoDatePicker`, which has no such hook.
+hour wraps at midnight.
+
+`DesignSystemDurationWheel` — the wheel under `showDurationPicker`, so a task's
+estimate and a check-in's length — rolls the same way (1:05 → 0:59) through the
+same driver. A duration has no midnight: its hour drum runs 0–23 without
+looping, and a minute wrap at 0:00 or 23:59 leaves the hour where it is rather
+than jumping to the other end. Anything past 23:59 opens on 23:59.
+
+Date and date-and-time sheets still use `CupertinoDatePicker`, which has no
+such hook; a date-only sheet has no minute drum to roll.
 
 The logic lives once, in `time_pickers/time_wheel_rollover.dart`:
 

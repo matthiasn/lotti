@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,6 +12,7 @@ import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
+import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/tasks/ui/header/task_meta_pickers.dart';
 import 'package:lotti/get_it.dart';
@@ -338,10 +338,10 @@ void main() {
         // Directly invoke the picker's duration-changed callback to simulate
         // the user scrolling to 1h, so selectedDuration diverges from the
         // zero initial and Done fires onEstimateChanged.
-        final picker = tester.widget<CupertinoTimerPicker>(
-          find.byType(CupertinoTimerPicker),
+        final picker = tester.widget<DesignSystemDurationWheel>(
+          find.byType(DesignSystemDurationWheel),
         );
-        picker.onTimerDurationChanged(const Duration(hours: 1));
+        picker.onDurationChanged(const Duration(hours: 1));
         await tester.tap(find.text('Done'));
         await settle(tester);
 

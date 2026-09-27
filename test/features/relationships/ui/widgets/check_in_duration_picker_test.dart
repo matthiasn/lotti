@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/relationships/state/check_in_duration_suggestions_controller.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_duration_picker.dart';
 import 'package:material_ui/material_ui.dart';
@@ -179,8 +179,10 @@ void main() {
       expect(find.text('Duration'), findsOneWidget);
       expect(
         tester
-            .widget<CupertinoTimerPicker>(find.byType(CupertinoTimerPicker))
-            .initialTimerDuration,
+            .widget<DesignSystemDurationWheel>(
+              find.byType(DesignSystemDurationWheel),
+            )
+            .initialDuration,
         thirty,
       );
       expect(pillOf(tester, '30 min').selected, isTrue);
@@ -193,7 +195,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(await chosen, ninety);
-      expect(find.byType(CupertinoTimerPicker), findsNothing);
+      expect(find.byType(DesignSystemDurationWheel), findsNothing);
     });
 
     testWidgets('Done on an untouched wheel resolves to null — nothing '
@@ -226,8 +228,10 @@ void main() {
       expect(find.bySemanticsLabel(RegExp('Duration: 30 min')), findsOneWidget);
 
       tester
-          .widget<CupertinoTimerPicker>(find.byType(CupertinoTimerPicker))
-          .onTimerDurationChanged(Duration.zero);
+          .widget<DesignSystemDurationWheel>(
+            find.byType(DesignSystemDurationWheel),
+          )
+          .onDurationChanged(Duration.zero);
       await tester.pumpAndSettle();
 
       expect(

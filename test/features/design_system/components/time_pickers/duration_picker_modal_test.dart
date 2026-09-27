@@ -1,5 +1,5 @@
-import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/components/time_pickers/duration_picker_modal.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -52,8 +52,8 @@ void main() {
   }
 
   void spinWheelTo(WidgetTester tester, Duration duration) => tester
-      .widget<CupertinoTimerPicker>(find.byType(CupertinoTimerPicker))
-      .onTimerDurationChanged(duration);
+      .widget<DesignSystemDurationWheel>(find.byType(DesignSystemDurationWheel))
+      .onDurationChanged(duration);
 
   testWidgets('the chips sit above the wheel, and the wheel opens on the '
       'initial value', (tester) async {
@@ -67,13 +67,15 @@ void main() {
     expect(drafts, const [oneHour]);
     expect(
       tester.getRect(find.text('chip')).bottom,
-      lessThan(tester.getRect(find.byType(CupertinoTimerPicker)).top),
+      lessThan(tester.getRect(find.byType(DesignSystemDurationWheel)).top),
       reason: 'the cheap path is met before the fallback',
     );
     expect(
       tester
-          .widget<CupertinoTimerPicker>(find.byType(CupertinoTimerPicker))
-          .initialTimerDuration,
+          .widget<DesignSystemDurationWheel>(
+            find.byType(DesignSystemDurationWheel),
+          )
+          .initialDuration,
       oneHour,
     );
   });
@@ -115,7 +117,7 @@ void main() {
     await tester.tap(find.text('Done'));
     await tester.pumpAndSettle();
     expect(written, const [fortySeven]);
-    expect(find.byType(CupertinoTimerPicker), findsNothing);
+    expect(find.byType(DesignSystemDurationWheel), findsNothing);
   });
 
   testWidgets('a quick pick closes first and then writes its value', (
