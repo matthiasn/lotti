@@ -133,9 +133,16 @@ final class WakeCoordinationDefer extends WakeCoordinationDecision {
 /// A peer already completed a wake that read everything this one would:
 /// drop the job, its triggers are covered.
 final class WakeCoordinationCancel extends WakeCoordinationDecision {
-  const WakeCoordinationCancel({required this.peerHostId});
+  const WakeCoordinationCancel({
+    required this.peerHostId,
+    required this.reportUpdated,
+  });
 
   final String peerHostId;
+
+  /// Whether the covering run refreshed the standing report, so this
+  /// device's report is fresh too.
+  final bool reportUpdated;
 }
 
 /// Cross-device coordination of agent wakes: of several devices about to run
@@ -252,13 +259,16 @@ class AgentWakeCoordinator with AgentErrorLogging {
     final reasons = <String>[];
     for (final MapEntry(key: host, value: view) in peers.entries) {
       for (final done in view.done.reversed) {
-        final reason = done.uncovered(inputs);
+        final reason = done.coverage.uncovered(inputs);
         if (reason == null) {
           _log(
             'cancel $agent: peer ${DomainLogger.sanitizeId(host)} completed '
             'a run covering ${inputs.clocks.length} inputs',
           );
-          return WakeCoordinationCancel(peerHostId: host);
+          return WakeCoordinationCancel(
+            peerHostId: host,
+            reportUpdated: done.reportUpdated,
+          );
         }
         reasons.add('${DomainLogger.sanitizeId(host)} done: $reason');
       }
@@ -311,9 +321,13 @@ class AgentWakeCoordinator with AgentErrorLogging {
     announce();
   }
 
-  /// Announces that run [runKey] completed successfully.
-  void complete(String runKey) =>
-      _finish(runKey, AgentWakeCoordinationKind.done);
+  /// Announces that run [runKey] completed successfully, and whether it
+  /// refreshed the agent's standing report.
+  void complete(String runKey, {bool reportUpdated = true}) => _finish(
+    runKey,
+    AgentWakeCoordinationKind.done,
+    reportUpdated: reportUpdated,
+  );
 
   /// Ends run [runKey] however it ended. After [complete] this is a no-op;
   /// otherwise the run failed, was aborted or never reached its executor, and
@@ -321,7 +335,11 @@ class AgentWakeCoordinator with AgentErrorLogging {
   void settle(String runKey) =>
       _finish(runKey, AgentWakeCoordinationKind.release);
 
-  void _finish(String runKey, AgentWakeCoordinationKind kind) {
+  void _finish(
+    String runKey,
+    AgentWakeCoordinationKind kind, {
+    bool reportUpdated = true,
+  }) {
     final run = _runs.remove(runKey);
     if (run == null) return;
     run.heartbeat.cancel();
@@ -330,6 +348,7 @@ class AgentWakeCoordinator with AgentErrorLogging {
       runKey: runKey,
       coverage: run.coverage,
       kind: kind,
+      reportUpdated: reportUpdated,
     );
   }
 
@@ -338,6 +357,7 @@ class AgentWakeCoordinator with AgentErrorLogging {
     required String runKey,
     required WakeCoverage coverage,
     required AgentWakeCoordinationKind kind,
+    bool reportUpdated = true,
   }) {
     final sentAt = clock.now();
     // Chained, so this device's messages reach the outbox in the order they
@@ -359,6 +379,7 @@ class AgentWakeCoordinator with AgentErrorLogging {
             runKey: runKey,
             hostId: hostId,
             sentAt: sentAt,
+            reportUpdated: reportUpdated,
           ),
         );
         _log(
@@ -422,7 +443,7 @@ class AgentWakeCoordinator with AgentErrorLogging {
       case AgentWakeCoordinationKind.done:
         view
           ..clearClaim()
-          ..addDone(coverage);
+          ..addDone((coverage: coverage, reportUpdated: message.reportUpdated));
         _peerStateChanged(message.agentId);
       case AgentWakeCoordinationKind.release:
         view.clearClaim();
@@ -472,6 +493,10 @@ class _LocalRun {
   final Timer heartbeat;
 }
 
+/// What a peer's `done` announced: what the run read, and whether it
+/// refreshed the standing report.
+typedef _CompletedRun = ({WakeCoverage coverage, bool reportUpdated});
+
 /// One device's view of one peer's wakes of one agent.
 class _PeerView {
   WakeCoverage? claim;
@@ -479,8 +504,8 @@ class _PeerView {
   Timer? expiry;
   DateTime? lastSentAt;
 
-  /// Coverages of the peer's completed runs, oldest first.
-  final done = <WakeCoverage>[];
+  /// The peer's completed runs, oldest first.
+  final done = <_CompletedRun>[];
 
   void clearClaim() {
     claim = null;
@@ -489,10 +514,10 @@ class _PeerView {
     expiry = null;
   }
 
-  void addDone(WakeCoverage coverage) {
+  void addDone(_CompletedRun run) {
     done
-      ..remove(coverage)
-      ..add(coverage);
+      ..removeWhere((known) => known.coverage == run.coverage)
+      ..add(run);
     while (done.length > AgentWakeCoordinator.doneHistoryLimit) {
       done.removeAt(0);
     }

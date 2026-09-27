@@ -1851,7 +1851,7 @@ void main() {
 
       /// A message from a peer whose run holds this device's writes up to
       /// counter 3.
-      void peer(AgentWakeCoordinationKind kind) {
+      void peer(AgentWakeCoordinationKind kind, {bool reportUpdated = true}) {
         coordinator.onMessage(
           SyncMessage.agentWakeCoordination(
                 agentId: 'agent-1',
@@ -1862,6 +1862,7 @@ void main() {
                 runKey: 'peer-run',
                 hostId: 'peer-device',
                 sentAt: clock.now(),
+                reportUpdated: reportUpdated,
               )
               as SyncAgentWakeCoordination,
         );
@@ -1918,6 +1919,61 @@ void main() {
           async.elapse(WakeOrchestrator.throttleWindow);
           drain(async);
           expect(executions, 0);
+        });
+      });
+
+      test('a covering run that did not refresh its report still ends the '
+          'countdown, but the report stays outdated', () {
+        coordinated((async) {
+          countingDown(async);
+
+          peer(AgentWakeCoordinationKind.done, reportUpdated: false);
+          async.flushMicrotasks();
+
+          expect(queue.isEmpty, isTrue);
+          expect(state.nextWakeAt, isNull);
+          expect(state.reportFreshAt, isNull);
+          expect(state.reportStaleAt, isNotNull);
+        });
+      });
+
+      test('a countdown cancelled while the peer check reads its inputs '
+          'stays cancelled, and nothing is marked fresh', () {
+        coordinated((async) {
+          countingDown(async);
+          final held = heldInputs = Completer<WakeInputs?>();
+          peer(AgentWakeCoordinationKind.done);
+          async.flushMicrotasks();
+
+          orchestrator.cancelPendingWakes('agent-1');
+          held.complete(inputsAt(3));
+          async.flushMicrotasks();
+
+          expect(queue.isEmpty, isTrue);
+          expect(executions, 0);
+          expect(state.reportFreshAt, isNull);
+        });
+      });
+
+      test('a drain superseded while the peer check reads its inputs hands '
+          'the job on, and the next drain drops it as covered', () {
+        coordinated((async) {
+          countingDown(async);
+          final held = heldInputs = Completer<WakeInputs?>();
+          peer(AgentWakeCoordinationKind.done);
+          // The stuck drain is force-reset after its progress timeout.
+          async
+            ..flushMicrotasks()
+            ..elapse(const Duration(minutes: 13));
+          unawaited(orchestrator.processNext());
+          async.flushMicrotasks();
+
+          held.complete(inputsAt(3));
+          async.flushMicrotasks();
+
+          expect(queue.isEmpty, isTrue);
+          expect(executions, 0);
+          expect(sent, isEmpty);
         });
       });
 

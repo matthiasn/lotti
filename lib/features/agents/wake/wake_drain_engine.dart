@@ -359,8 +359,8 @@ extension WakeDrainEngine on WakeOrchestrator {
             if (!job.drainImmediately && _isThrottled(job.agentId)) {
               // A peer completed a run covering this job while its countdown
               // runs: drop it now, and the countdown with it. The peer's run
-              // read everything this device holds, so its report is fresh
-              // here as of the check.
+              // read everything this device holds, so if it refreshed its
+              // report, the report is fresh here as of the check.
               if (_peerCoverageChecks.remove(job.agentId)) {
                 final coordinatedAt = clock.now();
                 final coordination = await _coordinate(job);
@@ -386,10 +386,12 @@ extension WakeDrainEngine on WakeOrchestrator {
                   // Awaited before the countdown is cleared: both rewrite the
                   // agent state, and neither may write back the other's old
                   // value.
-                  await _markReportFresh(
-                    job.agentId,
-                    refreshStartedAt: coordinatedAt,
-                  );
+                  if (coordination.reportUpdated) {
+                    await _markReportFresh(
+                      job.agentId,
+                      refreshStartedAt: coordinatedAt,
+                    );
+                  }
                   if (!queue.hasQueuedJobForAgent(job.agentId) &&
                       !deferred.any((held) => held.agentId == job.agentId)) {
                     clearThrottle(job.agentId);
@@ -466,10 +468,12 @@ extension WakeDrainEngine on WakeOrchestrator {
                 emitUnpersistedCompletion: false,
               );
               _releaseDrainLease(generation, lease);
-              await _markReportFresh(
-                job.agentId,
-                refreshStartedAt: coordinatedAt,
-              );
+              if (coordination.reportUpdated) {
+                await _markReportFresh(
+                  job.agentId,
+                  refreshStartedAt: coordinatedAt,
+                );
+              }
               continue;
             case WakeCoordinationDefer():
               _forgetDrainOwnedJob(job);
@@ -885,7 +889,9 @@ extension WakeDrainEngine on WakeOrchestrator {
         }
 
         final mutated = winner as Map<String, VectorClock>?;
-        coordinator?.complete(job.runKey);
+        final reportUpdated =
+            mutated is! WakeExecutorResult || mutated.reportUpdated;
+        coordinator?.complete(job.runKey, reportUpdated: reportUpdated);
 
         // Clear pre-registered suppression and record only the actual
         // mutations.  The zone-based isAgentExecution in PersistenceLogic
@@ -910,8 +916,6 @@ extension WakeDrainEngine on WakeOrchestrator {
           WakeRunStatus.completed.name,
           completedAt: clock.now(),
         );
-        final reportUpdated =
-            mutated is! WakeExecutorResult || mutated.reportUpdated;
         _emitRunCompletion(
           job,
           WakeRunStatus.completed,

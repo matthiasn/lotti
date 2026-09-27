@@ -431,6 +431,12 @@ sealed class SyncMessage with _$SyncMessage {
     /// When the sender emitted this message, by the sender's clock. Orders
     /// one sender's messages; never compared with the receiver's clock.
     required DateTime sentAt,
+
+    /// On a `done`: whether the completed run refreshed the agent's standing
+    /// report. A peer it covers marks its own report fresh only then. Absent
+    /// from 1.1.30, whose completions all come from task-agent runs, which
+    /// always refresh it.
+    @Default(true) bool reportUpdated,
   }) = SyncAgentWakeCoordination;
 
   const factory SyncMessage.agentEntity({

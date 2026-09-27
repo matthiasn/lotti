@@ -592,8 +592,9 @@ run uncoordinated.
 
 The drain asks the coordinator after the content gate. **Cancel** when a peer
 completed a run covering this device: the job is dropped and its intent
-settled, since the peer's run covers its triggers, and the report is marked
-fresh as of the check — the peer's run read everything this device holds.
+settled, since the peer's run covers its triggers. If that run refreshed its
+report — `done` carries the verdict — this device's report is marked fresh as
+of the check, since the run read everything this device holds.
 The drain does not wait for the countdown to find out: every peer event that
 can free a job (`AgentWakeCoordinator.onPeerStateChanged`, wired to
 `WakeOrchestrator.onPeerWakeStateChanged`) has the next drain check that
