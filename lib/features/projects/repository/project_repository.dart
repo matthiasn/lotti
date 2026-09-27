@@ -468,26 +468,48 @@ class ProjectRepository {
   /// if a link was removed.
   ///
   /// With [onlyIfPrivacyMismatched], only the links whose project's private
-  /// flag differs from the task's are removed. The removal rechecks the
-  /// links, and the privacy of both entries, inside the deletion transaction
-  /// so concurrent sync edits are preserved.
+  /// flag differs from the task's are removed. The deletion transaction
+  /// derives the links to remove again — the live links and the privacy of
+  /// every entry involved — and writes only when they are the ones it
+  /// prepared, so concurrent sync edits are preserved. When sync moved them in
+  /// between, the removal starts over from what is stored, a bounded number
+  /// of times ([_unlinkAttempts]).
   Future<bool> unlinkTaskFromProject(
     String taskId, {
     bool onlyIfPrivacyMismatched = false,
   }) async {
-    final liveLinks = await _journalDb.getLiveProjectLinksForTask(taskId);
-    final retire = [
-      for (final link in liveLinks)
-        if (!onlyIfPrivacyMismatched || await _privacyMismatched(link)) link,
-    ];
-    if (retire.isEmpty) return false;
-    return _softDeleteLinks(
-      taskId: taskId,
-      liveLinks: liveLinks,
-      retire: retire,
-      onlyIfPrivacyMismatched: onlyIfPrivacyMismatched,
-    );
+    for (var attempt = 0; attempt < _unlinkAttempts; attempt++) {
+      final liveLinks = await _journalDb.getLiveProjectLinksForTask(taskId);
+      final retire = await _linksToRetire(
+        liveLinks,
+        onlyIfPrivacyMismatched: onlyIfPrivacyMismatched,
+      );
+      if (retire.isEmpty) return false;
+      final removed = await _softDeleteLinks(
+        taskId: taskId,
+        liveLinks: liveLinks,
+        retire: retire,
+        onlyIfPrivacyMismatched: onlyIfPrivacyMismatched,
+      );
+      if (removed != null) return removed;
+    }
+    return false;
   }
+
+  /// How many times [unlinkTaskFromProject] starts over when sync changed
+  /// the task's links or privacy between its read and its transaction.
+  static const _unlinkAttempts = 3;
+
+  /// The links of [liveLinks] an unlink removes: all of them, or with
+  /// [onlyIfPrivacyMismatched] those whose project differs in privacy from
+  /// the task.
+  Future<List<EntryLink>> _linksToRetire(
+    List<EntryLink> liveLinks, {
+    required bool onlyIfPrivacyMismatched,
+  }) async => [
+    for (final link in liveLinks)
+      if (!onlyIfPrivacyMismatched || await _privacyMismatched(link)) link,
+  ];
 
   /// Copies the project assignment from [sourceTaskId] to [newTaskId].
   ///
@@ -685,28 +707,38 @@ class ProjectRepository {
 
   /// Soft-deletes [retire], the links of [taskId] chosen from [liveLinks], in
   /// one transaction that first checks the task's live links are still
-  /// [liveLinks] — and, for privacy cleanup, that each link to retire still
-  /// joins a task and a project whose private flags differ.
-  Future<bool> _softDeleteLinks({
+  /// [liveLinks] and — for privacy cleanup — that the links whose project
+  /// differs in privacy from the task are exactly [retire], read from the
+  /// transaction's snapshot.
+  ///
+  /// Returns true when the links were removed, false when a write failed,
+  /// and null when sync had moved the links or the privacy in between: the
+  /// caller reads again.
+  Future<bool?> _softDeleteLinks({
     required String taskId,
     required List<EntryLink> liveLinks,
     required List<EntryLink> retire,
     required bool onlyIfPrivacyMismatched,
   }) async {
-    return _vectorClockService.withVcScope<bool>(
+    return _vectorClockService.withVcScope<bool?>(
       () async {
         final now = DateTime.now();
         final tombstones = [
           for (final link in retire) await _prepareDeletedLink(link, now),
         ];
-        var removed = false;
+        bool? removed = false;
         try {
-          removed = await _journalDb.transaction(() async {
-            if (!await _liveLinksUnchanged(taskId, liveLinks)) return false;
-            if (onlyIfPrivacyMismatched) {
-              for (final link in retire) {
-                if (!await _privacyMismatched(link)) return false;
-              }
+          removed = await _journalDb.transaction<bool?>(() async {
+            if (!await _liveLinksUnchanged(taskId, liveLinks)) return null;
+            if (onlyIfPrivacyMismatched &&
+                !const ListEquality<EntryLink>().equals(
+                  await _linksToRetire(
+                    liveLinks,
+                    onlyIfPrivacyMismatched: true,
+                  ),
+                  retire,
+                )) {
+              return null;
             }
             for (final tombstone in tombstones) {
               if (await _journalDb.upsertEntryLink(tombstone) == 0) {
@@ -720,7 +752,7 @@ class ProjectRepository {
           // already written.
           removed = false;
         }
-        if (!removed) return false;
+        if (removed != true) return removed;
         // Same propagation tagging as [linkTaskToProject]: unlinking is a
         // task-link side-effect, not a direct project edit.
         final projectIds = {for (final link in retire) link.fromId};
@@ -750,7 +782,7 @@ class ProjectRepository {
         }
         return true;
       },
-      commitWhen: (ok) => ok,
+      commitWhen: (removed) => removed ?? false,
     );
   }
 

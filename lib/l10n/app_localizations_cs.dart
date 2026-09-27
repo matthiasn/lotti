@@ -15393,7 +15393,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get taskBlockedInCycleTooltip =>
-      'Tento úkol a úkol, na který čeká, se navzájem blokují. Dokonči jeden z nich nebo odeber propojení, a ten druhý se uvolní.';
+      'Tento úkol je součástí cyklu blokování: přes své blokující úkoly čeká sám na sebe. Dokonči některý úkol v cyklu nebo odeber jedno z jeho propojení, a cyklus se přeruší.';
 
   @override
   String taskBlockedReason(String title) {

@@ -15213,7 +15213,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get taskBlockedInCycleTooltip =>
-      'Den här uppgiften och en uppgift den väntar på blockerar varandra. Stäng en av dem eller ta bort en länk för att frigöra den andra.';
+      'Den här uppgiften ingår i en blockeringscykel: genom sina blockerande uppgifter väntar den på sig själv. Stäng en uppgift i cykeln eller ta bort en av dess länkar för att bryta den.';
 
   @override
   String taskBlockedReason(String title) {

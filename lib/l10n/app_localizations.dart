@@ -25298,7 +25298,7 @@ abstract class AppLocalizations {
   /// Tooltip of the header chip on a task in a blocking cycle
   ///
   /// In en, this message translates to:
-  /// **'This task and a task it waits on block each other. Close one of them, or remove a link, to release the other.'**
+  /// **'This task is part of a blocking cycle: it waits, through its blockers, on itself. Close a task in the cycle, or remove one of its links, to break it.'**
   String get taskBlockedInCycleTooltip;
 
   /// No description provided for @taskBlockedReason.

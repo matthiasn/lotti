@@ -352,7 +352,11 @@ class _GraphBench {
   /// Files task [t] under project [p] on device [d] and checks FilingShows.
   Future<void> file(int d, String t, String p) async {
     _writes++;
-    _filings.add((task: t, saw: await _liveProjectKeys(d, t, except: p)));
+    // As the model's File: filing a task where it already shows writes
+    // nothing, so it took the task out of nothing.
+    if (await shownProject(d, t) != p) {
+      _filings.add((task: t, saw: await _liveProjectKeys(d, t, except: p)));
+    }
     final filed = await activate(d).projects.linkTaskToProject(
       projectId: p,
       taskId: t,
@@ -648,6 +652,19 @@ void _registerTaskLinkGraphConformance() {
       await b.checkConverged();
       expect(await b.shownProject(0, 't1'), isNull);
       expect(await b.shownProject(1, 't1'), isNull);
+    });
+
+    test('filing a task where it already shows takes it out of nothing, so a '
+        'later filing under the link underneath is no lost write', () async {
+      final b = await bench();
+      await b.file(1, 't1', 'p2');
+      await b.file(0, 't1', 'p1');
+      await b.deliver(0, 0);
+      final shown = (await b.shownProject(0, 't1'))!;
+      await b.file(0, 't1', shown);
+      await b.file(0, 't1', shown == 'p1' ? 'p2' : 'p1');
+      await b.settle();
+      await b.checkConverged();
     });
 
     test('filing a task under the project of its other live link shows it '

@@ -6401,7 +6401,7 @@
   "taskAgentUseCategoryDefaultDescription": "Copre la configurazione attuale della categoria. Le modifiche successive della categoria non influenzeranno questo agente.",
   "taskAgentUseProfileDefault": "Utilizzare il profilo predefinito",
   "taskBlockedInCycleChipLabel": "Bloccata in un ciclo",
-  "taskBlockedInCycleTooltip": "Questa attività e un'attività che attende si bloccano a vicenda. Chiudine una o rimuovi un collegamento per sbloccare l'altra.",
+  "taskBlockedInCycleTooltip": "Questa attività fa parte di un ciclo di blocchi: tramite le attività che la bloccano, attende sé stessa. Chiudi un’attività del ciclo o rimuovi uno dei suoi collegamenti per interromperlo.",
   "taskCategoryAllLabel": "tutti quanti",
   "taskCategoryLabel": "Categoria:",
   "taskCategoryUnassignedLabel": "non firmata",

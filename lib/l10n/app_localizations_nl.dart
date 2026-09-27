@@ -15247,7 +15247,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get taskBlockedInCycleTooltip =>
-      'Deze taak en een taak waarop hij wacht blokkeren elkaar. Sluit er een af of verwijder een koppeling om de andere vrij te geven.';
+      'Deze taak maakt deel uit van een blokkeringscyclus: via de taken die hem blokkeren wacht hij op zichzelf. Sluit een taak in de cyclus af of verwijder een van de koppelingen om hem te doorbreken.';
 
   @override
   String taskBlockedReason(String title) {

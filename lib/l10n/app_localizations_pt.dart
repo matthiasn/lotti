@@ -15350,7 +15350,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get taskBlockedInCycleTooltip =>
-      'Esta tarefa e uma tarefa pela qual ela espera se bloqueiam mutuamente. Conclua uma delas ou remova um vínculo para liberar a outra.';
+      'Esta tarefa faz parte de um ciclo de bloqueios: por meio das tarefas que a bloqueiam, ela espera por si mesma. Conclua uma tarefa do ciclo ou remova um de seus vínculos para rompê-lo.';
 
   @override
   String taskBlockedReason(String title) {

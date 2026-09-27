@@ -15397,7 +15397,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get taskBlockedInCycleTooltip =>
-      'Questa attività e un\'attività che attende si bloccano a vicenda. Chiudine una o rimuovi un collegamento per sbloccare l\'altra.';
+      'Questa attività fa parte di un ciclo di blocchi: tramite le attività che la bloccano, attende sé stessa. Chiudi un’attività del ciclo o rimuovi uno dei suoi collegamenti per interromperlo.';
 
   @override
   String taskBlockedReason(String title) {

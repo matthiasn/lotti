@@ -225,12 +225,21 @@ class _TaskBlockedByChip extends ConsumerWidget {
     // a simultaneously-blocked-and-overdue task must not show two identical
     // alarms (design-review-panel round 1, color-contrast finding).
     final accent = TaskShowcasePalette.warning(context);
-    final blockers = result.openBlockers;
+    // A cycle chip names and opens the blockers on the cycle (ADR 0106), not
+    // another blocker the task also has: while a cycle blocker has not
+    // synced, the one that has would otherwise stand in for it.
+    final blockers = result.inCycle
+        ? [
+            for (final blocker in result.openBlockers)
+              if (result.cycleBlockerIds.contains(blocker.id)) blocker,
+          ]
+        : result.openBlockers;
 
     if (blockers.isEmpty) {
       // Blocked purely by a link whose blocker id didn't resolve to any
       // entity (conservative default, ADR 0042 §4) — nothing to name or
-      // navigate to, so render a bare label with no tap affordance.
+      // navigate to, so render a bare label with no tap affordance. The same
+      // holds for a cycle whose blockers have not synced yet.
       return DsPill(
         variant: DsPillVariant.outline,
         shape: DsPillShape.tag,
@@ -251,8 +260,8 @@ class _TaskBlockedByChip extends ConsumerWidget {
     final tokens = context.designTokens;
 
     return Tooltip(
-      // A cycle is named rather than counted: the task waits on a task that
-      // waits on it, which no count conveys (ADR 0106).
+      // A cycle is named rather than counted: the task waits, through its
+      // blockers, on itself, which no count conveys (ADR 0106).
       message: result.inCycle
           ? context.messages.taskBlockedInCycleTooltip
           : context.messages.taskBlockedByChipTooltip(

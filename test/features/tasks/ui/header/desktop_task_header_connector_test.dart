@@ -1473,8 +1473,9 @@ void main() {
         );
         expect(
           tooltip.message,
-          'This task and a task it waits on block each other. Close one of '
-          'them, or remove a link, to release the other.',
+          'This task is part of a blocking cycle: it waits, through its '
+          'blockers, on itself. Close a task in the cycle, or remove one of '
+          'its links, to break it.',
         );
 
         await tester.tap(find.byIcon(LottiIcons.block));
@@ -1629,6 +1630,48 @@ void main() {
 
         expect(find.text('Blocked in a cycle'), findsOneWidget);
         expect(find.text('Blocker not synced yet'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'does not open another blocker from a cycle chip whose cycle blocker has '
+      'not synced yet',
+      (tester) async {
+        final task = buildTask();
+        final other = buildTask(id: 'other-blocker');
+        final links = [
+          blocksLink(id: 'l1', fromId: 'missing-blocker', toId: task.id),
+          blocksLink(id: 'l2', fromId: task.id, toId: 'missing-blocker'),
+          blocksLink(id: 'l3', fromId: 'other-blocker', toId: task.id),
+        ];
+        stubBlockers(task.id, links);
+        when(
+          () => mockJournalDb.typedLinksForTaskIds(
+            {'missing-blocker'},
+            types: {'BlocksLink'},
+          ),
+        ).thenAnswer((_) async => links);
+        when(
+          () => mockJournalDb.entriesForIds(any()),
+        ).thenAnswer((invocation) {
+          final ids = invocation.positionalArguments.first as List<String>;
+          return MockSelectable([
+            if (ids.contains(other.meta.id)) toDbEntity(other),
+          ]);
+        });
+
+        await tester.pumpWidget(pumpConnector(task: task));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('Blocked in a cycle'), findsOneWidget);
+        final pill = tester.widget<DsPill>(
+          find.ancestor(
+            of: find.byIcon(LottiIcons.block),
+            matching: find.byType(DsPill),
+          ),
+        );
+        expect(pill.onTap, isNull);
       },
     );
   });

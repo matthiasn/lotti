@@ -13,6 +13,6 @@
 ### Changed
 - **Tasks that block each other now say so.** Two devices can still each add
   one direction of a block before they sync. Both tasks then show "Blocked in
-  a cycle" instead of "Blocked by 1 task", with a hint that closing either one,
-  or removing a link, releases the other; the day planner is told the two wait
-  on each other instead of trying to schedule one first.
+  a cycle" instead of "Blocked by 1 task", with a hint that closing a task in
+  the cycle, or removing one of its links, breaks it; the day planner is told
+  the tasks wait on each other instead of trying to schedule one first.

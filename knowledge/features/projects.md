@@ -101,7 +101,9 @@ the ones it read
   that link instead of writing a second one for the same pair.
 - `unlinkTaskFromProject` retires every live link, and with
   `onlyIfPrivacyMismatched` every link whose project differs in privacy from
-  the task.
+  the task. The transaction derives that set again from its own snapshot and
+  writes only when it is unchanged; when sync moved a link or a privacy flag
+  in between, the unlink starts over from what is stored (three attempts).
 
 Retiring only the link shown let the one underneath take its place: an unfiled
 task appeared in the other project, filing it under that project did nothing,

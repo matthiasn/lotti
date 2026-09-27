@@ -15317,7 +15317,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get taskBlockedInCycleTooltip =>
-      'Diese Aufgabe und eine Aufgabe, auf die sie wartet, blockieren sich gegenseitig. Schließ eine davon ab oder entferne eine Verknüpfung, um die andere freizugeben.';
+      'Diese Aufgabe ist Teil eines Blockier-Zyklus: Über ihre blockierenden Aufgaben wartet sie auf sich selbst. Schließ eine Aufgabe im Zyklus ab oder entferne eine seiner Verknüpfungen, um ihn aufzulösen.';
 
   @override
   String taskBlockedReason(String title) {

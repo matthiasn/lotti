@@ -1998,8 +1998,55 @@ void main() {
         );
 
         verifyNever(() => mockDb.upsertEntryLink(any()));
-        // Every clock reserved for the refused writes is released.
-        expect(mockVectorClockService.commits, [false, false]);
+        // The unlink starts over from what is stored three times before it
+        // gives up; the move refuses at once. Every clock reserved for the
+        // refused writes is released.
+        expect(mockVectorClockService.commits, [false, false, false, false]);
+      },
+    );
+
+    test(
+      'privacy cleanup starts over when a project changes privacy before the '
+      'transaction, and removes every link that no longer matches',
+      () async {
+        final private = projectEntry.copyWith(
+          meta: projectMeta.copyWith(id: 'project-private', private: true),
+        );
+        when(() => mockDb.entityById(taskEntry.id)).thenAnswer(
+          (_) async => toDbEntity(
+            taskEntry.copyWith(meta: taskMeta.copyWith(private: true)),
+          ),
+        );
+        // The first read finds the project private, matching the task; by
+        // the transaction, sync has made it public.
+        var reads = 0;
+        when(() => mockDb.entityById('project-private')).thenAnswer(
+          (_) async => toDbEntity(
+            ++reads == 1
+                ? private
+                : private.copyWith(meta: private.meta.copyWith(private: false)),
+          ),
+        );
+        final public = projectLink(projectEntry.id);
+        final nowPublic = projectLink('project-private');
+        stubLiveLinks([nowPublic, public]);
+
+        expect(
+          await repository.unlinkTaskFromProject(
+            taskEntry.id,
+            onlyIfPrivacyMismatched: true,
+          ),
+          isTrue,
+        );
+
+        expect(
+          {for (final link in written()) link.id},
+          {
+            public.id,
+            nowPublic.id,
+          },
+        );
+        expect(mockVectorClockService.commits, [false, true]);
       },
     );
 

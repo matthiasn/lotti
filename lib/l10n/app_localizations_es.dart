@@ -15409,7 +15409,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get taskBlockedInCycleTooltip =>
-      'Esta tarea y una tarea a la que espera se bloquean mutuamente. Cierra una de ellas o quita un vínculo para liberar la otra.';
+      'Esta tarea forma parte de un ciclo de bloqueos: a través de sus bloqueos, se espera a sí misma. Cierra una tarea del ciclo o quita uno de sus vínculos para romperlo.';
 
   @override
   String taskBlockedReason(String title) {
