@@ -132,7 +132,7 @@ events" into "we can prove nothing was lost".
 | `missing` | Gap detected — expected but not yet received |
 | `requested` | A backfill request has been sent |
 | `backfilled` | Arrived via backfill after being marked missing |
-| `deleted` | The responder confirmed the entry was purged |
+| `deleted` | The responder has no row for the payload. For a journal entry that means one purged by a build before ADR 0095; a purge now keeps a tombstone, which is served like any version |
 | `unresolvable` | Receiver gave up — **reopenable** |
 | `reserved` | A local vector-clock counter is reserved, not yet written |
 | `burnPending` | A reservation was released without a payload; the broadcast is not out yet |
@@ -631,7 +631,7 @@ redundant 250-counter requests on a slow onboarding device.
 | Outcome | When |
 |---------|------|
 | Exact payload resend | The responder still has it |
-| `deleted` | The responder confirms it was purged |
+| `deleted` | The responder has no row for the payload — for a journal entry, one purged by a build before ADR 0095. A soft deletion, or a purge's tombstone of one, is resent like any payload |
 | `unresolvable` | **Only ever sent by the originating host for its own counter.** The receiving peer classifies an incoming `unresolvable=true` as the terminal `burned` state — the wire flag is unchanged, so old and new peers interoperate |
 | A verified covering payload hint | An exact payload is no longer the best answer |
 

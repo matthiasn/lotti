@@ -146,6 +146,20 @@ class EntryDiff {
 /// * Soft-delete-vs-edit collisions are classified via [ConflictShape]
 ///   rather than as a confusing diff against a tombstone.
 EntryDiff computeEntryDiff(JournalEntity local, JournalEntity remote) {
+  // A purge's tombstone is a JournalEntry whatever the entry was (ADR 0095).
+  // Against an edit it is still a deletion, and the user keeps the edit or
+  // confirms the deletion; it has no fields to compare.
+  if (local.isPurgedTombstone || remote.isPurgedTombstone) {
+    final shape = _shapeOf(local, remote, const <FieldDiff>[]);
+    if (shape == ConflictShape.deletedOnLocal ||
+        shape == ConflictShape.deletedOnRemote) {
+      return EntryDiff(
+        shape: shape,
+        fields: const <FieldDiff>[],
+        identicalFieldCount: 0,
+      );
+    }
+  }
   if (local.runtimeType != remote.runtimeType) {
     return const EntryDiff(
       shape: ConflictShape.typeChanged,

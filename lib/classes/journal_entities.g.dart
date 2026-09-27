@@ -27,6 +27,9 @@ _Metadata _$MetadataFromJson(Map<String, dynamic> json) => _Metadata(
   flag: $enumDecodeNullable(_$EntryFlagEnumMap, json['flag']),
   starred: json['starred'] as bool?,
   private: json['private'] as bool?,
+  purgedAt: json['purgedAt'] == null
+      ? null
+      : DateTime.parse(json['purgedAt'] as String),
 );
 
 Map<String, dynamic> _$MetadataToJson(_Metadata instance) => <String, dynamic>{
@@ -44,6 +47,7 @@ Map<String, dynamic> _$MetadataToJson(_Metadata instance) => <String, dynamic>{
   'flag': _$EntryFlagEnumMap[instance.flag],
   'starred': instance.starred,
   'private': instance.private,
+  'purgedAt': ?instance.purgedAt?.toIso8601String(),
 };
 
 const _$EntryFlagEnumMap = {

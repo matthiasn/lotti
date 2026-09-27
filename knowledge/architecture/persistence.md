@@ -888,18 +888,28 @@ either service** — `purgeDeleted` lives in
 `lib/database/database_entity_ops.dart` alongside the rest of `JournalDb`'s
 entity operations, which is where to look for it.
 
-Both whole-journal walks are **rowid keyset scans**, not `OFFSET` pages:
-`purgeDeletedFiles` reads soft-deleted rows 500 at a time with
-`WHERE deleted = 1 AND rowid > ?`, deleting each entity's media, and any JSON
-file an older build wrote beside it, as it goes, and `recreateFts5` reads live rows the same way to feed
-the index (order is irrelevant to FTS). An `OFFSET` page re-scans every
+The purge does not remove a deleted journal row. It compacts it to a
+tombstone that keeps the id, dates, vector clock and deletion, so the deletion
+still replicates ([ADR 0095](../../docs/adr/0095-a-purge-keeps-the-deletion.md));
+dashboards and measurable types it removes outright. A tombstone carries
+`meta.purgedAt`, and the purge's walks select only deleted rows without one
+(`json_extract`, guarded by `json_valid` so one unreadable row cannot fail the
+statement), so a second purge neither rewrites nor counts them.
+
+The purge's walk and the FTS rebuild are **rowid keyset scans**, not `OFFSET`
+pages. The purge reads not-yet-purged deleted rows 500 at a time with
+`rowid > ?` and rewrites each chunk to tombstones **in the transaction that
+read it**, so a row restored or replaced by a newer version since the read
+cannot be overwritten with a tombstone of the stale one. Only after the chunk
+commits does it delete the media of the rows it compacted, and any JSON file
+an older build wrote beside them: an entry restored meanwhile keeps its files.
+`recreateFts5` reads live rows the same way to feed the index (order is
+irrelevant to FTS) and takes no transaction: a row inserted or deleted
+concurrently is simply seen or not by the next chunk, and a new live entry
+gets indexed by the app's own write path. An `OFFSET` page re-scans every
 earlier row, which made a rebuild quadratic in the journal's size. Counts
 come from `COUNT(*)`, progress is reported after each table (purge) or each
-percent (rebuild), and nothing sleeps to make it visible. Neither walk takes
-a transaction: a row inserted or deleted concurrently is simply seen or not
-by the next chunk, which is correct for both — a new live entry gets indexed
-by the app's own write path, and a row deleted mid-purge has nothing left to
-purge.
+percent (rebuild), and nothing sleeps to make it visible.
 
 # Where to look
 

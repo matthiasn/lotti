@@ -45,6 +45,13 @@
 (*   Backfill    answers with the writer's current row if it still carries *)
 (*               the requested counter, `unresolvable` if not, `deleted`   *)
 (*               for a row journalEntityById does not return               *)
+(*   Purge       JournalDb.purgeDeleted: a deleted row's files go, and the *)
+(*               row is compacted to a tombstone -- its id, dates, clock   *)
+(*               and deletion, nothing else -- that every path above reads *)
+(*               as the deleted row. A tombstone applied over a stored row *)
+(*               deletes that row's own copy; a deletion applied over a    *)
+(*               tombstone stays compacted (the `purged` flag). Fields are *)
+(*               not modelled, so the tombstone is the deleted version.    *)
 (*                                                                         *)
 (* A clock maps each device to a counter, 0 for absent (new hosts start at *)
 (* 1, ADR 0080). `nc` marks a version without a clock: an entry created    *)
@@ -54,8 +61,9 @@
 (* not read whenever its clock covers it (Covered): that is the design,    *)
 (* not a hole, and the ghost says so too.                                  *)
 (*                                                                         *)
-(* The eight design switches are fixes of ADR 0083 and ADR 0092; setting  *)
-(* one to FALSE restores the old behaviour and its counterexample (README).*)
+(* The first eight design switches are fixes of ADR 0083 and ADR 0092,     *)
+(* the ninth of ADR 0095; setting one to FALSE restores the old            *)
+(* behaviour and its counterexample (README).                              *)
 (***************************************************************************)
 EXTENDS Integers
 
@@ -68,7 +76,8 @@ CONSTANTS
     Labels,       \* label writes: setLabels and suppressLabelOnTask
     NullBase,     \* the entry predates clocks, and a late copy is in flight
     Lossy,        \* may a delivery be lost and recovered by backfill?
-    \* Design switches: TRUE is the code after ADR 0083.
+    Purges,       \* may a device purge its deleted rows?
+    \* Design switches: TRUE is the code after ADR 0083 (and 0095).
     ReceiveSeesTombstones,     \* the write decision reads a soft-deleted row
     BackfillServesTombstones,  \* backfill answers with a soft-deleted row
     ConflictSeesTombstone,     \* the conflict page opens over one
@@ -76,13 +85,15 @@ CONSTANTS
     KeepNewerConflict,         \* a stale copy does not replace a newer conflict
     LabelsRebuild,             \* a label write rebuilds on the stored row
     RefuseNullClock,           \* a clockless copy never replaces a clocked row
-    ConflictPerVersion         \* a concurrent version never displaces another
+    ConflictPerVersion,        \* a concurrent version never displaces another
+    PurgeKeepsTombstone        \* a purge compacts a deleted row, not removes it
 
-ASSUME \A b \in {Stale, Resolves, Restores, Labels, NullBase, Lossy,
+ASSUME \A b \in {Stale, Resolves, Restores, Labels, NullBase, Lossy, Purges,
                  ReceiveSeesTombstones, BackfillServesTombstones,
                  ConflictSeesTombstone, ResolveOnlyCovered, KeepNewerConflict,
-                 LabelsRebuild, RefuseNullClock, ConflictPerVersion}
-       : b \in BOOLEAN
+                 LabelsRebuild, RefuseNullClock, ConflictPerVersion,
+                 PurgeKeepsTombstone} :
+    b \in BOOLEAN
 
 R == 1..N
 Zero == [r \in R |-> 0]
@@ -91,12 +102,13 @@ Max(a, b) == IF a > b THEN a ELSE b
 Join(a, b) == [r \in R |-> Max(a[r], b[r])]
 
 \* A version: its write id, the device that wrote it, its clock (`nc`: none),
-\* whether it is soft-deleted (`deletedAt`), and the ghost `hist`: the ids of
-\* every version it causally follows, itself included. The properties use
-\* `hist`, the code only the clock. The first version was created on a device
-\* outside 1..N, by a build without clocks when NullBase.
+\* whether it is soft-deleted (`deletedAt`), whether it is a purged row
+\* (`purgedAt`), and the ghost `hist`: the ids of every version it causally
+\* follows, itself included. The properties use `hist`, the code only the
+\* clock. The first version was created on a device outside 1..N, by a build
+\* without clocks when NullBase.
 V0 == [id |-> 0, host |-> 0, vc |-> Zero, nc |-> NullBase, del |-> FALSE,
-       hist |-> {0}]
+       purged |-> FALSE, hist |-> {0}]
 
 \* VectorClock.compare(existing, incoming) as detectConflict reads it. A
 \* missing clock on either side made the incoming version newer.
@@ -148,6 +160,17 @@ Init ==
 \* it. Fixed: entityByIdIncludingDeleted.
 Visible(P) == ~P.del \/ ReceiveSeesTombstones
 
+\* A purged row. The purge removed it, and every reader found no row: the
+\* write decision applied anything, backfill answered `deleted`, the conflict
+\* page found no entry. Fixed: the purge keeps a tombstone.
+Gone(P) == P.purged /\ ~PurgeKeepsTombstone
+
+\* What an applied version `w` leaves stored over the row `P`. A tombstone
+\* applied over a stored copy deletes that copy, which keeps its own fields
+\* (and files, for its own purge to remove); a deletion applied over a
+\* tombstone is compacted in turn.
+Over(P, w) == [w EXCEPT !.purged = w.del /\ P.purged]
+
 \* detectConflict stores a concurrent version as a conflict row. The table
 \* held one row per entry id (insertOnConflictUpdate), so the new version
 \* replaced every open one. Fixed (KeepNewerConflict): nothing is stored
@@ -180,15 +203,16 @@ Tombstones(P, w) ==
     IN [win EXCEPT !.vc = Join(P.vc, w.vc), !.hist = P.hist \cup w.hist]
 
 DecideOn(P, C, w, override) ==
-    IF ~Visible(P)
+    IF Gone(P) \/ ~Visible(P)
     THEN [row |-> w, conf |-> C, applied |-> TRUE]
     ELSE LET s == Status(P, w)
              c == IF s = "concurrent" THEN StoredOn(C, w) ELSE C
-             t == Tombstones(P, w)
+             t == Over(P, Tombstones(P, w))
+             n == Over(P, w)
          IN IF s = "concurrent" /\ BothDeleted(P, w) /\ ~override
             THEN [row |-> t, conf |-> SettledOn(C, t), applied |-> t # P]
             ELSE IF s = "b_gt_a" \/ override
-            THEN [row |-> w, conf |-> SettledOn(c, w), applied |-> TRUE]
+            THEN [row |-> n, conf |-> SettledOn(c, n), applied |-> TRUE]
             ELSE [row |-> P, conf |-> c, applied |-> FALSE]
 
 Decide(r, w, override) == DecideOn(row[r], conf[r], w, override)
@@ -208,7 +232,7 @@ Covered(r, vc) ==
 NewV(r, b, del, id, n) ==
     LET vc == [b.vc EXCEPT ![r] = n]
     IN [id |-> id, host |-> r, vc |-> vc, nc |-> FALSE, del |-> del,
-        hist |-> b.hist \cup Covered(r, vc) \cup {id}]
+        purged |-> FALSE, hist |-> b.hist \cup Covered(r, vc) \cup {id}]
 
 \* A local write's decision `d`, committed in its own transaction: `kept`
 \* are the versions it wrote, `n` the counters it reserved, `ids` the
@@ -236,11 +260,13 @@ Edit(r) ==
 
 \* A deleted entry brought back by a writer that reads the deletion: the
 \* relationship dispatcher confirming a task an undo deleted, built on the
-\* tombstone's clock.
+\* tombstone's clock. A purged row is no longer a task, and the dispatcher
+\* creates one under the id instead (a creation, not modelled).
 Restore(r) ==
     /\ Restores
     /\ nid <= MaxWrites
     /\ row[r].del
+    /\ ~row[r].purged
     /\ LET w == NewV(r, row[r], FALSE, nid, hc[r] + 1)
        IN LocalCommit(r, Decide(r, w, FALSE), {w}, 1, 1)
 
@@ -300,11 +326,12 @@ Resolve(r) ==
     /\ Resolves
     /\ nid <= MaxWrites
     /\ ~row[r].del \/ ConflictSeesTombstone
+    /\ ~Gone(row[r])
     /\ \E X \in conf[r] : \E del \in {row[r].del, X.del} :
         LET P == row[r]
             vc == [Join(P.vc, X.vc) EXCEPT ![r] = hc[r] + 1]
             m == [id |-> nid, host |-> r, vc |-> vc, nc |-> FALSE,
-                  del |-> del,
+                  del |-> del, purged |-> FALSE,
                   hist |-> P.hist \cup X.hist \cup Covered(r, vc) \cup {nid}]
         IN LocalCommit(r, Decide(r, m, FALSE), {m}, 1, 1)
 
@@ -331,11 +358,12 @@ Lose(r) ==
 
 \* BackfillResponseHandler: the writer answers with its current row for the
 \* id if that still carries the requested counter, `unresolvable` if not, and
-\* `deleted` for a row journalEntityById does not return.
+\* `deleted` for a row journalEntityById does not return, or none at all.
 Backfill(r) ==
     /\ \E m \in lost[r] :
         LET a == row[m.host]
-            served == /\ ~a.del \/ BackfillServesTombstones
+            served == /\ ~Gone(a)
+                      /\ ~a.del \/ BackfillServesTombstones
                       /\ a.vc[m.host] >= m.vc[m.host]
             d == Decide(r, a, FALSE)
         IN /\ lost' = [lost EXCEPT ![r] = @ \ {m}]
@@ -348,11 +376,21 @@ Backfill(r) ==
               ELSE UNCHANGED <<row, conf, delivered, seen>>
     /\ UNCHANGED <<snap, sent, hc, nid>>
 
+\* JournalDb.purgeDeleted, from Settings. Nothing is sent: the tombstone is
+\* the deleted version, under its own clock. The conflict rows stay.
+Purge(r) ==
+    /\ Purges
+    /\ row[r].del
+    /\ ~row[r].purged
+    /\ row' = [row EXCEPT ![r].purged = TRUE]
+    /\ UNCHANGED <<conf, snap, sent, delivered, lost, gaps, seen, hc, nid>>
+
 Next ==
     \E r \in R :
         \/ Edit(r) \/ Restore(r) \/ Snapshot(r) \/ LabelWrite(r)
         \/ Resolve(r)
         \/ Deliver(r) \/ Lose(r) \/ Backfill(r)
+        \/ Purge(r)
 
 Spec == Init /\ [][Next]_vars
 
@@ -410,5 +448,7 @@ ConflictNotStale ==
 
 \* An open conflict can be opened and resolved.
 ConflictResolvable ==
-    \A r \in R : conf[r] # {} => (~row[r].del \/ ConflictSeesTombstone)
+    \A r \in R : conf[r] # {} =>
+        /\ ~row[r].del \/ ConflictSeesTombstone
+        /\ ~Gone(row[r])
 =============================================================================

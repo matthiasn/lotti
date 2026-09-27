@@ -1532,7 +1532,9 @@ One journal entry — a task, a note, a habit completion, a checklist item — o
 two or three devices. Local writes edit or soft-delete the entry the live read
 returns (`journalEntityById`), or an entry a screen read earlier; a writer that
 reads the deletion brings the entry back; label writes race the versions that
-sync in; and the user resolves the conflicts the devices raise. Every version
+sync in; the user resolves the conflicts the devices raise; and a device
+purges its deleted entries (`JournalDb.purgeDeleted`), which compacts each one
+to a tombstone of the deletion. Every version
 is delivered to every device in any order and any number of times, and in the
 lossy configuration a delivery can be lost and recovered by backfill from the
 writer's stored row. The write decision for local writes and the receive alike
@@ -1544,9 +1546,10 @@ only convergence but whether a divergence is ever silent. What a device sends
 is its stored row: the JSON sidecar that once carried the payload, and the two
 configurations that modelled it, were removed with it
 ([ADR 0087](../../docs/adr/0087-journal-row-is-the-only-copy.md)). The decision
-is [ADR 0083](../../docs/adr/0083-model-checked-journal-replication.md), and the
+is [ADR 0083](../../docs/adr/0083-model-checked-journal-replication.md), the
 conflict table's key is
-[ADR 0092](../../docs/adr/0092-one-conflict-row-per-version.md).
+[ADR 0092](../../docs/adr/0092-one-conflict-row-per-version.md), and the purge's
+tombstone is [ADR 0095](../../docs/adr/0095-a-purge-keeps-the-deletion.md).
 
 | Property | Kind | Says |
 |----------|------|------|
@@ -1558,10 +1561,14 @@ conflict table's key is
 
 | Configuration | Devices | Writes | Adds | Checks | Distinct states |
 |---------------|---------|--------|------|--------|-----------------|
-| `JournalReplication` | 3 | 3 | stale reads, restores, resolutions | all five | 700,231 |
-| `JournalReplicationLossy` | 2 | 3 | any delivery lost and recovered by backfill | the same | 98,283 |
-| `JournalReplicationLabels` | 2 | 4 | `setLabels` and `suppressLabelOnTask` | the same | 167,673 |
-| `JournalReplicationLegacy` | 2 | 3 | an entry created before clocks, a late copy of it in flight | the same | 35,444 |
+| `JournalReplication` | 3 | 3 | stale reads, restores, resolutions | all five | 5,883,088 |
+| `JournalReplicationLossy` | 2 | 3 | any delivery lost and recovered by backfill | the same | 806,903 |
+| `JournalReplicationLabels` | 2 | 4 | `setLabels` and `suppressLabelOnTask` | the same | 686,145 |
+| `JournalReplicationLegacy` | 2 | 3 | an entry created before clocks, a late copy of it in flight | the same | 134,132 |
+
+Every configuration also lets any device purge its deleted row at any point
+(`Purges`), which is most of the state space: the main configuration takes
+about two and a half minutes.
 
 The properties judge the code's decisions, which read clocks, against a ghost
 history of the versions each one causally follows. On one device the last
@@ -1584,6 +1591,7 @@ The design switches are the fixes, and each has a counterexample when set to
 | `ConflictPerVersion` | the conflict table was keyed by the entry alone, so a concurrent version replaced every open one ([ADR 0092](../../docs/adr/0092-one-conflict-row-per-version.md)) | `NothingDropped`, five steps: A and B edit, A receives B's edit as a conflict, C edits, and C's edit replaces B's on A. The same length for this device's own save: A and B edit; C receives A's edit, then saves an edit built on the version it read before, which is refused and parked as the conflict; B's edit replaces it, and C's save, never sent, exists nowhere |
 | `LabelsRebuild` | `setLabels` forced a refused write with `overrideComparison`; `suppressLabelOnTask` wrote under the stored row's own clock, and then forced it | `NothingDropped`, four steps: A receives B's edit while its label editor holds the version before; the label write is refused as concurrent, then forced over B's edit. `Converged`, three steps: A suppresses a label, B refuses the write as equal to what it holds, and the devices differ for good |
 | `RefuseNullClock` | a version without a clock was newer than any row | `NoLostSuccessor`, three steps: A deletes an entry created before clocks, and a late copy of that clockless version replaces the deletion |
+| `PurgeKeepsTombstone` | `purgeDeleted` removed a deleted row outright, so every reader found no row ([ADR 0095](../../docs/adr/0095-a-purge-keeps-the-deletion.md)) | In `JournalReplicationLossy`: `Converged`, four steps: A deletes and purges, B's delivery is lost, backfill answers `deleted`, and B keeps the entry for good. `NoLostSuccessor`, five steps: A edits, B receives the edit and deletes it, B purges, and a second copy of A's edit brings the entry back on B. `NothingDropped`, four steps: A deletes and purges, B edits concurrently, and B's edit replaces the deletion on A without a conflict. `ConflictResolvable`, four steps: A edits, B deletes concurrently and receives A's edit as a conflict, then purges, and the page finds no entry. `ConflictNotStale`, five steps: the same, and a second copy of A's edit lands as B's row while the conflict holding it stays open |
 
 What the model leaves out, deliberately or as a residual:
 
@@ -1608,8 +1616,16 @@ What the model leaves out, deliberately or as a residual:
   decision and the links commit together or not at all, and the event is
   retried, which is the same state as a delivery not yet made. `Deliver`
   covers it.
-- **Hard deletes** (`purgeDeleted`) remove rows, and backfill then answers
-  `deleted`; a device that never received the deletion keeps the entry.
+- **A purge keeps the deletion, not the fields.** The tombstone is the deleted
+  version with its fields dropped, and the model has no fields, so the purge
+  only sets the version's `purged` flag. The flag records the two rules a
+  tombstone meets: one applied over a stored copy deletes that copy, which
+  keeps its own fields (`Over`), and a deletion applied over a tombstone is
+  compacted in turn. A purged row is no longer the task the relationship
+  dispatcher restores, so `Restore` skips it; the dispatcher creates a task
+  under the id instead, which is the reused-id residual above. Rows an older
+  build purged are gone for good. Dashboards and measurable types a purge
+  still removes outright; they are not journal entries.
 - **Clockless versions** come only from builds that predate vector clocks;
   `RefuseNullClock` assumes no build writes without one today.
 - Embedded entry links are ordered by `JournalDb.upsertEntryLink`, the entry
