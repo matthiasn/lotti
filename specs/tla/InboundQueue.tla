@@ -11,10 +11,13 @@
 (* neither captured (a row in any status) nor fetched by the catch-up that *)
 (* the durable marker would run after a crash.                             *)
 (*                                                                         *)
-(* Events are the room timeline 1..N; an event's number is both its        *)
-(* position and its origin timestamp, so equal-millisecond collisions are  *)
-(* left out. Event 0 is "no anchor"; a marker timestamp of 0 is "no        *)
-(* marker"; a floor of None is `resume_floor_ts IS NULL`.                  *)
+(* Events are the room timeline 1..N in timeline order. Ts(e) is an       *)
+(* event's origin timestamp: it never decreases along the timeline, and an *)
+(* event in SameMs shares its predecessor's millisecond. The marker, the   *)
+(* floor and the backward walk's bound are timestamps; the anchor and the  *)
+(* walks' cursors are positions. Event 0 is "no anchor"; a marker          *)
+(* timestamp of 0 is "no marker"; a floor of None is                       *)
+(* `resume_floor_ts IS NULL`.                                              *)
 (*                                                                         *)
 (* What is modelled, and where it lives in the Dart code:                  *)
 (*                                                                         *)
@@ -73,6 +76,7 @@ EXTENDS Integers, FiniteSets
 
 CONSTANTS
     N,              \* timeline events 1..N
+    SameMs,         \* events sharing their predecessor's millisecond
     InitTip,        \* events already on the homeserver at the first start
     EncInit,        \* events that arrive encrypted without a usable key
     MaxDowns,       \* bound on stops and crashes together
@@ -91,6 +95,9 @@ CONSTANTS
     GuardedResurrect, \* resurrection flips only rows still abandoned
     ResurrectRechecksCap, \* ... and still under the hard cap
     RetainFailedClaim, \* a claim whose marker read throws stays pending
+    WalkBelowFloor, \* the backward walk covers the millisecond below the floor
+    CheckpointAtCursor, \* a checkpoint floor is the cursor's millisecond
+    TieKeepsAnchor, \* an equal-millisecond commit keeps the stored anchor
     HardCap,        \* resurrections per row (`hardCap`)
     \* Response ordering:
     AdmitResponses, \* TRUE: admit payloads from their complete response
@@ -109,6 +116,7 @@ ASSUME Faults \subseteq FaultKinds
 ASSUME N \in Nat /\ InitTip \in 0..N /\ EncInit \subseteq 1..N
 ASSUME MaxDowns \in Nat /\ FaultBudget \in Nat
 ASSUME MaxRetries \in Nat /\ MaxResurrections \in Nat /\ HardCap \in Nat
+ASSUME SameMs \subseteq 2..N
 
 Events == 1..N
 None == -1
@@ -117,6 +125,7 @@ Settled == {"applied", "abandoned"}
 RowStates == {"none"} \cup Active \cup Settled
 
 Min2(a, b) == IF a < b THEN a ELSE b
+Max2(a, b) == IF a > b THEN a ELSE b
 MinOf(S) == CHOOSE x \in S : \A y \in S : x <= y
 \* Lowering a floor-like value, where None is "no floor".
 Lower(f, t) == IF f = None THEN t ELSE Min2(f, t)
@@ -154,6 +163,12 @@ vars == <<tip, enc, running, workerAlive, liveNext, gapPending, row, wk,
           downs, faults>>
 
 walkVars == <<walk, wCur, wBound, wUnres>>
+
+\* Origin timestamps: Ts[0] = 0 is "no event", and Ts[N + 1] stands above
+\* the tip for a backward walk that has emitted nothing yet.
+Ts == [e \in 0..(N + 1) |->
+         IF e = 0 THEN 0
+         ELSE e - Cardinality({x \in SameMs : x <= e})]
 counters == <<retries, resurrections, downs, faults>>
 
 FaultOK(k) == k \in Faults /\ faults < FaultBudget
@@ -164,18 +179,23 @@ FaultOK(k) == k \in Faults /\ faults < FaultBudget
 
 AnchorSafe(f) == mAnchor # 0 /\ (f = None \/ f > mTs)
 
-\* Lower bound of the backward walk: `resumeFloorTs ?? lastAppliedTs`, and
-\* with the claims the smaller of the two, so a claim one above the marker
-\* never narrows the walk.
+\* Lower bound of the backward walk (`BridgeMarker.backwardWalkBound`):
+\* `resumeFloorTs ?? lastAppliedTs`, and with the claims the smaller of the
+\* two. A claim is one millisecond above the marker, so with WalkBelowFloor
+\* the walk takes the floor's millisecond minus one: the claimed marker's
+\* own millisecond can hold an event after the anchor the claim was made
+\* at, and a walk that stops inside it would skip that event once the
+\* marker has moved on.
 BackwardBound(f) ==
-    IF f = None THEN mTs
-    ELSE IF ClaimOnWalk /\ mTs # 0 THEN Min2(f, mTs)
-    ELSE f
+    LET fb == IF WalkBelowFloor THEN Max2(f - 1, 0) ELSE f
+    IN IF f = None THEN mTs
+       ELSE IF ClaimOnWalk /\ mTs # 0 THEN Min2(fb, mTs)
+       ELSE fb
 
 \* The next catch-up, run from the durable state alone (after a crash, the
 \* retained floor is gone), fetches e.
 Recoverable(e) ==
-    IF AnchorSafe(floor) THEN e > mAnchor ELSE e >= BackwardBound(floor)
+    IF AnchorSafe(floor) THEN e > mAnchor ELSE Ts[e] >= BackwardBound(floor)
 
 Captured(e) == row[e] # "none"
 
@@ -215,17 +235,21 @@ Claim(on) ==
 
 AdvanceMarker(e) ==
     LET others == {x \in Events \ {e} : row[x] \in Active}
-        oa == IF others = {} THEN None ELSE MinOf(others)
-        cand == IF oa = None \/ e < oa THEN e ELSE oa - 1
-        tie == cand = e /\ e = mTs
-        adv == mTs = 0 \/ cand > mTs \/ tie
+        oa == IF others = {} THEN None ELSE MinOf({Ts[x] : x \in others})
+        cand == IF oa = None \/ Ts[e] < oa THEN Ts[e] ELSE oa - 1
+        tie == cand = Ts[e] /\ Ts[e] = mTs
+        \* TieKeepsAnchor: a commit in the marker's own millisecond leaves
+        \* the marker alone. The anchor is the first event applied in its
+        \* millisecond, so a forward walk from it cannot step over an event
+        \* the claim at that millisecond was made for.
+        adv == mTs = 0 \/ cand > mTs \/ (tie /\ ~TieKeepsAnchor)
     IN IF ~adv THEN UNCHANGED <<mTs, mAnchor, resCount>>
        ELSE /\ mTs' = IF tie THEN mTs ELSE cand
-            \* An equal timestamp takes the larger event id, which is
-            \* arbitrary here; a null stored id always yields.
+            \* Otherwise an equal timestamp takes the larger event id, which
+            \* is arbitrary here; a null stored id always yields.
             /\ mAnchor' \in
                  IF tie THEN (IF mAnchor = 0 THEN {e} ELSE {mAnchor, e})
-                 ELSE IF cand = e THEN {e} ELSE {mAnchor}
+                 ELSE IF cand = Ts[e] THEN {e} ELSE {mAnchor}
 
 -----------------------------------------------------------------------------
 
@@ -281,7 +305,7 @@ LiveDeliver ==
        /\ liveNext' = e + 1
        /\ IF e \in enc
             THEN \* ciphertext: lowerResumeFloor bumps the revision
-                 /\ LowerFloor(e)
+                 /\ LowerFloor(Ts[e])
                  /\ dirty' = TRUE
                  /\ UNCHANGED <<row, bridgePending, resCount>>
             ELSE \/ \* enqueueLive: the retained floor first, then the insert
@@ -298,9 +322,9 @@ LiveDeliver ==
                          THEN \* the floor, and a pass to fetch the event
                               /\ dirty' = TRUE
                               /\ bridgePending' = TRUE
-                              /\ \/ /\ floor' = Lower(Flushed, e)
+                              /\ \/ /\ floor' = Lower(Flushed, Ts[e])
                                     /\ pend' = None /\ pendClaim' = FALSE
-                                 \/ /\ pend' = Lower(pend, e)
+                                 \/ /\ pend' = Lower(pend, Ts[e])
                                     /\ UNCHANGED <<floor, pendClaim>>
                          ELSE UNCHANGED <<floor, pend, pendClaim, dirty, bridgePending, resCount>>
     /\ UNCHANGED <<tip, enc, running, workerAlive, gapPending, wk, wkPhase, mTs, mAnchor, walkVars, recovered, rsSel, retries, resurrections, downs, resCount>>
@@ -378,12 +402,12 @@ AbortWalk ==
 Emit(c) ==
     IF c \in enc
       THEN \* still ciphertext after one fresh decrypt attempt
-           \/ /\ floor' = Lower(Flushed, c)
+           \/ /\ floor' = Lower(Flushed, Ts[c])
               /\ pend' = None /\ pendClaim' = FALSE
-              /\ wUnres' = Lower(wUnres, c)
+              /\ wUnres' = Lower(wUnres, Ts[c])
               /\ UNCHANGED <<row, faults, walk, bridgePending, resCount>>
            \/ /\ FaultOK("floorWrite")
-              /\ pend' = Lower(pend, c)
+              /\ pend' = Lower(pend, Ts[c])
               /\ faults' = faults + 1
               /\ UNCHANGED <<row, floor, wUnres, resCount, pendClaim>>
               /\ walk' = "idle"
@@ -405,29 +429,33 @@ WalkStepFwd ==
 WalkStepBwd ==
     /\ running
     /\ walk = "bwd"
-    /\ wCur - 1 >= wBound
     /\ wCur - 1 >= 1
+    /\ Ts[wCur - 1] >= wBound
     /\ wCur' = wCur - 1
     /\ Emit(wCur - 1)
     /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, wk, wkPhase, mTs, mAnchor, dirty, wBound, recovered, rsSel, retries, resurrections, downs, resCount>>
 
 \* After a forward page: every event after the anchor up to the cursor is
 \* queued, or is ciphertext the walk holds in wUnres, so the floor moves to
-\* one above the cursor. No compare-and-set: an observation made while the
-\* walk runs is of an event the walk has passed (and so captured or holds)
-\* or has yet to reach (and so sits above the cursor). TLC agrees; the
-\* completion's compare-and-set, which clears the floor, is load-bearing.
+\* the cursor's millisecond (CheckpointAtCursor; one above it before). The
+\* rest of that millisecond may still be ahead of the walk, and an event
+\* past it may apply first and become the anchor. No compare-and-set: an
+\* observation made while the walk runs is of an event the walk has passed
+\* (and so captured or holds) or has yet to reach (and so sits at or above
+\* the cursor). TLC agrees; the completion's compare-and-set, which clears
+\* the floor, is load-bearing.
 WalkCheckpoint ==
     /\ CheckpointForward
     /\ running
     /\ walk = "fwd"
-    /\ floor' = Lower(wUnres, wCur + 1)
+    /\ floor' = Lower(wUnres,
+                      IF CheckpointAtCursor THEN Ts[wCur] ELSE Ts[wCur] + 1)
     /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row, wk, wkPhase, mTs, mAnchor, pend, pendClaim, dirty, walkVars, bridgePending, recovered, rsSel, counters, resCount>>
 
 WalkComplete ==
     /\ running
     /\ \/ walk = "fwd" /\ wCur >= tip
-       \/ walk = "bwd" /\ (wCur - 1 < wBound \/ wCur - 1 < 1)
+       \/ walk = "bwd" /\ (wCur - 1 < 1 \/ Ts[wCur - 1] < wBound)
     /\ walk' = "idle"
     /\ floor' = IF dirty THEN floor ELSE wUnres
     /\ UNCHANGED <<tip, enc, running, workerAlive, liveNext, gapPending, row, wk, wkPhase, mTs, mAnchor, pend, pendClaim, dirty, wCur, wBound, wUnres, bridgePending, recovered, rsSel, counters, resCount>>
@@ -665,9 +693,12 @@ NoSilentLoss == \A e \in 1..tip : Captured(e) \/ Recoverable(e)
 \* The worker holds at most the row it leased.
 HeldIsLeased == wk # 0 => row[wk] \in {"leased", "enqueued"}
 
+\* The anchor moves only to a newer millisecond, or, without
+\* TieKeepsAnchor, within the marker's own.
 MarkerMonotone ==
     [][/\ mTs' >= mTs
-       /\ mAnchor' # mAnchor => mAnchor' > mAnchor]_vars
+       /\ Ts[mAnchor'] >= Ts[mAnchor]
+       /\ (TieKeepsAnchor /\ mAnchor' # mAnchor) => Ts[mAnchor'] > Ts[mAnchor]]_vars
 
 \* An applied row stays applied: a duplicate is ignored by the event_id
 \* UNIQUE constraint and nothing re-arms a committed row.

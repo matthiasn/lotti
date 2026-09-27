@@ -4,11 +4,15 @@ part of 'inbound_event_queue_test.dart';
 // driven through generated interleavings of the catch-up protocol that
 // `specs/tla/InboundQueue.tla` model-checks. TLC proves the design; this
 // trace checks the Dart primitives behave like the model's actions:
-// `advanceIfNewer`'s clamp, the floor's revision compare-and-set on
-// completion and checkpoint, and the claim one above the marker.
+// `advanceIfNewer`'s clamp and its equal-millisecond rule, the floor's
+// revision compare-and-set on completion and checkpoint, the claim one
+// above the marker and the backward walk's bound.
 //
-// The room timeline is events 1..5 with origin timestamps 1..5, so a
-// timestamp is a position. Event 3 arrives encrypted until its key does.
+// The room timeline is events 1..5 with origin timestamps 1, 2, 2, 2, 3,
+// as in `InboundQueueSameMs.cfg`: three events share a millisecond, and
+// their event ids sort in timeline order, so an anchor that followed the
+// larger id would move past a missing event of that millisecond. Event 3
+// arrives encrypted until its key does.
 // The live stream, the walks and the worker are driven here the way
 // QueuePipelineCoordinator, BridgeCoordinator and InboundWorker drive the
 // queue; a crash is a fresh InboundQueue over the same database, which
@@ -17,6 +21,11 @@ part of 'inbound_event_queue_test.dart';
 const _conformanceRoom = '!conformance:example.org';
 const _timelineLength = 5;
 const _encryptedEvent = 3;
+
+/// Origin timestamps of events 1..5: the middle three share one.
+const _conformanceTimestamps = <int>[1, 2, 2, 2, 3];
+
+int _conformanceTs(int index) => _conformanceTimestamps[index - 1];
 
 /// Each op does the next useful thing, so few generated steps are no-ops:
 /// a delivery with nothing left to deliver first lets an event arrive,
@@ -122,7 +131,7 @@ class _QueueBench {
     return buildSyncEvent(
       eventId: _conformanceEventId(index),
       roomId: _conformanceRoom,
-      originTsMs: index,
+      originTsMs: _conformanceTs(index),
       type: isCipher ? EventTypes.Encrypted : EventTypes.Message,
     );
   }
@@ -183,12 +192,13 @@ class _QueueBench {
 
   Future<void> emit(int index) async {
     if (isCipher(index)) {
+      final ts = _conformanceTs(index);
       await queue.lowerResumeFloorFromWalk(
         roomId: _conformanceRoom,
-        originTs: index,
+        originTs: ts,
       );
       final oldest = unresolved;
-      unresolved = oldest == null || index < oldest ? index : oldest;
+      unresolved = oldest == null || ts < oldest ? ts : oldest;
       return;
     }
     await queue.appendBootstrapPage([event(index)]);
@@ -237,7 +247,7 @@ class _QueueBench {
         if (isCipher(index)) {
           await queue.lowerResumeFloor(
             roomId: _conformanceRoom,
-            originTs: index,
+            originTs: _conformanceTs(index),
           );
         } else {
           await queue.enqueueLive(event(index));
@@ -255,7 +265,7 @@ class _QueueBench {
         if (isCipher(index)) {
           await queue.lowerResumeFloor(
             roomId: _conformanceRoom,
-            originTs: index,
+            originTs: _conformanceTs(index),
           );
         } else {
           await queue.enqueueLive(event(index));
@@ -274,10 +284,12 @@ class _QueueBench {
           await emit(cursor);
           await queue.checkpointResumeWalk(
             roomId: _conformanceRoom,
-            coveredThroughTs: cursor,
+            coveredThroughTs: _conformanceTs(cursor),
             unresolvedFloorTs: unresolved,
           );
-        } else if (walk == 'bwd' && cursor - 1 >= math.max(bound, 1)) {
+        } else if (walk == 'bwd' &&
+            cursor - 1 >= 1 &&
+            _conformanceTs(cursor - 1) >= bound) {
           cursor--;
           await emit(cursor);
         } else {
@@ -339,7 +351,9 @@ class _QueueBench {
     final forward = anchor != null && marker.anchorIsSafe;
     final bound = marker.backwardWalkBound ?? 0;
     for (var index = 1; index <= tip; index++) {
-      final recoverable = forward ? index > anchor : index >= bound;
+      final recoverable = forward
+          ? index > anchor
+          : _conformanceTs(index) >= bound;
       expect(
         captured.containsKey(index) || recoverable,
         isTrue,

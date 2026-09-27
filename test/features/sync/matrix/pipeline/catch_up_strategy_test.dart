@@ -1462,21 +1462,18 @@ void main() {
     );
 
     test(
-      'same-timestamp ties between pages advance the newestEventId '
-      'anchor when the later event id is lex-greater — pins the '
-      'anchor semantics that guarantee we never re-emit an event '
-      'already sent to the sink',
+      'a later page in the same millisecond emits its events whatever their '
+      'ids, and never re-emits what an earlier page sent',
       () async {
         final room = MockRoom();
         final log = MockDomainLogger();
         final tl = MockTimeline();
-        // Two events share ts=110, and the lex-greater one arrives on
-        // a later page. The first page sends `$aaaa`, the second
-        // page sends `$bbbb` with the same ts; the anchor must
-        // advance so a third page never re-sees `$aaaa`.
+        // Two events share ts=110, and the one whose id sorts first comes
+        // later in the timeline, on the second page. Event ids say nothing
+        // about timeline order, so it must still be emitted.
         final events = <Event>[
           buildEvent(r'$anchor', 100),
-          buildEvent(r'$aaaa', 110),
+          buildEvent(r'$bbbb', 110),
         ];
         var futureCalls = 0;
         when(
@@ -1491,7 +1488,7 @@ void main() {
           () => tl.requestFuture(historyCount: any(named: 'historyCount')),
         ).thenAnswer((_) async {
           futureCalls++;
-          events.add(buildEvent(r'$bbbb', 110));
+          events.add(buildEvent(r'$aaaa', 110));
         });
         when(tl.cancelSubscriptions).thenAnswer((_) {});
 
@@ -1507,12 +1504,55 @@ void main() {
         expect(
           pages.map((p) => p.map((e) => e.eventId).toList()).toList(),
           [
-            [r'$aaaa'],
             [r'$bbbb'],
+            [r'$aaaa'],
           ],
           reason:
-              r'page 1 must carry only $bbbb — the anchor-advance on '
-              r'same-ts ties prevents $aaaa from being re-emitted',
+              r'$aaaa is new although its id sorts before $bbbb, and the '
+              r'second page must not carry $bbbb again',
+        );
+      },
+    );
+
+    test(
+      "an event in the anchor's millisecond is emitted even when its id "
+      "sorts before the anchor's",
+      () async {
+        final room = MockRoom();
+        final log = MockDomainLogger();
+        final tl = MockTimeline();
+        // The anchor and the event after it share ts=100; the later
+        // event's id sorts first.
+        final events = <Event>[
+          buildEvent(r'$m-anchor', 100),
+          buildEvent(r'$a-after', 100),
+          buildEvent(r'$next', 101),
+        ];
+        when(
+          () => room.getTimeline(
+            eventContextId: any(named: 'eventContextId'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => tl);
+        when(() => tl.events).thenReturn(events);
+        when(() => tl.canRequestFuture).thenReturn(false);
+        when(tl.cancelSubscriptions).thenAnswer((_) {});
+
+        final pages = <List<Event>>[];
+        final result = await CatchUpStrategy.collectForwardForBootstrap(
+          room: room,
+          sink: _CollectingBootstrapSink(pages.add, acceptedPerPage: 2),
+          logging: log,
+          anchorEventId: r'$m-anchor',
+        );
+
+        expect(result.stopReason, BootstrapStopReason.serverExhausted);
+        expect(
+          pages.expand((p) => p.map((e) => e.eventId)).toSet(),
+          {r'$a-after', r'$next'},
+          reason:
+              r'a walk that compared ids would drop $a-after for good, and '
+              'the anchor itself is never sent again',
         );
       },
     );

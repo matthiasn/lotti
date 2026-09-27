@@ -5,7 +5,7 @@ description: The Drift-backed inbound queue, the anchored catch-up bridge, per-r
 resource: ../../../lib/features/sync/queue
 tags: [sync, inbound-queue, catch-up, matrix]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-26T14:05:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-27T12:30:00Z }
 stale_after: 2026-12-25
 sources:
   - id: descriptor-recovery
@@ -15,11 +15,15 @@ sources:
   - id: tla-spec
     resource: ../../../specs/tla/InboundQueue.tla
     title: TLA+ model of the inbound queue, its walks and its marker
-    last_modified: 2026-09-25
+    last_modified: 2026-09-27
   - id: adr-0084
     resource: ../../../docs/adr/0084-model-checked-inbound-queue.md
     title: ADR 0084 — model-checked inbound queue
     last_modified: 2026-09-25
+  - id: adr-0101
+    resource: ../../../docs/adr/0101-equal-milliseconds-at-the-catch-up-boundary.md
+    title: ADR 0101 — equal milliseconds at the catch-up boundary
+    last_modified: 2026-09-27
   - id: metrics-panel
     resource: ../../../lib/features/sync/ui/matrix_stats/matrix_metrics_panel.dart
     title: Serialized Matrix metrics refreshes
@@ -27,7 +31,7 @@ sources:
   - id: queue
     resource: ../../../lib/features/sync/queue
     title: Inbound queue pipeline
-    last_modified: 2026-09-25
+    last_modified: 2026-09-27
   - id: processor
     resource: ../../../lib/features/sync/matrix/sync_event_processor.dart
     title: SyncEventProcessor
@@ -261,9 +265,11 @@ newest event and probes until the server returns nothing newer.
 The fallback is a timestamp-bounded **backward** walk
 (`collectHistoryForBootstrap`), used for fresh clients, unresolvable anchors,
 and unsafe anchors. It walks back to `BridgeMarker.backwardWalkBound`, the
-lower of `resume_floor_ts` and `last_applied_ts`: an unsafe anchor walks to the
-floor, and a claim one millisecond above the marker never narrows the walk past
-the applied millisecond. Both directions feed the same enqueue path with
+lower of the millisecond below `resume_floor_ts` and `last_applied_ts`: an
+unsafe anchor walks to just below the floor, and a claim one millisecond above
+the marker never narrows the walk past the millisecond it was taken in, even
+after something newer has applied (see the equal-millisecond note below).
+Both directions feed the same enqueue path with
 `producer=bootstrap` via `InboundQueue.appendBootstrapPage`. When the boundary
 timestamp spans pages, the backward walk continues until that entire
 millisecond bucket is exhausted. It retains only the event IDs emitted at the
@@ -315,11 +321,35 @@ applies past it, the next walk goes backward to the claim.
 - A claim whose marker read throws is retained in the queue, like a failed
   floor write, and resolved against the marker as it then is before any
   queue insert or floor read.
-- A forward walk **checkpoints** after each page: the floor moves to one above
-  the page's newest event, or to the oldest ciphertext the walk still holds. A
-  retry after a capped or failed forward walk then resumes forward from the
-  anchor the walk's own rows reached, and walks backward only over the
-  remainder when something newer applied past it.
+- A forward walk **checkpoints** after each page: the floor moves to the
+  millisecond of the page's newest event, or to the oldest ciphertext the walk
+  still holds. A retry after a capped or failed forward walk then resumes
+  forward from the anchor while the walk's rows stay below that millisecond,
+  and otherwise walks backward only over the remainder.
+
+**Equal milliseconds.** Several events can share an `originServerTs`, and
+event ids say nothing about their timeline order. Four rules keep an
+uncaptured event in the boundary millisecond inside the next walk
+([ADR 0101](../../../docs/adr/0101-equal-milliseconds-at-the-catch-up-boundary.md)):
+
+- The forward walk never compares event ids. It emits an event that is newer
+  than everything it has emitted, the anchor included, or that shares the
+  newest timestamp and has not been emitted yet; it remembers only the ids
+  of that newest millisecond. A walk that ordered a millisecond by id dropped
+  an event after the anchor whose id sorted before it, and, across pages, a
+  later event whose id sorted before the page's newest.
+- The marker moves only to a newer millisecond. A commit in the marker's own
+  millisecond leaves it alone, so the anchor is the first event applied in
+  its millisecond, and a forward walk from it cannot step over an event of
+  that millisecond that a claim was made for.
+- A checkpoint is the cursor's millisecond, not one above it: the rest of that
+  millisecond can still be ahead of the walk, and a later event of it that
+  applies first must not become a safe anchor.
+- The backward walk's bound is one millisecond below the floor. After a claim
+  at `last_applied_ts + 1`, once something newer applies, only the floor
+  remembers the claimed millisecond, and the walk must cover all of it. For a
+  ciphertext or checkpoint floor the extra millisecond is re-fetched and
+  dropped by the `event_id` UNIQUE constraint.
 
 One window is left open: the SDK publishes a limited sync's slice on
 `onTimelineEvent` before `onSync`, so a post-gap event can apply before the
@@ -431,8 +461,8 @@ verifies retry restores the payload and its receipt without a false acknowledgem
 
 `commitApplied` delegates to `_advanceMarkerIfNewer`, which advances
 `last_applied_ts` / `last_applied_event_id` only when a clamped candidate
-timestamp **strictly** beats the stored one, with the durable `event_id` as a
-tiebreak only when both sides are durable. The candidate is clamped against the
+timestamp **strictly** beats the stored one; a commit in the stored
+millisecond leaves the marker as it is. The candidate is clamped against the
 oldest still-active row for the room, so the marker never crosses an unapplied
 gap.
 
@@ -445,10 +475,10 @@ instead of stepping over work known to be unresolved. Only a completed walk
 may clear the floor, and only a completed walk or a forward walk's checkpoint
 may raise it.
 
-`QueueMarkerAdvancer` performs that comparison inline: it checks the stored
-timestamp first and uses durable event ids only to break an equal-timestamp
-tie. A null stored event id therefore does not erase a non-zero timestamp or
-let an older durable event regress the marker.
+`QueueMarkerAdvancer` performs that comparison inline on the timestamps alone.
+A null stored event id therefore does not erase a non-zero timestamp or let an
+older durable event regress the marker, and an equal timestamp never moves the
+anchor.
 
 The net effect: an out-of-order apply — a live event at ts=100 applied first,
 then a bridge event at ts=60 from the same burst — cannot regress the marker.

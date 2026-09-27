@@ -54,19 +54,26 @@ class BridgeMarker {
     return floor > applied;
   }
 
-  /// Lower bound of a backward walk: the smaller of the floor and the
-  /// applied timestamp, or whichever is known.
+  /// Lower bound of a backward walk: the millisecond below the floor, or
+  /// the applied timestamp when that is lower, or whichever is known. The
+  /// walk covers the bound's whole millisecond, so it reaches every event
+  /// that shares it.
   ///
   /// A catch-up claim sets the floor one millisecond above the applied
-  /// timestamp. Walking only to that floor would skip the rest of the
-  /// applied millisecond's bucket, which walking to the applied timestamp
-  /// covered before claims existed.
+  /// timestamp, and events in that applied millisecond that come after the
+  /// anchor in timeline order can still be missing. Once a newer event
+  /// applies, the applied timestamp no longer covers them, so the bound
+  /// steps below the floor rather than stopping at it. For a floor that
+  /// records ciphertext or a checkpoint, the extra millisecond is
+  /// re-fetched and deduplicated by the queue's `event_id` constraint
+  /// (`WalkBelowFloor` in `specs/tla/InboundQueue.tla`).
   int? get backwardWalkBound {
     final floor = resumeFloorTs;
     final applied = lastAppliedTs;
     if (floor == null) return applied;
-    if (applied == null) return floor;
-    return floor < applied ? floor : applied;
+    final belowFloor = floor > 0 ? floor - 1 : 0;
+    if (applied == null) return belowFloor;
+    return belowFloor < applied ? belowFloor : applied;
   }
 }
 

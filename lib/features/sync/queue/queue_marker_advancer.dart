@@ -24,10 +24,17 @@ class QueueMarkerAdvancer {
   /// same room — strictly moves the marker forward. A null stored event id
   /// cannot be treated as "no marker" because the marker can legitimately
   /// carry a non-zero timestamp with a null event id (right after a
-  /// placeholder advance). Guarding on the timestamp directly, with
-  /// the durable event id as a tiebreaker only when both sides are
-  /// durable, prevents a later durable event with an older timestamp
-  /// from regressing `lastAppliedTs` (F2).
+  /// placeholder advance). Guarding on the timestamp directly prevents a
+  /// later durable event with an older timestamp from regressing
+  /// `lastAppliedTs` (F2).
+  ///
+  /// A commit in the marker's own millisecond leaves the marker alone, so
+  /// the anchor is the first event applied in its millisecond. Event ids
+  /// say nothing about timeline order: moving the anchor to a later
+  /// commit in the same millisecond could move it past an event of that
+  /// millisecond that never arrived, and the forward walk from it — which
+  /// a claim one above the marker still allows — would step over that
+  /// event for good (`TieKeepsAnchor` in `specs/tla/InboundQueue.tla`).
   ///
   /// The clamp: an older row still in `enqueued`/`leased`/`retrying`
   /// for the same room pins the candidate marker at
@@ -57,14 +64,11 @@ class QueueMarkerAdvancer {
         : (entry.originTs < oldestActive ? entry.originTs : oldestActive - 1);
 
     final storedTs = marker?.lastAppliedTs ?? 0;
-    final storedEventId = marker?.lastAppliedEventId;
-    final shouldAdvance =
-        storedTs == 0 ||
-        clampedCandidateTs > storedTs ||
-        (clampedCandidateTs == entry.originTs &&
-            entry.originTs == storedTs &&
-            (storedEventId == null ||
-                entry.eventId.compareTo(storedEventId) > 0));
+    // A row the resume floor created carries a zero timestamp and no event
+    // id; that is "no marker". A stored event id at timestamp zero is a
+    // marker like any other, and an equal timestamp must not replace it.
+    final hasMarker = storedTs != 0 || marker?.lastAppliedEventId != null;
+    final shouldAdvance = !hasMarker || clampedCandidateTs > storedTs;
 
     if (!shouldAdvance) return false;
 
@@ -249,28 +253,33 @@ class QueueMarkerAdvancer {
   /// incomplete walk leaves a floor at its cursor rather than at the
   /// marker it started from.
   ///
-  /// Every event after the walk's anchor up to [coveredThroughTs] has been
-  /// enqueued (or seen as ciphertext, which [unresolvedFloorTs] records),
-  /// so the floor moves to one above the cursor, or to the oldest
-  /// unresolved ciphertext when that is lower. A retry after a failure
-  /// then resumes forward from the anchor the walk's rows reach, and only
-  /// falls back to a backward walk down to the cursor when newer events
-  /// were applied past it.
+  /// Every event after the walk's anchor up to the page's newest event has
+  /// been enqueued (or seen as ciphertext, which [unresolvedFloorTs]
+  /// records), so the floor moves to the cursor's millisecond
+  /// [coveredThroughTs], or to the oldest unresolved ciphertext when that
+  /// is lower. The floor is the cursor's millisecond and not the one above
+  /// it: events sharing that millisecond can still lie ahead of the walk,
+  /// and one of them applying first would otherwise become an anchor safe
+  /// to walk forward from, past the others (`CheckpointAtCursor` in
+  /// `specs/tla/InboundQueue.tla`). A retry after a failure resumes forward
+  /// from the anchor while the walk's rows stay below the cursor's
+  /// millisecond, and otherwise walks backward down to it.
   ///
   /// Unlike [completeResumeWalk] this needs no compare-and-set, and leaves
   /// the revision alone so the walk's completion still matches: a floor
   /// observed while the walk runs is of an event the walk has already
   /// passed (queued, or held in [unresolvedFloorTs]) or has yet to reach
-  /// (above the cursor). `WalkCheckpoint` in `specs/tla/InboundQueue.tla`.
+  /// (at or above the cursor's millisecond). `WalkCheckpoint` in
+  /// `specs/tla/InboundQueue.tla`.
   Future<void> checkpointResumeWalk({
     required String roomId,
     required int coveredThroughTs,
     required int? unresolvedFloorTs,
   }) {
-    final cursorFloor = coveredThroughTs + 1;
-    final floor = unresolvedFloorTs != null && unresolvedFloorTs < cursorFloor
+    final floor =
+        unresolvedFloorTs != null && unresolvedFloorTs < coveredThroughTs
         ? unresolvedFloorTs
-        : cursorFloor;
+        : coveredThroughTs;
     return _serializeResumeFloorWrite(
       () => _db
           .into(_db.queueMarkers)

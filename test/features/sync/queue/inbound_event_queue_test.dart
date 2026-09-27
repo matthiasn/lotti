@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:drift/drift.dart' hide isNotNull, isNull;
@@ -405,13 +404,8 @@ class _ExpectedQueueMarker {
         ? entry.originTs
         : oldestActiveTs - 1;
 
-    final shouldAdvance =
-        lastAppliedTs == 0 ||
-        candidateTs > lastAppliedTs ||
-        (candidateTs == entry.originTs &&
-            entry.originTs == lastAppliedTs &&
-            (lastAppliedEventId == null ||
-                entry.eventId.compareTo(lastAppliedEventId!) > 0));
+    final hasMarker = lastAppliedTs != 0 || lastAppliedEventId != null;
+    final shouldAdvance = !hasMarker || candidateTs > lastAppliedTs;
 
     if (!shouldAdvance) return;
 
@@ -1362,30 +1356,111 @@ void main() {
     );
   });
 
-  group('_advanceMarkerIfNewer tie-breaker', () {
+  group('equal milliseconds at the catch-up boundary', () {
+    Future<BridgeMarker> readBridgeMarker() async {
+      final row = await (db.select(
+        db.queueMarkers,
+      )..where((t) => t.roomId.equals(roomA))).getSingle();
+      return BridgeMarker(
+        lastAppliedTs: row.lastAppliedTs,
+        lastAppliedEventId: row.lastAppliedEventId,
+        resumeFloorTs: await queue.resumeFloorTs(roomA),
+      );
+    }
+
+    Future<void> applyLive(String eventId, int originTs) async {
+      await queue.enqueueLive(
+        _buildSyncEvent(eventId: eventId, roomId: roomA, originTsMs: originTs),
+      );
+      await queue.commitApplied((await queue.peekBatchReady()).single);
+    }
+
+    Future<void> claim() => queue.claimAboveMarker(
+      roomId: roomA,
+      readAppliedTs: () async =>
+          (await (db.select(
+                db.queueMarkers,
+              )..where((t) => t.roomId.equals(roomA))).getSingleOrNull())
+              ?.lastAppliedTs,
+    );
+
     test(
-      'equal timestamps: a lex-greater durable eventId advances the '
-      'marker (covers the compareTo > 0 branch)',
+      "a later commit in the anchor's millisecond keeps the forward walk "
+      'starting before the event a limited sync dropped',
       () async {
-        // First commit: $aaa at ts=1000.
-        await queue.enqueueLive(
-          _buildSyncEvent(eventId: r'$aaa', roomId: roomA, originTsMs: 1000),
-        );
-        await queue.commitApplied((await queue.peekBatchReady()).single);
+        // Timeline: $aaa, $mid, $zzz, all at 1000. A limited sync drops
+        // $mid; the bridge claims above the marker, then $zzz applies.
+        await applyLive(r'$aaa', 1000);
+        await claim();
+        await applyLive(r'$zzz', 1000);
 
-        // Second commit: $zzz at the same ts=1000. With equal ts and
-        // $zzz.compareTo($aaa) > 0, the marker must advance to $zzz.
-        await queue.enqueueLive(
-          _buildSyncEvent(eventId: r'$zzz', roomId: roomA, originTsMs: 1000),
+        final marker = await readBridgeMarker();
+        expect(
+          marker.anchorIsSafe,
+          isTrue,
+          reason: 'the claim at 1001 still allows the forward walk',
         );
-        await queue.commitApplied((await queue.peekBatchReady()).single);
-
-        final marker = await (db.select(
-          db.queueMarkers,
-        )..where((t) => t.roomId.equals(roomA))).getSingle();
-        expect(marker.lastAppliedEventId, r'$zzz');
+        expect(
+          marker.lastAppliedEventId,
+          r'$aaa',
+          reason:
+              r'a forward walk from $zzz would never fetch $mid, which '
+              'comes before it in the timeline',
+        );
         expect(marker.lastAppliedTs, 1000);
-        expect(marker.lastAppliedCommitSeq, 2);
+      },
+    );
+
+    test(
+      "a claim covers the claimed millisecond's missing events after a "
+      'newer event applies',
+      () async {
+        // Timeline: $a at 1000, $b and $c at 1000 dropped by a limited
+        // sync, $d at 2000 delivered after the claim.
+        await applyLive(r'$a', 1000);
+        await claim();
+        await applyLive(r'$d', 2000);
+
+        final marker = await readBridgeMarker();
+        expect(marker.anchorIsSafe, isFalse);
+        expect(
+          marker.backwardWalkBound,
+          lessThanOrEqualTo(1000),
+          reason:
+              'the backward walk must cover every event at 1000; a page '
+              r'crossing a bound of 1001 can stop after $c and never '
+              r'reach $b',
+        );
+      },
+    );
+
+    test(
+      "a forward walk's checkpoint leaves its cursor's millisecond to the "
+      'next walk when a later event of it applies first',
+      () async {
+        // Timeline: $a at 1000; $b, $c and $d at 2000. A limited sync drops
+        // $b and $c, and $d, live after it, applies before the forward walk
+        // from $a queues $b. The walk fails after that first page.
+        await applyLive(r'$a', 1000);
+        await claim();
+        await applyLive(r'$d', 2000);
+        await queue.appendBootstrapPage([
+          _buildSyncEvent(eventId: r'$b', roomId: roomA, originTsMs: 2000),
+        ]);
+        await queue.checkpointResumeWalk(
+          roomId: roomA,
+          coveredThroughTs: 2000,
+          unresolvedFloorTs: null,
+        );
+
+        final marker = await readBridgeMarker();
+        expect(marker.lastAppliedEventId, r'$d');
+        expect(
+          marker.anchorIsSafe,
+          isFalse,
+          reason: r'a forward walk from $d would never fetch $c',
+        );
+        expect(marker.backwardWalkBound, lessThanOrEqualTo(2000));
       },
     );
   });
