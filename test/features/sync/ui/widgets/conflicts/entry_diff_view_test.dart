@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/entry_diff_view.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/entry_field_diff.dart';
@@ -189,8 +190,8 @@ void main() {
     tester,
   ) async {
     final diff = computeEntryDiff(
-      taskOf(estimate: const Duration(hours: 4)),
-      taskOf(estimate: const Duration(hours: 5)),
+      taskOf(languageCode: 'de'),
+      taskOf(languageCode: 'fr'),
     );
 
     await _pump(tester, diff);
@@ -198,6 +199,35 @@ void main() {
     expect(diff.fields.map((field) => field.field), [EntryField.other]);
     expect(find.text('Other details'), findsOneWidget);
     expect(find.textContaining('differ in details'), findsOneWidget);
+  });
+
+  testWidgets("a task's status, priority, estimate and due date are "
+      'labelled and shown as the task page shows them', (tester) async {
+    final diff = computeEntryDiff(
+      taskOf(
+        status: TaskStatus.blocked(
+          id: 'st-b',
+          createdAt: DateTime(2024, 3, 15, 10),
+          utcOffset: 0,
+          reason: 'waiting on review',
+        ),
+        estimate: const Duration(minutes: 90),
+        priority: TaskPriority.p0Urgent,
+        due: DateTime(2024, 4, 2),
+      ),
+      taskOf(),
+    );
+
+    await _pump(tester, diff);
+
+    for (final label in ['Status', 'Priority', 'Estimate', 'Due date']) {
+      expect(find.text(label), findsOneWidget, reason: label);
+    }
+    expect(find.text('Blocked: waiting on review'), findsOneWidget);
+    expect(find.text('Open'), findsOneWidget);
+    expect(find.text('Urgent'), findsOneWidget);
+    expect(find.text('Medium'), findsOneWidget);
+    expect(find.text('Other details'), findsNothing);
   });
 
   testWidgets('identical fields are summarized and no side rows are shown', (

@@ -47,6 +47,7 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/state/conflict_resolution_service.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_shared.dart';
+import 'package:lotti/features/sync/ui/widgets/conflicts/entry_field_diff.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -85,6 +86,7 @@ enum _FieldOp {
   armLanding,
   resolveLocal,
   resolveRemote,
+  resolveCombine,
 }
 
 class _FieldStep {
@@ -440,6 +442,8 @@ class _FieldBench {
         await _resolve(ConflictSide.local, arg);
       case _FieldOp.resolveRemote:
         await _resolve(ConflictSide.remote, arg);
+      case _FieldOp.resolveCombine:
+        await _resolve(ConflictSide.local, arg, combine: true);
     }
   }
 
@@ -456,20 +460,59 @@ class _FieldBench {
     await _land();
   }
 
-  /// The user keeps [side] of the oldest open conflict; with none open, the
-  /// other device forks one first.
-  Future<void> _resolve(ConflictSide side, int arg) async {
+  /// The user resolves the oldest open conflict: keeps [side], or with
+  /// [combine] starts from [side] and picks each field from the side the
+  /// bits of [arg] name. With none open, the other device forks one first.
+  ///
+  /// Every field the two sides differ in must be on the conflict screen
+  /// before the user decides (NoSilentFieldLoss): the real diff
+  /// ([ConflictPair.diff]) is checked for it.
+  Future<void> _resolve(
+    ConflictSide side,
+    int arg, {
+    bool combine = false,
+  }) async {
     if ((await _open()).isEmpty) await _fork(arg);
     final open = await _open();
     if (open.isEmpty) return;
     final remote = fromSerialized(open.last.serialized) as Task;
     final local = await _stored();
-    final resolved = await ConflictResolutionService(
-      persistenceLogic: persistence,
-    ).keepSide(ConflictPair(local: local, remote: remote), side);
-    expect(resolved, isTrue);
-    final kept = side == ConflictSide.local ? local : remote;
-    expected = _fieldsOf(kept.data);
+    final pair = ConflictPair(local: local, remote: remote);
+    final shown = {for (final f in pair.diff.fields) f.field};
+    final l = _fieldsOf(local.data);
+    final r = _fieldsOf(remote.data);
+    for (final (field, differs) in [
+      (EntryField.status, l.status != r.status),
+      (EntryField.title, l.title != r.title),
+      (EntryField.priority, l.priority != r.priority),
+    ]) {
+      if (differs) {
+        expect(shown, contains(field), reason: 'NoSilentFieldLoss: $field');
+      }
+    }
+    final service = ConflictResolutionService(persistenceLogic: persistence);
+    if (!combine) {
+      expect(await service.keepSide(pair, side), isTrue);
+      expected = _fieldsOf((side == ConflictSide.local ? local : remote).data);
+    } else {
+      ConflictSide pick(int bit) =>
+          (arg >> bit).isOdd ? ConflictSide.remote : ConflictSide.local;
+      final choices = {
+        EntryField.status: pick(0),
+        EntryField.title: pick(1),
+        EntryField.priority: pick(2),
+      };
+      expect(
+        await service.combine(pair, baseSide: side, choices: choices),
+        isTrue,
+      );
+      _Fields of(ConflictSide chosen) => chosen == ConflictSide.local ? l : r;
+      expected = (
+        status: of(choices[EntryField.status]!).status,
+        title: of(choices[EntryField.title]!).title,
+        priority: of(choices[EntryField.priority]!).priority,
+      );
+    }
     known.addAll(_historyIds(local.data).union(_historyIds(remote.data)));
   }
 
@@ -598,6 +641,18 @@ void registerTaskFieldWritesConformance() {
         _FieldStep(_FieldOp.resolveRemote, 2),
       ]);
     });
+
+    test(
+      'the conflict screen shows a status the two sides differ in before the '
+      'user keeps a side (NoSilentFieldLoss)',
+      () async {
+        await replay(const [
+          _FieldStep(_FieldOp.agentStatus, 1),
+          _FieldStep(_FieldOp.remoteWrite, 4),
+          _FieldStep(_FieldOp.resolveLocal, 4),
+        ]);
+      },
+    );
 
     glados.Glados(
       glados.any.fieldTrace,

@@ -3867,10 +3867,16 @@ class AppLocalizationsIt extends AppLocalizations {
   String get conflictFieldCategory => 'Categoria';
 
   @override
+  String get conflictFieldDueDate => 'Data di scadenza';
+
+  @override
   String get conflictFieldDuration => 'Durata';
 
   @override
   String get conflictFieldEnd => 'Fine';
+
+  @override
+  String get conflictFieldEstimate => 'Stima';
 
   @override
   String get conflictFieldFlag => 'Bandiera';
@@ -3883,6 +3889,9 @@ class AppLocalizationsIt extends AppLocalizations {
       'Queste versioni differiscono nei dettagli non mostrati singolarmente qui.';
 
   @override
+  String get conflictFieldPriority => 'Priorità';
+
+  @override
   String get conflictFieldPrivate => 'Privato';
 
   @override
@@ -3890,6 +3899,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get conflictFieldStart => 'Iniziare';
+
+  @override
+  String get conflictFieldStatus => 'Stato';
 
   @override
   String get conflictFieldTitle => 'Titolo';

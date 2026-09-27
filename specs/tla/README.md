@@ -2678,25 +2678,31 @@ membership, which also lives on the task (`checklistIds`), is
 | `NoLostFieldEdit` | invariant | no stored version claims, by its clock, a version whose field edits it does not hold |
 | `HistoryComplete` | invariant | the status history records every status write the stored status derives from, whoever made it |
 | `NoBlindAgentWrite` | invariant | an agent tool sets a field only while the stored value is the one it decided against |
+| `NoSilentFieldLoss` | invariant | a resolution settles a field the two sides differ in only after the conflict screen showed that difference, for the user to pick |
 | `Converged` | invariant | once every version reached every device and no conflict is open, every device holds the same fields |
 
 Each version carries ghost state: per field, the writes its value knowingly
 derives from (the write that set it, and every write of that field it was
 built over), and the status writes its history records. A resolution records
-both sides as seen: the user chose.
+both sides as seen: the user chose. It keeps one side as the base and picks
+each field the conflict screen shows (`ShownFields`) from either side; a field
+the screen does not show follows the base, and where the sides differ there,
+the `silent` ghost records it.
 
 | Configuration | Devices | Agents on | Writes | Resolutions | Distinct states |
 |---------------|--------:|-----------|-------:|------------:|----------------:|
-| `TaskFieldWrites` | 2 | one device | 3 | 1 | 799,828 |
-| `TaskFieldWritesAgents` | 2 | both devices | 3 | 1 | 5,345,944 |
-| `TaskFieldWritesResolve` | 2 | one device | 3 | 2 | 2,692,684 |
+| `TaskFieldWrites` | 2 | one device | 3 | 1 | 1,157,524 |
+| `TaskFieldWritesAgents` | 2 | both devices | 3 | 1 | 7,744,632 |
+| `TaskFieldWritesResolve` | 2 | one device | 3 | 2 | 5,932,172 |
 
-With four writes and two resolutions the model has 63,121,759 distinct states
-and passes in ten minutes on eight cores; that bound is checked by hand, not
-in CI.
+Before resolutions picked per field (ADR 0107), four writes and two
+resolutions gave 63,121,759 distinct states and passed in ten minutes on
+eight cores; that bound is checked by hand, not in CI.
 
 The design switches are the fixes, and each has a counterexample when set to
-`FALSE`:
+`FALSE` (`ShownFields` when set to `{}`). The step counts are what TLC
+reported; with several workers it does not always report the same shortest
+trace, so a run may print one or two more:
 
 | Switch | Old behaviour | Counterexample |
 |--------|---------------|----------------|
@@ -2705,6 +2711,7 @@ The design switches are the fixes, and each has a counterexample when set to
 | `AgentCas` | the tool compared its target field with its copy, not with the stored row, so a value set between the call's read and its write was overwritten (ADR 0075's compare-and-set, checked before the write) | `NoBlindAgentWrite`, five states: the agent reads the task, the user sets the status, the agent sets the status over it |
 | `UiRecordsStatus` | a status set from the task screen was not appended to `statusHistory`; the agent's status tool and the day agent's triage were | `HistoryComplete`, four states: the user sets a status |
 | `ResolveJoinsHistory` | resolving a conflict kept one side's `TaskData`, its status history included | `HistoryComplete`, seven states: both devices set a status, the second lands as a conflict, and the user keeps the other device's side — this device's status is no longer in the history |
+| `ShownFields` | the conflict screen modelled a task's title and metadata but not its status, priority, estimate or due date: a difference there was one "other details" line, and the field followed the side kept ([ADR 0107](../../docs/adr/0107-a-conflict-shows-every-task-field.md)) | `NoSilentFieldLoss`, seven states: the user sets the status on one device, the agent the priority on the other, the two versions meet as a conflict, and keeping either side settles a field whose difference the screen never showed |
 
 With every switch on, a writer states the fields it sets as a change of the
 stored data (`PersistenceLogic.updateTask(change:)`), which `writeOnStored`
@@ -2714,7 +2721,10 @@ atomic commit. An agent tool writes through `writeTaskField`, which compares
 its field on the stored row inside the same write and reports "nothing
 applied" when it moved. `TaskData.withStatus` sets a status and records it,
 for every writer, and a resolution joins both sides' histories
-(`TaskDataOnStored.withHistoryOf`).
+(`TaskDataOnStored.withHistoryOf`). The conflict screen shows a task's
+status (with a blocked or on-hold reason), priority, estimate and due date as
+fields of their own (`entry_field_diff.dart`), and "Combine" takes each from
+the side the user picks (`buildMergedEntity`).
 
 The conformance trace is
 `test/features/tasks/repository/task_field_writes_model_conformance.dart`:
@@ -2729,19 +2739,24 @@ and `NoBlindAgentWrite` (a tool writes exactly when the stored value is its
 copy's). It pins the three shortest traces glados found with a fix reverted:
 without the compare-and-set in `writeTaskField` the agent's title lands over
 another device's (three steps); building a write on the first row read
-instead of the stored one loses the other device's field (three steps); and
-a resolution without the history join drops this device's status (three
-steps).
+instead of the stored one loses the other device's field (three steps); a
+resolution without the history join drops this device's status (three
+steps); and, with a task's status left out of the conflict diff, keeping a
+side settles a status the screen never showed (three steps). Every
+resolution — keep a side, or combine with per-field picks — first checks the
+real diff (`ConflictPair.diff`) shows every field the two sides differ in.
 
 What the model leaves out:
 
 - **The same field set twice.** A writer that sets a field replaces the
   stored value, whatever its copy showed: the user's explicit choice is the
   newest. Only the agent compares first, because it decided against a value.
-- **Field-level merge across devices.** Two devices writing before they sync
-  still raise a conflict the user resolves by keeping a side
-  (`JournalReplication`); the conflict screen merges the title and the
-  metadata fields, not status, priority, estimate or due date.
+- **Automatic merge across devices.** Two devices writing before they sync
+  still raise a conflict the user resolves (`JournalReplication`), even when
+  they set different fields: the journal keeps no common ancestor to tell
+  which side changed what. The screen shows every field that differs and
+  lets the user combine them; a task's language, cover art and inference
+  profile remain "other details", following the side kept.
 - **Star, flag and private.** `EntryController.toggleStarred`,
   `toggleFlagged` and `togglePrivate` read the stored row immediately
   before writing its metadata, without a precondition; a version landing in

@@ -1,6 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' show Glados, Glados2, StringAnys, any;
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/entry_field_diff.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
@@ -216,8 +219,8 @@ void main() {
   group('computeEntryDiff — completeness guard', () {
     test('an unmodelled field change surfaces as EntryField.other', () {
       final diff = computeEntryDiff(
-        taskOf(estimate: const Duration(hours: 4)),
-        taskOf(estimate: const Duration(hours: 5)),
+        taskOf(languageCode: 'de'),
+        taskOf(languageCode: 'fr'),
       );
       expect(diff.shape, ConflictShape.edited);
       expect(diff.fields.map((f) => f.field), [EntryField.other]);
@@ -225,13 +228,112 @@ void main() {
 
     test('other is appended after modelled fields', () {
       final diff = computeEntryDiff(
-        taskOf(title: 'My task', estimate: const Duration(hours: 4)),
-        taskOf(title: 'Renamed', estimate: const Duration(hours: 5)),
+        taskOf(title: 'My task', languageCode: 'de'),
+        taskOf(title: 'Renamed', languageCode: 'fr'),
       );
       expect(
         diff.fields.map((f) => f.field),
         [EntryField.title, EntryField.other],
       );
+    });
+  });
+
+  group("computeEntryDiff — a task's fields (ADR 0107)", () {
+    TaskStatus blocked(String reason) => TaskStatus.blocked(
+      id: 'st-b',
+      createdAt: DateTime(2024, 3, 15, 10),
+      utcOffset: 0,
+      reason: reason,
+    );
+
+    test('status, priority, estimate and due date are each shown, with '
+        'their raw values, and nothing is left to other', () {
+      final diff = computeEntryDiff(
+        taskOf(
+          estimate: const Duration(minutes: 30),
+          priority: TaskPriority.p1High,
+          due: DateTime(2024, 4),
+        ),
+        taskOf(
+          status: TaskStatus.done(
+            id: 'st-d',
+            createdAt: DateTime(2024, 3, 15, 10),
+            utcOffset: 0,
+          ),
+          estimate: const Duration(hours: 2),
+          priority: TaskPriority.p3Low,
+          due: DateTime(2024, 5),
+        ),
+      );
+
+      expect(diff.shape, ConflictShape.edited);
+      expect(
+        {for (final f in diff.fields) f.field: (f.localValue, f.remoteValue)},
+        {
+          EntryField.status: ('OPEN', 'DONE'),
+          EntryField.priority: ('P1', 'P3'),
+          EntryField.estimate: ('30', '120'),
+          EntryField.dueDate: (
+            DateTime(2024, 4).toIso8601String(),
+            DateTime(2024, 5).toIso8601String(),
+          ),
+        },
+      );
+    });
+
+    test('two reasons behind the same status are a difference to show', () {
+      final diff = computeEntryDiff(
+        taskOf(status: blocked('waiting on design')),
+        taskOf(status: blocked('waiting on review')),
+      );
+
+      expect(diff.fields.single.field, EntryField.status);
+      expect(diff.fields.single.localValue, 'BLOCKED: waiting on design');
+      expect(diff.fields.single.remoteValue, 'BLOCKED: waiting on review');
+    });
+
+    test('a due date set on one side only is onlyLocal / onlyRemote', () {
+      final diff = computeEntryDiff(
+        taskOf(due: DateTime(2024, 4)),
+        taskOf(),
+      );
+
+      expect(diff.fields.single.field, EntryField.dueDate);
+      expect(diff.fields.single.kind, FieldDiffKind.onlyLocal);
+    });
+
+    test('a difference only in what the resolution joins — the status '
+        'history, the applied changes — is not reported at all', () {
+      final open = TaskStatus.open(
+        id: 'st-1',
+        createdAt: DateTime(2024, 3, 15, 9),
+        utcOffset: 0,
+      );
+      final diff = computeEntryDiff(
+        taskOf(
+          status: open,
+          statusHistory: [open],
+          appliedChangeEffects: {'a'},
+        ),
+        taskOf(status: open, appliedChangeEffects: {'b'}),
+      );
+
+      expect(diff.shape, ConflictShape.identical);
+      expect(diff.fields, isEmpty);
+    });
+
+    test("an event's status is not a task field: it stays in other", () {
+      JournalEntity event(EventStatus status) => JournalEvent(
+        meta: metaOf(id: 'ev'),
+        data: EventData(title: 'Launch', stars: 0.5, status: status),
+      );
+
+      final diff = computeEntryDiff(
+        event(EventStatus.planned),
+        event(EventStatus.completed),
+      );
+
+      expect(diff.fields.map((f) => f.field), [EntryField.other]);
     });
   });
 

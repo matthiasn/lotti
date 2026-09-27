@@ -388,8 +388,13 @@ stateDiagram-v2
 `ConflictDetailRoute` loads both versions — the local journal row and the remote
 payload deserialized from the `Conflict` row — and renders a full field diff.
 `computeEntryDiff` walks a registry of comparable fields (title, body, category,
-start/end dates, starred, private, flag, audio duration) and returns
-`EntryDiff{shape, fields, identicalFieldCount}`.
+start/end dates, starred, private, flag, a task's status, priority, estimate
+and due date, audio duration) and returns
+`EntryDiff{shape, fields, identicalFieldCount}`. A task's status is compared
+with the reason a blocked or on-hold status carries. What the resolution
+joins from both sides anyway — a task's status history and applied agent
+changes — is left out of the comparison, for tasks only
+([ADR 0107](../../../docs/adr/0107-a-conflict-shows-every-task-field.md)).
 
 Two details make it trustworthy:
 
@@ -404,7 +409,11 @@ Two details make it trustworthy:
 `ConflictResolutionView` offers three paths: **Keep this device**, **Keep from
 sync**, or **Combine** — a per-field merge where each independently-mergeable
 field gets a non-colour-dependent toggle and everything else follows a chosen
-base side. A *recommended* chip marks the no-data-loss option.
+base side. A *recommended* chip marks the no-data-loss option. A task's
+status, priority, estimate and due date are mergeable like its title, so
+"Combine" can keep this device's status and the other device's priority;
+`specs/tla/TaskFieldWrites.tla` checks that no resolution settles a field
+whose difference the screen did not show (`NoSilentFieldLoss`).
 
 When one side was soft-deleted while the other was edited
 (`ConflictShape.deletedOnLocal` / `deletedOnRemote`), the diff is replaced by a

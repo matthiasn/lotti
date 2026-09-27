@@ -3826,10 +3826,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get conflictFieldCategory => 'Kategori';
 
   @override
+  String get conflictFieldDueDate => 'Förfallodatum';
+
+  @override
   String get conflictFieldDuration => 'Varaktighet';
 
   @override
   String get conflictFieldEnd => 'Slut';
+
+  @override
+  String get conflictFieldEstimate => 'Uppskattning';
 
   @override
   String get conflictFieldFlag => 'Flagga';
@@ -3842,6 +3848,9 @@ class AppLocalizationsSv extends AppLocalizations {
       'Dessa versioner skiljer sig åt i detaljer som inte visas individuellt här.';
 
   @override
+  String get conflictFieldPriority => 'Prioritet';
+
+  @override
   String get conflictFieldPrivate => 'Privat';
 
   @override
@@ -3849,6 +3858,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get conflictFieldStart => 'Start';
+
+  @override
+  String get conflictFieldStatus => 'Status';
 
   @override
   String get conflictFieldTitle => 'Titel';

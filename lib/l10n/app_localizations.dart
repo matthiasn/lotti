@@ -6402,6 +6402,12 @@ abstract class AppLocalizations {
   /// **'Category'**
   String get conflictFieldCategory;
 
+  /// Conflict screen: label of a task's due date when the two versions differ in it.
+  ///
+  /// In en, this message translates to:
+  /// **'Due date'**
+  String get conflictFieldDueDate;
+
   /// No description provided for @conflictFieldDuration.
   ///
   /// In en, this message translates to:
@@ -6413,6 +6419,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'End'**
   String get conflictFieldEnd;
+
+  /// Conflict screen: label of a task's time estimate when the two versions differ in it.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimate'**
+  String get conflictFieldEstimate;
 
   /// No description provided for @conflictFieldFlag.
   ///
@@ -6432,6 +6444,12 @@ abstract class AppLocalizations {
   /// **'These versions differ in details not shown individually here.'**
   String get conflictFieldOtherDescription;
 
+  /// Conflict screen: label of a task's priority when the two versions differ in it.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get conflictFieldPriority;
+
   /// No description provided for @conflictFieldPrivate.
   ///
   /// In en, this message translates to:
@@ -6449,6 +6467,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Start'**
   String get conflictFieldStart;
+
+  /// Conflict screen: label of a task's status when the two versions differ in it.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get conflictFieldStatus;
 
   /// No description provided for @conflictFieldTitle.
   ///
