@@ -17,6 +17,7 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/agents/service/task_agent_retirement.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -62,6 +63,17 @@ class TaskAgentService {
   /// Optional domain logger for structured, PII-safe logging.
   final DomainLogger? domainLogger;
 
+  /// Keeps each task at one live task agent across devices (ADR 0104). The
+  /// sync receive and the wake gate call it; [restoreSubscriptions] runs its
+  /// startup pass.
+  late final TaskAgentRetirement retirement = TaskAgentRetirement(
+    repository: repository,
+    syncService: syncService,
+    orchestrator: orchestrator,
+    updateNotifications: updateNotifications,
+    domainLogger: domainLogger,
+  );
+
   static const _uuid = Uuid();
   static const String _agentKind = AgentKinds.taskAgent;
 
@@ -90,7 +102,10 @@ class TaskAgentService {
   /// runtime, so a seeded-on agent wakes in the session it was created in
   /// rather than after the next app start.
   ///
-  /// Throws [StateError] if a Task Agent already exists for [taskId].
+  /// Throws [StateError] if a Task Agent already exists for [taskId]. That
+  /// check sees only this device's links: when another device assigns the
+  /// same task before either has the other's agent, both agents exist once
+  /// they sync, and [retirement] keeps the one the task's card shows.
   Future<AgentIdentityEntity> createTaskAgent({
     required String taskId,
     required Set<String> allowedCategoryIds,
@@ -848,12 +863,18 @@ class TaskAgentService {
   /// snapshot of agent states and `agent_task` links. A snapshot failure
   /// propagates before the per-agent loop; runtime registration failures after
   /// a successful snapshot remain isolated to their agent.
+  ///
+  /// First retires every task's superseded agents
+  /// ([TaskAgentRetirement.retireSupersededEverywhere]), so an agent that
+  /// lost to another of its task's agents is not subscribed again.
   Future<void> restoreSubscriptions() async {
     domainLogger?.log(
       LogDomain.agentRuntime,
       'restoring task agent subscriptions...',
       subDomain: 'restore',
     );
+
+    await retirement.retireSupersededEverywhere();
 
     final activeAgents = await agentService.listAgents(
       lifecycle: AgentLifecycle.active,

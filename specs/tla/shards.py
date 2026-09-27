@@ -106,6 +106,11 @@ SECONDS = {
     "AgentWakeCoordinationFailure": 75,
     "AgentWakeCoordinationCrash": 110,
     "AgentWakeCoordinationLossy": 60,
+    # Local runs (20 workers: 7s, 28s and under 1s), scaled for a CI runner;
+    # refresh from CI.
+    "TaskAgentAssignment": 45,
+    "TaskAgentAssignmentSkew": 180,
+    "TaskAgentAssignmentLegacy": 2,
     "ChangeSetLifecycleRaceUndo": 40,
     "ChangeSetLifecycleRaceAdd": 5,
     "ChangeSetLifecycleUndo": 1,

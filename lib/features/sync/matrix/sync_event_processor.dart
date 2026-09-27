@@ -259,6 +259,13 @@ class SyncEventProcessor {
   List<AgentRuntimeMaintenance> runtimeMaintenance =
       const <AgentRuntimeMaintenance>[];
 
+  /// Keeps a task at one live task agent (ADR 0104), injected alongside the
+  /// orchestrator. Called with the task id after an `agent_task` link, or a
+  /// task agent's identity, from another device is applied: the arrival may
+  /// give the task a second agent, and the retirement pass keeps the one
+  /// every device ranks first. Null when agents are off.
+  Future<void> Function(String taskId)? retireSupersededTaskAgents;
+
   void Function(SyncApplyDiagnostics diag)? applyObserver;
 
   /// Startup timestamp - events with backfill requests older than this

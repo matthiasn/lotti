@@ -858,6 +858,61 @@ void main() {
       verify(() => bench.mockOrchestrator.wakeExecutor = any()).called(1);
     });
 
+    test('the wake gate is the task service retirement pass: a superseded '
+        'task agent is retired instead of running (ADR 0104)', () async {
+      when(
+        () => bench.mockService.getAgent(kTestAgentId),
+      ).thenAnswer((_) async => makeTestIdentity());
+      when(
+        () => bench.mockTaskAgentRetirement.retireIfSuperseded(kTestAgentId),
+      ).thenAnswer((_) async => true);
+
+      final capture = bench.captureWakeExecutor();
+      final container = bench.createContainer();
+      await bench.initAndSubscribe(container);
+
+      final result = await capture.executor(
+        kTestAgentId,
+        'run-key-1',
+        {'tok-a'},
+        'thread-1',
+      );
+
+      expect(result, isNull);
+      verify(
+        () => bench.mockTaskAgentRetirement.retireIfSuperseded(kTestAgentId),
+      ).called(1);
+      verifyNever(
+        () => bench.mockWorkflow.execute(
+          agentIdentity: any(named: 'agentIdentity'),
+          runKey: any(named: 'runKey'),
+          triggerTokens: any(named: 'triggerTokens'),
+          threadId: any(named: 'threadId'),
+        ),
+      );
+    });
+
+    test('wires the task service retirement pass into the sync '
+        'processor (ADR 0104)', () async {
+      final processor = MockSyncEventProcessor();
+      when(
+        () => processor.backfillResponseHandler,
+      ).thenReturn(MockBackfillResponseHandler());
+      final container = bench.createContainer(syncEventProcessor: processor);
+      await bench.initAndSubscribe(container);
+
+      final wired =
+          verify(
+                () => processor.retireSupersededTaskAgents = captureAny(),
+              ).captured.single
+              as Future<void> Function(String);
+      await wired('task-1');
+
+      verify(
+        () => bench.mockTaskAgentRetirement.retireSuperseded('task-1'),
+      ).called(1);
+    });
+
     test(
       'wakeExecutor returns null when agent identity not found',
       () async {

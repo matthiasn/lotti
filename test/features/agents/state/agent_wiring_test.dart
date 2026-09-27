@@ -26,6 +26,8 @@ void main() {
     late MockUpdateNotifications notifications;
     late ProviderContainer container;
     late Map<String, AgentWakeRunner> contributedRunners;
+    late List<String> gateCalls;
+    late Set<String> retiredByGate;
 
     setUp(() {
       agentService = MockAgentService();
@@ -35,6 +37,8 @@ void main() {
       orchestrator = MockWakeOrchestrator();
       notifications = MockUpdateNotifications();
       contributedRunners = {};
+      gateCalls = [];
+      retiredByGate = {};
 
       // The orchestrator stores whatever executor is wired into a real field.
       WakeExecutor? wired;
@@ -69,6 +73,10 @@ void main() {
         orchestrator,
         taskWorkflow,
         notifications,
+        retireIfSuperseded: (agentId) async {
+          gateCalls.add(agentId);
+          return retiredByGate.contains(agentId);
+        },
       );
       return orchestrator.wakeExecutor!;
     }
@@ -209,6 +217,82 @@ void main() {
         verifyNever(() => notifications.notifyUiOnly(any()));
       },
     );
+
+    group('task agent wake gate (ADR 0104)', () {
+      void stubTaskAgent() {
+        when(() => agentService.getAgent('task-agent-1')).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: 'task-agent-1',
+            agentId: 'task-agent-1',
+          ),
+        );
+        when(
+          () => taskWorkflow.execute(
+            agentIdentity: any(named: 'agentIdentity'),
+            runKey: any(named: 'runKey'),
+            triggerTokens: any(named: 'triggerTokens'),
+            threadId: any(named: 'threadId'),
+          ),
+        ).thenAnswer((_) async => const WakeResult(success: true));
+      }
+
+      test('a task agent the gate retires does not run and announces '
+          'nothing', () async {
+        stubTaskAgent();
+        retiredByGate.add('task-agent-1');
+
+        final result = await wire()(
+          'task-agent-1',
+          'run-key',
+          const {'task-1'},
+          'thread',
+        );
+
+        expect(result, isNull);
+        expect(gateCalls, ['task-agent-1']);
+        verifyNever(
+          () => taskWorkflow.execute(
+            agentIdentity: any(named: 'agentIdentity'),
+            runKey: any(named: 'runKey'),
+            triggerTokens: any(named: 'triggerTokens'),
+            threadId: any(named: 'threadId'),
+          ),
+        );
+        verifyNever(() => notifications.notifyUiOnly(any()));
+      });
+
+      test('the task agent the gate keeps runs the task workflow', () async {
+        stubTaskAgent();
+
+        await wire()('task-agent-1', 'run-key', const {'task-1'}, 'thread');
+
+        expect(gateCalls, ['task-agent-1']);
+        verify(
+          () => taskWorkflow.execute(
+            agentIdentity: any(named: 'agentIdentity'),
+            runKey: 'run-key',
+            triggerTokens: {'task-1'},
+            threadId: 'thread',
+          ),
+        ).called(1);
+      });
+
+      test('other kinds never consult the gate', () async {
+        stubEventAgent();
+        when(
+          () => eventWorkflow.execute(
+            agentIdentity: any(named: 'agentIdentity'),
+            runKey: any(named: 'runKey'),
+            triggerTokens: any(named: 'triggerTokens'),
+            threadId: any(named: 'threadId'),
+          ),
+        ).thenAnswer((_) async => const WakeResult(success: true));
+
+        await wire()('event-agent-1', 'run-key', const {}, 'thread');
+
+        expect(gateCalls, isEmpty);
+      });
+    });
 
     test('does nothing when the agent cannot be resolved', () async {
       when(

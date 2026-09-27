@@ -2164,6 +2164,24 @@ copy read before `writeOnStored` in two (an armed landing, then the agent's
 add), and writing the caller's task in `JournalRepository.updateJournalEntity`
 in two.
 
+Task-agent assignment has one. In
+`test/features/agents/service/task_agent_retirement_model_conformance.dart`
+(a part of the `TaskAgentRetirement` suite), one task on two devices, each a
+real in-memory agent database behind the real `TaskAgentService`,
+`AgentService` and `TaskAgentRetirement`, exchanges every write through the
+real receive decision (`ReplicaNetwork`). Generated traces assign the task,
+through the follow-up's auto-assignment once per device and by hand, destroy
+and delete agents, deliver writes in any order, run the pass a receive
+schedules, crash a device (a fresh service stack whose startup runs the
+pass), and wake agents through the gate. Each wake that is let run must be
+its device's first-ranked agent (`NoSupersededWake`). Once everything has
+arrived and every scheduled pass has run, `AtMostOneLive`, `LiveAgreed` and
+`KeepsAgent` must hold. With the pass reverted to a no-op, it fails with a
+trace shrunk to two steps, both devices assigning, which is TLC's
+counterexample. Its fixed traces (the counterexample, the wake gate, and
+two agents an older build left) each fail too. Without the startup pass,
+the legacy trace fails.
+
 ## Changing a spec
 
 Keep the header's action-to-code map current. When a change is meant to fix a
@@ -2628,3 +2646,77 @@ And label and category definitions carry no host counter, so the code
 requires an equal digest of them on top of the subset check — a stricter
 cover, which can only cost a run
 ([ADR 0093](../../docs/adr/0093-what-a-task-wake-reads.md)).
+
+## `TaskAgentAssignment` — one task agent per task, across devices
+
+One task on two devices. A task agent is an identity plus an `agent_task`
+link, both written by `TaskAgentService.createTaskAgent` under fresh random
+ids. The method refuses a task that already has a link, but the check is
+local: two devices that assign the task before either has the other's agent
+both create one. The follow-up tool does this whenever a follow-up is
+confirmed on two devices, because each device auto-assigns the category's
+agent to the same derived task id. Two manual assignments do it too. Both
+agents then lived on, woke and wrote reports and proposals, while the card
+showed only one of them. The fix ranks the task's links the way the card
+does (`orderedPrimaryFirst`) among those whose identity the device holds,
+live or destroyed. It then retires every other live agent, with a destroy
+that syncs. The pass runs after sync applies an `agent_task` link or a task
+agent's identity, at startup, and before a task agent's wake. Every write
+reaches every device exactly once, in any order. A lost delivery is recovered
+by backfill, so it only delays the write (`AgentLinks` and
+`AgentReplication` model the loss). Ranks are creation order, or with `Skew`
+any unused one. The decision, and why a derived agent id does not work
+here, is
+[ADR 0104](../../docs/adr/0104-one-task-agent-per-task.md).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `AtMostOneLive` | invariant | once every write has arrived and every scheduled pass has run, no device holds two live agents of the task |
+| `LiveAgreed` | invariant | at that point, every device holds the same live agent, or none |
+| `KeepsAgent` | invariant | no over-retirement: when an agent was assigned after the user's last destroy (or the user destroyed none), the task keeps a live agent |
+| `KeepsAgentUndestroyed` | invariant | the weaker form that holds under clock skew: when the user destroyed no agent of the task, one stays |
+| `NoSupersededWake` | invariant | a wake runs only for the agent its device ranks first |
+
+| Configuration | Devices | Agent ids | Destroys | Crashes | Start | Clock | Distinct states |
+|---------------|---------|-----------|----------|---------|-------|-------|-----------------|
+| `TaskAgentAssignment` | 2 | 3 | 1 | 1 | empty | creation order | 2,715,340 |
+| `TaskAgentAssignmentSkew` | 2 | 3 | 1 | 0 | empty | any order (`KeepsAgentUndestroyed` only) | 11,181,541 |
+| `TaskAgentAssignmentLegacy` | 2 | 3 | 1 | 1 | two live agents on both devices | creation order | 5,296 |
+
+Each rule has a switch. To see a counterexample, copy the spec and a
+configuration to a directory outside this one, set the switch to `FALSE`,
+and run TLC there. CI checks every configuration in this directory, so a
+mutation must never be checked in.
+
+| Switch | Old behaviour | Counterexample |
+|--------|---------------|----------------|
+| `RetireLosers` | nothing ever retired an agent: the code before this change | `AtMostOneLive`, 9 states. A and B both assign (the follow-up confirmed on both). Each receives the other's link and identity, the passes run and retire nothing, and both devices hold two live agents. With `NoSupersededWake` checked too, TLC stops sooner, at 6 states: A receives B's later agent and wakes its own |
+| `RetireOnReceive` | no pass after a receive | `AtMostOneLive`, 7 states: the same exchange, and nothing ranks what arrived |
+| `StartupRetire` | no pass at startup | `TaskAgentAssignmentLegacy` fails `AtMostOneLive` in its initial state: nothing arrives, so nothing ranks the two agents an older build left. With two crashes allowed, the base configuration fails in 9 states: each device dies between a receive and its pass |
+| `WakeGate` | a wake runs without a pass | `NoSupersededWake`, 6 states: A holds B's later agent, its pass not yet run, and wakes its own |
+| `SharedRank` | each device keeps the agent it created | `KeepsAgent`, 12 states: each device retires the other's agent, the two retirements cross, and the task is left with none. `NoSupersededWake` fails first, in 6 states |
+
+What the model leaves out, or shows as a residual:
+
+- **Skew can cost a reassignment.** Destroyed agents rank, so the agent that
+  stays is the one the card shows. Under `Skew`, TLC breaks `KeepsAgent` in
+  12 states. A assigns a1 on a clock running ahead and destroys it. B,
+  unaware, assigns a2 on a clock behind, so a2 ranks below a1. A receives a2
+  and retires it in favour of the destroyed a1. The skew has to exceed the
+  time between the two assignments, and the user assigns again.
+  `KeepsAgentUndestroyed` holds under any skew.
+- **A hard delete leaves no tombstone.** `AgentService.deleteAgent` deletes
+  an agent's rows locally. With the delete allowed before every write about
+  the agent has arrived, TLC breaks `LiveAgreed` in 8 states. B receives
+  a1's destroy before its creation, deletes it, and the late creation inserts
+  it again as live. This affects every agent kind and predates this spec, so
+  the model's `HardDelete` waits for every write about the agent.
+- **A loser may run before its device sees the winner.** The model's wakes
+  are decisions, not inference. A wake that ran before its device held the
+  winner keeps its report and proposals. The retirement stops the next one.
+- **Three devices** add only arrival orders. The rule is pairwise, and a
+  three-device configuration outgrows a CI shard.
+- The model's lifecycle only moves from live to destroyed. A concurrent
+  identity edit (a config change) can win the lifecycle merge and revive a
+  retired agent. The pass then runs again on the next receive, wake or start,
+  and retires the agent again.

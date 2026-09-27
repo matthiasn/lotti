@@ -283,6 +283,20 @@ extension _AgentHandlers on SyncEventProcessor {
         // another kind branch. Contributors contain their own failures.
         await _offerIdentityToRuntimeMaintenance(appliedIdentity);
       }
+      // A task agent's identity can arrive after its link: only now does the
+      // retirement pass rank that link (ADR 0104).
+      if (appliedIdentity != null &&
+          appliedIdentity.kind == AgentKinds.taskAgent) {
+        await _retireSupersededTaskAgents(
+          () async => [
+            for (final link in await agentRepository!.getLinksFrom(
+              appliedIdentity.agentId,
+              type: AgentLinkTypes.agentTask,
+            ))
+              link.toId,
+          ],
+        );
+      }
       // The identity may already be present when its state arrives. Sync
       // notifications do not enter the local project-update stream, so repair
       // the device-local fallback here instead of waiting for a restart.
@@ -473,6 +487,10 @@ extension _AgentHandlers on SyncEventProcessor {
           await _offerIdentityToRuntimeMaintenance(identity);
         }
       }
+      // A live agent_task link may give the task a second agent (ADR 0104).
+      if (resolvedLink is AgentTaskLink && resolvedLink.deletedAt == null) {
+        await _retireSupersededTaskAgents(() async => [resolvedLink.toId]);
+      }
       _updateNotifications.notify(
         {resolvedLink.fromId, resolvedLink.toId, agentNotification},
         fromSync: true,
@@ -577,6 +595,31 @@ extension _AgentHandlers on SyncEventProcessor {
         matchEntityIds: {projectEntityUpdateNotification(link.toId)},
       ),
     );
+  }
+
+  /// Runs the task-agent retirement pass ([retireSupersededTaskAgents]) for
+  /// each task [taskIds] reads, when the pass is wired, containing its
+  /// failures: a pass that throws is logged and leaves the duplicate for the
+  /// next pass (the wake gate or the startup pass), never stalling the sync
+  /// apply loop.
+  Future<void> _retireSupersededTaskAgents(
+    Future<List<String>> Function() taskIds,
+  ) async {
+    final retire = retireSupersededTaskAgents;
+    if (retire == null) return;
+    try {
+      for (final taskId in {...await taskIds()}) {
+        await retire(taskId);
+      }
+    } catch (error, stackTrace) {
+      _loggingService.error(
+        LogDomain.sync,
+        error,
+        subDomain: 'processor.taskAgentRetirement',
+        message: 'task agent retirement failed',
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   /// Offers a synced-in identity to every runtime-maintenance contributor,

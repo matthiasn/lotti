@@ -128,13 +128,27 @@ sources:
     resource: ../../../lib/features/agents/tools/task_agent_staged_tool_exposure.dart
     title: TaskAgentStagedToolExposure — withhold update_report from turn one
     last_modified: 2026-08-08
+  - id: retirement
+    resource: ../../../lib/features/agents/service/task_agent_retirement.dart
+    title: TaskAgentRetirement — one live task agent per task, across devices
+    last_modified: 2026-09-27
+  - id: task-agent-assignment-spec
+    resource: ../../../specs/tla/TaskAgentAssignment.tla
+    title: TaskAgentAssignment — task agents assigned on two devices, model-checked
+    last_modified: 2026-09-27
+  - id: adr-0104
+    resource: ../../../docs/adr/0104-one-task-agent-per-task.md
+    title: ADR 0104 — One task agent per task
+    last_modified: 2026-09-27
 ---
 
 # Creation
 
 `TaskAgentService.createTaskAgent()` runs inside an agent-sync transaction:
 
-1. Validate the task has no task agent already.
+1. Validate the task has no task agent already — on this device; see
+   [one agent per task](#one-agent-per-task-across-devices) for what happens
+   when another device assigns it too.
 2. Resolve a template, defaulting to the seeded Laura template when present.
 3. Create the agent identity and state.
 4. Set `slots.activeTaskId`.
@@ -206,6 +220,55 @@ agentNotification})` immediately after commit and before the creation wake is
 enqueued. **`notifyUiOnly` keeps it off `localUpdateStream`**, so the orchestrator
 does not read the agent system's own write as task content changing and stack a
 second wake on the creation wake.
+
+# One agent per task, across devices
+
+Step 1's check reads only this device's links. When two devices assign the
+same task before either holds the other's agent, both create one: the
+follow-up tool does exactly that when a follow-up is confirmed on two devices,
+since each auto-assigns to the same derived task id, and so do two manual
+assignments. `TaskAgentRetirement` resolves the pair once the agents meet
+([ADR 0104](../../../docs/adr/0104-one-task-agent-per-task.md)):
+
+- **The rank is the card's.** Among the task's live `agent_task` links whose
+  identity the device holds — live or destroyed — the first by
+  `orderedPrimaryFirst` (`createdAt`, then id, newest first) is the task's
+  agent. That is the agent `getTaskAgentForTask` shows.
+- **Every other live agent of the task is retired**: written `destroyed`
+  through `AgentSyncService`, in the same transaction as the rank read. The
+  retirement syncs like any destroy; the loser's subscriptions go, the drain
+  engine never runs it again, and its history stays.
+- **The pass runs at three points**: after `SyncEventProcessor` applies an
+  `agent_task` link or a task agent's identity
+  (`retireSupersededTaskAgents`, wired by `wireSyncEventProcessor`); at
+  startup, first thing in `restoreSubscriptions`, over every task with links
+  from more than one agent (`getTaskIdsWithSeveralAgentLinks`), which also
+  clears what older builds left; and in `wireWakeExecutor`'s gate before a
+  task agent's wake, which retires a loser instead of running it.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Live: createTaskAgent
+    Live --> Live: a pass ranks it first
+    Live --> Destroyed: a pass ranks another link first (retired)
+    Live --> Destroyed: the user destroys it
+    Destroyed --> [*]: deleteAgent (local hard delete)
+```
+
+Gotchas:
+
+- A link whose identity has not arrived does not rank; the identity's arrival
+  triggers the pass that ranks it.
+- A destroyed agent ranked first still retires the live ones below it — the
+  card shows the destroyed agent, so nothing may work unseen behind it.
+- A loser may already have woken before its device held the winner; that
+  wake's report and proposals stay.
+- Under clock skew, an assignment made on a clock behind a concurrent agent
+  that was then destroyed can be retired in its favour; `specs/tla/README.md`
+  has the counterexample. The user assigns again.
+
+`specs/tla/TaskAgentAssignment.tla` model-checks the rule; its conformance
+trace drives two real devices through `TaskAgentService`.
 
 # Inference setup
 

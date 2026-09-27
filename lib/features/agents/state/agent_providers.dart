@@ -624,6 +624,8 @@ Future<void> agentInitialization(Ref ref) async {
     orchestrator,
     workflow,
     updateNotifications,
+    retireIfSuperseded: (agentId) =>
+        taskAgentService.retirement.retireIfSuperseded(agentId),
   );
 
   // 2.5. Coordinate wakes with peer devices: a peer's claim or completion
@@ -655,6 +657,8 @@ Future<void> agentInitialization(Ref ref) async {
     ref,
     orchestrator,
     syncEventProcessor,
+    retireSupersededTaskAgents: (taskId) =>
+        taskAgentService.retirement.retireSuperseded(taskId),
   );
 
   // 5. Seed default templates and profiles in parallel, then

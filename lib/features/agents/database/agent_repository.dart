@@ -525,6 +525,10 @@ class AgentRepository {
   Future<Set<String>> getTaskIdsWithAgentLink() =>
       _links.getTaskIdsWithAgentLink();
 
+  /// Journal task ids with live `agent_task` links from more than one agent.
+  Future<Set<String>> getTaskIdsWithSeveralAgentLinks() =>
+      _links.getTaskIdsWithSeveralAgentLinks();
+
   Future<int> countLinksWithNullVectorClock() =>
       _links.countLinksWithNullVectorClock();
 

@@ -15,6 +15,7 @@ import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maint
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_workflow_providers.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
+import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart'
     show journalDbProvider, outboxServiceProvider, syncDatabaseProvider;
@@ -50,6 +51,7 @@ class InitProviderBench {
     required this.mockProjectWorkflow,
     required this.mockDayWorkflow,
     required this.mockTaskAgentService,
+    required this.mockTaskAgentRetirement,
     required this.mockProjectAgentService,
     required this.mockDayAgentService,
     required this.mockTemplateService,
@@ -76,6 +78,7 @@ class InitProviderBench {
       mockProjectWorkflow: MockProjectAgentWorkflow(),
       mockDayWorkflow: MockDayAgentWorkflow(),
       mockTaskAgentService: MockTaskAgentService(),
+      mockTaskAgentRetirement: MockTaskAgentRetirement(),
       mockProjectAgentService: MockProjectAgentService(),
       mockDayAgentService: MockDayAgentService(),
       mockTemplateService: MockAgentTemplateService(),
@@ -98,6 +101,10 @@ class InitProviderBench {
   final MockProjectAgentWorkflow mockProjectWorkflow;
   final MockDayAgentWorkflow mockDayWorkflow;
   final MockTaskAgentService mockTaskAgentService;
+
+  /// The task service's retirement pass: the wake gate keeps every agent
+  /// unless a test says otherwise.
+  final MockTaskAgentRetirement mockTaskAgentRetirement;
   final MockProjectAgentService mockProjectAgentService;
   final MockDayAgentService mockDayAgentService;
   final MockAgentTemplateService mockTemplateService;
@@ -116,6 +123,15 @@ class InitProviderBench {
     when(mockOrchestrator.restoreWakeIntents).thenAnswer((_) async => 0);
     when(mockOrchestrator.stop).thenAnswer((_) async {});
     when(mockTaskAgentService.restoreSubscriptions).thenAnswer((_) async {});
+    when(
+      () => mockTaskAgentService.retirement,
+    ).thenReturn(mockTaskAgentRetirement);
+    when(
+      () => mockTaskAgentRetirement.retireIfSuperseded(any()),
+    ).thenAnswer((_) async => false);
+    when(
+      () => mockTaskAgentRetirement.retireSuperseded(any()),
+    ).thenAnswer((_) async => const <String>{});
     when(mockProjectAgentService.restoreSubscriptions).thenAnswer((_) async {});
     when(mockDayAgentService.restoreSubscriptions).thenAnswer((_) async {});
     when(mockTemplateService.seedDefaults).thenAnswer((_) async {});
@@ -152,6 +168,7 @@ class InitProviderBench {
   ProviderContainer createContainer({
     DomainLogger? testDomainLogger,
     List<AgentRuntimeMaintenance> Function(Ref)? runtimeMaintenance,
+    SyncEventProcessor? syncEventProcessor,
   }) {
     final container = ProviderContainer(
       overrides: [
@@ -194,6 +211,8 @@ class InitProviderBench {
         ),
         if (testDomainLogger != null)
           domainLoggerProvider.overrideWithValue(testDomainLogger),
+        if (syncEventProcessor != null)
+          maybeSyncEventProcessorProvider.overrideWithValue(syncEventProcessor),
       ],
     );
     addTearDown(container.dispose);

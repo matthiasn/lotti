@@ -49,6 +49,7 @@ import 'package:lotti/features/agents/service/project_recommendation_service.dar
 import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/service/subject_agent_lookup.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
+import 'package:lotti/features/agents/service/task_agent_retirement.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
@@ -1321,6 +1322,8 @@ class MockWakeOrchestrator extends Mock implements WakeOrchestrator {
 }
 
 class MockTaskAgentService extends Mock implements TaskAgentService {}
+
+class MockTaskAgentRetirement extends Mock implements TaskAgentRetirement {}
 
 class MockAgentRuntimeMaintenance extends Mock
     implements AgentRuntimeMaintenance {}
