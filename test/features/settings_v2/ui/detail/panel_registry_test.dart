@@ -552,7 +552,7 @@ void main() {
             create: (_, route) => Text(
               'marker:create:${route?.queryParameters['name'] ?? ''}',
             ),
-            detail: (_, id) => Text('marker:detail:$id'),
+            detail: (_, id, _) => Text('marker:detail:$id'),
           ),
         ),
       );
@@ -825,7 +825,7 @@ void main() {
       'with a stable per-id key so successive detail rows tear down cleanly',
       (tester) async {
         final r = await dispatchFor('categories', tester);
-        final detail = r.dispatch.detail(r.context, 'cat-42');
+        final detail = r.dispatch.detail(r.context, 'cat-42', null);
         expect(detail, isA<CategoryDetailsPage>());
         expect((detail as CategoryDetailsPage).categoryId, 'cat-42');
         expect(detail.key, const ValueKey('settings-v2-category-cat-42'));
@@ -850,7 +850,7 @@ void main() {
         expect((created as HabitEditorPage).isCreate, isTrue);
         expect(created.returnPath, '/settings/habits');
 
-        final detail = r.dispatch.detail(r.context, 'hab-7');
+        final detail = r.dispatch.detail(r.context, 'hab-7', null);
         expect(detail, isA<HabitEditorPage>());
         expect((detail as HabitEditorPage).habitId, 'hab-7');
         expect(detail.isCreate, isFalse);
@@ -894,7 +894,7 @@ void main() {
       'labels panel: detail closure returns LabelDetailsPage(labelId)',
       (tester) async {
         final r = await dispatchFor('labels', tester);
-        final detail = r.dispatch.detail(r.context, 'lab-7');
+        final detail = r.dispatch.detail(r.context, 'lab-7', null);
         expect(detail, isA<LabelDetailsPage>());
         expect((detail as LabelDetailsPage).labelId, 'lab-7');
         expect(detail.key, const ValueKey('settings-v2-label-lab-7'));
@@ -922,7 +922,7 @@ void main() {
       'dashboards panel: detail closure returns EditDashboardPage(dashboardId)',
       (tester) async {
         final r = await dispatchFor('dashboards', tester);
-        final detail = r.dispatch.detail(r.context, 'dash-3');
+        final detail = r.dispatch.detail(r.context, 'dash-3', null);
         expect(detail, isA<EditDashboardPage>());
         expect((detail as EditDashboardPage).dashboardId, 'dash-3');
         expect(detail.key, const ValueKey('settings-v2-dashboard-dash-3'));
@@ -951,7 +951,7 @@ void main() {
       'measurables panel: detail closure returns EditMeasurablePage(id)',
       (tester) async {
         final r = await dispatchFor('measurables', tester);
-        final detail = r.dispatch.detail(r.context, 'meas-9');
+        final detail = r.dispatch.detail(r.context, 'meas-9', null);
         expect(detail, isA<EditMeasurablePage>());
         expect((detail as EditMeasurablePage).measurableId, 'meas-9');
         expect(detail.key, const ValueKey('settings-v2-measurable-meas-9'));
@@ -990,7 +990,7 @@ void main() {
       'AgentTemplateDetailPage(templateId)',
       (tester) async {
         final r = await dispatchFor('agents-templates', tester);
-        final detail = r.dispatch.detail(r.context, 'tpl-1');
+        final detail = r.dispatch.detail(r.context, 'tpl-1', null);
         expect(detail, isA<AgentTemplateDetailPage>());
         expect((detail as AgentTemplateDetailPage).templateId, 'tpl-1');
         expect(
@@ -1022,7 +1022,7 @@ void main() {
       'agents-souls panel: detail closure returns AgentSoulDetailPage(soulId)',
       (tester) async {
         final r = await dispatchFor('agents-souls', tester);
-        final detail = r.dispatch.detail(r.context, 'soul-7');
+        final detail = r.dispatch.detail(r.context, 'soul-7', null);
         expect(detail, isA<AgentSoulDetailPage>());
         expect((detail as AgentSoulDetailPage).soulId, 'soul-7');
         expect(detail.key, const ValueKey('settings-v2-agent-soul-soul-7'));
@@ -1047,7 +1047,7 @@ void main() {
       'agents-instances panel: detail closure returns AgentDetailPage(agentId)',
       (tester) async {
         final r = await dispatchFor('agents-instances', tester);
-        final detail = r.dispatch.detail(r.context, 'agent-3');
+        final detail = r.dispatch.detail(r.context, 'agent-3', null);
         expect(detail, isA<AgentDetailPage>());
         expect((detail as AgentDetailPage).agentId, 'agent-3');
         expect(
@@ -1096,10 +1096,30 @@ void main() {
       'ConflictDetailRoute(conflictId) with a stable per-id key',
       (tester) async {
         final r = await dispatchFor('sync-conflicts', tester);
-        final detail = r.dispatch.detail(r.context, 'conflict-12');
+        final detail = r.dispatch.detail(r.context, 'conflict-12', null);
         expect(detail, isA<ConflictDetailRoute>());
         expect((detail as ConflictDetailRoute).conflictId, 'conflict-12');
+        expect(detail.versionKey, isNull);
         expect(detail.key, const ValueKey('settings-v2-conflict-conflict-12'));
+      },
+    );
+
+    testWidgets(
+      "sync-conflicts panel: the route's version query picks one of the "
+      "entry's concurrent versions and keys the page by it",
+      (tester) async {
+        final r = await dispatchFor('sync-conflicts', tester);
+        final detail = r.dispatch.detail(r.context, 'conflict-12', (
+          path: '/settings/advanced/conflicts/conflict-12',
+          pathParameters: const {'conflictId': 'conflict-12'},
+          queryParameters: const {'version': 'a:1,b:2'},
+        ));
+        expect(detail, isA<ConflictDetailRoute>());
+        expect((detail as ConflictDetailRoute).versionKey, 'a:1,b:2');
+        expect(
+          detail.key,
+          const ValueKey('settings-v2-conflict-conflict-12@a:1,b:2'),
+        );
       },
     );
 
@@ -1324,7 +1344,7 @@ void main() {
                 idParamKey: 'categoryId',
                 list: (_) => const Text('marker:list'),
                 create: (_, _) => const Text('marker:create'),
-                detail: (_, id) => Text('marker:detail:$id'),
+                detail: (_, id, _) => Text('marker:detail:$id'),
               ),
             ),
           );

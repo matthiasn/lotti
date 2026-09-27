@@ -74,7 +74,9 @@ class ConflictNotificationObserver {
   /// Never throws: it runs as a stream listener, where an escaping error is an
   /// unhandled async error with nobody to catch it.
   Future<void> handleSnapshot(List<Conflict> conflicts) async {
-    final byId = {for (final conflict in conflicts) conflict.id: conflict};
+    final byId = {
+      for (final conflict in conflicts) _rowKey(conflict): conflict,
+    };
     final ids = byId.keys.toSet();
     final fresh = ids.difference(_known);
 
@@ -140,10 +142,16 @@ class ConflictNotificationObserver {
     ..clear()
     ..addAll(ids);
 
-  /// One conflict occurrence: the entry plus the moment this conflict row
-  /// was last written, UTC so two devices name it the same.
+  /// One conflict row: the entry and which of its concurrent versions the
+  /// row holds, since an entry can hold several (ADR 0092).
+  static String _rowKey(Conflict conflict) => conflict.versionKey.isEmpty
+      ? conflict.id
+      : '${conflict.id}/${conflict.versionKey}';
+
+  /// One conflict occurrence: the row plus the moment it was last written,
+  /// UTC so two devices name it the same.
   static String _occurrence(Conflict conflict) =>
-      '${conflict.id}@${conflict.updatedAt.toUtc().toIso8601String()}';
+      '${_rowKey(conflict)}@${conflict.updatedAt.toUtc().toIso8601String()}';
 
   /// Cancels the subscription and waits for the snapshot being applied, so
   /// nothing is written after the observer — and the services it writes

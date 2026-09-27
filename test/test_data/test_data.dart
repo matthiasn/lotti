@@ -526,6 +526,7 @@ final testWorkoutRunning = WorkoutEntry(
 
 final resolvedConflict = Conflict(
   id: 'id',
+  versionKey: '',
   createdAt: DateTime(2024, 3, 15, 14),
   updatedAt: DateTime(2024, 3, 15, 14),
   serialized: jsonEncode(testTextEntry.toJson()),
@@ -556,6 +557,7 @@ final testRatingEntry = JournalEntity.rating(
 
 final unresolvedConflict = Conflict(
   id: 'id',
+  versionKey: '',
   createdAt: DateTime(2024, 3, 15, 15),
   updatedAt: DateTime(2024, 3, 15, 15),
   serialized: jsonEncode(testTextEntry.toJson()),

@@ -5,8 +5,8 @@ description: How causal order is represented, why coveredVectorClocks is separat
 resource: ../../../lib/features/sync/vector_clock.dart
 tags: [sync, vector-clock, conflicts, causality]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-25T21:00:00Z }
-stale_after: 2026-12-25
+generated: { by: claude-code/opus-5.5, at: 2026-09-27T12:00:00Z }
+stale_after: 2026-12-27
 sources:
   - id: entity-receive
     resource: ../../../lib/features/agents/sync/agent_entity_receive.dart
@@ -14,8 +14,8 @@ sources:
     last_modified: 2026-09-25
   - id: vector-clock
     resource: ../../../lib/features/sync/vector_clock.dart
-    title: VectorClock compare, compareCanonically and merge
-    last_modified: 2026-09-25
+    title: VectorClock compare, compareCanonically, merge and canonicalKey
+    last_modified: 2026-09-27
   - id: vc-service
     resource: ../../../lib/services/vector_clock_service.dart
     title: VectorClockService — counter numbering starts at firstVectorClockCounter
@@ -62,8 +62,8 @@ sources:
     last_modified: 2026-09-24
   - id: journal-receive
     resource: ../../../lib/database/database_entity_ops.dart
-    title: updateJournalEntity / detectConflict — the journal receive
-    last_modified: 2026-09-24
+    title: updateJournalEntity / detectConflict — the journal receive, one conflict row per version
+    last_modified: 2026-09-27
   - id: message-dag
     resource: ../../../lib/features/agents/sync/agent_message_dag.dart
     title: AgentMessageDag — the head order read before a merge, and the tip an append chains off
@@ -115,19 +115,27 @@ sources:
   - id: journal-replication-spec
     resource: ../../../specs/tla/JournalReplication.tla
     title: TLA+ model of journal entry replication and conflicts
-    last_modified: 2026-09-25
+    last_modified: 2026-09-27
   - id: adr-0083
     resource: ../../../docs/adr/0083-model-checked-journal-replication.md
     title: ADR 0083 — model-checked journal replication
     last_modified: 2026-09-25
+  - id: adr-0092
+    resource: ../../../docs/adr/0092-one-conflict-row-per-version.md
+    title: ADR 0092 — one conflict row per concurrent version
+    last_modified: 2026-09-27
   - id: labels-repo
     resource: ../../../lib/features/labels/repository/labels_repository.dart
     title: LabelsRepository — label writes built on the stored entry
     last_modified: 2026-09-25
   - id: conflict-route
     resource: ../../../lib/features/sync/ui/pages/conflicts/conflict_detail_route.dart
-    title: ConflictDetailRoute — the local side, deletion included
-    last_modified: 2026-09-25
+    title: ConflictDetailRoute — the local side, deletion included, one open version at a time
+    last_modified: 2026-09-27
+  - id: conflict-observer
+    resource: ../../../lib/features/sync/state/conflict_notification_observer.dart
+    title: ConflictNotificationObserver — one alert per new conflict row
+    last_modified: 2026-09-27
 ---
 
 # What a vector clock is here
@@ -309,9 +317,9 @@ received, in one transaction: it reads the stored row **with its deletion**
 
 | Stored vs incoming | Outcome |
 |--------------------|---------|
-| incoming newer | applied; the entry's open conflict is marked resolved **only if the written version includes it** (its clock covers the conflict's) |
+| incoming newer | applied; each of the entry's open conflicts is marked resolved **only if the written version includes it** (its clock covers the conflict's) |
 | equal or older | refused — a late copy of the version a deletion replaced included |
-| concurrent | refused and stored as the entry's `Conflict` row, **unless the open conflict already holds that version or a newer one** |
+| concurrent | refused and stored as a `Conflict` row of the entry, **unless an open conflict already holds that version or a newer one**; it replaces the open conflicts it follows and stands beside the others |
 | concurrent, both deleted | merged, no conflict: the canonically greater deletion's fields under the join of both clocks, the same row on every device |
 | incoming without a clock | refused over a clocked row; applied over a row without one |
 | stored without a clock | incoming applied |
@@ -326,17 +334,24 @@ on the stored entry under a new clock, conditional on it still being stored,
 and build again on a version that synced in meanwhile; nothing forces a write
 over the stored row any more.
 
-The conflict table holds **one row per entry**. A second concurrent version —
-from a third device, or a save of this device refused while a conflict is
-open — replaces the first on this device. A peer's version replaced this way
-is raised again from its own device; a refused local save replaced this way is
-lost. That is a residual awaiting a product decision (ADR 0083).
+The conflict table holds **one row per concurrent version**, keyed by the
+entry's id and `version_key`, the version's clock as `VectorClock.canonicalKey`
+([ADR 0092](../../../docs/adr/0092-one-conflict-row-per-version.md)). A second
+concurrent version — a third device's, or this device's own save built on an
+entry the editor read before a peer's version landed — stands beside the first
+instead of replacing it. That matters most for the local save: it is refused
+and never sent, so its conflict row is the only copy there is. Until schema
+v50 the table was keyed by the entry alone, and a later concurrent version
+silently replaced such a save.
+
+Each row has this lifecycle; an entry holds any number of them at once.
 
 ```mermaid
 stateDiagram-v2
     [*] --> Detected: incoming clock concurrent with local
     Detected: Detected (status = unresolved)
-    Detected --> Detected: a concurrent version not older than the open one replaces it
+    Detected --> Superseded: a concurrent version that follows it is received
+    Superseded --> [*]: row replaced by that version's row
     Detected --> Resolved: a version that includes it is written
     Detected --> Alerted: ConflictNotificationObserver inbox row → OS banner
     Alerted --> Reviewing: open conflict detail
@@ -393,17 +408,27 @@ remote)`, so the written entity dominates both clocks;
 labels, a deleted one's included — and the write decision marks the row
 resolved, because the written clock covers the conflict's.
 
+With several versions open, the page decides one pair at a time: the stored
+row against one open version. The list shows each version as its own row and
+opens the page on it with a `version` query parameter
+(`conflictDetailPath`); without one, `pickConflictVersion` shows the oldest
+still open. The merge written for one pair does not cover another concurrent
+version, so that one stays open and is decided next, against the new row. In
+whatever order the user works through them, the last resolution covers them
+all.
+
 ## Proactive surfacing
 
 Conflicts do not have to be discovered by browsing settings.
 `ConflictNotificationObserver`, started from `get_it`, watches the
 unresolved-conflict stream and writes a single `syncConflict` inbox row when
-*new* conflicts appear during a session — the OS banner is the notification
+*new* conflict rows appear during a session — the OS banner is the notification
 scheduler's projection of that row, a tap opens this list, and the row stays
 in the bell after the banner is gone. Conflicts already present at startup
 are primed silently, and a burst — a device returning from a long offline
 stretch — is coalesced into one row; the next burst retracts the previous
-one. The row is [device-local](../notifications.md#two-rows-never-leave-the-device):
+one. A second concurrent version of an entry already in conflict is a new
+row, so it counts and alerts on its own. The row is [device-local](../notifications.md#two-rows-never-leave-the-device):
 a conflict is this device's disagreement with a peer, so the row must never
 reach that peer. `unresolvedConflictCountProvider` exposes the live count for
 badges.

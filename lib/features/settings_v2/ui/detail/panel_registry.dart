@@ -353,7 +353,7 @@ Widget _categoriesPanel(BuildContext context) => DetailIdDispatch(
   idParamKey: 'categoryId',
   list: (_) => const CategoriesListBody(),
   create: (_, _) => const CategoryDetailsPage(),
-  detail: (_, id) => CategoryDetailsPage(
+  detail: (_, id, _) => CategoryDetailsPage(
     key: ValueKey('settings-v2-category-$id'),
     categoryId: id,
   ),
@@ -364,7 +364,7 @@ Widget _labelsPanel(BuildContext context) => DetailIdDispatch(
   create: (_, route) => LabelDetailsPage(
     initialName: route?.queryParameters['name'],
   ),
-  detail: (_, id) => LabelDetailsPage(
+  detail: (_, id, _) => LabelDetailsPage(
     key: ValueKey('settings-v2-label-$id'),
     labelId: id,
   ),
@@ -373,7 +373,7 @@ Widget _habitsPanel(BuildContext context) => DetailIdDispatch(
   idParamKey: 'habitId',
   list: (_) => const HabitsBody(),
   create: (_, _) => const HabitEditorPage(returnPath: '/settings/habits'),
-  detail: (_, id) => HabitEditorPage(
+  detail: (_, id, _) => HabitEditorPage(
     key: ValueKey('settings-v2-habit-$id'),
     habitId: id,
     returnPath: '/settings/habits',
@@ -383,7 +383,7 @@ Widget _dashboardsPanel(BuildContext context) => DetailIdDispatch(
   idParamKey: 'dashboardId',
   list: (_) => const DashboardsBody(),
   create: (_, _) => CreateDashboardPage(),
-  detail: (_, id) => EditDashboardPage(
+  detail: (_, id, _) => EditDashboardPage(
     key: ValueKey('settings-v2-dashboard-$id'),
     dashboardId: id,
   ),
@@ -392,7 +392,7 @@ Widget _measurablesPanel(BuildContext context) => DetailIdDispatch(
   idParamKey: 'measurableId',
   list: (_) => const MeasurablesBody(),
   create: (_, _) => CreateMeasurablePage(),
-  detail: (_, id) => EditMeasurablePage(
+  detail: (_, id, _) => EditMeasurablePage(
     key: ValueKey('settings-v2-measurable-$id'),
     measurableId: id,
   ),
@@ -407,10 +407,18 @@ Widget _syncConflictsPanel(BuildContext context) => DetailIdDispatch(
   idParamKey: 'conflictId',
   list: (_) => const ConflictsBody(),
   create: (_, _) => const ConflictsBody(),
-  detail: (_, id) => ConflictDetailRoute(
-    key: ValueKey('settings-v2-conflict-$id'),
-    conflictId: id,
-  ),
+  detail: (_, id, route) {
+    final versionKey = route?.queryParameters['version'];
+    return ConflictDetailRoute(
+      key: ValueKey(
+        versionKey == null
+            ? 'settings-v2-conflict-$id'
+            : 'settings-v2-conflict-$id@$versionKey',
+      ),
+      conflictId: id,
+      versionKey: versionKey,
+    );
+  },
 );
 
 // --- Step 9 builders --------------------------------------------------------
@@ -485,7 +493,7 @@ Widget _agentsTemplatesPanel(BuildContext context) => DetailIdDispatch(
   idParamKey: 'templateId',
   list: (_) => const AgentSettingsBody(initialTab: AgentSettingsTab.templates),
   create: (_, _) => const AgentTemplateDetailPage(),
-  detail: (_, id) => AgentTemplateDetailPage(
+  detail: (_, id, _) => AgentTemplateDetailPage(
     key: ValueKey('settings-v2-agent-template-$id'),
     templateId: id,
   ),
@@ -501,7 +509,7 @@ Widget _agentsSoulsPanel(BuildContext context) => DetailIdDispatch(
   idParamKey: 'soulId',
   list: (_) => const AgentSettingsBody(initialTab: AgentSettingsTab.souls),
   create: (_, _) => const AgentSoulDetailPage(),
-  detail: (_, id) => AgentSoulDetailPage(
+  detail: (_, id, _) => AgentSoulDetailPage(
     key: ValueKey('settings-v2-agent-soul-$id'),
     soulId: id,
   ),
@@ -522,7 +530,7 @@ Widget _agentsInstancesPanel(BuildContext context) => DetailIdDispatch(
   // defensively rather than crashing if a stray URL ever arrives.
   create: (_, _) =>
       const AgentSettingsBody(initialTab: AgentSettingsTab.instances),
-  detail: (_, id) => AgentDetailPage(
+  detail: (_, id, _) => AgentDetailPage(
     key: ValueKey('settings-v2-agent-instance-$id'),
     agentId: id,
   ),

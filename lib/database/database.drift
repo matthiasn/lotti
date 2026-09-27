@@ -199,14 +199,18 @@ CREATE INDEX idx_journal_insights_time ON journal(
 WHERE type = 'JournalEntry'
   AND deleted = FALSE;
 
+-- One row per concurrent version of an entry: `id` is the entry's id and
+-- `version_key` names the version's vector clock (VectorClock.canonicalKey),
+-- so a second concurrent version never replaces the first (ADR 0092).
 CREATE TABLE conflicts (
   id TEXT NOT NULL,
+  version_key TEXT NOT NULL DEFAULT '',
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
   serialized TEXT NOT NULL,
   schema_version INTEGER NOT NULL DEFAULT 0,
   status INTEGER NOT NULL,
-  PRIMARY KEY (id)
+  PRIMARY KEY (id, version_key)
 );
 
 CREATE INDEX idx_conflicts_status_created_at
@@ -805,7 +809,7 @@ SELECT * FROM conflicts
 conflictsById:
 SELECT * FROM conflicts
   WHERE id = :id
-  ORDER BY created_at DESC;
+  ORDER BY created_at DESC, version_key ASC;
 
 activeMeasurableTypes:
 SELECT * FROM measurable_types

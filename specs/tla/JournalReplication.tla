@@ -18,9 +18,9 @@
 (*               local writes and the receive alike: the stored row, read  *)
 (*               in the write's transaction, against the incoming clock.   *)
 (*               Newer applies; equal or older is refused; concurrent is   *)
-(*               stored as the entry's single Conflict row                 *)
-(*               (insertOnConflictUpdate by id) and refused. An applied    *)
-(*               write marks the conflict resolved.                        *)
+(*               stored as a Conflict row of the entry, one per version    *)
+(*               (keyed by id and version_key), and refused. An applied    *)
+(*               write marks resolved the conflicts it includes.           *)
 (*   Edit        an edit or JournalRepository.deleteJournalEntity: the     *)
 (*               entry read with journalEntityById (which hides a deleted  *)
 (*               one), MetadataService.updateMetadata's clock -- the       *)
@@ -30,8 +30,9 @@
 (*   Snapshot    a screen holding the entry it read (the entry editor)     *)
 (*   LabelWrite  LabelsRepository.setLabels and suppressLabelOnTask        *)
 (*   Resolve     ConflictResolutionService.keepSide / combine and the      *)
-(*               delete-versus-edit choice: VectorClock.merge of both      *)
-(*               sides plus this device's next counter, through            *)
+(*               delete-versus-edit choice, for one open version against  *)
+(*               the row: VectorClock.merge of both sides plus this        *)
+(*               device's next counter, through                            *)
 (*               PersistenceLogic.updateJournalEntity                      *)
 (*   Deliver     SyncEventProcessor._persistJournalEntity: Decide in the   *)
 (*               receive's transaction with the embedded links, for an     *)
@@ -53,8 +54,8 @@
 (* not read whenever its clock covers it (Covered): that is the design,    *)
 (* not a hole, and the ghost says so too.                                  *)
 (*                                                                         *)
-(* The seven design switches are fixes of ADR 0083; setting one to         *)
-(* FALSE restores the old behaviour and its counterexample (README).       *)
+(* The eight design switches are fixes of ADR 0083 and ADR 0092; setting  *)
+(* one to FALSE restores the old behaviour and its counterexample (README).*)
 (***************************************************************************)
 EXTENDS Integers
 
@@ -74,12 +75,14 @@ CONSTANTS
     ResolveOnlyCovered,        \* an applied write settles only a conflict it covers
     KeepNewerConflict,         \* a stale copy does not replace a newer conflict
     LabelsRebuild,             \* a label write rebuilds on the stored row
-    RefuseNullClock            \* a clockless copy never replaces a clocked row
+    RefuseNullClock,           \* a clockless copy never replaces a clocked row
+    ConflictPerVersion         \* a concurrent version never displaces another
 
 ASSUME \A b \in {Stale, Resolves, Restores, Labels, NullBase, Lossy,
                  ReceiveSeesTombstones, BackfillServesTombstones,
                  ConflictSeesTombstone, ResolveOnlyCovered, KeepNewerConflict,
-                 LabelsRebuild, RefuseNullClock} : b \in BOOLEAN
+                 LabelsRebuild, RefuseNullClock, ConflictPerVersion}
+       : b \in BOOLEAN
 
 R == 1..N
 Zero == [r \in R |-> 0]
@@ -94,8 +97,6 @@ Join(a, b) == [r \in R |-> Max(a[r], b[r])]
 \* outside 1..N, by a build without clocks when NullBase.
 V0 == [id |-> 0, host |-> 0, vc |-> Zero, nc |-> NullBase, del |-> FALSE,
        hist |-> {0}]
-
-NoConf == [v |-> V0, open |-> FALSE]
 
 \* VectorClock.compare(existing, incoming) as detectConflict reads it. A
 \* missing clock on either side made the incoming version newer.
@@ -113,9 +114,8 @@ Covers(a, b) == Status(a, b) \in {"b_gt_a", "equal"}
 
 VARIABLES
     row,        \* per device: the journal row
-    conf,       \* per device: its conflict row, `open` while unresolved
-    displaced,  \* ghost, per device: open conflicts another version replaced
-    snap,      \* per device: an entry a writer read earlier
+    conf,       \* per device: the versions its unresolved conflict rows hold
+    snap,       \* per device: an entry a writer read earlier
     sent,       \* every version sent (the network delivers each, any times)
     delivered,  \* per device: versions received
     lost,       \* per device: versions whose delivery was dropped
@@ -124,13 +124,11 @@ VARIABLES
     hc,         \* per device: the last counter it issued
     nid         \* the next version id
 
-vars == <<row, conf, displaced, snap, sent, delivered, lost, gaps, seen, hc,
-          nid>>
+vars == <<row, conf, snap, sent, delivered, lost, gaps, seen, hc, nid>>
 
 Init ==
     /\ row = [r \in R |-> V0]
-    /\ conf = [r \in R |-> NoConf]
-    /\ displaced = [r \in R |-> {}]
+    /\ conf = [r \in R |-> {}]
     /\ snap = [r \in R |-> V0]
     \* The late copy of the clockless first version.
     /\ sent = IF NullBase THEN {V0} ELSE {}
@@ -142,7 +140,7 @@ Init ==
     /\ nid = 1
 
 (***************************************************************************)
-(* JournalDb.updateJournalEntity: the stored row `P`, the conflict row     *)
+(* JournalDb.updateJournalEntity: the stored row `P`, the open conflicts  *)
 (* `C`, the incoming version `w`.                                          *)
 (***************************************************************************)
 \* The stored row was read with `entityById`, which filters
@@ -150,17 +148,23 @@ Init ==
 \* it. Fixed: entityByIdIncludingDeleted.
 Visible(P) == ~P.del \/ ReceiveSeesTombstones
 
-\* detectConflict stores a concurrent version as the conflict row, one per
-\* entry id (insertOnConflictUpdate). Fixed: not over an open conflict that
-\* already holds the same version or a newer one.
+\* detectConflict stores a concurrent version as a conflict row. The table
+\* held one row per entry id (insertOnConflictUpdate), so the new version
+\* replaced every open one. Fixed (KeepNewerConflict): nothing is stored
+\* when an open conflict already holds the same version or a newer one.
+\* Fixed (ConflictPerVersion, ADR 0092): rows are keyed by entry and
+\* version, and the new version replaces only the open ones it follows.
 StoredOn(C, w) ==
-    IF KeepNewerConflict /\ C.open /\ Covers(w, C.v)
-    THEN C ELSE [v |-> w, open |-> TRUE]
+    IF KeepNewerConflict /\ \E c \in C : Covers(w, c)
+    THEN C
+    ELSE IF ConflictPerVersion
+    THEN {c \in C : ~Covers(c, w)} \cup {w}
+    ELSE {w}
 
-\* An applied write marks the entry's conflict resolved. Fixed: only one
-\* that includes the conflict's version.
+\* An applied write marks the entry's conflicts resolved. Fixed: only the
+\* ones it includes.
 SettledOn(C, w) ==
-    IF C.open /\ (~ResolveOnlyCovered \/ Covers(C.v, w)) THEN NoConf ELSE C
+    IF ResolveOnlyCovered THEN {c \in C : ~Covers(c, w)} ELSE {}
 
 \* VectorClock.compareCanonically(a, b) > 0.
 CanonGt(a, b) ==
@@ -189,15 +193,8 @@ DecideOn(P, C, w, override) ==
 
 Decide(r, w, override) == DecideOn(row[r], conf[r], w, override)
 
-\* Device r's conflict row becomes `c`. The table holds one version per
-\* entry, so a concurrent version replaces an open conflict it does not
-\* follow; the ghost `displaced` keeps what it replaced.
-SetConf(r, c) ==
-    /\ conf' = [conf EXCEPT ![r] = c]
-    /\ displaced' =
-        IF conf[r].open /\ c.open /\ ~(conf[r].v.hist \subseteq c.v.hist)
-        THEN [displaced EXCEPT ![r] = @ \cup {conf[r].v}]
-        ELSE displaced
+\* Device r's open conflicts become `c`.
+SetConf(r, c) == conf' = [conf EXCEPT ![r] = c]
 
 \* The history of a version written on device r with clock `vc`: whatever it
 \* was built on, and every version the device knows whose clock `vc` covers.
@@ -251,7 +248,7 @@ Snapshot(r) ==
     /\ Stale
     /\ snap[r] # row[r]
     /\ snap' = [snap EXCEPT ![r] = row[r]]
-    /\ UNCHANGED <<row, conf, displaced, sent, delivered, lost, gaps, seen, hc, nid>>
+    /\ UNCHANGED <<row, conf, sent, delivered, lost, gaps, seen, hc, nid>>
 
 \* LabelsRepository.setLabels / suppressLabelOnTask, on an entry read
 \* earlier or just now. setLabels' first attempt is an ordinary write;
@@ -294,18 +291,17 @@ LabelWrite(r) ==
               ELSE LocalCommit(r, DecideOn(P, d.conf, w, TRUE), {w}, 1, 1)
 
 \* ConflictResolutionService: keep this device, keep the other, combine, or,
-\* between a deletion and an edit, keep the edit or confirm the deletion.
-\* The written version carries VectorClock.merge of both sides, and
+\* between a deletion and an edit, keep the edit or confirm the deletion --
+\* for one open version against the row, the one the page shows. The
+\* written version carries VectorClock.merge of both sides, and
 \* updateMetadata adds this device's next counter. The conflict page reads
 \* the local side with journalEntityById, which hid a deleted row.
 Resolve(r) ==
     /\ Resolves
     /\ nid <= MaxWrites
-    /\ conf[r].open
     /\ ~row[r].del \/ ConflictSeesTombstone
-    /\ \E del \in {row[r].del, conf[r].v.del} :
+    /\ \E X \in conf[r] : \E del \in {row[r].del, X.del} :
         LET P == row[r]
-            X == conf[r].v
             vc == [Join(P.vc, X.vc) EXCEPT ![r] = hc[r] + 1]
             m == [id |-> nid, host |-> r, vc |-> vc, nc |-> FALSE,
                   del |-> del,
@@ -331,7 +327,7 @@ Lose(r) ==
         /\ m.host \in R \ {r}
         /\ m \notin delivered[r] \cup lost[r] \cup gaps[r]
         /\ lost' = [lost EXCEPT ![r] = @ \cup {m}]
-    /\ UNCHANGED <<row, conf, displaced, snap, sent, delivered, gaps, seen, hc, nid>>
+    /\ UNCHANGED <<row, conf, snap, sent, delivered, gaps, seen, hc, nid>>
 
 \* BackfillResponseHandler: the writer answers with its current row for the
 \* id if that still carries the requested counter, `unresolvable` if not, and
@@ -349,7 +345,7 @@ Backfill(r) ==
                    /\ SetConf(r, d.conf)
                    /\ delivered' = [delivered EXCEPT ![r]= @ \cup {a}]
                    /\ seen' = [seen EXCEPT ![r] = @ \cup {a}]
-              ELSE UNCHANGED <<row, conf, displaced, delivered, seen>>
+              ELSE UNCHANGED <<row, conf, delivered, seen>>
     /\ UNCHANGED <<snap, sent, hc, nid>>
 
 Next ==
@@ -376,13 +372,12 @@ Quiescent ==
 \* Once everything is delivered, the devices hold the same entry -- or one of
 \* them shows the user a conflict to resolve. Divergence is never silent.
 \* (Devices that all hold a deletion agree on the entry, whichever deletion
-\* each holds: two deletions are merged without the user, and one displaced
-\* from the conflict table on a third device may never meet the other.)
+\* each holds: two deletions are merged without the user.)
 Converged ==
     Quiescent =>
         \/ \A a, b \in R : Content(row[a]) = Content(row[b])
         \/ \A a \in R : row[a].del
-        \/ \E r \in R : conf[r].open
+        \/ \E r \in R : conf[r] # {}
 
 \* `m` causally replaced `v`. (Two merged deletions keep the winner's id, so
 \* versions are compared by their histories.)
@@ -397,29 +392,23 @@ NoLostSuccessor ==
 Keeps(v, m) == m.hist \subseteq v.hist \/ (m.del /\ v.del)
 
 \* Every version a device has received or written is kept by its row or by
-\* its open conflict: nothing is dropped on a device without the user
-\* choosing so -- except a conflict another concurrent version displaced
-\* from the one-row-per-entry conflict table (a residual).
+\* one of its open conflicts: nothing is dropped on a device without the
+\* user choosing so -- a local save refused as concurrent included, which
+\* was never sent and exists nowhere else.
 NothingDropped ==
     \A r \in R : \A m \in seen[r] :
         \/ Keeps(row[r], m)
-        \/ conf[r].open /\ Keeps(conf[r].v, m)
-        \/ \E x \in displaced[r] : Keeps(x, m)
-
-\* Not checked: the residual itself.
-NoDisplacement == \A r \in R : displaced[r] = {}
+        \/ \E c \in conf[r] : Keeps(c, m)
 
 \* An open conflict never holds a version its row, or a version the device
 \* has already seen, replaced: a stale copy neither re-opens a resolved
-\* conflict nor regresses an open one -- unless what it replaced was itself
-\* displaced from the conflict table (the same residual).
+\* conflict nor regresses an open one.
 ConflictNotStale ==
-    \A r \in R : conf[r].open =>
-        /\ ~(conf[r].v.hist \subseteq row[r].hist)
-        /\ \A m \in seen[r] :
-            Replaced(conf[r].v, m) => \E x \in displaced[r] : Keeps(x, m)
+    \A r \in R : \A c \in conf[r] :
+        /\ ~(c.hist \subseteq row[r].hist)
+        /\ \A m \in seen[r] : ~Replaced(c, m)
 
 \* An open conflict can be opened and resolved.
 ConflictResolvable ==
-    \A r \in R : conf[r].open => (~row[r].del \/ ConflictSeesTombstone)
+    \A r \in R : conf[r] # {} => (~row[r].del \/ ConflictSeesTombstone)
 =============================================================================

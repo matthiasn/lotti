@@ -204,6 +204,7 @@ Conflict _conflictFor({
   required DateTime createdAt,
 }) => Conflict(
   id: id,
+  versionKey: '',
   createdAt: createdAt,
   updatedAt: createdAt,
   serialized: jsonEncode(remote.toJson()),

@@ -1519,27 +1519,29 @@ lossy configuration a delivery can be lost and recovered by backfill from the
 writer's stored row. The write decision for local writes and the receive alike
 is `JournalDb.updateJournalEntity` with `detectConflict`
 (`database_entity_ops.dart`): newer applies, equal or older is refused, and a
-concurrent version is stored as the entry's single `Conflict` row for the user
-to decide. Journal entries never merge on their own, so the question is not
+concurrent version is stored as a `Conflict` row of the entry, one per
+version, for the user to decide. Journal entries never merge on their own, so the question is not
 only convergence but whether a divergence is ever silent. What a device sends
 is its stored row: the JSON sidecar that once carried the payload, and the two
 configurations that modelled it, were removed with it
 ([ADR 0087](../../docs/adr/0087-journal-row-is-the-only-copy.md)). The decision
-is [ADR 0083](../../docs/adr/0083-model-checked-journal-replication.md).
+is [ADR 0083](../../docs/adr/0083-model-checked-journal-replication.md), and the
+conflict table's key is
+[ADR 0092](../../docs/adr/0092-one-conflict-row-per-version.md).
 
 | Property | Kind | Says |
 |----------|------|------|
 | `Converged` | invariant | once every version has reached every device, directly or by backfill, the devices hold the same entry — or all hold a deletion, or one shows the user a conflict: divergence is never silent |
 | `NoLostSuccessor` | invariant | a row is never a version that a version the device received or wrote causally replaced: a deletion is not undone by a late copy |
-| `NothingDropped` | invariant | every version a device received or wrote is kept by its row or by its open conflict — nothing is dropped without the user choosing so (except a conflict displaced from the one-row table, below) |
-| `ConflictNotStale` | invariant | an open conflict never holds a version its row, or a version the device has seen, replaced: a stale copy neither re-opens a resolved conflict nor regresses an open one |
+| `NothingDropped` | invariant | every version a device received or wrote is kept by its row or by one of its open conflicts — nothing is dropped without the user choosing so, a local save refused as concurrent included |
+| `ConflictNotStale` | invariant | no open conflict holds a version its row, or a version the device has seen, replaced: a stale copy neither re-opens a resolved conflict nor regresses an open one |
 | `ConflictResolvable` | invariant | an open conflict can be opened and resolved, a deletion made here included |
 
 | Configuration | Devices | Writes | Adds | Checks | Distinct states |
 |---------------|---------|--------|------|--------|-----------------|
-| `JournalReplication` | 3 | 3 | stale reads, restores, resolutions | all five | 768,439 |
+| `JournalReplication` | 3 | 3 | stale reads, restores, resolutions | all five | 700,231 |
 | `JournalReplicationLossy` | 2 | 3 | any delivery lost and recovered by backfill | the same | 98,283 |
-| `JournalReplicationLabels` | 2 | 4 | `setLabels` and `suppressLabelOnTask` | the same | 168,713 |
+| `JournalReplicationLabels` | 2 | 4 | `setLabels` and `suppressLabelOnTask` | the same | 167,673 |
 | `JournalReplicationLegacy` | 2 | 3 | an entry created before clocks, a late copy of it in flight | the same | 35,444 |
 
 The properties judge the code's decisions, which read clocks, against a ghost
@@ -1558,33 +1560,27 @@ The design switches are the fixes, and each has a counterexample when set to
 | `ReceiveSeesTombstones` | the write decision read the stored row with `entityById`, which filters `deleted = false`: a deletion read as no row, and anything replaced it | `NoLostSuccessor`, six steps: A edits the entry and deletes it; B deletes it too and receives A's deletion; A's edit arrives late and brings the entry back on B, while A keeps it deleted. `NothingDropped`, five steps: A deletes, B edits concurrently, and B's edit replaces A's deletion on A without a conflict |
 | `BackfillServesTombstones` | the backfill responder read with `journalEntityById` and answered `deleted` for a deleted entry | `Converged`, four steps: A deletes, B's delivery is lost, backfill answers `deleted`, and B keeps the entry |
 | `ConflictSeesTombstone` | the conflict page read the local side with `journalEntityById` | `ConflictResolvable`, four steps: B edits, A deletes concurrently and receives B's edit — a delete-versus-edit conflict the page could not open ("entry not found") |
-| `ResolveOnlyCovered` | any applied write marked the entry's conflict resolved | `NothingDropped`, five steps: B's concurrent edit is A's open conflict; A edits again, and the conflict is marked resolved though A's edit never included B's. B's edit is gone from A without the user choosing; `Converged` still holds, because B raises the conflict again when A's edit arrives |
-| `KeepNewerConflict` | a concurrent version always replaced the conflict row | `ConflictNotStale`, seven steps: A edits twice; B receives the second as a conflict, then the first, late, which replaces it |
+| `ResolveOnlyCovered` | any applied write marked the entry's conflicts resolved | `NothingDropped`, four steps: B's concurrent edit is A's open conflict; A edits again, and the conflict is marked resolved though A's edit never included B's. B's edit is gone from A without the user choosing; `Converged` still holds, because B raises the conflict again when A's edit arrives |
+| `KeepNewerConflict` | a concurrent version was stored even when an open conflict already held a newer one | `ConflictNotStale`, five steps: A edits twice and B edits; B receives A's second edit as a conflict, then the first, late, which is stored as well |
+| `ConflictPerVersion` | the conflict table was keyed by the entry alone, so a concurrent version replaced every open one ([ADR 0092](../../docs/adr/0092-one-conflict-row-per-version.md)) | `NothingDropped`, five steps: A and B edit, A receives B's edit as a conflict, C edits, and C's edit replaces B's on A. The same length for this device's own save: A and B edit; C receives A's edit, then saves an edit built on the version it read before, which is refused and parked as the conflict; B's edit replaces it, and C's save, never sent, exists nowhere |
 | `LabelsRebuild` | `setLabels` forced a refused write with `overrideComparison`; `suppressLabelOnTask` wrote under the stored row's own clock, and then forced it | `NothingDropped`, four steps: A receives B's edit while its label editor holds the version before; the label write is refused as concurrent, then forced over B's edit. `Converged`, three steps: A suppresses a label, B refuses the write as equal to what it holds, and the devices differ for good |
 | `RefuseNullClock` | a version without a clock was newer than any row | `NoLostSuccessor`, three steps: A deletes an entry created before clocks, and a late copy of that clockless version replaces the deletion |
 
 What the model leaves out, deliberately or as a residual:
 
-- **One conflict row per entry.** `detectConflict` stores the incoming
-  version under the entry's id. A second concurrent version — from a third
-  device, or this device's own save refused while a conflict is open —
-  displaces the first on this device (the ghost `displaced`; `NothingDropped`
-  and `ConflictNotStale` are claimed except for it). A displaced version from
-  another device stays that device's row, and the next version it receives
-  from here raises the conflict there again. A displaced save of this device's
-  own was never sent and is gone. The options: a conflict table keyed by entry
-  and version, with the page listing every open version; folding a second
-  version into the open conflict as a three-way choice; or refusing a local
-  save while its entry has an open conflict. Each changes what the user sees,
-  so it is a product decision.
+- **A refused local save waits for the user.** A save built on an entry the
+  editor read before another version landed is concurrent with the row, so
+  it is refused, kept as a conflict, and not sent until the user resolves it.
+  Rebasing the editor's change onto the stored row instead is a larger change
+  of its own.
 - **Concurrent edits never merge on their own.** Every concurrent pair is a
   conflict for the user, however disjoint the fields. Auto-merging disjoint
   fields, or last-writer-wins as agent entities do, is a product decision.
 - **Two concurrent deletions merge without the user**: each device keeps the
-  canonically greater one's fields under the join of both clocks. A deletion
-  displaced from the conflict table on a third device may never meet the
-  other, and the devices then hold different deletions — all deleted, which
-  `Converged` accepts.
+  canonically greater one's fields under the join of both clocks. `Converged`
+  accepts devices that all hold a deletion, whichever each holds; at these
+  bounds it holds without that allowance too, with the one-row table or
+  without it.
 - **A creation under a reused id replaces a deleted row** (`overwrite:
   false`), as before, under a clock that does not cover the deletion. Peers
   then see an edit concurrent with the deletion, and the user decides. Whether

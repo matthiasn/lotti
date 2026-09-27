@@ -343,6 +343,68 @@ CREATE TABLE config_flags_v48 (
     if (from < 49) {
       await m.createTable(configFlagVersions);
     }
+    if (from < 50) {
+      await _keyConflictsByVersion();
+    }
+  }
+
+  /// v50: one conflict row per concurrent version of an entry (ADR 0092).
+  /// The table was keyed by the entry id alone, so a second concurrent
+  /// version replaced the first. SQLite cannot change a primary key in
+  /// place, so the table is rebuilt in the shape database.drift declares,
+  /// and each existing row's `version_key` is derived from the clock of the
+  /// version it holds. A row whose payload cannot be read keeps `''`: one
+  /// row per entry before this step, so the key stays unique.
+  Future<void> _keyConflictsByVersion() async {
+    DevLogger.log(
+      name: 'JournalDb',
+      message: 'Rebuilding conflicts with one row per version',
+    );
+    await customStatement('''
+CREATE TABLE conflicts_v50 (
+  id TEXT NOT NULL,
+  version_key TEXT NOT NULL DEFAULT '',
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  serialized TEXT NOT NULL,
+  schema_version INTEGER NOT NULL DEFAULT 0,
+  status INTEGER NOT NULL,
+  PRIMARY KEY (id, version_key)
+)''');
+    await customStatement(
+      'INSERT INTO conflicts_v50 '
+      '(id, version_key, created_at, updated_at, serialized, schema_version, '
+      'status) '
+      "SELECT id, '', created_at, updated_at, serialized, schema_version, "
+      'status FROM conflicts',
+    );
+    await customStatement('DROP TABLE conflicts');
+    await customStatement('ALTER TABLE conflicts_v50 RENAME TO conflicts');
+
+    final rows = await customSelect(
+      'SELECT id, serialized FROM conflicts',
+    ).get();
+    for (final row in rows) {
+      final key = _versionKeyOf(row.read<String>('serialized'));
+      if (key.isEmpty) continue;
+      await customStatement(
+        'UPDATE conflicts SET version_key = ? WHERE id = ?',
+        [key, row.read<String>('id')],
+      );
+    }
+  }
+
+  /// The `version_key` of the version [serialized] holds, or `''` when it
+  /// has no clock or cannot be read.
+  static String _versionKeyOf(String serialized) {
+    try {
+      final json = jsonDecode(serialized) as Map<String, dynamic>;
+      final meta = json['meta'] as Map<String, dynamic>?;
+      final clock = meta?['vectorClock'] as Map<String, dynamic>?;
+      return clock == null ? '' : VectorClock.fromJson(clock).canonicalKey;
+    } catch (_) {
+      return '';
+    }
   }
 }
 

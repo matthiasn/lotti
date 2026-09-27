@@ -259,6 +259,35 @@ void main() {
       );
     });
 
+    group('canonicalKey', () {
+      test('names each node and counter in sorted node order', () {
+        expect(
+          const VectorClock({'hB': 2, 'hA': 0, 'hC': 11}).canonicalKey,
+          'hA:0,hB:2,hC:11',
+        );
+        expect(const VectorClock({}).canonicalKey, isEmpty);
+      });
+
+      glados.Glados(
+        glados.any.clockPair,
+        glados.ExploreConfig(numRuns: 200),
+      ).test('is equal exactly for equal clocks, whatever the map order', (
+        scenario,
+      ) {
+        final a = scenario.a.toClock();
+        final b = scenario.b.toClock();
+        final reordered = VectorClock(
+          Map.fromEntries(a.vclock.entries.toList().reversed),
+        );
+        expect(reordered.canonicalKey, a.canonicalKey);
+        expect(
+          a.canonicalKey == b.canonicalKey,
+          a == b,
+          reason: 'a=${a.vclock} b=${b.vclock}',
+        );
+      }, tags: 'glados');
+    });
+
     group('compareCanonically', () {
       glados.Glados(
         glados.any.clockPair,

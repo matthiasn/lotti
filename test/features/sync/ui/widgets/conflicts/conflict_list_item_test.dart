@@ -61,6 +61,7 @@ Conflict _buildConflict({
       );
   return Conflict(
     id: id,
+    versionKey: '',
     createdAt: createdAt,
     updatedAt: createdAt,
     serialized: jsonEncode(resolvedEntity.toJson()),
