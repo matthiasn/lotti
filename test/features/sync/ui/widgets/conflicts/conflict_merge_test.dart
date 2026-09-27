@@ -75,6 +75,46 @@ void main() {
     });
   });
 
+  group('a task keeps every applied change either side records (ADR 0098)', () {
+    final local = taskOf(
+      title: 'local',
+      vectorClock: localClock,
+      appliedChangeEffects: {'set-1:0'},
+    );
+    final remote = taskOf(
+      title: 'remote',
+      vectorClock: remoteClock,
+      appliedChangeEffects: {'set-2:0'},
+    );
+
+    for (final side in ConflictSide.values) {
+      test('keeping the ${side.name} side', () {
+        final result =
+            resolveToSide(local: local, remote: remote, side: side) as Task;
+
+        expect(
+          result.data.title,
+          side == ConflictSide.local ? 'local' : 'remote',
+        );
+        expect(result.data.appliedChangeEffects, {'set-1:0', 'set-2:0'});
+      });
+    }
+
+    test('combining the two', () {
+      final result =
+          buildMergedEntity(
+                local: local,
+                remote: remote,
+                baseSide: ConflictSide.local,
+                choices: const {EntryField.title: ConflictSide.remote},
+              )
+              as Task;
+
+      expect(result.data.title, 'remote');
+      expect(result.data.appliedChangeEffects, {'set-1:0', 'set-2:0'});
+    });
+  });
+
   group('buildMergedEntity', () {
     test('overrides the body from the non-base side', () {
       final result = buildMergedEntity(

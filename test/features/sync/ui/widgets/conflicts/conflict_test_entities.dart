@@ -63,6 +63,7 @@ JournalEntity taskOf({
   String text = 'task notes',
   Duration? estimate,
   VectorClock? vectorClock,
+  Set<String>? appliedChangeEffects,
 }) => Task(
   meta: metaOf(id: 'task-1', starred: true, vectorClock: vectorClock),
   data: TaskData(
@@ -76,6 +77,7 @@ JournalEntity taskOf({
       utcOffset: 0,
     ),
     estimate: estimate,
+    appliedChangeEffects: appliedChangeEffects,
   ),
   entryText: EntryText(plainText: text),
 );

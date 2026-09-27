@@ -394,8 +394,9 @@ user decision runs in its own attempt slot, so a confirm of an item reopened
 while an earlier dispatch still runs is a second, concurrent operation. The
 ghost `applied` counts, per device, how often each change was dispatched and
 took effect. The decisions are
-[ADR 0067](../../docs/adr/0067-model-checked-change-set-lifecycle.md) and
-[ADR 0075](../../docs/adr/0075-idempotent-change-set-tools.md).
+[ADR 0067](../../docs/adr/0067-model-checked-change-set-lifecycle.md),
+[ADR 0075](../../docs/adr/0075-idempotent-change-set-tools.md) and
+[ADR 0098](../../docs/adr/0098-field-changes-record-their-effect.md).
 
 The switches are the fixes, and each is a mutation point. From ADR 0067:
 `AtomicWrites` (every local write of a set re-reads it in its transaction and
@@ -412,12 +413,15 @@ exists), `CopyCarriesKey` (a consolidated copy carries its original's key) and
 proposal was made against) and `ReuseLive` (where a created entity and its
 link to a parent sync apart — a checklist and the task update listing it — a
 device holding the entity without its link writes nothing, since the
-creator's link is on its way; switched on by `SeparateAttach`).
-`CrashBeforeLink` is not a fix: it lets the creator stop between the entity
+creator's link is on its way; switched on by `SeparateAttach`). From
+ADR 0098: `EffectMark` (a set-style tool records its effect key on the task
+in the write that sets the field, and applies only while the task does not
+record it — so a base the user restored after the change landed is left
+alone). `CrashBeforeLink` is not a fix: it lets the creator stop between the entity
 and its link. `RaceFree` restricts the environment: no item is
 decided on two devices before they have synced. `UserRestoresBase` lets the
-user's edit restore the base value, the ABA a value compare-and-set cannot
-see.
+user's edit restore the base value, the ABA a value compare-and-set alone
+cannot see.
 
 | Property | Kind | Says |
 |----------|------|------|
@@ -428,7 +432,7 @@ see.
 | `Converged` | invariant | once everything is delivered, the replicas of the set agree |
 | `MigrationAfterTarget` | invariant | a checklist migration never runs before its follow-up task exists |
 | `NoDuplicateEffects` | invariant | every change creates at most one entity id, across all replicas and the messages in flight |
-| `NoClobber` | invariant | no dispatch overwrites a value the user wrote into the field |
+| `NoClobber` | invariant | no dispatch overwrites a value the user wrote into the field — one the user changed, or the base the user wrote back on a version that had seen the change applied (its clock covers a dispatch's write, the ghost `appVcs`) |
 | `EffectsConverge` | invariant | once everything, entities and fields included, is delivered, every replica holds the same entities, the field agrees unless a `Conflict` row holds a concurrent version, and a change's entity exists exactly when the change was applied somewhere |
 | `SucceededClaimStands` | invariant | an item whose latest claim's dispatch succeeded reads `confirmed` |
 | `EffectsLinked` | invariant | with `SeparateAttach`: once everything is delivered, every created entity is linked to its parent on every device |
@@ -441,6 +445,7 @@ see.
 | `ChangeSetLifecycleSyncSplit` | 2 | follow-up and migration, `RaceFree` | all but `NoClobber`, `SucceededClaimStands` | 79,082 |
 | `ChangeSetLifecycleRace` | 2 | one create-style item decided on both devices, retryable failures | `Converged`, `NoDuplicateEffects`, `EffectsConverge` | 491,402 |
 | `ChangeSetLifecycleRaceSet` | 2 | one set-style item decided on both devices, one user edit per device, retryable failures | `Converged`, `NoClobber`, `EffectsConverge` | 852,966 |
+| `ChangeSetLifecycleRaceRestore` | 2 | as `RaceSet`, the user's edit restoring the base (`UserRestoresBase`) | `Converged`, `NoClobber`, `EffectsConverge` | 1,094,284 |
 | `ChangeSetLifecycleReopen` | 1 | one item, two confirms, one reopen, both failure kinds | `SucceededClaimStands`, `NoDuplicateEffects` | 90 |
 | `ChangeSetLifecycleConsolidateSync` | 2 | an item consolidated on one device while confirmed on the other, `RaceFree` | `NoDuplicateEffects`, `EffectsConverge` | 147,557 |
 | `ChangeSetLifecycleRaceLink` | 2 | one create-style item decided on both devices, whose entity and link to its parent sync apart | `Converged`, `NoDuplicateEffects`, `EffectsConverge`, `EffectsLinked` | 241 |
@@ -463,6 +468,7 @@ configuration with a short trace (kept outside this directory, as for
 | `CopyCarriesKey = FALSE` | `ChangeSetLifecycleConsolidateSync` | `NoDuplicateEffects` (7 states): one device confirms and applies the original, the other consolidates it into a copy of its own key; the copy is confirmed and creates a second entity |
 | `ReuseLive = FALSE` | `ChangeSetLifecycleRaceLink` | `NoDuplicateEffects` (6 states): one device confirms, creates the checklist and lists it; the other receives the checklist but not the task update listing it, confirms, and creates a second checklist |
 | `CasGuard = FALSE` | `ChangeSetLifecycleRaceSet` | `NoClobber` (4 states): the change is confirmed, the user edits the field, and the dispatch overwrites the edit |
+| `EffectMark = FALSE` | `ChangeSetLifecycleRaceRestore` | `NoClobber` (7 states): device 1 confirms and applies the change, and the user restores the base there; device 2 receives the restored field before the change set, confirms the item it still shows pending, and applies the change over the restore |
 
 What stays open — the residuals, each confirmed by TLC:
 
@@ -478,10 +484,6 @@ What stays open — the residuals, each confirmed by TLC:
     merge would need identical content and a journal rule that merges
     identical concurrent versions — a product decision. Two concurrent
     applications of a field change land as a conflict the same way.
-  - **The field's ABA.** A user who restores the field to the proposal's base
-    between the two applications gets the proposed value again
-    (`ChangeSetLifecycleRaceSet` with `UserRestoresBase = TRUE` violates
-    `NoClobber` in 4 states).
   - **The status records the dispatch, not the effect.** When one device's
     dispatch fails and reverts while the other's applied, the merged item
     reads pending though its change landed; confirming it again applies

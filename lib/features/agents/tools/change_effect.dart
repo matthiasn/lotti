@@ -1,3 +1,5 @@
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
@@ -14,6 +16,10 @@ import 'package:lotti/logic/services/metadata_service.dart';
 ///   (`ChangeItem.base`). A tool that sets a field applies only while the
 ///   task still holds them ([changedField]), so a late second application
 ///   cannot overwrite an edit made after the first.
+/// - A tool that sets a field also records [key] on the task in the same
+///   write ([recordOn]), and applies only while the task does not record it
+///   ([recordedOn]): a value restored to the base after the first
+///   application passes the value compare, but not this one (ADR 0098).
 ///
 /// The dispatch carries both as reserved arguments. Only
 /// `ChangeSetConfirmationService` writes them ([addTo]), replacing whatever a
@@ -82,6 +88,23 @@ class ChangeEffect {
     final found = await db.journalEntityMapForIdsIncludingDeleted([id]);
     return found.containsKey(id);
   }
+
+  /// Whether [task] records this effect as applied
+  /// ([TaskData.appliedChangeEffects]): a field it set was set once, here or
+  /// on a device the task synced from, and applying it again would overwrite
+  /// whatever the field holds since — the base value the user restored
+  /// included, which the value compare of [changedField] cannot tell from an
+  /// untouched field (ADR 0098).
+  bool recordedOn(Task task) =>
+      task.data.appliedChangeEffects?.contains(key) ?? false;
+
+  /// [task] recording this effect as applied, for the tool to write in the
+  /// same version as the field it sets, so the record syncs with the value.
+  Task recordOn(Task task) => task.copyWith(
+    data: task.data.copyWith(
+      appliedChangeEffects: {...?task.data.appliedChangeEffects, key},
+    ),
+  );
 
   /// The first field of [base] whose value in [current] differs from the one
   /// the proposal was made against, or `null` when every field still holds

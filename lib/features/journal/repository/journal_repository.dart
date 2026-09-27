@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_types.dart';
@@ -239,7 +240,9 @@ class JournalRepository {
   /// is taken from the stored row and the write applies only while that row
   /// is still the one read ([writeOnStored]), so a checklist listed in
   /// between is never dropped (`specs/tla/ChecklistMembership.tla`,
-  /// agTaskEdit). Returns false on a logged failure.
+  /// agTaskEdit). Its record of applied agent changes is kept the same way,
+  /// joined with any `updated` adds ([TaskDataOnStored.onStored], ADR 0098).
+  /// Returns false on a logged failure.
   Future<bool> updateJournalEntity(JournalEntity updated) async {
     try {
       final persistenceLogic = getIt<PersistenceLogic>();
@@ -251,11 +254,7 @@ class JournalRepository {
           persistenceLogic: persistenceLogic,
           id: updated.id,
           build: (stored) async => stored is Task
-              ? updated.copyWith(
-                  data: updated.data.copyWith(
-                    checklistIds: stored.data.checklistIds,
-                  ),
-                )
+              ? updated.copyWith(data: updated.data.onStored(stored.data))
               : null,
           write: (entity, precondition) => persistenceLogic.updateJournalEntity(
             entity,

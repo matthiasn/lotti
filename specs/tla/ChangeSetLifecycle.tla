@@ -115,8 +115,17 @@
 (* the entity and its link — createChecklist's two writes — the residual   *)
 (* EffectsLinked then shows.                                               *)
 (*                                                                         *)
+(* ADR 0098:                                                               *)
+(*                                                                         *)
+(*   EffectMark         a set-style tool records its effect key on the     *)
+(*                      task in the write that sets the field              *)
+(*                      (TaskData.appliedChangeEffects), and applies only  *)
+(*                      while the task does not record it; without it, a   *)
+(*                      late second application over a field the user      *)
+(*                      restored to the base passes the compare-and-set    *)
+(*                                                                         *)
 (* UserRestoresBase is not a fix: it lets the user's edit restore the base *)
-(* value, the ABA a value compare-and-set cannot see.                      *)
+(* value, the ABA a value compare-and-set alone cannot see.                *)
 (*                                                                         *)
 (* `applied` is a ghost: how often each change was dispatched and took     *)
 (* effect, per device. A consolidated copy and its original propose the    *)
@@ -140,6 +149,7 @@ CONSTANTS
     MaxReopens,    \* reopens per device
     MaxUserEdits,  \* user edits of the set-style field per device, 0 or 1
     UserRestoresBase,
+    EffectMark,
     RaceFree,      \* no item is decided on two devices before they synced
     AtomicWrites, AtomicReceive, ItemMerge, PendingCopiesOnly,
     RevisionGuard, ClaimResolvesTarget, DerivedIds, CopyCarriesKey, CasGuard,
@@ -151,7 +161,7 @@ ASSUME
     /\ Faults \subseteq {"dispatchFails", "nonRetryable"}
     /\ SetItems \subseteq Items
     /\ MaxUserEdits \in {0, 1}
-    /\ {UserRestoresBase, RaceFree, AtomicWrites, AtomicReceive, ItemMerge,
+    /\ {UserRestoresBase, EffectMark, RaceFree, AtomicWrites, AtomicReceive, ItemMerge,
         PendingCopiesOnly, RevisionGuard, ClaimResolvesTarget, DerivedIds,
         CopyCarriesKey, CasGuard, SeparateAttach, ReuseLive,
         CrashBeforeLink} \subseteq BOOLEAN
@@ -218,10 +228,11 @@ VARIABLES
     latest,    \* ghost: latest[d][i], the slot of the standing claim, or 0
     lastOk,    \* ghost: the standing claim's dispatch succeeded
     conflict,  \* ghost: the field landed as a Conflict row somewhere
-    clobbered  \* ghost: a dispatch overwrote a value the user wrote
+    clobbered, \* ghost: a dispatch overwrote a value the user wrote
+    appVcs     \* ghost: the clocks of the versions a dispatch wrote
 
 entVars == <<ents, emsgs, atts, amsgs>>
-effVars == <<entVars, reg, rhc, rmsgs, userEdits, conflict, clobbered>>
+effVars == <<entVars, reg, rhc, rmsgs, userEdits, conflict, clobbered, appVcs>>
 claimVars == <<obs, latest, lastOk, reopens>>
 
 vars == <<rows, hc, msgs, pc, snap, recv, mem, attempts, agentOps,
@@ -245,7 +256,8 @@ Init ==
     /\ emsgs = {}
     /\ atts = [d \in Devices |-> {}]
     /\ amsgs = {}
-    /\ reg = [d \in Devices |-> [val |-> "base", user |-> FALSE, vc |-> ZeroVc]]
+    /\ reg = [d \in Devices |->
+                [val |-> "base", user |-> FALSE, mark |-> FALSE, vc |-> ZeroVc]]
     /\ rhc = [d \in Devices |-> 0]
     /\ rmsgs = {}
     /\ userEdits = [d \in Devices |-> 0]
@@ -255,6 +267,7 @@ Init ==
     /\ lastOk = [d \in Devices |-> [i \in Items |-> FALSE]]
     /\ conflict = FALSE
     /\ clobbered = FALSE
+    /\ appVcs = {}
 
 -----------------------------------------------------------------------------
 (* Writes and sync *)
@@ -350,7 +363,7 @@ Create(d, i, k) ==
        ELSE /\ ents' = [ents EXCEPT ![d] = @ \cup {id}]
             /\ emsgs' = emsgs \cup {[to |-> e, id |-> id] : e \in Devices \ {d}}
     /\ UNCHANGED <<atts, amsgs, reg, rhc, rmsgs, userEdits, conflict,
-                   clobbered>>
+                   clobbered, appVcs>>
 
 \* ... and link it to its parent: two writes that sync apart, so a device
 \* can hold the entity another device created without its link. A device
@@ -376,26 +389,43 @@ CreateLinked(d, i, k) ==
        ELSE IF ReuseLive \/ ~DerivedIds
        THEN UNCHANGED <<ents, emsgs, atts, amsgs>>
        ELSE new(fresh) /\ Link(d, fresh)
-    /\ UNCHANGED <<reg, rhc, rmsgs, userEdits, conflict, clobbered>>
+    /\ UNCHANGED <<reg, rhc, rmsgs, userEdits, conflict, clobbered, appVcs>>
 
 \* Device d writes the field: its next counter on the clock it holds.
-RegPut(d, val, user) ==
-    LET v == [val |-> val, user |-> user,
+\* `mark` is the task's record of the change having been applied
+\* (TaskData.appliedChangeEffects), written in the same version as the
+\* field, so it syncs with the value it describes.
+RegPut(d, val, user, mark) ==
+    LET v == [val |-> val, user |-> user, mark |-> mark,
               vc |-> [reg[d].vc EXCEPT ![d] = rhc[d] + 1]] IN
     /\ reg' = [reg EXCEPT ![d] = v]
     /\ rhc' = [rhc EXCEPT ![d] = @ + 1]
     /\ rmsgs' = rmsgs \cup {[to |-> e, v |-> v] : e \in Devices \ {d}}
 
+\* The version v descends from one a dispatch wrote: its clock has seen it.
+AfterApply(v) == \E a \in appVcs : Leq(a, v.vc)
+
 \* A set-style dispatch. With the guard it writes only over the base the
 \* proposal was made on; a field that holds the target, or anything else,
-\* is left alone and the dispatch still succeeds.
+\* is left alone and the dispatch still succeeds. With the mark it also
+\* leaves alone a version that records the change as applied — the base
+\* value restored after the change had landed.
+\*
+\* A user value is clobbered when the dispatch writes over one the user
+\* changed, or over the base value the user wrote back after seeing the
+\* change applied. A user write of the base value on a version that never
+\* held the change left nothing to overwrite: applying over it is the
+\* serial order "edit, then confirm".
 SetField(d) ==
     LET r == reg[d]
-        write == IF CasGuard THEN r.val = "base" ELSE r.val # "target"
+        write == IF CasGuard THEN r.val = "base" /\ ~(EffectMark /\ r.mark)
+                 ELSE r.val # "target"
     IN /\ IF write
-          THEN /\ RegPut(d, "target", FALSE)
-               /\ clobbered' = (clobbered \/ r.user)
-          ELSE UNCHANGED <<reg, rhc, rmsgs, clobbered>>
+          THEN /\ RegPut(d, "target", FALSE, EffectMark)
+               /\ appVcs' = appVcs \cup {[r.vc EXCEPT ![d] = rhc[d] + 1]}
+               /\ clobbered' = (clobbered \/
+                    (r.user /\ (r.val # "base" \/ AfterApply(r))))
+          ELSE UNCHANGED <<reg, rhc, rmsgs, clobbered, appVcs>>
        /\ UNCHANGED <<entVars, userEdits, conflict>>
 
 -----------------------------------------------------------------------------
@@ -620,13 +650,16 @@ Consolidate(d) ==
 -----------------------------------------------------------------------------
 (* The user *)
 
-\* The user edits the field a set-style item proposes to change.
+\* The user edits the field a set-style item proposes to change. The
+\* write is built on the stored task, so it keeps the stored mark
+\* (persistence_update_ops.dart updateTaskImpl, journal_repository.dart
+\* updateJournalEntity).
 UserEdit(d) ==
     /\ userEdits[d] < MaxUserEdits
-    /\ RegPut(d, UserVal(d), TRUE)
+    /\ RegPut(d, UserVal(d), TRUE, reg[d].mark)
     /\ userEdits' = [userEdits EXCEPT ![d] = @ + 1]
     /\ UNCHANGED <<rows, hc, msgs, pc, snap, recv, mem, attempts, agentOps,
-                   applied, early, entVars, conflict, clobbered,
+                   applied, early, entVars, conflict, clobbered, appVcs,
                    claimVars>>
 
 -----------------------------------------------------------------------------
@@ -671,7 +704,7 @@ ReceiveEnt(d) ==
           /\ emsgs' = emsgs \ {m}
     /\ UNCHANGED <<rows, hc, msgs, pc, snap, recv, mem, attempts, agentOps,
                    applied, early, atts, amsgs, reg, rhc, rmsgs, userEdits,
-                   conflict, clobbered, claimVars>>
+                   conflict, clobbered, appVcs, claimVars>>
 
 \* A link arrives: the parent's update that lists the entity.
 ReceiveLink(d) ==
@@ -681,7 +714,7 @@ ReceiveLink(d) ==
           /\ amsgs' = amsgs \ {m}
     /\ UNCHANGED <<rows, hc, msgs, pc, snap, recv, mem, attempts, agentOps,
                    applied, early, ents, emsgs, reg, rhc, rmsgs, userEdits,
-                   conflict, clobbered, claimVars>>
+                   conflict, clobbered, appVcs, claimVars>>
 
 \* updateJournalEntity: an older or equal version is dropped, a newer one
 \* taken, and a concurrent one — equal content or not — is kept aside as a
@@ -700,7 +733,7 @@ ReceiveReg(d) ==
                      /\ UNCHANGED reg
           /\ rmsgs' = rmsgs \ {m}
     /\ UNCHANGED <<rows, hc, msgs, pc, snap, recv, mem, attempts, agentOps,
-                   applied, early, entVars, rhc, userEdits, clobbered,
+                   applied, early, entVars, rhc, userEdits, clobbered, appVcs,
                    claimVars>>
 
 -----------------------------------------------------------------------------
@@ -740,6 +773,7 @@ TypeOK ==
     /\ \A d \in Devices :
           /\ mem[d] \in BOOLEAN
           /\ reg[d].val \in {"base", "target", "u1", "u2"}
+          /\ reg[d].mark \in BOOLEAN
           /\ \A id \in ents[d] : EffOf(id) \in CreateEffects
     /\ conflict \in BOOLEAN
     /\ clobbered \in BOOLEAN

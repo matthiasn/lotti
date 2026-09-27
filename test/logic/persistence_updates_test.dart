@@ -156,6 +156,46 @@ void main() {
     },
   );
 
+  test(
+    "updateJournalEntity keeps the stored task's applied agent changes — a "
+    'star or flag toggled from a copy read before a change landed must not '
+    'let it apply again (ADR 0098)',
+    () async {
+      final stored = testTask.copyWith(
+        data: testTask.data.copyWith(appliedChangeEffects: {'set-1:0'}),
+      );
+      when(
+        () => mocks.journalDb.journalEntityByIdIncludingDeleted(testTask.id),
+      ).thenAnswer((_) async => stored);
+      when(() => logic.updateMetadata(any())).thenAnswer(
+        (invocation) async => invocation.positionalArguments.first as Metadata,
+      );
+      when(
+        () => logic.updateDbEntity(
+          any(),
+          beforeNotify: any(named: 'beforeNotify'),
+        ),
+      ).thenAnswer((_) async => true);
+      when(() => mocks.journalDb.addLabeled(any())).thenAnswer((_) async => 1);
+
+      final toggled = testTask.copyWith(
+        meta: testTask.meta.copyWith(starred: true),
+      );
+      await updates.updateJournalEntity(toggled, toggled.meta);
+
+      final written =
+          verify(
+                () => logic.updateDbEntity(
+                  captureAny(),
+                  beforeNotify: any(named: 'beforeNotify'),
+                ),
+              ).captured.single
+              as Task;
+      expect(written.meta.starred, isTrue);
+      expect(written.data.appliedChangeEffects, {'set-1:0'});
+    },
+  );
+
   // ADR 0083: a conflict resolution that keeps an edit over a deletion made
   // here writes over the soft-deleted row, and must keep the entry's labels.
   test(

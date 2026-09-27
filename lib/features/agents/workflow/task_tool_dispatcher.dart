@@ -104,14 +104,30 @@ class TaskToolDispatcher {
     // previous handler (e.g. a title change is visible to the next tool).
     // A local SQLite read by primary key is negligible cost, and caching
     // in memory would add complexity with risk of stale state.
-    final taskEntity = await journalDb.journalEntityById(taskId);
-    if (taskEntity is! Task) {
+    final storedTask = await journalDb.journalEntityById(taskId);
+    if (storedTask is! Task) {
       return ToolExecutionResult(
         success: false,
         output: 'Task $taskId not found or is not a Task entity',
         errorMessage: 'Task lookup failed',
       );
     }
+
+    // A field proposal applies once. The tool records the change's effect key
+    // on the task in the very write that sets the field, so the record syncs
+    // with the value; a task that records it had the change applied —
+    // here, or on the device it synced from — and whatever the field holds
+    // now, the base value the user restored included, stands (ADR 0098).
+    final fieldEffect = taskFieldSetBy(resolvedName) != null ? effect : null;
+    if (fieldEffect != null && fieldEffect.recordedOn(storedTask)) {
+      return const ToolExecutionResult(
+        success: true,
+        output:
+            'Nothing applied: this change was applied to the task already, '
+            'so the field stays as it is now.',
+      );
+    }
+    final taskEntity = fieldEffect?.recordOn(storedTask) ?? storedTask;
 
     // A field proposal applies only while the task still holds the value it
     // was made against. Anything else means it was applied already — on

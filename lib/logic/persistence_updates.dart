@@ -105,7 +105,15 @@ class PersistenceUpdates extends PersistenceCollaboratorBase {
           }
           final updatedMeta = await logic.updateMetadata(metadata);
           final preservedLabelIds = current?.meta.labelIds;
-          final entityWithUpdatedMeta = journalEntity.copyWith(
+          // A task keeps the agent changes its stored row records as
+          // applied, whatever copy the caller read (ADR 0098).
+          final written = switch ((journalEntity, current)) {
+            (final Task task, final Task stored) => task.copyWith(
+              data: task.data.withEffectsOf(stored.data),
+            ),
+            _ => journalEntity,
+          };
+          final entityWithUpdatedMeta = written.copyWith(
             meta: updatedMeta.copyWith(labelIds: preservedLabelIds),
           );
           Future<void> Function()? beforeNotify;

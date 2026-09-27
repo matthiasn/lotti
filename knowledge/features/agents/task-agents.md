@@ -82,16 +82,20 @@ sources:
     last_modified: 2026-09-24
   - id: change-effect
     resource: ../../../lib/features/agents/tools/change_effect.dart
-    title: ChangeEffect — the effect key, derived entity ids and the field base
-    last_modified: 2026-09-24
+    title: ChangeEffect — the effect key, derived entity ids, the field base and the applied record
+    last_modified: 2026-09-27
   - id: task-tool-dispatcher
     resource: ../../../lib/features/agents/workflow/task_tool_dispatcher.dart
-    title: TaskToolDispatcher — the compare-and-set before any handler runs
-    last_modified: 2026-09-24
+    title: TaskToolDispatcher — the applied record and the compare-and-set before any handler runs
+    last_modified: 2026-09-27
   - id: adr-0075
     resource: ../../../docs/adr/0075-idempotent-change-set-tools.md
     title: ADR 0075 — Idempotent change-set tools
     last_modified: 2026-09-24
+  - id: adr-0098
+    resource: ../../../docs/adr/0098-field-changes-record-their-effect.md
+    title: ADR 0098 — Field changes record their effect on the task
+    last_modified: 2026-09-27
   - id: directed-relation
     resource: ../../../lib/features/tasks/model/directed_relation.dart
     title: DirectedRelation
@@ -1100,9 +1104,11 @@ flowchart TD
   Exists -->|yes| Noop[success, nothing written, same id reported]
   Exists -->|no| Create[create under the derived id]
   Create -->|insert refused: the other device's entity arrived| Noop
-  Kind -->|sets a task field| Cas{"field still holds the proposal's base?"}
-  Cas -->|yes| Apply[apply]
-  Cas -->|no: applied elsewhere, or edited since| Skip[success, nothing applied]
+  Kind -->|sets a task field| Mark{"task records the key in appliedChangeEffects?"}
+  Mark -->|yes: applied here or on a device it synced from| Skip[success, nothing applied]
+  Mark -->|no| Cas{"field still holds the proposal's base?"}
+  Cas -->|yes| Apply["set the field and record the key, in one write"]
+  Cas -->|no: applied elsewhere, or edited since| Skip
 ```
 
 - **The key is the item, not the decision.** Each device mints its own
@@ -1144,11 +1150,24 @@ flowchart TD
   retract the item over a confirm that landed elsewhere. The flip side: a
   user who edits a field and then confirms the older proposal for it sees
   the proposal confirmed and the field unchanged.
+- **A field change applies once, and records that it did.** The value
+  compare cannot tell a field the user put back to the base from one never
+  touched, so the tool also writes the effect key into the task's
+  `appliedChangeEffects`, in the same write — and version — as the field it
+  sets, and the dispatcher skips any change whose key the task already
+  records. The record syncs with the value, so a device that received the
+  change and then saw the user restore the base leaves the restore alone.
+  Every write over a stored task keeps the stored record
+  (`TaskDataOnStored.withEffectsOf`, joined in by `updateTaskImpl`,
+  `JournalRepository.updateJournalEntity` and the common writer
+  `PersistenceUpdates.updateJournalEntity`), so a screen's stale copy cannot
+  drop it. Resolving a journal conflict keeps both sides' records, whichever
+  side's fields the user keeps. A reopened field item confirmed again is a no-op once its change
+  landed, as a reopened create-style item already was (ADR 0098).
 
 What stays open, from ADR 0075: both devices creating the entity before
 either has received the other's leaves one id with a journal `Conflict` row
-(their creation timestamps differ); a field restored to the proposal's base
-between the two applications gets the proposed value again; an item whose
+(their creation timestamps differ); an item whose
 dispatch failed and reverted on one device reads pending though the other
 device applied it (confirming again is a no-op); a consolidated copy stays
 pending beside its applied original. Label assignment, checklist item and

@@ -108,6 +108,35 @@ void main() {
         isNull,
       );
     });
+
+    test(
+      'records itself on the task beside the effects recorded there, and '
+      'finds only its own key (ADR 0098)',
+      () {
+        const effect = ChangeEffect(key: 'set-1:0');
+        final other = testTask.copyWith(
+          data: testTask.data.copyWith(appliedChangeEffects: {'set-0:2'}),
+        );
+
+        expect(effect.recordedOn(testTask), isFalse);
+        expect(effect.recordedOn(other), isFalse);
+
+        final recorded = effect.recordOn(other);
+
+        expect(recorded.data.appliedChangeEffects, {'set-0:2', 'set-1:0'});
+        expect(effect.recordedOn(recorded), isTrue);
+        expect(
+          const ChangeEffect(key: 'set-1:1').recordedOn(recorded),
+          isFalse,
+        );
+        // Only the record changes: the tool sets the field itself.
+        expect(recorded.meta, other.meta);
+        expect(
+          recorded.data.copyWith(appliedChangeEffects: {'set-0:2'}),
+          other.data,
+        );
+      },
+    );
   });
 
   test('taskFieldSetBy names the field of each field-setting tool', () {
