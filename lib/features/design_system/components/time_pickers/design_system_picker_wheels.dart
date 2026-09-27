@@ -34,13 +34,14 @@ class DesignSystemTimeWheel extends StatefulWidget {
   State<DesignSystemTimeWheel> createState() => _DesignSystemTimeWheelState();
 }
 
+// Flutter's Cupertino picker values, tuned against the native iOS wheel.
+const _diameterRatio = 1.07;
+const _squeeze = 1.45;
+const _overAndUnderCenterOpacity = 0.447;
+const _hourMaxFlingRowsPerSecond = 8.0;
+const _minuteMaxFlingRowsPerSecond = 20.0;
+
 class _DesignSystemTimeWheelState extends State<DesignSystemTimeWheel> {
-  // Flutter's Cupertino picker values, tuned against the native iOS wheel.
-  static const _diameterRatio = 1.07;
-  static const _squeeze = 1.45;
-  static const _overAndUnderCenterOpacity = 0.447;
-  static const _hourMaxFlingRowsPerSecond = 8.0;
-  static const _minuteMaxFlingRowsPerSecond = 20.0;
   final _hourColumn = GlobalKey<_FixedExtentWheelColumnState>();
   final _periodColumn = GlobalKey<_FixedExtentWheelColumnState>();
   late int _hourIndex;
@@ -107,20 +108,103 @@ class _DesignSystemTimeWheelState extends State<DesignSystemTimeWheel> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final materialLocalizations = MaterialLocalizations.of(context);
-    final pickerStyle = _pickerTextStyle(tokens);
-    return SizedBox(
+    final styles = _wheelStyles(tokens);
+    return _WheelFrame(
       height: tokens.spacing.step12 + tokens.spacing.step10,
+      rowExtent: tokens.spacing.step8,
+      semanticsLabel: widget.semanticsLabel,
+      semanticsLiveRegion: widget.semanticsLiveRegion,
+      children: [
+        Expanded(
+          child: _FixedExtentWheelColumn(
+            key: _hourColumn,
+            itemCount: widget.use24hFormat ? 24 : 12,
+            initialItem: _hourIndex,
+            itemExtent: tokens.spacing.step8,
+            maxFlingRowsPerSecond: _hourMaxFlingRowsPerSecond,
+            semanticsLabel: materialLocalizations.timePickerHourLabel,
+            labelBuilder: (index) => widget.use24hFormat
+                ? index.toString().padLeft(2, '0')
+                : '${index + 1}',
+            styles: styles,
+            onSelectedItemChanged: (index) => _hourIndex = index,
+            onScrollEnd: _notifyChanged,
+          ),
+        ),
+        Text(':', style: styles.selected),
+        Expanded(
+          child: _FixedExtentWheelColumn(
+            itemCount: 60,
+            initialItem: _minuteIndex,
+            itemExtent: tokens.spacing.step8,
+            maxFlingRowsPerSecond: _minuteMaxFlingRowsPerSecond,
+            semanticsLabel: materialLocalizations.timePickerMinuteLabel,
+            labelBuilder: (index) => index.toString().padLeft(2, '0'),
+            styles: styles,
+            onSelectedItemChanged: (index) => _minuteIndex = index,
+            onWrapped: _handleMinuteWrapped,
+            onScrollEnd: _notifyChanged,
+          ),
+        ),
+        if (!widget.use24hFormat)
+          Expanded(
+            child: _FixedExtentWheelColumn(
+              key: _periodColumn,
+              itemCount: 2,
+              initialItem: _periodIndex,
+              itemExtent: tokens.spacing.step8,
+              maxFlingRowsPerSecond: 0,
+              semanticsLabel:
+                  '${materialLocalizations.anteMeridiemAbbreviation} / '
+                  '${materialLocalizations.postMeridiemAbbreviation}',
+              looping: false,
+              labelBuilder: (index) => index == 0
+                  ? materialLocalizations.anteMeridiemAbbreviation
+                  : materialLocalizations.postMeridiemAbbreviation,
+              styles: styles,
+              onSelectedItemChanged: (index) => _periodIndex = index,
+              onScrollEnd: _notifyChanged,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// The chrome every drum shares: a fixed-height box holding the selection
+/// band behind a row of columns, inside the semantics container the host
+/// names.
+class _WheelFrame extends StatelessWidget {
+  const _WheelFrame({
+    required this.height,
+    required this.rowExtent,
+    required this.semanticsLabel,
+    required this.semanticsLiveRegion,
+    required this.children,
+  });
+
+  final double height;
+  final double rowExtent;
+  final String? semanticsLabel;
+  final bool semanticsLiveRegion;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return SizedBox(
+      height: height,
       child: Semantics(
         container: true,
         explicitChildNodes: true,
-        label: widget.semanticsLabel,
-        liveRegion: widget.semanticsLiveRegion,
+        label: semanticsLabel,
+        liveRegion: semanticsLiveRegion,
         child: Stack(
           children: [
             IgnorePointer(
               child: Center(
                 child: SizedBox(
-                  height: tokens.spacing.step8,
+                  height: rowExtent,
                   width: double.infinity,
                   child: DecoratedBox(
                     decoration: BoxDecoration(
@@ -131,79 +215,7 @@ class _DesignSystemTimeWheelState extends State<DesignSystemTimeWheel> {
                 ),
               ),
             ),
-            Row(
-              children: [
-                Expanded(
-                  child: _FixedExtentWheelColumn(
-                    key: _hourColumn,
-                    itemCount: widget.use24hFormat ? 24 : 12,
-                    initialItem: _hourIndex,
-                    itemExtent: tokens.spacing.step8,
-                    maxFlingRowsPerSecond: _hourMaxFlingRowsPerSecond,
-                    semanticsLabel: materialLocalizations.timePickerHourLabel,
-                    labelBuilder: (index) => widget.use24hFormat
-                        ? index.toString().padLeft(2, '0')
-                        : '${index + 1}',
-                    selectedStyle: pickerStyle,
-                    focusedStyle: pickerStyle.copyWith(
-                      color: tokens.colors.interactive.enabled,
-                    ),
-                    unselectedStyle: pickerStyle.copyWith(
-                      color: tokens.colors.text.mediumEmphasis,
-                    ),
-                    onSelectedItemChanged: (index) => _hourIndex = index,
-                    onScrollEnd: _notifyChanged,
-                  ),
-                ),
-                Text(':', style: pickerStyle),
-                Expanded(
-                  child: _FixedExtentWheelColumn(
-                    itemCount: 60,
-                    initialItem: _minuteIndex,
-                    itemExtent: tokens.spacing.step8,
-                    maxFlingRowsPerSecond: _minuteMaxFlingRowsPerSecond,
-                    semanticsLabel: materialLocalizations.timePickerMinuteLabel,
-                    labelBuilder: (index) => index.toString().padLeft(2, '0'),
-                    selectedStyle: pickerStyle,
-                    focusedStyle: pickerStyle.copyWith(
-                      color: tokens.colors.interactive.enabled,
-                    ),
-                    unselectedStyle: pickerStyle.copyWith(
-                      color: tokens.colors.text.mediumEmphasis,
-                    ),
-                    onSelectedItemChanged: (index) => _minuteIndex = index,
-                    onWrapped: _handleMinuteWrapped,
-                    onScrollEnd: _notifyChanged,
-                  ),
-                ),
-                if (!widget.use24hFormat)
-                  Expanded(
-                    child: _FixedExtentWheelColumn(
-                      key: _periodColumn,
-                      itemCount: 2,
-                      initialItem: _periodIndex,
-                      itemExtent: tokens.spacing.step8,
-                      maxFlingRowsPerSecond: 0,
-                      semanticsLabel:
-                          '${materialLocalizations.anteMeridiemAbbreviation} / '
-                          '${materialLocalizations.postMeridiemAbbreviation}',
-                      looping: false,
-                      labelBuilder: (index) => index == 0
-                          ? materialLocalizations.anteMeridiemAbbreviation
-                          : materialLocalizations.postMeridiemAbbreviation,
-                      selectedStyle: pickerStyle,
-                      focusedStyle: pickerStyle.copyWith(
-                        color: tokens.colors.interactive.enabled,
-                      ),
-                      unselectedStyle: pickerStyle.copyWith(
-                        color: tokens.colors.text.mediumEmphasis,
-                      ),
-                      onSelectedItemChanged: (index) => _periodIndex = index,
-                      onScrollEnd: _notifyChanged,
-                    ),
-                  ),
-              ],
-            ),
+            Row(children: children),
           ],
         ),
       ),
@@ -219,11 +231,11 @@ class _FixedExtentWheelColumn extends StatefulWidget {
     required this.maxFlingRowsPerSecond,
     required this.semanticsLabel,
     required this.labelBuilder,
-    required this.selectedStyle,
-    required this.focusedStyle,
-    required this.unselectedStyle,
+    required this.styles,
     required this.onSelectedItemChanged,
     required this.onScrollEnd,
+    this.semanticsValueBuilder,
+    this.labelAlignment = Alignment.center,
     this.onWrapped,
     this.looping = true,
     super.key,
@@ -235,9 +247,11 @@ class _FixedExtentWheelColumn extends StatefulWidget {
   final double maxFlingRowsPerSecond;
   final String semanticsLabel;
   final String Function(int) labelBuilder;
-  final TextStyle selectedStyle;
-  final TextStyle focusedStyle;
-  final TextStyle unselectedStyle;
+
+  /// What assistive technology reads for a row; [labelBuilder] when null.
+  final String Function(int)? semanticsValueBuilder;
+  final AlignmentGeometry labelAlignment;
+  final _WheelStyles styles;
   final ValueChanged<int> onSelectedItemChanged;
   final VoidCallback onScrollEnd;
 
@@ -282,9 +296,7 @@ class _FixedExtentWheelColumnState extends State<_FixedExtentWheelColumn> {
   void didUpdateWidget(covariant _FixedExtentWheelColumn oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.itemCount != oldWidget.itemCount ||
-        widget.selectedStyle != oldWidget.selectedStyle ||
-        widget.focusedStyle != oldWidget.focusedStyle ||
-        widget.unselectedStyle != oldWidget.unselectedStyle) {
+        widget.styles != oldWidget.styles) {
       _children = _buildChildren();
     }
   }
@@ -348,16 +360,17 @@ class _FixedExtentWheelColumnState extends State<_FixedExtentWheelColumn> {
       behavior: HitTestBehavior.translucent,
       onPointerSignal: _handlePointerSignal,
       child: SizedBox.expand(
-        child: Center(
+        child: Align(
+          alignment: widget.labelAlignment,
           child: AnimatedBuilder(
             animation: _visualState,
             builder: (context, _) => Text(
               widget.labelBuilder(index),
               style: index == _selectedItem.value
                   ? _focusNode.hasFocus
-                        ? widget.focusedStyle
-                        : widget.selectedStyle
-                  : widget.unselectedStyle,
+                        ? widget.styles.focused
+                        : widget.styles.selected
+                  : widget.styles.unselected,
             ),
           ),
         ),
@@ -379,16 +392,17 @@ class _FixedExtentWheelColumnState extends State<_FixedExtentWheelColumn> {
             final selectedItem = _selectedItem.value;
             final increasedIndex = _driver.indexFor(1);
             final decreasedIndex = _driver.indexFor(-1);
+            final valueOf = widget.semanticsValueBuilder ?? widget.labelBuilder;
             return Semantics(
               container: true,
               label: widget.semanticsLabel,
-              value: widget.labelBuilder(selectedItem),
+              value: valueOf(selectedItem),
               increasedValue: increasedIndex == null
                   ? null
-                  : widget.labelBuilder(increasedIndex),
+                  : valueOf(increasedIndex),
               decreasedValue: decreasedIndex == null
                   ? null
-                  : widget.labelBuilder(decreasedIndex),
+                  : valueOf(decreasedIndex),
               focusable: true,
               focused: _focusNode.hasFocus,
               selected: true,
@@ -409,10 +423,9 @@ class _FixedExtentWheelColumnState extends State<_FixedExtentWheelColumn> {
                             itemExtent: widget.itemExtent,
                             maxFlingRowsPerSecond: widget.maxFlingRowsPerSecond,
                           ),
-                    diameterRatio: _DesignSystemTimeWheelState._diameterRatio,
-                    squeeze: _DesignSystemTimeWheelState._squeeze,
-                    overAndUnderCenterOpacity:
-                        _DesignSystemTimeWheelState._overAndUnderCenterOpacity,
+                    diameterRatio: _diameterRatio,
+                    squeeze: _squeeze,
+                    overAndUnderCenterOpacity: _overAndUnderCenterOpacity,
                     onSelectedItemChanged: _driver.handleSelectedItemChanged,
                     dragStartBehavior: DragStartBehavior.down,
                     childDelegate: widget.looping
@@ -476,8 +489,15 @@ class _ControlledFixedExtentScrollPhysics extends FixedExtentScrollPhysics {
   );
 }
 
-/// Token-backed hour/minute duration wheel used by estimate modals.
-class DesignSystemDurationWheel extends StatelessWidget {
+/// Token-backed hour/minute duration wheel used by the duration modals.
+///
+/// The minute drum carries into the hour drum the way [DesignSystemTimeWheel]
+/// does — rolling back past 00 → 59 animates the hour down (1:05 → 0:59),
+/// rolling forward past 59 → 00 animates it up — through the same
+/// [TimeWheelColumnDriver]. A duration has no midnight to wrap across, so the
+/// hour drum runs 0–23 without looping, and a minute wrap at either end
+/// leaves the hour where it is.
+class DesignSystemDurationWheel extends StatefulWidget {
   const DesignSystemDurationWheel({
     required this.initialDuration,
     required this.onDurationChanged,
@@ -486,62 +506,143 @@ class DesignSystemDurationWheel extends StatelessWidget {
     super.key,
   });
 
+  /// Where the drums open; anything past 23:59 opens on 23:59.
   final Duration initialDuration;
+
+  /// Called with the settled duration once a drum comes to rest.
   final ValueChanged<Duration> onDurationChanged;
   final String? semanticsLabel;
   final bool semanticsLiveRegion;
 
   @override
+  State<DesignSystemDurationWheel> createState() =>
+      _DesignSystemDurationWheelState();
+}
+
+class _DesignSystemDurationWheelState extends State<DesignSystemDurationWheel> {
+  static const _hourCount = 24;
+  final _hourColumn = GlobalKey<_FixedExtentWheelColumnState>();
+  late int _hours;
+  late int _minutes;
+
+  @override
+  void initState() {
+    super.initState();
+    final minutes = widget.initialDuration.inMinutes.clamp(
+      0,
+      _hourCount * 60 - 1,
+    );
+    _hours = minutes ~/ 60;
+    _minutes = minutes % 60;
+  }
+
+  /// Records a minute that wrapped onto [minute] and carries the wrap into the
+  /// hour drum, recording the hour before the drum moves for the same reason
+  /// the time wheel does: moving it can report synchronously.
+  void _handleMinuteWrapped(int minute, int direction) {
+    _minutes = minute;
+    final hours = (_hours + direction).clamp(0, _hourCount - 1);
+    if (hours == _hours) return;
+    _hours = hours;
+    _hourColumn.currentState?.animateToIndex(hours);
+  }
+
+  void _notifyChanged() {
+    // Rebuilds the unit labels, whose plurals follow the drums.
+    setState(() {});
+    widget.onDurationChanged(Duration(hours: _hours, minutes: _minutes));
+  }
+
+  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return SizedBox(
-      height: tokens.spacing.step12 + tokens.spacing.step9,
-      child: CupertinoTheme(
-        data: CupertinoThemeData(
-          textTheme: CupertinoTextThemeData(
-            pickerTextStyle: _pickerTextStyle(tokens),
+    final localizations = CupertinoLocalizations.of(context);
+    final materialLocalizations = MaterialLocalizations.of(context);
+    final styles = _wheelStyles(tokens);
+
+    // The number right-aligned against its unit, as the platform timer
+    // picker lays them out. The unit gets its own half, so a plural longer
+    // than its singular never shifts the drum.
+    Widget half({required Widget column, required String unit}) => Expanded(
+      child: Row(
+        children: [
+          Expanded(child: column),
+          SizedBox(width: tokens.spacing.step3),
+          Expanded(
+            child: ExcludeSemantics(
+              child: Text(unit, style: styles.selected),
+            ),
           ),
-        ),
-        child: Semantics(
-          container: true,
-          explicitChildNodes: true,
-          label: semanticsLabel,
-          liveRegion: semanticsLiveRegion,
-          child: CupertinoTimerPicker(
-            initialTimerDuration: initialDuration,
-            mode: CupertinoTimerPickerMode.hm,
-            itemExtent: tokens.spacing.step9,
-            changeReportingBehavior: ChangeReportingBehavior.onScrollEnd,
-            selectionOverlayBuilder:
-                (
-                  context, {
-                  required selectedIndex,
-                  required columnCount,
-                }) => _selectionOverlay(
-                  tokens,
-                  selectedIndex: selectedIndex,
-                  columnCount: columnCount,
-                ),
-            onTimerDurationChanged: onDurationChanged,
-          ),
-        ),
+        ],
       ),
+    );
+
+    return _WheelFrame(
+      height: tokens.spacing.step12 + tokens.spacing.step9,
+      rowExtent: tokens.spacing.step9,
+      semanticsLabel: widget.semanticsLabel,
+      semanticsLiveRegion: widget.semanticsLiveRegion,
+      children: [
+        half(
+          column: _FixedExtentWheelColumn(
+            key: _hourColumn,
+            itemCount: _hourCount,
+            initialItem: _hours,
+            itemExtent: tokens.spacing.step9,
+            maxFlingRowsPerSecond: _hourMaxFlingRowsPerSecond,
+            semanticsLabel: materialLocalizations.timePickerHourLabel,
+            looping: false,
+            labelAlignment: AlignmentDirectional.centerEnd,
+            labelBuilder: localizations.timerPickerHour,
+            semanticsValueBuilder: (hours) =>
+                '${localizations.timerPickerHour(hours)} '
+                '${localizations.timerPickerHourLabel(hours) ?? ''}',
+            styles: styles,
+            onSelectedItemChanged: (index) => _hours = index,
+            onScrollEnd: _notifyChanged,
+          ),
+          unit: localizations.timerPickerHourLabel(_hours) ?? '',
+        ),
+        half(
+          column: _FixedExtentWheelColumn(
+            itemCount: 60,
+            initialItem: _minutes,
+            itemExtent: tokens.spacing.step9,
+            maxFlingRowsPerSecond: _minuteMaxFlingRowsPerSecond,
+            semanticsLabel: materialLocalizations.timePickerMinuteLabel,
+            labelAlignment: AlignmentDirectional.centerEnd,
+            labelBuilder: localizations.timerPickerMinute,
+            semanticsValueBuilder: (minutes) =>
+                '${localizations.timerPickerMinute(minutes)} '
+                '${localizations.timerPickerMinuteLabel(minutes) ?? ''}',
+            styles: styles,
+            onSelectedItemChanged: (index) => _minutes = index,
+            onWrapped: _handleMinuteWrapped,
+            onScrollEnd: _notifyChanged,
+          ),
+          unit: localizations.timerPickerMinuteLabel(_minutes) ?? '',
+        ),
+      ],
     );
   }
 }
 
-TextStyle _pickerTextStyle(DsTokens tokens) =>
-    tokens.typography.styles.subtitle.subtitle1.copyWith(
-      color: tokens.colors.text.highEmphasis,
-      fontFeatures: const [FontFeature.tabularFigures()],
-    );
+/// The three looks of a drum row: settled under the band, settled while its
+/// column has keyboard focus, and off the band.
+typedef _WheelStyles = ({
+  TextStyle selected,
+  TextStyle focused,
+  TextStyle unselected,
+});
 
-Widget _selectionOverlay(
-  DsTokens tokens, {
-  required int selectedIndex,
-  required int columnCount,
-}) => CupertinoPickerDefaultSelectionOverlay(
-  background: tokens.colors.surface.selected,
-  capStartEdge: selectedIndex == 0,
-  capEndEdge: selectedIndex == columnCount - 1,
-);
+_WheelStyles _wheelStyles(DsTokens tokens) {
+  final base = tokens.typography.styles.subtitle.subtitle1.copyWith(
+    color: tokens.colors.text.highEmphasis,
+    fontFeatures: const [FontFeature.tabularFigures()],
+  );
+  return (
+    selected: base,
+    focused: base.copyWith(color: tokens.colors.interactive.enabled),
+    unselected: base.copyWith(color: tokens.colors.text.mediumEmphasis),
+  );
+}

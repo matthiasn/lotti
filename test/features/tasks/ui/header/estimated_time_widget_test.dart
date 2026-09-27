@@ -1,8 +1,8 @@
-import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/tasks/state/task_estimate_suggestions_controller.dart';
 import 'package:lotti/features/tasks/ui/header/estimate_quick_pick_chips.dart';
 import 'package:lotti/features/tasks/ui/header/estimated_time_widget.dart';
@@ -89,11 +89,13 @@ void main() {
       expect(find.text('Estimate'), findsOneWidget);
       expect(find.text('Estimate:'), findsNothing);
       expect(find.text('Clear'), findsOneWidget);
-      final picker = tester.widget<CupertinoTimerPicker>(
-        find.byType(CupertinoTimerPicker),
+      final picker = tester.widget<DesignSystemDurationWheel>(
+        find.byType(DesignSystemDurationWheel),
       );
-      expect(picker.itemExtent, 48);
-      expect(picker.selectionOverlayBuilder, isNotNull);
+      expect(picker.initialDuration, const Duration(hours: 2));
+      // The drums open on the estimate: two hours, zero minutes.
+      expect(find.text('02'), findsOneWidget);
+      expect(find.text('hours'), findsOneWidget);
 
       // Without changing the picker value, tapping Done should not call callback.
       await tester.tap(find.text('Done'));
@@ -137,10 +139,10 @@ void main() {
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
-      final picker = tester.widget<CupertinoTimerPicker>(
-        find.byType(CupertinoTimerPicker),
+      final picker = tester.widget<DesignSystemDurationWheel>(
+        find.byType(DesignSystemDurationWheel),
       );
-      expect(picker.initialTimerDuration, Duration.zero);
+      expect(picker.initialDuration, Duration.zero);
       expect(find.text('Clear'), findsNothing);
 
       await tester.tap(find.text('Done'));
@@ -184,10 +186,10 @@ void main() {
     await tester.pumpAndSettle();
 
     // Simulate the user changing the duration in the picker.
-    final picker = tester.widget<CupertinoTimerPicker>(
-      find.byType(CupertinoTimerPicker),
+    final picker = tester.widget<DesignSystemDurationWheel>(
+      find.byType(DesignSystemDurationWheel),
     );
-    picker.onTimerDurationChanged(const Duration(hours: 3));
+    picker.onDurationChanged(const Duration(hours: 3));
 
     await tester.tap(find.text('Done'));
     await tester.pumpAndSettle();
@@ -238,7 +240,7 @@ void main() {
       );
 
       expect(saved, const Duration(hours: 2));
-      expect(find.byType(CupertinoTimerPicker), findsNothing);
+      expect(find.byType(DesignSystemDurationWheel), findsNothing);
       expect(find.text('Done'), findsNothing);
     });
 
@@ -254,7 +256,7 @@ void main() {
         );
 
         expect(saved, isNull);
-        expect(find.byType(CupertinoTimerPicker), findsNothing);
+        expect(find.byType(DesignSystemDurationWheel), findsNothing);
       },
     );
 
@@ -299,7 +301,7 @@ void main() {
       expect(find.byType(DsPill), findsNWidgets(4));
       expect(
         tester.getRect(find.byType(EstimateQuickPickChips)).bottom,
-        lessThan(tester.getRect(find.byType(CupertinoTimerPicker)).top),
+        lessThan(tester.getRect(find.byType(DesignSystemDurationWheel)).top),
         reason: 'the cheap path is met before the fallback',
       );
     });
@@ -337,8 +339,10 @@ void main() {
       expect(pillOf('1h').selected, isTrue);
 
       tester
-          .widget<CupertinoTimerPicker>(find.byType(CupertinoTimerPicker))
-          .onTimerDurationChanged(const Duration(hours: 4));
+          .widget<DesignSystemDurationWheel>(
+            find.byType(DesignSystemDurationWheel),
+          )
+          .onDurationChanged(const Duration(hours: 4));
       await tester.pumpAndSettle();
 
       expect(pillOf('4h').selected, isTrue);
@@ -371,8 +375,10 @@ void main() {
       await tester.pumpAndSettle();
 
       tester
-          .widget<CupertinoTimerPicker>(find.byType(CupertinoTimerPicker))
-          .onTimerDurationChanged(const Duration(minutes: 47));
+          .widget<DesignSystemDurationWheel>(
+            find.byType(DesignSystemDurationWheel),
+          )
+          .onDurationChanged(const Duration(minutes: 47));
       await tester.tap(find.text('Done'));
       await tester.pumpAndSettle();
 
