@@ -92,8 +92,11 @@ therefore adds nothing. The processor's comment called the read
    applied", as ADR 0075 does for task fields.
 3. **A stamp closes the ABA where the entity keeps one.** A value
    compare-and-set cannot see the user restoring the base value (ADR 0075's
-   residual). A checklist item stamps `checkedAt` on every check or uncheck
-   and `titleSetAt` on every rename, and every project status change mints a
+   residual, closed for task fields by
+   [ADR 0098](./0098-field-changes-record-their-effect.md), which records the
+   effect key on the task). A checklist item stamps `checkedAt` on every
+   check or uncheck, `titleSetAt` on every rename and `archivedSetAt` on
+   every archive or restore, and every project status change mints a
    new status entry id, so recording those makes a restored value a changed
    field. The commonest edit after an agent checks an item off — the user
    unchecking it — is exactly that ABA. A time entry keeps no such stamp and
@@ -153,10 +156,10 @@ therefore adds nothing. The processor's comment called the read
   for task fields: a user who edits the item and then confirms the older
   suggestion sees it confirmed and the item as they left it.
 - A time entry restored to the proposal's base between the two applications
-  gets the proposed value again — the ADR 0075 ABA, now only for time
-  entries and task fields. Task fields could close it the same way through
-  the status entry's id, but their base format is ADR 0075's, read by older
-  builds; left for a later change.
+  gets the proposed value again — the ADR 0075 ABA, which ADR 0098 closed
+  for task fields and this ADR for checklist items and project statuses.
+  Recording the effect key on the entry, as ADR 0098 does on the task,
+  would close it; left for a later change.
 - A label add has no base: a label the user takes off and then re-adds by
   hand is unsuppressed, and a late add then finds it present and adds
   nothing. A label unsuppressed without being re-added (no UI does this
