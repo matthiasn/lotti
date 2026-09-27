@@ -24,6 +24,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as agent_model;
+import 'package:lotti/features/agents/model/agent_link_slot.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
@@ -362,6 +363,8 @@ void registerAllFallbackValues() {
       vectorClock: null,
     ),
   );
+
+  registerFallbackValue(const AgentLinkSlot.soul('fallback-template-id'));
 
   // Agent repository fallback (for setter verification with `any()`)
   registerFallbackValue(MockAgentRepository());

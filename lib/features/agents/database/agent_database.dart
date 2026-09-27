@@ -37,7 +37,7 @@ class AgentDatabase extends _$AgentDatabase {
 
   /// The schema this build writes. A restored backup may carry an
   /// older schema, which Drift migrates, but never a newer one.
-  static const int currentSchemaVersion = 19;
+  static const int currentSchemaVersion = 22;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -497,6 +497,20 @@ class AgentDatabase extends _$AgentDatabase {
           ]) {
             await customStatement('DROP INDEX IF EXISTS $index');
           }
+        }
+        if (from < 22) {
+          // The slot links keep every concurrent assignment (ADR 0099), and
+          // two of them can share a natural key under different ids. The
+          // slot's own partial unique indexes still admit one visible row.
+          await customStatement(
+            'DROP INDEX IF EXISTS idx_agent_links_unique_from_to_type',
+          );
+          await customStatement(
+            'CREATE UNIQUE INDEX idx_agent_links_unique_from_to_type '
+            'ON agent_links(from_id, to_id, type) '
+            "WHERE type NOT IN ('message_payload', 'soul_assignment', "
+            "'improver_target')",
+          );
         }
       },
     );

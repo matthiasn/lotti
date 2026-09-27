@@ -1,4 +1,3 @@
-import 'package:clock/clock.dart';
 import 'package:drift/drift.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_db_conversions.dart';
@@ -10,6 +9,9 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
+import 'package:lotti/features/agents/model/agent_link.dart'
+    show AgentLinkSelection;
+import 'package:lotti/features/agents/model/agent_link_slot.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:sqlite3/sqlite3.dart' show SqliteException;
 
@@ -30,11 +32,14 @@ class AgentRepoLinks {
   /// another assignment row — live or removed, for instance one an older
   /// build made under a random id and the user then removed or replaced — is
   /// not stored; and any other assignment row that is written retires a live
-  /// seed of the same template, stamping its removal at [agentSeedInstant] so
-  /// every device that retires it stores the same row. Without this, a
+  /// seed of the same template, stamping its removal at [agentSeedInstant]
+  /// so every device that retires it stores the same row. Without this, a
   /// device that seeded afresh would put the default soul back over the
   /// user's choice on a device that made that choice before the seed had a
   /// fixed id.
+  ///
+  /// The seed is settled first, so the slot ranking [_upsertLinkRow] runs
+  /// next (ADR 0099) never sees a live seed beside another assignment.
   Future<void> upsertLink(model.AgentLink link) async {
     if (AgentDbConversions.linkType(link) != AgentLinkTypes.soulAssignment) {
       return _upsertLinkRow(link);
@@ -79,87 +84,113 @@ class AgentRepoLinks {
     );
   }
 
+  /// Persist [link] under its id.
+  ///
+  /// A link that fills an [AgentLinkSlot] — a template's soul or improver —
+  /// is stored exactly as it arrived, like any other, and then the slot is
+  /// re-ranked: of its live links, only the one [AgentLinkSelection] ranks
+  /// first stays visible to reads (`deleted_at IS NULL`); the others keep
+  /// their live serialized version but get the SQL `deleted_at` column set,
+  /// which hides them without deleting them. Nothing about the slot is
+  /// written as a new version, so every replica that holds the same versions
+  /// shows the same assignment whichever order they arrived in (ADR 0099,
+  /// `specs/tla/AgentLinks.tla`).
+  ///
+  /// Before ADR 0099 a live assignment tombstoned the slot's other live rows
+  /// in place, with no clock and no sync message, and hard-deleted a row with
+  /// the same `(from_id, to_id, type)`. Two devices that reassigned one slot
+  /// concurrently each kept the other's link: the assignments swapped.
   Future<void> _upsertLinkRow(model.AgentLink link) async {
-    final companion = AgentDbConversions.toLinkCompanion(link);
-    final type = AgentDbConversions.linkType(link);
-    final needsUniqueSlotHandoff =
-        link.deletedAt == null &&
-        (type == AgentLinkTypes.soulAssignment ||
-            type == AgentLinkTypes.improverTarget);
-
-    if (!needsUniqueSlotHandoff) {
-      await _db.into(_db.agentLinks).insertOnConflictUpdate(companion);
+    final slot = AgentLinkSlot.of(link);
+    if (slot == null) {
+      await _db
+          .into(_db.agentLinks)
+          .insertOnConflictUpdate(AgentDbConversions.toLinkCompanion(link));
       return;
     }
+    await _db.transaction(() => _upsertSlotLink(link, slot));
+  }
 
-    await _db.transaction(() async {
-      final now = clock.now();
-      // The SQL `deleted_at` / `updated_at` columns AND the
-      // `serialized` JSON both need to carry the tombstone, otherwise
-      // readers that decode the link from `serialized` (e.g. the
-      // sequence-log population queries `getAgentLinksInInterval` and
-      // `getAgentLinksWithNullVectorClock`, which return raw rows
-      // without a deleted_at filter) see a SQL-soft-deleted row whose
-      // JSON still describes an active link. `json_set` mutates the
-      // JSON in-place so the two stay consistent.
-      final nowIso = now.toIso8601String();
-      final nowSeconds = now.millisecondsSinceEpoch ~/ 1000;
-      final typeSql = type == AgentLinkTypes.soulAssignment
-          ? 'soul_assignment'
-          : 'improver_target';
-      if (type == AgentLinkTypes.soulAssignment) {
-        await _db.customStatement(
-          'UPDATE agent_links '
-          'SET deleted_at = ?, updated_at = ?, '
-          '    serialized = json_set(serialized, '
-          r"      '$.deletedAt', ?, "
-          r"      '$.updatedAt', ?) "
-          "WHERE type = 'soul_assignment' "
-          '  AND deleted_at IS NULL '
-          '  AND from_id = ? '
-          '  AND id != ?',
-          [nowSeconds, nowSeconds, nowIso, nowIso, link.fromId, link.id],
-        );
-      } else {
-        // improverTarget — UNIQUE on (to_id).
-        await _db.customStatement(
-          'UPDATE agent_links '
-          'SET deleted_at = ?, updated_at = ?, '
-          '    serialized = json_set(serialized, '
-          r"      '$.deletedAt', ?, "
-          r"      '$.updatedAt', ?) "
-          "WHERE type = 'improver_target' "
-          '  AND deleted_at IS NULL '
-          '  AND to_id = ? '
-          '  AND id != ?',
-          [nowSeconds, nowSeconds, nowIso, nowIso, link.toId, link.id],
-        );
+  Future<void> _upsertSlotLink(
+    model.AgentLink link,
+    AgentLinkSlot slot,
+  ) async {
+    final others = [
+      for (final row in await _slotRows(slot))
+        if (row.id != link.id)
+          (row: row, link: AgentDbConversions.fromLinkRow(row)),
+    ];
+    final contenders = [
+      for (final other in others)
+        if (other.link.deletedAt == null) other.link,
+      if (link.deletedAt == null) link,
+    ];
+    final winnerId = contenders.isEmpty ? null : contenders.selectPrimary().id;
+
+    // Hide the losers first: the partial unique index on the slot admits one
+    // visible row, and the incoming link may be the new winner.
+    for (final other in others) {
+      if (other.link.deletedAt == null &&
+          other.link.id != winnerId &&
+          other.row.deletedAt == null) {
+        await _setHidden(other.row.id, hidden: true);
       }
-      // The partial unique index `idx_agent_links_unique_from_to_type`
-      // on (from_id, to_id, type) — all types except `message_payload` —
-      // applies regardless of `deleted_at`, so the soft-delete above
-      // does NOT free the natural-key slot when an existing row has
-      // the exact same `(type, from_id, to_id)` triple but a
-      // different `id` (e.g. the same soul↔template binding
-      // resynced from another device after a data restore). Drift's
-      // `insertOnConflictUpdate` emits `ON CONFLICT(id) DO UPDATE`,
-      // so a non-primary-key UNIQUE violation throws 2067 instead of
-      // upserting. Hard-delete any exact-natural-key rows with a
-      // different id inside the same transaction so the INSERT can
-      // claim the slot. The soft-delete tombstone is preserved for
-      // rows whose natural key differs (e.g. different to_id on a
-      // soul_assignment re-binding) — only exact-duplicate rows that
-      // were already headed to the tombstone are dropped.
-      await _db.customStatement(
-        'DELETE FROM agent_links '
-        'WHERE type = ? '
-        '  AND from_id = ? '
-        '  AND to_id = ? '
-        '  AND id != ?',
-        [typeSql, link.fromId, link.toId, link.id],
-      );
-      await _db.into(_db.agentLinks).insertOnConflictUpdate(companion);
-    });
+    }
+
+    final companion = AgentDbConversions.toLinkCompanion(link);
+    await _db
+        .into(_db.agentLinks)
+        .insertOnConflictUpdate(
+          link.deletedAt == null && link.id != winnerId
+              ? companion.copyWith(deletedAt: Value(link.updatedAt))
+              : companion,
+        );
+
+    for (final other in others) {
+      if (other.link.id == winnerId && other.row.deletedAt != null) {
+        await _setHidden(other.row.id, hidden: false);
+      }
+    }
+  }
+
+  /// Every row stored in [slot], tombstones and hidden links included.
+  Future<List<AgentLink>> _slotRows(AgentLinkSlot slot) {
+    final key = slot.keyedByFromId ? 'from_id' : 'to_id';
+    return _db
+        .customSelect(
+          'SELECT * FROM agent_links WHERE type = ? AND $key = ?',
+          variables: [
+            Variable.withString(slot.type),
+            Variable.withString(slot.keyId),
+          ],
+          readsFrom: {_db.agentLinks},
+        )
+        .asyncMap(_db.agentLinks.mapFromRow)
+        .get();
+  }
+
+  /// Shows or hides a live slot link from reads. Only the SQL `deleted_at`
+  /// column changes: `serialized` keeps the version as it was written, which
+  /// is what sync sends on and what the slot ranks.
+  Future<void> _setHidden(String id, {required bool hidden}) {
+    return _db.customStatement(
+      hidden
+          ? 'UPDATE agent_links SET deleted_at = updated_at WHERE id = ?'
+          : 'UPDATE agent_links SET deleted_at = NULL WHERE id = ?',
+      [id],
+    );
+  }
+
+  /// Every version stored in [slot], as written: the visible link, the live
+  /// links the slot ranks below it, and tombstones.
+  ///
+  /// A writer that reassigns or clears the slot removes every live link here,
+  /// not only the visible one, so a hidden assignment does not surface when
+  /// the one above it is removed; and it stamps a new assignment's
+  /// `createdAt` above all of them.
+  Future<List<model.AgentLink>> getSlotLinks(AgentLinkSlot slot) async {
+    final rows = await _slotRows(slot);
+    return rows.map(AgentDbConversions.fromLinkRow).toList();
   }
 
   /// Fetch non-deleted links originating from [fromId], optionally filtered

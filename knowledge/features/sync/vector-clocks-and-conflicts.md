@@ -571,8 +571,12 @@ flowchart TD
   D -- otherwise --> A[write the incoming version]
 ```
 
-Soul assignments and improver targets are an exception, recorded as a
-residual below.
+Soul assignments and improver targets add one rule on top: a template's soul
+or improver is a slot that can hold several live links under different ids,
+and every replica shows the one ranked first by `createdAt`, then id, hiding
+the others without rewriting them. A writer stamps a new assignment past every
+link of the slot it holds (ADR 0099; the details are in
+[agent persistence and sync](../agents/persistence-and-sync.md)).
 
 ## Agent entities: a removal is a version too
 
@@ -786,10 +790,8 @@ These cases stay open, recorded in `specs/tla/README.md` and ADRs 0068 and
 - Nudges store the join of both clocks after a concurrent merge, so an exact
   `updatedAt` tie between two nudge versions is broken on a history-dependent
   clock.
-- A template has at most one live soul assignment, and a template has at most
-  one improver. When a live one arrives, `AgentRepoLinks.upsertLink`
-  tombstones the other locally, without a clock bump or a sync message, so
-  two devices that reassign concurrently swap the assignments (ADR 0081).
-  The fix needs a decision.
+- Soul or improver assignments that the pre-ADR 0099 handoff tombstoned in
+  place, without a clock, stay tombstoned on that device. The next assignment
+  of the template converges the slot.
 - A hard delete (`hardDeleteAgent`, retention pruning) leaves no tombstone and
   is not synced, so a late copy can restore such a row.

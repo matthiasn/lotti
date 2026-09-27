@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/model/agent_link_slot.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -216,10 +217,7 @@ void main() {
   group('assignSoulToTemplate', () {
     test('creates soul assignment link', () async {
       when(
-        () => mockRepo.getLinksFrom(
-          kTestTemplateId,
-          type: AgentLinkTypes.soulAssignment,
-        ),
+        () => mockRepo.getSlotLinks(const AgentLinkSlot.soul(kTestTemplateId)),
       ).thenAnswer((_) async => []);
 
       await service.assignSoulToTemplate(kTestTemplateId, kTestSoulId);
@@ -234,10 +232,7 @@ void main() {
     test('replaces existing assignment by soft-deleting old link', () async {
       final existingLink = makeTestSoulAssignmentLink(toId: 'old-soul');
       when(
-        () => mockRepo.getLinksFrom(
-          kTestTemplateId,
-          type: AgentLinkTypes.soulAssignment,
-        ),
+        () => mockRepo.getSlotLinks(const AgentLinkSlot.soul(kTestTemplateId)),
       ).thenAnswer((_) async => [existingLink]);
 
       await service.assignSoulToTemplate(kTestTemplateId, kTestSoulId);
@@ -252,10 +247,7 @@ void main() {
     test('is a no-op when already assigned to the same soul', () async {
       final existingLink = makeTestSoulAssignmentLink();
       when(
-        () => mockRepo.getLinksFrom(
-          kTestTemplateId,
-          type: AgentLinkTypes.soulAssignment,
-        ),
+        () => mockRepo.getSlotLinks(const AgentLinkSlot.soul(kTestTemplateId)),
       ).thenAnswer((_) async => [existingLink]);
 
       await service.assignSoulToTemplate(kTestTemplateId, kTestSoulId);
@@ -276,10 +268,8 @@ void main() {
         );
         final matchingLink = makeTestSoulAssignmentLink(id: 'link-match');
         when(
-          () => mockRepo.getLinksFrom(
-            kTestTemplateId,
-            type: AgentLinkTypes.soulAssignment,
-          ),
+          () =>
+              mockRepo.getSlotLinks(const AgentLinkSlot.soul(kTestTemplateId)),
         ).thenAnswer((_) async => [staleLink, matchingLink]);
 
         await service.assignSoulToTemplate(kTestTemplateId, kTestSoulId);

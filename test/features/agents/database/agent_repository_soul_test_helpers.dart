@@ -304,38 +304,36 @@ class GeneratedSoulResolutionScenario {
     return target == null || target.deleted ? null : target.displayName;
   }
 
-  GeneratedSoulAssignmentSpec? get expectedTargetTemplateAssignment {
-    final activeByTemplate =
-        <GeneratedSoulTemplateSlot, GeneratedSoulAssignmentSpec>{};
-    for (final assignment in assignments) {
-      if (assignment.deleted) {
-        if (activeByTemplate[assignment.templateSlot]?.id == assignment.id) {
-          activeByTemplate.remove(assignment.templateSlot);
-        }
-      } else {
-        activeByTemplate[assignment.templateSlot] = assignment;
+  /// The assignment each template's slot shows (ADR 0099): every id holds
+  /// its last write, and of the live ones the slot shows the newest
+  /// `createdAt`, then the greater id.
+  Map<GeneratedSoulTemplateSlot, GeneratedSoulAssignmentSpec>
+  get _shownByTemplate {
+    final latestById = <String, GeneratedSoulAssignmentSpec>{
+      for (final assignment in assignments) assignment.id: assignment,
+    };
+    final shown = <GeneratedSoulTemplateSlot, GeneratedSoulAssignmentSpec>{};
+    for (final assignment in latestById.values) {
+      if (assignment.deleted) continue;
+      final current = shown[assignment.templateSlot];
+      final byCreatedAt = current == null
+          ? 1
+          : assignment.createdAt.compareTo(current.createdAt);
+      if (byCreatedAt > 0 ||
+          (byCreatedAt == 0 && assignment.id.compareTo(current!.id) > 0)) {
+        shown[assignment.templateSlot] = assignment;
       }
     }
-    return activeByTemplate[GeneratedSoulTemplateSlot.target];
+    return shown;
   }
 
-  Set<String> get expectedTargetSoulAssignmentIds {
-    final activeByTemplate =
-        <GeneratedSoulTemplateSlot, GeneratedSoulAssignmentSpec>{};
-    for (final assignment in assignments) {
-      if (assignment.deleted) {
-        if (activeByTemplate[assignment.templateSlot]?.id == assignment.id) {
-          activeByTemplate.remove(assignment.templateSlot);
-        }
-      } else {
-        activeByTemplate[assignment.templateSlot] = assignment;
-      }
-    }
-    return {
-      for (final assignment in activeByTemplate.values)
-        if (assignment.soulSlot == GeneratedSoulSlot.target) assignment.id,
-    };
-  }
+  GeneratedSoulAssignmentSpec? get expectedTargetTemplateAssignment =>
+      _shownByTemplate[GeneratedSoulTemplateSlot.target];
+
+  Set<String> get expectedTargetSoulAssignmentIds => {
+    for (final assignment in _shownByTemplate.values)
+      if (assignment.soulSlot == GeneratedSoulSlot.target) assignment.id,
+  };
 
   @override
   String toString() {

@@ -7,6 +7,9 @@ import 'package:lotti/features/agents/database/agent_repo_links.dart';
 import 'package:lotti/features/agents/database/agent_repository_exception.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
+import 'package:lotti/features/agents/model/agent_link.dart'
+    show AgentLinkSoftDelete;
+import 'package:lotti/features/agents/model/agent_link_slot.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
 import '../test_data/entity_factories.dart';
@@ -270,6 +273,57 @@ void main() {
     );
   });
 
+  test(
+    "a seed retired by the user's assignment stays retired when the slot "
+    'ranking loses that assignment (ADR 0099 with ADR 0100)',
+    () async {
+      final seedId = seededSoulAssignmentLinkId('template-1');
+      await links.upsertLink(
+        makeTestSoulAssignmentLink(
+          id: seedId,
+          fromId: 'template-1',
+          toId: 'soul-default',
+          createdAt: agentSeedInstant,
+          updatedAt: agentSeedInstant,
+        ),
+      );
+      final mine = makeTestSoulAssignmentLink(
+        id: 'mine',
+        fromId: 'template-1',
+        toId: 'soul-mine',
+        createdAt: testDate,
+        updatedAt: testDate,
+      );
+      await links.upsertLink(mine);
+      expect(
+        (await links.getLinksFrom(
+          'template-1',
+          type: AgentLinkTypes.soulAssignment,
+        )).map((l) => l.toId),
+        ['soul-mine'],
+      );
+
+      // With nothing live left in the slot, the ranking must not surface the
+      // default soul the user replaced.
+      await links.upsertLink(mine.softDeleted(testDate));
+
+      expect(
+        await links.getLinksFrom(
+          'template-1',
+          type: AgentLinkTypes.soulAssignment,
+        ),
+        isEmpty,
+      );
+      final slot = await links.getSlotLinks(
+        const AgentLinkSlot.soul('template-1'),
+      );
+      expect(
+        slot.singleWhere((l) => l.id == seedId).deletedAt,
+        agentSeedInstant,
+      );
+    },
+  );
+
   group('hasAnyLinkFrom', () {
     test(
       'counts a removed link, and only links of the type from the id',
@@ -331,6 +385,199 @@ void main() {
         );
       },
     );
+  });
+
+  group('slot links (ADR 0099)', () {
+    final early = DateTime(2026, 3, 15, 9);
+    final late = DateTime(2026, 3, 15, 10);
+
+    model.AgentLink soul(String id, String soulId, DateTime at) =>
+        makeTestSoulAssignmentLink(
+          id: id,
+          fromId: 'tpl-1',
+          toId: soulId,
+          createdAt: at,
+          updatedAt: at,
+        );
+
+    Future<List<String>> visibleSouls(AgentRepoLinks repo) async => [
+      for (final link in await repo.getLinksFrom(
+        'tpl-1',
+        type: AgentLinkTypes.soulAssignment,
+      ))
+        link.toId,
+    ];
+
+    test(
+      'two devices that reassign one soul concurrently both show the '
+      'higher-ranked assignment, not each other',
+      () async {
+        final otherDb = AgentDatabase(
+          inMemoryDatabase: true,
+          background: false,
+        );
+        addTearDown(otherDb.close);
+        final deviceB = AgentRepoLinks(otherDb, null);
+
+        final onA = soul('link-a', 'soul-a', late);
+        final onB = soul('link-b', 'soul-b', early);
+        await links.upsertLink(onA);
+        await deviceB.upsertLink(onB);
+
+        // Each receives the other's assignment.
+        await links.upsertLink(onB);
+        await deviceB.upsertLink(onA);
+
+        // Before ADR 0099 each arrival tombstoned the local assignment:
+        // A showed soul-b and B showed soul-a.
+        expect(await visibleSouls(links), ['soul-a']);
+        expect(await visibleSouls(deviceB), ['soul-a']);
+      },
+    );
+
+    test(
+      'every arrival order of two assignments and a removal shows the '
+      'same soul and keeps the same versions',
+      () async {
+        final versions = [
+          soul('link-a', 'soul-a', early),
+          soul('link-b', 'soul-b', late),
+          soul('link-b', 'soul-b', late).softDeleted(late),
+        ];
+        final orders = [
+          [0, 1, 2],
+          [0, 2, 1],
+          [1, 0, 2],
+          [1, 2, 0],
+          [2, 0, 1],
+          [2, 1, 0],
+        ];
+        for (final order in orders) {
+          final replicaDb = AgentDatabase(
+            inMemoryDatabase: true,
+            background: false,
+          );
+          final replica = AgentRepoLinks(replicaDb, null);
+          for (final index in order) {
+            final version = versions[index];
+            // The receive keeps a tombstone over its own live copy.
+            final stored = (await replica.getSlotLinks(
+              const AgentLinkSlot.soul('tpl-1'),
+            )).where((link) => link.id == version.id).firstOrNull;
+            if (stored?.deletedAt != null) continue;
+            await replica.upsertLink(version);
+          }
+          expect(await visibleSouls(replica), ['soul-a'], reason: '$order');
+          final stored = await replica.getSlotLinks(
+            const AgentLinkSlot.soul('tpl-1'),
+          );
+          expect(
+            {for (final link in stored) link.id: link.deletedAt != null},
+            {'link-a': false, 'link-b': true},
+            reason: '$order',
+          );
+          await replicaDb.close();
+        }
+      },
+    );
+
+    test(
+      'a lower-ranked live assignment is hidden, not deleted: its serialized '
+      'version stays live and it shows once the winner is removed',
+      () async {
+        final loser = soul('link-a', 'soul-a', early);
+        final winner = soul('link-b', 'soul-b', late);
+        await links.upsertLink(winner);
+        await links.upsertLink(loser);
+
+        expect(await visibleSouls(links), ['soul-b']);
+        final raw = await db
+            .customSelect(
+              'SELECT deleted_at FROM agent_links WHERE id = ?',
+              variables: [Variable.withString('link-a')],
+            )
+            .getSingle();
+        expect(raw.data['deleted_at'], isNotNull);
+        final slot = await links.getSlotLinks(
+          const AgentLinkSlot.soul('tpl-1'),
+        );
+        expect(slot.singleWhere((l) => l.id == 'link-a'), loser);
+
+        await links.upsertLink(winner.softDeleted(late));
+        expect(await visibleSouls(links), ['soul-a']);
+      },
+    );
+
+    test(
+      'two assignments of the same soul under different ids are both kept',
+      () async {
+        await links.upsertLink(soul('link-a', 'soul-a', early));
+        await links.upsertLink(soul('link-b', 'soul-a', late));
+
+        final stored = await links.getSlotLinks(
+          const AgentLinkSlot.soul('tpl-1'),
+        );
+        // Before ADR 0099 the second write hard-deleted the first row.
+        expect(stored.map((l) => l.id).toSet(), {'link-a', 'link-b'});
+        expect(
+          (await links.getLinksFrom(
+            'tpl-1',
+            type: AgentLinkTypes.soulAssignment,
+          )).map((l) => l.id),
+          ['link-b'],
+        );
+      },
+    );
+
+    test('the improver slot is keyed by the template in toId', () async {
+      await links.upsertLink(
+        makeTestImproverTargetLink(
+          id: 'imp-a',
+          fromId: 'improver-a',
+          toId: 'tpl-1',
+          createdAt: late,
+          updatedAt: late,
+        ),
+      );
+      await links.upsertLink(
+        makeTestImproverTargetLink(
+          id: 'imp-b',
+          fromId: 'improver-b',
+          toId: 'tpl-1',
+          createdAt: early,
+          updatedAt: early,
+        ),
+      );
+      // Another template's improver is a different slot.
+      await links.upsertLink(
+        makeTestImproverTargetLink(
+          id: 'imp-c',
+          fromId: 'improver-b',
+          toId: 'tpl-2',
+          createdAt: early,
+          updatedAt: early,
+        ),
+      );
+
+      final visible = await links.getLinksTo(
+        'tpl-1',
+        type: AgentLinkTypes.improverTarget,
+      );
+      expect(visible.map((l) => l.id), ['imp-a']);
+      expect(
+        (await links.getSlotLinks(
+          const AgentLinkSlot.improver('tpl-1'),
+        )).map((l) => l.id).toSet(),
+        {'imp-a', 'imp-b'},
+      );
+      expect(
+        (await links.getLinksTo(
+          'tpl-2',
+          type: AgentLinkTypes.improverTarget,
+        )).map((l) => l.id),
+        ['imp-c'],
+      );
+    });
   });
 
   group('wake run log', () {

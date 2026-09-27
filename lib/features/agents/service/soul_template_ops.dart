@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/model/agent_link_slot.dart';
 import 'package:lotti/features/agents/model/seeded_directives.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/soul_version_ops.dart';
@@ -35,12 +36,13 @@ class SoulTemplateOps {
 
   /// Assign a soul document to a template.
   ///
-  /// Soft-deletes **all** existing soul assignment links for this template,
-  /// then creates a fresh link to [soulId]. This ensures exactly one active
-  /// assignment regardless of sync races or prior corruption.
+  /// Soft-deletes **all** live soul assignment links of this template — the
+  /// one the slot shows and any concurrent assignment ranked below it
+  /// ([AgentLinkSlot]) — then creates a fresh link to [soulId], which
+  /// `AgentSyncService.upsertLink` stamps to outrank them.
   ///
-  /// If the only existing link already points at [soulId] and no stale
-  /// parallel links exist, the method is a no-op.
+  /// If the only live link already points at [soulId], the method is a
+  /// no-op.
   Future<void> assignSoulToTemplate(
     String templateId,
     String soulId,
@@ -48,10 +50,7 @@ class SoulTemplateOps {
     final now = clock.now();
 
     await syncService.runInTransaction(() async {
-      final existingLinks = await repository.getLinksFrom(
-        templateId,
-        type: AgentLinkTypes.soulAssignment,
-      );
+      final existingLinks = await _liveAssignments(templateId);
 
       // Only skip if the sole link already points at the requested soul.
       // If there are multiple links (sync race residue), fall through to
@@ -83,14 +82,14 @@ class SoulTemplateOps {
   }
 
   /// Remove the soul assignment from a template.
+  ///
+  /// Removes every live assignment of the slot, so a concurrent assignment
+  /// ranked below the visible one does not take its place.
   Future<void> unassignSoul(String templateId) async {
     final now = clock.now();
 
     await syncService.runInTransaction(() async {
-      final links = await repository.getLinksFrom(
-        templateId,
-        type: AgentLinkTypes.soulAssignment,
-      );
+      final links = await _liveAssignments(templateId);
       for (final link in links) {
         await syncService.upsertLink(link.softDeleted(now));
       }
@@ -101,6 +100,14 @@ class SoulTemplateOps {
       name: _logTag,
     );
   }
+
+  /// Every live soul assignment of [templateId], the hidden ones included.
+  Future<List<AgentLink>> _liveAssignments(String templateId) async => [
+    for (final link in await repository.getSlotLinks(
+      AgentLinkSlot.soul(templateId),
+    ))
+      if (link.deletedAt == null) link,
+  ];
 
   /// Resolve the active soul version for a template by following the
   /// assignment link → soul → head → version chain.

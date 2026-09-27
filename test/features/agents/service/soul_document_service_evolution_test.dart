@@ -3,6 +3,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/model/agent_link_slot.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -178,10 +179,7 @@ void main() {
     test('soft-deletes existing soul assignment link', () async {
       final existingLink = makeTestSoulAssignmentLink();
       when(
-        () => mockRepo.getLinksFrom(
-          kTestTemplateId,
-          type: AgentLinkTypes.soulAssignment,
-        ),
+        () => mockRepo.getSlotLinks(const AgentLinkSlot.soul(kTestTemplateId)),
       ).thenAnswer((_) async => [existingLink]);
 
       await service.unassignSoul(kTestTemplateId);
@@ -194,10 +192,7 @@ void main() {
 
     test('does nothing when no soul is assigned', () async {
       when(
-        () => mockRepo.getLinksFrom(
-          kTestTemplateId,
-          type: AgentLinkTypes.soulAssignment,
-        ),
+        () => mockRepo.getSlotLinks(const AgentLinkSlot.soul(kTestTemplateId)),
       ).thenAnswer((_) async => []);
 
       await service.unassignSoul(kTestTemplateId);
@@ -279,6 +274,9 @@ void main() {
           type: AgentLinkTypes.soulAssignment,
         ),
       ).thenAnswer((_) async => true);
+      when(
+        () => mockRepo.getSlotLinks(any()),
+      ).thenAnswer((_) async => []);
 
       await service.seedDefaults();
 
@@ -310,6 +308,20 @@ void main() {
           type: AgentLinkTypes.soulAssignment,
         ),
       ).thenAnswer((_) async => true);
+      when(
+        () => mockRepo.getSlotLinks(any()),
+      ).thenAnswer((invocation) async {
+        final templateId =
+            (invocation.positionalArguments.first as AgentLinkSlot).keyId;
+        // Map template → expected soul for the seed assignments.
+        final soulId = switch (templateId) {
+          'template-laura-001' => 'soul-laura-001',
+          'template-tom-001' => 'soul-tom-001',
+          'template-project-001' => 'soul-laura-001',
+          _ => 'unknown',
+        };
+        return [makeTestSoulAssignmentLink(fromId: templateId, toId: soulId)];
+      });
 
       await service.seedDefaults();
 
