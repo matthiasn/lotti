@@ -244,6 +244,20 @@ void main() {
     expect(find.text('01:30:30'), findsOneWidget);
   });
 
+  testWidgets('an estimate differing below the second is shown in full', (
+    tester,
+  ) async {
+    final diff = computeEntryDiff(
+      taskOf(estimate: const Duration(minutes: 90)),
+      taskOf(estimate: const Duration(minutes: 90, milliseconds: 500)),
+    );
+
+    await _pump(tester, diff);
+
+    expect(find.text('1h 30m'), findsOneWidget);
+    expect(find.text('1:30:00.500000'), findsOneWidget);
+  });
+
   testWidgets('identical fields are summarized and no side rows are shown', (
     tester,
   ) async {

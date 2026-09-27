@@ -322,11 +322,15 @@ String _displayValue(BuildContext context, EntryField field, String? raw) {
       final micros = int.tryParse(raw);
       if (micros == null) return raw;
       final estimate = Duration(microseconds: micros);
-      // As the task page shows an estimate — to the second when it is not
-      // whole minutes, so two sides differing below the minute read apart.
-      return estimate.inSeconds % 60 == 0
-          ? formatRangeDuration(estimate)
-          : formatDuration(estimate);
+      // As the task page shows an estimate when it is whole minutes; to the
+      // second, or below, when it is not — the comparison is exact, so two
+      // sides that differ must never read the same.
+      if (estimate.inMicroseconds % Duration.microsecondsPerMinute == 0) {
+        return formatRangeDuration(estimate);
+      }
+      return estimate.inMicroseconds % Duration.microsecondsPerSecond == 0
+          ? formatDuration(estimate)
+          : estimate.toString();
     case EntryField.dueDate:
       final parsed = DateTime.tryParse(raw);
       return parsed == null ? raw : deviceDateLabel(context, parsed);
