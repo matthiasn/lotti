@@ -15570,6 +15570,42 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{The database is sound.} other{All {count} databases are sound.}}'**
   String maintenanceCheckIntegrityOk(int count);
 
+  /// No description provided for @maintenanceDeepBackfill.
+  ///
+  /// In en, this message translates to:
+  /// **'Deep backfill'**
+  String get maintenanceDeepBackfill;
+
+  /// No description provided for @maintenanceDeepBackfillComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} records listed for your other devices'**
+  String maintenanceDeepBackfillComplete(int count);
+
+  /// No description provided for @maintenanceDeepBackfillConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, start'**
+  String get maintenanceDeepBackfillConfirm;
+
+  /// No description provided for @maintenanceDeepBackfillDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare every record with your other devices and fill the gaps'**
+  String get maintenanceDeepBackfillDescription;
+
+  /// No description provided for @maintenanceDeepBackfillMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This sends a list of every record on this device, deletions included, to your other devices. Each one compares it with its own records, asks for what it is missing and sends back what this device lacks. Your other devices need to be online to answer.'**
+  String get maintenanceDeepBackfillMessage;
+
+  /// No description provided for @maintenanceDeepBackfillProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{advertised} of {total} records listed'**
+  String maintenanceDeepBackfillProgress(int advertised, int total);
+
   /// No description provided for @maintenanceDeleteAgentDb.
   ///
   /// In en, this message translates to:
@@ -24460,6 +24496,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Daily OS name'**
   String get syncPayloadDailyOsUserName;
+
+  /// No description provided for @syncPayloadDeepBackfillInventory.
+  ///
+  /// In en, this message translates to:
+  /// **'Deep backfill inventory'**
+  String get syncPayloadDeepBackfillInventory;
+
+  /// No description provided for @syncPayloadDeepBackfillRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Deep backfill request'**
+  String get syncPayloadDeepBackfillRequest;
 
   /// No description provided for @syncPayloadEntityDefinition.
   ///

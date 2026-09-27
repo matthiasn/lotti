@@ -9237,6 +9237,30 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get maintenanceDeepBackfill => 'Tiefes Nachfüllen';
+
+  @override
+  String maintenanceDeepBackfillComplete(int count) {
+    return '$count Einträge für deine anderen Geräte aufgelistet';
+  }
+
+  @override
+  String get maintenanceDeepBackfillConfirm => 'Ja, starten';
+
+  @override
+  String get maintenanceDeepBackfillDescription =>
+      'Alle Einträge mit deinen anderen Geräten abgleichen und Lücken schließen';
+
+  @override
+  String get maintenanceDeepBackfillMessage =>
+      'Dabei wird eine Liste aller Einträge auf diesem Gerät, auch der gelöschten, an deine anderen Geräte gesendet. Jedes vergleicht sie mit den eigenen Einträgen, fordert an, was ihm fehlt, und schickt zurück, was diesem Gerät fehlt. Deine anderen Geräte müssen online sein, um zu antworten.';
+
+  @override
+  String maintenanceDeepBackfillProgress(int advertised, int total) {
+    return '$advertised von $total Einträgen aufgelistet';
+  }
+
+  @override
   String get maintenanceDeleteAgentDb => 'Agenten-Datenbank löschen';
 
   @override
@@ -14813,6 +14837,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncPayloadDailyOsUserName => 'Daily-OS-Name';
+
+  @override
+  String get syncPayloadDeepBackfillInventory =>
+      'Bestandsliste zum tiefen Nachfüllen';
+
+  @override
+  String get syncPayloadDeepBackfillRequest => 'Anfrage zum tiefen Nachfüllen';
 
   @override
   String get syncPayloadEntityDefinition => 'Entitätsdefinition';

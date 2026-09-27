@@ -17,6 +17,28 @@ Map<String, dynamic> _$BackfillRequestEntryToJson(
   _BackfillRequestEntry instance,
 ) => <String, dynamic>{'hostId': instance.hostId, 'counter': instance.counter};
 
+_DeepBackfillRecord _$DeepBackfillRecordFromJson(Map<String, dynamic> json) =>
+    _DeepBackfillRecord(
+      id: json['id'] as String,
+      vectorClock: VectorClock.fromJson(
+        json['vectorClock'] as Map<String, dynamic>,
+      ),
+    );
+
+Map<String, dynamic> _$DeepBackfillRecordToJson(_DeepBackfillRecord instance) =>
+    <String, dynamic>{'id': instance.id, 'vectorClock': instance.vectorClock};
+
+_DeepBackfillRequestRecord _$DeepBackfillRequestRecordFromJson(
+  Map<String, dynamic> json,
+) => _DeepBackfillRequestRecord(
+  id: json['id'] as String,
+  absent: json['absent'] as bool? ?? false,
+);
+
+Map<String, dynamic> _$DeepBackfillRequestRecordToJson(
+  _DeepBackfillRequestRecord instance,
+) => <String, dynamic>{'id': instance.id, 'absent': instance.absent};
+
 _SyncCounterRange _$SyncCounterRangeFromJson(Map<String, dynamic> json) =>
     _SyncCounterRange(
       start: (json['start'] as num).toInt(),
@@ -431,6 +453,93 @@ Map<String, dynamic> _$SyncBackfillRequestToJson(
   'runtimeType': instance.$type,
 };
 
+SyncDeepBackfillInventory _$SyncDeepBackfillInventoryFromJson(
+  Map<String, dynamic> json,
+) => SyncDeepBackfillInventory(
+  roundId: json['roundId'] as String,
+  hostId: json['hostId'] as String,
+  payloadType: $enumDecode(
+    _$SyncSequencePayloadTypeEnumMap,
+    json['payloadType'],
+  ),
+  batch: (json['batch'] as num).toInt(),
+  rangeStart: json['rangeStart'] as String?,
+  rangeEnd: json['rangeEnd'] as String?,
+  records:
+      (json['records'] as List<dynamic>?)
+          ?.map((e) => DeepBackfillRecord.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <DeepBackfillRecord>[],
+  conflicts:
+      (json['conflicts'] as List<dynamic>?)
+          ?.map((e) => DeepBackfillRecord.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <DeepBackfillRecord>[],
+  jsonPath: json['jsonPath'] as String?,
+  attachmentEventId: json['attachmentEventId'] as String?,
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$SyncDeepBackfillInventoryToJson(
+  SyncDeepBackfillInventory instance,
+) => <String, dynamic>{
+  'roundId': instance.roundId,
+  'hostId': instance.hostId,
+  'payloadType': _$SyncSequencePayloadTypeEnumMap[instance.payloadType]!,
+  'batch': instance.batch,
+  'rangeStart': instance.rangeStart,
+  'rangeEnd': instance.rangeEnd,
+  'records': instance.records.map((e) => e.toJson()).toList(),
+  'conflicts': instance.conflicts.map((e) => e.toJson()).toList(),
+  'jsonPath': instance.jsonPath,
+  'attachmentEventId': instance.attachmentEventId,
+  'runtimeType': instance.$type,
+};
+
+const _$SyncSequencePayloadTypeEnumMap = {
+  SyncSequencePayloadType.journalEntity: 'journalEntity',
+  SyncSequencePayloadType.entryLink: 'entryLink',
+  SyncSequencePayloadType.agentEntity: 'agentEntity',
+  SyncSequencePayloadType.agentLink: 'agentLink',
+  SyncSequencePayloadType.notification: 'notification',
+  SyncSequencePayloadType.notificationStateUpdate: 'notificationStateUpdate',
+  SyncSequencePayloadType.consumptionEvent: 'consumptionEvent',
+};
+
+SyncDeepBackfillRequest _$SyncDeepBackfillRequestFromJson(
+  Map<String, dynamic> json,
+) => SyncDeepBackfillRequest(
+  requesterId: json['requesterId'] as String,
+  targetHostId: json['targetHostId'] as String,
+  payloadType: $enumDecode(
+    _$SyncSequencePayloadTypeEnumMap,
+    json['payloadType'],
+  ),
+  records:
+      (json['records'] as List<dynamic>?)
+          ?.map(
+            (e) =>
+                DeepBackfillRequestRecord.fromJson(e as Map<String, dynamic>),
+          )
+          .toList() ??
+      const <DeepBackfillRequestRecord>[],
+  jsonPath: json['jsonPath'] as String?,
+  attachmentEventId: json['attachmentEventId'] as String?,
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$SyncDeepBackfillRequestToJson(
+  SyncDeepBackfillRequest instance,
+) => <String, dynamic>{
+  'requesterId': instance.requesterId,
+  'targetHostId': instance.targetHostId,
+  'payloadType': _$SyncSequencePayloadTypeEnumMap[instance.payloadType]!,
+  'records': instance.records.map((e) => e.toJson()).toList(),
+  'jsonPath': instance.jsonPath,
+  'attachmentEventId': instance.attachmentEventId,
+  'runtimeType': instance.$type,
+};
+
 SyncBackfillResponse _$SyncBackfillResponseFromJson(
   Map<String, dynamic> json,
 ) => SyncBackfillResponse(
@@ -458,16 +567,6 @@ Map<String, dynamic> _$SyncBackfillResponseToJson(
   'payloadType': _$SyncSequencePayloadTypeEnumMap[instance.payloadType],
   'payloadId': instance.payloadId,
   'runtimeType': instance.$type,
-};
-
-const _$SyncSequencePayloadTypeEnumMap = {
-  SyncSequencePayloadType.journalEntity: 'journalEntity',
-  SyncSequencePayloadType.entryLink: 'entryLink',
-  SyncSequencePayloadType.agentEntity: 'agentEntity',
-  SyncSequencePayloadType.agentLink: 'agentLink',
-  SyncSequencePayloadType.notification: 'notification',
-  SyncSequencePayloadType.notificationStateUpdate: 'notificationStateUpdate',
-  SyncSequencePayloadType.consumptionEvent: 'consumptionEvent',
 };
 
 SyncMediaRequest _$SyncMediaRequestFromJson(Map<String, dynamic> json) =>

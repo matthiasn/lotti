@@ -11,6 +11,7 @@ import 'package:lotti/features/sync/tuning.dart';
 
 part 'sync_db.g.dart';
 part 'sync_db_backfill.dart';
+part 'sync_db_deep_backfill.dart';
 part 'sync_db_lifecycle.dart';
 part 'sync_db_outbox.dart';
 part 'sync_db_outbox_dedup.dart';
@@ -55,6 +56,7 @@ const _idxInboundEventQueueActiveStatusRoom =
     InboundEventQueue,
     QueueMarkers,
     OnboardingSyncRounds,
+    DeepBackfillRequests,
   ],
 )
 class SyncDatabase extends _$SyncDatabase
@@ -66,6 +68,7 @@ class SyncDatabase extends _$SyncDatabase
         _SyncDbSequenceLog,
         _SyncDbOnboarding,
         _SyncDbBackfill,
+        _SyncDbDeepBackfill,
         _SyncDbSequenceLifecycle {
   SyncDatabase({
     this.inMemoryDatabase = false,
@@ -100,7 +103,7 @@ class SyncDatabase extends _$SyncDatabase
 
   /// The schema this build writes. A restored backup may carry an
   /// older schema, which Drift migrates, but never a newer one.
-  static const int currentSchemaVersion = 30;
+  static const int currentSchemaVersion = 31;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -637,6 +640,9 @@ class SyncDatabase extends _$SyncDatabase
         }
         if (from < 30) {
           await _dropWatermarksCachedAcrossCounterZero();
+        }
+        if (from < 31) {
+          await m.createTable(deepBackfillRequests);
         }
       },
     );

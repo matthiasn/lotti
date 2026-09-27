@@ -9266,6 +9266,30 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get maintenanceDeepBackfill => 'Preenchimento completo';
+
+  @override
+  String maintenanceDeepBackfillComplete(int count) {
+    return '$count registos listados para os teus outros dispositivos';
+  }
+
+  @override
+  String get maintenanceDeepBackfillConfirm => 'Sim, iniciar';
+
+  @override
+  String get maintenanceDeepBackfillDescription =>
+      'Compara todos os registos com os teus outros dispositivos e preenche as falhas';
+
+  @override
+  String get maintenanceDeepBackfillMessage =>
+      'Isto envia aos teus outros dispositivos uma lista de todos os registos deste dispositivo, incluindo os eliminados. Cada um compara-a com os seus próprios registos, pede o que lhe falta e devolve o que falta a este dispositivo. Os teus outros dispositivos precisam de estar online para responder.';
+
+  @override
+  String maintenanceDeepBackfillProgress(int advertised, int total) {
+    return '$advertised de $total registos listados';
+  }
+
+  @override
   String get maintenanceDeleteAgentDb => 'Excluir banco de dados de agentes';
 
   @override
@@ -14848,6 +14872,14 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get syncPayloadDailyOsUserName => 'Nome diário do sistema operacional';
+
+  @override
+  String get syncPayloadDeepBackfillInventory =>
+      'Inventário do preenchimento completo';
+
+  @override
+  String get syncPayloadDeepBackfillRequest =>
+      'Pedido de preenchimento completo';
 
   @override
   String get syncPayloadEntityDefinition => 'Definição de entidade';

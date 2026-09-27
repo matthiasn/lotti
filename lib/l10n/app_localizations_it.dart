@@ -9288,6 +9288,30 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get maintenanceDeepBackfill => 'Recupero completo';
+
+  @override
+  String maintenanceDeepBackfillComplete(int count) {
+    return '$count record elencati per i tuoi altri dispositivi';
+  }
+
+  @override
+  String get maintenanceDeepBackfillConfirm => 'Sì, avvia';
+
+  @override
+  String get maintenanceDeepBackfillDescription =>
+      'Confronta ogni record con i tuoi altri dispositivi e colma le lacune';
+
+  @override
+  String get maintenanceDeepBackfillMessage =>
+      'Questo invia ai tuoi altri dispositivi l\'elenco di tutti i record di questo dispositivo, compresi quelli eliminati. Ognuno lo confronta con i propri record, chiede ciò che gli manca e rimanda ciò che manca a questo dispositivo. I tuoi altri dispositivi devono essere online per rispondere.';
+
+  @override
+  String maintenanceDeepBackfillProgress(int advertised, int total) {
+    return '$advertised di $total record elencati';
+  }
+
+  @override
   String get maintenanceDeleteAgentDb => 'Eliminare il database degli agenti';
 
   @override
@@ -14893,6 +14917,13 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get syncPayloadDailyOsUserName =>
       'Nome del sistema operativo giornaliero';
+
+  @override
+  String get syncPayloadDeepBackfillInventory =>
+      'Inventario del recupero completo';
+
+  @override
+  String get syncPayloadDeepBackfillRequest => 'Richiesta di recupero completo';
 
   @override
   String get syncPayloadEntityDefinition => 'Definizione di ingresso';

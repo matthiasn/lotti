@@ -9325,6 +9325,30 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get maintenanceDeepBackfill => 'Rattrapage complet';
+
+  @override
+  String maintenanceDeepBackfillComplete(int count) {
+    return '$count enregistrements listés pour tes autres appareils';
+  }
+
+  @override
+  String get maintenanceDeepBackfillConfirm => 'Oui, lancer';
+
+  @override
+  String get maintenanceDeepBackfillDescription =>
+      'Compare chaque enregistrement avec tes autres appareils et comble les manques';
+
+  @override
+  String get maintenanceDeepBackfillMessage =>
+      'Cela envoie à tes autres appareils la liste de tous les enregistrements de cet appareil, y compris ceux supprimés. Chacun la compare avec ses propres enregistrements, demande ce qui lui manque et renvoie ce qui manque à cet appareil. Tes autres appareils doivent être en ligne pour répondre.';
+
+  @override
+  String maintenanceDeepBackfillProgress(int advertised, int total) {
+    return '$advertised enregistrements listés sur $total';
+  }
+
+  @override
   String get maintenanceDeleteAgentDb =>
       'Supprimer la base de données des agents';
 
@@ -14956,6 +14980,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncPayloadDailyOsUserName => 'Nom Daily OS';
+
+  @override
+  String get syncPayloadDeepBackfillInventory =>
+      'Inventaire de rattrapage complet';
+
+  @override
+  String get syncPayloadDeepBackfillRequest => 'Demande de rattrapage complet';
 
   @override
   String get syncPayloadEntityDefinition => 'Définition d\'entité';

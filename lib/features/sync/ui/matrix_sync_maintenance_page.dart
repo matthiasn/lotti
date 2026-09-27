@@ -5,6 +5,7 @@ import 'package:lotti/features/design_system/components/lists/hover_divider_inde
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
+import 'package:lotti/features/sync/ui/deep_backfill_modal.dart';
 import 'package:lotti/features/sync/ui/re_sync_modal.dart';
 import 'package:lotti/features/sync/ui/sequence_log_populate_modal.dart';
 import 'package:lotti/features/sync/ui/sync_modal.dart';
@@ -96,6 +97,12 @@ class _MatrixSyncMaintenanceBodyState extends State<MatrixSyncMaintenanceBody>
                 context.messages.maintenancePopulateSequenceLogDescription,
             icon: LottiIcons.checkAll,
             onTap: () => SequenceLogPopulateModal.show(context),
+          ),
+          (
+            title: context.messages.maintenanceDeepBackfill,
+            subtitle: context.messages.maintenanceDeepBackfillDescription,
+            icon: LottiIcons.devices,
+            onTap: () => DeepBackfillModal.show(context),
           ),
           (
             title: context.messages.maintenancePurgeSentOutbox,

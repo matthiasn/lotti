@@ -355,4 +355,15 @@ class SyncTuning {
   // newly-expired rows in a single pass and is cheap enough that
   // running more often buys nothing.
   static const Duration outboxPruneInterval = Duration(hours: 24);
+
+  // Records per deep-backfill inventory batch. A batch of 5000 ids and
+  // clocks gzips to roughly 100 KB, comfortably inside one attachment and
+  // one outbox bundle manifest.
+  static const int deepBackfillBatchSize = 5000;
+
+  // How long a deep-backfill request stays outstanding before the record may
+  // be requested again. Longer than any delivery the requester waits for, so
+  // an answer still on its way is not asked for twice; short enough that a
+  // lost request is retried by the user's next round.
+  static const Duration deepBackfillRequestExpiry = Duration(hours: 1);
 }

@@ -283,6 +283,542 @@ as int,
 
 
 /// @nodoc
+mixin _$DeepBackfillRecord {
+
+ String get id; VectorClock get vectorClock;
+/// Create a copy of DeepBackfillRecord
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$DeepBackfillRecordCopyWith<DeepBackfillRecord> get copyWith => _$DeepBackfillRecordCopyWithImpl<DeepBackfillRecord>(this as DeepBackfillRecord, _$identity);
+
+  /// Serializes this DeepBackfillRecord to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DeepBackfillRecord&&(identical(other.id, id) || other.id == id)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,vectorClock);
+
+@override
+String toString() {
+  return 'DeepBackfillRecord(id: $id, vectorClock: $vectorClock)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $DeepBackfillRecordCopyWith<$Res>  {
+  factory $DeepBackfillRecordCopyWith(DeepBackfillRecord value, $Res Function(DeepBackfillRecord) _then) = _$DeepBackfillRecordCopyWithImpl;
+@useResult
+$Res call({
+ String id, VectorClock vectorClock
+});
+
+
+
+
+}
+/// @nodoc
+class _$DeepBackfillRecordCopyWithImpl<$Res>
+    implements $DeepBackfillRecordCopyWith<$Res> {
+  _$DeepBackfillRecordCopyWithImpl(this._self, this._then);
+
+  final DeepBackfillRecord _self;
+  final $Res Function(DeepBackfillRecord) _then;
+
+/// Create a copy of DeepBackfillRecord
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? vectorClock = null,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,vectorClock: null == vectorClock ? _self.vectorClock : vectorClock // ignore: cast_nullable_to_non_nullable
+as VectorClock,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [DeepBackfillRecord].
+extension DeepBackfillRecordPatterns on DeepBackfillRecord {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _DeepBackfillRecord value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _DeepBackfillRecord() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _DeepBackfillRecord value)  $default,){
+final _that = this;
+switch (_that) {
+case _DeepBackfillRecord():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _DeepBackfillRecord value)?  $default,){
+final _that = this;
+switch (_that) {
+case _DeepBackfillRecord() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  VectorClock vectorClock)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _DeepBackfillRecord() when $default != null:
+return $default(_that.id,_that.vectorClock);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  VectorClock vectorClock)  $default,) {final _that = this;
+switch (_that) {
+case _DeepBackfillRecord():
+return $default(_that.id,_that.vectorClock);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  VectorClock vectorClock)?  $default,) {final _that = this;
+switch (_that) {
+case _DeepBackfillRecord() when $default != null:
+return $default(_that.id,_that.vectorClock);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _DeepBackfillRecord implements DeepBackfillRecord {
+  const _DeepBackfillRecord({required this.id, required this.vectorClock});
+  factory _DeepBackfillRecord.fromJson(Map<String, dynamic> json) => _$DeepBackfillRecordFromJson(json);
+
+@override final  String id;
+@override final  VectorClock vectorClock;
+
+/// Create a copy of DeepBackfillRecord
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$DeepBackfillRecordCopyWith<_DeepBackfillRecord> get copyWith => __$DeepBackfillRecordCopyWithImpl<_DeepBackfillRecord>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$DeepBackfillRecordToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DeepBackfillRecord&&(identical(other.id, id) || other.id == id)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,vectorClock);
+
+@override
+String toString() {
+  return 'DeepBackfillRecord(id: $id, vectorClock: $vectorClock)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$DeepBackfillRecordCopyWith<$Res> implements $DeepBackfillRecordCopyWith<$Res> {
+  factory _$DeepBackfillRecordCopyWith(_DeepBackfillRecord value, $Res Function(_DeepBackfillRecord) _then) = __$DeepBackfillRecordCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, VectorClock vectorClock
+});
+
+
+
+
+}
+/// @nodoc
+class __$DeepBackfillRecordCopyWithImpl<$Res>
+    implements _$DeepBackfillRecordCopyWith<$Res> {
+  __$DeepBackfillRecordCopyWithImpl(this._self, this._then);
+
+  final _DeepBackfillRecord _self;
+  final $Res Function(_DeepBackfillRecord) _then;
+
+/// Create a copy of DeepBackfillRecord
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? vectorClock = null,}) {
+  return _then(_DeepBackfillRecord(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,vectorClock: null == vectorClock ? _self.vectorClock : vectorClock // ignore: cast_nullable_to_non_nullable
+as VectorClock,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$DeepBackfillRequestRecord {
+
+ String get id;/// The requester holds no row for the record at all, so the answer
+/// carries its media too.
+ bool get absent;
+/// Create a copy of DeepBackfillRequestRecord
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$DeepBackfillRequestRecordCopyWith<DeepBackfillRequestRecord> get copyWith => _$DeepBackfillRequestRecordCopyWithImpl<DeepBackfillRequestRecord>(this as DeepBackfillRequestRecord, _$identity);
+
+  /// Serializes this DeepBackfillRequestRecord to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DeepBackfillRequestRecord&&(identical(other.id, id) || other.id == id)&&(identical(other.absent, absent) || other.absent == absent));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,absent);
+
+@override
+String toString() {
+  return 'DeepBackfillRequestRecord(id: $id, absent: $absent)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $DeepBackfillRequestRecordCopyWith<$Res>  {
+  factory $DeepBackfillRequestRecordCopyWith(DeepBackfillRequestRecord value, $Res Function(DeepBackfillRequestRecord) _then) = _$DeepBackfillRequestRecordCopyWithImpl;
+@useResult
+$Res call({
+ String id, bool absent
+});
+
+
+
+
+}
+/// @nodoc
+class _$DeepBackfillRequestRecordCopyWithImpl<$Res>
+    implements $DeepBackfillRequestRecordCopyWith<$Res> {
+  _$DeepBackfillRequestRecordCopyWithImpl(this._self, this._then);
+
+  final DeepBackfillRequestRecord _self;
+  final $Res Function(DeepBackfillRequestRecord) _then;
+
+/// Create a copy of DeepBackfillRequestRecord
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? absent = null,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,absent: null == absent ? _self.absent : absent // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [DeepBackfillRequestRecord].
+extension DeepBackfillRequestRecordPatterns on DeepBackfillRequestRecord {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _DeepBackfillRequestRecord value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _DeepBackfillRequestRecord() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _DeepBackfillRequestRecord value)  $default,){
+final _that = this;
+switch (_that) {
+case _DeepBackfillRequestRecord():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _DeepBackfillRequestRecord value)?  $default,){
+final _that = this;
+switch (_that) {
+case _DeepBackfillRequestRecord() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  bool absent)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _DeepBackfillRequestRecord() when $default != null:
+return $default(_that.id,_that.absent);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  bool absent)  $default,) {final _that = this;
+switch (_that) {
+case _DeepBackfillRequestRecord():
+return $default(_that.id,_that.absent);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  bool absent)?  $default,) {final _that = this;
+switch (_that) {
+case _DeepBackfillRequestRecord() when $default != null:
+return $default(_that.id,_that.absent);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _DeepBackfillRequestRecord implements DeepBackfillRequestRecord {
+  const _DeepBackfillRequestRecord({required this.id, this.absent = false});
+  factory _DeepBackfillRequestRecord.fromJson(Map<String, dynamic> json) => _$DeepBackfillRequestRecordFromJson(json);
+
+@override final  String id;
+/// The requester holds no row for the record at all, so the answer
+/// carries its media too.
+@override@JsonKey() final  bool absent;
+
+/// Create a copy of DeepBackfillRequestRecord
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$DeepBackfillRequestRecordCopyWith<_DeepBackfillRequestRecord> get copyWith => __$DeepBackfillRequestRecordCopyWithImpl<_DeepBackfillRequestRecord>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$DeepBackfillRequestRecordToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DeepBackfillRequestRecord&&(identical(other.id, id) || other.id == id)&&(identical(other.absent, absent) || other.absent == absent));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,absent);
+
+@override
+String toString() {
+  return 'DeepBackfillRequestRecord(id: $id, absent: $absent)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$DeepBackfillRequestRecordCopyWith<$Res> implements $DeepBackfillRequestRecordCopyWith<$Res> {
+  factory _$DeepBackfillRequestRecordCopyWith(_DeepBackfillRequestRecord value, $Res Function(_DeepBackfillRequestRecord) _then) = __$DeepBackfillRequestRecordCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, bool absent
+});
+
+
+
+
+}
+/// @nodoc
+class __$DeepBackfillRequestRecordCopyWithImpl<$Res>
+    implements _$DeepBackfillRequestRecordCopyWith<$Res> {
+  __$DeepBackfillRequestRecordCopyWithImpl(this._self, this._then);
+
+  final _DeepBackfillRequestRecord _self;
+  final $Res Function(_DeepBackfillRequestRecord) _then;
+
+/// Create a copy of DeepBackfillRequestRecord
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? absent = null,}) {
+  return _then(_DeepBackfillRequestRecord(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,absent: null == absent ? _self.absent : absent // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$SyncCounterRange {
 
  int get start; int get end;
@@ -623,6 +1159,14 @@ SyncMessage _$SyncMessageFromJson(
           return SyncBackfillRequest.fromJson(
             json
           );
+                case 'deepBackfillInventory':
+          return SyncDeepBackfillInventory.fromJson(
+            json
+          );
+                case 'deepBackfillRequest':
+          return SyncDeepBackfillRequest.fromJson(
+            json
+          );
                 case 'backfillResponse':
           return SyncBackfillResponse.fromJson(
             json
@@ -713,7 +1257,7 @@ extension SyncMessagePatterns on SyncMessage {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( SyncJournalEntity value)?  journalEntity,TResult Function( SyncEntityDefinition value)?  entityDefinition,TResult Function( SyncEntryLink value)?  entryLink,TResult Function( SyncAiConfig value)?  aiConfig,TResult Function( SyncSyncNodeProfile value)?  syncNodeProfile,TResult Function( SyncAiConfigDelete value)?  aiConfigDelete,TResult Function( SyncSavedTaskFilter value)?  savedTaskFilter,TResult Function( SyncSavedTaskFilterDelete value)?  savedTaskFilterDelete,TResult Function( SyncConfigFlag value)?  configFlag,TResult Function( SyncThemingSelection value)?  themingSelection,TResult Function( SyncDailyOsUserName value)?  dailyOsUserName,TResult Function( SyncNotification value)?  notification,TResult Function( SyncNotificationStateUpdate value)?  notificationStateUpdate,TResult Function( SyncOnboardingSnapshotBegin value)?  onboardingSnapshotBegin,TResult Function( SyncOnboardingSnapshotAccepted value)?  onboardingSnapshotAccepted,TResult Function( SyncOnboardingTerminalCounters value)?  onboardingTerminalCounters,TResult Function( SyncOnboardingSnapshotEnd value)?  onboardingSnapshotEnd,TResult Function( SyncBackfillRequest value)?  backfillRequest,TResult Function( SyncBackfillResponse value)?  backfillResponse,TResult Function( SyncMediaRequest value)?  mediaRequest,TResult Function( SyncAgentWakeCoordination value)?  agentWakeCoordination,TResult Function( SyncAgentEntity value)?  agentEntity,TResult Function( SyncAgentLink value)?  agentLink,TResult Function( SyncConsumptionEvent value)?  consumptionEvent,TResult Function( SyncAgentBundle value)?  agentBundle,TResult Function( SyncOutboxBundle value)?  outboxBundle,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( SyncJournalEntity value)?  journalEntity,TResult Function( SyncEntityDefinition value)?  entityDefinition,TResult Function( SyncEntryLink value)?  entryLink,TResult Function( SyncAiConfig value)?  aiConfig,TResult Function( SyncSyncNodeProfile value)?  syncNodeProfile,TResult Function( SyncAiConfigDelete value)?  aiConfigDelete,TResult Function( SyncSavedTaskFilter value)?  savedTaskFilter,TResult Function( SyncSavedTaskFilterDelete value)?  savedTaskFilterDelete,TResult Function( SyncConfigFlag value)?  configFlag,TResult Function( SyncThemingSelection value)?  themingSelection,TResult Function( SyncDailyOsUserName value)?  dailyOsUserName,TResult Function( SyncNotification value)?  notification,TResult Function( SyncNotificationStateUpdate value)?  notificationStateUpdate,TResult Function( SyncOnboardingSnapshotBegin value)?  onboardingSnapshotBegin,TResult Function( SyncOnboardingSnapshotAccepted value)?  onboardingSnapshotAccepted,TResult Function( SyncOnboardingTerminalCounters value)?  onboardingTerminalCounters,TResult Function( SyncOnboardingSnapshotEnd value)?  onboardingSnapshotEnd,TResult Function( SyncBackfillRequest value)?  backfillRequest,TResult Function( SyncDeepBackfillInventory value)?  deepBackfillInventory,TResult Function( SyncDeepBackfillRequest value)?  deepBackfillRequest,TResult Function( SyncBackfillResponse value)?  backfillResponse,TResult Function( SyncMediaRequest value)?  mediaRequest,TResult Function( SyncAgentWakeCoordination value)?  agentWakeCoordination,TResult Function( SyncAgentEntity value)?  agentEntity,TResult Function( SyncAgentLink value)?  agentLink,TResult Function( SyncConsumptionEvent value)?  consumptionEvent,TResult Function( SyncAgentBundle value)?  agentBundle,TResult Function( SyncOutboxBundle value)?  outboxBundle,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case SyncJournalEntity() when journalEntity != null:
@@ -734,7 +1278,9 @@ return onboardingSnapshotBegin(_that);case SyncOnboardingSnapshotAccepted() when
 return onboardingSnapshotAccepted(_that);case SyncOnboardingTerminalCounters() when onboardingTerminalCounters != null:
 return onboardingTerminalCounters(_that);case SyncOnboardingSnapshotEnd() when onboardingSnapshotEnd != null:
 return onboardingSnapshotEnd(_that);case SyncBackfillRequest() when backfillRequest != null:
-return backfillRequest(_that);case SyncBackfillResponse() when backfillResponse != null:
+return backfillRequest(_that);case SyncDeepBackfillInventory() when deepBackfillInventory != null:
+return deepBackfillInventory(_that);case SyncDeepBackfillRequest() when deepBackfillRequest != null:
+return deepBackfillRequest(_that);case SyncBackfillResponse() when backfillResponse != null:
 return backfillResponse(_that);case SyncMediaRequest() when mediaRequest != null:
 return mediaRequest(_that);case SyncAgentWakeCoordination() when agentWakeCoordination != null:
 return agentWakeCoordination(_that);case SyncAgentEntity() when agentEntity != null:
@@ -760,7 +1306,7 @@ return outboxBundle(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( SyncJournalEntity value)  journalEntity,required TResult Function( SyncEntityDefinition value)  entityDefinition,required TResult Function( SyncEntryLink value)  entryLink,required TResult Function( SyncAiConfig value)  aiConfig,required TResult Function( SyncSyncNodeProfile value)  syncNodeProfile,required TResult Function( SyncAiConfigDelete value)  aiConfigDelete,required TResult Function( SyncSavedTaskFilter value)  savedTaskFilter,required TResult Function( SyncSavedTaskFilterDelete value)  savedTaskFilterDelete,required TResult Function( SyncConfigFlag value)  configFlag,required TResult Function( SyncThemingSelection value)  themingSelection,required TResult Function( SyncDailyOsUserName value)  dailyOsUserName,required TResult Function( SyncNotification value)  notification,required TResult Function( SyncNotificationStateUpdate value)  notificationStateUpdate,required TResult Function( SyncOnboardingSnapshotBegin value)  onboardingSnapshotBegin,required TResult Function( SyncOnboardingSnapshotAccepted value)  onboardingSnapshotAccepted,required TResult Function( SyncOnboardingTerminalCounters value)  onboardingTerminalCounters,required TResult Function( SyncOnboardingSnapshotEnd value)  onboardingSnapshotEnd,required TResult Function( SyncBackfillRequest value)  backfillRequest,required TResult Function( SyncBackfillResponse value)  backfillResponse,required TResult Function( SyncMediaRequest value)  mediaRequest,required TResult Function( SyncAgentWakeCoordination value)  agentWakeCoordination,required TResult Function( SyncAgentEntity value)  agentEntity,required TResult Function( SyncAgentLink value)  agentLink,required TResult Function( SyncConsumptionEvent value)  consumptionEvent,required TResult Function( SyncAgentBundle value)  agentBundle,required TResult Function( SyncOutboxBundle value)  outboxBundle,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( SyncJournalEntity value)  journalEntity,required TResult Function( SyncEntityDefinition value)  entityDefinition,required TResult Function( SyncEntryLink value)  entryLink,required TResult Function( SyncAiConfig value)  aiConfig,required TResult Function( SyncSyncNodeProfile value)  syncNodeProfile,required TResult Function( SyncAiConfigDelete value)  aiConfigDelete,required TResult Function( SyncSavedTaskFilter value)  savedTaskFilter,required TResult Function( SyncSavedTaskFilterDelete value)  savedTaskFilterDelete,required TResult Function( SyncConfigFlag value)  configFlag,required TResult Function( SyncThemingSelection value)  themingSelection,required TResult Function( SyncDailyOsUserName value)  dailyOsUserName,required TResult Function( SyncNotification value)  notification,required TResult Function( SyncNotificationStateUpdate value)  notificationStateUpdate,required TResult Function( SyncOnboardingSnapshotBegin value)  onboardingSnapshotBegin,required TResult Function( SyncOnboardingSnapshotAccepted value)  onboardingSnapshotAccepted,required TResult Function( SyncOnboardingTerminalCounters value)  onboardingTerminalCounters,required TResult Function( SyncOnboardingSnapshotEnd value)  onboardingSnapshotEnd,required TResult Function( SyncBackfillRequest value)  backfillRequest,required TResult Function( SyncDeepBackfillInventory value)  deepBackfillInventory,required TResult Function( SyncDeepBackfillRequest value)  deepBackfillRequest,required TResult Function( SyncBackfillResponse value)  backfillResponse,required TResult Function( SyncMediaRequest value)  mediaRequest,required TResult Function( SyncAgentWakeCoordination value)  agentWakeCoordination,required TResult Function( SyncAgentEntity value)  agentEntity,required TResult Function( SyncAgentLink value)  agentLink,required TResult Function( SyncConsumptionEvent value)  consumptionEvent,required TResult Function( SyncAgentBundle value)  agentBundle,required TResult Function( SyncOutboxBundle value)  outboxBundle,}){
 final _that = this;
 switch (_that) {
 case SyncJournalEntity():
@@ -781,7 +1327,9 @@ return onboardingSnapshotBegin(_that);case SyncOnboardingSnapshotAccepted():
 return onboardingSnapshotAccepted(_that);case SyncOnboardingTerminalCounters():
 return onboardingTerminalCounters(_that);case SyncOnboardingSnapshotEnd():
 return onboardingSnapshotEnd(_that);case SyncBackfillRequest():
-return backfillRequest(_that);case SyncBackfillResponse():
+return backfillRequest(_that);case SyncDeepBackfillInventory():
+return deepBackfillInventory(_that);case SyncDeepBackfillRequest():
+return deepBackfillRequest(_that);case SyncBackfillResponse():
 return backfillResponse(_that);case SyncMediaRequest():
 return mediaRequest(_that);case SyncAgentWakeCoordination():
 return agentWakeCoordination(_that);case SyncAgentEntity():
@@ -803,7 +1351,7 @@ return outboxBundle(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( SyncJournalEntity value)?  journalEntity,TResult? Function( SyncEntityDefinition value)?  entityDefinition,TResult? Function( SyncEntryLink value)?  entryLink,TResult? Function( SyncAiConfig value)?  aiConfig,TResult? Function( SyncSyncNodeProfile value)?  syncNodeProfile,TResult? Function( SyncAiConfigDelete value)?  aiConfigDelete,TResult? Function( SyncSavedTaskFilter value)?  savedTaskFilter,TResult? Function( SyncSavedTaskFilterDelete value)?  savedTaskFilterDelete,TResult? Function( SyncConfigFlag value)?  configFlag,TResult? Function( SyncThemingSelection value)?  themingSelection,TResult? Function( SyncDailyOsUserName value)?  dailyOsUserName,TResult? Function( SyncNotification value)?  notification,TResult? Function( SyncNotificationStateUpdate value)?  notificationStateUpdate,TResult? Function( SyncOnboardingSnapshotBegin value)?  onboardingSnapshotBegin,TResult? Function( SyncOnboardingSnapshotAccepted value)?  onboardingSnapshotAccepted,TResult? Function( SyncOnboardingTerminalCounters value)?  onboardingTerminalCounters,TResult? Function( SyncOnboardingSnapshotEnd value)?  onboardingSnapshotEnd,TResult? Function( SyncBackfillRequest value)?  backfillRequest,TResult? Function( SyncBackfillResponse value)?  backfillResponse,TResult? Function( SyncMediaRequest value)?  mediaRequest,TResult? Function( SyncAgentWakeCoordination value)?  agentWakeCoordination,TResult? Function( SyncAgentEntity value)?  agentEntity,TResult? Function( SyncAgentLink value)?  agentLink,TResult? Function( SyncConsumptionEvent value)?  consumptionEvent,TResult? Function( SyncAgentBundle value)?  agentBundle,TResult? Function( SyncOutboxBundle value)?  outboxBundle,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( SyncJournalEntity value)?  journalEntity,TResult? Function( SyncEntityDefinition value)?  entityDefinition,TResult? Function( SyncEntryLink value)?  entryLink,TResult? Function( SyncAiConfig value)?  aiConfig,TResult? Function( SyncSyncNodeProfile value)?  syncNodeProfile,TResult? Function( SyncAiConfigDelete value)?  aiConfigDelete,TResult? Function( SyncSavedTaskFilter value)?  savedTaskFilter,TResult? Function( SyncSavedTaskFilterDelete value)?  savedTaskFilterDelete,TResult? Function( SyncConfigFlag value)?  configFlag,TResult? Function( SyncThemingSelection value)?  themingSelection,TResult? Function( SyncDailyOsUserName value)?  dailyOsUserName,TResult? Function( SyncNotification value)?  notification,TResult? Function( SyncNotificationStateUpdate value)?  notificationStateUpdate,TResult? Function( SyncOnboardingSnapshotBegin value)?  onboardingSnapshotBegin,TResult? Function( SyncOnboardingSnapshotAccepted value)?  onboardingSnapshotAccepted,TResult? Function( SyncOnboardingTerminalCounters value)?  onboardingTerminalCounters,TResult? Function( SyncOnboardingSnapshotEnd value)?  onboardingSnapshotEnd,TResult? Function( SyncBackfillRequest value)?  backfillRequest,TResult? Function( SyncDeepBackfillInventory value)?  deepBackfillInventory,TResult? Function( SyncDeepBackfillRequest value)?  deepBackfillRequest,TResult? Function( SyncBackfillResponse value)?  backfillResponse,TResult? Function( SyncMediaRequest value)?  mediaRequest,TResult? Function( SyncAgentWakeCoordination value)?  agentWakeCoordination,TResult? Function( SyncAgentEntity value)?  agentEntity,TResult? Function( SyncAgentLink value)?  agentLink,TResult? Function( SyncConsumptionEvent value)?  consumptionEvent,TResult? Function( SyncAgentBundle value)?  agentBundle,TResult? Function( SyncOutboxBundle value)?  outboxBundle,}){
 final _that = this;
 switch (_that) {
 case SyncJournalEntity() when journalEntity != null:
@@ -824,7 +1372,9 @@ return onboardingSnapshotBegin(_that);case SyncOnboardingSnapshotAccepted() when
 return onboardingSnapshotAccepted(_that);case SyncOnboardingTerminalCounters() when onboardingTerminalCounters != null:
 return onboardingTerminalCounters(_that);case SyncOnboardingSnapshotEnd() when onboardingSnapshotEnd != null:
 return onboardingSnapshotEnd(_that);case SyncBackfillRequest() when backfillRequest != null:
-return backfillRequest(_that);case SyncBackfillResponse() when backfillResponse != null:
+return backfillRequest(_that);case SyncDeepBackfillInventory() when deepBackfillInventory != null:
+return deepBackfillInventory(_that);case SyncDeepBackfillRequest() when deepBackfillRequest != null:
+return deepBackfillRequest(_that);case SyncBackfillResponse() when backfillResponse != null:
 return backfillResponse(_that);case SyncMediaRequest() when mediaRequest != null:
 return mediaRequest(_that);case SyncAgentWakeCoordination() when agentWakeCoordination != null:
 return agentWakeCoordination(_that);case SyncAgentEntity() when agentEntity != null:
@@ -849,7 +1399,7 @@ return outboxBundle(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String jsonPath,  VectorClock? vectorClock,  SyncEntryStatus status,  String? attachmentEventId,  List<EntryLink>? entryLinks,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks,  bool? includeAttachments)?  journalEntity,TResult Function( EntityDefinition entityDefinition,  SyncEntryStatus status)?  entityDefinition,TResult Function( EntryLink entryLink,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  entryLink,TResult Function( AiConfig aiConfig,  SyncEntryStatus status,  int? versionStamp)?  aiConfig,TResult Function(@SyncNodeProfileWireConverter()  SyncNodeProfile profile)?  syncNodeProfile,TResult Function( String id,  bool? hardDelete,  int? versionStamp)?  aiConfigDelete,TResult Function( SavedTaskFilter filter,  SyncEntryStatus status)?  savedTaskFilter,TResult Function( String id,  DateTime? deletedAt)?  savedTaskFilterDelete,TResult Function( String name,  String description,  bool status,  int? updatedAt,  String? originatingHostId)?  configFlag,TResult Function( String lightThemeName,  String darkThemeName,  String themeMode,  int updatedAt,  SyncEntryStatus status)?  themingSelection,TResult Function( String userName,  int updatedAt,  SyncEntryStatus status)?  dailyOsUserName,TResult Function( String id,  String jsonPath,  VectorClock vectorClock,  String originatingHostId,  String? attachmentEventId,  List<VectorClock>? coveredVectorClocks)?  notification,TResult Function( String id,  VectorClock vectorClock,  String originatingHostId,  DateTime? seenAt,  DateTime? actedOnAt,  DateTime? deletedAt)?  notificationStateUpdate,TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String senderUserId,  String senderDeviceId,  String recipientUserId,  String recipientDeviceId,  Map<String, int> coverageUpperBounds,  int leaseSeconds)?  onboardingSnapshotBegin,TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String senderUserId,  String senderDeviceId,  String recipientHostId,  String recipientDeviceId)?  onboardingSnapshotAccepted,TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String recipientUserId,  String recipientDeviceId,  List<SyncCounterRange> ranges)?  onboardingTerminalCounters,TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String recipientUserId,  String recipientDeviceId,  OnboardingSyncEndReason reason)?  onboardingSnapshotEnd,TResult Function( List<BackfillRequestEntry> entries,  String requesterId, @JsonKey(includeIfNull: false)  int? requesterSequenceHead)?  backfillRequest,TResult Function( String hostId,  int counter,  bool deleted,  bool? unresolvable,  String? entryId,  SyncSequencePayloadType? payloadType,  String? payloadId)?  backfillResponse,TResult Function( List<String> entryIds,  String requesterId)?  mediaRequest,TResult Function( String agentId,  AgentWakeCoordinationKind kind,  Map<String, int> watermark,  bool readsPrivate,  String definitionsDigest,  String runKey,  String hostId,  DateTime sentAt,  bool reportUpdated)?  agentWakeCoordination,TResult Function( SyncEntryStatus status, @JsonKey(toJson: _agentDomainEntityToJson)  AgentDomainEntity? agentEntity,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  agentEntity,TResult Function( SyncEntryStatus status,  AgentLink? agentLink,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  agentLink,TResult Function( AiConsumptionEvent event,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  consumptionEvent,TResult Function( String agentId,  String wakeRunKey,  List<SyncAgentEntity> entities,  List<SyncAgentLink> links,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId)?  agentBundle,TResult Function( List<SyncMessage> children,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId)?  outboxBundle,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String jsonPath,  VectorClock? vectorClock,  SyncEntryStatus status,  String? attachmentEventId,  List<EntryLink>? entryLinks,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks,  bool? includeAttachments)?  journalEntity,TResult Function( EntityDefinition entityDefinition,  SyncEntryStatus status)?  entityDefinition,TResult Function( EntryLink entryLink,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  entryLink,TResult Function( AiConfig aiConfig,  SyncEntryStatus status,  int? versionStamp)?  aiConfig,TResult Function(@SyncNodeProfileWireConverter()  SyncNodeProfile profile)?  syncNodeProfile,TResult Function( String id,  bool? hardDelete,  int? versionStamp)?  aiConfigDelete,TResult Function( SavedTaskFilter filter,  SyncEntryStatus status)?  savedTaskFilter,TResult Function( String id,  DateTime? deletedAt)?  savedTaskFilterDelete,TResult Function( String name,  String description,  bool status,  int? updatedAt,  String? originatingHostId)?  configFlag,TResult Function( String lightThemeName,  String darkThemeName,  String themeMode,  int updatedAt,  SyncEntryStatus status)?  themingSelection,TResult Function( String userName,  int updatedAt,  SyncEntryStatus status)?  dailyOsUserName,TResult Function( String id,  String jsonPath,  VectorClock vectorClock,  String originatingHostId,  String? attachmentEventId,  List<VectorClock>? coveredVectorClocks)?  notification,TResult Function( String id,  VectorClock vectorClock,  String originatingHostId,  DateTime? seenAt,  DateTime? actedOnAt,  DateTime? deletedAt)?  notificationStateUpdate,TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String senderUserId,  String senderDeviceId,  String recipientUserId,  String recipientDeviceId,  Map<String, int> coverageUpperBounds,  int leaseSeconds)?  onboardingSnapshotBegin,TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String senderUserId,  String senderDeviceId,  String recipientHostId,  String recipientDeviceId)?  onboardingSnapshotAccepted,TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String recipientUserId,  String recipientDeviceId,  List<SyncCounterRange> ranges)?  onboardingTerminalCounters,TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String recipientUserId,  String recipientDeviceId,  OnboardingSyncEndReason reason)?  onboardingSnapshotEnd,TResult Function( List<BackfillRequestEntry> entries,  String requesterId, @JsonKey(includeIfNull: false)  int? requesterSequenceHead)?  backfillRequest,TResult Function( String roundId,  String hostId,  SyncSequencePayloadType payloadType,  int batch,  String? rangeStart,  String? rangeEnd,  List<DeepBackfillRecord> records,  List<DeepBackfillRecord> conflicts,  String? jsonPath,  String? attachmentEventId)?  deepBackfillInventory,TResult Function( String requesterId,  String targetHostId,  SyncSequencePayloadType payloadType,  List<DeepBackfillRequestRecord> records,  String? jsonPath,  String? attachmentEventId)?  deepBackfillRequest,TResult Function( String hostId,  int counter,  bool deleted,  bool? unresolvable,  String? entryId,  SyncSequencePayloadType? payloadType,  String? payloadId)?  backfillResponse,TResult Function( List<String> entryIds,  String requesterId)?  mediaRequest,TResult Function( String agentId,  AgentWakeCoordinationKind kind,  Map<String, int> watermark,  bool readsPrivate,  String definitionsDigest,  String runKey,  String hostId,  DateTime sentAt,  bool reportUpdated)?  agentWakeCoordination,TResult Function( SyncEntryStatus status, @JsonKey(toJson: _agentDomainEntityToJson)  AgentDomainEntity? agentEntity,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  agentEntity,TResult Function( SyncEntryStatus status,  AgentLink? agentLink,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  agentLink,TResult Function( AiConsumptionEvent event,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  consumptionEvent,TResult Function( String agentId,  String wakeRunKey,  List<SyncAgentEntity> entities,  List<SyncAgentLink> links,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId)?  agentBundle,TResult Function( List<SyncMessage> children,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId)?  outboxBundle,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case SyncJournalEntity() when journalEntity != null:
 return journalEntity(_that.id,_that.jsonPath,_that.vectorClock,_that.status,_that.attachmentEventId,_that.entryLinks,_that.originatingHostId,_that.coveredVectorClocks,_that.includeAttachments);case SyncEntityDefinition() when entityDefinition != null:
@@ -869,7 +1419,9 @@ return onboardingSnapshotBegin(_that.protocolVersion,_that.roundId,_that.senderH
 return onboardingSnapshotAccepted(_that.protocolVersion,_that.roundId,_that.senderHostId,_that.senderUserId,_that.senderDeviceId,_that.recipientHostId,_that.recipientDeviceId);case SyncOnboardingTerminalCounters() when onboardingTerminalCounters != null:
 return onboardingTerminalCounters(_that.protocolVersion,_that.roundId,_that.senderHostId,_that.recipientUserId,_that.recipientDeviceId,_that.ranges);case SyncOnboardingSnapshotEnd() when onboardingSnapshotEnd != null:
 return onboardingSnapshotEnd(_that.protocolVersion,_that.roundId,_that.senderHostId,_that.recipientUserId,_that.recipientDeviceId,_that.reason);case SyncBackfillRequest() when backfillRequest != null:
-return backfillRequest(_that.entries,_that.requesterId,_that.requesterSequenceHead);case SyncBackfillResponse() when backfillResponse != null:
+return backfillRequest(_that.entries,_that.requesterId,_that.requesterSequenceHead);case SyncDeepBackfillInventory() when deepBackfillInventory != null:
+return deepBackfillInventory(_that.roundId,_that.hostId,_that.payloadType,_that.batch,_that.rangeStart,_that.rangeEnd,_that.records,_that.conflicts,_that.jsonPath,_that.attachmentEventId);case SyncDeepBackfillRequest() when deepBackfillRequest != null:
+return deepBackfillRequest(_that.requesterId,_that.targetHostId,_that.payloadType,_that.records,_that.jsonPath,_that.attachmentEventId);case SyncBackfillResponse() when backfillResponse != null:
 return backfillResponse(_that.hostId,_that.counter,_that.deleted,_that.unresolvable,_that.entryId,_that.payloadType,_that.payloadId);case SyncMediaRequest() when mediaRequest != null:
 return mediaRequest(_that.entryIds,_that.requesterId);case SyncAgentWakeCoordination() when agentWakeCoordination != null:
 return agentWakeCoordination(_that.agentId,_that.kind,_that.watermark,_that.readsPrivate,_that.definitionsDigest,_that.runKey,_that.hostId,_that.sentAt,_that.reportUpdated);case SyncAgentEntity() when agentEntity != null:
@@ -895,7 +1447,7 @@ return outboxBundle(_that.children,_that.jsonPath,_that.attachmentEventId,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String jsonPath,  VectorClock? vectorClock,  SyncEntryStatus status,  String? attachmentEventId,  List<EntryLink>? entryLinks,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks,  bool? includeAttachments)  journalEntity,required TResult Function( EntityDefinition entityDefinition,  SyncEntryStatus status)  entityDefinition,required TResult Function( EntryLink entryLink,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)  entryLink,required TResult Function( AiConfig aiConfig,  SyncEntryStatus status,  int? versionStamp)  aiConfig,required TResult Function(@SyncNodeProfileWireConverter()  SyncNodeProfile profile)  syncNodeProfile,required TResult Function( String id,  bool? hardDelete,  int? versionStamp)  aiConfigDelete,required TResult Function( SavedTaskFilter filter,  SyncEntryStatus status)  savedTaskFilter,required TResult Function( String id,  DateTime? deletedAt)  savedTaskFilterDelete,required TResult Function( String name,  String description,  bool status,  int? updatedAt,  String? originatingHostId)  configFlag,required TResult Function( String lightThemeName,  String darkThemeName,  String themeMode,  int updatedAt,  SyncEntryStatus status)  themingSelection,required TResult Function( String userName,  int updatedAt,  SyncEntryStatus status)  dailyOsUserName,required TResult Function( String id,  String jsonPath,  VectorClock vectorClock,  String originatingHostId,  String? attachmentEventId,  List<VectorClock>? coveredVectorClocks)  notification,required TResult Function( String id,  VectorClock vectorClock,  String originatingHostId,  DateTime? seenAt,  DateTime? actedOnAt,  DateTime? deletedAt)  notificationStateUpdate,required TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String senderUserId,  String senderDeviceId,  String recipientUserId,  String recipientDeviceId,  Map<String, int> coverageUpperBounds,  int leaseSeconds)  onboardingSnapshotBegin,required TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String senderUserId,  String senderDeviceId,  String recipientHostId,  String recipientDeviceId)  onboardingSnapshotAccepted,required TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String recipientUserId,  String recipientDeviceId,  List<SyncCounterRange> ranges)  onboardingTerminalCounters,required TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String recipientUserId,  String recipientDeviceId,  OnboardingSyncEndReason reason)  onboardingSnapshotEnd,required TResult Function( List<BackfillRequestEntry> entries,  String requesterId, @JsonKey(includeIfNull: false)  int? requesterSequenceHead)  backfillRequest,required TResult Function( String hostId,  int counter,  bool deleted,  bool? unresolvable,  String? entryId,  SyncSequencePayloadType? payloadType,  String? payloadId)  backfillResponse,required TResult Function( List<String> entryIds,  String requesterId)  mediaRequest,required TResult Function( String agentId,  AgentWakeCoordinationKind kind,  Map<String, int> watermark,  bool readsPrivate,  String definitionsDigest,  String runKey,  String hostId,  DateTime sentAt,  bool reportUpdated)  agentWakeCoordination,required TResult Function( SyncEntryStatus status, @JsonKey(toJson: _agentDomainEntityToJson)  AgentDomainEntity? agentEntity,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)  agentEntity,required TResult Function( SyncEntryStatus status,  AgentLink? agentLink,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)  agentLink,required TResult Function( AiConsumptionEvent event,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)  consumptionEvent,required TResult Function( String agentId,  String wakeRunKey,  List<SyncAgentEntity> entities,  List<SyncAgentLink> links,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId)  agentBundle,required TResult Function( List<SyncMessage> children,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId)  outboxBundle,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String jsonPath,  VectorClock? vectorClock,  SyncEntryStatus status,  String? attachmentEventId,  List<EntryLink>? entryLinks,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks,  bool? includeAttachments)  journalEntity,required TResult Function( EntityDefinition entityDefinition,  SyncEntryStatus status)  entityDefinition,required TResult Function( EntryLink entryLink,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)  entryLink,required TResult Function( AiConfig aiConfig,  SyncEntryStatus status,  int? versionStamp)  aiConfig,required TResult Function(@SyncNodeProfileWireConverter()  SyncNodeProfile profile)  syncNodeProfile,required TResult Function( String id,  bool? hardDelete,  int? versionStamp)  aiConfigDelete,required TResult Function( SavedTaskFilter filter,  SyncEntryStatus status)  savedTaskFilter,required TResult Function( String id,  DateTime? deletedAt)  savedTaskFilterDelete,required TResult Function( String name,  String description,  bool status,  int? updatedAt,  String? originatingHostId)  configFlag,required TResult Function( String lightThemeName,  String darkThemeName,  String themeMode,  int updatedAt,  SyncEntryStatus status)  themingSelection,required TResult Function( String userName,  int updatedAt,  SyncEntryStatus status)  dailyOsUserName,required TResult Function( String id,  String jsonPath,  VectorClock vectorClock,  String originatingHostId,  String? attachmentEventId,  List<VectorClock>? coveredVectorClocks)  notification,required TResult Function( String id,  VectorClock vectorClock,  String originatingHostId,  DateTime? seenAt,  DateTime? actedOnAt,  DateTime? deletedAt)  notificationStateUpdate,required TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String senderUserId,  String senderDeviceId,  String recipientUserId,  String recipientDeviceId,  Map<String, int> coverageUpperBounds,  int leaseSeconds)  onboardingSnapshotBegin,required TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String senderUserId,  String senderDeviceId,  String recipientHostId,  String recipientDeviceId)  onboardingSnapshotAccepted,required TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String recipientUserId,  String recipientDeviceId,  List<SyncCounterRange> ranges)  onboardingTerminalCounters,required TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String recipientUserId,  String recipientDeviceId,  OnboardingSyncEndReason reason)  onboardingSnapshotEnd,required TResult Function( List<BackfillRequestEntry> entries,  String requesterId, @JsonKey(includeIfNull: false)  int? requesterSequenceHead)  backfillRequest,required TResult Function( String roundId,  String hostId,  SyncSequencePayloadType payloadType,  int batch,  String? rangeStart,  String? rangeEnd,  List<DeepBackfillRecord> records,  List<DeepBackfillRecord> conflicts,  String? jsonPath,  String? attachmentEventId)  deepBackfillInventory,required TResult Function( String requesterId,  String targetHostId,  SyncSequencePayloadType payloadType,  List<DeepBackfillRequestRecord> records,  String? jsonPath,  String? attachmentEventId)  deepBackfillRequest,required TResult Function( String hostId,  int counter,  bool deleted,  bool? unresolvable,  String? entryId,  SyncSequencePayloadType? payloadType,  String? payloadId)  backfillResponse,required TResult Function( List<String> entryIds,  String requesterId)  mediaRequest,required TResult Function( String agentId,  AgentWakeCoordinationKind kind,  Map<String, int> watermark,  bool readsPrivate,  String definitionsDigest,  String runKey,  String hostId,  DateTime sentAt,  bool reportUpdated)  agentWakeCoordination,required TResult Function( SyncEntryStatus status, @JsonKey(toJson: _agentDomainEntityToJson)  AgentDomainEntity? agentEntity,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)  agentEntity,required TResult Function( SyncEntryStatus status,  AgentLink? agentLink,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)  agentLink,required TResult Function( AiConsumptionEvent event,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)  consumptionEvent,required TResult Function( String agentId,  String wakeRunKey,  List<SyncAgentEntity> entities,  List<SyncAgentLink> links,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId)  agentBundle,required TResult Function( List<SyncMessage> children,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId)  outboxBundle,}) {final _that = this;
 switch (_that) {
 case SyncJournalEntity():
 return journalEntity(_that.id,_that.jsonPath,_that.vectorClock,_that.status,_that.attachmentEventId,_that.entryLinks,_that.originatingHostId,_that.coveredVectorClocks,_that.includeAttachments);case SyncEntityDefinition():
@@ -915,7 +1467,9 @@ return onboardingSnapshotBegin(_that.protocolVersion,_that.roundId,_that.senderH
 return onboardingSnapshotAccepted(_that.protocolVersion,_that.roundId,_that.senderHostId,_that.senderUserId,_that.senderDeviceId,_that.recipientHostId,_that.recipientDeviceId);case SyncOnboardingTerminalCounters():
 return onboardingTerminalCounters(_that.protocolVersion,_that.roundId,_that.senderHostId,_that.recipientUserId,_that.recipientDeviceId,_that.ranges);case SyncOnboardingSnapshotEnd():
 return onboardingSnapshotEnd(_that.protocolVersion,_that.roundId,_that.senderHostId,_that.recipientUserId,_that.recipientDeviceId,_that.reason);case SyncBackfillRequest():
-return backfillRequest(_that.entries,_that.requesterId,_that.requesterSequenceHead);case SyncBackfillResponse():
+return backfillRequest(_that.entries,_that.requesterId,_that.requesterSequenceHead);case SyncDeepBackfillInventory():
+return deepBackfillInventory(_that.roundId,_that.hostId,_that.payloadType,_that.batch,_that.rangeStart,_that.rangeEnd,_that.records,_that.conflicts,_that.jsonPath,_that.attachmentEventId);case SyncDeepBackfillRequest():
+return deepBackfillRequest(_that.requesterId,_that.targetHostId,_that.payloadType,_that.records,_that.jsonPath,_that.attachmentEventId);case SyncBackfillResponse():
 return backfillResponse(_that.hostId,_that.counter,_that.deleted,_that.unresolvable,_that.entryId,_that.payloadType,_that.payloadId);case SyncMediaRequest():
 return mediaRequest(_that.entryIds,_that.requesterId);case SyncAgentWakeCoordination():
 return agentWakeCoordination(_that.agentId,_that.kind,_that.watermark,_that.readsPrivate,_that.definitionsDigest,_that.runKey,_that.hostId,_that.sentAt,_that.reportUpdated);case SyncAgentEntity():
@@ -937,7 +1491,7 @@ return outboxBundle(_that.children,_that.jsonPath,_that.attachmentEventId,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String jsonPath,  VectorClock? vectorClock,  SyncEntryStatus status,  String? attachmentEventId,  List<EntryLink>? entryLinks,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks,  bool? includeAttachments)?  journalEntity,TResult? Function( EntityDefinition entityDefinition,  SyncEntryStatus status)?  entityDefinition,TResult? Function( EntryLink entryLink,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  entryLink,TResult? Function( AiConfig aiConfig,  SyncEntryStatus status,  int? versionStamp)?  aiConfig,TResult? Function(@SyncNodeProfileWireConverter()  SyncNodeProfile profile)?  syncNodeProfile,TResult? Function( String id,  bool? hardDelete,  int? versionStamp)?  aiConfigDelete,TResult? Function( SavedTaskFilter filter,  SyncEntryStatus status)?  savedTaskFilter,TResult? Function( String id,  DateTime? deletedAt)?  savedTaskFilterDelete,TResult? Function( String name,  String description,  bool status,  int? updatedAt,  String? originatingHostId)?  configFlag,TResult? Function( String lightThemeName,  String darkThemeName,  String themeMode,  int updatedAt,  SyncEntryStatus status)?  themingSelection,TResult? Function( String userName,  int updatedAt,  SyncEntryStatus status)?  dailyOsUserName,TResult? Function( String id,  String jsonPath,  VectorClock vectorClock,  String originatingHostId,  String? attachmentEventId,  List<VectorClock>? coveredVectorClocks)?  notification,TResult? Function( String id,  VectorClock vectorClock,  String originatingHostId,  DateTime? seenAt,  DateTime? actedOnAt,  DateTime? deletedAt)?  notificationStateUpdate,TResult? Function( int protocolVersion,  String roundId,  String senderHostId,  String senderUserId,  String senderDeviceId,  String recipientUserId,  String recipientDeviceId,  Map<String, int> coverageUpperBounds,  int leaseSeconds)?  onboardingSnapshotBegin,TResult? Function( int protocolVersion,  String roundId,  String senderHostId,  String senderUserId,  String senderDeviceId,  String recipientHostId,  String recipientDeviceId)?  onboardingSnapshotAccepted,TResult? Function( int protocolVersion,  String roundId,  String senderHostId,  String recipientUserId,  String recipientDeviceId,  List<SyncCounterRange> ranges)?  onboardingTerminalCounters,TResult? Function( int protocolVersion,  String roundId,  String senderHostId,  String recipientUserId,  String recipientDeviceId,  OnboardingSyncEndReason reason)?  onboardingSnapshotEnd,TResult? Function( List<BackfillRequestEntry> entries,  String requesterId, @JsonKey(includeIfNull: false)  int? requesterSequenceHead)?  backfillRequest,TResult? Function( String hostId,  int counter,  bool deleted,  bool? unresolvable,  String? entryId,  SyncSequencePayloadType? payloadType,  String? payloadId)?  backfillResponse,TResult? Function( List<String> entryIds,  String requesterId)?  mediaRequest,TResult? Function( String agentId,  AgentWakeCoordinationKind kind,  Map<String, int> watermark,  bool readsPrivate,  String definitionsDigest,  String runKey,  String hostId,  DateTime sentAt,  bool reportUpdated)?  agentWakeCoordination,TResult? Function( SyncEntryStatus status, @JsonKey(toJson: _agentDomainEntityToJson)  AgentDomainEntity? agentEntity,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  agentEntity,TResult? Function( SyncEntryStatus status,  AgentLink? agentLink,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  agentLink,TResult? Function( AiConsumptionEvent event,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  consumptionEvent,TResult? Function( String agentId,  String wakeRunKey,  List<SyncAgentEntity> entities,  List<SyncAgentLink> links,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId)?  agentBundle,TResult? Function( List<SyncMessage> children,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId)?  outboxBundle,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String jsonPath,  VectorClock? vectorClock,  SyncEntryStatus status,  String? attachmentEventId,  List<EntryLink>? entryLinks,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks,  bool? includeAttachments)?  journalEntity,TResult? Function( EntityDefinition entityDefinition,  SyncEntryStatus status)?  entityDefinition,TResult? Function( EntryLink entryLink,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  entryLink,TResult? Function( AiConfig aiConfig,  SyncEntryStatus status,  int? versionStamp)?  aiConfig,TResult? Function(@SyncNodeProfileWireConverter()  SyncNodeProfile profile)?  syncNodeProfile,TResult? Function( String id,  bool? hardDelete,  int? versionStamp)?  aiConfigDelete,TResult? Function( SavedTaskFilter filter,  SyncEntryStatus status)?  savedTaskFilter,TResult? Function( String id,  DateTime? deletedAt)?  savedTaskFilterDelete,TResult? Function( String name,  String description,  bool status,  int? updatedAt,  String? originatingHostId)?  configFlag,TResult? Function( String lightThemeName,  String darkThemeName,  String themeMode,  int updatedAt,  SyncEntryStatus status)?  themingSelection,TResult? Function( String userName,  int updatedAt,  SyncEntryStatus status)?  dailyOsUserName,TResult? Function( String id,  String jsonPath,  VectorClock vectorClock,  String originatingHostId,  String? attachmentEventId,  List<VectorClock>? coveredVectorClocks)?  notification,TResult? Function( String id,  VectorClock vectorClock,  String originatingHostId,  DateTime? seenAt,  DateTime? actedOnAt,  DateTime? deletedAt)?  notificationStateUpdate,TResult? Function( int protocolVersion,  String roundId,  String senderHostId,  String senderUserId,  String senderDeviceId,  String recipientUserId,  String recipientDeviceId,  Map<String, int> coverageUpperBounds,  int leaseSeconds)?  onboardingSnapshotBegin,TResult? Function( int protocolVersion,  String roundId,  String senderHostId,  String senderUserId,  String senderDeviceId,  String recipientHostId,  String recipientDeviceId)?  onboardingSnapshotAccepted,TResult? Function( int protocolVersion,  String roundId,  String senderHostId,  String recipientUserId,  String recipientDeviceId,  List<SyncCounterRange> ranges)?  onboardingTerminalCounters,TResult? Function( int protocolVersion,  String roundId,  String senderHostId,  String recipientUserId,  String recipientDeviceId,  OnboardingSyncEndReason reason)?  onboardingSnapshotEnd,TResult? Function( List<BackfillRequestEntry> entries,  String requesterId, @JsonKey(includeIfNull: false)  int? requesterSequenceHead)?  backfillRequest,TResult? Function( String roundId,  String hostId,  SyncSequencePayloadType payloadType,  int batch,  String? rangeStart,  String? rangeEnd,  List<DeepBackfillRecord> records,  List<DeepBackfillRecord> conflicts,  String? jsonPath,  String? attachmentEventId)?  deepBackfillInventory,TResult? Function( String requesterId,  String targetHostId,  SyncSequencePayloadType payloadType,  List<DeepBackfillRequestRecord> records,  String? jsonPath,  String? attachmentEventId)?  deepBackfillRequest,TResult? Function( String hostId,  int counter,  bool deleted,  bool? unresolvable,  String? entryId,  SyncSequencePayloadType? payloadType,  String? payloadId)?  backfillResponse,TResult? Function( List<String> entryIds,  String requesterId)?  mediaRequest,TResult? Function( String agentId,  AgentWakeCoordinationKind kind,  Map<String, int> watermark,  bool readsPrivate,  String definitionsDigest,  String runKey,  String hostId,  DateTime sentAt,  bool reportUpdated)?  agentWakeCoordination,TResult? Function( SyncEntryStatus status, @JsonKey(toJson: _agentDomainEntityToJson)  AgentDomainEntity? agentEntity,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  agentEntity,TResult? Function( SyncEntryStatus status,  AgentLink? agentLink,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  agentLink,TResult? Function( AiConsumptionEvent event,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  consumptionEvent,TResult? Function( String agentId,  String wakeRunKey,  List<SyncAgentEntity> entities,  List<SyncAgentLink> links,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId)?  agentBundle,TResult? Function( List<SyncMessage> children,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId)?  outboxBundle,}) {final _that = this;
 switch (_that) {
 case SyncJournalEntity() when journalEntity != null:
 return journalEntity(_that.id,_that.jsonPath,_that.vectorClock,_that.status,_that.attachmentEventId,_that.entryLinks,_that.originatingHostId,_that.coveredVectorClocks,_that.includeAttachments);case SyncEntityDefinition() when entityDefinition != null:
@@ -957,7 +1511,9 @@ return onboardingSnapshotBegin(_that.protocolVersion,_that.roundId,_that.senderH
 return onboardingSnapshotAccepted(_that.protocolVersion,_that.roundId,_that.senderHostId,_that.senderUserId,_that.senderDeviceId,_that.recipientHostId,_that.recipientDeviceId);case SyncOnboardingTerminalCounters() when onboardingTerminalCounters != null:
 return onboardingTerminalCounters(_that.protocolVersion,_that.roundId,_that.senderHostId,_that.recipientUserId,_that.recipientDeviceId,_that.ranges);case SyncOnboardingSnapshotEnd() when onboardingSnapshotEnd != null:
 return onboardingSnapshotEnd(_that.protocolVersion,_that.roundId,_that.senderHostId,_that.recipientUserId,_that.recipientDeviceId,_that.reason);case SyncBackfillRequest() when backfillRequest != null:
-return backfillRequest(_that.entries,_that.requesterId,_that.requesterSequenceHead);case SyncBackfillResponse() when backfillResponse != null:
+return backfillRequest(_that.entries,_that.requesterId,_that.requesterSequenceHead);case SyncDeepBackfillInventory() when deepBackfillInventory != null:
+return deepBackfillInventory(_that.roundId,_that.hostId,_that.payloadType,_that.batch,_that.rangeStart,_that.rangeEnd,_that.records,_that.conflicts,_that.jsonPath,_that.attachmentEventId);case SyncDeepBackfillRequest() when deepBackfillRequest != null:
+return deepBackfillRequest(_that.requesterId,_that.targetHostId,_that.payloadType,_that.records,_that.jsonPath,_that.attachmentEventId);case SyncBackfillResponse() when backfillResponse != null:
 return backfillResponse(_that.hostId,_that.counter,_that.deleted,_that.unresolvable,_that.entryId,_that.payloadType,_that.payloadId);case SyncMediaRequest() when mediaRequest != null:
 return mediaRequest(_that.entryIds,_that.requesterId);case SyncAgentWakeCoordination() when agentWakeCoordination != null:
 return agentWakeCoordination(_that.agentId,_that.kind,_that.watermark,_that.readsPrivate,_that.definitionsDigest,_that.runKey,_that.hostId,_that.sentAt,_that.reportUpdated);case SyncAgentEntity() when agentEntity != null:
@@ -2548,6 +3104,209 @@ entries: null == entries ? _self._entries : entries // ignore: cast_nullable_to_
 as List<BackfillRequestEntry>,requesterId: null == requesterId ? _self.requesterId : requesterId // ignore: cast_nullable_to_non_nullable
 as String,requesterSequenceHead: freezed == requesterSequenceHead ? _self.requesterSequenceHead : requesterSequenceHead // ignore: cast_nullable_to_non_nullable
 as int?,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+@JsonSerializable(explicitToJson: true)
+class SyncDeepBackfillInventory implements SyncMessage {
+  const SyncDeepBackfillInventory({required this.roundId, required this.hostId, required this.payloadType, required this.batch, this.rangeStart, this.rangeEnd, final  List<DeepBackfillRecord> records = const <DeepBackfillRecord>[], final  List<DeepBackfillRecord> conflicts = const <DeepBackfillRecord>[], this.jsonPath, this.attachmentEventId, final  String? $type}): _records = records,_conflicts = conflicts,$type = $type ?? 'deepBackfillInventory';
+  factory SyncDeepBackfillInventory.fromJson(Map<String, dynamic> json) => _$SyncDeepBackfillInventoryFromJson(json);
+
+/// The round this batch belongs to, for correlation in logs.
+ final  String roundId;
+/// The advertiser's `VectorClockService` host UUID.
+ final  String hostId;
+ final  SyncSequencePayloadType payloadType;
+/// The batch's position in the round, per payload type.
+ final  int batch;
+/// First id of the range, inclusive; null is unbounded below.
+ final  String? rangeStart;
+/// End of the range, exclusive; null is unbounded above.
+ final  String? rangeEnd;
+ final  List<DeepBackfillRecord> _records;
+@JsonKey() List<DeepBackfillRecord> get records {
+  if (_records is EqualUnmodifiableListView) return _records;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_records);
+}
+
+/// The advertiser's open conflict versions in the range. A peer does not
+/// push a version the advertiser already holds as one.
+ final  List<DeepBackfillRecord> _conflicts;
+/// The advertiser's open conflict versions in the range. A peer does not
+/// push a version the advertiser already holds as one.
+@JsonKey() List<DeepBackfillRecord> get conflicts {
+  if (_conflicts is EqualUnmodifiableListView) return _conflicts;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_conflicts);
+}
+
+ final  String? jsonPath;
+ final  String? attachmentEventId;
+
+@JsonKey(name: 'runtimeType')
+final String $type;
+
+
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SyncDeepBackfillInventoryCopyWith<SyncDeepBackfillInventory> get copyWith => _$SyncDeepBackfillInventoryCopyWithImpl<SyncDeepBackfillInventory>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$SyncDeepBackfillInventoryToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SyncDeepBackfillInventory&&(identical(other.roundId, roundId) || other.roundId == roundId)&&(identical(other.hostId, hostId) || other.hostId == hostId)&&(identical(other.payloadType, payloadType) || other.payloadType == payloadType)&&(identical(other.batch, batch) || other.batch == batch)&&(identical(other.rangeStart, rangeStart) || other.rangeStart == rangeStart)&&(identical(other.rangeEnd, rangeEnd) || other.rangeEnd == rangeEnd)&&const DeepCollectionEquality().equals(other._records, _records)&&const DeepCollectionEquality().equals(other._conflicts, _conflicts)&&(identical(other.jsonPath, jsonPath) || other.jsonPath == jsonPath)&&(identical(other.attachmentEventId, attachmentEventId) || other.attachmentEventId == attachmentEventId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,roundId,hostId,payloadType,batch,rangeStart,rangeEnd,const DeepCollectionEquality().hash(_records),const DeepCollectionEquality().hash(_conflicts),jsonPath,attachmentEventId);
+
+@override
+String toString() {
+  return 'SyncMessage.deepBackfillInventory(roundId: $roundId, hostId: $hostId, payloadType: $payloadType, batch: $batch, rangeStart: $rangeStart, rangeEnd: $rangeEnd, records: $records, conflicts: $conflicts, jsonPath: $jsonPath, attachmentEventId: $attachmentEventId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SyncDeepBackfillInventoryCopyWith<$Res> implements $SyncMessageCopyWith<$Res> {
+  factory $SyncDeepBackfillInventoryCopyWith(SyncDeepBackfillInventory value, $Res Function(SyncDeepBackfillInventory) _then) = _$SyncDeepBackfillInventoryCopyWithImpl;
+@useResult
+$Res call({
+ String roundId, String hostId, SyncSequencePayloadType payloadType, int batch, String? rangeStart, String? rangeEnd, List<DeepBackfillRecord> records, List<DeepBackfillRecord> conflicts, String? jsonPath, String? attachmentEventId
+});
+
+
+
+
+}
+/// @nodoc
+class _$SyncDeepBackfillInventoryCopyWithImpl<$Res>
+    implements $SyncDeepBackfillInventoryCopyWith<$Res> {
+  _$SyncDeepBackfillInventoryCopyWithImpl(this._self, this._then);
+
+  final SyncDeepBackfillInventory _self;
+  final $Res Function(SyncDeepBackfillInventory) _then;
+
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? roundId = null,Object? hostId = null,Object? payloadType = null,Object? batch = null,Object? rangeStart = freezed,Object? rangeEnd = freezed,Object? records = null,Object? conflicts = null,Object? jsonPath = freezed,Object? attachmentEventId = freezed,}) {
+  return _then(SyncDeepBackfillInventory(
+roundId: null == roundId ? _self.roundId : roundId // ignore: cast_nullable_to_non_nullable
+as String,hostId: null == hostId ? _self.hostId : hostId // ignore: cast_nullable_to_non_nullable
+as String,payloadType: null == payloadType ? _self.payloadType : payloadType // ignore: cast_nullable_to_non_nullable
+as SyncSequencePayloadType,batch: null == batch ? _self.batch : batch // ignore: cast_nullable_to_non_nullable
+as int,rangeStart: freezed == rangeStart ? _self.rangeStart : rangeStart // ignore: cast_nullable_to_non_nullable
+as String?,rangeEnd: freezed == rangeEnd ? _self.rangeEnd : rangeEnd // ignore: cast_nullable_to_non_nullable
+as String?,records: null == records ? _self._records : records // ignore: cast_nullable_to_non_nullable
+as List<DeepBackfillRecord>,conflicts: null == conflicts ? _self._conflicts : conflicts // ignore: cast_nullable_to_non_nullable
+as List<DeepBackfillRecord>,jsonPath: freezed == jsonPath ? _self.jsonPath : jsonPath // ignore: cast_nullable_to_non_nullable
+as String?,attachmentEventId: freezed == attachmentEventId ? _self.attachmentEventId : attachmentEventId // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+@JsonSerializable(explicitToJson: true)
+class SyncDeepBackfillRequest implements SyncMessage {
+  const SyncDeepBackfillRequest({required this.requesterId, required this.targetHostId, required this.payloadType, final  List<DeepBackfillRequestRecord> records = const <DeepBackfillRequestRecord>[], this.jsonPath, this.attachmentEventId, final  String? $type}): _records = records,$type = $type ?? 'deepBackfillRequest';
+  factory SyncDeepBackfillRequest.fromJson(Map<String, dynamic> json) => _$SyncDeepBackfillRequestFromJson(json);
+
+/// The requester's `VectorClockService` host UUID.
+ final  String requesterId;
+/// The advertiser, the only device that answers.
+ final  String targetHostId;
+ final  SyncSequencePayloadType payloadType;
+ final  List<DeepBackfillRequestRecord> _records;
+@JsonKey() List<DeepBackfillRequestRecord> get records {
+  if (_records is EqualUnmodifiableListView) return _records;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_records);
+}
+
+ final  String? jsonPath;
+ final  String? attachmentEventId;
+
+@JsonKey(name: 'runtimeType')
+final String $type;
+
+
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SyncDeepBackfillRequestCopyWith<SyncDeepBackfillRequest> get copyWith => _$SyncDeepBackfillRequestCopyWithImpl<SyncDeepBackfillRequest>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$SyncDeepBackfillRequestToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SyncDeepBackfillRequest&&(identical(other.requesterId, requesterId) || other.requesterId == requesterId)&&(identical(other.targetHostId, targetHostId) || other.targetHostId == targetHostId)&&(identical(other.payloadType, payloadType) || other.payloadType == payloadType)&&const DeepCollectionEquality().equals(other._records, _records)&&(identical(other.jsonPath, jsonPath) || other.jsonPath == jsonPath)&&(identical(other.attachmentEventId, attachmentEventId) || other.attachmentEventId == attachmentEventId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,requesterId,targetHostId,payloadType,const DeepCollectionEquality().hash(_records),jsonPath,attachmentEventId);
+
+@override
+String toString() {
+  return 'SyncMessage.deepBackfillRequest(requesterId: $requesterId, targetHostId: $targetHostId, payloadType: $payloadType, records: $records, jsonPath: $jsonPath, attachmentEventId: $attachmentEventId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SyncDeepBackfillRequestCopyWith<$Res> implements $SyncMessageCopyWith<$Res> {
+  factory $SyncDeepBackfillRequestCopyWith(SyncDeepBackfillRequest value, $Res Function(SyncDeepBackfillRequest) _then) = _$SyncDeepBackfillRequestCopyWithImpl;
+@useResult
+$Res call({
+ String requesterId, String targetHostId, SyncSequencePayloadType payloadType, List<DeepBackfillRequestRecord> records, String? jsonPath, String? attachmentEventId
+});
+
+
+
+
+}
+/// @nodoc
+class _$SyncDeepBackfillRequestCopyWithImpl<$Res>
+    implements $SyncDeepBackfillRequestCopyWith<$Res> {
+  _$SyncDeepBackfillRequestCopyWithImpl(this._self, this._then);
+
+  final SyncDeepBackfillRequest _self;
+  final $Res Function(SyncDeepBackfillRequest) _then;
+
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? requesterId = null,Object? targetHostId = null,Object? payloadType = null,Object? records = null,Object? jsonPath = freezed,Object? attachmentEventId = freezed,}) {
+  return _then(SyncDeepBackfillRequest(
+requesterId: null == requesterId ? _self.requesterId : requesterId // ignore: cast_nullable_to_non_nullable
+as String,targetHostId: null == targetHostId ? _self.targetHostId : targetHostId // ignore: cast_nullable_to_non_nullable
+as String,payloadType: null == payloadType ? _self.payloadType : payloadType // ignore: cast_nullable_to_non_nullable
+as SyncSequencePayloadType,records: null == records ? _self._records : records // ignore: cast_nullable_to_non_nullable
+as List<DeepBackfillRequestRecord>,jsonPath: freezed == jsonPath ? _self.jsonPath : jsonPath // ignore: cast_nullable_to_non_nullable
+as String?,attachmentEventId: freezed == attachmentEventId ? _self.attachmentEventId : attachmentEventId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

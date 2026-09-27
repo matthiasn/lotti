@@ -568,8 +568,9 @@ void main() {
       expect(items.first.payloadSize, isNull);
     });
 
-    test('schema version is 29', () {
-      expect(db.schemaVersion, 30);
+    test('schema version is the current one', () {
+      expect(db.schemaVersion, SyncDatabase.currentSchemaVersion);
+      expect(db.schemaVersion, 31);
     });
 
     test('OutboxStatus indices used by the partial-index annotation '

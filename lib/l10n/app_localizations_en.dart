@@ -9143,6 +9143,30 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get maintenanceDeepBackfill => 'Deep backfill';
+
+  @override
+  String maintenanceDeepBackfillComplete(int count) {
+    return '$count records listed for your other devices';
+  }
+
+  @override
+  String get maintenanceDeepBackfillConfirm => 'Yes, start';
+
+  @override
+  String get maintenanceDeepBackfillDescription =>
+      'Compare every record with your other devices and fill the gaps';
+
+  @override
+  String get maintenanceDeepBackfillMessage =>
+      'This sends a list of every record on this device, deletions included, to your other devices. Each one compares it with its own records, asks for what it is missing and sends back what this device lacks. Your other devices need to be online to answer.';
+
+  @override
+  String maintenanceDeepBackfillProgress(int advertised, int total) {
+    return '$advertised of $total records listed';
+  }
+
+  @override
   String get maintenanceDeleteAgentDb => 'Delete Agents Database';
 
   @override
@@ -14616,6 +14640,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncPayloadDailyOsUserName => 'Daily OS name';
+
+  @override
+  String get syncPayloadDeepBackfillInventory => 'Deep backfill inventory';
+
+  @override
+  String get syncPayloadDeepBackfillRequest => 'Deep backfill request';
 
   @override
   String get syncPayloadEntityDefinition => 'Entity definition';

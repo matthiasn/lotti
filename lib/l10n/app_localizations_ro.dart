@@ -9358,6 +9358,30 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get maintenanceDeepBackfill => 'Completare aprofundată';
+
+  @override
+  String maintenanceDeepBackfillComplete(int count) {
+    return '$count înregistrări listate pentru celelalte dispozitive';
+  }
+
+  @override
+  String get maintenanceDeepBackfillConfirm => 'Da, porniți';
+
+  @override
+  String get maintenanceDeepBackfillDescription =>
+      'Comparați fiecare înregistrare cu celelalte dispozitive și completați golurile';
+
+  @override
+  String get maintenanceDeepBackfillMessage =>
+      'Aceasta trimite celorlalte dispozitive ale dumneavoastră lista tuturor înregistrărilor de pe acest dispozitiv, inclusiv a celor șterse. Fiecare o compară cu propriile înregistrări, cere ce îi lipsește și trimite înapoi ce îi lipsește acestui dispozitiv. Celelalte dispozitive trebuie să fie online pentru a răspunde.';
+
+  @override
+  String maintenanceDeepBackfillProgress(int advertised, int total) {
+    return '$advertised din $total înregistrări listate';
+  }
+
+  @override
   String get maintenanceDeleteAgentDb => 'Ștergeți baza de date a agenților';
 
   @override
@@ -14998,6 +15022,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncPayloadDailyOsUserName => 'Nume Daily OS';
+
+  @override
+  String get syncPayloadDeepBackfillInventory =>
+      'Inventar pentru completarea aprofundată';
+
+  @override
+  String get syncPayloadDeepBackfillRequest =>
+      'Cerere de completare aprofundată';
 
   @override
   String get syncPayloadEntityDefinition => 'Definiție entitate';

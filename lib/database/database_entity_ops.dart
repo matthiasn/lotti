@@ -133,6 +133,24 @@ mixin _JournalDbEntityOps
     }
   }
 
+  /// The open conflict version of [entryId] whose clock is exactly
+  /// [vectorClock], or null. A concurrent version a peer asks for by deep
+  /// backfill may live here rather than in the row (ADR 0092).
+  Future<JournalEntity?> openConflictVersion(
+    String entryId,
+    VectorClock vectorClock,
+  ) async {
+    for (final conflict in await _unresolvedConflictsOf(entryId)) {
+      final conflictClock = _conflictClock(conflict);
+      if (conflictClock != null &&
+          VectorClock.compare(conflictClock, vectorClock) ==
+              VclockStatus.equal) {
+        return fromSerialized(conflict.serialized);
+      }
+    }
+    return null;
+  }
+
   Future<List<Conflict>> _unresolvedConflictsOf(String entryId) async =>
       (await conflictsForEntry(
         entryId,

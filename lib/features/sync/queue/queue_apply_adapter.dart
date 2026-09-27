@@ -343,6 +343,7 @@ class QueueApplyAdapter {
         '/agent_entities/',
         '/agent_links/',
         '/notifications/',
+        '/deep_backfill/',
       ];
       for (final prefix in attachmentPrefixes) {
         if (path.contains(prefix)) return true;
@@ -398,6 +399,11 @@ class QueueApplyAdapter {
       // The media-request handler reads JournalDb and enqueues outbox rows;
       // it writes no journal state of its own, so it needs no transaction.
       mediaRequest: (_) => false,
+      // Deep backfill reads every store and writes only the sync database
+      // (outstanding requests) and the outbox; received versions arrive as
+      // their own payload messages.
+      deepBackfillInventory: (_) => false,
+      deepBackfillRequest: (_) => false,
       // In-memory coordination state only.
       agentWakeCoordination: (_) => false,
       backfillResponse: (_) => true,
