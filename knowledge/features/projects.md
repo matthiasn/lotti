@@ -19,7 +19,11 @@ sources:
   - id: queries
     resource: ../../lib/database/database_project_queries.dart
     title: Project queries and the coalescing wave
-    last_modified: 2026-06-08
+    last_modified: 2026-09-27
+  - id: adr-0106
+    resource: ../../docs/adr/0106-the-task-link-graph-across-devices.md
+    title: ADR 0106 — The task link graph across devices
+    last_modified: 2026-09-27
   - id: lifecycle
     resource: ../../lib/features/projects/service/project_lifecycle_service.dart
     title: Coordinated project deletion and agent compensation
@@ -75,6 +79,51 @@ rather than joining `linked_entries` and sorting. **It is kept in lock-step with
 the latest non-hidden `ProjectLink` on every link and entity write**, so the
 result is identical to the old join without its
 `USE TEMP B-TREE FOR ORDER BY` sort.
+
+## One project per task, across devices
+
+A task is in at most one project, but the rule is enforced where each link is
+written, and two devices that file the task under different projects while
+offline each write one. Both links arrive everywhere. Every device still shows
+the same project: the one shown is **a function of the stored rows** — the live
+link with the latest `updatedAt`, then the greatest id — in
+`_projectIdSubquery`, `projectLinkForTask` and
+`JournalDb.getLiveProjectLinksForTask` alike. The other link stays live
+underneath it.
+
+So every project write reads **all** of the task's live links, not the one
+shown, and replaces them in one transaction that first checks they are still
+the ones it read
+([ADR 0106](../../docs/adr/0106-the-task-link-graph-across-devices.md)):
+
+- `linkTaskToProject` retires every live link to another project. When a live
+  link to the target is already among them — the one underneath — it keeps
+  that link instead of writing a second one for the same pair.
+- `unlinkTaskFromProject` retires every live link, and with
+  `onlyIfPrivacyMismatched` every link whose project differs in privacy from
+  the task. The transaction derives that set again from its own snapshot and
+  writes only when it is unchanged; when sync moved a link or a privacy flag
+  in between, the unlink starts over from what is stored (three attempts).
+
+Retiring only the link shown let the one underneath take its place: an unfiled
+task appeared in the other project, filing it under that project did nothing,
+and a move lost to a link stamped later by a device whose clock ran ahead.
+`specs/tla/TaskLinkGraph.tla` (`TaskLinkGraphProjects`) found all three.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Unfiled
+  Unfiled --> Filed: linkTaskToProject
+  Filed --> Filed: move (retires every other live link)
+  Filed --> TwoLive: another device filed it elsewhere, offline
+  TwoLive --> Filed: move, on any device
+  TwoLive --> Unfiled: unfile, on any device
+  Filed --> Unfiled: unfile
+  note right of TwoLive
+    Both links live; every device shows
+    the later updatedAt, then the greater id
+  end note
+```
 
 ## Membership is scoped to category and privacy
 

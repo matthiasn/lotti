@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -359,30 +360,36 @@ class ProjectRepository {
   /// Links a task to a project.
   ///
   /// Enforces the single-project-per-task constraint: if the task already
-  /// belongs to a different project, the old link is soft-deleted first.
+  /// belongs to a different project, every live link to another project is
+  /// soft-deleted in the same transaction — not only the one shown. Two
+  /// devices that filed the task under different projects while offline
+  /// leave two live links; the one that does not show would otherwise take
+  /// over, or outrank the new link when its device's clock ran ahead
+  /// (ADR 0106).
   ///
-  /// Returns `true` if the link was created, `false` if rejected (e.g.,
-  /// cross-category linking).
+  /// Returns `true` if the task is now in [projectId], `false` if rejected
+  /// (e.g., cross-category linking).
   Future<bool> linkTaskToProject({
     required String projectId,
     required String taskId,
   }) async {
     // This read chooses the mutation shape and reserves the right number of
-    // vector clocks. Every branch re-reads both entities and this link inside
-    // the write transaction before it commits, so a sync update between this
-    // snapshot and the mutation can only reject the operation, never create a
-    // category/privacy-invalid link.
-    final existingLink = await _journalDb.getProjectLinkForTask(taskId);
-    if (existingLink != null) {
-      if (existingLink.fromId == projectId) {
+    // vector clocks. Every branch re-reads both entities and these links
+    // inside the write transaction before it commits, so a sync update
+    // between this snapshot and the mutation can only reject the operation,
+    // never create a category/privacy-invalid link.
+    final liveLinks = await _journalDb.getLiveProjectLinksForTask(taskId);
+    if (liveLinks.isNotEmpty) {
+      final shown = liveLinks.first;
+      if (shown.fromId == projectId) {
         return _existingProjectLinkIsStillValid(
-          existingLink: existingLink,
+          existingLink: shown,
           projectId: projectId,
           taskId: taskId,
         );
       }
       return _relinkTask(
-        oldLink: existingLink,
+        liveLinks: liveLinks,
         projectId: projectId,
         taskId: taskId,
       );
@@ -455,20 +462,54 @@ class ProjectRepository {
 
   /// Removes a task from its project.
   ///
-  /// Soft-deletes the ProjectLink if one exists. Returns `true` if a link
-  /// was removed. Privacy cleanup rechecks both entries and the membership
-  /// inside the deletion transaction so concurrent sync edits are preserved.
+  /// Soft-deletes every live ProjectLink of the task, not only the one shown:
+  /// a link another device wrote concurrently would otherwise show the task
+  /// in that project the moment this one is gone (ADR 0106). Returns `true`
+  /// if a link was removed.
+  ///
+  /// With [onlyIfPrivacyMismatched], only the links whose project's private
+  /// flag differs from the task's are removed. The deletion transaction
+  /// derives the links to remove again — the live links and the privacy of
+  /// every entry involved — and writes only when they are the ones it
+  /// prepared, so concurrent sync edits are preserved. When sync moved them in
+  /// between, the removal starts over from what is stored, a bounded number
+  /// of times ([_unlinkAttempts]).
   Future<bool> unlinkTaskFromProject(
     String taskId, {
     bool onlyIfPrivacyMismatched = false,
   }) async {
-    final existingLink = await _journalDb.getProjectLinkForTask(taskId);
-    if (existingLink == null) return false;
-    return _softDeleteLink(
-      existingLink,
-      onlyIfPrivacyMismatched: onlyIfPrivacyMismatched,
-    );
+    for (var attempt = 0; attempt < _unlinkAttempts; attempt++) {
+      final liveLinks = await _journalDb.getLiveProjectLinksForTask(taskId);
+      final retire = await _linksToRetire(
+        liveLinks,
+        onlyIfPrivacyMismatched: onlyIfPrivacyMismatched,
+      );
+      if (retire.isEmpty) return false;
+      final removed = await _softDeleteLinks(
+        taskId: taskId,
+        liveLinks: liveLinks,
+        retire: retire,
+        onlyIfPrivacyMismatched: onlyIfPrivacyMismatched,
+      );
+      if (removed != null) return removed;
+    }
+    return false;
   }
+
+  /// How many times [unlinkTaskFromProject] starts over when sync changed
+  /// the task's links or privacy between its read and its transaction.
+  static const _unlinkAttempts = 3;
+
+  /// The links of [liveLinks] an unlink removes: all of them, or with
+  /// [onlyIfPrivacyMismatched] those whose project differs in privacy from
+  /// the task.
+  Future<List<EntryLink>> _linksToRetire(
+    List<EntryLink> liveLinks, {
+    required bool onlyIfPrivacyMismatched,
+  }) async => [
+    for (final link in liveLinks)
+      if (!onlyIfPrivacyMismatched || await _privacyMismatched(link)) link,
+  ];
 
   /// Copies the project assignment from [sourceTaskId] to [newTaskId].
   ///
@@ -558,33 +599,44 @@ class ProjectRepository {
     });
   }
 
-  /// Atomically soft-deletes an old project link and creates a new one
-  /// within a single DB transaction. Notifications and sync enqueuing are
-  /// deferred until after the transaction commits.
+  /// Atomically soft-deletes every live project link of [taskId] to another
+  /// project and — unless a live link to [projectId] is among them already —
+  /// creates the new one, within a single DB transaction. Notifications and
+  /// sync enqueuing are deferred until after the transaction commits.
   Future<bool> _relinkTask({
-    required EntryLink oldLink,
+    required List<EntryLink> liveLinks,
     required String projectId,
     required String taskId,
   }) async {
-    // Wrap BOTH reservations (delete-link VC + new-link VC) in a single
-    // scope so a rolled-back transaction releases both. Nested reservations
-    // from [_prepareDeletedLink] attach automatically via the zone-local
-    // scope.
+    final retire = [
+      for (final link in liveLinks)
+        if (link.fromId != projectId) link,
+    ];
+    final alreadyLinked = retire.length < liveLinks.length;
+
+    // Wrap every reservation (one per tombstone, plus the new link's) in a
+    // single scope so a rolled-back transaction releases them all. Nested
+    // reservations from [_prepareDeletedLink] attach automatically via the
+    // zone-local scope.
     return _vectorClockService.withVcScope<bool>(
       () async {
         final now = DateTime.now();
-        final deletedLink = await _prepareDeletedLink(oldLink, now);
-        final created = await _newProjectLink(
-          projectId: projectId,
-          taskId: taskId,
-          now: now,
-        );
-        if (created == null) return false;
-        final (link: newLink, :revived) = created;
+        final tombstones = [
+          for (final link in retire) await _prepareDeletedLink(link, now),
+        ];
+        final created = alreadyLinked
+            ? null
+            : await _newProjectLink(
+                projectId: projectId,
+                taskId: taskId,
+                now: now,
+              );
+        if (!alreadyLinked && created == null) return false;
 
-        // The final invariant reads and both writes share one transaction. If
-        // sync changed either entity or the old link after the shape-selection
-        // snapshot, reject instead of committing stale validation.
+        // The final invariant reads and every write share one transaction.
+        // If sync changed either entity or the task's links after the
+        // shape-selection snapshot, reject instead of committing stale
+        // validation.
         var success = false;
         try {
           success = await _journalDb.transaction(() async {
@@ -594,18 +646,22 @@ class ProjectRepository {
             )) {
               return false;
             }
-            final currentLink = await _journalDb.getProjectLinkForTask(taskId);
-            if (currentLink != oldLink) return false;
-            final deleteRes = await _journalDb.upsertEntryLink(deletedLink);
-            if (deleteRes == 0) return false;
-            final insertRes = await _journalDb.upsertEntryLink(newLink);
-            if (insertRes == 0) throw const _RelinkInsertFailed();
+            if (!await _liveLinksUnchanged(taskId, liveLinks)) return false;
+            for (final tombstone in tombstones) {
+              if (await _journalDb.upsertEntryLink(tombstone) == 0) {
+                throw const _RelinkInsertFailed();
+              }
+            }
+            if (created != null &&
+                await _journalDb.upsertEntryLink(created.link) == 0) {
+              throw const _RelinkInsertFailed();
+            }
             return true;
           });
         } on _RelinkInsertFailed {
           // Throwing from the Drift transaction is what rolls the already-
-          // written tombstone back. Translate the private sentinel only after
-          // the transaction has restored the old link.
+          // written tombstones back. Translate the private sentinel only
+          // after the transaction has restored the old links.
           success = false;
         }
 
@@ -613,22 +669,26 @@ class ProjectRepository {
 
         // Same propagation tagging as [linkTaskToProject]: relinking is a
         // task-link side-effect, not a direct project edit.
+        final projectIds = {for (final link in retire) link.fromId, projectId};
         _updateNotifications.notify({
-          oldLink.fromId,
-          oldLink.toId,
-          projectId,
+          ...projectIds,
           taskId,
           projectNotification,
-          projectEntityUpdateNotification(oldLink.fromId),
-          projectEntityUpdateNotification(projectId),
-          propagatedNotification(
-            projectEntityUpdateNotification(oldLink.fromId),
-          ),
-          propagatedNotification(projectEntityUpdateNotification(projectId)),
+          for (final id in projectIds) ...{
+            projectEntityUpdateNotification(id),
+            propagatedNotification(projectEntityUpdateNotification(id)),
+          },
         });
         try {
-          await _enqueueLinkSync(deletedLink, SyncEntryStatus.update);
-          await _enqueueLinkSync(newLink, _creationStatus(revived: revived));
+          for (final tombstone in tombstones) {
+            await _enqueueLinkSync(tombstone, SyncEntryStatus.update);
+          }
+          if (created != null) {
+            await _enqueueLinkSync(
+              created.link,
+              _creationStatus(revived: created.revived),
+            );
+          }
         } catch (error, stackTrace) {
           getIt<DomainLogger>().error(
             LogDomain.sync,
@@ -645,59 +705,106 @@ class ProjectRepository {
     );
   }
 
-  Future<bool> _softDeleteLink(
-    EntryLink link, {
-    bool onlyIfPrivacyMismatched = false,
+  /// Soft-deletes [retire], the links of [taskId] chosen from [liveLinks], in
+  /// one transaction that first checks the task's live links are still
+  /// [liveLinks] and — for privacy cleanup — that the links whose project
+  /// differs in privacy from the task are exactly [retire], read from the
+  /// transaction's snapshot.
+  ///
+  /// Returns true when the links were removed, false when a write failed,
+  /// and null when sync had moved the links or the privacy in between: the
+  /// caller reads again.
+  Future<bool?> _softDeleteLinks({
+    required String taskId,
+    required List<EntryLink> liveLinks,
+    required List<EntryLink> retire,
+    required bool onlyIfPrivacyMismatched,
   }) async {
-    return _vectorClockService.withVcScope<bool>(
+    return _vectorClockService.withVcScope<bool?>(
       () async {
         final now = DateTime.now();
-        final deleted = await _prepareDeletedLink(link, now);
-        final res = await _journalDb.transaction(() async {
-          final currentLink = await _journalDb.getProjectLinkForTask(link.toId);
-          if (currentLink != link) return 0;
-          if (onlyIfPrivacyMismatched) {
-            final taskRow = await _journalDb.entityById(link.toId);
-            final projectRow = await _journalDb.entityById(link.fromId);
-            final task = taskRow == null ? null : fromDbEntity(taskRow);
-            final project = projectRow == null
-                ? null
-                : fromDbEntity(projectRow);
-            if (task is! Task ||
-                project is! ProjectEntry ||
-                (task.meta.private ?? false) ==
-                    (project.meta.private ?? false)) {
-              return 0;
+        final tombstones = [
+          for (final link in retire) await _prepareDeletedLink(link, now),
+        ];
+        bool? removed = false;
+        try {
+          removed = await _journalDb.transaction<bool?>(() async {
+            if (!await _liveLinksUnchanged(taskId, liveLinks)) return null;
+            if (onlyIfPrivacyMismatched &&
+                !const ListEquality<EntryLink>().equals(
+                  await _linksToRetire(
+                    liveLinks,
+                    onlyIfPrivacyMismatched: true,
+                  ),
+                  retire,
+                )) {
+              return null;
             }
-          }
-          return _journalDb.upsertEntryLink(deleted);
-        });
-        if (res == 0) return false;
+            for (final tombstone in tombstones) {
+              if (await _journalDb.upsertEntryLink(tombstone) == 0) {
+                throw const _RelinkInsertFailed();
+              }
+            }
+            return true;
+          });
+        } on _RelinkInsertFailed {
+          // As in [_relinkTask]: the throw rolled back the tombstones
+          // already written.
+          removed = false;
+        }
+        if (removed != true) return removed;
         // Same propagation tagging as [linkTaskToProject]: unlinking is a
         // task-link side-effect, not a direct project edit.
+        final projectIds = {for (final link in retire) link.fromId};
         _updateNotifications.notify({
-          link.fromId,
-          link.toId,
+          ...projectIds,
+          taskId,
           projectNotification,
-          projectEntityUpdateNotification(link.fromId),
-          propagatedNotification(projectEntityUpdateNotification(link.fromId)),
+          for (final id in projectIds) ...{
+            projectEntityUpdateNotification(id),
+            propagatedNotification(projectEntityUpdateNotification(id)),
+          },
         });
         try {
-          await _enqueueLinkSync(deleted, SyncEntryStatus.update);
+          for (final tombstone in tombstones) {
+            await _enqueueLinkSync(tombstone, SyncEntryStatus.update);
+          }
         } catch (error, stackTrace) {
           getIt<DomainLogger>().error(
             LogDomain.sync,
             error,
             message:
-                'outbox enqueue failed after _softDeleteLink; VC already committed',
+                'outbox enqueue failed after _softDeleteLinks; '
+                'VC already committed',
             stackTrace: stackTrace,
-            subDomain: '_softDeleteLink.enqueue',
+            subDomain: '_softDeleteLinks.enqueue',
           );
         }
         return true;
       },
-      commitWhen: (ok) => ok,
+      commitWhen: (removed) => removed ?? false,
     );
+  }
+
+  /// Whether the task's live project links are still [expected], in order.
+  Future<bool> _liveLinksUnchanged(
+    String taskId,
+    List<EntryLink> expected,
+  ) async => const ListEquality<EntryLink>().equals(
+    await _journalDb.getLiveProjectLinksForTask(taskId),
+    expected,
+  );
+
+  /// Whether [link] joins a task and a project whose private flags differ,
+  /// read from the journal directly (see [_projectLinkInputsAreValid]).
+  Future<bool> _privacyMismatched(EntryLink link) async {
+    final taskRow = await _journalDb.entityById(link.toId);
+    final projectRow = await _journalDb.entityById(link.fromId);
+    final task = taskRow == null ? null : fromDbEntity(taskRow);
+    final project = projectRow == null ? null : fromDbEntity(projectRow);
+    return task is Task &&
+        project is ProjectEntry &&
+        (task.meta.private ?? false) != (project.meta.private ?? false);
   }
 
   /// The link that puts [taskId] in [projectId], reserved inside the

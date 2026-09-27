@@ -15389,6 +15389,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Blokující úkol není synchronizován';
 
   @override
+  String get taskBlockedInCycleChipLabel => 'Blokováno v cyklu';
+
+  @override
+  String get taskBlockedInCycleTooltip =>
+      'Tento úkol je součástí cyklu blokování: přes své blokující úkoly čeká sám na sebe. Dokonči některý úkol v cyklu nebo odeber jedno z jeho propojení, a cyklus se přeruší.';
+
+  @override
   String taskBlockedReason(String title) {
     return 'Blokováno úkolem: $title';
   }

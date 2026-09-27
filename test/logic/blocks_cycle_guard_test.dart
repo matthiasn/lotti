@@ -11,7 +11,7 @@ import '../widget_test_utils.dart';
 /// covered indirectly via `PersistenceEntries.createLink` in
 /// `test/logic/persistence_entries_test.dart` are not repeated here beyond a
 /// couple of smoke cases — this file's focus is the `excludeLinkId` behavior
-/// that only the edit path needs.
+/// that only the edit path needs, and a traversal of any depth.
 void main() {
   late TestGetItMocks mocks;
 
@@ -48,6 +48,42 @@ void main() {
 
     expect(result, isFalse);
   });
+
+  test(
+    'follows a chain of any length: a cycle closed through 100 links is '
+    'rejected (ADR 0106 removed the 64-hop cap that missed it)',
+    () async {
+      // n0 -> n1 -> ... -> n100; the new link n100 -> n0 closes the loop.
+      const length = 100;
+      when(
+        () => mocks.journalDb.typedLinksForTaskIds(
+          any(),
+          types: {'BlocksLink'},
+        ),
+      ).thenAnswer((invocation) async {
+        final frontier = invocation.positionalArguments.first as Set<String>;
+        return [
+          for (final id in frontier)
+            if (int.parse(id.substring(1)) < length)
+              EntryLink.blocks(
+                id: '$id-next',
+                fromId: id,
+                toId: 'n${int.parse(id.substring(1)) + 1}',
+                createdAt: DateTime(2024),
+                updatedAt: DateTime(2024),
+                vectorClock: null,
+              ),
+        ];
+      });
+
+      final result = await wouldCreateBlocksCycle(
+        fromId: 'n$length',
+        toId: 'n0',
+      );
+
+      expect(result, isTrue);
+    },
+  );
 
   test('rejects a 1-hop cycle (b already blocks a)', () async {
     when(

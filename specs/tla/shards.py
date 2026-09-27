@@ -57,6 +57,10 @@ SECONDS = {
     "EntryLinkIdentity": 10,
     "EntryLinkIdentityLegacy": 10,
     "EntryLinkIdentityLegacyReceiver": 5,
+    # Local runs (TaskLinkGraph 63s, 9.2M states); refresh from CI.
+    "TaskLinkGraph": 90,
+    "TaskLinkGraphProjects": 5,
+    "TaskLinkGraphProjectsThree": 15,
     "AgentLinksSlotLossy": 240,
     "DayProcessingJob": 379,
     "AgentReplicationTerminal": 409,

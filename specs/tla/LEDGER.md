@@ -106,6 +106,13 @@ reproduces the duplicate task agents a follow-up confirmed on two devices
 created, and each of its five switches has a counterexample. Not included in
 the historical totals above.
 
+The `TaskLinkGraph` model ([#4549](https://github.com/matthiasn/lotti/pull/4549)) adds one spec, three configurations,
+seven named properties and 10,761,709 distinct states (9,213,523 + 163,378 +
+1,384,808). It checks what the task links say together — no `blocks` cycle
+closed on one device, every cycle reported, one project per task — and came
+with eight fixes (P1×2 P2×5 P3), seven of them TLC counterexamples. Not
+included in the historical totals above.
+
 ## Timeline
 
 ```mermaid
@@ -181,6 +188,7 @@ counterexamples found. "Severity" grades each of those bugs; see
 | [#4527](https://github.com/matthiasn/lotti/pull/4527) | pending | sync | — | 0 | 1 (0) | P0 | [0092](../../docs/adr/0092-one-conflict-row-per-version.md) | Closed the one-conflict-row residual of ADR 0083: a save built on a stale read is refused and parked as the entry's conflict, never sent, and a later concurrent version replaced it in the one-row table, losing it on every device. Conflicts are now keyed by entry and version; the `displaced` ghost is gone, `NothingDropped` and `ConflictNotStale` hold without exception, and the `ConflictPerVersion` switch brings back a five-step counterexample. `JournalReplication` 700,231 and `JournalReplicationLabels` 167,673 distinct states, the other two unchanged |
 | [#4545](https://github.com/matthiasn/lotti/pull/4545) | pending | tasks, agents | `TaskFieldWrites` | 3 | 5 (5) | P1×3 P2×2 | [0103](../../docs/adr/0103-task-fields-are-changed-on-the-stored-row.md) | The fields ADR 0089 left: every task field write handed over a copy — the task screen's `TaskData`, or the task an agent tool call began with — under a clock that claimed everything stored, so a field the agent, the user or another device set meanwhile was put back with no conflict. The agent's compare-and-set ran against its copy, not the stored row; a status set on the task screen never reached the status history; and a resolution dropped the other side's statuses. Writers now state a change of the stored data, the agent compares inside the write, and a conformance trace drives the real writers, tools and resolution |
 | [#4546](https://github.com/matthiasn/lotti/pull/4546) | pending | agents, sync | `TaskAgentAssignment` | 3 | 1 (0) | P1 | [0104](../../docs/adr/0104-one-task-agent-per-task.md) | A follow-up task confirmed on two devices got a task agent from each, and so did two manual assignments: the duplicate check was local, and both agents lived on, woke and wrote reports and proposals behind the one the card showed. Every device now ranks the task's agents as the card does and retires the others, after a receive, at startup (which also clears what older builds left) and before a wake. TLC reproduces the bug with `RetireLosers = FALSE` in nine states, and a model with each device keeping its own agent leaves the task with none. It also shows two residuals: clock skew can cost a reassignment, and a local hard delete lets a late copy bring an agent back |
+| [#4549](https://github.com/matthiasn/lotti/pull/4549) | pending | tasks, projects | `TaskLinkGraph` | 3 | 8 (7) | P1×2 P2×5 P3 | [0106](../../docs/adr/0106-the-task-link-graph-across-devices.md) | A task unfiled on one device showed up in the project another device had filed it under while offline, and filing it there did nothing. The user and the task agent linking two tasks both ways at once closed a `blocks` cycle the guard exists to refuse, and a cycle two devices closed was never reported: each task said "Blocked by 1 task" and the day agent was told to schedule the other first. Cycles are now kept and reported the same on every device, the check runs inside the write's transaction without a depth cap, and a project move or unfile retires every live project link |
 | [#4550](https://github.com/matthiasn/lotti/pull/4550) | pending | sync | `DeepBackfill` | 8 | 0 | — | — | A design model written before the code: a manual round advertises every record, tombstones included, in batches; recipients request what they lack and push back what they hold newer. Each of its nine design switches has a counterexample. TLC's first draft starved a tombstone-carrying batch behind a re-emitted one, so the implementation must process every batch; and it showed that batches must name their id range — otherwise a record only the recipient holds never travels — and that outstanding requests must survive a crash. Review added two switches: a request is settled by coverage, not by sender (`ClearOnlyCovered`), and TLC then found that a concurrent version held only as an open conflict never reached a third device, so conflict versions travel like rows (`ConflictsTravel`) |
 
 ## Sync follow-up evidence, 2026-09-26
@@ -436,6 +444,15 @@ The P0 and P1 bugs:
 | [#4545](https://github.com/matthiasn/lotti/pull/4545) | P1 | yes | An agent tool set a field over a value the user changed between the call's read and its write |
 | [#4545](https://github.com/matthiasn/lotti/pull/4545) | P2 | yes | A status set from the task screen was never appended to the status history |
 | [#4545](https://github.com/matthiasn/lotti/pull/4545) | P2 | yes | Resolving a conflict dropped the status history of the side not kept |
+| [#4549](https://github.com/matthiasn/lotti/pull/4549) | P1 | yes | Unfiling a task another device had filed elsewhere while offline put it in that other project |
+| [#4549](https://github.com/matthiasn/lotti/pull/4549) | P1 | yes | A move lost to a project link underneath it stamped by a device whose clock ran ahead, so the task stayed put |
+| [#4549](https://github.com/matthiasn/lotti/pull/4549) | P2 | yes | Filing a task under the project of its link underneath did nothing and reported failure |
+| [#4549](https://github.com/matthiasn/lotti/pull/4549) | P2 | yes | The user and the task agent linking two tasks both ways at once closed a `blocks` cycle on one device |
+| [#4549](https://github.com/matthiasn/lotti/pull/4549) | P2 | yes | Retyping or turning a link around raced another write: it could close a cycle, or bring back a link removed in between |
+| [#4549](https://github.com/matthiasn/lotti/pull/4549) | P2 | yes | A cycle two devices closed was never reported, and the day agent was told to schedule each task's blocker first |
+| [#4549](https://github.com/matthiasn/lotti/pull/4549) | P2 | no | Privacy cleanup removed only the project link shown, leaving a mismatched one underneath |
+| [#4549](https://github.com/matthiasn/lotti/pull/4549) | P3 | yes | The cycle check stopped after 64 hops, so a longer chain could close a cycle |
+
 </details>
 
 ## Specs

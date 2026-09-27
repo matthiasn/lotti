@@ -1185,6 +1185,37 @@ void main() {
       );
 
       test(
+        'getLiveProjectLinksForTask returns every live link, the one the task '
+        'shows first, ties broken by the greater id, removed ones left out',
+        () async {
+          final base = DateTime(2024, 7, 13);
+          Future<void> link(String id, DateTime at, {bool removed = false}) =>
+              db!.upsertEntryLink(
+                buildProjectLink(
+                  id: id,
+                  fromId: 'proj-$id',
+                  toId: 'task-live-links',
+                  timestamp: at,
+                  hidden: removed,
+                ),
+              );
+          await link('a', base);
+          await link('c', base.add(const Duration(hours: 1)));
+          await link('b', base.add(const Duration(hours: 1)));
+          await link('gone', base.add(const Duration(hours: 2)), removed: true);
+
+          final links = await db!.getLiveProjectLinksForTask('task-live-links');
+
+          expect(links.map((l) => l.id), ['c', 'b', 'a']);
+          expect(
+            (await db!.getProjectLinkForTask('task-live-links'))!.id,
+            links.first.id,
+          );
+          expect(await db!.getLiveProjectLinksForTask('no-link-task'), isEmpty);
+        },
+      );
+
+      test(
         'getVisibleProjects returns non-deleted projects ordered by '
         'dateFrom desc',
         () async {

@@ -5,8 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_helpers.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/tasks/repository/blocks_cycles.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/cache_extension.dart';
@@ -23,6 +23,7 @@ class TaskBlockersResult {
   const TaskBlockersResult({
     required this.openBlockers,
     required this.unresolvedCount,
+    this.cycleBlockerIds = const {},
   });
 
   static const empty = TaskBlockersResult(openBlockers: [], unresolvedCount: 0);
@@ -30,17 +31,33 @@ class TaskBlockersResult {
   final List<Task> openBlockers;
   final int unresolvedCount;
 
+  /// The blockers this task blocks in turn, directly or through other tasks:
+  /// the two wait on each other (ADR 0106). Links written on two devices
+  /// while offline can close such a cycle; closing either task releases the
+  /// other.
+  final Set<String> cycleBlockerIds;
+
   bool get isBlocked => openBlockers.isNotEmpty || unresolvedCount > 0;
+
+  /// Whether the task waits on a task it blocks.
+  bool get inCycle => cycleBlockerIds.isNotEmpty;
 
   @override
   bool operator ==(Object other) =>
       other is TaskBlockersResult &&
       const ListEquality<Task>().equals(other.openBlockers, openBlockers) &&
-      other.unresolvedCount == unresolvedCount;
+      other.unresolvedCount == unresolvedCount &&
+      const SetEquality<String>().equals(
+        other.cycleBlockerIds,
+        cycleBlockerIds,
+      );
 
   @override
-  int get hashCode =>
-      Object.hash(Object.hashAll(openBlockers), unresolvedCount);
+  int get hashCode => Object.hash(
+    Object.hashAll(openBlockers),
+    unresolvedCount,
+    Object.hashAllUnordered(cycleBlockerIds),
+  );
 }
 
 /// Resolves which open tasks currently block `taskId`, independent of the
@@ -123,30 +140,37 @@ class TaskBlockersController extends AsyncNotifier<TaskBlockersResult> {
     final openBlockers = <Task>[];
     var unresolvedCount = 0;
 
+    final stillBlocking = <String>{};
+
     for (final blockerId in blockerIds) {
       final entity = resolvedById[blockerId];
-      if (entity == null || entity is! Task) {
+      // Tombstoned or DONE/REJECTED — releases the dependent.
+      if (blockerReleases(entity)) continue;
+      stillBlocking.add(blockerId);
+      if (entity is Task) {
+        openBlockers.add(entity);
+      } else {
         // Not found at all (sync gap) or resolved to something other than a
         // task — both treated conservatively: keep blocking (ADR 0042 §4).
         unresolvedCount++;
-        continue;
       }
-      if (entity.meta.deletedAt != null) {
-        continue; // tombstoned — releases the dependent
-      }
-      if (isClosedTask(entity)) {
-        continue; // DONE/REJECTED — releases the dependent
-      }
-      openBlockers.add(entity);
     }
 
+    final cycles = await findBlockersInCycle(
+      journalRepository,
+      blockersByTask: {taskId: stillBlocking},
+    );
+
+    // Closing any task on a cycle breaks it, so all of them are watched.
     _watchedIds
       ..add(taskId)
-      ..addAll(blockerIds);
+      ..addAll(blockerIds)
+      ..addAll(cycles.visited);
 
     return TaskBlockersResult(
       openBlockers: openBlockers,
       unresolvedCount: unresolvedCount,
+      cycleBlockerIds: cycles.of(taskId),
     );
   }
 }

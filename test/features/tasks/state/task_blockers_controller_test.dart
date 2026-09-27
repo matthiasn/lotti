@@ -274,26 +274,18 @@ void main() {
           createdAt: baseDate,
           utcOffset: 0,
         );
-        var callCount = 0;
-        when(
-          () => journalRepository.getTypedLinksForTaskIds(
-            {blockedTaskId},
-            linkTypes: {'BlocksLink'},
-          ),
-        ).thenAnswer((_) async {
-          callCount++;
-          return [
-            blocksLink(id: 'l1', fromId: 'blocker', toId: blockedTaskId),
-          ];
-        });
+        stubBlocksLinks([
+          blocksLink(id: 'l1', fromId: 'blocker', toId: blockedTaskId),
+        ]);
         // First fetch sees an open blocker; the notification-triggered
         // refetch sees it closed — a real state change, not just a re-run.
+        var closed = false;
         when(
           () =>
               journalRepository.getJournalEntitiesByIdsIncludingDeleted(any()),
         ).thenAnswer(
           (_) async => [
-            if (callCount > 1)
+            if (closed)
               blocker.copyWith(data: blocker.data.copyWith(status: doneStatus))
             else
               blocker,
@@ -305,13 +297,12 @@ void main() {
         final initial = await container.read(
           taskBlockersControllerProvider(blockedTaskId).future,
         );
-        expect(callCount, 1);
         expect(initial.isBlocked, isTrue);
 
+        closed = true;
         updateStreamController.add({'blocker'});
         await pumpEventQueue();
 
-        expect(callCount, 2);
         expect(
           container
               .read(taskBlockersControllerProvider(blockedTaskId))
@@ -380,5 +371,97 @@ void main() {
         isNot(TaskBlockersResult(openBlockers: [blocker], unresolvedCount: 1)),
       );
     });
+
+    test(
+      'differs when the blockers on a cycle differ, whatever their order',
+      () {
+        final blocker = TestTaskFactory.create(id: 'blocker', title: 'Blocker');
+        TaskBlockersResult result(Set<String> cycle) => TaskBlockersResult(
+          openBlockers: [blocker],
+          unresolvedCount: 0,
+          cycleBlockerIds: cycle,
+        );
+
+        expect(result({'blocker'}).inCycle, isTrue);
+        expect(result({}).inCycle, isFalse);
+        expect(result({'blocker'}), isNot(result({})));
+        expect(result({'a', 'b'}), result({'b', 'a'}));
+        expect(result({'a', 'b'}).hashCode, result({'b', 'a'}).hashCode);
+      },
+    );
+  });
+
+  group('TaskBlockersController cycles (ADR 0106)', () {
+    // blocked-task -> middle -> blocker -> blocked-task: each waits on the
+    // one before it.
+    final links = [
+      blocksLink(id: 'l1', fromId: 'blocker', toId: blockedTaskId),
+      blocksLink(id: 'l2', fromId: blockedTaskId, toId: 'middle'),
+      blocksLink(id: 'l3', fromId: 'middle', toId: 'blocker'),
+    ];
+
+    void stubCycle(Map<String, JournalEntity> tasks) {
+      when(
+        () => journalRepository.getTypedLinksForTaskIds(
+          any(),
+          linkTypes: {'BlocksLink'},
+        ),
+      ).thenAnswer((invocation) async {
+        final ids = invocation.positionalArguments.first as Set<String>;
+        return [
+          for (final link in links)
+            if (ids.contains(link.fromId) || ids.contains(link.toId)) link,
+        ];
+      });
+      when(
+        () => journalRepository.getJournalEntitiesByIdsIncludingDeleted(any()),
+      ).thenAnswer((invocation) async {
+        final ids = invocation.positionalArguments.first as Iterable<String>;
+        return [for (final id in ids) ?tasks[id]];
+      });
+    }
+
+    test(
+      'reports a blocker the task waits on through another task, and '
+      'refetches when that other task changes',
+      () async {
+        final blocker = TestTaskFactory.create(id: 'blocker', title: 'B');
+        final middle = TestTaskFactory.create(id: 'middle', title: 'M');
+        final tasks = <String, JournalEntity>{
+          blockedTaskId: TestTaskFactory.create(id: blockedTaskId),
+          'blocker': blocker,
+          'middle': middle,
+        };
+        stubCycle(tasks);
+
+        final container = buildContainer();
+        addTearDown(container.dispose);
+        final initial = await container.read(
+          taskBlockersControllerProvider(blockedTaskId).future,
+        );
+        expect(initial.cycleBlockerIds, {'blocker'});
+        expect(initial.openBlockers.map((t) => t.meta.id), ['blocker']);
+
+        // Closing the middle task breaks the cycle; it is not a blocker of
+        // this task, yet the page must hear about it.
+        tasks['middle'] = middle.copyWith(
+          data: middle.data.copyWith(
+            status: TaskStatus.done(
+              id: 'status-done',
+              createdAt: baseDate,
+              utcOffset: 0,
+            ),
+          ),
+        );
+        updateStreamController.add({'middle'});
+        await pumpEventQueue();
+
+        final after = container
+            .read(taskBlockersControllerProvider(blockedTaskId))
+            .value;
+        expect(after?.inCycle, isFalse);
+        expect(after?.isBlocked, isTrue);
+      },
+    );
   });
 }

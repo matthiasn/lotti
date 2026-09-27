@@ -1,20 +1,20 @@
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 
-/// Depth cap for [wouldCreateBlocksCycle]'s local traversal. Task-relationship
-/// chains are short in practice (ADR 0042 §4: readiness is one hop, chains are
-/// the exception); this bounds the best-effort creation-time guard without
-/// needing a real graph size limit.
-const blocksCycleGuardMaxHops = 64;
-
 /// Whether inserting `blocks` edge `fromId -> toId` would close a cycle
 /// already visible on this device (ADR 0042 §5): true iff [fromId] is
-/// reachable by following existing `blocks` edges forward from [toId].
+/// reachable by following live `blocks` edges forward from [toId].
 ///
-/// Bounded breadth-first traversal via `JournalDb.typedLinksForTaskIds` —
-/// batched per hop rather than per-node, and capped at
-/// [blocksCycleGuardMaxHops] hops so a pathological chain cannot make link
-/// creation hang.
+/// Breadth-first via `JournalDb.typedLinksForTaskIds`, batched per hop rather
+/// than per node, over every path: the visited set bounds it by the number
+/// of tasks the chain reaches, so no depth cap is needed, and a cap would
+/// let a long enough chain close a cycle unseen (ADR 0106).
+///
+/// A writer calls it once before reserving a clock, as a fast path, and
+/// again inside the transaction that writes the link: only the second
+/// check sees every link another writer on this device stored in between
+/// (ADR 0106). Links another device writes concurrently can still close a
+/// cycle; the readers report it (`findBlockersInCycle`).
 ///
 /// [excludeLinkId], when supplied, ignores that link's own still-persisted
 /// row during traversal — required when editing an existing `blocks` edge in
@@ -31,11 +31,7 @@ Future<bool> wouldCreateBlocksCycle({
   final visited = <String>{toId};
   var frontier = <String>{toId};
 
-  for (
-    var hop = 0;
-    hop < blocksCycleGuardMaxHops && frontier.isNotEmpty;
-    hop++
-  ) {
+  while (frontier.isNotEmpty) {
     final links = await journalDb.typedLinksForTaskIds(
       frontier,
       types: const {'BlocksLink'},

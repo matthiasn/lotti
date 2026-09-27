@@ -41,6 +41,7 @@ together; add to them only when a decision joins one.
 | --- | --- | --- |
 | [0042: Typed Task Relationship Links](./0042-typed-task-relationship-links.md) | Accepted | `EntryLink` union variants (blocks, followsUp, duplicates, fixes, supersedes), one stored edge with rendered inverses, derived one-hop readiness, cycle tolerance, suggestion-only lifecycle coupling. |
 | [0043: Dependency-Aware Planning](./0043-dependency-aware-planning.md) | Accepted | Ready frontier consumed by planning: corpus annotation (never exclusion), batch dependency resolver, drafting/digest prompt rules, task-detail visibility, explicit non-goals. |
+| [0106: The Task Link Graph Across Devices](./0106-the-task-link-graph-across-devices.md) | Accepted | Cycles kept and reported the same on every device, never broken; the cycle check inside the write's transaction and uncapped; a project move or unfile retires every live project link of the task. |
 
 ### Relationship management decision cluster
 

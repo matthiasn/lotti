@@ -207,7 +207,8 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
 /// fact (ADR 0042 §4) independent of the task's own [TaskStatus]: a task can
 /// carry a live `blocks` link while its stored status is still `open`, and
 /// that's exactly the state this chip must surface. Renders nothing when the
-/// task isn't blocked.
+/// task isn't blocked, and says "blocked in a cycle" when the task waits on
+/// a task it blocks (ADR 0106).
 class _TaskBlockedByChip extends ConsumerWidget {
   const _TaskBlockedByChip({required this.taskId});
 
@@ -224,12 +225,21 @@ class _TaskBlockedByChip extends ConsumerWidget {
     // a simultaneously-blocked-and-overdue task must not show two identical
     // alarms (design-review-panel round 1, color-contrast finding).
     final accent = TaskShowcasePalette.warning(context);
-    final blockers = result.openBlockers;
+    // A cycle chip names and opens the blockers on the cycle (ADR 0106), not
+    // another blocker the task also has: while a cycle blocker has not
+    // synced, the one that has would otherwise stand in for it.
+    final blockers = result.inCycle
+        ? [
+            for (final blocker in result.openBlockers)
+              if (result.cycleBlockerIds.contains(blocker.id)) blocker,
+          ]
+        : result.openBlockers;
 
     if (blockers.isEmpty) {
       // Blocked purely by a link whose blocker id didn't resolve to any
       // entity (conservative default, ADR 0042 §4) — nothing to name or
-      // navigate to, so render a bare label with no tap affordance.
+      // navigate to, so render a bare label with no tap affordance. The same
+      // holds for a cycle whose blockers have not synced yet.
       return DsPill(
         variant: DsPillVariant.outline,
         shape: DsPillShape.tag,
@@ -240,7 +250,9 @@ class _TaskBlockedByChip extends ConsumerWidget {
           size: context.designTokens.spacing.step4,
           color: accent,
         ),
-        label: context.messages.taskBlockedByUnresolvedLabel,
+        label: result.inCycle
+            ? context.messages.taskBlockedInCycleChipLabel
+            : context.messages.taskBlockedByUnresolvedLabel,
       );
     }
 
@@ -248,10 +260,14 @@ class _TaskBlockedByChip extends ConsumerWidget {
     final tokens = context.designTokens;
 
     return Tooltip(
-      message: context.messages.taskBlockedByChipTooltip(
-        blockers.length,
-        single ? blockers.first.data.title : '',
-      ),
+      // A cycle is named rather than counted: the task waits, through its
+      // blockers, on itself, which no count conveys (ADR 0106).
+      message: result.inCycle
+          ? context.messages.taskBlockedInCycleTooltip
+          : context.messages.taskBlockedByChipTooltip(
+              blockers.length,
+              single ? blockers.first.data.title : '',
+            ),
       child: DsPill(
         // Outline, not tinted: the status read-out is the summary's alarm,
         // and this chip explains it. Two filled alert-coloured shells side by
@@ -273,7 +289,9 @@ class _TaskBlockedByChip extends ConsumerWidget {
         // the status read-out beside it. That the task is waiting is the
         // header's job; which task it waits on is one glance away in the
         // Linked Tasks card, and the tooltip still names it.
-        label: context.messages.taskBlockedByChipLabel(blockers.length),
+        label: result.inCycle
+            ? context.messages.taskBlockedInCycleChipLabel
+            : context.messages.taskBlockedByChipLabel(blockers.length),
         // Matches LinkedTaskRow's own browse-mode chevron so a chip that
         // navigates reads as tappable, not just as a status readout. Neutral,
         // not amber: "go here" is not part of the blocked semantic, and a third

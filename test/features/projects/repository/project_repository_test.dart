@@ -182,6 +182,19 @@ void main() {
     getIt.registerSingleton<T>(instance);
   }
 
+  // One live project link per task unless a test says otherwise: the one
+  // shown, as `getProjectLinkForTask` is stubbed for [db].
+  void stubLiveLinksFromShown(MockJournalDb db) {
+    when(() => db.getLiveProjectLinksForTask(any())).thenAnswer((
+      invocation,
+    ) async {
+      final shown = await db.getProjectLinkForTask(
+        invocation.positionalArguments.first as String,
+      );
+      return [?shown];
+    });
+  }
+
   setUp(() async {
     mockDb = MockJournalDb();
     mockPersistence = MockPersistenceLogic();
@@ -213,6 +226,7 @@ void main() {
     when(
       () => mockDb.getProjectLinkForTask(any()),
     ).thenAnswer((_) async => null);
+    stubLiveLinksFromShown(mockDb);
     when(
       () => mockVectorClockService.getNextVectorClock(
         payload: any(named: 'payload'),
@@ -1099,6 +1113,7 @@ void main() {
       final trackingDb = _TransactionTrackingJournalDb(
         rows: {projectEntry.id: toDbEntity(projectEntry)},
       );
+      stubLiveLinksFromShown(trackingDb);
       final movedProject = projectEntry.copyWith(
         meta: projectMeta.copyWith(categoryId: 'cat-2'),
       );
@@ -1445,6 +1460,7 @@ void main() {
             rows[projectEntry.id] = toDbEntity(privateProject);
           },
         );
+        stubLiveLinksFromShown(trackingDb);
         when(
           () => trackingDb.getProjectLinkForTask(taskEntry.id),
         ).thenAnswer((_) async => null);
@@ -1598,6 +1614,7 @@ void main() {
       'rolls back the soft-delete when relink insertion fails',
       () async {
         final rollbackDb = _RollbackTrackingJournalDb();
+        stubLiveLinksFromShown(rollbackDb);
         final oldLink = EntryLink.project(
           id: 'link-old',
           fromId: 'project-old',
@@ -1727,6 +1744,7 @@ void main() {
               }
             },
           );
+          stubLiveLinksFromShown(db);
           when(
             () => db.getProjectLinkForTask(taskEntry.id),
           ).thenAnswer((_) async => currentLink);
@@ -1835,6 +1853,218 @@ void main() {
       verifyNever(() => mockNotifications.notify(any()));
       verifyNever(() => mockOutboxService.enqueueMessage(any()));
     });
+  });
+
+  // Two devices that file a task under different projects while offline
+  // leave two live links; the task shows in one (ADR 0106).
+  group('a task with two live project links', () {
+    EntryLink projectLink(String projectId) => EntryLink.project(
+      id: 'link-$projectId',
+      fromId: projectId,
+      toId: taskEntry.id,
+      createdAt: testDate,
+      updatedAt: testDate,
+      vectorClock: null,
+    );
+
+    final shown = projectLink('project-a');
+    final underneath = projectLink('project-b');
+
+    void stubLiveLinks(List<EntryLink> links) {
+      when(
+        () => mockDb.getLiveProjectLinksForTask(taskEntry.id),
+      ).thenAnswer((_) async => links);
+    }
+
+    List<EntryLink> written() => verify(
+      () => mockDb.upsertEntryLink(captureAny()),
+    ).captured.cast<EntryLink>();
+
+    test('a move retires both, not only the one shown', () async {
+      stubLiveLinks([shown, underneath]);
+
+      final moved = await repository.linkTaskToProject(
+        projectId: projectEntry.id,
+        taskId: taskEntry.id,
+      );
+
+      expect(moved, isTrue);
+      final links = written();
+      expect(
+        {
+          for (final link in links)
+            link.fromId: link.deletedAt != null && (link.hidden ?? false),
+        },
+        {'project-a': true, 'project-b': true, projectEntry.id: false},
+      );
+      verify(() => mockOutboxService.enqueueMessage(any())).called(3);
+      final notified =
+          verify(
+                () => mockNotifications.notify(captureAny()),
+              ).captured.single
+              as Set<String>;
+      expect(
+        notified,
+        containsAll([
+          'project-a',
+          'project-b',
+          projectEntry.id,
+          propagatedNotification(projectEntityUpdateNotification('project-b')),
+        ]),
+      );
+    });
+
+    test(
+      'filing it under the project of the link underneath retires the one '
+      'shown and keeps that link, writing no second one',
+      () async {
+        final target = projectLink(projectEntry.id);
+        stubLiveLinks([shown, target]);
+
+        final filed = await repository.linkTaskToProject(
+          projectId: projectEntry.id,
+          taskId: taskEntry.id,
+        );
+
+        expect(filed, isTrue);
+        final links = written();
+        expect(links.single.id, shown.id);
+        expect(links.single.deletedAt, isNotNull);
+        expect(mockVectorClockService.commits, [true]);
+      },
+    );
+
+    test('an unfile retires both', () async {
+      stubLiveLinks([shown, underneath]);
+
+      expect(await repository.unlinkTaskFromProject(taskEntry.id), isTrue);
+
+      expect(
+        {for (final link in written()) link.id: link.deletedAt != null},
+        {shown.id: true, underneath.id: true},
+      );
+      verify(() => mockOutboxService.enqueueMessage(any())).called(2);
+    });
+
+    test(
+      'privacy cleanup retires only the links whose project differs in '
+      'privacy from the task',
+      () async {
+        final private = projectEntry.copyWith(
+          meta: projectMeta.copyWith(id: 'project-private', private: true),
+        );
+        when(
+          () => mockDb.entityById('project-private'),
+        ).thenAnswer((_) async => toDbEntity(private));
+        when(() => mockDb.entityById(taskEntry.id)).thenAnswer(
+          (_) async => toDbEntity(
+            taskEntry.copyWith(meta: taskMeta.copyWith(private: true)),
+          ),
+        );
+        final public = projectLink(projectEntry.id);
+        stubLiveLinks([projectLink('project-private'), public]);
+
+        expect(
+          await repository.unlinkTaskFromProject(
+            taskEntry.id,
+            onlyIfPrivacyMismatched: true,
+          ),
+          isTrue,
+        );
+
+        expect(written().single.id, public.id);
+      },
+    );
+
+    test(
+      'writes nothing when the live links changed before the transaction',
+      () async {
+        var reads = 0;
+        when(
+          () => mockDb.getLiveProjectLinksForTask(taskEntry.id),
+        ).thenAnswer(
+          // Each call reads both links, and finds one gone in its
+          // transaction.
+          (_) async => (++reads).isOdd ? [shown, underneath] : [shown],
+        );
+
+        expect(await repository.unlinkTaskFromProject(taskEntry.id), isFalse);
+        expect(
+          await repository.linkTaskToProject(
+            projectId: projectEntry.id,
+            taskId: taskEntry.id,
+          ),
+          isFalse,
+        );
+
+        verifyNever(() => mockDb.upsertEntryLink(any()));
+        // The unlink starts over from what is stored three times before it
+        // gives up; the move refuses at once. Every clock reserved for the
+        // refused writes is released.
+        expect(mockVectorClockService.commits, [false, false, false, false]);
+      },
+    );
+
+    test(
+      'privacy cleanup starts over when a project changes privacy before the '
+      'transaction, and removes every link that no longer matches',
+      () async {
+        final private = projectEntry.copyWith(
+          meta: projectMeta.copyWith(id: 'project-private', private: true),
+        );
+        when(() => mockDb.entityById(taskEntry.id)).thenAnswer(
+          (_) async => toDbEntity(
+            taskEntry.copyWith(meta: taskMeta.copyWith(private: true)),
+          ),
+        );
+        // The first read finds the project private, matching the task; by
+        // the transaction, sync has made it public.
+        var reads = 0;
+        when(() => mockDb.entityById('project-private')).thenAnswer(
+          (_) async => toDbEntity(
+            ++reads == 1
+                ? private
+                : private.copyWith(meta: private.meta.copyWith(private: false)),
+          ),
+        );
+        final public = projectLink(projectEntry.id);
+        final nowPublic = projectLink('project-private');
+        stubLiveLinks([nowPublic, public]);
+
+        expect(
+          await repository.unlinkTaskFromProject(
+            taskEntry.id,
+            onlyIfPrivacyMismatched: true,
+          ),
+          isTrue,
+        );
+
+        expect(
+          {for (final link in written()) link.id},
+          {
+            public.id,
+            nowPublic.id,
+          },
+        );
+        expect(mockVectorClockService.commits, [false, true]);
+      },
+    );
+
+    test(
+      'a later tombstone that fails to write rolls back the ones before it',
+      () async {
+        stubLiveLinks([shown, underneath]);
+        var upserts = 0;
+        when(
+          () => mockDb.upsertEntryLink(any()),
+        ).thenAnswer((_) async => ++upserts == 1 ? 1 : 0);
+
+        expect(await repository.unlinkTaskFromProject(taskEntry.id), isFalse);
+        expect(upserts, 2);
+        expect(mockVectorClockService.commits, [false]);
+        verifyNever(() => mockOutboxService.enqueueMessage(any()));
+      },
+    );
   });
 
   group('reservation intent', () {
@@ -2293,10 +2523,10 @@ void main() {
             any<Object>(),
             message: any<String>(
               named: 'message',
-              that: contains('outbox enqueue failed after _softDeleteLink'),
+              that: contains('outbox enqueue failed after _softDeleteLinks'),
             ),
             stackTrace: any<StackTrace>(named: 'stackTrace'),
-            subDomain: '_softDeleteLink.enqueue',
+            subDomain: '_softDeleteLinks.enqueue',
           ),
         ).called(1);
       },

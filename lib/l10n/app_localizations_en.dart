@@ -15107,6 +15107,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskBlockedByUnresolvedLabel => 'Blocker not synced yet';
 
   @override
+  String get taskBlockedInCycleChipLabel => 'Blocked in a cycle';
+
+  @override
+  String get taskBlockedInCycleTooltip =>
+      'This task is part of a blocking cycle: it waits, through its blockers, on itself. Close a task in the cycle, or remove one of its links, to break it.';
+
+  @override
   String taskBlockedReason(String title) {
     return 'Blocked by: $title';
   }
