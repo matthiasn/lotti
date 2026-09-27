@@ -207,6 +207,20 @@ and a failed write. Disabling flag versions reproduces the previous arrival-orde
 divergence. The assumptions and
 configurations are in the [formal specs](../../../specs/tla/README.md#syncsettings--the-boundary-for-settings-without-sequence-recovery).
 
+# AI configurations
+
+`aiConfig` and `aiConfigDelete` carry an optional `versionStamp`, the stamp the
+sender's `AiConfigDb` gave that version or deletion; the maintenance resend
+(`SyncStep.aiSettings`) carries the stored one. The receiver keeps a version
+only if its stamp is greater than the one it holds, so a send that timed out
+and lands after a newer version, a monitor Retry of an older row, or a replay
+is dropped, and a copy sent before a hard delete does not bring the config
+back. A message from an older sender has no stamp and is ordered by the Matrix
+event's server timestamp, as a config flag's is. The storage contract is in
+[AI config versions](../../architecture/persistence.md#ai-config-versions);
+the decision is
+[ADR 0094](../../../docs/adr/0094-ai-config-versions-are-stamped.md).
+
 # File-backed payloads
 
 Journal entities and agent payloads can travel by reference: the envelope

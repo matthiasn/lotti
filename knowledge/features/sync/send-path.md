@@ -211,15 +211,16 @@ status it read). The rules live in `outbox_collapse.dart`:
 
 - **Newest by clock.** Journal entities, entry links and agent entities and
   links are ordered by vector clock, so an enqueue that arrived out of order
-  never sends an older payload over a newer one. A config flag has no clock
-  and is applied in arrival order, so its newest is the row enqueued last.
+  never sends an older payload over a newer one. A config flag has no clock;
+  it is ordered by its version stamp, and two rows without one (from an older
+  build) by enqueue order.
 - **Cover everything folded in.** The send carries the newest payload with
   every other collapsed row's clock as a covered clock, so each counter
   reaches peers exactly as if its row had been sent. A row whose clock is
   concurrent with the newest is not folded; it is sent on its own. Missing,
   empty or malformed clocks also cannot prove supersession, so those
-  snapshots travel separately. Config flags intentionally collapse by enqueue
-  order because their receiver applies them in arrival order.
+  snapshots travel separately. AI configurations never collapse: each
+  version is its own send, ordered on the receiver by its stamp.
 - **Carry the attachment if any folded row owed it** (see above). A bundle
   ships JSON only, so a bundled send does not fold in rows that owe an
   attachment; they go out alone.
@@ -353,8 +354,12 @@ touch the new one's rows: `ServiceDisposer` closes its `SyncDatabase` first.
 
 One ordering is **not** guaranteed (ADR 0085's residual, kept by ADR 0086):
 a send the processor abandoned at its timeout can still land after a newer
-version. Receivers that order by vector clock drop the stale copy; a config
-flag or an AI configuration is applied in arrival order. Two narrower cases
+version. No receiver depends on that order any more: receivers that order by
+vector clock drop the stale copy, and config flags and AI configurations carry
+a version stamp the receiver compares
+([ADR 0094](../../../docs/adr/0094-ai-config-versions-are-stamped.md);
+`PeerHoldsNewest` in `Outbox.tla`). Only a sender or receiver from before
+those stamps still sees arrival order. Two narrower cases
 are documented in ADR 0086: a bundled send leaves a failed row that owes an
 attachment alone, so a later Retry sends that older journal version (and its
 blob) after the newer one; and removing the newer row, then retrying an

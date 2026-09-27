@@ -106,6 +106,7 @@ Map<String, dynamic> _$SyncEntryLinkToJson(SyncEntryLink instance) =>
 SyncAiConfig _$SyncAiConfigFromJson(Map<String, dynamic> json) => SyncAiConfig(
   aiConfig: AiConfig.fromJson(json['aiConfig'] as Map<String, dynamic>),
   status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
+  versionStamp: (json['versionStamp'] as num?)?.toInt(),
   $type: json['runtimeType'] as String?,
 );
 
@@ -113,6 +114,7 @@ Map<String, dynamic> _$SyncAiConfigToJson(SyncAiConfig instance) =>
     <String, dynamic>{
       'aiConfig': instance.aiConfig,
       'status': _$SyncEntryStatusEnumMap[instance.status]!,
+      'versionStamp': instance.versionStamp,
       'runtimeType': instance.$type,
     };
 
@@ -135,6 +137,7 @@ SyncAiConfigDelete _$SyncAiConfigDeleteFromJson(Map<String, dynamic> json) =>
     SyncAiConfigDelete(
       id: json['id'] as String,
       hardDelete: json['hardDelete'] as bool?,
+      versionStamp: (json['versionStamp'] as num?)?.toInt(),
       $type: json['runtimeType'] as String?,
     );
 
@@ -142,6 +145,7 @@ Map<String, dynamic> _$SyncAiConfigDeleteToJson(SyncAiConfigDelete instance) =>
     <String, dynamic>{
       'id': instance.id,
       'hardDelete': instance.hardDelete,
+      'versionStamp': instance.versionStamp,
       'runtimeType': instance.$type,
     };
 

@@ -270,6 +270,17 @@ void main() {
       when(
         () => mockOutboxService.enqueueMessage(any()),
       ).thenAnswer((_) async {});
+      // ADR 0094: a resend carries the stamp of the version it replays, so a
+      // peer with a newer version drops it. A row without one sends none.
+      when(
+        () => mockAiConfigRepository.versionStamp('provider-1'),
+      ).thenAnswer((_) async => 11);
+      when(
+        () => mockAiConfigRepository.versionStamp('model-1'),
+      ).thenAnswer((_) async => 22);
+      when(
+        () => mockAiConfigRepository.versionStamp('prompt-1'),
+      ).thenAnswer((_) async => null);
 
       await syncMaintenanceRepository.syncAiSettings();
 
@@ -283,7 +294,8 @@ void main() {
             .whereType<SyncMessage>()
             .where(
               (message) => message.maybeMap(
-                aiConfig: (config) => config.aiConfig == provider,
+                aiConfig: (config) =>
+                    config.aiConfig == provider && config.versionStamp == 11,
                 orElse: () => false,
               ),
             )
@@ -295,7 +307,8 @@ void main() {
             .whereType<SyncMessage>()
             .where(
               (message) => message.maybeMap(
-                aiConfig: (config) => config.aiConfig == model,
+                aiConfig: (config) =>
+                    config.aiConfig == model && config.versionStamp == 22,
                 orElse: () => false,
               ),
             )
@@ -307,7 +320,8 @@ void main() {
             .whereType<SyncMessage>()
             .where(
               (message) => message.maybeMap(
-                aiConfig: (config) => config.aiConfig == prompt,
+                aiConfig: (config) =>
+                    config.aiConfig == prompt && config.versionStamp == null,
                 orElse: () => false,
               ),
             )

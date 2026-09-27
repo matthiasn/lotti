@@ -1366,7 +1366,8 @@ three inline payload types, both enqueue orders, real outbox claiming and
 bundling, and both receive orders through the durable domain receivers. Removing the send-time
 causality guard makes the concurrent-payload traces fail. Clockless-snapshot
 regressions also assert that the processor sends both payloads; they fail on
-the pre-fix collapse rule from #4489. Config flags retain enqueue-order collapse.
+the pre-fix collapse rule from #4489. Config flags collapse by their version
+stamp; two unstamped rows from an older sender keep enqueue order.
 
 This is a boundary composition, not a proof of the entire sync system.
 Transport loss, gap discovery/backfill, attachment generations, retry
@@ -1388,10 +1389,15 @@ then marked sent, or all of them are retried up to `maxRetries`, then
 fail, time out and land anyway, marks throw, the process dies between the
 send and the mark, claim leases run out, the same profile is torn down and
 restarted, sent rows are pruned, and the monitor's Retry and Remove act on
-failed rows. A key is an entity whose rows collapse — a journal entry, an
-entry link, an agent entity or link, a config flag — and its versions are
-ordered like its vector clocks; a version in `MediaVersions` owes the
-attachment. The design is
+failed rows. A key is an entity with versions — a journal entry, an entry
+link, an agent entity or link, a config flag, an AI configuration — and its
+versions are ordered like its vector clocks or stamps; a version in
+`MediaVersions` owes the attachment. The rows of a key in `RowKeys` never
+collapse: an AI configuration, which `collapseKeyOf` gives no key, is sent
+row by row. The receiver is a function of the room: `HeldAfter` applies a
+key's payloads in arrival order, keeping one only if its stamp is greater
+than the one held ([ADR 0094](../../docs/adr/0094-ai-config-versions-are-stamped.md)).
+The design is
 [ADR 0086](../../docs/adr/0086-append-only-outbox.md), which supersedes the
 enqueue-time merge of
 [ADR 0085](../../docs/adr/0085-model-checked-outbox.md) and keeps its
@@ -1409,6 +1415,7 @@ properties.
 | `MediaNotDropped` | invariant | a row that owed the attachment is `sent` only after a send of its entity carried it |
 | `PruneOnlySent` | action | pruning deletes only sent rows |
 | `NewestLandsLast` | invariant | with callers enqueuing in order, the last payload of an entity in the room is the newest the room holds |
+| `PeerHoldsNewest` | invariant | a peer applying the room in arrival order holds the newest version of each entity the room carries, however late an older send lands |
 | `EveryRowSettles` | liveness | every pending or sending row ends sent, failed for good, or removed |
 | `EnqueuedIsDelivered` | liveness | every enqueued version reaches the room, unless its row failed for good or was removed |
 
@@ -1419,6 +1426,11 @@ properties.
 | `OutboxConcurrentLive` | any order, two versions (the first owing the attachment), bundles of two | failed sends, a mark that throws, a crash or a teardown | 4,814 |
 | `OutboxOperator` | in order, two versions | failed sends, marks that throw, a crash or a teardown, the monitor's Retry | 5,890 |
 | `OutboxGhost` | in order, two versions (the first owing the attachment) | timed-out sends that land late, marks that throw, a crash or a teardown, the monitor's Retry and Remove | 16,097 |
+| `OutboxGhostRows` | in order, two versions of an AI configuration, sent row by row | timed-out sends that land late, marks that throw, a crash or a teardown, the monitor's Retry and Remove | 28,782 |
+
+Every configuration claims `PeerHoldsNewest`; `NewestLandsLast` only
+`Outbox` and `OutboxOperator`, which have no late landings and no row-by-row
+keys.
 
 | Switch | Without it | Counterexample |
 |--------|------------|----------------|
@@ -1428,16 +1440,18 @@ properties.
 | `AbsorbErrorRows` | a send leaves the entity's failed rows alone | `NewestLandsLast`, fifteen steps: v1 fails to `error`, v2 is sent, the monitor retries v1 and it lands last — ADR 0085's residual 2, which this design resolves |
 | `ReleaseBeforeDrain` | a claim a crash left behind waits out its lease | `NewestLandsLast`, ten steps (ADR 0085) |
 | `QuiesceOnDispose` | dispose returns while its drain still sends | `NewestLandsLast`, nine steps (ADR 0085) |
+| `StampedReceiver` | the receiver applies config flags and AI configurations in arrival order | `PeerHoldsNewest`, ten steps in both `OutboxGhost` and `OutboxGhostRows`: v1 is claimed, v2 is enqueued, v1's send times out and is retried, v2 goes out, and the abandoned v1 lands last — ADR 0085's residual 1, which ADR 0094 resolves |
 
 What the model leaves out, deliberately or as a residual:
 
-- **A timed-out send can land after a newer one** (ADR 0085's residual 1,
-  unchanged). `OutboxGhost` allows it; with `NewestLandsLast` it fails in ten
-  steps. Payloads the receiver orders by vector clock drop the late copy; a
-  config flag or an AI configuration, applied in arrival order, is
-  overwritten on the peer. The options — a stable Matrix transaction id per
-  outbox row, a clock or timestamp for those payloads, no timeout while the
-  SDK still retries — each change the wire or the protocol.
+- **A timed-out send can still land after a newer one** (ADR 0085's
+  residual 1). The room keeps that order — `NewestLandsLast` still fails in
+  `OutboxGhost` — but no receiver depends on it any more: payloads with a
+  vector clock are ordered by it, config flags by their durable stamp (#4517)
+  and AI configurations by theirs (ADR 0094), so the late copy is dropped
+  (`PeerHoldsNewest`). What stays outside: a sender from before those stamps
+  is ordered by the Matrix server timestamp, which is its landing time, and a
+  receiver from before them still applies in arrival order.
 - **Remove of the newer row, then Retry of an older one**, sends the older
   value last (sixteen steps, with `UserRemoves` in `OutboxOperator`). That is
   the user's own reversal, not a stale retry: Remove is guarded by a
@@ -1448,9 +1462,9 @@ What the model leaves out, deliberately or as a residual:
   that older version, with its attachment, after the newer one. Only journal
   entries carry attachments, and their receivers order the JSON by clock, so
   the older JSON is dropped and the attachment lands.
-- **Clockless payloads follow the callers' order.** The collapse picks the
-  config flag enqueued last; two callers setting one flag at once enqueue in
-  whichever order their writes finish.
+- **Unstamped flags follow the callers' order.** The collapse orders config
+  flags by their version stamp; two rows without one (from before #4517)
+  keep enqueue order.
 - The claim and the collapse are one step. Between the Dart claim and its
   collapse lookups only appends (rows the collapse did not read), the
   monitor (guarded by a compare-and-set on status) and pruning (sent rows
@@ -1994,6 +2008,15 @@ once with every counter covered, the attachment sent exactly once across the
 audio row and its edit, a superseded failed row settled, and pruning only
 after the collapse marks — are examples in the processor's and the writer's
 suites.
+
+The bench also carries an AI configuration, whose rows never collapse: the
+sender's real `AiConfigDb` stamps each version, and a real receiving
+`AiConfigDb` applies what lands in arrival order. A drain can time out while
+its send lands later, so after every step it also checks `PeerHoldsNewest`
+for that entity, and `NewestLandsLast` only while no late send has landed.
+With the receiver's stamp comparison removed, the generator finds a failing
+trace within 43 inputs; `OutboxGhostRows`' ten-step counterexample is a fixed
+example in the same group.
 
 The inbound queue has one. In
 `test/features/sync/queue/inbound_event_queue_model_conformance.dart` (a part

@@ -772,7 +772,30 @@ void main() {
     },
   );
 
-  test('processes ai config messages', () async {
+  // ADR 0094: the receiver orders a version by the stamp it carries, so a
+  // copy that lands after a newer one is dropped.
+  test('applies an ai config under the stamp it carries', () async {
+    final message = SyncMessage.aiConfig(
+      aiConfig: fallbackAiConfig,
+      status: SyncEntryStatus.initial,
+      versionStamp: 42,
+    );
+    when(() => event.text).thenReturn(encodeMessage(message));
+
+    await processor.process(event: event, journalDb: journalDb);
+
+    verify(
+      () => aiConfigRepository.saveConfig(
+        fallbackAiConfig,
+        fromSync: true,
+        versionStamp: 42,
+        fallbackStamp: DateTime(2024).millisecondsSinceEpoch,
+      ),
+    ).called(1);
+  });
+
+  test('orders an unstamped ai config from an older sender by the server '
+      'timestamp', () async {
     final message = SyncMessage.aiConfig(
       aiConfig: fallbackAiConfig,
       status: SyncEntryStatus.initial,
@@ -785,6 +808,7 @@ void main() {
       () => aiConfigRepository.saveConfig(
         fallbackAiConfig,
         fromSync: true,
+        fallbackStamp: DateTime(2024).millisecondsSinceEpoch,
       ),
     ).called(1);
   });
@@ -806,24 +830,35 @@ void main() {
       () => aiConfigRepository.saveConfig(
         fallbackAiConfig,
         fromSync: true,
+        versionStamp: any(named: 'versionStamp'),
+        fallbackStamp: any(named: 'fallbackStamp'),
       ),
     ).called(1);
   });
 
   test('applies a flagged ai config delete as a hard delete', () async {
     const id = 'config-id';
-    const message = SyncMessage.aiConfigDelete(id: id, hardDelete: true);
+    const message = SyncMessage.aiConfigDelete(
+      id: id,
+      hardDelete: true,
+      versionStamp: 7,
+    );
     when(() => event.text).thenReturn(encodeMessage(message));
 
     await processor.process(event: event, journalDb: journalDb);
 
     verify(
-      () => aiConfigRepository.hardDeleteConfig(id, fromSync: true),
+      () => aiConfigRepository.hardDeleteConfig(
+        id,
+        fromSync: true,
+        versionStamp: 7,
+      ),
     ).called(1);
     verifyNever(
       () => aiConfigRepository.deleteConfig(
         any(),
         fromSync: any(named: 'fromSync'),
+        versionStamp: any(named: 'versionStamp'),
       ),
     );
   });
@@ -838,11 +873,18 @@ void main() {
 
     await processor.process(event: event, journalDb: journalDb);
 
-    verify(() => aiConfigRepository.deleteConfig(id, fromSync: true)).called(1);
+    verify(
+      () => aiConfigRepository.deleteConfig(
+        id,
+        fromSync: true,
+        versionStamp: DateTime(2024).millisecondsSinceEpoch,
+      ),
+    ).called(1);
     verifyNever(
       () => aiConfigRepository.hardDeleteConfig(
         any(),
         fromSync: any(named: 'fromSync'),
+        versionStamp: any(named: 'versionStamp'),
       ),
     );
   });
@@ -1051,6 +1093,7 @@ void main() {
             () => aiConfigRepository.deleteConfig(
               'later-child',
               fromSync: true,
+              versionStamp: any(named: 'versionStamp'),
             ),
           ).thenAnswer((_) async {
             verify(
@@ -2541,7 +2584,11 @@ void main() {
         await processorWithVc.process(event: event, journalDb: journalDb);
 
         verify(
-          () => aiConfigRepository.deleteConfig('cfg-err', fromSync: true),
+          () => aiConfigRepository.deleteConfig(
+            'cfg-err',
+            fromSync: true,
+            versionStamp: any(named: 'versionStamp'),
+          ),
         ).called(1);
         verify(
           () => loggingService.error(
@@ -2624,7 +2671,11 @@ void main() {
         await processorWithVc.process(event: event, journalDb: journalDb);
 
         verify(
-          () => aiConfigRepository.deleteConfig('cfg-peer', fromSync: true),
+          () => aiConfigRepository.deleteConfig(
+            'cfg-peer',
+            fromSync: true,
+            versionStamp: any(named: 'versionStamp'),
+          ),
         ).called(1);
       },
     );
