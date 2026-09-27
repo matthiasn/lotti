@@ -101,9 +101,7 @@ void main() {
       test(
         'updates title and returns success result with didWrite=true',
         () async {
-          when(
-            () => mockJournalRepo.updateJournalEntity(any()),
-          ).thenAnswer((_) async => true);
+          stubTaskRow(mockJournalRepo, task);
 
           final handler = TaskTitleHandler(
             task: task,
@@ -118,14 +116,12 @@ void main() {
           expect(handler.task.data.title, equals('New Title'));
           expect(result.error, isNull);
 
-          verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+          verify(() => mockJournalRepo.updateTask(any(), any())).called(1);
         },
       );
 
       test('trims whitespace from title before applying', () async {
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskTitleHandler(
           task: task,
@@ -152,7 +148,7 @@ void main() {
         expect(result.error, contains('empty'));
         expect(handler.task, same(task));
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
       });
 
       test('rejects whitespace-only title', () async {
@@ -167,7 +163,7 @@ void main() {
         expect(result.didWrite, isFalse);
         expect(result.error, contains('empty'));
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
       });
 
       test('returns success no-op when title is unchanged', () async {
@@ -183,12 +179,12 @@ void main() {
         expect(result.message, contains('already'));
         expect(handler.task.data.title, equals('Original Title'));
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
       });
 
       test('returns error when repository throws', () async {
         when(
-          () => mockJournalRepo.updateJournalEntity(any()),
+          () => mockJournalRepo.updateTask(any(), any()),
         ).thenThrow(Exception('DB write failed'));
 
         final handler = TaskTitleHandler(
@@ -208,8 +204,8 @@ void main() {
 
       test('returns error when repository returns false', () async {
         when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => false);
+          () => mockJournalRepo.updateTask(any(), any()),
+        ).thenAnswer((_) async => null);
 
         final handler = TaskTitleHandler(
           task: task,
@@ -227,9 +223,7 @@ void main() {
       });
 
       test('updates local task field after successful write', () async {
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskTitleHandler(
           task: task,
@@ -245,7 +239,7 @@ void main() {
 
       test('does not update local task field when write fails', () async {
         when(
-          () => mockJournalRepo.updateJournalEntity(any()),
+          () => mockJournalRepo.updateTask(any(), any()),
         ).thenThrow(Exception('fail'));
 
         final handler = TaskTitleHandler(
@@ -259,9 +253,7 @@ void main() {
       });
 
       test('invokes onTaskUpdated callback on successful write', () async {
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         Task? callbackTask;
         final handler = TaskTitleHandler(
@@ -291,7 +283,7 @@ void main() {
 
       test('does not invoke onTaskUpdated when write fails', () async {
         when(
-          () => mockJournalRepo.updateJournalEntity(any()),
+          () => mockJournalRepo.updateTask(any(), any()),
         ).thenThrow(Exception('fail'));
 
         var callbackInvoked = false;
@@ -306,6 +298,55 @@ void main() {
         expect(callbackInvoked, isFalse);
       });
 
+      test('writes the title on the task as stored, keeping a field set '
+          'since the call read the task', () async {
+        final row = stubTaskRow(mockJournalRepo, task)
+          ..task = task.copyWith(
+            data: task.data.copyWith(estimate: const Duration(hours: 2)),
+          );
+        Task? callbackTask;
+        final handler = TaskTitleHandler(
+          task: task,
+          journalRepository: mockJournalRepo,
+          onTaskUpdated: (t) => callbackTask = t,
+        );
+
+        final result = await handler.handle('New Title');
+
+        expect(result.didWrite, isTrue);
+        final written = row.writes.single;
+        expect(written.data.title, 'New Title');
+        expect(written.data.estimate, const Duration(hours: 2));
+        expect(handler.task, written);
+        expect(callbackTask, written);
+      });
+
+      test('applies nothing when the stored title changed since the call '
+          'read the task', () async {
+        final row = stubTaskRow(mockJournalRepo, task)
+          ..task = task.copyWith(
+            data: task.data.copyWith(title: 'Renamed by the user'),
+          );
+        final stored = row.task;
+        var callbackInvoked = false;
+        final handler = TaskTitleHandler(
+          task: task,
+          journalRepository: mockJournalRepo,
+          onTaskUpdated: (_) => callbackInvoked = true,
+        );
+
+        final result = await handler.handle('Agent Title');
+
+        expect(result.success, isTrue);
+        expect(result.didWrite, isFalse);
+        expect(result.error, isNull);
+        expect(result.message, startsWith('Nothing applied'));
+        expect(row.writes, isEmpty);
+        expect(row.task.data.title, 'Renamed by the user');
+        expect(handler.task, stored);
+        expect(callbackInvoked, isFalse);
+      });
+
       glados.Glados(
         glados.any.taskTitleScenario,
         glados.ExploreConfig(numRuns: 180),
@@ -313,13 +354,10 @@ void main() {
         'matches generated title validation, no-op, and write semantics',
         (scenario) async {
           final repo = MockJournalRepository();
-          when(
-            () => repo.updateJournalEntity(any()),
-          ).thenAnswer((_) async => true);
-
           final initialTask = task.copyWith(
             data: task.data.copyWith(title: scenario.currentTitle),
           );
+          final row = stubTaskRow(repo, initialTask);
           Task? callbackTask;
           final handler = TaskTitleHandler(
             task: initialTask,
@@ -335,7 +373,7 @@ void main() {
             expect(result.error, contains('empty'), reason: '$scenario');
             expect(handler.task, initialTask, reason: '$scenario');
             expect(callbackTask, isNull, reason: '$scenario');
-            verifyNever(() => repo.updateJournalEntity(any()));
+            verifyNever(() => repo.updateTask(any(), any()));
             return;
           }
 
@@ -345,7 +383,7 @@ void main() {
             expect(result.didWrite, isFalse, reason: '$scenario');
             expect(handler.task, initialTask, reason: '$scenario');
             expect(callbackTask, isNull, reason: '$scenario');
-            verifyNever(() => repo.updateJournalEntity(any()));
+            verifyNever(() => repo.updateTask(any(), any()));
             return;
           }
 
@@ -358,12 +396,12 @@ void main() {
           );
           expect(callbackTask, handler.task, reason: '$scenario');
 
-          final captured =
-              verify(
-                    () => repo.updateJournalEntity(captureAny()),
-                  ).captured.single
-                  as Task;
-          expect(captured, handler.task, reason: '$scenario');
+          expect(row.writes, [handler.task], reason: '$scenario');
+          expect(
+            row.writes.single.data,
+            initialTask.data.copyWith(title: scenario.trimmedRequest),
+            reason: '$scenario',
+          );
         },
         tags: 'glados',
       );

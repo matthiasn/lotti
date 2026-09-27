@@ -14871,6 +14871,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncPayloadAgentLink => 'Propojení agenta';
 
   @override
+  String get syncPayloadAgentWakeCoordination => 'Koordinace probuzení agenta';
+
+  @override
   String get syncPayloadAiConfig => 'Nastavení AI';
 
   @override
@@ -14902,9 +14905,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncPayloadMediaRequest => 'Žádost o média';
-
-  @override
-  String get syncPayloadAgentWakeCoordination => 'Koordinace probuzení agenta';
 
   @override
   String get syncPayloadNotification => 'Oznámení';

@@ -296,20 +296,27 @@ class EntryController extends AsyncNotifier<EntryState?> {
     }
     if (entry is Task) {
       final task = entry;
-      final nextTitle = title ?? task.data.title;
-      final titleChanged = nextTitle.trim() != task.data.title.trim();
+      final titleChanged =
+          title != null && title.trim() != task.data.title.trim();
 
+      // Only what this save sets is written, on the task as stored: a field
+      // the screen's copy predates — set by sync or the agent since — is
+      // kept (specs/tla/TaskFieldWrites.tla). The body is written only when
+      // the editor holds unsaved edits; otherwise the editor shows the
+      // stored text, or is about to.
       await _persistenceLogic.updateTask(
-        entryText: entryTextFromController(controller),
+        entryText: _dirty || _editorStateService.entryIsUnsaved(id)
+            ? entryTextFromController(controller)
+            : null,
         journalEntityId: id,
-        taskData: task.data.copyWith(
-          title: nextTitle,
-          estimate: estimate ?? task.data.estimate,
-          due: clearDueDate ? null : (dueDate ?? task.data.due),
+        change: (stored) => stored.copyWith(
+          title: titleChanged ? title : stored.title,
+          estimate: estimate ?? stored.estimate,
+          due: clearDueDate ? null : (dueDate ?? stored.due),
         ),
       );
       if (titleChanged) {
-        await _syncDailyOsTaskTitle(task.id, nextTitle);
+        await _syncDailyOsTaskTitle(task.id, title);
       }
     }
     if (entry is JournalEvent) {
@@ -441,7 +448,7 @@ class EntryController extends AsyncNotifier<EntryState?> {
 
       await _persistenceLogic.updateTask(
         journalEntityId: id,
-        taskData: task.data.copyWith(status: newStatus),
+        change: (stored) => stored.withStatus(newStatus),
       );
 
       await HapticFeedback.heavyImpact();
@@ -472,7 +479,7 @@ class EntryController extends AsyncNotifier<EntryState?> {
     // Persist change
     final _ = await _persistenceLogic.updateTask(
       journalEntityId: id,
-      taskData: optimistic.data,
+      change: (stored) => stored.copyWith(priority: next),
     );
 
     // Haptic feedback
@@ -505,7 +512,10 @@ class EntryController extends AsyncNotifier<EntryState?> {
 
     final _ = await _persistenceLogic.updateTask(
       journalEntityId: id,
-      taskData: optimistic.data,
+      change: (stored) => stored.copyWith(
+        languageCode: languageCode,
+        languageSource: ChangeSource.user,
+      ),
     );
   }
 
@@ -860,9 +870,9 @@ class EntryController extends AsyncNotifier<EntryState?> {
     // Persist change
     final written = await _persistenceLogic.updateTask(
       journalEntityId: id,
-      taskData: optimistic.data,
+      change: (stored) => stored.copyWith(coverArtId: imageId),
     );
-    if (!written) {
+    if (written == null) {
       state = AsyncData(state.value?.copyWith(entry: entry));
       return false;
     }

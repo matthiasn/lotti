@@ -1444,6 +1444,46 @@ class MockOnboardingCaptureToTaskService extends Mock
 
 class MockJournalRepository extends Mock implements JournalRepository {}
 
+/// The stored row of one task behind a [MockJournalRepository] stubbed with
+/// [stubTaskRow].
+class StubTaskRow {
+  StubTaskRow(this.task);
+
+  /// The task as stored. A test sets it to model a write that landed since
+  /// the code under test read the task (sync, the user, another agent).
+  Task task;
+
+  /// Every version written, in order. A change that leaves the data as it is
+  /// writes nothing, as `PersistenceUpdateOps.updateTaskImpl` does.
+  final List<Task> writes = [];
+}
+
+/// Stubs [MockJournalRepository.updateTask] for [task]'s id the way the real
+/// write behaves: the change is applied to the data as stored in the
+/// returned row — not to the caller's copy — joined onto it with
+/// `TaskDataOnStored.onStored`, and the task as stored afterwards is
+/// returned. An `onlyIf` the caller passes is asked of the stored task, and
+/// nothing is written when it answers false. Requires the
+/// `TaskData Function(TaskData)` fallback from `registerAllFallbackValues()`.
+StubTaskRow stubTaskRow(MockJournalRepository mock, Task task) {
+  final row = StubTaskRow(task);
+  when(
+    () => mock.updateTask(task.id, any(), onlyIf: any(named: 'onlyIf')),
+  ).thenAnswer((invocation) async {
+    final change =
+        invocation.positionalArguments[1] as TaskData Function(TaskData);
+    final onlyIf = invocation.namedArguments[#onlyIf] as bool Function(Task)?;
+    if (onlyIf != null && !onlyIf(row.task)) return row.task;
+    final stored = row.task.data;
+    final data = change(stored).onStored(stored);
+    if (data == stored) return row.task;
+    row.task = row.task.copyWith(data: data);
+    row.writes.add(row.task);
+    return row.task;
+  });
+  return row;
+}
+
 class MockImagePathMigrationService extends Mock
     implements ImagePathMigrationService {}
 

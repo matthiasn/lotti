@@ -258,6 +258,75 @@ void main() {
     return container;
   }
 
+  /// The one change the controller handed `PersistenceLogic.updateTask` for
+  /// [entryId], applied to [stored] — the task data as the write finds it,
+  /// which may differ from the copy the controller loaded.
+  TaskData writtenOn(String entryId, TaskData stored) {
+    final change =
+        verify(
+              () => mockPersistenceLogic.updateTask(
+                journalEntityId: entryId,
+                change: captureAny(named: 'change'),
+                entryText: any(named: 'entryText'),
+              ),
+            ).captured.single
+            as TaskData Function(TaskData);
+    return change(stored);
+  }
+
+  /// The body text the controller handed `PersistenceLogic.updateTask` for
+  /// [entryId] — `null` when the save left the stored text alone.
+  EntryText? writtenText(String entryId) =>
+      verify(
+            () => mockPersistenceLogic.updateTask(
+              journalEntityId: entryId,
+              change: any(named: 'change'),
+              entryText: captureAny(named: 'entryText'),
+            ),
+          ).captured.single
+          as EntryText?;
+
+  /// A status the task agent set after the screen loaded [testTask].
+  final agentDone = TaskStatus.done(
+    id: 'agent-done',
+    createdAt: DateTime(2023, 11, 2, 9),
+    utcOffset: 0,
+  );
+
+  /// [testTask]'s data as stored once sync or the task agent set every one
+  /// of these fields after the screen loaded it — the version a write from
+  /// that screen lands on (`specs/tla/TaskFieldWrites.tla`, NoLostFieldEdit).
+  final storedSince = testTask.data.copyWith(
+    title: 'Renamed by the agent',
+    status: agentDone,
+    statusHistory: [...testTask.data.statusHistory, agentDone],
+    estimate: const Duration(minutes: 45),
+    due: DateTime(2026, 1, 2),
+    priority: TaskPriority.p0Urgent,
+    languageCode: 'de',
+    languageSource: ChangeSource.agent,
+    coverArtId: 'agent-cover',
+  );
+
+  /// The controller for [testTask], loaded, with `updateTask` accepting the
+  /// write.
+  Future<EntryController> loadedTaskController() async {
+    final container = makeProviderContainer();
+    final provider = entryControllerProvider(testTask.meta.id);
+    await container.read(provider.future);
+    when(
+      () => mockPersistenceLogic.updateTask(
+        journalEntityId: testTask.meta.id,
+        change: any(named: 'change'),
+        entryText: any(named: 'entryText'),
+      ),
+    ).thenAnswer((_) async => testTask);
+    when(
+      () => mockPersistenceLogic.updateJournalEntityText(any(), any(), any()),
+    ).thenAnswer((_) async => true);
+    return container.read(provider.notifier);
+  }
+
   // setUpAll at main scope
   setUpAll(() {
     // File-level GetIt scope: popped in tearDownAll so registrations never
@@ -269,6 +338,7 @@ void main() {
     registerFallbackValue(FakeMetadata());
     registerFallbackValue(FakeEntryText());
     registerFallbackValue(FakeTaskData());
+    registerFallbackValue((TaskData stored) => stored);
     registerFallbackValue(FakeEventData());
     registerFallbackValue(const AsyncLoading<EntryState?>());
     registerFallbackValue(DateTime(2024, 3, 15, 10, 30));
@@ -373,9 +443,9 @@ void main() {
       () => mockPersistenceLogic.updateTask(
         entryText: any(named: 'entryText'),
         journalEntityId: any(named: 'journalEntityId'),
-        taskData: any(named: 'taskData'),
+        change: any(named: 'change'),
       ),
-    ).thenAnswer((_) async => true);
+    ).thenAnswer((_) async => testTask);
 
     // Default stub for persistence logic updateEvent
     when(
@@ -2407,7 +2477,7 @@ void main() {
         () => mockPersistenceLogic.updateTask(
           entryText: any(named: 'entryText'),
           journalEntityId: any(named: 'journalEntityId'),
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
       );
     });
@@ -2428,7 +2498,7 @@ void main() {
         () => mockPersistenceLogic.updateTask(
           entryText: any(named: 'entryText'),
           journalEntityId: any(named: 'journalEntityId'),
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
       );
     });
@@ -2514,16 +2584,16 @@ void main() {
       when(
         () => mockPersistenceLogic.updateTask(
           journalEntityId: entryId,
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
-      ).thenAnswer((_) async => true);
+      ).thenAnswer((_) async => testTask);
 
       await notifier.updateTaskStatus('DONE');
 
       verify(
         () => mockPersistenceLogic.updateTask(
           journalEntityId: entryId,
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
       ).called(1);
     });
@@ -2541,7 +2611,7 @@ void main() {
       verifyNever(
         () => mockPersistenceLogic.updateTask(
           journalEntityId: any(named: 'journalEntityId'),
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
       );
     });
@@ -2559,7 +2629,7 @@ void main() {
       verifyNever(
         () => mockPersistenceLogic.updateTask(
           journalEntityId: any(named: 'journalEntityId'),
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
       );
     });
@@ -2577,7 +2647,7 @@ void main() {
       verifyNever(
         () => mockPersistenceLogic.updateTask(
           journalEntityId: any(named: 'journalEntityId'),
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
       );
     });
@@ -2596,9 +2666,9 @@ void main() {
         when(
           () => mockPersistenceLogic.updateTask(
             journalEntityId: entryId,
-            taskData: any(named: 'taskData'),
+            change: any(named: 'change'),
           ),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((_) async => testTask);
         when(
           () => mockPersistenceLogic.createLink(
             fromId: 'blocker-id',
@@ -2613,19 +2683,16 @@ void main() {
           blockerTaskTitle: 'Fix the outage',
         );
 
-        final captured =
-            verify(
-                  () => mockPersistenceLogic.updateTask(
-                    journalEntityId: entryId,
-                    taskData: captureAny(named: 'taskData'),
-                  ),
-                ).captured.single
-                as TaskData;
+        final captured = writtenOn(entryId, testTask.data);
         expect(captured.status, isA<TaskBlocked>());
         expect(
           (captured.status as TaskBlocked).reason,
           'Blocked by: Fix the outage',
         );
+        expect(captured.statusHistory, [
+          ...testTask.data.statusHistory,
+          captured.status,
+        ]);
         verify(
           () => mockPersistenceLogic.createLink(
             fromId: 'blocker-id',
@@ -2649,9 +2716,9 @@ void main() {
         when(
           () => mockPersistenceLogic.updateTask(
             journalEntityId: entryId,
-            taskData: any(named: 'taskData'),
+            change: any(named: 'change'),
           ),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((_) async => testTask);
         when(
           () => mockPersistenceLogic.createLink(
             fromId: 'blocker-id',
@@ -2669,7 +2736,7 @@ void main() {
         verify(
           () => mockPersistenceLogic.updateTask(
             journalEntityId: entryId,
-            taskData: any(named: 'taskData'),
+            change: any(named: 'change'),
           ),
         ).called(1);
         verify(
@@ -2710,7 +2777,7 @@ void main() {
         verifyNever(
           () => mockPersistenceLogic.updateTask(
             journalEntityId: any(named: 'journalEntityId'),
-            taskData: any(named: 'taskData'),
+            change: any(named: 'change'),
           ),
         );
         verify(
@@ -2737,16 +2804,16 @@ void main() {
         when(
           () => mockPersistenceLogic.updateTask(
             journalEntityId: entryId,
-            taskData: any(named: 'taskData'),
+            change: any(named: 'change'),
           ),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((_) async => testTask);
 
         await notifier.updateTaskStatus('DONE');
 
         verify(
           () => mockPersistenceLogic.updateTask(
             journalEntityId: entryId,
-            taskData: any(named: 'taskData'),
+            change: any(named: 'change'),
           ),
         ).called(1);
         verifyNever(
@@ -2758,6 +2825,44 @@ void main() {
         );
       },
     );
+  });
+
+  group('updateTaskStatus on the task as stored '
+      '(TaskFieldWrites.tla, HistoryComplete)', () {
+    setUp(() {
+      reset(mockPersistenceLogic);
+      when(
+        () => mockJournalDb.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => testTask);
+    });
+
+    test('records the status the user sets in the status history, keeping '
+        'every other stored field', () async {
+      final notifier = await loadedTaskController();
+      final stored = storedSince.copyWith(
+        status: _testTaskOpenStatus,
+        statusHistory: [_testTaskOpenStatus],
+      );
+
+      await notifier.updateTaskStatus('IN PROGRESS');
+
+      final written = writtenOn(testTask.meta.id, stored);
+      expect(written.status, isA<TaskInProgress>());
+      expect(written.statusHistory, [_testTaskOpenStatus, written.status]);
+      expect(
+        written.copyWith(status: stored.status, statusHistory: []),
+        stored.copyWith(statusHistory: []),
+      );
+    });
+
+    test('a status already stored — set elsewhere since the screen loaded '
+        'the task — changes nothing and adds no history entry', () async {
+      final notifier = await loadedTaskController();
+
+      await notifier.updateTaskStatus('DONE');
+
+      expect(writtenOn(testTask.meta.id, storedSince), storedSince);
+    });
   });
 
   group('updateTaskLanguage method', () {
@@ -2782,20 +2887,13 @@ void main() {
       when(
         () => mockPersistenceLogic.updateTask(
           journalEntityId: entryId,
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
-      ).thenAnswer((_) async => true);
+      ).thenAnswer((_) async => testTask);
 
       await notifier.updateTaskLanguage('en');
 
-      final captured =
-          verify(
-                () => mockPersistenceLogic.updateTask(
-                  journalEntityId: entryId,
-                  taskData: captureAny(named: 'taskData'),
-                ),
-              ).captured.single
-              as TaskData;
+      final captured = writtenOn(entryId, testTask.data);
       expect(captured.languageCode, 'en');
       expect(captured.languageSource, ChangeSource.user);
     });
@@ -2823,20 +2921,13 @@ void main() {
         when(
           () => mockPersistenceLogic.updateTask(
             journalEntityId: seeded.meta.id,
-            taskData: any(named: 'taskData'),
+            change: any(named: 'change'),
           ),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((_) async => testTask);
 
         await notifier.updateTaskLanguage('en');
 
-        final captured =
-            verify(
-                  () => mockPersistenceLogic.updateTask(
-                    journalEntityId: seeded.meta.id,
-                    taskData: captureAny(named: 'taskData'),
-                  ),
-                ).captured.single
-                as TaskData;
+        final captured = writtenOn(seeded.meta.id, seeded.data);
         expect(captured.languageCode, 'en');
         expect(captured.languageSource, ChangeSource.user);
       },
@@ -2865,7 +2956,7 @@ void main() {
         verifyNever(
           () => mockPersistenceLogic.updateTask(
             journalEntityId: any(named: 'journalEntityId'),
-            taskData: any(named: 'taskData'),
+            change: any(named: 'change'),
           ),
         );
       },
@@ -2890,20 +2981,13 @@ void main() {
       when(
         () => mockPersistenceLogic.updateTask(
           journalEntityId: seeded.meta.id,
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
-      ).thenAnswer((_) async => true);
+      ).thenAnswer((_) async => testTask);
 
       await notifier.updateTaskLanguage(null);
 
-      final captured =
-          verify(
-                () => mockPersistenceLogic.updateTask(
-                  journalEntityId: seeded.meta.id,
-                  taskData: captureAny(named: 'taskData'),
-                ),
-              ).captured.single
-              as TaskData;
+      final captured = writtenOn(seeded.meta.id, seeded.data);
       expect(captured.languageCode, isNull);
       expect(captured.languageSource, ChangeSource.user);
     });
@@ -2920,7 +3004,7 @@ void main() {
       verifyNever(
         () => mockPersistenceLogic.updateTask(
           journalEntityId: any(named: 'journalEntityId'),
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
       );
     });
@@ -3385,9 +3469,9 @@ void main() {
         () => mockPersistenceLogic.updateTask(
           entryText: any(named: 'entryText'),
           journalEntityId: entryId,
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
-      ).thenAnswer((_) async => true);
+      ).thenAnswer((_) async => testTask);
 
       when(
         () => mockEditorStateService.entryWasSaved(
@@ -3401,18 +3485,7 @@ void main() {
       const newEstimate = Duration(hours: 2);
       await notifier.save(title: newTitle, estimate: newEstimate);
 
-      final captured = verify(
-        () => mockPersistenceLogic.updateTask(
-          entryText: captureAny(named: 'entryText'),
-          journalEntityId: captureAny(named: 'journalEntityId'),
-          taskData: captureAny(named: 'taskData'),
-        ),
-      ).captured;
-
-      expect(captured[0], entryId);
-      expect(captured[1], isA<TaskData>());
-      expect(captured[2], isA<EntryText>());
-      final capturedTaskData = captured[1] as TaskData;
+      final capturedTaskData = writtenOn(entryId, testTask.data);
       expect(capturedTaskData.title, newTitle);
       expect(capturedTaskData.estimate, newEstimate);
     });
@@ -3457,9 +3530,9 @@ void main() {
           () => mockPersistenceLogic.updateTask(
             entryText: any(named: 'entryText'),
             journalEntityId: entryId,
-            taskData: any(named: 'taskData'),
+            change: any(named: 'change'),
           ),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((_) async => testTask);
         when(
           () => mockEditorStateService.entryWasSaved(
             id: entryId,
@@ -3513,9 +3586,9 @@ void main() {
         () => mockPersistenceLogic.updateTask(
           entryText: any(named: 'entryText'),
           journalEntityId: entryId,
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
-      ).thenAnswer((_) async => true);
+      ).thenAnswer((_) async => testTask);
       when(
         () => mockEditorStateService.entryWasSaved(
           id: entryId,
@@ -3530,7 +3603,7 @@ void main() {
         () => mockPersistenceLogic.updateTask(
           entryText: any(named: 'entryText'),
           journalEntityId: entryId,
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
       ).called(1);
       verify(
@@ -3561,9 +3634,9 @@ void main() {
         () => mockPersistenceLogic.updateTask(
           entryText: any(named: 'entryText'),
           journalEntityId: entryId,
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
-      ).thenAnswer((_) async => true);
+      ).thenAnswer((_) async => testTask);
 
       when(
         () => mockEditorStateService.entryWasSaved(
@@ -3576,15 +3649,7 @@ void main() {
       final newDueDate = DateTime(2025, 12, 31);
       await notifier.save(dueDate: newDueDate);
 
-      final captured = verify(
-        () => mockPersistenceLogic.updateTask(
-          entryText: captureAny(named: 'entryText'),
-          journalEntityId: captureAny(named: 'journalEntityId'),
-          taskData: captureAny(named: 'taskData'),
-        ),
-      ).captured;
-
-      final capturedTaskData = captured[1] as TaskData;
+      final capturedTaskData = writtenOn(entryId, testTask.data);
       expect(capturedTaskData.due, newDueDate);
     });
 
@@ -3617,9 +3682,9 @@ void main() {
         () => mockPersistenceLogic.updateTask(
           entryText: any(named: 'entryText'),
           journalEntityId: entryId,
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
-      ).thenAnswer((_) async => true);
+      ).thenAnswer((_) async => testTask);
 
       when(
         () => mockEditorStateService.entryWasSaved(
@@ -3631,15 +3696,7 @@ void main() {
 
       await notifier.save(clearDueDate: true);
 
-      final captured = verify(
-        () => mockPersistenceLogic.updateTask(
-          entryText: captureAny(named: 'entryText'),
-          journalEntityId: captureAny(named: 'journalEntityId'),
-          taskData: captureAny(named: 'taskData'),
-        ),
-      ).captured;
-
-      final capturedTaskData = captured[1] as TaskData;
+      final capturedTaskData = writtenOn(entryId, taskWithDueDate.data);
       expect(capturedTaskData.due, isNull);
     });
 
@@ -3674,9 +3731,9 @@ void main() {
           () => mockPersistenceLogic.updateTask(
             entryText: any(named: 'entryText'),
             journalEntityId: entryId,
-            taskData: any(named: 'taskData'),
+            change: any(named: 'change'),
           ),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((_) async => testTask);
 
         when(
           () => mockEditorStateService.entryWasSaved(
@@ -3689,18 +3746,105 @@ void main() {
         // Save with just a title change, dueDate should be preserved
         await notifier.save(title: 'New Title');
 
-        final captured = verify(
-          () => mockPersistenceLogic.updateTask(
-            entryText: captureAny(named: 'entryText'),
-            journalEntityId: captureAny(named: 'journalEntityId'),
-            taskData: captureAny(named: 'taskData'),
-          ),
-        ).captured;
-
-        final capturedTaskData = captured[1] as TaskData;
+        final capturedTaskData = writtenOn(entryId, taskWithDueDate.data);
         expect(capturedTaskData.due, existingDueDate);
       },
     );
+
+    group('writes only what it was given, on the task as stored '
+        '(TaskFieldWrites.tla, NoLostFieldEdit)', () {
+      test('a save of the estimate keeps every field stored since the '
+          'screen loaded the task', () async {
+        final notifier = await loadedTaskController();
+
+        await notifier.save(estimate: const Duration(hours: 2));
+
+        expect(
+          writtenOn(testTask.meta.id, storedSince),
+          storedSince.copyWith(estimate: const Duration(hours: 2)),
+        );
+      });
+
+      test('a title the user left as loaded does not put the old title back '
+          'over the one stored since', () async {
+        final notifier = await loadedTaskController();
+
+        await notifier.save(title: testTask.data.title);
+
+        expect(writtenOn(testTask.meta.id, storedSince), storedSince);
+      });
+
+      test('a title the user changed is written, and nothing else', () async {
+        final notifier = await loadedTaskController();
+
+        await notifier.save(title: 'Mine');
+
+        expect(
+          writtenOn(testTask.meta.id, storedSince),
+          storedSince.copyWith(title: 'Mine'),
+        );
+      });
+
+      test('a due date given is written, clearing it clears it, and neither '
+          'touches another field', () async {
+        final notifier = await loadedTaskController();
+        final due = DateTime(2026, 3, 4);
+
+        await notifier.save(dueDate: due);
+        expect(
+          writtenOn(testTask.meta.id, storedSince),
+          storedSince.copyWith(due: due),
+        );
+
+        await notifier.save(clearDueDate: true);
+        expect(
+          writtenOn(testTask.meta.id, storedSince),
+          storedSince.copyWith(due: null),
+        );
+      });
+
+      test(
+        'the body is left as stored when the editor holds no edits',
+        () async {
+          final notifier = await loadedTaskController();
+
+          await notifier.save(estimate: const Duration(hours: 1));
+
+          expect(writtenText(testTask.meta.id), isNull);
+        },
+      );
+
+      test('the body is written when the editor is dirty', () async {
+        final notifier = await loadedTaskController()
+          ..setDirty(value: true, requestFocus: false);
+
+        await notifier.save();
+
+        // The editor's text — the fixture's markdown list item, as the
+        // editor holds it.
+        expect(
+          writtenText(testTask.meta.id)?.plainText.trim(),
+          'test task text',
+        );
+      });
+
+      test('the body is written when the editor state holds an unsaved '
+          'draft for the entry', () async {
+        when(
+          () => mockEditorStateService.entryIsUnsaved(testTask.meta.id),
+        ).thenReturn(true);
+        addTearDown(
+          () => when(
+            () => mockEditorStateService.entryIsUnsaved(any()),
+          ).thenReturn(false),
+        );
+        final notifier = await loadedTaskController();
+
+        await notifier.save();
+
+        expect(writtenText(testTask.meta.id), isA<EntryText>());
+      });
+    });
   });
 
   group('setCoverArt method', () {
@@ -3725,21 +3869,13 @@ void main() {
       when(
         () => mockPersistenceLogic.updateTask(
           journalEntityId: entryId,
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
-      ).thenAnswer((_) async => true);
+      ).thenAnswer((_) async => testTask);
 
       await notifier.setCoverArt('image-123');
 
-      final captured = verify(
-        () => mockPersistenceLogic.updateTask(
-          journalEntityId: captureAny(named: 'journalEntityId'),
-          taskData: captureAny(named: 'taskData'),
-        ),
-      ).captured;
-
-      expect(captured[0], entryId);
-      final capturedTaskData = captured[1] as TaskData;
+      final capturedTaskData = writtenOn(entryId, testTask.data);
       expect(capturedTaskData.coverArtId, 'image-123');
     });
 
@@ -3762,21 +3898,13 @@ void main() {
       when(
         () => mockPersistenceLogic.updateTask(
           journalEntityId: entryId,
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
-      ).thenAnswer((_) async => true);
+      ).thenAnswer((_) async => testTask);
 
       await notifier.setCoverArt(null);
 
-      final captured = verify(
-        () => mockPersistenceLogic.updateTask(
-          journalEntityId: captureAny(named: 'journalEntityId'),
-          taskData: captureAny(named: 'taskData'),
-        ),
-      ).captured;
-
-      expect(captured[0], entryId);
-      final capturedTaskData = captured[1] as TaskData;
+      final capturedTaskData = writtenOn(entryId, taskWithCover.data);
       expect(capturedTaskData.coverArtId, isNull);
     });
 
@@ -3793,7 +3921,7 @@ void main() {
       verifyNever(
         () => mockPersistenceLogic.updateTask(
           journalEntityId: any(named: 'journalEntityId'),
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
       );
     });
@@ -3813,9 +3941,9 @@ void main() {
         when(
           () => mockPersistenceLogic.updateTask(
             journalEntityId: any(named: 'journalEntityId'),
-            taskData: any(named: 'taskData'),
+            change: any(named: 'change'),
           ),
-        ).thenAnswer((_) async => false);
+        ).thenAnswer((_) async => null);
 
         final written = await container
             .read(provider.notifier)
@@ -3838,9 +3966,9 @@ void main() {
       when(
         () => mockPersistenceLogic.updateTask(
           journalEntityId: entryId,
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
-      ).thenAnswer((_) async => true);
+      ).thenAnswer((_) async => testTask);
 
       await notifier.setCoverArt('new-image');
 
@@ -3929,9 +4057,9 @@ void main() {
       when(
         () => mockPersistenceLogic.updateTask(
           journalEntityId: any(named: 'journalEntityId'),
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
-      ).thenAnswer((_) async => true);
+      ).thenAnswer((_) async => testTask);
     });
 
     tearDown(() async {
@@ -3973,14 +4101,7 @@ void main() {
               ).captured.single
               as JournalImage;
       expect(image.meta.categoryId, 'cat-cover');
-      final taskData =
-          verify(
-                () => mockPersistenceLogic.updateTask(
-                  journalEntityId: categorised.meta.id,
-                  taskData: captureAny(named: 'taskData'),
-                ),
-              ).captured.single
-              as TaskData;
+      final taskData = writtenOn(categorised.meta.id, categorised.data);
       expect(taskData.coverArtId, 'pasted-cover');
       final task =
           container
@@ -4000,9 +4121,9 @@ void main() {
       when(
         () => mockPersistenceLogic.updateTask(
           journalEntityId: any(named: 'journalEntityId'),
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
-      ).thenAnswer((_) async => false);
+      ).thenAnswer((_) async => null);
 
       final (pasted, container) = await paste(categorised.meta.id);
 
@@ -4030,7 +4151,7 @@ void main() {
       verifyNever(
         () => mockPersistenceLogic.updateTask(
           journalEntityId: any(named: 'journalEntityId'),
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
       );
     });
@@ -4044,7 +4165,7 @@ void main() {
       verifyNever(
         () => mockPersistenceLogic.updateTask(
           journalEntityId: any(named: 'journalEntityId'),
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
       );
     });
@@ -4081,7 +4202,7 @@ void main() {
       verifyNever(
         () => mockPersistenceLogic.updateTask(
           journalEntityId: any(named: 'journalEntityId'),
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
       );
     });
@@ -4100,7 +4221,7 @@ void main() {
       verifyNever(
         () => mockPersistenceLogic.updateTask(
           journalEntityId: any(named: 'journalEntityId'),
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
       );
     });
@@ -4116,21 +4237,13 @@ void main() {
       when(
         () => mockPersistenceLogic.updateTask(
           journalEntityId: entryId,
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
-      ).thenAnswer((_) async => true);
+      ).thenAnswer((_) async => testTask);
 
       await notifier.updateTaskPriority('P0');
 
-      final captured = verify(
-        () => mockPersistenceLogic.updateTask(
-          journalEntityId: captureAny(named: 'journalEntityId'),
-          taskData: captureAny(named: 'taskData'),
-        ),
-      ).captured;
-
-      expect(captured[0], entryId);
-      final capturedTaskData = captured[1] as TaskData;
+      final capturedTaskData = writtenOn(entryId, testTask.data);
       expect(capturedTaskData.priority, TaskPriority.p0Urgent);
 
       // Verify local state was optimistically updated
@@ -4150,21 +4263,53 @@ void main() {
       when(
         () => mockPersistenceLogic.updateTask(
           journalEntityId: entryId,
-          taskData: any(named: 'taskData'),
+          change: any(named: 'change'),
         ),
-      ).thenAnswer((_) async => true);
+      ).thenAnswer((_) async => testTask);
 
       await notifier.updateTaskPriority('P1');
 
-      final captured = verify(
-        () => mockPersistenceLogic.updateTask(
-          journalEntityId: captureAny(named: 'journalEntityId'),
-          taskData: captureAny(named: 'taskData'),
-        ),
-      ).captured;
-
-      final capturedTaskData = captured[1] as TaskData;
+      final capturedTaskData = writtenOn(entryId, testTask.data);
       expect(capturedTaskData.priority, TaskPriority.p1High);
+    });
+
+    group('each single-field edit sets only its field on the task as '
+        'stored (TaskFieldWrites.tla, NoLostFieldEdit)', () {
+      test('priority', () async {
+        final notifier = await loadedTaskController();
+
+        await notifier.updateTaskPriority('P3');
+
+        expect(
+          writtenOn(testTask.meta.id, storedSince),
+          storedSince.copyWith(priority: TaskPriority.p3Low),
+        );
+      });
+
+      test('language', () async {
+        final notifier = await loadedTaskController();
+
+        await notifier.updateTaskLanguage('fr');
+
+        expect(
+          writtenOn(testTask.meta.id, storedSince),
+          storedSince.copyWith(
+            languageCode: 'fr',
+            languageSource: ChangeSource.user,
+          ),
+        );
+      });
+
+      test('cover art', () async {
+        final notifier = await loadedTaskController();
+
+        expect(await notifier.setCoverArt('user-cover'), isTrue);
+
+        expect(
+          writtenOn(testTask.meta.id, storedSince),
+          storedSince.copyWith(coverArtId: 'user-cover'),
+        );
+      });
     });
   });
 

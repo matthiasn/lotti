@@ -8,6 +8,7 @@ import 'package:lotti/features/ai/functions/task_priority_handler.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
 enum _GeneratedPriorityRequestShape {
@@ -114,6 +115,7 @@ void main() {
   final fixedDate = DateTime(2024, 1, 15);
 
   setUpAll(() {
+    registerAllFallbackValues();
     registerFallbackValue(
       Task(
         meta: Metadata(
@@ -288,9 +290,7 @@ void main() {
             confidence: 'high',
           );
 
-          when(
-            () => mockJournalRepo.updateJournalEntity(any()),
-          ).thenAnswer((_) async => true);
+          stubTaskRow(mockJournalRepo, task);
 
           Task? capturedTask;
           final handler = TaskPriorityHandler(
@@ -308,7 +308,7 @@ void main() {
           expect(capturedTask, isNotNull);
           expect(capturedTask!.data.priority, TaskPriority.p1High);
 
-          verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+          verify(() => mockJournalRepo.updateTask(any(), any())).called(1);
           verify(
             () => mockManager.addToolResponse(
               toolCallId: 'call_priority_123',
@@ -326,9 +326,7 @@ void main() {
           confidence: 'high',
         );
 
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskPriorityHandler(
           task: task,
@@ -340,7 +338,7 @@ void main() {
         expect(result.success, isTrue);
         expect(handler.task.data.priority, TaskPriority.p0Urgent);
 
-        verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+        verify(() => mockJournalRepo.updateTask(any(), any())).called(1);
       });
 
       test('should update to P3 (Low)', () async {
@@ -351,9 +349,7 @@ void main() {
           confidence: 'high',
         );
 
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskPriorityHandler(
           task: task,
@@ -365,16 +361,14 @@ void main() {
         expect(result.success, isTrue);
         expect(handler.task.data.priority, TaskPriority.p3Low);
 
-        verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+        verify(() => mockJournalRepo.updateTask(any(), any())).called(1);
       });
 
       test('should update handler task reference after success', () async {
         final task = createTask();
         final toolCall = createPriorityToolCall(priority: 'P0');
 
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskPriorityHandler(
           task: task,
@@ -394,9 +388,7 @@ void main() {
           final task = createTask();
           final toolCall = createPriorityToolCall(priority: 'P1');
 
-          when(
-            () => mockJournalRepo.updateJournalEntity(any()),
-          ).thenAnswer((_) async => true);
+          stubTaskRow(mockJournalRepo, task);
 
           final handler = TaskPriorityHandler(
             task: task,
@@ -408,7 +400,7 @@ void main() {
 
           expect(result.success, isTrue);
           expect(handler.task.data.priority, TaskPriority.p1High);
-          verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+          verify(() => mockJournalRepo.updateTask(any(), any())).called(1);
           // Manager methods should not be called
           verifyNever(
             () => mockManager.addToolResponse(
@@ -423,9 +415,7 @@ void main() {
         final task = createTask();
         final toolCall = createPriorityToolCall(priority: 'p1');
 
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskPriorityHandler(
           task: task,
@@ -460,7 +450,7 @@ void main() {
         expect(handler.task.data.priority, TaskPriority.p0Urgent);
         expect(result.message, contains('No change needed'));
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
       });
 
       test('should not call onTaskUpdated when same priority', () async {
@@ -489,9 +479,7 @@ void main() {
           confidence: 'high',
         );
 
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskPriorityHandler(
           task: task,
@@ -504,16 +492,14 @@ void main() {
         expect(result.didWrite, isTrue);
         expect(handler.task.data.priority, TaskPriority.p1High);
 
-        verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+        verify(() => mockJournalRepo.updateTask(any(), any())).called(1);
       });
 
       test('should update from P3 to P0', () async {
         final task = createTask(priority: TaskPriority.p3Low);
         final toolCall = createPriorityToolCall(priority: 'P0');
 
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskPriorityHandler(
           task: task,
@@ -526,7 +512,7 @@ void main() {
         expect(result.didWrite, isTrue);
         expect(handler.task.data.priority, TaskPriority.p0Urgent);
 
-        verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+        verify(() => mockJournalRepo.updateTask(any(), any())).called(1);
       });
     });
 
@@ -555,7 +541,7 @@ void main() {
         expect(handler.task, same(task));
         expect(handler.task.data.priority, TaskPriority.p2Medium);
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
       });
 
       test('should reject invalid priority string', () async {
@@ -574,7 +560,7 @@ void main() {
         expect(result.error, contains('must be P0, P1, P2, or P3'));
         expect(result.error, contains('P4'));
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
       });
 
       test('should reject text priority values', () async {
@@ -592,7 +578,7 @@ void main() {
         expect(result.error, isNotNull);
         expect(result.error, contains('urgent'));
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
       });
 
       test('should reject empty priority string', () async {
@@ -609,7 +595,7 @@ void main() {
         expect(result.success, isFalse);
         expect(result.error, isNotNull);
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
       });
 
       test(
@@ -639,7 +625,7 @@ void main() {
           expect(result.error, isNotNull);
           expect(result.error, contains('must be P0, P1, P2, or P3'));
 
-          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+          verifyNever(() => mockJournalRepo.updateTask(any(), any()));
         },
       );
 
@@ -658,9 +644,7 @@ void main() {
             ),
           );
 
-          when(
-            () => mockJournalRepo.updateJournalEntity(any()),
-          ).thenAnswer((_) async => true);
+          stubTaskRow(mockJournalRepo, task);
 
           final handler = TaskPriorityHandler(
             task: task,
@@ -672,7 +656,7 @@ void main() {
           // Should succeed - non-string values are converted via toString()
           expect(result.success, isTrue);
 
-          verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+          verify(() => mockJournalRepo.updateTask(any(), any())).called(1);
         },
       );
 
@@ -697,7 +681,7 @@ void main() {
         expect(result.success, isFalse);
         expect(result.error, isNotNull);
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
         verify(
           () => mockManager.addToolResponse(
             toolCallId: 'call_priority_123',
@@ -713,7 +697,7 @@ void main() {
         final toolCall = createPriorityToolCall(priority: 'P1');
 
         when(
-          () => mockJournalRepo.updateJournalEntity(any()),
+          () => mockJournalRepo.updateTask(any(), any()),
         ).thenThrow(Exception('Database connection lost'));
 
         final handler = TaskPriorityHandler(
@@ -742,7 +726,7 @@ void main() {
         final toolCall = createPriorityToolCall(priority: 'P1');
 
         when(
-          () => mockJournalRepo.updateJournalEntity(any()),
+          () => mockJournalRepo.updateTask(any(), any()),
         ).thenThrow(Exception('Database error'));
 
         var callbackCalled = false;
@@ -764,7 +748,7 @@ void main() {
           final toolCall = createPriorityToolCall(priority: 'P1');
 
           when(
-            () => mockJournalRepo.updateJournalEntity(any()),
+            () => mockJournalRepo.updateTask(any(), any()),
           ).thenThrow(Exception('Database error'));
 
           final handler = TaskPriorityHandler(
@@ -787,11 +771,13 @@ void main() {
       'matches generated priority parsing, no-op, and repository semantics',
       (scenario) async {
         final repo = MockJournalRepository();
-        when(
-          () => repo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => scenario.repositorySucceeds);
-
         final initialTask = createTask(priority: scenario.currentPriority);
+        final row = stubTaskRow(repo, initialTask);
+        if (!scenario.repositorySucceeds) {
+          when(
+            () => repo.updateTask(any(), any()),
+          ).thenAnswer((_) async => null);
+        }
         Task? callbackTask;
         final handler = TaskPriorityHandler(
           task: initialTask,
@@ -809,7 +795,7 @@ void main() {
           expect(result.error, contains('must be P0'), reason: '$scenario');
           expect(handler.task, initialTask, reason: '$scenario');
           expect(callbackTask, isNull, reason: '$scenario');
-          verifyNever(() => repo.updateJournalEntity(any()));
+          verifyNever(() => repo.updateTask(any(), any()));
           return;
         }
 
@@ -818,18 +804,18 @@ void main() {
           expect(result.didWrite, isFalse, reason: '$scenario');
           expect(handler.task, initialTask, reason: '$scenario');
           expect(callbackTask, isNull, reason: '$scenario');
-          verifyNever(() => repo.updateJournalEntity(any()));
+          verifyNever(() => repo.updateTask(any(), any()));
           return;
         }
 
         expect(scenario.shouldAttemptWrite, isTrue, reason: '$scenario');
-        final captured =
+        final change =
             verify(
-                  () => repo.updateJournalEntity(captureAny()),
+                  () => repo.updateTask(initialTask.id, captureAny()),
                 ).captured.single
-                as Task;
+                as TaskData Function(TaskData);
         expect(
-          captured.data.priority,
+          change(initialTask.data).priority,
           scenario.parsedPriority,
           reason: '$scenario',
         );
@@ -843,13 +829,83 @@ void main() {
           return;
         }
 
+        final written = row.writes.single;
+        expect(
+          written.data,
+          initialTask.data.copyWith(priority: scenario.parsedPriority!),
+          reason: '$scenario',
+        );
         expect(result.success, isTrue, reason: '$scenario');
         expect(result.didWrite, isTrue, reason: '$scenario');
-        expect(handler.task, captured, reason: '$scenario');
-        expect(callbackTask, captured, reason: '$scenario');
+        expect(handler.task, written, reason: '$scenario');
+        expect(callbackTask, written, reason: '$scenario');
       },
       tags: 'glados',
     );
+
+    group('field changed since the call read the task', () {
+      test('writes the priority on the task as stored, keeping a field set '
+          'meanwhile', () async {
+        final task = createTask();
+        final row = stubTaskRow(mockJournalRepo, task)
+          ..task = task.copyWith(
+            data: task.data.copyWith(estimate: const Duration(minutes: 45)),
+          );
+        Task? callbackTask;
+        final handler = TaskPriorityHandler(
+          task: task,
+          journalRepository: mockJournalRepo,
+          onTaskUpdated: (t) => callbackTask = t,
+        );
+
+        final result = await handler.processToolCall(
+          createPriorityToolCall(priority: 'P0'),
+          mockManager,
+        );
+
+        expect(result.didWrite, isTrue);
+        final written = row.writes.single;
+        expect(written.data.priority, TaskPriority.p0Urgent);
+        expect(written.data.estimate, const Duration(minutes: 45));
+        expect(handler.task, written);
+        expect(callbackTask, written);
+      });
+
+      test('applies nothing when the stored priority changed', () async {
+        final task = createTask();
+        final row = stubTaskRow(mockJournalRepo, task)
+          ..task = task.copyWith(
+            data: task.data.copyWith(priority: TaskPriority.p3Low),
+          );
+        final stored = row.task;
+        var callbackCalled = false;
+        final handler = TaskPriorityHandler(
+          task: task,
+          journalRepository: mockJournalRepo,
+          onTaskUpdated: (_) => callbackCalled = true,
+        );
+
+        final result = await handler.processToolCall(
+          createPriorityToolCall(priority: 'P0'),
+          mockManager,
+        );
+
+        expect(result.success, isTrue);
+        expect(result.didWrite, isFalse);
+        expect(result.error, isNull);
+        expect(result.message, startsWith('Nothing applied'));
+        expect(row.writes, isEmpty);
+        expect(row.task.data.priority, TaskPriority.p3Low);
+        expect(handler.task, stored);
+        expect(callbackCalled, isFalse);
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call_priority_123',
+            response: result.message,
+          ),
+        ).called(1);
+      });
+    });
 
     group('edge cases', () {
       test(
@@ -881,9 +937,7 @@ void main() {
           );
           final toolCall = createPriorityToolCall(priority: 'P0');
 
-          when(
-            () => mockJournalRepo.updateJournalEntity(any()),
-          ).thenAnswer((_) async => true);
+          stubTaskRow(mockJournalRepo, task);
 
           final handler = TaskPriorityHandler(
             task: task,
@@ -907,9 +961,7 @@ void main() {
         final task = createTask();
         final toolCall = createPriorityToolCall(priority: '  P1  ');
 
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskPriorityHandler(
           task: task,
@@ -937,14 +989,14 @@ void main() {
 
           final result = await handler.processToolCall(toolCall, mockManager);
 
-          // Should succeed but NOT call updateJournalEntity (optimization)
+          // Should succeed but NOT call updateTask (optimization)
           expect(result.success, isTrue);
           expect(handler.task.data.priority, TaskPriority.p2Medium);
           expect(result.didWrite, isFalse);
           expect(result.message, contains('No change needed'));
 
           // Verify no DB write occurred
-          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+          verifyNever(() => mockJournalRepo.updateTask(any(), any()));
         },
       );
 
@@ -953,9 +1005,7 @@ void main() {
           final task = createTask(); // fresh task with default priority
           final toolCall = createPriorityToolCall(priority: priorityStr);
 
-          when(
-            () => mockJournalRepo.updateJournalEntity(any()),
-          ).thenAnswer((_) async => true);
+          stubTaskRow(mockJournalRepo, task);
 
           final handler = TaskPriorityHandler(
             task: task,
@@ -987,9 +1037,7 @@ void main() {
           ),
         );
 
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskPriorityHandler(
           task: task,

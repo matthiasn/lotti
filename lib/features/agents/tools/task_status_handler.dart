@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/tasks/repository/task_field_write.dart';
 import 'package:uuid/uuid.dart';
 
 /// Result of processing a task status transition.
@@ -137,27 +138,34 @@ class TaskStatusHandler {
       reason: reason?.trim(),
     );
 
-    final updatedTask = task.copyWith(
-      data: task.data.copyWith(
-        status: newStatus,
-        statusHistory: [...task.data.statusHistory, newStatus],
-      ),
-    );
-
     try {
-      final success = await journalRepository.updateJournalEntity(updatedTask);
+      final write = await writeTaskField(
+        journalRepository: journalRepository,
+        task: task,
+        field: (data) => data.status.toDbString,
+        set: (stored) => stored.withStatus(newStatus),
+      );
 
-      if (!success) {
-        const message = 'Failed to update status: repository returned false.';
-        developer.log(message, name: 'TaskStatusHandler');
-        return const TaskStatusResult(
-          success: false,
-          message: message,
-          error: message,
-        );
+      switch (write) {
+        case TaskFieldWriteFailed():
+          const message = 'Failed to update status: repository returned false.';
+          developer.log(message, name: 'TaskStatusHandler');
+          return const TaskStatusResult(
+            success: false,
+            message: message,
+            error: message,
+          );
+        case TaskFieldMoved(task: final stored):
+          task = stored;
+          final message =
+              "Nothing applied: the task's status changed to "
+              '${stored.data.status.toDbString} since this call read it, '
+              'so it stays as it is.';
+          developer.log(message, name: 'TaskStatusHandler');
+          return TaskStatusResult(success: true, message: message);
+        case TaskFieldWritten(task: final stored):
+          task = stored;
       }
-
-      task = updatedTask;
 
       final message =
           'Task status changed from "$currentDbString" to "$normalized".';

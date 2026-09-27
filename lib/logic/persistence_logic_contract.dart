@@ -128,11 +128,11 @@ abstract class PersistenceLogicContract {
     DateTime? dateTo,
   });
 
-  Future<bool> updateTaskImpl({
+  Future<Task?> updateTaskImpl({
     required String journalEntityId,
-    required TaskData taskData,
-    String? categoryId,
+    required TaskData Function(TaskData stored) change,
     EntryText? entryText,
+    bool Function(Task stored)? onlyIf,
   });
 
   Future<bool> updateEventImpl({

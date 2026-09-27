@@ -253,9 +253,9 @@ extension _ImageGenerationInputCases on _SkillInferenceTestSetup {
         when(
           () => mockPersistenceLogic.updateTask(
             journalEntityId: any(named: 'journalEntityId'),
-            taskData: any(named: 'taskData'),
+            change: any(named: 'change'),
           ),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((_) async => taskEntity as Task);
         stubLoggingEvent();
 
         await runner.runImageGeneration(
@@ -357,9 +357,9 @@ extension _ImageGenerationInputCases on _SkillInferenceTestSetup {
         when(
           () => mockPersistenceLogic.updateTask(
             journalEntityId: any(named: 'journalEntityId'),
-            taskData: any(named: 'taskData'),
+            change: any(named: 'change'),
           ),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((_) async => taskEntity as Task);
         stubLoggingEvent();
 
         await runner.runImageGeneration(

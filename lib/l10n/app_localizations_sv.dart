@@ -14691,6 +14691,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get syncPayloadAgentLink => 'Agentlänk';
 
   @override
+  String get syncPayloadAgentWakeCoordination => 'Samordning av agentkörningar';
+
+  @override
   String get syncPayloadAiConfig => 'AI-konfiguration';
 
   @override
@@ -14722,9 +14725,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncPayloadMediaRequest => 'Mediebegäran';
-
-  @override
-  String get syncPayloadAgentWakeCoordination => 'Samordning av agentkörningar';
 
   @override
   String get syncPayloadNotification => 'Meddelande';

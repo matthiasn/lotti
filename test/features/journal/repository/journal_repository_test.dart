@@ -30,6 +30,7 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/commit_evaluating_vector_clock_service.dart';
+import '../../../helpers/entity_factories.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
@@ -2640,9 +2641,9 @@ void main() {
         when(
           () => mockPersistenceLogic.updateTask(
             journalEntityId: any(named: 'journalEntityId'),
-            taskData: any(named: 'taskData'),
+            change: any(named: 'change'),
           ),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((_) async => taskWithCoverArt as Task);
 
         // Mock the updateMetadata call for the image deletion
         when(
@@ -2678,12 +2679,30 @@ void main() {
         verify(() => mockJournalDb.getLinkedToEntities(imageId)).called(1);
 
         // Verify updateTask was called once (only for the task with coverArtId)
-        verify(
+        final change =
+            verify(
+                  () => mockPersistenceLogic.updateTask(
+                    journalEntityId: 'task-with-cover',
+                    change: captureAny(named: 'change'),
+                  ),
+                ).captured.single
+                as TaskData Function(TaskData);
+        verifyNever(
           () => mockPersistenceLogic.updateTask(
-            journalEntityId: 'task-with-cover',
-            taskData: any(named: 'taskData'),
+            journalEntityId: 'task-without-cover',
+            change: any(named: 'change'),
           ),
-        ).called(1);
+        );
+
+        // The change clears the cover art on the task as stored, keeping a
+        // field set there since the task was read...
+        final stored = (taskWithCoverArt as Task).data.copyWith(
+          title: 'Renamed meanwhile',
+        );
+        expect(change(stored), stored.copyWith(coverArtId: null));
+        // ...and leaves a cover art picked since then as it is.
+        final repicked = stored.copyWith(coverArtId: 'another-image');
+        expect(change(repicked), same(repicked));
 
         // Verify the image entity was soft-deleted
         verify(
@@ -2692,6 +2711,49 @@ void main() {
             deletedAt: any(named: 'deletedAt'),
           ),
         ).called(1);
+      });
+    });
+
+    group('updateTask', () {
+      test('applies the change through PersistenceLogic and returns the task '
+          'as stored', () async {
+        final stored = TestTaskFactory.create(id: 'task-1', title: 'Stored');
+        final written = stored.copyWith(
+          data: stored.data.copyWith(title: 'Written'),
+        );
+        when(
+          () => mockPersistenceLogic.updateTask(
+            journalEntityId: 'task-1',
+            change: any(named: 'change'),
+          ),
+        ).thenAnswer((_) async => written);
+
+        final result = await repository.updateTask(
+          'task-1',
+          (data) => data.copyWith(title: 'Written'),
+        );
+
+        expect(result, same(written));
+        final change =
+            verify(
+                  () => mockPersistenceLogic.updateTask(
+                    journalEntityId: 'task-1',
+                    change: captureAny(named: 'change'),
+                  ),
+                ).captured.single
+                as TaskData Function(TaskData);
+        expect(change(stored.data).title, 'Written');
+      });
+
+      test('answers null when PersistenceLogic could not write', () async {
+        when(
+          () => mockPersistenceLogic.updateTask(
+            journalEntityId: any(named: 'journalEntityId'),
+            change: any(named: 'change'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        expect(await repository.updateTask('missing', (data) => data), isNull);
       });
     });
 

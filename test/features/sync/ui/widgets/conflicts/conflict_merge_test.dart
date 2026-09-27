@@ -5,6 +5,7 @@ import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_shared.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/conflict_merge.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/entry_field_diff.dart';
@@ -112,6 +113,66 @@ void main() {
 
       expect(result.data.title, 'remote');
       expect(result.data.appliedChangeEffects, {'set-1:0', 'set-2:0'});
+    });
+  });
+
+  group('a task keeps every status either side was set to '
+      '(TaskFieldWrites.tla, HistoryComplete)', () {
+    final opened = TaskStatus.open(
+      id: 'st-open',
+      createdAt: DateTime(2024, 3, 15, 9),
+      utcOffset: 0,
+    );
+    // Set on this device: the user started the task.
+    final started = TaskStatus.inProgress(
+      id: 'st-started',
+      createdAt: DateTime(2024, 3, 15, 10),
+      utcOffset: 0,
+    );
+    // Set on the other device, later: the agent marked it done.
+    final done = TaskStatus.done(
+      id: 'st-done',
+      createdAt: DateTime(2024, 3, 15, 11),
+      utcOffset: 0,
+    );
+    final local = taskOf(
+      title: 'local',
+      vectorClock: localClock,
+      statusHistory: [opened, started],
+    );
+    final remote = taskOf(
+      title: 'remote',
+      vectorClock: remoteClock,
+      statusHistory: [opened, done],
+    );
+
+    for (final side in ConflictSide.values) {
+      test("keeping the ${side.name} side joins both sides' histories, in "
+          'the order they were set, and keeps its status', () {
+        final result =
+            resolveToSide(local: local, remote: remote, side: side) as Task;
+
+        expect(result.data.statusHistory, [opened, started, done]);
+        expect(
+          result.data.status,
+          side == ConflictSide.local ? started : done,
+        );
+      });
+    }
+
+    test('combining the two joins both histories', () {
+      final result =
+          buildMergedEntity(
+                local: local,
+                remote: remote,
+                baseSide: ConflictSide.remote,
+                choices: const {EntryField.title: ConflictSide.local},
+              )
+              as Task;
+
+      expect(result.data.title, 'local');
+      expect(result.data.status, done);
+      expect(result.data.statusHistory, [opened, started, done]);
     });
   });
 

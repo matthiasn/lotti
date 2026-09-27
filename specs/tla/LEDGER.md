@@ -70,6 +70,10 @@ one spec, three configurations, six named properties and 5,597,909 distinct
 states. TLC found five bugs and an audit of the modelled code one more (P1×3, P2×3). Not included in the historical totals
 above.
 
+The `TaskFieldWrites` model (#4545) adds the tasks feature's fields: one spec, three
+configurations, four named properties and 8,838,456 distinct states. TLC found
+five bugs (P1×3, P2×2). Not included in the historical totals above.
+
 The `EnvelopeChain` design model (#4501) adds one spec, two configurations, six
 named properties and 145,926 distinct states. It models record provenance's
 signed chains before they are built, so it caught no shipped bug; its four
@@ -168,6 +172,7 @@ counterexamples found. "Severity" grades each of those bugs; see
 | [#4523](https://github.com/matthiasn/lotti/pull/4523) | 09-26 | agents, sync | `AgentWakeCoordination` | 4 | 1 (0) | P2 | [0090](../../docs/adr/0090-cross-device-agent-wake-coordination.md) | Two devices ran the same task agent over the same synced state, an inference paid twice for one result. Modelled before it was built: a claim broadcast with the state digest defers a matching peer, `done` cancels it, a heartbeat carries runs past the two-minute timer. TLC rejected the first draft, where a peer's next claim erased its completion and a device still at the older state ran it again |
 | [#4526](https://github.com/matthiasn/lotti/pull/4526) | pending | agents, sync | — | 0 | 1 (0) | P1 | [0091](../../docs/adr/0091-wake-coordination-by-vector-clock-coverage.md) | #4523 stood down only over an exactly equal state, and on two real devices never did: a checklist item checked off on B before A's countdown ran out still ran on B after A completed. A peer's run now covers a device when it read every write the device's inputs rest on — a claim carries the sender's gap-free sync watermark per host, and the receiver checks its inputs' vector clocks against it. With the old equality restored (`CoverSuperset = FALSE`), `Exclusive` fails in nine states |
 | [#4527](https://github.com/matthiasn/lotti/pull/4527) | pending | sync | — | 0 | 1 (0) | P0 | [0092](../../docs/adr/0092-one-conflict-row-per-version.md) | Closed the one-conflict-row residual of ADR 0083: a save built on a stale read is refused and parked as the entry's conflict, never sent, and a later concurrent version replaced it in the one-row table, losing it on every device. Conflicts are now keyed by entry and version; the `displaced` ghost is gone, `NothingDropped` and `ConflictNotStale` hold without exception, and the `ConflictPerVersion` switch brings back a five-step counterexample. `JournalReplication` 700,231 and `JournalReplicationLabels` 167,673 distinct states, the other two unchanged |
+| [#4545](https://github.com/matthiasn/lotti/pull/4545) | pending | tasks, agents | `TaskFieldWrites` | 3 | 5 (5) | P1×3 P2×2 | [0103](../../docs/adr/0103-task-fields-are-changed-on-the-stored-row.md) | The fields ADR 0089 left: every task field write handed over a copy — the task screen's `TaskData`, or the task an agent tool call began with — under a clock that claimed everything stored, so a field the agent, the user or another device set meanwhile was put back with no conflict. The agent's compare-and-set ran against its copy, not the stored row; a status set on the task screen never reached the status history; and a resolution dropped the other side's statuses. Writers now state a change of the stored data, the agent compares inside the write, and a conformance trace drives the real writers, tools and resolution |
 | [#4546](https://github.com/matthiasn/lotti/pull/4546) | pending | agents, sync | `TaskAgentAssignment` | 3 | 1 (0) | P1 | [0104](../../docs/adr/0104-one-task-agent-per-task.md) | A follow-up task confirmed on two devices got a task agent from each, and so did two manual assignments: the duplicate check was local, and both agents lived on, woke and wrote reports and proposals behind the one the card showed. Every device now ranks the task's agents as the card does and retires the others, after a receive, at startup (which also clears what older builds left) and before a wake. TLC reproduces the bug with `RetireLosers = FALSE` in nine states, and a model with each device keeping its own agent leaves the task with none. It also shows two residuals: clock skew can cost a reassignment, and a local hard delete lets a late copy bring an agent back |
 
 ## Sync follow-up evidence, 2026-09-26
@@ -410,6 +415,11 @@ The P0 and P1 bugs:
 | [#4506](https://github.com/matthiasn/lotti/pull/4506) | P3 | no | One undecodable stored filter blanked the list, and the next save persisted it empty |
 | [#4523](https://github.com/matthiasn/lotti/pull/4523) | P2 | no | Edits on two devices at once made both run the same task agent over the same state |
 | [#4527](https://github.com/matthiasn/lotti/pull/4527) | P0 | no | A save made while another device's version synced in was lost for good when a third version replaced its conflict |
+| [#4545](https://github.com/matthiasn/lotti/pull/4545) | P1 | yes | A field set from the task screen put back a field the agent or another device had set since the screen read the task |
+| [#4545](https://github.com/matthiasn/lotti/pull/4545) | P1 | yes | An agent tool writing the task its call read put back a field the user set during the call |
+| [#4545](https://github.com/matthiasn/lotti/pull/4545) | P1 | yes | An agent tool set a field over a value the user changed between the call's read and its write |
+| [#4545](https://github.com/matthiasn/lotti/pull/4545) | P2 | yes | A status set from the task screen was never appended to the status history |
+| [#4545](https://github.com/matthiasn/lotti/pull/4545) | P2 | yes | Resolving a conflict dropped the status history of the side not kept |
 </details>
 
 ## Specs

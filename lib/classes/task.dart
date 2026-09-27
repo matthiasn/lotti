@@ -204,6 +204,39 @@ extension TaskDataOnStored on TaskData {
     };
     return copyWith(appliedChangeEffects: effects.isEmpty ? null : effects);
   }
+
+  /// This data with its status set to [next], recorded in the status history
+  /// when it changes the status. A status equal to the current one by its
+  /// database string leaves the data as it is: whoever sets a status — the
+  /// user, the task agent or the day agent's triage — records it here, so
+  /// the history holds every status the task was set to
+  /// (`specs/tla/TaskFieldWrites.tla`, HistoryComplete).
+  TaskData withStatus(TaskStatus next) => next.toDbString == status.toDbString
+      ? this
+      : copyWith(status: next, statusHistory: [...statusHistory, next]);
+
+  /// This data with its status history holding every status [other]'s
+  /// holds, too, each once (by id), in the order they were set — by id
+  /// where two were set at the same instant, so both directions of a join
+  /// order the history the same way. Resolving a
+  /// conflict keeps one side's fields, but a status either side was set to
+  /// was set, so the history keeps both sides'
+  /// (`specs/tla/TaskFieldWrites.tla`, HistoryComplete).
+  TaskData withHistoryOf(TaskData other) {
+    final seen = {for (final s in statusHistory) s.id};
+    final joined = [
+      ...statusHistory,
+      ...other.statusHistory.where((s) => seen.add(s.id)),
+    ];
+    if (joined.length == statusHistory.length) return this;
+    return copyWith(
+      statusHistory: joined
+        ..sort((a, b) {
+          final byTime = a.createdAt.compareTo(b.createdAt);
+          return byTime != 0 ? byTime : a.id.compareTo(b.id);
+        }),
+    );
+  }
 }
 
 TaskStatus taskStatusFromString(String status) {

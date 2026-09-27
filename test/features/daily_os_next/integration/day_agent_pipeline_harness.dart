@@ -270,12 +270,17 @@ class DayAgentPipelineHarness {
     when(
       () => journalDb.basicLinksForEntryIds(any()),
     ).thenAnswer((_) async => const <EntryLink>[]);
-    // True, not false: `apply_triage` updates a task through this, and a
-    // false answer becomes "failed to update task <id>" handed back to the
-    // model as a correction it did not earn. In the app the update succeeds.
+    // `apply_triage` updates a task through this. The harness stores no
+    // tasks (`journalEntityById` answers null above), so the triage reports
+    // the task missing before it writes; the stub only keeps an unexpected
+    // write from arriving as a Dart type error.
     when(
-      () => journalRepository.updateJournalEntity(any()),
-    ).thenAnswer((_) async => true);
+      () => journalRepository.updateTask(
+        any(),
+        any(),
+        onlyIf: any(named: 'onlyIf'),
+      ),
+    ).thenAnswer((_) async => null);
 
     final planService = DayAgentPlanService(
       agentRepository: agentRepository,

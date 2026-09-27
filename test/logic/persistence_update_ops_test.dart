@@ -50,6 +50,7 @@ void main() {
         linkedId: any(named: 'linkedId'),
         enqueueSync: any(named: 'enqueueSync'),
         beforeNotify: any(named: 'beforeNotify'),
+        precondition: any(named: 'precondition'),
       ),
     ).thenAnswer((_) async => true);
   });
@@ -157,19 +158,18 @@ void main() {
         ),
       ).thenAnswer((_) async => 1);
 
-      final changed = task.data.copyWith(
-        priority: task.data.priority == TaskPriority.p1High
-            ? TaskPriority.p3Low
-            : TaskPriority.p1High,
-      );
+      final next = task.data.priority == TaskPriority.p1High
+          ? TaskPriority.p3Low
+          : TaskPriority.p1High;
 
-      final ok = await ops.updateTaskImpl(
+      final written = await ops.updateTaskImpl(
         journalEntityId: task.meta.id,
-        taskData: changed,
+        change: (stored) => stored.copyWith(priority: next),
       );
 
-      expect(ok, isTrue);
-      // The priority changed, so a beforeNotify hook must accompany the write.
+      expect(written?.data.priority, next);
+      // The priority changed, so a beforeNotify hook must accompany the write,
+      // and it writes the new priority's column values.
       final beforeNotify =
           verify(
                 () => logic.updateDbEntity(
@@ -180,8 +180,263 @@ void main() {
               ).captured.single
               as Future<void> Function()?;
       expect(beforeNotify, isNotNull);
+      verifyNever(
+        () => mocks.journalDb.updateTaskPriorityColumn(
+          id: any(named: 'id'),
+          priority: any(named: 'priority'),
+          rank: any(named: 'rank'),
+        ),
+      );
+      await beforeNotify!();
+      verify(
+        () => mocks.journalDb.updateTaskPriorityColumn(
+          id: task.meta.id,
+          priority: next.short,
+          rank: next.rank,
+        ),
+      ).called(1);
     },
   );
+
+  test(
+    'updateTaskImpl writes no priority column when the priority stays',
+    () async {
+      when(
+        () => mocks.journalDb.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => testTask);
+
+      await ops.updateTaskImpl(
+        journalEntityId: testTask.meta.id,
+        change: (stored) => stored.copyWith(title: 'renamed'),
+      );
+
+      final beforeNotify = verify(
+        () => logic.updateDbEntity(
+          any(),
+          beforeNotify: captureAny(named: 'beforeNotify'),
+          precondition: any(named: 'precondition'),
+        ),
+      ).captured.single;
+      expect(beforeNotify, isNull);
+    },
+  );
+
+  test(
+    'updateTaskImpl applies the change to the data as stored, so a field set '
+    'there after the caller read the task is kept, and returns the task as '
+    'written (TaskFieldWrites.tla, NoLostFieldEdit)',
+    () async {
+      // The caller read testTask; since then sync set the title and the
+      // priority on the stored row.
+      final stored = testTask.copyWith(
+        data: testTask.data.copyWith(
+          title: 'Set by sync',
+          priority: TaskPriority.p0Urgent,
+        ),
+      );
+      when(
+        () => mocks.journalDb.journalEntityById(stored.meta.id),
+      ).thenAnswer((_) async => stored);
+      TaskData? handed;
+
+      final result = await ops.updateTaskImpl(
+        journalEntityId: stored.meta.id,
+        change: (data) {
+          handed = data;
+          return data.copyWith(estimate: const Duration(minutes: 45));
+        },
+      );
+
+      expect(handed, stored.data);
+      final written =
+          verify(
+                () => logic.updateDbEntity(
+                  captureAny(),
+                  beforeNotify: any(named: 'beforeNotify'),
+                  precondition: any(named: 'precondition'),
+                ),
+              ).captured.single
+              as Task;
+      expect(
+        written.data,
+        stored.data.copyWith(estimate: const Duration(minutes: 45)),
+      );
+      expect(written.entryText, stored.entryText);
+      expect(result, written);
+    },
+  );
+
+  test(
+    'updateTaskImpl writes nothing and returns the stored task when the '
+    'change leaves it as it is',
+    () async {
+      when(
+        () => mocks.journalDb.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => testTask);
+
+      final result = await ops.updateTaskImpl(
+        journalEntityId: testTask.meta.id,
+        change: (stored) => stored.copyWith(title: stored.title),
+        entryText: testTask.entryText,
+      );
+
+      expect(result, same(testTask));
+      verifyNever(
+        () => logic.updateDbEntity(
+          any(),
+          linkedId: any(named: 'linkedId'),
+          enqueueSync: any(named: 'enqueueSync'),
+          beforeNotify: any(named: 'beforeNotify'),
+          precondition: any(named: 'precondition'),
+        ),
+      );
+      verifyNever(
+        () => logic.updateMetadata(
+          any(),
+          dateFrom: any(named: 'dateFrom'),
+          dateTo: any(named: 'dateTo'),
+        ),
+      );
+    },
+  );
+
+  test('updateTaskImpl writes the entry text only when given', () async {
+    final stored = testTask.copyWith(
+      entryText: const EntryText(plainText: 'stored body'),
+    );
+    when(
+      () => mocks.journalDb.journalEntityById(stored.meta.id),
+    ).thenAnswer((_) async => stored);
+
+    final withoutText = await ops.updateTaskImpl(
+      journalEntityId: stored.meta.id,
+      change: (data) => data.copyWith(title: 'renamed'),
+    );
+    final withText = await ops.updateTaskImpl(
+      journalEntityId: stored.meta.id,
+      change: (data) => data,
+      entryText: const EntryText(plainText: 'edited body'),
+    );
+
+    expect(withoutText?.entryText?.plainText, 'stored body');
+    expect(withoutText?.data.title, 'renamed');
+    // Only the text changed, and that alone is written.
+    expect(withText?.entryText?.plainText, 'edited body');
+    expect(withText?.data, stored.data);
+    verify(
+      () => logic.updateDbEntity(
+        any(),
+        beforeNotify: any(named: 'beforeNotify'),
+        precondition: any(named: 'precondition'),
+      ),
+    ).called(2);
+  });
+
+  test('updateTaskImpl asks onlyIf of the stored task and writes nothing '
+      'when it refuses', () async {
+    final stored = testTask.copyWith(
+      meta: testTask.meta.copyWith(categoryId: 'moved-away'),
+    );
+    when(
+      () => mocks.journalDb.journalEntityById(stored.meta.id),
+    ).thenAnswer((_) async => stored);
+    Task? asked;
+
+    final result = await ops.updateTaskImpl(
+      journalEntityId: stored.meta.id,
+      change: (data) => data.copyWith(title: 'renamed'),
+      onlyIf: (task) {
+        asked = task;
+        return task.meta.categoryId == 'allowed';
+      },
+    );
+
+    expect(asked, stored);
+    expect(result, stored);
+    verifyNever(
+      () => logic.updateDbEntity(
+        any(),
+        beforeNotify: any(named: 'beforeNotify'),
+        precondition: any(named: 'precondition'),
+      ),
+    );
+  });
+
+  group('updateTaskImpl returns null', () {
+    Future<void> expectNothingWritten(Task? result) async {
+      expect(result, isNull);
+      verifyNever(
+        () => logic.updateDbEntity(
+          any(),
+          linkedId: any(named: 'linkedId'),
+          enqueueSync: any(named: 'enqueueSync'),
+          beforeNotify: any(named: 'beforeNotify'),
+          precondition: any(named: 'precondition'),
+        ),
+      );
+    }
+
+    test('when the task is missing', () async {
+      when(
+        () => mocks.journalDb.journalEntityById('missing'),
+      ).thenAnswer((_) async => null);
+
+      await expectNothingWritten(
+        await ops.updateTaskImpl(
+          journalEntityId: 'missing',
+          change: (stored) => stored.copyWith(title: 'x'),
+        ),
+      );
+    });
+
+    test('when the entity is not a task', () async {
+      when(
+        () => mocks.journalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+
+      await expectNothingWritten(
+        await ops.updateTaskImpl(
+          journalEntityId: testTextEntry.meta.id,
+          change: (stored) => stored.copyWith(title: 'x'),
+        ),
+      );
+    });
+
+    test('when the change throws', () async {
+      when(
+        () => mocks.journalDb.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => testTask);
+
+      await expectNothingWritten(
+        await ops.updateTaskImpl(
+          journalEntityId: testTask.meta.id,
+          change: (_) => throw StateError('boom'),
+        ),
+      );
+    });
+
+    test('when the write is not applied and the row did not move', () async {
+      when(
+        () => mocks.journalDb.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => testTask);
+      when(
+        () => logic.updateDbEntity(
+          any(),
+          linkedId: any(named: 'linkedId'),
+          enqueueSync: any(named: 'enqueueSync'),
+          beforeNotify: any(named: 'beforeNotify'),
+          precondition: any(named: 'precondition'),
+        ),
+      ).thenAnswer((_) async => false);
+
+      final result = await ops.updateTaskImpl(
+        journalEntityId: testTask.meta.id,
+        change: (stored) => stored.copyWith(title: 'x'),
+      );
+
+      expect(result, isNull);
+    });
+  });
 
   test(
     'updateTaskImpl keeps the checklists the stored task lists, whatever the '
@@ -195,15 +450,15 @@ void main() {
         () => mocks.journalDb.journalEntityById(stored.meta.id),
       ).thenAnswer((_) async => stored);
 
-      final ok = await ops.updateTaskImpl(
+      final result = await ops.updateTaskImpl(
         journalEntityId: stored.meta.id,
-        taskData: testTask.data.copyWith(
+        change: (data) => data.copyWith(
           checklistIds: ['kept'],
           title: 'renamed',
         ),
       );
 
-      expect(ok, isTrue);
+      expect(result?.data.checklistIds, ['kept', 'added-later']);
       final written =
           verify(
                 () => logic.updateDbEntity(
@@ -232,7 +487,8 @@ void main() {
 
       await ops.updateTaskImpl(
         journalEntityId: stored.meta.id,
-        taskData: testTask.data.copyWith(title: 'restored'),
+        change: (data) =>
+            data.copyWith(title: 'restored', appliedChangeEffects: null),
       );
 
       final written =
@@ -259,7 +515,10 @@ void main() {
         meta: testTask.meta.copyWith(
           vectorClock: const VectorClock({'peer': 1}),
         ),
-        data: testTask.data.copyWith(checklistIds: ['synced']),
+        data: testTask.data.copyWith(
+          checklistIds: ['synced'],
+          priority: TaskPriority.p0Urgent,
+        ),
       );
       final reads = [first, synced];
       when(
@@ -276,12 +535,11 @@ void main() {
         ),
       ).thenAnswer((_) async => results.removeAt(0));
 
-      final ok = await ops.updateTaskImpl(
+      final result = await ops.updateTaskImpl(
         journalEntityId: testTask.meta.id,
-        taskData: testTask.data.copyWith(title: 'renamed'),
+        change: (data) => data.copyWith(title: 'renamed'),
       );
 
-      expect(ok, isTrue);
       final written = verify(
         () => logic.updateDbEntity(
           captureAny(),
@@ -293,6 +551,12 @@ void main() {
         const <String>[],
         ['synced'],
       ]);
+      // The change is applied again to the synced data, so the priority
+      // sync set is kept alongside the title, and the retried version is
+      // the one returned.
+      expect(written.last.data.priority, TaskPriority.p0Urgent);
+      expect(written.last.data.title, 'renamed');
+      expect(result, written.last);
     },
   );
 

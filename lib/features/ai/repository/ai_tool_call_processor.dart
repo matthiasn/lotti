@@ -18,6 +18,7 @@ import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/utils/label_tool_parsing.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
+import 'package:lotti/features/tasks/repository/task_field_write.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:openai_dart/openai_dart.dart';
@@ -325,33 +326,34 @@ class AiToolCallProcessor {
 
           final freshTask = freshEntity;
 
-          // Only set language if task doesn't already have one
-          if (freshTask.data.languageCode == null) {
-            final updated = freshTask.copyWith(
-              data: freshTask.data.copyWith(
-                languageCode: languageCode,
-              ),
-            );
-
-            try {
-              await journalRepo.updateJournalEntity(updated);
+          // Only set language if task doesn't already have one — checked
+          // again on the stored task inside the write, so a language set
+          // meanwhile is never overwritten (writeTaskField).
+          final write = freshTask.data.languageCode == null
+              ? await writeTaskField(
+                  journalRepository: journalRepo,
+                  task: freshTask,
+                  field: (data) => data.languageCode,
+                  set: (stored) => stored.copyWith(languageCode: languageCode),
+                )
+              : TaskFieldMoved(freshTask);
+          switch (write) {
+            case TaskFieldWritten():
               developer.log(
                 'Successfully set task language to $languageCode for task ${currentTask.id}',
                 name: 'UnifiedAiInferenceRepository',
               );
               languageWasSet = true;
-            } catch (e) {
+            case TaskFieldMoved(task: final stored):
+              developer.log(
+                'Task ${currentTask.id} already has language set to ${stored.data.languageCode}, not overwriting',
+                name: 'UnifiedAiInferenceRepository',
+              );
+            case TaskFieldWriteFailed():
               developer.log(
                 'Failed to update task language for task ${currentTask.id}',
                 name: 'UnifiedAiInferenceRepository',
-                error: e,
               );
-            }
-          } else {
-            developer.log(
-              'Task ${currentTask.id} already has language set to ${freshTask.data.languageCode}, not overwriting',
-              name: 'UnifiedAiInferenceRepository',
-            );
           }
         } catch (e) {
           developer.log(

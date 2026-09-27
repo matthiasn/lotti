@@ -496,9 +496,9 @@ extension _ImageGenerationErrorCases on _SkillInferenceTestSetup {
         when(
           () => mockPersistenceLogic.updateTask(
             journalEntityId: any(named: 'journalEntityId'),
-            taskData: any(named: 'taskData'),
+            change: any(named: 'change'),
           ),
-        ).thenAnswer((_) async => false);
+        ).thenAnswer((_) async => null);
 
         stubLoggingException();
 

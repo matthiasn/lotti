@@ -2566,6 +2566,100 @@ Assumptions the model states rather than checks:
 - **The settings database commits an intent before the operation's first
   write** (`saveSettingsItem` is awaited), and intent rows never sync.
 
+## `TaskFieldWrites` — a task's fields, set by every writer on every device
+
+The fields of one task — status, priority, title, estimate, due date,
+language, cover — written by the task screen (`EntryController`), the task
+agent's field tools, the AI function handlers, the day agent's triage and
+another device, and a conflict between two devices resolved by the user.
+Every writer holds a copy it read earlier: the screen's state, refreshed by an
+update notification some time after the row changes, or the task a tool call
+began with. A write replaces the whole row, and the write decision keeps it
+when its vector clock is newer — so a write whose clock claims a version its
+data never saw drops that version's edit, and no conflict is raised. Two
+devices writing before they sync are `JournalReplication`'s subject; this
+spec keeps that decision and adds the fields it abstracts away. Checklist
+membership, which also lives on the task (`checklistIds`), is
+`ChecklistMembership`'s. The decision is
+[ADR 0103](../../docs/adr/0103-task-fields-are-changed-on-the-stored-row.md).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `NoLostFieldEdit` | invariant | no stored version claims, by its clock, a version whose field edits it does not hold |
+| `HistoryComplete` | invariant | the status history records every status write the stored status derives from, whoever made it |
+| `NoBlindAgentWrite` | invariant | an agent tool sets a field only while the stored value is the one it decided against |
+| `Converged` | invariant | once every version reached every device and no conflict is open, every device holds the same fields |
+
+Each version carries ghost state: per field, the writes its value knowingly
+derives from (the write that set it, and every write of that field it was
+built over), and the status writes its history records. A resolution records
+both sides as seen: the user chose.
+
+| Configuration | Devices | Agents on | Writes | Resolutions | Distinct states |
+|---------------|--------:|-----------|-------:|------------:|----------------:|
+| `TaskFieldWrites` | 2 | one device | 3 | 1 | 799,828 |
+| `TaskFieldWritesAgents` | 2 | both devices | 3 | 1 | 5,345,944 |
+| `TaskFieldWritesResolve` | 2 | one device | 3 | 2 | 2,692,684 |
+
+With four writes and two resolutions the model has 63,121,759 distinct states
+and passes in ten minutes on eight cores; that bound is checked by hand, not
+in CI.
+
+The design switches are the fixes, and each has a counterexample when set to
+`FALSE`:
+
+| Switch | Old behaviour | Counterexample |
+|--------|---------------|----------------|
+| `UiOnStored` | `updateTaskImpl` wrote the screen's whole `TaskData`, only `checklistIds` and the applied effects taken from the stored row, under a clock built on the stored row | `NoLostFieldEdit`, six states: the screen and the agent read the task, the agent sets the status, and the screen sets the priority from its copy — the status goes back, and its history entry with it. The same with a version synced in from another device before the screen refreshed. (TLC's shortest trace has the screen set the status to the agent's value: the write carries its copy's history, without the agent's entry) |
+| `AgentOnStored` | the agent's tools wrote the task their call began with, under a clock built on that copy's (`JournalRepository.updateJournalEntity`) | `NoLostFieldEdit`, five states: the agent reads the task, the user sets the status, the agent sets the priority — its copy's clock plus this device's next counter is newer than the user's version, so the status goes back |
+| `AgentCas` | the tool compared its target field with its copy, not with the stored row, so a value set between the call's read and its write was overwritten (ADR 0075's compare-and-set, checked before the write) | `NoBlindAgentWrite`, five states: the agent reads the task, the user sets the status, the agent sets the status over it |
+| `UiRecordsStatus` | a status set from the task screen was not appended to `statusHistory`; the agent's status tool and the day agent's triage were | `HistoryComplete`, four states: the user sets a status |
+| `ResolveJoinsHistory` | resolving a conflict kept one side's `TaskData`, its status history included | `HistoryComplete`, seven states: both devices set a status, the second lands as a conflict, and the user keeps the other device's side — this device's status is no longer in the history |
+
+With every switch on, a writer states the fields it sets as a change of the
+stored data (`PersistenceLogic.updateTask(change:)`), which `writeOnStored`
+applies to the row as stored and writes under a precondition, checked in the
+write's transaction, that the row is still the version read — the spec's
+atomic commit. An agent tool writes through `writeTaskField`, which compares
+its field on the stored row inside the same write and reports "nothing
+applied" when it moved. `TaskData.withStatus` sets a status and records it,
+for every writer, and a resolution joins both sides' histories
+(`TaskDataOnStored.withHistoryOf`).
+
+The conformance trace is
+`test/features/tasks/repository/task_field_writes_model_conformance.dart`:
+a real in-memory `JournalDb` behind the real `PersistenceLogic`, the real
+`TaskStatusHandler`, `TaskTitleHandler` and `TaskPriorityHandler`, and the
+real `ConflictResolutionService`; the other device writes on its own copy
+under its own host's counter and lands its versions through
+`JournalDb.updateJournalEntity`, between steps or armed to land between a
+writer's read and its write. After every step it checks `NoLostFieldEdit`
+(each field holds the value the last write that won set), `HistoryComplete`
+and `NoBlindAgentWrite` (a tool writes exactly when the stored value is its
+copy's). It pins the three shortest traces glados found with a fix reverted:
+without the compare-and-set in `writeTaskField` the agent's title lands over
+another device's (three steps); building a write on the first row read
+instead of the stored one loses the other device's field (three steps); and
+a resolution without the history join drops this device's status (three
+steps).
+
+What the model leaves out:
+
+- **The same field set twice.** A writer that sets a field replaces the
+  stored value, whatever its copy showed: the user's explicit choice is the
+  newest. Only the agent compares first, because it decided against a value.
+- **Field-level merge across devices.** Two devices writing before they sync
+  still raise a conflict the user resolves by keeping a side
+  (`JournalReplication`); the conflict screen merges the title and the
+  metadata fields, not status, priority, estimate or due date.
+- **Star, flag and private.** `EntryController.toggleStarred`,
+  `toggleFlagged` and `togglePrivate` read the stored row immediately
+  before writing its metadata, without a precondition; a version landing in
+  that window is not modelled.
+- **Audio and image entries.** Transcripts and image analyses appended by
+  the AI (`SkillInferenceRunner`, `UnifiedAiInferenceRepository`) write the
+  entry they re-read, like the old task writers; they are not task fields.
+
 ## `AgentWakeCoordination` — one device wakes a task agent over what it holds
 
 One task agent, replicated on two devices, each waking it on its own local

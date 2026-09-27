@@ -78,9 +78,7 @@ void main() {
           when(
             () => mockJournalRepo.getJournalEntityById(task.id),
           ).thenAnswer((_) async => task);
-          when(
-            () => mockJournalRepo.updateJournalEntity(any()),
-          ).thenAnswer((_) async => true);
+          final row = stubTaskRow(mockJournalRepo, task);
 
           final result = await repository.processToolCalls(
             toolCalls: [
@@ -92,7 +90,60 @@ void main() {
           );
 
           expect(result, isTrue); // languageWasSet
-          verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+          expect(
+            row.writes.single.data,
+            task.data.copyWith(languageCode: 'en'),
+          );
+        },
+      );
+
+      test(
+        'keeps a language stored since the task was read, writing nothing',
+        () async {
+          final task = makeTask();
+          when(
+            () => mockJournalRepo.getJournalEntityById(task.id),
+          ).thenAnswer((_) async => task);
+          final row = stubTaskRow(mockJournalRepo, task)
+            ..task = makeTask(languageCode: 'fr');
+
+          final result = await repository.processToolCalls(
+            toolCalls: [
+              langCall(
+                '{"languageCode":"en","confidence":"high","reason":"Detected English"}',
+              ),
+            ],
+            task: task,
+          );
+
+          expect(result, isFalse);
+          expect(row.writes, isEmpty);
+          expect(row.task.data.languageCode, 'fr');
+        },
+      );
+
+      test(
+        'reports no language set when the task write fails',
+        () async {
+          final task = makeTask();
+          when(
+            () => mockJournalRepo.getJournalEntityById(task.id),
+          ).thenAnswer((_) async => task);
+          when(
+            () => mockJournalRepo.updateTask(any(), any()),
+          ).thenAnswer((_) async => null);
+
+          final result = await repository.processToolCalls(
+            toolCalls: [
+              langCall(
+                '{"languageCode":"en","confidence":"high","reason":"Detected English"}',
+              ),
+            ],
+            task: task,
+          );
+
+          expect(result, isFalse);
+          verify(() => mockJournalRepo.updateTask(task.id, any())).called(1);
         },
       );
 
@@ -114,7 +165,7 @@ void main() {
           );
 
           expect(result, isFalse); // languageWasSet stays false
-          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+          verifyNever(() => mockJournalRepo.updateTask(any(), any()));
         },
       );
 
@@ -137,19 +188,19 @@ void main() {
           );
 
           expect(result, isFalse);
-          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+          verifyNever(() => mockJournalRepo.updateTask(any(), any()));
         },
       );
 
       test(
-        'handles updateJournalEntity failure when setting language',
+        'handles updateTask failure when setting language',
         () async {
           final task = makeTask();
           when(
             () => mockJournalRepo.getJournalEntityById(task.id),
           ).thenAnswer((_) async => task);
           when(
-            () => mockJournalRepo.updateJournalEntity(any()),
+            () => mockJournalRepo.updateTask(any(), any()),
           ).thenThrow(Exception('DB write error'));
 
           // Should not throw despite update failure
@@ -164,7 +215,7 @@ void main() {
 
           // languageWasSet should be false because update threw
           expect(result, isFalse);
-          verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+          verify(() => mockJournalRepo.updateTask(any(), any())).called(1);
         },
       );
 
@@ -186,7 +237,7 @@ void main() {
           );
 
           expect(result, isFalse);
-          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+          verifyNever(() => mockJournalRepo.updateTask(any(), any()));
         },
       );
     },
@@ -249,9 +300,7 @@ void main() {
           when(
             () => mockJournalRepo.getJournalEntityById(taskEntity.id),
           ).thenAnswer((_) async => taskEntity);
-          when(
-            () => mockJournalRepo.updateJournalEntity(any()),
-          ).thenAnswer((_) async => true);
+          stubTaskRow(mockJournalRepo, taskEntity);
 
           when(
             () => mockCloudInferenceRepo.generate(
@@ -356,9 +405,7 @@ void main() {
           when(
             () => mockJournalRepo.getJournalEntityById(taskEntity.id),
           ).thenAnswer((_) async => taskEntity);
-          when(
-            () => mockJournalRepo.updateJournalEntity(any()),
-          ).thenAnswer((_) async => true);
+          stubTaskRow(mockJournalRepo, taskEntity);
 
           // Single run: BOTH a language tool call AND text content, so the
           // `response.trim().isEmpty` half of the re-run gate is false and
@@ -419,7 +466,7 @@ void main() {
           // Language was set, but the non-empty response suppresses the
           // automatic re-run: exactly one inference call.
           expect(callCount, 1);
-          verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+          verify(() => mockJournalRepo.updateTask(any(), any())).called(1);
           expect(statusChanges, contains(InferenceStatus.idle));
         },
       );
@@ -1009,6 +1056,7 @@ void main() {
         ),
       );
       verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+      verifyNever(() => mockJournalRepo.updateTask(any(), any()));
     });
   });
 

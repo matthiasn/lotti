@@ -14790,6 +14790,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncPayloadAgentLink => 'Agent-Link';
 
   @override
+  String get syncPayloadAgentWakeCoordination =>
+      'Koordination von Agentenläufen';
+
+  @override
   String get syncPayloadAiConfig => 'AI-Konfiguration';
 
   @override
@@ -14821,10 +14825,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncPayloadMediaRequest => 'Medienanfrage';
-
-  @override
-  String get syncPayloadAgentWakeCoordination =>
-      'Koordination von Agentenläufen';
 
   @override
   String get syncPayloadNotification => 'Hinweis';

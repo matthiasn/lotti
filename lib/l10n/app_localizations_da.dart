@@ -14678,6 +14678,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get syncPayloadAgentLink => 'Agentlink';
 
   @override
+  String get syncPayloadAgentWakeCoordination => 'Koordinering af agentkørsler';
+
+  @override
   String get syncPayloadAiConfig => 'AI-konfiguration';
 
   @override
@@ -14709,9 +14712,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get syncPayloadMediaRequest => 'Medieanmodning';
-
-  @override
-  String get syncPayloadAgentWakeCoordination => 'Koordinering af agentkørsler';
 
   @override
   String get syncPayloadNotification => 'Underretning';

@@ -126,6 +126,12 @@ well — so **a task save performs two persistence writes**: `updateTask` for th
 task data and `updateJournalEntityText` for the editor text. Events save through
 `updateEvent` only; every other type through `updateJournalEntityText` only.
 
+A task's `updateTask` is a change of the stored task, not the controller's
+copy of it: it sets only the title, estimate and due date `save` was given,
+and the body only while the editor holds unsaved edits, so a field the agent
+or sync set since the page loaded is kept (see
+[task data](../tasks/data-model.md#writing-a-tasks-fields)).
+
 ## Behaviours that are easy to miss
 
 - **Updating a category from the detail controller also propagates that category

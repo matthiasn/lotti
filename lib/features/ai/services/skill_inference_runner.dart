@@ -1530,14 +1530,11 @@ class SkillInferenceRunner {
         // values are different. Setting `coverArtId` to `imageId` silently
         // pointed the task at an id nothing was ever stored under: the
         // cover art generated successfully but never rendered anywhere.
-        final updatedData = taskEntity.data.copyWith(
-          coverArtId: importedImageId,
-        );
         final didUpdate = await getIt<PersistenceLogic>().updateTask(
           journalEntityId: linkedTaskId,
-          taskData: updatedData,
+          change: (stored) => stored.copyWith(coverArtId: importedImageId),
         );
-        if (!didUpdate) {
+        if (didUpdate == null) {
           throw StateError(
             'Linked task $linkedTaskId disappeared before cover art update',
           );

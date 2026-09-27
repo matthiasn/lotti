@@ -14975,6 +14975,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncPayloadAgentLink => 'Legătură agent';
 
   @override
+  String get syncPayloadAgentWakeCoordination =>
+      'Coordonarea activărilor agentului';
+
+  @override
   String get syncPayloadAiConfig => 'Configurare AI';
 
   @override
@@ -15006,10 +15010,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncPayloadMediaRequest => 'Cerere de fișiere media';
-
-  @override
-  String get syncPayloadAgentWakeCoordination =>
-      'Coordonarea activărilor agentului';
 
   @override
   String get syncPayloadNotification => 'Notificare';

@@ -237,9 +237,7 @@ void main() {
   group('TaskStatusHandler', () {
     group('handle', () {
       test('transitions to IN PROGRESS with didWrite=true', () async {
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskStatusHandler(
           task: task,
@@ -258,13 +256,11 @@ void main() {
         );
         expect(result.error, isNull);
 
-        verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+        verify(() => mockJournalRepo.updateTask(any(), any())).called(1);
       });
 
       test('transitions to GROOMED', () async {
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskStatusHandler(
           task: task,
@@ -279,9 +275,7 @@ void main() {
       });
 
       test('transitions to BLOCKED with reason', () async {
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        final row = stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskStatusHandler(
           task: task,
@@ -303,11 +297,8 @@ void main() {
 
         // The reason also lands on the PERSISTED entity, not just the
         // returned copy.
-        final persisted =
-            verify(
-                  () => mockJournalRepo.updateJournalEntity(captureAny()),
-                ).captured.single
-                as Task;
+        final persisted = row.writes.single;
+        expect(persisted, handler.task);
         expect(
           (persisted.data.status as TaskBlocked).reason,
           'Waiting for API access',
@@ -315,9 +306,7 @@ void main() {
       });
 
       test('transitions to ON HOLD with reason', () async {
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskStatusHandler(
           task: task,
@@ -339,10 +328,6 @@ void main() {
       });
 
       test('transitions back to OPEN from IN PROGRESS', () async {
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
-
         final inProgressTask = task.copyWith(
           data: task.data.copyWith(
             status: TaskStatus.inProgress(
@@ -352,6 +337,7 @@ void main() {
             ),
           ),
         );
+        stubTaskRow(mockJournalRepo, inProgressTask);
 
         final handler = TaskStatusHandler(
           task: inProgressTask,
@@ -366,9 +352,7 @@ void main() {
       });
 
       test('normalizes case for status string', () async {
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskStatusHandler(
           task: task,
@@ -395,7 +379,7 @@ void main() {
         expect(result.error, contains('user-only'));
         expect(result.error, contains('DONE'));
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
       });
 
       test('rejects REJECTED status (user-only)', () async {
@@ -410,7 +394,7 @@ void main() {
         expect(result.didWrite, isFalse);
         expect(result.error, contains('user-only'));
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
       });
 
       test('rejects unknown status string', () async {
@@ -425,7 +409,7 @@ void main() {
         expect(result.didWrite, isFalse);
         expect(result.error, contains('Unknown status'));
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
       });
 
       test('requires reason for BLOCKED', () async {
@@ -440,7 +424,7 @@ void main() {
         expect(result.didWrite, isFalse);
         expect(result.error, contains('requires a reason'));
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
       });
 
       test('requires reason for ON HOLD', () async {
@@ -454,7 +438,7 @@ void main() {
         expect(result.success, isFalse);
         expect(result.error, contains('requires a reason'));
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
       });
 
       test('rejects empty reason for BLOCKED', () async {
@@ -482,13 +466,11 @@ void main() {
         expect(result.didWrite, isFalse);
         expect(result.message, contains('already'));
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        verifyNever(() => mockJournalRepo.updateTask(any(), any()));
       });
 
       test('appends to statusHistory', () async {
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskStatusHandler(
           task: task,
@@ -509,9 +491,7 @@ void main() {
       test('uses clock.now() for status createdAt', () async {
         final fixedTime = DateTime(2024, 6, 15, 10, 30);
         await withClock(Clock.fixed(fixedTime), () async {
-          when(
-            () => mockJournalRepo.updateJournalEntity(any()),
-          ).thenAnswer((_) async => true);
+          stubTaskRow(mockJournalRepo, task);
 
           final handler = TaskStatusHandler(
             task: task,
@@ -527,8 +507,8 @@ void main() {
 
       test('returns error when repository returns false', () async {
         when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => false);
+          () => mockJournalRepo.updateTask(any(), any()),
+        ).thenAnswer((_) async => null);
 
         final handler = TaskStatusHandler(
           task: task,
@@ -544,7 +524,7 @@ void main() {
 
       test('returns error when repository throws', () async {
         when(
-          () => mockJournalRepo.updateJournalEntity(any()),
+          () => mockJournalRepo.updateTask(any(), any()),
         ).thenThrow(Exception('DB error'));
 
         final handler = TaskStatusHandler(
@@ -560,9 +540,7 @@ void main() {
       });
 
       test('updates local task field after successful write', () async {
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubTaskRow(mockJournalRepo, task);
 
         final handler = TaskStatusHandler(
           task: task,
@@ -578,7 +556,7 @@ void main() {
 
       test('does not update local task field when write fails', () async {
         when(
-          () => mockJournalRepo.updateJournalEntity(any()),
+          () => mockJournalRepo.updateTask(any(), any()),
         ).thenThrow(Exception('fail'));
 
         final handler = TaskStatusHandler(
@@ -591,6 +569,62 @@ void main() {
         expect(handler.task.data.status.toDbString, 'OPEN');
       });
 
+      test('writes the status on the task as stored, keeping a field set '
+          'since the call read the task', () async {
+        final row = stubTaskRow(mockJournalRepo, task)
+          ..task = task.copyWith(
+            data: task.data.copyWith(title: 'Renamed by the user'),
+          );
+        final handler = TaskStatusHandler(
+          task: task,
+          journalRepository: mockJournalRepo,
+        );
+
+        final result = await handler.handle('IN PROGRESS');
+
+        expect(result.didWrite, isTrue);
+        final written = row.writes.single;
+        expect(written.data.title, 'Renamed by the user');
+        expect(written.data.status.toDbString, 'IN PROGRESS');
+        expect(
+          written.data.statusHistory.map((s) => s.toDbString),
+          ['OPEN', 'IN PROGRESS'],
+        );
+        expect(handler.task, written);
+      });
+
+      test('applies nothing when the stored status changed since the call '
+          'read the task', () async {
+        final userStatus = TaskStatus.groomed(
+          id: 'status-user',
+          createdAt: DateTime(2024, 3, 16),
+          utcOffset: 60,
+        );
+        final row = stubTaskRow(mockJournalRepo, task)
+          ..task = task.copyWith(
+            data: task.data.copyWith(
+              status: userStatus,
+              statusHistory: [...task.data.statusHistory, userStatus],
+            ),
+          );
+        final stored = row.task;
+        final handler = TaskStatusHandler(
+          task: task,
+          journalRepository: mockJournalRepo,
+        );
+
+        final result = await handler.handle('IN PROGRESS');
+
+        expect(result.success, isTrue);
+        expect(result.didWrite, isFalse);
+        expect(result.error, isNull);
+        expect(result.message, startsWith('Nothing applied'));
+        expect(result.message, contains('GROOMED'));
+        expect(row.writes, isEmpty);
+        expect(row.task, stored);
+        expect(handler.task, stored);
+      });
+
       glados.Glados(
         glados.any.allowedStatusScenario,
         glados.ExploreConfig(numRuns: 180),
@@ -598,11 +632,8 @@ void main() {
         'matches generated allowed-status transition semantics',
         (scenario) async {
           final repo = MockJournalRepository();
-          when(
-            () => repo.updateJournalEntity(any()),
-          ).thenAnswer((_) async => true);
-
           final initialTask = taskWithStatus(scenario.currentStatus);
+          final row = stubTaskRow(repo, initialTask);
           final handler = TaskStatusHandler(
             task: initialTask,
             journalRepository: repo,
@@ -618,7 +649,7 @@ void main() {
             expect(result.didWrite, isFalse, reason: '$scenario');
             expect(result.error, contains('requires a reason'));
             expect(handler.task, initialTask);
-            verifyNever(() => repo.updateJournalEntity(any()));
+            verifyNever(() => repo.updateTask(any(), any()));
             return;
           }
 
@@ -628,7 +659,7 @@ void main() {
           if (scenario.shouldNoOp) {
             expect(result.didWrite, isFalse, reason: '$scenario');
             expect(handler.task, initialTask, reason: '$scenario');
-            verifyNever(() => repo.updateJournalEntity(any()));
+            verifyNever(() => repo.updateTask(any(), any()));
             return;
           }
 
@@ -654,12 +685,7 @@ void main() {
             expect(actualReason, scenario.reason!.trim(), reason: '$scenario');
           }
 
-          final captured =
-              verify(
-                    () => repo.updateJournalEntity(captureAny()),
-                  ).captured.single
-                  as Task;
-          expect(captured, handler.task, reason: '$scenario');
+          expect(row.writes, [handler.task], reason: '$scenario');
         },
         tags: 'glados',
       );
@@ -686,7 +712,7 @@ void main() {
             scenario.isTerminal ? contains('user-only') : contains('Unknown'),
             reason: '$scenario',
           );
-          verifyNever(() => repo.updateJournalEntity(any()));
+          verifyNever(() => repo.updateTask(any(), any()));
         },
         tags: 'glados',
       );
