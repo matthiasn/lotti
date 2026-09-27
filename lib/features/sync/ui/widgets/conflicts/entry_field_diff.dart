@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_shared.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/title_diff.dart';
 import 'package:meta/meta.dart';
@@ -11,9 +12,13 @@ import 'package:meta/meta.dart';
 /// l10n so the diff can be unit-tested as pure logic.
 ///
 /// [EntryField.other] is a catch-all: it is emitted when the entities differ
-/// in a field that is not individually modelled here (e.g. a task's status,
-/// a measurement's value). It guarantees the diff never silently hides a
-/// change — the resolution UI can always tell the user "there is more here".
+/// in a field that is not individually modelled here (e.g. a measurement's
+/// value). It guarantees the diff never silently hides a change — the
+/// resolution UI can always tell the user "there is more here".
+///
+/// A task's [status], [priority], [estimate] and [dueDate] are modelled, so a
+/// conflict shows them and "Combine" can take each from either side
+/// (`specs/tla/TaskFieldWrites.tla`, NoSilentFieldLoss; ADR 0107).
 enum EntryField {
   title,
   body,
@@ -23,6 +28,10 @@ enum EntryField {
   starred,
   private,
   flag,
+  status,
+  priority,
+  estimate,
+  dueDate,
   audioDuration,
   other,
 }
@@ -256,6 +265,18 @@ final List<_FieldSpec> _specs = <_FieldSpec>[
   _FieldSpec(EntryField.starred, (e) => e.meta.starred?.toString()),
   _FieldSpec(EntryField.private, (e) => e.meta.private?.toString()),
   _FieldSpec(EntryField.flag, (e) => e.meta.flag?.name),
+  const _FieldSpec(EntryField.status, _statusOf),
+  _FieldSpec(
+    EntryField.priority,
+    (e) => e is Task ? e.data.priority.short : null,
+  ),
+  // Exact, in microseconds as stored: an estimate that differs below the
+  // minute is still a difference (the view shows it to the second).
+  _FieldSpec(
+    EntryField.estimate,
+    (e) => e is Task ? e.data.estimate?.inMicroseconds.toString() : null,
+  ),
+  const _FieldSpec(EntryField.dueDate, _dueDayOf),
   _FieldSpec(EntryField.audioDuration, (e) {
     final d = audioDuration(e);
     return d == null ? null : formatDuration(d);
@@ -274,6 +295,35 @@ String? _titleOf(JournalEntity e) => switch (e) {
   ChecklistItem(:final data) => data.title,
   _ => null,
 };
+
+/// A task's status as its database string, with the reason a blocked or
+/// on-hold status carries: two different reasons are a difference to show.
+String? _statusOf(JournalEntity e) {
+  if (e is! Task) return null;
+  final status = e.data.status;
+  final reason = switch (status) {
+    TaskBlocked(:final reason) || TaskOnHold(:final reason) => reason,
+    _ => null,
+  };
+  return reason == null || reason.isEmpty
+      ? status.toDbString
+      : '${status.toDbString}$statusReasonSeparator$reason';
+}
+
+/// A task's due date as its calendar day (`YYYY-MM-DD`): a due date is a day
+/// — the date picker stores its midnight, the day agent's triage its end —
+/// so two times on one day are not a difference to show.
+String? _dueDayOf(JournalEntity e) {
+  if (e is! Task) return null;
+  final due = e.data.due;
+  if (due == null) return null;
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${due.year.toString().padLeft(4, '0')}-${two(due.month)}-'
+      '${two(due.day)}';
+}
+
+/// Separates a status from its reason in [EntryField.status] values.
+const statusReasonSeparator = ': ';
 
 String? _bodyOf(JournalEntity e) {
   final text = e.entryText?.plainText;
@@ -307,13 +357,32 @@ const Set<String> _coveredPaths = <String>{
   'data.duration',
 };
 
+/// A task's paths the registry reports individually, or the resolution
+/// joins from both sides whatever the user picks (the status history, the
+/// applied agent changes and the checklist list, `conflict_merge.dart`). Stripped only when both
+/// sides are tasks: an event's or a project's `data.status` stays unmodelled.
+const Set<String> _taskCoveredPaths = <String>{
+  'data.status',
+  'data.statusHistory',
+  'data.priority',
+  'data.estimate',
+  'data.due',
+  'data.appliedChangeEffects',
+  // Joined too (ADR 0105): the kept side's order, with every checklist the
+  // other side lists appended.
+  'data.checklistIds',
+};
+
 /// True when the two entities differ in a field the registry does not model,
 /// once sync noise and already-covered fields are stripped. This is the
 /// safety net behind "never a blind choice": even an unmodelled field
-/// change (task status, measurement value, …) is surfaced rather than lost.
+/// change (a measurement's value, …) is surfaced rather than lost.
 bool _hasOtherDifferences(JournalEntity local, JournalEntity remote) {
-  final l = _strip(local.toJson(), _coveredPaths);
-  final r = _strip(remote.toJson(), _coveredPaths);
+  final covered = local is Task && remote is Task
+      ? {..._coveredPaths, ..._taskCoveredPaths}
+      : _coveredPaths;
+  final l = _strip(local.toJson(), covered);
+  final r = _strip(remote.toJson(), covered);
   return !const DeepCollectionEquality().equals(l, r);
 }
 

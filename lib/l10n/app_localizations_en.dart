@@ -3801,10 +3801,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get conflictFieldCategory => 'Category';
 
   @override
+  String get conflictFieldDueDate => 'Due date';
+
+  @override
   String get conflictFieldDuration => 'Duration';
 
   @override
   String get conflictFieldEnd => 'End';
+
+  @override
+  String get conflictFieldEstimate => 'Estimate';
 
   @override
   String get conflictFieldFlag => 'Flag';
@@ -3817,6 +3823,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'These versions differ in details not shown individually here.';
 
   @override
+  String get conflictFieldPriority => 'Priority';
+
+  @override
   String get conflictFieldPrivate => 'Private';
 
   @override
@@ -3824,6 +3833,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get conflictFieldStart => 'Start';
+
+  @override
+  String get conflictFieldStatus => 'Status';
 
   @override
   String get conflictFieldTitle => 'Title';

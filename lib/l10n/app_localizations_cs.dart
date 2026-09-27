@@ -3866,10 +3866,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get conflictFieldCategory => 'kategorie';
 
   @override
+  String get conflictFieldDueDate => 'datum splnění';
+
+  @override
   String get conflictFieldDuration => 'trvání';
 
   @override
   String get conflictFieldEnd => 'Konec';
+
+  @override
+  String get conflictFieldEstimate => 'odhad';
 
   @override
   String get conflictFieldFlag => 'Označení';
@@ -3882,6 +3888,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Tyto verze se liší v podrobnostech, které zde nejsou zobrazeny jednotlivě.';
 
   @override
+  String get conflictFieldPriority => 'priorita';
+
+  @override
   String get conflictFieldPrivate => 'Soukromé';
 
   @override
@@ -3889,6 +3898,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get conflictFieldStart => 'Začátek';
+
+  @override
+  String get conflictFieldStatus => 'stav';
 
   @override
   String get conflictFieldTitle => 'Titulek';

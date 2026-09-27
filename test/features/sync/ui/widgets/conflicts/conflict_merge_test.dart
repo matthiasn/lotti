@@ -388,6 +388,62 @@ void main() {
     );
   });
 
+  group("buildMergedEntity · a task's fields (ADR 0107)", () {
+    final done = TaskStatus.done(
+      id: 'st-d',
+      createdAt: DateTime(2024, 3, 15, 10),
+      utcOffset: 0,
+    );
+    final local = taskOf(
+      estimate: const Duration(minutes: 30),
+      priority: TaskPriority.p1High,
+      due: DateTime(2024, 4),
+    );
+    final remote = taskOf(
+      status: done,
+      estimate: const Duration(hours: 2),
+      priority: TaskPriority.p3Low,
+      due: DateTime(2024, 5),
+    );
+
+    test('takes each field from the side the user picked', () {
+      final result =
+          buildMergedEntity(
+                local: local,
+                remote: remote,
+                baseSide: ConflictSide.local,
+                choices: const {
+                  EntryField.status: ConflictSide.remote,
+                  EntryField.priority: ConflictSide.local,
+                  EntryField.estimate: ConflictSide.remote,
+                  EntryField.dueDate: ConflictSide.local,
+                },
+              )
+              as Task;
+
+      expect(result.data.status, done);
+      expect(result.data.priority, TaskPriority.p1High);
+      expect(result.data.estimate, const Duration(hours: 2));
+      expect(result.data.due, DateTime(2024, 4));
+    });
+
+    test('a field with no choice follows the base side', () {
+      final result =
+          buildMergedEntity(
+                local: local,
+                remote: remote,
+                baseSide: ConflictSide.remote,
+                choices: const {EntryField.priority: ConflictSide.local},
+              )
+              as Task;
+
+      expect(result.data.status, done);
+      expect(result.data.priority, TaskPriority.p1High);
+      expect(result.data.estimate, const Duration(hours: 2));
+      expect(result.data.due, DateTime(2024, 5));
+    });
+  });
+
   group('buildMergedEntity · structured title across entity types', () {
     final builders = <String, JournalEntity Function(String)>{
       'event': (t) => JournalEvent(

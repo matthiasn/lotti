@@ -65,8 +65,11 @@ JournalEntity taskOf({
   VectorClock? vectorClock,
   Set<String>? appliedChangeEffects,
   List<TaskStatus> statusHistory = const [],
-
   List<String>? checklistIds,
+  TaskStatus? status,
+  TaskPriority priority = TaskPriority.p2Medium,
+  DateTime? due,
+  String? languageCode,
 }) => Task(
   meta: metaOf(id: 'task-1', starred: true, vectorClock: vectorClock),
   data: TaskData(
@@ -74,16 +77,21 @@ JournalEntity taskOf({
     dateFrom: DateTime(2024, 3, 15, 9),
     dateTo: DateTime(2024, 3, 15, 11),
     statusHistory: statusHistory,
-    status: statusHistory.isEmpty
-        ? TaskStatus.open(
-            id: 'st-1',
-            createdAt: DateTime(2024, 3, 15, 9),
-            utcOffset: 0,
-          )
-        : statusHistory.last,
+    status:
+        status ??
+        (statusHistory.isEmpty
+            ? TaskStatus.open(
+                id: 'st-1',
+                createdAt: DateTime(2024, 3, 15, 9),
+                utcOffset: 0,
+              )
+            : statusHistory.last),
     estimate: estimate,
     appliedChangeEffects: appliedChangeEffects,
     checklistIds: checklistIds,
+    priority: priority,
+    due: due,
+    languageCode: languageCode,
   ),
   entryText: EntryText(plainText: text),
 );

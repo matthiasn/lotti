@@ -1,4 +1,6 @@
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/entry_field_diff.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/title_diff.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -271,6 +273,10 @@ String conflictFieldLabel(EntryField field, AppLocalizations messages) {
     EntryField.starred => messages.conflictFieldStarred,
     EntryField.private => messages.conflictFieldPrivate,
     EntryField.flag => messages.conflictFieldFlag,
+    EntryField.status => messages.conflictFieldStatus,
+    EntryField.priority => messages.conflictFieldPriority,
+    EntryField.estimate => messages.conflictFieldEstimate,
+    EntryField.dueDate => messages.conflictFieldDueDate,
     EntryField.audioDuration => messages.conflictFieldDuration,
     EntryField.other => messages.conflictFieldOther,
   };
@@ -300,6 +306,34 @@ String _displayValue(BuildContext context, EntryField field, String? raw) {
       // timestamp is unreadable if the two sides are shown in a format the
       // reader does not use.
       return deviceTimestampLabel(context, parsed);
+    case EntryField.status:
+      // `DB STRING` or `DB STRING: reason` (blocked, on hold).
+      final separator = raw.indexOf(statusReasonSeparator);
+      final status = taskStatusFromString(
+        separator < 0 ? raw : raw.substring(0, separator),
+      ).localizedLabel(context);
+      return separator < 0
+          ? status
+          : '$status$statusReasonSeparator'
+                '${raw.substring(separator + statusReasonSeparator.length)}';
+    case EntryField.priority:
+      return taskPriorityFromString(raw).localizedLabel(context);
+    case EntryField.estimate:
+      final micros = int.tryParse(raw);
+      if (micros == null) return raw;
+      final estimate = Duration(microseconds: micros);
+      // As the task page shows an estimate when it is whole minutes; to the
+      // second, or below, when it is not — the comparison is exact, so two
+      // sides that differ must never read the same.
+      if (estimate.inMicroseconds % Duration.microsecondsPerMinute == 0) {
+        return formatRangeDuration(estimate);
+      }
+      return estimate.inMicroseconds % Duration.microsecondsPerSecond == 0
+          ? formatDuration(estimate)
+          : estimate.toString();
+    case EntryField.dueDate:
+      final parsed = DateTime.tryParse(raw);
+      return parsed == null ? raw : deviceDateLabel(context, parsed);
     case EntryField.title:
     case EntryField.body:
     case EntryField.category:

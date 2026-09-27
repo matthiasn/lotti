@@ -17,7 +17,8 @@ typedef CombineCallback =
       required Map<EntryField, ConflictSide> choices,
     });
 
-/// Fields the merge assembler (`buildMergedEntity`) can pull independently.
+/// Fields the merge assembler (`buildMergedEntity`) can pull independently —
+/// a task's status, priority, estimate and due date among them (ADR 0107).
 /// Other differing fields (audio duration, the `other` catch-all) follow the
 /// chosen base side, so they get no per-field toggle.
 const Set<EntryField> _mergeableFields = {
@@ -29,6 +30,10 @@ const Set<EntryField> _mergeableFields = {
   EntryField.starred,
   EntryField.private,
   EntryField.flag,
+  EntryField.status,
+  EntryField.priority,
+  EntryField.estimate,
+  EntryField.dueDate,
 };
 
 /// The redesigned, stress-free resolution surface: a full field-level diff plus

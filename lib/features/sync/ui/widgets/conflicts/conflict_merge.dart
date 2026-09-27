@@ -31,8 +31,9 @@ JournalEntity resolveToSide({
 ///
 /// Only independently-mergeable fields are honoured: the metadata fields
 /// (category, starred, private, flag, dateFrom, dateTo), the [EntryField.body]
-/// text, and — for entities that carry a structured title — [EntryField.title].
-/// Other differences ([EntryField.other], audio duration, …) follow [baseSide].
+/// text, for entities that carry a structured title [EntryField.title], and
+/// a task's status, priority, estimate and due date (ADR 0107). Other
+/// differences ([EntryField.other], audio duration, …) follow [baseSide].
 JournalEntity buildMergedEntity({
   required JournalEntity local,
   required JournalEntity remote,
@@ -83,6 +84,35 @@ JournalEntity buildMergedEntity({
   final titleChoice = choices[EntryField.title];
   if (titleChoice != null && titleChoice != baseSide) {
     result = _withTitleFrom(result, entityFor(titleChoice));
+  }
+
+  if (result is Task) {
+    var data = result.data;
+    void overrideTask(
+      EntryField field,
+      TaskData Function(TaskData current, TaskData source) apply,
+    ) {
+      final choice = choices[field];
+      if (choice == null || choice == baseSide) return;
+      if (entityFor(choice) case final Task source) {
+        data = apply(data, source.data);
+      }
+    }
+
+    overrideTask(
+      EntryField.status,
+      (d, src) => d.copyWith(status: src.status),
+    );
+    overrideTask(
+      EntryField.priority,
+      (d, src) => d.copyWith(priority: src.priority),
+    );
+    overrideTask(
+      EntryField.estimate,
+      (d, src) => d.copyWith(estimate: src.estimate),
+    );
+    overrideTask(EntryField.dueDate, (d, src) => d.copyWith(due: src.due));
+    result = result.copyWith(data: data);
   }
 
   return _resolved(result, local, remote);

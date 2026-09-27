@@ -3888,10 +3888,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get conflictFieldCategory => 'categorie';
 
   @override
+  String get conflictFieldDueDate => 'data scadenței';
+
+  @override
   String get conflictFieldDuration => 'durată';
 
   @override
   String get conflictFieldEnd => 'Sfârșit';
+
+  @override
+  String get conflictFieldEstimate => 'timp estimat';
 
   @override
   String get conflictFieldFlag => 'Marcaj';
@@ -3904,6 +3910,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Aceste versiuni diferă prin detalii care nu sunt afișate individual aici.';
 
   @override
+  String get conflictFieldPriority => 'prioritate';
+
+  @override
   String get conflictFieldPrivate => 'Privat';
 
   @override
@@ -3911,6 +3920,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get conflictFieldStart => 'Început';
+
+  @override
+  String get conflictFieldStatus => 'stare';
 
   @override
   String get conflictFieldTitle => 'Titlu';

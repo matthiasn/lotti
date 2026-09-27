@@ -2312,14 +2312,30 @@
   },
   "conflictFieldBody": "Body",
   "conflictFieldCategory": "Category",
+  "conflictFieldDueDate": "Due date",
+  "@conflictFieldDueDate": {
+    "description": "Conflict screen: label of a task's due date when the two versions differ in it."
+  },
   "conflictFieldDuration": "Duration",
   "conflictFieldEnd": "End",
+  "conflictFieldEstimate": "Estimate",
+  "@conflictFieldEstimate": {
+    "description": "Conflict screen: label of a task's time estimate when the two versions differ in it."
+  },
   "conflictFieldFlag": "Flag",
   "conflictFieldOther": "Other details",
   "conflictFieldOtherDescription": "These versions differ in details not shown individually here.",
+  "conflictFieldPriority": "Priority",
+  "@conflictFieldPriority": {
+    "description": "Conflict screen: label of a task's priority when the two versions differ in it."
+  },
   "conflictFieldPrivate": "Private",
   "conflictFieldStarred": "Starred",
   "conflictFieldStart": "Start",
+  "conflictFieldStatus": "Status",
+  "@conflictFieldStatus": {
+    "description": "Conflict screen: label of a task's status when the two versions differ in it."
+  },
   "conflictFieldTitle": "Title",
   "conflictFieldWordCount": "word count",
   "conflictFlagFollowUp": "Follow-up needed",

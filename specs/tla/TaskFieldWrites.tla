@@ -39,8 +39,11 @@
 (*   Receive    sync lands another device's version: newer applies, older  *)
 (*              is dropped, concurrent becomes a conflict row              *)
 (*              (JournalDb.detectConflict)                                 *)
-(*   Resolve    the user keeps one side of a conflict                      *)
-(*              (ConflictResolutionService, conflict_merge.dart)           *)
+(*   Resolve    the user resolves a conflict on the conflict screen: keeps *)
+(*              one side, or combines them, picking each field the screen  *)
+(*              shows from either side (ConflictResolutionService,         *)
+(*              conflict_merge.dart, entry_field_diff.dart); a field it    *)
+(*              does not show follows the side kept                        *)
 (*                                                                         *)
 (* A field write is one transaction: with WriteOnStored the change is      *)
 (* applied to the stored row by writeOnStored, which rebuilds it whenever  *)
@@ -66,10 +69,15 @@ CONSTANTS
                           \* row holds the value it decided against
     UiRecordsStatus,      \* a status set from a screen is appended to the
                           \* status history, as the agent's is
-    ResolveJoinsHistory   \* resolving a conflict keeps both sides' status
+    ResolveJoinsHistory,  \* resolving a conflict keeps both sides' status
                           \* history
+    ShownFields           \* the fields the conflict screen shows as a
+                          \* difference and lets the user pick per field;
+                          \* before ADR 0107 a task's status and priority
+                          \* were not among them
 
 ASSUME "status" \in Fields /\ AgentDevices \subseteq Devices /\ 0 \notin Vals
+ASSUME ShownFields \subseteq Fields
 
 Writers == {<<d, "ui">> : d \in Devices} \cup {<<d, "agent">> : d \in AgentDevices}
 Edits == 1..MaxWrites
@@ -94,11 +102,13 @@ VARIABLES
     moved,     \* ghost: status writes that changed the status
     blind,     \* ghost: agent writes over a value other than the one
                \* they decided against
+    silent,    \* ghost: fields a resolution settled without showing the
+               \* user that the two sides differed
     writes,
     resolves
 
-vars == <<row, conf, snap, reading, ctr, net, all, moved, blind, writes,
-          resolves>>
+vars == <<row, conf, snap, reading, ctr, net, all, moved, blind, silent,
+          writes, resolves>>
 
 -----------------------------------------------------------------------------
 Leq(a, b) == \A d \in Devices : a[d] <= b[d]
@@ -124,13 +134,15 @@ Init ==
     /\ all = {Init0}
     /\ moved = {}
     /\ blind = {}
+    /\ silent = {}
     /\ writes = 0
     /\ resolves = 0
 
 Read(w) ==
     /\ snap' = [snap EXCEPT ![w] = row[w[1]]]
     /\ reading' = [reading EXCEPT ![w] = TRUE]
-    /\ UNCHANGED <<row, conf, ctr, net, all, moved, blind, writes, resolves>>
+    /\ UNCHANGED <<row, conf, ctr, net, all, moved, blind, silent, writes,
+                   resolves>>
 
 \* The version a write of field f to value x makes, as edit e by writer w.
 \* `base` is the copy the data comes from, `clock` the clock it extends.
@@ -159,7 +171,7 @@ UiWrite(d, f, x) ==
     /\ IF base.val[f] = x /\ UiOnStored
        THEN UNCHANGED <<row, conf, ctr, net, all>>   \* nothing to write
        ELSE Store(d, v)
-    /\ UNCHANGED <<snap, blind, resolves>>
+    /\ UNCHANGED <<snap, blind, silent, resolves>>
 
 AgentWrite(d, f, x) ==
     LET w == <<d, "agent">>
@@ -195,7 +207,7 @@ AgentWrite(d, f, x) ==
                     /\ net' = net \cup {v}
                     /\ all' = all \cup {v}
                     /\ UNCHANGED row
-    /\ UNCHANGED <<snap, resolves>>
+    /\ UNCHANGED <<snap, silent, resolves>>
 
 Receive(d, m) ==
     LET s == row[d] IN
@@ -207,14 +219,23 @@ Receive(d, m) ==
             /\ conf' = [conf EXCEPT ![d] = {c \in @ : ~Leq(c.vc, m.vc)}]
        ELSE /\ conf' = [conf EXCEPT ![d] = @ \cup {m}]
             /\ UNCHANGED row
-    /\ UNCHANGED <<snap, reading, ctr, net, all, moved, blind, writes, resolves>>
+    /\ UNCHANGED <<snap, reading, ctr, net, all, moved, blind, silent, writes,
+                   resolves>>
 
-\* The user keeps `keep`'s fields; the version records both sides as seen.
-Resolve(d, c, keepRemote) ==
+\* The user keeps one side as the base (`keepRemote`) and, for every field
+\* the screen shows, picks a side (`pick`, TRUE for the other device's): a
+\* keep-this-side resolution is the pick that agrees with the base. A field
+\* the screen does not show follows the base; where the sides differ there,
+\* the resolution settles it without the user having seen the difference.
+\* The version records both sides as seen: the user chose.
+Resolve(d, c, keepRemote, pick) ==
     LET s == row[d]
         k == IF keepRemote THEN c ELSE s
+        side(f) == IF f \in ShownFields
+                   THEN IF pick[f] THEN c ELSE s
+                   ELSE k
         v == [vc   |-> Tick(Join(s.vc, c.vc), d),
-              val  |-> k.val,
+              val  |-> [f \in Fields |-> side(f).val[f]],
               lin  |-> [f \in Fields |-> s.lin[f] \cup c.lin[f]],
               hist |-> IF ResolveJoinsHistory THEN s.hist \cup c.hist
                        ELSE k.hist]
@@ -222,6 +243,8 @@ Resolve(d, c, keepRemote) ==
     /\ c \in conf[d]
     /\ resolves < MaxResolves
     /\ resolves' = resolves + 1
+    /\ silent' = silent \cup
+        {f \in Fields \ ShownFields : s.val[f] # c.val[f]}
     /\ Store(d, v)
     /\ UNCHANGED <<snap, reading, moved, blind, writes>>
 
@@ -231,7 +254,8 @@ Next ==
     \/ \E d \in AgentDevices, f \in Fields, x \in Vals : AgentWrite(d, f, x)
     \/ \E d \in Devices, m \in net : Receive(d, m)
     \/ \E d \in Devices, c \in UNION {conf[x] : x \in Devices},
-          k \in BOOLEAN : c \in conf[d] /\ Resolve(d, c, k)
+          k \in BOOLEAN, pick \in [ShownFields -> BOOLEAN] :
+          c \in conf[d] /\ Resolve(d, c, k, pick)
 
 Spec == Init /\ [][Next]_vars
 
@@ -244,6 +268,7 @@ TypeOK ==
     /\ \A w \in Writers : snap[w] \in Version
     /\ writes \in 0..MaxWrites /\ resolves \in 0..MaxResolves
     /\ moved \subseteq Edits /\ blind \subseteq Edits
+    /\ silent \subseteq Fields
 
 \* No stored version claims, by its clock, a version whose field edits it
 \* does not hold: every edit an older version knew is still known.
@@ -259,6 +284,10 @@ HistoryComplete ==
 
 \* The agent never replaces a field value it did not see when it decided.
 NoBlindAgentWrite == blind = {}
+
+\* A resolution never settles a field whose two sides differ without the
+\* conflict screen having shown that difference, for the user to pick.
+NoSilentFieldLoss == silent = {}
 
 \* Once every version has reached every device and no conflict is open,
 \* every device holds the same task.

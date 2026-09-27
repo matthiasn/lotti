@@ -146,7 +146,9 @@ sequenceDiagram
 `test/features/tasks/repository/task_field_writes_model_conformance.dart`
 drives the real writers against it. Setting the same field twice keeps the
 newest write, and two devices writing before they sync still raise a
-conflict the user resolves by keeping a side.
+conflict the user resolves — the conflict screen shows every task field that
+differs and lets the user combine them per field
+([ADR 0107](../../../docs/adr/0107-a-conflict-shows-every-task-field.md)).
 
 # Pickers
 
