@@ -453,23 +453,27 @@ class ChangeSetConfirmationService {
   /// decision can be found — decided on a device that has not synced it —
   /// a fresh deferred decision is recorded instead.
   ///
-  /// [revert] undoes whatever a confirmed tool did, and runs only once the
-  /// record says pending again, so a failed reopen never strands a reversed
-  /// effect behind a confirmed row. If the revert refuses or throws, the
-  /// record is put back the way it was — item status and verdict — and the
-  /// method returns `false`, leaving the effect and the record in agreement.
+  /// [revert] undoes whatever a confirmed tool did, and runs first, while
+  /// the record still shows the decision: a pending item could be confirmed
+  /// meanwhile — on this device or one it syncs to — and its confirmation
+  /// would apply the change again beside the effect not yet taken back. If
+  /// the revert refuses or throws, nothing has been written: the method
+  /// returns `false`, and the effect and the record stay in agreement. After
+  /// a revert that succeeded, the item is reopened only while it still holds
+  /// the revision read before it; one that moved on meanwhile shows a later
+  /// decision, synced from another device, and is left alone.
   /// [effectKey], when given, is the key of the decision [revert] undoes:
   /// the item is reopened only while it still carries that key. An Undo
   /// remembers the decision its own device made, and the item may show a
   /// later one synced from another device — confirmed again after an Undo
   /// there — whose effect [revert] does not know (ADR 0097).
   /// An item reopened with a [revert] gets a new effect key
-  /// ([ChangeItemEffect.undoneIn]) — its effect is taken back, so the next
-  /// confirmation is a new one — and a refused revert restores the old key
-  /// with the status.
+  /// ([ChangeItemEffect.undoneIn]): its effect is taken back, so the next
+  /// confirmation is a new one.
   ///
   /// Returns `false` when the item is out of range, still pending, or
-  /// retracted by the agent (nothing of the user's to undo).
+  /// retracted by the agent (nothing of the user's to undo), when [revert]
+  /// refused, or when the item changed before it could be reopened.
   Future<bool> reopenItem(
     ChangeSetEntity changeSet,
     int itemIndex, {
@@ -506,6 +510,14 @@ class ChangeSetConfirmationService {
       'change set ${DomainLogger.sanitizeId(current.id)}',
       subDomain: _sub,
     );
+    // The effect is taken back while the item still shows it decided: a
+    // pending item can be confirmed — here or on a device it syncs to —
+    // and its confirmation, under the new key, would create a second
+    // entity beside the one a slow or refused revert leaves in place
+    // (ADR 0097, `RevertFirst` in specs/tla/ChangeSetLifecycle.tla).
+    if (revert != null && !await _revertEffect(revert, item, itemIndex)) {
+      return false;
+    }
     final standing = await _latestUserDecision(current, itemIndex);
     // The verdict is neutralised in the same transaction that moves the item
     // back to pending, and only while the item still holds the decision this
@@ -515,8 +527,8 @@ class ChangeSetConfirmationService {
     // tombstone the revert leaves (ADR 0097). A plain reopen keeps the key:
     // its effect stands, and confirming again must not apply it twice.
     final rekey = revert != null;
-    final reopenedWith = await _syncService.runInTransaction(() async {
-      final reopened = await _resolution.transitionChangeSetItem(
+    final reopened = await _syncService.runInTransaction(() async {
+      final moved = await _resolution.transitionChangeSetItem(
         current,
         itemIndex,
         from: {item.status},
@@ -526,10 +538,9 @@ class ChangeSetConfirmationService {
             ? (reopening) => reopening.undoneIn(current.id, itemIndex)
             : null,
       );
-      if (reopened == null) return null;
-      final ChangeDecisionEntity decision;
+      if (moved == null) return false;
       if (standing == null) {
-        decision = await _resolution.persistDecision(
+        await _resolution.persistDecision(
           changeSet: current,
           itemIndex: itemIndex,
           toolName: item.toolName,
@@ -538,20 +549,38 @@ class ChangeSetConfirmationService {
           args: item.args,
         );
       } else {
-        decision = standing.copyWith(
-          verdict: ChangeDecisionVerdict.deferred,
-          createdAt: clock.now(),
+        await _syncService.upsertEntity(
+          standing.copyWith(
+            verdict: ChangeDecisionVerdict.deferred,
+            createdAt: clock.now(),
+          ),
         );
-        await _syncService.upsertEntity(decision);
       }
-      return (decision: decision, item: reopened.items[itemIndex]);
+      return true;
     });
-    if (reopenedWith == null) return false;
-    if (revert == null) return true;
+    if (!reopened && rekey) {
+      // The item moved on while the revert ran — a later decision synced
+      // from another device. Its effect is not the one taken back.
+      _domainLogger?.log(
+        LogDomain.agentWorkflow,
+        'Reverted item $itemIndex (${item.toolName}), but it changed '
+        'meanwhile; leaving its record alone',
+        subDomain: _sub,
+      );
+    }
+    return reopened;
+  }
 
-    var reverted = false;
+  /// Runs an Undo's [revert] of [item]'s effect. A revert that refuses or
+  /// throws leaves the effect in place, and the item keeps the decision
+  /// that stands for it: nothing has been written yet.
+  Future<bool> _revertEffect(
+    Future<bool> Function() revert,
+    ChangeItem item,
+    int itemIndex,
+  ) async {
     try {
-      reverted = await revert();
+      if (await revert()) return true;
     } catch (error, stackTrace) {
       _domainLogger?.error(
         LogDomain.agentWorkflow,
@@ -561,37 +590,12 @@ class ChangeSetConfirmationService {
         message: 'Revert threw while reopening item $itemIndex',
       );
     }
-    if (reverted) return true;
-
-    // The effect stands, so the record must say so again.
     _domainLogger?.log(
       LogDomain.agentWorkflow,
-      'Revert refused for item $itemIndex (${item.toolName}); restoring '
+      'Revert refused for item $itemIndex (${item.toolName}); it stays '
       '${item.status.name}',
       subDomain: _sub,
     );
-    await _syncService.runInTransaction(() async {
-      final restored = await _resolution.transitionChangeSetItem(
-        current,
-        itemIndex,
-        from: const {ChangeItemStatus.pending},
-        to: item.status,
-        observed: reopenedWith.item,
-        // The effect stands under the key it was applied with.
-        edit: rekey
-            ? (restoring) => restoring.copyWith(effectKey: item.effectKey)
-            : null,
-      );
-      if (restored == null) return;
-      await _syncService.upsertEntity(
-        reopenedWith.decision.copyWith(
-          verdict: item.status == ChangeItemStatus.confirmed
-              ? ChangeDecisionVerdict.confirmed
-              : ChangeDecisionVerdict.rejected,
-          createdAt: clock.now(),
-        ),
-      );
-    });
     return false;
   }
 

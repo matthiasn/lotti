@@ -112,12 +112,13 @@ class ProjectProposalService {
     };
   }
 
-  /// Reopens the item at [itemIndex] and, once the record says pending
-  /// again, reverts what confirming it did: the created task is removed, or
-  /// the replaced status restored and its history entry dropped. A refused
-  /// revert puts the record back (see
-  /// [ChangeSetConfirmationService.reopenItem]) and returns `false`, leaving
-  /// the memo for another try.
+  /// Reverts what confirming the item at [itemIndex] did — the created task
+  /// is removed, or the replaced status restored and its history entry
+  /// dropped — and then reopens it. The item stays confirmed while the
+  /// revert runs, so it cannot be confirmed again beside the effect being
+  /// taken back (see [ChangeSetConfirmationService.reopenItem]). A refused
+  /// revert changes nothing and returns `false`, leaving the memo for
+  /// another try.
   Future<bool> undo(ChangeSetEntity changeSet, int itemIndex) async {
     final key = _key(changeSet, itemIndex);
     final applied = _applied[key];

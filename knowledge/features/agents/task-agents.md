@@ -1066,7 +1066,7 @@ that changes only what it owns:
 |--------|------------|
 | confirm / reject (`claimChangeSetItem`) | `pending` → `confirmed` / `rejected` |
 | failed dispatch | `confirmed` → `pending` (retryable) or `retracted` (non-retryable), only if still the `confirmed` it claimed (same revision, so an item reopened and confirmed again meanwhile is left alone); the agent retraction decision is written in the same transaction, and only when the move happens |
-| reopen (the user's Undo) | the decision it read → `pending`, with the verdict neutralised in the same transaction; a refused revert puts it back only from `pending` |
+| reopen (the user's Undo) | the decision it read → `pending` (same revision), with the verdict neutralised in the same transaction; an Undo's revert runs first, and a refused one writes nothing |
 | migration cascade | each matching migration claimed like a user rejection |
 | sibling rewrite (`persistResolvedIdToSiblings`) | the migrations' `targetTaskId`, status untouched; a migration resolved from the in-memory mapping was claimed with its target already written, so the rewrite passes it by |
 | staged retraction (`applyStaged`) | `pending` → `retracted`, re-validated in its transaction |
@@ -1116,7 +1116,7 @@ flowchart TD
   Mark -->|no| Cas{"field still holds the proposal's base?"}
   Cas -->|yes| Apply["set the field and record the key, in one write"]
   Cas -->|no: applied elsewhere, or edited since| Skip
-  Kind -->|sets another entity's field| TCas{"field and its stamp still hold the proposal's targetBase?"}
+  Kind -->|sets another entity's field| TCas{"recorded targetBase fields still match?"}
   TCas -->|yes| TApply[apply]
   TCas -->|no| Skip
   Kind -->|adds a label| Supp{"label suppressed: the user took it off?"}
@@ -1205,6 +1205,13 @@ flowchart TD
   the decision it undoes by its key: `reopenItem(effectKey:)` reopens
   nothing when the item shows a later decision synced from another device,
   whose task the memo does not name.
+- **The revert runs before the reopen.** While it runs the item still shows
+  it confirmed, so nothing can claim it: reopened first, under its new key, it
+  could be confirmed in between — here or on a device it synced to — and that
+  confirmation would create a second task beside the one not yet deleted, for
+  good if the revert is then refused. A refused revert writes nothing; after
+  one that succeeded, the item is reopened only while it still holds the
+  revision read before the revert.
 
 What stays open, from ADR 0075, ADR 0097 and ADR 0098: both devices creating the entity before
 either has received the other's leaves one id with a journal `Conflict` row

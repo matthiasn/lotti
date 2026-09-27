@@ -191,16 +191,27 @@ class _ConfirmBench {
   }
 }
 
-// Model conformance with `specs/tla/ChangeSetLifecycle.tla`'s `Undo` (ADR
+// Model conformance with `specs/tla/ChangeSetLifecycle.tla`'s Undo (ADR
 // 0097): the real confirmation service confirms, reopens and undoes one
 // create-style item, and a fake journal stands in for the tool — it creates
 // the entity the dispatch's effect key names unless that entity exists, as a
 // tombstone included, the way `ChangeEffect.created` reads the journal. An
-// Undo removes the entity its confirmation created. After every step, as
+// Undo removes the entity its confirmation created, in two steps as the
+// model's UndoBegin and UndoRevert/UndoReopen: the Undo starts, and its
+// revert is held until a later step lets it succeed or refuses it, so a
+// confirmation can run in between (`RevertFirst`). After every step, as
 // `NoDuplicateEffects` and `ConfirmedIsLive` say: at most one live entity,
 // and a settled confirmation has one.
 
-enum _UndoOp { confirm, dispatchOk, dispatchFails, undo, reopen }
+enum _UndoOp {
+  confirm,
+  dispatchOk,
+  dispatchFails,
+  undo,
+  revertOk,
+  revertRefused,
+  reopen,
+}
 
 class _UndoBench {
   _UndoBench() {
@@ -259,6 +270,12 @@ class _UndoBench {
   /// What the last successful confirmation created — the Undo's memo.
   String? memo;
 
+  /// The held revert of the Undo in progress: completed with its outcome.
+  Completer<bool>? reverting;
+
+  /// Undos started and not yet returned.
+  int undoing = 0;
+
   Set<String> get live => written.difference(deleted);
 
   Future<void> run(_UndoOp op, int arg) async {
@@ -292,19 +309,37 @@ class _UndoBench {
       case _UndoOp.undo:
         await pumpEventQueue();
         final created = memo;
-        if (created == null) return;
-        if (await service.reopenItem(
-          stored,
-          0,
-          revert: () async {
-            deleted.add(created);
-            return true;
-          },
-          // The Undo names the decision whose entity it deletes.
-          effectKey: created,
-        )) {
-          memo = null;
-        }
+        if (created == null || reverting != null) return;
+        final outcome = reverting = Completer<bool>();
+        undoing++;
+        unawaited(
+          service
+              .reopenItem(
+                stored,
+                0,
+                revert: () async {
+                  final reverted = await outcome.future;
+                  if (reverted) deleted.add(created);
+                  return reverted;
+                },
+                // The Undo names the decision whose entity it deletes.
+                effectKey: created,
+              )
+              .then((reopened) {
+                if (reopened && memo == created) memo = null;
+              })
+              .whenComplete(() {
+                undoing--;
+                // Refused before its revert ran: nothing is held any more.
+                if (identical(reverting, outcome)) reverting = null;
+              }),
+        );
+      case _UndoOp.revertOk || _UndoOp.revertRefused:
+        await pumpEventQueue();
+        final outcome = reverting;
+        if (outcome == null) return;
+        reverting = null;
+        outcome.complete(op == _UndoOp.revertOk);
       case _UndoOp.reopen:
         // Reopened without taking the effect back: it stands.
         await pumpEventQueue();
@@ -321,6 +356,7 @@ class _UndoBench {
     );
     if (running == 0 &&
         inFlight.isEmpty &&
+        undoing == 0 &&
         stored.items.single.status == ChangeItemStatus.confirmed) {
       expect(live, isNotEmpty, reason: 'ConfirmedIsLive: $trace');
     }
@@ -347,26 +383,56 @@ extension _AnyUndoTrace on glados.Any {
 
 void _registerModelConformance() {
   group('model conformance with specs/tla/ChangeSetLifecycle.tla Undo', () {
+    Future<_UndoBench> replay(List<(_UndoOp, int)> trace) async {
+      final bench = _UndoBench();
+      await withClock(Clock.fixed(DateTime(2024, 6, 15, 12)), () async {
+        for (final (op, arg) in trace) {
+          await bench.run(op, arg);
+          bench.checkInvariants(trace);
+        }
+      });
+      return bench;
+    }
+
     test(
       'a confirmation undone and confirmed again creates the entity anew',
       () async {
-        final bench = _UndoBench();
-        final trace = [
+        final bench = await replay(const [
+          (_UndoOp.confirm, 0),
+          (_UndoOp.dispatchOk, 0),
+          (_UndoOp.undo, 0),
+          (_UndoOp.revertOk, 0),
+          (_UndoOp.confirm, 0),
+          (_UndoOp.dispatchOk, 0),
+        ]);
+        expect(bench.stored.items.single.status, ChangeItemStatus.confirmed);
+        expect(bench.written, hasLength(2));
+        expect(bench.live, hasLength(1));
+      },
+    );
+
+    // The RevertFirst counterexample: as first written, the Undo reopened
+    // the item under its new key before the revert ran; the confirmation in
+    // between created a second entity, and the refused revert could no
+    // longer put the item back — two live entities for good.
+    test(
+      'a confirmation while an Undo reverts creates nothing, and a refused '
+      'revert leaves the item confirmed under its key (RevertFirst)',
+      () async {
+        final bench = await replay(const [
           (_UndoOp.confirm, 0),
           (_UndoOp.dispatchOk, 0),
           (_UndoOp.undo, 0),
           (_UndoOp.confirm, 0),
           (_UndoOp.dispatchOk, 0),
-        ];
-        await withClock(Clock.fixed(DateTime(2024, 6, 15, 12)), () async {
-          for (final (op, arg) in trace) {
-            await bench.run(op, arg);
-            bench.checkInvariants(trace);
-          }
-        });
-        expect(bench.stored.items.single.status, ChangeItemStatus.confirmed);
-        expect(bench.written, hasLength(2));
+          (_UndoOp.revertRefused, 0),
+        ]);
+        final item = bench.stored.items.single;
+        expect(item.status, ChangeItemStatus.confirmed);
+        expect(item.effectKeyIn(bench.stored.id, 0), bench.memo);
+        expect(bench.written, hasLength(1));
         expect(bench.live, hasLength(1));
+        expect(bench.undoing, 0);
       },
     );
 
@@ -374,8 +440,8 @@ void _registerModelConformance() {
       glados.any.undoTrace,
       glados.ExploreConfig(numRuns: 150),
     ).test(
-      'generated confirms, undos and reopens keep NoDuplicateEffects and '
-      'ConfirmedIsLive',
+      'generated confirms, undos — their reverts held, then let through or '
+      'refused — and reopens keep NoDuplicateEffects and ConfirmedIsLive',
       (trace) async {
         final bench = _UndoBench();
         await withClock(Clock.fixed(DateTime(2024, 6, 15, 12)), () async {
@@ -385,11 +451,13 @@ void _registerModelConformance() {
               bench.checkInvariants(trace);
             }
           } finally {
+            await bench.run(_UndoOp.revertRefused, 0);
             for (var i = 0; i < 8 && bench.inFlight.isNotEmpty; i++) {
               await bench.run(_UndoOp.dispatchFails, 0);
             }
           }
           expect(bench.running, 0, reason: 'a confirm never returned: $trace');
+          expect(bench.undoing, 0, reason: 'an Undo never returned: $trace');
           bench.checkInvariants(trace);
         });
       },

@@ -85,9 +85,9 @@ void main() {
       },
       domainLogger: logger,
     );
-    // The real reopen runs the revert once the record is pending again and
-    // reports its outcome; the mock does the same so the tests exercise the
-    // revert through the same seam.
+    // The real reopen runs the revert first, while the item still shows it
+    // confirmed, and reports its outcome; the mock does the same so the
+    // tests exercise the revert through the same seam.
     when(
       () => confirmation.reopenItem(
         any(),

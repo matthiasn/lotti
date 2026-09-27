@@ -359,9 +359,11 @@ from the item's effect key and writes nothing when that task exists, and
 `update_project_status` records the status it was proposed against — the
 canonical word and the status entry's id — and applies only while the
 project still holds it. The Undo (`ProjectProposalService`) deletes the
-created task or restores the replaced status, reopens the item under a new
-effect key so confirming it again creates anew, and acts only while the item
-still shows the decision its own session made; see
+created task or restores the replaced status — while the item still shows it
+confirmed, so it cannot be confirmed again meanwhile — then reopens the item
+under a new effect key so confirming it again creates anew; a refused revert
+leaves the item confirmed. It acts only while the item still shows the
+decision its own session made; see
 [task agents](task-agents.md#applying-an-item-on-two-devices).
 
 ### Proposals do not accumulate

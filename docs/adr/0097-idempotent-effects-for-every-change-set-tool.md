@@ -122,8 +122,18 @@ therefore adds nothing. The processor's comment called the read
    agree. Confirming it again derives a new id and creates the task anew. A
    late application of the undone decision on a device that confirmed it
    before they synced still carries the old key and finds the tombstone once
-   it has it. A refused revert restores the old key with the status. A plain
-   reopen keeps the key, as ADR 0075 requires.
+   it has it. A plain reopen keeps the key, as ADR 0075 requires.
+   The revert runs **before** the reopen, while the item still shows it
+   confirmed. Reopened first, the item — pending under its new key — could
+   be confirmed while the revert ran, here or on a device it synced to, and
+   that confirmation would create a second task beside the one not yet
+   deleted; a revert refused after that could no longer put back an item
+   that was no longer pending, and both tasks stayed (found in review of
+   #4538, and by TLC once `Undo` was split into its two steps). A refused
+   revert now writes nothing, leaving the item confirmed under its key; after
+   one that succeeded, the item is reopened only while it still holds the
+   revision read before the revert, since a change meanwhile is a later
+   decision synced from another device.
 7. **An Undo names the decision it undoes.** `ProjectProposalService`
    remembers the effect key its confirmation claimed the item under — read
    from the stored set through `confirmItem(onClaimed:)`, not from the
@@ -133,17 +143,19 @@ therefore adds nothing. The processor's comment called the read
    shows another key: a later decision, synced from another device, whose
    task the memo does not name.
 8. As before, the model gates the code. `ChangeSetLifecycle` gains the key
-   generation of an item, deletions and their sync, `Undo`, and `AddStyle`
-   for a label; the switches `RemoveWins`, `UndoRekeys` and `UndoOwnKey` are
-   mutation points; `NoDuplicateEffects` counts entities that are not deleted, and
+   generation of an item, deletions and their sync, the Undo in its two
+   steps (the revert, which may be refused, and the reopen), and `AddStyle`
+   for a label; the switches `RemoveWins`, `UndoRekeys`, `UndoOwnKey` and
+   `RevertFirst` are mutation points; `NoDuplicateEffects` counts entities that are not deleted, and
    `ConfirmedIsLive` is new. Three configurations are added:
    `ChangeSetLifecycleRaceAdd` (a label added on two devices and taken off),
    `ChangeSetLifecycleUndo` (confirm, Undo, confirm again) and
    `ChangeSetLifecycleRaceUndo` (an Undo under the race). The Glados
    trace over a real journal database applies eight confirmed items, the new
    ones included, any number of times with the user's edits in between, and a
-   generated trace of confirms, Undos and reopens drives the real
-   confirmation service against a fake journal.
+   generated trace of confirms, Undos — their reverts held, then let
+   through or refused — and reopens drives the real confirmation service
+   against a fake journal.
 
 ## Consequences
 
