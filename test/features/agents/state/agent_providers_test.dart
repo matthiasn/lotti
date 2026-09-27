@@ -820,7 +820,6 @@ void main() {
       "wires the wake coordinator into the orchestrator, and a peer's "
       'completion re-drains it',
       () async {
-        when(bench.mockOrchestrator.processNext).thenAnswer((_) async {});
         final container = bench.createContainer();
         await bench.initAndSubscribe(container);
 
@@ -845,7 +844,9 @@ void main() {
               as SyncAgentWakeCoordination,
         );
 
-        verify(bench.mockOrchestrator.processNext).called(1);
+        verify(
+          () => bench.mockOrchestrator.onPeerWakeStateChanged(kTestAgentId),
+        ).called(1);
       },
     );
 

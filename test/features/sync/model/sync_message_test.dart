@@ -25,6 +25,7 @@ void main() {
       'runKey': 'run-1',
       'hostId': 'host-a',
       'sentAt': '2024-03-15T10:00:00.000Z',
+      'reportUpdated': true,
     };
 
     test('travels under its own wire name with the watermark', () {
@@ -41,6 +42,15 @@ void main() {
 
       expect(jsonDecode(jsonEncode(message.toJson())), wire);
       expect(SyncMessage.fromJson(wire), message);
+    });
+
+    test('a 1.1.30 completion, which carries no report verdict, counts as '
+        'a refreshed report', () {
+      final decoded =
+          SyncMessage.fromJson(Map.of(wire)..remove('reportUpdated'))
+              as SyncAgentWakeCoordination;
+
+      expect(decoded.reportUpdated, isTrue);
     });
 
     test("1.1.29's digest message is an unknown type, which the sync "

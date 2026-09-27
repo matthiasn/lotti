@@ -497,6 +497,7 @@ SyncAgentWakeCoordination _$SyncAgentWakeCoordinationFromJson(
   runKey: json['runKey'] as String,
   hostId: json['hostId'] as String,
   sentAt: DateTime.parse(json['sentAt'] as String),
+  reportUpdated: json['reportUpdated'] as bool? ?? true,
   $type: json['runtimeType'] as String?,
 );
 
@@ -511,6 +512,7 @@ Map<String, dynamic> _$SyncAgentWakeCoordinationToJson(
   'runKey': instance.runKey,
   'hostId': instance.hostId,
   'sentAt': instance.sentAt.toIso8601String(),
+  'reportUpdated': instance.reportUpdated,
   'runtimeType': instance.$type,
 };
 

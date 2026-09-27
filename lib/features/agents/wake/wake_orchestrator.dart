@@ -323,6 +323,10 @@ class WakeOrchestrator with AgentErrorLogging {
   /// [AgentWakeCoordinator]). When null, every wake runs uncoordinated.
   AgentWakeCoordinator? coordinator;
 
+  /// Agents whose queued wakes the next drain checks against peers' runs even
+  /// while their throttle countdown runs, set by [onPeerWakeStateChanged].
+  final _peerCoverageChecks = <String>{};
+
   /// Optional pre-wake hook (fork healing, ADR 0018 rule 8) run just before the
   /// executor for each wake. When null (the default), wakes run exactly as
   /// before — this is the off state of the join-healing flag.
@@ -1344,6 +1348,16 @@ class WakeOrchestrator with AgentErrorLogging {
 
   /// Process the next pending job; see [WakeDrainEngine].
   Future<void> processNext() => processNextImpl();
+
+  /// A peer's wake of [agentId] ended, lapsed or changed — the coordinator's
+  /// [AgentWakeCoordinator.onPeerStateChanged]. A queued wake of the agent
+  /// that a peer's completed run covers is dropped now, its countdown with
+  /// it, rather than when the countdown runs out; the drain re-evaluates
+  /// everything else as usual.
+  void onPeerWakeStateChanged(String agentId) {
+    if (queue.hasQueuedJobForAgent(agentId)) _peerCoverageChecks.add(agentId);
+    unawaited(processNext());
+  }
 
   /// Abort the in-flight wake for [agentId], if any.
   ///

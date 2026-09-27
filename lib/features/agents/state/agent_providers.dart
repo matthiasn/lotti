@@ -630,7 +630,7 @@ Future<void> agentInitialization(Ref ref) async {
   //      re-drains the jobs it held back.
   final coordinator = ref.watch(agentWakeCoordinatorProvider);
   orchestrator.coordinator = coordinator;
-  coordinator.onPeerStateChanged = (_) => unawaited(orchestrator.processNext());
+  coordinator.onPeerStateChanged = orchestrator.onPeerWakeStateChanged;
 
   // 3. Start the orchestrator on the local update stream.
   await orchestrator.start(updateNotifications.localUpdateStream);

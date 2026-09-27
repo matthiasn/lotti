@@ -90,6 +90,7 @@ SyncAgentWakeCoordination _message({
   String hostId = 'peer',
   DateTime? sentAt,
   String runKey = 'peer-run',
+  bool reportUpdated = true,
 }) =>
     SyncMessage.agentWakeCoordination(
           agentId: _agent,
@@ -100,6 +101,7 @@ SyncAgentWakeCoordination _message({
           runKey: runKey,
           hostId: hostId,
           sentAt: sentAt ?? clock.now(),
+          reportUpdated: reportUpdated,
         )
         as SyncAgentWakeCoordination;
 
@@ -417,6 +419,37 @@ void main() {
           device.logLines.last,
           'cancel [id:agent-]: peer [id:peer] completed a run covering 2 '
           'inputs',
+        );
+      });
+    });
+
+    test('a cancel carries whether the covering run refreshed its report', () {
+      _fake((async) {
+        final device = _Device('me');
+        device.coordinator.onMessage(
+          _message(kind: AgentWakeCoordinationKind.done, reportUpdated: false),
+        );
+
+        expect(
+          _resolve(async, device.evaluate()),
+          isA<WakeCoordinationCancel>().having(
+            (d) => d.reportUpdated,
+            'reportUpdated',
+            isFalse,
+          ),
+        );
+
+        async.elapse(const Duration(seconds: 1));
+        device.coordinator.onMessage(
+          _message(kind: AgentWakeCoordinationKind.done),
+        );
+        expect(
+          _resolve(async, device.evaluate()),
+          isA<WakeCoordinationCancel>().having(
+            (d) => d.reportUpdated,
+            'reportUpdated',
+            isTrue,
+          ),
         );
       });
     });
@@ -810,6 +843,25 @@ void main() {
           AgentWakeCoordinationKind.done,
         ]);
         expect(device.sent.last.watermark, _held);
+      });
+    });
+
+    test('complete announces whether the run refreshed its report', () {
+      _fake((async) {
+        final device = _Device('me');
+        device.coordinator
+          ..claim(agentId: _agent, runKey: 'run-1', coverage: coverage)
+          ..complete('run-1', reportUpdated: false)
+          ..claim(agentId: _agent, runKey: 'run-2', coverage: coverage)
+          ..complete('run-2');
+        async.flushMicrotasks();
+
+        expect(
+          device.sent
+              .where((m) => m.kind == AgentWakeCoordinationKind.done)
+              .map((m) => (m.runKey, m.reportUpdated)),
+          [('run-1', false), ('run-2', true)],
+        );
       });
     });
 
