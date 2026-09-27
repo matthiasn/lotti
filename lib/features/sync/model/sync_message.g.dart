@@ -601,6 +601,11 @@ SyncAgentWakeCoordination _$SyncAgentWakeCoordinationFromJson(
   hostId: json['hostId'] as String,
   sentAt: DateTime.parse(json['sentAt'] as String),
   reportUpdated: json['reportUpdated'] as bool? ?? true,
+  clocklessInputs:
+      (json['clocklessInputs'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const <String>[],
   $type: json['runtimeType'] as String?,
 );
 
@@ -616,6 +621,7 @@ Map<String, dynamic> _$SyncAgentWakeCoordinationToJson(
   'hostId': instance.hostId,
   'sentAt': instance.sentAt.toIso8601String(),
   'reportUpdated': instance.reportUpdated,
+  'clocklessInputs': instance.clocklessInputs,
   'runtimeType': instance.$type,
 };
 

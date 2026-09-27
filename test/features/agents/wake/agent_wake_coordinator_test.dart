@@ -19,11 +19,12 @@ const _definitions = 'sha256-v1:definitions';
 
 /// The inputs of a task whose rows were last written as host `desktop`'s
 /// counter 3 and host `phone`'s counter 5.
+const _inputsClocks = {
+  'entry:task-1': VectorClock({'desktop': 3}),
+  'entry:item-1': VectorClock({'desktop': 2, 'phone': 5}),
+};
 const _inputs = WakeInputs(
-  clocks: {
-    'entry:task-1': VectorClock({'desktop': 3}),
-    'entry:item-1': VectorClock({'desktop': 2, 'phone': 5}),
-  },
+  clocks: _inputsClocks,
   readsPrivate: false,
   definitions: _definitions,
 );
@@ -178,20 +179,46 @@ void main() {
       );
     });
 
-    test('never covers a row without a vector clock', () {
+    test('a row saved before its type carried a clock is covered by a run '
+        'that read it, and only by one', () {
+      // An old task: one of its links predates link clocks.
+      const oldTask = WakeInputs(
+        clocks: {
+          ..._inputsClocks,
+          'link:link-from-2019': null,
+        },
+        readsPrivate: false,
+        definitions: _definitions,
+      );
+
+      expect(oldTask.clockless, {'link:link-from-2019'});
       expect(
         const WakeCoverage(
           watermark: _held,
           readsPrivate: false,
           definitions: _definitions,
-        ).uncovered(
-          const WakeInputs(
-            clocks: {'report:report-1': null},
-            readsPrivate: false,
-            definitions: _definitions,
-          ),
-        ),
-        'report [id:report] has no vector clock',
+          clockless: {'link:link-from-2019'},
+        ).uncovered(oldTask),
+        isNull,
+      );
+      // A peer that never received the old link did not read it.
+      expect(
+        const WakeCoverage(
+          watermark: _held,
+          readsPrivate: false,
+          definitions: _definitions,
+        ).uncovered(oldTask),
+        'link [id:link-f] predates clocks and the peer did not read it',
+      );
+      // Naming it does not hide a write the peer lacks elsewhere.
+      expect(
+        const WakeCoverage(
+          watermark: _behind,
+          readsPrivate: false,
+          definitions: _definitions,
+          clockless: {'link:link-from-2019'},
+        ).uncovered(oldTask),
+        'entry [id:item-1] needs [id:phone]:5, peer holds 4',
       );
     });
 
@@ -803,6 +830,7 @@ void main() {
       watermark: _held,
       readsPrivate: true,
       definitions: _definitions,
+      clockless: {'link:b', 'link:a'},
     );
 
     test('a claim is broadcast at once and repeated as a heartbeat', () {
@@ -820,6 +848,7 @@ void main() {
         expect(device.sent.single.watermark, _held);
         expect(device.sent.single.readsPrivate, isTrue);
         expect(device.sent.single.definitionsDigest, _definitions);
+        expect(device.sent.single.clocklessInputs, ['link:a', 'link:b']);
         expect(device.sent.single.hostId, 'me');
         expect(device.sent.single.runKey, 'run-1');
         expect(device.sent.single.sentAt, _start);

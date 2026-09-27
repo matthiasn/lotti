@@ -5,8 +5,8 @@ description: How a local change becomes an agent wake — subscription matching,
 resource: ../../../lib/features/agents/wake
 tags: [agents, wake, scheduling, concurrency]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-24T12:00:00Z }
-stale_after: 2026-12-24
+generated: { by: claude-code/opus-5.5, at: 2026-09-27T21:45:00Z }
+stale_after: 2026-12-27
 sources:
   - id: wake
     resource: ../../../lib/features/agents/wake
@@ -578,7 +578,11 @@ the rows the context reads that someone other than this agent's wakes wrote:
 - other agents' attention requests on the task.
 
 Removed links and deleted entities are read too, because a removal is a write
-and only a row that is read gets its clock checked. The agent's own outputs —
+and only a row that is read gets its clock checked. A row saved before its type carried a
+clock — old entry links are common — has no write a watermark could vouch for,
+so the claim names the clockless rows its run read, and such a row counts as
+covered when the peer named it; refusing every one made each older task
+uncoverable ([ADR 0110](../../../docs/adr/0110-a-clockless-row-counts-as-covered.md)). The agent's own outputs —
 its report, observations, messages, change sets and attention requests — are
 not inputs. A peer's run writes its own, above the watermark its claim
 carried, so counting them would make every completed run look uncovering.

@@ -27,6 +27,7 @@ void main() {
       'hostId': 'host-a',
       'sentAt': '2024-03-15T10:00:00.000Z',
       'reportUpdated': true,
+      'clocklessInputs': ['link:old-1'],
     };
 
     test('travels under its own wire name with the watermark', () {
@@ -39,6 +40,7 @@ void main() {
         runKey: 'run-1',
         hostId: 'host-a',
         sentAt: DateTime.utc(2024, 3, 15, 10),
+        clocklessInputs: const ['link:old-1'],
       );
 
       expect(jsonDecode(jsonEncode(message.toJson())), wire);
@@ -48,10 +50,15 @@ void main() {
     test('a 1.1.30 completion, which carries no report verdict, counts as '
         'a refreshed report', () {
       final decoded =
-          SyncMessage.fromJson(Map.of(wire)..remove('reportUpdated'))
+          SyncMessage.fromJson(
+                Map.of(wire)
+                  ..remove('reportUpdated')
+                  ..remove('clocklessInputs'),
+              )
               as SyncAgentWakeCoordination;
 
       expect(decoded.reportUpdated, isTrue);
+      expect(decoded.clocklessInputs, isEmpty);
     });
 
     test("1.1.29's digest message is an unknown type, which the sync "
