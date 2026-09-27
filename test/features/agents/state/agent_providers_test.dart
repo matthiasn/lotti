@@ -52,10 +52,8 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
-import 'package:lotti/features/sync/deep_backfill/deep_backfill_store.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -1783,41 +1781,32 @@ void main() {
       ).called(1);
     });
 
-    test('adds the agent stores to deep backfill, and removes them on '
-        'dispose', () async {
+    test('wires the SyncEventProcessor even when a later start-up step '
+        'fails', () async {
       final mockProcessor = MockSyncEventProcessor();
-      final deepBackfill = MockDeepBackfillService();
+      final mockHandler = MockBackfillResponseHandler();
+      when(() => mockProcessor.backfillResponseHandler).thenReturn(mockHandler);
+      getIt.registerSingleton<SyncEventProcessor>(mockProcessor);
       when(
-        () => mockProcessor.backfillResponseHandler,
-      ).thenReturn(MockBackfillResponseHandler());
-      when(() => mockProcessor.deepBackfillService).thenReturn(deepBackfill);
-      final agentDb = AgentDatabase(inMemoryDatabase: true, background: false);
-      addTearDown(agentDb.close);
-      getIt
-        ..registerSingleton<SyncEventProcessor>(mockProcessor)
-        ..registerSingleton<AgentDatabase>(agentDb);
+        () => bench.mockOrchestrator.start(any()),
+      ).thenThrow(StateError('orchestrator failed to start'));
 
       final container = bench.createContainer();
       final sub = container.listen(agentInitializationProvider, (_, _) {});
-      await container.read(agentInitializationProvider.future);
+      await expectLater(
+        container.read(agentInitializationProvider.future),
+        throwsA(isA<StateError>()),
+      );
 
-      final stores = verify(
-        () => deepBackfill.registerStore(captureAny()),
-      ).captured.cast<DeepBackfillStore>();
-      expect(stores.map((s) => s.payloadType), [
-        SyncSequencePayloadType.agentEntity,
-        SyncSequencePayloadType.agentLink,
-      ]);
-
+      // Wired after the failing step, sync would drop every agent record
+      // another device sends for the rest of the run.
+      verify(
+        () => mockProcessor.agentRepository = any(that: isNotNull),
+      ).called(1);
+      verify(
+        () => mockHandler.agentRepository = any(that: isNotNull),
+      ).called(1);
       sub.close();
-      container.dispose();
-
-      verify(
-        () => deepBackfill.unregisterStore(SyncSequencePayloadType.agentEntity),
-      ).called(1);
-      verify(
-        () => deepBackfill.unregisterStore(SyncSequencePayloadType.agentLink),
-      ).called(1);
     });
 
     test('clears SyncEventProcessor fields on dispose', () async {

@@ -82,6 +82,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -1121,6 +1122,53 @@ void main() {
         tester.widget<ColoredBox>(find.byType(ColoredBox)).color,
         ProfileSwitchChrome.instance.background,
       );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(seconds: 1));
+    });
+  });
+
+  group('MyBeamerApp agent initialization', () {
+    testWidgets('logs a failed agent start instead of swallowing it', (
+      tester,
+    ) async {
+      final mockNavService = MockNavService();
+      when(() => mockNavService.currentPath).thenReturn('/');
+      final logger = MockDomainLogger();
+      getIt.registerSingleton<DomainLogger>(logger);
+      addTearDown(() => getIt.unregister<DomainLogger>());
+      final failure = StateError('agent start failed');
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            themingControllerProvider.overrideWith(
+              _LoadingThemingController.new,
+            ),
+            enableTooltipsProvider.overrideWith(
+              (ref) => Stream<bool>.value(true),
+            ),
+            dayProcessingRuntimeProvider.overrideWithValue(
+              MockDayProcessingRuntime(),
+            ),
+            agentInitializationProvider.overrideWith(
+              (ref) async => throw failure,
+            ),
+          ],
+          child: MyBeamerApp(navService: mockNavService),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      verify(
+        () => logger.error(
+          LogDomain.agentRuntime,
+          failure,
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'agentInitialization',
+        ),
+      ).called(1);
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump(const Duration(seconds: 1));

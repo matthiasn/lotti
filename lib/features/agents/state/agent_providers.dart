@@ -568,12 +568,14 @@ ImproverAgentService improverAgentService(Ref ref) {
   );
 }
 
-/// Initializes the agent infrastructure when the `enableAgents` config flag
-/// is enabled.
+/// Initializes the agent infrastructure. Not gated by a flag: it runs on
+/// every device, from app start (`beamer_app.dart` listens to it).
 ///
 /// This provider:
-/// 1. Watches the `enableAgents` config flag.
-/// 2. When enabled, starts the [WakeOrchestrator] listening to
+/// 1. Wires the [SyncEventProcessor] for agent data, before anything that
+///    can await or throw, so a failure further down never leaves sync unable
+///    to store another device's agents.
+/// 2. Starts the [WakeOrchestrator] listening to
 ///    `UpdateNotifications.updateStream`.
 /// 3. Restores task agent subscriptions from persisted state.
 ///
@@ -606,6 +608,19 @@ Future<void> agentInitialization(Ref ref) async {
     );
     orchestrator.stop();
   });
+
+  // 0. Wire the sync event processor for cross-device agent data first,
+  //    before anything below can await or throw. Until it is wired, every
+  //    agent entity and link arriving from another device fails to apply; a
+  //    later step that failed used to leave it unwired for the whole run,
+  //    with sync unable to store another device's agents.
+  wireSyncEventProcessor(
+    ref,
+    orchestrator,
+    syncEventProcessor,
+    retireSupersededTaskAgents: (taskId) =>
+        taskAgentService.retirement.retireSuperseded(taskId),
+  );
 
   // 1. Mark any orphaned 'running' wake runs as 'abandoned' so the activity
   //    log is not confused by stale entries from a previous app lifecycle.
@@ -651,15 +666,6 @@ Future<void> agentInitialization(Ref ref) async {
 
   // 3.6. Track project-linked activity without triggering immediate wakes.
   projectActivityMonitor.start();
-
-  // 4. Wire the sync event processor for cross-device agent data.
-  wireSyncEventProcessor(
-    ref,
-    orchestrator,
-    syncEventProcessor,
-    retireSupersededTaskAgents: (taskId) =>
-        taskAgentService.retirement.retireSuperseded(taskId),
-  );
 
   // 5. Seed default templates and profiles in parallel, then
   //    upgrade existing profiles with skill assignments and restore

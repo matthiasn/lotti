@@ -365,31 +365,21 @@ Future<String? Function()> _registerMatrixSyncStack({
     );
 
   // Deep backfill: a manual round that repairs history the sequence log
-  // cannot see. Agent records join when the agent repository is wired
-  // (`wireSyncEventProcessor`), as for counter backfill.
+  // cannot see. Every synced type is registered here, agent records
+  // included (`allDeepBackfillStores`), so neither the round nor the page's
+  // record counts depend on the agent runtime having started.
   final deepBackfillService = DeepBackfillService(
     syncDatabase: syncDatabase,
     outboxService: outboxService,
     vectorClockService: vectorClockService,
     loggingService: domainLogger,
-    stores: [
-      JournalDeepBackfillStore(
-        journalDb: journalDb,
-        outboxService: outboxService,
-      ),
-      entryLinkDeepBackfillStore(
-        journalDb: journalDb,
-        outboxService: outboxService,
-      ),
-      notificationDeepBackfillStore(
-        notificationsDb: notificationsDb,
-        outboxService: outboxService,
-      ),
-      consumptionDeepBackfillStore(
-        consumptionDatabase: getIt<ConsumptionDatabase>(),
-        outboxService: outboxService,
-      ),
-    ],
+    stores: allDeepBackfillStores(
+      journalDb: journalDb,
+      agentDatabase: getIt<AgentDatabase>(),
+      notificationsDb: notificationsDb,
+      consumptionDatabase: getIt<ConsumptionDatabase>(),
+      outboxService: outboxService,
+    ),
   );
   syncEventProcessor.deepBackfillService = deepBackfillService;
 

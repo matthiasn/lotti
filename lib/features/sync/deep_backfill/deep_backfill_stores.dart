@@ -308,3 +308,38 @@ TableDeepBackfillStore consumptionDeepBackfillStore({
     ),
   ),
 );
+
+/// The store of every synced type, the scope of a deep backfill: journal
+/// entries, entry links, agent entities and links, notifications and AI
+/// consumption events. One list, so the round and the record counts cannot
+/// leave a type out — each store reads its own database, and none depends on
+/// another feature's runtime having started.
+List<DeepBackfillStore> allDeepBackfillStores({
+  required JournalDb journalDb,
+  required AgentDatabase agentDatabase,
+  required NotificationsDb notificationsDb,
+  required ConsumptionDatabase consumptionDatabase,
+  required OutboxService outboxService,
+}) => [
+  JournalDeepBackfillStore(journalDb: journalDb, outboxService: outboxService),
+  entryLinkDeepBackfillStore(
+    journalDb: journalDb,
+    outboxService: outboxService,
+  ),
+  agentEntityDeepBackfillStore(
+    agentDatabase: agentDatabase,
+    outboxService: outboxService,
+  ),
+  agentLinkDeepBackfillStore(
+    agentDatabase: agentDatabase,
+    outboxService: outboxService,
+  ),
+  notificationDeepBackfillStore(
+    notificationsDb: notificationsDb,
+    outboxService: outboxService,
+  ),
+  consumptionDeepBackfillStore(
+    consumptionDatabase: consumptionDatabase,
+    outboxService: outboxService,
+  ),
+];

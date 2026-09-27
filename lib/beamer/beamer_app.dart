@@ -1881,12 +1881,22 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
   Widget build(BuildContext context) {
     // Keep long-lived runtime wiring alive from app startup onward.
     // - agentInitializationProvider: sync can apply and verify incoming agent
-    //   payloads before the first entry view.
+    //   payloads before the first entry view. A failure is logged: swallowed,
+    //   it left the agent runtime half started with no trace of why.
     // - syncedAudioInferenceListenerProvider: auto-trigger local AI inference
     //   on synced audio for pinned profiles (keepAlive — this listen just
     //   forces construction so the listener subscribes to syncUpdateStream).
     ref
-      ..listen(agentInitializationProvider, (_, _) {})
+      ..listen(agentInitializationProvider, (_, next) {
+        if (next case AsyncError(:final error, :final stackTrace)) {
+          getIt<DomainLogger>().error(
+            LogDomain.agentRuntime,
+            error,
+            stackTrace: stackTrace,
+            subDomain: 'agentInitialization',
+          );
+        }
+      })
       ..listen(syncedAudioInferenceListenerProvider, (_, _) {})
       // goalSignalSyncListenerProvider: run the deterministic goal tier
       // (Phase A) when synced signals arrive — the orchestrator only

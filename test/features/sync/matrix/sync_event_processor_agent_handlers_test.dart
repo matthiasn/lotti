@@ -2765,7 +2765,8 @@ void main() {
       },
     );
 
-    test('skips agent entity when agentRepository is null', () async {
+    test('fails the apply of an agent entity, rather than dropping it, '
+        'while agentRepository is not wired', () async {
       processor.agentRepository = null;
 
       final entity = AgentDomainEntity.agent(
@@ -2789,22 +2790,22 @@ void main() {
       );
       when(() => event.text).thenReturn(encodeMessage(message));
 
-      await withClock(
-        Clock.fixed(DateTime(2026, 8, 1, 9)),
-        () => processor.process(event: event, journalDb: journalDb),
+      // A throw is a retriable apply failure: the queue retries it, and
+      // keeps it as a skipped event past the cap, instead of dropping
+      // another device's agent record.
+      await expectLater(
+        withClock(
+          Clock.fixed(DateTime(2026, 8, 1, 9)),
+          () => processor.process(event: event, journalDb: journalDb),
+        ),
+        throwsA(isA<StateError>()),
       );
 
       verifyNever(() => mockAgentRepo.upsertEntity(any()));
-      verify(
-        () => loggingService.log(
-          LogDomain.sync,
-          any<String>(that: contains('ignored')),
-          subDomain: 'processor.apply',
-        ),
-      ).called(1);
     });
 
-    test('skips agent link when agentRepository is null', () async {
+    test('fails the apply of an agent link, rather than dropping it, '
+        'while agentRepository is not wired', () async {
       processor.agentRepository = null;
 
       final link = AgentLink.basic(
@@ -2822,16 +2823,12 @@ void main() {
       );
       when(() => event.text).thenReturn(encodeMessage(message));
 
-      await processor.process(event: event, journalDb: journalDb);
+      await expectLater(
+        processor.process(event: event, journalDb: journalDb),
+        throwsA(isA<StateError>()),
+      );
 
       verifyNever(() => mockAgentRepo.upsertLink(any()));
-      verify(
-        () => loggingService.log(
-          LogDomain.sync,
-          any<String>(that: contains('ignored')),
-          subDomain: 'processor.apply',
-        ),
-      ).called(1);
     });
 
     test('propagates repository error on agent entity upsert', () async {

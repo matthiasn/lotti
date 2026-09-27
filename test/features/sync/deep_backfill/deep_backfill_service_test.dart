@@ -603,23 +603,4 @@ void main() {
       expect(counts, {_journal: 2, _links: 0});
     },
   );
-
-  test("registerStore replaces a type's store and unregisterStore removes "
-      'it', () async {
-    final first = _FakeStore(_journal);
-    final second = _FakeStore(
-      _journal,
-      rows: {
-        'a': const VectorClock({'x': 1}),
-      },
-    );
-    final svc = service(stores: [first])..registerStore(second);
-
-    expect(svc.payloadTypes, {_journal});
-    final summary = await svc.runRound();
-    expect(summary.records, 1, reason: 'the second store answered');
-
-    svc.unregisterStore(_journal);
-    expect(svc.payloadTypes, isEmpty);
-  });
 }

@@ -333,4 +333,44 @@ void main() {
       expect(message.event.id, 'c-1');
     });
   });
+
+  test('allDeepBackfillStores covers every synced type, agent records '
+      'included, once each', () async {
+    final journalDb = JournalDb(inMemoryDatabase: true);
+    final agentDb = AgentDatabase(inMemoryDatabase: true, background: false);
+    final notificationsDb = NotificationsDb(
+      inMemoryDatabase: true,
+      background: false,
+    );
+    final consumptionDb = ConsumptionDatabase(inMemoryDatabase: true);
+    addTearDown(() async {
+      await journalDb.close();
+      await agentDb.close();
+      await notificationsDb.close();
+      await consumptionDb.close();
+    });
+
+    final stores = allDeepBackfillStores(
+      journalDb: journalDb,
+      agentDatabase: agentDb,
+      notificationsDb: notificationsDb,
+      consumptionDatabase: consumptionDb,
+      outboxService: outbox,
+    );
+
+    // A type missing here is missing from every round and from the page's
+    // record counts — what left agent records out on a device whose agent
+    // runtime never started.
+    expect(stores.map((s) => s.payloadType), [
+      SyncSequencePayloadType.journalEntity,
+      SyncSequencePayloadType.entryLink,
+      SyncSequencePayloadType.agentEntity,
+      SyncSequencePayloadType.agentLink,
+      SyncSequencePayloadType.notification,
+      SyncSequencePayloadType.consumptionEvent,
+    ]);
+    for (final store in stores) {
+      expect(await store.count(), 0, reason: '${store.payloadType} reads');
+    }
+  });
 }

@@ -7,10 +7,7 @@ import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
-import 'package:lotti/features/sync/deep_backfill/deep_backfill_stores.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
-import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
-import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:riverpod/riverpod.dart';
 
@@ -284,25 +281,6 @@ void wireSyncEventProcessor(
   // Also wire the agent repository into the backfill handler so it can
   // look up agent entities and links when responding to backfill requests.
   processor.backfillResponseHandler.agentRepository = repository;
-  // Agent records join deep backfill once their database exists.
-  final deepBackfill = processor.deepBackfillService;
-  if (deepBackfill != null) {
-    final agentDatabase = ref.read(agentDatabaseProvider);
-    final outbox = ref.read(outboxServiceProvider);
-    deepBackfill
-      ..registerStore(
-        agentEntityDeepBackfillStore(
-          agentDatabase: agentDatabase,
-          outboxService: outbox,
-        ),
-      )
-      ..registerStore(
-        agentLinkDeepBackfillStore(
-          agentDatabase: agentDatabase,
-          outboxService: outbox,
-        ),
-      );
-  }
   ref.onDispose(() {
     processor
       ..agentRepository = null
@@ -311,8 +289,5 @@ void wireSyncEventProcessor(
       ..runtimeMaintenance = const []
       ..retireSupersededTaskAgents = null;
     processor.backfillResponseHandler.agentRepository = null;
-    deepBackfill
-      ?..unregisterStore(SyncSequencePayloadType.agentEntity)
-      ..unregisterStore(SyncSequencePayloadType.agentLink);
   });
 }
