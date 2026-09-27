@@ -2839,12 +2839,6 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get backfillSettingsSubtitle => 'Synchronisierungslücken verwalten';
-
-  @override
-  String get backfillSettingsTitle => 'Sync-Nachfüllung';
-
-  @override
   String get backfillStatsBackfilled => 'Nachgefüllt';
 
   @override
@@ -16258,4 +16252,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Überspringen';
+
+  @override
+  String get syncHealthTitle => 'Sync-Zustand';
+
+  @override
+  String get syncHealthSubtitle =>
+      'Prüf, ob deine Geräte dieselben Daten haben';
 }

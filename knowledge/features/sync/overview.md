@@ -5,7 +5,7 @@ description: Single-user multi-device replication over end-to-end encrypted Matr
 resource: ../../../lib/features/sync
 tags: [sync, matrix, replication, outbox, queue]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-27T19:30:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-27T21:00:00Z }
 stale_after: 2026-12-27
 sources:
   - id: sync-src
@@ -565,7 +565,7 @@ persisted before enqueue, and the failed-row retry retains that stamped value
 so an enqueue-only failure does not increment the clock again.
 `SyncMaintenanceRepository.backfillAgentEntityClocks` /
 `backfillAgentLinkClocks` remain the whole-database version of the same repair,
-reachable from *Backfill sync* as the **Vector clocks** recovery action, which
+reachable from *Sync health* as the **Vector clocks** recovery action, which
 also runs `backfillEntryLinkClocks` for entry links saved before links carried
 a clock. That step keeps each link's `updatedAt`: links order by `updatedAt`
 before their clocks, so a stamp dated now would outrank a genuine edit.

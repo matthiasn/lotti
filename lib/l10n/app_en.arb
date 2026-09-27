@@ -1777,8 +1777,6 @@
       }
     }
   },
-  "backfillSettingsSubtitle": "Manage sync gap recovery",
-  "backfillSettingsTitle": "Backfill sync",
   "backfillStatsBackfilled": "Backfilled",
   "backfillStatsBurned": "Burned",
   "backfillStatsByDevice": "Tracked counters by device",
@@ -8381,6 +8379,8 @@
   "syncEntitiesMessage": "Choose the entities you want to sync.",
   "syncEntitiesSuccessDescription": "Everything is up to date.",
   "syncEntitiesSuccessTitle": "Sync complete",
+  "syncHealthSubtitle": "Check that your devices hold the same data",
+  "syncHealthTitle": "Sync health",
   "syncListCountSummary": "{label} · {itemCount, plural, =0{0 items} =1{1 item} other{{itemCount} items}}",
   "@syncListCountSummary": {
     "placeholders": {

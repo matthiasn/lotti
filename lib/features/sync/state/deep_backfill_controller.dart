@@ -1,19 +1,87 @@
+import 'dart:async';
+
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/get_it.dart';
 
 /// Records of each synced type on this device, deletions included, or null
-/// where no sync stack runs (a demo world). Read on demand: counting a large
-/// journal is not free, so the page refreshes it explicitly.
-final FutureProvider<Map<SyncSequencePayloadType, int>?>
+/// where no sync stack runs (a demo world). Re-counted every
+/// [SyncTuning.recordCountsRefreshInterval] while something listens — the
+/// page, while it is shown — and the app is visible: a backgrounded app keeps
+/// a retained route (and so this provider) alive, and must not keep counting.
+/// On return to the foreground it counts at once. A count that fails
+/// surfaces as an error without ending the polling, so the next successful
+/// count replaces it.
+final StreamProvider<Map<SyncSequencePayloadType, int>?>
 deepBackfillRecordCountsProvider =
-    FutureProvider.autoDispose<Map<SyncSequencePayloadType, int>?>(
-      (ref) async => getIt.isRegistered<DeepBackfillService>()
-          ? getIt<DeepBackfillService>().recordCounts()
-          : null,
+    StreamProvider.autoDispose<Map<SyncSequencePayloadType, int>?>(
+      (ref) {
+        if (!getIt.isRegistered<DeepBackfillService>()) {
+          return Stream.value(null);
+        }
+        final poller = _RecordCountsPoller(getIt<DeepBackfillService>());
+        ref.onDispose(poller.dispose);
+        return poller.counts;
+      },
       name: 'deepBackfillRecordCountsProvider',
     );
+
+/// Counts at once, then on every tick while the app is visible. A tick that
+/// finds the previous count still running is skipped, so slow counts never
+/// pile up.
+class _RecordCountsPoller {
+  _RecordCountsPoller(this._service) {
+    _lifecycle = AppLifecycleListener(
+      onShow: () {
+        unawaited(_count());
+        _start();
+      },
+      onHide: _stop,
+    );
+    unawaited(_count());
+    _start();
+  }
+
+  final DeepBackfillService _service;
+  final _controller = StreamController<Map<SyncSequencePayloadType, int>>();
+  late final AppLifecycleListener _lifecycle;
+  Timer? _timer;
+  bool _inFlight = false;
+
+  Stream<Map<SyncSequencePayloadType, int>> get counts => _controller.stream;
+
+  void _start() => _timer ??= Timer.periodic(
+    SyncTuning.recordCountsRefreshInterval,
+    (_) => unawaited(_count()),
+  );
+
+  void _stop() {
+    _timer?.cancel();
+    _timer = null;
+  }
+
+  Future<void> _count() async {
+    if (_inFlight) return;
+    _inFlight = true;
+    try {
+      final counts = await _service.recordCounts();
+      if (!_controller.isClosed) _controller.add(counts);
+    } catch (error, stackTrace) {
+      if (!_controller.isClosed) _controller.addError(error, stackTrace);
+    } finally {
+      _inFlight = false;
+    }
+  }
+
+  void dispose() {
+    _stop();
+    _lifecycle.dispose();
+    unawaited(_controller.close());
+  }
+}
 
 final deepBackfillControllerProvider =
     NotifierProvider<DeepBackfillController, DeepBackfillState>(

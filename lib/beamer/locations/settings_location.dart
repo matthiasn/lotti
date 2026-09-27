@@ -370,7 +370,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
       if (path == '/settings/sync/backfill')
         const BeamPage(
           key: ValueKey('settings-sync-backfill'),
-          title: 'Backfill Settings',
+          title: 'Sync health',
           child: BackfillSettingsPage(),
         ),
 

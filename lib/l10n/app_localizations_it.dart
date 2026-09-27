@@ -2850,13 +2850,6 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get backfillSettingsSubtitle =>
-      'Gestire il recupero del gap di sincronizzazione';
-
-  @override
-  String get backfillSettingsTitle => 'Sincronizzazione di backup';
-
-  @override
   String get backfillStatsBackfilled => 'Ricambio';
 
   @override
@@ -16335,4 +16328,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Salta!';
+
+  @override
+  String get syncHealthTitle => 'Stato della sincronizzazione';
+
+  @override
+  String get syncHealthSubtitle =>
+      'Controlla che i tuoi dispositivi abbiano gli stessi dati';
 }

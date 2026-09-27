@@ -1441,8 +1441,6 @@
       }
     }
   },
-  "backfillSettingsSubtitle": "Styr gendannelse af synkroniseringsgab.",
-  "backfillSettingsTitle": "Backfill-synkronisering",
   "backfillStatsBackfilled": "Tilbagefyldt",
   "backfillStatsBurned": "Brændt",
   "backfillStatsByDevice": "Sporede tællere pr. enhed",
@@ -6129,6 +6127,8 @@
   "syncEntitiesMessage": "Vælg de enheder, du vil synkronisere.",
   "syncEntitiesSuccessDescription": "Alt er opdateret.",
   "syncEntitiesSuccessTitle": "Synkronisering fuldført",
+  "syncHealthSubtitle": "Tjek, at dine enheder har de samme data",
+  "syncHealthTitle": "Synkroniseringstilstand",
   "syncListCountSummary": "{label} · {itemCount, plural, =0{0 genstande} =1{1 genstand} other{{itemCount} genstande}}",
   "@syncListCountSummary": {
     "placeholders": {

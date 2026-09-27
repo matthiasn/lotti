@@ -2824,12 +2824,6 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get backfillSettingsSubtitle => 'Sync gap recovery beheren';
-
-  @override
-  String get backfillSettingsTitle => 'Synchronisatie van backfill';
-
-  @override
   String get backfillStatsBackfilled => 'Achterin gevuld';
 
   @override
@@ -16184,4 +16178,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
+
+  @override
+  String get syncHealthTitle => 'Synchronisatiestatus';
+
+  @override
+  String get syncHealthSubtitle =>
+      'Controleer of je apparaten dezelfde gegevens hebben';
 }

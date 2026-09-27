@@ -2801,12 +2801,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get backfillSettingsSubtitle => 'Manage sync gap recovery';
-
-  @override
-  String get backfillSettingsTitle => 'Backfill sync';
-
-  @override
   String get backfillStatsBackfilled => 'Backfilled';
 
   @override
@@ -16040,6 +16034,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
+
+  @override
+  String get syncHealthTitle => 'Sync health';
+
+  @override
+  String get syncHealthSubtitle => 'Check that your devices hold the same data';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

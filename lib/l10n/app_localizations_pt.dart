@@ -2841,13 +2841,6 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get backfillSettingsSubtitle =>
-      'Gerenciar a recuperação de lacunas de sincronização';
-
-  @override
-  String get backfillSettingsTitle => 'Sincronização de preenchimento';
-
-  @override
   String get backfillStatsBackfilled => 'Preenchido';
 
   @override
@@ -16289,4 +16282,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Pular';
+
+  @override
+  String get syncHealthTitle => 'Estado da sincronização';
+
+  @override
+  String get syncHealthSubtitle =>
+      'Verifica se os teus dispositivos têm os mesmos dados';
 }

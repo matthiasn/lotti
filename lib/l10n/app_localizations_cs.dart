@@ -2848,12 +2848,6 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get backfillSettingsSubtitle => 'Správa obnovy mezer v synchronizaci';
-
-  @override
-  String get backfillSettingsTitle => 'Synchronizace doplnění';
-
-  @override
   String get backfillStatsBackfilled => 'Doplněno';
 
   @override
@@ -16337,4 +16331,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
+
+  @override
+  String get syncHealthTitle => 'Stav synchronizace';
+
+  @override
+  String get syncHealthSubtitle =>
+      'Zkontroluj, že tvá zařízení mají stejná data';
 }

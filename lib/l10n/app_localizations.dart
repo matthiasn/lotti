@@ -4746,18 +4746,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{Retire 1 stuck entry} other{Retire {count} stuck entries}}'**
   String backfillRetireStuckTrigger(int count);
 
-  /// No description provided for @backfillSettingsSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Manage sync gap recovery'**
-  String get backfillSettingsSubtitle;
-
-  /// No description provided for @backfillSettingsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Backfill sync'**
-  String get backfillSettingsTitle;
-
   /// No description provided for @backfillStatsBackfilled.
   ///
   /// In en, this message translates to:
@@ -26842,6 +26830,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
+
+  /// No description provided for @syncHealthTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync health'**
+  String get syncHealthTitle;
+
+  /// No description provided for @syncHealthSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check that your devices hold the same data'**
+  String get syncHealthSubtitle;
 }
 
 class _AppLocalizationsDelegate

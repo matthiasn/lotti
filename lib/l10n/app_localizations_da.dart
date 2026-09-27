@@ -2813,13 +2813,6 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String get backfillSettingsSubtitle =>
-      'Styr gendannelse af synkroniseringsgab.';
-
-  @override
-  String get backfillSettingsTitle => 'Backfill-synkronisering';
-
-  @override
   String get backfillStatsBackfilled => 'Tilbagefyldt';
 
   @override
@@ -16135,4 +16128,10 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Spring over';
+
+  @override
+  String get syncHealthTitle => 'Synkroniseringstilstand';
+
+  @override
+  String get syncHealthSubtitle => 'Tjek, at dine enheder har de samme data';
 }

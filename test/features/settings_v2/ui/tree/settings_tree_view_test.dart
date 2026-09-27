@@ -135,7 +135,7 @@ void main() {
           find.text('Sync is not available in the demo workspace'),
           findsOneWidget,
         );
-        expect(find.text('Backfill sync'), findsNothing);
+        expect(find.text('Sync health'), findsNothing);
         expect(find.text('Sync Outbox'), findsNothing);
         // Nothing in the tree resolved the absent MatrixService.
         expect(tester.takeException(), isNull);

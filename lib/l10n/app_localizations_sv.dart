@@ -2822,13 +2822,6 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get backfillSettingsSubtitle =>
-      'Hantera synkroniseringsluckeåterställning';
-
-  @override
-  String get backfillSettingsTitle => 'Backfill-synkronisering';
-
-  @override
   String get backfillStatsBackfilled => 'Fylld igen';
 
   @override
@@ -16150,4 +16143,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
+
+  @override
+  String get syncHealthTitle => 'Synkroniseringsstatus';
+
+  @override
+  String get syncHealthSubtitle =>
+      'Kontrollera att dina enheter har samma data';
 }

@@ -1258,8 +1258,6 @@
       }
     }
   },
-  "backfillSettingsSubtitle": "Gérer la récupération des écarts de synchronisation",
-  "backfillSettingsTitle": "Rattrapage de synchronisation",
   "backfillStatsBackfilled": "Rattrapé",
   "backfillStatsBurned": "Annulé",
   "backfillStatsByDevice": "Compteurs suivis par appareil",
@@ -5587,6 +5585,8 @@
   "syncEntitiesMessage": "Choisis les données à synchroniser.",
   "syncEntitiesSuccessDescription": "Tout est à jour.",
   "syncEntitiesSuccessTitle": "Synchronisation terminée",
+  "syncHealthSubtitle": "Vérifie que tes appareils ont les mêmes données",
+  "syncHealthTitle": "Santé de la synchronisation",
   "syncListCountSummary": "{label} · {itemCount, plural, =0{0 éléments} =1{1 élément} other{{itemCount} éléments}}",
   "@syncListCountSummary": {
     "placeholders": {

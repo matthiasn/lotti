@@ -1440,8 +1440,6 @@
       }
     }
   },
-  "backfillSettingsSubtitle": "Gerenciar a recuperação de lacunas de sincronização",
-  "backfillSettingsTitle": "Sincronização de preenchimento",
   "backfillStatsBackfilled": "Preenchido",
   "backfillStatsBurned": "Queimado",
   "backfillStatsByDevice": "Contadores registados por dispositivo",
@@ -6128,6 +6126,8 @@
   "syncEntitiesMessage": "Escolha as entidades que deseja sincronizar.",
   "syncEntitiesSuccessDescription": "Tudo está atualizado.",
   "syncEntitiesSuccessTitle": "Sincronização concluída",
+  "syncHealthSubtitle": "Verifica se os teus dispositivos têm os mesmos dados",
+  "syncHealthTitle": "Estado da sincronização",
   "syncListCountSummary": "{label} · {itemCount, plural, =0{0 itens} =1{1 item} other{{itemCount} itens}}",
   "@syncListCountSummary": {
     "placeholders": {
