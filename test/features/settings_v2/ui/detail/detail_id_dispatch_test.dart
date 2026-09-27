@@ -10,10 +10,11 @@ import 'package:material_ui/material_ui.dart';
 DesktopSettingsRoute _route(
   String path, {
   Map<String, String> pathParameters = const {},
+  Map<String, String> queryParameters = const {},
 }) => (
   path: path,
   pathParameters: pathParameters,
-  queryParameters: const {},
+  queryParameters: queryParameters,
 );
 
 void main() {
@@ -39,7 +40,9 @@ void main() {
           listenable: routes,
           list: (_) => const Text('list'),
           create: (_, _) => const Text('create'),
-          detail: (_, id) => Text('detail:$id'),
+          detail: (_, id, route) => Text(
+            'detail:$id${route?.queryParameters['version'] ?? ''}',
+          ),
           detailSubRoutes: detailSubRoutes,
         ),
       ),
@@ -80,6 +83,19 @@ void main() {
       await pump(tester);
 
       expect(find.text('detail:t1'), findsOneWidget);
+    });
+
+    testWidgets('the detail body receives the route and its query', (
+      tester,
+    ) async {
+      routes.value = _route(
+        '$templatesUrl/t1',
+        pathParameters: const {'templateId': 't1'},
+        queryParameters: const {'version': '@v2'},
+      );
+      await pump(tester);
+
+      expect(find.text('detail:t1@v2'), findsOneWidget);
     });
   });
 

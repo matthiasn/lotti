@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:path/path.dart' as path;
@@ -10,6 +12,7 @@ import 'package:sqlite3/sqlite3.dart';
 
 import '../widget_test_utils.dart';
 import 'schema_fixtures.dart';
+import 'test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -114,6 +117,64 @@ void main() {
         ),
         hasLength(1),
         reason: DevLogger.capturedLogs.join('\n'),
+      );
+    },
+  );
+
+  test(
+    'v50 keeps every conflict, keyed by the clock of the version it holds, '
+    'and a second concurrent version then stands beside the first',
+    () async {
+      final file = File(path.join(testDirectory.path, 'conflicts_v49.db'));
+      final sqlite = sqlite3.open(file.path);
+      createJournalSchema(sqlite, 49);
+      const insert =
+          'INSERT INTO conflicts (id, created_at, updated_at, serialized, '
+          'schema_version, status) VALUES (?, 0, 0, ?, 49, ?)';
+      sqlite
+        ..execute(insert, [
+          'entry',
+          jsonEncode(
+            createJournalEntryWithVclock(
+              const VectorClock({'b': 1, 'a': 1}),
+              id: 'entry',
+            ),
+          ),
+          ConflictStatus.unresolved.index,
+        ])
+        ..execute(insert, [
+          'unreadable',
+          'not json',
+          ConflictStatus.resolved.index,
+        ])
+        ..close();
+
+      final db = JournalDb(overriddenFilename: 'conflicts_v49.db');
+      addTearDown(db.close);
+      final keys = {
+        for (final row
+            in await db
+                .customSelect('SELECT id, version_key, status FROM conflicts')
+                .get())
+          row.read<String>('id'): (
+            row.read<String>('version_key'),
+            row.read<int>('status'),
+          ),
+      };
+      expect(keys, {
+        'entry': ('a:1,b:1', ConflictStatus.unresolved.index),
+        'unreadable': ('', ConflictStatus.resolved.index),
+      });
+
+      await db.updateJournalEntity(
+        createJournalEntryWithVclock(const VectorClock({'a': 2}), id: 'entry'),
+      );
+      await db.updateJournalEntity(
+        createJournalEntryWithVclock(const VectorClock({'c': 1}), id: 'entry'),
+      );
+      expect(
+        (await db.conflictsForEntry('entry')).map((c) => c.versionKey).toSet(),
+        {'a:1,b:1', 'c:1'},
       );
     },
   );

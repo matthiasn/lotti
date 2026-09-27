@@ -212,6 +212,7 @@ void main() {
         final now = DateTime(2024, 9);
         final conflict = Conflict(
           id: 'conflict-unresolved',
+          versionKey: '',
           createdAt: now,
           updatedAt: now,
           serialized: jsonEncode(
@@ -247,6 +248,7 @@ void main() {
         final now = DateTime(2024, 9, 2);
         final conflict = Conflict(
           id: conflictId,
+          versionKey: '',
           createdAt: now,
           updatedAt: now,
           serialized: jsonEncode(
@@ -282,6 +284,7 @@ void main() {
             await db!.addConflict(
               Conflict(
                 id: 'indexed-conflict-$i',
+                versionKey: '',
                 createdAt: now.add(Duration(minutes: i)),
                 updatedAt: now.add(Duration(minutes: i)),
                 serialized: jsonEncode(
@@ -635,7 +638,10 @@ void main() {
           expect(result.applied, isTrue);
           final row = await db!.journalEntityById(stored.meta.id);
           expect(row?.entryText?.plainText, 'edited on B');
-          expect(await db!.conflictById(stored.meta.id), isNull);
+          expect(
+            (await db!.conflictsForEntry(stored.meta.id)).firstOrNull,
+            isNull,
+          );
         },
       );
 
@@ -767,7 +773,7 @@ void main() {
           expect(result.applied, isFalse);
           expect(result.skipReason, JournalUpdateSkipReason.overwritePrevented);
           expect(await db!.journalEntityById(entry.id), entry);
-          expect(await db!.conflictById(entry.id), isNull);
+          expect((await db!.conflictsForEntry(entry.id)).firstOrNull, isNull);
         },
       );
 
@@ -833,7 +839,7 @@ void main() {
             results.map((r) => r.skipReason),
             contains(JournalUpdateSkipReason.conflict),
           );
-          final conflict = await db!.conflictById(id);
+          final conflict = (await db!.conflictsForEntry(id)).firstOrNull;
           expect(conflict, isNotNull);
           expect(conflict!.status, ConflictStatus.unresolved.index);
         },
@@ -860,7 +866,7 @@ void main() {
 
     group('Conflict Handling -', () {
       test(
-        'addConflict upserts: writing the same conflict id twice keeps a '
+        'addConflict upserts: writing the same conflict version twice keeps a '
         'single row with the latest payload',
         () async {
           final base = DateTime(2024, 3, 15, 10);
@@ -869,6 +875,7 @@ void main() {
           await db!.addConflict(
             Conflict(
               id: conflictId,
+              versionKey: '',
               createdAt: base,
               updatedAt: base,
               serialized: '{"v": 1}',
@@ -879,6 +886,7 @@ void main() {
           await db!.addConflict(
             Conflict(
               id: conflictId,
+              versionKey: '',
               createdAt: base,
               updatedAt: base.add(const Duration(minutes: 5)),
               serialized: '{"v": 2}',
@@ -887,7 +895,7 @@ void main() {
             ),
           );
 
-          final stored = await db!.conflictById(conflictId);
+          final stored = (await db!.conflictsForEntry(conflictId)).firstOrNull;
           expect(stored, isNotNull);
           expect(stored!.serialized, '{"v": 2}');
 
@@ -919,7 +927,9 @@ void main() {
         expect(status, VclockStatus.concurrent);
 
         // Check that a conflict was created
-        final conflict = await db?.conflictById(entryA.meta.id);
+        final conflict = (await db!.conflictsForEntry(
+          entryA.meta.id,
+        )).firstOrNull;
         expect(conflict, isNotNull);
         expect(conflict?.status, ConflictStatus.unresolved.index);
 
@@ -1006,6 +1016,7 @@ void main() {
             await db!.addConflict(
               Conflict(
                 id: id,
+                versionKey: '',
                 createdAt: testDate,
                 updatedAt: testDate,
                 serialized: jsonEncode(existingEntry),
@@ -1039,7 +1050,7 @@ void main() {
             shouldApply ? scenario.incomingClock : scenario.existingClock,
           );
 
-          final conflict = await db!.conflictById(id);
+          final conflict = (await db!.conflictsForEntry(id)).firstOrNull;
           if (shouldApply) {
             // The pre-existing conflict holds the version the incoming one
             // succeeds, so the write settles it.
@@ -1083,6 +1094,7 @@ void main() {
 
         final conflict = Conflict(
           id: existingEntry.meta.id,
+          versionKey: '',
           createdAt: DateTime(2024, 3, 15, 10),
           updatedAt: DateTime(2024, 3, 15, 10),
           serialized: jsonEncode(existingEntry),
@@ -1098,7 +1110,9 @@ void main() {
         final result = await db!.updateJournalEntity(updatedEntry);
 
         expect(result.applied, isTrue);
-        final resolved = await db!.conflictById(existingEntry.meta.id);
+        final resolved = (await db!.conflictsForEntry(
+          existingEntry.meta.id,
+        )).firstOrNull;
         expect(resolved, isNotNull);
         expect(resolved?.status, ConflictStatus.resolved.index);
       });
@@ -1112,6 +1126,7 @@ void main() {
 
         final conflict = Conflict(
           id: appliedEntry.meta.id,
+          versionKey: '',
           createdAt: DateTime(2024, 3, 15, 11),
           updatedAt: DateTime(2024, 3, 15, 11),
           serialized: jsonEncode(appliedEntry),
@@ -1130,7 +1145,9 @@ void main() {
         expect(result.applied, isFalse);
         expect(result.skipReason, JournalUpdateSkipReason.olderOrEqual);
 
-        final unresolved = await db!.conflictById(appliedEntry.meta.id);
+        final unresolved = (await db!.conflictsForEntry(
+          appliedEntry.meta.id,
+        )).firstOrNull;
         expect(unresolved, isNotNull);
         expect(unresolved?.status, ConflictStatus.unresolved.index);
       });
@@ -1189,7 +1206,7 @@ void main() {
           db!.journalEntityByIdIncludingDeleted(id);
 
       Future<String?> conflictText() async {
-        final conflict = await db!.conflictById(id);
+        final conflict = (await db!.conflictsForEntry(id)).firstOrNull;
         if (conflict == null ||
             conflict.status != ConflictStatus.unresolved.index) {
           return null;
@@ -1246,7 +1263,7 @@ void main() {
             await db!.updateJournalEntity(first);
             final result = await db!.updateJournalEntity(second);
             expect(result.applied, isTrue);
-            expect(await db!.conflictById(id), isNull);
+            expect((await db!.conflictsForEntry(id)).firstOrNull, isNull);
             return stored();
           }
 
@@ -1292,6 +1309,7 @@ void main() {
           await db!.addConflict(
             Conflict(
               id: id,
+              versionKey: '',
               createdAt: testDate,
               updatedAt: testDate,
               serialized: 'not json',
@@ -1303,7 +1321,7 @@ void main() {
           await db!.updateJournalEntity(version({'a': 2}, 'v2'));
 
           expect(
-            (await db!.conflictById(id))?.status,
+            (await db!.conflictsForEntry(id)).firstOrNull?.status,
             ConflictStatus.resolved.index,
           );
           verify(
@@ -1328,6 +1346,109 @@ void main() {
 
         expect(late.skipReason, JournalUpdateSkipReason.conflict);
         expect(await conflictText(), 'theirs v2');
+      });
+
+      // One conflict row per version (ADR 0092): a second concurrent version
+      // stands beside the first instead of displacing it.
+      group('several concurrent versions -', () {
+        Future<Map<String, String>> openConflicts() async => {
+          for (final conflict in await db!.conflictsForEntry(id))
+            if (conflict.status == ConflictStatus.unresolved.index)
+              conflict.versionKey: JournalEntity.fromJson(
+                jsonDecode(conflict.serialized) as Map<String, dynamic>,
+              ).entryText!.plainText,
+        };
+
+        test(
+          "a local save built on an entry read before a peer's version landed "
+          'is kept beside the open conflict, not in place of it',
+          () async {
+            // This device (a) read v1; b's edit arrives and applies; c's
+            // concurrent edit opens a conflict; then the editor, still
+            // holding v1, saves.
+            await db!.updateJournalEntity(version({'a': 1}, 'v1'));
+            await db!.updateJournalEntity(version({'a': 1, 'b': 1}, 'B'));
+            await db!.updateJournalEntity(version({'a': 1, 'c': 1}, 'C'));
+
+            final save = await db!.updateJournalEntity(
+              version({'a': 2}, 'stale local save'),
+            );
+
+            expect(save.skipReason, JournalUpdateSkipReason.conflict);
+            expect(await openConflicts(), {
+              'a:1,c:1': 'C',
+              'a:2': 'stale local save',
+            });
+          },
+        );
+
+        test(
+          "a third device's version does not displace the open conflict",
+          () async {
+            await db!.updateJournalEntity(version({'a': 1}, 'mine'));
+            await db!.updateJournalEntity(version({'b': 1}, 'B'));
+            await db!.updateJournalEntity(version({'c': 1}, 'C'));
+
+            expect(await openConflicts(), {'b:1': 'B', 'c:1': 'C'});
+          },
+        );
+
+        test(
+          'a version that follows an open conflict replaces it, and one that '
+          'another open conflict already includes adds nothing',
+          () async {
+            await db!.updateJournalEntity(version({'a': 1}, 'mine'));
+            await db!.updateJournalEntity(version({'b': 1}, 'B1'));
+            await db!.updateJournalEntity(version({'c': 1}, 'C'));
+
+            await db!.updateJournalEntity(version({'b': 2}, 'B2'));
+            final late = await db!.updateJournalEntity(version({'b': 1}, 'B1'));
+
+            expect(late.skipReason, JournalUpdateSkipReason.conflict);
+            expect(await openConflicts(), {'b:2': 'B2', 'c:1': 'C'});
+            expect(await db!.conflictsForEntry(id), hasLength(2));
+          },
+        );
+
+        test(
+          'resolving one pair settles that version and leaves the other open '
+          'for the next decision',
+          () async {
+            await db!.updateJournalEntity(version({'a': 1}, 'mine'));
+            await db!.updateJournalEntity(version({'b': 1}, 'B'));
+            await db!.updateJournalEntity(version({'c': 1}, 'C'));
+
+            // ConflictResolutionService: the merge of the row and B, plus
+            // this device's next counter.
+            final first = await db!.updateJournalEntity(
+              version({'a': 2, 'b': 1}, 'mine + B'),
+            );
+            expect(first.applied, isTrue);
+            expect(await openConflicts(), {'c:1': 'C'});
+
+            await db!.updateJournalEntity(
+              version({'a': 3, 'b': 1, 'c': 1}, 'mine + B + C'),
+            );
+            expect(await openConflicts(), isEmpty);
+            expect(
+              (await db!.conflictsForEntry(id)).map((c) => c.status).toSet(),
+              {ConflictStatus.resolved.index},
+            );
+          },
+        );
+
+        test('resolveConflict marks only the version it names', () async {
+          await db!.updateJournalEntity(version({'a': 1}, 'mine'));
+          await db!.updateJournalEntity(version({'b': 1}, 'B'));
+          await db!.updateJournalEntity(version({'c': 1}, 'C'));
+          final rows = await db!.conflictsForEntry(id);
+
+          await db!.resolveConflict(
+            rows.singleWhere((c) => c.versionKey == 'b:1'),
+          );
+
+          expect(await openConflicts(), {'c:1': 'C'});
+        });
       });
 
       test('a clockless version never replaces a clocked row', () async {
@@ -1379,7 +1500,7 @@ void main() {
           );
 
           expect(result.applied, isFalse);
-          expect(await db!.conflictById(id), isNull);
+          expect((await db!.conflictsForEntry(id)).firstOrNull, isNull);
           expect((await stored())?.entryText?.plainText, 'v1');
         },
       );

@@ -746,10 +746,12 @@ class SettingsLocation extends BeamLocation<BeamState> {
       if (pathContains('advanced/conflicts/') && pathContainsKey('conflictId'))
         BeamPage(
           key: ValueKey(
-            'settings-conflict-${state.pathParameters['conflictId']}',
+            'settings-conflict-${state.pathParameters['conflictId']}'
+            '@${state.uri.queryParameters['version'] ?? ''}',
           ),
           child: ConflictDetailRoute(
             conflictId: state.pathParameters['conflictId']!,
+            versionKey: state.uri.queryParameters['version'],
           ),
         ),
 

@@ -20,14 +20,16 @@ import '../../../widget_test_utils.dart';
 
 final _firstSeen = DateTime.utc(2024, 3, 15, 14);
 
-Conflict _conflict(String id, {DateTime? updatedAt}) => Conflict(
-  id: id,
-  createdAt: _firstSeen,
-  updatedAt: updatedAt ?? _firstSeen,
-  serialized: '{}',
-  schemaVersion: 1,
-  status: ConflictStatus.unresolved.index,
-);
+Conflict _conflict(String id, {DateTime? updatedAt, String versionKey = ''}) =>
+    Conflict(
+      id: id,
+      versionKey: versionKey,
+      createdAt: _firstSeen,
+      updatedAt: updatedAt ?? _firstSeen,
+      serialized: '{}',
+      schemaVersion: 1,
+      status: ConflictStatus.unresolved.index,
+    );
 
 void main() {
   // The default-locale path resolves through WidgetsBinding.instance.
@@ -186,6 +188,23 @@ void main() {
         episodeId(['a']),
         episodeId(['a'], updatedAt: later),
       ]);
+    },
+  );
+
+  test(
+    'a second concurrent version of an entry already in conflict is a new '
+    'conflict, counted and alerted on its own',
+    () async {
+      await observer.handleSnapshot([_conflict('a', versionKey: 'hB:1')]);
+      await observer.handleSnapshot([
+        _conflict('a', versionKey: 'hB:1'),
+        _conflict('a', versionKey: 'hC:1'),
+      ]);
+
+      final row = armedRows.single as SyncConflictNotification;
+      expect(row.conflictCount, 2);
+      expect(row.body, l10n.conflictNotificationBody(2));
+      expect(row.meta.id, episodeId(['a/hC:1']));
     },
   );
 

@@ -112,7 +112,10 @@ void _registerIdempotency(_Db Function() fixture) {
 
         expect(received.applied, isFalse);
         expect(received.skipReason, JournalUpdateSkipReason.conflict);
-        expect(await f.db.conflictById(ours.meta.id), isNotNull);
+        expect(
+          (await f.db.conflictsForEntry(ours.meta.id)).firstOrNull,
+          isNotNull,
+        );
         expect(await idsOf('Task', 'Audit the key rotation'), [ours.meta.id]);
       },
     );

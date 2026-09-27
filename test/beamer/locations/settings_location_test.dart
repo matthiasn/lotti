@@ -2048,6 +2048,29 @@ void main() {
       );
       expect(pages[2].child, isA<ConflictsPage>());
       expect(pages[3].child, isA<ConflictDetailRoute>());
+      expect((pages[3].child as ConflictDetailRoute).versionKey, isNull);
+    });
+
+    test('buildPages hands the version query to ConflictDetailRoute', () {
+      final routeInformation = RouteInformation(
+        uri: Uri.parse(
+          '/settings/advanced/conflicts/conflict-123?version=hA%3A1%2ChB%3A2',
+        ),
+      );
+      final location = SettingsLocation(routeInformation);
+      var beamState = BeamState.fromRouteInformation(routeInformation);
+      beamState = beamState.copyWith(
+        pathParameters: {'conflictId': 'conflict-123'},
+      );
+      final pages = location.buildPages(mockBuildContext, beamState);
+
+      final detail = pages.last.child as ConflictDetailRoute;
+      expect(detail.conflictId, 'conflict-123');
+      expect(detail.versionKey, 'hA:1,hB:2');
+      expect(
+        pages.last.key,
+        const ValueKey('settings-conflict-conflict-123@hA:1,hB:2'),
+      );
     });
 
     test('buildPages builds MaintenancePage', () {

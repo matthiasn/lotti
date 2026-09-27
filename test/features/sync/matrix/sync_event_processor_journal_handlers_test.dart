@@ -939,7 +939,9 @@ void main() {
         );
 
         expect((await stored()).entryText?.plainText, 'edited again on A');
-        final conflict = await realJournalDb.conflictById(onA.meta.id);
+        final conflict = (await realJournalDb.conflictsForEntry(
+          onA.meta.id,
+        )).firstOrNull;
         expect(conflict, isNotNull);
         expect(conflict!.serialized, contains('edited on B'));
       },

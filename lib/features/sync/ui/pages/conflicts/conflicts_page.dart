@@ -31,6 +31,15 @@ class ConflictsPage extends StatefulWidget {
   State<ConflictsPage> createState() => _ConflictsPageState();
 }
 
+/// The detail route of one conflict row: its entry, and which of the entry's
+/// concurrent versions it holds (ADR 0092).
+String conflictDetailPath(Conflict conflict) => Uri(
+  path: '/settings/advanced/conflicts/${conflict.id}',
+  queryParameters: conflict.versionKey.isEmpty
+      ? null
+      : {'version': conflict.versionKey},
+).toString();
+
 class _ConflictsPageState extends State<ConflictsPage> {
   final JournalDb _db = getIt<JournalDb>();
 
@@ -141,7 +150,7 @@ class _ConflictsPageState extends State<ConflictsPage> {
           ctx.messages.syncListCountSummary(label, count),
       itemBuilder: (ctx, conflict) => ConflictListItem(
         conflict: conflict,
-        onTap: () => beamToNamed('/settings/advanced/conflicts/${conflict.id}'),
+        onTap: () => beamToNamed(conflictDetailPath(conflict)),
       ),
     );
   }

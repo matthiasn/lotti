@@ -1480,6 +1480,18 @@ class Conflicts extends Table with TableInfo<Conflicts, Conflict> {
     requiredDuringInsert: true,
     $customConstraints: 'NOT NULL',
   );
+  static const VerificationMeta _versionKeyMeta = const VerificationMeta(
+    'versionKey',
+  );
+  late final GeneratedColumn<String> versionKey = GeneratedColumn<String>(
+    'version_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'\'',
+    defaultValue: const CustomExpression('\'\''),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -1537,6 +1549,7 @@ class Conflicts extends Table with TableInfo<Conflicts, Conflict> {
   @override
   List<GeneratedColumn> get $columns => [
     id,
+    versionKey,
     createdAt,
     updatedAt,
     serialized,
@@ -1559,6 +1572,12 @@ class Conflicts extends Table with TableInfo<Conflicts, Conflict> {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     } else if (isInserting) {
       context.missing(_idMeta);
+    }
+    if (data.containsKey('version_key')) {
+      context.handle(
+        _versionKeyMeta,
+        versionKey.isAcceptableOrUnknown(data['version_key']!, _versionKeyMeta),
+      );
     }
     if (data.containsKey('created_at')) {
       context.handle(
@@ -1605,7 +1624,7 @@ class Conflicts extends Table with TableInfo<Conflicts, Conflict> {
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {id};
+  Set<GeneratedColumn> get $primaryKey => {id, versionKey};
   @override
   Conflict map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
@@ -1613,6 +1632,10 @@ class Conflicts extends Table with TableInfo<Conflicts, Conflict> {
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
+      )!,
+      versionKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}version_key'],
       )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
@@ -1643,13 +1666,14 @@ class Conflicts extends Table with TableInfo<Conflicts, Conflict> {
   }
 
   @override
-  List<String> get customConstraints => const ['PRIMARY KEY(id)'];
+  List<String> get customConstraints => const ['PRIMARY KEY(id, version_key)'];
   @override
   bool get dontWriteConstraints => true;
 }
 
 class Conflict extends DataClass implements Insertable<Conflict> {
   final String id;
+  final String versionKey;
   final DateTime createdAt;
   final DateTime updatedAt;
   final String serialized;
@@ -1657,6 +1681,7 @@ class Conflict extends DataClass implements Insertable<Conflict> {
   final int status;
   const Conflict({
     required this.id,
+    required this.versionKey,
     required this.createdAt,
     required this.updatedAt,
     required this.serialized,
@@ -1667,6 +1692,7 @@ class Conflict extends DataClass implements Insertable<Conflict> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
+    map['version_key'] = Variable<String>(versionKey);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     map['serialized'] = Variable<String>(serialized);
@@ -1678,6 +1704,7 @@ class Conflict extends DataClass implements Insertable<Conflict> {
   ConflictsCompanion toCompanion(bool nullToAbsent) {
     return ConflictsCompanion(
       id: Value(id),
+      versionKey: Value(versionKey),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       serialized: Value(serialized),
@@ -1693,6 +1720,7 @@ class Conflict extends DataClass implements Insertable<Conflict> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Conflict(
       id: serializer.fromJson<String>(json['id']),
+      versionKey: serializer.fromJson<String>(json['version_key']),
       createdAt: serializer.fromJson<DateTime>(json['created_at']),
       updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
       serialized: serializer.fromJson<String>(json['serialized']),
@@ -1705,6 +1733,7 @@ class Conflict extends DataClass implements Insertable<Conflict> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
+      'version_key': serializer.toJson<String>(versionKey),
       'created_at': serializer.toJson<DateTime>(createdAt),
       'updated_at': serializer.toJson<DateTime>(updatedAt),
       'serialized': serializer.toJson<String>(serialized),
@@ -1715,6 +1744,7 @@ class Conflict extends DataClass implements Insertable<Conflict> {
 
   Conflict copyWith({
     String? id,
+    String? versionKey,
     DateTime? createdAt,
     DateTime? updatedAt,
     String? serialized,
@@ -1722,6 +1752,7 @@ class Conflict extends DataClass implements Insertable<Conflict> {
     int? status,
   }) => Conflict(
     id: id ?? this.id,
+    versionKey: versionKey ?? this.versionKey,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     serialized: serialized ?? this.serialized,
@@ -1731,6 +1762,9 @@ class Conflict extends DataClass implements Insertable<Conflict> {
   Conflict copyWithCompanion(ConflictsCompanion data) {
     return Conflict(
       id: data.id.present ? data.id.value : this.id,
+      versionKey: data.versionKey.present
+          ? data.versionKey.value
+          : this.versionKey,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       serialized: data.serialized.present
@@ -1747,6 +1781,7 @@ class Conflict extends DataClass implements Insertable<Conflict> {
   String toString() {
     return (StringBuffer('Conflict(')
           ..write('id: $id, ')
+          ..write('versionKey: $versionKey, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('serialized: $serialized, ')
@@ -1757,13 +1792,21 @@ class Conflict extends DataClass implements Insertable<Conflict> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, createdAt, updatedAt, serialized, schemaVersion, status);
+  int get hashCode => Object.hash(
+    id,
+    versionKey,
+    createdAt,
+    updatedAt,
+    serialized,
+    schemaVersion,
+    status,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Conflict &&
           other.id == this.id &&
+          other.versionKey == this.versionKey &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.serialized == this.serialized &&
@@ -1773,6 +1816,7 @@ class Conflict extends DataClass implements Insertable<Conflict> {
 
 class ConflictsCompanion extends UpdateCompanion<Conflict> {
   final Value<String> id;
+  final Value<String> versionKey;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<String> serialized;
@@ -1781,6 +1825,7 @@ class ConflictsCompanion extends UpdateCompanion<Conflict> {
   final Value<int> rowid;
   const ConflictsCompanion({
     this.id = const Value.absent(),
+    this.versionKey = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.serialized = const Value.absent(),
@@ -1790,6 +1835,7 @@ class ConflictsCompanion extends UpdateCompanion<Conflict> {
   });
   ConflictsCompanion.insert({
     required String id,
+    this.versionKey = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     required String serialized,
@@ -1803,6 +1849,7 @@ class ConflictsCompanion extends UpdateCompanion<Conflict> {
        status = Value(status);
   static Insertable<Conflict> custom({
     Expression<String>? id,
+    Expression<String>? versionKey,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<String>? serialized,
@@ -1812,6 +1859,7 @@ class ConflictsCompanion extends UpdateCompanion<Conflict> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (versionKey != null) 'version_key': versionKey,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (serialized != null) 'serialized': serialized,
@@ -1823,6 +1871,7 @@ class ConflictsCompanion extends UpdateCompanion<Conflict> {
 
   ConflictsCompanion copyWith({
     Value<String>? id,
+    Value<String>? versionKey,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<String>? serialized,
@@ -1832,6 +1881,7 @@ class ConflictsCompanion extends UpdateCompanion<Conflict> {
   }) {
     return ConflictsCompanion(
       id: id ?? this.id,
+      versionKey: versionKey ?? this.versionKey,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       serialized: serialized ?? this.serialized,
@@ -1846,6 +1896,9 @@ class ConflictsCompanion extends UpdateCompanion<Conflict> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<String>(id.value);
+    }
+    if (versionKey.present) {
+      map['version_key'] = Variable<String>(versionKey.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -1872,6 +1925,7 @@ class ConflictsCompanion extends UpdateCompanion<Conflict> {
   String toString() {
     return (StringBuffer('ConflictsCompanion(')
           ..write('id: $id, ')
+          ..write('versionKey: $versionKey, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('serialized: $serialized, ')
@@ -6929,7 +6983,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
 
   Selectable<Conflict> conflictsById(String id) {
     return customSelect(
-      'SELECT * FROM conflicts WHERE id = ?1 ORDER BY created_at DESC',
+      'SELECT * FROM conflicts WHERE id = ?1 ORDER BY created_at DESC, version_key ASC',
       variables: [Variable<String>(id)],
       readsFrom: {conflicts},
     ).asyncMap(conflicts.mapFromRow);
@@ -8389,6 +8443,7 @@ typedef $JournalProcessedTableManager =
 typedef $ConflictsCreateCompanionBuilder =
     ConflictsCompanion Function({
       required String id,
+      Value<String> versionKey,
       required DateTime createdAt,
       required DateTime updatedAt,
       required String serialized,
@@ -8399,6 +8454,7 @@ typedef $ConflictsCreateCompanionBuilder =
 typedef $ConflictsUpdateCompanionBuilder =
     ConflictsCompanion Function({
       Value<String> id,
+      Value<String> versionKey,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<String> serialized,
@@ -8417,6 +8473,11 @@ class $ConflictsFilterComposer extends Composer<_$JournalDb, Conflicts> {
   });
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get versionKey => $composableBuilder(
+    column: $table.versionKey,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8459,6 +8520,11 @@ class $ConflictsOrderingComposer extends Composer<_$JournalDb, Conflicts> {
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get versionKey => $composableBuilder(
+    column: $table.versionKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -8495,6 +8561,11 @@ class $ConflictsAnnotationComposer extends Composer<_$JournalDb, Conflicts> {
   });
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get versionKey => $composableBuilder(
+    column: $table.versionKey,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -8545,6 +8616,7 @@ class $ConflictsTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
+                Value<String> versionKey = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<String> serialized = const Value.absent(),
@@ -8553,6 +8625,7 @@ class $ConflictsTableManager
                 Value<int> rowid = const Value.absent(),
               }) => ConflictsCompanion(
                 id: id,
+                versionKey: versionKey,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 serialized: serialized,
@@ -8563,6 +8636,7 @@ class $ConflictsTableManager
           createCompanionCallback:
               ({
                 required String id,
+                Value<String> versionKey = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 required String serialized,
@@ -8571,6 +8645,7 @@ class $ConflictsTableManager
                 Value<int> rowid = const Value.absent(),
               }) => ConflictsCompanion.insert(
                 id: id,
+                versionKey: versionKey,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 serialized: serialized,

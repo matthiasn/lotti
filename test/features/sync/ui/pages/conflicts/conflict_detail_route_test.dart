@@ -44,14 +44,21 @@ JournalEntity _entry({
   );
 }
 
-Conflict _conflict({required JournalEntity remote, String id = _conflictId}) {
+Conflict _conflict({
+  required JournalEntity remote,
+  String id = _conflictId,
+  String versionKey = '',
+  DateTime? createdAt,
+  ConflictStatus status = ConflictStatus.unresolved,
+}) {
   return Conflict(
     id: id,
-    createdAt: _baseTime,
-    updatedAt: _baseTime,
+    versionKey: versionKey,
+    createdAt: createdAt ?? _baseTime,
+    updatedAt: createdAt ?? _baseTime,
     serialized: jsonEncode(remote.toJson()),
     schemaVersion: 1,
-    status: ConflictStatus.unresolved.index,
+    status: status.index,
   );
 }
 
@@ -105,12 +112,16 @@ class _Bench {
 
 const _size = Size(1200, 900);
 
-Future<void> _pump(WidgetTester tester, String conflictId) async {
+Future<void> _pump(
+  WidgetTester tester,
+  String conflictId, {
+  String? versionKey,
+}) async {
   await tester.binding.setSurfaceSize(_size);
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(
     makeTestableWidgetNoScroll(
-      ConflictDetailRoute(conflictId: conflictId),
+      ConflictDetailRoute(conflictId: conflictId, versionKey: versionKey),
       mediaQueryData: const MediaQueryData(size: _size),
     ),
   );
@@ -376,6 +387,109 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       verifyNever(
         () => bench.db.journalEntityByIdIncludingDeleted(conflict.id),
+      );
+    });
+  });
+
+  // An entry can hold several concurrent versions, one row each (ADR 0092).
+  group('several concurrent versions', () {
+    final local = _entry(title: 'Local title', clock: const {'a': 2});
+    final older = _conflict(
+      remote: _entry(title: 'From B', clock: const {'a': 1, 'b': 1}),
+      versionKey: 'a:1,b:1',
+    );
+    final newer = _conflict(
+      remote: _entry(title: 'From C', clock: const {'a': 1, 'c': 1}),
+      versionKey: 'a:1,c:1',
+      createdAt: _baseTime.add(const Duration(minutes: 1)),
+    );
+
+    Future<String> keptFromSync(WidgetTester tester, String? versionKey) async {
+      final bench = await _Bench.create(localEntry: local, conflict: older);
+      addTearDown(bench.dispose);
+      await _pump(tester, older.id, versionKey: versionKey);
+      bench.controller.add([newer, older]);
+      await tester.pumpAndSettle();
+      await _tap(tester, l10n.conflictPickerUseFromSync);
+      final captured = verify(
+        () => bench.persistence.updateJournalEntity(captureAny(), any()),
+      ).captured;
+      return _firstLineOf(captured.single as JournalEntity);
+    }
+
+    testWidgets('the version the list row named is the one decided', (
+      tester,
+    ) async {
+      expect(await keptFromSync(tester, 'a:1,c:1'), 'From C');
+    });
+
+    testWidgets('without a version, the oldest open one comes first', (
+      tester,
+    ) async {
+      expect(await keptFromSync(tester, null), 'From B');
+    });
+
+    testWidgets(
+      'when the version shown is resolved elsewhere, the next one is decided '
+      'against the row that resolution wrote, not the row before',
+      (tester) async {
+        final bench = await _Bench.create(localEntry: local, conflict: older);
+        addTearDown(bench.dispose);
+        await _pump(tester, older.id);
+        bench.controller.add([newer, older]);
+        await tester.pumpAndSettle();
+
+        // Sync settles B's version: the local row is now the merge of the
+        // row and B, and C's version is the one still open.
+        final merged = _entry(
+          title: 'Local + B',
+          clock: const {'a': 3, 'b': 1},
+        );
+        when(
+          () => bench.db.journalEntityByIdIncludingDeleted(older.id),
+        ).thenAnswer((_) async => merged);
+        bench.controller.add([
+          newer,
+          older.copyWith(status: ConflictStatus.resolved.index),
+        ]);
+        await tester.pumpAndSettle();
+
+        await _tap(tester, l10n.conflictPickerUseThisDevice);
+        final written =
+            verify(
+                  () => bench.persistence.updateJournalEntity(
+                    captureAny(),
+                    any(),
+                  ),
+                ).captured.single
+                as JournalEntity;
+        expect(_firstLineOf(written), 'Local + B');
+        // The merge covers the new row and C, so it settles C as well.
+        expect(
+          written.meta.vectorClock,
+          const VectorClock({'a': 3, 'b': 1, 'c': 1}),
+        );
+      },
+    );
+
+    test('pickConflictVersion falls back to the oldest unresolved row once '
+        'the named one is resolved, and to the newest when none is open', () {
+      final resolvedNewer = _conflict(
+        remote: _entry(title: 'From C', clock: const {'a': 1, 'c': 1}),
+        versionKey: 'a:1,c:1',
+        createdAt: _baseTime.add(const Duration(minutes: 1)),
+        status: ConflictStatus.resolved,
+      );
+      final resolvedOlder = _conflict(
+        remote: _entry(title: 'From B', clock: const {'a': 1, 'b': 1}),
+        versionKey: 'a:1,b:1',
+        status: ConflictStatus.resolved,
+      );
+
+      expect(pickConflictVersion([resolvedNewer, older], 'a:1,c:1'), older);
+      expect(
+        pickConflictVersion([resolvedNewer, resolvedOlder], 'a:1,b:1'),
+        resolvedNewer,
       );
     });
   });

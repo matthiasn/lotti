@@ -59,8 +59,15 @@ class DetailIdDispatch extends StatelessWidget {
   create;
 
   /// Builds the detail body when [idParamKey] resolves to a non-empty
-  /// id (and not the literal `create`). Receives that id.
-  final Widget Function(BuildContext context, String id) detail;
+  /// id (and not the literal `create`). Receives that id, and the full
+  /// route so it can read query parameters (e.g. which of a conflicted
+  /// entry's versions to show).
+  final Widget Function(
+    BuildContext context,
+    String id,
+    DesktopSettingsRoute? route,
+  )
+  detail;
 
   /// Bodies for URLs that hang *below* a detail route, keyed by the
   /// URL's trailing segment — `{'review': …}` serves
@@ -109,7 +116,7 @@ class DetailIdDispatch extends StatelessWidget {
               // previous body on screen.
               modeKey = 'detail:$id/$segment';
             } else {
-              child = detail(context, id);
+              child = detail(context, id, route);
               // Key includes the id so swapping between two detail rows
               // (e.g. tapping a different category) cross-fades instead
               // of reusing the previous detail's element.

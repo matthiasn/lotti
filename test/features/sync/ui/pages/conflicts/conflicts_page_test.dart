@@ -271,6 +271,32 @@ void main() {
     );
   });
 
+  group('conflictDetailPath', () {
+    test('names the version a row holds, so the page opens that one', () {
+      expect(
+        conflictDetailPath(
+          unresolvedConflict.copyWith(versionKey: 'hA:1,hB:2'),
+        ),
+        '/settings/advanced/conflicts/id?version=hA%3A1%2ChB%3A2',
+      );
+      expect(
+        Uri.parse(
+          conflictDetailPath(
+            unresolvedConflict.copyWith(versionKey: 'hA:1,hB:2'),
+          ),
+        ).queryParameters['version'],
+        'hA:1,hB:2',
+      );
+    });
+
+    test('a row from before versions were keyed links to the entry alone', () {
+      expect(
+        conflictDetailPath(unresolvedConflict),
+        '/settings/advanced/conflicts/id',
+      );
+    });
+  });
+
   group('ConflictsPage Widget Tests', () {
     final mockJournalDb = MockJournalDb();
 

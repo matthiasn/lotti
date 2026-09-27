@@ -95,9 +95,6 @@ class _ReplicaBench {
 
   /// Per device: keys of the versions received or written there.
   final _seen = [<String>{}, <String>{}, <String>{}];
-
-  /// Per device: conflicts another version displaced (the residual).
-  final _displaced = [<String>{}, <String>{}, <String>{}];
   final _snapshots = <JournalEntity?>[null, null, null];
   final _counters = [0, 0, 0];
   var _writes = 0;
@@ -135,16 +132,17 @@ class _ReplicaBench {
   Future<JournalEntity> _stored(int d) async =>
       (await dbs[d].journalEntityByIdIncludingDeleted(_replicaEntryId))!;
 
-  Future<JournalEntity?> _openConflict(int d) async {
-    final conflict = await dbs[d].conflictById(_replicaEntryId);
-    if (conflict == null ||
-        conflict.status != ConflictStatus.unresolved.index) {
-      return null;
-    }
-    return JournalEntity.fromJson(
-      jsonDecode(conflict.serialized) as Map<String, dynamic>,
-    );
-  }
+  /// Device [d]'s open conflicts: every concurrent version it holds, one
+  /// row each (ADR 0092), oldest first.
+  Future<List<JournalEntity>> _openConflicts(int d) async => [
+    for (final conflict in (await dbs[d].conflictsForEntry(
+      _replicaEntryId,
+    )).reversed)
+      if (conflict.status == ConflictStatus.unresolved.index)
+        JournalEntity.fromJson(
+          jsonDecode(conflict.serialized) as Map<String, dynamic>,
+        ),
+  ];
 
   /// A new version device [d] writes on [base]: its clock plus the device's
   /// next counter (MetadataService.updateMetadata), named by a fresh id.
@@ -189,22 +187,15 @@ class _ReplicaBench {
     }
   }
 
-  /// JournalDb.updateJournalEntity on device [d], keeping the ghosts of a
-  /// merged deletion and of a displaced conflict.
+  /// JournalDb.updateJournalEntity on device [d], keeping the ghost of a
+  /// merged deletion.
   Future<JournalUpdateResult> _decide(int d, JournalEntity incoming) async {
     final before = await _stored(d);
-    final conflictBefore = await _openConflict(d);
     final result = await dbs[d].updateJournalEntity(incoming);
     final after = await _stored(d);
     if (!_hist.containsKey(_keyOf(after))) {
       // Two deletions merged: the winner's fields under the joined clock.
       _register(after, {..._histOf(before), ..._histOf(incoming)});
-    }
-    final conflictAfter = await _openConflict(d);
-    if (conflictBefore != null &&
-        conflictAfter != null &&
-        !_histOf(conflictAfter).containsAll(_histOf(conflictBefore))) {
-      _displaced[d].add(_keyOf(conflictBefore));
     }
     return result;
   }
@@ -246,8 +237,9 @@ class _ReplicaBench {
         if (!writesLeft || stored.meta.deletedAt == null) return;
         await _write(d, _versionOn(d, stored, deleted: false), [stored]);
       case _ReplicaOp.resolve:
-        final remote = await _openConflict(d);
-        if (!writesLeft || remote == null) return;
+        final open = await _openConflicts(d);
+        if (!writesLeft || open.isEmpty) return;
+        final remote = open[(step.arg ~/ 2) % open.length];
         final local = await _stored(d);
         final chosen = resolveToSide(
           local: local,
@@ -307,16 +299,13 @@ class _ReplicaBench {
       _histOf(v).containsAll(_hist[key]!) ||
       (v.meta.deletedAt != null && _deleted[key]!);
 
-  bool _displacedKeeps(int d, String key) =>
-      _displaced[d].any((x) => _hist[x]!.containsAll(_hist[key]!));
-
   static bool _replaced(Set<int> v, Set<int> m) =>
       v.length < m.length && m.containsAll(v);
 
   Future<void> checkStep(Object trace) async {
     for (var d = 0; d < dbs.length; d++) {
       final row = await _stored(d);
-      final conflict = await _openConflict(d);
+      final open = await _openConflicts(d);
       final host = hosts[d];
       for (final key in _seen[d]) {
         expect(
@@ -325,21 +314,19 @@ class _ReplicaBench {
           reason: 'NoLostSuccessor on $host ($key): $trace',
         );
         expect(
-          _keeps(row, key) ||
-              (conflict != null && _keeps(conflict, key)) ||
-              _displacedKeeps(d, key),
+          _keeps(row, key) || open.any((c) => _keeps(c, key)),
           isTrue,
           reason: 'NothingDropped on $host ($key): $trace',
         );
-        if (conflict != null && _replaced(_histOf(conflict), _hist[key]!)) {
+        for (final conflict in open) {
           expect(
-            _displacedKeeps(d, key),
-            isTrue,
+            _replaced(_histOf(conflict), _hist[key]!),
+            isFalse,
             reason: 'ConflictNotStale on $host ($key): $trace',
           );
         }
       }
-      if (conflict != null) {
+      for (final conflict in open) {
         expect(
           _histOf(row).containsAll(_histOf(conflict)),
           isFalse,
@@ -351,11 +338,11 @@ class _ReplicaBench {
 
   Future<void> checkConverged(Object trace) async {
     final rows = [for (var d = 0; d < dbs.length; d++) await _stored(d)];
-    final open = [for (var d = 0; d < dbs.length; d++) await _openConflict(d)];
+    final open = [for (var d = 0; d < dbs.length; d++) await _openConflicts(d)];
     final same = rows.every((r) => _keyOf(r) == _keyOf(rows.first));
     final allDeleted = rows.every((r) => r.meta.deletedAt != null);
     expect(
-      same || allDeleted || open.any((c) => c != null),
+      same || allDeleted || open.any((c) => c.isNotEmpty),
       isTrue,
       reason: 'Converged: $trace',
     );

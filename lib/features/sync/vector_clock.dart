@@ -119,6 +119,15 @@ class VectorClock extends Equatable {
     return 0;
   }
 
+  /// The clock as `node:counter` pairs in sorted node order, joined by `,`:
+  /// the same text for equal clocks on every device, whatever the map's
+  /// iteration order. Names one version of an entry, as the conflict table's
+  /// `version_key` does (ADR 0092).
+  String get canonicalKey {
+    final nodeIds = vclock.keys.toList()..sort();
+    return nodeIds.map((nodeId) => '$nodeId:${vclock[nodeId]}').join(',');
+  }
+
   /// [node]'s counter for ordering: -1 when the node is absent, which ranks
   /// below every valid counter.
   int _rank(String node) => vclock[node] ?? -1;

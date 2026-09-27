@@ -46,7 +46,7 @@ mixin _JournalDbEntityOps
   }
 
   /// Compares the stored [existing] version with the incoming [updated] one
-  /// and records a concurrent pair as the entry's [Conflict].
+  /// and records a concurrent [updated] as one of the entry's [Conflict]s.
   ///
   /// A version without a vector clock carries no causal information. It
   /// replaces a stored row that has none either, but never a clocked one: a
@@ -81,20 +81,33 @@ mixin _JournalDbEntityOps
   static bool _bothDeleted(JournalEntity a, JournalEntity b) =>
       a.meta.deletedAt != null && b.meta.deletedAt != null;
 
-  /// Stores [incoming] as the entry's conflict row, unless the unresolved
-  /// conflict already stored is the same version or a newer one: a late copy
-  /// of an older version must not replace the version the user is shown.
+  /// Stores [incoming] as an unresolved conflict of its entry, one row per
+  /// version (ADR 0092).
+  ///
+  /// Nothing is stored when an unresolved conflict already holds the same
+  /// version or a newer one: a late copy of an older version must not stand
+  /// beside the version the user is shown. An unresolved conflict that
+  /// [incoming] follows is replaced by it, since [incoming] includes it. Every
+  /// other open conflict stays: a second concurrent version — a third
+  /// device's, or this device's own save built on an entry read before a
+  /// peer's version landed — is added beside the first instead of replacing
+  /// it. A replaced local save was never sent, so replacing it lost it.
   Future<void> _recordConflict(JournalEntity incoming) async {
-    final open = await conflictById(incoming.meta.id);
-    if (open != null &&
-        open.status == ConflictStatus.unresolved.index &&
-        _covers(incoming.meta.vectorClock, _conflictClock(open))) {
-      return;
+    final incomingClock = incoming.meta.vectorClock;
+    final open = await _unresolvedConflictsOf(incoming.meta.id);
+    for (final conflict in open) {
+      if (_covers(incomingClock, _conflictClock(conflict))) return;
+    }
+    for (final conflict in open) {
+      if (_covers(_conflictClock(conflict), incomingClock)) {
+        await _deleteConflict(conflict);
+      }
     }
     final now = clock.now();
     await addConflict(
       Conflict(
         id: incoming.meta.id,
+        versionKey: incomingClock?.canonicalKey ?? '',
         createdAt: now,
         updatedAt: now,
         serialized: jsonEncode(incoming),
@@ -104,22 +117,34 @@ mixin _JournalDbEntityOps
     );
   }
 
-  /// Marks the entry's unresolved conflict resolved when the version just
-  /// written, [written], is the conflict's version or a successor of it —
-  /// the user's resolution, or any later version that includes it. A write
-  /// that does not include it leaves the conflict open: marking it resolved
-  /// would drop the other device's edit without the user choosing so.
+  /// Marks resolved every unresolved conflict of the entry whose version the
+  /// version just written, [written], is or follows — the user's resolution,
+  /// or any later version that includes it. A conflict [written] does not
+  /// include stays open: marking it resolved would drop the other version
+  /// without the user choosing so. With several open, a resolution settles
+  /// the one the user decided and leaves the next for them.
   Future<void> _settleConflictCoveredBy(JournalEntity written) async {
-    final open = await conflictById(written.meta.id);
-    if (open == null || open.status != ConflictStatus.unresolved.index) {
-      return;
-    }
-    final conflictClock = _conflictClock(open);
-    if (conflictClock == null ||
-        _covers(conflictClock, written.meta.vectorClock)) {
-      await resolveConflict(open);
+    for (final conflict in await _unresolvedConflictsOf(written.meta.id)) {
+      final conflictClock = _conflictClock(conflict);
+      if (conflictClock == null ||
+          _covers(conflictClock, written.meta.vectorClock)) {
+        await resolveConflict(conflict);
+      }
     }
   }
+
+  Future<List<Conflict>> _unresolvedConflictsOf(String entryId) async =>
+      (await conflictsForEntry(
+        entryId,
+      )).where((c) => c.status == ConflictStatus.unresolved.index).toList();
+
+  Future<void> _deleteConflict(Conflict conflict) =>
+      (delete(conflicts)..where(
+            (t) =>
+                t.id.equals(conflict.id) &
+                t.versionKey.equals(conflict.versionKey),
+          ))
+          .go();
 
   /// The vector clock of the version stored in [conflict], or null when it
   /// has none or cannot be read.
@@ -268,13 +293,10 @@ mixin _JournalDbEntityOps
   JournalDbEntity _toRow(JournalEntity entity) =>
       toDbEntity(entity).copyWith(updatedAt: clock.now());
 
-  Future<Conflict?> conflictById(String id) async {
-    final res = await (select(conflicts)..where((t) => t.id.equals(id))).get();
-    if (res.isNotEmpty) {
-      return res.first;
-    }
-    return null;
-  }
+  /// Every conflict row of the entry [entryId], resolved or not, newest
+  /// first: one per concurrent version (ADR 0092).
+  Future<List<Conflict>> conflictsForEntry(String entryId) =>
+      conflictsById(entryId).get();
 
   /// How many soft-deleted rows [purgeDeletedFiles] reads per round trip.
   /// Keyed on rowid so the walk never re-reads what it has already visited,
@@ -406,13 +428,19 @@ mixin _JournalDbEntityOps
     return conflictsByStatus(status.index, limit).watch();
   }
 
+  /// Every conflict row of the entry [id], one per concurrent version,
+  /// newest first.
   Stream<List<Conflict>> watchConflictById(String id) {
     return conflictsById(id).watch();
   }
 
+  /// Marks [conflict] — one version of its entry — resolved.
   Future<int> resolveConflict(Conflict conflict) {
-    return (update(conflicts)..where((t) => t.id.equals(conflict.id))).write(
-      conflict.copyWith(status: ConflictStatus.resolved.index),
-    );
+    return (update(conflicts)..where(
+          (t) =>
+              t.id.equals(conflict.id) &
+              t.versionKey.equals(conflict.versionKey),
+        ))
+        .write(conflict.copyWith(status: ConflictStatus.resolved.index));
   }
 }

@@ -54,6 +54,7 @@ Conflict _conflict({
   final ts = createdAt ?? DateTime(2024, 3, 15, 12, 30);
   return Conflict(
     id: id,
+    versionKey: '',
     createdAt: ts,
     updatedAt: ts,
     serialized: serializedJson,

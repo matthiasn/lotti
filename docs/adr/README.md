@@ -159,3 +159,4 @@ Each ADR should contain:
 - [`0089-checklist-membership-on-the-stored-row.md`](./0089-checklist-membership-on-the-stored-row.md)
 - [`0090-cross-device-agent-wake-coordination.md`](./0090-cross-device-agent-wake-coordination.md)
 - [`0091-wake-coordination-by-vector-clock-coverage.md`](./0091-wake-coordination-by-vector-clock-coverage.md)
+- [`0092-one-conflict-row-per-version.md`](./0092-one-conflict-row-per-version.md)

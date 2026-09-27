@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
@@ -16,10 +17,23 @@ import 'package:material_ui/material_ui.dart';
 /// Conflict resolution page. Loads the local + remote versions of the
 /// conflicted entry, renders a full field-level diff, and lets the user keep
 /// either side or combine them — applied through [ConflictResolutionService].
+///
+/// An entry can hold several concurrent versions at once, one conflict row
+/// each (ADR 0092). The page shows the one [versionKey] names; without it, or
+/// once that one is resolved, the oldest still unresolved. Resolving one
+/// writes the merge of that pair, and the next is decided against it.
 class ConflictDetailRoute extends StatefulWidget {
-  const ConflictDetailRoute({required this.conflictId, super.key});
+  const ConflictDetailRoute({
+    required this.conflictId,
+    this.versionKey,
+    super.key,
+  });
 
+  /// The conflicted entry's id.
   final String conflictId;
+
+  /// The conflict row's `version_key`, when a list row named one.
+  final String? versionKey;
 
   @override
   State<ConflictDetailRoute> createState() => _ConflictDetailRouteState();
@@ -30,17 +44,22 @@ class _ConflictDetailRouteState extends State<ConflictDetailRoute> {
   Future<JournalEntity?>? _localEntryFuture;
   String? _futureKey;
 
-  /// Cache the local-entry lookup keyed by conflict id so the
-  /// [FutureBuilder] doesn't re-issue the DB read on every stream tick.
+  /// Cache the local-entry lookup keyed by the conflict row shown — the
+  /// entry and the version — so the [FutureBuilder] doesn't re-issue the DB
+  /// read on every stream tick, but does read again when the page moves to
+  /// another version. That happens when the version shown is resolved while
+  /// another is still open: the resolution wrote a new local row, and the
+  /// next version must be decided against it, not against the row before.
   ///
   /// The local side is read with its soft deletion: an edit that arrived
   /// after this device deleted the entry is a delete-versus-edit conflict,
   /// and the user decides it here.
-  Future<JournalEntity?> _localEntryFor(String conflictId) {
-    if (_futureKey != conflictId || _localEntryFuture == null) {
-      _futureKey = conflictId;
+  Future<JournalEntity?> _localEntryFor(Conflict conflict) {
+    final key = '${conflict.id}/${conflict.versionKey}';
+    if (_futureKey != key || _localEntryFuture == null) {
+      _futureKey = key;
       _localEntryFuture = getIt<JournalDb>().journalEntityByIdIncludingDeleted(
-        conflictId,
+        conflict.id,
       );
     }
     return _localEntryFuture!;
@@ -95,10 +114,10 @@ class _ConflictDetailRouteState extends State<ConflictDetailRoute> {
             context.messages.conflictDetailNotFoundTitle,
           );
         }
-        final conflict = data.first;
+        final conflict = pickConflictVersion(data, widget.versionKey);
         final remote = fromSerialized(conflict.serialized);
         return FutureBuilder<JournalEntity?>(
-          future: _localEntryFor(conflict.id),
+          future: _localEntryFor(conflict),
           builder: (context, entrySnapshot) {
             if (entrySnapshot.hasError) {
               return EmptyScaffoldWithTitle(
@@ -133,6 +152,19 @@ class _ConflictDetailRouteState extends State<ConflictDetailRoute> {
 
   Widget _loading(BuildContext context) =>
       const Scaffold(body: Center(child: CircularProgressIndicator()));
+}
+
+/// The conflict row of one entry the page shows, from [rows] ordered newest
+/// first: the one [versionKey] names while it is unresolved, else the oldest
+/// unresolved, else the newest.
+@visibleForTesting
+Conflict pickConflictVersion(List<Conflict> rows, String? versionKey) {
+  bool unresolved(Conflict c) => c.status == ConflictStatus.unresolved.index;
+  return rows.firstWhereOrNull(
+        (c) => unresolved(c) && c.versionKey == versionKey,
+      ) ??
+      rows.lastWhereOrNull(unresolved) ??
+      rows.first;
 }
 
 class _Scaffold extends StatelessWidget {
