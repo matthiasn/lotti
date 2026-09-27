@@ -6,9 +6,12 @@ import 'package:lotti/features/design_system/components/toggles/design_system_to
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/state/backfill_config_controller.dart';
 import 'package:lotti/features/sync/state/backfill_stats_controller.dart';
+import 'package:lotti/features/sync/state/deep_backfill_controller.dart';
+import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_recovery.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_stats.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_feature_gate.dart';
@@ -48,9 +51,12 @@ class BackfillSettingsPage extends StatelessWidget {
 ///   1. **Status row** — three welded cells (Inbound queue · Missing
 ///      · Skipped) on a single rounded surface. Operator-critical
 ///      counters live here so they sit at eye level.
-///   2. **Sync statistics** — leader-dot ledger of eight counts.
-///   3. **Automatic backfill** — toggle card.
-///   4. **Advanced recovery** — collapsed group containing every
+///   2. **Sync statistics** — leader-dot ledger of eight counts, then the
+///      tracked counters per device.
+///   3. **Records on this device** — per-type record counts, the numbers a
+///      deep backfill makes equal across devices.
+///   4. **Automatic backfill** — toggle card.
+///   5. **Advanced recovery** — collapsed group containing every
 ///      manual recovery action.
 ///
 /// The body owns no chrome (page title / scaffold) — both hosts
@@ -65,6 +71,15 @@ class BackfillSettingsBody extends ConsumerWidget {
     final config = ref.watch(backfillConfigControllerProvider);
     final stats = ref.watch(backfillStatsControllerProvider);
     final liveMissing = ref.watch(backfillMissingCountProvider).value;
+    final recordCounts = ref.watch(deepBackfillRecordCountsProvider);
+    final self = ref.watch(localSyncNodeSelfProvider).value;
+    final hostNames = {
+      for (final node
+          in ref.watch(knownSyncNodesProvider).value ??
+              const <SyncNodeProfile>[])
+        node.hostId: node.displayName,
+      if (self != null) self.hostId: self.displayName,
+    };
     final missing = liveMissing ?? stats.stats?.totalMissing ?? 0;
     final matrixService = getIt.isRegistered<MatrixService>()
         ? getIt<MatrixService>()
@@ -94,6 +109,15 @@ class BackfillSettingsBody extends ConsumerWidget {
                 onRefresh: () => ref
                     .read(backfillStatsControllerProvider.notifier)
                     .refresh(),
+                hostNames: hostNames,
+                selfHostId: self?.hostId,
+              ),
+              SizedBox(height: tokens.spacing.step4),
+              RecordCountsCard(
+                counts: recordCounts.value,
+                isLoading: recordCounts.isLoading,
+                onRefresh: () =>
+                    ref.invalidate(deepBackfillRecordCountsProvider),
               ),
               SizedBox(height: tokens.spacing.step4),
               _AutomaticBackfillCard(

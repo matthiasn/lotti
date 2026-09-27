@@ -2721,6 +2721,31 @@ class AppLocalizationsDa extends AppLocalizations {
   String get backfillManualTrigger => 'Anmod om manglende poster';
 
   @override
+  String get backfillRecordsAgentEntities => 'Agententiteter';
+
+  @override
+  String get backfillRecordsAgentLinks => 'Agentlinks';
+
+  @override
+  String get backfillRecordsConsumptionEvents => 'AI-forbrugshændelser';
+
+  @override
+  String get backfillRecordsEntryLinks => 'Links mellem poster';
+
+  @override
+  String get backfillRecordsHint =>
+      'Inklusive slettede. Enheder, der er synkroniseret, viser de samme tal her; sporede tællere kan variere mellem dem.';
+
+  @override
+  String get backfillRecordsJournal => 'Journalposter';
+
+  @override
+  String get backfillRecordsNotifications => 'Notifikationer';
+
+  @override
+  String get backfillRecordsTitle => 'Poster på denne enhed';
+
+  @override
   String get backfillReRequestDescription =>
       'Anmod om nye indsendelser, der blev anmodet om, men aldrig modtaget. Brug dette, når svarene sidder fast.';
 
@@ -2802,6 +2827,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get backfillStatsBurned => 'Brændt';
 
   @override
+  String get backfillStatsByDevice => 'Sporede tællere pr. enhed';
+
+  @override
   String get backfillStatsDeleted => 'Slettet';
 
   @override
@@ -2820,10 +2848,15 @@ class AppLocalizationsDa extends AppLocalizations {
   String get backfillStatsRequested => 'Efterspurgt';
 
   @override
+  String backfillStatsThisDevice(String name) {
+    return '$name (denne enhed)';
+  }
+
+  @override
   String get backfillStatsTitle => 'Synkroniseringsstatistikker';
 
   @override
-  String get backfillStatsTotalEntries => 'Samlet antal tilmeldinger';
+  String get backfillStatsTrackedCounters => 'Sporede tællere';
 
   @override
   String get backfillStatsUnresolvable => 'Uløseligt';

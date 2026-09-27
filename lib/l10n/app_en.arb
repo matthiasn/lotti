@@ -1740,6 +1740,14 @@
   "backfillManualProcessing": "Processing...",
   "backfillManualTitle": "Manual Backfill",
   "backfillManualTrigger": "Request Missing Entries",
+  "backfillRecordsAgentEntities": "Agent entities",
+  "backfillRecordsAgentLinks": "Agent links",
+  "backfillRecordsConsumptionEvents": "AI usage events",
+  "backfillRecordsEntryLinks": "Entry links",
+  "backfillRecordsHint": "Deletions included. Devices that are in sync show the same numbers here; tracked counters can differ between them.",
+  "backfillRecordsJournal": "Journal entries",
+  "backfillRecordsNotifications": "Notifications",
+  "backfillRecordsTitle": "Records on this device",
   "backfillReRequestDescription": "Re-request entries that were requested but never received. Use this when responses are stuck.",
   "backfillReRequestProcessing": "Re-requesting...",
   "backfillReRequestTitle": "Re-Request Pending",
@@ -1773,14 +1781,23 @@
   "backfillSettingsTitle": "Backfill sync",
   "backfillStatsBackfilled": "Backfilled",
   "backfillStatsBurned": "Burned",
+  "backfillStatsByDevice": "Tracked counters by device",
   "backfillStatsDeleted": "Deleted",
   "backfillStatsMissing": "Missing",
   "backfillStatsNoData": "No sync data available",
   "backfillStatsReceived": "Received",
   "backfillStatsRefresh": "Refresh stats",
   "backfillStatsRequested": "Requested",
+  "backfillStatsThisDevice": "{name} (this device)",
+  "@backfillStatsThisDevice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "backfillStatsTitle": "Sync statistics",
-  "backfillStatsTotalEntries": "Total entries",
+  "backfillStatsTrackedCounters": "Tracked counters",
   "backfillStatsUnresolvable": "Unresolvable",
   "backfillStatusInboundQueue": "Inbound queue",
   "backfillStatusMissing": "Missing",

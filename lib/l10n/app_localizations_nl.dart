@@ -2733,6 +2733,31 @@ class AppLocalizationsNl extends AppLocalizations {
   String get backfillManualTrigger => 'Verzoek ontbrekende items';
 
   @override
+  String get backfillRecordsAgentEntities => 'Agententiteiten';
+
+  @override
+  String get backfillRecordsAgentLinks => 'Agentkoppelingen';
+
+  @override
+  String get backfillRecordsConsumptionEvents => 'AI-gebruiksgebeurtenissen';
+
+  @override
+  String get backfillRecordsEntryLinks => 'Koppelingen tussen items';
+
+  @override
+  String get backfillRecordsHint =>
+      'Inclusief verwijderde. Gesynchroniseerde apparaten tonen hier dezelfde aantallen; de bijgehouden tellers kunnen tussen hen verschillen.';
+
+  @override
+  String get backfillRecordsJournal => 'Dagboekitems';
+
+  @override
+  String get backfillRecordsNotifications => 'Meldingen';
+
+  @override
+  String get backfillRecordsTitle => 'Records op dit apparaat';
+
+  @override
   String get backfillReRequestDescription =>
       'Re-verzoeken die werden aangevraagd maar nooit ontvangen. Gebruik dit wanneer de antwoorden vastzitten.';
 
@@ -2811,6 +2836,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get backfillStatsBurned => 'Verbrand';
 
   @override
+  String get backfillStatsByDevice => 'Bijgehouden tellers per apparaat';
+
+  @override
   String get backfillStatsDeleted => 'Verwijderd';
 
   @override
@@ -2829,10 +2857,15 @@ class AppLocalizationsNl extends AppLocalizations {
   String get backfillStatsRequested => 'Verzoek';
 
   @override
+  String backfillStatsThisDevice(String name) {
+    return '$name (dit apparaat)';
+  }
+
+  @override
   String get backfillStatsTitle => 'Synchronisatiestatistieken';
 
   @override
-  String get backfillStatsTotalEntries => 'Totaal aantal vermeldingen';
+  String get backfillStatsTrackedCounters => 'Bijgehouden tellers';
 
   @override
   String get backfillStatsUnresolvable => 'Onoplosbaar';

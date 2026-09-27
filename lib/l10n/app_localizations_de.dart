@@ -2745,6 +2745,31 @@ class AppLocalizationsDe extends AppLocalizations {
   String get backfillManualTrigger => 'Fehlende Einträge anfordern';
 
   @override
+  String get backfillRecordsAgentEntities => 'Agenten-Entitäten';
+
+  @override
+  String get backfillRecordsAgentLinks => 'Agenten-Verknüpfungen';
+
+  @override
+  String get backfillRecordsConsumptionEvents => 'KI-Nutzungsereignisse';
+
+  @override
+  String get backfillRecordsEntryLinks => 'Eintragsverknüpfungen';
+
+  @override
+  String get backfillRecordsHint =>
+      'Gelöschte eingeschlossen. Synchrone Geräte zeigen hier dieselben Zahlen; die erfassten Zähler können sich zwischen ihnen unterscheiden.';
+
+  @override
+  String get backfillRecordsJournal => 'Journaleinträge';
+
+  @override
+  String get backfillRecordsNotifications => 'Benachrichtigungen';
+
+  @override
+  String get backfillRecordsTitle => 'Einträge auf diesem Gerät';
+
+  @override
   String get backfillReRequestDescription =>
       'Einträge erneut anfordern, die angefordert aber nie empfangen wurden. Nutze dies bei hängenden Antworten.';
 
@@ -2826,6 +2851,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get backfillStatsBurned => 'Entwertet';
 
   @override
+  String get backfillStatsByDevice => 'Erfasste Zähler nach Gerät';
+
+  @override
   String get backfillStatsDeleted => 'Gelöscht';
 
   @override
@@ -2844,10 +2872,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get backfillStatsRequested => 'Angefordert';
 
   @override
+  String backfillStatsThisDevice(String name) {
+    return '$name (dieses Gerät)';
+  }
+
+  @override
   String get backfillStatsTitle => 'Synchronisierungsstatistiken';
 
   @override
-  String get backfillStatsTotalEntries => 'Einträge gesamt';
+  String get backfillStatsTrackedCounters => 'Erfasste Zähler';
 
   @override
   String get backfillStatsUnresolvable => 'Nicht auflösbar';

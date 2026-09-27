@@ -1,5 +1,6 @@
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -150,6 +151,8 @@ class SyncStatsCard extends StatelessWidget {
     required this.missingCount,
     required this.isLoading,
     required this.onRefresh,
+    this.hostNames = const {},
+    this.selfHostId,
     super.key,
   });
 
@@ -157,6 +160,12 @@ class SyncStatsCard extends StatelessWidget {
   final int missingCount;
   final bool isLoading;
   final VoidCallback onRefresh;
+
+  /// Display names of known devices by host id, for the per-device rows.
+  final Map<String, String> hostNames;
+
+  /// This device's host id, marked in the per-device rows.
+  final String? selfHostId;
 
   @override
   Widget build(BuildContext context) {
@@ -216,7 +225,12 @@ class SyncStatsCard extends StatelessWidget {
               ),
             )
           else
-            _Ledger(stats: stats!, missingCount: missingCount),
+            _Ledger(
+              stats: stats!,
+              missingCount: missingCount,
+              hostNames: hostNames,
+              selfHostId: selfHostId,
+            ),
         ],
       ),
     );
@@ -224,10 +238,27 @@ class SyncStatsCard extends StatelessWidget {
 }
 
 class _Ledger extends StatelessWidget {
-  const _Ledger({required this.stats, required this.missingCount});
+  const _Ledger({
+    required this.stats,
+    required this.missingCount,
+    required this.hostNames,
+    required this.selfHostId,
+  });
 
   final BackfillStats stats;
   final int missingCount;
+  final Map<String, String> hostNames;
+  final String? selfHostId;
+
+  /// A device's name, or the start of its host id when it has none.
+  String _hostLabel(BuildContext context, String hostId) {
+    final name =
+        hostNames[hostId] ??
+        (hostId.length > 8 ? hostId.substring(0, 8) : hostId);
+    return hostId == selfHostId
+        ? context.messages.backfillStatsThisDevice(name)
+        : name;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -247,8 +278,8 @@ class _Ledger extends StatelessWidget {
     return Column(
       children: [
         _LedgerRow(
-          label: messages.backfillStatsTotalEntries,
-          value: stats.totalEntries,
+          label: messages.backfillStatsTrackedCounters,
+          value: stats.trackedCounters,
           color: highEmphasis,
         ),
         _LedgerRow(
@@ -289,7 +320,127 @@ class _Ledger extends StatelessWidget {
           value: stats.totalBurned,
           color: lowEmphasis,
         ),
+        if (stats.hostStats.isNotEmpty) ...[
+          Padding(
+            padding: EdgeInsets.only(
+              top: tokens.spacing.step4,
+              bottom: tokens.spacing.step1,
+            ),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                messages.backfillStatsByDevice,
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: lowEmphasis,
+                ),
+              ),
+            ),
+          ),
+          // Counters differ between devices that hold the same records:
+          // a device never gap-detects its own host. Listing them per host
+          // shows where a difference sits.
+          for (final host in [
+            ...stats.hostStats,
+          ]..sort((a, b) => b.trackedCounters.compareTo(a.trackedCounters)))
+            _LedgerRow(
+              label: _hostLabel(context, host.hostId),
+              value: host.trackedCounters,
+              color: highEmphasis,
+            ),
+        ],
       ],
+    );
+  }
+}
+
+/// Records of each synced type on this device, deletions included: the
+/// numbers a deep backfill makes equal, so two devices in sync show the same
+/// ones here — unlike the tracked counters above.
+class RecordCountsCard extends StatelessWidget {
+  const RecordCountsCard({
+    required this.counts,
+    required this.isLoading,
+    required this.onRefresh,
+    super.key,
+  });
+
+  /// Null while loading, or where no sync stack runs.
+  final Map<SyncSequencePayloadType, int>? counts;
+  final bool isLoading;
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final counts = this.counts;
+    final labels = <SyncSequencePayloadType, String>{
+      SyncSequencePayloadType.journalEntity: messages.backfillRecordsJournal,
+      SyncSequencePayloadType.entryLink: messages.backfillRecordsEntryLinks,
+      SyncSequencePayloadType.agentEntity:
+          messages.backfillRecordsAgentEntities,
+      SyncSequencePayloadType.agentLink: messages.backfillRecordsAgentLinks,
+      SyncSequencePayloadType.notification:
+          messages.backfillRecordsNotifications,
+      SyncSequencePayloadType.consumptionEvent:
+          messages.backfillRecordsConsumptionEvents,
+    };
+
+    return SurfaceCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                LottiIcons.list,
+                size: IconSizes.m,
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+              SizedBox(width: tokens.spacing.step3),
+              Expanded(
+                child: Text(
+                  messages.backfillRecordsTitle,
+                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                    color: tokens.colors.text.highEmphasis,
+                  ),
+                ),
+              ),
+              DesignSystemIconAction(
+                icon: LottiIcons.refresh,
+                tooltip: messages.backfillStatsRefresh,
+                isBusy: isLoading,
+                onPressed: isLoading ? null : onRefresh,
+              ),
+            ],
+          ),
+          SizedBox(height: tokens.spacing.step2),
+          Text(
+            messages.backfillRecordsHint,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.lowEmphasis,
+            ),
+          ),
+          SizedBox(height: tokens.spacing.step3),
+          if (counts == null)
+            Text(
+              isLoading
+                  ? messages.backfillStatsRefresh
+                  : messages.backfillStatsNoData,
+              style: tokens.typography.styles.body.bodyMedium.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+            )
+          else
+            for (final MapEntry(key: type, value: label) in labels.entries)
+              if (counts[type] case final count?)
+                _LedgerRow(
+                  label: label,
+                  value: count,
+                  color: tokens.colors.text.highEmphasis,
+                ),
+        ],
+      ),
     );
   }
 }
@@ -312,37 +463,52 @@ class _LedgerRow extends StatelessWidget {
     final tokens = context.designTokens;
     return Padding(
       padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
-      child: Row(
-        children: [
-          Text(
-            label,
-            style: tokens.typography.styles.body.bodyMedium.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step3),
-              child: CustomPaint(
-                size: const Size.fromHeight(1),
-                painter: _DottedLeaderPainter(
-                  color: tokens.colors.text.lowEmphasis,
+      child: LayoutBuilder(
+        builder: (context, constraints) => Row(
+          children: [
+            // The label keeps its natural width, so the value sits at the
+            // edge; only a label wider than most of the row — a long device
+            // name — is cut short.
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: constraints.maxWidth * _maxLabelShare,
+              ),
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: tokens.typography.styles.body.bodyMedium.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
                 ),
               ),
             ),
-          ),
-          Text(
-            formatCount(context, value),
-            style: tokens.typography.styles.body.bodyMedium.copyWith(
-              color: color,
-              fontFeatures: const [FontFeature.tabularFigures()],
-              fontWeight: tokens.typography.weight.semiBold,
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step3),
+                child: CustomPaint(
+                  size: const Size.fromHeight(1),
+                  painter: _DottedLeaderPainter(
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
+                ),
+              ),
             ),
-          ),
-        ],
+            Text(
+              formatCount(context, value),
+              style: tokens.typography.styles.body.bodyMedium.copyWith(
+                color: color,
+                fontFeatures: const [FontFeature.tabularFigures()],
+                fontWeight: tokens.typography.weight.semiBold,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
+
+  /// The most of a row a label may take before it is cut short.
+  static const double _maxLabelShare = 0.6;
 }
 
 class _DottedLeaderPainter extends CustomPainter {

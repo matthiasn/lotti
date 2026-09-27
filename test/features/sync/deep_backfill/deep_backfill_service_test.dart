@@ -535,6 +535,26 @@ void main() {
     });
   });
 
+  test(
+    'recordCounts counts each registered type, deletions included',
+    () async {
+      final counts = await service(
+        stores: [
+          _FakeStore(
+            _journal,
+            rows: {
+              'a': const VectorClock({'x': 1}),
+              'b': null,
+            },
+          ),
+          _FakeStore(_links),
+        ],
+      ).recordCounts();
+
+      expect(counts, {_journal: 2, _links: 0});
+    },
+  );
+
   test("registerStore replaces a type's store and unregisterStore removes "
       'it', () async {
     final first = _FakeStore(_journal);

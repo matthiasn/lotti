@@ -1,6 +1,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/get_it.dart';
+
+/// Records of each synced type on this device, deletions included, or null
+/// where no sync stack runs (a demo world). Read on demand: counting a large
+/// journal is not free, so the page refreshes it explicitly.
+final FutureProvider<Map<SyncSequencePayloadType, int>?>
+deepBackfillRecordCountsProvider =
+    FutureProvider.autoDispose<Map<SyncSequencePayloadType, int>?>(
+      (ref) async => getIt.isRegistered<DeepBackfillService>()
+          ? getIt<DeepBackfillService>().recordCounts()
+          : null,
+      name: 'deepBackfillRecordCountsProvider',
+    );
 
 final deepBackfillControllerProvider =
     NotifierProvider<DeepBackfillController, DeepBackfillState>(

@@ -1,6 +1,7 @@
 /// Stats for backfill status per host.
 class BackfillHostStats {
   const BackfillHostStats({
+    required this.hostId,
     required this.receivedCount,
     required this.missingCount,
     required this.requestedCount,
@@ -10,6 +11,8 @@ class BackfillHostStats {
     required this.burnedCount,
   });
 
+  /// The host these counters belong to.
+  final String hostId;
   final int receivedCount;
   final int missingCount;
   final int requestedCount;
@@ -21,6 +24,16 @@ class BackfillHostStats {
   /// originating host confirmed carry no payload. Benign — split out of
   /// [unresolvableCount] so diagnostics don't read voided counters as loss.
   final int burnedCount;
+
+  /// Every counter of this host this device tracks, whatever its status.
+  int get trackedCounters =>
+      receivedCount +
+      missingCount +
+      requestedCount +
+      backfilledCount +
+      deletedCount +
+      unresolvableCount +
+      burnedCount;
 }
 
 /// Aggregate stats across all hosts.
@@ -58,7 +71,11 @@ class BackfillStats {
   final int totalUnresolvable;
   final int totalBurned;
 
-  int get totalEntries =>
+  /// Every `(host, counter)` pair this device tracks, whatever its status —
+  /// not a record count: a record edited ten times has ten counters on the
+  /// device that wrote it, and a device never gap-detects its own host, so
+  /// two devices holding the same records track different numbers.
+  int get trackedCounters =>
       totalReceived +
       totalMissing +
       totalRequested +

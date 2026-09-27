@@ -109,6 +109,13 @@ class DeepBackfillService {
     _stores.remove(payloadType);
   }
 
+  /// How many records of each registered type this device holds, deletions
+  /// included: the numbers a deep backfill makes equal across devices,
+  /// unlike the sequence log's counters.
+  Future<Map<SyncSequencePayloadType, int>> recordCounts() async => {
+    for (final store in _stores.values) store.payloadType: await store.count(),
+  };
+
   /// The payload types a round advertises and a request can be answered for.
   Set<SyncSequencePayloadType> get payloadTypes => _stores.keys.toSet();
 

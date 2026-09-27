@@ -2753,6 +2753,31 @@ class AppLocalizationsCs extends AppLocalizations {
   String get backfillManualTrigger => 'Požádat o chybějící záznamy';
 
   @override
+  String get backfillRecordsAgentEntities => 'Entity agentů';
+
+  @override
+  String get backfillRecordsAgentLinks => 'Odkazy agentů';
+
+  @override
+  String get backfillRecordsConsumptionEvents => 'Události využití AI';
+
+  @override
+  String get backfillRecordsEntryLinks => 'Odkazy mezi záznamy';
+
+  @override
+  String get backfillRecordsHint =>
+      'Včetně smazaných. Synchronizovaná zařízení tu ukazují stejná čísla; sledované čítače se mezi nimi mohou lišit.';
+
+  @override
+  String get backfillRecordsJournal => 'Záznamy deníku';
+
+  @override
+  String get backfillRecordsNotifications => 'Oznámení';
+
+  @override
+  String get backfillRecordsTitle => 'Záznamy na tomto zařízení';
+
+  @override
   String get backfillReRequestDescription =>
       'Požádejte znovu o položky, které byly požadovány, ale nikdy nedoručeny. Použijte toto, když jsou odpovědi zaseknuté.';
 
@@ -2836,6 +2861,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get backfillStatsBurned => 'Anulováno';
 
   @override
+  String get backfillStatsByDevice => 'Sledované čítače podle zařízení';
+
+  @override
   String get backfillStatsDeleted => 'Smazáno';
 
   @override
@@ -2854,10 +2882,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get backfillStatsRequested => 'Požadováno';
 
   @override
+  String backfillStatsThisDevice(String name) {
+    return '$name (toto zařízení)';
+  }
+
+  @override
   String get backfillStatsTitle => 'Statistiky synchronizace';
 
   @override
-  String get backfillStatsTotalEntries => 'Celkem položek';
+  String get backfillStatsTrackedCounters => 'Sledované čítače';
 
   @override
   String get backfillStatsUnresolvable => 'Nevyřešitelné';

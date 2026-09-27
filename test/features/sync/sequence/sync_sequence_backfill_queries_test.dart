@@ -127,6 +127,7 @@ void main() {
     test('getBackfillStats returns the database stats', () async {
       final stats = BackfillStats.fromHostStats(const [
         BackfillHostStats(
+          hostId: 'host-1',
           receivedCount: 1,
           missingCount: 1,
           requestedCount: 1,

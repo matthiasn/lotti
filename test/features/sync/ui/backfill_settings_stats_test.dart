@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_stats.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -242,6 +243,150 @@ void main() {
         isTrue,
         reason: 'the leader colour does not follow the emphasis ramp',
       );
+    });
+  });
+
+  group('SyncStatsCard per-device rows', () {
+    BackfillHostStats host(String id, int received) => BackfillHostStats(
+      hostId: id,
+      receivedCount: received,
+      missingCount: 0,
+      requestedCount: 0,
+      backfilledCount: 0,
+      deletedCount: 0,
+      unresolvableCount: 0,
+      burnedCount: 1,
+    );
+
+    Future<void> pumpHosts(
+      WidgetTester tester,
+      List<BackfillHostStats> hosts,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          SingleChildScrollView(
+            child: SyncStatsCard(
+              stats: BackfillStats.fromHostStats(hosts),
+              missingCount: 0,
+              isLoading: false,
+              onRefresh: () {},
+              hostNames: const {'aaaa-1111-laptop': 'Laptop'},
+              selfHostId: 'aaaa-1111-laptop',
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets("lists each device's tracked counters, largest first, named "
+        'where known and marking this device', (tester) async {
+      await pumpHosts(tester, [
+        host('aaaa-1111-laptop', 9),
+        host('bbbbbbbb-2222-phone', 499),
+      ]);
+
+      final context = tester.element(find.byType(SyncStatsCard));
+      expect(
+        find.text(context.messages.backfillStatsByDevice),
+        findsOneWidget,
+      );
+      final thisDevice = find.text('Laptop (this device)');
+      final unnamed = find.text('bbbbbbbb');
+      expect(thisDevice, findsOneWidget);
+      expect(unnamed, findsOneWidget, reason: 'first 8 chars of the host id');
+      expect(find.text('500'), findsOneWidget);
+      expect(
+        tester.getTopLeft(unnamed).dy,
+        lessThan(tester.getTopLeft(thisDevice).dy),
+        reason: 'the host with more counters comes first',
+      );
+    });
+
+    testWidgets('keeps every value flush at the right edge, however long its '
+        'label', (tester) async {
+      await pumpHosts(tester, [
+        host('aaaa-1111-laptop', 9),
+        host('bbbbbbbb-2222-phone', 499),
+      ]);
+
+      // Values of rows with short labels ("Burned"), a longer one ("Laptop
+      // (this device)") and the per-device totals all end at one x.
+      final rightEdges = {
+        for (final value in ['510', '508', '2', '500', '10'])
+          tester.getTopRight(find.text(value).first).dx,
+      };
+      expect(rightEdges, hasLength(1), reason: '$rightEdges');
+      expect(
+        tester.getSize(find.text('Laptop (this device)')).width,
+        greaterThan(0),
+      );
+    });
+
+    testWidgets('shows no per-device section without hosts', (tester) async {
+      await pumpHosts(tester, const []);
+
+      final context = tester.element(find.byType(SyncStatsCard));
+      expect(find.text(context.messages.backfillStatsByDevice), findsNothing);
+    });
+  });
+
+  group('RecordCountsCard', () {
+    Future<void> pumpCounts(
+      WidgetTester tester,
+      Map<SyncSequencePayloadType, int>? counts, {
+      bool isLoading = false,
+      VoidCallback? onRefresh,
+    }) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          SingleChildScrollView(
+            child: RecordCountsCard(
+              counts: counts,
+              isLoading: isLoading,
+              onRefresh: onRefresh ?? () {},
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('shows a row per counted type, in a fixed order', (
+      tester,
+    ) async {
+      await pumpCounts(tester, const {
+        SyncSequencePayloadType.agentEntity: 1200,
+        SyncSequencePayloadType.journalEntity: 276711,
+      });
+
+      final context = tester.element(find.byType(RecordCountsCard));
+      final journal = find.text(context.messages.backfillRecordsJournal);
+      final agents = find.text(context.messages.backfillRecordsAgentEntities);
+      expect(journal, findsOneWidget);
+      expect(agents, findsOneWidget);
+      expect(
+        find.text(context.messages.backfillRecordsNotifications),
+        findsNothing,
+        reason: 'a type without a store has no row',
+      );
+      expect(find.text('276,711'), findsOneWidget);
+      expect(find.text('1,200'), findsOneWidget);
+      expect(
+        tester.getTopLeft(journal).dy,
+        lessThan(tester.getTopLeft(agents).dy),
+      );
+    });
+
+    testWidgets('says so while there is nothing to show, and refreshes on '
+        'tap', (tester) async {
+      var refreshed = 0;
+      await pumpCounts(tester, null, onRefresh: () => refreshed++);
+
+      final context = tester.element(find.byType(RecordCountsCard));
+      expect(find.text(context.messages.backfillStatsNoData), findsOneWidget);
+      await tester.tap(find.byIcon(LottiIcons.refresh));
+      expect(refreshed, 1);
     });
   });
 }

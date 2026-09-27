@@ -132,6 +132,7 @@ final List<SyncNodeProfile> _knownNodes = [
 
 final BackfillStats _backfillStats = BackfillStats.fromHostStats([
   const BackfillHostStats(
+    hostId: 'host-1',
     receivedCount: 1842,
     missingCount: 3,
     requestedCount: 2,
@@ -141,6 +142,7 @@ final BackfillStats _backfillStats = BackfillStats.fromHostStats([
     burnedCount: 6,
   ),
   const BackfillHostStats(
+    hostId: 'host-2',
     receivedCount: 933,
     missingCount: 1,
     requestedCount: 0,
