@@ -47,20 +47,30 @@ bool vectorClockCovers(VectorClock a, VectorClock b) {
 /// now holds: for every version asked for, the row or one of the record's
 /// open conflicts is that version or a newer one. Coverage, not the sender,
 /// settles a request: nothing on the wire ties an answer to the request it
-/// answers (the model's `ClearOnlyCovered`).
+/// answers (the model's `ClearOnlyCovered`). An empty clock asks for a row
+/// the advertiser holds without one, and any row settles it.
 bool deepBackfillRequestSettled({
   required Iterable<VectorClock> asked,
+  required bool holdsRow,
   required VectorClock? local,
   required Iterable<VectorClock> openConflicts,
 }) => asked.every(
-  (version) => _keeps(local, openConflicts, version),
+  (version) =>
+      version.vclock.isEmpty ? holdsRow : _keeps(local, openConflicts, version),
 );
+
+/// What a request for a row the advertiser holds without a clock asks for.
+const VectorClock unclockedVersion = VectorClock(<String, int>{});
 
 /// Diffs one inventory batch against this device's rows in the batch's
 /// range.
 ///
 /// - [advertised]: the advertiser's rows in the range, id to clock.
 /// - [advertisedConflicts]: the advertiser's open conflict versions there.
+/// - [advertisedUnclocked]: ids the advertiser holds without a clock. They
+///   are never pushed back as if the advertiser lacked them, and are asked
+///   for only where this device holds no row at all: a clockless copy cannot
+///   be ordered against another one.
 /// - [local]: this device's rows in the same range; a null clock is a row
 ///   written before clocks existed.
 /// - [localConflicts]: this device's open conflict versions there.
@@ -72,6 +82,7 @@ DeepBackfillDiff diffDeepBackfillBatch({
   required Map<String, VectorClock?> local,
   required Map<String, List<VectorClock>> localConflicts,
   required Set<String> outstanding,
+  Set<String> advertisedUnclocked = const {},
 }) {
   final requests = <String, List<VectorClock>>{};
   final absentLocally = <String>{};
@@ -85,7 +96,19 @@ DeepBackfillDiff diffDeepBackfillBatch({
     ...local.keys,
     ...localConflicts.keys,
   };
+  for (final id in advertisedUnclocked) {
+    if (advertised.containsKey(id) || local.containsKey(id)) continue;
+    if (!outstanding.contains(id)) {
+      requests[id] = const [unclockedVersion];
+      absentLocally.add(id);
+    }
+  }
   for (final id in ids) {
+    // Held by the advertiser without a clock: nothing orders the two copies,
+    // so nothing is sent either way (absence was handled above).
+    if (advertisedUnclocked.contains(id) && !advertised.containsKey(id)) {
+      continue;
+    }
     final theirs = advertised[id];
     final theirConflicts = advertisedConflicts[id] ?? const <VectorClock>[];
     final holdsRow = local.containsKey(id);

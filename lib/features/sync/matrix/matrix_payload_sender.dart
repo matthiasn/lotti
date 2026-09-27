@@ -732,12 +732,19 @@ class MatrixPayloadSender {
     final Map<String, dynamic> document;
     final String detail;
     switch (message) {
-      case SyncDeepBackfillInventory(:final records, :final conflicts):
+      case SyncDeepBackfillInventory(
+        :final records,
+        :final conflicts,
+        :final unclocked,
+      ):
         document = {
           'records': [for (final r in records) r.toJson()],
           'conflicts': [for (final c in conflicts) c.toJson()],
+          'unclocked': unclocked,
         };
-        detail = 'records=${records.length} conflicts=${conflicts.length}';
+        detail =
+            'records=${records.length} conflicts=${conflicts.length} '
+            'unclocked=${unclocked.length}';
       case SyncDeepBackfillRequest(:final records):
         document = {
           'records': [for (final r in records) r.toJson()],
@@ -761,6 +768,7 @@ class MatrixPayloadSender {
         attachmentEventId: eventId,
         records: const [],
         conflicts: const [],
+        unclocked: const [],
       ),
       final SyncDeepBackfillRequest m => m.copyWith(
         jsonPath: relativePath,

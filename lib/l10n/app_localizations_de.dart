@@ -2662,20 +2662,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Erweiterte Wiederherstellung';
 
   @override
-  String get backfillAgentClocksDescription =>
-      'Versieh Agenten-Entitäten und Agenten-Verknüpfungen, die ohne Vektoruhr gespeichert wurden, nachträglich mit einer, damit deine anderen Geräte sie einordnen und empfangen können.';
-
-  @override
-  String get backfillAgentClocksFailed =>
-      'Agenten-Vektoruhren konnten nicht repariert werden';
-
-  @override
-  String get backfillAgentClocksTitle => 'Agenten-Vektoruhren';
-
-  @override
-  String get backfillAgentClocksTrigger => 'Vektoruhren reparieren';
-
-  @override
   String get backfillAskPeersConfirmAccept => 'Peers fragen';
 
   @override
@@ -2719,6 +2705,20 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get backfillCatchUpDescription =>
       'Fordere fehlende Einträge der letzten Zeit jetzt von Peers an.';
+
+  @override
+  String get backfillClocksDescription =>
+      'Versieh Eintragsverknüpfungen, Agenten-Entitäten und Agenten-Verknüpfungen, die ohne Vektoruhr gespeichert wurden, nachträglich mit einer, damit deine anderen Geräte sie einordnen und empfangen können.';
+
+  @override
+  String get backfillClocksFailed =>
+      'Vektoruhren konnten nicht repariert werden';
+
+  @override
+  String get backfillClocksTitle => 'Vektoruhren';
+
+  @override
+  String get backfillClocksTrigger => 'Vektoruhren reparieren';
 
   @override
   String backfillDevicesMeta(int count) {

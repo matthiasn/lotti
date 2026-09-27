@@ -2647,20 +2647,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Avancerad återhämtning';
 
   @override
-  String get backfillAgentClocksDescription =>
-      'Ge agententiteter och agentlänkar som sparats utan vektorklocka en vektorklocka, så att dina andra enheter kan ordna och ta emot dem.';
-
-  @override
-  String get backfillAgentClocksFailed =>
-      'Agenternas vektorklockor kunde inte repareras';
-
-  @override
-  String get backfillAgentClocksTitle => 'Agenternas vektorklockor';
-
-  @override
-  String get backfillAgentClocksTrigger => 'Reparera vektorklockor';
-
-  @override
   String get backfillAskPeersConfirmAccept => 'Fråga kollegor';
 
   @override
@@ -2704,6 +2690,20 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get backfillCatchUpDescription =>
       'Hämta nyligen saknade poster från kollegor just nu.';
+
+  @override
+  String get backfillClocksDescription =>
+      'Ge länkar mellan poster, agententiteter och agentlänkar som sparades utan vektorklocka en sådan, så att dina andra enheter kan ordna och ta emot dem.';
+
+  @override
+  String get backfillClocksFailed =>
+      'Det gick inte att reparera vektorklockorna';
+
+  @override
+  String get backfillClocksTitle => 'Vektorklockor';
+
+  @override
+  String get backfillClocksTrigger => 'Reparera vektorklockor';
 
   @override
   String backfillDevicesMeta(int count) {

@@ -1532,6 +1532,7 @@ void main() {
       rangeEnd: 'm',
       records: [DeepBackfillRecord(id: 'a', vectorClock: clock)],
       conflicts: [DeepBackfillRecord(id: 'a', vectorClock: clock)],
+      unclocked: ['legacy'],
     );
     const request = SyncDeepBackfillRequest(
       requesterId: 'hostB',
@@ -1580,6 +1581,7 @@ void main() {
       expect(result?.jsonPath, startsWith(deepBackfillSegment));
       expect(result?.records, isEmpty);
       expect(result?.conflicts, isEmpty);
+      expect(result?.unclocked, isEmpty);
       expect(result?.rangeEnd, 'm');
       final document = uploadedDocument();
       expect(
@@ -1594,6 +1596,7 @@ void main() {
         ),
         inventory.conflicts,
       );
+      expect(document['unclocked'], ['legacy']);
       expect(sentEventRegistry.consume('inventory-upload'), isTrue);
     });
 

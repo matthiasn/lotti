@@ -1366,10 +1366,6 @@
     }
   },
   "backfillAdvancedRecoveryTitle": "Avancerad återhämtning",
-  "backfillAgentClocksDescription": "Ge agententiteter och agentlänkar som sparats utan vektorklocka en vektorklocka, så att dina andra enheter kan ordna och ta emot dem.",
-  "backfillAgentClocksFailed": "Agenternas vektorklockor kunde inte repareras",
-  "backfillAgentClocksTitle": "Agenternas vektorklockor",
-  "backfillAgentClocksTrigger": "Reparera vektorklockor",
   "backfillAskPeersConfirmAccept": "Fråga kollegor",
   "backfillAskPeersConfirmContent": "{count, plural, =1{Detta vänder tillbaka en olösbar sekvensloggpost till att saknas, så den normala backfill-svepningen frågar om peers. Jämliker som fortfarande har nyttolasten kommer att svara; Verkligt oåterkalleliga inträden kommer att pensioneras igen efter sju dagars amnestifönster. } other{Detta vänder alla {count} olösbara sekvensloggposter tillbaka till att saknas, så att den normala backfill-sweepen frågar peers igen. Jämliker som fortfarande har nyttolasten kommer att svara; Verkligt oåterkalleliga inträden kommer att pensioneras igen efter sju dagars amnestifönster. }}",
   "@backfillAskPeersConfirmContent": {
@@ -1392,6 +1388,10 @@
     }
   },
   "backfillCatchUpDescription": "Hämta nyligen saknade poster från kollegor just nu.",
+  "backfillClocksDescription": "Ge länkar mellan poster, agententiteter och agentlänkar som sparades utan vektorklocka en sådan, så att dina andra enheter kan ordna och ta emot dem.",
+  "backfillClocksFailed": "Det gick inte att reparera vektorklockorna",
+  "backfillClocksTitle": "Vektorklockor",
+  "backfillClocksTrigger": "Reparera vektorklockor",
   "backfillDevicesMeta": "{count, plural, =1{1 enhets-ID} other{{count} enhets-ID:n }}",
   "@backfillDevicesMeta": {
     "placeholders": {

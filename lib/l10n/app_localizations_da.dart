@@ -2638,20 +2638,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Avanceret genopretning';
 
   @override
-  String get backfillAgentClocksDescription =>
-      'Giv agent-entiteter og -links, der blev gemt uden vektorur, et vektorur, så dine andre enheder kan sortere og modtage dem.';
-
-  @override
-  String get backfillAgentClocksFailed =>
-      'Agenternes vektorure kunne ikke repareres';
-
-  @override
-  String get backfillAgentClocksTitle => 'Agenternes vektorure';
-
-  @override
-  String get backfillAgentClocksTrigger => 'Reparer vektorure';
-
-  @override
   String get backfillAskPeersConfirmAccept => 'Spørg jævnaldrende';
 
   @override
@@ -2695,6 +2681,19 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get backfillCatchUpDescription =>
       'Træk nyligt manglende poster fra jævnaldrende lige nu.';
+
+  @override
+  String get backfillClocksDescription =>
+      'Giv links mellem poster, agententiteter og agentlinks, der blev gemt uden vektorur, et vektorur, så dine andre enheder kan ordne og modtage dem.';
+
+  @override
+  String get backfillClocksFailed => 'Kunne ikke reparere vektorure';
+
+  @override
+  String get backfillClocksTitle => 'Vektorure';
+
+  @override
+  String get backfillClocksTrigger => 'Reparer vektorure';
 
   @override
   String backfillDevicesMeta(int count) {

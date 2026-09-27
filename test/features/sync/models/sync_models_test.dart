@@ -14,6 +14,7 @@ void main() {
         SyncStep.savedTaskFilters,
         SyncStep.backfillAgentEntityClocks,
         SyncStep.backfillAgentLinkClocks,
+        SyncStep.backfillEntryLinkClocks,
         SyncStep.complete,
       ]);
     });

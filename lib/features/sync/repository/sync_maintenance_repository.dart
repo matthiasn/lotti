@@ -217,11 +217,12 @@ class SyncMaintenanceRepository {
                 ),
               ),
             );
-            // Enqueue before persisting so the entity still has a null
-            // vector clock on disk if enqueueMessage throws — making the
-            // row retryable on the next backfill run. Any throw here will
-            // propagate and release the reservation via the scope.
-            await _outboxService.enqueueMessage(
+            // Enqueue before persisting, and with the variant that throws:
+            // the plain enqueueMessage logs and swallows a failed outbox
+            // write, which would store the stamp without ever sending it.
+            // A throw leaves the entity's clock null on disk, so the next
+            // run retries it, and releases the reservation via the scope.
+            await _outboxService.enqueueMessageOrThrow(
               SyncMessage.agentEntity(
                 agentEntity: stamped,
                 status: SyncEntryStatus.update,
@@ -270,7 +271,7 @@ class SyncMaintenanceRepository {
             );
             // Enqueue before persisting — see backfillAgentEntityClocks.
             // A throw here propagates and releases the reservation.
-            await _outboxService.enqueueMessage(
+            await _outboxService.enqueueMessageOrThrow(
               SyncMessage.agentLink(
                 agentLink: stamped,
                 status: SyncEntryStatus.update,
@@ -285,6 +286,60 @@ class SyncMaintenanceRepository {
         }
       },
       'backfillAgentLinkClocks',
+    );
+  }
+
+  /// Backfill vector clocks on entry links saved before links carried one.
+  ///
+  /// Same pattern as [backfillAgentEntityClocks], with one difference: the
+  /// link keeps its `updatedAt`. Links order by `updatedAt` before their
+  /// clocks, so a stamp dated now would outrank a genuine edit made meanwhile
+  /// on another device. Two devices that stamp the same link produce
+  /// concurrent versions at the same `updatedAt`, which the links' total order
+  /// (`upsertEntryLink`) settles the same way everywhere.
+  Future<void> backfillEntryLinkClocks({
+    SyncProgressCallback? onProgress,
+    SyncDetailedProgressCallback? onDetailedProgress,
+  }) {
+    return _runWithLogging<void>(
+      () async {
+        final links = await _journalDb.entryLinksWithNullVectorClock();
+        final total = links.length;
+
+        if (total == 0) {
+          onDetailedProgress?.call(0, 0);
+          onProgress?.call(1);
+          return;
+        }
+
+        onDetailedProgress?.call(0, total);
+
+        var processed = 0;
+        for (final link in links) {
+          await _vectorClockService.withVcScope<void>(() async {
+            final stamped = link.copyWith(
+              vectorClock: await _vectorClockService.getNextVectorClock(
+                previous: link.vectorClock,
+                payload: (id: link.id, type: SyncSequencePayloadType.entryLink),
+              ),
+            );
+            // Enqueue before persisting — see backfillAgentEntityClocks.
+            // A throw here propagates and releases the reservation.
+            await _outboxService.enqueueMessageOrThrow(
+              SyncMessage.entryLink(
+                entryLink: stamped,
+                status: SyncEntryStatus.update,
+              ),
+            );
+            await _journalDb.upsertEntryLink(stamped);
+          });
+
+          processed++;
+          onDetailedProgress?.call(processed, total);
+          onProgress?.call(processed / total);
+        }
+      },
+      'backfillEntryLinkClocks',
     );
   }
 
@@ -401,6 +456,12 @@ class SyncMaintenanceRepository {
       return _runWithLogging<int>(
         _agentRepository.countLinksWithNullVectorClock,
         'fetchTotals_backfillAgentLinkClocks',
+      );
+    }
+    if (step == SyncStep.backfillEntryLinkClocks) {
+      return _runWithLogging<int>(
+        _journalDb.countEntryLinksWithNullVectorClock,
+        'fetchTotals_backfillEntryLinkClocks',
       );
     }
 
@@ -540,6 +601,7 @@ class SyncMaintenanceRepository {
     SyncStep.savedTaskFilters: 'syncSavedTaskFilters',
     SyncStep.backfillAgentEntityClocks: 'backfillAgentEntityClocks',
     SyncStep.backfillAgentLinkClocks: 'backfillAgentLinkClocks',
+    SyncStep.backfillEntryLinkClocks: 'backfillEntryLinkClocks',
   };
 
   String _syncDomainFor(SyncStep step) {

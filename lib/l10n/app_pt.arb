@@ -1365,10 +1365,6 @@
     }
   },
   "backfillAdvancedRecoveryTitle": "Recuperação avançada",
-  "backfillAgentClocksDescription": "Adiciona um relógio vetorial às entidades e ligações de agente guardadas sem um, para que os teus outros dispositivos as possam ordenar e receber.",
-  "backfillAgentClocksFailed": "Não foi possível reparar os relógios vetoriais dos agentes",
-  "backfillAgentClocksTitle": "Relógios vetoriais dos agentes",
-  "backfillAgentClocksTrigger": "Reparar relógios vetoriais",
   "backfillAskPeersConfirmAccept": "Pergunte aos colegas",
   "backfillAskPeersConfirmContent": "{count, plural, =1{Isso transforma 1 entrada de log de sequência insolúvel de volta em falta, para que a varredura de preenchimento normal pergunte novamente aos pares. Os pares que ainda possuem a carga responderão; entradas verdadeiramente irrecuperáveis ​​serão retiradas novamente após a janela de anistia de 7 dias.} other{Isso faz com que todas {count} entradas de log de sequência não resolvíveis voltem a ser perdidas, para que a varredura de preenchimento normal pergunte novamente aos pares. Os pares que ainda possuem a carga responderão; entradas verdadeiramente irrecuperáveis serão retiradas novamente após a janela de anistia de 7 dias.}}",
   "@backfillAskPeersConfirmContent": {
@@ -1391,6 +1387,10 @@
     }
   },
   "backfillCatchUpDescription": "Extraia entradas ausentes recentes de colegas agora mesmo.",
+  "backfillClocksDescription": "Adiciona um relógio vetorial às ligações entre entradas, às entidades e às ligações dos agentes guardadas sem um, para que os teus outros dispositivos as possam ordenar e receber.",
+  "backfillClocksFailed": "Não foi possível reparar os relógios vetoriais",
+  "backfillClocksTitle": "Relógios vetoriais",
+  "backfillClocksTrigger": "Reparar relógios vetoriais",
   "backfillDevicesMeta": "{count, plural, =1{1 ID de dispositivo} other{{count} IDs de dispositivo}}",
   "@backfillDevicesMeta": {
     "placeholders": {

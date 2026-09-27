@@ -3070,8 +3070,11 @@ sends answers and pushes to the room like any payload, so other devices
 receive them too — extra receives through the write decision, which, like
 ordinary sync in `DeepBackfillIncremental`, only settle requests they cover.
 
-Left out, deliberately: clockless legacy rows (they cannot be ordered and are
-not advertised); relays (only the advertiser answers its inventory; a third
+Left out, deliberately: clockless legacy rows. They cannot be ordered, so the
+code names them in a batch's `unclocked` list instead of listing them: a peer
+never pushes one back and asks for one only where it holds no row. (The first
+implementation omitted them altogether, and a peer read each as missing from
+the advertiser and pushed it back on every round.) Also left out: relays (only the advertiser answers its inventory; a third
 device's newer copy travels as that device's push when it diffs another's
 inventory, so a device needs no round of its own); the sequence log (a
 deep-backfilled version is recorded like any received payload, but rows the log

@@ -2650,20 +2650,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Geavanceerd herstel';
 
   @override
-  String get backfillAgentClocksDescription =>
-      'Geef agent-entiteiten en -koppelingen die zonder vectorklok zijn opgeslagen alsnog een vectorklok, zodat je andere apparaten ze kunnen ordenen en ontvangen.';
-
-  @override
-  String get backfillAgentClocksFailed =>
-      'Kon de vectorklokken van agents niet herstellen';
-
-  @override
-  String get backfillAgentClocksTitle => 'Vectorklokken van agents';
-
-  @override
-  String get backfillAgentClocksTrigger => 'Vectorklokken herstellen';
-
-  @override
   String get backfillAskPeersConfirmAccept => 'Vragen aan gelijken';
 
   @override
@@ -2707,6 +2693,20 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get backfillCatchUpDescription =>
       'Trek recente ontbrekende items uit van collega\'s nu.';
+
+  @override
+  String get backfillClocksDescription =>
+      'Geef koppelingen tussen items, agententiteiten en agentkoppelingen die zonder vectorklok zijn opgeslagen er alsnog een, zodat je andere apparaten ze kunnen ordenen en ontvangen.';
+
+  @override
+  String get backfillClocksFailed =>
+      'Vectorklokken konden niet worden hersteld';
+
+  @override
+  String get backfillClocksTitle => 'Vectorklokken';
+
+  @override
+  String get backfillClocksTrigger => 'Vectorklokken herstellen';
 
   @override
   String backfillDevicesMeta(int count) {

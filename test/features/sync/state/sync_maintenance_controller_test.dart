@@ -327,6 +327,14 @@ void main() {
         ).thenAnswer(
           (invocation) => runStep(invocation, SyncStep.backfillAgentLinkClocks),
         );
+        when(
+          () => mockRepository.backfillEntryLinkClocks(
+            onProgress: any(named: 'onProgress'),
+            onDetailedProgress: any(named: 'onDetailedProgress'),
+          ),
+        ).thenAnswer(
+          (invocation) => runStep(invocation, SyncStep.backfillEntryLinkClocks),
+        );
 
         if (scenario.shouldFail) {
           await expectLater(

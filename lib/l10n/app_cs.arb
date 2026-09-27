@@ -1190,10 +1190,6 @@
     }
   },
   "backfillAdvancedRecoveryTitle": "Pokročilé obnovení",
-  "backfillAgentClocksDescription": "Doplň vektorové hodiny agentním entitám a odkazům, které byly uloženy bez nich, aby je tvá ostatní zařízení mohla seřadit a přijmout.",
-  "backfillAgentClocksFailed": "Vektorové hodiny agentů se nepodařilo opravit",
-  "backfillAgentClocksTitle": "Vektorové hodiny agentů",
-  "backfillAgentClocksTrigger": "Opravit vektorové hodiny",
   "backfillAskPeersConfirmAccept": "Zeptat se peerů",
   "backfillAskPeersConfirmContent": "{count, plural, =1{Toto vrátí 1 neřešitelný záznam sekvenčního logu zpět na chybějící, aby se normální backfill znovu zeptal peerů. Peeři, kteří data stále mají, odpoví; skutečně neobnovitelné záznamy se znovu stáhnou po 7denní amnestii.} few{Toto vrátí všechny {count} neřešitelné záznamy sekvenčního logu zpět na chybějící, aby se normální backfill znovu zeptal peerů. Peeři, kteří data stále mají, odpoví; skutečně neobnovitelné záznamy se znovu stáhnou po 7denní amnestii.} other{Toto vrátí všech {count} neřešitelných záznamů sekvenčního logu zpět na chybějící, aby se normální backfill znovu zeptal peerů. Peeři, kteří data stále mají, odpoví; skutečně neobnovitelné záznamy se znovu stáhnou po 7denní amnestii.}}",
   "@backfillAskPeersConfirmContent": {
@@ -1216,6 +1212,10 @@
     }
   },
   "backfillCatchUpDescription": "Stáhni od peerů nedávné chybějící položky hned teď.",
+  "backfillClocksDescription": "Doplň vektorové hodiny odkazům mezi záznamy, entitám agentů a odkazům agentů, které byly uloženy bez nich, aby je tvá další zařízení mohla seřadit a přijmout.",
+  "backfillClocksFailed": "Vektorové hodiny se nepodařilo opravit",
+  "backfillClocksTitle": "Vektorové hodiny",
+  "backfillClocksTrigger": "Opravit vektorové hodiny",
   "backfillDevicesMeta": "{count, plural, =1{1 zařízení} few{{count} zařízení} other{{count} zařízení}}",
   "@backfillDevicesMeta": {
     "placeholders": {

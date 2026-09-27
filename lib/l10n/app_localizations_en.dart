@@ -2628,20 +2628,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Advanced recovery';
 
   @override
-  String get backfillAgentClocksDescription =>
-      'Add a vector clock to agent entities and links that were saved without one, so your other devices can order and receive them.';
-
-  @override
-  String get backfillAgentClocksFailed =>
-      'Could not repair agent vector clocks';
-
-  @override
-  String get backfillAgentClocksTitle => 'Agent vector clocks';
-
-  @override
-  String get backfillAgentClocksTrigger => 'Repair vector clocks';
-
-  @override
   String get backfillAskPeersConfirmAccept => 'Ask peers';
 
   @override
@@ -2685,6 +2671,19 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get backfillCatchUpDescription =>
       'Pull recent missing entries from peers right now.';
+
+  @override
+  String get backfillClocksDescription =>
+      'Add a vector clock to entry links, agent entities and agent links that were saved without one, so your other devices can order and receive them.';
+
+  @override
+  String get backfillClocksFailed => 'Could not repair vector clocks';
+
+  @override
+  String get backfillClocksTitle => 'Vector clocks';
+
+  @override
+  String get backfillClocksTrigger => 'Repair vector clocks';
 
   @override
   String backfillDevicesMeta(int count) {

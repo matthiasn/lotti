@@ -387,6 +387,13 @@ sealed class SyncMessage with _$SyncMessage {
     /// The advertiser's open conflict versions in the range. A peer does not
     /// push a version the advertiser already holds as one.
     @Default(<DeepBackfillRecord>[]) List<DeepBackfillRecord> conflicts,
+
+    /// Ids in the range the advertiser holds without a vector clock (rows
+    /// written before clocks existed). They cannot be ordered, so they are
+    /// named rather than listed: a peer that saw them nowhere would read the
+    /// range as "the advertiser has no such row" and push them back on every
+    /// round. Absent from peers on 1.1.31, which ignore it.
+    @Default(<String>[]) List<String> unclocked,
     String? jsonPath,
     String? attachmentEventId,
   }) = SyncDeepBackfillInventory;

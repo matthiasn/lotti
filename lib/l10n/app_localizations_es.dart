@@ -2665,20 +2665,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Recuperación avanzada';
 
   @override
-  String get backfillAgentClocksDescription =>
-      'Añade un reloj vectorial a las entidades y los enlaces de agente que se guardaron sin uno, para que tus otros dispositivos puedan ordenarlos y recibirlos.';
-
-  @override
-  String get backfillAgentClocksFailed =>
-      'No se han podido reparar los relojes vectoriales de agentes';
-
-  @override
-  String get backfillAgentClocksTitle => 'Relojes vectoriales de agentes';
-
-  @override
-  String get backfillAgentClocksTrigger => 'Reparar relojes vectoriales';
-
-  @override
   String get backfillAskPeersConfirmAccept => 'Preguntar a pares';
 
   @override
@@ -2722,6 +2708,20 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get backfillCatchUpDescription =>
       'Solicita ahora a los pares las entradas faltantes recientes.';
+
+  @override
+  String get backfillClocksDescription =>
+      'Añade un reloj vectorial a los enlaces entre entradas, las entidades de agentes y los enlaces de agentes guardados sin uno, para que tus otros dispositivos puedan ordenarlos y recibirlos.';
+
+  @override
+  String get backfillClocksFailed =>
+      'No se pudieron reparar los relojes vectoriales';
+
+  @override
+  String get backfillClocksTitle => 'Relojes vectoriales';
+
+  @override
+  String get backfillClocksTrigger => 'Reparar relojes vectoriales';
 
   @override
   String backfillDevicesMeta(int count) {

@@ -1,9 +1,9 @@
 /// Ordered phases of a full re-sync run, as surfaced in the sync settings UI.
 ///
 /// Each entity-type step (measurables…agentLinks) re-enqueues that category's
-/// rows to the outbox; the two `backfill…Clocks` steps repair missing vector
-/// clocks on agent rows before they are re-sent. [complete] is the terminal
-/// marker.
+/// rows to the outbox; the `backfill…Clocks` steps repair missing vector
+/// clocks on agent rows and entry links before they are re-sent. [complete]
+/// is the terminal marker.
 enum SyncStep {
   measurables,
   labels,
@@ -14,6 +14,7 @@ enum SyncStep {
   savedTaskFilters,
   backfillAgentEntityClocks,
   backfillAgentLinkClocks,
+  backfillEntryLinkClocks,
   complete,
 }
 

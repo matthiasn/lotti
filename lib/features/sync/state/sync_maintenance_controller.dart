@@ -32,6 +32,7 @@ class SyncMaintenanceController extends Notifier<SyncState> {
       SyncStep.savedTaskFilters,
       SyncStep.backfillAgentEntityClocks,
       SyncStep.backfillAgentLinkClocks,
+      SyncStep.backfillEntryLinkClocks,
     ].where(selectedSteps.contains).toList();
 
     if (orderedSteps.isEmpty) {
@@ -76,6 +77,7 @@ class SyncMaintenanceController extends Notifier<SyncState> {
           SyncStep.backfillAgentEntityClocks:
               _repository.backfillAgentEntityClocks,
           SyncStep.backfillAgentLinkClocks: _repository.backfillAgentLinkClocks,
+          SyncStep.backfillEntryLinkClocks: _repository.backfillEntryLinkClocks,
         };
 
     final syncOperations = orderedSteps
