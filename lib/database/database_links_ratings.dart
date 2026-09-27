@@ -425,6 +425,14 @@ mixin _JournalDbLinksRatings
       if (res != 0 && dbLink.type == 'ProjectLink') {
         await _refreshProjectId(dbLink.toId);
       }
+      // A project link this version moved away from its task — retyped, or
+      // pointed at another one — leaves that task's project id behind.
+      if (res != 0 &&
+          existing != null &&
+          existing.type == 'ProjectLink' &&
+          (dbLink.type != 'ProjectLink' || existing.toId != dbLink.toId)) {
+        await _refreshProjectId(existing.toId);
+      }
 
       return res;
     });

@@ -736,6 +736,35 @@ void main() {
           verifyNever(() => mockNotifications.notify(any()));
         },
       );
+
+      test(
+        'a rating link already live for the pair is not written again and '
+        'reserves no clock',
+        () async {
+          stubCreateFlow();
+          when(
+            () => mockDb.linksBetween(
+              testMetadata.id,
+              testTimeEntryId,
+              type: 'RatingLink',
+            ),
+          ).thenAnswer((_) async => [fallbackLink]);
+
+          final result = await repository.createOrUpdateRating(
+            targetId: testTimeEntryId,
+            dimensions: testDimensions,
+          );
+
+          expect(result, isA<RatingEntry>());
+          verifyNever(() => mockDb.upsertEntryLink(any()));
+          verifyNever(
+            () => mockVectorClock.getNextVectorClock(
+              payload: any(named: 'payload'),
+            ),
+          );
+          verifyNever(() => mockOutbox.enqueueMessage(any()));
+        },
+      );
     });
   });
 

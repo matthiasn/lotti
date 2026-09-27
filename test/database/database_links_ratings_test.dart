@@ -1679,6 +1679,41 @@ void main() {
           expect(await projectId(), isNull);
         },
       );
+
+      test(
+        'a project link retyped away from its task clears that '
+        "task's project id",
+        () async {
+          await db!.upsertJournalDbEntity(toDbEntity(_makeTask('ids-to')));
+          Future<String?> projectId() async =>
+              (await db!
+                      .customSelect(
+                        "SELECT project_id FROM journal WHERE id = 'ids-to'",
+                      )
+                      .getSingle())
+                  .read<String?>('project_id');
+
+          await db!.upsertEntryLink(
+            version(
+              'moving',
+              fromId: 'project-1',
+              clock: const VectorClock({'a': 1}),
+              updatedAt: early,
+              type: EntryLinkType.project,
+            ),
+          );
+          expect(await projectId(), 'project-1');
+
+          final retyped = version(
+            'moving',
+            fromId: 'project-1',
+            clock: const VectorClock({'a': 2}),
+            updatedAt: late,
+          );
+          expect(await db!.upsertEntryLink(retyped), isNot(0));
+          expect(await projectId(), isNull);
+        },
+      );
     });
 
     group('getBulkLinkedTimeSpans -', () {
