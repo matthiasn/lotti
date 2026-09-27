@@ -198,7 +198,7 @@ void main() {
     );
 
     test(
-      'a checkpoint moves the walk claim up to one above its cursor, or to '
+      'a checkpoint moves the walk claim up to the millisecond of its cursor, or to '
       'the oldest ciphertext the walk still holds, without moving the '
       'revision its completion compares against',
       () async {
@@ -214,7 +214,7 @@ void main() {
           coveredThroughTs: 7000,
           unresolvedFloorTs: null,
         );
-        expect(await advancer.resumeFloorTs(_roomA), 7001);
+        expect(await advancer.resumeFloorTs(_roomA), 7000);
 
         await advancer.checkpointResumeWalk(
           roomId: _roomA,
@@ -258,7 +258,7 @@ void main() {
           coveredThroughTs: 7000,
           unresolvedFloorTs: null,
         );
-        expect(await advancer.resumeFloorTs(_roomA), 7001);
+        expect(await advancer.resumeFloorTs(_roomA), 7000);
 
         await advancer.completeResumeWalk(
           roomId: _roomA,
@@ -267,7 +267,7 @@ void main() {
         );
         expect(
           await advancer.resumeFloorTs(_roomA),
-          7001,
+          7000,
           reason:
               'the completion compare-and-set still keeps the live '
               'observation from being cleared',
@@ -480,8 +480,8 @@ void main() {
     });
 
     test(
-      'equal timestamps tie-break on event id: lexically greater '
-      'advances, lexically smaller does not',
+      "a commit in the marker's own millisecond keeps the first anchor, "
+      'whatever its event id',
       () async {
         final firstId = await insertRow(eventId: r'$b', originTs: 5000);
         await advancer.advanceIfNewer(
@@ -489,25 +489,34 @@ void main() {
         );
         await markApplied(firstId);
 
-        final greaterId = await insertRow(eventId: r'$c', originTs: 5000);
+        // Event ids say nothing about timeline order: $c may come after an
+        // event of this millisecond that never arrived, and a forward walk
+        // from it would step over that event.
+        for (final eventId in [r'$c', r'$a']) {
+          final queueId = await insertRow(eventId: eventId, originTs: 5000);
+          expect(
+            await advancer.advanceIfNewer(
+              _entry(queueId: queueId, eventId: eventId, originTs: 5000),
+            ),
+            isFalse,
+            reason: '$eventId shares the anchor millisecond',
+          );
+          await markApplied(queueId);
+        }
+        final marker = await readMarker();
+        expect(marker?.lastAppliedEventId, r'$b');
+        expect(marker?.lastAppliedTs, 5000);
+        expect(marker?.lastAppliedCommitSeq, 1);
+
+        final newerId = await insertRow(eventId: r'$0', originTs: 5001);
         expect(
           await advancer.advanceIfNewer(
-            _entry(queueId: greaterId, eventId: r'$c', originTs: 5000),
+            _entry(queueId: newerId, eventId: r'$0', originTs: 5001),
           ),
           isTrue,
+          reason: 'a newer millisecond moves the anchor as before',
         );
-        await markApplied(greaterId);
-        expect((await readMarker())?.lastAppliedEventId, r'$c');
-        expect((await readMarker())?.lastAppliedCommitSeq, 2);
-
-        final smallerId = await insertRow(eventId: r'$a', originTs: 5000);
-        expect(
-          await advancer.advanceIfNewer(
-            _entry(queueId: smallerId, eventId: r'$a', originTs: 5000),
-          ),
-          isFalse,
-        );
-        expect((await readMarker())?.lastAppliedEventId, r'$c');
+        expect((await readMarker())?.lastAppliedEventId, r'$0');
       },
     );
 

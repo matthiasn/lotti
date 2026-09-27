@@ -1429,30 +1429,38 @@ and the resume floor with its revision compare-and-set — resurrection of
 abandoned rows, and stop, start and crash. `SyncSequence` is the layer above:
 it models counters and peer backfill, not how timeline events are consumed.
 
-An event's number is both its timeline position and its origin timestamp, so
-equal-millisecond collisions are left out. The durable marker decides what
-the next catch-up fetches after a crash: the forward walk from the anchor
-when `BridgeMarker.anchorIsSafe`, otherwise the backward walk down to
-`BridgeMarker.backwardWalkBound`. The decision is
-[ADR 0084](../../docs/adr/0084-model-checked-inbound-queue.md).
+An event's number is its timeline position; its origin timestamp never
+decreases along the timeline, and an event in `SameMs` shares its
+predecessor's millisecond. The marker, the floor and the backward walk's
+bound are timestamps; the anchor and the walks' cursors are positions. The
+durable marker decides what the next catch-up fetches after a crash: the
+forward walk from the anchor when `BridgeMarker.anchorIsSafe`, otherwise the
+backward walk down to `BridgeMarker.backwardWalkBound`. The decision is
+[ADR 0084](../../docs/adr/0084-model-checked-inbound-queue.md); the
+equal-millisecond rules are
+[ADR 0093](../../docs/adr/0093-equal-milliseconds-at-the-catch-up-boundary.md).
 
 | Property | Kind | Says |
 |----------|------|------|
 | `NoSilentLoss` | invariant | every event the homeserver holds is captured (a queue row in any status, abandoned included) or fetched by the catch-up the durable marker selects; a crash at any step loses nothing |
 | `HeldIsLeased` | invariant | the worker holds only a row it leased |
 | `CapHolds` | invariant | no row is resurrected past its hard cap |
-| `MarkerMonotone` | action | `last_applied_ts` and the anchor never move back |
+| `MarkerMonotone` | action | `last_applied_ts` never moves back, and the anchor moves only to a newer millisecond |
 | `AppliedIsFinal` | action | an applied row stays applied: nothing re-arms a committed row, and a duplicate is ignored by the `event_id` UNIQUE constraint |
 | `QueuedEventuallySettled` | liveness | every queued event is eventually applied or dead-lettered (abandoned) |
 | `EventuallyCaptured` | liveness | every plaintext event the homeserver holds is eventually captured |
 
 | Configuration | Events | Crashes/stops | Faults (one of) | Distinct states |
 |---------------|--------|---------------|-----------------|-----------------|
-| `InboundQueue` | 3, one on the server at the first start | 1 | failed enqueue, failed claim read, incomplete walk, worker throw; one retry, two resurrection passes (hard cap one), a gap-recovery walk | 40,494,743 |
-| `InboundQueueCipher` | 3, event 2 encrypted until its key arrives | 1 | failed resume-floor write, failed enqueue | 1,607,563 |
-| `InboundQueueCrash` | 4 | 2 | incomplete walk, failed claim read | 3,484,605 |
-| `InboundQueueLiveness` | 3 | 1 | worker throw, incomplete walk, failed enqueue (fairness) | 410,386 |
-| `InboundQueueSlice` | 3 | 1 | limited-slice admission, failed claim read | 191,865 |
+| `InboundQueue` | 3, one on the server at the first start | 1 | failed enqueue, failed claim read, incomplete walk, worker throw; one retry, two resurrection passes (hard cap one), a gap-recovery walk | 41,042,742 |
+| `InboundQueueCipher` | 3, event 2 encrypted until its key arrives | 1 | failed resume-floor write, failed enqueue | 1,480,001 |
+| `InboundQueueCrash` | 4 | 2 | incomplete walk, failed claim read | 3,951,399 |
+| `InboundQueueLiveness` | 3 | 1 | worker throw, incomplete walk, failed enqueue (fairness) | 474,748 |
+| `InboundQueueSlice` | 3 | 1 | limited-slice admission, failed claim read | 225,631 |
+| `InboundQueueSameMs` | 5, timestamps 1, 2, 2, 2, 3 | 1 | incomplete walk, failed claim read | 15,419,780 |
+
+Every configuration but `InboundQueueSameMs` gives each event its own
+millisecond.
 
 The fixes are switches, so each one's old behaviour is a configuration away;
 every checked-in configuration sets them `TRUE`. "Claiming the range above
@@ -1471,7 +1479,10 @@ newer applies past it the next walk goes backward to the claim.
 | `RetainFailedClaim` | a claim whose marker read threw was logged and dropped, and start and the limited-sync handler carried on | `NoSilentLoss`, 5 steps: the start claim's read fails, a live event applies, and what arrived while the app was down is behind the anchor. A retained claim is resolved against the marker as it then is, before any queue insert |
 | `GuardedResurrect` | the resurrection UPDATE flipped the selected rows by id | `AppliedIsFinal`, 11 steps: a second pass re-arms the row, the worker applies it, and the first pass's UPDATE flips the applied row back to `enqueued` |
 | `ResurrectRechecksCap` | the UPDATE re-checked only `status = 'abandoned'` | `CapHolds`, 12 steps: a second pass re-arms the selected row, the worker abandons it again, and the first pass resurrects it past its hard cap. The same holds for the reason filter of `resurrectByReason`, which the model leaves out |
-| `CheckpointForward` | an incomplete forward walk left its claim at the old marker | no violation (14,186,906 states): the checkpoint is efficiency, not safety. Without it, a retry after a capped or failed forward walk whose rows applied walks backward over everything the walk already fetched |
+| `TieKeepsAnchor` (ADR 0093) | a commit in the marker's millisecond moved the anchor to the larger event id | `InboundQueueSameMs`, `NoSilentLoss`, 16 steps: the anchor is event 2; a limited sync drops event 3, the gap claim is 3, and event 4 — the same millisecond, a larger id — applies and becomes the anchor. The claim still reads as safe, and the forward walk from event 4 never fetches event 3 |
+| `CheckpointAtCursor` (ADR 0093) | a forward walk checkpointed one millisecond above its newest event | `InboundQueueSameMs`, `NoSilentLoss`, 16 steps: a limited sync drops events 2 and 3 and event 4, in their millisecond, applies first and becomes the anchor; the forward walk from event 1 queues event 2 and checkpoints one above it, which makes event 4 a safe anchor, and the retry walks forward past event 3 |
+| `WalkBelowFloor` (ADR 0093) | the backward walk stopped at the lower of the floor and `last_applied_ts` | `InboundQueueSameMs`, `NoSilentLoss`, 17 steps: the anchor is event 2; a limited sync drops events 3 and 4 in its millisecond, the claim is one above it, and event 5 applies in the next millisecond. The walk bounded at the claim stops inside the claimed millisecond; a real page that crosses the bound carries event 4 at most, and event 3 is lost |
+| `CheckpointForward` | an incomplete forward walk left its claim at the old marker | no violation (34,784,361 states): the checkpoint is efficiency, not safety. Without it, a retry after a capped or failed forward walk whose rows applied walks backward over everything the walk already fetched |
 
 Two spec mutants also pass, and say which parts are load-bearing. Without
 `advanceIfNewer`'s clamp (the marker stopping below an older active row)
@@ -1485,13 +1496,11 @@ cleared).
 
 What the model leaves out, deliberately or as a residual:
 
-- **Equal milliseconds.** A claim is one millisecond above the marker and a
-  checkpoint one above the walk's newest event. An uncaptured event in the
-  same millisecond as the marker or the cursor, later in timeline order, is
-  outside a backward walk bounded there. `backwardWalkBound` takes the lower
-  of the floor and `last_applied_ts`, so a claim never narrows a walk past the
-  applied millisecond, and a backward page that crosses the bound is
-  enqueued whole.
+- **A backward page that crosses the bound.** The model's backward walk
+  stops at the first event below its bound; a real page that crosses it also
+  carries older events, which only fetches more. The bound itself must cover
+  every millisecond that can hold a missing event, and with the fixes of
+  ADR 0093 it does.
 - **Timestamps are positions.** The marker, the floor and the walks all
   order by `originServerTs`; homeservers assign it, and the model assumes it
   follows timeline order.
@@ -1913,7 +1922,8 @@ suites.
 
 The inbound queue has one. In
 `test/features/sync/queue/inbound_event_queue_model_conformance.dart` (a part
-of the `InboundQueue` suite), a five-event room drives the real
+of the `InboundQueue` suite), a five-event room whose middle three events
+share a millisecond (`InboundQueueSameMs`'s timestamps) drives the real
 `InboundQueue` — its enqueue, lease, commit, retry and skip, the marker
 advance, the resume floor with its claims, checkpoints and completion
 compare-and-set — through generated interleavings of live deliveries,
@@ -1927,7 +1937,9 @@ their direction with the real `BridgeMarker`. After every step
 durable marker row. Dropping the completion's compare-and-set, ignoring the
 walk's unresolved ciphertext in a checkpoint, or dropping a claim whose
 marker read failed fails it; so does leaving out the gap claim in the
-driver.
+driver, and so does reverting any of ADR 0093's rules: an equal-millisecond
+commit that moves the anchor, a checkpoint one above the cursor, or a
+backward walk bounded at the floor.
 The coordinator's wiring — the claims on start, on a limited sync and at
 every walk, the checkpoint and the failed-enqueue floor — has regressions
 in the coordinator's and the bridge's suites, each failing with its fix

@@ -306,7 +306,7 @@ void main() {
           lastAppliedEventId: r'$a',
           resumeFloorTs: 3000,
         ).backwardWalkBound,
-        3000,
+        2999,
       );
       expect(
         const BridgeMarker(
@@ -321,7 +321,16 @@ void main() {
           lastAppliedEventId: null,
           resumeFloorTs: 3000,
         ).backwardWalkBound,
-        3000,
+        2999,
+      );
+      expect(
+        const BridgeMarker(
+          lastAppliedTs: null,
+          lastAppliedEventId: null,
+          resumeFloorTs: 0,
+        ).backwardWalkBound,
+        0,
+        reason: 'a floor at zero already covers the whole history',
       );
       expect(
         const BridgeMarker(
@@ -331,6 +340,28 @@ void main() {
         isNull,
       );
     });
+
+    test(
+      "a claim whose marker has moved on still covers the claimed marker's "
+      'millisecond',
+      () {
+        // The claim was taken while the marker sat at 5000, as a floor of
+        // 5001. The anchor's millisecond can still hold an event after the
+        // anchor that never arrived; once a newer event applies at 6000 the
+        // applied timestamp no longer covers it, so only the floor does.
+        expect(
+          const BridgeMarker(
+            lastAppliedTs: 6000,
+            lastAppliedEventId: r'$newer',
+            resumeFloorTs: 5001,
+          ).backwardWalkBound,
+          5000,
+          reason:
+              'a walk that stops at 5001 steps over the rest of 5000, '
+              'the millisecond the claim was taken in',
+        );
+      },
+    );
   });
 
   late SyncDatabase db;

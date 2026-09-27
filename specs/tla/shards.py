@@ -59,6 +59,8 @@ SECONDS = {
     "AgentReplicationLegacyReceiver": 452,
     "InboundQueue": 523,
     "InboundQueueSlice": 5,
+    # Local exhaustive run (15.4M states, five minutes); refresh from CI.
+    "InboundQueueSameMs": 300,
     "SyncSequenceCrashFault": 78,
     "ScheduledWakeLeaseThree": 74,
     "WakeRuntimeCrash": 66,
