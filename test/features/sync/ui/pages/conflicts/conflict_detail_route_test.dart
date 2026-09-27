@@ -429,6 +429,49 @@ void main() {
       expect(await keptFromSync(tester, null), 'From B');
     });
 
+    testWidgets(
+      'when the version shown is resolved elsewhere, the next one is decided '
+      'against the row that resolution wrote, not the row before',
+      (tester) async {
+        final bench = await _Bench.create(localEntry: local, conflict: older);
+        addTearDown(bench.dispose);
+        await _pump(tester, older.id);
+        bench.controller.add([newer, older]);
+        await tester.pumpAndSettle();
+
+        // Sync settles B's version: the local row is now the merge of the
+        // row and B, and C's version is the one still open.
+        final merged = _entry(
+          title: 'Local + B',
+          clock: const {'a': 3, 'b': 1},
+        );
+        when(
+          () => bench.db.journalEntityByIdIncludingDeleted(older.id),
+        ).thenAnswer((_) async => merged);
+        bench.controller.add([
+          newer,
+          older.copyWith(status: ConflictStatus.resolved.index),
+        ]);
+        await tester.pumpAndSettle();
+
+        await _tap(tester, l10n.conflictPickerUseThisDevice);
+        final written =
+            verify(
+                  () => bench.persistence.updateJournalEntity(
+                    captureAny(),
+                    any(),
+                  ),
+                ).captured.single
+                as JournalEntity;
+        expect(_firstLineOf(written), 'Local + B');
+        // The merge covers the new row and C, so it settles C as well.
+        expect(
+          written.meta.vectorClock,
+          const VectorClock({'a': 3, 'b': 1, 'c': 1}),
+        );
+      },
+    );
+
     test('pickConflictVersion falls back to the oldest unresolved row once '
         'the named one is resolved, and to the newest when none is open', () {
       final resolvedNewer = _conflict(

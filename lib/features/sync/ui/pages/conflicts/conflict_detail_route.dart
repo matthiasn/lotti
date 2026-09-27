@@ -44,17 +44,22 @@ class _ConflictDetailRouteState extends State<ConflictDetailRoute> {
   Future<JournalEntity?>? _localEntryFuture;
   String? _futureKey;
 
-  /// Cache the local-entry lookup keyed by conflict id so the
-  /// [FutureBuilder] doesn't re-issue the DB read on every stream tick.
+  /// Cache the local-entry lookup keyed by the conflict row shown — the
+  /// entry and the version — so the [FutureBuilder] doesn't re-issue the DB
+  /// read on every stream tick, but does read again when the page moves to
+  /// another version. That happens when the version shown is resolved while
+  /// another is still open: the resolution wrote a new local row, and the
+  /// next version must be decided against it, not against the row before.
   ///
   /// The local side is read with its soft deletion: an edit that arrived
   /// after this device deleted the entry is a delete-versus-edit conflict,
   /// and the user decides it here.
-  Future<JournalEntity?> _localEntryFor(String conflictId) {
-    if (_futureKey != conflictId || _localEntryFuture == null) {
-      _futureKey = conflictId;
+  Future<JournalEntity?> _localEntryFor(Conflict conflict) {
+    final key = '${conflict.id}/${conflict.versionKey}';
+    if (_futureKey != key || _localEntryFuture == null) {
+      _futureKey = key;
       _localEntryFuture = getIt<JournalDb>().journalEntityByIdIncludingDeleted(
-        conflictId,
+        conflict.id,
       );
     }
     return _localEntryFuture!;
@@ -112,7 +117,7 @@ class _ConflictDetailRouteState extends State<ConflictDetailRoute> {
         final conflict = pickConflictVersion(data, widget.versionKey);
         final remote = fromSerialized(conflict.serialized);
         return FutureBuilder<JournalEntity?>(
-          future: _localEntryFor(conflict.id),
+          future: _localEntryFor(conflict),
           builder: (context, entrySnapshot) {
             if (entrySnapshot.hasError) {
               return EmptyScaffoldWithTitle(
