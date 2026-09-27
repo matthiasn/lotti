@@ -10,11 +10,11 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/entry_link_creation.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:uuid/uuid.dart';
 
 /// Provides the singleton [RatingRepository] used by controllers and UI.
 final Provider<RatingRepository> ratingRepositoryProvider =
@@ -37,7 +37,6 @@ RatingRepository ratingRepository(Ref ref) {
 class RatingRepository {
   final JournalDb _journalDb = getIt<JournalDb>();
   final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
-  final _uuid = const Uuid();
 
   /// Creates or updates a rating for a target entry.
   ///
@@ -199,16 +198,26 @@ class RatingRepository {
     await vectorClockService.withVcScope<bool>(
       () async {
         final now = DateTime.now();
-        final linkId = _uuid.v1();
+        // The link's derived id, or the next version of a removed or hidden
+        // row of it; none when it is already live (see [linkCreationBase]).
+        final base = await linkCreationBase(
+          _journalDb,
+          fromId: fromId,
+          toId: toId,
+          type: entryLinkTypeDbName(EntryLinkType.rating),
+        );
+        if (base == null) return false;
+        final (:id, :predecessor) = base;
         final link = EntryLink.rating(
-          id: linkId,
+          id: id,
           fromId: fromId,
           toId: toId,
           createdAt: now,
-          updatedAt: now,
+          updatedAt: linkEditTimestamp(predecessor, now),
           hidden: false,
           vectorClock: await vectorClockService.getNextVectorClock(
-            payload: (id: linkId, type: SyncSequencePayloadType.entryLink),
+            previous: predecessor?.vectorClock,
+            payload: (id: id, type: SyncSequencePayloadType.entryLink),
           ),
         );
 
@@ -224,7 +233,9 @@ class RatingRepository {
           await getIt<OutboxService>().enqueueMessage(
             SyncMessage.entryLink(
               entryLink: link,
-              status: SyncEntryStatus.initial,
+              status: predecessor == null
+                  ? SyncEntryStatus.initial
+                  : SyncEntryStatus.update,
             ),
           );
         } catch (e, stackTrace) {

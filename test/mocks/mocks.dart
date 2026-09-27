@@ -325,6 +325,24 @@ class MockJournalDb extends Mock implements JournalDb {
     return Future<List<EntryLink>>.value(const <EntryLink>[]);
   }
 
+  /// Unstubbed, no link has the id — so a link created behind a mocked
+  /// database takes the id derived from its triple (`linkCreationBase`)
+  /// instead of failing on a null `Future`.
+  @override
+  Future<EntryLink?> entryLinkById(String id) {
+    try {
+      final result = super.noSuchMethod(
+        Invocation.method(#entryLinkById, [id]),
+      );
+      if (result is Future<EntryLink?>) {
+        return result;
+      }
+    } catch (_) {
+      // ignore and fall back
+    }
+    return Future<EntryLink?>.value();
+  }
+
   @override
   Stream<bool> watchConfigFlag(String flagName) {
     try {

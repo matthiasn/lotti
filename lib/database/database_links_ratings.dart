@@ -338,8 +338,8 @@ mixin _JournalDbLinksRatings
     return entryLinkFromLinkedDbEntry(res);
   }
 
-  /// Inserts or updates [link], refusing self-links, active duplicates and
-  /// versions older than the stored one.
+  /// Inserts or updates [link], refusing self-links and versions older than
+  /// the stored version of the same link.
   ///
   /// A link is replicated state: the same id arrives from every device, in
   /// no guaranteed order, and every journal-entity message embeds a snapshot
@@ -349,12 +349,27 @@ mixin _JournalDbLinksRatings
   /// updates extend the stored version's clock and are not stamped earlier
   /// than it, so they always rank above what they replace.
   ///
-  /// The equality pre-read, the recency check, the `(from_id, to_id, type)`
-  /// duplicate check, the tombstone replacement and the upsert run in one
-  /// transaction, so two concurrent creations of the same link — a local one
-  /// racing the same link arriving by sync — cannot both pass the duplicate
-  /// check and then collide on the UNIQUE constraint. A failing read
-  /// propagates; it is a database error, not a reason to write blind.
+  /// A link is its `(from_id, to_id, type)`, whatever id a version carries.
+  /// Links created before ADR 0096, or by a device that predates it, took a
+  /// random id, so two devices that created the same link offline hold it
+  /// under two ids — and the table keeps one row per triple. The versions of
+  /// a triple are therefore ordered against each other by the same rule,
+  /// across ids: the greater one takes the row. A removal succeeds the row
+  /// its writer held, the greatest version it had seen under any id, so it
+  /// outranks every one of them wherever it arrives. Before, a live row
+  /// refused another id as a duplicate and a hidden one gave way to any: a
+  /// removal was refused where the other id was live, and that device's next
+  /// snapshot replaced the tombstone with its live row. When a version whose
+  /// id moved to this triple (`JournalRepository.updateLinkType`) loses
+  /// here, the row it superseded under its own id goes too, as it does on
+  /// the device where the winner displaced that version.
+  ///
+  /// The equality pre-read, the recency checks, the tombstone or loser
+  /// replacement and the upsert run in one transaction, so two concurrent
+  /// creations of the same link — a local one racing the same link arriving
+  /// by sync — cannot both pass the checks and then collide on the UNIQUE
+  /// constraint. A failing read propagates; it is a database error, not a
+  /// reason to write blind.
   Future<int> upsertEntryLink(EntryLink link) async {
     if (link.fromId == link.toId) {
       return 0;
@@ -374,11 +389,11 @@ mixin _JournalDbLinksRatings
         return 0; // the stored version already supersedes this one
       }
 
-      // Guard against secondary UNIQUE(from_id, to_id, type) constraint.
-      // insertOnConflictUpdate only handles primary key conflicts, so a
-      // duplicate (from_id, to_id, type) with a different id would throw.
+      // The row holding this link's triple under another id. insertOnConflict-
+      // Update only handles primary key conflicts, so it has to give way here
+      // or the UNIQUE(from_id, to_id, type) constraint throws.
       final dbLink = linkedDbEntity(link);
-      final existingByTriple =
+      final holder =
           await (select(linkedEntries)..where(
                 (t) =>
                     t.fromId.equals(dbLink.fromId) &
@@ -386,15 +401,19 @@ mixin _JournalDbLinksRatings
                     t.type.equals(dbLink.type),
               ))
               .getSingleOrNull();
-      if (existingByTriple != null && existingByTriple.id != dbLink.id) {
-        if (existingByTriple.hidden != true) {
-          return 0; // genuine active duplicate — block it
+      if (holder != null && holder.id != dbLink.id) {
+        if (_entryLinkIsStale(
+          link,
+          than: entryLinkFromLinkedDbEntry(holder),
+        )) {
+          // The triple keeps the other id's version. A row this version
+          // superseded under its own id sat at another triple, which it left.
+          if (existing != null) {
+            await _deleteLinkRow(existing);
+          }
+          return 0;
         }
-        // The existing row is a soft-deleted tombstone. Hard-delete it so the
-        // UNIQUE(from_id, to_id, type) constraint doesn't block the new insert.
-        await (delete(
-          linkedEntries,
-        )..where((t) => t.id.equals(existingByTriple.id))).go();
+        await _deleteLinkRow(holder);
       }
 
       final res = await into(linkedEntries).insertOnConflictUpdate(dbLink);
@@ -404,15 +423,34 @@ mixin _JournalDbLinksRatings
       // non-hidden ProjectLink wins" subquery so late-arriving sync
       // messages and hide-then-restore sequences remain correct.
       if (res != 0 && dbLink.type == 'ProjectLink') {
-        await customStatement(
-          'UPDATE journal SET project_id = ($_projectIdSubquery) WHERE id = ?',
-          [dbLink.toId],
-        );
+        await _refreshProjectId(dbLink.toId);
+      }
+      // A project link this version moved away from its task — retyped, or
+      // pointed at another one — leaves that task's project id behind.
+      if (res != 0 &&
+          existing != null &&
+          existing.type == 'ProjectLink' &&
+          (dbLink.type != 'ProjectLink' || existing.toId != dbLink.toId)) {
+        await _refreshProjectId(existing.toId);
       }
 
       return res;
     });
   }
+
+  /// Deletes the link [row] replaced by a version of the same link under
+  /// another id, and keeps the task's denormalized project id in step.
+  Future<void> _deleteLinkRow(LinkedDbEntry row) async {
+    await (delete(linkedEntries)..where((t) => t.id.equals(row.id))).go();
+    if (row.type == 'ProjectLink') {
+      await _refreshProjectId(row.toId);
+    }
+  }
+
+  Future<void> _refreshProjectId(String taskId) => customStatement(
+    'UPDATE journal SET project_id = ($_projectIdSubquery) WHERE id = ?',
+    [taskId],
+  );
 }
 
 /// Whether [incoming] is older than the [than] version of the same link.

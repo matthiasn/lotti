@@ -78,8 +78,20 @@ sources:
     last_modified: 2026-09-24
   - id: link-receive
     resource: ../../../lib/database/database_links_ratings.dart
-    title: JournalDb.upsertEntryLink — the entry-link receive order
-    last_modified: 2026-09-25
+    title: JournalDb.upsertEntryLink — the entry-link receive order, across ids of one natural key
+    last_modified: 2026-09-27
+  - id: link-creation
+    resource: ../../../lib/logic/entry_link_creation.dart
+    title: entryLinkId and linkCreationBase — a new link's derived id, or the row it succeeds
+    last_modified: 2026-09-27
+  - id: adr-0096
+    resource: ../../../docs/adr/0096-an-entry-link-is-its-natural-key.md
+    title: ADR 0096 — an entry link is its natural key
+    last_modified: 2026-09-27
+  - id: link-identity-spec
+    resource: ../../../specs/tla/EntryLinkIdentity.tla
+    title: TLA+ model of one entry link under several ids
+    last_modified: 2026-09-27
   - id: link-edit
     resource: ../../../lib/features/journal/repository/journal_repository.dart
     title: JournalRepository — updateLink, and removeLink / removeTypedLink as synced tombstones
@@ -90,8 +102,8 @@ sources:
     last_modified: 2026-09-25
   - id: link-revive
     resource: ../../../lib/logic/persistence_entries.dart
-    title: PersistenceEntries.createLink — linking again revives a removed link
-    last_modified: 2026-09-25
+    title: PersistenceEntries.createLink — a derived id, or linking again revives a removed link
+    last_modified: 2026-09-27
   - id: adr-0078
     resource: ../../../docs/adr/0078-entry-link-versions-are-ordered.md
     title: ADR 0078 — entry-link versions are ordered, and an edit succeeds its predecessor; 2026-09-25 addendum on removals
@@ -478,6 +490,18 @@ the same id rather than minting a second row, so a re-link is ordered against
 the removal like any other edit
 ([entry links](../../domain/entry-links.md#a-removal-is-a-synced-tombstone),
 ADR 0078 addendum).
+
+A link is its `(fromId, toId, type)`, not its id. A new link takes the id
+derived from that triple (`entryLinkId`), so two devices that create it
+offline write two versions of one link. Links from before ADR 0096, and from
+a device on an older build, carry random ids, so the receive orders the
+versions of a triple by the same key whatever their ids, and the greater one
+takes the row. Before, a live row refused another id as a duplicate and a
+hidden row gave way to any. A removal was then refused where the other id was
+live, and that device's next snapshot replaced the tombstone with its live
+row, so the link came back. `specs/tla/EntryLinkIdentity.tla` checks the fix
+and reproduces the resurrection with either switch off
+([ADR 0096](../../../docs/adr/0096-an-entry-link-is-its-natural-key.md)).
 
 # Agent state converges without user involvement
 

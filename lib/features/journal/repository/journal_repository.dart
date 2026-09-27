@@ -563,20 +563,38 @@ class JournalRepository {
   /// notification stream and any future edits) rather than deleting and
   /// recreating it.
   ///
-  /// Returns `false` when [linkId] no longer resolves to a link, or when
-  /// [newType] is `blocks` and the retype would close a cycle (ADR 0042 §5)
-  /// — the existing link's own row is excluded from that check so a
-  /// same-edge direction flip is never rejected against its own stale state.
+  /// Returns `false` when [linkId] no longer resolves to a link, when another
+  /// live link already is the new relationship, or when [newType] is
+  /// `blocks` and the retype would close a cycle (ADR 0042 §5) — the existing
+  /// link's own row is excluded from that check so a same-edge direction flip
+  /// is never rejected against its own stale state.
+  ///
+  /// A link is its `(fromId, toId, type)`, and the receive keeps one version
+  /// per triple whatever its id (ADR 0096), so moving this link onto a triple
+  /// another live link holds would replace that link rather than sit beside
+  /// it. That is refused here, as the duplicate rule refused it before.
   Future<bool> updateLinkType({
     required String linkId,
     required EntryLinkType newType,
     required bool swapDirection,
   }) async {
-    final existing = await getIt<JournalDb>().entryLinkById(linkId);
+    final db = getIt<JournalDb>();
+    final existing = await db.entryLinkById(linkId);
     if (existing == null) return false;
 
     final newFromId = swapDirection ? existing.toId : existing.fromId;
     final newToId = swapDirection ? existing.fromId : existing.toId;
+
+    final occupant = (await db.linksBetween(
+      newFromId,
+      newToId,
+      type: entryLinkTypeDbName(newType),
+    )).where((link) => link.id != linkId).firstOrNull;
+    if (occupant != null &&
+        occupant.deletedAt == null &&
+        occupant.hidden != true) {
+      return false;
+    }
 
     if (newType == EntryLinkType.blocks &&
         await wouldCreateBlocksCycle(

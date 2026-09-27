@@ -5,13 +5,17 @@ description: One row per relationship, nine variants sharing one shape, and why 
 resource: ../../lib/classes/entry_link.dart
 tags: [domain, links, relationships]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-25T18:00:00Z }
-stale_after: 2026-12-25
+generated: { by: claude-code/opus-5.5, at: 2026-09-27T13:00:00Z }
+stale_after: 2026-12-27
 sources:
   - id: entry-link
     resource: ../../lib/classes/entry_link.dart
-    title: EntryLink union, EntryLinkType, linkEditTimestamp and removedVersion
-    last_modified: 2026-09-25
+    title: EntryLink union, EntryLinkType and linkEditTimestamp
+    last_modified: 2026-09-27
+  - id: link-creation
+    resource: ../../lib/logic/entry_link_creation.dart
+    title: entryLinkId and linkCreationBase — a new link's derived id, or the row it succeeds
+    last_modified: 2026-09-27
   - id: adr-0042
     resource: ../../docs/adr/0042-typed-task-relationship-links.md
     title: ADR 0042 — Typed task relationship links
@@ -19,23 +23,27 @@ sources:
   - id: link-upsert
     resource: ../../lib/database/database_links_ratings.dart
     title: JournalDb.upsertEntryLink, linksBetween and the live-link reads
-    last_modified: 2026-09-25
+    last_modified: 2026-09-27
   - id: link-queries
     resource: ../../lib/database/database.drift
     title: Link queries that exclude removed links
     last_modified: 2026-09-25
   - id: journal-repository
     resource: ../../lib/features/journal/repository/journal_repository.dart
-    title: JournalRepository — updateLink, removeLink and removeTypedLink
-    last_modified: 2026-09-25
+    title: JournalRepository — updateLink, updateLinkType, removeLink and removeTypedLink
+    last_modified: 2026-09-27
   - id: create-link
     resource: ../../lib/logic/persistence_entries.dart
-    title: PersistenceEntries.createLink — revives a removed link
-    last_modified: 2026-09-25
+    title: PersistenceEntries.createLink — a derived id, or the next version of a removed link
+    last_modified: 2026-09-27
   - id: adr-0078
     resource: ../../docs/adr/0078-entry-link-versions-are-ordered.md
     title: ADR 0078 — entry-link versions are ordered; 2026-09-25 addendum on removals
-    last_modified: 2026-09-25
+    last_modified: 2026-09-27
+  - id: adr-0096
+    resource: ../../docs/adr/0096-an-entry-link-is-its-natural-key.md
+    title: ADR 0096 — an entry link is its natural key
+    last_modified: 2026-09-27
 ---
 
 # Nine variants, one shape
@@ -145,18 +153,43 @@ of the live link, including the one embedded in their journal-entity
 messages, which carry tombstones too.
 
 **Linking the same pair and type again revives the tombstone** rather than
-minting a second id (`removedVersion`, used by `PersistenceLogic.createLink`
-and `ProjectRepository.linkTaskToProject`). A fresh id would be a second row
-for one `(from_id, to_id, type)`. A peer still holding the live link refuses
-that row as a duplicate, and when the tombstone lands the link is gone there
-but live here.
+minting a second id. `linkCreationBase` (`lib/logic/entry_link_creation.dart`),
+used by `PersistenceLogic.createLink`, `ProjectRepository.linkTaskToProject`
+and the rating link, makes the new link the next version of a removed or
+hidden row: its id, its clock as `previous`, stamped by `linkEditTimestamp`.
+Creating a link that is live and visible writes nothing.
+
+# A link is its natural key
+
+A link never stored here takes the id derived from its `(fromId, toId, type)`
+(`entryLinkId`, a uuid v5), so two devices that create it offline write two
+versions of one link. The derived id can belong to another row only when a
+link created under it was retyped or turned around since, because
+`updateLinkType` keeps the id. The new link then takes a random id.
+
+Links from before ADR 0096, and from a device on an older build, carry random
+ids. So `upsertEntryLink` orders the versions of a triple by the same key
+whatever their ids, and the greater one takes the row. A removal succeeds the
+row its writer held, the greatest version it had seen under any id, and
+outranks every one of them wherever it arrives. Before, a live row refused
+another id as a duplicate and a hidden one gave way to any version, so a
+removal was refused where the other id was live, and that device's next
+snapshot brought the link back
+([ADR 0096](../../docs/adr/0096-an-entry-link-is-its-natural-key.md),
+`specs/tla/EntryLinkIdentity.tla`).
+
+Because the triple is the identity, `updateLinkType` refuses to move a link
+onto a relationship another live link already is: the receive would replace
+that link rather than keep both. One residual remains. When a version moved
+by a retype loses at its new triple, its old row is deleted, and a late copy
+of its version from before the retype can be inserted again there.
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Live: createLink / linkTaskToProject (fresh id)
+  [*] --> Live: createLink / linkTaskToProject (derived id)
   [*] --> Hidden: createLink(hidden true)
   Live --> Hidden: updateLink(hidden true)
-  Hidden --> Live: updateLink(hidden false)
+  Hidden --> Live: updateLink(hidden false) / createLink (same id, next version)
   Live --> Removed: removeLink / removeTypedLink / project or relationship unlink
   Hidden --> Removed: removeLink / removeTypedLink
   Removed --> Live: createLink / linkTaskToProject (same id, next version)
@@ -165,11 +198,6 @@ stateDiagram-v2
     excluded from every live-link read
   end note
 ```
-
-One gap remains ([ADR 0078](../../docs/adr/0078-entry-link-versions-are-ordered.md),
-2026-09-25 addendum). Two devices that create the same link offline mint two
-ids for one triple. A removal of one id is then refused on the device holding
-the other.
 
 # Related
 

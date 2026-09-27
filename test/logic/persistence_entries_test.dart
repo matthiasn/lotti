@@ -7,6 +7,7 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/entry_link_creation.dart';
 import 'package:lotti/logic/persistence_entries.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/notification_service.dart';
@@ -554,27 +555,63 @@ void main() {
       },
     );
 
-    test('a live link of the same type is not revived', () async {
-      when(
-        () => mocks.journalDb.linksBetween('a', 'b', type: 'BasicLink'),
-      ).thenAnswer(
-        (_) async => [removed.copyWith(deletedAt: null, hidden: false)],
-      );
+    test(
+      'a live link of the same type is not written again, and reserves no '
+      'clock',
+      () async {
+        when(
+          () => mocks.journalDb.linksBetween('a', 'b', type: 'BasicLink'),
+        ).thenAnswer(
+          (_) async => [removed.copyWith(deletedAt: null, hidden: false)],
+        );
 
-      await entries.createLink(fromId: 'a', toId: 'b');
+        expect(await entries.createLink(fromId: 'a', toId: 'b'), isFalse);
 
-      final written =
-          verify(
-                () => mocks.journalDb.upsertEntryLink(captureAny()),
-              ).captured.single
-              as EntryLink;
-      // A fresh id: the upsert refuses it as a duplicate of the live link.
-      expect(written.id, isNot('removed-link'));
-      verify(
-        () => vectorClockService.getNextVectorClock(
-          payload: any(named: 'payload'),
-        ),
-      ).called(1);
-    });
+        verifyNever(() => mocks.journalDb.upsertEntryLink(any()));
+        verifyNever(
+          () => vectorClockService.getNextVectorClock(
+            previous: any(named: 'previous'),
+            payload: any(named: 'payload'),
+          ),
+        );
+        verifyNever(() => outboxService.enqueueMessage(any()));
+      },
+    );
+
+    test(
+      'a link never stored here takes the id derived from its triple, so '
+      'the same link created on another device is the same link',
+      () async {
+        expect(
+          await entries.createLink(
+            fromId: 'a',
+            toId: 'b',
+            linkType: EntryLinkType.followsUp,
+          ),
+          isTrue,
+        );
+
+        final written =
+            verify(
+                  () => mocks.journalDb.upsertEntryLink(captureAny()),
+                ).captured.single
+                as EntryLink;
+        expect(
+          written.id,
+          entryLinkId(fromId: 'a', toId: 'b', type: 'FollowsUpLink'),
+        );
+        verify(
+          () => vectorClockService.getNextVectorClock(
+            payload: (id: written.id, type: SyncSequencePayloadType.entryLink),
+          ),
+        ).called(1);
+        final sent =
+            verify(
+                  () => outboxService.enqueueMessage(captureAny()),
+                ).captured.single
+                as SyncEntryLink;
+        expect(sent.status, SyncEntryStatus.initial);
+      },
+    );
   });
 }

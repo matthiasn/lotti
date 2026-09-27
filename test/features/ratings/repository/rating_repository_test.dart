@@ -14,6 +14,7 @@ import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/entry_link_creation.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -521,6 +522,15 @@ void main() {
         expect(ratingLink.fromId, equals(testMetadata.id));
         expect(ratingLink.toId, equals(testTimeEntryId));
         expect(ratingLink.hidden, isFalse);
+        // The id every device derives for this link (ADR 0096).
+        expect(
+          ratingLink.id,
+          entryLinkId(
+            fromId: testMetadata.id,
+            toId: testTimeEntryId,
+            type: 'RatingLink',
+          ),
+        );
         // A written link commits its reserved vector-clock tick.
         expect(mockVectorClock.commits, [true]);
       });
@@ -724,6 +734,35 @@ void main() {
           expect(mockVectorClock.commits, [false]);
           verifyNever(() => mockOutbox.enqueueMessage(any()));
           verifyNever(() => mockNotifications.notify(any()));
+        },
+      );
+
+      test(
+        'a rating link already live for the pair is not written again and '
+        'reserves no clock',
+        () async {
+          stubCreateFlow();
+          when(
+            () => mockDb.linksBetween(
+              testMetadata.id,
+              testTimeEntryId,
+              type: 'RatingLink',
+            ),
+          ).thenAnswer((_) async => [fallbackLink]);
+
+          final result = await repository.createOrUpdateRating(
+            targetId: testTimeEntryId,
+            dimensions: testDimensions,
+          );
+
+          expect(result, isA<RatingEntry>());
+          verifyNever(() => mockDb.upsertEntryLink(any()));
+          verifyNever(
+            () => mockVectorClock.getNextVectorClock(
+              payload: any(named: 'payload'),
+            ),
+          );
+          verifyNever(() => mockOutbox.enqueueMessage(any()));
         },
       );
     });

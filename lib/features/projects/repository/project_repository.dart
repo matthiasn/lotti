@@ -16,12 +16,12 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/entry_link_creation.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/utils/file_utils.dart';
 
 /// Repository for project CRUD and task-project linking.
 ///
@@ -397,11 +397,13 @@ class ProjectRepository {
     // burn silently and receivers would only converge via reactive backfill.
     return _vectorClockService.withVcScope<bool>(
       () async {
-        final (:link, :revived) = await _newProjectLink(
+        final created = await _newProjectLink(
           projectId: projectId,
           taskId: taskId,
           now: DateTime.now(),
         );
+        if (created == null) return false;
+        final (:link, :revived) = created;
 
         final committed = await _journalDb.transaction(() async {
           if (!await _projectLinkInputsAreValid(
@@ -572,11 +574,13 @@ class ProjectRepository {
       () async {
         final now = DateTime.now();
         final deletedLink = await _prepareDeletedLink(oldLink, now);
-        final (link: newLink, :revived) = await _newProjectLink(
+        final created = await _newProjectLink(
           projectId: projectId,
           taskId: taskId,
           now: now,
         );
+        if (created == null) return false;
+        final (link: newLink, :revived) = created;
 
         // The final invariant reads and both writes share one transaction. If
         // sync changed either entity or the old link after the shape-selection
@@ -697,34 +701,36 @@ class ProjectRepository {
   }
 
   /// The link that puts [taskId] in [projectId], reserved inside the
-  /// caller's [VectorClockService.withVcScope]. When the task was in that
-  /// project before, it revives the removed link rather than minting a
-  /// second one for the same pair (see [removedVersion]).
-  Future<({EntryLink link, bool revived})> _newProjectLink({
+  /// caller's [VectorClockService.withVcScope]: under the id derived from
+  /// the pair, or — when the task was in that project before — as the next
+  /// version of the removed link rather than a second one for the same pair
+  /// (see [linkCreationBase]). Null when that link is already live, which
+  /// the callers' own reads rule out unless sync lands in between.
+  Future<({EntryLink link, bool revived})?> _newProjectLink({
     required String projectId,
     required String taskId,
     required DateTime now,
   }) async {
-    final removed = removedVersion(
-      await _journalDb.linksBetween(
-        projectId,
-        taskId,
-        type: entryLinkTypeDbName(EntryLinkType.project),
-      ),
+    final base = await linkCreationBase(
+      _journalDb,
+      fromId: projectId,
+      toId: taskId,
+      type: entryLinkTypeDbName(EntryLinkType.project),
     );
-    final linkId = removed?.id ?? uuid.v1();
+    if (base == null) return null;
+    final (:id, :predecessor) = base;
     final link = EntryLink.project(
-      id: linkId,
+      id: id,
       fromId: projectId,
       toId: taskId,
       createdAt: now,
-      updatedAt: linkEditTimestamp(removed, now),
+      updatedAt: linkEditTimestamp(predecessor, now),
       vectorClock: await _vectorClockService.getNextVectorClock(
-        previous: removed?.vectorClock,
-        payload: (id: linkId, type: SyncSequencePayloadType.entryLink),
+        previous: predecessor?.vectorClock,
+        payload: (id: id, type: SyncSequencePayloadType.entryLink),
       ),
     );
-    return (link: link, revived: removed != null);
+    return (link: link, revived: predecessor != null);
   }
 
   static SyncEntryStatus _creationStatus({required bool revived}) =>

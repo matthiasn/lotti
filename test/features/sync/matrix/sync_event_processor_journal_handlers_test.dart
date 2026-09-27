@@ -1252,6 +1252,69 @@ void main() {
     });
 
     test(
+      'records a refused version whose link is held here under another id',
+      () async {
+        const vc = VectorClock({'host-H': 3});
+        final link = EntryLink.basic(
+          id: 'seq-link-other-id',
+          fromId: 'from-held',
+          toId: 'to-held',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          vectorClock: vc,
+        );
+        final message = SyncMessage.entryLink(
+          entryLink: link,
+          status: SyncEntryStatus.update,
+          originatingHostId: 'host-H',
+        );
+
+        when(
+          () => mockSequenceService.recordReceivedEntryLink(
+            linkId: any(named: 'linkId'),
+            vectorClock: any(named: 'vectorClock'),
+            originatingHostId: any(named: 'originatingHostId'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        final processorWithSeq = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          savedTaskFiltersRepository: savedTaskFiltersRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          sequenceLogService: mockSequenceService,
+        );
+
+        when(() => event.text).thenReturn(encodeMessage(message));
+        // Refused: a greater version of the same link has another id.
+        when(() => journalDb.upsertEntryLink(any())).thenAnswer((_) async => 0);
+        when(
+          () => journalDb.entryLinkById('seq-link-other-id'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => journalDb.linksBetween(
+            'from-held',
+            'to-held',
+            type: 'BasicLink',
+          ),
+        ).thenAnswer((_) async => [link.copyWith(id: 'derived-id')]);
+
+        await processorWithSeq.process(event: event, journalDb: journalDb);
+
+        // Received and decided, so backfill stops asking for its counter.
+        verify(
+          () => mockSequenceService.recordReceivedEntryLink(
+            linkId: 'seq-link-other-id',
+            vectorClock: vc,
+            originatingHostId: 'host-H',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
       'skips recording when rows=0 and link does not exist locally',
       () async {
         const vc = VectorClock({'host-G': 2});

@@ -179,7 +179,8 @@ Consequences:
   triple is live under the other id. That device's next snapshot replaces
   the tombstone with its live row. The fix would make the triple the link's
   identity, for example with a deterministic id. That changes the data model
-  and is left open.
+  and is left open. Closed by
+  [ADR 0096](./0096-an-entry-link-is-its-natural-key.md).
 
 ## Related
 
