@@ -75,7 +75,7 @@ void main() {
     if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
   });
 
-  test('fills an inventory\'s lists from its attachment and clears the '
+  test("fills an inventory's lists from its attachment and clears the "
       'attachment, without writing the document to disk', () async {
     indexUpload({
       'records': [
@@ -99,7 +99,7 @@ void main() {
     expect(File('${tempDir.path}$_path').existsSync(), isFalse);
   });
 
-  test('fills a request\'s records from its attachment', () async {
+  test("fills a request's records from its attachment", () async {
     indexUpload({
       'records': [
         const DeepBackfillRequestRecord(id: 'x', absent: true).toJson(),
@@ -131,19 +131,21 @@ void main() {
     );
   });
 
-  test('waits for an attachment that has not arrived yet: the queue retries',
-      () async {
-    await expectLater(
-      resolver.resolveDeepBackfillMessageForTesting(inventory),
-      throwsA(
-        isA<FileSystemException>().having(
-          (e) => e.message,
-          'message',
-          'attachment descriptor not yet available',
+  test(
+    'waits for an attachment that has not arrived yet: the queue retries',
+    () async {
+      await expectLater(
+        resolver.resolveDeepBackfillMessageForTesting(inventory),
+        throwsA(
+          isA<FileSystemException>().having(
+            (e) => e.message,
+            'message',
+            'attachment descriptor not yet available',
+          ),
         ),
-      ),
-    );
-  });
+      );
+    },
+  );
 
   test('returns an unreadable document unresolved — still naming its '
       'attachment, so the service ignores it rather than read an empty '

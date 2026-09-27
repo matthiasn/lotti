@@ -24,7 +24,10 @@ abstract class DeepBackfillStore {
 
   /// Up to [limit] rows whose id sorts after [after] (from the first when
   /// null), in id order, tombstones included.
-  Future<List<DeepBackfillRow>> page({required String? after, required int limit});
+  Future<List<DeepBackfillRow>> page({
+    required String? after,
+    required int limit,
+  });
 
   /// Every row whose id lies in `[start, end)`; a null bound is unbounded.
   Future<Map<String, VectorClock?>> range({
@@ -87,7 +90,10 @@ class DeepBackfillTableQueries {
         .get();
     return [
       for (final row in rows)
-        (id: row.read<String>('id'), clock: parseClock(row.readNullable<String>('vc'))),
+        (
+          id: row.read<String>('id'),
+          clock: parseClock(row.readNullable<String>('vc')),
+        ),
     ];
   }
 

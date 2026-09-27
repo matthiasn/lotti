@@ -62,7 +62,9 @@ extension _DeepBackfillResolution on SyncEventProcessor {
       return switch (message) {
         final SyncDeepBackfillInventory m => m.copyWith(
           records: list('records').map(DeepBackfillRecord.fromJson).toList(),
-          conflicts: list('conflicts').map(DeepBackfillRecord.fromJson).toList(),
+          conflicts: list(
+            'conflicts',
+          ).map(DeepBackfillRecord.fromJson).toList(),
           jsonPath: null,
           attachmentEventId: null,
         ),

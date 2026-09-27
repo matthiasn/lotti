@@ -32,8 +32,9 @@ void main() {
   late MockOutboxService outbox;
 
   List<SyncMessage> enqueued() => [
-    ...verify(() => outbox.enqueueMessage(captureAny())).captured
-        .cast<SyncMessage>(),
+    ...verify(
+      () => outbox.enqueueMessage(captureAny()),
+    ).captured.cast<SyncMessage>(),
   ];
 
   setUpAll(registerAllFallbackValues);
@@ -72,10 +73,9 @@ void main() {
             updatedAt: _date,
             serialized: jsonEncode(version.toJson()),
             schemaVersion: 0,
-            status: (resolved
-                    ? ConflictStatus.resolved
-                    : ConflictStatus.unresolved)
-                .index,
+            status:
+                (resolved ? ConflictStatus.resolved : ConflictStatus.unresolved)
+                    .index,
           ),
         );
 
@@ -113,7 +113,9 @@ void main() {
       await addConflict(entry('b', const VectorClock({'o': 3})));
 
       expect(await store.openConflicts(start: null, end: 'b'), {
-        'a': [const VectorClock({'o': 1})],
+        'a': [
+          const VectorClock({'o': 1}),
+        ],
       });
     });
 
@@ -291,9 +293,11 @@ void main() {
         'n-1': const VectorClock({'h': 7}),
       });
       expect(await store.enqueueCurrent({'n-1'}, withMedia: {}), 1);
-      final sent = verify(
-        () => outbox.enqueueNotification(captureAny()),
-      ).captured.single as NotificationEntity;
+      final sent =
+          verify(
+                () => outbox.enqueueNotification(captureAny()),
+              ).captured.single
+              as NotificationEntity;
       expect(sent.meta.id, 'n-1');
       expect(sent.meta.deletedAt, _date);
     });

@@ -100,13 +100,15 @@ void main() {
   );
 
   List<SyncMessage> enqueued() => [
-    ...verify(() => outbox.enqueueMessage(captureAny())).captured
-        .cast<SyncMessage>(),
+    ...verify(
+      () => outbox.enqueueMessage(captureAny()),
+    ).captured.cast<SyncMessage>(),
   ];
 
   List<SyncDeepBackfillRequest> requestsSent() => [
-    ...verify(() => outbox.enqueueMessageOrThrow(captureAny())).captured
-        .cast<SyncDeepBackfillRequest>(),
+    ...verify(
+      () => outbox.enqueueMessageOrThrow(captureAny()),
+    ).captured.cast<SyncDeepBackfillRequest>(),
   ];
 
   SyncDeepBackfillInventory inventory({
@@ -181,7 +183,9 @@ void main() {
           'e': const VectorClock({'x': 5}),
         },
         conflicts: {
-          'd': [const VectorClock({'y': 1})],
+          'd': [
+            const VectorClock({'y': 1}),
+          ],
         },
       );
       final progress = <(int, int)>[];
@@ -225,7 +229,12 @@ void main() {
       await service(
         stores: [
           _FakeStore(_journal),
-          _FakeStore(_links, rows: {'k': const VectorClock({'x': 1})}),
+          _FakeStore(
+            _links,
+            rows: {
+              'k': const VectorClock({'x': 1}),
+            },
+          ),
         ],
       ).runRound();
 
@@ -243,7 +252,10 @@ void main() {
         stores: [
           _FakeStore(
             _journal,
-            rows: {'a': null, 'b': const VectorClock({'x': 1})},
+            rows: {
+              'a': null,
+              'b': const VectorClock({'x': 1}),
+            },
           ),
         ],
       ).runRound();
@@ -294,8 +306,12 @@ void main() {
         {'absent': true, 'older': false},
       );
       expect(await outstandingRows(), {
-        'absent': [const VectorClock({'x': 1})],
-        'older': [const VectorClock({'x': 2})],
+        'absent': [
+          const VectorClock({'x': 1}),
+        ],
+        'older': [
+          const VectorClock({'x': 2}),
+        ],
       });
       expect(store.resent.single.ids, {'newer', 'alone'});
       expect(store.resent.single.withMedia, {'alone'});
@@ -305,7 +321,11 @@ void main() {
         'once the local row covers the version asked for', () async {
       final store = _FakeStore(_journal);
       final svc = service(stores: [store]);
-      final batch = inventory(records: {'r': const VectorClock({'x': 2})});
+      final batch = inventory(
+        records: {
+          'r': const VectorClock({'x': 2}),
+        },
+      );
 
       await svc.handleInventory(batch);
       await svc.handleInventory(batch);
@@ -323,7 +343,11 @@ void main() {
         'it', () async {
       final store = _FakeStore(_journal);
       final svc = service(stores: [store]);
-      final batch = inventory(records: {'r': const VectorClock({'x': 2})});
+      final batch = inventory(
+        records: {
+          'r': const VectorClock({'x': 2}),
+        },
+      );
 
       await svc.handleInventory(batch);
       store.rows['r'] = const VectorClock({'x': 1});
@@ -335,7 +359,11 @@ void main() {
 
     test('asks again once a request has expired', () async {
       final svc = service(stores: [_FakeStore(_journal)]);
-      final batch = inventory(records: {'r': const VectorClock({'x': 2})});
+      final batch = inventory(
+        records: {
+          'r': const VectorClock({'x': 2}),
+        },
+      );
 
       await svc.handleInventory(batch);
       now = now.add(const Duration(hours: 1, minutes: 1));
@@ -346,7 +374,14 @@ void main() {
 
     test("settles only the outstanding rows in the batch's range", () async {
       final svc = service(
-        stores: [_FakeStore(_journal, rows: {'m': const VectorClock({'x': 9})})],
+        stores: [
+          _FakeStore(
+            _journal,
+            rows: {
+              'm': const VectorClock({'x': 9}),
+            },
+          ),
+        ],
       );
       await svc.handleInventory(
         inventory(
@@ -372,7 +407,11 @@ void main() {
 
       await expectLater(
         svc.handleInventory(
-          inventory(records: {'r': const VectorClock({'x': 2})}),
+          inventory(
+            records: {
+              'r': const VectorClock({'x': 2}),
+            },
+          ),
         ),
         throwsStateError,
       );
@@ -381,15 +420,24 @@ void main() {
 
     test('ignores its own inventory, lists never loaded from their '
         'attachment, and payload types it has no store for', () async {
-      final store = _FakeStore(_journal, rows: {'r': const VectorClock({'x': 1})});
+      final store = _FakeStore(
+        _journal,
+        rows: {
+          'r': const VectorClock({'x': 1}),
+        },
+      );
       final svc = service(stores: [store]);
-      final records = {'z': const VectorClock({'x': 1})};
+      final records = {
+        'z': const VectorClock({'x': 1}),
+      };
 
       await svc.handleInventory(inventory(hostId: _me, records: records));
       await svc.handleInventory(
         inventory(records: records, attachmentEventId: r'$unresolved'),
       );
-      await svc.handleInventory(inventory(payloadType: _links, records: records));
+      await svc.handleInventory(
+        inventory(payloadType: _links, records: records),
+      );
 
       verifyNever(() => outbox.enqueueMessageOrThrow(any()));
       expect(store.resent, isEmpty);
@@ -440,7 +488,12 @@ void main() {
   test("registerStore replaces a type's store and unregisterStore removes "
       'it', () async {
     final first = _FakeStore(_journal);
-    final second = _FakeStore(_journal, rows: {'a': const VectorClock({'x': 1})});
+    final second = _FakeStore(
+      _journal,
+      rows: {
+        'a': const VectorClock({'x': 1}),
+      },
+    );
     final svc = service(stores: [first])..registerStore(second);
 
     expect(svc.payloadTypes, {_journal});

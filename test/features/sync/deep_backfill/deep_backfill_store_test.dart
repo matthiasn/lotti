@@ -10,18 +10,20 @@ void main() {
 
   /// Inserts a link row whose serialized JSON carries [clockJson] verbatim
   /// (null leaves the clock out).
-  Future<void> insertLink(String id, {String? clockJson}) =>
-      db.customStatement(
-        'INSERT INTO linked_entries (id, from_id, to_id, type, serialized) '
-        'VALUES (?, ?, ?, ?, ?)',
-        [
-          id,
-          'from-$id',
-          'to-$id',
-          'BasicLink',
-          if (clockJson == null) '{"id":"$id"}' else '{"id":"$id","vectorClock":$clockJson}',
-        ],
-      );
+  Future<void> insertLink(String id, {String? clockJson}) => db.customStatement(
+    'INSERT INTO linked_entries (id, from_id, to_id, type, serialized) '
+    'VALUES (?, ?, ?, ?, ?)',
+    [
+      id,
+      'from-$id',
+      'to-$id',
+      'BasicLink',
+      if (clockJson == null)
+        '{"id":"$id"}'
+      else
+        '{"id":"$id","vectorClock":$clockJson}',
+    ],
+  );
 
   setUp(() async {
     db = JournalDb(inMemoryDatabase: true);
@@ -42,17 +44,20 @@ void main() {
     expect(await queries.count(), 5);
   });
 
-  test('page returns rows in id order after the cursor, up to the limit', () async {
-    final first = await queries.page(after: null, limit: 2);
-    final next = await queries.page(after: first.last.id, limit: 2);
-    final last = await queries.page(after: next.last.id, limit: 2);
+  test(
+    'page returns rows in id order after the cursor, up to the limit',
+    () async {
+      final first = await queries.page(after: null, limit: 2);
+      final next = await queries.page(after: first.last.id, limit: 2);
+      final last = await queries.page(after: next.last.id, limit: 2);
 
-    expect(first.map((r) => r.id), ['a', 'b']);
-    expect(first.first.clock, const VectorClock({'host': 1}));
-    expect(next.map((r) => r.id), ['c', 'd']);
-    expect(last.map((r) => r.id), ['e']);
-    expect(last.single.clock, isNull, reason: 'a row without a clock');
-  });
+      expect(first.map((r) => r.id), ['a', 'b']);
+      expect(first.first.clock, const VectorClock({'host': 1}));
+      expect(next.map((r) => r.id), ['c', 'd']);
+      expect(last.map((r) => r.id), ['e']);
+      expect(last.single.clock, isNull, reason: 'a row without a clock');
+    },
+  );
 
   test('range honours each bound and treats null as unbounded', () async {
     expect(

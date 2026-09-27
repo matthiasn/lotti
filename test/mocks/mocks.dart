@@ -167,6 +167,7 @@ import 'package:lotti/features/speech/services/speech_dictionary_service.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
+import 'package:lotti/features/sync/deep_backfill/deep_backfill_service.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
@@ -180,7 +181,6 @@ import 'package:lotti/features/sync/matrix/sync_engine.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
-import 'package:lotti/features/sync/deep_backfill/deep_backfill_service.dart';
 import 'package:lotti/features/sync/media/media_request_handler.dart';
 import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
@@ -1279,8 +1279,7 @@ class MockSoulDocumentService extends Mock implements SoulDocumentService {}
 class MockBackfillResponseHandler extends Mock
     implements BackfillResponseHandler {}
 
-class MockDeepBackfillService extends Mock
-    implements DeepBackfillService {}
+class MockDeepBackfillService extends Mock implements DeepBackfillService {}
 
 class MockMediaRequestHandler extends Mock implements MediaRequestHandler {}
 

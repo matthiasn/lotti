@@ -33,7 +33,8 @@ mixin _SyncDbDeepBackfill on _$SyncDatabase {
   ) async {
     if (requests.isEmpty) return;
     await batch(
-      (batch) => batch.insertAllOnConflictUpdate(deepBackfillRequests, requests),
+      (batch) =>
+          batch.insertAllOnConflictUpdate(deepBackfillRequests, requests),
     );
   }
 

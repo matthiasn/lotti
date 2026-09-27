@@ -149,7 +149,10 @@ void main() {
   // ---------------------------------------------------------------------------
   group('deep backfill payload paths', () {
     test('live under the deep backfill segment as JSON', () {
-      expect(relativeDeepBackfillPath('abc-123'), '/deep_backfill/abc-123.json');
+      expect(
+        relativeDeepBackfillPath('abc-123'),
+        '/deep_backfill/abc-123.json',
+      );
     });
 
     glados.Glados(

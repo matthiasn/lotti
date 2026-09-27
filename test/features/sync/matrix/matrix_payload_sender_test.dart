@@ -1491,13 +1491,15 @@ void main() {
       expect(result?.rangeEnd, 'm');
       final document = uploadedDocument();
       expect(
-        (document['records'] as List<dynamic>)
-            .map((r) => DeepBackfillRecord.fromJson(r as Map<String, dynamic>)),
+        (document['records'] as List<dynamic>).map(
+          (r) => DeepBackfillRecord.fromJson(r as Map<String, dynamic>),
+        ),
         inventory.records,
       );
       expect(
-        (document['conflicts'] as List<dynamic>)
-            .map((r) => DeepBackfillRecord.fromJson(r as Map<String, dynamic>)),
+        (document['conflicts'] as List<dynamic>).map(
+          (r) => DeepBackfillRecord.fromJson(r as Map<String, dynamic>),
+        ),
         inventory.conflicts,
       );
       expect(sentEventRegistry.consume('inventory-upload'), isTrue);

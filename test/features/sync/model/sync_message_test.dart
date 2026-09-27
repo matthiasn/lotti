@@ -103,8 +103,7 @@ void main() {
       jsonDecode(jsonEncode(message.toJson())) as Map<String, dynamic>,
     );
 
-    test('an inventory batch round-trips its range, records and conflicts',
-        () {
+    test('an inventory batch round-trips its range, records and conflicts', () {
       const message = SyncMessage.deepBackfillInventory(
         roundId: 'round-1',
         hostId: 'host-a',

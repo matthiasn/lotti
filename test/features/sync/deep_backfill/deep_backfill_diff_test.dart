@@ -289,7 +289,8 @@ void main() {
       final mine = scenario.mine;
       final owesRow =
           scenario.holdsRow &&
-          (scenario.theirs == null || mine != null && !scenario.keptThere(mine));
+          (scenario.theirs == null ||
+              mine != null && !scenario.keptThere(mine));
       final owesConflict = scenario.myConflicts.any(
         (c) => !scenario.keptThere(c),
       );
@@ -374,8 +375,10 @@ class _RecordScenario {
 /// The conflicts a device can hold over [row]: the write decision applies a
 /// newer version as the row, so an open conflict is always concurrent with
 /// it, and a device without a clocked row holds none.
-List<VectorClock> _openConflictsOf(VectorClock? row, List<VectorClock> clocks) =>
-    row == null
+List<VectorClock> _openConflictsOf(
+  VectorClock? row,
+  List<VectorClock> clocks,
+) => row == null
     ? const []
     : clocks
           .where((c) => VectorClock.compare(row, c) == VclockStatus.concurrent)
@@ -383,17 +386,16 @@ List<VectorClock> _openConflictsOf(VectorClock? row, List<VectorClock> clocks) =
 
 extension _AnyRecordScenario on glados.Any {
   /// A clock over hosts a and b, each counter 0–2; `[-1, _]` is no clock.
-  glados.Generator<VectorClock?> get twoHostClock =>
-      glados.ListAnys(this)
-          .listWithLength(2, glados.IntAnys(this).intInRange(-1, 3))
-          .map(
-            (counters) => counters.first < 0
-                ? null
-                : VectorClock({
-                    'a': counters.first,
-                    'b': counters.last.clamp(0, 2),
-                  }),
-          );
+  glados.Generator<VectorClock?> get twoHostClock => glados.ListAnys(this)
+      .listWithLength(2, glados.IntAnys(this).intInRange(-1, 3))
+      .map(
+        (counters) => counters.first < 0
+            ? null
+            : VectorClock({
+                'a': counters.first,
+                'b': counters.last.clamp(0, 2),
+              }),
+      );
 
   glados.Generator<List<VectorClock>> get conflictClocks =>
       glados.ListAnys(this)

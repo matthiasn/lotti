@@ -2129,17 +2129,20 @@ void main() {
         records: [DeepBackfillRequestRecord(id: 'l-1')],
       );
 
-      test('an inventory batch is diffed by the deep backfill service', () async {
-        final service = MockDeepBackfillService();
-        when(() => service.handleInventory(any())).thenAnswer((_) async {});
-        processor.deepBackfillService = service;
-        when(() => event.text).thenReturn(encodeMessage(inventory));
+      test(
+        'an inventory batch is diffed by the deep backfill service',
+        () async {
+          final service = MockDeepBackfillService();
+          when(() => service.handleInventory(any())).thenAnswer((_) async {});
+          processor.deepBackfillService = service;
+          when(() => event.text).thenReturn(encodeMessage(inventory));
 
-        await processor.process(event: event, journalDb: journalDb);
+          await processor.process(event: event, journalDb: journalDb);
 
-        verify(() => service.handleInventory(inventory)).called(1);
-        verifyNever(() => service.handleRequest(any()));
-      });
+          verify(() => service.handleInventory(inventory)).called(1);
+          verifyNever(() => service.handleRequest(any()));
+        },
+      );
 
       test('a request is answered by the deep backfill service', () async {
         final service = MockDeepBackfillService();
