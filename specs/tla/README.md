@@ -2362,36 +2362,39 @@ Assumptions the model states rather than checks:
 - **The settings database commits an intent before the operation's first
   write** (`saveSettingsItem` is awaited), and intent rows never sync.
 
-## `AgentWakeCoordination` — one device wakes a task agent over a given state
+## `AgentWakeCoordination` — one device wakes a task agent over what it holds
 
 One task agent, replicated on two devices, each waking it on its own local
 edits; a synced audio entry may also queue a wake on the receiver
 (`WakeOnSync`). A device that dispatches a wake broadcasts a claim with the
-digest of the task state it reads and repeats it every heartbeat; a peer
-holding the same digest defers while that claim is live, and drops its wake
-when the claimer's `done` for that digest arrives. A different digest is new
-work. Claims lapse `Timeout` after the last message from the peer. The model
-carries relative time — message ages, the time left on each claim, run ages —
-so the state space is finite without an absolute clock; messages are
-delivered within `MaxDelay`, in order per sender. Digests are the set of
-edits a device holds, so equal digests mean equal state. The decision is
-[ADR 0090](../../docs/adr/0090-cross-device-agent-wake-coordination.md); the
-runtime is described in
+state it reads and repeats it every heartbeat. A peer's state covers a device
+when it holds every edit the device holds; a covered device defers while that
+claim is live, and drops its wake when the claimer's `done` arrives. A device
+holding an edit the peer's state lacks has new work. Claims lapse `Timeout`
+after the last message from the peer. The model carries relative time —
+message ages, the time left on each claim, run ages — so the state space is
+finite without an absolute clock; messages are delivered within `MaxDelay`,
+in order per sender. A state is the set of edits a device holds and covering
+is the subset relation; the code decides it from a watermark of vector-clock
+counters. The decisions are
+[ADR 0090](../../docs/adr/0090-cross-device-agent-wake-coordination.md) and
+[ADR 0091](../../docs/adr/0091-wake-coordination-by-vector-clock-coverage.md);
+the runtime is described in
 [wake orchestration](../../knowledge/features/agents/wake-orchestration.md#one-device-per-state-cross-device-coordination).
 
 | Property | Kind | Says |
 |----------|------|------|
-| `Exclusive` | invariant | no run starts over a state a peer is running, or ran successfully, once the peer's claim has certainly arrived |
-| `CancelCovered` | invariant | a wake is dropped only when some device completed a run over exactly the state the dropping device holds |
+| `Exclusive` | invariant | no run starts over a state that a peer's live or successful run covers, once the peer's claim has certainly arrived |
+| `CancelCovered` | invariant | a wake is dropped only when some device completed a run over a state holding every edit the dropping device holds |
 | `NoLostEdit` | liveness | every edit is eventually processed by a successful run whose state includes it |
 | `OwedWakeSettles` | liveness | every owed wake is eventually run or cancelled: waiting never deadlocks |
 
 | Configuration | Devices | Edits | Failures | Crashes | Losses | Checks | Distinct states |
 |---------------|---------|-------|----------|---------|--------|--------|-----------------|
-| `AgentWakeCoordination` | 2 | 2 | 0 | 0 | 0 | all | 227,398 |
-| `AgentWakeCoordinationFailure` | 2 | 2 | 1 | 0 | 0 | all | 1,287,337 |
-| `AgentWakeCoordinationCrash` | 2 | 2 | 0 | 1 | 0 | all but `Exclusive` | 1,818,187 |
-| `AgentWakeCoordinationLossy` | 2 | 2 | 0 | 0 | 1 | all but `Exclusive` | 1,000,856 |
+| `AgentWakeCoordination` | 2 | 2 | 0 | 0 | 0 | all | 215,434 |
+| `AgentWakeCoordinationFailure` | 2 | 2 | 1 | 0 | 0 | all | 1,207,325 |
+| `AgentWakeCoordinationCrash` | 2 | 2 | 0 | 1 | 0 | all but `Exclusive` | 1,764,793 |
+| `AgentWakeCoordinationLossy` | 2 | 2 | 0 | 0 | 1 | all but `Exclusive` | 965,300 |
 
 The timer is four units, the heartbeat two, the delivery delay one and the
 run cap five: runs outlast the timer, so the heartbeat carries them, and the
@@ -2405,6 +2408,7 @@ set it to `FALSE` and run TLC against `AgentWakeCoordination.tla`:
 | Mutation | Configuration | Counterexample |
 |----------|---------------|----------------|
 | `KeepDoneHistory = FALSE` (a peer's view is one slot) | `AgentWakeCoordination` | `Exclusive`, 13 states: A runs state {1} and completes it; B syncs {1} with a content wake; A takes a new edit and claims a run over {1, 2}. On B that claim overwrites A's `done({1})`, and B, still holding {1}, runs it again. TLC found this in the first draft of the protocol |
+| `CoverSuperset = FALSE` (only an equal state covers, as 1.1.29 shipped) | `AgentWakeCoordination` | `Exclusive`, 9 states: A holds {1, 2} and runs; B, holding {1}, receives A's claim — which covers everything B holds — and runs {1} anyway. On two real devices this was every duplicate |
 | `CompareHash = FALSE` (any claim defers, any done cancels) | `AgentWakeCoordination` | `CancelCovered`, 8 states: B completes a run over {1}; A, holding its own edit {2}, drops its wake on B's `done` — edit 2 is never processed |
 | `DoneCancels = FALSE` | `AgentWakeCoordination` | `Exclusive`, 10 states: A completes a run over {1}; B syncs {1} with a content wake, receives the claim and the `done`, and runs {1} again |
 | `SendHeartbeat = FALSE` | `AgentWakeCoordination` | `Exclusive`, 10 states: B's run outlasts the timer; A, holding the same state, sees the claim lapse and runs beside it |
@@ -2425,12 +2429,12 @@ design does not claim, each shown above by the configurations that drop
 - **A lost message or a crash.** Either can cost a duplicate run; the
   checked properties are that neither loses one.
 
-Three more lie outside the model. The digest is computed a moment before
-the claim, and state that changes in between makes the claim name an older
-digest — a peer holding the newer state runs, which is the conservative
-direction. A claim delivered later than `MaxDelay` — after a disconnect —
-holds a matching wake back for up to `Timeout` from its receipt, even if its
-run has ended; the code never compares the sender's clock with its own. And
-the code keeps the last eight completed digests per
-peer, where the model keeps all; a device eight completed runs behind its
-peer runs once more.
+Four more lie outside the model. The watermark is read a moment before the
+claim and the run reads later still, so a run can read more than its claim
+says, never less. A claim delivered later than `MaxDelay` — after a
+disconnect — holds a covered wake back for up to `Timeout` from its receipt,
+even if its run has ended; the code never compares the sender's clock with
+its own. The code keeps the last eight completed runs per peer, where the
+model keeps all; a device eight completed runs behind its peer runs once
+more. And the watermark counts a counter the sync log gave up on as held, so
+after a gap the backfill could not close it can overstate what a run read.

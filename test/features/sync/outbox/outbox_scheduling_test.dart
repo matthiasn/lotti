@@ -175,7 +175,8 @@ class _GeneratedPriorityScenario {
         SyncMessage.agentWakeCoordination(
           agentId: 'agent-$counterSlot',
           kind: AgentWakeCoordinationKind.claim,
-          stateHash: 'sha256-v1:state-$counterSlot',
+          watermark: {'host-a': counterSlot},
+          readsPrivate: false,
           runKey: 'run-$counterSlot',
           hostId: 'host-$counterSlot',
           sentAt: DateTime(2024, 3, 15),

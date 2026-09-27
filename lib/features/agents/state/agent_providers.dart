@@ -35,7 +35,7 @@ import 'package:lotti/features/agents/wake/wake_intent_store.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
-import 'package:lotti/features/agents/workflow/task_state_digest.dart';
+import 'package:lotti/features/agents/workflow/task_wake_inputs.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
@@ -44,7 +44,11 @@ import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart'
-    show journalDbProvider, loggingServiceProvider, outboxServiceProvider;
+    show
+        journalDbProvider,
+        loggingServiceProvider,
+        outboxServiceProvider,
+        syncDatabaseProvider;
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -344,10 +348,23 @@ Future<String?> _localHostId() async {
   return vectorClock.getHost();
 }
 
+/// This device's watermark for [AgentWakeCoordinator]: the sync sequence
+/// log's gap-free prefix per peer host, and for this host the last counter it
+/// handed out — every local write is held locally.
+Future<Map<String, int>> _wakeWatermark(Ref ref, Set<String> hosts) async {
+  final watermark = await ref
+      .read(syncDatabaseProvider)
+      .contiguousWatermarks(hosts);
+  final vectorClock = getIt<VectorClockService>();
+  final host = await _localHostId();
+  if (host != null) watermark[host] = await vectorClock.lastReservedCounter();
+  return watermark;
+}
+
 /// Cross-device coordination of task-agent wakes: of several devices about to
-/// wake a task agent over the same task state, one runs and the others stand
-/// down (`specs/tla/AgentWakeCoordination.tla`). Other agent kinds have no
-/// state digest and run uncoordinated.
+/// wake a task agent, one runs and the others stand down when its run reads
+/// everything theirs would (`specs/tla/AgentWakeCoordination.tla`). Other
+/// agent kinds have no inputs reader and run uncoordinated.
 final agentWakeCoordinatorProvider = Provider<AgentWakeCoordinator>(
   agentWakeCoordinator,
   name: 'agentWakeCoordinatorProvider',
@@ -355,7 +372,7 @@ final agentWakeCoordinatorProvider = Provider<AgentWakeCoordinator>(
 AgentWakeCoordinator agentWakeCoordinator(Ref ref) {
   final repository = ref.watch(agentRepositoryProvider);
   final coordinator = AgentWakeCoordinator(
-    digestState: (agentId) async {
+    readInputs: (agentId) async {
       final identity = await repository.getEntity(agentId);
       if (identity is! AgentIdentityEntity ||
           identity.kind != AgentKinds.taskAgent) {
@@ -364,12 +381,13 @@ AgentWakeCoordinator agentWakeCoordinator(Ref ref) {
       final state = await repository.getAgentState(agentId);
       final taskId = state?.slots.activeTaskId;
       if (taskId == null) return null;
-      return taskStateDigest(
+      return taskWakeInputs(
         journalDb: ref.read(journalDbProvider),
         agentRepository: repository,
         taskId: taskId,
       );
     },
+    readWatermark: (hosts) => _wakeWatermark(ref, hosts),
     send: ref.watch(outboxServiceProvider).enqueueMessage,
     localHostId: _localHostId,
     domainLogger: ref.watch(domainLoggerProvider),

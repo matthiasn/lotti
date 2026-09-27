@@ -252,6 +252,13 @@ class VectorClockService {
     return host;
   }
 
+  /// The highest counter this host has handed out, `0` before the first. Every
+  /// local write this device holds carries a counter at or below it.
+  Future<int> lastReservedCounter() async {
+    await _initialized;
+    return _nextAvailableCounter - 1;
+  }
+
   Future<String?> getHost() async {
     return _host;
   }

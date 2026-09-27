@@ -1048,7 +1048,8 @@ void main() {
           SyncMessage.agentWakeCoordination(
             agentId: 'agent-1',
             kind: AgentWakeCoordinationKind.claim,
-            stateHash: 'sha256-v1:state',
+            watermark: const {'host-a': 7},
+            readsPrivate: false,
             runKey: 'run-1',
             hostId: 'host-a',
             sentAt: DateTime(2024, 3, 15),

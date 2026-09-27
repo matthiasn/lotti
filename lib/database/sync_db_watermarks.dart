@@ -29,6 +29,26 @@ mixin _SyncDbSequenceWatermarks on _$SyncDatabase {
     return _rebuildSequenceWatermarkForHost(hostId);
   }
 
+  /// [getLastCounterForHost] for every host with a cached watermark and for
+  /// each of [hosts]. A host this device has never heard of is left out,
+  /// which a reader must take as holding none of its writes.
+  Future<Map<String, int>> contiguousWatermarks(Set<String> hosts) async {
+    final rows = await customSelect(
+      'SELECT host_id FROM sync_sequence_watermarks',
+      readsFrom: {syncSequenceLog},
+    ).get();
+    final result = <String, int>{};
+    for (final host in {
+      for (final row in rows) row.read<String>('host_id'),
+      ...hosts,
+    }) {
+      if (host.isEmpty) continue;
+      final counter = await getLastCounterForHost(host);
+      if (counter != null) result[host] = counter;
+    }
+    return result;
+  }
+
   Future<int?> _readSequenceWatermark(String hostId) async {
     final row = await customSelect(
       'SELECT last_counter FROM sync_sequence_watermarks WHERE host_id = ?',

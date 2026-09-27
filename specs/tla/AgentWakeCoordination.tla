@@ -2,22 +2,25 @@
 (***************************************************************************)
 (* Cross-device coordination of one task agent's wakes. The same agent is  *)
 (* replicated on every device, and each device wakes it on its own local   *)
-(* edits. When edits on two devices sync into the same task state, both    *)
-(* devices would run the agent over the same inputs. The protocol lets one *)
-(* of them run and the others stand down:                                  *)
+(* edits. When edits on two devices sync into one task, both devices would *)
+(* run the agent, the later run over inputs the earlier one already read.  *)
+(* The protocol lets one of them run and the others stand down:            *)
 (*                                                                         *)
 (*   - a device that dispatches a wake broadcasts claim(h), h being the    *)
-(*     digest of the task state the wake reads, and repeats it every       *)
-(*     Heartbeat while the run is live;                                    *)
+(*     state the wake reads, and repeats it every Heartbeat while the run  *)
+(*     is live;                                                            *)
 (*   - on success it broadcasts done(h), on failure or abort release(h);   *)
-(*   - a device holding a live peer claim for its own current digest does  *)
-(*     not dispatch; the claim lapses Timeout after it was last received,  *)
-(*     and every message from that peer re-arms it;                        *)
-(*   - a device that has received a peer's done(h) for its own current     *)
-(*     digest drops its pending wake: the peer already processed exactly   *)
-(*     this state. The digests of a peer's completed runs are kept apart   *)
-(*     from its live claim, so its next claim does not erase them;         *)
-(*   - a digest mismatch is new work and runs regardless.                  *)
+(*   - a peer's h covers a device when it holds every edit that device's   *)
+(*     own state holds: the peer's run reads all of it, and maybe more;    *)
+(*   - a device covered by a live peer claim does not dispatch; the claim  *)
+(*     lapses Timeout after it was last received, and every message from   *)
+(*     that peer re-arms it;                                               *)
+(*   - a device covered by a peer's done(h) drops its pending wake: the    *)
+(*     peer already processed everything it holds. The states of a peer's  *)
+(*     completed runs are kept apart from its live claim, so its next      *)
+(*     claim does not erase them;                                          *)
+(*   - a device holding an edit the peer's state lacks has new work, and   *)
+(*     runs regardless.                                                    *)
 (*                                                                         *)
 (* What is modelled, and where it lives in the Dart code:                  *)
 (*                                                                         *)
@@ -42,8 +45,11 @@
 (*   Tick          wall-clock time; it cannot pass a message's delivery    *)
 (*                 bound, a live run's heartbeat or its run cap            *)
 (*                                                                         *)
-(* Digests are modelled as the set of edits a device's state holds, so     *)
-(* equal digests mean equal state and there are no collisions. Time is     *)
+(* A state is modelled as the set of edits a device holds, and covering is *)
+(* the subset relation. The Dart code decides it from vector clocks: the   *)
+(* claim carries, per host, how far the sender holds that host's writes    *)
+(* without a gap, and the receiver checks every write its own inputs rest  *)
+(* on against it (AgentWakeCoordinator). Time is                           *)
 (* relative: messages, claims and runs carry ages or remaining time, which *)
 (* keeps the state space finite without an absolute clock.                 *)
 (***************************************************************************)
@@ -61,7 +67,8 @@ CONSTANTS
     MaxLosses,       \* bound on lost messages
     WakeOnSync,      \* a synced edit may queue a wake on the receiver
     \* Switches: TRUE is the implemented protocol, FALSE the mutation.
-    CompareHash,     \* defer and cancel only on a matching digest
+    CompareHash,     \* defer and cancel only when the peer's state covers
+    CoverSuperset,   \* covering is a superset; FALSE: only an equal state
     SendHeartbeat,   \* repeat the claim while running
     ReArmOnMessage,  \* every received message restarts the timer
     DoneCancels,     \* done(h) cancels a matching pending wake
@@ -122,28 +129,32 @@ Broadcast(d, kind, h) ==
                THEN Append(chan[c], [kind |-> kind, hash |-> h, age |-> 0])
                ELSE chan[c]]
 
-Matches(d, h) == CompareHash => h = seen[d]
+\* Peer state h covers d: a run over h reads every edit d holds.
+Covers(h, d) == seen[d] \subseteq h
 
-\* A live peer claim for this device's own state holds its wake back.
+Matches(d, h) ==
+    CompareHash => IF CoverSuperset THEN Covers(h, d) ELSE h = seen[d]
+
+\* A live peer claim covering this device's state holds its wake back.
 Blocked(d) ==
     \E p \in Devices \ {d} :
         /\ peer[d][p].claimed
         /\ Matches(d, peer[d][p].hash)
         /\ peer[d][p].left > 0
 
-\* A peer already ran a wake over exactly this state.
+\* A peer already ran a wake over everything this device holds.
 Covered(d) ==
     /\ DoneCancels
     /\ \E p \in Devices \ {d} : \E h \in peer[d][p].done : Matches(d, h)
 
-\* A peer is running, or successfully ran, a wake over d's current state,
-\* and its claim has certainly reached d.
+\* A peer is running, or successfully ran, a wake over a state covering
+\* d's, and its claim has certainly reached d.
 KnownRun(d) ==
     \E p \in Devices \ {d} :
         \/ /\ run[p].live
-           /\ run[p].hash = seen[d]
+           /\ Covers(run[p].hash, d)
            /\ run[p].age >= Settled
-        \/ [hash |-> seen[d], age |-> Settled] \in ok[p]
+        \/ \E r \in ok[p] : r.age = Settled /\ Covers(r.hash, d)
 
 Inc(n) == IF n < Settled THEN n + 1 ELSE n
 
@@ -335,15 +346,17 @@ TypeOK ==
     /\ dup \in BOOLEAN
 
 \* The protocol's promise. No run starts over a state a peer is running, or
-\* already ran successfully, once that peer's claim has certainly arrived.
+\* already ran successfully, over a state covering it, once that peer's
+\* claim has certainly arrived.
 \* Duplicates remain only where claims cross within one delivery delay, or
 \* where a message is lost or a crash erases the receiver's view (the
 \* configurations that allow those do not check this).
 Exclusive == ~dup
 
-\* A wake is dropped only when some device completed a run over exactly the
-\* state the dropping device holds: nothing it would read goes unprocessed.
-CancelCovered == cancels \subseteq okHashes
+\* A wake is dropped only when some device completed a run over a state
+\* holding every edit the dropping device holds: nothing it would read goes
+\* unprocessed.
+CancelCovered == \A c \in cancels : \E h \in okHashes : c \subseteq h
 
 \* Every owed wake is eventually run or cancelled: a deferral never
 \* becomes a deadlock, even when the claiming peer crashes or its done is

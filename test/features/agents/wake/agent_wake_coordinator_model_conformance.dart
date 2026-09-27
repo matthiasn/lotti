@@ -9,15 +9,23 @@ part of 'agent_wake_coordinator_test.dart';
 // Matrix room order one sender's rows. The mix leans towards dispatch,
 // delivery and time, where the protocol decides anything.
 //
+// The model's state is a set of edits; the code's is vector clocks. Each edit
+// is a journal entry written by its device with that host's next counter, a
+// device's inputs are the entries of the edits it holds, and its watermark is
+// the gap-free prefix of each host's counters it holds — as the sync sequence
+// log computes it.
+//
 // Beside the code, the trace keeps the model's own view of each peer
-// (`claimed`, `hash`, `left`, `done`) and updates it by the spec's `Deliver`
-// and `Tick`. Every dispatch must decide what the spec's guards decide:
-// cancel exactly when `Covered`, defer exactly when `Blocked`, proceed
-// otherwise. The view also applies the code's one extension of the spec: a
-// peer's completed digests are bounded to the most recent `doneHistoryLimit`.
-// Delivery here is unbounded; a late claim is timed from its receipt. After every step `CancelCovered` must hold, and so must the
-// sender's side of `Tick`: a live run has claimed within the last heartbeat
-// interval. After the trace is played out to quiescence, `NoLostEdit`.
+// (`claimed`, `hash`, `left`, `done`, with each state a set of edits) and
+// updates it by the spec's `Deliver` and `Tick`. Every dispatch must decide
+// what the spec's guards decide: cancel exactly when `Covered`, defer exactly
+// when `Blocked`, proceed otherwise — both through `Covers`, the subset
+// relation. The view also applies the code's one extension of the spec: a
+// peer's completed runs are bounded to the most recent `doneHistoryLimit`.
+// Delivery here is unbounded; a late claim is timed from its receipt. After
+// every step `CancelCovered` must hold, and so must the sender's side of
+// `Tick`: a live run has claimed within the last heartbeat interval. After the
+// trace is played out to quiescence, `NoLostEdit`.
 
 enum _Op {
   edit,
@@ -74,13 +82,16 @@ const _tick = Duration(seconds: 15);
 final int _timeoutTicks =
     AgentWakeCoordinator.coordinationTimeout.inSeconds ~/ _tick.inSeconds;
 
-/// The spec's view of one peer: its claim and its completed digests.
+/// The spec's view of one peer: its claim and its completed states.
 class _ModelView {
   bool claimed = false;
-  String hash = '';
+  Set<int> hash = {};
   int left = 0;
-  final done = <String>{};
+  final done = <Set<int>>[];
 }
+
+/// Who wrote an edit, with which of its counters.
+typedef _Origin = ({String host, int counter});
 
 class _TraceDevice {
   _TraceDevice(this.name);
@@ -89,7 +100,7 @@ class _TraceDevice {
   final edits = <int>{};
   bool pending = false;
   String? liveRun;
-  String? liveHash;
+  Set<int>? liveHash;
   DateTime? lastClaimAt;
   int runs = 0;
   late AgentWakeCoordinator coordinator;
@@ -97,8 +108,6 @@ class _TraceDevice {
 
   /// Messages this device sent, not yet delivered to its peer.
   final outbox = <SyncAgentWakeCoordination>[];
-
-  String get digest => 'state:${(edits.toList()..sort()).join(',')}';
 }
 
 class _CoordinationTrace {
@@ -108,8 +117,13 @@ class _CoordinationTrace {
 
   final FakeAsync async;
   final devices = [_TraceDevice('a'), _TraceDevice('b')];
-  final okHashes = <String>{};
-  final cancelled = <String>{};
+  final origins = <int, _Origin>{};
+  final counters = <String, int>{'a': 0, 'b': 0};
+
+  /// The state each run read, by run key: what its claim and done announce.
+  final runStates = <String, Set<int>>{};
+  final okHashes = <Set<int>>[];
+  final cancelled = <Set<int>>[];
   int nextEdit = 1;
   int losses = 0;
   int crashes = 0;
@@ -117,10 +131,38 @@ class _CoordinationTrace {
   _TraceDevice peerOf(_TraceDevice device) =>
       identical(device, devices[0]) ? devices[1] : devices[0];
 
+  WakeInputs inputsOf(_TraceDevice device) => WakeInputs(
+    clocks: {
+      for (final edit in device.edits)
+        'entry:edit-$edit': VectorClock({
+          origins[edit]!.host: origins[edit]!.counter,
+        }),
+    },
+    readsPrivate: false,
+  );
+
+  Map<String, int> watermarkOf(_TraceDevice device) {
+    final held = {
+      for (final edit in device.edits)
+        (origins[edit]!.host, origins[edit]!.counter),
+    };
+    return {
+      for (final host in counters.keys)
+        host: () {
+          var counter = 0;
+          while (held.contains((host, counter + 1))) {
+            counter++;
+          }
+          return counter;
+        }(),
+    };
+  }
+
   void boot(_TraceDevice device) {
     device
       ..coordinator = AgentWakeCoordinator(
-        digestState: (_) async => device.digest,
+        readInputs: (_) async => inputsOf(device),
+        readWatermark: (_) async => watermarkOf(device),
         send: (message) async {
           message as SyncAgentWakeCoordination;
           if (message.kind == AgentWakeCoordinationKind.claim) {
@@ -137,8 +179,11 @@ class _CoordinationTrace {
     final device = devices[step.device];
     switch (step.op) {
       case _Op.edit:
+        final edit = nextEdit++;
+        final counter = counters[device.name] = counters[device.name]! + 1;
+        origins[edit] = (host: device.name, counter: counter);
         device
-          ..edits.add(nextEdit++)
+          ..edits.add(edit)
           ..pending = true;
       case _Op.sync:
         device.edits.addAll(peerOf(device).edits);
@@ -182,11 +227,13 @@ class _CoordinationTrace {
         }
     }
     async.flushMicrotasks();
-    expect(
-      cancelled.difference(okHashes),
-      isEmpty,
-      reason: 'CancelCovered',
-    );
+    for (final state in cancelled) {
+      expect(
+        okHashes.any((ok) => ok.containsAll(state)),
+        isTrue,
+        reason: 'CancelCovered',
+      );
+    }
     for (final d in devices) {
       if (d.liveRun == null) continue;
       expect(
@@ -199,10 +246,11 @@ class _CoordinationTrace {
 
   void dispatch(_TraceDevice device) {
     if (!device.pending || device.liveRun != null) return;
-    final digest = device.digest;
+    final state = Set.of(device.edits);
     final model = device.model;
-    final covered = model.done.contains(digest);
-    final blocked = model.claimed && model.hash == digest && model.left > 0;
+    final covered = model.done.any((done) => done.containsAll(state));
+    final blocked =
+        model.claimed && model.hash.containsAll(state) && model.left > 0;
 
     late WakeCoordinationDecision decision;
     device.coordinator.evaluate(_agent).then((value) => decision = value);
@@ -211,20 +259,21 @@ class _CoordinationTrace {
     if (covered) {
       expect(decision, isA<WakeCoordinationCancel>(), reason: 'Covered');
       device.pending = false;
-      cancelled.add(digest);
+      cancelled.add(state);
     } else if (blocked) {
       expect(decision, isA<WakeCoordinationDefer>(), reason: 'Blocked');
     } else {
       expect(decision, isA<WakeCoordinationProceed>(), reason: 'Dispatch');
       final runKey = '${device.name}-${device.runs++}';
+      runStates[runKey] = state;
       device.coordinator.claim(
         agentId: _agent,
         runKey: runKey,
-        stateHash: digest,
+        coverage: (decision as WakeCoordinationProceed).coverage,
       );
       device
         ..liveRun = runKey
-        ..liveHash = digest
+        ..liveHash = state
         ..pending = false;
     }
   }
@@ -234,20 +283,23 @@ class _CoordinationTrace {
     final message = from.outbox.removeAt(0);
     to.coordinator.onMessage(message);
 
+    final state = runStates[message.runKey]!;
     final view = to.model;
     switch (message.kind) {
       case AgentWakeCoordinationKind.claim:
         view
           ..claimed = true
-          ..hash = message.stateHash
+          ..hash = state
           ..left = _timeoutTicks;
       case AgentWakeCoordinationKind.done:
         view
           ..claimed = false
-          ..done.remove(message.stateHash)
-          ..done.add(message.stateHash);
+          ..done.removeWhere(
+            (done) => done.length == state.length && done.containsAll(state),
+          )
+          ..done.add(state);
         if (view.done.length > AgentWakeCoordinator.doneHistoryLimit) {
-          view.done.remove(view.done.first);
+          view.done.removeAt(0);
         }
       case AgentWakeCoordinationKind.release:
         view.claimed = false;
@@ -300,12 +352,7 @@ void _registerModelConformance() {
             bench.settle();
             for (var edit = 1; edit < bench.nextEdit; edit++) {
               expect(
-                bench.okHashes.any(
-                  (hash) => hash
-                      .substring('state:'.length)
-                      .split(',')
-                      .contains('$edit'),
-                ),
+                bench.okHashes.any((state) => state.contains(edit)),
                 isTrue,
                 reason: 'NoLostEdit: edit $edit',
               );

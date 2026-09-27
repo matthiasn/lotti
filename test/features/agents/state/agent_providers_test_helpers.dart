@@ -17,7 +17,7 @@ import 'package:lotti/features/daily_os_next/agents/state/day_agent_workflow_pro
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart'
-    show journalDbProvider, outboxServiceProvider;
+    show journalDbProvider, outboxServiceProvider, syncDatabaseProvider;
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -358,12 +358,14 @@ ProviderContainer createCoordinatorContainer({
   required MockAgentRepository mockRepo,
   required MockJournalDb mockDb,
   required MockOutboxService mockOutbox,
+  required MockSyncDatabase mockSyncDb,
 }) {
   final container = ProviderContainer(
     overrides: [
       agentRepositoryProvider.overrideWithValue(mockRepo),
       journalDbProvider.overrideWithValue(mockDb),
       outboxServiceProvider.overrideWithValue(mockOutbox),
+      syncDatabaseProvider.overrideWithValue(mockSyncDb),
       domainLoggerProvider.overrideWithValue(
         DomainLogger(loggingService: LoggingService()),
       ),

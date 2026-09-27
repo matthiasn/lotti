@@ -1,17 +1,89 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:collection/collection.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:meta/meta.dart';
 
-/// Computes the digest of the state a wake of `agentId` would read, or `null`
-/// when the agent does not take part in coordination (its kind has no state
-/// digest, or the state cannot be resolved). A `null` digest always proceeds.
-typedef WakeStateDigester = Future<String?> Function(String agentId);
+/// Reads the rows a wake of `agentId` would read, or `null` when the agent
+/// does not take part in coordination (its kind has no inputs reader, or its
+/// state cannot be resolved). A `null` result always proceeds.
+typedef WakeInputsReader = Future<WakeInputs?> Function(String agentId);
+
+/// Reads this device's watermark: per host, the highest counter up to which
+/// it holds every one of that host's writes. It covers every host it knows
+/// and at least [hosts].
+typedef WakeWatermarkReader =
+    Future<Map<String, int>> Function(Set<String> hosts);
 
 /// Sends one coordination broadcast to every peer (the sync outbox).
 typedef WakeCoordinationSender = Future<void> Function(SyncMessage message);
+
+/// The rows a wake reads, keyed `<kind>:<id>` for the logs, with the vector
+/// clock of each.
+class WakeInputs {
+  const WakeInputs({required this.clocks, required this.readsPrivate});
+
+  final Map<String, VectorClock?> clocks;
+
+  /// Whether this device's context includes private entries.
+  final bool readsPrivate;
+
+  /// Every host a write under these rows came from.
+  Set<String> get hosts => {
+    for (final clock in clocks.values) ...?clock?.vclock.keys,
+  };
+}
+
+/// What a run reads: every write up to [watermark], per host, and private
+/// entries if [readsPrivate]. Claims and completions carry it.
+@immutable
+class WakeCoverage {
+  const WakeCoverage({required this.watermark, required this.readsPrivate});
+
+  final Map<String, int> watermark;
+  final bool readsPrivate;
+
+  /// Why a run over this coverage would not read everything in [inputs], or
+  /// `null` when it reads all of it. This is the model's `Covers`: the run's
+  /// state holds every write the inputs rest on.
+  String? uncovered(WakeInputs inputs) {
+    if (inputs.readsPrivate && !readsPrivate) return 'private entries';
+    for (final MapEntry(:key, value: clock) in inputs.clocks.entries) {
+      if (clock == null) return '${_describe(key)} has no vector clock';
+      for (final MapEntry(key: host, value: counter) in clock.vclock.entries) {
+        final held = watermark[host] ?? 0;
+        if (counter > held) {
+          return '${_describe(key)} needs '
+              '${DomainLogger.sanitizeId(host)}:$counter, peer holds $held';
+        }
+      }
+    }
+    return null;
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is WakeCoverage &&
+      other.readsPrivate == readsPrivate &&
+      const MapEquality<String, int>().equals(other.watermark, watermark);
+
+  @override
+  int get hashCode => Object.hash(
+    readsPrivate,
+    const MapEquality<String, int>().hash(watermark),
+  );
+}
+
+String _describe(String key) {
+  final separator = key.indexOf(':');
+  if (separator < 0) return DomainLogger.sanitizeId(key);
+  return '${key.substring(0, separator)} '
+      '${DomainLogger.sanitizeId(key.substring(separator + 1))}';
+}
 
 /// What the drain should do with a wake job, decided by
 /// [AgentWakeCoordinator.evaluate].
@@ -19,16 +91,16 @@ sealed class WakeCoordinationDecision {
   const WakeCoordinationDecision();
 }
 
-/// Run the wake. [stateHash] is the digest to claim, or `null` when the wake
-/// takes no part in coordination.
+/// Run the wake. [coverage] is what to claim, or `null` when the wake takes
+/// no part in coordination.
 final class WakeCoordinationProceed extends WakeCoordinationDecision {
-  const WakeCoordinationProceed(this.stateHash);
+  const WakeCoordinationProceed(this.coverage);
 
-  final String? stateHash;
+  final WakeCoverage? coverage;
 }
 
-/// A peer is running a wake over the same state: keep the job queued. The
-/// coordinator asks for a drain when the claim ends or lapses.
+/// A peer is running a wake that reads everything this one would: keep the
+/// job queued. The coordinator asks for a drain when the claim ends or lapses.
 final class WakeCoordinationDefer extends WakeCoordinationDecision {
   const WakeCoordinationDefer({required this.peerHostId, required this.until});
 
@@ -38,49 +110,50 @@ final class WakeCoordinationDefer extends WakeCoordinationDecision {
   final DateTime until;
 }
 
-/// A peer already completed a wake over exactly this state: drop the job, its
-/// triggers are covered.
+/// A peer already completed a wake that read everything this one would:
+/// drop the job, its triggers are covered.
 final class WakeCoordinationCancel extends WakeCoordinationDecision {
-  const WakeCoordinationCancel({
-    required this.peerHostId,
-    required this.stateHash,
-  });
+  const WakeCoordinationCancel({required this.peerHostId});
 
   final String peerHostId;
-  final String stateHash;
 }
 
 /// Cross-device coordination of agent wakes: of several devices about to run
-/// the same agent over the same state, one runs and the others stand down.
+/// the same agent, one runs and the others stand down when its run reads
+/// everything theirs would.
 ///
 /// The protocol, and the properties TLC checks for it, are
 /// `specs/tla/AgentWakeCoordination.tla`; each method names the action it
-/// implements.
+/// implements. The model's state is a set of edits and its `Covers` is the
+/// subset relation; here a run's state is a [WakeCoverage] — the watermark of
+/// the device when the run started — and [WakeCoverage.uncovered] checks the
+/// vector clock of every row another device's wake would read against it.
 ///
-/// - [claim] (`Dispatch`) broadcasts that this device runs a wake over a state
-///   digest, and repeats it every [heartbeatInterval] (`Beat`) while the run
+/// - [claim] (`Dispatch`) broadcasts that this device runs a wake with a
+///   coverage, and repeats it every [heartbeatInterval] (`Beat`) while the run
 ///   is live, because a run may outlast [coordinationTimeout].
 /// - [complete] (`Complete`) broadcasts `done`; [settle] (`Fail`) broadcasts
 ///   `release` for a run that ended any other way.
 /// - [onMessage] (`Deliver`) records a peer's claim, re-arming its timer on
-///   every message, and remembers the digests of the peer's completed runs
+///   every message, and remembers the coverages of the peer's completed runs
 ///   apart from its live claim, so its next claim cannot erase them.
-/// - [evaluate] returns cancel when a peer completed a run over this state
-///   (`Cancel`), defer while a live peer claim matches it, and proceed
-///   otherwise — a digest mismatch is new work.
+/// - [evaluate] returns cancel when a peer completed a run covering this
+///   wake's inputs (`Cancel`), defer while a live peer claim covers them, and
+///   proceed otherwise — an input the peer does not hold is new work.
 ///
 /// All state is in memory and device-local: a process restart forgets the
 /// peers' claims (`Crash`), which can only cost a duplicate run, never a lost
 /// one.
 class AgentWakeCoordinator with AgentErrorLogging {
   AgentWakeCoordinator({
-    required this._digestState,
+    required this._readInputs,
+    required this._readWatermark,
     required this._send,
     required this._localHostId,
     this.domainLogger,
   });
 
-  /// How long a peer's claim holds a matching wake back after its last
+  /// How long a peer's claim holds a covered wake back after its last
   /// message. Any message from that peer about the agent re-arms it.
   static const coordinationTimeout = Duration(minutes: 2);
 
@@ -89,11 +162,11 @@ class AgentWakeCoordinator with AgentErrorLogging {
   /// leaves 75 seconds for a heartbeat to arrive.
   static const heartbeatInterval = Duration(seconds: 45);
 
-  /// How many completed-run digests are kept per peer and agent. A device
-  /// behind its peer may still match an older one.
+  /// How many completed-run coverages are kept per peer and agent.
   static const doneHistoryLimit = 8;
 
-  final WakeStateDigester _digestState;
+  final WakeInputsReader _readInputs;
+  final WakeWatermarkReader _readWatermark;
   final WakeCoordinationSender _send;
   final Future<String?> Function() _localHostId;
 
@@ -104,7 +177,7 @@ class AgentWakeCoordinator with AgentErrorLogging {
   LogDomain get errorLogDomain => LogDomain.agentRuntime;
 
   /// Called with an agent id whenever a peer's claim for it ends, lapses or
-  /// is replaced by a claim over another digest — every event that can free
+  /// is replaced by a claim with another coverage — every event that can free
   /// a deferred job — so deferred jobs are drained again. Set by the
   /// orchestrator.
   void Function(String agentId)? onPeerStateChanged;
@@ -128,67 +201,90 @@ class AgentWakeCoordinator with AgentErrorLogging {
     String agentId, {
     bool deferrable = true,
   }) async {
-    String? stateHash;
+    final agent = DomainLogger.sanitizeId(agentId);
+    final WakeInputs? inputs;
+    final WakeCoverage coverage;
     try {
-      stateHash = await _digestState(agentId);
+      inputs = await _readInputs(agentId);
+      if (inputs == null) return const WakeCoordinationProceed(null);
+      // Read after the inputs: a write the inputs hold is then under the
+      // watermark, and the run, which reads later still, holds it too.
+      coverage = WakeCoverage(
+        watermark: await _readWatermark(inputs.hosts),
+        readsPrivate: inputs.readsPrivate,
+      );
     } catch (error, stackTrace) {
       // Coordination only ever saves work; failing open costs a duplicate.
       logError(
-        'state digest failed; wake proceeds uncoordinated',
+        'wake inputs unreadable; wake proceeds uncoordinated',
         error: error,
         stackTrace: stackTrace,
       );
       return const WakeCoordinationProceed(null);
     }
-    if (stateHash == null || !deferrable) {
-      return WakeCoordinationProceed(stateHash);
+    if (!deferrable) {
+      _log('proceed $agent: requested by the user');
+      return WakeCoordinationProceed(coverage);
     }
 
     final peers = _peers[agentId] ?? const <String, _PeerView>{};
+    final reasons = <String>[];
     for (final MapEntry(key: host, value: view) in peers.entries) {
-      if (view.done.contains(stateHash)) {
-        _log(
-          'cancel ${DomainLogger.sanitizeId(agentId)}: '
-          'peer ${DomainLogger.sanitizeId(host)} completed this state',
-        );
-        return WakeCoordinationCancel(peerHostId: host, stateHash: stateHash);
+      for (final done in view.done.reversed) {
+        final reason = done.uncovered(inputs);
+        if (reason == null) {
+          _log(
+            'cancel $agent: peer ${DomainLogger.sanitizeId(host)} completed '
+            'a run covering ${inputs.clocks.length} inputs',
+          );
+          return WakeCoordinationCancel(peerHostId: host);
+        }
+        reasons.add('${DomainLogger.sanitizeId(host)} done: $reason');
       }
     }
     final now = clock.now();
     for (final MapEntry(key: host, value: view) in peers.entries) {
+      final claim = view.claim;
       final expiresAt = view.claimExpiresAt;
-      if (view.claimHash == stateHash &&
-          expiresAt != null &&
-          now.isBefore(expiresAt)) {
+      if (claim == null || expiresAt == null || !now.isBefore(expiresAt)) {
+        continue;
+      }
+      final reason = claim.uncovered(inputs);
+      if (reason == null) {
         _log(
-          'defer ${DomainLogger.sanitizeId(agentId)}: '
-          'peer ${DomainLogger.sanitizeId(host)} is running this state',
+          'defer $agent: peer ${DomainLogger.sanitizeId(host)} is running '
+          'a wake covering ${inputs.clocks.length} inputs',
         );
         return WakeCoordinationDefer(peerHostId: host, until: expiresAt);
       }
+      reasons.add('${DomainLogger.sanitizeId(host)} claim: $reason');
     }
-    return WakeCoordinationProceed(stateHash);
+    _log(
+      'proceed $agent: ${inputs.clocks.length} inputs, '
+      '${reasons.isEmpty ? 'no peer run known' : reasons.join('; ')}',
+    );
+    return WakeCoordinationProceed(coverage);
   }
 
-  /// Announces that run [runKey] of [agentId] is starting over [stateHash]
-  /// and keeps announcing it until [complete] or [settle]. A `null` digest
+  /// Announces that run [runKey] of [agentId] is starting with [coverage]
+  /// and keeps announcing it until [complete] or [settle]. A `null` coverage
   /// announces nothing.
   void claim({
     required String agentId,
     required String runKey,
-    required String? stateHash,
+    required WakeCoverage? coverage,
   }) {
-    if (stateHash == null) return;
+    if (coverage == null) return;
     _runs.remove(runKey)?.heartbeat.cancel();
     void announce() => _broadcast(
       agentId: agentId,
       runKey: runKey,
-      stateHash: stateHash,
+      coverage: coverage,
       kind: AgentWakeCoordinationKind.claim,
     );
     _runs[runKey] = _LocalRun(
       agentId: agentId,
-      stateHash: stateHash,
+      coverage: coverage,
       heartbeat: Timer.periodic(heartbeatInterval, (_) => announce()),
     );
     announce();
@@ -211,7 +307,7 @@ class AgentWakeCoordinator with AgentErrorLogging {
     _broadcast(
       agentId: run.agentId,
       runKey: runKey,
-      stateHash: run.stateHash,
+      coverage: run.coverage,
       kind: kind,
     );
   }
@@ -219,7 +315,7 @@ class AgentWakeCoordinator with AgentErrorLogging {
   void _broadcast({
     required String agentId,
     required String runKey,
-    required String stateHash,
+    required WakeCoverage coverage,
     required AgentWakeCoordinationKind kind,
   }) {
     final sentAt = clock.now();
@@ -228,16 +324,24 @@ class AgentWakeCoordinator with AgentErrorLogging {
     _sendChain = _sendChain.then((_) async {
       try {
         final hostId = await _localHostId();
-        if (hostId == null) return;
+        if (hostId == null) {
+          _log('${kind.name} not sent: no host id yet');
+          return;
+        }
         await _send(
           SyncMessage.agentWakeCoordination(
             agentId: agentId,
             kind: kind,
-            stateHash: stateHash,
+            watermark: coverage.watermark,
+            readsPrivate: coverage.readsPrivate,
             runKey: runKey,
             hostId: hostId,
             sentAt: sentAt,
           ),
+        );
+        _log(
+          'sent ${kind.name} for ${DomainLogger.sanitizeId(agentId)} '
+          'run ${DomainLogger.sanitizeId(runKey)}',
         );
       } catch (error, stackTrace) {
         logError(
@@ -253,22 +357,35 @@ class AgentWakeCoordinator with AgentErrorLogging {
   /// applied in the order they were sent — by that peer's own clock, so the
   /// comparison never mixes clocks; an older one is dropped.
   void onMessage(SyncAgentWakeCoordination message) {
+    final peer = DomainLogger.sanitizeId(message.hostId);
+    final agent = DomainLogger.sanitizeId(message.agentId);
     final view = (_peers[message.agentId] ??= {})[message.hostId] ??=
         _PeerView();
     final lastSentAt = view.lastSentAt;
-    if (lastSentAt != null && message.sentAt.isBefore(lastSentAt)) return;
+    if (lastSentAt != null && message.sentAt.isBefore(lastSentAt)) {
+      _log('dropped stale ${message.kind.name} from $peer for $agent');
+      return;
+    }
     view.lastSentAt = message.sentAt;
+    _log(
+      'received ${message.kind.name} from $peer for $agent '
+      'run ${DomainLogger.sanitizeId(message.runKey)}',
+    );
 
+    final coverage = WakeCoverage(
+      watermark: message.watermark,
+      readsPrivate: message.readsPrivate,
+    );
     final now = clock.now();
     switch (message.kind) {
       case AgentWakeCoordinationKind.claim:
-        final previous = view.claimHash;
+        final previous = view.claim;
         // The timer runs from receipt, on this device's clock: `sentAt` is
         // the peer's clock, and comparing the two would drop every claim
         // from a peer whose clock runs behind. A claim that arrives late
-        // holds a matching wake back for at most one timeout.
+        // holds a covered wake back for at most one timeout.
         view
-          ..claimHash = message.stateHash
+          ..claim = coverage
           ..claimExpiresAt = now.add(coordinationTimeout);
         view.expiry?.cancel();
         view.expiry = Timer(
@@ -276,13 +393,13 @@ class AgentWakeCoordinator with AgentErrorLogging {
           () => _peerStateChanged(message.agentId),
         );
         // A job held back by the claim this one replaces may run now.
-        if (previous != null && previous != message.stateHash) {
+        if (previous != null && previous != coverage) {
           _peerStateChanged(message.agentId);
         }
       case AgentWakeCoordinationKind.done:
         view
           ..clearClaim()
-          ..addDone(message.stateHash);
+          ..addDone(coverage);
         _peerStateChanged(message.agentId);
       case AgentWakeCoordinationKind.release:
         view.clearClaim();
@@ -323,38 +440,38 @@ class AgentWakeCoordinator with AgentErrorLogging {
 class _LocalRun {
   _LocalRun({
     required this.agentId,
-    required this.stateHash,
+    required this.coverage,
     required this.heartbeat,
   });
 
   final String agentId;
-  final String stateHash;
+  final WakeCoverage coverage;
   final Timer heartbeat;
 }
 
 /// One device's view of one peer's wakes of one agent.
 class _PeerView {
-  String? claimHash;
+  WakeCoverage? claim;
   DateTime? claimExpiresAt;
   Timer? expiry;
   DateTime? lastSentAt;
 
-  /// Digests of the peer's completed runs, oldest first.
-  final done = <String>{};
+  /// Coverages of the peer's completed runs, oldest first.
+  final done = <WakeCoverage>[];
 
   void clearClaim() {
-    claimHash = null;
+    claim = null;
     claimExpiresAt = null;
     expiry?.cancel();
     expiry = null;
   }
 
-  void addDone(String stateHash) {
+  void addDone(WakeCoverage coverage) {
     done
-      ..remove(stateHash)
-      ..add(stateHash);
+      ..remove(coverage)
+      ..add(coverage);
     while (done.length > AgentWakeCoordinator.doneHistoryLimit) {
-      done.remove(done.first);
+      done.removeAt(0);
     }
   }
 }
