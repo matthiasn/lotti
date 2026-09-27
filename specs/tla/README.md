@@ -784,14 +784,19 @@ override outranks the timestamp (retracted knowledge, a consumed wake window,
 a dismissed nudge), and `"removal"` a register that is removed and written
 again, whose tombstone (`deletedAt`) is ordered like any other field — a day
 plan deleted and drafted again, a parsed capture item replaced by a re-parse,
-a deleted template or soul. The receive is `resolveReceivedAgentEntity`
+a deleted template or soul. `"seeded"` is a default the app seeds under a
+well-known id at every start — a default template, soul or soul assignment —
+which starts with no row and which the user edits and deletes through the
+typed reads. The receive is `resolveReceivedAgentEntity`
 (`agent_entity_receive.dart`) inside `SyncEventProcessor`'s receive
 transaction. In the lossy configuration a delivery can also be lost, and the
 receiver recovers it by backfill from the writer's stored version. The
 decisions are
 [ADR 0068](../../docs/adr/0068-model-checked-agent-convergence.md) and, for
 removals, the addendum of
-[ADR 0081](../../docs/adr/0081-model-checked-evolution-sessions-and-agent-links.md).
+[ADR 0081](../../docs/adr/0081-model-checked-evolution-sessions-and-agent-links.md),
+and, for seeds,
+[ADR 0100](../../docs/adr/0100-deleted-defaults-stay-deleted.md).
 
 | Property | Kind | Says |
 |----------|------|------|
@@ -800,6 +805,7 @@ removals, the addendum of
 | `OwnCountKept` | invariant | a host always sees all of its own G-counter increments |
 | `NoLostIncrement` | invariant | once everything is delivered, every replica sees every increment |
 | `LocalWriteTakesEffect` | invariant | a write meant to move the row against the resolver's order keeps its fields on the writing device; on the removal kind, a re-creation over a removed row |
+| `SeedYieldsToRemoval` | invariant | on the seeded kind, a replica that has received a removal, its own included, never holds a seeded version |
 
 | Configuration | Kind | Replicas | Writes | Clock skew | Checks | Distinct states |
 |---------------|------|----------|--------|------------|--------|-----------------|
@@ -811,6 +817,8 @@ removals, the addendum of
 | `AgentReplicationLegacyReceiver` | terminal; received by a build that reads an absent host as 0 | 3 | 3 | 1 tick | `Converged`, `NoLostSuccessor` | 9,544,635 |
 | `AgentReplicationRemoval` | removal, with re-creations (`Intend`) | 3 | 3 | 1 tick | `Converged`, `NoLostSuccessor`, `LocalWriteTakesEffect` | 13,561,419 |
 | `AgentReplicationRemovalLossy` | removal, with re-creations; any delivery lost and recovered by backfill | 2 | 3 | 1 tick | `Converged`, `NoLostSuccessor`, `LocalWriteTakesEffect` | 2,257,939 |
+| `AgentReplicationSeed` | seeded: seeds on every replica, the user's edits and deletions | 3 | 3 | 1 tick | `Converged`, `NoLostSuccessor`, `SeedYieldsToRemoval` | 1,843,077 |
+| `AgentReplicationSeedLossy` | seeded; any delivery lost and recovered by backfill | 2 | 3 | 1 tick | `Converged`, `NoLostSuccessor`, `SeedYieldsToRemoval` | 339,219 |
 
 A clock maps each replica to a counter or to `Absent`, and the properties use
 the causal order, in which a present entry, 0 included, ranks above an absent
@@ -839,6 +847,8 @@ The design switches are the fixes, and each has a counterexample when set to
 | `WriteSeesTombstones` (ADR 0081 addendum) | the local write resolution read the persisted row with `getEntity` too | removal kind, `NoLostSuccessor` in six steps: A writes and removes, B receives the removal and writes the row afresh on `{B:1}` alone, and A's first version, arriving late, wins over B's write on the canonical order |
 | `RecreateKeepsFields` (ADR 0081 addendum) | a row built afresh over a tombstone was resolved against it as if concurrent | removal kind, `LocalWriteTakesEffect` in two steps: A removes, then writes the row afresh at the same instant, and the tiebreak hands the removal back |
 | `AtomicReceive` (ADR 0081 addendum) | every type but agent state, change sets and evolution sessions was read, then written after an await | removal kind, `NoLostSuccessor` in eight steps: B reads the stored row to receive A's version, writes twice locally, and the receive then writes A's version over both |
+| `SeedSeesTombstones` (ADR 0100) | the seed asked the typed read, which reads a tombstone as no row | seeded kind, `SeedYieldsToRemoval` in three steps: A seeds, A deletes, A seeds again at its next start — a re-creation, which succeeds the removal everywhere |
+| `SeedYields` (ADR 0100) | the seed was stamped at the wall clock | seeded kind, `SeedYieldsToRemoval` in four steps: A and B seed at the same instant, B deletes, and A, receiving the deletion, keeps its own seed, which wins the canonical tiebreak — with a clock ahead, a later instant wins outright |
 
 `Intend` (ADR 0068's addendum) is the class the local write resolution
 opened: a write built on the row whose point is to move it against the
@@ -902,11 +912,10 @@ What the model leaves out, deliberately or as a residual:
   rule, where a removal kept the timestamp of the row it removed, converges
   too and so has no counterexample here. It is checked by the resolver's and
   the receive's unit tests.
-- **Seeding restores a deleted default.** The default templates and souls are
-  seeded at every start, and a default the user deleted is created again
-  under its id. That is a re-creation, which this model checks and which now
-  wins on every device; whether a deleted default should stay deleted is a
-  product decision (ADR 0081, addendum).
+- **The rows a seed writes under fresh ids.** A seeded template or soul's
+  version and head rows are minted per device, so a device that seeded
+  before it received a deletion keeps its own, behind the removed template
+  or soul; the seeded kind is the row under the well-known id (ADR 0100).
 - **Hard deletes** (`hardDeleteAgent`, retention pruning) leave no tombstone
   and are not synced, so a late copy can restore such a row.
 - Agent links (`AgentLink`) are `AgentLinks` below.
@@ -1865,6 +1874,22 @@ drafted again — are examples in the same suite and in the `AgentSyncService`
 suite; the receive transaction of every type, the backfill of a tombstone and
 own-counter settlement of a removal are examples in the sync processor's and
 the backfill handler's suites.
+
+Seeds have theirs. In
+`test/features/agents/service/agent_seeding_model_conformance.dart` (a part
+of the suite of `agent_template_seeding.dart`), three devices of a
+`ReplicaNetwork` start — running the real template and soul seeding — at any
+point of a generated trace, while the user renames and deletes the default
+Tom template, unassigns its soul and deletes the soul. One device's clock
+runs ahead. For the template, the soul and the seeded assignment, after
+every step no device that has made or received a removal holds a live seed
+(`SeedYieldsToRemoval`) and `NoLostSuccessor` holds; after everything,
+`Converged`. Seeding over a tombstone shrinks to the model's three steps
+(start, delete, start); stamping the seed at the wall clock to its four
+(start, start on the device that runs ahead, delete, deliver). The
+two-device regressions — a deletion and an unassignment reaching a device
+that seeded later, a rename a later seed must not revert — are examples in
+the same suite and in `soul_template_ops_test.dart`.
 
 Links and sessions have theirs. In
 `test/features/agents/sync/agent_links_model_conformance.dart` (a part of the

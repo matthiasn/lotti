@@ -206,6 +206,69 @@ void main() {
     );
   });
 
+  group('hasAnyLinkFrom', () {
+    test(
+      'counts a removed link, and only links of the type from the id',
+      () async {
+        expect(
+          await links.hasAnyLinkFrom(
+            'template-1',
+            type: AgentLinkTypes.soulAssignment,
+          ),
+          isFalse,
+        );
+
+        final assignment = makeTestSoulAssignmentLink(
+          id: 'sa-1',
+          fromId: 'template-1',
+          toId: 'soul-1',
+          createdAt: testDate,
+          updatedAt: testDate,
+        );
+        await links.upsertLink(assignment);
+        await links.upsertLink(assignment.softDeleted(testDate));
+        // A link of another type from the same id, and one of the same type
+        // from another id, are not the template's soul assignment.
+        await links.upsertLink(
+          makeTestBasicLink(
+            id: 'basic-1',
+            fromId: 'template-2',
+            toId: 'soul-1',
+            createdAt: testDate,
+            updatedAt: testDate,
+          ),
+        );
+
+        expect(
+          await links.getLinksFrom(
+            'template-1',
+            type: AgentLinkTypes.soulAssignment,
+          ),
+          isEmpty,
+          reason: 'the typed read hides the removal',
+        );
+        expect(
+          await links.hasAnyLinkFrom(
+            'template-1',
+            type: AgentLinkTypes.soulAssignment,
+          ),
+          isTrue,
+        );
+        expect(
+          await links.hasAnyLinkFrom('template-1', type: AgentLinkTypes.basic),
+          isFalse,
+        );
+        expect(
+          await links.hasAnyLinkFrom(
+            'template-2',
+            type: AgentLinkTypes.soulAssignment,
+          ),
+          isFalse,
+        );
+      },
+    );
+  });
+
   group('wake run log', () {
     test('insert then status update is observable via getWakeRun', () async {
       await links.insertWakeRun(

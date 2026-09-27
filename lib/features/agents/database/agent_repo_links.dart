@@ -133,6 +133,22 @@ class AgentRepoLinks {
     return rows.map(AgentDbConversions.fromLinkRow).toList();
   }
 
+  /// Whether any link of [type] originates from [fromId], **a removed one
+  /// included**: a seeding pass that asks whether the user has ever had one
+  /// must not read a removal as never having had it (ADR 0100).
+  Future<bool> hasAnyLinkFrom(String fromId, {required String type}) async {
+    final row = await _db
+        .customSelect(
+          'SELECT 1 FROM agent_links '
+          'INDEXED BY idx_agent_links_from '
+          'WHERE from_id = ? AND type = ? LIMIT 1',
+          variables: [Variable.withString(fromId), Variable.withString(type)],
+          readsFrom: {_db.agentLinks},
+        )
+        .getSingleOrNull();
+    return row != null;
+  }
+
   /// Fetch non-deleted links pointing to [toId], optionally filtered by
   /// [type].
   Future<List<model.AgentLink>> getLinksTo(

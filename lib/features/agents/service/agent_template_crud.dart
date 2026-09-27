@@ -30,6 +30,12 @@ class AgentTemplateCrud {
 
   /// Create a new template with its initial version and head pointer.
   ///
+  /// A [seeded] template is a default the app creates under a well-known
+  /// [templateId]: its template row is stamped at [agentSeedInstant], so a
+  /// deletion or edit a user made concurrently on another device wins over
+  /// it (ADR 0100). The version and head keep the current instant, which the
+  /// version history shows.
+  ///
   /// Returns the created [AgentTemplateEntity].
   Future<AgentTemplateEntity> createTemplate({
     required String displayName,
@@ -42,11 +48,13 @@ class AgentTemplateCrud {
     Set<String> categoryIds = const {},
     String? templateId,
     String? profileId,
+    bool seeded = false,
   }) async {
     final tplId = templateId ?? _uuid.v4();
     final versionId = _uuid.v4();
     final headId = _uuid.v4();
     final now = clock.now();
+    final stampedAt = seeded ? agentSeedInstant : now;
 
     final template =
         AgentDomainEntity.agentTemplate(
@@ -57,8 +65,8 @@ class AgentTemplateCrud {
               modelId: modelId,
               profileId: profileId,
               categoryIds: categoryIds,
-              createdAt: now,
-              updatedAt: now,
+              createdAt: stampedAt,
+              updatedAt: stampedAt,
               vectorClock: null,
             )
             as AgentTemplateEntity;

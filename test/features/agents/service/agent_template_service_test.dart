@@ -112,7 +112,7 @@ enum _GeneratedGatherAgentSlot {
   wrongType,
 }
 
-enum _GeneratedDefaultTemplateSlot { present, missing, wrongType }
+enum _GeneratedDefaultTemplateSlot { present, missing, deleted, wrongType }
 
 class _GeneratedTemplateUpdateDelta {
   const _GeneratedTemplateUpdateDelta({
@@ -826,20 +826,32 @@ class _DefaultTemplateDefinition {
   final String generalDirective;
   final String reportDirective;
 
-  AgentDomainEntity? existingEntity(_GeneratedDefaultTemplateSlot slot) {
+  /// The row stored under the default's id, a tombstone included
+  /// (`getEntityIncludingDeleted`).
+  AgentDomainEntity? storedEntity(_GeneratedDefaultTemplateSlot slot) {
+    final template = makeTestTemplate(
+      id: id,
+      agentId: id,
+      displayName: displayName,
+      kind: kind,
+    );
     return switch (slot) {
-      _GeneratedDefaultTemplateSlot.present => makeTestTemplate(
-        id: id,
-        agentId: id,
-        displayName: displayName,
-        kind: kind,
-      ),
+      _GeneratedDefaultTemplateSlot.present => template,
       _GeneratedDefaultTemplateSlot.missing => null,
+      _GeneratedDefaultTemplateSlot.deleted => template.copyWith(
+        deletedAt: DateTime(2026, 4, 22),
+      ),
       _GeneratedDefaultTemplateSlot.wrongType => makeTestTemplateVersion(
         id: id,
         agentId: id,
       ),
     };
+  }
+
+  /// What the typed read (`getEntity`) returns: the row unless removed.
+  AgentDomainEntity? liveEntity(_GeneratedDefaultTemplateSlot slot) {
+    final stored = storedEntity(slot);
+    return stored?.deletedAt == null ? stored : null;
   }
 }
 
@@ -926,13 +938,15 @@ class _GeneratedSeedDefaultsScenario {
     metaImproverSlot,
   ];
 
-  bool get allPresent =>
-      slots.every((slot) => slot == _GeneratedDefaultTemplateSlot.present);
+  /// Only a default with no row stored under its id is seeded: a deleted
+  /// one stays deleted, and so does an id another row holds (ADR 0100).
+  bool get noneMissing =>
+      slots.every((slot) => slot != _GeneratedDefaultTemplateSlot.missing);
 
   List<_DefaultTemplateDefinition> get templatesToCreate {
     return [
       for (final (index, slot) in slots.indexed)
-        if (slot != _GeneratedDefaultTemplateSlot.present)
+        if (slot == _GeneratedDefaultTemplateSlot.missing)
           _defaultTemplateDefinitions[index],
     ];
   }
@@ -2781,13 +2795,16 @@ void main() {
       for (final (index, definition) in _defaultTemplateDefinitions.indexed) {
         final slot = scenario.slots[index];
         when(
+          () => generatedRepository.getEntityIncludingDeleted(definition.id),
+        ).thenAnswer((_) async => definition.storedEntity(slot));
+        when(
           () => generatedRepository.getEntity(definition.id),
-        ).thenAnswer((_) async => definition.existingEntity(slot));
+        ).thenAnswer((_) async => definition.liveEntity(slot));
       }
 
       await withClock(Clock.fixed(testDate), generatedService.seedDefaults);
 
-      if (scenario.allPresent) {
+      if (scenario.noneMissing) {
         verifyNever(() => generatedSync.upsertEntity(any()));
         verify(generatedRepository.getAllTemplates).called(1);
         return;
@@ -2822,8 +2839,10 @@ void main() {
           kDefaultAgentTemplateModelId,
           reason: '$scenario',
         );
-        expect(template.createdAt, testDate, reason: '$scenario');
-        expect(template.updatedAt, testDate, reason: '$scenario');
+        // The seed sorts below every user write (ADR 0100); the version
+        // and head carry the instant the history shows.
+        expect(template.createdAt, agentSeedInstant, reason: '$scenario');
+        expect(template.updatedAt, agentSeedInstant, reason: '$scenario');
 
         expect(version.agentId, definition.id, reason: '$scenario');
         expect(version.version, 1, reason: '$scenario');

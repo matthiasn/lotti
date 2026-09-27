@@ -236,9 +236,11 @@ stateDiagram-v2
 
 A row built afresh over a removed one — no clock, because its writer read no
 row — is a re-creation: it keeps its fields and succeeds the removal on every
-device. The day plan drafted again for a deleted day, the recommendation
-decision recorded again after an undo, and the seeding of default templates
-and souls re-create under a reused id. An edit and a removal made
+device. The day plan drafted again for a deleted day and the recommendation
+decision recorded again after an undo re-create under a reused id. The
+seeding of default templates and souls does not: it skips an id whose
+tombstone is stored, and stamps what it seeds at the epoch so a concurrent
+removal wins over it (ADR 0100). An edit and a removal made
 concurrently resolve by last-writer-wins on their instants; an append-only
 variant's edit keeps its `createdAt`, so the removal wins. The rules are in
 [vector clocks and conflicts](../sync/vector-clocks-and-conflicts.md#agent-entities-a-removal-is-a-version-too).

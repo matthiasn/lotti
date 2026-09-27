@@ -489,6 +489,9 @@ class AgentRepository {
   Future<List<model.AgentLink>> getLinksFrom(String fromId, {String? type}) =>
       _links.getLinksFrom(fromId, type: type);
 
+  Future<bool> hasAnyLinkFrom(String fromId, {required String type}) =>
+      _links.hasAnyLinkFrom(fromId, type: type);
+
   Future<List<model.AgentLink>> getLinksTo(String toId, {String? type}) =>
       _links.getLinksTo(toId, type: type);
 
