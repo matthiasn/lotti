@@ -2854,13 +2854,6 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get backfillSettingsSubtitle =>
-      'Gérer la récupération des écarts de synchronisation';
-
-  @override
-  String get backfillSettingsTitle => 'Rattrapage de synchronisation';
-
-  @override
   String get backfillStatsBackfilled => 'Rattrapé';
 
   @override
@@ -16411,4 +16404,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Ignorer';
+
+  @override
+  String get syncHealthTitle => 'Santé de la synchronisation';
+
+  @override
+  String get syncHealthSubtitle =>
+      'Vérifie que tes appareils ont les mêmes données';
 }

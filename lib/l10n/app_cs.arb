@@ -1265,8 +1265,6 @@
       }
     }
   },
-  "backfillSettingsSubtitle": "Správa obnovy mezer v synchronizaci",
-  "backfillSettingsTitle": "Synchronizace doplnění",
   "backfillStatsBackfilled": "Doplněno",
   "backfillStatsBurned": "Anulováno",
   "backfillStatsByDevice": "Sledované čítače podle zařízení",
@@ -5594,6 +5592,8 @@
   "syncEntitiesMessage": "Vyberte entity, které chcete synchronizovat.",
   "syncEntitiesSuccessDescription": "Vše je aktuální.",
   "syncEntitiesSuccessTitle": "Synchronizace dokončena",
+  "syncHealthSubtitle": "Zkontroluj, že tvá zařízení mají stejná data",
+  "syncHealthTitle": "Stav synchronizace",
   "syncListCountSummary": "{label} · {itemCount, plural, =0{0 položek} =1{1 položka} other{{itemCount} položek}}",
   "@syncListCountSummary": {
     "placeholders": {

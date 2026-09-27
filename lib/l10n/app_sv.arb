@@ -1441,8 +1441,6 @@
       }
     }
   },
-  "backfillSettingsSubtitle": "Hantera synkroniseringsluckeåterställning",
-  "backfillSettingsTitle": "Backfill-synkronisering",
   "backfillStatsBackfilled": "Fylld igen",
   "backfillStatsBurned": "Bränd",
   "backfillStatsByDevice": "Spårade räknare per enhet",
@@ -6129,6 +6127,8 @@
   "syncEntitiesMessage": "Välj de enheter du vill synka.",
   "syncEntitiesSuccessDescription": "Allt är uppdaterat.",
   "syncEntitiesSuccessTitle": "Synkronisering klar",
+  "syncHealthSubtitle": "Kontrollera att dina enheter har samma data",
+  "syncHealthTitle": "Synkroniseringsstatus",
   "syncListCountSummary": "{label} · {itemCount, plural, =0{0 föremål} =1{1 föremål} other{{itemCount} föremål}}",
   "@syncListCountSummary": {
     "placeholders": {

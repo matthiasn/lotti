@@ -46,6 +46,10 @@ const Map<String, String> settingsNodeUrls = {
   'sync': '/settings/sync',
   'sync/provisioned': '/settings/sync/provisioned',
   'sync/node-profile': '/settings/sync/node-profile',
+  // Shown as "Sync health" since the page became the overview of whether
+  // devices hold the same data, but the id and URL keep their original
+  // name: a restored route (`NAV_LAST_ROUTE`) or a shipped link must keep
+  // opening it.
   'sync/backfill': '/settings/sync/backfill',
   'sync/stats': '/settings/sync/stats',
   'sync/outbox': '/settings/sync/outbox',

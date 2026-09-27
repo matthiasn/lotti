@@ -97,7 +97,7 @@ void main() {
       // "Devices" — titling the tree entry "Provisioned Sync" named the
       // mechanism rather than what the user finds there.
       expect(resolve('sync/provisioned').title, 'Devices');
-      expect(resolve('sync/backfill').title, 'Backfill sync');
+      expect(resolve('sync/backfill').title, 'Sync health');
       expect(resolve('sync/stats').title, 'Matrix Stats');
       expect(resolve('sync/matrix-maintenance').title, 'Maintenance');
     });

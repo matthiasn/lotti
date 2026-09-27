@@ -1258,8 +1258,6 @@
       }
     }
   },
-  "backfillSettingsSubtitle": "Gestionează recuperarea lacunelor de sincronizare",
-  "backfillSettingsTitle": "Completare sincronizare",
   "backfillStatsBackfilled": "Completat",
   "backfillStatsBurned": "Anulat",
   "backfillStatsByDevice": "Contoare urmărite pe dispozitiv",
@@ -5587,6 +5585,8 @@
   "syncEntitiesMessage": "Alegeți datele pe care doriți să le sincronizați.",
   "syncEntitiesSuccessDescription": "Totul este actualizat.",
   "syncEntitiesSuccessTitle": "Sincronizare finalizată",
+  "syncHealthSubtitle": "Verificați dacă dispozitivele dumneavoastră au aceleași date",
+  "syncHealthTitle": "Starea sincronizării",
   "syncListCountSummary": "{label} · {itemCount, plural, =0{0 elemente} =1{1 element} other{{itemCount} elemente}}",
   "@syncListCountSummary": {
     "placeholders": {

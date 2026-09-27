@@ -2863,13 +2863,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get backfillSettingsSubtitle =>
-      'Gestionează recuperarea lacunelor de sincronizare';
-
-  @override
-  String get backfillSettingsTitle => 'Completare sincronizare';
-
-  @override
   String get backfillStatsBackfilled => 'Completat';
 
   @override
@@ -16457,4 +16450,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
+
+  @override
+  String get syncHealthTitle => 'Starea sincronizării';
+
+  @override
+  String get syncHealthSubtitle =>
+      'Verificați dacă dispozitivele dumneavoastră au aceleași date';
 }

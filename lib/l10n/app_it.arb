@@ -1441,8 +1441,6 @@
       }
     }
   },
-  "backfillSettingsSubtitle": "Gestire il recupero del gap di sincronizzazione",
-  "backfillSettingsTitle": "Sincronizzazione di backup",
   "backfillStatsBackfilled": "Ricambio",
   "backfillStatsBurned": "Bruciata",
   "backfillStatsByDevice": "Contatori tracciati per dispositivo",
@@ -6129,6 +6127,8 @@
   "syncEntitiesMessage": "Scegli le entità che vuoi sincronizzare.",
   "syncEntitiesSuccessDescription": "Tutto e' aggiornato.",
   "syncEntitiesSuccessTitle": "Sincronizzazione completa",
+  "syncHealthSubtitle": "Controlla che i tuoi dispositivi abbiano gli stessi dati",
+  "syncHealthTitle": "Stato della sincronizzazione",
   "syncListCountSummary": "{label} · {itemCount, plural, =0{0} =1{1 elemento} other{{itemCount} articoli}}",
   "@syncListCountSummary": {
     "placeholders": {

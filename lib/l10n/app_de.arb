@@ -1258,8 +1258,6 @@
       }
     }
   },
-  "backfillSettingsSubtitle": "Synchronisierungslücken verwalten",
-  "backfillSettingsTitle": "Sync-Nachfüllung",
   "backfillStatsBackfilled": "Nachgefüllt",
   "backfillStatsBurned": "Entwertet",
   "backfillStatsByDevice": "Erfasste Zähler nach Gerät",
@@ -5587,6 +5585,8 @@
   "syncEntitiesMessage": "Wähle die Daten, die du synchronisieren möchtest.",
   "syncEntitiesSuccessDescription": "Alles ist auf dem neuesten Stand.",
   "syncEntitiesSuccessTitle": "Synchronisierung abgeschlossen",
+  "syncHealthSubtitle": "Prüf, ob deine Geräte dieselben Daten haben",
+  "syncHealthTitle": "Sync-Zustand",
   "syncListCountSummary": "{label} · {itemCount, plural, =0{0 Elemente} =1{1 Element} other{{itemCount} Elemente}}",
   "@syncListCountSummary": {
     "placeholders": {

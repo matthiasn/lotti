@@ -37,8 +37,8 @@ class BackfillSettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return SyncFeatureGate(
       child: SliverBoxAdapterPage(
-        title: context.messages.backfillSettingsTitle,
-        subtitle: context.messages.backfillSettingsSubtitle,
+        title: context.messages.syncHealthTitle,
+        subtitle: context.messages.syncHealthSubtitle,
         showBackButton: true,
         padding: EdgeInsets.symmetric(
           horizontal: context.designTokens.spacing.step5,
@@ -49,7 +49,7 @@ class BackfillSettingsPage extends StatelessWidget {
   }
 }
 
-/// Backfill Sync content. Layout follows the
+/// Sync health content (the page was "Backfill sync"). Layout follows the
 /// `option_c_preview` handoff, with the records first:
 ///   1. **Records on this device** — per-type record counts, the numbers a
 ///      deep backfill makes equal across devices: the direct answer to "do

@@ -1258,8 +1258,6 @@
       }
     }
   },
-  "backfillSettingsSubtitle": "Gestionar recuperación de brechas de sincronización",
-  "backfillSettingsTitle": "Relleno de sincronización",
   "backfillStatsBackfilled": "Rellenado",
   "backfillStatsBurned": "Anulado",
   "backfillStatsByDevice": "Contadores registrados por dispositivo",
@@ -5587,6 +5585,8 @@
   "syncEntitiesMessage": "Elige los datos que quieres sincronizar.",
   "syncEntitiesSuccessDescription": "Todo está al día.",
   "syncEntitiesSuccessTitle": "Sincronización completada",
+  "syncHealthSubtitle": "Comprueba que tus dispositivos tienen los mismos datos",
+  "syncHealthTitle": "Estado de la sincronización",
   "syncListCountSummary": "{label} · {itemCount, plural, =0{0 elementos} =1{1 elemento} other{{itemCount} elementos}}",
   "@syncListCountSummary": {
     "placeholders": {

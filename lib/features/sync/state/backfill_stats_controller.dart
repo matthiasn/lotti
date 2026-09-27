@@ -54,7 +54,7 @@ class BackfillStatsState {
   }
 }
 
-/// Cadence at which the Backfill Settings page auto-refreshes stats
+/// Cadence at which the Sync health page auto-refreshes stats
 /// while it is open AND the app is in the foreground. Keeps
 /// `missing` / `requested` counts live as backfill works them down
 /// without requiring the user to hit the manual refresh button. The
@@ -71,7 +71,7 @@ class BackfillStatsState {
 /// the timer on `onHide` and re-arms it on `onShow`.
 const Duration _autoRefreshInterval = Duration(seconds: 30);
 
-/// Live missing-row count for the Backfill Settings page.
+/// Live missing-row count for the Sync health page.
 ///
 /// The full per-host stats aggregate remains throttled because it is intended
 /// for diagnostics. This focused reactive query is cheap enough to follow
@@ -83,7 +83,7 @@ final StreamProvider<int> backfillMissingCountProvider =
       name: 'backfillMissingCountProvider',
     );
 
-/// Backs the Backfill Settings page: loads and auto-refreshes [BackfillStats]
+/// Backs the Sync health page: loads and auto-refreshes [BackfillStats]
 /// (throttled, foreground-only — see [_autoRefreshInterval]) and exposes the
 /// manual operations (full backfill, re-request, reset/retire of stuck and
 /// unresolvable entries), reflecting each operation's in-progress state on

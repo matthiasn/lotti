@@ -16,7 +16,7 @@ abstract final class SyncModal {
   /// offered on the entries path instead — the "Send message history" sheet
   /// has one "Agent entities" checkbox covering both. The two agent
   /// clock-backfill steps are a repair, not a choice of what to send, and
-  /// live on the Backfill sync page.
+  /// live on the Sync health page.
   static final List<({SyncStep step, String Function(AppLocalizations) label})>
   _offeredSteps = [
     (step: SyncStep.measurables, label: (m) => m.syncStepMeasurables),

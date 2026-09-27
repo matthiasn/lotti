@@ -316,7 +316,7 @@ void main() {
             SyncStep.savedTaskFilters,
             // Settings only. Agent entities/links are offered on the entries
             // path (Send message history), and the two agent clock backfills
-            // are a repair on the Backfill sync page — neither belongs in a
+            // are a repair on the Sync health page — neither belongs in a
             // "choose the entities you want to sync" selection.
           },
         ),
@@ -365,7 +365,7 @@ void main() {
       // Agent data is journal-side, not settings: the entries path offers it
       // (one "Agent entities" checkbox in Send message history covering both
       // entities and links), and the two clock backfills are a repair on the
-      // Backfill sync page. Exactly the seven settings steps are offered.
+      // Sync health page. Exactly the seven settings steps are offered.
       final rows = tester
           .widgetList<DesignSystemSelectionRow>(
             find.byType(DesignSystemSelectionRow),
