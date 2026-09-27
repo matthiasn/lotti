@@ -28,6 +28,14 @@ const _inputs = WakeInputs(
   definitions: _definitions,
 );
 
+/// A peer's running wake covers the device: its wake is dropped, the
+/// covering run trusted to finish.
+final Matcher _handedOver = isA<WakeCoordinationCancel>().having(
+  (d) => d.completed,
+  'completed',
+  isFalse,
+);
+
 /// A watermark holding exactly what [_inputs] rests on.
 const _held = {'desktop': 3, 'phone': 5};
 
@@ -335,7 +343,8 @@ void main() {
       });
     });
 
-    test('defers while a live peer claim covers the inputs', () {
+    test('cancels while a live peer claim covers the inputs: a started run is '
+        'trusted to finish', () {
       _fake((async) {
         final device = _Device('me');
         device.coordinator.onMessage(
@@ -346,13 +355,10 @@ void main() {
 
         expect(
           decision,
-          isA<WakeCoordinationDefer>()
+          isA<WakeCoordinationCancel>()
               .having((d) => d.peerHostId, 'peerHostId', 'peer')
-              .having(
-                (d) => d.until,
-                'until',
-                _start.add(AgentWakeCoordinator.coordinationTimeout),
-              ),
+              .having((d) => d.completed, 'completed', isFalse)
+              .having((d) => d.reportUpdated, 'reportUpdated', isFalse),
         );
       });
     });
@@ -372,7 +378,7 @@ void main() {
 
         expect(
           _resolve(async, device.evaluate()),
-          isA<WakeCoordinationDefer>(),
+          _handedOver,
         );
       });
     });
@@ -414,7 +420,7 @@ void main() {
             'peer',
           ),
         );
-        expect(device.changed, [_agent]);
+        expect(device.changed, [_agent, _agent]);
         expect(
           device.logLines.last,
           'cancel [id:agent-]: peer [id:peer] completed a run covering 2 '
@@ -536,7 +542,7 @@ void main() {
       });
     });
 
-    test('a released claim no longer defers', () {
+    test('a released claim no longer cancels', () {
       _fake((async) {
         final device = _Device('me');
         device.coordinator
@@ -547,7 +553,7 @@ void main() {
           _resolve(async, device.evaluate()),
           isA<WakeCoordinationProceed>(),
         );
-        expect(device.changed, [_agent]);
+        expect(device.changed, [_agent, _agent]);
       });
     });
 
@@ -563,12 +569,12 @@ void main() {
         );
         expect(
           _resolve(async, device.evaluate()),
-          isA<WakeCoordinationDefer>(),
+          _handedOver,
         );
-        expect(device.changed, isEmpty);
+        expect(device.changed, [_agent], reason: 'the claim itself');
 
         async.elapse(const Duration(seconds: 1));
-        expect(device.changed, [_agent]);
+        expect(device.changed, [_agent, _agent]);
         expect(
           _resolve(async, device.evaluate()),
           isA<WakeCoordinationProceed>(),
@@ -591,12 +597,13 @@ void main() {
         async.elapse(const Duration(seconds: 60));
         expect(
           _resolve(async, device.evaluate()),
-          isA<WakeCoordinationDefer>(),
+          _handedOver,
         );
-        expect(device.changed, isEmpty);
+        // The first claim is an event; its heartbeat is not.
+        expect(device.changed, [_agent]);
 
         async.elapse(const Duration(seconds: 60));
-        expect(device.changed, [_agent]);
+        expect(device.changed, [_agent, _agent]);
         expect(
           _resolve(async, device.evaluate()),
           isA<WakeCoordinationProceed>(),
@@ -605,8 +612,8 @@ void main() {
     });
 
     test(
-      'a claim with another coverage replaces the held one and asks for a '
-      'drain; a repeated one does not',
+      'a new claim, and one with another coverage, ask for a drain; a '
+      'repeated one does not',
       () {
         _fake((async) {
           // The done for the covering run was lost; the peer has moved on.
@@ -617,17 +624,17 @@ void main() {
           device.coordinator.onMessage(
             _message(kind: AgentWakeCoordinationKind.claim),
           );
-          expect(device.changed, isEmpty);
+          expect(device.changed, [_agent]);
           expect(
             _resolve(async, device.evaluate()),
-            isA<WakeCoordinationDefer>(),
+            _handedOver,
           );
 
           device.coordinator.onMessage(
             _message(kind: AgentWakeCoordinationKind.claim, watermark: _behind),
           );
 
-          expect(device.changed, [_agent]);
+          expect(device.changed, [_agent, _agent]);
           expect(
             _resolve(async, device.evaluate()),
             isA<WakeCoordinationProceed>(),
@@ -655,7 +662,7 @@ void main() {
           );
           expect(
             _resolve(async, device.evaluate()),
-            isA<WakeCoordinationDefer>(),
+            _handedOver,
           );
           async.elapse(const Duration(seconds: 1));
           expect(
@@ -982,7 +989,7 @@ void main() {
 
         async.elapse(AgentWakeCoordinator.coordinationTimeout * 2);
         expect(device.sent, hasLength(1));
-        expect(device.changed, isEmpty);
+        expect(device.changed, [_agent], reason: 'no lapse after dispose');
         expect(async.pendingTimers, isEmpty);
       });
     });
@@ -1006,7 +1013,8 @@ void main() {
       );
     }
 
-    test('same state: one runs, the other defers and then cancels', () {
+    test('same state: one runs, the other stands down at once, and the '
+        'done reports the run complete', () {
       _fake((async) {
         final desktop = _Device('desktop');
         final phone = _Device('phone');
@@ -1014,20 +1022,22 @@ void main() {
         run(async, desktop, 'desktop-run');
         deliver(async, desktop, phone);
 
-        expect(_resolve(async, phone.evaluate()), isA<WakeCoordinationDefer>());
+        expect(_resolve(async, phone.evaluate()), _handedOver);
 
-        // The run outlasts the timer; the heartbeat keeps the phone waiting.
+        // The run outlasts the timer; the heartbeat keeps its claim live.
         for (var i = 0; i < 4; i++) {
           async.elapse(AgentWakeCoordinator.heartbeatInterval);
           deliver(async, desktop, phone);
         }
-        expect(_resolve(async, phone.evaluate()), isA<WakeCoordinationDefer>());
+        expect(_resolve(async, phone.evaluate()), _handedOver);
 
         desktop.coordinator.complete('desktop-run');
         deliver(async, desktop, phone);
         expect(
           _resolve(async, phone.evaluate()),
-          isA<WakeCoordinationCancel>(),
+          isA<WakeCoordinationCancel>()
+              .having((d) => d.completed, 'completed', isTrue)
+              .having((d) => d.reportUpdated, 'reportUpdated', isTrue),
         );
       });
     });
@@ -1090,7 +1100,7 @@ void main() {
         desktop.coordinator.dispose();
 
         async.elapse(AgentWakeCoordinator.coordinationTimeout);
-        expect(phone.changed, [_agent]);
+        expect(phone.changed, [_agent, _agent]);
         expect(
           _resolve(async, phone.evaluate()),
           isA<WakeCoordinationProceed>(),

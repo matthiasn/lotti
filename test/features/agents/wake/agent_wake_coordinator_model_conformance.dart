@@ -18,14 +18,16 @@ part of 'agent_wake_coordinator_test.dart';
 // Beside the code, the trace keeps the model's own view of each peer
 // (`claimed`, `hash`, `left`, `done`, with each state a set of edits) and
 // updates it by the spec's `Deliver` and `Tick`. Every dispatch must decide
-// what the spec's guards decide: cancel exactly when `Covered`, defer exactly
-// when `Blocked`, proceed otherwise — both through `Covers`, the subset
-// relation. The view also applies the code's one extension of the spec: a
+// what the spec's guards decide: cancel exactly when `Covered` or `Blocked`
+// (`ClaimCancels`: a live covering claim hands the wake over), proceed
+// otherwise — both through `Covers`, the subset relation. The view also applies the code's one extension of the spec: a
 // peer's completed runs are bounded to the most recent `doneHistoryLimit`.
 // Delivery here is unbounded; a late claim is timed from its receipt. After
-// every step `CancelCovered` must hold, and so must the sender's side of
-// `Tick`: a live run has claimed within the last heartbeat interval. After the
-// trace is played out to quiescence, `NoLostEdit`.
+// every step `CancelCovered` and `HandoverCovered` must hold, and so must the
+// sender's side of `Tick`: a live run has claimed within the last heartbeat
+// interval. After the trace is played out to quiescence, `NoLostEdit` — also
+// for edits handed over to a run that then failed or crashed, whose own wake
+// stays owed and covers them when it runs.
 
 enum _Op {
   edit,
@@ -124,6 +126,8 @@ class _CoordinationTrace {
   final runStates = <String, Set<int>>{};
   final okHashes = <Set<int>>[];
   final cancelled = <Set<int>>[];
+  final handovers = <Set<int>>[];
+  final started = <Set<int>>[];
   int nextEdit = 1;
   int losses = 0;
   int crashes = 0;
@@ -235,6 +239,13 @@ class _CoordinationTrace {
         reason: 'CancelCovered',
       );
     }
+    for (final state in handovers) {
+      expect(
+        started.any((run) => run.containsAll(state)),
+        isTrue,
+        reason: 'HandoverCovered',
+      );
+    }
     for (final d in devices) {
       if (d.liveRun == null) continue;
       expect(
@@ -262,11 +273,22 @@ class _CoordinationTrace {
       device.pending = false;
       cancelled.add(state);
     } else if (blocked) {
-      expect(decision, isA<WakeCoordinationDefer>(), reason: 'Blocked');
+      expect(
+        decision,
+        isA<WakeCoordinationCancel>().having(
+          (d) => d.completed,
+          'completed',
+          isFalse,
+        ),
+        reason: 'Blocked (ClaimCancels)',
+      );
+      device.pending = false;
+      handovers.add(state);
     } else {
       expect(decision, isA<WakeCoordinationProceed>(), reason: 'Dispatch');
       final runKey = '${device.name}-${device.runs++}';
       runStates[runKey] = state;
+      started.add(state);
       device.coordinator.claim(
         agentId: _agent,
         runKey: runKey,
@@ -343,8 +365,8 @@ void _registerModelConformance() {
       glados.any.coordinationTrace,
       glados.ExploreConfig(numRuns: 300),
     ).test(
-      'every dispatch decides as the spec does; CancelCovered and NoLostEdit '
-      'hold',
+      'every dispatch decides as the spec does; CancelCovered, '
+      'HandoverCovered and NoLostEdit hold',
       (trace) {
         fakeAsync((async) {
           final bench = _CoordinationTrace(async);

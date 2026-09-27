@@ -2025,61 +2025,87 @@ void main() {
         });
       });
 
-      test(
-        'a job over a state a peer is running waits, and is dropped when '
-        'the peer completes it',
-        () {
-          coordinated((async) {
-            peer(AgentWakeCoordinationKind.claim);
-            enqueueAutomaticWake();
-            drain(async);
-
-            expect(executions, 0);
-            expect(queue.length, 1);
-            verifyNever(
-              () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
-            );
-
-            peer(AgentWakeCoordinationKind.done);
-            async.flushMicrotasks();
-
-            expect(executions, 0);
-            expect(queue.length, 0);
-            expect(orchestrator.hasPendingOrActiveWake('agent-1'), isFalse);
-            expect(sent, isEmpty);
-          });
-        },
-      );
-
-      test('a job waits out a silent peer, then runs', () {
+      test("a peer's covering claim ends the countdown at once; its done "
+          'then marks the report fresh', () {
         coordinated((async) {
+          countingDown(async);
+
           peer(AgentWakeCoordinationKind.claim);
-          enqueueAutomaticWake();
-          drain(async);
+          async.flushMicrotasks();
 
-          async.elapse(
-            AgentWakeCoordinator.coordinationTimeout -
-                const Duration(seconds: 1),
-          );
+          expect(queue.isEmpty, isTrue);
           expect(executions, 0);
+          expect(state.nextWakeAt, isNull, reason: 'no countdown row');
+          expect(
+            state.reportFreshAt,
+            isNull,
+            reason: 'the peer has not finished yet',
+          );
+          verifyNever(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          );
 
-          async.elapse(const Duration(seconds: 1));
-          expect(executions, 1);
-          expect(queue.length, 0);
+          async.elapse(const Duration(seconds: 40));
+          final doneAt = clock.now();
+          peer(AgentWakeCoordinationKind.done);
+          async.flushMicrotasks();
+
+          expect(state.reportFreshAt, doneAt);
+          expect(executions, 0);
         });
       });
 
-      test('a released peer claim lets the job run at once', () {
+      test('a job reaching dispatch while a peer runs a covering wake is '
+          'dropped', () {
         coordinated((async) {
           peer(AgentWakeCoordinationKind.claim);
           enqueueAutomaticWake();
           drain(async);
-          expect(executions, 0);
 
-          peer(AgentWakeCoordinationKind.release);
+          expect(executions, 0);
+          expect(queue.length, 0);
+          expect(orchestrator.hasPendingOrActiveWake('agent-1'), isFalse);
+          expect(sent, isEmpty);
+        });
+      });
+
+      test('a released claim runs nothing here and leaves the report '
+          "outdated until the peer's retry completes", () {
+        coordinated((async) {
+          countingDown(async);
+          peer(AgentWakeCoordinationKind.claim);
           async.flushMicrotasks();
 
-          expect(executions, 1);
+          peer(AgentWakeCoordinationKind.release);
+          async
+            ..flushMicrotasks()
+            ..elapse(WakeOrchestrator.throttleWindow);
+          drain(async);
+
+          expect(executions, 0);
+          expect(state.reportFreshAt, isNull);
+          expect(state.reportStaleAt, isNotNull);
+
+          // The failed run stayed owed on the peer; its retry completes.
+          final retriedAt = clock.now();
+          peer(AgentWakeCoordinationKind.done);
+          async.flushMicrotasks();
+          expect(state.reportFreshAt, retriedAt);
+        });
+      });
+
+      test('a claim that goes silent lapses without re-running the wake, and '
+          'the report stays outdated', () {
+        coordinated((async) {
+          countingDown(async);
+          peer(AgentWakeCoordinationKind.claim);
+          async
+            ..flushMicrotasks()
+            ..elapse(AgentWakeCoordinator.coordinationTimeout * 2);
+          drain(async);
+
+          expect(executions, 0);
+          expect(state.reportFreshAt, isNull);
         });
       });
 

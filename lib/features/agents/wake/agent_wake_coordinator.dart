@@ -119,29 +119,24 @@ final class WakeCoordinationProceed extends WakeCoordinationDecision {
   final WakeCoverage? coverage;
 }
 
-/// A peer is running a wake that reads everything this one would: keep the
-/// job queued. The coordinator asks for a drain when the claim ends or lapses.
-final class WakeCoordinationDefer extends WakeCoordinationDecision {
-  const WakeCoordinationDefer({required this.peerHostId, required this.until});
-
-  final String peerHostId;
-
-  /// When the peer's claim lapses unless another message re-arms it.
-  final DateTime until;
-}
-
-/// A peer already completed a wake that read everything this one would:
-/// drop the job, its triggers are covered.
+/// A peer completed, or is running, a wake that reads everything this one
+/// would: drop the job, its triggers are covered. A started run is trusted to
+/// finish; if it does not, the dropped triggers stay visibly stale here.
 final class WakeCoordinationCancel extends WakeCoordinationDecision {
   const WakeCoordinationCancel({
     required this.peerHostId,
+    required this.completed,
     required this.reportUpdated,
   });
 
   final String peerHostId;
 
+  /// Whether the covering run has completed — `false` while it runs.
+  final bool completed;
+
   /// Whether the covering run refreshed the standing report, so this
-  /// device's report is fresh too.
+  /// device's report is fresh too. `false` while it runs: that is only known
+  /// from its `done`.
   final bool reportUpdated;
 }
 
@@ -164,9 +159,10 @@ final class WakeCoordinationCancel extends WakeCoordinationDecision {
 /// - [onMessage] (`Deliver`) records a peer's claim, re-arming its timer on
 ///   every message, and remembers the coverages of the peer's completed runs
 ///   apart from its live claim, so its next claim cannot erase them.
-/// - [evaluate] returns cancel when a peer completed a run covering this
-///   wake's inputs (`Cancel`), defer while a live peer claim covers them, and
-///   proceed otherwise — an input the peer does not hold is new work.
+/// - [evaluate] returns cancel when a peer completed, or is running, a run
+///   covering this wake's inputs (`Cancel`), and proceed otherwise — an input
+///   the peer does not hold is new work. A started run is trusted to finish:
+///   if it does not, the cancelled wake's inputs stay visibly stale.
 ///
 /// All state is in memory and device-local: a process restart forgets the
 /// peers' claims (`Crash`), which can only cost a duplicate run, never a lost
@@ -180,8 +176,8 @@ class AgentWakeCoordinator with AgentErrorLogging {
     this.domainLogger,
   });
 
-  /// How long a peer's claim holds a covered wake back after its last
-  /// message. Any message from that peer about the agent re-arms it.
+  /// How long a peer's claim cancels covered wakes after its last message.
+  /// Any message from that peer about the agent re-arms it.
   static const coordinationTimeout = Duration(minutes: 2);
 
   /// How often a live run repeats its claim. The model requires
@@ -203,10 +199,10 @@ class AgentWakeCoordinator with AgentErrorLogging {
   @override
   LogDomain get errorLogDomain => LogDomain.agentRuntime;
 
-  /// Called with an agent id whenever a peer's claim for it ends, lapses or
-  /// is replaced by a claim with another coverage — every event that can free
-  /// a deferred job — so deferred jobs are drained again. Set by the
-  /// orchestrator.
+  /// Called with an agent id whenever a peer's claim for it starts, ends,
+  /// lapses or changes its coverage — every event that can hold back, free or
+  /// cover a queued job — so queued jobs are checked again. A heartbeat
+  /// repeating the same claim is not an event. Set by the orchestrator.
   void Function(String agentId)? onPeerStateChanged;
 
   final _peers = <String, Map<String, _PeerView>>{};
@@ -223,7 +219,7 @@ class AgentWakeCoordinator with AgentErrorLogging {
 
   /// Decides whether a wake of [agentId] may run now. [deferrable] is false
   /// for a wake the user asked for explicitly, which always runs (it still
-  /// claims, so peers defer to it).
+  /// claims, so peers stand down for it).
   Future<WakeCoordinationDecision> evaluate(
     String agentId, {
     bool deferrable = true,
@@ -267,6 +263,7 @@ class AgentWakeCoordinator with AgentErrorLogging {
           );
           return WakeCoordinationCancel(
             peerHostId: host,
+            completed: true,
             reportUpdated: done.reportUpdated,
           );
         }
@@ -283,10 +280,14 @@ class AgentWakeCoordinator with AgentErrorLogging {
       final reason = claim.uncovered(inputs);
       if (reason == null) {
         _log(
-          'defer $agent: peer ${DomainLogger.sanitizeId(host)} is running '
+          'cancel $agent: peer ${DomainLogger.sanitizeId(host)} is running '
           'a wake covering ${inputs.clocks.length} inputs',
         );
-        return WakeCoordinationDefer(peerHostId: host, until: expiresAt);
+        return WakeCoordinationCancel(
+          peerHostId: host,
+          completed: false,
+          reportUpdated: false,
+        );
       }
       reasons.add('${DomainLogger.sanitizeId(host)} claim: $reason');
     }
@@ -436,10 +437,9 @@ class AgentWakeCoordinator with AgentErrorLogging {
           coordinationTimeout,
           () => _peerStateChanged(message.agentId),
         );
-        // A job held back by the claim this one replaces may run now.
-        if (previous != null && previous != coverage) {
-          _peerStateChanged(message.agentId);
-        }
+        // A new claim may cover a queued job, whose countdown then waits on
+        // the peer; one that replaces another may free a job held back.
+        if (previous != coverage) _peerStateChanged(message.agentId);
       case AgentWakeCoordinationKind.done:
         view
           ..clearClaim()

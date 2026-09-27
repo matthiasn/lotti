@@ -357,10 +357,9 @@ extension WakeDrainEngine on WakeOrchestrator {
             // it up after the throttle window expires. Immediate-drain jobs
             // ignore the agent-level deadline (see the candidate filter).
             if (!job.drainImmediately && _isThrottled(job.agentId)) {
-              // A peer completed a run covering this job while its countdown
-              // runs: drop it now, and the countdown with it. The peer's run
-              // read everything this device holds, so if it refreshed its
-              // report, the report is fresh here as of the check.
+              // A peer completed, or is running, a wake covering this job
+              // while its countdown runs: drop it now, and the countdown with
+              // it, rather than when the countdown runs out.
               if (_peerCoverageChecks.remove(job.agentId)) {
                 final coordinatedAt = clock.now();
                 final coordination = await _coordinate(job);
@@ -377,29 +376,13 @@ extension WakeDrainEngine on WakeOrchestrator {
                   return;
                 }
                 if (coordination is WakeCoordinationCancel) {
-                  await _dropDrainOwnedJob(
+                  await _dropCoveredJob(
+                    generation,
                     job,
-                    reason: 'wake covered by a peer device',
-                    emitUnpersistedCompletion: false,
-                  );
-                  _releaseDrainLease(generation, lease);
-                  // Awaited before the countdown is cleared: both rewrite the
-                  // agent state, and neither may write back the other's old
-                  // value.
-                  if (coordination.reportUpdated) {
-                    await _markReportFresh(
-                      job.agentId,
-                      refreshStartedAt: coordinatedAt,
-                    );
-                  }
-                  if (!queue.hasQueuedJobForAgent(job.agentId) &&
-                      !deferred.any((held) => held.agentId == job.agentId)) {
-                    clearThrottle(job.agentId);
-                  }
-                  _log(
-                    'countdown ended: a peer covered '
-                    '${DomainLogger.sanitizeId(job.agentId)}',
-                    subDomain: 'drain',
+                    lease: lease,
+                    coverage: coordination,
+                    coordinatedAt: coordinatedAt,
+                    deferred: deferred,
                   );
                   continue;
                 }
@@ -446,6 +429,7 @@ extension WakeDrainEngine on WakeOrchestrator {
           // a peer that completed a wake reading everything this one would
           // covers the job; a peer running one holds it back until its claim
           // ends or lapses.
+          _peerCoverageChecks.remove(job.agentId);
           final coordinatedAt = clock.now();
           final coordination = await _coordinate(job);
           if (_discardCancelledDrainOwnedJob(
@@ -462,25 +446,18 @@ extension WakeDrainEngine on WakeOrchestrator {
           }
           switch (coordination) {
             case WakeCoordinationCancel():
-              await _dropDrainOwnedJob(
+              await _dropCoveredJob(
+                generation,
                 job,
-                reason: 'wake covered by a peer device',
-                emitUnpersistedCompletion: false,
+                lease: lease,
+                coverage: coordination,
+                coordinatedAt: coordinatedAt,
+                deferred: deferred,
               );
-              _releaseDrainLease(generation, lease);
-              if (coordination.reportUpdated) {
-                await _markReportFresh(
-                  job.agentId,
-                  refreshStartedAt: coordinatedAt,
-                );
-              }
-              continue;
-            case WakeCoordinationDefer():
-              _forgetDrainOwnedJob(job);
-              _releaseDrainLease(generation, lease);
-              _holdBack(deferred, job);
               continue;
             case WakeCoordinationProceed(:final coverage):
+              // This run refreshes the report itself.
+              _handedToPeer.remove(job.agentId);
               coordinator?.claim(
                 agentId: job.agentId,
                 runKey: job.runKey,
@@ -574,6 +551,70 @@ extension WakeDrainEngine on WakeOrchestrator {
           _drainOwnedJobs.isEmpty) {
         _log('run-key history cleared (queue empty)', subDomain: 'drain');
         queue.clearHistory();
+      }
+    }
+  }
+
+  /// Drops [job], which a peer's completed or running wake covers.
+  ///
+  /// A completed run that refreshed its report leaves this device's report
+  /// fresh as of [coordinatedAt], when the job's inputs were read. A running
+  /// one is trusted to finish — one that fails stays owed on its own device,
+  /// and its retry covers this job's inputs — so the agent is remembered as
+  /// handed over, and [settleHandOver] marks the report fresh once a covering
+  /// `done` arrives. A countdown still running for the agent goes with the
+  /// job.
+  Future<void> _dropCoveredJob(
+    int generation,
+    WakeJob job, {
+    required WakeRunnerLease lease,
+    required WakeCoordinationCancel coverage,
+    required DateTime coordinatedAt,
+    required List<WakeJob> deferred,
+  }) async {
+    await _dropDrainOwnedJob(
+      job,
+      reason: 'wake covered by a peer device',
+      emitUnpersistedCompletion: false,
+    );
+    _releaseDrainLease(generation, lease);
+    if (!coverage.completed) {
+      _handedToPeer.add(job.agentId);
+    } else if (coverage.reportUpdated) {
+      await _markReportFresh(job.agentId, refreshStartedAt: coordinatedAt);
+    }
+    // After the fresh mark: both rewrite the agent state, and neither may
+    // write back the other's old value.
+    if (_isThrottled(job.agentId) &&
+        !queue.hasQueuedJobForAgent(job.agentId) &&
+        !deferred.any((held) => held.agentId == job.agentId)) {
+      clearThrottle(job.agentId);
+    }
+    _log(
+      'wake dropped: peer ${DomainLogger.sanitizeId(coverage.peerHostId)} '
+      '${coverage.completed ? 'completed' : 'is running'} a covering wake of '
+      '${DomainLogger.sanitizeId(job.agentId)}',
+      subDomain: 'drain',
+    );
+  }
+
+  /// Settles a wake of [agentId] handed to a peer's running wake: once a
+  /// covering `done` is known, the hand-over ends, and the report is fresh if
+  /// that run refreshed it. Until then the report stays outdated — also while
+  /// a failed run waits for its retry on the peer. A wake this device runs
+  /// itself ends the hand-over too (see the drain's dispatch).
+  Future<void> settleHandOver(String agentId) async {
+    final coordinator = this.coordinator;
+    if (coordinator == null || !_handedToPeer.contains(agentId)) return;
+    final checkedAt = clock.now();
+    final decision = await coordinator.evaluate(agentId);
+    if (decision case WakeCoordinationCancel(
+      completed: true,
+      :final reportUpdated,
+    )) {
+      _handedToPeer.remove(agentId);
+      if (reportUpdated) {
+        await _markReportFresh(agentId, refreshStartedAt: checkedAt);
       }
     }
   }

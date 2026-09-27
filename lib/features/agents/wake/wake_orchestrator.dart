@@ -327,6 +327,10 @@ class WakeOrchestrator with AgentErrorLogging {
   /// while their throttle countdown runs, set by [onPeerWakeStateChanged].
   final _peerCoverageChecks = <String>{};
 
+  /// Agents whose wake was dropped for a peer's running wake that has not
+  /// completed yet; see [WakeDrainEngine.settleHandOver].
+  final _handedToPeer = <String>{};
+
   /// Optional pre-wake hook (fork healing, ADR 0018 rule 8) run just before the
   /// executor for each wake. When null (the default), wakes run exactly as
   /// before — this is the off state of the join-healing flag.
@@ -1349,13 +1353,15 @@ class WakeOrchestrator with AgentErrorLogging {
   /// Process the next pending job; see [WakeDrainEngine].
   Future<void> processNext() => processNextImpl();
 
-  /// A peer's wake of [agentId] ended, lapsed or changed — the coordinator's
-  /// [AgentWakeCoordinator.onPeerStateChanged]. A queued wake of the agent
-  /// that a peer's completed run covers is dropped now, its countdown with
-  /// it, rather than when the countdown runs out; the drain re-evaluates
+  /// A peer's wake of [agentId] started, ended, lapsed or changed — the
+  /// coordinator's [AgentWakeCoordinator.onPeerStateChanged]. A queued wake of
+  /// the agent that a peer's completed or running wake covers is dropped now,
+  /// its countdown with it, rather than when the countdown runs out; a wake
+  /// handed to a peer's run earlier is settled; the drain re-evaluates
   /// everything else as usual.
   void onPeerWakeStateChanged(String agentId) {
     if (queue.hasQueuedJobForAgent(agentId)) _peerCoverageChecks.add(agentId);
+    unawaited(settleHandOver(agentId));
     unawaited(processNext());
   }
 
