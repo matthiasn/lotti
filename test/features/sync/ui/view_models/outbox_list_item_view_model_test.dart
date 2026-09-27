@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/ui/view_models/outbox_list_item_view_model.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -588,6 +589,25 @@ void main() {
                 requesterId: 'host-a',
               ),
               (ctx) => ctx.messages.syncPayloadMediaRequest,
+            ),
+            (
+              'deepBackfillInventory',
+              () => const SyncMessage.deepBackfillInventory(
+                roundId: 'round-1',
+                hostId: 'host-a',
+                payloadType: SyncSequencePayloadType.journalEntity,
+                batch: 0,
+              ),
+              (ctx) => ctx.messages.syncPayloadDeepBackfillInventory,
+            ),
+            (
+              'deepBackfillRequest',
+              () => const SyncMessage.deepBackfillRequest(
+                requesterId: 'host-b',
+                targetHostId: 'host-a',
+                payloadType: SyncSequencePayloadType.journalEntity,
+              ),
+              (ctx) => ctx.messages.syncPayloadDeepBackfillRequest,
             ),
             (
               'agentWakeCoordination',

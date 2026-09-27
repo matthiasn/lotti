@@ -248,6 +248,19 @@ class MatrixMessageSender {
       }
       outboundMessage = agentResult;
 
+      final deepBackfillResult = await _payloadSender.sendDeepBackfillPayload(
+        room: room,
+        message: outboundMessage,
+      );
+      if (deepBackfillResult == null) {
+        _trace(
+          'FAIL deepBackfillPayload type=${outboundMessage.runtimeType}',
+          subDomain: 'matrix.send.error',
+        );
+        return false;
+      }
+      outboundMessage = deepBackfillResult;
+
       if (outboundMessage is SyncOutboxBundle) {
         // Bundle children skip the top-level `_ensureOriginatingHostId`
         // call above. Backfill each child individually so a journal entity

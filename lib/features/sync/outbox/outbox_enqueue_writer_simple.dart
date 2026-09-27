@@ -278,6 +278,33 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
         'entries=${msg.entryIds.length} requester=${msg.requesterId}',
   );
 
+  Future<void> enqueueDeepBackfillInventory({
+    required SyncDeepBackfillInventory msg,
+    required OutboxCompanion commonFields,
+  }) => enqueueSimple(
+    commonFields: commonFields,
+    subject:
+        'deepBackfillInventory:${msg.roundId}:'
+        '${msg.payloadType.name}:${msg.batch}',
+    logMessage:
+        'enqueue type=SyncDeepBackfillInventory round=${msg.roundId} '
+        'payloadType=${msg.payloadType.name} batch=${msg.batch} '
+        'records=${msg.records.length} conflicts=${msg.conflicts.length}',
+  );
+
+  Future<void> enqueueDeepBackfillRequest({
+    required SyncDeepBackfillRequest msg,
+    required OutboxCompanion commonFields,
+  }) => enqueueSimple(
+    commonFields: commonFields,
+    subject:
+        'deepBackfillRequest:${msg.targetHostId}:'
+        '${msg.payloadType.name}:${msg.records.length}',
+    logMessage:
+        'enqueue type=SyncDeepBackfillRequest target=${msg.targetHostId} '
+        'payloadType=${msg.payloadType.name} records=${msg.records.length}',
+  );
+
   Future<void> enqueueAgentWakeCoordination({
     required SyncAgentWakeCoordination msg,
     required OutboxCompanion commonFields,

@@ -280,6 +280,30 @@ class OnboardingSyncRounds extends Table {
   Set<Column> get primaryKey => {roundId};
 }
 
+/// Deep-backfill requests this device sent and still waits on
+/// (`specs/tla/DeepBackfill.tla`, the model's `out`). Durable, so a restart
+/// does not send the same request twice. A row is settled once this device
+/// keeps every version in [vectorClocks] — its row or an open conflict is that
+/// version or newer — whoever delivered it, and expires after
+/// `SyncTuning.deepBackfillRequestExpiry`.
+@DataClassName('DeepBackfillRequestItem')
+class DeepBackfillRequests extends Table {
+  /// The advertiser the request went to.
+  TextColumn get targetHostId => text().named('target_host_id')();
+
+  /// `SyncSequencePayloadType.index`.
+  IntColumn get payloadType => integer().named('payload_type')();
+  TextColumn get entryId => text().named('entry_id')();
+
+  /// JSON list of the vector clocks asked for: the advertiser's row and any
+  /// of its open conflict versions this device did not keep.
+  TextColumn get vectorClocks => text().named('vector_clocks')();
+  DateTimeColumn get requestedAt => dateTime().named('requested_at')();
+
+  @override
+  Set<Column> get primaryKey => {targetHostId, payloadType, entryId};
+}
+
 /// Durable inbound queue for Matrix sync events. Three producers
 /// (live stream, limited-sync bridge, bootstrap pagination) write
 /// here; one `InboundWorker` drains and applies.

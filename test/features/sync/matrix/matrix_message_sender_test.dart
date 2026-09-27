@@ -20,6 +20,7 @@ import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
@@ -481,6 +482,11 @@ void main() {
     );
     room = MockRoom();
     uploadStub = MatrixUploadTestStub(room);
+    // No entry keeps an open conflict unless a test says so: a queued version
+    // the row does not cover then falls back to the row, as it always did.
+    when(
+      () => journalDb.openConflictVersion(any(), any()),
+    ).thenAnswer((_) async => null);
 
     when(
       () => loggingService.log(
@@ -3385,6 +3391,79 @@ void main() {
         },
       );
     }
+
+    group('a deep-backfill inventory sent on its own', () {
+      const inventory = SyncMessage.deepBackfillInventory(
+        roundId: 'round-1',
+        hostId: 'host-a',
+        payloadType: SyncSequencePayloadType.journalEntity,
+        batch: 0,
+        records: [
+          DeepBackfillRecord(id: 'e-1', vectorClock: VectorClock({'a': 1})),
+        ],
+      );
+
+      void stubText(void Function(String payload) onText) {
+        when(
+          () => room.sendTextEvent(
+            any<String>(),
+            msgtype: any<String>(named: 'msgtype'),
+            parseCommands: any<bool>(named: 'parseCommands'),
+            parseMarkdown: any<bool>(named: 'parseMarkdown'),
+          ),
+        ).thenAnswer((inv) async {
+          onText(inv.positionalArguments.first as String);
+          return r'$inventory-text-id';
+        });
+      }
+
+      test('uploads its records and sends a text event naming the '
+          'attachment instead of carrying them', () async {
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenAnswer(uploadStub.record((_) async => r'$inventory-file-id'));
+        String? payload;
+        stubText((p) => payload = p);
+
+        final result = await sender.sendMatrixMessage(
+          message: inventory,
+          context: buildContext(),
+          onSent: (_, _) {},
+        );
+
+        expect(result, isTrue);
+        final decoded =
+            json.decode(utf8.decode(base64.decode(payload!)))
+                as Map<String, dynamic>;
+        expect(decoded['runtimeType'], 'deepBackfillInventory');
+        expect(decoded['attachmentEventId'], r'$inventory-file-id');
+        expect(decoded['jsonPath'], startsWith('/deep_backfill/'));
+        expect(decoded['records'], isEmpty);
+      });
+
+      test('is not sent when the upload fails', () async {
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenAnswer(uploadStub.record((_) async => null));
+        var textSent = false;
+        stubText((_) => textSent = true);
+
+        final result = await sender.sendMatrixMessage(
+          message: inventory,
+          context: buildContext(),
+          onSent: (_, _) {},
+        );
+
+        expect(result, isFalse);
+        expect(textSent, isFalse);
+      });
+    });
 
     test(
       'sendMatrixMessage returns false when the outboxBundle upload fails — '

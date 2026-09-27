@@ -248,10 +248,17 @@ class MatrixPayloadSender {
     if (entity == null) {
       throw StateError('No payload for queued journal entry ${message.id}');
     }
-    if (!_coversQueued(entity.meta.vectorClock, message)) {
-      throw StateError('Database payload does not cover queued version');
+    if (_coversQueued(entity.meta.vectorClock, message)) return entity;
+    // A deep-backfill answer or push may name a concurrent version the entry
+    // keeps as an open conflict rather than as its row: serve exactly that
+    // version. Such a message failed on every attempt before, so nothing the
+    // app queued otherwise takes this branch.
+    final queued = message.vectorClock;
+    if (queued != null) {
+      final conflict = await journalDb.openConflictVersion(message.id, queued);
+      if (conflict != null) return conflict;
     }
-    return entity;
+    throw StateError('Database payload does not cover queued version');
   }
 
   bool _coversQueued(VectorClock? payloadClock, SyncJournalEntity message) {
@@ -511,6 +518,25 @@ class MatrixPayloadSender {
 
     final host = await vectorClockService?.getHost();
 
+    // A child whose queued version the row does not cover names a concurrent
+    // version the entry keeps as an open conflict (a deep-backfill answer or
+    // push): serve exactly that version, as a standalone send does, instead
+    // of adopting the row's clock. Only such children cost a lookup.
+    final conflictVersionAt = <int, JournalEntity>{};
+    for (var index = 0; index < message.children.length; index++) {
+      final child = message.children[index];
+      if (child is! SyncJournalEntity) continue;
+      final row = journalEntityById[child.id];
+      final queued = child.vectorClock;
+      if (row == null ||
+          queued == null ||
+          _coversQueued(row.meta.vectorClock, child)) {
+        continue;
+      }
+      final conflict = await journalDb.openConflictVersion(child.id, queued);
+      if (conflict != null) conflictVersionAt[index] = conflict;
+    }
+
     // Track journal-entity children whose DB row was hard-purged between
     // enqueue and dequeue. Soft-deleted rows are deliberately included above
     // because their tombstones must sync. Silently dropping a hard-missing
@@ -523,17 +549,23 @@ class MatrixPayloadSender {
 
     final entries = <Map<String, dynamic>>[];
     final journalChildren = <SyncJournalEntity>[];
-    for (final child in message.children) {
-      final reconciled = _reconcileBundleChildEnvelope(
-        child,
-        host: host,
-        journalEntityById: journalEntityById,
-      );
+    for (var index = 0; index < message.children.length; index++) {
+      final child = message.children[index];
+      final conflict = conflictVersionAt[index];
+      final reconciled = conflict != null && child is SyncJournalEntity
+          ? (child.originatingHostId == null && host != null
+                ? child.copyWith(originatingHostId: host)
+                : child)
+          : _reconcileBundleChildEnvelope(
+              child,
+              host: host,
+              journalEntityById: journalEntityById,
+            );
       final record = <String, dynamic>{
         'envelope': reconciled.toJson(),
       };
       if (reconciled is SyncJournalEntity) {
-        final entity = journalEntityById[reconciled.id];
+        final entity = conflict ?? journalEntityById[reconciled.id];
         if (entity == null) {
           missingJournalEntityIds.add(reconciled.id);
           continue;
@@ -579,18 +611,46 @@ class MatrixPayloadSender {
       'entries': entries,
     };
 
+    final uploadEventId = await _uploadGzippedJson(
+      room: room,
+      relativePath: relativePath,
+      document: manifest,
+      label: 'outboxBundle',
+      detail: 'children=${message.children.length}',
+    );
+    if (uploadEventId == null) return null;
+
+    return message.copyWith(
+      jsonPath: relativePath,
+      attachmentEventId: uploadEventId,
+      children: const [],
+    );
+  }
+
+  /// Gzips [document], uploads it as a verified file event under
+  /// [relativePath] and registers the event as sent. Returns the event id,
+  /// or null after logging when encoding, the size cap or the upload fails.
+  /// [label] names the payload in log sub-domains; [detail] describes it when
+  /// it exceeds [SyncTuning.outboxBundleMaxBytes].
+  Future<String?> _uploadGzippedJson({
+    required Room room,
+    required String relativePath,
+    required Map<String, dynamic> document,
+    required String label,
+    required String detail,
+  }) async {
     Uint8List gzipped;
     try {
       // Run json.encode + utf8.encode + gzip on a worker isolate so a
-      // bundle of up to [SyncTuning.outboxBundleMaxSize] entities does not
-      // stall the UI thread for the duration of the encode pipeline.
-      gzipped = await gzipEncode(manifest);
+      // large document (a bundle of up to [SyncTuning.outboxBundleMaxSize]
+      // entities, a deep-backfill batch) does not stall the UI thread.
+      gzipped = await gzipEncode(document);
     } catch (error, stackTrace) {
       loggingService.error(
         LogDomain.sync,
         error,
         stackTrace: stackTrace,
-        subDomain: 'sendMatrixMsg.outboxBundle.encode',
+        subDomain: 'sendMatrixMsg.$label.encode',
       );
       return null;
     }
@@ -598,11 +658,10 @@ class MatrixPayloadSender {
     if (gzipped.length > SyncTuning.outboxBundleMaxBytes) {
       loggingService.error(
         LogDomain.sync,
-        'outboxBundle exceeds max bytes: '
+        '$label exceeds max bytes: '
         'gzipped=${gzipped.length} '
-        'max=${SyncTuning.outboxBundleMaxBytes} '
-        'children=${message.children.length}',
-        subDomain: 'sendMatrixMsg.outboxBundle.tooLarge',
+        'max=${SyncTuning.outboxBundleMaxBytes} $detail',
+        subDomain: 'sendMatrixMsg.$label.tooLarge',
       );
       return null;
     }
@@ -628,7 +687,7 @@ class MatrixPayloadSender {
       );
     } catch (error, stackTrace) {
       _trace(
-        'EXCEPTION outboxBundle.upload path=$relativePath '
+        'EXCEPTION $label.upload path=$relativePath '
         'error=${error.runtimeType}: $error',
         subDomain: 'matrix.send.error',
       );
@@ -636,32 +695,80 @@ class MatrixPayloadSender {
         LogDomain.sync,
         error,
         stackTrace: stackTrace,
-        subDomain: 'sendMatrixMsg.outboxBundle.upload',
+        subDomain: 'sendMatrixMsg.$label.upload',
       );
       return null;
     }
 
     if (uploadEventId == null) {
       _trace(
-        'FAIL outboxBundle.upload returned null path=$relativePath '
+        'FAIL $label.upload returned null path=$relativePath '
         'gzippedBytes=${gzipped.length}',
         subDomain: 'matrix.send.error',
       );
       loggingService.log(
         LogDomain.sync,
-        'Failed sending outboxBundle file message to $room',
+        'Failed sending $label file message to $room',
         subDomain: 'sendMatrixMsg',
       );
       return null;
     }
 
     sentEventRegistry.register(uploadEventId);
+    return uploadEventId;
+  }
 
-    return message.copyWith(
-      jsonPath: relativePath,
-      attachmentEventId: uploadEventId,
-      children: const [],
+  /// Moves the record lists of a deep-backfill inventory or request into a
+  /// gzipped attachment and returns the envelope that names it, its lists
+  /// emptied. A batch of thousands of records would not fit a Matrix text
+  /// event; inside an outbox bundle the lists ride inline instead, in the
+  /// bundle's own gzipped manifest, so this runs only for a message sent on
+  /// its own. Returns [message] unchanged for any other type, and null when
+  /// the upload fails.
+  Future<SyncMessage?> sendDeepBackfillPayload({
+    required Room room,
+    required SyncMessage message,
+  }) async {
+    final Map<String, dynamic> document;
+    final String detail;
+    switch (message) {
+      case SyncDeepBackfillInventory(:final records, :final conflicts):
+        document = {
+          'records': [for (final r in records) r.toJson()],
+          'conflicts': [for (final c in conflicts) c.toJson()],
+        };
+        detail = 'records=${records.length} conflicts=${conflicts.length}';
+      case SyncDeepBackfillRequest(:final records):
+        document = {
+          'records': [for (final r in records) r.toJson()],
+        };
+        detail = 'records=${records.length}';
+      default:
+        return message;
+    }
+    final relativePath = relativeDeepBackfillPath(uuid.v1());
+    final eventId = await _uploadGzippedJson(
+      room: room,
+      relativePath: relativePath,
+      document: document,
+      label: 'deepBackfill',
+      detail: detail,
     );
+    if (eventId == null) return null;
+    return switch (message) {
+      final SyncDeepBackfillInventory m => m.copyWith(
+        jsonPath: relativePath,
+        attachmentEventId: eventId,
+        records: const [],
+        conflicts: const [],
+      ),
+      final SyncDeepBackfillRequest m => m.copyWith(
+        jsonPath: relativePath,
+        attachmentEventId: eventId,
+        records: const [],
+      ),
+      _ => message,
+    };
   }
 
   /// Uploads the media blob of any bundle child whose payload asks for it,

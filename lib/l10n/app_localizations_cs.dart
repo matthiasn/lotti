@@ -9277,6 +9277,43 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get maintenanceDeepBackfill => 'Hloubkové doplnění';
+
+  @override
+  String maintenanceDeepBackfillComplete(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count záznamů uvedeno pro tvá další zařízení',
+      few: '$count záznamy uvedeny pro tvá další zařízení',
+      one: '1 záznam uveden pro tvá další zařízení',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get maintenanceDeepBackfillConfirm => 'Ano, spustit';
+
+  @override
+  String get maintenanceDeepBackfillDescription =>
+      'Porovnej všechny záznamy se svými dalšími zařízeními a doplň mezery';
+
+  @override
+  String get maintenanceDeepBackfillMessage =>
+      'Tím se tvým dalším zařízením pošle seznam všech záznamů na tomto zařízení, včetně smazaných. Každé ho porovná se svými záznamy, vyžádá si, co mu chybí, a pošle zpět, co chybí tomuto zařízení. Tvá další zařízení musí být online, aby mohla odpovědět.';
+
+  @override
+  String maintenanceDeepBackfillProgress(int advertised, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$total záznamů',
+      one: '1 záznamu',
+    );
+    return 'Uvedeno $advertised z $_temp0';
+  }
+
+  @override
   String get maintenanceDeleteAgentDb => 'Smazat databázi agentů';
 
   @override
@@ -14893,6 +14930,13 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncPayloadDailyOsUserName => 'Jméno Daily OS';
+
+  @override
+  String get syncPayloadDeepBackfillInventory =>
+      'Soupis pro hloubkové doplnění';
+
+  @override
+  String get syncPayloadDeepBackfillRequest => 'Žádost o hloubkové doplnění';
 
   @override
   String get syncPayloadEntityDefinition => 'Definice entity';

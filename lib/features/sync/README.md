@@ -107,6 +107,7 @@ lib/features/sync/
 ├── queue/       # inbound queue, catch-up bridge, worker
 ├── sequence/    # (hostId, counter) accounting
 ├── backfill/    # gap requests and responses
+├── deep_backfill/ # manual round comparing every record with the peers
 ├── onboarding/  # bounded initial-history suppression protocol
 ├── media/       # self-healing fetch for missing image/audio blobs
 ├── model/       # SyncMessage and node profiles
@@ -121,7 +122,8 @@ For failure history, log-backed investigations and tuning context, see
 [docs/architecture/sync_current_architecture.md](../../../docs/architecture/sync_current_architecture.md).
 
 The runtime architecture — the outbox and its bundling, the inbound queue
-pipeline, vector clocks and conflict detection, the sequence log and backfill,
+pipeline, vector clocks and conflict detection, the sequence log, backfill and
+deep backfill,
 and the synced-audio auto-trigger — is documented in the knowledge bundle:
 
 **→ [knowledge/features/sync/](../../../knowledge/features/sync/)**

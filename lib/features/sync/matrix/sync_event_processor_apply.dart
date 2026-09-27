@@ -294,6 +294,15 @@ extension SyncEventProcessorApply on SyncEventProcessor {
         // Handle backfill request - another device is asking for a missing entry
         await backfillResponseHandler.handleBackfillRequest(syncMessage);
         return null;
+      case final SyncDeepBackfillInventory msg:
+        // A peer's deep-backfill inventory batch: diff it, then request and
+        // push what differs (`DeepBackfillService.handleInventory`).
+        await deepBackfillService?.handleInventory(msg);
+        return null;
+      case final SyncDeepBackfillRequest msg:
+        // A peer asks this device, the advertiser, for current versions.
+        await deepBackfillService?.handleRequest(msg);
+        return null;
       case final SyncMediaRequest msg:
         // A peer is missing blobs for entries it already holds. Answering is
         // best-effort: the request is broadcast, and a device that lacks the

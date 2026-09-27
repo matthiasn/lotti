@@ -9296,6 +9296,42 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get maintenanceDeepBackfill => 'Relleno profundo';
+
+  @override
+  String maintenanceDeepBackfillComplete(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count registros listados para tus otros dispositivos',
+      one: '1 registro listado para tus otros dispositivos',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get maintenanceDeepBackfillConfirm => 'Sí, empezar';
+
+  @override
+  String get maintenanceDeepBackfillDescription =>
+      'Compara todos los registros con tus otros dispositivos y completa lo que falta';
+
+  @override
+  String get maintenanceDeepBackfillMessage =>
+      'Esto envía a tus otros dispositivos una lista de todos los registros de este dispositivo, incluidos los eliminados. Cada uno la compara con sus propios registros, pide lo que le falta y devuelve lo que le falta a este dispositivo. Tus otros dispositivos deben estar conectados para responder.';
+
+  @override
+  String maintenanceDeepBackfillProgress(int advertised, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: 'registros listados',
+      one: 'registro listado',
+    );
+    return '$advertised de $total $_temp0';
+  }
+
+  @override
   String get maintenanceDeleteAgentDb => 'Eliminar la base de datos de agentes';
 
   @override
@@ -14900,6 +14936,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get syncPayloadDailyOsUserName => 'Nombre de Daily OS';
+
+  @override
+  String get syncPayloadDeepBackfillInventory =>
+      'Inventario de relleno profundo';
+
+  @override
+  String get syncPayloadDeepBackfillRequest => 'Solicitud de relleno profundo';
 
   @override
   String get syncPayloadEntityDefinition => 'Definición de entidad';

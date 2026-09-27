@@ -1,6 +1,9 @@
 # Deep backfill — a manual inventory round that repairs what counters cannot see
 
-Status: **Phase 1 done (model checked), Phase 2 planned, not started.**
+Status: **Phase 1 done (model checked), Phase 2 implemented.** The runtime
+behaviour is documented in
+[sequence log and backfill](../../knowledge/features/sync/sequence-and-backfill.md#deep-backfill);
+this plan records how the model was mapped onto the code.
 
 ## The gap
 

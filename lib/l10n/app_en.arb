@@ -5396,6 +5396,29 @@
       }
     }
   },
+  "maintenanceDeepBackfill": "Deep backfill",
+  "maintenanceDeepBackfillComplete": "{count, plural, =1{1 record listed for your other devices} other{{count} records listed for your other devices}}",
+  "@maintenanceDeepBackfillComplete": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "maintenanceDeepBackfillConfirm": "Yes, start",
+  "maintenanceDeepBackfillDescription": "Compare every record with your other devices and fill the gaps",
+  "maintenanceDeepBackfillMessage": "This sends a list of every record on this device, deletions included, to your other devices. Each one compares it with its own records, asks for what it is missing and sends back what this device lacks. Your other devices need to be online to answer.",
+  "maintenanceDeepBackfillProgress": "{advertised} of {total} {total, plural, =1{record} other{records}} listed",
+  "@maintenanceDeepBackfillProgress": {
+    "placeholders": {
+      "advertised": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "maintenanceDeleteAgentDb": "Delete Agents Database",
   "maintenanceDeleteAgentDbDescription": "Delete agents database and restart app",
   "maintenanceDeleteDatabaseConfirm": "Yes, delete database",
@@ -8413,6 +8436,8 @@
   "syncPayloadConfigFlag": "Config flag",
   "syncPayloadConsumptionEvent": "AI consumption",
   "syncPayloadDailyOsUserName": "Daily OS name",
+  "syncPayloadDeepBackfillInventory": "Deep backfill inventory",
+  "syncPayloadDeepBackfillRequest": "Deep backfill request",
   "syncPayloadEntityDefinition": "Entity definition",
   "syncPayloadEntryLink": "Entry link",
   "syncPayloadJournalEntity": "Journal entry",

@@ -9358,6 +9358,44 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get maintenanceDeepBackfill => 'Completare aprofundată';
+
+  @override
+  String maintenanceDeepBackfillComplete(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de înregistrări listate pentru celelalte dispozitive',
+      few: '$count înregistrări listate pentru celelalte dispozitive',
+      one: '1 înregistrare listată pentru celelalte dispozitive',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get maintenanceDeepBackfillConfirm => 'Da, porniți';
+
+  @override
+  String get maintenanceDeepBackfillDescription =>
+      'Comparați fiecare înregistrare cu celelalte dispozitive și completați golurile';
+
+  @override
+  String get maintenanceDeepBackfillMessage =>
+      'Aceasta trimite celorlalte dispozitive ale dumneavoastră lista tuturor înregistrărilor de pe acest dispozitiv, inclusiv a celor șterse. Fiecare o compară cu propriile înregistrări, cere ce îi lipsește și trimite înapoi ce îi lipsește acestui dispozitiv. Celelalte dispozitive trebuie să fie online pentru a răspunde.';
+
+  @override
+  String maintenanceDeepBackfillProgress(int advertised, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$total de înregistrări listate',
+      few: '$total înregistrări listate',
+      one: '1 înregistrare listată',
+    );
+    return '$advertised din $_temp0';
+  }
+
+  @override
   String get maintenanceDeleteAgentDb => 'Ștergeți baza de date a agenților';
 
   @override
@@ -14998,6 +15036,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncPayloadDailyOsUserName => 'Nume Daily OS';
+
+  @override
+  String get syncPayloadDeepBackfillInventory =>
+      'Inventar pentru completarea aprofundată';
+
+  @override
+  String get syncPayloadDeepBackfillRequest =>
+      'Cerere de completare aprofundată';
 
   @override
   String get syncPayloadEntityDefinition => 'Definiție entitate';

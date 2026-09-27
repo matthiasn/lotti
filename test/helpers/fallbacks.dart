@@ -43,6 +43,7 @@ import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/recent_searches/domain/recent_search.dart';
+import 'package:lotti/features/sync/deep_backfill/deep_backfill_store.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
@@ -252,6 +253,36 @@ FutureOr<AgentStateEntity?> _fallbackAgentStateUpdate(
   AgentStateEntity state,
 ) => state;
 
+/// A deep-backfill store for `any()` matchers; never read.
+class FallbackDeepBackfillStore extends DeepBackfillStore {
+  const FallbackDeepBackfillStore();
+
+  @override
+  SyncSequencePayloadType get payloadType =>
+      SyncSequencePayloadType.journalEntity;
+
+  @override
+  Future<int> count() => throw UnimplementedError();
+
+  @override
+  Future<List<DeepBackfillRow>> page({
+    required String? after,
+    required int limit,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<Map<String, VectorClock?>> range({
+    required String? start,
+    required String? end,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<int> enqueueCurrent(
+    Set<String> ids, {
+    required Set<String> withMedia,
+  }) => throw UnimplementedError();
+}
+
 /// Registers all commonly used fallback values for mocktail in one call.
 ///
 /// Call this in `setUpAll()` or `setUp()` instead of scattering individual
@@ -275,6 +306,7 @@ void registerAllFallbackValues() {
   registerFallbackValue(fallbackCheckInEntry);
   registerFallbackValue(fallbackCheckInData);
   registerFallbackValue(fallbackSyncMessage);
+  registerFallbackValue(const FallbackDeepBackfillStore());
   registerFallbackValue(MockEvent());
   registerFallbackValue(MockPreparedSyncEvent());
   registerFallbackValue(fallbackAiConfig);

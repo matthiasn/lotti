@@ -12,6 +12,7 @@ import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/matrix_payload_sender.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -638,10 +639,13 @@ void main() {
       );
     }
 
-    void stubRow(JournalEntity? recovered) {
+    void stubRow(JournalEntity? recovered, {JournalEntity? conflict}) {
       when(
         () => journalDb.journalEntityMapForIdsIncludingDeleted([message.id]),
       ).thenAnswer((_) async => {message.id: ?recovered});
+      when(
+        () => journalDb.openConflictVersion(message.id, any()),
+      ).thenAnswer((_) async => conflict);
       when(
         () => journalDb.getConfigFlag(resendAttachments),
       ).thenAnswer((_) async => false);
@@ -716,9 +720,52 @@ void main() {
               [message.id],
             ),
           ).called(1);
+          verify(
+            () => journalDb.openConflictVersion(
+              message.id,
+              message.vectorClock!,
+            ),
+          ).called(1);
         },
       );
     }
+
+    test('serves the open conflict of exactly the queued version when the '
+        'row does not cover it — a deep-backfill answer for a concurrent '
+        'version', () async {
+      final conflict = entity(clock: message.vectorClock);
+      stubRow(
+        entity(clock: const VectorClock({'hostB': 5})),
+        conflict: conflict,
+      );
+      MatrixFile? uploaded;
+      when(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).thenAnswer(
+        uploadStub.record((invocation) async {
+          uploaded = invocation.positionalArguments.first as MatrixFile;
+          return 'conflict-upload';
+        }),
+      );
+
+      final result = await payloadSender.sendJournalEntityPayload(
+        room: room,
+        message: message,
+      );
+
+      expect(result?.attachmentEventId, 'conflict-upload');
+      expect(result?.vectorClock, message.vectorClock);
+      expect(
+        JournalEntity.fromJson(
+          jsonDecode(utf8.decode(gzip.decode(uploaded!.bytes)))
+              as Map<String, dynamic>,
+        ),
+        conflict,
+      );
+    });
 
     test('checks covered clocks as well as the queued version', () async {
       stubRow(entity(clock: const VectorClock({'hostA': 3})));
@@ -969,6 +1016,98 @@ void main() {
         ),
       ).called(1);
     });
+
+    test(
+      'serves a child that names an open conflict version with that '
+      'version, not the row — a deep-backfill answer inside a bundle',
+      () async {
+        final date = DateTime.utc(2026, 8);
+        JournalEntity version(VectorClock clock, String text) =>
+            JournalEntity.journalEntry(
+              meta: Metadata(
+                id: 'conflicted',
+                createdAt: date,
+                updatedAt: date,
+                dateFrom: date,
+                dateTo: date,
+                vectorClock: clock,
+              ),
+              entryText: EntryText(plainText: text),
+            );
+        final row = version(const VectorClock({'a': 2}), 'row');
+        final conflict = version(
+          const VectorClock({'a': 1, 'b': 1}),
+          'conflict',
+        );
+        when(
+          () => journalDb.journalEntityMapForIdsIncludingDeleted(
+            any<Iterable<String>>(),
+          ),
+        ).thenAnswer((_) async => {'conflicted': row});
+        when(
+          () => journalDb.openConflictVersion(
+            'conflicted',
+            conflict.meta.vectorClock!,
+          ),
+        ).thenAnswer((_) async => conflict);
+        MatrixFile? uploadedManifest;
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenAnswer(
+          uploadStub.record((invocation) async {
+            uploadedManifest =
+                invocation.positionalArguments.first as MatrixFile;
+            return 'manifest-event';
+          }),
+        );
+
+        final result = await payloadSender.sendOutboxBundlePayload(
+          room: room,
+          message: SyncOutboxBundle(
+            children: [
+              SyncMessage.journalEntity(
+                id: 'conflicted',
+                jsonPath: '/journal/conflicted.json',
+                vectorClock: row.meta.vectorClock,
+                status: SyncEntryStatus.update,
+              ),
+              SyncMessage.journalEntity(
+                id: 'conflicted',
+                jsonPath: '/journal/conflicted.json',
+                vectorClock: conflict.meta.vectorClock,
+                status: SyncEntryStatus.update,
+              ),
+            ],
+            jsonPath: '/outbox_bundles/conflicted.json',
+          ),
+        );
+
+        expect(result, isNotNull);
+        final entries =
+            ((json.decode(utf8.decode(gzip.decode(uploadedManifest!.bytes)))
+                        as Map<String, dynamic>)['entries']
+                    as List)
+                .cast<Map<String, dynamic>>();
+        final sent = [
+          for (final entry in entries)
+            (
+              (SyncMessage.fromJson(entry['envelope'] as Map<String, dynamic>)
+                      as SyncJournalEntity)
+                  .vectorClock,
+              JournalEntity.fromJson(
+                entry['payload'] as Map<String, dynamic>,
+              ).entryText?.plainText,
+            ),
+        ];
+        expect(sent, [
+          (row.meta.vectorClock, 'row'),
+          (conflict.meta.vectorClock, 'conflict'),
+        ]);
+      },
+    );
 
     test(
       'replaces unsafe bundle paths before uploading the manifest',
@@ -1381,5 +1520,146 @@ void main() {
         );
       },
     );
+  });
+
+  group('sendDeepBackfillPayload', () {
+    const clock = VectorClock({'hostA': 2});
+    const inventory = SyncDeepBackfillInventory(
+      roundId: 'round-1',
+      hostId: 'hostA',
+      payloadType: SyncSequencePayloadType.journalEntity,
+      batch: 0,
+      rangeEnd: 'm',
+      records: [DeepBackfillRecord(id: 'a', vectorClock: clock)],
+      conflicts: [DeepBackfillRecord(id: 'a', vectorClock: clock)],
+    );
+    const request = SyncDeepBackfillRequest(
+      requesterId: 'hostB',
+      targetHostId: 'hostA',
+      payloadType: SyncSequencePayloadType.entryLink,
+      records: [DeepBackfillRequestRecord(id: 'a', absent: true)],
+    );
+
+    void stubUpload(String eventId) {
+      when(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).thenAnswer(uploadStub.record((_) async => eventId));
+    }
+
+    Map<String, dynamic> uploadedDocument() {
+      final file =
+          verify(
+                () => room.sendFileEvent(
+                  captureAny<MatrixFile>(),
+                  extraContent: any<Map<String, dynamic>>(
+                    named: 'extraContent',
+                  ),
+                ),
+              ).captured.single
+              as MatrixFile;
+      expect(file.name, endsWith('.json.gz'));
+      return jsonDecode(utf8.decode(gzip.decode(file.bytes)))
+          as Map<String, dynamic>;
+    }
+
+    test("moves an inventory's lists into a gzipped attachment and names "
+        'it', () async {
+      stubUpload('inventory-upload');
+
+      final result =
+          await payloadSender.sendDeepBackfillPayload(
+                room: room,
+                message: inventory,
+              )
+              as SyncDeepBackfillInventory?;
+
+      expect(result?.attachmentEventId, 'inventory-upload');
+      expect(result?.jsonPath, startsWith(deepBackfillSegment));
+      expect(result?.records, isEmpty);
+      expect(result?.conflicts, isEmpty);
+      expect(result?.rangeEnd, 'm');
+      final document = uploadedDocument();
+      expect(
+        (document['records'] as List<dynamic>).map(
+          (r) => DeepBackfillRecord.fromJson(r as Map<String, dynamic>),
+        ),
+        inventory.records,
+      );
+      expect(
+        (document['conflicts'] as List<dynamic>).map(
+          (r) => DeepBackfillRecord.fromJson(r as Map<String, dynamic>),
+        ),
+        inventory.conflicts,
+      );
+      expect(sentEventRegistry.consume('inventory-upload'), isTrue);
+    });
+
+    test("moves a request's records into a gzipped attachment", () async {
+      stubUpload('request-upload');
+
+      final result =
+          await payloadSender.sendDeepBackfillPayload(
+                room: room,
+                message: request,
+              )
+              as SyncDeepBackfillRequest?;
+
+      expect(result?.attachmentEventId, 'request-upload');
+      expect(result?.records, isEmpty);
+      expect(result?.targetHostId, 'hostA');
+      expect(
+        (uploadedDocument()['records'] as List<dynamic>).map(
+          (r) => DeepBackfillRequestRecord.fromJson(r as Map<String, dynamic>),
+        ),
+        request.records,
+      );
+    });
+
+    test('returns any other message unchanged, without uploading', () async {
+      const other = SyncMessage.backfillRequest(
+        entries: [],
+        requesterId: 'hostB',
+      );
+
+      expect(
+        await payloadSender.sendDeepBackfillPayload(room: room, message: other),
+        same(other),
+      );
+      verifyNever(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      );
+    });
+
+    test('fails the send when the upload fails, logging under its own '
+        'label', () async {
+      when(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).thenThrow(Exception('upload down'));
+
+      expect(
+        await payloadSender.sendDeepBackfillPayload(
+          room: room,
+          message: inventory,
+        ),
+        isNull,
+      );
+      verify(
+        () => loggingService.error(
+          LogDomain.sync,
+          any<Object>(),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: 'sendMatrixMsg.deepBackfill.upload',
+        ),
+      ).called(1);
+    });
   });
 }

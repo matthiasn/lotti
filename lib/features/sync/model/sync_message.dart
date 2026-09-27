@@ -42,6 +42,34 @@ abstract class BackfillRequestEntry with _$BackfillRequestEntry {
       _$BackfillRequestEntryFromJson(json);
 }
 
+/// One record in a deep-backfill inventory: its id and the vector clock of
+/// the version the advertiser holds, a deletion as much as a live row.
+@freezed
+abstract class DeepBackfillRecord with _$DeepBackfillRecord {
+  const factory DeepBackfillRecord({
+    required String id,
+    required VectorClock vectorClock,
+  }) = _DeepBackfillRecord;
+
+  factory DeepBackfillRecord.fromJson(Map<String, dynamic> json) =>
+      _$DeepBackfillRecordFromJson(json);
+}
+
+/// One record a deep-backfill request asks for.
+@freezed
+abstract class DeepBackfillRequestRecord with _$DeepBackfillRequestRecord {
+  const factory DeepBackfillRequestRecord({
+    required String id,
+
+    /// The requester holds no row for the record at all, so the answer
+    /// carries its media too.
+    @Default(false) bool absent,
+  }) = _DeepBackfillRequestRecord;
+
+  factory DeepBackfillRequestRecord.fromJson(Map<String, dynamic> json) =>
+      _$DeepBackfillRequestRecordFromJson(json);
+}
+
 /// Inclusive counter range used by onboarding terminal-coverage chunks.
 @freezed
 abstract class SyncCounterRange with _$SyncCounterRange {
@@ -325,6 +353,61 @@ sealed class SyncMessage with _$SyncMessage {
     /// Older clients ignore this optional field and accept empty requests.
     @JsonKey(includeIfNull: false) int? requesterSequenceHead,
   }) = SyncBackfillRequest;
+
+  /// One batch of a deep-backfill inventory (`specs/tla/DeepBackfill.tla`):
+  /// every record of one payload type the advertiser holds whose id lies in
+  /// `[rangeStart, rangeEnd)`, tombstones included. The ranges of one round
+  /// tile the whole keyspace — a null bound is unbounded — so a record a
+  /// peer holds and the advertiser does not always lies in some batch's
+  /// range, and the peer pushes it back.
+  ///
+  /// The record lists can run to thousands of entries. Sent on its own, the
+  /// envelope carries them in a gzipped attachment ([attachmentEventId]) and
+  /// the lists are empty; inside an outbox bundle they ride inline in the
+  /// bundle's own gzipped manifest.
+  @JsonSerializable(explicitToJson: true)
+  const factory SyncMessage.deepBackfillInventory({
+    /// The round this batch belongs to, for correlation in logs.
+    required String roundId,
+
+    /// The advertiser's `VectorClockService` host UUID.
+    required String hostId,
+    required SyncSequencePayloadType payloadType,
+
+    /// The batch's position in the round, per payload type.
+    required int batch,
+
+    /// First id of the range, inclusive; null is unbounded below.
+    String? rangeStart,
+
+    /// End of the range, exclusive; null is unbounded above.
+    String? rangeEnd,
+    @Default(<DeepBackfillRecord>[]) List<DeepBackfillRecord> records,
+
+    /// The advertiser's open conflict versions in the range. A peer does not
+    /// push a version the advertiser already holds as one.
+    @Default(<DeepBackfillRecord>[]) List<DeepBackfillRecord> conflicts,
+    String? jsonPath,
+    String? attachmentEventId,
+  }) = SyncDeepBackfillInventory;
+
+  /// Asks the advertiser of a deep-backfill inventory for the current
+  /// version of records the requester lacks or holds older or concurrent.
+  /// Only [targetHostId] answers; the answers are ordinary payload messages.
+  /// Large record lists travel as an attachment, as for the inventory.
+  @JsonSerializable(explicitToJson: true)
+  const factory SyncMessage.deepBackfillRequest({
+    /// The requester's `VectorClockService` host UUID.
+    required String requesterId,
+
+    /// The advertiser, the only device that answers.
+    required String targetHostId,
+    required SyncSequencePayloadType payloadType,
+    @Default(<DeepBackfillRequestRecord>[])
+    List<DeepBackfillRequestRecord> records,
+    String? jsonPath,
+    String? attachmentEventId,
+  }) = SyncDeepBackfillRequest;
 
   /// Response to a backfill request.
   /// If deleted is true, the entry was purged and no longer exists.

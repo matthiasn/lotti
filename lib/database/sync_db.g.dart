@@ -3814,6 +3814,412 @@ class OnboardingSyncRoundsCompanion
   }
 }
 
+class $DeepBackfillRequestsTable extends DeepBackfillRequests
+    with TableInfo<$DeepBackfillRequestsTable, DeepBackfillRequestItem> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DeepBackfillRequestsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _targetHostIdMeta = const VerificationMeta(
+    'targetHostId',
+  );
+  @override
+  late final GeneratedColumn<String> targetHostId = GeneratedColumn<String>(
+    'target_host_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _payloadTypeMeta = const VerificationMeta(
+    'payloadType',
+  );
+  @override
+  late final GeneratedColumn<int> payloadType = GeneratedColumn<int>(
+    'payload_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entryIdMeta = const VerificationMeta(
+    'entryId',
+  );
+  @override
+  late final GeneratedColumn<String> entryId = GeneratedColumn<String>(
+    'entry_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _vectorClocksMeta = const VerificationMeta(
+    'vectorClocks',
+  );
+  @override
+  late final GeneratedColumn<String> vectorClocks = GeneratedColumn<String>(
+    'vector_clocks',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _requestedAtMeta = const VerificationMeta(
+    'requestedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> requestedAt = GeneratedColumn<DateTime>(
+    'requested_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    targetHostId,
+    payloadType,
+    entryId,
+    vectorClocks,
+    requestedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'deep_backfill_requests';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DeepBackfillRequestItem> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('target_host_id')) {
+      context.handle(
+        _targetHostIdMeta,
+        targetHostId.isAcceptableOrUnknown(
+          data['target_host_id']!,
+          _targetHostIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_targetHostIdMeta);
+    }
+    if (data.containsKey('payload_type')) {
+      context.handle(
+        _payloadTypeMeta,
+        payloadType.isAcceptableOrUnknown(
+          data['payload_type']!,
+          _payloadTypeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_payloadTypeMeta);
+    }
+    if (data.containsKey('entry_id')) {
+      context.handle(
+        _entryIdMeta,
+        entryId.isAcceptableOrUnknown(data['entry_id']!, _entryIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entryIdMeta);
+    }
+    if (data.containsKey('vector_clocks')) {
+      context.handle(
+        _vectorClocksMeta,
+        vectorClocks.isAcceptableOrUnknown(
+          data['vector_clocks']!,
+          _vectorClocksMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_vectorClocksMeta);
+    }
+    if (data.containsKey('requested_at')) {
+      context.handle(
+        _requestedAtMeta,
+        requestedAt.isAcceptableOrUnknown(
+          data['requested_at']!,
+          _requestedAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_requestedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {targetHostId, payloadType, entryId};
+  @override
+  DeepBackfillRequestItem map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DeepBackfillRequestItem(
+      targetHostId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_host_id'],
+      )!,
+      payloadType: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}payload_type'],
+      )!,
+      entryId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entry_id'],
+      )!,
+      vectorClocks: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}vector_clocks'],
+      )!,
+      requestedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}requested_at'],
+      )!,
+    );
+  }
+
+  @override
+  $DeepBackfillRequestsTable createAlias(String alias) {
+    return $DeepBackfillRequestsTable(attachedDatabase, alias);
+  }
+}
+
+class DeepBackfillRequestItem extends DataClass
+    implements Insertable<DeepBackfillRequestItem> {
+  /// The advertiser the request went to.
+  final String targetHostId;
+
+  /// `SyncSequencePayloadType.index`.
+  final int payloadType;
+  final String entryId;
+
+  /// JSON list of the vector clocks asked for: the advertiser's row and any
+  /// of its open conflict versions this device did not keep.
+  final String vectorClocks;
+  final DateTime requestedAt;
+  const DeepBackfillRequestItem({
+    required this.targetHostId,
+    required this.payloadType,
+    required this.entryId,
+    required this.vectorClocks,
+    required this.requestedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['target_host_id'] = Variable<String>(targetHostId);
+    map['payload_type'] = Variable<int>(payloadType);
+    map['entry_id'] = Variable<String>(entryId);
+    map['vector_clocks'] = Variable<String>(vectorClocks);
+    map['requested_at'] = Variable<DateTime>(requestedAt);
+    return map;
+  }
+
+  DeepBackfillRequestsCompanion toCompanion(bool nullToAbsent) {
+    return DeepBackfillRequestsCompanion(
+      targetHostId: Value(targetHostId),
+      payloadType: Value(payloadType),
+      entryId: Value(entryId),
+      vectorClocks: Value(vectorClocks),
+      requestedAt: Value(requestedAt),
+    );
+  }
+
+  factory DeepBackfillRequestItem.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DeepBackfillRequestItem(
+      targetHostId: serializer.fromJson<String>(json['targetHostId']),
+      payloadType: serializer.fromJson<int>(json['payloadType']),
+      entryId: serializer.fromJson<String>(json['entryId']),
+      vectorClocks: serializer.fromJson<String>(json['vectorClocks']),
+      requestedAt: serializer.fromJson<DateTime>(json['requestedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'targetHostId': serializer.toJson<String>(targetHostId),
+      'payloadType': serializer.toJson<int>(payloadType),
+      'entryId': serializer.toJson<String>(entryId),
+      'vectorClocks': serializer.toJson<String>(vectorClocks),
+      'requestedAt': serializer.toJson<DateTime>(requestedAt),
+    };
+  }
+
+  DeepBackfillRequestItem copyWith({
+    String? targetHostId,
+    int? payloadType,
+    String? entryId,
+    String? vectorClocks,
+    DateTime? requestedAt,
+  }) => DeepBackfillRequestItem(
+    targetHostId: targetHostId ?? this.targetHostId,
+    payloadType: payloadType ?? this.payloadType,
+    entryId: entryId ?? this.entryId,
+    vectorClocks: vectorClocks ?? this.vectorClocks,
+    requestedAt: requestedAt ?? this.requestedAt,
+  );
+  DeepBackfillRequestItem copyWithCompanion(
+    DeepBackfillRequestsCompanion data,
+  ) {
+    return DeepBackfillRequestItem(
+      targetHostId: data.targetHostId.present
+          ? data.targetHostId.value
+          : this.targetHostId,
+      payloadType: data.payloadType.present
+          ? data.payloadType.value
+          : this.payloadType,
+      entryId: data.entryId.present ? data.entryId.value : this.entryId,
+      vectorClocks: data.vectorClocks.present
+          ? data.vectorClocks.value
+          : this.vectorClocks,
+      requestedAt: data.requestedAt.present
+          ? data.requestedAt.value
+          : this.requestedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DeepBackfillRequestItem(')
+          ..write('targetHostId: $targetHostId, ')
+          ..write('payloadType: $payloadType, ')
+          ..write('entryId: $entryId, ')
+          ..write('vectorClocks: $vectorClocks, ')
+          ..write('requestedAt: $requestedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    targetHostId,
+    payloadType,
+    entryId,
+    vectorClocks,
+    requestedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DeepBackfillRequestItem &&
+          other.targetHostId == this.targetHostId &&
+          other.payloadType == this.payloadType &&
+          other.entryId == this.entryId &&
+          other.vectorClocks == this.vectorClocks &&
+          other.requestedAt == this.requestedAt);
+}
+
+class DeepBackfillRequestsCompanion
+    extends UpdateCompanion<DeepBackfillRequestItem> {
+  final Value<String> targetHostId;
+  final Value<int> payloadType;
+  final Value<String> entryId;
+  final Value<String> vectorClocks;
+  final Value<DateTime> requestedAt;
+  final Value<int> rowid;
+  const DeepBackfillRequestsCompanion({
+    this.targetHostId = const Value.absent(),
+    this.payloadType = const Value.absent(),
+    this.entryId = const Value.absent(),
+    this.vectorClocks = const Value.absent(),
+    this.requestedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DeepBackfillRequestsCompanion.insert({
+    required String targetHostId,
+    required int payloadType,
+    required String entryId,
+    required String vectorClocks,
+    required DateTime requestedAt,
+    this.rowid = const Value.absent(),
+  }) : targetHostId = Value(targetHostId),
+       payloadType = Value(payloadType),
+       entryId = Value(entryId),
+       vectorClocks = Value(vectorClocks),
+       requestedAt = Value(requestedAt);
+  static Insertable<DeepBackfillRequestItem> custom({
+    Expression<String>? targetHostId,
+    Expression<int>? payloadType,
+    Expression<String>? entryId,
+    Expression<String>? vectorClocks,
+    Expression<DateTime>? requestedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (targetHostId != null) 'target_host_id': targetHostId,
+      if (payloadType != null) 'payload_type': payloadType,
+      if (entryId != null) 'entry_id': entryId,
+      if (vectorClocks != null) 'vector_clocks': vectorClocks,
+      if (requestedAt != null) 'requested_at': requestedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DeepBackfillRequestsCompanion copyWith({
+    Value<String>? targetHostId,
+    Value<int>? payloadType,
+    Value<String>? entryId,
+    Value<String>? vectorClocks,
+    Value<DateTime>? requestedAt,
+    Value<int>? rowid,
+  }) {
+    return DeepBackfillRequestsCompanion(
+      targetHostId: targetHostId ?? this.targetHostId,
+      payloadType: payloadType ?? this.payloadType,
+      entryId: entryId ?? this.entryId,
+      vectorClocks: vectorClocks ?? this.vectorClocks,
+      requestedAt: requestedAt ?? this.requestedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (targetHostId.present) {
+      map['target_host_id'] = Variable<String>(targetHostId.value);
+    }
+    if (payloadType.present) {
+      map['payload_type'] = Variable<int>(payloadType.value);
+    }
+    if (entryId.present) {
+      map['entry_id'] = Variable<String>(entryId.value);
+    }
+    if (vectorClocks.present) {
+      map['vector_clocks'] = Variable<String>(vectorClocks.value);
+    }
+    if (requestedAt.present) {
+      map['requested_at'] = Variable<DateTime>(requestedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DeepBackfillRequestsCompanion(')
+          ..write('targetHostId: $targetHostId, ')
+          ..write('payloadType: $payloadType, ')
+          ..write('entryId: $entryId, ')
+          ..write('vectorClocks: $vectorClocks, ')
+          ..write('requestedAt: $requestedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$SyncDatabase extends GeneratedDatabase {
   _$SyncDatabase(QueryExecutor e) : super(e);
   _$SyncDatabase.connect(DatabaseConnection c) : super.connect(c);
@@ -3828,6 +4234,8 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
   late final $QueueMarkersTable queueMarkers = $QueueMarkersTable(this);
   late final $OnboardingSyncRoundsTable onboardingSyncRounds =
       $OnboardingSyncRoundsTable(this);
+  late final $DeepBackfillRequestsTable deepBackfillRequests =
+      $DeepBackfillRequestsTable(this);
   late final Index idxOutboxStatusPriorityCreatedAt = Index(
     'idx_outbox_status_priority_created_at',
     'CREATE INDEX idx_outbox_status_priority_created_at ON outbox (status, priority, created_at)',
@@ -3935,6 +4343,7 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     inboundEventQueue,
     queueMarkers,
     onboardingSyncRounds,
+    deepBackfillRequests,
     idxOutboxStatusPriorityCreatedAt,
     idxOutboxActionablePriorityCreatedAt,
     idxOutboxActionableSubject,
@@ -5770,6 +6179,230 @@ typedef $$OnboardingSyncRoundsTableProcessedTableManager =
       OnboardingSyncRoundItem,
       PrefetchHooks Function()
     >;
+typedef $$DeepBackfillRequestsTableCreateCompanionBuilder =
+    DeepBackfillRequestsCompanion Function({
+      required String targetHostId,
+      required int payloadType,
+      required String entryId,
+      required String vectorClocks,
+      required DateTime requestedAt,
+      Value<int> rowid,
+    });
+typedef $$DeepBackfillRequestsTableUpdateCompanionBuilder =
+    DeepBackfillRequestsCompanion Function({
+      Value<String> targetHostId,
+      Value<int> payloadType,
+      Value<String> entryId,
+      Value<String> vectorClocks,
+      Value<DateTime> requestedAt,
+      Value<int> rowid,
+    });
+
+class $$DeepBackfillRequestsTableFilterComposer
+    extends Composer<_$SyncDatabase, $DeepBackfillRequestsTable> {
+  $$DeepBackfillRequestsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get targetHostId => $composableBuilder(
+    column: $table.targetHostId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get payloadType => $composableBuilder(
+    column: $table.payloadType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entryId => $composableBuilder(
+    column: $table.entryId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get vectorClocks => $composableBuilder(
+    column: $table.vectorClocks,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get requestedAt => $composableBuilder(
+    column: $table.requestedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DeepBackfillRequestsTableOrderingComposer
+    extends Composer<_$SyncDatabase, $DeepBackfillRequestsTable> {
+  $$DeepBackfillRequestsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get targetHostId => $composableBuilder(
+    column: $table.targetHostId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get payloadType => $composableBuilder(
+    column: $table.payloadType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entryId => $composableBuilder(
+    column: $table.entryId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get vectorClocks => $composableBuilder(
+    column: $table.vectorClocks,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get requestedAt => $composableBuilder(
+    column: $table.requestedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DeepBackfillRequestsTableAnnotationComposer
+    extends Composer<_$SyncDatabase, $DeepBackfillRequestsTable> {
+  $$DeepBackfillRequestsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get targetHostId => $composableBuilder(
+    column: $table.targetHostId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get payloadType => $composableBuilder(
+    column: $table.payloadType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get entryId =>
+      $composableBuilder(column: $table.entryId, builder: (column) => column);
+
+  GeneratedColumn<String> get vectorClocks => $composableBuilder(
+    column: $table.vectorClocks,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get requestedAt => $composableBuilder(
+    column: $table.requestedAt,
+    builder: (column) => column,
+  );
+}
+
+class $$DeepBackfillRequestsTableTableManager
+    extends
+        RootTableManager<
+          _$SyncDatabase,
+          $DeepBackfillRequestsTable,
+          DeepBackfillRequestItem,
+          $$DeepBackfillRequestsTableFilterComposer,
+          $$DeepBackfillRequestsTableOrderingComposer,
+          $$DeepBackfillRequestsTableAnnotationComposer,
+          $$DeepBackfillRequestsTableCreateCompanionBuilder,
+          $$DeepBackfillRequestsTableUpdateCompanionBuilder,
+          (
+            DeepBackfillRequestItem,
+            BaseReferences<
+              _$SyncDatabase,
+              $DeepBackfillRequestsTable,
+              DeepBackfillRequestItem
+            >,
+          ),
+          DeepBackfillRequestItem,
+          PrefetchHooks Function()
+        > {
+  $$DeepBackfillRequestsTableTableManager(
+    _$SyncDatabase db,
+    $DeepBackfillRequestsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DeepBackfillRequestsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DeepBackfillRequestsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$DeepBackfillRequestsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> targetHostId = const Value.absent(),
+                Value<int> payloadType = const Value.absent(),
+                Value<String> entryId = const Value.absent(),
+                Value<String> vectorClocks = const Value.absent(),
+                Value<DateTime> requestedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DeepBackfillRequestsCompanion(
+                targetHostId: targetHostId,
+                payloadType: payloadType,
+                entryId: entryId,
+                vectorClocks: vectorClocks,
+                requestedAt: requestedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String targetHostId,
+                required int payloadType,
+                required String entryId,
+                required String vectorClocks,
+                required DateTime requestedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => DeepBackfillRequestsCompanion.insert(
+                targetHostId: targetHostId,
+                payloadType: payloadType,
+                entryId: entryId,
+                vectorClocks: vectorClocks,
+                requestedAt: requestedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DeepBackfillRequestsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$SyncDatabase,
+      $DeepBackfillRequestsTable,
+      DeepBackfillRequestItem,
+      $$DeepBackfillRequestsTableFilterComposer,
+      $$DeepBackfillRequestsTableOrderingComposer,
+      $$DeepBackfillRequestsTableAnnotationComposer,
+      $$DeepBackfillRequestsTableCreateCompanionBuilder,
+      $$DeepBackfillRequestsTableUpdateCompanionBuilder,
+      (
+        DeepBackfillRequestItem,
+        BaseReferences<
+          _$SyncDatabase,
+          $DeepBackfillRequestsTable,
+          DeepBackfillRequestItem
+        >,
+      ),
+      DeepBackfillRequestItem,
+      PrefetchHooks Function()
+    >;
 
 class $SyncDatabaseManager {
   final _$SyncDatabase _db;
@@ -5786,4 +6419,6 @@ class $SyncDatabaseManager {
       $$QueueMarkersTableTableManager(_db, _db.queueMarkers);
   $$OnboardingSyncRoundsTableTableManager get onboardingSyncRounds =>
       $$OnboardingSyncRoundsTableTableManager(_db, _db.onboardingSyncRounds);
+  $$DeepBackfillRequestsTableTableManager get deepBackfillRequests =>
+      $$DeepBackfillRequestsTableTableManager(_db, _db.deepBackfillRequests);
 }

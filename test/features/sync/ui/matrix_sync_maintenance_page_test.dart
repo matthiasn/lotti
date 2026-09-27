@@ -106,6 +106,10 @@ void main() {
         findsOneWidget,
       );
       expect(
+        find.text(context.messages.maintenanceDeepBackfill),
+        findsOneWidget,
+      );
+      expect(
         find.text(context.messages.maintenanceRecreateFts5),
         findsNothing,
       );
@@ -203,6 +207,28 @@ void main() {
       );
     });
 
+    testWidgets('deep backfill card asks before starting a round', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildPage());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final context = tester.element(find.byType(MatrixSyncMaintenancePage));
+      await tester.tap(find.text(context.messages.maintenanceDeepBackfill));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(
+        find.text(context.messages.maintenanceDeepBackfillMessage),
+        findsOneWidget,
+      );
+      expect(
+        find.text(context.messages.maintenanceDeepBackfillConfirm),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('purge sent outbox card shows confirmation dialog', (
       tester,
     ) async {
@@ -272,8 +298,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(DesignSystemGroupedList), findsOneWidget);
-      expect(find.byType(DesignSystemListItem), findsNWidgets(5));
-      expect(find.byType(SettingsIcon), findsNWidgets(5));
+      expect(find.byType(DesignSystemListItem), findsNWidgets(6));
+      expect(find.byType(SettingsIcon), findsNWidgets(6));
     });
 
     testWidgets('shows chevron trailing icon on each item', (tester) async {
@@ -281,7 +307,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byIcon(LottiIcons.chevronRight), findsNWidgets(5));
+      expect(find.byIcon(LottiIcons.chevronRight), findsNWidgets(6));
     });
 
     testWidgets('shows correct settings icons', (tester) async {
@@ -293,6 +319,7 @@ void main() {
       expect(find.byIcon(LottiIcons.compare), findsOneWidget);
       expect(find.byIcon(LottiIcons.refresh), findsOneWidget);
       expect(find.byIcon(LottiIcons.checkAll), findsOneWidget);
+      expect(find.byIcon(LottiIcons.devices), findsOneWidget);
       expect(find.byIcon(LottiIcons.clearAll), findsOneWidget);
     });
 
@@ -357,7 +384,7 @@ void main() {
 
     // Mirrors the Advanced -> Maintenance list this page is a twin of:
     // hovering a row fades the hairlines bracketing it so the hovered row
-    // is never bisected. Five action rows -> dividers beneath rows 0..3;
+    // is never bisected. Six action rows -> dividers beneath rows 0..4;
     // the last row draws none.
     group('hover divider fade', () {
       Future<List<DesignSystemListItem>> pumpBody(WidgetTester tester) async {

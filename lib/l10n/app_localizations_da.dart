@@ -9179,6 +9179,42 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get maintenanceDeepBackfill => 'Dyb tilbagefyldning';
+
+  @override
+  String maintenanceDeepBackfillComplete(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count poster listet til dine andre enheder',
+      one: '1 post listet til dine andre enheder',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get maintenanceDeepBackfillConfirm => 'Ja, start';
+
+  @override
+  String get maintenanceDeepBackfillDescription =>
+      'Sammenlign alle poster med dine andre enheder, og udfyld hullerne';
+
+  @override
+  String get maintenanceDeepBackfillMessage =>
+      'Dette sender en liste over alle poster på denne enhed, også slettede, til dine andre enheder. Hver af dem sammenligner den med sine egne poster, beder om det, den mangler, og sender det tilbage, som denne enhed mangler. Dine andre enheder skal være online for at svare.';
+
+  @override
+  String maintenanceDeepBackfillProgress(int advertised, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: 'poster',
+      one: 'post',
+    );
+    return '$advertised af $total $_temp0 listet';
+  }
+
+  @override
   String get maintenanceDeleteAgentDb => 'Slet agentdatabase';
 
   @override
@@ -14700,6 +14736,14 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get syncPayloadDailyOsUserName => 'Daily OS-navn';
+
+  @override
+  String get syncPayloadDeepBackfillInventory =>
+      'Oversigt til dyb tilbagefyldning';
+
+  @override
+  String get syncPayloadDeepBackfillRequest =>
+      'Anmodning om dyb tilbagefyldning';
 
   @override
   String get syncPayloadEntityDefinition => 'Entitetsdefinition';

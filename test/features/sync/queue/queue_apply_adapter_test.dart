@@ -18,6 +18,7 @@ import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
 import 'package:lotti/features/sync/queue/queue_apply_adapter.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
@@ -1044,6 +1045,19 @@ void main() {
           const SyncMessage.mediaRequest(
             entryIds: ['img-1'],
             requesterId: 'host-a',
+          ),
+          // Deep backfill writes the sync database and the outbox only; the
+          // versions it sets off arrive as their own payload messages.
+          const SyncMessage.deepBackfillInventory(
+            roundId: 'round-1',
+            hostId: 'host-a',
+            payloadType: SyncSequencePayloadType.journalEntity,
+            batch: 0,
+          ),
+          const SyncMessage.deepBackfillRequest(
+            requesterId: 'host-b',
+            targetHostId: 'host-a',
+            payloadType: SyncSequencePayloadType.journalEntity,
           ),
           SyncMessage.agentWakeCoordination(
             agentId: 'agent-1',

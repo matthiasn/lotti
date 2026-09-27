@@ -40,6 +40,7 @@ import 'package:lotti/features/notifications/preferences/notification_preference
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
+import 'package:lotti/features/sync/deep_backfill/deep_backfill_service.dart';
 import 'package:lotti/features/sync/matrix/journal_entity_dedup_cache.dart';
 import 'package:lotti/features/sync/matrix/outbox_bundle_unpacker.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
@@ -67,16 +68,17 @@ export 'package:lotti/features/sync/matrix/smart_journal_entity_loader.dart';
 export 'package:lotti/features/sync/matrix/sync_journal_entity_loader.dart';
 export 'package:lotti/features/sync/matrix/vector_clock_validator.dart';
 
+part 'sync_event_processor_agent_handlers.dart';
+part 'sync_event_processor_apply.dart';
+part 'sync_event_processor_consumption_handlers.dart';
+part 'sync_event_processor_deep_backfill.dart';
+part 'sync_event_processor_descriptor_cache.dart';
 // Per-domain method bodies live in part files so they share the orchestrator's
 // private state (dedup cache, sequence log service, agent repository) without
 // dependency-injection plumbing for every collaborator.
 part 'sync_event_processor_journal_handlers.dart';
-part 'sync_event_processor_agent_handlers.dart';
-part 'sync_event_processor_descriptor_cache.dart';
 part 'sync_event_processor_notification_handlers.dart';
 part 'sync_event_processor_outbox_bundle.dart';
-part 'sync_event_processor_apply.dart';
-part 'sync_event_processor_consumption_handlers.dart';
 
 /// Sync message bodies below this base64 length are decoded inline; anything
 /// longer hands off to a worker isolate via `compute`. The break-even point
@@ -322,6 +324,11 @@ class SyncEventProcessor {
   /// responder path, in which case requests are ignored.
   MediaRequestHandler? mediaRequestHandler;
 
+  /// Diffs peers' deep-backfill inventories and answers their requests.
+  /// Assigned in `get_it_sync.dart` after the outbox exists; left null in
+  /// tests that never exercise it, in which case both are ignored.
+  DeepBackfillService? deepBackfillService;
+
   /// Receives peers' [SyncAgentWakeCoordination] broadcasts. Wired by the
   /// agent runtime; left null when agents are off, in which case the
   /// broadcasts are ignored.
@@ -522,6 +529,8 @@ class SyncEventProcessor {
     final SyncAgentBundle m => m.originatingHostId,
     final SyncOutboxBundle m => m.originatingHostId,
     final SyncAgentWakeCoordination m => m.hostId,
+    final SyncDeepBackfillInventory m => m.hostId,
+    final SyncDeepBackfillRequest m => m.requesterId,
     _ => null,
   };
 
@@ -626,6 +635,11 @@ class SyncEventProcessor {
           subDomain: 'processor.resolve.legacyAgentBundle',
         );
         return PreparedSyncEvent._(event: event, syncMessage: msg);
+      case SyncDeepBackfillInventory() || SyncDeepBackfillRequest():
+        return PreparedSyncEvent._(
+          event: event,
+          syncMessage: await _resolveDeepBackfillMessage(syncMessage),
+        );
       case final SyncOutboxBundle msg:
         final rawChildren = switch (rawMessageJson?['children']) {
           final List<dynamic> children =>
@@ -663,6 +677,11 @@ class SyncEventProcessor {
         return PreparedSyncEvent._(event: event, syncMessage: syncMessage);
     }
   }
+
+  @visibleForTesting
+  Future<SyncMessage> resolveDeepBackfillMessageForTesting(
+    SyncMessage message,
+  ) => _resolveDeepBackfillMessage(message);
 
   @visibleForTesting
   Future<SyncOutboxBundle?> resolveOutboxBundleManifestForTesting(

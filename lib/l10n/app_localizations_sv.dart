@@ -9190,6 +9190,42 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get maintenanceDeepBackfill => 'Djup återfyllning';
+
+  @override
+  String maintenanceDeepBackfillComplete(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count poster listade för dina andra enheter',
+      one: '1 post listad för dina andra enheter',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get maintenanceDeepBackfillConfirm => 'Ja, starta';
+
+  @override
+  String get maintenanceDeepBackfillDescription =>
+      'Jämför alla poster med dina andra enheter och fyll luckorna';
+
+  @override
+  String get maintenanceDeepBackfillMessage =>
+      'Detta skickar en lista över alla poster på den här enheten, även raderade, till dina andra enheter. Varje enhet jämför den med sina egna poster, begär det som saknas och skickar tillbaka det som den här enheten saknar. Dina andra enheter måste vara online för att svara.';
+
+  @override
+  String maintenanceDeepBackfillProgress(int advertised, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: 'poster listade',
+      one: 'post listad',
+    );
+    return '$advertised av $total $_temp0';
+  }
+
+  @override
   String get maintenanceDeleteAgentDb => 'Databas för borttagningsagenter';
 
   @override
@@ -14713,6 +14749,13 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncPayloadDailyOsUserName => 'Daily OS-namn';
+
+  @override
+  String get syncPayloadDeepBackfillInventory =>
+      'Förteckning för djup återfyllning';
+
+  @override
+  String get syncPayloadDeepBackfillRequest => 'Begäran om djup återfyllning';
 
   @override
   String get syncPayloadEntityDefinition => 'Entitetsdefinition';

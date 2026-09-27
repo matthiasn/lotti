@@ -428,6 +428,8 @@ class MatrixService {
       consumptionEvent: (_) => 'consumptionEvent',
       backfillRequest: (_) => 'backfillRequest',
       mediaRequest: (_) => 'mediaRequest',
+      deepBackfillInventory: (_) => 'deepBackfillInventory',
+      deepBackfillRequest: (_) => 'deepBackfillRequest',
       agentWakeCoordination: (_) => 'agentWakeCoordination',
       backfillResponse: (_) => 'backfillResponse',
       agentEntity: (_) => 'agentEntity',

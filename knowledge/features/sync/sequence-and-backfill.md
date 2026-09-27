@@ -1,12 +1,12 @@
 ---
 type: Feature Module
 title: Sequence log and backfill
-description: Causal accounting over (hostId, counter) pairs, bounded initial-onboarding suppression, and why burned and unresolvable are deliberately different.
+description: Causal accounting over (hostId, counter) pairs, bounded initial-onboarding suppression, why burned and unresolvable are deliberately different, and the deep-backfill round that repairs what counters cannot see.
 resource: ../../../lib/features/sync/sequence
-tags: [sync, sequence-log, backfill, gap-detection]
+tags: [sync, sequence-log, backfill, gap-detection, deep-backfill]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-26T00:30:00Z }
-stale_after: 2026-12-25
+generated: { by: claude-code/opus-5.5, at: 2026-09-27T16:40:00Z }
+stale_after: 2026-12-27
 sources:
   - id: sequence-heads
     resource: ../../../lib/features/sync/backfill/sync_sequence_head_tracker.dart
@@ -112,6 +112,18 @@ sources:
     resource: ../../../specs/tla/JournalReplication.tla
     title: TLA+ model of journal entry replication and conflicts
     last_modified: 2026-09-25
+  - id: deep-backfill
+    resource: ../../../lib/features/sync/deep_backfill
+    title: Deep backfill — inventory rounds, the batch diff and per-type stores
+    last_modified: 2026-09-27
+  - id: deep-backfill-spec
+    resource: ../../../specs/tla/DeepBackfill.tla
+    title: TLA+ model of the deep-backfill inventory round
+    last_modified: 2026-09-27
+  - id: deep-backfill-requests
+    resource: ../../../lib/database/sync_db_deep_backfill.dart
+    title: Outstanding deep-backfill requests (sync DB v31)
+    last_modified: 2026-09-27
   - id: adr-0083
     resource: ../../../docs/adr/0083-model-checked-journal-replication.md
     title: ADR 0083 — model-checked journal replication
@@ -669,6 +681,97 @@ The hint and payload may arrive in either order. A first-arriving hint remains
 available. The later receive path verifies it with the decoded payload clock;
 an already-present payload is verified immediately. Duplicate hint, payload,
 and replay processing does not downgrade a resolved row.
+
+# Deep backfill
+
+Counter backfill can only repair a hole between `(hostId, counter)` pairs a
+device has recorded, and a responder only answers a counter its own log maps
+to a payload. History an installation never recorded — the populate sweep
+records only each row's current clock, gap detection skips hosts it has not
+seen, and a record a device never heard of leaves no counter to be missing —
+is out of its reach. Deep backfill compares the records themselves. It is a
+manual round, started from *Settings → Sync → Maintenance*, and the protocol
+is model-checked in [`specs/tla/DeepBackfill.tla`](../../../specs/tla/DeepBackfill.tla)
+before it was built; its README section lists the nine design rules and the
+counterexample each prevents.
+
+`DeepBackfillService.runRound` pages every registered store by id and
+enqueues `SyncMessage.deepBackfillInventory` batches of
+`SyncTuning.deepBackfillBatchSize` records, each record an id and its clock —
+tombstones included, since a deletion is a clocked version. A batch also
+names its id range `[rangeStart, rangeEnd)` and the open conflict versions in
+it. **The ranges of a round tile the whole keyspace**: the first is unbounded
+below, the last above, each starts where the previous ended (a one-row
+lookahead reads the next page's first id), and a store without rows sends one
+empty batch covering everything. Only then can a peer tell "the advertiser
+has no row for this" from "this record is in another batch".
+
+```mermaid
+sequenceDiagram
+  participant A as Advertiser
+  participant B as Peer
+  A->>B: deepBackfillInventory (ids, clocks, range, open conflicts)
+  Note over B: one range read per table,<br/>diffDeepBackfillBatch in memory
+  B->>A: deepBackfillRequest (ids B lacks or holds older/concurrent)
+  B-->>A: payloads B holds newer, concurrent, or alone (push)
+  A-->>B: current row and open conflicts of each requested id (answer)
+  Note over A,B: every payload goes through the type's own write decision
+```
+
+Each peer diffs a batch in `DeepBackfillService.handleInventory`: one range
+query per table (`DeepBackfillStore.range`, a primary-key scan) and, for
+journal entries, one over open conflicts; then `diffDeepBackfillBatch`
+decides in memory. There is no per-record lookup.
+
+| This device holds | Advertised | Action |
+|-------------------|------------|--------|
+| no row, a clockless row, or an older version | a version | request it |
+| a newer version | a version | push it |
+| a concurrent version | a version | request theirs and push ours, unless either side already holds the other as an open conflict |
+| any row | nothing, inside the range | push it, with media |
+| — | an open conflict version this device does not keep | request it |
+| an open conflict version the advertiser does not keep | — | push it |
+
+Conflict versions travel like rows: a concurrent version held on one device
+only as an open conflict would otherwise never reach a third device whose row
+equals the others'. The journal send path serves a queued version that the
+row does not cover from the entry's open conflict of exactly that version
+(`JournalDb.openConflictVersion`), which is how an answer or push carries it.
+
+A request goes only to the advertiser, and only it answers
+(`handleRequest`), with the current row of each record — a deletion as much
+as a live one — through the ordinary payload message of its type
+(`DeepBackfillStore.enqueueCurrent`). Answers and pushes are ordinary sync
+messages, received through each type's existing write decision; nothing on
+the receive side is new.
+
+**Outstanding requests** are rows of `deep_backfill_requests` (sync DB v31),
+keyed by advertiser, payload type and id, holding the clocks asked for. They
+are durable, so a restart does not ask twice, and a record is not requested
+again while one is open. An answer carries nothing that ties it to its
+request — a payload's `originatingHostId` names the version's origin — so a
+request is **settled by coverage**: once the local row or an open conflict
+covers every clock it asked for, whoever delivered it. Settlement runs when
+the next batch from that advertiser is diffed, which is the only moment the
+outstanding set decides anything. A request expires after
+`SyncTuning.deepBackfillRequestExpiry`, and the rows are recorded before the
+request is enqueued, so a crash in between delays a record rather than
+asking for it twice.
+
+A batch sent on its own carries its record lists in a gzipped attachment
+under `/deep_backfill/` (`MatrixPayloadSender.sendDeepBackfillPayload`); the
+receiver's prepare step loads them and clears the attachment. Inside an
+outbox bundle the lists ride inline in the bundle's own manifest. A message
+whose lists could not be loaded still names its attachment, and the service
+ignores it — an empty inventory would read as "the advertiser holds nothing
+in this range" and push the whole range back.
+
+The stores (`deep_backfill_stores.dart`) cover journal entries, entry links,
+notifications and AI consumption events from the start; agent entities and
+links join when the agent repository is wired (`wireSyncEventProcessor`).
+Rows without a clock are not advertised: they cannot be ordered against
+anything. The sequence log is not reconstructed — a deep-backfilled version
+is recorded like any received payload.
 
 # Two statistics paths, on purpose
 

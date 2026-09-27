@@ -189,6 +189,18 @@ const outboxBundlesSegment = '/outbox_bundles/';
 /// Path segment for synced notification payload files.
 const notificationsSegment = '/notifications/';
 
+/// Segment under which deep-backfill inventory and request record lists are
+/// uploaded. Like outbox bundles they have no persistent identity: each
+/// upload gets a fresh UUID-named path.
+const deepBackfillSegment = '/deep_backfill/';
+
+/// Returns the documents-directory-relative path for the record lists of a
+/// deep-backfill message, including a leading `/`. Uses
+/// `/deep_backfill/<uploadId>.json`.
+String relativeDeepBackfillPath(String uploadId) {
+  return '$deepBackfillSegment${Uri.encodeComponent(uploadId)}.json';
+}
+
 /// Returns `true` if [relativePath] points to an agent sync payload file.
 ///
 /// Entity/link payloads use the entity ID in the path and can be legitimately

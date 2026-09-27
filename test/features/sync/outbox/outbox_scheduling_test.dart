@@ -8,6 +8,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/outbox/outbox_scheduling.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
@@ -28,6 +29,8 @@ enum _GeneratedPriorityMessageKind {
   backfillRequest,
   backfillResponse,
   mediaRequest,
+  deepBackfillInventory,
+  deepBackfillRequest,
   agentWakeCoordination,
   agentEntity,
   agentLink,
@@ -171,6 +174,19 @@ class _GeneratedPriorityScenario {
         ],
         requesterId: 'requester-$counterSlot',
       ),
+      _GeneratedPriorityMessageKind.deepBackfillInventory =>
+        SyncMessage.deepBackfillInventory(
+          roundId: 'round-$counterSlot',
+          hostId: 'host-$counterSlot',
+          payloadType: SyncSequencePayloadType.journalEntity,
+          batch: counterSlot,
+        ),
+      _GeneratedPriorityMessageKind.deepBackfillRequest =>
+        SyncMessage.deepBackfillRequest(
+          requesterId: 'requester-$counterSlot',
+          targetHostId: 'host-$counterSlot',
+          payloadType: SyncSequencePayloadType.entryLink,
+        ),
       _GeneratedPriorityMessageKind.agentWakeCoordination =>
         SyncMessage.agentWakeCoordination(
           agentId: 'agent-$counterSlot',
@@ -261,6 +277,9 @@ class _GeneratedPriorityScenario {
       _GeneratedPriorityMessageKind.backfillRequest ||
       _GeneratedPriorityMessageKind.backfillResponse ||
       _GeneratedPriorityMessageKind.mediaRequest ||
+      // A manual maintenance round stays behind the user's own writes.
+      _GeneratedPriorityMessageKind.deepBackfillInventory ||
+      _GeneratedPriorityMessageKind.deepBackfillRequest ||
       _GeneratedPriorityMessageKind.agentEntity ||
       _GeneratedPriorityMessageKind.agentLink ||
       _GeneratedPriorityMessageKind.agentBundle ||

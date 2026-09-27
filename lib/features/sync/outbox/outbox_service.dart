@@ -534,6 +534,16 @@ class MatrixOutboxService extends _OutboxServiceBase
           msg: msg,
           commonFields: commonFields,
         ),
+        final SyncDeepBackfillInventory msg =>
+          _enqueueWriter.enqueueDeepBackfillInventory(
+            msg: msg,
+            commonFields: commonFields,
+          ),
+        final SyncDeepBackfillRequest msg =>
+          _enqueueWriter.enqueueDeepBackfillRequest(
+            msg: msg,
+            commonFields: commonFields,
+          ),
         final SyncAgentWakeCoordination msg =>
           _enqueueWriter.enqueueAgentWakeCoordination(
             msg: msg,

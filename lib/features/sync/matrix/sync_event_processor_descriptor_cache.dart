@@ -37,6 +37,11 @@ extension _DescriptorCache on SyncEventProcessor {
         :final jsonPath,
       ) =>
         (attachmentEventId, jsonPath),
+      SyncDeepBackfillInventory(:final attachmentEventId, :final jsonPath) ||
+      SyncDeepBackfillRequest(:final attachmentEventId, :final jsonPath) => (
+        attachmentEventId,
+        jsonPath,
+      ),
       _ => (null, null),
     };
     final index = _attachmentIndex;

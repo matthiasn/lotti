@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
 import 'sync_message_test_helpers.dart';
@@ -94,6 +95,80 @@ void main() {
       };
 
       expect(SyncMessage.fromJson(wire).toJson(), wire);
+    });
+  });
+
+  group('deep backfill messages', () {
+    SyncMessage roundTrip(SyncMessage message) => SyncMessage.fromJson(
+      jsonDecode(jsonEncode(message.toJson())) as Map<String, dynamic>,
+    );
+
+    test('an inventory batch round-trips its range, records and conflicts', () {
+      const message = SyncMessage.deepBackfillInventory(
+        roundId: 'round-1',
+        hostId: 'host-a',
+        payloadType: SyncSequencePayloadType.consumptionEvent,
+        batch: 2,
+        rangeStart: 'b',
+        rangeEnd: 'k',
+        records: [
+          DeepBackfillRecord(id: 'c', vectorClock: VectorClock({'a': 3})),
+        ],
+        conflicts: [
+          DeepBackfillRecord(
+            id: 'c',
+            vectorClock: VectorClock({'a': 2, 'b': 1}),
+          ),
+        ],
+      );
+
+      final decoded = roundTrip(message);
+
+      expect(decoded, message);
+      expect(
+        (message.toJson()['records'] as List<dynamic>).first,
+        isA<Map<String, dynamic>>(),
+        reason: 'nested records serialise as JSON, not as objects',
+      );
+    });
+
+    test('an inventory without ranges or lists reads as unbounded and '
+        'empty', () {
+      final decoded =
+          SyncMessage.fromJson(const {
+                'runtimeType': 'deepBackfillInventory',
+                'roundId': 'round-1',
+                'hostId': 'host-a',
+                'payloadType': 'journalEntity',
+                'batch': 0,
+              })
+              as SyncDeepBackfillInventory;
+
+      expect(decoded.rangeStart, isNull);
+      expect(decoded.rangeEnd, isNull);
+      expect(decoded.records, isEmpty);
+      expect(decoded.conflicts, isEmpty);
+    });
+
+    test('a request round-trips its target and records, absent defaulting '
+        'to false', () {
+      const message = SyncMessage.deepBackfillRequest(
+        requesterId: 'host-b',
+        targetHostId: 'host-a',
+        payloadType: SyncSequencePayloadType.agentLink,
+        records: [
+          DeepBackfillRequestRecord(id: 'x', absent: true),
+          DeepBackfillRequestRecord(id: 'y'),
+        ],
+        jsonPath: '/deep_backfill/u.json',
+        attachmentEventId: r'$u',
+      );
+
+      expect(roundTrip(message), message);
+      expect(
+        DeepBackfillRequestRecord.fromJson(const {'id': 'y'}).absent,
+        isFalse,
+      );
     });
   });
 

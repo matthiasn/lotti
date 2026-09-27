@@ -876,6 +876,52 @@ void main() {
       );
 
       test(
+        'openConflictVersion returns the open conflict of exactly the '
+        'version asked for, and nothing once a covering write settles it',
+        () async {
+          final stored = createJournalEntryWithVclock(
+            const VectorClock({'device-a': 2}),
+          );
+          await db!.updateJournalEntity(stored);
+          final concurrent = createJournalEntryWithVclock(
+            const VectorClock({'device-a': 1, 'device-b': 1}),
+            id: stored.meta.id,
+          ).copyWith(entryText: const EntryText(plainText: 'from B'));
+          await db!.updateJournalEntity(concurrent);
+
+          final found = await db!.openConflictVersion(
+            stored.meta.id,
+            concurrent.meta.vectorClock!,
+          );
+          expect(found?.entryText?.plainText, 'from B');
+          expect(found?.meta.vectorClock, concurrent.meta.vectorClock);
+          expect(
+            await db!.openConflictVersion(
+              stored.meta.id,
+              stored.meta.vectorClock!,
+            ),
+            isNull,
+            reason: 'the row is not a conflict',
+          );
+
+          await db!.updateJournalEntity(
+            createJournalEntryWithVclock(
+              const VectorClock({'device-a': 3, 'device-b': 1}),
+              id: stored.meta.id,
+            ),
+          );
+          expect(
+            await db!.openConflictVersion(
+              stored.meta.id,
+              concurrent.meta.vectorClock!,
+            ),
+            isNull,
+            reason: 'a resolved conflict is not served',
+          );
+        },
+      );
+
+      test(
         "two devices through the real services: a new device's first edit "
         'of a synced entry is saved there and applied on the device it came '
         'from (ADR 0080)',

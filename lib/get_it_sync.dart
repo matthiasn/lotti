@@ -364,6 +364,35 @@ Future<String? Function()> _registerMatrixSyncStack({
       loggingService: domainLogger,
     );
 
+  // Deep backfill: a manual round that repairs history the sequence log
+  // cannot see. Agent records join when the agent repository is wired
+  // (`wireSyncEventProcessor`), as for counter backfill.
+  final deepBackfillService = DeepBackfillService(
+    syncDatabase: syncDatabase,
+    outboxService: outboxService,
+    vectorClockService: vectorClockService,
+    loggingService: domainLogger,
+    stores: [
+      JournalDeepBackfillStore(
+        journalDb: journalDb,
+        outboxService: outboxService,
+      ),
+      entryLinkDeepBackfillStore(
+        journalDb: journalDb,
+        outboxService: outboxService,
+      ),
+      notificationDeepBackfillStore(
+        notificationsDb: notificationsDb,
+        outboxService: outboxService,
+      ),
+      consumptionDeepBackfillStore(
+        consumptionDatabase: getIt<ConsumptionDatabase>(),
+        outboxService: outboxService,
+      ),
+    ],
+  );
+  syncEventProcessor.deepBackfillService = deepBackfillService;
+
   // Start the backfill request service
   backfillRequestService.start();
 
@@ -378,6 +407,7 @@ Future<String? Function()> _registerMatrixSyncStack({
       dispose: (service) => service.stopAndDrain(),
     )
     ..registerSingleton<OnboardingSyncService>(onboardingSyncService)
+    ..registerSingleton<DeepBackfillService>(deepBackfillService)
     ..registerSingleton<MediaRepairService>(
       mediaRepairService,
       dispose: (service) => service.dispose(),
