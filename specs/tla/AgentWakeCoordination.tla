@@ -12,9 +12,11 @@
 (*   - on success it broadcasts done(h), on failure or abort release(h);   *)
 (*   - a peer's h covers a device when it holds every edit that device's   *)
 (*     own state holds: the peer's run reads all of it, and maybe more;    *)
-(*   - a device covered by a live peer claim does not dispatch; the claim  *)
-(*     lapses Timeout after it was last received, and every message from   *)
-(*     that peer re-arms it;                                               *)
+(*   - a device covered by a live peer claim drops its pending wake: a    *)
+(*     started run is trusted to finish, and one that fails or crashes     *)
+(*     stays owed on its own device, whose retry covers the dropped edits; *)
+(*     the claim lapses Timeout after it was last received, and every      *)
+(*     message from that peer re-arms it;                                  *)
 (*   - a device covered by a peer's done(h) drops its pending wake: the    *)
 (*     peer already processed everything it holds. The states of a peer's  *)
 (*     completed runs are kept apart from its live claim, so its next      *)
@@ -73,7 +75,8 @@ CONSTANTS
     ReArmOnMessage,  \* every received message restarts the timer
     DoneCancels,     \* done(h) cancels a matching pending wake
     ClaimsLapse,     \* a claim no message re-arms lapses after Timeout
-    KeepDoneHistory  \* a peer's done digests outlive its next claim
+    KeepDoneHistory, \* a peer's done digests outlive its next claim
+    ClaimCancels     \* a live covering claim drops the wake; FALSE: it waits
 
 ASSUME Timeout > Heartbeat + MaxDelay
 
@@ -97,13 +100,15 @@ VARIABLES
                 \* age counted from the run's claim
     dup,        \* ghost: a run started over a peer's known run
     okHashes,   \* ghost: every digest some successful run processed
-    cancels,    \* ghost: every cancelled wake's digest
+    cancels,    \* ghost: every state a peer's done dropped a wake over
+    handovers,  \* ghost: every state a live peer claim dropped a wake over
+    started,    \* ghost: every state some run was dispatched over
     failures,
     crashes,
     losses
 
 vars == <<nextEdit, seen, pending, run, peer, chan, ok, dup, okHashes,
-          cancels, failures, crashes, losses>>
+          cancels, handovers, started, failures, crashes, losses>>
 
 Pairs == {<<s, r>> \in Devices \X Devices : s # r}
 
@@ -118,6 +123,8 @@ Init ==
     /\ dup = FALSE
     /\ okHashes = {}
     /\ cancels = {}
+    /\ handovers = {}
+    /\ started = {}
     /\ failures = 0
     /\ crashes = 0
     /\ losses = 0
@@ -166,7 +173,7 @@ Edit(d) ==
     /\ seen' = [seen EXCEPT ![d] = @ \cup {nextEdit}]
     /\ pending' = [pending EXCEPT ![d] = TRUE]
     /\ nextEdit' = nextEdit + 1
-    /\ UNCHANGED <<run, peer, chan, ok, dup, okHashes, cancels, failures,
+    /\ UNCHANGED <<run, peer, chan, ok, dup, okHashes, cancels, handovers, started, failures,
                    crashes, losses>>
 
 \* Journal replication: d receives s's state. Sync-originated changes do
@@ -177,7 +184,7 @@ SyncEdits(s, d) ==
     /\ seen' = [seen EXCEPT ![d] = @ \cup seen[s]]
     /\ \E w \in IF WakeOnSync THEN BOOLEAN ELSE {FALSE} :
           pending' = [pending EXCEPT ![d] = @ \/ w]
-    /\ UNCHANGED <<nextEdit, run, peer, chan, ok, dup, okHashes, cancels,
+    /\ UNCHANGED <<nextEdit, run, peer, chan, ok, dup, okHashes, cancels, handovers, started,
                    failures, crashes, losses>>
 
 ----------------------------------------------------------------------------
@@ -189,20 +196,27 @@ Dispatch(d) ==
     /\ ~Covered(d)
     /\ ~Blocked(d)
     /\ dup' = (dup \/ KnownRun(d))
+    /\ started' = started \cup {seen[d]}
     /\ run' = [run EXCEPT ![d] = [live |-> TRUE, hash |-> seen[d],
                                   age |-> 0, beat |-> 0]]
     /\ pending' = [pending EXCEPT ![d] = FALSE]
     /\ Broadcast(d, "claim", seen[d])
-    /\ UNCHANGED <<nextEdit, seen, peer, ok, okHashes, cancels, failures,
-                   crashes, losses>>
+    /\ UNCHANGED <<nextEdit, seen, peer, ok, okHashes, cancels, handovers,
+                   failures, crashes, losses>>
 
 Cancel(d) ==
     /\ pending[d]
     /\ ~run[d].live
-    /\ Covered(d)
+    /\ \/ /\ Covered(d)
+          /\ cancels' = cancels \cup {seen[d]}
+          /\ UNCHANGED handovers
+       \/ /\ ~Covered(d)
+          /\ ClaimCancels
+          /\ Blocked(d)
+          /\ handovers' = handovers \cup {seen[d]}
+          /\ UNCHANGED cancels
     /\ pending' = [pending EXCEPT ![d] = FALSE]
-    /\ cancels' = cancels \cup {seen[d]}
-    /\ UNCHANGED <<nextEdit, seen, run, peer, chan, ok, dup, okHashes,
+    /\ UNCHANGED <<nextEdit, seen, run, peer, chan, ok, dup, okHashes, started,
                    failures, crashes, losses>>
 
 Beat(d) ==
@@ -211,7 +225,7 @@ Beat(d) ==
     /\ run[d].beat >= Heartbeat
     /\ run' = [run EXCEPT ![d].beat = 0]
     /\ Broadcast(d, "claim", run[d].hash)
-    /\ UNCHANGED <<nextEdit, seen, pending, peer, ok, dup, okHashes, cancels,
+    /\ UNCHANGED <<nextEdit, seen, pending, peer, ok, dup, okHashes, cancels, handovers, started,
                    failures, crashes, losses>>
 
 Complete(d) ==
@@ -223,7 +237,7 @@ Complete(d) ==
                                  ELSE run[d].age]}]
     /\ okHashes' = okHashes \cup {run[d].hash}
     /\ Broadcast(d, "done", run[d].hash)
-    /\ UNCHANGED <<nextEdit, seen, pending, peer, dup, cancels, failures,
+    /\ UNCHANGED <<nextEdit, seen, pending, peer, dup, cancels, handovers, started, failures,
                    crashes, losses>>
 
 \* A failed or aborted run: its triggers stay owed (WakeRuntime NoLostWake).
@@ -234,7 +248,7 @@ Fail(d) ==
     /\ run' = [run EXCEPT ![d] = NoRun]
     /\ pending' = [pending EXCEPT ![d] = TRUE]
     /\ Broadcast(d, "release", run[d].hash)
-    /\ UNCHANGED <<nextEdit, seen, peer, ok, dup, okHashes, cancels, crashes,
+    /\ UNCHANGED <<nextEdit, seen, peer, ok, dup, okHashes, cancels, handovers, started, crashes,
                    losses>>
 
 \* Process death and restart. The durable outbox keeps what was sent; the
@@ -245,7 +259,7 @@ Crash(d) ==
     /\ pending' = [pending EXCEPT ![d] = @ \/ run[d].live]
     /\ run' = [run EXCEPT ![d] = NoRun]
     /\ peer' = [peer EXCEPT ![d] = [p \in Devices |-> Fresh]]
-    /\ UNCHANGED <<nextEdit, seen, chan, ok, dup, okHashes, cancels, failures,
+    /\ UNCHANGED <<nextEdit, seen, chan, ok, dup, okHashes, cancels, handovers, started, failures,
                    losses>>
 
 ----------------------------------------------------------------------------
@@ -270,7 +284,7 @@ Deliver(s, d) ==
                        [] m.kind = "release" ->
                             [Fresh EXCEPT !.done = old.done]]
     /\ chan' = [chan EXCEPT ![<<s, d>>] = Tail(@)]
-    /\ UNCHANGED <<nextEdit, seen, pending, run, ok, dup, okHashes, cancels,
+    /\ UNCHANGED <<nextEdit, seen, pending, run, ok, dup, okHashes, cancels, handovers, started,
                    failures, crashes, losses>>
 
 Lose(s, d) ==
@@ -280,7 +294,7 @@ Lose(s, d) ==
     /\ losses' = losses + 1
     /\ chan' = [chan EXCEPT ![<<s, d>>] = Tail(@)]
     /\ UNCHANGED <<nextEdit, seen, pending, run, peer, ok, dup, okHashes,
-                   cancels, failures, crashes>>
+                   cancels, handovers, started, failures, crashes>>
 
 \* One unit of time passes. It cannot pass a message's delivery bound, a
 \* live run's cap, or a heartbeat that is due.
@@ -304,7 +318,7 @@ Tick ==
                   ELSE peer[d][p]]]
     /\ ok' = [d \in Devices |-> {[r EXCEPT !.age = Inc(@)] : r \in ok[d]}]
     /\ <<chan', run', peer', ok'>> # <<chan, run, peer, ok>>
-    /\ UNCHANGED <<nextEdit, seen, pending, dup, okHashes, cancels, failures,
+    /\ UNCHANGED <<nextEdit, seen, pending, dup, okHashes, cancels, handovers, started, failures,
                    crashes, losses>>
 
 Next ==
@@ -363,8 +377,12 @@ CancelCovered == \A c \in cancels : \E h \in okHashes : c \subseteq h
 \* lost.
 OwedWakeSettles == \A d \in Devices : pending[d] ~> ~pending[d]
 
+\* A wake dropped on a live claim was covered by a run that started.
+HandoverCovered == \A c \in handovers : \E h \in started : c \subseteq h
+
 \* Every edit is eventually processed by a successful run whose state
-\* includes it, on some device.
+\* includes it, on some device — also an edit whose wake was handed over to
+\* a run that then failed or crashed: that run's own wake stays owed.
 NoLostEdit ==
     \A e \in Edits : (e < nextEdit) ~> (\E h \in okHashes : e \in h)
 =============================================================================

@@ -115,8 +115,7 @@ flowchart TD
   Content -->|skip| Wait["Leave agent dormant until content exists"]
   Content -->|run| Coord{"Does a peer's run cover this device?"}
   Coord -->|a completed one| Covered["Drop job, intent settled as covered"]
-  Coord -->|a running one| Defer["Hold back until the claim ends or lapses"]
-  Defer --> Capacity
+  Coord -->|a running one| HandedOver["Drop job; its done marks the report fresh"]
   Coord -->|no| Claim["Broadcast claim(watermark)"]
   Claim --> Persist["Persist wake_run_log row"]
   Persist --> Exec["Dispatch workflow by agent kind in a capacity slot"]
@@ -591,21 +590,23 @@ device-local and not inputs (ADR 0093). Agent kinds without an inputs reader
 run uncoordinated.
 
 The drain asks the coordinator after the content gate. **Cancel** when a peer
-completed a run covering this device: the job is dropped and its intent
-settled, since the peer's run covers its triggers. If that run refreshed its
+completed, or is running, a wake covering this device: the job is dropped and
+its intent settled, since the peer's run covers its triggers
+([ADR 0109](../../../docs/adr/0109-a-running-peer-wake-covers-at-once.md)). A
+started run is trusted to finish; one that fails stays owed on its own device,
+and its retry covers what was handed to it. If a completed run refreshed its
 report — `done` carries the verdict — this device's report is marked fresh as
-of the check, since the run read everything this device holds.
+of the check. A wake handed to a running one is remembered, and
+`WakeDrainEngine.settleHandOver` marks the report fresh when a covering `done`
+arrives; until then the report stays outdated.
 The drain does not wait for the countdown to find out: every peer event that
-can free a job (`AgentWakeCoordinator.onPeerStateChanged`, wired to
-`WakeOrchestrator.onPeerWakeStateChanged`) has the next drain check that
+can cover or free a job — a claim that is new or changes coverage, a `done`,
+a release, a lapse (`AgentWakeCoordinator.onPeerStateChanged`, wired to
+`WakeOrchestrator.onPeerWakeStateChanged`) — has the next drain check that
 agent's queued wake even while its throttle runs. A covered wake is dropped
-there, its countdown cleared and its outdated label with it; any other stays
-held back by the throttle. **Defer** while a live
-peer claim covers it: the job is held back and the coordinator asks for a
-drain when that claim ends, lapses, or is replaced by a claim with another
-watermark — every event that can free the job. **Proceed** otherwise — a write
-the peer's run lacks is new work — and broadcast `claim`, repeated every 45
-seconds while the run lives. A successful run broadcasts `done`; `_executeJob`'s
+there, its countdown cleared with it; any other stays held back by the
+throttle. **Proceed** otherwise — a write the peer's run lacks is new work —
+and broadcast `claim`, repeated every 45 seconds while the run lives. A successful run broadcasts `done`; `_executeJob`'s
 outer `finally` broadcasts `release` for any run that ended otherwise, which
 is a no-op after `done`. A wake the user asked for explicitly is never
 deferred or cancelled, but still claims.

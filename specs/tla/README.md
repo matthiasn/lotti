@@ -2830,33 +2830,37 @@ One task agent, replicated on two devices, each waking it on its own local
 edits; a synced audio entry may also queue a wake on the receiver
 (`WakeOnSync`). A device that dispatches a wake broadcasts a claim with the
 state it reads and repeats it every heartbeat. A peer's state covers a device
-when it holds every edit the device holds; a covered device defers while that
-claim is live, and drops its wake when the claimer's `done` arrives. A device
-holding an edit the peer's state lacks has new work. Claims lapse `Timeout`
+when it holds every edit the device holds; a covered device drops its wake,
+whether the claimer's run is still live or its `done` has arrived. A started
+run is trusted to finish: one that fails or crashes stays owed on its own
+device, and its retry covers what it was handed. A device holding an edit the
+peer's state lacks has new work. Claims lapse `Timeout`
 after the last message from the peer. The model carries relative time —
 message ages, the time left on each claim, run ages — so the state space is
 finite without an absolute clock; messages are delivered within `MaxDelay`,
 in order per sender. A state is the set of edits a device holds and covering
 is the subset relation; the code decides it from a watermark of vector-clock
 counters. The decisions are
-[ADR 0090](../../docs/adr/0090-cross-device-agent-wake-coordination.md) and
-[ADR 0091](../../docs/adr/0091-wake-coordination-by-vector-clock-coverage.md);
+[ADR 0090](../../docs/adr/0090-cross-device-agent-wake-coordination.md),
+[ADR 0091](../../docs/adr/0091-wake-coordination-by-vector-clock-coverage.md)
+and [ADR 0109](../../docs/adr/0109-a-running-peer-wake-covers-at-once.md);
 the runtime is described in
 [wake orchestration](../../knowledge/features/agents/wake-orchestration.md#one-device-per-state-cross-device-coordination).
 
 | Property | Kind | Says |
 |----------|------|------|
 | `Exclusive` | invariant | no run starts over a state that a peer's live or successful run covers, once the peer's claim has certainly arrived |
-| `CancelCovered` | invariant | a wake is dropped only when some device completed a run over a state holding every edit the dropping device holds |
-| `NoLostEdit` | liveness | every edit is eventually processed by a successful run whose state includes it |
+| `CancelCovered` | invariant | a wake a `done` dropped was covered by a run that completed over a state holding every edit the dropping device holds |
+| `HandoverCovered` | invariant | a wake a live claim dropped was covered by a run that started over such a state |
+| `NoLostEdit` | liveness | every edit is eventually processed by a successful run whose state includes it — also one handed to a run that then failed or crashed |
 | `OwedWakeSettles` | liveness | every owed wake is eventually run or cancelled: waiting never deadlocks |
 
 | Configuration | Devices | Edits | Failures | Crashes | Losses | Checks | Distinct states |
 |---------------|---------|-------|----------|---------|--------|--------|-----------------|
-| `AgentWakeCoordination` | 2 | 2 | 0 | 0 | 0 | all | 215,434 |
-| `AgentWakeCoordinationFailure` | 2 | 2 | 1 | 0 | 0 | all | 1,207,325 |
-| `AgentWakeCoordinationCrash` | 2 | 2 | 0 | 1 | 0 | all but `Exclusive` | 1,764,793 |
-| `AgentWakeCoordinationLossy` | 2 | 2 | 0 | 0 | 1 | all but `Exclusive` | 965,300 |
+| `AgentWakeCoordination` | 2 | 2 | 0 | 0 | 0 | all | 242,096 |
+| `AgentWakeCoordinationFailure` | 2 | 2 | 1 | 0 | 0 | all | 1,465,310 |
+| `AgentWakeCoordinationCrash` | 2 | 2 | 0 | 1 | 0 | all but `Exclusive` | 2,100,423 |
+| `AgentWakeCoordinationLossy` | 2 | 2 | 0 | 0 | 1 | all but `Exclusive` | 1,076,466 |
 
 The timer is four units, the heartbeat two, the delivery delay one and the
 run cap five: runs outlast the timer, so the heartbeat carries them, and the
