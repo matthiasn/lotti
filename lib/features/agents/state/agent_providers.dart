@@ -384,6 +384,7 @@ AgentWakeCoordinator agentWakeCoordinator(Ref ref) {
       return taskWakeInputs(
         journalDb: ref.read(journalDbProvider),
         agentRepository: repository,
+        agentId: agentId,
         taskId: taskId,
       );
     },

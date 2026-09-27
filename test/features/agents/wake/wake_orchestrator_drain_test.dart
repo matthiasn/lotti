@@ -1788,6 +1788,7 @@ void main() {
           'entry:task-1': VectorClock({'this-device': counter}),
         },
         readsPrivate: false,
+        definitions: 'sha256-v1:definitions',
       );
 
       late int counter;
@@ -1856,6 +1857,7 @@ void main() {
                 kind: kind,
                 watermark: const {'this-device': 3},
                 readsPrivate: false,
+                definitionsDigest: 'sha256-v1:definitions',
                 runKey: 'peer-run',
                 hostId: 'peer-device',
                 sentAt: clock.now(),

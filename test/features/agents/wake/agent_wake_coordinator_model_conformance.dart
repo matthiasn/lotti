@@ -139,6 +139,7 @@ class _CoordinationTrace {
         }),
     },
     readsPrivate: false,
+    definitions: _definitions,
   );
 
   Map<String, int> watermarkOf(_TraceDevice device) {

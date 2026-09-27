@@ -1050,6 +1050,7 @@ void main() {
             kind: AgentWakeCoordinationKind.claim,
             watermark: const {'host-a': 7},
             readsPrivate: false,
+            definitionsDigest: 'sha256-v1:definitions',
             runKey: 'run-1',
             hostId: 'host-a',
             sentAt: DateTime(2024, 3, 15),

@@ -177,6 +177,7 @@ class _GeneratedPriorityScenario {
           kind: AgentWakeCoordinationKind.claim,
           watermark: {'host-a': counterSlot},
           readsPrivate: false,
+          definitionsDigest: 'sha256-v1:definitions',
           runKey: 'run-$counterSlot',
           hostId: 'host-$counterSlot',
           sentAt: DateTime(2024, 3, 15),

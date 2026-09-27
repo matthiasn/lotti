@@ -405,6 +405,11 @@ sealed class SyncMessage with _$SyncMessage {
     /// hides them does not cover a peer that reads them.
     required bool readsPrivate,
 
+    /// Digest of the label and category definitions the sender's context
+    /// reads. They carry no host counter, so the watermark cannot cover them;
+    /// only a peer with the same digest is covered.
+    required String definitionsDigest,
+
     /// The sender's run key, for correlation in logs.
     required String runKey,
 

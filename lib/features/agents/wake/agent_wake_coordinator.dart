@@ -25,12 +25,21 @@ typedef WakeCoordinationSender = Future<void> Function(SyncMessage message);
 /// The rows a wake reads, keyed `<kind>:<id>` for the logs, with the vector
 /// clock of each.
 class WakeInputs {
-  const WakeInputs({required this.clocks, required this.readsPrivate});
+  const WakeInputs({
+    required this.clocks,
+    required this.readsPrivate,
+    required this.definitions,
+  });
 
   final Map<String, VectorClock?> clocks;
 
   /// Whether this device's context includes private entries.
   final bool readsPrivate;
+
+  /// Digest of the inputs no watermark can cover because their versions carry
+  /// no host counter — label and category definitions. Only an equal digest
+  /// covers them.
+  final String definitions;
 
   /// Every host a write under these rows came from.
   Set<String> get hosts => {
@@ -38,20 +47,29 @@ class WakeInputs {
   };
 }
 
-/// What a run reads: every write up to [watermark], per host, and private
-/// entries if [readsPrivate]. Claims and completions carry it.
+/// What a run reads: every write up to [watermark], per host, private
+/// entries if [readsPrivate], and the definitions [definitions] digests.
+/// Claims and completions carry it.
 @immutable
 class WakeCoverage {
-  const WakeCoverage({required this.watermark, required this.readsPrivate});
+  const WakeCoverage({
+    required this.watermark,
+    required this.readsPrivate,
+    required this.definitions,
+  });
 
   final Map<String, int> watermark;
   final bool readsPrivate;
+  final String definitions;
 
   /// Why a run over this coverage would not read everything in [inputs], or
   /// `null` when it reads all of it. This is the model's `Covers`: the run's
   /// state holds every write the inputs rest on.
   String? uncovered(WakeInputs inputs) {
     if (inputs.readsPrivate && !readsPrivate) return 'private entries';
+    if (inputs.definitions != definitions) {
+      return 'label or category definitions differ';
+    }
     for (final MapEntry(:key, value: clock) in inputs.clocks.entries) {
       if (clock == null) return '${_describe(key)} has no vector clock';
       for (final MapEntry(key: host, value: counter) in clock.vclock.entries) {
@@ -69,11 +87,13 @@ class WakeCoverage {
   bool operator ==(Object other) =>
       other is WakeCoverage &&
       other.readsPrivate == readsPrivate &&
+      other.definitions == definitions &&
       const MapEquality<String, int>().equals(other.watermark, watermark);
 
   @override
   int get hashCode => Object.hash(
     readsPrivate,
+    definitions,
     const MapEquality<String, int>().hash(watermark),
   );
 }
@@ -212,6 +232,7 @@ class AgentWakeCoordinator with AgentErrorLogging {
       coverage = WakeCoverage(
         watermark: await _readWatermark(inputs.hosts),
         readsPrivate: inputs.readsPrivate,
+        definitions: inputs.definitions,
       );
     } catch (error, stackTrace) {
       // Coordination only ever saves work; failing open costs a duplicate.
@@ -334,6 +355,7 @@ class AgentWakeCoordinator with AgentErrorLogging {
             kind: kind,
             watermark: coverage.watermark,
             readsPrivate: coverage.readsPrivate,
+            definitionsDigest: coverage.definitions,
             runKey: runKey,
             hostId: hostId,
             sentAt: sentAt,
@@ -375,6 +397,7 @@ class AgentWakeCoordinator with AgentErrorLogging {
     final coverage = WakeCoverage(
       watermark: message.watermark,
       readsPrivate: message.readsPrivate,
+      definitions: message.definitionsDigest,
     );
     final now = clock.now();
     switch (message.kind) {

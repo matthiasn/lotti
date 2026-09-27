@@ -114,6 +114,12 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
     return labelDefinitionsStreamMapper(labels);
   }
 
+  /// Every live label definition, private ones included, whatever this
+  /// device's privacy toggle says.
+  Future<List<LabelDefinition>>
+  getAllLabelDefinitionsIncludingPrivate() async =>
+      labelDefinitionsStreamMapper(await allLabelDefinitions().get());
+
   Future<LabelDefinition?> getLabelDefinitionById(String id) async {
     final result = await _queryWithPrivateFilter(
       allPrivate: () => labelDefinitionById(id).get(),

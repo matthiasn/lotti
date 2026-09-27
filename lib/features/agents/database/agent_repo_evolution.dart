@@ -312,6 +312,22 @@ class AgentRepoEvolution {
     return results;
   }
 
+  /// The newest decisions on [agentId]'s proposals for [taskId], newest
+  /// first, capped at [limit] — the ledger's resolved history.
+  Future<List<ChangeDecisionEntity>> getChangeDecisions(
+    String agentId, {
+    required String taskId,
+    int limit = 50,
+  }) async {
+    final rows = await _db
+        .getChangeDecisionsForAgentAndTask(agentId, taskId, limit)
+        .get();
+    return rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<ChangeDecisionEntity>()
+        .toList();
+  }
+
   /// Build a [ProposalLedger] for [taskId] under [agentId]. See
   /// [AgentProposalLedger.getProposalLedger].
   Future<ProposalLedger> getProposalLedger(

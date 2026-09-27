@@ -2432,5 +2432,9 @@ disconnect — holds a covered wake back for up to `Timeout` from its receipt,
 even if its run has ended; the code never compares the sender's clock with
 its own. The code keeps the last eight completed runs per peer, where the
 model keeps all; a device eight completed runs behind its peer runs once
-more. And the watermark counts a counter the sync log gave up on as held, so
+more. The watermark counts a counter the sync log gave up on as held, so
 after a gap the backfill could not close it can overstate what a run read.
+And label and category definitions carry no host counter, so the code
+requires an equal digest of them on top of the subset check — a stricter
+cover, which can only cost a run
+([ADR 0093](../../docs/adr/0093-what-a-task-wake-reads.md)).

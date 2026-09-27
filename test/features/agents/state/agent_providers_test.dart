@@ -18,6 +18,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
+import 'package:lotti/features/agents/projection/content_digest.dart';
 import 'package:lotti/features/agents/projection/join_plan.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
@@ -836,6 +837,7 @@ void main() {
                 kind: AgentWakeCoordinationKind.done,
                 watermark: const {'peer-device': 3},
                 readsPrivate: false,
+                definitionsDigest: 'sha256-v1:definitions',
                 runKey: 'peer-run',
                 hostId: 'peer-device',
                 sentAt: DateTime(2024, 3, 15),
@@ -1898,6 +1900,31 @@ void main() {
       when(
         () => mockSyncDb.contiguousWatermarks({'host-self', 'peer'}),
       ).thenAnswer((_) async => {'peer': 4, 'host-self': 2});
+      when(
+        mockDb.getAllLabelDefinitionsIncludingPrivate,
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockDb.getCategoryByIdForIntegrity(any()),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getLinksTouchingIncludingDeleted(
+          {kTestAgentId},
+          type: AgentLinkTypes.templateAssignment,
+        ),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockRepo.getChangeDecisions(
+          kTestAgentId,
+          taskId: 'task-1',
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockRepo.getAttentionClaimsForTarget(
+          targetKind: 'task',
+          targetId: 'task-1',
+        ),
+      ).thenAnswer((_) async => []);
 
       final decision = await evaluate(kTestAgentId);
 
@@ -1907,9 +1934,13 @@ void main() {
         isA<WakeCoordinationProceed>().having(
           (d) => d.coverage,
           'coverage',
-          const WakeCoverage(
-            watermark: {'peer': 4, 'host-self': 9},
+          WakeCoverage(
+            watermark: const {'peer': 4, 'host-self': 9},
             readsPrivate: true,
+            definitions: ContentDigest.of({
+              'labels': <String, Object?>{},
+              'category': null,
+            }),
           ),
         ),
       );
@@ -1973,6 +2004,7 @@ void main() {
         coverage: const WakeCoverage(
           watermark: {'host-self': 9},
           readsPrivate: false,
+          definitions: 'sha256-v1:definitions',
         ),
       );
       await pumpEventQueue();

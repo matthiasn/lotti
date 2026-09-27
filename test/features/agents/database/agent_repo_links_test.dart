@@ -10,6 +10,7 @@ import 'package:lotti/features/sync/vector_clock.dart';
 
 import '../test_data/entity_factories.dart';
 import '../test_data/link_factories.dart';
+import '../test_data/soul_factories.dart';
 import '../test_data/wake_factories.dart';
 
 /// Mirror tests for [AgentRepoLinks]. They construct the collaborator directly
@@ -30,6 +31,66 @@ void main() {
 
   tearDown(() async {
     await db.close();
+  });
+
+  group('getLinksTouchingIncludingDeleted', () {
+    test(
+      'returns links of the type from or to the ids, tombstones included',
+      () async {
+        final removed = makeTestSoulAssignmentLink(
+          id: 'soul-removed',
+          fromId: 'template-1',
+          toId: 'soul-old',
+        ).copyWith(deletedAt: testDate);
+        for (final link in <model.AgentLink>[
+          makeTestSoulAssignmentLink(
+            id: 'soul-live',
+            fromId: 'template-1',
+            toId: 'soul-new',
+          ),
+          removed,
+          makeTestSoulAssignmentLink(
+            id: 'soul-other-template',
+            fromId: 'template-2',
+            toId: 'soul-new',
+          ),
+          makeTestTemplateAssignmentLink(
+            id: 'template-assignment',
+            fromId: 'template-1',
+            toId: 'agent-1',
+          ),
+        ]) {
+          await links.upsertLink(link);
+        }
+
+        final found = await links.getLinksTouchingIncludingDeleted({
+          'template-1',
+        }, type: AgentLinkTypes.soulAssignment);
+        expect(
+          found.map((l) => l.id),
+          unorderedEquals(['soul-live', 'soul-removed']),
+        );
+        expect(
+          found.singleWhere((l) => l.id == 'soul-removed').deletedAt,
+          testDate,
+        );
+
+        // Either end matches.
+        expect(
+          (await links.getLinksTouchingIncludingDeleted({
+            'soul-new',
+          }, type: AgentLinkTypes.soulAssignment)).map((l) => l.id),
+          unorderedEquals(['soul-live', 'soul-other-template']),
+        );
+        expect(
+          await links.getLinksTouchingIncludingDeleted(
+            const <String>{},
+            type: AgentLinkTypes.soulAssignment,
+          ),
+          isEmpty,
+        );
+      },
+    );
   });
 
   group('upsertLink / getLinksTo / getLinksFrom', () {

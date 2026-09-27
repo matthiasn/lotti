@@ -546,6 +546,17 @@ class AgentDatabase extends _$AgentDatabase {
     ).asyncMap(agentEntities.mapFromRow);
   }
 
+  Selectable<AgentEntity> getChangeDecisionsForAgentAndTask(
+    String agentId,
+    String taskId,
+    int limit,
+  ) => _agentEntitiesByTask(
+    agentId: agentId,
+    entityType: 'changeDecision',
+    taskId: taskId,
+    limit: limit,
+  );
+
   Selectable<AgentEntity> getPendingChangeSetsForAgentAndTask(
     String agentId,
     String taskId,

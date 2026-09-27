@@ -461,6 +461,12 @@ class AgentRepository {
     resolvedLimit: resolvedLimit,
   );
 
+  Future<List<ChangeDecisionEntity>> getChangeDecisions(
+    String agentId, {
+    required String taskId,
+    int limit = 50,
+  }) => _evolution.getChangeDecisions(agentId, taskId: taskId, limit: limit);
+
   Future<List<ChangeDecisionEntity>> getRecentDecisionsForTemplate(
     String templateId, {
     required DateTime since,
@@ -485,6 +491,11 @@ class AgentRepository {
 
   Future<List<model.AgentLink>> getLinksTo(String toId, {String? type}) =>
       _links.getLinksTo(toId, type: type);
+
+  Future<List<model.AgentLink>> getLinksTouchingIncludingDeleted(
+    Iterable<String> ids, {
+    required String type,
+  }) => _links.getLinksTouchingIncludingDeleted(ids, type: type);
 
   Future<Map<String, List<model.AgentLink>>> getLinksToMultiple(
     List<String> toIds, {

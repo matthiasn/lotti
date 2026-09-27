@@ -167,6 +167,40 @@ void main() {
 
   // ── Repository query methods ──────────────────────────────────────────────
 
+  group('getChangeDecisions', () {
+    test(
+      "returns the task's decisions, newest first, up to the limit",
+      () async {
+        for (final (id, taskId, day) in [
+          ('cd-old', 'task-a', 10),
+          ('cd-new', 'task-a', 12),
+          ('cd-other', 'task-b', 13),
+        ]) {
+          await repo.upsertEntity(
+            makeTestChangeDecision(
+              id: id,
+              taskId: taskId,
+              createdAt: DateTime(2026, 3, day),
+            ),
+          );
+        }
+
+        final all = await repo.getChangeDecisions(
+          kTestAgentId,
+          taskId: 'task-a',
+        );
+        expect(all.map((d) => d.id), ['cd-new', 'cd-old']);
+
+        final newest = await repo.getChangeDecisions(
+          kTestAgentId,
+          taskId: 'task-a',
+          limit: 1,
+        );
+        expect(newest.map((d) => d.id), ['cd-new']);
+      },
+    );
+  });
+
   group('getPendingChangeSets', () {
     test('returns pending and partiallyResolved sets for agent', () async {
       // Create change sets with various statuses.

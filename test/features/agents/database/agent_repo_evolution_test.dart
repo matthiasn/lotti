@@ -89,6 +89,37 @@ void main() {
     });
   });
 
+  group('getChangeDecisions', () {
+    test(
+      "returns one task's decisions, newest first, capped at the limit",
+      () async {
+        for (final (id, taskId, day) in [
+          ('cd-old', 'task-a', 10),
+          ('cd-new', 'task-a', 12),
+          ('cd-mid', 'task-a', 11),
+          ('cd-other', 'task-b', 13),
+        ]) {
+          await core.upsertEntity(
+            makeTestChangeDecision(
+              id: id,
+              agentId: 'agent-1',
+              taskId: taskId,
+              createdAt: DateTime(2026, 3, day),
+              vectorClock: VectorClock({'node-1': day}),
+            ),
+          );
+        }
+
+        final decisions = await evolution.getChangeDecisions(
+          'agent-1',
+          taskId: 'task-a',
+          limit: 2,
+        );
+        expect(decisions.map((d) => d.id), ['cd-new', 'cd-mid']);
+      },
+    );
+  });
+
   group('getProposalLedger (ledger hop)', () {
     test('assembles open entries from a pending change set', () async {
       await core.upsertEntity(
