@@ -1244,24 +1244,36 @@ override ranks it below both terminal statuses. What the model leaves out:
 One agent link on three replicas: written afresh (`vectorClock: null`) and
 removed (`softDeleted` of the row read) under one reused id, which covers the
 Daily OS links' deterministic ids, the planner's template assignment,
-`msgprev` edges and any link written again after a removal. Versions are
+`msgprev` edges and any link written again after a removal. With `Slot`, two
+links under fresh ids share one slot instead: a template's soul
+(`soul_assignment`) or its improver (`improver_target`), assigned, removed and
+reassigned concurrently. Versions are
 delivered in any order and any number of times. In the lossy configuration
 a delivery can also be lost, and the receiver then recovers it by backfill
 from the writer's stored version. The receive is
 `SyncEventProcessor._resolveAndPersistAgentLink`, which calls
 `resolveAgentLinkVersions`: dominance, then `updatedAt`, then the canonical
-clock. The local write is `AgentSyncService.upsertLink`. The decision is
-[ADR 0081](../../docs/adr/0081-model-checked-evolution-sessions-and-agent-links.md).
+clock. The local write is `AgentSyncService.upsertLink`, and the store is
+`AgentRepoLinks.upsertLink`, which for a slot link re-ranks the slot and
+leaves only the live link ranked first by `(createdAt, id)` visible. The
+decisions are
+[ADR 0081](../../docs/adr/0081-model-checked-evolution-sessions-and-agent-links.md)
+and, for the slot,
+[ADR 0099](../../docs/adr/0099-agent-link-slots-rank-every-assignment.md).
 
 | Property | Kind | Says |
 |----------|------|------|
 | `Converged` | invariant | once every write has reached every replica, directly or by backfill, all hold the same version |
 | `NoLostSuccessor` | invariant | a row is never a version that a version it received causally replaced: a removal is not undone by a late copy of the link |
+| `SlotConverged` | invariant | once every write has reached every replica, all show the same assignment in the slot |
+| `SuccessorOutranks` | invariant | wherever an assignment and one its writer held are both live, the assignment ranks first |
 
 | Configuration | Replicas | Writes | Losses | Clock | Distinct states |
 |---------------|----------|--------|--------|-------|-----------------|
 | `AgentLinks` | 3 | 3 | none | 0..2, 1 tick skew | 169,899 |
 | `AgentLinksLossy` | 3 | 3 | any, recovered by backfill | 0..1, 1 tick skew | 10,940,570 |
+| `AgentLinksSlot` | 3 | 3, two fresh-id assignments of one slot | none | 0..2, 1 tick skew | 237,651 |
+| `AgentLinksSlotLossy` | 3 | 3, two fresh-id assignments of one slot | any, recovered by backfill | 0..1, 1 tick skew | 7,758,650 |
 
 | Switch | Old behaviour | Counterexample |
 |--------|---------------|----------------|
@@ -1270,23 +1282,22 @@ clock. The local write is `AgentSyncService.upsertLink`. The decision is
 | `WriteSucceedsRow` | a write's clock was its own base plus this host's counter, and it overwrote the row | `Converged` with no clock skew: B links, A removes, and B links again afresh. `{B:2}` is concurrent with A's `{A:1, B:1}`, and the canonical order prefers the removal, so A and C keep the removal and B keeps the link |
 | `ClampTimestamp` | a successor's `updatedAt` could be older than its predecessor's | `Converged`: a write on a lagging clock loses to a third concurrent version that its predecessor beat |
 | `AtomicReceive` | the receive read the link and wrote the incoming version after an await | `NoLostSuccessor`, seven steps: a local write commits between the receive's read and its write and is overwritten |
+| `SlotRule` | writing a live slot assignment, local or received, tombstoned the slot's other live rows in place, with no clock bump and no sync message | `SlotConverged` in `AgentLinksSlot`, six steps: A and B assign the template's soul concurrently, each receives the other's link and keeps it, and C receives both. A shows B's soul and B shows A's |
+| `ClampCreatedAt` | a new assignment's `createdAt` was the writer's clock | `SuccessorOutranks` in `AgentLinksSlot`, two steps: one device reassigns within the same tick, and the new link ties on `createdAt` and loses the id tiebreak to the link it replaced |
 
 What the model leaves out, deliberately or as a residual:
 
-- **Two concurrent reassignments of one slot swap.** A template has at most
-  one live soul assignment, and a template has at most one improver. When a
-  live assignment arrives, `AgentRepoLinks.upsertLink` tombstones the other
-  live one locally, without a clock bump or a sync message. A copy of this
-  model with that handoff (not checked in) finds the swap in five steps: A
-  and B reassign the template's soul concurrently, each receives the
-  other's link and keeps it, and A ends with B's soul and B with A's until
-  the next assignment. The same handoff hard-deletes a row that shares the
-  slot's natural key. The fix needs a decision. The options are one
-  deterministic link id per slot, which makes the assignment a register but
-  needs a migration and a plan for older clients; a slot rule every replica
-  applies the same way, ranking assignments by `(createdAt, id)` over every
-  version known, with writers clamping `createdAt`; or emitting the
-  handoff's tombstones as synced writes.
+- **Rows the old slot handoff tombstoned in place** carry the clock of the
+  live link they replaced, so a late copy of that link cannot revive them. A
+  device that swapped before ADR 0099 keeps the swap until the next
+  assignment of the template. The model starts from empty replicas.
+- **The natural-key hard delete** of the old handoff is gone with it: schema
+  v22 lets two slot links share `(from_id, to_id, type)`. The model's links
+  carry no natural key; the repository tests cover it.
+- **The writers' clearing of the slot**
+  (`SoulTemplateOps.assignSoulToTemplate`, `unassignSoul`), which tombstones
+  every live assignment including hidden ones, is not modelled: it is
+  `Unlink` steps followed by `Link`, and convergence does not depend on it.
 - **Agent entities had the tombstone hole too.** The entity receive and its
   backfill read with `getEntity`. The addendum of ADR 0081 fixes it; the
   model is `AgentReplication`'s removal kind above.

@@ -4,9 +4,11 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/model/agent_link_slot.dart';
 import 'package:lotti/features/agents/projection/join_plan.dart';
 import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
@@ -3024,6 +3026,90 @@ void main() {
         }
       },
     );
+  });
+
+  group('AgentSyncService.upsertLink — a new slot assignment outranks the '
+      'slot (AgentLinks.tla SuccessorOutranks, ADR 0099)', () {
+    final at = DateTime(2026, 9, 24, 9);
+    late AgentTestDevice device;
+
+    setUp(() {
+      device = AgentTestDevice('host-a');
+      addTearDown(device.close);
+    });
+
+    AgentLink assignment(String id, String soulId, DateTime createdAt) =>
+        AgentLink.soulAssignment(
+          id: id,
+          fromId: 'template',
+          toId: soulId,
+          createdAt: createdAt,
+          updatedAt: createdAt,
+          vectorClock: null,
+        );
+
+    Future<List<String>> shown() async => [
+      for (final link in await device.repository.getLinksFrom(
+        'template',
+        type: AgentLinkTypes.soulAssignment,
+      ))
+        link.toId,
+    ];
+
+    test(
+      'a reassignment in the same instant, or on a clock behind the link it '
+      'replaces, is stamped just past it and shows',
+      () async {
+        await device.sync.upsertLink(assignment('first', 'soul-1', at));
+        await device.sync.upsertLink(assignment('second', 'soul-2', at));
+        expect(await shown(), ['soul-2']);
+
+        final lagging = at.subtract(const Duration(minutes: 5));
+        await device.sync.upsertLink(assignment('third', 'soul-3', lagging));
+        expect(await shown(), ['soul-3']);
+
+        final stamped = device.sentLinks.last;
+        expect(stamped.createdAt, at.add(const Duration(microseconds: 2)));
+        expect(stamped.updatedAt, stamped.createdAt);
+      },
+    );
+
+    test(
+      'a stamped createdAt keeps an updatedAt that is already later',
+      () async {
+        await device.sync.upsertLink(assignment('first', 'soul-1', at));
+        final later = at.add(const Duration(minutes: 3));
+        await device.sync.upsertLink(
+          assignment('second', 'soul-2', at).copyWith(updatedAt: later),
+        );
+
+        final stamped = device.sentLinks.last;
+        expect(stamped.createdAt, at.add(const Duration(microseconds: 1)));
+        expect(stamped.updatedAt, later);
+      },
+    );
+
+    test('a tombstone in the slot is outranked too', () async {
+      final removed = assignment('removed', 'soul-1', at);
+      await device.sync.upsertLink(removed);
+      await device.sync.upsertLink(removed.softDeleted(at));
+
+      await device.sync.upsertLink(assignment('next', 'soul-2', at));
+
+      expect(
+        device.sentLinks.last.createdAt,
+        at.add(const Duration(microseconds: 1)),
+      );
+    });
+
+    test('an assignment already newer than the slot keeps its stamp', () async {
+      final later = at.add(const Duration(hours: 1));
+      await device.sync.upsertLink(assignment('first', 'soul-1', at));
+      await device.sync.upsertLink(assignment('second', 'soul-2', later));
+
+      expect(device.sentLinks.last.createdAt, later);
+      expect(await shown(), ['soul-2']);
+    });
   });
 
   group('AgentSyncService.upsertLink — a write succeeds the stored version '

@@ -2120,6 +2120,7 @@ void main() {
               schema_version INTEGER NOT NULL DEFAULT 1
             )
           ''')
+          ..execute(_agentLinksV21Sql)
           ..execute('PRAGMA user_version = 15');
         rawDb.close();
 
@@ -2267,6 +2268,7 @@ void main() {
               malformedTimestampSerialized,
             ],
           )
+          ..execute(_agentLinksV21Sql)
           ..execute('PRAGMA user_version = 17')
           ..close();
 
@@ -2376,6 +2378,7 @@ void main() {
         )
         ..execute("INSERT INTO wake_run_log VALUES ('run-1', 1)")
         ..execute("INSERT INTO saga_log VALUES ('op-1', 'pending', 1, 1)")
+        ..execute(_agentLinksV21Sql)
         ..execute('PRAGMA user_version = 18')
         ..close();
 
@@ -2387,7 +2390,7 @@ void main() {
       addTearDown(db.close);
 
       final version = await db.customSelect('PRAGMA user_version').getSingle();
-      expect(version.read<int>('user_version'), 19);
+      expect(version.read<int>('user_version'), db.schemaVersion);
 
       final obsoleteIndexes = await db.customSelect('''
         SELECT name FROM sqlite_master
@@ -2410,6 +2413,63 @@ void main() {
         ['entity-1', 'run-1', 'op-1'],
       );
     });
+    test(
+      'v21 to v22 lets slot links share a natural key and keeps it unique '
+      'for other links',
+      () async {
+        final dbFile = path.join(testDirectory.path, agentDbFileName);
+        sqlite3.open(dbFile)
+          ..execute(_agentLinksV21Sql)
+          ..execute(
+            'CREATE UNIQUE INDEX idx_agent_links_unique_from_to_type '
+            'ON agent_links(from_id, to_id, type) '
+            "WHERE type != 'message_payload'",
+          )
+          ..execute(
+            "INSERT INTO agent_links VALUES ('sa-1', 'tpl', 'soul', "
+            "'soul_assignment', 1, 1, NULL, '{}', 1)",
+          )
+          ..execute(
+            "INSERT INTO agent_links VALUES ('ta-1', 'tpl', 'agent', "
+            "'template_assignment', 1, 1, NULL, '{}', 1)",
+          )
+          ..execute('PRAGMA user_version = 21')
+          ..close();
+
+        final db = AgentDatabase(
+          background: false,
+          documentsDirectoryProvider: () async => testDirectory,
+          tempDirectoryProvider: () async => testDirectory,
+        );
+        addTearDown(db.close);
+
+        final version = await db
+            .customSelect('PRAGMA user_version')
+            .getSingle();
+        expect(version.read<int>('user_version'), 22);
+
+        // A concurrent assignment of the same soul under another id: kept.
+        await db.customStatement(
+          "INSERT INTO agent_links VALUES ('sa-2', 'tpl', 'soul', "
+          "'soul_assignment', 2, 2, 2, '{}', 1)",
+        );
+        await expectLater(
+          db.customStatement(
+            "INSERT INTO agent_links VALUES ('ta-2', 'tpl', 'agent', "
+            "'template_assignment', 2, 2, NULL, '{}', 1)",
+          ),
+          throwsA(isA<SqliteException>()),
+        );
+        final ids = await db
+            .customSelect('SELECT id FROM agent_links ORDER BY id')
+            .get();
+        expect(ids.map((row) => row.read<String>('id')), [
+          'sa-1',
+          'sa-2',
+          'ta-1',
+        ]);
+      },
+    );
   });
 
   group('AgentDatabase fresh install', () {
@@ -3178,3 +3238,19 @@ void main() {
     }, tags: 'glados');
   });
 }
+
+/// The `agent_links` table as schema v21 had it, for fixtures that seed an
+/// older database by hand: the v22 migration rebuilds an index on it.
+const _agentLinksV21Sql = '''
+  CREATE TABLE agent_links (
+    id TEXT NOT NULL PRIMARY KEY,
+    from_id TEXT NOT NULL,
+    to_id TEXT NOT NULL,
+    type TEXT NOT NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    deleted_at DATETIME,
+    serialized TEXT NOT NULL,
+    schema_version INTEGER NOT NULL DEFAULT 1
+  )
+''';

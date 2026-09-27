@@ -10,6 +10,12 @@ part of 'agent_sync_service_test.dart';
 // version that a version it received causally replaced (NoLostSuccessor),
 // and once every write has reached every replica, directly or by backfill,
 // all hold the same version (Converged).
+//
+// The slot variant (`Slot` in the spec, ADR 0099) assigns one template's
+// soul under fresh link ids instead, and removes live assignments. Every
+// replica must also show the same soul once quiescent (SlotConverged), show
+// exactly the live assignment the slot ranks first, and rank an assignment
+// above every assignment its writer held (SuccessorOutranks).
 
 enum _LinkOp { link, unlink, deliver, lose, backfill, tick }
 
@@ -44,6 +50,9 @@ extension _AnyLinkTrace on glados.Any {
 
 const _linkId = 'parsed_item_to_task:item:task';
 final _linkEpoch = DateTime(2026, 9, 24, 9);
+const _slotTemplate = 'template-slot';
+const _slot = AgentLinkSlot.soul(_slotTemplate);
+const _maxAssignments = 3;
 
 class _LinkReplica {
   _LinkReplica(String host) : device = AgentTestDevice(host);
@@ -58,11 +67,24 @@ class _LinkReplica {
   final lost = <int>{};
   final resolved = <int>{};
 
-  Future<AgentLink?> row() =>
-      device.repository.getLinkByIdIncludingDeleted(_linkId);
+  Future<AgentLink?> row([String id = _linkId]) =>
+      device.repository.getLinkByIdIncludingDeleted(id);
+
+  /// The soul assignments the slot shows: at most one.
+  Future<List<AgentLink>> visible() => device.repository.getLinksFrom(
+    _slotTemplate,
+    type: AgentLinkTypes.soulAssignment,
+  );
 }
 
 class _LinkWorld {
+  _LinkWorld({this.slot = false});
+
+  /// Assign one slot under fresh ids instead of writing one reused id.
+  final bool slot;
+
+  /// Per slot assignment id: the other assignments its writer held.
+  final saw = <String, Set<String>>{};
   final List<_LinkReplica> replicas = [
     for (final host in ['hA', 'hB', 'hC']) _LinkReplica(host),
   ];
@@ -93,7 +115,7 @@ class _LinkWorld {
 
   /// BackfillResponseHandler: the writer answers with its stored version.
   Future<void> _backfill(_LinkReplica replica, int index) async {
-    final answer = await replicas[origin[index]].row();
+    final answer = await replicas[origin[index]].row(sent[index].id);
     if (answer != null) {
       await replica.device.receiveLink(answer);
       final answered = sent.indexWhere(
@@ -112,6 +134,39 @@ class _LinkWorld {
     switch (step.op) {
       case _LinkOp.tick:
         now = now.add(const Duration(minutes: 1));
+      case _LinkOp.link when slot:
+        // A reassignment under a fresh id, as `assignSoulToTemplate` writes.
+        if (saw.length == _maxAssignments) return;
+        final id = 'soul-link-${saw.length}';
+        saw[id] = {
+          for (final held in await replica.device.repository.getSlotLinks(
+            _slot,
+          ))
+            held.id,
+        };
+        await _write(
+          step.replica,
+          AgentLink.soulAssignment(
+            id: id,
+            fromId: _slotTemplate,
+            toId: 'soul-${saw.length}',
+            createdAt: at,
+            updatedAt: at,
+            vectorClock: null,
+          ),
+        );
+      case _LinkOp.unlink when slot:
+        final live = [
+          for (final held in await replica.device.repository.getSlotLinks(
+            _slot,
+          ))
+            if (held.deletedAt == null) held,
+        ];
+        if (live.isEmpty) return;
+        await _write(
+          step.replica,
+          live[step.arg % live.length].softDeleted(at),
+        );
       case _LinkOp.link:
         // `linkCaptureItem`: the link built afresh under its reused id.
         await _write(
@@ -171,9 +226,8 @@ class _LinkWorld {
 
   Future<void> checkStep(List<_LinkStep> trace) async {
     for (final replica in replicas) {
-      if (replica.delivered.isEmpty) continue;
-      final row = (await replica.row())!;
       for (final index in replica.delivered) {
+        final row = (await replica.row(sent[index].id))!;
         expect(
           VectorClock.compare(sent[index].vectorClock!, row.vectorClock!),
           isNot(VclockStatus.a_gt_b),
@@ -182,14 +236,73 @@ class _LinkWorld {
               '${sent[index]}: $trace',
         );
       }
+      if (slot) await _checkSlot(replica, trace);
+    }
+  }
+
+  /// The slot shows the live assignment ranked first, and ranks each above
+  /// every assignment its writer held (SuccessorOutranks).
+  Future<void> _checkSlot(_LinkReplica replica, List<_LinkStep> trace) async {
+    final live = [
+      for (final held in await replica.device.repository.getSlotLinks(_slot))
+        if (held.deletedAt == null) held,
+    ];
+    expect(
+      (await replica.visible()).map((l) => l.id),
+      live.isEmpty ? isEmpty : [live.selectPrimary().id],
+      reason: 'visible link on ${replica.device.host}: $trace',
+    );
+    final rank = {
+      for (final (i, link) in live.orderedPrimaryFirst().indexed) link.id: i,
+    };
+    for (final link in live) {
+      for (final held in saw[link.id]!) {
+        if (!rank.containsKey(held)) continue;
+        expect(
+          rank[link.id]! < rank[held]!,
+          isTrue,
+          reason:
+              'SuccessorOutranks on ${replica.device.host}: ${link.id} '
+              'below $held: $trace',
+        );
+      }
     }
   }
 
   Future<void> checkConverged(List<_LinkStep> trace) async {
-    final rows = [for (final replica in replicas) await replica.row()];
-    for (final row in rows.skip(1)) {
-      expect(row?.toJson(), rows.first?.toJson(), reason: 'Converged: $trace');
+    for (final id in {for (final v in sent) v.id, if (!slot) _linkId}) {
+      final rows = [for (final replica in replicas) await replica.row(id)];
+      for (final row in rows.skip(1)) {
+        expect(
+          row?.toJson(),
+          rows.first?.toJson(),
+          reason: 'Converged: $trace',
+        );
+      }
     }
+    if (!slot) return;
+    final shown = [
+      for (final replica in replicas)
+        (await replica.visible()).map((l) => l.toId).toList(),
+    ];
+    for (final soul in shown.skip(1)) {
+      expect(soul, shown.first, reason: 'SlotConverged: $trace');
+    }
+  }
+}
+
+Future<void> _runLinkTrace(List<_LinkStep> trace, {bool slot = false}) async {
+  final world = _LinkWorld(slot: slot);
+  try {
+    for (final step in trace) {
+      await world.run(step);
+      await world.checkStep(trace);
+    }
+    await world.deliverAll();
+    await world.checkStep(trace);
+    await world.checkConverged(trace);
+  } finally {
+    await world.close();
   }
 }
 
@@ -201,21 +314,30 @@ void _registerLinkModelConformance() {
     ).test(
       'generated links, removals, losses and arrival orders converge without '
       'losing a successor',
-      (trace) async {
-        final world = _LinkWorld();
-        try {
-          for (final step in trace) {
-            await world.run(step);
-            await world.checkStep(trace);
-          }
-          await world.deliverAll();
-          await world.checkStep(trace);
-          await world.checkConverged(trace);
-        } finally {
-          await world.close();
-        }
-      },
+      _runLinkTrace,
       tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.linkTrace,
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'generated soul reassignments, removals, losses and arrival orders show '
+      'one soul everywhere, the one ranked first',
+      (trace) => _runLinkTrace(trace, slot: true),
+      tags: 'glados',
+    );
+
+    test(
+      'the TLC counterexample: two devices reassign one soul concurrently '
+      'and each receives the other',
+      () => _runLinkTrace(slot: true, const [
+        // hA and hB assign; hA receives hB's, hB receives hA's; hC both.
+        _LinkStep(_LinkOp.link, 0, 0),
+        _LinkStep(_LinkOp.link, 1, 0),
+        _LinkStep(_LinkOp.deliver, 0, 1),
+        _LinkStep(_LinkOp.deliver, 1, 0),
+      ]),
     );
   });
 }

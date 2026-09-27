@@ -32,6 +32,14 @@ sources:
     resource: ../../../specs/tla/GoalChatReply.tla
     title: TLA+ model of who answers a goal chat message
     last_modified: 2026-09-25
+  - id: link-slot
+    resource: ../../../lib/features/agents/model/agent_link_slot.dart
+    title: AgentLinkSlot — a template's soul or improver slot
+    last_modified: 2026-09-27
+  - id: adr-0099
+    resource: ../../../docs/adr/0099-agent-link-slots-rank-every-assignment.md
+    title: ADR 0099 — agent link slots rank every assignment
+    last_modified: 2026-09-27
   - id: repo-links
     resource: ../../../lib/features/agents/database/agent_repo_links.dart
     title: AgentRepoLinks
@@ -135,7 +143,7 @@ sources:
 
 # One database, two shapes
 
-Agent persistence lives in `agent.sqlite` (schema version 19). Syncable domain
+Agent persistence lives in `agent.sqlite` (schema version 22). Syncable domain
 objects are modelled as **`AgentDomainEntity` variants** and **`AgentLink`
 variants**; wake-run history lives in a dedicated `wake_run_log` table outside
 that model.
@@ -245,12 +253,44 @@ concurrently resolve by last-writer-wins on their instants; an append-only
 variant's edit keeps its `createdAt`, so the removal wins. The rules are in
 [vector clocks and conflicts](../sync/vector-clocks-and-conflicts.md#agent-entities-a-removal-is-a-version-too).
 
-**Soul assignments and improver targets hold one slot.** A partial unique index
-allows one live `soul_assignment` per template and one live `improver_target`
-per template. `AgentRepoLinks.upsertLink` makes room for an arriving live link
-by tombstoning the other one locally, without a clock bump or a sync message.
-Two devices that reassign concurrently therefore swap the assignments, a
-residual that ADR 0081 records with the options for fixing it.
+**Soul assignments and improver targets hold one slot.** A template shows one
+soul (`soul_assignment`, keyed by the template in `from_id`) and one improver
+(`improver_target`, keyed by the template in `to_id`); `AgentLinkSlot` names
+the two. Each assignment is written under a fresh link id, so two devices that
+reassign one template concurrently leave two live links in the slot. Every
+replica keeps both exactly as they arrived, and the slot shows the live link
+ranked first by `createdAt`, then id (`AgentLinkSelection.orderedPrimaryFirst`,
+the tiebreak every other primary-link read uses). `AgentRepoLinks.upsertLink`
+re-ranks the slot after each write: the winner has `deleted_at IS NULL`, and a
+live loser keeps its serialized version but gets the SQL `deleted_at` column
+set, which hides it from every read without deleting or rewriting it. The
+partial unique indexes still admit one visible row per slot, and the natural-key
+unique index exempts the slot types, since two concurrent assignments of one
+soul share `(from_id, to_id, type)` (schema v22).
+
+A writer makes a reassignment outrank what it replaced: `AgentSyncService.upsertLink`
+stamps a new slot link's `createdAt` just past the newest link of the slot this
+device holds, tombstones and hidden links included, when its own clock is not
+already later. `SoulTemplateOps` tombstones every live assignment it finds with
+`getSlotLinks` — hidden ones too — before assigning, and when unassigning, so a
+hidden assignment does not surface once the visible one is removed; deleting a
+soul also removes the hidden assignments that point at it
+(`getLinksToIncludingHidden`). Because
+nothing about the ranking is written as a version, replicas that hold the same
+versions show the same assignment in any arrival order (ADR 0099,
+`specs/tla/AgentLinks.tla` with `Slot`).
+
+```mermaid
+flowchart TD
+  In["upsertLink(soul_assignment or improver_target)"] --> Store["store the version under its id, as it arrived"]
+  Store --> Rank["rank the slot's live links: createdAt, then id"]
+  Rank --> Win["winner: deleted_at NULL (visible)"]
+  Rank --> Lose["other live links: deleted_at set, serialized unchanged (hidden)"]
+  Rank --> Tomb["tombstones: deleted_at from the version"]
+```
+
+Rows the old handoff tombstoned in place before ADR 0099 stay tombstoned; the
+next assignment of that template converges the slot.
 
 ## What is deliberately absent
 

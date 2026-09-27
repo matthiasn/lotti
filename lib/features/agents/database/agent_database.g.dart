@@ -4439,7 +4439,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
   );
   late final Index idxAgentLinksUniqueFromToType = Index(
     'idx_agent_links_unique_from_to_type',
-    'CREATE UNIQUE INDEX idx_agent_links_unique_from_to_type ON agent_links (from_id, to_id, type) WHERE type != \'message_payload\'',
+    'CREATE UNIQUE INDEX idx_agent_links_unique_from_to_type ON agent_links (from_id, to_id, type) WHERE type NOT IN (\'message_payload\', \'soul_assignment\', \'improver_target\')',
   );
   late final Index idxUniqueImproverPerTemplate = Index(
     'idx_unique_improver_per_template',

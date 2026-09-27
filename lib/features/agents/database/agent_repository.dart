@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/database/agent_repo_retention.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
+import 'package:lotti/features/agents/model/agent_link_slot.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -485,6 +486,14 @@ class AgentRepository {
   // ── Links: link CRUD, wake-run log, saga log, hard delete ──────────────────
 
   Future<void> upsertLink(model.AgentLink link) => _links.upsertLink(link);
+
+  Future<List<model.AgentLink>> getSlotLinks(AgentLinkSlot slot) =>
+      _links.getSlotLinks(slot);
+
+  Future<List<model.AgentLink>> getLinksToIncludingHidden(
+    String toId, {
+    required String type,
+  }) => _links.getLinksToIncludingHidden(toId, type: type);
 
   Future<List<model.AgentLink>> getLinksFrom(String fromId, {String? type}) =>
       _links.getLinksFrom(fromId, type: type);

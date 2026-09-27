@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/model/agent_link_slot.dart';
 import 'package:lotti/features/agents/projection/agent_event_adapter.dart';
 import 'package:lotti/features/agents/projection/agent_projection.dart';
 import 'package:lotti/features/agents/projection/canonical_order.dart';
@@ -475,7 +476,9 @@ class AgentSyncService {
   ///
   /// A local write succeeds the version stored under its id, a tombstone
   /// included, read in the same transaction (ADR 0081): its clock covers
-  /// that version's and its `updatedAt` is not older. Writers build links
+  /// that version's and its `updatedAt` is not older. A new link that fills
+  /// an [AgentLinkSlot] also outranks every link of the slot this device
+  /// holds ([_outrankSlot], ADR 0099). Writers build links
   /// afresh (`vectorClock: null`) under reused ids — a link removed and
   /// written again, the Daily OS links' deterministic ids — and a clock of
   /// this host's counter alone would be concurrent with a peer's version,
@@ -500,8 +503,9 @@ class AgentSyncService {
         final persisted = await _repository.getLinkByIdIncludingDeleted(
           link.id,
         );
-        final successor =
-            persisted != null && link.updatedAt.isBefore(persisted.updatedAt)
+        final successor = persisted == null
+            ? await _outrankSlot(link)
+            : link.updatedAt.isBefore(persisted.updatedAt)
             ? link.copyWith(updatedAt: persisted.updatedAt)
             : link;
         stamped = successor.copyWith(
@@ -530,6 +534,38 @@ class AgentSyncService {
         );
       }
     });
+  }
+
+  /// A new assignment of an [AgentLinkSlot] — a template's soul or
+  /// improver — stamped to outrank every link of the slot this device holds,
+  /// tombstones and hidden links included: its `createdAt` is moved just past
+  /// the newest one when the wall clock is not already past it.
+  ///
+  /// The slot shows the live link ranked first by `createdAt`, then id
+  /// ([AgentLinkSelection]), on every replica. Without the stamp a
+  /// reassignment written in the same instant as the link it replaced, or on
+  /// a clock that runs behind the writer of that link, would rank below it
+  /// wherever both are live (`SuccessorOutranks` in
+  /// `specs/tla/AgentLinks.tla`, ADR 0099). Any other link, or a tombstone,
+  /// is returned unchanged.
+  Future<AgentLink> _outrankSlot(AgentLink link) async {
+    final slot = AgentLinkSlot.of(link);
+    if (slot == null || link.deletedAt != null) return link;
+    DateTime? newest;
+    for (final seen in await _repository.getSlotLinks(slot)) {
+      if (seen.id == link.id) continue;
+      if (newest == null || seen.createdAt.isAfter(newest)) {
+        newest = seen.createdAt;
+      }
+    }
+    if (newest == null || link.createdAt.isAfter(newest)) return link;
+    final createdAt = newest.add(const Duration(microseconds: 1));
+    return link.copyWith(
+      createdAt: createdAt,
+      updatedAt: link.updatedAt.isBefore(createdAt)
+          ? createdAt
+          : link.updatedAt,
+    );
   }
 
   /// Run a post-DB-write outbox enqueue that MUST NOT propagate failures.

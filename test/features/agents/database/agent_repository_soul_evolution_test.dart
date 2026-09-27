@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:drift/drift.dart' show Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -9,6 +7,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
+import 'package:lotti/features/agents/model/agent_link_slot.dart';
 import 'agent_repository_soul_test_helpers.dart';
 
 void main() {
@@ -251,6 +250,51 @@ void main() {
       expect(result.first.toId, soulId);
     });
 
+    test(
+      'getSlotLinks and getLinksToIncludingHidden return the hidden '
+      'assignment the visible reads skip',
+      () async {
+        await repo.upsertLink(
+          model.AgentLink.soulAssignment(
+            id: 'link-sa-shown',
+            fromId: 'tpl-001',
+            toId: 'soul-shown',
+            createdAt: testDate.add(const Duration(minutes: 1)),
+            updatedAt: testDate.add(const Duration(minutes: 1)),
+            vectorClock: null,
+          ),
+        );
+        await repo.upsertLink(
+          model.AgentLink.soulAssignment(
+            id: 'link-sa-hidden',
+            fromId: 'tpl-001',
+            toId: soulId,
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          ),
+        );
+
+        expect(
+          await repo.getLinksTo(soulId, type: AgentLinkTypes.soulAssignment),
+          isEmpty,
+        );
+        expect(
+          (await repo.getLinksToIncludingHidden(
+            soulId,
+            type: AgentLinkTypes.soulAssignment,
+          )).map((l) => l.id),
+          ['link-sa-hidden'],
+        );
+        expect(
+          (await repo.getSlotLinks(
+            const AgentLinkSlot.soul('tpl-001'),
+          )).map((l) => l.id).toSet(),
+          {'link-sa-shown', 'link-sa-hidden'},
+        );
+      },
+    );
+
     test('getLinksTo returns reverse soul assignment links', () async {
       final link = model.AgentLink.soulAssignment(
         id: 'link-sa-002',
@@ -271,11 +315,8 @@ void main() {
     });
 
     test(
-      'upsertLink succeeds when an existing soul_assignment row has the '
-      'exact same natural key (from_id, to_id, type) but a different id '
-      '— the global UNIQUE(from_id,to_id,type) constraint applies to '
-      'all rows including soft-deleted ones, so the handoff path must '
-      'free the slot before the INSERT',
+      'upsertLink keeps both soul_assignment rows that share a natural key '
+      '(from_id, to_id, type) under different ids, and shows the newer',
       () async {
         final original = model.AgentLink.soulAssignment(
           id: 'link-sa-original',
@@ -346,8 +387,8 @@ void main() {
     );
 
     test(
-      'upsertLink soft-deletes a conflicting improver_target from a '
-      'DIFFERENT template (UNIQUE on to_id) instead of hard-deleting it',
+      'upsertLink hides a lower-ranked improver_target from a DIFFERENT '
+      'template (one improver per to_id) instead of deleting it',
       () async {
         final original = model.AgentLink.improverTarget(
           id: 'link-it-tpl-a',
@@ -359,8 +400,7 @@ void main() {
         );
         await repo.upsertLink(original);
 
-        // Different from_id -> natural key differs -> the conflict goes
-        // through the soft-delete (tombstone) path, not the hard delete.
+        // Different from_id, same slot: the older link ranks below.
         final rebind = model.AgentLink.improverTarget(
           id: 'link-it-tpl-b',
           fromId: 'tpl-b',
@@ -378,8 +418,7 @@ void main() {
         expect(active, hasLength(1));
         expect(active.first.id, 'link-it-tpl-b');
 
-        // The original row survives as a tombstone (soft-deleted, not
-        // hard-deleted), so sync still propagates the retraction.
+        // The original row survives, hidden from reads (ADR 0099).
         final raw = await db
             .customSelect(
               'SELECT deleted_at FROM agent_links WHERE id = ?',
@@ -387,50 +426,6 @@ void main() {
             )
             .getSingle();
         expect(raw.data['deleted_at'], isNotNull);
-      },
-    );
-
-    test(
-      "upsertLink keeps the soft-deleted row's serialized JSON in step "
-      'with the SQL tombstone columns (json_set side-channel)',
-      () async {
-        final original = model.AgentLink.soulAssignment(
-          id: 'link-sa-json',
-          fromId: 'tpl-json',
-          toId: soulId,
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: null,
-        );
-        await repo.upsertLink(original);
-
-        // Re-bind the template to a different soul: the original link is
-        // soft-deleted via the handoff path.
-        final rebind = model.AgentLink.soulAssignment(
-          id: 'link-sa-json-2',
-          fromId: 'tpl-json',
-          toId: 'soul-other',
-          createdAt: testDate.add(const Duration(minutes: 1)),
-          updatedAt: testDate.add(const Duration(minutes: 1)),
-          vectorClock: null,
-        );
-        await repo.upsertLink(rebind);
-
-        final raw = await db
-            .customSelect(
-              'SELECT deleted_at, serialized FROM agent_links WHERE id = ?',
-              variables: [Variable.withString('link-sa-json')],
-            )
-            .getSingle();
-        expect(raw.data['deleted_at'], isNotNull);
-
-        // Readers that decode from `serialized` without a deleted_at filter
-        // must see the tombstone in the JSON too.
-        final decoded =
-            jsonDecode(raw.data['serialized'] as String)
-                as Map<String, dynamic>;
-        expect(decoded['deletedAt'], isNotNull);
-        expect(decoded['updatedAt'], isNot(testDate.toIso8601String()));
       },
     );
   });
