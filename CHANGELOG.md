@@ -4,6 +4,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.33]
+
+### Changed
+
+- **Backfill sync is now Sync health, and leads with the records on this
+  device.** The page has become the place to check that your devices hold the
+  same data, so it is named for that. The record counts that answer it now
+  sit at the top and update every second while the page is open, instead of
+  waiting for a refresh.
+
+### Fixed
+
+- **Starting a task update on one device now ends the other device's
+  countdown right away.** With the same task open on two devices, a device
+  waited until the other device had finished its update before stopping its
+  own countdown, so the countdown kept running even after the new entry had
+  arrived. Now the countdown stops as soon as the other device starts an
+  update that includes everything this device has, and the summary stops
+  showing as outdated once that update finishes. If that update fails, it is
+  retried on the device that started it.
+- **Agents from your other devices could stop arriving on a device.** If the
+  agent runtime hit an error while the app started, that device silently
+  discarded every agent record sync delivered for the rest of the session,
+  and left agent records out of a deep backfill and out of Sync health's
+  record counts. Agent records are now received, compared and counted however
+  the agent runtime fares, and a failed start is logged.
+- **Sync health scrolls smoothly during a sync.** Every change to the incoming
+  queue redrew the whole page, per-device statistics included, several times a
+  second; now only the numbers that changed are redrawn.
+- **Undoing a person's suggested task could get stuck.** If something went
+  wrong partway through undoing a task a relationship suggestion had created,
+  the task was already deleted but the suggestion still showed as accepted,
+  and trying Undo again did nothing. Trying again now finishes the Undo and
+  puts the suggestion back up for a decision. A task you changed before it
+  was deleted is still left alone.
+
 ## [1.1.32]
 
 ### Changed
