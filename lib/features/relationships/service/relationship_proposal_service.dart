@@ -217,13 +217,20 @@ class RelationshipProposalService {
   /// the item confirmed (ADR 0097). The effect is already taken back when
   /// the stored tombstone is [original] as the removal leaves it — nothing
   /// changed but the deletion and its stamps — so the revert succeeds and
-  /// the retry proceeds to the reopen. A task changed after the receipt, or
-  /// one that is missing altogether, still refuses.
+  /// the retry proceeds to the reopen. A purge between the two attempts
+  /// compacts that tombstone to a type-erased row marked `purgedAt` (ADR
+  /// 0095): its content can no longer be compared, but it records that the
+  /// task is gone for good, which is all the Undo takes back, so it counts
+  /// too. A live task changed after the receipt, or one that is missing
+  /// altogether, still refuses.
   Future<bool> _alreadyRemoved(Task original, String personId) async {
     final stored = await journalDb.journalEntityByIdIncludingDeleted(
       original.id,
     );
-    if (stored is! Task || !_isRemovedReceipt(stored, original)) return false;
+    final removed = stored != null && stored.isPurgedTombstone
+        ? stored.isDeleted
+        : stored is Task && _isRemovedReceipt(stored, original);
+    if (!removed) return false;
     await _unlinkRemoved(original.id, personId);
     return true;
   }

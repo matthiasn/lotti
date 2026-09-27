@@ -225,6 +225,30 @@ void main() {
       },
     );
 
+    test(
+      'takes a tombstone a purge compacted in between as the removal done '
+      '(ADR 0095)',
+      () async {
+        // A purge between the two attempts leaves a type-erased row with no
+        // content: the task cannot be compared any more, but it is gone.
+        final purged = JournalEntity.journalEntry(
+          meta: tombstone.meta.copyWith(
+            purgedAt: DateTime(2024, 3, 16),
+          ),
+        );
+        await failReopenAfterRevert(purged);
+
+        expect(await service.undo(confirmed, 0), isTrue);
+        expect(removed, [testTask]);
+        verify(
+          () => relationships.unlinkTask(
+            relationshipId: set.taskId,
+            taskId: testTask.id,
+          ),
+        ).called(2);
+      },
+    );
+
     final changed = <String, JournalEntity?>{
       'the task was edited before it was deleted': tombstone.copyWith(
         data: tombstone.data.copyWith(title: 'Edited'),

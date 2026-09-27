@@ -1344,8 +1344,12 @@ reopen then failed (the agent database threw) leaves the item confirmed with
 the task gone, and its retry finds no live task. It reads the row with deleted
 ones included and, when that tombstone is the receipt as the removal leaves
 it — equal apart from `deletedAt`, `updatedAt` and the vector clock — takes
-the task as removed, cleans up the link again and reopens the item. A task
-edited before it was deleted, or missing altogether, still refuses
+the task as removed, cleans up the link again and reopens the item. A purge
+between the two attempts compacts that tombstone to a type-erased row marked
+`purgedAt` ([ADR 0095](../../docs/adr/0095-a-purge-keeps-the-deletion.md)),
+whose content can no longer be compared; it still proves the task is gone, so
+it counts as removed too. A task edited before it was deleted, or missing
+altogether, still refuses
 ([ADR 0097](../../docs/adr/0097-idempotent-effects-for-every-change-set-tool.md)).
 Malformed or absent receipts disable confirmed-task undo. A receipt write
 failure after successful creation is logged and keeps confirmation successful;
