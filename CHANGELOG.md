@@ -4,6 +4,69 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.31]
+
+### Added
+
+- **A deep backfill in sync maintenance brings devices that drifted apart
+  back together.** Ordinary repair can only ask for gaps a device can name,
+  so history an older installation never recorded stayed missing for good.
+  *Settings → Sync → Maintenance → Deep backfill* sends your other devices a
+  list of every entry, link, agent record, notification and usage record on
+  this device, deletions included. Each one compares the list with its own
+  records, asks for what it is missing and sends back what this device
+  lacks, so both sides end up with everything either had. Entries edited on
+  two devices at once come back as a conflict for you to resolve, never
+  silently overwritten.
+
+### Changed
+
+- **Tasks that block each other now say so.** Two devices can still each add
+  one direction of a block before they sync. Both tasks then show "Blocked in
+  a cycle" instead of "Blocked by 1 task", with a hint that closing a task in
+  the cycle, or removing one of its links, breaks it; the day planner is told
+  the tasks wait on each other instead of trying to schedule one first.
+
+### Fixed
+
+- **A change to a task could quietly undo another change made a moment
+  before.** When the task agent set a task's status, priority, title, estimate,
+  due date or language while the task was open, and you then changed a
+  different field — or the other way round, or a change arrived from another
+  device just before — the earlier change was reverted on every device, with no
+  conflict shown. Each change now touches only the field it sets, so both
+  stick.
+- **The task agent could overwrite a field you had just changed.** If you
+  changed a field between the agent reading the task and writing its own
+  change, the agent's older decision replaced yours. The agent now leaves a
+  field alone when it has changed since it looked, and says so.
+- **Statuses you set yourself were missing from a task's status history.**
+  Only the agent's and the day planner's status changes were recorded, so the
+  history — and what the agent reports about how the task moved — skipped
+  yours. Resolving a sync conflict also dropped the statuses of the side you
+  did not keep. Every status change is now recorded, and a resolution keeps
+  both sides' history.
+- **Checklists edited on two devices at once now agree.** An item moved on a
+  phone and a laptop before they synced could show up — and count towards
+  completion — in two checklists at once, and resolving a sync conflict by
+  keeping one side could make the other device's new item or checklist
+  disappear from the task. Each item now shows in exactly one checklist, and
+  resolving a conflict keeps what both devices added.
+- **Deleting a checklist deletes its items.** They used to stay behind in the
+  journal and search, belonging to no checklist; they now go with it on every
+  device, including items another device added to the checklist at the same
+  time.
+- **A task taken out of its project could turn up in another one.** When two
+  devices filed the same task under different projects before they synced, the
+  task showed in one of them — and taking it out, or moving it, left the other
+  link behind, so the task reappeared there, filing it under that project did
+  nothing, and a move could appear not to happen at all. Moving or removing a
+  task's project now takes it out of every project it was filed under.
+- **Two tasks could end up blocking each other.** Linking tasks while the task
+  agent linked them too, or through a long enough chain of blockers, could
+  close a loop the app is meant to refuse. Such a loop is now refused on the
+  device that would close it.
+
 ## [1.1.30]
 
 ### Changed
