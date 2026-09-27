@@ -75,25 +75,35 @@ class AiConfigRepository {
   /// Save or update an AI configuration.
   ///
   /// A local save stamps a new version and, unless [fromSync] is set, sends
-  /// it with that stamp. A received version passes its [versionStamp] and is
-  /// written only if it is newer than the version held here, so a late or
-  /// replayed copy never overwrites a newer one (ADR 0094). [fromSync]
-  /// without a stamp is a local write that is not sent.
+  /// it with that stamp. A received version passes the [versionStamp] its
+  /// sender gave it and is written only if it is newer than the version held
+  /// here, so a late or replayed copy never overwrites a newer one (ADR
+  /// 0094). A copy from a sender that predates stamps passes none; it is
+  /// ordered by [fallbackStamp] (the Matrix server timestamp) instead, after
+  /// the tombstone screen that guarded such copies before. [fromSync] with
+  /// neither is a local write that is not sent.
   Future<void> saveConfig(
     AiConfig config, {
     bool fromSync = false,
     int? versionStamp,
+    int? fallbackStamp,
   }) async {
-    // Only inbound writes are screened: a local edit of a deleted row is the
-    // user acting on this device, and `restoreConfig` is the deliberate way
-    // back. A peer replaying its still-active copy is not.
-    if (fromSync && await _isStaleReplayOfTombstone(config)) {
+    // Only unstamped inbound writes are screened: a local edit of a deleted
+    // row is the user acting on this device, and `restoreConfig` is the
+    // deliberate way back. A peer replaying its still-active copy is not. A
+    // stamped version needs no screen: its stamp already says whether it is
+    // newer than the tombstone, and a restore's `updatedAt` can trail the
+    // tombstone's when the restoring device's clock runs behind.
+    if (fromSync &&
+        versionStamp == null &&
+        await _isStaleReplayOfTombstone(config)) {
       return;
     }
-    if (fromSync && versionStamp != null) {
+    final receivedStamp = versionStamp ?? fallbackStamp;
+    if (fromSync && receivedStamp != null) {
       final applied = await _db.applyConfigVersion(
         config,
-        stamp: versionStamp,
+        stamp: receivedStamp,
       );
       if (applied) _storeConfig(config);
       return;
@@ -195,7 +205,19 @@ class AiConfigRepository {
     final template = ProfileSeedingService.defaultProfiles
         .where((profile) => profile.id == id)
         .firstOrNull;
-    if (template == null) return;
+    if (template == null) {
+      // Nothing to tombstone, but a received deletion still takes its stamp,
+      // so a copy of the config sent before it cannot create the row when it
+      // lands later.
+      if (fromSync && versionStamp != null) {
+        await hardDeleteConfig(
+          id,
+          fromSync: true,
+          versionStamp: versionStamp,
+        );
+      }
+      return;
+    }
     final now = DateTime.now();
     await saveConfig(
       template.copyWith(deletedAt: now, updatedAt: now),

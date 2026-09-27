@@ -74,7 +74,12 @@ config flags.
   provider credential, whose keychain write follows the decision.
 - **Old senders.** A message without a stamp is ordered by the Matrix event's
   server timestamp, as config flags do. Among old senders that is arrival
-  order, as before. Old receivers ignore the new field and keep applying in
+  order, as before. Such a copy still passes the `updatedAt` tombstone
+  screen first; a stamped version does not, because its stamp already says
+  whether it is newer than the tombstone, and a restore's `updatedAt` can
+  trail the tombstone's when the restoring device's clock runs behind. A
+  legacy deletion of an id this device never held, with no bundled template
+  to tombstone, still records its stamp. Old receivers ignore the new field and keep applying in
   arrival order, so the guarantee needs updated receivers, not updated
   senders.
 - **Local-only removal.** The orphaned-seed prune

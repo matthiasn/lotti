@@ -117,6 +117,7 @@ void setUpProcessorMocks() {
       any<AiConfig>(),
       fromSync: any<bool>(named: 'fromSync'),
       versionStamp: any<int?>(named: 'versionStamp'),
+      fallbackStamp: any<int?>(named: 'fallbackStamp'),
     ),
   ).thenAnswer((_) async {});
   when(

@@ -789,6 +789,7 @@ void main() {
         fallbackAiConfig,
         fromSync: true,
         versionStamp: 42,
+        fallbackStamp: DateTime(2024).millisecondsSinceEpoch,
       ),
     ).called(1);
   });
@@ -807,7 +808,7 @@ void main() {
       () => aiConfigRepository.saveConfig(
         fallbackAiConfig,
         fromSync: true,
-        versionStamp: DateTime(2024).millisecondsSinceEpoch,
+        fallbackStamp: DateTime(2024).millisecondsSinceEpoch,
       ),
     ).called(1);
   });
@@ -830,6 +831,7 @@ void main() {
         fallbackAiConfig,
         fromSync: true,
         versionStamp: any(named: 'versionStamp'),
+        fallbackStamp: any(named: 'fallbackStamp'),
       ),
     ).called(1);
   });

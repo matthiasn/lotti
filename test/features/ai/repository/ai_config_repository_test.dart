@@ -692,6 +692,75 @@ void main() {
         );
       });
 
+      test('a stamped restore clears a tombstone even when its updatedAt '
+          'trails the tombstone', () async {
+        final tombstonedAt = DateTime(2026, 9, 27, 12);
+        await repository.saveConfig(
+          profile(
+            'v1',
+          ).copyWith(deletedAt: tombstonedAt, updatedAt: tombstonedAt),
+          fromSync: true,
+          versionStamp: 10,
+        );
+
+        // Restored on a device whose clock runs an hour behind.
+        final restoredAt = tombstonedAt.subtract(const Duration(hours: 1));
+        await repository.saveConfig(
+          profile('v1').copyWith(updatedAt: restoredAt),
+          fromSync: true,
+          versionStamp: 11,
+        );
+
+        expect(
+          (await repository.getConfigById('profile-stamped'))!.deletedAt,
+          isNull,
+        );
+      });
+
+      test('an unstamped copy from an older sender is still screened against '
+          'a tombstone', () async {
+        final tombstonedAt = DateTime(2026, 9, 27, 12);
+        await repository.saveConfig(
+          profile(
+            'v1',
+          ).copyWith(deletedAt: tombstonedAt, updatedAt: tombstonedAt),
+          fromSync: true,
+          versionStamp: 10,
+        );
+
+        // Its server timestamp is newer, but its payload is a stale replay.
+        await repository.saveConfig(
+          profile('v1').copyWith(updatedAt: tombstonedAt),
+          fromSync: true,
+          fallbackStamp: 99,
+        );
+
+        expect(await repository.getConfigById('profile-stamped'), isNull);
+      });
+
+      test('a legacy delete of a config this device never had still '
+          'outranks an older copy of it', () async {
+        await repository.deleteConfig(
+          'profile-stamped',
+          fromSync: true,
+          versionStamp: 20,
+        );
+
+        await repository.saveConfig(
+          profile('v1'),
+          fromSync: true,
+          versionStamp: 10,
+        );
+
+        expect(
+          await repository.getConfigById(
+            'profile-stamped',
+            includeDeleted: true,
+          ),
+          isNull,
+        );
+      });
+
       test('a local hard delete sends the stamp the deletion took', () async {
         await repository.saveConfig(profile('v1'));
 

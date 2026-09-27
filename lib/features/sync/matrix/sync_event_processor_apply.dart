@@ -107,8 +107,8 @@ extension SyncEventProcessorApply on SyncEventProcessor {
         await _aiConfigRepository.saveConfig(
           aiConfig,
           fromSync: true,
-          versionStamp:
-              versionStamp ?? event.originServerTs.millisecondsSinceEpoch,
+          versionStamp: versionStamp,
+          fallbackStamp: event.originServerTs.millisecondsSinceEpoch,
         );
         return null;
       case SyncAiConfigDelete(
