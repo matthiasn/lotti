@@ -5,7 +5,7 @@ description: Causal accounting over (hostId, counter) pairs, bounded initial-onb
 resource: ../../../lib/features/sync/sequence
 tags: [sync, sequence-log, backfill, gap-detection, deep-backfill]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-27T19:30:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-27T22:00:00Z }
 stale_after: 2026-12-27
 sources:
   - id: sequence-heads
@@ -766,9 +766,13 @@ whose lists could not be loaded still names its attachment, and the service
 ignores it — an empty inventory would read as "the advertiser holds nothing
 in this range" and push the whole range back.
 
-The stores (`deep_backfill_stores.dart`) cover journal entries, entry links,
-notifications and AI consumption events from the start; agent entities and
-links join when the agent repository is wired (`wireSyncEventProcessor`).
+The stores (`deep_backfill_stores.dart`, `allDeepBackfillStores`) cover
+journal entries, entry links, agent entities and links, notifications and AI
+consumption events, all registered with the sync stack. Each reads its own
+database, so none waits on another feature's runtime. Agent stores used to
+join only once the agent runtime wired the processor
+(`wireSyncEventProcessor`); a device whose agent start-up failed first
+advertised and counted no agent records at all.
 Rows without a clock (written before their type carried one) cannot be
 ordered against anything, so a batch does not list them as versions. It
 **names** them instead, in `unclocked`. Leaving them out was a defect: the

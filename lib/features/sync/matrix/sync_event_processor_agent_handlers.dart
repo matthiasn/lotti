@@ -390,12 +390,18 @@ extension _AgentHandlers on SyncEventProcessor {
 
       await _recordReceivedAgentEntity(msg: msg, entity: resolvedEntity);
     } else {
-      _trace(
-        'agentEntity.ignored no repository',
-        subDomain: 'processor.apply',
-      );
+      _agentRepositoryNotWired('agentEntity');
     }
   }
+
+  /// Fails the apply of an agent record that arrived before the agent
+  /// repository was wired (`wireAgentSyncRepository`). A failed apply is
+  /// retried and, past the retry cap, kept as a skipped event that can be
+  /// retried again — dropping it instead lost another device's agent data
+  /// for as long as the agent runtime had not started.
+  Never _agentRepositoryNotWired(String kind) => throw StateError(
+    '$kind arrived before the agent repository was wired',
+  );
 
   Future<void> _projectAgentAttribution(AgentDomainEntity entity) async {
     final repository = consumptionRepository;
@@ -541,10 +547,7 @@ extension _AgentHandlers on SyncEventProcessor {
 
       await _recordReceivedAgentLink(msg: msg, link: resolvedLink);
     } else {
-      _trace(
-        'agentLink.ignored no repository',
-        subDomain: 'processor.apply',
-      );
+      _agentRepositoryNotWired('agentLink');
     }
   }
 

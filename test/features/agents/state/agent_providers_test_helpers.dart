@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
+import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maintenance.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
@@ -169,13 +170,17 @@ class InitProviderBench {
     DomainLogger? testDomainLogger,
     List<AgentRuntimeMaintenance> Function(Ref)? runtimeMaintenance,
     SyncEventProcessor? syncEventProcessor,
+    TaskAgentWorkflow Function(Ref)? taskAgentWorkflow,
   }) {
     final container = ProviderContainer(
       overrides: [
         agentServiceProvider.overrideWithValue(mockService),
         agentRepositoryProvider.overrideWithValue(mockRepository),
         wakeOrchestratorProvider.overrideWithValue(mockOrchestrator),
-        taskAgentWorkflowProvider.overrideWithValue(mockWorkflow),
+        if (taskAgentWorkflow != null)
+          taskAgentWorkflowProvider.overrideWith(taskAgentWorkflow)
+        else
+          taskAgentWorkflowProvider.overrideWithValue(mockWorkflow),
         improverAgentWorkflowProvider.overrideWithValue(mockImproverWorkflow),
         projectAgentWorkflowProvider.overrideWithValue(mockProjectWorkflow),
         dayAgentWorkflowProvider.overrideWithValue(mockDayWorkflow),

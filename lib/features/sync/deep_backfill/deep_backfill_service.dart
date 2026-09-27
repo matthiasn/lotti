@@ -84,9 +84,8 @@ class DeepBackfillService {
        _now = now ?? DateTime.now,
        _newRoundId = newRoundId ?? const Uuid().v4,
        _batchSize = batchSize ?? SyncTuning.deepBackfillBatchSize,
-       _requestExpiry = requestExpiry ?? SyncTuning.deepBackfillRequestExpiry {
-    stores.forEach(registerStore);
-  }
+       _requestExpiry = requestExpiry ?? SyncTuning.deepBackfillRequestExpiry,
+       _stores = {for (final store in stores) store.payloadType: store};
 
   final SyncDatabase _syncDb;
   final OutboxService _outbox;
@@ -96,18 +95,10 @@ class DeepBackfillService {
   final String Function() _newRoundId;
   final int _batchSize;
   final Duration _requestExpiry;
-  final Map<SyncSequencePayloadType, DeepBackfillStore> _stores = {};
 
-  /// Adds the store for its payload type, replacing an earlier one. Stores
-  /// whose database is wired after sync starts (agent records) arrive here.
-  void registerStore(DeepBackfillStore store) {
-    _stores[store.payloadType] = store;
-  }
-
-  /// Removes the store for [payloadType], when its database goes away.
-  void unregisterStore(SyncSequencePayloadType payloadType) {
-    _stores.remove(payloadType);
-  }
+  /// One store per synced type, fixed at construction: every store reads
+  /// its own database directly, so none waits on another feature starting.
+  final Map<SyncSequencePayloadType, DeepBackfillStore> _stores;
 
   /// How many records of each registered type this device holds, deletions
   /// included: the numbers a deep backfill makes equal across devices,

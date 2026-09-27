@@ -568,12 +568,14 @@ ImproverAgentService improverAgentService(Ref ref) {
   );
 }
 
-/// Initializes the agent infrastructure when the `enableAgents` config flag
-/// is enabled.
+/// Initializes the agent infrastructure. Not gated by a flag: it runs on
+/// every device, from app start (`beamer_app.dart` listens to it).
 ///
 /// This provider:
-/// 1. Watches the `enableAgents` config flag.
-/// 2. When enabled, starts the [WakeOrchestrator] listening to
+/// 1. Hands the agent repository to the [SyncEventProcessor] before it
+///    builds any runtime provider, so a runtime that fails to build or start
+///    never leaves sync unable to store another device's agents.
+/// 2. Starts the [WakeOrchestrator] listening to
 ///    `UpdateNotifications.updateStream`.
 /// 3. Restores task agent subscriptions from persisted state.
 ///
@@ -589,12 +591,17 @@ Future<void> agentInitialization(Ref ref) async {
     name: 'agentInitialization',
   );
 
+  // Sync first, before any runtime provider is built: building one can
+  // throw, and until the repository is wired every agent entity and link
+  // arriving from another device fails to apply.
+  final syncEventProcessor = ref.watch(maybeSyncEventProcessorProvider);
+  wireAgentSyncRepository(ref, syncEventProcessor);
+
   final orchestrator = ref.watch(wakeOrchestratorProvider);
   final workflow = ref.watch(taskAgentWorkflowProvider);
   final taskAgentService = ref.watch(taskAgentServiceProvider);
   final templateService = ref.watch(agentTemplateServiceProvider);
   final updateNotifications = ref.watch(updateNotificationsProvider);
-  final syncEventProcessor = ref.watch(maybeSyncEventProcessorProvider);
   final projectActivityMonitor = ref.watch(projectActivityMonitorProvider);
 
   // Register the dispose callback before any async work so it is always
@@ -606,6 +613,16 @@ Future<void> agentInitialization(Ref ref) async {
     );
     orchestrator.stop();
   });
+
+  // 0. Wire the wake runtime into the sync event processor, before anything
+  //    below can await or throw, so synced lifecycle changes reach it.
+  wireSyncEventProcessor(
+    ref,
+    orchestrator,
+    syncEventProcessor,
+    retireSupersededTaskAgents: (taskId) =>
+        taskAgentService.retirement.retireSuperseded(taskId),
+  );
 
   // 1. Mark any orphaned 'running' wake runs as 'abandoned' so the activity
   //    log is not confused by stale entries from a previous app lifecycle.
@@ -651,15 +668,6 @@ Future<void> agentInitialization(Ref ref) async {
 
   // 3.6. Track project-linked activity without triggering immediate wakes.
   projectActivityMonitor.start();
-
-  // 4. Wire the sync event processor for cross-device agent data.
-  wireSyncEventProcessor(
-    ref,
-    orchestrator,
-    syncEventProcessor,
-    retireSupersededTaskAgents: (taskId) =>
-        taskAgentService.retirement.retireSuperseded(taskId),
-  );
 
   // 5. Seed default templates and profiles in parallel, then
   //    upgrade existing profiles with skill assignments and restore
