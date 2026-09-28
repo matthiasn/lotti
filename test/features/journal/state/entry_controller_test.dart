@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter_quill/flutter_quill.dart' show QuillController;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -4357,6 +4358,11 @@ void main() {
         // The state entry should now reflect the updated entry
         final currentState = container.read(provider).value;
         expect(currentState?.entry, updatedEntry);
+        // ...and the editor was rebuilt from the new stored text.
+        expect(
+          container.read(provider.notifier).controller.document.toPlainText(),
+          'updated text\n',
+        );
 
         await streamController.close();
 
@@ -4366,6 +4372,136 @@ void main() {
         ).thenAnswer((_) => Stream<Set<String>>.fromIterable([]));
       },
     );
+
+    group('a write that leaves the stored text alone', () {
+      final base = testTextEntry.meta.updatedAt;
+      final autosavedAt = base.add(const Duration(minutes: 5));
+      // What the running timer's autosave stores: a new end time, the same
+      // text, a new version.
+      final autosaved = testTextEntry.copyWith(
+        meta: testTextEntry.meta.copyWith(
+          dateTo: testTextEntry.meta.dateTo.add(const Duration(minutes: 5)),
+          updatedAt: autosavedAt,
+        ),
+      );
+
+      /// Opens the controller on [testTextEntry], lets its deferred
+      /// setController run, then delivers one update notification after
+      /// which the database holds [next]. Returns the notifier and the editor
+      /// controller it had before the update.
+      Future<(EntryController, QuillController)> openThenUpdate(
+        JournalEntity next,
+      ) async {
+        final streamController = StreamController<Set<String>>.broadcast();
+        addTearDown(streamController.close);
+        when(
+          () => mockUpdateNotifications.updateStream,
+        ).thenAnswer((_) => streamController.stream);
+        addTearDown(
+          () => when(
+            () => mockUpdateNotifications.updateStream,
+          ).thenAnswer((_) => Stream<Set<String>>.fromIterable([])),
+        );
+        var fetchCount = 0;
+        when(
+          () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+        ).thenAnswer((_) async => ++fetchCount == 1 ? testTextEntry : next);
+        addTearDown(
+          () => when(
+            () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+          ).thenAnswer((_) async => testTextEntry),
+        );
+
+        final container = makeProviderContainer();
+        final provider = entryControllerProvider(testTextEntry.meta.id);
+        final notifier = container.read(provider.notifier);
+        await container.read(provider.future);
+        await container.pump();
+        final editorBefore = notifier.controller;
+
+        streamController.add({testTextEntry.meta.id});
+        await container.pump();
+        await container.read(provider.future);
+        expect(container.read(provider).value?.entry, next);
+        return (notifier, editorBefore);
+      }
+
+      /// Types one character, and returns the entry version the resulting
+      /// draft was keyed to.
+      Future<DateTime> typeAndCaptureDraftKey(EntryController notifier) async {
+        notifier.controller.document.insert(0, 'x');
+        await Future<void>.microtask(() {});
+        return verify(
+              () => mockEditorStateService.saveTempState(
+                id: testTextEntry.meta.id,
+                json: any(named: 'json'),
+                lastSaved: captureAny(named: 'lastSaved'),
+              ),
+            ).captured.single
+            as DateTime;
+      }
+
+      setUp(() {
+        when(
+          () => mockEditorStateService.rebaseDraft(
+            id: any(named: 'id'),
+            from: any(named: 'from'),
+            to: any(named: 'to'),
+          ),
+        ).thenAnswer((_) async {});
+        clearInteractions(mockEditorStateService);
+      });
+
+      test('keeps the editor controller, so an open editor keeps its '
+          'cursor', () async {
+        final (notifier, editorBefore) = await openThenUpdate(autosaved);
+
+        expect(notifier.controller, same(editorBefore));
+      });
+
+      test('moves the draft onto the new version even before the editor '
+          'state has loaded it, and keys later drafts there', () async {
+        // entryIsUnsaved stays false: a draft restored from EditorDb is
+        // loaded asynchronously, and the write can arrive first.
+        final (notifier, _) = await openThenUpdate(autosaved);
+
+        verify(
+          () => mockEditorStateService.rebaseDraft(
+            id: testTextEntry.meta.id,
+            from: base,
+            to: autosavedAt,
+          ),
+        ).called(1);
+        expect(await typeAndCaptureDraftKey(notifier), autosavedAt);
+      });
+
+      test('a write that changed the text leaves an unsaved draft keyed to '
+          'the version it was typed against', () async {
+        when(
+          () => mockEditorStateService.entryIsUnsaved(testTextEntry.meta.id),
+        ).thenReturn(true);
+        addTearDown(
+          () => when(
+            () => mockEditorStateService.entryIsUnsaved(any()),
+          ).thenReturn(false),
+        );
+        final rewritten = autosaved.copyWith(
+          entryText: const EntryText(plainText: 'changed elsewhere'),
+        );
+
+        final (notifier, editorBefore) = await openThenUpdate(rewritten);
+
+        verifyNever(
+          () => mockEditorStateService.rebaseDraft(
+            id: any(named: 'id'),
+            from: any(named: 'from'),
+            to: any(named: 'to'),
+          ),
+        );
+        expect(notifier.controller, same(editorBefore));
+        expect(await typeAndCaptureDraftKey(notifier), base);
+      });
+    });
 
     test(
       'does not update state when stream emits unrelated id',

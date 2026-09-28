@@ -84,6 +84,7 @@ import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/running_timer_persistence.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/logic/sleep_asleep_backfill_service.dart';
@@ -145,18 +146,7 @@ Future<void> registerSingletons({
     ..registerSingleton<SyncDatabase>(SyncDatabase())
     ..registerSingleton<StartupTasks>(StartupTasks())
     ..registerSingleton<VectorClockService>(VectorClockService())
-    ..registerSingleton<TimeService>(
-      // When a new timer replaces a still-running one, persist the outgoing
-      // entry's real stop time so it is not left with the stale dateTo it
-      // was created with (≈ its start time). Existing entry text is
-      // preserved — only the end time is written.
-      TimeService(
-        (entry) => getIt<PersistenceLogic>().updateJournalEntry(
-          journalEntityId: entry.meta.id,
-          dateTo: DateTime.now(),
-        ),
-      ),
-    );
+    ..registerSingleton<TimeService>(buildPersistingTimeService());
 
   // Initialize config flags before constructing services that depend on them.
   await initConfigFlags(getIt<JournalDb>(), inMemoryDatabase: false);

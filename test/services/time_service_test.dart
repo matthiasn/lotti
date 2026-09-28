@@ -4,8 +4,12 @@ import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../mocks/mocks.dart';
 import '../test_data/test_data.dart';
 import '../widget_test_utils.dart';
 
@@ -310,7 +314,7 @@ void main() {
         'running one', () async {
       final finalized = <JournalEntity>[];
       final service = TimeService(
-        (entry) async => finalized.add(entry),
+        persistTimerStop: (entry) async => finalized.add(entry),
       );
       addTearDown(service.stop);
 
@@ -326,7 +330,7 @@ void main() {
     test('does not persist when starting the very first timer', () async {
       final finalized = <JournalEntity>[];
       final service = TimeService(
-        (entry) async => finalized.add(entry),
+        persistTimerStop: (entry) async => finalized.add(entry),
       );
       addTearDown(service.stop);
 
@@ -342,7 +346,7 @@ void main() {
         // before calling stop(); finalizing again here would double-write.
         final finalized = <JournalEntity>[];
         final service = TimeService(
-          (entry) async => finalized.add(entry),
+          persistTimerStop: (entry) async => finalized.add(entry),
         );
 
         await service.start(testTextEntry, null);
@@ -354,7 +358,7 @@ void main() {
 
     test('a failing finalize still starts the replacing timer', () async {
       final service = TimeService(
-        (_) async => throw Exception('db unavailable'),
+        persistTimerStop: (_) async => throw Exception('db unavailable'),
       );
       addTearDown(service.stop);
 
@@ -362,6 +366,190 @@ void main() {
       await service.start(testImageEntry, null);
 
       expect(service.getCurrent()?.id, testImageEntry.id);
+    });
+  });
+
+  // While a timer runs its entry is saved on a fixed cadence, so the
+  // calendar shows the session growing instead of a gap until it stops.
+  group('autosaves the running timer', () {
+    late MockDomainLogger domainLogger;
+
+    setUp(() async {
+      domainLogger = MockDomainLogger();
+      when(
+        () => domainLogger.error(
+          any(),
+          any(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).thenAnswer((_) {});
+      await setUpTestGetIt(
+        additionalSetup: () => getIt
+          ..unregister<DomainLogger>()
+          ..registerSingleton<DomainLogger>(domainLogger),
+      );
+    });
+
+    tearDown(tearDownTestGetIt);
+
+    test('the default cadence is five minutes', () {
+      expect(runningTimerAutosaveInterval, const Duration(minutes: 5));
+    });
+
+    test('saves the running entry once per default interval', () async {
+      final autosaved = <String>[];
+      final service = TimeService(
+        autosave: (entry) async => autosaved.add(entry.meta.id),
+      );
+      final async = FakeAsync();
+      try {
+        async
+          ..run((_) => unawaited(service.start(testTextEntry, testTask)))
+          ..elapse(const Duration(minutes: 4, seconds: 59));
+        expect(autosaved, isEmpty, reason: 'no save before the first interval');
+
+        async.elapse(const Duration(seconds: 1));
+        expect(autosaved, [testTextEntry.meta.id]);
+
+        async.elapse(const Duration(minutes: 10));
+        expect(autosaved, [
+          testTextEntry.meta.id,
+          testTextEntry.meta.id,
+          testTextEntry.meta.id,
+        ]);
+      } finally {
+        await service.stop();
+        async.flushMicrotasks();
+      }
+    });
+
+    test('honours an injected interval', () async {
+      final autosaved = <String>[];
+      final service = TimeService(
+        autosave: (entry) async => autosaved.add(entry.meta.id),
+        autosaveInterval: const Duration(seconds: 30),
+      );
+      final async = FakeAsync();
+      try {
+        async
+          ..run((_) => unawaited(service.start(testTextEntry, null)))
+          ..elapse(const Duration(seconds: 90));
+        expect(autosaved, hasLength(3));
+      } finally {
+        await service.stop();
+        async.flushMicrotasks();
+      }
+    });
+
+    test('stop cancels the cadence, so a stopped timer is never saved '
+        'again', () async {
+      final autosaved = <String>[];
+      final service = TimeService(
+        autosave: (entry) async => autosaved.add(entry.meta.id),
+      );
+      final async = FakeAsync();
+      try {
+        async
+          ..run((_) => unawaited(service.start(testTextEntry, null)))
+          ..elapse(const Duration(minutes: 5));
+        expect(autosaved, hasLength(1));
+        expect(async.periodicTimerCount, 2, reason: 'ticker plus autosave');
+
+        await service.stop();
+        async.flushMicrotasks();
+        expect(async.periodicTimerCount, 0);
+
+        async.elapse(const Duration(minutes: 30));
+        expect(autosaved, hasLength(1));
+      } finally {
+        await service.stop();
+        async.flushMicrotasks();
+      }
+    });
+
+    test(
+      'a replacing timer restarts the cadence for the new entry only',
+      () async {
+        final autosaved = <String>[];
+        final service = TimeService(
+          autosave: (entry) async => autosaved.add(entry.meta.id),
+        );
+        final async = FakeAsync();
+        try {
+          async
+            ..run((_) => unawaited(service.start(testTextEntry, null)))
+            ..elapse(const Duration(minutes: 3));
+
+          async.run((_) {
+            unawaited(service.start(testImageEntry, null));
+            async.flushMicrotasks();
+          });
+          // Let the SDK's cancellation of the old ticker complete, then drain
+          // the replacement's continuation without advancing time.
+          await Future<void>.microtask(() {});
+          async.flushMicrotasks();
+          expect(service.getCurrent()?.id, testImageEntry.id);
+          expect(async.periodicTimerCount, 2);
+
+          // The old cadence would have fired at minute 5; the new one is due
+          // five minutes after the replacement, at minute 8.
+          async.elapse(const Duration(minutes: 4, seconds: 59));
+          expect(autosaved, isEmpty);
+          async.elapse(const Duration(seconds: 1));
+          expect(autosaved, [testImageEntry.meta.id]);
+        } finally {
+          await service.stop();
+          async.flushMicrotasks();
+        }
+      },
+    );
+
+    test('a failing save is logged and the cadence keeps going', () async {
+      var attempts = 0;
+      final error = Exception('db unavailable');
+      final service = TimeService(
+        autosave: (_) async {
+          attempts++;
+          throw error;
+        },
+      );
+      final async = FakeAsync();
+      try {
+        async
+          ..run((_) => unawaited(service.start(testTextEntry, null)))
+          ..elapse(const Duration(minutes: 5));
+
+        verify(
+          () => domainLogger.error(
+            LogDomain.persistence,
+            error,
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'autosaveRunningTimer',
+          ),
+        ).called(1);
+        expect(service.getCurrent()?.id, testTextEntry.id);
+
+        async.elapse(const Duration(minutes: 5));
+        expect(attempts, 2);
+      } finally {
+        await service.stop();
+        async.flushMicrotasks();
+      }
+    });
+
+    test('schedules no cadence without an autosave callback', () async {
+      final service = TimeService();
+      final async = FakeAsync();
+      try {
+        async
+          ..run((_) => unawaited(service.start(testTextEntry, null)))
+          ..flushMicrotasks();
+        expect(async.periodicTimerCount, 1, reason: 'only the 1s ticker');
+      } finally {
+        await service.stop();
+        async.flushMicrotasks();
+      }
     });
   });
 }

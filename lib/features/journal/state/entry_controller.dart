@@ -89,6 +89,11 @@ class EntryController extends AsyncNotifier<EntryState?> {
   bool animationCompleted = false;
 
   bool _dirty = false;
+
+  /// The entry version (`updatedAt`) the editor's content is based on, and so
+  /// the key its drafts are written under. Set when [controller] is built,
+  /// and advanced by a write that leaves the stored text alone.
+  DateTime? _draftBase;
   bool _isFocused = false;
   bool _shouldShowEditorToolBar = false;
   PersistenceLogic get _persistenceLogic => getIt<PersistenceLogic>();
@@ -105,14 +110,41 @@ class EntryController extends AsyncNotifier<EntryState?> {
     ) async {
       if (affectedIds.contains(id)) {
         final latest = await _fetch();
-        if (latest != state.value?.entry) {
+        final previous = state.value?.entry;
+        if (latest != previous) {
           state = AsyncData(state.value?.copyWith(entry: latest));
-          if (!_dirty && !_editorStateService.entryIsUnsaved(id)) {
-            setController();
+          if (latest?.entryText != previous?.entryText) {
+            if (!_dirty && !_editorStateService.entryIsUnsaved(id)) {
+              setController();
+            }
+          } else if (latest != null) {
+            await _rebaseEditorOnto(latest.meta.updatedAt);
           }
         }
       }
     });
+  }
+
+  /// Follows a write that changed the entry but not its text — such as the
+  /// running timer's periodic autosave of its end time. The editor keeps its
+  /// controller, so an open editor's cursor does not jump, and an unsaved
+  /// draft moves onto the new version so it is still restored after a
+  /// restart.
+  ///
+  /// The draft is moved whether or not [EditorStateService] holds it in
+  /// memory yet: a draft restored from `EditorDb` is loaded asynchronously,
+  /// and the move is a no-op when there is no draft on [_draftBase].
+  Future<void> _rebaseEditorOnto(DateTime updatedAt) async {
+    final base = _draftBase;
+    if (base == null || base == updatedAt) {
+      return;
+    }
+    _draftBase = updatedAt;
+    await _editorStateService.rebaseDraft(
+      id: id,
+      from: base,
+      to: updatedAt,
+    );
   }
 
   @override
@@ -362,7 +394,7 @@ class EntryController extends AsyncNotifier<EntryState?> {
 
     await _editorStateService.entryWasSaved(
       id: id,
-      lastSaved: entry.meta.updatedAt,
+      lastSaved: _draftBase ?? entry.meta.updatedAt,
       controller: controller,
     );
     await HapticFeedback.heavyImpact();
@@ -399,7 +431,7 @@ class EntryController extends AsyncNotifier<EntryState?> {
 
     await _editorStateService.dropDraft(
       id: id,
-      lastSaved: entry.meta.updatedAt,
+      lastSaved: _draftBase ?? entry.meta.updatedAt,
     );
     // Rebuild from the saved text: with the draft gone, setController falls back
     // to entry.entryText, reverting any unsaved edits.
@@ -711,8 +743,9 @@ class EntryController extends AsyncNotifier<EntryState?> {
   /// (Re)builds the Quill editor [controller] from the best available source:
   /// an unsaved draft from the editor-state service, else the saved
   /// `entryText.quill`, else markdown converted to a Quill delta. Disposes the
-  /// previous controller and wires a change listener that saves temp drafts and
-  /// marks the entry dirty on every edit.
+  /// previous controller and wires a change listener that saves temp drafts —
+  /// keyed to the entry version the editor is based on — and marks the entry
+  /// dirty on every edit.
   void setController() {
     final entry = state.value?.entry;
 
@@ -732,13 +765,14 @@ class EntryController extends AsyncNotifier<EntryState?> {
       selection: _editorStateService.getSelection(id),
       markdownPasteEnabled: true,
     );
+    _draftBase = entry.meta.updatedAt;
 
     controller.changes.listen((DocChange event) {
       final delta = deltaFromController(controller);
       _editorStateService.saveTempState(
         id: id,
         json: quillJsonFromDelta(delta),
-        lastSaved: entry.meta.updatedAt,
+        lastSaved: _draftBase ?? entry.meta.updatedAt,
       );
       setDirty(value: true);
     });

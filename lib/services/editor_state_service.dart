@@ -19,6 +19,11 @@ class EditorStateService {
   final selectionById = <String, TextSelection>{};
   final unsavedStreamById = <String, StreamController<bool>>{};
 
+  /// The entry version (`updatedAt`) each in-memory draft is keyed to when it
+  /// is written to [EditorDb]. Read when the debounced write fires, so a
+  /// [rebaseDraft] in the meantime is honoured.
+  final _lastSavedById = <String, DateTime>{};
+
   Future<void> init() async {
     final drafts = await _editorDb.allDrafts().get();
     if (drafts.isEmpty) return;
@@ -92,6 +97,7 @@ class EditorStateService {
     required String json,
   }) {
     editorStateById[id] = json;
+    _lastSavedById[id] = lastSaved;
     selectionById.remove(id);
 
     final unsavedStreamController = unsavedStreamById[id];
@@ -101,11 +107,12 @@ class EditorStateService {
 
     void persistDraftState() {
       final latest = editorStateById[id];
+      final latestLastSaved = _lastSavedById[id];
 
-      if (latest != null) {
+      if (latest != null && latestLastSaved != null) {
         _editorDb.insertDraftState(
           entryId: id,
-          lastSaved: lastSaved,
+          lastSaved: latestLastSaved,
           draftDeltaJson: latest,
         );
       }
@@ -129,6 +136,7 @@ class EditorStateService {
 
     final unsavedStreamController = unsavedStreamById[id];
     editorStateById.remove(id);
+    _lastSavedById.remove(id);
 
     if (unsavedStreamController != null) {
       unsavedStreamController.add(false);
@@ -148,9 +156,28 @@ class EditorStateService {
   }) async {
     EasyDebounce.cancel('persistDraftState-$id');
     editorStateById.remove(id);
+    _lastSavedById.remove(id);
     selectionById.remove(id);
     await _editorDb.setDraftSaved(entryId: id, lastSaved: lastSaved);
     unsavedStreamById[id]?.add(false);
+  }
+
+  /// Moves the unsaved draft of [id] from the entry version [from] onto [to],
+  /// both the rows already in [EditorDb] and a debounced write still pending.
+  ///
+  /// For a write that changed the entry but not its text — the running
+  /// timer's autosave of its end time, a flag — after which the draft still
+  /// applies. Without this, the draft stays keyed to the superseded version
+  /// and is not restored after a restart.
+  Future<void> rebaseDraft({
+    required String id,
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    if (_lastSavedById[id] == from) {
+      _lastSavedById[id] = to;
+    }
+    await _editorDb.rebaseDraft(entryId: id, from: from, to: to);
   }
 
   /// Forgets every draft held in memory without persisting any of it:
@@ -167,6 +194,7 @@ class EditorStateService {
       EasyDebounce.cancel('persistDraftState-$id');
     }
     editorStateById.clear();
+    _lastSavedById.clear();
     selectionById.clear();
     for (final controller in unsavedStreamById.values) {
       if (!controller.isClosed) {
