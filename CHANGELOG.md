@@ -39,6 +39,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and trying Undo again did nothing. Trying again now finishes the Undo and
   puts the suggestion back up for a decision. A task you changed before it
   was deleted is still left alone.
+- **Resolving a sync conflict on a task could quietly undo a status,
+  priority, estimate or due date change.** The conflict screen compared a
+  task's title, but lumped every other task field into "other details", so
+  keeping one device's version put back whatever the other device had set
+  there, unseen. The screen now shows a task's status (with the reason it is
+  blocked or on hold), priority, estimate and due date side by side, and
+  Combine lets you take each from either device.
+- **Deep backfill now repairs missing and cut-short photos and recordings.**
+  When two devices had the same entry, a photo or audio file missing on one of
+  them, or only partly received, was never sent again, and a partial file
+  stayed partial even when the whole file arrived later. A deep backfill round
+  now compares file sizes between devices. It sends each device the largest
+  copy any of your devices holds, even with *resend attachments* switched off,
+  and a received file never replaces a larger one.
+- **Working on the same task from two devices now saves the second update on
+  older tasks too.** A task holding any link saved by an older version of the
+  app never let the other device stand down, so both devices still ran the
+  task's agent however the update was started. Each device now tells the
+  other which of those old links its update read. On older tasks, as on new
+  ones, one device's update now ends the other device's countdown whenever it
+  included everything the other device has.
 
 ## [1.1.32]
 
