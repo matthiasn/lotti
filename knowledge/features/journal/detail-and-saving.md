@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Entry detail and saving
-description: The two-state detail machine, Markdown-aware rich-text paste, the save path that writes twice for a task, and the date-time editor whose bounds can never desync.
+description: The two-state detail machine, Markdown-aware rich-text paste, the save path that writes twice for a task, the running timer's five-minute autosave, and the date-time editor whose bounds can never desync.
 resource: ../../../lib/features/journal/state/entry_controller.dart
 tags: [journal, entry-controller, editor, drafts, datetime]
 status: stable
@@ -11,7 +11,7 @@ sources:
   - id: controller
     resource: ../../../lib/features/journal/state/entry_controller.dart
     title: EntryController
-    last_modified: 2026-08-15
+    last_modified: 2026-09-28
   - id: editor-tools
     resource: ../../../lib/features/journal/ui/widgets/editor/editor_tools.dart
     title: Editor conversion helpers
@@ -23,7 +23,15 @@ sources:
   - id: editor-service
     resource: ../../../lib/services/editor_state_service.dart
     title: EditorStateService
-    last_modified: 2026-06-21
+    last_modified: 2026-09-28
+  - id: time-service
+    resource: ../../../lib/services/time_service.dart
+    title: TimeService
+    last_modified: 2026-09-28
+  - id: running-timer-persistence
+    resource: ../../../lib/logic/running_timer_persistence.dart
+    title: Running timer persistence
+    last_modified: 2026-09-28
 ---
 
 `EntryController` is the detail-side brain for **one** entry. It loads the
@@ -139,13 +147,79 @@ or sync set since the page loaded is kept (see
 - Saving with `stopRecording: true` updates the text first, then stops the timer
   after a short delay.
 - When an external update arrives and the entry is **not** dirty, the editor
-  controller is rebuilt from the saved value.
+  controller is rebuilt from the saved value — **but only when the stored text
+  changed**. An update that leaves the text alone (a new end time, a flag) keeps
+  the live controller, so the cursor of an open editor does not jump.
+- **A draft is keyed to the entry version it was typed against** (`updatedAt`,
+  the `lastSaved` of its `EditorDb` row), and is only restored onto that
+  version. The controller tracks that version as its draft base. A write that
+  leaves the text alone advances the base and moves an unsaved draft onto the
+  new version (`EditorStateService.rebaseDraft`, which also re-keys a debounced
+  write still pending), so the draft survives a restart. A write that changed
+  the text leaves the draft keyed to the old version — it was typed against
+  text that no longer exists.
 - When the entry **is** dirty, the controller keeps the user's unsaved editor
   state instead of bluntly resetting it.
 - **`discard()` is the inverse of `save()` without persisting**: it drops the
   in-memory and persisted draft, rebuilds the editor controller from the saved
   text, drops focus, hides the toolbar, and clears the dirty flag. The toolbar
   surfaces it beside Save only while there are unsaved changes.
+
+# A running timer autosaves
+
+While a timer runs, only `TimeService` knows how long it has been going: the
+live duration ticks from its one-second stream, and the stored `dateTo` stays
+where the entry was last saved. Every calendar — this device's, and every
+other device's through sync — reads the stored value, so without help a
+two-hour session shows as a sliver until the timer is stopped.
+
+`TimeService` therefore runs a second cadence next to the ticker:
+every `runningTimerAutosaveInterval` (five minutes) it hands the running entry
+to the injected `autosave` callback. The app's instance comes from
+`buildPersistingTimeService()`, whose callback — for autosave and for a
+replaced timer alike — is `persistRunningTimerEnd`:
+
+```mermaid
+sequenceDiagram
+  participant TS as "TimeService"
+  participant Persister as "persistRunningTimerEnd"
+  participant Persist as "writeOnStored / PersistenceLogic"
+  participant Draft as "EditorStateService"
+  participant Ctl as "EntryController (if open)"
+
+  loop every 5 minutes while running
+    TS->>Persister: running entry
+    Persister->>Persist: stored row with dateTo: now
+    alt stored row changed meanwhile
+      Persist->>Persist: rebuild on the newer row
+    end
+    Persist-->>Persister: written
+    Persister->>Draft: rebaseDraft(old updatedAt, new updatedAt)
+    Persist-->>Ctl: UpdateNotifications
+    Ctl->>Ctl: refresh entry, keep editor (text unchanged)
+    Ctl->>Draft: rebaseDraft(base, new updatedAt), a no-op when already moved
+  end
+```
+
+- **Only the end time is written, never the draft.** Unsaved text stays the
+  user's to save or discard: it is not synced to other devices before they
+  save, and `discard()` still reverts everything typed since the last save.
+  The draft is protected against a crash by `EditorDb`, and rebased onto each
+  autosaved version by the write itself — so it is still restored when no
+  editor for the entry is open to follow the write. An open controller moves
+  it too, which is a no-op once the rows are moved, and also covers a draft
+  restored from `EditorDb` that `EditorStateService` has not loaded yet.
+- **The write is built on the stored row, and only lands on it**
+  (`writeOnStored`). The entry the timer was started with is never written
+  back, and a text save landing between the read and the write is built on
+  rather than put back — the stored end time never moves backwards either,
+  since a rebuilt write takes the time again.
+- **The cadence belongs to the session.** `stop()` cancels it, and a replacing
+  `start()` restarts it for the new entry, whose first autosave is five
+  minutes after it started. The outgoing entry gets its stop time through the
+  separate `persistTimerStop` callback instead.
+- **A failed write is logged, never thrown** (`autosaveRunningTimer` sub-domain
+  under `LogDomain.persistence`), and the next tick tries again.
 
 # The start/end date-time editor
 

@@ -203,6 +203,75 @@ void main() {
     });
   });
 
+  group('rebaseDraft', () {
+    const entryId = 'entry-1';
+    final typedAgainst = DateTime(2024, 3, 15, 10, 30);
+    final newVersion = DateTime(2024, 3, 15, 10, 35);
+
+    test('moves the open draft onto the new version, where it is found and '
+        'can be marked saved', () async {
+      await db.insertDraftState(
+        entryId: entryId,
+        lastSaved: typedAgainst,
+        draftDeltaJson: '{"ops":[{"insert":"draft"}]}',
+      );
+
+      final moved = await db.rebaseDraft(
+        entryId: entryId,
+        from: typedAgainst,
+        to: newVersion,
+      );
+
+      expect(moved, 1);
+      expect(await db.getLatestDraft(entryId, lastSaved: typedAgainst), isNull);
+      final draft = await db.getLatestDraft(entryId, lastSaved: newVersion);
+      expect(draft?.delta, '{"ops":[{"insert":"draft"}]}');
+      expect(
+        await db.setDraftSaved(entryId: entryId, lastSaved: newVersion),
+        1,
+      );
+    });
+
+    test(
+      'leaves saved drafts, other versions and other entries alone',
+      () async {
+        await db.insertDraftState(
+          entryId: entryId,
+          lastSaved: typedAgainst,
+          draftDeltaJson: '{"ops":[{"insert":"saved"}]}',
+        );
+        await db.setDraftSaved(entryId: entryId, lastSaved: typedAgainst);
+        await db.insertDraftState(
+          entryId: 'entry-2',
+          lastSaved: typedAgainst,
+          draftDeltaJson: '{"ops":[{"insert":"other entry"}]}',
+        );
+
+        expect(
+          await db.rebaseDraft(
+            entryId: entryId,
+            from: typedAgainst,
+            to: newVersion,
+          ),
+          0,
+        );
+        expect(
+          await db.rebaseDraft(
+            entryId: 'entry-2',
+            from: newVersion,
+            to: typedAgainst,
+          ),
+          0,
+        );
+        final otherEntry = await db.getLatestDraft(
+          'entry-2',
+          lastSaved: typedAgainst,
+        );
+        expect(otherEntry?.delta, '{"ops":[{"insert":"other entry"}]}');
+      },
+    );
+  });
+
   group('setDraftSaved Tests', () {
     test('updates draft status from DRAFT to SAVED', () async {
       const entryId = 'test-entry-123';

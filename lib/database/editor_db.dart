@@ -134,6 +134,30 @@ class EditorDb extends _$EditorDb {
         .write(const EditorDraftsCompanion(status: Value(_draftStatusSaved)));
   }
 
+  /// Moves the open drafts of [entryId] from the entry version [from] onto
+  /// [to].
+  ///
+  /// A draft is only restored onto the version it was typed against (see
+  /// [getLatestDraft]). When the entry is rewritten without its text
+  /// changing — a new end time, a flag — the draft still applies, so it
+  /// follows the entry to its new `updatedAt` instead of being orphaned.
+  /// Only drafts with status DRAFT are touched.
+  ///
+  /// Returns the number of rows updated.
+  Future<int> rebaseDraft({
+    required String entryId,
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    return (update(editorDrafts)..where(
+          (EditorDrafts draft) =>
+              draft.entryId.equals(entryId) &
+              draft.status.equals(_draftStatusDraft) &
+              draft.lastSaved.equals(from),
+        ))
+        .write(EditorDraftsCompanion(lastSaved: Value(to)));
+  }
+
   /// Retrieves the latest draft for an entry.
   ///
   /// Fetches the most recent draft (by creation time) for the specified entry

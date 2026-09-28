@@ -10,6 +10,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/utils/platform.dart' as platform_utils;
 import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
@@ -492,6 +493,100 @@ void main() {
       );
 
       await expectation;
+    });
+
+    group('rebaseDraft', () {
+      final typedAgainst = DateTime(2026, 9, 28, 14);
+      final newVersion = DateTime(2026, 9, 28, 14, 5);
+
+      setUp(() {
+        when(
+          () => mockEditorDb.rebaseDraft(
+            entryId: any(named: 'entryId'),
+            from: any(named: 'from'),
+            to: any(named: 'to'),
+          ),
+        ).thenAnswer((_) async => 1);
+        // The real two-second debounce, so a write is actually pending.
+        final wasTestEnv = platform_utils.isTestEnv;
+        platform_utils.isTestEnv = false;
+        addTearDown(() => platform_utils.isTestEnv = wasTestEnv);
+      });
+
+      test('moves the persisted draft rows onto the new version', () async {
+        await editorStateService.rebaseDraft(
+          id: 'entry-a',
+          from: typedAgainst,
+          to: newVersion,
+        );
+
+        verify(
+          () => mockEditorDb.rebaseDraft(
+            entryId: 'entry-a',
+            from: typedAgainst,
+            to: newVersion,
+          ),
+        ).called(1);
+      });
+
+      test('a debounced write still pending lands under the new version', () {
+        fakeAsync((async) {
+          editorStateService
+            ..saveTempState(
+              id: 'entry-a',
+              lastSaved: typedAgainst,
+              json: '{"ops":[{"insert":"a"}]}',
+            )
+            ..rebaseDraft(id: 'entry-a', from: typedAgainst, to: newVersion);
+          async.flushMicrotasks();
+          verifyNever(
+            () => mockEditorDb.insertDraftState(
+              entryId: any(named: 'entryId'),
+              lastSaved: any(named: 'lastSaved'),
+              draftDeltaJson: any(named: 'draftDeltaJson'),
+            ),
+          );
+          async.elapse(const Duration(seconds: 3));
+
+          verify(
+            () => mockEditorDb.insertDraftState(
+              entryId: 'entry-a',
+              lastSaved: newVersion,
+              draftDeltaJson: '{"ops":[{"insert":"a"}]}',
+            ),
+          ).called(1);
+        });
+      });
+
+      test('leaves a pending write typed against another version alone', () {
+        fakeAsync((async) {
+          final other = DateTime(2026, 9, 28, 13);
+          editorStateService
+            ..saveTempState(
+              id: 'entry-a',
+              lastSaved: other,
+              json: '{"ops":[{"insert":"a"}]}',
+            )
+            ..rebaseDraft(id: 'entry-a', from: typedAgainst, to: newVersion);
+          async.flushMicrotasks();
+          verifyNever(
+            () => mockEditorDb.insertDraftState(
+              entryId: any(named: 'entryId'),
+              lastSaved: any(named: 'lastSaved'),
+              draftDeltaJson: any(named: 'draftDeltaJson'),
+            ),
+          );
+          async.elapse(const Duration(seconds: 3));
+
+          verify(
+            () => mockEditorDb.insertDraftState(
+              entryId: 'entry-a',
+              lastSaved: other,
+              draftDeltaJson: any(named: 'draftDeltaJson'),
+            ),
+          ).called(1);
+        });
+      });
     });
 
     test(
