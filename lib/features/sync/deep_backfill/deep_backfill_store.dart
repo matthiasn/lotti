@@ -42,10 +42,19 @@ abstract class DeepBackfillStore {
     required String? end,
   }) async => const {};
 
+  /// The size in bytes of this device's file for each live record in
+  /// `[start, end)` that carries media — 0 when the file is missing. A
+  /// deletion makes no claim on its file, and is left out. Only journal
+  /// entries (images and audio) carry media.
+  Future<Map<String, int>> mediaSizes({
+    required String? start,
+    required String? end,
+  }) async => const {};
+
   /// Enqueues the current version of each record in [ids] — a deletion as
   /// much as a live row — through the ordinary sync message for its type.
   /// Records in [withMedia] carry their media: the peer holds nothing of
-  /// them yet. Returns how many were enqueued; an id with no row is skipped.
+  /// them yet, or a smaller copy of the file. Returns how many were enqueued; an id with no row is skipped.
   Future<int> enqueueCurrent(Set<String> ids, {required Set<String> withMedia});
 }
 

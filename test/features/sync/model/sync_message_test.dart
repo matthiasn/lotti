@@ -177,6 +177,54 @@ void main() {
         isFalse,
       );
     });
+
+    test("a record's file size travels only when there is one, and a record "
+        'from a peer that predates it reads as none', () {
+      const withMedia = DeepBackfillRecord(
+        id: 'img',
+        vectorClock: VectorClock({'a': 1}),
+        mediaSize: 2048,
+      );
+      const withoutMedia = DeepBackfillRecord(
+        id: 'txt',
+        vectorClock: VectorClock({'a': 1}),
+      );
+
+      expect(
+        DeepBackfillRecord.fromJson(
+          jsonDecode(jsonEncode(withMedia.toJson())) as Map<String, dynamic>,
+        ),
+        withMedia,
+      );
+      // 5000 records a batch: no `"mediaSize": null` on every text entry.
+      expect(withoutMedia.toJson().containsKey('mediaSize'), isFalse);
+      expect(
+        DeepBackfillRecord.fromJson(const {
+          'id': 'img',
+          'vectorClock': {'a': 1},
+        }).mediaSize,
+        isNull,
+      );
+    });
+
+    test('a request for a file round-trips, and one from a peer that '
+        'predates it asks for none', () {
+      const record = DeepBackfillRequestRecord(id: 'img', media: true);
+
+      expect(
+        DeepBackfillRequestRecord.fromJson(
+          jsonDecode(jsonEncode(record.toJson())) as Map<String, dynamic>,
+        ),
+        record,
+      );
+      expect(
+        DeepBackfillRequestRecord.fromJson(const {
+          'id': 'img',
+          'absent': false,
+        }).media,
+        isFalse,
+      );
+    });
   });
 
   group('SyncMessage.configFlag', () {

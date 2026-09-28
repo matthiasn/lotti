@@ -23,21 +23,31 @@ _DeepBackfillRecord _$DeepBackfillRecordFromJson(Map<String, dynamic> json) =>
       vectorClock: VectorClock.fromJson(
         json['vectorClock'] as Map<String, dynamic>,
       ),
+      mediaSize: (json['mediaSize'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$DeepBackfillRecordToJson(_DeepBackfillRecord instance) =>
-    <String, dynamic>{'id': instance.id, 'vectorClock': instance.vectorClock};
+    <String, dynamic>{
+      'id': instance.id,
+      'vectorClock': instance.vectorClock,
+      'mediaSize': ?instance.mediaSize,
+    };
 
 _DeepBackfillRequestRecord _$DeepBackfillRequestRecordFromJson(
   Map<String, dynamic> json,
 ) => _DeepBackfillRequestRecord(
   id: json['id'] as String,
   absent: json['absent'] as bool? ?? false,
+  media: json['media'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$DeepBackfillRequestRecordToJson(
   _DeepBackfillRequestRecord instance,
-) => <String, dynamic>{'id': instance.id, 'absent': instance.absent};
+) => <String, dynamic>{
+  'id': instance.id,
+  'absent': instance.absent,
+  'media': instance.media,
+};
 
 _SyncCounterRange _$SyncCounterRangeFromJson(Map<String, dynamic> json) =>
     _SyncCounterRange(
@@ -478,6 +488,11 @@ SyncDeepBackfillInventory _$SyncDeepBackfillInventoryFromJson(
   unclocked:
       (json['unclocked'] as List<dynamic>?)?.map((e) => e as String).toList() ??
       const <String>[],
+  unclockedMediaSizes:
+      (json['unclockedMediaSizes'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, (e as num).toInt()),
+      ) ??
+      const <String, int>{},
   jsonPath: json['jsonPath'] as String?,
   attachmentEventId: json['attachmentEventId'] as String?,
   $type: json['runtimeType'] as String?,
@@ -495,6 +510,7 @@ Map<String, dynamic> _$SyncDeepBackfillInventoryToJson(
   'records': instance.records.map((e) => e.toJson()).toList(),
   'conflicts': instance.conflicts.map((e) => e.toJson()).toList(),
   'unclocked': instance.unclocked,
+  'unclockedMediaSizes': instance.unclockedMediaSizes,
   'jsonPath': instance.jsonPath,
   'attachmentEventId': instance.attachmentEventId,
   'runtimeType': instance.$type,

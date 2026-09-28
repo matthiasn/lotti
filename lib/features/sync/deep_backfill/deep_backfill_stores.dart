@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/notification_entity.dart';
+import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
@@ -12,6 +14,7 @@ import 'package:lotti/features/agents/model/agent_link.dart' as model;
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_store.dart';
+import 'package:lotti/features/sync/media/entry_media.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
@@ -73,8 +76,10 @@ class JournalDeepBackfillStore extends DeepBackfillStore {
   JournalDeepBackfillStore({
     required JournalDb journalDb,
     required OutboxService outboxService,
+    required Directory documentsDirectory,
   }) : _db = journalDb,
        _outbox = outboxService,
+       _docs = documentsDirectory,
        _queries = DeepBackfillTableQueries(
          db: journalDb,
          table: 'journal',
@@ -86,6 +91,7 @@ class JournalDeepBackfillStore extends DeepBackfillStore {
 
   final JournalDb _db;
   final OutboxService _outbox;
+  final Directory _docs;
   final DeepBackfillTableQueries _queries;
 
   @override
@@ -120,6 +126,42 @@ class JournalDeepBackfillStore extends DeepBackfillStore {
       '${where.isEmpty ? 'WHERE' : '$where AND'} status = ?',
       [...variables, Variable.withInt(ConflictStatus.unresolved.index)],
     );
+  }
+
+  /// Reads the file size of every live image and audio entry in the range,
+  /// resolved as the payload sender resolves it: the size advertised is the
+  /// size of the file an answer would carry.
+  @override
+  Future<Map<String, int>> mediaSizes({
+    required String? start,
+    required String? end,
+  }) async {
+    final (where, variables) = DeepBackfillTableQueries.rangeClause(
+      start: start,
+      end: end,
+    );
+    final rows = await _db
+        .customSelect(
+          'SELECT id, serialized FROM journal '
+          '${where.isEmpty ? 'WHERE' : '$where AND'} deleted = 0 '
+          'AND type IN (?, ?)',
+          variables: [
+            ...variables,
+            Variable.withString('JournalImage'),
+            Variable.withString('JournalAudio'),
+          ],
+        )
+        .get();
+    final sizes = <String, int>{};
+    for (final row in rows) {
+      final media = entryMedia(
+        fromSerialized(row.read<String>('serialized')),
+        documentsDirectory: _docs,
+      );
+      if (media == null) continue;
+      sizes[row.read<String>('id')] = await mediaFileLength(media.file);
+    }
+    return sizes;
   }
 
   /// The open conflict clocks of [ids], in chunks.
@@ -320,8 +362,13 @@ List<DeepBackfillStore> allDeepBackfillStores({
   required NotificationsDb notificationsDb,
   required ConsumptionDatabase consumptionDatabase,
   required OutboxService outboxService,
+  required Directory documentsDirectory,
 }) => [
-  JournalDeepBackfillStore(journalDb: journalDb, outboxService: outboxService),
+  JournalDeepBackfillStore(
+    journalDb: journalDb,
+    outboxService: outboxService,
+    documentsDirectory: documentsDirectory,
+  ),
   entryLinkDeepBackfillStore(
     journalDb: journalDb,
     outboxService: outboxService,

@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:drift/drift.dart' show Value;
+
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_diff.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_store.dart';
@@ -63,6 +65,13 @@ class DeepBackfillRoundSummary {
 ///   and a push of what it holds newer, concurrent, or alone.
 /// - [handleRequest] is `Answer`: the current row of each requested record,
 ///   through the ordinary sync message for its type.
+///
+/// The files behind image and audio entries ride along, as model-checked in
+/// `specs/tla/DeepBackfillMedia.tla`: the inventory lists each live media
+/// record's file size, a recipient asks for a larger copy and pushes back a
+/// smaller one's, and an answer or push flagged for media carries the file
+/// whatever the resend-attachments setting says. The receiver keeps a file
+/// unless the incoming one is larger (`AttachmentIngestor`).
 ///
 /// Received versions go through each type's existing write decision; nothing
 /// on the receive side is new.
@@ -142,6 +151,7 @@ class DeepBackfillService {
             : page;
         final end = page.length > _batchSize ? page[_batchSize].id : null;
         final conflicts = await store.openConflicts(start: start, end: end);
+        final media = await store.mediaSizes(start: start, end: end);
 
         // Throws: a batch that never reached the outbox leaves its range
         // uncompared, and the round must not report success.
@@ -156,7 +166,11 @@ class DeepBackfillService {
             records: [
               for (final row in rows)
                 if (row.clock case final clock?)
-                  DeepBackfillRecord(id: row.id, vectorClock: clock),
+                  DeepBackfillRecord(
+                    id: row.id,
+                    vectorClock: clock,
+                    mediaSize: media[row.id],
+                  ),
             ],
             conflicts: [
               for (final MapEntry(key: id, value: clocks) in conflicts.entries)
@@ -170,6 +184,10 @@ class DeepBackfillService {
               for (final row in rows)
                 if (row.clock == null) row.id,
             ],
+            unclockedMediaSizes: {
+              for (final row in rows)
+                if (row.clock == null) row.id: ?media[row.id],
+            },
           ),
         );
         batches++;
@@ -219,6 +237,7 @@ class DeepBackfillService {
     final end = inventory.rangeEnd;
     final local = await store.range(start: start, end: end);
     final localConflicts = await store.openConflicts(start: start, end: end);
+    final localMedia = await store.mediaSizes(start: start, end: end);
     final outstanding = await _settleOutstanding(
       advertiser: inventory.hostId,
       payloadType: inventory.payloadType,
@@ -226,6 +245,7 @@ class DeepBackfillService {
       end: end,
       local: local,
       localConflicts: localConflicts,
+      localMedia: localMedia,
     );
 
     final diff = diffDeepBackfillBatch(
@@ -237,6 +257,11 @@ class DeepBackfillService {
       local: local,
       localConflicts: localConflicts,
       outstanding: outstanding,
+      advertisedMedia: {
+        for (final record in inventory.records) record.id: ?record.mediaSize,
+        ...inventory.unclockedMediaSizes,
+      },
+      localMedia: localMedia,
     );
 
     // Pushes first: a request that cannot be queued rethrows, and must not
@@ -244,7 +269,7 @@ class DeepBackfillService {
     if (diff.pushes.isNotEmpty) {
       await store.enqueueCurrent(
         diff.pushes,
-        withMedia: diff.advertiserLacks,
+        withMedia: {...diff.advertiserLacks, ...diff.mediaPushes},
       );
     }
     if (diff.requests.isNotEmpty) {
@@ -256,6 +281,8 @@ class DeepBackfillService {
       'type=${inventory.payloadType.name} batch=${inventory.batch} '
       'advertised=${inventory.records.length} local=${local.length} '
       'requested=${diff.requests.length} pushed=${diff.pushes.length} '
+      'mediaRequested=${diff.mediaRequests.length} '
+      'mediaPushed=${diff.mediaPushes.length} '
       'outstanding=${outstanding.length} '
       'incomparable=${diff.incomparable.length}',
       subDomain: 'deepBackfill.diff',
@@ -271,9 +298,11 @@ class DeepBackfillService {
     final store = _stores[request.payloadType];
     if (store == null) return;
     final ids = {for (final record in request.records) record.id};
+    // The file travels with the answer whatever the resend-attachments
+    // setting says: the requester lacks it, and nothing else will send it.
     final withMedia = {
       for (final record in request.records)
-        if (record.absent) record.id,
+        if (record.absent || record.media) record.id,
     };
     final sent = await store.enqueueCurrent(ids, withMedia: withMedia);
     _logging.log(
@@ -296,6 +325,7 @@ class DeepBackfillService {
     required String? end,
     required Map<String, VectorClock?> local,
     required Map<String, List<VectorClock>> localConflicts,
+    required Map<String, int> localMedia,
   }) async {
     final rows = await _syncDb.deepBackfillRequestsInRange(
       targetHostId: advertiser,
@@ -316,6 +346,8 @@ class DeepBackfillService {
             holdsRow: local.containsKey(row.entryId),
             local: local[row.entryId],
             openConflicts: localConflicts[row.entryId] ?? const [],
+            askedMediaSize: row.mediaSize,
+            localMediaSize: localMedia[row.entryId],
           );
       (settled ? done : open).add(row.entryId);
     }
@@ -345,6 +377,7 @@ class DeepBackfillService {
           payloadType: inventory.payloadType.index,
           entryId: id,
           vectorClocks: jsonEncode([for (final c in clocks) c.toJson()]),
+          mediaSize: Value(diff.mediaRequests[id]),
           requestedAt: requestedAt,
         ),
     ]);
@@ -359,6 +392,7 @@ class DeepBackfillService {
               DeepBackfillRequestRecord(
                 id: id,
                 absent: diff.absentLocally.contains(id),
+                media: diff.mediaRequests.containsKey(id),
               ),
           ],
         ),

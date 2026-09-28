@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/media/entry_media.dart';
 import 'package:lotti/features/sync/model/sync_attachment_policy.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
@@ -14,14 +14,13 @@ import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/sync/vector_clock_logging.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:path/path.dart' as p;
 
-part 'outbox_enqueue_writer_simple.dart';
 part 'outbox_enqueue_writer_agent.dart';
+part 'outbox_enqueue_writer_simple.dart';
 
 /// Per-message-type enqueue collaborator behind `OutboxService.enqueueMessage`:
 /// message preparation (originating host, embedded links, covered vector
@@ -314,8 +313,15 @@ class OutboxEnqueueWriter {
       includeAttachments: msg.includeAttachments,
       resendAttachmentsFlag: await _journalDb.getConfigFlag(resendAttachments),
     );
-    final attachment = sendAttachments ? _mediaFileFor(journalEntity) : null;
-    final fileLength = await _attachmentLength(attachment);
+    final attachment = sendAttachments
+        ? entryMedia(
+            journalEntity,
+            documentsDirectory: _documentsDirectory,
+          )?.file
+        : null;
+    final fileLength = attachment == null
+        ? 0
+        : await mediaFileLength(attachment);
     final subject = '$hostHash:$localCounter';
 
     await _syncDatabase.addOutboxItem(
@@ -349,33 +355,6 @@ class OutboxEnqueueWriter {
           subDomain: 'recordSent',
         );
       }
-    }
-  }
-
-  /// The on-disk media file [entity] references, or null for entity types that
-  /// carry no media. Pure path resolution — it does not check existence and
-  /// does not consult the attachment policy.
-  File? _mediaFileFor(JournalEntity entity) => entity.maybeMap(
-    journalAudio: (JournalAudio journalAudio) =>
-        File(AudioUtils.getAudioPath(journalAudio, _documentsDirectory)),
-    journalImage: (JournalImage journalImage) => File(
-      getFullImagePath(
-        journalImage,
-        documentsDirectory: _documentsDirectory.path,
-      ),
-    ),
-    orElse: () => null,
-  );
-
-  /// Byte length of [attachment], or 0 when it is null or unreadable. A zero
-  /// length is the signal used throughout the enqueue paths for "no attachment
-  /// on this row" — a missing blob must not block the JSON from syncing.
-  Future<int> _attachmentLength(File? attachment) async {
-    if (attachment == null) return 0;
-    try {
-      return await attachment.length();
-    } catch (_) {
-      return 0;
     }
   }
 

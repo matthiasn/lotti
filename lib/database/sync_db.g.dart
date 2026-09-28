@@ -3864,6 +3864,17 @@ class $DeepBackfillRequestsTable extends DeepBackfillRequests
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _mediaSizeMeta = const VerificationMeta(
+    'mediaSize',
+  );
+  @override
+  late final GeneratedColumn<int> mediaSize = GeneratedColumn<int>(
+    'media_size',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _requestedAtMeta = const VerificationMeta(
     'requestedAt',
   );
@@ -3881,6 +3892,7 @@ class $DeepBackfillRequestsTable extends DeepBackfillRequests
     payloadType,
     entryId,
     vectorClocks,
+    mediaSize,
     requestedAt,
   ];
   @override
@@ -3936,6 +3948,12 @@ class $DeepBackfillRequestsTable extends DeepBackfillRequests
     } else if (isInserting) {
       context.missing(_vectorClocksMeta);
     }
+    if (data.containsKey('media_size')) {
+      context.handle(
+        _mediaSizeMeta,
+        mediaSize.isAcceptableOrUnknown(data['media_size']!, _mediaSizeMeta),
+      );
+    }
     if (data.containsKey('requested_at')) {
       context.handle(
         _requestedAtMeta,
@@ -3975,6 +3993,10 @@ class $DeepBackfillRequestsTable extends DeepBackfillRequests
         DriftSqlType.string,
         data['${effectivePrefix}vector_clocks'],
       )!,
+      mediaSize: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}media_size'],
+      ),
       requestedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}requested_at'],
@@ -4000,12 +4022,18 @@ class DeepBackfillRequestItem extends DataClass
   /// JSON list of the vector clocks asked for: the advertiser's row and any
   /// of its open conflict versions this device did not keep.
   final String vectorClocks;
+
+  /// The size of the advertiser's file the request asked for, when the
+  /// request is for the record's media too; null when it is not. The
+  /// request is settled once the local copy is at least this large.
+  final int? mediaSize;
   final DateTime requestedAt;
   const DeepBackfillRequestItem({
     required this.targetHostId,
     required this.payloadType,
     required this.entryId,
     required this.vectorClocks,
+    this.mediaSize,
     required this.requestedAt,
   });
   @override
@@ -4015,6 +4043,9 @@ class DeepBackfillRequestItem extends DataClass
     map['payload_type'] = Variable<int>(payloadType);
     map['entry_id'] = Variable<String>(entryId);
     map['vector_clocks'] = Variable<String>(vectorClocks);
+    if (!nullToAbsent || mediaSize != null) {
+      map['media_size'] = Variable<int>(mediaSize);
+    }
     map['requested_at'] = Variable<DateTime>(requestedAt);
     return map;
   }
@@ -4025,6 +4056,9 @@ class DeepBackfillRequestItem extends DataClass
       payloadType: Value(payloadType),
       entryId: Value(entryId),
       vectorClocks: Value(vectorClocks),
+      mediaSize: mediaSize == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mediaSize),
       requestedAt: Value(requestedAt),
     );
   }
@@ -4039,6 +4073,7 @@ class DeepBackfillRequestItem extends DataClass
       payloadType: serializer.fromJson<int>(json['payloadType']),
       entryId: serializer.fromJson<String>(json['entryId']),
       vectorClocks: serializer.fromJson<String>(json['vectorClocks']),
+      mediaSize: serializer.fromJson<int?>(json['mediaSize']),
       requestedAt: serializer.fromJson<DateTime>(json['requestedAt']),
     );
   }
@@ -4050,6 +4085,7 @@ class DeepBackfillRequestItem extends DataClass
       'payloadType': serializer.toJson<int>(payloadType),
       'entryId': serializer.toJson<String>(entryId),
       'vectorClocks': serializer.toJson<String>(vectorClocks),
+      'mediaSize': serializer.toJson<int?>(mediaSize),
       'requestedAt': serializer.toJson<DateTime>(requestedAt),
     };
   }
@@ -4059,12 +4095,14 @@ class DeepBackfillRequestItem extends DataClass
     int? payloadType,
     String? entryId,
     String? vectorClocks,
+    Value<int?> mediaSize = const Value.absent(),
     DateTime? requestedAt,
   }) => DeepBackfillRequestItem(
     targetHostId: targetHostId ?? this.targetHostId,
     payloadType: payloadType ?? this.payloadType,
     entryId: entryId ?? this.entryId,
     vectorClocks: vectorClocks ?? this.vectorClocks,
+    mediaSize: mediaSize.present ? mediaSize.value : this.mediaSize,
     requestedAt: requestedAt ?? this.requestedAt,
   );
   DeepBackfillRequestItem copyWithCompanion(
@@ -4081,6 +4119,7 @@ class DeepBackfillRequestItem extends DataClass
       vectorClocks: data.vectorClocks.present
           ? data.vectorClocks.value
           : this.vectorClocks,
+      mediaSize: data.mediaSize.present ? data.mediaSize.value : this.mediaSize,
       requestedAt: data.requestedAt.present
           ? data.requestedAt.value
           : this.requestedAt,
@@ -4094,6 +4133,7 @@ class DeepBackfillRequestItem extends DataClass
           ..write('payloadType: $payloadType, ')
           ..write('entryId: $entryId, ')
           ..write('vectorClocks: $vectorClocks, ')
+          ..write('mediaSize: $mediaSize, ')
           ..write('requestedAt: $requestedAt')
           ..write(')'))
         .toString();
@@ -4105,6 +4145,7 @@ class DeepBackfillRequestItem extends DataClass
     payloadType,
     entryId,
     vectorClocks,
+    mediaSize,
     requestedAt,
   );
   @override
@@ -4115,6 +4156,7 @@ class DeepBackfillRequestItem extends DataClass
           other.payloadType == this.payloadType &&
           other.entryId == this.entryId &&
           other.vectorClocks == this.vectorClocks &&
+          other.mediaSize == this.mediaSize &&
           other.requestedAt == this.requestedAt);
 }
 
@@ -4124,6 +4166,7 @@ class DeepBackfillRequestsCompanion
   final Value<int> payloadType;
   final Value<String> entryId;
   final Value<String> vectorClocks;
+  final Value<int?> mediaSize;
   final Value<DateTime> requestedAt;
   final Value<int> rowid;
   const DeepBackfillRequestsCompanion({
@@ -4131,6 +4174,7 @@ class DeepBackfillRequestsCompanion
     this.payloadType = const Value.absent(),
     this.entryId = const Value.absent(),
     this.vectorClocks = const Value.absent(),
+    this.mediaSize = const Value.absent(),
     this.requestedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -4139,6 +4183,7 @@ class DeepBackfillRequestsCompanion
     required int payloadType,
     required String entryId,
     required String vectorClocks,
+    this.mediaSize = const Value.absent(),
     required DateTime requestedAt,
     this.rowid = const Value.absent(),
   }) : targetHostId = Value(targetHostId),
@@ -4151,6 +4196,7 @@ class DeepBackfillRequestsCompanion
     Expression<int>? payloadType,
     Expression<String>? entryId,
     Expression<String>? vectorClocks,
+    Expression<int>? mediaSize,
     Expression<DateTime>? requestedAt,
     Expression<int>? rowid,
   }) {
@@ -4159,6 +4205,7 @@ class DeepBackfillRequestsCompanion
       if (payloadType != null) 'payload_type': payloadType,
       if (entryId != null) 'entry_id': entryId,
       if (vectorClocks != null) 'vector_clocks': vectorClocks,
+      if (mediaSize != null) 'media_size': mediaSize,
       if (requestedAt != null) 'requested_at': requestedAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -4169,6 +4216,7 @@ class DeepBackfillRequestsCompanion
     Value<int>? payloadType,
     Value<String>? entryId,
     Value<String>? vectorClocks,
+    Value<int?>? mediaSize,
     Value<DateTime>? requestedAt,
     Value<int>? rowid,
   }) {
@@ -4177,6 +4225,7 @@ class DeepBackfillRequestsCompanion
       payloadType: payloadType ?? this.payloadType,
       entryId: entryId ?? this.entryId,
       vectorClocks: vectorClocks ?? this.vectorClocks,
+      mediaSize: mediaSize ?? this.mediaSize,
       requestedAt: requestedAt ?? this.requestedAt,
       rowid: rowid ?? this.rowid,
     );
@@ -4197,6 +4246,9 @@ class DeepBackfillRequestsCompanion
     if (vectorClocks.present) {
       map['vector_clocks'] = Variable<String>(vectorClocks.value);
     }
+    if (mediaSize.present) {
+      map['media_size'] = Variable<int>(mediaSize.value);
+    }
     if (requestedAt.present) {
       map['requested_at'] = Variable<DateTime>(requestedAt.value);
     }
@@ -4213,6 +4265,7 @@ class DeepBackfillRequestsCompanion
           ..write('payloadType: $payloadType, ')
           ..write('entryId: $entryId, ')
           ..write('vectorClocks: $vectorClocks, ')
+          ..write('mediaSize: $mediaSize, ')
           ..write('requestedAt: $requestedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -6185,6 +6238,7 @@ typedef $$DeepBackfillRequestsTableCreateCompanionBuilder =
       required int payloadType,
       required String entryId,
       required String vectorClocks,
+      Value<int?> mediaSize,
       required DateTime requestedAt,
       Value<int> rowid,
     });
@@ -6194,6 +6248,7 @@ typedef $$DeepBackfillRequestsTableUpdateCompanionBuilder =
       Value<int> payloadType,
       Value<String> entryId,
       Value<String> vectorClocks,
+      Value<int?> mediaSize,
       Value<DateTime> requestedAt,
       Value<int> rowid,
     });
@@ -6224,6 +6279,11 @@ class $$DeepBackfillRequestsTableFilterComposer
 
   ColumnFilters<String> get vectorClocks => $composableBuilder(
     column: $table.vectorClocks,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get mediaSize => $composableBuilder(
+    column: $table.mediaSize,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6262,6 +6322,11 @@ class $$DeepBackfillRequestsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get mediaSize => $composableBuilder(
+    column: $table.mediaSize,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get requestedAt => $composableBuilder(
     column: $table.requestedAt,
     builder: (column) => ColumnOrderings(column),
@@ -6294,6 +6359,9 @@ class $$DeepBackfillRequestsTableAnnotationComposer
     column: $table.vectorClocks,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get mediaSize =>
+      $composableBuilder(column: $table.mediaSize, builder: (column) => column);
 
   GeneratedColumn<DateTime> get requestedAt => $composableBuilder(
     column: $table.requestedAt,
@@ -6348,6 +6416,7 @@ class $$DeepBackfillRequestsTableTableManager
                 Value<int> payloadType = const Value.absent(),
                 Value<String> entryId = const Value.absent(),
                 Value<String> vectorClocks = const Value.absent(),
+                Value<int?> mediaSize = const Value.absent(),
                 Value<DateTime> requestedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DeepBackfillRequestsCompanion(
@@ -6355,6 +6424,7 @@ class $$DeepBackfillRequestsTableTableManager
                 payloadType: payloadType,
                 entryId: entryId,
                 vectorClocks: vectorClocks,
+                mediaSize: mediaSize,
                 requestedAt: requestedAt,
                 rowid: rowid,
               ),
@@ -6364,6 +6434,7 @@ class $$DeepBackfillRequestsTableTableManager
                 required int payloadType,
                 required String entryId,
                 required String vectorClocks,
+                Value<int?> mediaSize = const Value.absent(),
                 required DateTime requestedAt,
                 Value<int> rowid = const Value.absent(),
               }) => DeepBackfillRequestsCompanion.insert(
@@ -6371,6 +6442,7 @@ class $$DeepBackfillRequestsTableTableManager
                 payloadType: payloadType,
                 entryId: entryId,
                 vectorClocks: vectorClocks,
+                mediaSize: mediaSize,
                 requestedAt: requestedAt,
                 rowid: rowid,
               ),

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -53,6 +54,7 @@ void main() {
 
   group('JournalDeepBackfillStore', () {
     late JournalDb db;
+    late Directory documents;
     late JournalDeepBackfillStore store;
 
     JournalEntity entry(String id, VectorClock clock, {bool deleted = false}) =>
@@ -81,7 +83,12 @@ void main() {
 
     setUp(() async {
       db = JournalDb(inMemoryDatabase: true);
-      store = JournalDeepBackfillStore(journalDb: db, outboxService: outbox);
+      documents = Directory.systemTemp.createTempSync('deep_backfill_stores');
+      store = JournalDeepBackfillStore(
+        journalDb: db,
+        outboxService: outbox,
+        documentsDirectory: documents,
+      );
       await db.upsertJournalDbEntity(
         toDbEntity(entry('a', const VectorClock({'h': 1}))),
       );
@@ -90,7 +97,10 @@ void main() {
       );
     });
 
-    tearDown(() => db.close());
+    tearDown(() async {
+      await db.close();
+      documents.deleteSync(recursive: true);
+    });
 
     test('advertises rows by their meta clock, deletions included', () async {
       expect(store.payloadType, SyncSequencePayloadType.journalEntity);
@@ -101,6 +111,66 @@ void main() {
       ]);
       expect(await store.range(start: 'b', end: null), {
         'b': const VectorClock({'h': 2}),
+      });
+    });
+
+    test('reads the file size of each live image and audio entry in the '
+        'range, 0 for a missing file, and makes no claim for a deletion or '
+        'an entry without media', () async {
+      final date = DateTime.utc(2024);
+      Metadata meta(String id, {bool deleted = false}) => Metadata(
+        id: id,
+        createdAt: date,
+        updatedAt: date,
+        dateFrom: date,
+        dateTo: date,
+        vectorClock: const VectorClock({'h': 1}),
+        deletedAt: deleted ? date : null,
+      );
+      JournalEntity image(String id, {bool deleted = false}) => JournalImage(
+        meta: meta(id, deleted: deleted),
+        data: ImageData(
+          capturedAt: date,
+          imageId: 'img-$id',
+          imageFile: '$id.jpg',
+          imageDirectory: '/images/2024-01-01/',
+        ),
+      );
+      JournalEntity audio(String id) => JournalAudio(
+        meta: meta(id),
+        data: AudioData(
+          dateFrom: date,
+          dateTo: date,
+          audioFile: '$id.aac',
+          audioDirectory: '/audio/2024-01-01/',
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      void writeFile(String relativePath, int bytes) =>
+          File('${documents.path}$relativePath')
+            ..createSync(recursive: true)
+            ..writeAsBytesSync(List<int>.filled(bytes, 1));
+
+      for (final entity in [
+        image('m1'),
+        image('m2'),
+        image('m3', deleted: true),
+        audio('m4'),
+        image('z9'),
+      ]) {
+        await db.upsertJournalDbEntity(toDbEntity(entity));
+      }
+      writeFile('/images/2024-01-01/m1.jpg', 5);
+      writeFile('/images/2024-01-01/m3.jpg', 7);
+      writeFile('/audio/2024-01-01/m4.aac', 9);
+      writeFile('/images/2024-01-01/z9.jpg', 3);
+
+      // 'a' and 'b' (setUp) are text entries: no media. 'z9' lies past the
+      // range's end.
+      expect(await store.mediaSizes(start: null, end: 'n'), {
+        'm1': 5,
+        'm2': 0,
+        'm4': 9,
       });
     });
 
@@ -181,6 +251,8 @@ void main() {
       expect(await store.range(start: null, end: null), {
         'link-1': const VectorClock({'h': 4}),
       });
+      // Links carry no files: a round never compares media for them.
+      expect(await store.mediaSizes(start: null, end: null), isEmpty);
       expect(await store.enqueueCurrent({'link-1'}, withMedia: {}), 1);
       final message = enqueued().single as SyncEntryLink;
       expect(message.entryLink.id, 'link-1');
@@ -356,6 +428,7 @@ void main() {
       notificationsDb: notificationsDb,
       consumptionDatabase: consumptionDb,
       outboxService: outbox,
+      documentsDirectory: Directory.systemTemp,
     );
 
     // A type missing here is missing from every round and from the page's

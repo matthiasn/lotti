@@ -122,7 +122,19 @@ sources:
     last_modified: 2026-09-27
   - id: deep-backfill-requests
     resource: ../../../lib/database/sync_db_deep_backfill.dart
-    title: Outstanding deep-backfill requests (sync DB v31)
+    title: Outstanding deep-backfill requests (sync DB v31; v32 adds the media size asked for)
+    last_modified: 2026-09-27
+  - id: deep-backfill-media-spec
+    resource: ../../../specs/tla/DeepBackfillMedia.tla
+    title: TLA+ model of the files behind image and audio entries in a deep-backfill round
+    last_modified: 2026-09-27
+  - id: entry-media
+    resource: ../../../lib/features/sync/media/entry_media.dart
+    title: The one resolution of an entry's media file every sync path shares
+    last_modified: 2026-09-27
+  - id: attachment-saver
+    resource: ../../../lib/features/sync/matrix/pipeline/attachment_saver.dart
+    title: Received files replace a local copy only when larger
     last_modified: 2026-09-27
   - id: adr-0083
     resource: ../../../docs/adr/0083-model-checked-journal-replication.md
@@ -786,6 +798,62 @@ stamps clockless entry links (`backfillEntryLinkClocks`, keeping each link's
 `updatedAt` so a stamp never outranks a genuine edit) alongside agent
 entities and links. The sequence log is not reconstructed — a
 deep-backfilled version is recorded like any received payload.
+
+## Files behind image and audio entries
+
+A record the peer holds no row for travels with its file (`absent` on the
+request, `advertiserLacks` on a push). What the clocks cannot show is a record
+both devices hold at the same version while one lacks the file or holds it cut
+short — an interrupted transfer, a lost file. The round therefore also carries
+the file's size, as model-checked in
+[`specs/tla/DeepBackfillMedia.tla`](../../../specs/tla/DeepBackfillMedia.tla)
+(its README section lists the five design rules and their counterexamples):
+
+- **The inventory lists each file's size.** `DeepBackfillStore.mediaSizes`
+  reads, for every live image and audio entry in a batch's range, the length of
+  its file — 0 when it is missing — and `runRound` sets it as the record's
+  `DeepBackfillRecord.mediaSize`. A row without a clock is only named in
+  `unclocked`, so its size travels in `unclockedMediaSizes`: files are
+  compared whatever the clocks say, legacy rows included. A deletion makes no
+  claim on its file and is left out. The path is resolved by `entryMedia`
+  (`lib/features/sync/media/entry_media.dart`), the one resolution the enqueue,
+  the upload and the media request answer share, so the size advertised is the
+  size of the file an answer would carry.
+- **The diff compares sizes, whatever the clocks say.** A smaller local copy is
+  requested (`DeepBackfillDiff.mediaRequests`; `media: true` on the request
+  record, asking for no version when the clocks are equal); a larger one is
+  pushed back with its file (`mediaPushes`). Sizes only: same-size corruption
+  is out of scope, and no file is hashed.
+- **An answer carries the file whatever the resend-attachments setting says.**
+  A request record flagged `media` joins `withMedia`, which the journal store
+  enqueues with `includeAttachments`; the attachment policy honours that
+  without reading the flag.
+- **A file request is settled by size.** The request row records the size
+  asked for (`media_size`, sync DB v32), and `deepBackfillRequestSettled`
+  waits until the local copy is at least that large — or the record is no
+  live media row any more.
+- **A received file never shrinks a local one.** `AttachmentIngestor` used to
+  keep any existing non-empty file, so a truncated copy stayed truncated
+  whatever arrived. It now downloads when the local media file is smaller than
+  the size the event declares (`info.size`, the plaintext length) and writes
+  only a larger file. JSON payloads keep the old rule: they are uploaded
+  gzipped, so their declared size is not the local file's.
+
+A peer on 1.1.33 or older lists no sizes and ignores the `media` flag: files
+are compared only between devices that both carry them.
+
+```mermaid
+flowchart LR
+  Inv["inventory: id, clock, mediaSize"] --> Cmp{"local size vs advertised"}
+  Cmp -- smaller --> Req["request, media: true<br/>row records the size asked"]
+  Cmp -- larger --> Push["push with includeAttachments"]
+  Cmp -- equal --> Nothing["nothing"]
+  Req --> Ans["answer with includeAttachments<br/>(resend flag not consulted)"]
+  Ans --> Save{"received file larger<br/>than local?"}
+  Push --> Save
+  Save -- yes --> Write["atomic write"]
+  Save -- no --> Keep["keep local copy"]
+```
 
 # Two statistics paths, on purpose
 

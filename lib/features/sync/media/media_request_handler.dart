@@ -1,15 +1,13 @@
 import 'dart:io';
 
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/sync/media/entry_media.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
-import 'package:lotti/utils/image_utils.dart';
 
 /// Responder half of media self-healing: answers a peer's [SyncMediaRequest]
 /// by re-sending the requested entries with their blobs attached.
@@ -71,10 +69,13 @@ class MediaRequestHandler {
       final entity = entities[entryId];
       if (entity == null) continue;
 
-      final relativePath = _mediaRelativePath(entity);
-      if (relativePath == null) continue; // entry carries no media
+      final media = entryMedia(entity, documentsDirectory: _docs);
+      if (media == null) continue; // entry carries no media
 
-      if (!_hasLocalBlob(relativePath)) continue;
+      // An empty file is treated as absent: it is the signature of an
+      // interrupted download, and uploading zero bytes would answer the
+      // request without repairing it.
+      if (await mediaFileLength(media.file) == 0) continue;
 
       await _outbox.enqueueMessage(
         SyncMessage.journalEntity(
@@ -96,25 +97,5 @@ class MediaRequestHandler {
       'requester=${request.requesterId}',
       subDomain: 'mediaRequest.answered',
     );
-  }
-
-  /// The entry's media path relative to the documents directory, or null for
-  /// entry types that carry no media.
-  String? _mediaRelativePath(JournalEntity entity) => switch (entity) {
-    JournalImage() => getRelativeImagePath(entity),
-    JournalAudio() => AudioUtils.getRelativeAudioPath(entity),
-    _ => null,
-  };
-
-  /// True when this device holds a non-empty copy of the blob. An empty file
-  /// is treated as absent: it is the signature of an interrupted download,
-  /// and uploading zero bytes would answer the request without repairing it.
-  bool _hasLocalBlob(String relativePath) {
-    try {
-      final file = File('${_docs.path}$relativePath');
-      return file.existsSync() && file.lengthSync() > 0;
-    } catch (_) {
-      return false;
-    }
   }
 }

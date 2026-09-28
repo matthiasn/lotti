@@ -379,6 +379,7 @@ Future<String? Function()> _registerMatrixSyncStack({
       notificationsDb: notificationsDb,
       consumptionDatabase: getIt<ConsumptionDatabase>(),
       outboxService: outboxService,
+      documentsDirectory: documentsDirectory,
     ),
   );
   syncEventProcessor.deepBackfillService = deepBackfillService;
