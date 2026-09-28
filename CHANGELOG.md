@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.34]
+
+### Changed
+
+- **A running timer now shows up in your calendar while it runs.** Until you
+  stopped or saved it, a timer entry kept the end time it was last saved with,
+  so two hours of work showed as a gap on every device. The entry's end time is
+  now saved every five minutes while the timer runs, and sync carries it to
+  your other devices. What you type stays yours to save or discard, and your
+  editor stays as it is while you type.
+- **The mobile sidebar navigation now opens from the bottom of the screen.**
+  With *Mobile sidebar navigation* switched on, the menu button used to sit in
+  a strip of its own at the top of every page — a stretch to reach one-handed,
+  and a row of space taken from each page. It now sits in the bottom-left
+  corner, always in the same place, where the Navigate button used to be, and
+  the page's add button (new task, new project, and so on) sits opposite it in
+  the bottom-right corner. Pages get their full height back at the top.
+
 ## [1.1.33]
 
 ### Changed
