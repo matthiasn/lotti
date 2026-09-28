@@ -95,7 +95,6 @@ import 'package:lotti/widgets/nav_bar/mobile_activity_island.dart';
 import 'package:lotti/widgets/nav_bar/mobile_nav_sheet.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_drawer.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
-import 'package:lotti/widgets/nav_bar/mobile_navigation_menu_lane.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:matrix/matrix.dart';
 
@@ -535,7 +534,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
   final GlobalKey _contentStackKey = GlobalKey(debugLabel: 'app-content-stack');
 
   /// Open state of the mobile sidebar navigation's drawer. Held outside the
-  /// drawer's host so the menu lane's button can open it and every choice
+  /// drawer's host so the launcher's menu button can open it and every choice
   /// made inside it can close it, and app-wide rather than here because the
   /// root back dispatcher in [MyBeamerApp] has to close it too.
   late final MobileNavigationDrawerController _mobileDrawer = ref.read(
@@ -1203,9 +1202,10 @@ class _AppScreenState extends ConsumerState<AppScreen> {
 
     final launcherHeight = MobileNavigationLauncher.barHeight(context);
 
-    // The experimental sidebar navigation replaces the launcher outright: a
-    // menu button in a top lane of the shell's own slides a sidebar in from
-    // the side, and no Navigate chip is floated at all. Off — the default,
+    // The experimental sidebar navigation swaps the launcher's Navigate chip
+    // for a menu button pinned to the bottom-leading corner, which slides a
+    // sidebar in from the side instead of raising the grid; the page's
+    // create action moves to the bottom-trailing corner. Off — the default,
     // and the answer while the flag is still loading — leaves the shell
     // exactly as it was.
     final sidebarNavigation =
@@ -1214,42 +1214,49 @@ class _AppScreenState extends ConsumerState<AppScreen> {
             .value ??
         false;
 
-    // The launcher's row: the shell's Navigate chip and, on the list tabs
-    // that hand one over, the active page's create action. Navigate opens
-    // every enabled destination in a grid; taps route through the same
+    // The launcher's row: the shell's navigation control and, on the list
+    // tabs that hand one over, the active page's create action. Navigate
+    // opens every enabled destination in a grid; taps route through the same
     // NavService indices the IndexedStack uses. Built lazily: on routes that
     // suppress the bar entirely the grid's per-destination closures are
     // never constructed.
-    Widget buildLauncher() => MobileNavigationLauncher(
-      pageAction: _launcherDockAction(context, destinations[index].kind),
-      onNavigate: () => showMobileNavSheet(
-        context: context,
-        footerTrailing: const SyncQueueCounts(),
-        items: [
-          for (final (i, destination) in destinations.indexed)
-            MobileNavSheetItem(
-              label: destination.label,
-              icon: destination.iconBuilder(active: i == index),
-              active: i == index,
-              // The index is resolved at tap time, not captured: a flag
-              // change (e.g. synced from another device) while the grid is
-              // open re-numbers the destinations, and a stale index would
-              // route the tap to the wrong tab.
-              onSelected: () {
-                final tapIndex = _currentDestinationIndex(destination.kind);
-                if (tapIndex != null) navService.tapIndex(tapIndex);
-              },
-            ),
-        ],
-      ),
-    );
+    Widget buildLauncher() {
+      final pageAction = _launcherDockAction(
+        context,
+        destinations[index].kind,
+      );
+      if (sidebarNavigation) {
+        return MobileNavigationLauncher.sidebar(
+          onOpenMenu: _mobileDrawer.open,
+          pageAction: pageAction,
+        );
+      }
+      return MobileNavigationLauncher(
+        pageAction: pageAction,
+        onNavigate: () => showMobileNavSheet(
+          context: context,
+          footerTrailing: const SyncQueueCounts(),
+          items: [
+            for (final (i, destination) in destinations.indexed)
+              MobileNavSheetItem(
+                label: destination.label,
+                icon: destination.iconBuilder(active: i == index),
+                active: i == index,
+                // The index is resolved at tap time, not captured: a flag
+                // change (e.g. synced from another device) while the grid is
+                // open re-numbers the destinations, and a stale index would
+                // route the tap to the wrong tab.
+                onSelected: () {
+                  final tapIndex = _currentDestinationIndex(destination.kind);
+                  if (tapIndex != null) navService.tapIndex(tapIndex);
+                },
+              ),
+          ],
+        ),
+      );
+    }
 
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
-
-    // Whether navigation shows on this route at all. The launcher and the
-    // sidebar navigation's menu lane answer to the same rule, so a route
-    // that hides one hides the other.
-    final navigationShown = showBottomNav && !slideNavAway;
 
     final body = Stack(
       children: [
@@ -1262,26 +1269,22 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           // A slid-away bar reserves nothing: the goal agent pages, project
           // details and settings details dock their own pinned surfaces at
           // the bottom edge and must not pad around a bar that is gone.
-          barDocked: navigationShown && !sidebarNavigation,
-          // With no launcher there is no row to dock a page action on, so
-          // the list pages float their own create button again.
-          launcherPresent: !sidebarNavigation,
+          barDocked: showBottomNav && !slideNavAway,
           child: _buildContentStack(
             index: index,
             beamerChildren: beamerChildren,
           ),
         ),
         if (showBottomNav) ...[
-          if (!sidebarNavigation)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: _SlideAwayBottomNav(
-                hidden: slideNavAway,
-                child: buildLauncher(),
-              ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _SlideAwayBottomNav(
+              hidden: slideNavAway,
+              child: buildLauncher(),
             ),
+          ),
           // The activity island (running timer / recording) floats above
           // the bar but is deliberately not part of the slide-away
           // subtree: a running timer or recording must stay visible inside
@@ -1295,10 +1298,8 @@ class _AppScreenState extends ConsumerState<AppScreen> {
             curve: _SlideAwayBottomNav.slideCurve,
             left: 0,
             right: 0,
-            // With no launcher docked — slid away, or absent under the
-            // sidebar navigation — the island rests on the safe-area edge.
             bottom:
-                (slideNavAway || sidebarNavigation
+                (slideNavAway
                     ? MediaQuery.paddingOf(context).bottom
                     : launcherHeight) +
                 MobileActivityIsland.gapAboveBar(context),
@@ -1309,9 +1310,10 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         ],
       ],
     );
-    if (!sidebarNavigation) return Scaffold(extendBody: true, body: body);
+    final shell = Scaffold(extendBody: true, body: body);
+    if (!sidebarNavigation) return shell;
 
-    // The whole mobile shell — menu lane, page and activity island — is what
+    // The whole mobile shell — page, launcher and activity island — is what
     // the drawer pushes aside, so nothing of it floats over the panel.
     // Flipping the flag re-parents the keyed content stack rather than
     // rebuilding it, exactly as crossing the desktop breakpoint does.
@@ -1322,14 +1324,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         index: index,
         destinations: destinations,
       ),
-      child: Scaffold(
-        extendBody: true,
-        body: MobileNavigationMenuLane(
-          visible: navigationShown,
-          onOpenMenu: _mobileDrawer.open,
-          child: body,
-        ),
-      ),
+      child: shell,
     );
   }
 
@@ -1408,12 +1403,14 @@ class _AppScreenState extends ConsumerState<AppScreen> {
   /// The active page's primary action, docked on the mobile navigation
   /// launcher's row instead of floating in the page's own corner.
   ///
-  /// Exactly the destinations whose list page floats a create button today:
-  /// leaving it in the corner would stack two floating controls above the
-  /// centred launcher, neither of them looking placed. Daily OS, Dashboards
-  /// and Settings float nothing, so they leave the launcher
-  /// centred alone — which is what makes a docked action read as belonging
-  /// to the page rather than to the shell.
+  /// Exactly the destinations whose list page floats a create button on
+  /// desktop: leaving it in the corner would stack two floating controls
+  /// above the launcher, neither of them looking placed. Daily OS,
+  /// Dashboards and Settings float nothing, so they leave the navigation
+  /// control alone on the row — which is what makes a docked action read as
+  /// belonging to the page rather than to the shell. Both arrangements take
+  /// the same action: centred beside Navigate, or in the trailing corner
+  /// opposite the sidebar's menu button.
   ///
   /// The page decides the chip's wording, not this switch: the task and
   /// people lists word their actions, the lists whose own heading says what
@@ -1696,7 +1693,6 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
   const _MobileNavOverlayHeightScope({
     required this.navBarVisible,
     required this.barDocked,
-    required this.launcherPresent,
     required this.child,
   });
 
@@ -1705,10 +1701,6 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
   /// Whether the bar is docked at the bottom edge rather than slid away;
   /// see [DesignSystemBottomNavigationOverlayHeight.barDocked].
   final bool barDocked;
-
-  /// Whether the shell floats a launcher at all; see
-  /// [DesignSystemBottomNavigationOverlayHeight.launcherPresent].
-  final bool launcherPresent;
 
   final Widget child;
 
@@ -1747,7 +1739,6 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
         return DesignSystemBottomNavigationOverlayHeight(
           height: height,
           barDocked: barDocked,
-          launcherPresent: launcherPresent,
           child: child,
         );
       },

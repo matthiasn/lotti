@@ -178,26 +178,57 @@ void main() {
     );
 
     testWidgets(
-      'a solid fill still gets a ring when an outlineColor asks for one',
+      'an outlineColor swaps the glass hairline for a full-strength ring',
       (tester) async {
-        const bg = Color(0xFF222222);
-        const ring = Color(0x1FFFFFFF);
+        const ring = Color(0xFF00AA88);
         await _pump(
           tester,
           DsGlassRoundButton(
             icon: LottiIcons.bolt,
-            semanticLabel: 'Quiet',
-            backgroundColor: bg,
+            semanticLabel: 'Peer',
             outlineColor: ring,
             onPressed: () {},
           ),
         );
 
-        expect(_inkDecoration(tester, DsGlassRoundButton).color, bg);
+        final tokens = _tokens(tester, DsGlassRoundButton);
+        // Still the translucent glass fill of its neighbours…
+        expect(
+          _inkDecoration(tester, DsGlassRoundButton).color,
+          dsGlassChipFill(tokens),
+        );
+        // …with the ring in place of the hairline, not beside it.
         final container = _decoratedContainer(tester, DsGlassRoundButton);
         final foreground = container.foregroundDecoration! as BoxDecoration;
         expect(foreground.shape, BoxShape.circle);
         expect(foreground.border, Border.all(color: ring));
+        expect(foreground.border, isNot(dsGlassChipBorder(tokens)));
+      },
+    );
+
+    testWidgets(
+      'a solid fill draws no edge even when an outlineColor is passed',
+      (tester) async {
+        const bg = Color(0xFF222222);
+        await _pump(
+          tester,
+          DsGlassRoundButton(
+            icon: LottiIcons.bolt,
+            semanticLabel: 'Recording',
+            backgroundColor: bg,
+            outlineColor: const Color(0xFF00AA88),
+            onPressed: () {},
+          ),
+        );
+
+        expect(_inkDecoration(tester, DsGlassRoundButton).color, bg);
+        expect(
+          _decoratedContainer(
+            tester,
+            DsGlassRoundButton,
+          ).foregroundDecoration,
+          isNull,
+        );
       },
     );
 

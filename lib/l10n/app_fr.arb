@@ -1583,7 +1583,7 @@
   "configFlagEnableMatrix": "Activer la synchronisation Matrix",
   "configFlagEnableMatrixDescription": "Activer l'intégration Matrix pour synchroniser tes entrées sur plusieurs appareils et avec d'autres utilisateurs Matrix.",
   "configFlagEnableMobileSidebarNavigation": "Navigation mobile en barre latérale",
-  "configFlagEnableMobileSidebarNavigationDescription": "Remplace le bouton Naviguer par un bouton de menu en haut qui ouvre une barre latérale avec toutes les sections et tes recherches récentes.",
+  "configFlagEnableMobileSidebarNavigationDescription": "Remplace le bouton Naviguer par un bouton de menu en bas à gauche qui ouvre une barre latérale avec toutes les sections et tes recherches récentes.",
   "configFlagEnableNotificationsDescription": "Recevoir des notifications pour les rappels, les mises à jour et les événements importants.",
   "configFlagEnableProjects": "Activer les projets",
   "configFlagEnableProjectsDescription": "Afficher les fonctions de gestion de projets pour organiser les tâches en projets.",

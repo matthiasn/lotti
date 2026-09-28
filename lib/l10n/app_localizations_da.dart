@@ -3635,7 +3635,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get configFlagEnableMobileSidebarNavigationDescription =>
-      'Erstat Naviger-knappen med en menuknap øverst, der åbner et sidepanel med alle sektioner og dine seneste søgninger.';
+      'Erstat Naviger-knappen med en menuknap nederst til venstre, der åbner et sidepanel med alle sektioner og dine seneste søgninger.';
 
   @override
   String get configFlagEnableNotificationsDescription =>
@@ -14567,6 +14567,12 @@ class AppLocalizationsDa extends AppLocalizations {
   String get syncEntitiesSuccessTitle => 'Synkronisering fuldført';
 
   @override
+  String get syncHealthSubtitle => 'Tjek, at dine enheder har de samme data';
+
+  @override
+  String get syncHealthTitle => 'Synkroniseringstilstand';
+
+  @override
   String syncListCountSummary(String label, int itemCount) {
     String _temp0 = intl.Intl.pluralLogic(
       itemCount,
@@ -16140,10 +16146,4 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Spring over';
-
-  @override
-  String get syncHealthTitle => 'Synkroniseringstilstand';
-
-  @override
-  String get syncHealthSubtitle => 'Tjek, at dine enheder har de samme data';
 }

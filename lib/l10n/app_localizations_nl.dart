@@ -3652,7 +3652,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get configFlagEnableMobileSidebarNavigationDescription =>
-      'Vervang de knop Navigeren door een menuknop bovenaan die een zijbalk opent met alle onderdelen en je recente zoekopdrachten.';
+      'Vervang de knop Navigeren door een menuknop linksonder die een zijbalk opent met alle onderdelen en je recente zoekopdrachten.';
 
   @override
   String get configFlagEnableNotificationsDescription =>
@@ -14611,6 +14611,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get syncEntitiesSuccessTitle => 'Compleet synchroniseren';
 
   @override
+  String get syncHealthSubtitle =>
+      'Controleer of je apparaten dezelfde gegevens hebben';
+
+  @override
+  String get syncHealthTitle => 'Synchronisatiestatus';
+
+  @override
   String syncListCountSummary(String label, int itemCount) {
     String _temp0 = intl.Intl.pluralLogic(
       itemCount,
@@ -16190,11 +16197,4 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
-
-  @override
-  String get syncHealthTitle => 'Synchronisatiestatus';
-
-  @override
-  String get syncHealthSubtitle =>
-      'Controleer of je apparaten dezelfde gegevens hebben';
 }

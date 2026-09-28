@@ -6141,7 +6141,7 @@ abstract class AppLocalizations {
   /// No description provided for @configFlagEnableMobileSidebarNavigationDescription.
   ///
   /// In en, this message translates to:
-  /// **'Replace the Navigate button with a menu button at the top that opens a sidebar with every section and your recent searches.'**
+  /// **'Replace the Navigate button with a menu button in the bottom-left corner that opens a sidebar with every section and your recent searches.'**
   String get configFlagEnableMobileSidebarNavigationDescription;
 
   /// No description provided for @configFlagEnableNotificationsDescription.
@@ -24215,6 +24215,18 @@ abstract class AppLocalizations {
   /// **'Sync complete'**
   String get syncEntitiesSuccessTitle;
 
+  /// No description provided for @syncHealthSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check that your devices hold the same data'**
+  String get syncHealthSubtitle;
+
+  /// No description provided for @syncHealthTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync health'**
+  String get syncHealthTitle;
+
   /// No description provided for @syncListCountSummary.
   ///
   /// In en, this message translates to:
@@ -26854,18 +26866,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
-
-  /// No description provided for @syncHealthTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Sync health'**
-  String get syncHealthTitle;
-
-  /// No description provided for @syncHealthSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Check that your devices hold the same data'**
-  String get syncHealthSubtitle;
 }
 
 class _AppLocalizationsDelegate

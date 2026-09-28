@@ -16,7 +16,7 @@ abstract final class MobileNavigationDrawerKeys {
 }
 
 /// Whether the mobile navigation drawer is open. The shell opens it from the
-/// menu lane's button and closes it when a choice is made.
+/// launcher's menu button and closes it when a choice is made.
 class MobileNavigationDrawerController extends ValueNotifier<bool> {
   MobileNavigationDrawerController() : super(false);
 

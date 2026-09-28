@@ -60,8 +60,7 @@ Border dsGlassChipBorder(DsTokens tokens) => Border.all(
 /// [dsGlassChipBorder]) is used so the silhouette and glyph stay visible
 /// regardless of what's behind the bar. Callers that pass a solid
 /// [backgroundColor] (e.g. an active/alert state) bring their own
-/// contrast, so no hairline outline is drawn in that case — unless they ask
-/// for one with [outlineColor], as a quiet surface-toned button does.
+/// contrast, so no hairline outline is drawn in that case.
 ///
 /// [outlineColor] replaces the hairline with a full-strength ring. It is how
 /// a round affordance reads as a **peer of the bar's primary pill** without
@@ -159,7 +158,7 @@ class DsGlassRoundButton extends StatelessWidget {
                 height: diameter,
                 // foregroundDecoration so the hairline outline doesn't eat
                 // into the icon's content rect — keeps the glyph centred.
-                foregroundDecoration: isTranslucent || outlineColor != null
+                foregroundDecoration: isTranslucent
                     ? BoxDecoration(
                         shape: BoxShape.circle,
                         border: outlineColor == null

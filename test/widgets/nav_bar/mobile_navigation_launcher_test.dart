@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
+import 'package:lotti/features/design_system/components/navigation/ds_menu_glyph.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -130,7 +131,7 @@ void main() {
     Future<bool?> resolve(
       WidgetTester tester, {
       required Size size,
-      bool? launcherPresent,
+      bool? barDocked,
     }) async {
       bool? owns;
       final probe = Builder(
@@ -141,11 +142,11 @@ void main() {
       );
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          launcherPresent == null
+          barDocked == null
               ? probe
               : DesignSystemBottomNavigationOverlayHeight(
                   height: 0,
-                  launcherPresent: launcherPresent,
+                  barDocked: barDocked,
                   child: probe,
                 ),
           theme: DesignSystemTheme.light(),
@@ -161,23 +162,15 @@ void main() {
       expect(await resolve(tester, size: const Size(390, 844)), isTrue);
     });
 
-    testWidgets('is false on a compact window whose shell floats no '
-        'launcher — the sidebar navigation — so the page keeps its own '
-        'button', (tester) async {
+    testWidgets('ignores whether the launcher is docked or slid away — '
+        'every mobile navigation floats one, so the action is never handed '
+        'back to the page', (tester) async {
       expect(
-        await resolve(
-          tester,
-          size: const Size(390, 844),
-          launcherPresent: false,
-        ),
-        isFalse,
+        await resolve(tester, size: const Size(390, 844), barDocked: false),
+        isTrue,
       );
       expect(
-        await resolve(
-          tester,
-          size: const Size(390, 844),
-          launcherPresent: true,
-        ),
+        await resolve(tester, size: const Size(390, 844), barDocked: true),
         isTrue,
       );
     });
@@ -662,6 +655,425 @@ void main() {
       );
       expect(create.fillColor, tokens.colors.interactive.enabled);
       expect(create.foregroundColor, tokens.colors.text.onInteractiveAlert);
+    });
+  });
+
+  group('sidebar arrangement', () {
+    Widget sidebarSubject({
+      MobileNavDockAction? pageAction,
+      VoidCallback? openMenu,
+      MediaQueryData? mediaQueryData,
+      ThemeData? theme,
+      TextDirection textDirection = TextDirection.ltr,
+    }) => makeTestableWidgetWithScaffold(
+      Directionality(
+        textDirection: textDirection,
+        child: MobileNavigationLauncher.sidebar(
+          onOpenMenu: openMenu ?? onNavigate,
+          pageAction: pageAction,
+        ),
+      ),
+      theme: theme ?? DesignSystemTheme.light(),
+      mediaQueryData: mediaQueryData ?? roomy,
+    );
+
+    final menuButton = find.byKey(MobileNavigationLauncherKeys.menuButton);
+
+    Rect menuRect(WidgetTester tester) => tester.getRect(menuButton);
+
+    /// The launcher's own gutter plus the window's leading or trailing
+    /// safe-area inset — where the two pinned controls must land.
+    double gutter(WidgetTester tester) => tester
+        .element(find.byType(MobileNavigationLauncher))
+        .designTokens
+        .spacing
+        .step3;
+
+    double chipHeightOf(WidgetTester tester) =>
+        MobileNavigationLauncher.chipHeight(
+          tester.element(find.byType(MobileNavigationLauncher)),
+        );
+
+    /// Pumps the sidebar launcher so its row is [delta] pixels wider than
+    /// the menu button, the gap and the worded action need at [scaler] —
+    /// calibrated for the reason [pumpAtFitThreshold] is.
+    Future<void> pumpAtSidebarFitThreshold(
+      WidgetTester tester, {
+      required MobileNavDockAction pageAction,
+      required double delta,
+      TextScaler scaler = TextScaler.noScaling,
+    }) async {
+      await tester.pumpWidget(
+        sidebarSubject(
+          pageAction: pageAction,
+          mediaQueryData: sized(const Size(2000, 932), scaler),
+        ),
+      );
+      final context = tester.element(find.byType(MobileNavigationLauncher));
+      final needed =
+          MobileNavigationLauncher.chipHeight(context) +
+          MobileNavigationLauncher.chipGap(context) +
+          DsGlassPill.intrinsicWidth(context, label: pageAction.label);
+      final gutters = context.designTokens.spacing.step3 * 2;
+
+      await tester.pumpWidget(
+        sidebarSubject(
+          pageAction: pageAction,
+          mediaQueryData: sized(Size(needed + gutters + delta, 932), scaler),
+        ),
+      );
+    }
+
+    group('the menu button', () {
+      testWidgets('stands alone in the bottom-leading corner, never centred, '
+          'with no Navigate chip anywhere', (tester) async {
+        await tester.pumpWidget(sidebarSubject());
+
+        final launcher = launcherRect(tester);
+        expect(launcher.width, tester.getSize(find.byType(Scaffold)).width);
+        expect(menuRect(tester).left, launcher.left + gutter(tester));
+        expect(menuRect(tester).center.dx, lessThan(launcher.center.dx));
+        expect(find.text('Navigate'), findsNothing);
+        expect(find.byType(DsGlassPill), findsNothing);
+      });
+
+      testWidgets('opens the menu when tapped', (tester) async {
+        var taps = 0;
+        await tester.pumpWidget(sidebarSubject(openMenu: () => taps++));
+
+        await tester.tap(menuButton);
+        expect(taps, 1);
+      });
+
+      testWidgets('is a round glyph button the height of a chip, wearing the '
+          'two-stroke menu mark', (tester) async {
+        await tester.pumpWidget(sidebarSubject());
+
+        final button = tester.widget<DsGlassRoundButton>(menuButton);
+        expect(button.glyph, isA<DsMenuGlyph>());
+        expect(button.icon, isNull);
+        expect(button.diameter, chipHeightOf(tester));
+        expect(button.iconSize, IconSizes.l);
+        expect(menuRect(tester).width, closeTo(chipHeightOf(tester), 0.01));
+        expect(menuRect(tester).height, closeTo(chipHeightOf(tester), 0.01));
+        expect(
+          menuRect(tester).height,
+          greaterThanOrEqualTo(TapTargets.minimum),
+        );
+      });
+
+      testWidgets('wears the translucent glass the Navigate chip does: no '
+          'fill of its own, blurred backdrop, floating shadow', (tester) async {
+        await tester.pumpWidget(sidebarSubject());
+
+        final button = tester.widget<DsGlassRoundButton>(menuButton);
+        expect(button.backgroundColor, isNull);
+        expect(button.outlineColor, isNull);
+
+        final filter = tester.widget<BackdropFilter>(
+          find.ancestor(of: menuButton, matching: find.byType(BackdropFilter)),
+        );
+        expect(
+          filter.filter.toString(),
+          contains('${DesignSystemGlassStrip.blurSigma}'),
+        );
+        expect(
+          tester
+              .widgetList<DecoratedBox>(
+                find.ancestor(
+                  of: menuButton,
+                  matching: find.byType(DecoratedBox),
+                ),
+              )
+              .map((box) => (box.decoration as BoxDecoration).boxShadow),
+          contains(DsShadows.floatingSurface),
+        );
+      });
+
+      testWidgets('announces that it opens the navigation', (tester) async {
+        await tester.pumpWidget(sidebarSubject());
+
+        final label = tester
+            .element(find.byType(MobileNavigationLauncher))
+            .messages
+            .navSidebarOpenLabel;
+        expect(
+          tester.widget<DsGlassRoundButton>(menuButton).semanticLabel,
+          label,
+        );
+        expect(find.bySemanticsLabel(label), findsOneWidget);
+      });
+
+      testWidgets('stays exactly where it is whether or not the page docks '
+          'an action', (tester) async {
+        await tester.pumpWidget(sidebarSubject());
+        final alone = menuRect(tester);
+
+        await tester.pumpWidget(sidebarSubject(pageAction: action()));
+        expect(menuRect(tester), alone);
+
+        await tester.pumpWidget(sidebarSubject(pageAction: glyphAction()));
+        expect(menuRect(tester), alone);
+      });
+
+      testWidgets('clears the leading safe-area inset of a landscape phone', (
+        tester,
+      ) async {
+        const inset = 48.0;
+        await tester.pumpWidget(
+          sidebarSubject(
+            mediaQueryData: const MediaQueryData(
+              size: Size(932, 430),
+              padding: EdgeInsets.only(left: inset, bottom: 21),
+            ),
+          ),
+        );
+
+        expect(
+          menuRect(tester).left,
+          launcherRect(tester).left + inset + gutter(tester),
+        );
+      });
+    });
+
+    group('the docked page action', () {
+      testWidgets('is pinned to the bottom-trailing corner, on the menu '
+          "button's row and baseline", (tester) async {
+        await tester.pumpWidget(sidebarSubject(pageAction: action()));
+
+        final create = chipRect(tester, 0);
+        final launcher = launcherRect(tester);
+        expect(create.right, closeTo(launcher.right - gutter(tester), 0.01));
+        expect(create.height, closeTo(menuRect(tester).height, 0.01));
+        expect(create.center.dy, closeTo(menuRect(tester).center.dy, 0.01));
+        // The two sit at opposite ends, not as a centred pair.
+        expect(
+          create.left - menuRect(tester).right,
+          greaterThan(chipGapOf(tester)),
+        );
+      });
+
+      testWidgets('clears the trailing safe-area inset too', (tester) async {
+        const inset = 48.0;
+        await tester.pumpWidget(
+          sidebarSubject(
+            pageAction: action(),
+            mediaQueryData: const MediaQueryData(
+              size: Size(932, 430),
+              padding: EdgeInsets.only(right: inset, bottom: 21),
+            ),
+          ),
+        );
+
+        expect(
+          chipRect(tester, 0).right,
+          closeTo(launcherRect(tester).right - inset - gutter(tester), 0.01),
+        );
+      });
+
+      testWidgets('keeps its accent fill, ink and label', (tester) async {
+        await tester.pumpWidget(sidebarSubject(pageAction: action()));
+
+        final tokens = tester
+            .element(find.byType(MobileNavigationLauncher))
+            .designTokens;
+        final create = tester.widget<DsGlassPill>(find.byType(DsGlassPill));
+        expect(create.fillColor, tokens.colors.interactive.enabled);
+        expect(create.foregroundColor, tokens.colors.text.onInteractiveAlert);
+        expect(create.label, 'Add a task');
+        expect(create.icon, LottiIcons.add);
+      });
+
+      testWidgets('dispatches its own action, and the menu button its own', (
+        tester,
+      ) async {
+        var menuTaps = 0;
+        var actionTaps = 0;
+        await tester.pumpWidget(
+          sidebarSubject(
+            openMenu: () => menuTaps++,
+            pageAction: action(onPressed: () => actionTaps++),
+          ),
+        );
+
+        await tester.tap(find.text('Add a task'));
+        expect((menuTaps, actionTaps), (0, 1));
+
+        await tester.tap(menuButton);
+        expect((menuTaps, actionTaps), (1, 1));
+      });
+
+      testWidgets('a glyph-only action is a round accent button in the '
+          'trailing corner', (tester) async {
+        var taps = 0;
+        await tester.pumpWidget(
+          sidebarSubject(pageAction: glyphAction(onPressed: () => taps++)),
+        );
+
+        final glyph = find.byWidgetPredicate(
+          (w) => w is DsGlassRoundButton && w.icon == LottiIcons.add,
+        );
+        final rect = tester.getRect(glyph);
+        expect(
+          rect.right,
+          closeTo(launcherRect(tester).right - gutter(tester), 0.01),
+        );
+        expect(rect.width, closeTo(chipHeightOf(tester), 0.01));
+        expect(find.text('Add a habit'), findsNothing);
+        expect(find.bySemanticsLabel('Add a habit'), findsOneWidget);
+
+        await tester.tap(glyph);
+        expect(taps, 1);
+      });
+    });
+
+    group('labelsFit beside the menu button', () {
+      testWidgets('keeps the word when the row has room for the disc, the '
+          'gap and the label', (tester) async {
+        await pumpAtSidebarFitThreshold(
+          tester,
+          pageAction: action(),
+          delta: 0,
+        );
+
+        final context = tester.element(find.byType(MobileNavigationLauncher));
+        expect(
+          MobileNavigationLauncher.labelsFit(
+            context,
+            action(),
+            opensSidebar: true,
+          ),
+          isTrue,
+        );
+        expect(find.text('Add a task'), findsOneWidget);
+      });
+
+      testWidgets('drops the action to its glyph one pixel short of that', (
+        tester,
+      ) async {
+        await pumpAtSidebarFitThreshold(
+          tester,
+          pageAction: action(),
+          delta: -1,
+          scaler: const TextScaler.linear(2),
+        );
+
+        expect(find.text('Add a task'), findsNothing);
+        expect(find.bySemanticsLabel('Add a task'), findsOneWidget);
+        expect(
+          find.byWidgetPredicate(
+            (w) => w is DsGlassRoundButton && w.icon == LottiIcons.add,
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('measures the disc, not the Navigate label: a width too '
+          'narrow beside Navigate still fits beside the menu button', (
+        tester,
+      ) async {
+        // Exactly wide enough for the menu button and the worded action.
+        await pumpAtSidebarFitThreshold(
+          tester,
+          pageAction: action(),
+          delta: 0,
+        );
+        final context = tester.element(find.byType(MobileNavigationLauncher));
+
+        // The disc is narrower than the Navigate chip, so the same row is
+        // too narrow for the Navigate arrangement.
+        expect(
+          MobileNavigationLauncher.chipHeight(context),
+          lessThan(
+            DsGlassPill.intrinsicWidth(
+              context,
+              label: context.messages.navTabTitleNavigate,
+            ),
+          ),
+        );
+        expect(MobileNavigationLauncher.labelsFit(context, action()), isFalse);
+        expect(
+          MobileNavigationLauncher.labelsFit(
+            context,
+            action(),
+            opensSidebar: true,
+          ),
+          isTrue,
+        );
+      });
+    });
+
+    group('right-to-left', () {
+      testWidgets('mirrors the corners: menu button on the right, action on '
+          'the left', (tester) async {
+        await tester.pumpWidget(
+          sidebarSubject(
+            pageAction: action(),
+            textDirection: TextDirection.rtl,
+          ),
+        );
+
+        final launcher = launcherRect(tester);
+        expect(
+          menuRect(tester).right,
+          closeTo(launcher.right - gutter(tester), 0.01),
+        );
+        expect(
+          chipRect(tester, 0).left,
+          closeTo(launcher.left + gutter(tester), 0.01),
+        );
+      });
+    });
+
+    group('clearance', () {
+      testWidgets("occupies exactly the Navigate arrangement's height, so "
+          'every page clears it without knowing which one floats', (
+        tester,
+      ) async {
+        await tester.pumpWidget(subject(pageAction: action()));
+        final navigate = tester.getSize(find.byType(MobileNavigationLauncher));
+
+        await tester.pumpWidget(sidebarSubject(pageAction: action()));
+        expect(
+          tester.getSize(find.byType(MobileNavigationLauncher)).height,
+          navigate.height,
+        );
+      });
+
+      for (final scaler in const [
+        TextScaler.linear(2),
+        TextScaler.linear(3),
+        _NonlinearTextScaler(),
+      ]) {
+        testWidgets('matches barHeight at $scaler', (tester) async {
+          await tester.pumpWidget(
+            sidebarSubject(
+              pageAction: action(),
+              mediaQueryData: scaled(scaler),
+            ),
+          );
+          final finder = find.byType(MobileNavigationLauncher);
+          expect(
+            tester.getSize(finder).height,
+            MobileNavigationLauncher.barHeight(tester.element(finder)),
+          );
+          expect(tester.takeException(), isNull);
+        });
+      }
+    });
+
+    testWidgets('resolves the menu glyph ink from the dark token set', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        sidebarSubject(theme: DesignSystemTheme.dark()),
+      );
+
+      final tokens = tester
+          .element(find.byType(MobileNavigationLauncher))
+          .designTokens;
+      final ink = IconTheme.of(tester.element(find.byType(DsMenuGlyph)));
+      expect(ink.color, tokens.colors.text.highEmphasis);
     });
   });
 }

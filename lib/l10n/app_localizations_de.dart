@@ -3668,7 +3668,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get configFlagEnableMobileSidebarNavigationDescription =>
-      'Ersetze die Navigieren-Schaltfläche durch eine Menütaste oben, die eine Seitenleiste mit allen Bereichen und deinen letzten Suchen öffnet.';
+      'Ersetze die Navigieren-Schaltfläche durch eine Menütaste unten links, die eine Seitenleiste mit allen Bereichen und deinen letzten Suchen öffnet.';
 
   @override
   String get configFlagEnableNotificationsDescription =>
@@ -14678,6 +14678,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncEntitiesSuccessTitle => 'Synchronisierung abgeschlossen';
 
   @override
+  String get syncHealthSubtitle =>
+      'Prüf, ob deine Geräte dieselben Daten haben';
+
+  @override
+  String get syncHealthTitle => 'Sync-Zustand';
+
+  @override
   String syncListCountSummary(String label, int itemCount) {
     String _temp0 = intl.Intl.pluralLogic(
       itemCount,
@@ -16264,11 +16271,4 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Überspringen';
-
-  @override
-  String get syncHealthTitle => 'Sync-Zustand';
-
-  @override
-  String get syncHealthSubtitle =>
-      'Prüf, ob deine Geräte dieselben Daten haben';
 }

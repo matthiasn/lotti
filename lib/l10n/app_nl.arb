@@ -1760,7 +1760,7 @@
   "configFlagEnableMatrix": "Matrix-synchronisatie inschakelen",
   "configFlagEnableMatrixDescription": "Schakel de integratie van Matrix in om uw items te synchroniseren tussen apparaten en met andere Matrix-gebruikers.",
   "configFlagEnableMobileSidebarNavigation": "Mobiele navigatie als zijbalk",
-  "configFlagEnableMobileSidebarNavigationDescription": "Vervang de knop Navigeren door een menuknop bovenaan die een zijbalk opent met alle onderdelen en je recente zoekopdrachten.",
+  "configFlagEnableMobileSidebarNavigationDescription": "Vervang de knop Navigeren door een menuknop linksonder die een zijbalk opent met alle onderdelen en je recente zoekopdrachten.",
   "configFlagEnableNotificationsDescription": "Ontvang meldingen voor herinneringen, updates en belangrijke gebeurtenissen.",
   "configFlagEnableProjects": "Projecten inschakelen",
   "configFlagEnableProjectsDescription": "Functies voor projectbeheer tonen voor het organiseren van taken in projecten.",

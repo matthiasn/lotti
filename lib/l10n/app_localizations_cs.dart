@@ -3683,7 +3683,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get configFlagEnableMobileSidebarNavigationDescription =>
-      'Nahraď tlačítko Navigovat tlačítkem nabídky nahoře, které otevře boční panel se všemi sekcemi a tvými nedávnými hledáními.';
+      'Nahraď tlačítko Navigovat tlačítkem nabídky v levém dolním rohu, které otevře boční panel se všemi sekcemi a tvými nedávnými hledáními.';
 
   @override
   String get configFlagEnableNotificationsDescription =>
@@ -14762,6 +14762,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncEntitiesSuccessTitle => 'Synchronizace dokončena';
 
   @override
+  String get syncHealthSubtitle =>
+      'Zkontroluj, že tvá zařízení mají stejná data';
+
+  @override
+  String get syncHealthTitle => 'Stav synchronizace';
+
+  @override
   String syncListCountSummary(String label, int itemCount) {
     String _temp0 = intl.Intl.pluralLogic(
       itemCount,
@@ -16343,11 +16350,4 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
-
-  @override
-  String get syncHealthTitle => 'Stav synchronizace';
-
-  @override
-  String get syncHealthSubtitle =>
-      'Zkontroluj, že tvá zařízení mají stejná data';
 }

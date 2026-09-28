@@ -1761,7 +1761,7 @@
   "configFlagEnableMatrix": "Aktivera matrissynkronisering",
   "configFlagEnableMatrixDescription": "Aktivera Matrix-integrationen för att synkronisera dina poster mellan enheter och med andra Matrix-användare.",
   "configFlagEnableMobileSidebarNavigation": "Mobilnavigering i sidofält",
-  "configFlagEnableMobileSidebarNavigationDescription": "Ersätt knappen Navigera med en menyknapp högst upp som öppnar ett sidofält med alla avsnitt och dina senaste sökningar.",
+  "configFlagEnableMobileSidebarNavigationDescription": "Ersätt knappen Navigera med en menyknapp nere till vänster som öppnar ett sidofält med alla avsnitt och dina senaste sökningar.",
   "configFlagEnableNotificationsDescription": "Få notiser om påminnelser, uppdateringar och viktiga evenemang.",
   "configFlagEnableProjects": "Möjliggöra projekt",
   "configFlagEnableProjectsDescription": "Visa projektledningsfunktioner för att organisera uppgifter i projekt.",
