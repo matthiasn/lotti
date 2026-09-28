@@ -3693,7 +3693,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get configFlagEnableMobileSidebarNavigationDescription =>
-      'Remplace le bouton Naviguer par un bouton de menu en haut qui ouvre une barre latérale avec toutes les sections et tes recherches récentes.';
+      'Remplace le bouton Naviguer par un bouton de menu en bas à gauche qui ouvre une barre latérale avec toutes les sections et tes recherches récentes.';
 
   @override
   String get configFlagEnableNotificationsDescription =>
@@ -14823,6 +14823,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncEntitiesSuccessTitle => 'Synchronisation terminée';
 
   @override
+  String get syncHealthSubtitle =>
+      'Vérifie que tes appareils ont les mêmes données';
+
+  @override
+  String get syncHealthTitle => 'Santé de la synchronisation';
+
+  @override
   String syncListCountSummary(String label, int itemCount) {
     String _temp0 = intl.Intl.pluralLogic(
       itemCount,
@@ -16416,11 +16423,4 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Ignorer';
-
-  @override
-  String get syncHealthTitle => 'Santé de la synchronisation';
-
-  @override
-  String get syncHealthSubtitle =>
-      'Vérifie que tes appareils ont les mêmes données';
 }

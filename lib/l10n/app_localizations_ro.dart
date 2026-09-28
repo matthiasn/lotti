@@ -3705,7 +3705,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get configFlagEnableMobileSidebarNavigationDescription =>
-      'Înlocuiți butonul Navigare cu un buton de meniu în partea de sus, care deschide o bară laterală cu toate secțiunile și căutările dvs. recente.';
+      'Înlocuiți butonul Navigare cu un buton de meniu în colțul din stânga jos, care deschide o bară laterală cu toate secțiunile și căutările dvs. recente.';
 
   @override
   String get configFlagEnableNotificationsDescription =>
@@ -14867,6 +14867,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncEntitiesSuccessTitle => 'Sincronizare finalizată';
 
   @override
+  String get syncHealthSubtitle =>
+      'Verificați dacă dispozitivele dumneavoastră au aceleași date';
+
+  @override
+  String get syncHealthTitle => 'Starea sincronizării';
+
+  @override
   String syncListCountSummary(String label, int itemCount) {
     String _temp0 = intl.Intl.pluralLogic(
       itemCount,
@@ -16462,11 +16469,4 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
-
-  @override
-  String get syncHealthTitle => 'Starea sincronizării';
-
-  @override
-  String get syncHealthSubtitle =>
-      'Verificați dacă dispozitivele dumneavoastră au aceleași date';
 }

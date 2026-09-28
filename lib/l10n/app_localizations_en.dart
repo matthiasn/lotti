@@ -3620,7 +3620,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get configFlagEnableMobileSidebarNavigationDescription =>
-      'Replace the Navigate button with a menu button at the top that opens a sidebar with every section and your recent searches.';
+      'Replace the Navigate button with a menu button in the bottom-left corner that opens a sidebar with every section and your recent searches.';
 
   @override
   String get configFlagEnableNotificationsDescription =>
@@ -14485,6 +14485,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncEntitiesSuccessTitle => 'Sync complete';
 
   @override
+  String get syncHealthSubtitle => 'Check that your devices hold the same data';
+
+  @override
+  String get syncHealthTitle => 'Sync health';
+
+  @override
   String syncListCountSummary(String label, int itemCount) {
     String _temp0 = intl.Intl.pluralLogic(
       itemCount,
@@ -16046,12 +16052,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
-
-  @override
-  String get syncHealthTitle => 'Sync health';
-
-  @override
-  String get syncHealthSubtitle => 'Check that your devices hold the same data';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

@@ -3645,7 +3645,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get configFlagEnableMobileSidebarNavigationDescription =>
-      'Ersätt knappen Navigera med en menyknapp högst upp som öppnar ett sidofält med alla avsnitt och dina senaste sökningar.';
+      'Ersätt knappen Navigera med en menyknapp nere till vänster som öppnar ett sidofält med alla avsnitt och dina senaste sökningar.';
 
   @override
   String get configFlagEnableNotificationsDescription =>
@@ -14581,6 +14581,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get syncEntitiesSuccessTitle => 'Synkronisering klar';
 
   @override
+  String get syncHealthSubtitle =>
+      'Kontrollera att dina enheter har samma data';
+
+  @override
+  String get syncHealthTitle => 'Synkroniseringsstatus';
+
+  @override
   String syncListCountSummary(String label, int itemCount) {
     String _temp0 = intl.Intl.pluralLogic(
       itemCount,
@@ -16155,11 +16162,4 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
-
-  @override
-  String get syncHealthTitle => 'Synkroniseringsstatus';
-
-  @override
-  String get syncHealthSubtitle =>
-      'Kontrollera att dina enheter har samma data';
 }

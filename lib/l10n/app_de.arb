@@ -1583,7 +1583,7 @@
   "configFlagEnableMatrix": "Matrix-Synchronisation aktivieren",
   "configFlagEnableMatrixDescription": "Aktiviert die Matrix-Integration, um deine Einträge geräteübergreifend und mit anderen Matrix-Benutzern zu synchronisieren.",
   "configFlagEnableMobileSidebarNavigation": "Mobile Navigation als Seitenleiste",
-  "configFlagEnableMobileSidebarNavigationDescription": "Ersetze die Navigieren-Schaltfläche durch eine Menütaste oben, die eine Seitenleiste mit allen Bereichen und deinen letzten Suchen öffnet.",
+  "configFlagEnableMobileSidebarNavigationDescription": "Ersetze die Navigieren-Schaltfläche durch eine Menütaste unten links, die eine Seitenleiste mit allen Bereichen und deinen letzten Suchen öffnet.",
   "configFlagEnableNotificationsDescription": "Erhalte Benachrichtigungen für Erinnerungen, Aktualisierungen und wichtige Ereignisse.",
   "configFlagEnableProjects": "Projekte aktivieren",
   "configFlagEnableProjectsDescription": "Projektverwaltung zum Organisieren von Aufgaben in Projekten anzeigen.",

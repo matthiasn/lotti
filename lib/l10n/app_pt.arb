@@ -1760,7 +1760,7 @@
   "configFlagEnableMatrix": "Ativar sincronização Matrix",
   "configFlagEnableMatrixDescription": "Habilite a integração do Matrix para sincronizar suas entradas entre dispositivos e com outros usuários do Matrix.",
   "configFlagEnableMobileSidebarNavigation": "Navegação móvel com barra lateral",
-  "configFlagEnableMobileSidebarNavigationDescription": "Substitui o botão Navegar por um botão de menu no topo que abre uma barra lateral com todas as secções e as tuas pesquisas recentes.",
+  "configFlagEnableMobileSidebarNavigationDescription": "Substitui o botão Navegar por um botão de menu no canto inferior esquerdo que abre uma barra lateral com todas as secções e as tuas pesquisas recentes.",
   "configFlagEnableNotificationsDescription": "Receba notificações de lembretes, atualizações e eventos importantes.",
   "configFlagEnableProjects": "Habilitar projetos",
   "configFlagEnableProjectsDescription": "Mostre recursos de gerenciamento de projetos para organizar tarefas em projetos.",

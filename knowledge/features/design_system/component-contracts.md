@@ -5,13 +5,13 @@ description: The repeating patterns that are contract rather than coincidence �
 resource: ../../../lib/features/design_system/components
 tags: [design-system, components, accessibility, layout]
 status: stable
-generated: { by: claude-code/fable-5.1, at: 2026-09-22T09:00:00Z }
-stale_after: 2027-03-22
+generated: { by: claude-code/opus-5.5, at: 2026-09-28T12:00:00Z }
+stale_after: 2027-03-27
 sources:
   - id: components
     resource: ../../../lib/features/design_system/components
     title: Design-system components
-    last_modified: 2026-09-15
+    last_modified: 2026-09-28
   - id: contact-row
     resource: ../../../lib/features/design_system/components/navigation/design_system_contact_row.dart
     title: DesignSystemContactRow — the support footer both navigation surfaces close with
@@ -701,20 +701,22 @@ their integration with the app shell, docked and slid away. The contract:
   reading, while a `+` beside a list still reads as "add". It is consulted
   only for a `MobileNavDockAction.worded` action — the two constructors carry
   the page's own decision about wording, the same one its floating button
-  made, and a `.glyph` action is a `DsGlassRoundButton` at every width.
+  made, and a `.glyph` action is a `DsGlassRoundButton` at every width. For
+  the sidebar arrangement (`MobileNavigationLauncher.sidebar`,
+  `opensSidebar: true`) the leading half is the round menu button, budgeted
+  as one `chipHeight` rather than a measured label.
 
-`DsGlassRoundButton` has two further rules a caller outside the launcher leans
-on. **`DsGlassRoundButton.glyph` takes a widget where the icon font has no
-matching mark** — the mobile sidebar navigation's two-stroke
-[`DsMenuGlyph`](../../../lib/features/design_system/components/navigation/ds_menu_glyph.dart)
+`DsGlassRoundButton` has two further rules. **`DsGlassRoundButton.glyph` takes
+a widget where the icon font has no matching mark** — the sidebar
+arrangement's menu button, around the two-stroke
+[`DsMenuGlyph`](../../../lib/features/design_system/components/navigation/ds_menu_glyph.dart),
 is the case — and inks it through an `IconTheme` carrying `iconColor` and
 `iconSize`, so a painted mark tints and sizes exactly as an `Icon` would and
 the button's chrome is never restated for the sake of one glyph. **A solid
-fill draws no hairline unless `outlineColor` asks for one.** A solid
-`backgroundColor` normally brings its own contrast (the recording mic's alert
-fill), so the glass hairline is dropped; a surface-toned button — the menu
-button's `background.level02` disc — is the case that needs an edge anyway,
-and says so with an explicit ring rather than by pretending to be translucent.
+fill draws no edge at all.** A solid `backgroundColor` brings its own contrast
+(the recording mic's alert fill), so neither the glass hairline nor an
+`outlineColor` ring is drawn on it; the ring is a translucent button's way of
+reading as a peer of the bar's primary, as the idle mic does.
 
 # Accessibility is enforced at construction
 

@@ -99,7 +99,6 @@ import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/nav_bar/mobile_activity_island.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_drawer.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
-import 'package:lotti/widgets/nav_bar/mobile_navigation_menu_lane.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart' hide Profile;
@@ -4022,9 +4021,10 @@ void main() {
   });
 
   group('AppScreen mobile sidebar navigation', () {
-    // Behind `enable_mobile_sidebar_navigation`: a menu button in a top lane
-    // of the shell's own slides the desktop rail's sidebar in from the side.
-    // The launcher is not floated at all under the flag.
+    // Behind `enable_mobile_sidebar_navigation`: the launcher trades its
+    // Navigate chip for a menu button pinned to the bottom-leading corner,
+    // which slides the desktop rail's sidebar in from the side; the page's
+    // create action rides the same row in the bottom-trailing corner.
     const fish = RecentSearch(
       surface: RecentSearchSurface.tasks,
       query: 'fish feeder',
@@ -4072,7 +4072,7 @@ void main() {
     }
 
     Future<void> openDrawer(WidgetTester tester) async {
-      await tester.tap(find.byKey(MobileNavigationMenuLaneKeys.button));
+      await tester.tap(find.byKey(MobileNavigationLauncherKeys.menuButton));
       await tester.pumpAndSettle();
     }
 
@@ -4084,14 +4084,21 @@ void main() {
     DesktopNavigationSidebar sidebar(WidgetTester tester) =>
         tester.widget(find.byType(DesktopNavigationSidebar));
 
+    MobileNavigationLauncher launcher(WidgetTester tester) =>
+        tester.widget(find.byType(MobileNavigationLauncher));
+
+    final menuButton = find.byKey(MobileNavigationLauncherKeys.menuButton);
+
     testWidgets('with the flag off Navigate still raises the grid, and '
-        'neither the menu lane nor the drawer host is mounted', (tester) async {
+        'neither the menu button nor the drawer host is mounted', (
+      tester,
+    ) async {
       final mockNavService = MockNavService();
       await pumpShell(tester, mockNavService, flagValues: Stream.value(false));
 
       expect(find.byType(MobileNavigationDrawerHost), findsNothing);
-      expect(find.byType(MobileNavigationMenuLane), findsNothing);
-      expect(find.byType(MobileNavigationLauncher), findsOneWidget);
+      expect(menuButton, findsNothing);
+      expect(launcher(tester).opensSidebar, isFalse);
 
       await tester.tap(find.text('Navigate'));
       await tester.pumpAndSettle();
@@ -4104,37 +4111,99 @@ void main() {
       await unmount(tester);
     });
 
-    testWidgets('with the flag on the launcher is gone: no Navigate chip, a '
-        'menu button fixed at the top-leading corner instead', (tester) async {
+    testWidgets('with the flag on the launcher trades Navigate for a menu '
+        'button pinned to the bottom-leading corner, and nothing is added at '
+        'the top', (tester) async {
       final mockNavService = MockNavService();
       await pumpShell(tester, mockNavService);
 
-      expect(find.byType(MobileNavigationLauncher), findsNothing);
+      expect(launcher(tester).opensSidebar, isTrue);
       expect(find.text('Navigate'), findsNothing);
 
-      final button = tester.getRect(
-        find.byKey(MobileNavigationMenuLaneKeys.button),
-      );
+      final button = tester.getRect(menuButton);
       final shell = tester.getRect(find.byType(MobileNavigationDrawerHost));
-      final tokens = tester
-          .element(find.byType(MobileNavigationMenuLane))
-          .designTokens;
-      expect(button.left - shell.left, tokens.spacing.step5);
-      expect(button.top - shell.top, tokens.spacing.step2);
+      final context = tester.element(find.byType(MobileNavigationLauncher));
+      expect(button.left - shell.left, context.designTokens.spacing.step3);
+      // On the launcher's row: its bottom sits exactly the launcher's own
+      // bottom padding above the shell's bottom edge.
+      final launcherRect = tester.getRect(
+        find.byType(MobileNavigationLauncher),
+      );
+      expect(launcherRect.bottom, shell.bottom);
+      expect(
+        launcherRect.height,
+        MobileNavigationLauncher.barHeight(context),
+      );
+      expect(button.bottom, lessThan(shell.bottom));
+      expect(button.top, greaterThan(shell.center.dy));
+
+      // The page starts where it always did: no lane above it takes the
+      // status-bar inset or any height.
+      final tasks = tester.getRect(find.byType(IndexedStack).first);
+      expect(tasks.top, shell.top);
 
       await unmount(tester);
     });
 
-    testWidgets('tells the pages there is no launcher to dock on, so they '
-        'float their own create button and reserve no bar', (tester) async {
+    testWidgets('docks the launcher, so pages keep reserving its clearance', (
+      tester,
+    ) async {
       final mockNavService = MockNavService();
       await pumpShell(tester, mockNavService);
 
       final scope = tester.widget<DesignSystemBottomNavigationOverlayHeight>(
         find.byType(DesignSystemBottomNavigationOverlayHeight),
       );
-      expect(scope.launcherPresent, isFalse);
-      expect(scope.barDocked, isFalse);
+      expect(scope.barDocked, isTrue);
+
+      await unmount(tester);
+    });
+
+    testWidgets("docks the task list's create action in the bottom-trailing "
+        'corner, opposite the menu button', (tester) async {
+      final mockNavService = MockNavService();
+      await pumpShell(tester, mockNavService);
+
+      final context = tester.element(find.byType(MobileNavigationLauncher));
+      final action = launcher(tester).pageAction;
+      expect(action, isNotNull);
+      expect(action!.label, context.messages.addActionCreateTask);
+
+      final chip = tester.getRect(
+        find.descendant(
+          of: find.byType(MobileNavigationLauncher),
+          matching: find.bySemanticsLabel(action.label),
+        ),
+      );
+      final shell = tester.getRect(find.byType(MobileNavigationDrawerHost));
+      expect(
+        chip.right,
+        closeTo(shell.right - context.designTokens.spacing.step3, 0.01),
+      );
+      expect(chip.center.dy, closeTo(tester.getRect(menuButton).center.dy, 1));
+
+      await unmount(tester);
+    });
+
+    testWidgets('the menu button stays in its corner on a tab that docks no '
+        'action', (tester) async {
+      final mockNavService = MockNavService();
+      final indexController = StreamController<int>.broadcast();
+      addTearDown(indexController.close);
+      await pumpShell(
+        tester,
+        mockNavService,
+        indexStream: indexController.stream,
+      );
+      indexController.add(0);
+      await tester.pump();
+      final onTasks = tester.getRect(menuButton);
+
+      // Daily OS (index 1) floats no create action.
+      indexController.add(1);
+      await tester.pump();
+      expect(launcher(tester).pageAction, isNull);
+      expect(tester.getRect(menuButton), onTasks);
 
       await unmount(tester);
     });
@@ -4213,31 +4282,29 @@ void main() {
       await unmount(tester);
     });
 
-    testWidgets('pushes the menu lane aside with the page instead of '
+    testWidgets('pushes the launcher aside with the page instead of '
         'floating it over the panel', (tester) async {
       final mockNavService = MockNavService();
       await pumpShell(tester, mockNavService);
-      final restingLeft = tester
-          .getTopLeft(find.byKey(MobileNavigationMenuLaneKeys.button))
-          .dx;
+      final restingLeft = tester.getTopLeft(menuButton).dx;
       await openDrawer(tester);
 
       expect(
         find.descendant(
           of: find.byKey(MobileNavigationDrawerKeys.page),
-          matching: find.byKey(MobileNavigationMenuLaneKeys.button),
+          matching: menuButton,
         ),
         findsOneWidget,
       );
       expect(
-        tester.getTopLeft(find.byKey(MobileNavigationMenuLaneKeys.button)).dx,
+        tester.getTopLeft(menuButton).dx,
         restingLeft + sidebar(tester).width,
       );
 
       await unmount(tester);
     });
 
-    testWidgets('folds the menu lane away inside a project detail and brings '
+    testWidgets('slides the launcher away inside a project detail and brings '
         'it back on the list', (tester) async {
       final mockNavService = MockNavService();
       final indexController = StreamController<int>.broadcast();
@@ -4280,37 +4347,50 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      bool laneVisible() => tester
-          .widget<MobileNavigationMenuLane>(
-            find.byType(MobileNavigationMenuLane),
+      // The launcher's slide-away wrapper is the shell's private
+      // `_SlideAwayBottomNav`; its `IgnorePointer` is what says hidden.
+      bool launcherHidden() => tester
+          .widget<IgnorePointer>(
+            find
+                .ancestor(
+                  of: find.byType(MobileNavigationLauncher),
+                  matching: find.byType(IgnorePointer),
+                )
+                .first,
           )
-          .visible;
-      final menuButton = find.byKey(MobileNavigationMenuLaneKeys.button);
+          .ignoring;
+      double buttonTop() => tester.getRect(menuButton).top;
 
-      // On the projects list navigation shows, and so does the lane.
-      expect(laneVisible(), isTrue);
-      expect(menuButton, findsOneWidget);
+      // On the projects list navigation shows, and so does the menu button.
+      expect(launcher(tester).opensSidebar, isTrue);
+      expect(launcherHidden(), isFalse);
+      final restingTop = buttonTop();
 
       // A project's own page is one of the routes that hide navigation: the
-      // lane answers to the same rule the launcher does.
+      // menu button leaves with the launcher, below the screen edge.
       projectsDelegate.beamToNamed('/projects/some-project-id');
       await tester.pump();
-      expect(laneVisible(), isFalse);
       await tester.pump(const Duration(milliseconds: 500));
-      expect(menuButton, findsNothing);
+      expect(launcherHidden(), isTrue);
+      expect(
+        buttonTop(),
+        greaterThanOrEqualTo(
+          tester.getRect(find.byType(MobileNavigationDrawerHost)).bottom,
+        ),
+      );
 
-      // Back on the list it folds out again.
+      // Back on the list it slides up again.
       projectsDelegate.beamToNamed('/projects');
       await tester.pump();
-      expect(laneVisible(), isTrue);
       await tester.pump(const Duration(milliseconds: 500));
-      expect(menuButton, findsOneWidget);
+      expect(launcherHidden(), isFalse);
+      expect(buttonTop(), restingTop);
 
       await unmount(tester);
     });
 
-    testWidgets('rests the activity island on the safe-area edge, there '
-        'being no launcher for it to float above', (tester) async {
+    testWidgets('floats the activity island above the launcher, as with the '
+        'flag off', (tester) async {
       final mockNavService = MockNavService();
       await _stubNavService(
         mockNavService,
@@ -4345,7 +4425,7 @@ void main() {
       );
       expect(
         island.bottom,
-        MediaQuery.paddingOf(context).bottom +
+        MobileNavigationLauncher.barHeight(context) +
             MobileActivityIsland.gapAboveBar(context),
       );
 
@@ -5846,7 +5926,7 @@ void main() {
       await tester.pump();
       expect(projectsDelegate.canBeamBack, isTrue);
 
-      await tester.tap(find.byKey(MobileNavigationMenuLaneKeys.button));
+      await tester.tap(find.byKey(MobileNavigationLauncherKeys.menuButton));
       await tester.pump();
       await tester.pump(
         MotionDurations.medium2 + const Duration(milliseconds: 50),

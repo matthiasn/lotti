@@ -2208,7 +2208,7 @@
   "configFlagEnableMatrix": "Enable Matrix sync",
   "configFlagEnableMatrixDescription": "Enable the Matrix integration to sync your entries across devices and with other Matrix users.",
   "configFlagEnableMobileSidebarNavigation": "Mobile sidebar navigation",
-  "configFlagEnableMobileSidebarNavigationDescription": "Replace the Navigate button with a menu button at the top that opens a sidebar with every section and your recent searches.",
+  "configFlagEnableMobileSidebarNavigationDescription": "Replace the Navigate button with a menu button in the bottom-left corner that opens a sidebar with every section and your recent searches.",
   "configFlagEnableNotificationsDescription": "Receive notifications for reminders, updates, and important events.",
   "configFlagEnableProjects": "Enable Projects",
   "configFlagEnableProjectsDescription": "Show project management features for organizing tasks into projects.",

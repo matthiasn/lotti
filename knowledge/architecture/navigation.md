@@ -5,8 +5,8 @@ description: Ten independent Beamer stacks behind one IndexedStack, how the acti
 resource: ../../lib/beamer
 tags: [architecture, navigation, beamer, routing, app-shell]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-23T12:00:00Z }
-stale_after: 2027-03-22
+generated: { by: claude-code/opus-5.5, at: 2026-09-28T12:00:00Z }
+stale_after: 2027-03-27
 sources:
   - id: route-mirror
     resource: ../../lib/beamer/locations/route_state_mirror.dart
@@ -15,7 +15,7 @@ sources:
   - id: beamer-app
     resource: ../../lib/beamer/beamer_app.dart
     title: MyBeamerApp and AppScreen
-    last_modified: 2026-09-22
+    last_modified: 2026-09-28
   - id: activity-island
     resource: ../../lib/widgets/nav_bar/mobile_activity_island.dart
     title: The activity island floating above the mobile navigation
@@ -26,20 +26,16 @@ sources:
     last_modified: 2026-08-05
   - id: mobile-launcher
     resource: ../../lib/widgets/nav_bar/mobile_navigation_launcher.dart
-    title: MobileNavigationLauncher — the mobile navigation and its docked page action
-    last_modified: 2026-09-16
+    title: MobileNavigationLauncher — both mobile navigations' bottom row and its docked page action
+    last_modified: 2026-09-28
   - id: mobile-nav-sheet
     resource: ../../lib/widgets/nav_bar/mobile_nav_sheet.dart
     title: The Navigate grid of every enabled destination
     last_modified: 2026-09-07
-  - id: mobile-nav-menu-lane
-    resource: ../../lib/widgets/nav_bar/mobile_navigation_menu_lane.dart
-    title: MobileNavigationMenuLane — the sidebar navigation's top lane and its menu button
-    last_modified: 2026-09-22
   - id: mobile-nav-drawer
     resource: ../../lib/widgets/nav_bar/mobile_navigation_drawer.dart
     title: MobileNavigationDrawerHost — the experimental sidebar that pushes the page aside
-    last_modified: 2026-09-22
+    last_modified: 2026-09-28
   - id: drawer-back-dispatcher
     resource: ../../lib/beamer/drawer_first_back_button_dispatcher.dart
     title: DrawerFirstBackButtonDispatcher — the root back dispatcher that closes an open drawer first
@@ -137,8 +133,8 @@ flowchart TD
   Chrome -->|desktop| DayCol["DayViewSidePanel (right-docked day view)"]
   Chrome -->|mobile| Launcher["MobileNavigationLauncher: glass Navigate chip (+ docked page action)"]
   Launcher --> Grid["showMobileNavSheet: two-column grid of every enabled destination"]
-  Chrome -->|mobile, enable_mobile_sidebar_navigation| Lane["MobileNavigationMenuLane: menu button fixed top-leading, no launcher"]
-  Lane --> Drawer["MobileNavigationDrawerHost: DesktopSidebar in a slide-over, plus Recents"]
+  Chrome -->|mobile, enable_mobile_sidebar_navigation| SidebarLauncher["MobileNavigationLauncher.sidebar: menu button bottom-leading (+ page action bottom-trailing)"]
+  SidebarLauncher --> Drawer["MobileNavigationDrawerHost: DesktopSidebar in a slide-over, plus Recents"]
 ```
 
 An `IndexedStack` keeps every tab **mounted**. Tabs preserve scroll position and
@@ -582,80 +578,69 @@ start whichever way it was set.
 ## The mobile sidebar navigation
 
 Behind `enable_mobile_sidebar_navigation` (Config Flags → Advanced, off by
-default) the mobile shell trades the launcher for a **menu button fixed at the
-top-leading corner** that slides a sidebar in from the side and pushes the page
-aside. It is an experiment running beside the launcher, not a replacement for
-it: with the flag off the shell builds exactly the tree it built before, and
-neither the lane nor the drawer host is mounted at all.
+default) the launcher trades its Navigate chip for a **menu button pinned to
+the bottom-leading corner** that slides a sidebar in from the side and pushes
+the page aside. It is an experiment running beside the Navigate grid, not a
+replacement for it: with the flag off the shell builds exactly the tree it
+built before, and the drawer host is not mounted at all.
 
-**It shares nothing with the launcher but the rule for when navigation shows.**
-Under the flag no `MobileNavigationLauncher` is built — no Navigate chip, no
-docked page action, no grid. What the two do share is
-`navigationShown` (`showBottomNav && !slideNavAway`), so every route that hides
-the launcher hides the menu button too, and no second list of routes exists to
-drift from the first.
+**It is the same launcher, re-arranged.** Under the flag the shell floats
+`MobileNavigationLauncher.sidebar` where it would float the default launcher —
+same `Positioned` slot, same `_SlideAwayBottomNav`, same `barHeight` — so
+everything the launcher already answers for holds unchanged: every route that
+hides the launcher hides the menu button with it, pages hand it their create
+action through the same `_launcherDockAction`, `occupiedHeight` reserves the
+same row, and the activity island floats the same `gapAboveBar` above it.
+Only the leading control and the row's arrangement differ, and nothing above
+the page is added: no row takes the status-bar inset or any height from the
+page's own header.
 
-### The menu lane
+### The menu button
 
-[`MobileNavigationMenuLane`](../../lib/widgets/nav_bar/mobile_navigation_menu_lane.dart)
-is a slim row of the shell's own above every page, with the button at its
-leading edge. It is **structural, never an overlay**, for the reason the
-bottom launcher could afford to float and this cannot: every tab owns its
-top-leading corner. Tasks, Habits and Settings put their title there, Daily OS
-its day stepper, every settings hub a back chevron — so a button floated over
-the page would land on a different control on each tab. As the first child of
-a `Column` whose second child is the page, the button sits in one fixed place
-everywhere and each page's own header starts beneath it, untouched: the
-large-title arrangement, with the bar button above the title. No page was
-edited to make room for it.
+The row puts both controls under the thumb and keeps the button still:
+
+| | Navigate arrangement (default) | Sidebar arrangement (`.sidebar`) |
+|---|---|---|
+| Leading control | labelled Navigate chip, opens the grid | round menu button, opens the drawer |
+| Where it sits | centred as a pair with the page action | pinned to the leading gutter on every tab, action or none |
+| Page action | beside Navigate, pair centred | pinned to the trailing gutter, opposite the button |
+| `labelsFit` measures | the Navigate label + gap + the action label | one `chipHeight` (the disc) + gap + the action label |
 
 The button is a
 [`DsGlassRoundButton.glyph`](../../lib/features/design_system/components/glass_action_bar.dart)
 around
 [`DsMenuGlyph`](../../lib/features/design_system/components/navigation/ds_menu_glyph.dart),
 the two-stroke mark — a long stroke over a shorter one, painted because no icon
-font carries it. It wears a surface one step above the page with a hairline
-ring rather than the translucent glass of the floating chips: the lane is part
-of the page's own plane, with nothing scrolling beneath it to blur.
+font carries it — at `chipHeight` diameter, so the row keeps one baseline and
+one height. It wears the translucent, blurred glass of the Navigate chip it
+stands in for: the row floats over scrolling content. It is keyed
+`MobileNavigationLauncherKeys.menuButton` and announces `navSidebarOpenLabel`.
+In a right-to-left locale the two corners mirror.
+
+The action takes whatever width the row has left and hugs its trailing end. A
+disc is narrower than the Navigate chip at every text scale, so a worded action
+keeps its word well past the point where it would collapse beside Navigate.
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Shown: a route where navigation shows
-  [*] --> Hidden: a route that hides navigation
-  Shown --> Folding: navigate to a route that hides navigation
-  Folding --> Hidden: fold completes — row unmounted
-  Hidden --> Unfolding: navigate back to a route where it shows
-  Unfolding --> Shown: fold completes
-  note right of Shown
-    The lane pads itself by the status-bar inset
-    and hands the page a zero top inset.
-  end note
-  note right of Hidden
-    The whole status-bar inset is the page's again.
-  end note
+  [*] --> MenuAlone
+  MenuAlone --> MenuAndWorded: Tasks or People becomes active
+  MenuAlone --> MenuAndGlyph: Logbook, Projects, Goals, Habits or Events becomes active
+  MenuAndWorded --> MenuAlone: a destination with no create action becomes active
+  MenuAndGlyph --> MenuAlone: a destination with no create action becomes active
+  MenuAndWorded --> MenuAndGlyph: disc, gap and label no longer fit the row
+  MenuAndGlyph --> MenuAndWorded: they fit again, on a worded action
+  MenuAlone: menu button in the leading corner
+  MenuAndWorded: menu button leading, accent labelled pill trailing
+  MenuAndGlyph: menu button leading, accent round button trailing
 ```
 
-**The lane owns the status-bar inset while it shows, and hands it back as it
-folds.** One animated value drives both the lane's height factor and the top
-inset the page sees through an overridden `MediaQuery`, so their sum moves
-smoothly from "inset + row" to "inset". Driving only the height would leave
-the page padding for a status bar the lane still covered until the last frame,
-then jump by the inset's height. With reduced motion the change is immediate.
+The menu button's position is the same in all three states.
 
-### What the missing launcher changes
-
-`DesignSystemBottomNavigationOverlayHeight` publishes `launcherPresent: false`
-(and therefore `barDocked: false`), and two things follow with no per-page
-edit:
-
-- **Pages float their own create button again.**
-  `mobileNavigationLauncherOwnsPageActions` is false where no launcher exists,
-  exactly as on desktop, so the six list pages keep their
-  `DesignSystemFloatingActionButton` in its corner and restore the scroll
-  clearance they reserve for it.
-- **`occupiedHeight` reserves no bar**, and the activity island rests on the
-  bottom safe-area edge — the position it already takes when the launcher has
-  slid away.
+The flag's first version put the button in a slim lane of the shell's own
+above every page. It cost every page a row of height at the top, and it was
+the one control on the phone out of the thumb's reach, so the button moved to
+the launcher's row.
 
 ### The drawer
 
@@ -728,7 +713,7 @@ These contracts hold it together:
   content stack — and that is what `_contentStackKey` already exists for:
   the stack is re-parented, exactly as it is when the window crosses the
   desktop breakpoint.
-- **The whole mobile shell is pushed aside** — menu lane, page and activity
+- **The whole mobile shell is pushed aside** — page, launcher and activity
   island together — so nothing of it floats over the panel.
 - **The page leaves as a card.** Its leading corners round off (`radii.xl`) in
   step with the slide, over a backdrop in the panel's own `background.level02`,
@@ -898,7 +883,9 @@ stateDiagram-v2
 ```
 
 `labelsFit` measures both labels with a `TextPainter` at the current scaler
-against `availableRowWidth`. It is
+against `availableRowWidth` — or, for the sidebar arrangement
+(`opensSidebar: true`), the menu button's one `chipHeight` in place of the
+Navigate label; see [the menu button](#the-menu-button). It is
 consulted only for a `MobileNavDockAction.worded` action; a `.glyph` one is
 round at every width. Below the threshold a worded action drops to
 `DsGlassRoundButton` at the same diameter as the row's chip height — it keeps
@@ -1001,9 +988,8 @@ Two rules hold it together:
 | Index, delegate registry, flag gating, state persistence | [`lib/services/nav_service.dart`](../../lib/services/nav_service.dart) |
 | Restore hook, awaited before `runApp` | [`lib/get_it.dart`](../../lib/get_it.dart) |
 | Logbook auto-selection, the background-navigation case | [`lib/features/journal/ui/pages/journal_root_page.dart`](../../lib/features/journal/ui/pages/journal_root_page.dart) |
-| Mobile launcher and its docked page action | [`lib/widgets/nav_bar/mobile_navigation_launcher.dart`](../../lib/widgets/nav_bar/mobile_navigation_launcher.dart) |
+| Mobile launcher — both arrangements — and its docked page action | [`lib/widgets/nav_bar/mobile_navigation_launcher.dart`](../../lib/widgets/nav_bar/mobile_navigation_launcher.dart) |
 | Navigate grid | [`lib/widgets/nav_bar/mobile_nav_sheet.dart`](../../lib/widgets/nav_bar/mobile_nav_sheet.dart) |
-| Sidebar navigation's menu lane (experimental) | [`lib/widgets/nav_bar/mobile_navigation_menu_lane.dart`](../../lib/widgets/nav_bar/mobile_navigation_menu_lane.dart) |
 | Sidebar drawer host (experimental) | [`lib/widgets/nav_bar/mobile_navigation_drawer.dart`](../../lib/widgets/nav_bar/mobile_navigation_drawer.dart) |
 | The two-stroke menu mark | [`lib/features/design_system/components/navigation/ds_menu_glyph.dart`](../../lib/features/design_system/components/navigation/ds_menu_glyph.dart) |
 | The sidebar both form factors host | [`lib/features/design_system/components/navigation/desktop_navigation_sidebar.dart`](../../lib/features/design_system/components/navigation/desktop_navigation_sidebar.dart) |
