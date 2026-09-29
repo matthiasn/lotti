@@ -11237,10 +11237,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get projectShowcaseViewBlocker => 'Vedeți blocajul';
 
   @override
+  String get projectsInferenceProfileMissing => 'Profil de inferență lipsă';
+
+  @override
+  String get projectsInferenceProfileNone => 'Fără profil de inferență';
+
+  @override
   String get projectsScopeAll => 'Toate';
 
   @override
   String get projectsScopeCurrent => 'Curente';
+
+  @override
+  String get projectsShowInferenceProfile => 'Afișați profilul de inferență';
 
   @override
   String get projectsSortActionable => 'Necesită atenție';

@@ -75,6 +75,94 @@ void main() {
     );
   });
 
+  group('buildProjectsFilterSheetState — inference profile toggle', () {
+    for (final show in [false, true]) {
+      testWidgets('offers the switch, seeded ${show ? 'on' : 'off'}', (
+        tester,
+      ) async {
+        late BuildContext context;
+        await tester.pumpWidget(
+          makeTestableWidget(
+            Builder(
+              builder: (buildContext) {
+                context = buildContext;
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        );
+
+        final state = buildProjectsFilterSheetState(
+          context,
+          filter: ProjectsFilter(showInferenceProfile: show),
+          categories: const [],
+        );
+
+        expect(state.toggles, hasLength(1));
+        final toggle = state.toggles.single;
+        expect(toggle.id, ProjectsFilterToggleIds.showInferenceProfile);
+        expect(toggle.label, 'Show inference profile');
+        expect(toggle.value, show);
+      });
+    }
+  });
+
+  group('projectsFilterFromSheetState — inference profile toggle', () {
+    DesignSystemTaskFilterState sheetWith(
+      List<DesignSystemTaskFilterToggle> toggles,
+    ) => DesignSystemTaskFilterState(
+      title: 'Apply filter',
+      clearAllLabel: 'Clear all',
+      applyLabel: 'Apply',
+      toggles: toggles,
+    );
+
+    test('an enabled switch turns the pill on', () {
+      final filter = projectsFilterFromSheetState(
+        sheetWith(const [
+          DesignSystemTaskFilterToggle(
+            id: ProjectsFilterToggleIds.showInferenceProfile,
+            label: 'Show inference profile',
+            value: true,
+          ),
+        ]),
+        baseFilter: const ProjectsFilter(),
+      );
+
+      expect(filter.showInferenceProfile, isTrue);
+    });
+
+    test('a disabled switch turns a previously shown pill off', () {
+      final filter = projectsFilterFromSheetState(
+        sheetWith(const [
+          DesignSystemTaskFilterToggle(
+            id: ProjectsFilterToggleIds.showInferenceProfile,
+            label: 'Show inference profile',
+            value: false,
+          ),
+        ]),
+        baseFilter: const ProjectsFilter(showInferenceProfile: true),
+      );
+
+      expect(filter.showInferenceProfile, isFalse);
+    });
+
+    test('an unrelated enabled toggle does not turn the pill on', () {
+      final filter = projectsFilterFromSheetState(
+        sheetWith(const [
+          DesignSystemTaskFilterToggle(
+            id: 'some-other-toggle',
+            label: 'Other',
+            value: true,
+          ),
+        ]),
+        baseFilter: const ProjectsFilter(),
+      );
+
+      expect(filter.showInferenceProfile, isFalse);
+    });
+  });
+
   group('projectsFilterFromSheetState', () {
     test('maps DS status/category selections back into a ProjectsFilter', () {
       final sheetState = DesignSystemTaskFilterState(

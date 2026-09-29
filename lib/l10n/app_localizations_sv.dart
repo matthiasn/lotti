@@ -11033,10 +11033,19 @@ class AppLocalizationsSv extends AppLocalizations {
   String get projectShowcaseViewBlocker => 'Visningsblockerare';
 
   @override
+  String get projectsInferenceProfileMissing => 'Inferensprofil saknas';
+
+  @override
+  String get projectsInferenceProfileNone => 'Ingen inferensprofil';
+
+  @override
   String get projectsScopeAll => 'Alla';
 
   @override
   String get projectsScopeCurrent => 'Aktuella';
+
+  @override
+  String get projectsShowInferenceProfile => 'Visa inferensprofil';
 
   @override
   String get projectsSortActionable => 'Behöver uppmärksamhet';

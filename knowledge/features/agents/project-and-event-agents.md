@@ -5,8 +5,8 @@ description: The digest-shaped project agent that resists waking on every linked
 resource: ../../../lib/features/agents/workflow/project_agent_workflow.dart
 tags: [agents, project-agent, event-agent, digest, notifications]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-12T20:00:00Z }
-stale_after: 2026-10-12
+generated: { by: claude-code/opus-5, at: 2026-09-29T12:00:00Z }
+stale_after: 2026-10-29
 sources:
   - id: project-execution
     resource: ../../../lib/features/agents/workflow/project_agent_execute.dart
@@ -30,8 +30,8 @@ sources:
     last_modified: 2026-08-07
   - id: project-service
     resource: ../../../lib/features/agents/service/project_agent_service.dart
-    title: ProjectAgentService (creation and announcement)
-    last_modified: 2026-09-05
+    title: ProjectAgentService (creation, inference setup and announcement)
+    last_modified: 2026-09-29
   - id: project-mutations
     resource: ../../../lib/features/agents/service/project_agent_mutation_coordinator.dart
     title: Shared project category, provisioning, and retirement exclusion
@@ -85,7 +85,7 @@ expensive and useless.
 2. Enforces one project agent per project.
 3. Re-reads the template and validates that it is an active project-agent
    template whose category scope still applies to the requested project scope.
-4. Creates identity and state.
+4. Creates identity and state, with the inference setup described below.
 5. Sets `slots.activeProjectId` and marks the explicit creation work pending.
 6. Persists a one-shot next-06:00 fallback for the in-memory creation wake.
 7. Creates `agent_project` and `template_assignment` links.
@@ -95,6 +95,37 @@ expensive and useless.
 9. Announces itself (see below).
 10. Registers the project subscription.
 11. Enqueues the explicit creation wake.
+
+## Inference profile at creation
+
+A project agent is created with the profile it is handed, and a handed profile
+is stored as a **typed, authoritative** `AgentInferenceSetup` (`configured`,
+`baseProfileId` = that profile). Typed setups never fall through to template or
+legacy defaults, so the agent runs on exactly that profile.
+
+- **New project** (`ProjectCreateForm`): the category's `defaultProfileId`,
+  with `setupOrigin: categorySnapshot` and the category id as origin entity —
+  the same default a new task's agent takes from its category (see
+  [task agents](task-agents.md)). The two differ when the category has no
+  default: a task agent is then created with a *disabled* setup, while a
+  project agent gets no typed setup and falls back to the legacy chain below.
+- **Assign agent** on a project without one: the profile picked in the
+  creation modal, `setupOrigin: user`.
+- **No profile** (a category without a default): no typed setup is written,
+  so the agent keeps the legacy chain in `ProfileResolver` — template profile,
+  then the template's built-in model (the seeded templates carry
+  `models/gemini-3-flash-preview`), then the device's Settings default. That
+  chain is what every project agent used before, which is why projects ran on
+  Gemini regardless of the category.
+
+```mermaid
+flowchart TD
+  Create["createProjectAgent(profileId, setupOrigin)"] --> Has{"profileId?"}
+  Has -->|yes| Typed["AgentInferenceSetup<br/>configured · baseProfileId"]
+  Has -->|no| Legacy["inferenceSetup = null<br/>legacy chain"]
+  Typed --> Resolve["ProfileResolver.resolveSetup"]
+  Legacy --> Chain["template profile → template model → Settings default"]
+```
 
 Project deletion and synced scope reconciliation hold the same per-project
 coordinator as provisioning. Deletion lives in `ProjectLifecycleService`; its

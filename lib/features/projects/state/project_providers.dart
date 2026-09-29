@@ -2,14 +2,18 @@
 
 import 'dart:developer' as developer;
 
+import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
@@ -109,9 +113,12 @@ class ProjectsFilterController extends Notifier<ProjectsFilter> {
     state = state.copyWith(sortMode: sortMode);
   }
 
+  /// Clears every narrowing filter back to the current-work scope. The
+  /// profile pill is a display preference, not a filter, so it survives.
   void resetToCurrent() {
-    state = const ProjectsFilter(
+    state = ProjectsFilter(
       selectedStatusIds: currentProjectStatusFilterIds,
+      showInferenceProfile: state.showInferenceProfile,
     );
   }
 
@@ -129,10 +136,20 @@ class ProjectsFilterController extends Notifier<ProjectsFilter> {
   }
 }
 
-/// Raw grouped projects snapshot for the top-level tab.
-final _projectOneLinerCacheProvider = Provider<Map<String, String?>>(
-  (ref) => <String, String?>{},
-);
+/// The agent-derived fields of one overview row, as last loaded successfully.
+typedef _ProjectAgentSidecar = ({
+  String? oneLiner,
+  bool hasProjectAgent,
+  String? inferenceProfileName,
+  bool inferenceProfileMissing,
+  bool inferenceProfileLoaded,
+});
+
+/// Last successfully loaded agent sidecars, keyed by project id.
+final _projectAgentSidecarCacheProvider =
+    Provider<Map<String, _ProjectAgentSidecar>>(
+      (ref) => <String, _ProjectAgentSidecar>{},
+    );
 
 /// Emits only shared agent-update batches that concern project agents.
 ///
@@ -175,85 +192,155 @@ final projectAgentOverviewUpdateStreamProvider =
       }
     });
 
+/// Raw grouped projects snapshot for the top-level tab, with each row's
+/// project-agent sidecar (one-liner and assigned inference profile) attached
+/// in one batch.
+///
+/// The inference profiles are only looked up while the list shows them
+/// ([ProjectsFilter.showInferenceProfile]); flipping that switch reloads the
+/// snapshot, which keeps the list on screen while it does.
 final projectsOverviewProvider =
     StreamProvider.autoDispose<ProjectsOverviewSnapshot>((ref) {
       final repository = ref.watch(projectRepositoryProvider);
       final agentRepository = ref.watch(agentRepositoryProvider);
-      final oneLinerCache = ref.watch(_projectOneLinerCacheProvider);
+      final aiConfigRepository = ref.watch(aiConfigRepositoryProvider);
+      final sidecarCache = ref.watch(_projectAgentSidecarCacheProvider);
+      final includeInferenceProfiles = ref.watch(
+        projectsFilterControllerProvider.select(
+          (filter) => filter.showInferenceProfile,
+        ),
+      );
       ref.watch(projectAgentOverviewUpdateStreamProvider);
+      if (includeInferenceProfiles) {
+        _reloadOnProfileNameChanges(ref, aiConfigRepository);
+      }
       return repository
           .watchProjectsOverview(query: const ProjectsQuery())
           .asyncMap(
             (snapshot) async {
               try {
-                final enriched = await _attachProjectOneLiners(
+                final enriched = await _attachProjectAgentSidecars(
                   snapshot,
                   agentRepository,
+                  includeInferenceProfiles ? aiConfigRepository : null,
                 );
-                _replaceProjectOneLinerCache(oneLinerCache, enriched);
+                _replaceProjectAgentSidecarCache(sidecarCache, enriched);
                 return enriched;
               } catch (error, stackTrace) {
-                // Agent summaries are optional enrichment. A failed sidecar
-                // read must not replace the established list with an error.
+                // Agent sidecars are optional enrichment. A failed read must
+                // not replace the established list with an error.
                 developer.log(
-                  'Failed to attach project agent one-liners',
+                  'Failed to attach project agent sidecars',
                   name: 'projectsOverviewProvider',
                   error: error,
                   stackTrace: stackTrace,
                 );
-                return _restoreCachedProjectOneLiners(
+                return _restoreCachedProjectAgentSidecars(
                   snapshot,
-                  oneLinerCache,
+                  sidecarCache,
                 );
               }
             },
           );
     });
 
-void _replaceProjectOneLinerCache(
-  Map<String, String?> cache,
-  ProjectsOverviewSnapshot snapshot,
-) {
-  cache
-    ..clear()
-    ..addEntries(
-      snapshot.groups.expand(
-        (group) => group.projects.map(
-          (item) => MapEntry(item.project.meta.id, item.oneLiner),
-        ),
-      ),
-    );
+/// Reloads the overview when an inference profile is renamed, added or
+/// deleted — locally or by sync — while the list shows profile names.
+///
+/// Profile edits emit no project or agent notification, so without this a
+/// renamed profile kept its old name and a deleted one never turned into the
+/// missing-profile warning. The first emission is the baseline; only a change
+/// in the id → name map reloads, so edits to a profile's model slots do not.
+void _reloadOnProfileNameChanges(Ref ref, AiConfigRepository repository) {
+  Map<String, String>? baseline;
+  final subscription = repository.watchProfiles().listen(
+    (profiles) {
+      final names = {for (final profile in profiles) profile.id: profile.name};
+      final previous = baseline;
+      baseline = names;
+      if (previous != null &&
+          !const MapEquality<String, String>().equals(previous, names)) {
+        ref.invalidateSelf();
+      }
+    },
+    onError: (Object error, StackTrace stackTrace) {
+      developer.log(
+        'Failed to watch inference profiles for the Projects overview',
+        name: 'projectsOverviewProvider',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    },
+  );
+  ref.onDispose(subscription.cancel);
 }
 
-ProjectsOverviewSnapshot _restoreCachedProjectOneLiners(
+Iterable<ProjectListItemData> _overviewItems(
   ProjectsOverviewSnapshot snapshot,
-  Map<String, String?> cache,
+) => snapshot.groups.expand((group) => group.projects);
+
+ProjectsOverviewSnapshot _mapOverviewItems(
+  ProjectsOverviewSnapshot snapshot,
+  ProjectListItemData Function(ProjectListItemData item) transform,
 ) {
   return ProjectsOverviewSnapshot(
     groups: [
       for (final group in snapshot.groups)
         group.copyWith(
-          projects: [
-            for (final item in group.projects)
-              ProjectListItemData(
-                project: item.project,
-                category: item.category,
-                taskRollup: item.taskRollup,
-                oneLiner: cache[item.project.meta.id] ?? item.oneLiner,
-              ),
-          ],
+          projects: [for (final item in group.projects) transform(item)],
         ),
     ],
   );
 }
 
-Future<ProjectsOverviewSnapshot> _attachProjectOneLiners(
+void _replaceProjectAgentSidecarCache(
+  Map<String, _ProjectAgentSidecar> cache,
+  ProjectsOverviewSnapshot snapshot,
+) {
+  cache
+    ..clear()
+    ..addEntries(
+      _overviewItems(snapshot).map(
+        (item) => MapEntry(item.project.meta.id, (
+          oneLiner: item.oneLiner,
+          hasProjectAgent: item.hasProjectAgent,
+          inferenceProfileName: item.inferenceProfileName,
+          inferenceProfileMissing: item.inferenceProfileMissing,
+          inferenceProfileLoaded: item.inferenceProfileLoaded,
+        )),
+      ),
+    );
+}
+
+ProjectsOverviewSnapshot _restoreCachedProjectAgentSidecars(
+  ProjectsOverviewSnapshot snapshot,
+  Map<String, _ProjectAgentSidecar> cache,
+) {
+  return _mapOverviewItems(snapshot, (item) {
+    final cached = cache[item.project.meta.id];
+    if (cached == null) return item;
+    return item.withAgentSidecar(
+      oneLiner: cached.oneLiner ?? item.oneLiner,
+      hasProjectAgent: cached.hasProjectAgent,
+      inferenceProfileName: cached.inferenceProfileName,
+      inferenceProfileMissing: cached.inferenceProfileMissing,
+      // A sidecar cached while profiles were not looked up stays unloaded, so
+      // its empty profile fields never render as "no inference profile".
+      inferenceProfileLoaded: cached.inferenceProfileLoaded,
+    );
+  });
+}
+
+/// Attaches each row's agent sidecar. The inference profiles are resolved only
+/// when [aiConfigRepository] is given; without it every profile field stays
+/// empty.
+Future<ProjectsOverviewSnapshot> _attachProjectAgentSidecars(
   ProjectsOverviewSnapshot snapshot,
   AgentRepository agentRepository,
+  AiConfigRepository? aiConfigRepository,
 ) async {
   final projectIds = [
-    for (final group in snapshot.groups)
-      for (final item in group.projects) item.project.meta.id,
+    for (final item in _overviewItems(snapshot)) item.project.meta.id,
   ];
   if (projectIds.isEmpty) return snapshot;
 
@@ -262,47 +349,96 @@ Future<ProjectsOverviewSnapshot> _attachProjectOneLiners(
     type: AgentLinkTypes.agentProject,
   );
   final agentIdsByProjectId = <String, String>{};
-  final agentIds = <String>{};
   for (final entry in linksByProjectId.entries) {
     if (entry.value.isEmpty) continue;
-    final agentId = entry.value.selectPrimary().fromId;
-    agentIdsByProjectId[entry.key] = agentId;
-    agentIds.add(agentId);
+    agentIdsByProjectId[entry.key] = entry.value.selectPrimary().fromId;
   }
+  final agentIds = agentIdsByProjectId.values.toSet().toList(growable: false);
   if (agentIds.isEmpty) return snapshot;
 
-  final reportsByAgentId = await agentRepository.getLatestReportsByAgentIds(
-    agentIds.toList(growable: false),
-    AgentReportScopes.current,
+  final (reportsByAgentId, profileNamesByAgentId) = await (
+    agentRepository.getLatestReportsByAgentIds(
+      agentIds,
+      AgentReportScopes.current,
+    ),
+    aiConfigRepository == null
+        ? Future.value(const <String, String?>{})
+        : _assignedProfileNamesByAgentId(
+            agentIds,
+            agentRepository,
+            aiConfigRepository,
+          ),
+  ).wait;
+  return _mapOverviewItems(snapshot, (item) {
+    final agentId = agentIdsByProjectId[item.project.meta.id];
+    final profileName = profileNamesByAgentId[agentId];
+    return item.withAgentSidecar(
+      oneLiner: reportsByAgentId[agentId]?.oneLiner?.trim(),
+      hasProjectAgent: agentId != null,
+      inferenceProfileName: profileName,
+      inferenceProfileMissing:
+          profileName == null && profileNamesByAgentId.containsKey(agentId),
+      inferenceProfileLoaded: aiConfigRepository != null,
+    );
+  });
+}
+
+/// Names of the inference profiles [agentIds] are explicitly assigned.
+///
+/// An agent without an assigned profile is absent from the result. An agent
+/// whose assigned id no longer resolves to an inference profile — deleted, or
+/// some other config — maps to `null`: it is assigned, but nothing can run.
+/// Profile reads go through the repository's per-id cache, so a shared
+/// profile is fetched once.
+Future<Map<String, String?>> _assignedProfileNamesByAgentId(
+  List<String> agentIds,
+  AgentRepository agentRepository,
+  AiConfigRepository aiConfigRepository,
+) async {
+  final entities = await agentRepository.getEntitiesByIds(agentIds);
+  final profileIdsByAgentId = <String, String>{
+    for (final entity in entities.values)
+      if (entity case final AgentIdentityEntity identity)
+        if (identity.config.assignedProfileId case final String profileId)
+          identity.agentId: profileId,
+  };
+  final profileIds = profileIdsByAgentId.values.toSet().toList();
+  final configs = await Future.wait(
+    profileIds.map(aiConfigRepository.getConfigById),
   );
-  return ProjectsOverviewSnapshot(
-    groups: [
-      for (final group in snapshot.groups)
-        group.copyWith(
-          projects: [
-            for (final item in group.projects)
-              ProjectListItemData(
-                project: item.project,
-                category: item.category,
-                taskRollup: item.taskRollup,
-                oneLiner:
-                    reportsByAgentId[agentIdsByProjectId[item.project.meta.id]]
-                        ?.oneLiner
-                        ?.trim(),
-              ),
-          ],
-        ),
-    ],
-  );
+  final profileNamesById = <String, String>{
+    for (final config in configs)
+      if (config case final AiConfigInferenceProfile profile)
+        profile.id: profile.name,
+  };
+  return <String, String?>{
+    for (final MapEntry(key: agentId, value: profileId)
+        in profileIdsByAgentId.entries)
+      agentId: profileNamesById[profileId],
+  };
 }
 
 /// Applies the provider-layer filtering model to the raw snapshot.
+///
+/// Stale-while-revalidate: while the overview reloads — every relevant agent
+/// update rebuilds it — the last snapshot stays on screen until the new one
+/// arrives, and an error after a loaded snapshot keeps that snapshot. Only a
+/// first load with nothing to show yet is loading or an error. This is
+/// deliberately not `whenData`, which turns a reload into a bare loading state
+/// and drops the previous value, so the list would blink out on every update.
 final visibleProjectGroupsProvider =
     Provider.autoDispose<AsyncValue<List<ProjectCategoryGroup>>>((ref) {
       final overviewAsync = ref.watch(projectsOverviewProvider);
       final filter = ref.watch(projectsFilterControllerProvider);
 
-      return overviewAsync.whenData(
-        (overview) => applyProjectsFilter(overview, filter),
-      );
+      return switch (overviewAsync) {
+        AsyncValue(:final value?) => AsyncData(
+          applyProjectsFilter(value, filter),
+        ),
+        AsyncError(:final error, :final stackTrace) => AsyncError(
+          error,
+          stackTrace,
+        ),
+        _ => const AsyncLoading(),
+      };
     });

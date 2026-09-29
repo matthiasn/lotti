@@ -470,9 +470,21 @@ void main() {
         expect(createCall[0], AgentKinds.projectAgent, reason: '$scenario');
         expect(createCall[1], displayName, reason: '$scenario');
         final config = createCall[2] as AgentConfig;
+        // A profile is stored as an authoritative typed setup; without one
+        // the agent keeps the legacy chain.
+        final profileId = scenario.profileId;
         expect(
           config,
-          AgentConfig(profileId: scenario.profileId),
+          AgentConfig(
+            profileId: profileId,
+            inferenceSetup: profileId == null
+                ? null
+                : AgentInferenceSetup(
+                    mode: AgentInferenceSetupMode.configured,
+                    origin: AgentInferenceSetupOrigin.user,
+                    baseProfileId: profileId,
+                  ),
+          ),
           reason: '$scenario',
         );
         expect(
@@ -871,6 +883,140 @@ void main() {
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
           ),
         ).called(1);
+      });
+
+      group('inference setup', () {
+        Future<AgentConfig> createAndCaptureConfig({
+          String? profileId,
+          AgentInferenceSetupOrigin? setupOrigin,
+          String? setupOriginEntityId,
+        }) async {
+          final template = makeTestTemplate(
+            kind: AgentTemplateKind.projectAgent,
+          );
+          when(
+            () => mockRepository.getLinksTo(
+              'project-2',
+              type: 'agent_project',
+            ),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockRepository.getEntity(kTestTemplateId),
+          ).thenAnswer((_) async => template);
+          when(
+            () => mockAgentService.createAgent(
+              kind: any(named: 'kind'),
+              displayName: any(named: 'displayName'),
+              config: any(named: 'config'),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            ),
+          ).thenAnswer((_) async => makeIdentity());
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => makeState());
+          when(
+            () => mockOrchestrator.enqueueManualWake(
+              agentId: any(named: 'agentId'),
+              reason: any(named: 'reason'),
+              triggerTokens: any(named: 'triggerTokens'),
+            ),
+          ).thenReturn('run-key-stub');
+
+          if (setupOrigin == null) {
+            await service.createProjectAgent(
+              projectId: 'project-2',
+              templateId: kTestTemplateId,
+              displayName: 'Agent',
+              allowedCategoryIds: const {},
+              profileId: profileId,
+              setupOriginEntityId: setupOriginEntityId,
+            );
+          } else {
+            await service.createProjectAgent(
+              projectId: 'project-2',
+              templateId: kTestTemplateId,
+              displayName: 'Agent',
+              allowedCategoryIds: const {},
+              profileId: profileId,
+              setupOrigin: setupOrigin,
+              setupOriginEntityId: setupOriginEntityId,
+            );
+          }
+
+          return verify(
+                () => mockAgentService.createAgent(
+                  kind: any(named: 'kind'),
+                  displayName: any(named: 'displayName'),
+                  config: captureAny(named: 'config'),
+                  allowedCategoryIds: any(named: 'allowedCategoryIds'),
+                ),
+              ).captured.single
+              as AgentConfig;
+        }
+
+        test(
+          'a category profile becomes an authoritative configured setup',
+          () async {
+            final config = await createAndCaptureConfig(
+              profileId: 'profile-category',
+              setupOrigin: AgentInferenceSetupOrigin.categorySnapshot,
+              setupOriginEntityId: 'category-1',
+            );
+
+            expect(config.profileId, 'profile-category');
+            expect(
+              config.inferenceSetup,
+              const AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.configured,
+                origin: AgentInferenceSetupOrigin.categorySnapshot,
+                baseProfileId: 'profile-category',
+                originEntityId: 'category-1',
+              ),
+            );
+          },
+        );
+
+        test('a picked profile defaults to a user-origin setup', () async {
+          final config = await createAndCaptureConfig(
+            profileId: 'profile-picked',
+          );
+
+          expect(
+            config.inferenceSetup,
+            const AgentInferenceSetup(
+              mode: AgentInferenceSetupMode.configured,
+              origin: AgentInferenceSetupOrigin.user,
+              baseProfileId: 'profile-picked',
+            ),
+          );
+        });
+
+        test(
+          'an empty category profile id is treated as no profile',
+          () async {
+            final config = await createAndCaptureConfig(
+              profileId: '',
+              setupOrigin: AgentInferenceSetupOrigin.categorySnapshot,
+              setupOriginEntityId: 'category-1',
+            );
+
+            expect(config.profileId, isNull);
+            expect(config.inferenceSetup, isNull);
+          },
+        );
+
+        test(
+          'without a profile the agent keeps the legacy resolution chain',
+          () async {
+            final config = await createAndCaptureConfig(
+              setupOrigin: AgentInferenceSetupOrigin.categorySnapshot,
+              setupOriginEntityId: 'category-1',
+            );
+
+            expect(config.profileId, isNull);
+            expect(config.inferenceSetup, isNull);
+          },
+        );
       });
 
       test('throws StateError if agent already exists for project', () async {

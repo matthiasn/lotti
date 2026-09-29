@@ -1,6 +1,6 @@
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 
 /// Builds the model resolver used by profile slots.
@@ -65,23 +65,8 @@ Set<String> profileIdsInUse({
   }
 
   for (final agent in agents) {
-    final setup = agent.config.inferenceSetup;
-    if (setup != null) {
-      // A disabled setup runs no inference, so whatever profile it still
-      // carries is not in use.
-      if (setup.mode == AgentInferenceSetupMode.disabled) continue;
-      final baseProfileId = setup.baseProfileId;
-      if (baseProfileId != null && baseProfileId.isNotEmpty) {
-        inUse.add(baseProfileId);
-      }
-      continue;
-    }
-    // Null setup preserves the legacy resolution chain, where the agent's own
-    // profileId is authoritative.
-    final legacyProfileId = agent.config.profileId;
-    if (legacyProfileId != null && legacyProfileId.isNotEmpty) {
-      inUse.add(legacyProfileId);
-    }
+    final profileId = agent.config.assignedProfileId;
+    if (profileId != null) inUse.add(profileId);
   }
 
   return inUse;

@@ -5,7 +5,7 @@ description: The middle layer between categories and tasks — a denormalized me
 resource: ../../lib/features/projects
 tags: [projects, grouping, health, agents]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-09-04T12:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-09-29T12:00:00Z }
 stale_after: 2027-03-01
 sources:
   - id: project-actions
@@ -24,6 +24,10 @@ sources:
     resource: ../../docs/adr/0106-the-task-link-graph-across-devices.md
     title: ADR 0106 — The task link graph across devices
     last_modified: 2026-09-27
+  - id: overview-providers
+    resource: ../../lib/features/projects/state/project_providers.dart
+    title: Overview snapshot, agent sidecars and the visible-groups filter
+    last_modified: 2026-09-29
   - id: lifecycle
     resource: ../../lib/features/projects/service/project_lifecycle_service.dart
     title: Coordinated project deletion and agent compensation
@@ -249,18 +253,48 @@ The tab is driven by `ProjectsOverviewSnapshot`, `ProjectCategoryGroup`,
 `ProjectListItemData`, `ProjectTaskRollupData` and `ProjectsFilter` — **not raw
 entities** — so the UI renders grouped rows without recomputing counts,
 categories and rollups in each widget.
-Project-agent one-liners are resolved in two bulk reads when the snapshot is
-assembled, then stored on each `ProjectListItemData`. Rows therefore render a
-stable subtitle without one provider/query chain per card, and local search
-matches the same one-liner text that the list displays. Background enrichment
+Each row's project-agent sidecar — the one-liner, whether an agent exists, and
+the name of the inference profile that agent is assigned — is resolved in bulk
+reads when the snapshot is assembled (links and latest reports, plus — only
+while the profile switch below is on — identities and one cached read per
+distinct profile), then stored on each
+`ProjectListItemData`. Rows therefore render a stable subtitle without one
+provider/query chain per card, and local search matches the same one-liner text
+that the list displays. The assigned profile follows
+`AgentConfig.assignedProfileId`: a typed setup's base profile, nothing for a
+disabled setup, the legacy `profileId` otherwise; template and model fallbacks
+are not assignments. The filter sheet's *Show inference profile* switch
+(`ProjectsFilter.showInferenceProfile`, off by default and kept by
+`resetToCurrent`) puts it on each row as a tag — the profile name, a muted
+*No inference profile* for an agent without one, or a warning *Inference
+profile missing* for an agent assigned a profile that no longer resolves (its
+wakes abort) — so agents still on the template's built-in model can be found
+one by one. Flipping the switch reloads the overview, which keeps the list on
+screen while it does. `ProjectListItemData.inferenceProfileLoaded` records
+whether a row's profile fields were actually looked up: until the switched-on
+reload lands — or when it fails and the row falls back to a sidecar cached
+while the switch was off — the row shows no tag rather than passing unread
+fields off as *No inference profile*. While the switch is on the overview also
+watches `AiConfigRepository.watchProfiles()` and reloads when a profile's
+id → name map changes, since profile edits emit no project or agent
+notification; a rename shows the new name and a deletion (local or synced)
+turns into the missing warning, while edits to a profile's model slots do not
+reload. It is a display switch, so it never counts as an active
+filter and the name is not searchable. Background enrichment
 listens through `projectAgentOverviewUpdateStreamProvider`, which bulk-resolves
 the affected agent IDs and emits only when at least one is a project agent;
 unrelated task, event, day and improver writes therefore do not rebuild the
 project query, task rollups, links and reports. Background enrichment
 reloads preserve the last rendered snapshot, category-filter metadata, and
-create affordance until the replacement is ready. If agent enrichment fails,
-the replacement snapshot retains the last resolved one-liner for each surviving
-project instead of dropping visible subtitles and their searchable text. If an
+create affordance until the replacement is ready. Every relevant agent update
+rebuilds `projectsOverviewProvider`, which puts it in a reloading state that
+still carries the previous value; `visibleProjectGroupsProvider` maps that
+value through the filter directly rather than with `whenData`, which in
+Riverpod 3 turns a reload into a bare `AsyncLoading` and drops the value — that
+made the whole list blink out and back on every agent update. If agent
+enrichment fails, the replacement snapshot retains the last resolved sidecar
+for each surviving project instead of dropping visible subtitles, their
+searchable text or profile tags. If an
 upstream repository refresh fails after data was rendered, the tab keeps that
 previous list instead of replacing it with a full-page error.
 

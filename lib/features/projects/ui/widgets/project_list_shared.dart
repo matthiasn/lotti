@@ -65,11 +65,15 @@ class ProjectGroupSection extends StatefulWidget {
     required this.selectedProjectId,
     required this.onProjectSelected,
     this.onExplorePlaza,
+    this.showInferenceProfile = false,
     super.key,
   });
 
   final ProjectCategoryGroup group;
   final String? selectedProjectId;
+
+  /// Whether each row shows its project agent's inference profile pill.
+  final bool showInferenceProfile;
   final ValueChanged<ProjectListItemData> onProjectSelected;
   final VoidCallback? onExplorePlaza;
 
@@ -162,6 +166,7 @@ class _ProjectGroupSectionState extends State<ProjectGroupSection> {
                   ) ...[
                     ProjectRow(
                       item: widget.group.projects[index],
+                      showInferenceProfile: widget.showInferenceProfile,
                       selected:
                           widget.group.projects[index].project.meta.id ==
                           widget.selectedProjectId,

@@ -8,11 +8,13 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// Each group is width-constrained by [DetailContentWidth], and
 /// [selectedProjectId] highlights the active row in the desktop split view.
+/// [showInferenceProfile] adds each row's inference profile pill.
 class ProjectsOverviewSliverList extends StatelessWidget {
   const ProjectsOverviewSliverList({
     required this.groups,
     required this.onProjectTap,
     this.selectedProjectId,
+    this.showInferenceProfile = false,
     this.onExploreCategory,
     this.bottomPadding = 24,
     super.key,
@@ -22,6 +24,7 @@ class ProjectsOverviewSliverList extends StatelessWidget {
   final ValueChanged<ProjectListItemData> onProjectTap;
   final ValueChanged<String>? onExploreCategory;
   final String? selectedProjectId;
+  final bool showInferenceProfile;
   final double bottomPadding;
 
   @override
@@ -39,6 +42,7 @@ class ProjectsOverviewSliverList extends StatelessWidget {
                   ),
                   group: groups[index],
                   selectedProjectId: selectedProjectId,
+                  showInferenceProfile: showInferenceProfile,
                   onProjectSelected: onProjectTap,
                   onExplorePlaza:
                       onExploreCategory == null ||

@@ -660,6 +660,71 @@ void main() {
     },
   );
 
+  testWidgets(
+    "the filter sheet switch shows each project agent's inference profile",
+    (tester) async {
+      final work = buildWorkGroup();
+      final profiled = work.copyWith(
+        projects: [
+          work.projects.first.withAgentSidecar(
+            oneLiner: null,
+            hasProjectAgent: true,
+            inferenceProfileName: 'Claude Sonnet',
+            inferenceProfileMissing: false,
+            inferenceProfileLoaded: true,
+          ),
+          work.projects.last.withAgentSidecar(
+            oneLiner: null,
+            hasProjectAgent: true,
+            inferenceProfileName: null,
+            inferenceProfileMissing: false,
+            inferenceProfileLoaded: true,
+          ),
+        ],
+      );
+      await pumpPage(tester, groups: [profiled, buildStudyGroup()]);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(ProjectsTabPage)),
+      );
+
+      // Off by default: no pills.
+      expect(find.text('Claude Sonnet'), findsNothing);
+      expect(find.text('No inference profile'), findsNothing);
+
+      await tester.tap(find.byIcon(LottiIcons.filter));
+      await tester.pumpAndSettle();
+      final toggle = find.byKey(
+        const ValueKey(
+          'design-system-task-filter-toggle-show-inference-profile',
+        ),
+      );
+      await tester.ensureVisible(toggle);
+      await tester.tap(toggle);
+      await tester.pump();
+      final applyButton = find.byKey(
+        const ValueKey('design-system-task-filter-apply'),
+      );
+      await tester.ensureVisible(applyButton);
+      await tester.tap(applyButton);
+      await tester.pumpAndSettle();
+
+      expect(
+        container.read(projectsFilterControllerProvider).showInferenceProfile,
+        isTrue,
+      );
+      expect(
+        tester
+            .widget<ProjectsOverviewContent>(
+              find.byType(ProjectsOverviewContent),
+            )
+            .showInferenceProfile,
+        isTrue,
+      );
+      expect(find.text('Claude Sonnet'), findsOneWidget);
+      expect(find.text('No inference profile'), findsOneWidget);
+    },
+  );
+
   testWidgets('preserves category filters while overview metadata reloads', (
     tester,
   ) async {

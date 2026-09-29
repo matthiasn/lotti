@@ -3,9 +3,14 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
@@ -20,12 +25,14 @@ import '../test_utils.dart';
 void main() {
   late MockProjectRepository mockRepo;
   late MockAgentRepository mockAgentRepo;
+  late MockAiConfigRepository mockAiConfigRepo;
   late StreamController<Set<String>> updateStreamController;
   late ProviderContainer container;
 
   setUp(() {
     mockRepo = MockProjectRepository();
     mockAgentRepo = MockAgentRepository();
+    mockAiConfigRepo = MockAiConfigRepository();
     updateStreamController = StreamController<Set<String>>.broadcast();
 
     when(
@@ -43,11 +50,21 @@ void main() {
         AgentReportScopes.current,
       ),
     ).thenAnswer((_) async => {});
+    when(
+      () => mockAgentRepo.getEntitiesByIds(any()),
+    ).thenAnswer((_) async => <String, AgentDomainEntity>{});
+    when(
+      () => mockAiConfigRepo.getConfigById(any()),
+    ).thenAnswer((_) async => null);
+    when(
+      () => mockAiConfigRepo.watchProfiles(),
+    ).thenAnswer((_) => const Stream.empty());
 
     container = ProviderContainer(
       overrides: [
         projectRepositoryProvider.overrideWithValue(mockRepo),
         agentRepositoryProvider.overrideWithValue(mockAgentRepo),
+        aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
         projectAgentOverviewUpdateStreamProvider.overrideWith(
           (ref) => const Stream.empty(),
         ),
@@ -279,6 +296,7 @@ void main() {
           overrides: [
             projectRepositoryProvider.overrideWithValue(mockRepo),
             agentRepositoryProvider.overrideWithValue(mockAgentRepo),
+            aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
             projectAgentOverviewUpdateStreamProvider.overrideWith(
               (ref) => agentUpdates.stream,
             ),
@@ -352,6 +370,7 @@ void main() {
           overrides: [
             projectRepositoryProvider.overrideWithValue(mockRepo),
             agentRepositoryProvider.overrideWithValue(mockAgentRepo),
+            aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
             updateNotificationsProvider.overrideWithValue(notifications),
           ],
         );
@@ -724,5 +743,645 @@ void main() {
         );
       },
     );
+
+    group('project agent sidecars', () {
+      AgentLink projectLink(String agentId, String projectId) =>
+          AgentLink.agentProject(
+            id: 'link-$projectId',
+            fromId: agentId,
+            toId: projectId,
+            createdAt: DateTime(2026, 4, 2),
+            updatedAt: DateTime(2026, 4, 2),
+            vectorClock: null,
+          );
+
+      AgentIdentityEntity projectAgent(String agentId, AgentConfig config) =>
+          makeTestIdentity(
+            id: agentId,
+            agentId: agentId,
+            kind: AgentKinds.projectAgent,
+            config: config,
+          );
+
+      const configuredSetup = AgentInferenceSetup(
+        mode: AgentInferenceSetupMode.configured,
+        origin: AgentInferenceSetupOrigin.categorySnapshot,
+        baseProfileId: 'profile-claude',
+      );
+
+      void stubAgents({
+        required Map<String, List<AgentLink>> links,
+        required Map<String, AgentDomainEntity> identities,
+      }) {
+        when(
+          () => mockRepo.watchProjectsOverview(query: const ProjectsQuery()),
+        ).thenAnswer((_) => Stream.value(makeSnapshot()));
+        when(
+          () => mockAgentRepo.getLinksToMultiple(
+            any(),
+            type: AgentLinkTypes.agentProject,
+          ),
+        ).thenAnswer((_) async => links);
+        when(
+          () => mockAgentRepo.getEntitiesByIds(any()),
+        ).thenAnswer((_) async => identities);
+      }
+
+      void showProfiles(ProviderContainer target) {
+        final controller = target.read(
+          projectsFilterControllerProvider.notifier,
+        );
+        controller.filter = controller.filter.copyWith(
+          showInferenceProfile: true,
+        );
+      }
+
+      Future<ProjectListItemData Function(String)> loadRows(
+        ProviderContainer target, {
+        bool showInferenceProfile = true,
+      }) async {
+        if (showInferenceProfile) showProfiles(target);
+        final subscription = target.listen(
+          projectsOverviewProvider,
+          (_, _) {},
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+        final result = await target.read(projectsOverviewProvider.future);
+        final rows = {
+          for (final group in result.groups)
+            for (final item in group.projects) item.project.meta.id: item,
+        };
+        return (String projectId) => rows[projectId]!;
+      }
+
+      test('names the profile an agent is assigned', () async {
+        stubAgents(
+          links: {
+            'project-work': [projectLink('agent-work', 'project-work')],
+          },
+          identities: {
+            'agent-work': projectAgent(
+              'agent-work',
+              const AgentConfig(inferenceSetup: configuredSetup),
+            ),
+          },
+        );
+        when(
+          () => mockAiConfigRepo.getConfigById('profile-claude'),
+        ).thenAnswer(
+          (_) async => testInferenceProfile(
+            id: 'profile-claude',
+            name: 'Claude Sonnet',
+          ),
+        );
+
+        final row = await loadRows(container);
+
+        expect(row('project-work').hasProjectAgent, isTrue);
+        expect(row('project-work').inferenceProfileName, 'Claude Sonnet');
+        expect(row('project-work').inferenceProfileMissing, isFalse);
+        expect(row('project-study').hasProjectAgent, isFalse);
+        expect(row('project-study').inferenceProfileName, isNull);
+      });
+
+      test(
+        'an agent on the legacy chain has an agent but no profile',
+        () async {
+          stubAgents(
+            links: {
+              'project-work': [projectLink('agent-work', 'project-work')],
+            },
+            identities: {
+              'agent-work': projectAgent('agent-work', const AgentConfig()),
+            },
+          );
+
+          final row = await loadRows(container);
+
+          expect(row('project-work').hasProjectAgent, isTrue);
+          expect(row('project-work').inferenceProfileName, isNull);
+          expect(row('project-work').inferenceProfileMissing, isFalse);
+          verifyNever(() => mockAiConfigRepo.getConfigById(any()));
+        },
+      );
+
+      test('a profile that no longer exists reads as missing', () async {
+        stubAgents(
+          links: {
+            'project-work': [projectLink('agent-work', 'project-work')],
+          },
+          identities: {
+            'agent-work': projectAgent(
+              'agent-work',
+              const AgentConfig(profileId: 'profile-deleted'),
+            ),
+          },
+        );
+
+        final row = await loadRows(container);
+
+        expect(row('project-work').hasProjectAgent, isTrue);
+        expect(row('project-work').inferenceProfileName, isNull);
+        expect(row('project-work').inferenceProfileMissing, isTrue);
+        verify(
+          () => mockAiConfigRepo.getConfigById('profile-deleted'),
+        ).called(1);
+      });
+
+      test('a non-profile config under the id reads as missing', () async {
+        stubAgents(
+          links: {
+            'project-work': [projectLink('agent-work', 'project-work')],
+          },
+          identities: {
+            'agent-work': projectAgent(
+              'agent-work',
+              const AgentConfig(profileId: 'model-row'),
+            ),
+          },
+        );
+        when(
+          () => mockAiConfigRepo.getConfigById('model-row'),
+        ).thenAnswer((_) async => testAiModel(id: 'model-row'));
+
+        final row = await loadRows(container);
+
+        expect(row('project-work').inferenceProfileName, isNull);
+        expect(row('project-work').inferenceProfileMissing, isTrue);
+      });
+
+      test('a non-identity entity under the agent id is skipped', () async {
+        stubAgents(
+          links: {
+            'project-work': [projectLink('agent-work', 'project-work')],
+          },
+          identities: {
+            'agent-work': makeTestReport(agentId: 'agent-work'),
+          },
+        );
+
+        final row = await loadRows(container);
+
+        expect(row('project-work').hasProjectAgent, isTrue);
+        expect(row('project-work').inferenceProfileName, isNull);
+        expect(row('project-work').inferenceProfileMissing, isFalse);
+      });
+
+      test('a profile shared by two agents is read once', () async {
+        stubAgents(
+          links: {
+            'project-work': [projectLink('agent-work', 'project-work')],
+            'project-study': [projectLink('agent-study', 'project-study')],
+          },
+          identities: {
+            for (final agentId in ['agent-work', 'agent-study'])
+              agentId: projectAgent(
+                agentId,
+                const AgentConfig(inferenceSetup: configuredSetup),
+              ),
+          },
+        );
+        when(
+          () => mockAiConfigRepo.getConfigById('profile-claude'),
+        ).thenAnswer(
+          (_) async => testInferenceProfile(
+            id: 'profile-claude',
+            name: 'Claude Sonnet',
+          ),
+        );
+
+        final row = await loadRows(container);
+
+        expect(row('project-work').inferenceProfileName, 'Claude Sonnet');
+        expect(row('project-study').inferenceProfileName, 'Claude Sonnet');
+        verify(
+          () => mockAiConfigRepo.getConfigById('profile-claude'),
+        ).called(1);
+      });
+
+      test(
+        'a failed profile lookup keeps the last loaded sidecars on refresh',
+        () async {
+          final agentUpdates = StreamController<Set<String>>.broadcast();
+          addTearDown(agentUpdates.close);
+          stubAgents(
+            links: {
+              'project-work': [projectLink('agent-work', 'project-work')],
+            },
+            identities: const {},
+          );
+          var identityReads = 0;
+          when(() => mockAgentRepo.getEntitiesByIds(any())).thenAnswer((
+            _,
+          ) async {
+            identityReads++;
+            if (identityReads > 1) throw StateError('agent store offline');
+            return {
+              'agent-work': projectAgent(
+                'agent-work',
+                const AgentConfig(inferenceSetup: configuredSetup),
+              ),
+            };
+          });
+          when(
+            () => mockAiConfigRepo.getConfigById('profile-claude'),
+          ).thenAnswer(
+            (_) async => testInferenceProfile(
+              id: 'profile-claude',
+              name: 'Claude Sonnet',
+            ),
+          );
+          final scopedContainer = ProviderContainer(
+            overrides: [
+              projectRepositoryProvider.overrideWithValue(mockRepo),
+              agentRepositoryProvider.overrideWithValue(mockAgentRepo),
+              aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
+              projectAgentOverviewUpdateStreamProvider.overrideWith(
+                (ref) => agentUpdates.stream,
+              ),
+            ],
+          );
+          addTearDown(scopedContainer.dispose);
+          showProfiles(scopedContainer);
+          final values = <ProjectsOverviewSnapshot>[];
+          final subscription = scopedContainer.listen(
+            projectsOverviewProvider,
+            (_, next) {
+              if (next case AsyncData(:final value)) values.add(value);
+            },
+            fireImmediately: true,
+          );
+          addTearDown(subscription.close);
+          await scopedContainer.read(projectsOverviewProvider.future);
+
+          agentUpdates.add({agentNotification});
+          await pumpEventQueue();
+          await pumpEventQueue();
+
+          expect(identityReads, 2);
+          final refreshed = values.last.groups.first.projects.single;
+          expect(refreshed.hasProjectAgent, isTrue);
+          expect(refreshed.inferenceProfileName, 'Claude Sonnet');
+        },
+      );
+
+      test('profiles are not looked up while the switch is off', () async {
+        stubAgents(
+          links: {
+            'project-work': [projectLink('agent-work', 'project-work')],
+          },
+          identities: {
+            'agent-work': projectAgent(
+              'agent-work',
+              const AgentConfig(inferenceSetup: configuredSetup),
+            ),
+          },
+        );
+
+        final row = await loadRows(container, showInferenceProfile: false);
+
+        expect(row('project-work').hasProjectAgent, isTrue);
+        expect(row('project-work').inferenceProfileName, isNull);
+        expect(row('project-work').inferenceProfileMissing, isFalse);
+        verifyNever(() => mockAgentRepo.getEntitiesByIds(any()));
+        verifyNever(() => mockAiConfigRepo.getConfigById(any()));
+        expect(row('project-work').inferenceProfileLoaded, isFalse);
+        verifyNever(() => mockAiConfigRepo.watchProfiles());
+      });
+
+      test('turning the switch on reloads the rows with profiles', () async {
+        stubAgents(
+          links: {
+            'project-work': [projectLink('agent-work', 'project-work')],
+          },
+          identities: {
+            'agent-work': projectAgent(
+              'agent-work',
+              const AgentConfig(inferenceSetup: configuredSetup),
+            ),
+          },
+        );
+        when(
+          () => mockAiConfigRepo.getConfigById('profile-claude'),
+        ).thenAnswer(
+          (_) async => testInferenceProfile(
+            id: 'profile-claude',
+            name: 'Claude Sonnet',
+          ),
+        );
+        final before = await loadRows(container, showInferenceProfile: false);
+        expect(before('project-work').inferenceProfileName, isNull);
+
+        showProfiles(container);
+        final after = await container.read(projectsOverviewProvider.future);
+
+        expect(
+          after.groups.first.projects.single.inferenceProfileName,
+          'Claude Sonnet',
+        );
+        expect(
+          after.groups.first.projects.single.inferenceProfileLoaded,
+          isTrue,
+        );
+      });
+
+      test(
+        'a row cached without profiles stays unloaded when a switched-on '
+        'refresh fails',
+        () async {
+          stubAgents(
+            links: {
+              'project-work': [projectLink('agent-work', 'project-work')],
+            },
+            identities: const {},
+          );
+          when(
+            () => mockAgentRepo.getEntitiesByIds(any()),
+          ).thenThrow(StateError('agent store offline'));
+          final before = await loadRows(
+            container,
+            showInferenceProfile: false,
+          );
+          expect(before('project-work').inferenceProfileLoaded, isFalse);
+
+          showProfiles(container);
+          final after = await container.read(projectsOverviewProvider.future);
+
+          final row = after.groups.first.projects.single;
+          expect(row.hasProjectAgent, isTrue);
+          expect(
+            row.inferenceProfileLoaded,
+            isFalse,
+            reason: 'the empty profile fields were never looked up',
+          );
+        },
+      );
+
+      group('profile changes while the switch is on', () {
+        late StreamController<List<AiConfigInferenceProfile>> profiles;
+
+        setUp(() {
+          profiles =
+              StreamController<List<AiConfigInferenceProfile>>.broadcast();
+          addTearDown(profiles.close);
+          when(
+            () => mockAiConfigRepo.watchProfiles(),
+          ).thenAnswer((_) => profiles.stream);
+          stubAgents(
+            links: {
+              'project-work': [projectLink('agent-work', 'project-work')],
+            },
+            identities: {
+              'agent-work': projectAgent(
+                'agent-work',
+                const AgentConfig(inferenceSetup: configuredSetup),
+              ),
+            },
+          );
+        });
+
+        void profileNamed(String? name) {
+          when(
+            () => mockAiConfigRepo.getConfigById('profile-claude'),
+          ).thenAnswer(
+            (_) async => name == null
+                ? null
+                : testInferenceProfile(id: 'profile-claude', name: name),
+          );
+        }
+
+        Future<ProjectListItemData> settledRow() async {
+          await pumpEventQueue();
+          await pumpEventQueue();
+          final result = await container.read(projectsOverviewProvider.future);
+          return result.groups.first.projects.single;
+        }
+
+        test('a rename reloads the rows with the new name', () async {
+          profileNamed('Claude Sonnet');
+          final row = await loadRows(container);
+          profiles.add([
+            testInferenceProfile(id: 'profile-claude', name: 'Claude Sonnet'),
+          ]);
+          await pumpEventQueue();
+          expect(row('project-work').inferenceProfileName, 'Claude Sonnet');
+
+          profileNamed('Claude Opus');
+          profiles.add([
+            testInferenceProfile(id: 'profile-claude', name: 'Claude Opus'),
+          ]);
+
+          expect((await settledRow()).inferenceProfileName, 'Claude Opus');
+        });
+
+        test('a deletion turns the pill into the missing warning', () async {
+          profileNamed('Claude Sonnet');
+          await loadRows(container);
+          profiles.add([
+            testInferenceProfile(id: 'profile-claude', name: 'Claude Sonnet'),
+          ]);
+          await pumpEventQueue();
+
+          profileNamed(null);
+          profiles.add(const []);
+
+          final row = await settledRow();
+          expect(row.inferenceProfileName, isNull);
+          expect(row.inferenceProfileMissing, isTrue);
+        });
+
+        test('an edit that keeps every name does not reload', () async {
+          profileNamed('Claude Sonnet');
+          await loadRows(container);
+          profiles.add([
+            testInferenceProfile(id: 'profile-claude', name: 'Claude Sonnet'),
+          ]);
+          await pumpEventQueue();
+          clearInteractions(mockAgentRepo);
+
+          profiles.add([
+            testInferenceProfile(
+              id: 'profile-claude',
+              name: 'Claude Sonnet',
+              thinkingModelId: 'models/other-thinking-model',
+            ),
+          ]);
+          await pumpEventQueue();
+          await pumpEventQueue();
+
+          verifyNever(
+            () => mockAgentRepo.getLinksToMultiple(
+              any(),
+              type: AgentLinkTypes.agentProject,
+            ),
+          );
+        });
+
+        test('a failing profile watch leaves the list loaded', () async {
+          profileNamed('Claude Sonnet');
+          final row = await loadRows(container);
+
+          profiles.addError(StateError('config db closed'));
+          await pumpEventQueue();
+
+          expect(container.read(projectsOverviewProvider).hasError, isFalse);
+          expect(row('project-work').inferenceProfileName, 'Claude Sonnet');
+        });
+      });
+    });
+
+    group('visibleProjectGroupsProvider keeps the list while it reloads', () {
+      test('a reload shows the previous groups, then the new ones', () async {
+        final agentUpdates = StreamController<Set<String>>.broadcast();
+        addTearDown(agentUpdates.close);
+        final firstLoad = StreamController<ProjectsOverviewSnapshot>();
+        final reload = StreamController<ProjectsOverviewSnapshot>();
+        addTearDown(firstLoad.close);
+        addTearDown(reload.close);
+        final loads = [firstLoad, reload];
+        when(
+          () => mockRepo.watchProjectsOverview(query: const ProjectsQuery()),
+        ).thenAnswer((_) => loads.removeAt(0).stream);
+        final scopedContainer = ProviderContainer(
+          overrides: [
+            projectRepositoryProvider.overrideWithValue(mockRepo),
+            agentRepositoryProvider.overrideWithValue(mockAgentRepo),
+            aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
+            projectAgentOverviewUpdateStreamProvider.overrideWith(
+              (ref) => agentUpdates.stream,
+            ),
+          ],
+        );
+        addTearDown(scopedContainer.dispose);
+        scopedContainer
+            .read(projectsFilterControllerProvider.notifier)
+            .setSelectedStatusIds(const {});
+        final states = <AsyncValue<List<ProjectCategoryGroup>>>[];
+        final subscription = scopedContainer.listen(
+          visibleProjectGroupsProvider,
+          (_, next) => states.add(next),
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+
+        firstLoad.add(makeSnapshot());
+        await pumpEventQueue();
+        expect(states.last.value, hasLength(2));
+        final loadedAt = states.length;
+        Iterable<AsyncValue<List<ProjectCategoryGroup>>> blankStates() =>
+            states.skip(loadedAt).where((state) => !state.hasValue);
+
+        // An agent update rebuilds the overview; its new stream has not
+        // emitted yet, so the overview is reloading.
+        agentUpdates.add({agentNotification});
+        await pumpEventQueue();
+        expect(
+          scopedContainer.read(projectsOverviewProvider).isLoading,
+          isTrue,
+        );
+        expect(
+          blankStates(),
+          isEmpty,
+          reason: 'the list must never blink out while it reloads',
+        );
+        expect(states.last.value, hasLength(2));
+
+        reload.add(
+          ProjectsOverviewSnapshot(groups: [makeSnapshot().groups.first]),
+        );
+        await pumpEventQueue();
+        expect(states.last.value, hasLength(1));
+        expect(blankStates(), isEmpty);
+      });
+
+      test('is loading before the first snapshot arrives', () {
+        when(
+          () => mockRepo.watchProjectsOverview(query: const ProjectsQuery()),
+        ).thenAnswer((_) => const Stream.empty());
+        final subscription = container.listen(
+          visibleProjectGroupsProvider,
+          (_, _) {},
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+
+        final state = container.read(visibleProjectGroupsProvider);
+        expect(state, isA<AsyncLoading<List<ProjectCategoryGroup>>>());
+        expect(state.hasValue, isFalse);
+      });
+
+      test('a first-load failure surfaces as an error', () async {
+        final scopedContainer = ProviderContainer(
+          overrides: [
+            projectsOverviewProvider.overrideWith(
+              (ref) => Stream.error(StateError('db closed')),
+            ),
+          ],
+        );
+        addTearDown(scopedContainer.dispose);
+        final subscription = scopedContainer.listen(
+          visibleProjectGroupsProvider,
+          (_, _) {},
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+        await pumpEventQueue();
+
+        final state = scopedContainer.read(visibleProjectGroupsProvider);
+        expect(state, isA<AsyncError<List<ProjectCategoryGroup>>>());
+        expect(state.error, isA<StateError>());
+      });
+
+      test('an error after a loaded snapshot keeps the snapshot', () async {
+        final overview = StreamController<ProjectsOverviewSnapshot>();
+        addTearDown(overview.close);
+        final scopedContainer = ProviderContainer(
+          overrides: [
+            projectsOverviewProvider.overrideWith((ref) => overview.stream),
+          ],
+        );
+        addTearDown(scopedContainer.dispose);
+        scopedContainer
+            .read(projectsFilterControllerProvider.notifier)
+            .setSelectedStatusIds(const {});
+        final subscription = scopedContainer.listen(
+          visibleProjectGroupsProvider,
+          (_, _) {},
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+
+        overview.add(makeSnapshot());
+        await pumpEventQueue();
+        overview.addError(StateError('transient'));
+        await pumpEventQueue();
+
+        expect(scopedContainer.read(projectsOverviewProvider).hasError, isTrue);
+        final state = scopedContainer.read(visibleProjectGroupsProvider);
+        expect(state, isA<AsyncData<List<ProjectCategoryGroup>>>());
+        expect(state.value, hasLength(2));
+      });
+    });
+
+    test('resetToCurrent keeps the inference profile display switch', () {
+      final scopedContainer = ProviderContainer();
+      addTearDown(scopedContainer.dispose);
+
+      scopedContainer.read(projectsFilterControllerProvider.notifier)
+        ..filter = const ProjectsFilter(
+          selectedCategoryIds: {'stale'},
+          showInferenceProfile: true,
+        )
+        ..resetToCurrent();
+
+      expect(
+        scopedContainer.read(projectsFilterControllerProvider),
+        const ProjectsFilter(
+          selectedStatusIds: currentProjectStatusFilterIds,
+          showInferenceProfile: true,
+        ),
+      );
+    });
   });
 }

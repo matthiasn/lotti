@@ -11021,10 +11021,19 @@ class AppLocalizationsDa extends AppLocalizations {
   String get projectShowcaseViewBlocker => 'Visningsblokker';
 
   @override
+  String get projectsInferenceProfileMissing => 'Inferensprofil mangler';
+
+  @override
+  String get projectsInferenceProfileNone => 'Ingen inferensprofil';
+
+  @override
   String get projectsScopeAll => 'Alle';
 
   @override
   String get projectsScopeCurrent => 'Aktuelle';
+
+  @override
+  String get projectsShowInferenceProfile => 'Vis inferensprofil';
 
   @override
   String get projectsSortActionable => 'Kræver opmærksomhed';

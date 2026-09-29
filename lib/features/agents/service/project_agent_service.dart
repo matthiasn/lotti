@@ -8,7 +8,12 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart'
-    show AgentLifecycle, AgentTemplateKind, WakeReason;
+    show
+        AgentInferenceSetupMode,
+        AgentInferenceSetupOrigin,
+        AgentLifecycle,
+        AgentTemplateKind,
+        WakeReason;
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
@@ -75,6 +80,14 @@ class ProjectAgentService {
   /// 6. Compensate a concurrent sync tombstone before announcing the agent.
   /// 7. Enqueue a creation wake with a one-shot persisted fallback.
   ///
+  /// A non-empty [profileId] is stored as a typed, authoritative inference
+  /// setup, so the agent runs on exactly that profile and never falls through
+  /// to the template's built-in model. [setupOrigin] and [setupOriginEntityId]
+  /// record where it came from — the category whose default was copied, or
+  /// the user who picked it (the default origin). Without a [profileId] the
+  /// agent keeps the legacy resolution chain (template profile, template
+  /// model, device default).
+  ///
   /// Returns the created [AgentIdentityEntity].
   ///
   /// Throws [StateError] if the project no longer exists, its current category
@@ -86,10 +99,17 @@ class ProjectAgentService {
     required String displayName,
     required Set<String> allowedCategoryIds,
     String? profileId,
+    AgentInferenceSetupOrigin setupOrigin = AgentInferenceSetupOrigin.user,
+    String? setupOriginEntityId,
   }) => mutationCoordinator.run(projectId, () async {
     if (!await projectScopeIsCurrent(projectId, allowedCategoryIds)) {
       throw StateError('Project $projectId no longer has the requested scope.');
     }
+    // An empty id names no profile; stored as a configured setup it could
+    // never resolve and would block the legacy fallbacks.
+    final assignedProfileId = profileId == null || profileId.isEmpty
+        ? null
+        : profileId;
 
     final identity = await syncService.runInTransaction(() async {
       // Definitive duplicate check inside the transaction to prevent
@@ -121,7 +141,17 @@ class ProjectAgentService {
       final identity = await agentService.createAgent(
         kind: _agentKind,
         displayName: displayName,
-        config: AgentConfig(profileId: profileId),
+        config: AgentConfig(
+          profileId: assignedProfileId,
+          inferenceSetup: assignedProfileId == null
+              ? null
+              : AgentInferenceSetup(
+                  mode: AgentInferenceSetupMode.configured,
+                  origin: setupOrigin,
+                  baseProfileId: assignedProfileId,
+                  originEntityId: setupOriginEntityId,
+                ),
+        ),
         allowedCategoryIds: allowedCategoryIds,
       );
 

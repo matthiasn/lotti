@@ -11169,10 +11169,19 @@ class AppLocalizationsCs extends AppLocalizations {
   String get projectShowcaseViewBlocker => 'Zobrazit blokátor';
 
   @override
+  String get projectsInferenceProfileMissing => 'Profil inference chybí';
+
+  @override
+  String get projectsInferenceProfileNone => 'Bez profilu inference';
+
+  @override
   String get projectsScopeAll => 'Vše';
 
   @override
   String get projectsScopeCurrent => 'Aktuální';
+
+  @override
+  String get projectsShowInferenceProfile => 'Zobrazit profil inference';
 
   @override
   String get projectsSortActionable => 'Vyžaduje pozornost';

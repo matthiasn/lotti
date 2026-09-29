@@ -18493,6 +18493,18 @@ abstract class AppLocalizations {
   /// **'View blocker'**
   String get projectShowcaseViewBlocker;
 
+  /// No description provided for @projectsInferenceProfileMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Inference profile missing'**
+  String get projectsInferenceProfileMissing;
+
+  /// No description provided for @projectsInferenceProfileNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No inference profile'**
+  String get projectsInferenceProfileNone;
+
   /// No description provided for @projectsScopeAll.
   ///
   /// In en, this message translates to:
@@ -18504,6 +18516,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Current'**
   String get projectsScopeCurrent;
+
+  /// No description provided for @projectsShowInferenceProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Show inference profile'**
+  String get projectsShowInferenceProfile;
 
   /// No description provided for @projectsSortActionable.
   ///

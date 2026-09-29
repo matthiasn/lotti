@@ -77,7 +77,8 @@ class ProjectsQuery {
 }
 
 /// The user-facing filter state for the Projects tab: status + category
-/// selections plus a text query and its [ProjectsSearchMode].
+/// selections plus a text query and its [ProjectsSearchMode], and the
+/// [showInferenceProfile] display switch.
 ///
 /// Held by `ProjectsFilterController` and applied to a loaded
 /// [ProjectsOverviewSnapshot] via [applyProjectsFilter]. Value equality lets
@@ -90,6 +91,7 @@ class ProjectsFilter {
     this.textQuery = '',
     this.searchMode = ProjectsSearchMode.disabled,
     this.sortMode = ProjectsSortMode.actionable,
+    this.showInferenceProfile = false,
   });
 
   final Set<String> selectedStatusIds;
@@ -98,12 +100,18 @@ class ProjectsFilter {
   final ProjectsSearchMode searchMode;
   final ProjectsSortMode sortMode;
 
+  /// Display-only: whether each row shows its project agent's inference
+  /// profile as a pill. It narrows nothing, so it never counts as an active
+  /// filter. Off by default.
+  final bool showInferenceProfile;
+
   ProjectsFilter copyWith({
     Set<String>? selectedStatusIds,
     Set<String>? selectedCategoryIds,
     String? textQuery,
     ProjectsSearchMode? searchMode,
     ProjectsSortMode? sortMode,
+    bool? showInferenceProfile,
   }) {
     return ProjectsFilter(
       selectedStatusIds: selectedStatusIds ?? this.selectedStatusIds,
@@ -111,6 +119,7 @@ class ProjectsFilter {
       textQuery: textQuery ?? this.textQuery,
       searchMode: searchMode ?? this.searchMode,
       sortMode: sortMode ?? this.sortMode,
+      showInferenceProfile: showInferenceProfile ?? this.showInferenceProfile,
     );
   }
 
@@ -128,7 +137,8 @@ class ProjectsFilter {
             ) &&
             other.textQuery == textQuery &&
             other.searchMode == searchMode &&
-            other.sortMode == sortMode;
+            other.sortMode == sortMode &&
+            other.showInferenceProfile == showInferenceProfile;
   }
 
   @override
@@ -138,6 +148,7 @@ class ProjectsFilter {
     textQuery,
     searchMode,
     sortMode,
+    showInferenceProfile,
   );
 }
 
@@ -177,7 +188,17 @@ class ProjectTaskRollupData {
 }
 
 /// One project as displayed in an overview list row: the project entity, its
-/// resolved category, aggregated task counts, and a stable agent summary.
+/// resolved category, aggregated task counts, a stable agent summary, and the
+/// project agent's assigned inference profile.
+///
+/// [hasProjectAgent] says whether a project agent is linked at all;
+/// [inferenceProfileName] is the name of the profile that agent is explicitly
+/// assigned, or `null` when it has none or it is not known.
+/// [inferenceProfileMissing] marks an agent assigned a profile that no longer
+/// resolves to one, which its wakes cannot run on. The profile fields are only
+/// resolved while the list shows them; [inferenceProfileLoaded] says whether
+/// they were, so a row loaded without them never passes their empty values off
+/// as "no inference profile".
 ///
 /// [searchableText] is the haystack used by the Projects-tab local text filter
 /// (title + entry plain text + category name + visible agent one-liner).
@@ -188,12 +209,43 @@ class ProjectListItemData {
     required this.category,
     required this.taskRollup,
     this.oneLiner,
+    this.hasProjectAgent = false,
+    this.inferenceProfileName,
+    this.inferenceProfileMissing = false,
+    this.inferenceProfileLoaded = false,
   });
 
   final ProjectEntry project;
   final CategoryDefinition? category;
   final ProjectTaskRollupData taskRollup;
   final String? oneLiner;
+  final bool hasProjectAgent;
+  final String? inferenceProfileName;
+  final bool inferenceProfileMissing;
+  final bool inferenceProfileLoaded;
+
+  /// Replaces the agent-derived sidecar fields, keeping the project data.
+  ///
+  /// All of them are set together because they come from one agent lookup: a
+  /// row either carries that lookup's full result or none of it.
+  ProjectListItemData withAgentSidecar({
+    required String? oneLiner,
+    required bool hasProjectAgent,
+    required String? inferenceProfileName,
+    required bool inferenceProfileMissing,
+    required bool inferenceProfileLoaded,
+  }) {
+    return ProjectListItemData(
+      project: project,
+      category: category,
+      taskRollup: taskRollup,
+      oneLiner: oneLiner,
+      hasProjectAgent: hasProjectAgent,
+      inferenceProfileName: inferenceProfileName,
+      inferenceProfileMissing: inferenceProfileMissing,
+      inferenceProfileLoaded: inferenceProfileLoaded,
+    );
+  }
 
   String get categoryName => category?.name ?? '';
 

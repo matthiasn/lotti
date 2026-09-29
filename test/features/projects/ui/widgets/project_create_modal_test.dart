@@ -278,6 +278,9 @@ void main() {
           templateId: any(named: 'templateId'),
           displayName: any(named: 'displayName'),
           allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          profileId: any(named: 'profileId'),
+          setupOrigin: any(named: 'setupOrigin'),
+          setupOriginEntityId: any(named: 'setupOriginEntityId'),
         ),
       );
     });
@@ -434,6 +437,9 @@ void main() {
           templateId: any(named: 'templateId'),
           displayName: any(named: 'displayName'),
           allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          profileId: any(named: 'profileId'),
+          setupOrigin: any(named: 'setupOrigin'),
+          setupOriginEntityId: any(named: 'setupOriginEntityId'),
         ),
       ).thenAnswer((_) async => makeAgent());
 
@@ -455,6 +461,7 @@ void main() {
           templateId: 'tpl-1',
           displayName: 'Agent Project',
           allowedCategoryIds: <String>{},
+          setupOrigin: AgentInferenceSetupOrigin.categorySnapshot,
         ),
       ).called(1);
     });
@@ -478,6 +485,9 @@ void main() {
           templateId: any(named: 'templateId'),
           displayName: any(named: 'displayName'),
           allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          profileId: any(named: 'profileId'),
+          setupOrigin: any(named: 'setupOrigin'),
+          setupOriginEntityId: any(named: 'setupOriginEntityId'),
         ),
       ).thenAnswer((_) async => makeAgent());
 
@@ -502,9 +512,72 @@ void main() {
           templateId: 'tpl-cat',
           displayName: 'Cat Project',
           allowedCategoryIds: {categoryId},
+          setupOrigin: AgentInferenceSetupOrigin.categorySnapshot,
+          setupOriginEntityId: categoryId,
         ),
       ).called(1);
     });
+
+    testWidgets(
+      "the new project's agent takes the category's inference profile",
+      (tester) async {
+        const categoryId = 'cat-1';
+        stubCreateMetadata(categoryId: categoryId);
+        stubCreateProject();
+        when(
+          () => mockEntitiesCacheService.getCategoryById(categoryId),
+        ).thenReturn(
+          CategoryTestUtils.createTestCategory(
+            id: categoryId,
+            name: 'Research',
+          ).copyWith(defaultProfileId: 'profile-category'),
+        );
+        when(
+          () => mockTemplateService.listTemplatesForCategory(categoryId),
+        ).thenAnswer(
+          (_) async => [
+            makeProjectAgentTemplate(id: 'tpl-cat', categoryIds: {categoryId}),
+          ],
+        );
+        when(
+          () => mockAgentService.createProjectAgent(
+            projectId: any(named: 'projectId'),
+            templateId: any(named: 'templateId'),
+            displayName: any(named: 'displayName'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            profileId: any(named: 'profileId'),
+            setupOrigin: any(named: 'setupOrigin'),
+            setupOriginEntityId: any(named: 'setupOriginEntityId'),
+          ),
+        ).thenAnswer((_) async => makeAgent());
+
+        await pumpForm(tester, categoryId: categoryId);
+        final messages = tester
+            .element(find.byType(ProjectCreateForm))
+            .messages;
+
+        await tester.enterText(
+          find.byType(DesignSystemTextInput),
+          'Profiled Project',
+        );
+        await tester.pump();
+
+        await tester.tap(find.text(messages.createButton));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockAgentService.createProjectAgent(
+            projectId: 'test-meta-id',
+            templateId: 'tpl-cat',
+            displayName: 'Profiled Project',
+            allowedCategoryIds: {categoryId},
+            profileId: 'profile-category',
+            setupOrigin: AgentInferenceSetupOrigin.categorySnapshot,
+            setupOriginEntityId: categoryId,
+          ),
+        ).called(1);
+      },
+    );
 
     testWidgets('a failing agent provisioning never blocks the new project', (
       tester,
@@ -520,6 +593,9 @@ void main() {
           templateId: any(named: 'templateId'),
           displayName: any(named: 'displayName'),
           allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          profileId: any(named: 'profileId'),
+          setupOrigin: any(named: 'setupOrigin'),
+          setupOriginEntityId: any(named: 'setupOriginEntityId'),
         ),
       ).thenAnswer((_) async => throw StateError('agent store offline'));
 
@@ -544,6 +620,7 @@ void main() {
           templateId: 'tpl-1',
           displayName: 'Iceberg Survey',
           allowedCategoryIds: <String>{},
+          setupOrigin: AgentInferenceSetupOrigin.categorySnapshot,
         ),
       ).called(1);
       // The failure is swallowed: the form closed as on a normal save.

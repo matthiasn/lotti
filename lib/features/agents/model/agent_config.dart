@@ -56,6 +56,25 @@ extension AgentConfigAutomation on AgentConfig {
   bool get automaticUpdatesEnabledEffective => automaticUpdatesEnabled ?? false;
 }
 
+extension AgentConfigAssignedProfile on AgentConfig {
+  /// The inference profile this agent is explicitly assigned, or `null` when
+  /// it has none.
+  ///
+  /// A typed [inferenceSetup] is authoritative: a disabled setup runs no
+  /// inference, so any profile it still carries is not assigned. A null setup
+  /// preserves the legacy chain, where the agent's own [profileId] is the only
+  /// explicit choice — template and model fallbacks are not assignments.
+  String? get assignedProfileId {
+    final setup = inferenceSetup;
+    final assigned = setup == null
+        ? profileId
+        : setup.mode == AgentInferenceSetupMode.disabled
+        ? null
+        : setup.baseProfileId;
+    return assigned == null || assigned.isEmpty ? null : assigned;
+  }
+}
+
 /// Persistent inference routing owned by one agent instance.
 @freezed
 abstract class AgentInferenceSetup with _$AgentInferenceSetup {

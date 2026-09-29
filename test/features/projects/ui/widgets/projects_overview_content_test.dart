@@ -18,6 +18,7 @@ Future<void> _pumpContent(
   required ValueChanged<ProjectListItemData> onProjectTap,
   List<Override> overrides = const [],
   ScrollController? scrollController,
+  bool showInferenceProfile = false,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -31,6 +32,7 @@ Future<void> _pumpContent(
               groups: groups,
               onProjectTap: onProjectTap,
               scrollController: scrollController,
+              showInferenceProfile: showInferenceProfile,
             ),
           ),
         ),
@@ -94,6 +96,34 @@ void main() {
     expect(find.text('Apollo'), findsOneWidget);
     expect(find.byType(NoResultsPane), findsNothing);
   });
+
+  for (final show in [true, false]) {
+    testWidgets('hands showInferenceProfile=$show to the project list', (
+      tester,
+    ) async {
+      await _pumpContent(
+        tester,
+        groups: [
+          ProjectCategoryGroup(
+            categoryId: 'cat-1',
+            category: null,
+            projects: [makeTestProjectListItemData()],
+          ),
+        ],
+        onProjectTap: (_) {},
+        showInferenceProfile: show,
+      );
+
+      expect(
+        tester
+            .widget<ProjectsOverviewSliverList>(
+              find.byType(ProjectsOverviewSliverList),
+            )
+            .showInferenceProfile,
+        show,
+      );
+    });
+  }
 
   testWidgets('forwards project taps to onProjectTap with the tapped item', (
     tester,
