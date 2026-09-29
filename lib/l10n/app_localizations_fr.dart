@@ -11224,10 +11224,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get projectShowcaseViewBlocker => 'Voir le blocage';
 
   @override
+  String get projectsInferenceProfileMissing =>
+      'Profil d’inférence introuvable';
+
+  @override
+  String get projectsInferenceProfileNone => 'Aucun profil d’inférence';
+
+  @override
   String get projectsScopeAll => 'Tous';
 
   @override
   String get projectsScopeCurrent => 'Actuels';
+
+  @override
+  String get projectsShowInferenceProfile => 'Afficher le profil d’inférence';
 
   @override
   String get projectsSortActionable => 'Nécessite ton attention';

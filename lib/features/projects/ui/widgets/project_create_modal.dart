@@ -111,6 +111,9 @@ class _ProjectCreateFormState extends ConsumerState<ProjectCreateForm> {
     final templateService = ref.read(agentTemplateServiceProvider);
     final agentService = ref.read(projectAgentServiceProvider);
     final categoryId = _categoryId;
+    final categoryProfileId = getIt<EntitiesCacheService>()
+        .getCategoryById(categoryId)
+        ?.defaultProfileId;
 
     try {
       final now = DateTime.now();
@@ -148,6 +151,7 @@ class _ProjectCreateFormState extends ConsumerState<ProjectCreateForm> {
           projectId: created.meta.id,
           displayName: title,
           categoryId: categoryId,
+          categoryProfileId: categoryProfileId,
         );
 
         // The freshly-created project appears in the projects list
@@ -222,12 +226,20 @@ class _ProjectCreateFormState extends ConsumerState<ProjectCreateForm> {
   /// falling back to the global template list — consistent with the
   /// task-agent flow in `task_agent_report_section.dart`.
   /// Silently skips if no template exists — agent creation is non-fatal.
+  ///
+  /// The agent takes the category's default inference profile
+  /// ([categoryProfileId]), the same default a new task's agent gets, so a
+  /// project agent never silently runs on the template's built-in model when
+  /// the category says otherwise. A category without a default passes no
+  /// profile, and the agent keeps the template's profile or model — unlike a
+  /// task agent, which is created disabled in that case.
   Future<void> _provisionProjectAgent({
     required AgentTemplateService templateService,
     required ProjectAgentService agentService,
     required String projectId,
     required String displayName,
     required String? categoryId,
+    required String? categoryProfileId,
   }) async {
     try {
       // Prefer category-scoped templates; fall back to global templates if
@@ -262,6 +274,9 @@ class _ProjectCreateFormState extends ConsumerState<ProjectCreateForm> {
         templateId: projectTemplate.id,
         displayName: displayName,
         allowedCategoryIds: {?categoryId},
+        profileId: categoryProfileId,
+        setupOrigin: AgentInferenceSetupOrigin.categorySnapshot,
+        setupOriginEntityId: categoryId,
       );
     } catch (e, s) {
       developer.log(

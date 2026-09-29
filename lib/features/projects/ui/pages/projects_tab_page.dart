@@ -432,6 +432,7 @@ class _ProjectsListScaffold extends ConsumerWidget {
                           : null,
                       query: filter.textQuery,
                       selectedProjectId: activeProjectId,
+                      showInferenceProfile: filter.showInferenceProfile,
                       scrollController: scrollController,
                       listBottomPadding: listBottomPadding,
                       emptyTitle: !rawHasProjects

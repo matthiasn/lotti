@@ -228,6 +228,71 @@ void main() {
     }
   });
 
+  group('AgentConfig.assignedProfileId', () {
+    AgentInferenceSetup setup(
+      AgentInferenceSetupMode mode, {
+      String? baseProfileId,
+    }) => AgentInferenceSetup(
+      mode: mode,
+      origin: AgentInferenceSetupOrigin.user,
+      baseProfileId: baseProfileId,
+    );
+
+    test('a configured setup assigns its base profile', () {
+      final config = AgentConfig(
+        profileId: 'legacy',
+        inferenceSetup: setup(
+          AgentInferenceSetupMode.configured,
+          baseProfileId: 'base',
+        ),
+      );
+      expect(config.assignedProfileId, 'base');
+    });
+
+    test('a disabled setup assigns nothing, whatever it still carries', () {
+      final config = AgentConfig(
+        profileId: 'legacy',
+        inferenceSetup: setup(
+          AgentInferenceSetupMode.disabled,
+          baseProfileId: 'base',
+        ),
+      );
+      expect(config.assignedProfileId, isNull);
+    });
+
+    test('a configured setup without a base profile assigns nothing', () {
+      final config = AgentConfig(
+        profileId: 'legacy',
+        inferenceSetup: setup(AgentInferenceSetupMode.configured),
+      );
+      expect(config.assignedProfileId, isNull);
+    });
+
+    test('without a setup the legacy profileId is the assignment', () {
+      expect(
+        const AgentConfig(profileId: 'legacy').assignedProfileId,
+        'legacy',
+      );
+    });
+
+    test('without a setup or profileId nothing is assigned', () {
+      expect(const AgentConfig().assignedProfileId, isNull);
+    });
+
+    test('an empty profile id counts as unassigned', () {
+      expect(const AgentConfig(profileId: '').assignedProfileId, isNull);
+      expect(
+        AgentConfig(
+          inferenceSetup: setup(
+            AgentInferenceSetupMode.configured,
+            baseProfileId: '',
+          ),
+        ).assignedProfileId,
+        isNull,
+      );
+    });
+  });
+
   group('AgentMessageMetadata.milestone', () {
     // The JSON value for each milestone is the cross-device sync wire format
     // and the key the State-as-Projection fold matches on (PR 4). Renaming an

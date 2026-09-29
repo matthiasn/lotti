@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
@@ -150,6 +151,28 @@ void main() {
         findsOneWidget,
       );
     });
+
+    for (final show in [true, false]) {
+      testWidgets('hands showInferenceProfile=$show to every row', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          wrap(
+            ProjectGroupSection(
+              group: makeGroupedProjectsSection(),
+              selectedProjectId: null,
+              showInferenceProfile: show,
+              onProjectSelected: (_) {},
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final rows = tester.widgetList<ProjectRow>(find.byType(ProjectRow));
+        expect(rows, hasLength(2));
+        expect(rows.map((row) => row.showInferenceProfile), everyElement(show));
+      });
+    }
 
     testWidgets('collapses and restores a category without losing its header', (
       tester,
@@ -728,6 +751,133 @@ void main() {
       expect(find.text('Test Project'), findsOneWidget);
       expect(tester.widget<Text>(find.text('Test Project')).maxLines, 2);
       expect(tester.widget<Text>(find.text(oneLiner)).maxLines, 2);
+    });
+
+    group('inference profile pill', () {
+      Future<void> pumpRow(
+        WidgetTester tester,
+        ProjectListItemData item, {
+        required bool showInferenceProfile,
+      }) async {
+        await tester.pumpWidget(
+          wrap(
+            ProjectRow(
+              item: item,
+              showInferenceProfile: showInferenceProfile,
+              selected: false,
+              topOverlap: 0,
+              bottomOverlap: 0,
+              onHoverChanged: (_) {},
+              onTap: () {},
+            ),
+          ),
+        );
+        await tester.pump();
+      }
+
+      Finder pillFor(ProjectListItemData item) =>
+          find.byKey(ValueKey('project-row-profile-${item.project.meta.id}'));
+
+      testWidgets('names the assigned profile when the switch is on', (
+        tester,
+      ) async {
+        final item = makeTestProjectListItemData(
+          hasProjectAgent: true,
+          inferenceProfileName: 'Claude Sonnet',
+        );
+
+        await pumpRow(tester, item, showInferenceProfile: true);
+
+        final pill = tester.widget<DsPill>(
+          find.descendant(of: pillFor(item), matching: find.byType(DsPill)),
+        );
+        expect(pill.label, 'Claude Sonnet');
+        expect(pill.variant, DsPillVariant.filled);
+        expect(pill.shape, DsPillShape.tag);
+        expect(
+          find.descendant(
+            of: pillFor(item),
+            matching: find.byIcon(LottiIcons.aiModel),
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('marks an agent without a profile with a muted placeholder', (
+        tester,
+      ) async {
+        final item = makeTestProjectListItemData(hasProjectAgent: true);
+
+        await pumpRow(tester, item, showInferenceProfile: true);
+
+        final pill = tester.widget<DsPill>(
+          find.descendant(of: pillFor(item), matching: find.byType(DsPill)),
+        );
+        expect(pill.label, 'No inference profile');
+        expect(pill.variant, DsPillVariant.muted);
+      });
+
+      testWidgets('warns about an assigned profile that no longer exists', (
+        tester,
+      ) async {
+        final item = makeTestProjectListItemData(
+          hasProjectAgent: true,
+          inferenceProfileMissing: true,
+        );
+
+        await pumpRow(tester, item, showInferenceProfile: true);
+
+        final tokens = tester.element(pillFor(item)).designTokens;
+        final pill = tester.widget<DsPill>(
+          find.descendant(of: pillFor(item), matching: find.byType(DsPill)),
+        );
+        expect(pill.label, 'Inference profile missing');
+        expect(pill.variant, DsPillVariant.tinted);
+        expect(pill.color, tokens.colors.alert.warning.defaultColor);
+        expect(
+          find.descendant(
+            of: pillFor(item),
+            matching: find.byIcon(LottiIcons.warning),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('No inference profile'), findsNothing);
+      });
+
+      testWidgets('stays hidden while the switch is off', (tester) async {
+        final item = makeTestProjectListItemData(
+          hasProjectAgent: true,
+          inferenceProfileName: 'Claude Sonnet',
+        );
+
+        await pumpRow(tester, item, showInferenceProfile: false);
+
+        expect(pillFor(item), findsNothing);
+        expect(find.text('Claude Sonnet'), findsNothing);
+      });
+
+      testWidgets('stays hidden until the profile has been looked up', (
+        tester,
+      ) async {
+        final item = makeTestProjectListItemData(
+          hasProjectAgent: true,
+          inferenceProfileLoaded: false,
+        );
+
+        await pumpRow(tester, item, showInferenceProfile: true);
+
+        expect(pillFor(item), findsNothing);
+        expect(find.text('No inference profile'), findsNothing);
+      });
+
+      testWidgets('is absent for a project without an agent', (tester) async {
+        final item = makeTestProjectListItemData();
+
+        await pumpRow(tester, item, showInferenceProfile: true);
+
+        expect(pillFor(item), findsNothing);
+        expect(find.text('No inference profile'), findsNothing);
+      });
     });
 
     testWidgets('labels an empty project without a warning-colored 0% ring', (

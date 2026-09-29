@@ -11045,10 +11045,19 @@ class AppLocalizationsNl extends AppLocalizations {
   String get projectShowcaseViewBlocker => 'Beeldblokker';
 
   @override
+  String get projectsInferenceProfileMissing => 'Inferentieprofiel ontbreekt';
+
+  @override
+  String get projectsInferenceProfileNone => 'Geen inferentieprofiel';
+
+  @override
   String get projectsScopeAll => 'Alles';
 
   @override
   String get projectsScopeCurrent => 'Actueel';
+
+  @override
+  String get projectsShowInferenceProfile => 'Inferentieprofiel tonen';
 
   @override
   String get projectsSortActionable => 'Aandacht nodig';

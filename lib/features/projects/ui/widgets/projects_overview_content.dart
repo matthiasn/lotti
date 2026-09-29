@@ -21,6 +21,7 @@ class ProjectsOverviewContent extends StatefulWidget {
     this.query = '',
     this.searchEnabled = true,
     this.selectedProjectId,
+    this.showInferenceProfile = false,
     this.onExploreCategory,
     this.onSearchChanged,
     this.onSearchCleared,
@@ -46,6 +47,9 @@ class ProjectsOverviewContent extends StatefulWidget {
   final String query;
   final bool searchEnabled;
   final String? selectedProjectId;
+
+  /// Whether each row shows its project agent's inference profile pill.
+  final bool showInferenceProfile;
   final ValueChanged<String>? onSearchChanged;
   final VoidCallback? onSearchCleared;
   final ValueChanged<String>? onSearchPressed;
@@ -139,6 +143,7 @@ class _ProjectsOverviewContentState extends State<ProjectsOverviewContent> {
                   ProjectsOverviewSliverList(
                     groups: widget.groups,
                     selectedProjectId: widget.selectedProjectId,
+                    showInferenceProfile: widget.showInferenceProfile,
                     onProjectTap: widget.onProjectTap,
                     onExploreCategory: widget.onExploreCategory,
                     bottomPadding: widget.listBottomPadding,

@@ -114,6 +114,17 @@ void main() {
         expect(a, isNot(equals(b)));
       });
 
+      test('not equal when showInferenceProfile differs', () {
+        const a = ProjectsFilter();
+        const b = ProjectsFilter(showInferenceProfile: true);
+        expect(a, isNot(equals(b)));
+        expect(a.hashCode, isNot(equals(b.hashCode)));
+      });
+
+      test('the inference profile pill is off by default', () {
+        expect(const ProjectsFilter().showInferenceProfile, isFalse);
+      });
+
       test('identical instance is equal', () {
         const filter = ProjectsFilter(textQuery: 'x');
         expect(filter, equals(filter));
@@ -161,11 +172,19 @@ void main() {
         expect(copied.sortMode, ProjectsSortMode.recent);
       });
 
+      test('copies with new showInferenceProfile', () {
+        const original = ProjectsFilter(selectedCategoryIds: {'a'});
+        final copied = original.copyWith(showInferenceProfile: true);
+        expect(copied.showInferenceProfile, isTrue);
+        expect(copied.selectedCategoryIds, {'a'});
+      });
+
       test('retains all fields when no arguments given', () {
         const original = ProjectsFilter(
           selectedCategoryIds: {'z'},
           textQuery: 'keep',
           searchMode: ProjectsSearchMode.localText,
+          showInferenceProfile: true,
         );
         final copied = original.copyWith();
         expect(copied, equals(original));
@@ -262,6 +281,80 @@ void main() {
           taskRollup: const ProjectTaskRollupData(),
         );
         expect(item.categoryName, isEmpty);
+      });
+    });
+
+    group('withAgentSidecar', () {
+      test('replaces all agent fields and keeps the project data', () {
+        final item = makeTestProjectListItemData(
+          project: makeTestProject(id: 'p-side', title: 'Sidecar'),
+          category: category,
+          totalTaskCount: 7,
+          completedTaskCount: 2,
+          oneLiner: 'old line',
+          inferenceProfileMissing: true,
+        );
+
+        final updated = item.withAgentSidecar(
+          oneLiner: 'new line',
+          hasProjectAgent: true,
+          inferenceProfileName: 'Local Qwen',
+          inferenceProfileMissing: false,
+          inferenceProfileLoaded: true,
+        );
+
+        expect(updated.oneLiner, 'new line');
+        expect(updated.hasProjectAgent, isTrue);
+        expect(updated.inferenceProfileName, 'Local Qwen');
+        expect(updated.inferenceProfileMissing, isFalse);
+        expect(updated.inferenceProfileLoaded, isTrue);
+        expect(updated.project, same(item.project));
+        expect(updated.category, same(category));
+        expect(updated.taskRollup.totalTaskCount, 7);
+        expect(updated.taskRollup.completedTaskCount, 2);
+      });
+
+      test('clears the agent fields when the lookup found no agent', () {
+        final item = makeTestProjectListItemData(
+          oneLiner: 'stale',
+          hasProjectAgent: true,
+          inferenceProfileName: 'Gone',
+        );
+
+        final updated = item.withAgentSidecar(
+          oneLiner: null,
+          hasProjectAgent: false,
+          inferenceProfileName: null,
+          inferenceProfileMissing: false,
+          inferenceProfileLoaded: false,
+        );
+
+        expect(updated.oneLiner, isNull);
+        expect(updated.hasProjectAgent, isFalse);
+        expect(updated.inferenceProfileName, isNull);
+        expect(updated.inferenceProfileMissing, isFalse);
+        expect(updated.inferenceProfileLoaded, isFalse);
+      });
+
+      test('an item built without agent fields has no agent', () {
+        final item = ProjectListItemData(
+          project: makeTestProject(),
+          category: null,
+          taskRollup: const ProjectTaskRollupData(),
+        );
+        expect(item.hasProjectAgent, isFalse);
+        expect(item.inferenceProfileName, isNull);
+        expect(item.inferenceProfileMissing, isFalse);
+        expect(item.inferenceProfileLoaded, isFalse);
+      });
+
+      test('the profile name is not part of the search haystack', () {
+        final item = makeTestProjectListItemData(
+          project: makeTestProject(title: 'Alpha'),
+          hasProjectAgent: true,
+          inferenceProfileName: 'Gemini Flash',
+        );
+        expect(item.searchableText, isNot(contains('Gemini')));
       });
     });
 

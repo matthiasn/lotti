@@ -5,13 +5,19 @@ import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
+/// Stable identifiers for the Projects filter sheet's display toggles.
+abstract final class ProjectsFilterToggleIds {
+  static const showInferenceProfile = 'show-inference-profile';
+}
+
 /// Adapts a [ProjectsFilter] into the design-system filter-sheet model so the
 /// Projects tab can reuse the shared task-filter modal.
 ///
 /// Builds the fixed six status options (keyed by [ProjectStatusFilterIds]) and
 /// one option per category, then pre-selects each field by intersecting the
 /// filter's stored IDs with the options actually present — dropping any stale
-/// selections for categories that no longer exist. The inverse is
+/// selections for categories that no longer exist. It also carries the
+/// show-inference-profile display toggle. The inverse is
 /// [projectsFilterFromSheetState].
 DesignSystemTaskFilterState buildProjectsFilterSheetState(
   BuildContext context, {
@@ -69,11 +75,18 @@ DesignSystemTaskFilterState buildProjectsFilterSheetState(
       options: categoryOptions,
       selectedIds: filter.selectedCategoryIds.intersection(categoryOptionIds),
     ),
+    toggles: [
+      DesignSystemTaskFilterToggle(
+        id: ProjectsFilterToggleIds.showInferenceProfile,
+        label: context.messages.projectsShowInferenceProfile,
+        value: filter.showInferenceProfile,
+      ),
+    ],
   );
 }
 
 /// Folds the filter sheet's edited selections back onto [baseFilter],
-/// overwriting only the status and category IDs.
+/// overwriting only the status and category IDs and the display toggle.
 ///
 /// The text query and search mode are preserved from [baseFilter] because the
 /// filter sheet does not own them. Inverse of [buildProjectsFilterSheetState].
@@ -85,5 +98,10 @@ ProjectsFilter projectsFilterFromSheetState(
     selectedStatusIds: sheetState.statusField?.selectedIds ?? const <String>{},
     selectedCategoryIds:
         sheetState.categoryField?.selectedIds ?? const <String>{},
+    showInferenceProfile: sheetState.toggles.any(
+      (toggle) =>
+          toggle.id == ProjectsFilterToggleIds.showInferenceProfile &&
+          toggle.value,
+    ),
   );
 }

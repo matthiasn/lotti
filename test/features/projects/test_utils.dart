@@ -153,6 +153,11 @@ ProjectListItemData makeTestProjectListItemData({
   int totalTaskCount = 5,
   int blockedTaskCount = 1,
   String? oneLiner,
+  bool hasProjectAgent = false,
+  String? inferenceProfileName,
+  bool inferenceProfileMissing = false,
+  // A fixture row with an agent reads as looked up unless it says otherwise.
+  bool? inferenceProfileLoaded,
 }) {
   final record = makeTestProjectRecord(
     project: project,
@@ -169,6 +174,10 @@ ProjectListItemData makeTestProjectListItemData({
       totalTaskCount: totalTaskCount,
     ),
     oneLiner: oneLiner,
+    hasProjectAgent: hasProjectAgent,
+    inferenceProfileName: inferenceProfileName,
+    inferenceProfileMissing: inferenceProfileMissing,
+    inferenceProfileLoaded: inferenceProfileLoaded ?? hasProjectAgent,
   );
 }
 

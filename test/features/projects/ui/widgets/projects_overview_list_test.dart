@@ -71,6 +71,53 @@ void main() {
       );
     });
 
+    for (final (label, show, expected) in [
+      ('defaults to hiding', null, false),
+      ('forwards showing', true, true),
+    ]) {
+      testWidgets('$label the inference profile to every section', (
+        tester,
+      ) async {
+        final groups = [
+          for (final id in ['cat-1', 'cat-2'])
+            ProjectCategoryGroup(
+              categoryId: id,
+              category: null,
+              projects: [
+                makeTestProjectListItemData(
+                  project: makeTestProject(id: 'p-$id'),
+                ),
+              ],
+            ),
+        ];
+
+        await tester.pumpWidget(
+          wrap(
+            show == null
+                ? ProjectsOverviewSliverList(
+                    groups: groups,
+                    onProjectTap: (_) {},
+                  )
+                : ProjectsOverviewSliverList(
+                    groups: groups,
+                    showInferenceProfile: show,
+                    onProjectTap: (_) {},
+                  ),
+          ),
+        );
+        await tester.pump();
+
+        final sections = tester.widgetList<ProjectGroupSection>(
+          find.byType(ProjectGroupSection),
+        );
+        expect(sections, hasLength(2));
+        expect(
+          sections.map((section) => section.showInferenceProfile),
+          everyElement(expected),
+        );
+      });
+    }
+
     testWidgets('forwards project taps with the tapped item', (tester) async {
       final item = makeTestProjectListItemData(
         project: makeTestProject(id: 'p-tap', title: 'Tap Me'),

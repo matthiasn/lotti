@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:intl/intl.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/lists/grouped_card_row_surface.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
@@ -14,7 +15,8 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// A single project row in the list, with task-progress ring, task count,
-/// due label, and status tag.
+/// due label, and status tag. With [showInferenceProfile], a project that has
+/// an agent also shows that agent's inference profile as a pill.
 class ProjectRow extends StatelessWidget {
   const ProjectRow({
     required this.item,
@@ -23,6 +25,7 @@ class ProjectRow extends StatelessWidget {
     required this.bottomOverlap,
     required this.onHoverChanged,
     required this.onTap,
+    this.showInferenceProfile = false,
     this.backgroundTopInset = 0,
     this.backgroundBottomInset = 0,
     super.key,
@@ -36,6 +39,7 @@ class ProjectRow extends StatelessWidget {
   final double backgroundBottomInset;
   final ValueChanged<bool> onHoverChanged;
   final VoidCallback onTap;
+  final bool showInferenceProfile;
 
   @override
   Widget build(BuildContext context) {
@@ -105,6 +109,16 @@ class ProjectRow extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (showInferenceProfile &&
+                    item.hasProjectAgent &&
+                    item.inferenceProfileLoaded) ...[
+                  SizedBox(height: tokens.spacing.step2),
+                  ProjectInferenceProfilePill(
+                    key: ValueKey('project-row-profile-$projectId'),
+                    profileName: item.inferenceProfileName,
+                    missing: item.inferenceProfileMissing,
+                  ),
+                ],
               ],
             ),
           ),
@@ -126,6 +140,57 @@ class ProjectRow extends StatelessWidget {
         ),
       },
       child: row,
+    );
+  }
+}
+
+/// Informational tag naming the inference profile a project agent is
+/// assigned, or a muted "no inference profile" placeholder when
+/// [profileName] is `null`.
+///
+/// When [missing], the agent is assigned a profile that no longer exists, so
+/// its wakes cannot run: that reads as a warning, not as the harmless
+/// placeholder.
+class ProjectInferenceProfilePill extends StatelessWidget {
+  const ProjectInferenceProfilePill({
+    required this.profileName,
+    this.missing = false,
+    super.key,
+  });
+
+  final String? profileName;
+  final bool missing;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    if (missing) {
+      return DsPill(
+        variant: DsPillVariant.tinted,
+        shape: DsPillShape.tag,
+        color: tokens.colors.alert.warning.defaultColor,
+        labelColor: tokens.colors.text.highEmphasis,
+        label: context.messages.projectsInferenceProfileMissing,
+        leading: Icon(
+          LottiIcons.warning,
+          size: tokens.spacing.step5,
+          color: tokens.colors.alert.warning.ink,
+        ),
+      );
+    }
+    final name = profileName;
+    final iconColor = name == null
+        ? tokens.colors.text.mediumEmphasis
+        : tokens.colors.interactive.enabled;
+    return DsPill(
+      variant: name == null ? DsPillVariant.muted : DsPillVariant.filled,
+      shape: DsPillShape.tag,
+      label: name ?? context.messages.projectsInferenceProfileNone,
+      leading: Icon(
+        LottiIcons.aiModel,
+        size: tokens.spacing.step5,
+        color: iconColor,
+      ),
     );
   }
 }

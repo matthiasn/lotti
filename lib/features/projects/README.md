@@ -35,7 +35,16 @@ project agent is attached — a summary and health read that the agent maintains
   category with task counts and filters. It opens on current work, keeps
   completed/archived projects behind All, prioritizes actionable work, and lets
   each category collapse for focus. Agent one-liners load in one overview batch
-  and participate in search instead of shifting into rows one by one.
+  and participate in search instead of shifting into rows one by one. An agent
+  update refreshes the list in place; it never blanks out while reloading.
+- **Shows which model each project agent uses, on request.** A *Show inference
+  profile* switch in the filter sheet (off by default) tags every project that
+  has an agent with the name of its inference profile, or *No inference
+  profile*, so projects can be checked and reassigned one by one.
+- **Gives a new project's agent the category's profile.** The agent created
+  with a project uses the category's default inference profile. When the
+  category names none, the agent falls back to the template's profile or
+  model; unlike a task's agent, it is never created disabled.
 - **Makes room to focus on one project.** On desktop, the project list can be
   hidden after a project is selected and restored without losing its filters,
   search or scroll position. The embedded detail has no misleading Back action.

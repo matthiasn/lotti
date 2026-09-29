@@ -10971,10 +10971,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get projectShowcaseViewBlocker => 'View blocker';
 
   @override
+  String get projectsInferenceProfileMissing => 'Inference profile missing';
+
+  @override
+  String get projectsInferenceProfileNone => 'No inference profile';
+
+  @override
   String get projectsScopeAll => 'All';
 
   @override
   String get projectsScopeCurrent => 'Current';
+
+  @override
+  String get projectsShowInferenceProfile => 'Show inference profile';
 
   @override
   String get projectsSortActionable => 'Needs attention';
