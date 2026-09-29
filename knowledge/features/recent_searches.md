@@ -29,12 +29,10 @@ widget reads it, and one function turns a row back into a search.
 
 ```mermaid
 flowchart LR
-  Tasks["Tasks header<br/>search field"] -->|noteQuery / record| Gate
-  Logbook["Logbook header<br/>search field"] -->|noteQuery / record| Gate
-  Projects["Projects header<br/>search field"] -->|noteQuery / record| Gate
-  Habits["HabitsSearchWidget"] -->|noteQuery| Gate
-  Gate{"recentSearchRecorder<br/>compact window?"} -->|yes| Ctrl
-  Gate -->|desktop: null| Drop["not remembered"]
+  Tasks["Tasks header<br/>search field"] -->|noteQuery / record| Ctrl
+  Logbook["Logbook header<br/>search field"] -->|noteQuery / record| Ctrl
+  Projects["Projects header<br/>search field"] -->|noteQuery / record| Ctrl
+  Habits["HabitsSearchWidget"] -->|noteQuery| Ctrl
   Ctrl["RecentSearchesController<br/>List&lt;RecentSearch&gt;"] <--> Repo["RecentSearchesRepository<br/>SettingsDb row RECENT_SEARCHES"]
   Ctrl --> Section["RecentSearchesSection<br/>(sidebar belowDestinations slot)"]
   Section -->|tap| Open["openRecentSearch"]
@@ -46,17 +44,6 @@ flowchart LR
 The module is a leaf of the [mobile sidebar drawer](../architecture/navigation.md#the-drawer):
 the shell decides which surfaces are offered and hosts the section; nothing
 here knows the sidebar exists.
-
-# Only where Recents are shown
-
-Every field reaches the controller through `recentSearchRecorder(context,
-ref)`, which returns it on a compact window and null on the desktop layout.
-Recents are shown only in the mobile drawer, and the desktop layout neither
-lists them nor offers *Clear*, so a search run there is not remembered at all
-rather than piling up in a history the user cannot see or delete. The check
-runs at the moment of the search, so it follows the window's current width:
-narrowing a desktop window below the breakpoint brings the drawer, and
-recording, back.
 
 # What counts as one search
 
@@ -220,6 +207,5 @@ nothing stored does the section render nothing at all, heading included.
 | What counts as one search | [`domain/recent_search_list.dart`](../../lib/features/recent_searches/domain/recent_search_list.dart) |
 | Settings-backed store | [`state/recent_searches_repository.dart`](../../lib/features/recent_searches/state/recent_searches_repository.dart) |
 | Loading, settle timers, writes | [`state/recent_searches_controller.dart`](../../lib/features/recent_searches/state/recent_searches_controller.dart) |
-| Recording only on a compact window | [`ui/recent_search_recorder.dart`](../../lib/features/recent_searches/ui/recent_search_recorder.dart) |
 | The Recents section | [`ui/recent_searches_section.dart`](../../lib/features/recent_searches/ui/recent_searches_section.dart) |
 | Running a search again | [`ui/recent_search_opener.dart`](../../lib/features/recent_searches/ui/recent_search_opener.dart) |

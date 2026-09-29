@@ -636,7 +636,7 @@ widget as on desktop, and the activity summary sits above it through the same
 |---|---|---|
 | Collapse toggle | shown | `showToggle: false` — the panel is dismissed, never collapsed to icons |
 | Gap between destination rows | `spacing.step4` | `destinationGap: spacing.step1` — each row is a full touch target already, and Recents should show without a scroll on a phone with every section on |
-| Under-row subtrees | saved filters, month calendar, impact entry, for the active row | the Tasks row's saved filters only, as `SidebarSavedTaskFilters(onApplied: close)` passed through `toDesktopSidebarDestination(expandedChild:)` — on a compact window its rows and Manage button grow to `TapTargets.minimum` (`SidebarSavedTaskFilters.minTapExtent`); the month calendar and the impact entry are desktop surfaces that do not size for touch |
+| Under-row subtrees | saved filters, month calendar, impact entry, for the active row | the Tasks row's saved filters only, as `SidebarSavedTaskFilters(onApplied: close)` passed through `toDesktopSidebarDestination(expandedChild:)`; the month calendar and the impact entry are desktop surfaces that do not size for touch |
 | `aboveSettings` | `SidebarActivitySummary` — recording, timer, agent wakes | the same |
 | `belowDestinations` | empty | the app-wide [Recents](../features/recent_searches.md) list, scrolling with the destinations |
 | Scroll region | plain | its last `spacing.step7` fades out, and Settings stands a step clear — an open-ended section makes scrolling the normal case, so the region says where it ends instead of butting against the pinned row as if they were one list |
@@ -705,6 +705,9 @@ These contracts hold it together:
 - **Every choice closes the drawer.** A destination or a recent search closes
   it before navigating; a saved filter (or All tasks) once it has been
   applied, through `onApplied` — Manage, More and Show fewer leave it open.
+  `onApplied` is skipped if the list unmounted while the filter was landing
+  (e.g. the window crossed the desktop breakpoint), so a late completion
+  cannot close a drawer opened since; the MRU touch still happens.
   The activity rows that navigate on their own — a running timer opening its
   task, an agent wake opening its agent — know nothing of the drawer:
   `_closeMobileDrawerOnRouteChange`, listening on `_routeChangeListenable`
@@ -845,13 +848,18 @@ Two deliberate divergences from what the floating button did:
   query, and a chip arriving one beat late would pop into the row under the
   user's thumb; on its own layer in the corner the same delay cost nothing.
 
-Route sensitivity is needed in one place only. Projects, Goals, Habits and
+Route sensitivity is needed in two places only. Projects, Goals, Habits and
 People slide the whole launcher away on their detail routes (`slideNavAway`), so a
 stale action there is off screen anyway. The journal tab keeps the bar on an
 entry's page — and that page owns a *different* action, an `add linked entry`
 button with its own glyph — so `isLogbookEntryDetailRoute` drops the logbook's
-action from the rail there and lets the detail page keep floating its own.
-That check is why `navService.journalDelegate` joins `_routeChangeListenable`.
+action from the rail there and lets the detail page keep floating its own. The
+events tab keeps the bar on an event's page too, where a new-event plus would
+read as adding to that event, so `isEventDetailRoute` drops its action there.
+Opening an entry or an event moves only that tab's delegate, not the tab index,
+which is why `navService.journalDelegate` and `navService.eventsDelegate` both
+join `_routeChangeListenable` — without them the launcher would not rebuild and
+would keep the list's action beside the detail page.
 
 The row's states are [the menu button's](#the-menu-button) diagram.
 
@@ -963,7 +971,7 @@ Two rules hold it together:
 | Sidebar drawer host | [`lib/widgets/nav_bar/mobile_navigation_drawer.dart`](../../lib/widgets/nav_bar/mobile_navigation_drawer.dart) |
 | The two-stroke menu mark | [`lib/features/design_system/components/navigation/ds_menu_glyph.dart`](../../lib/features/design_system/components/navigation/ds_menu_glyph.dart) |
 | The sidebar both form factors host | [`lib/features/design_system/components/navigation/desktop_navigation_sidebar.dart`](../../lib/features/design_system/components/navigation/desktop_navigation_sidebar.dart) |
-| Saved task filters under the Tasks row (desktop rail and drawer) | [`lib/features/tasks/ui/saved_filters/sidebar/sidebar_saved_task_filters.dart`](../../lib/features/tasks/ui/saved_filters/sidebar/sidebar_saved_task_filters.dart) |
+| Saved task filters under the Tasks row (desktop rail and drawer) | [`lib/features/tasks/ui/saved_filters/desktop/sidebar_saved_task_filters.dart`](../../lib/features/tasks/ui/saved_filters/desktop/sidebar_saved_task_filters.dart) |
 | Activity summary above Settings (desktop rail and drawer) | [`lib/widgets/misc/sidebar_activity_summary.dart`](../../lib/widgets/misc/sidebar_activity_summary.dart) |
 | Recents list in the drawer | [`lib/features/recent_searches/`](../../lib/features/recent_searches) |
 | Bottom clearance contract, activity island scope | [`lib/widgets/nav_bar/design_system_bottom_navigation_bar.dart`](../../lib/widgets/nav_bar/design_system_bottom_navigation_bar.dart) |

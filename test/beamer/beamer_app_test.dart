@@ -70,7 +70,7 @@ import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart'
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_provider.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
-import 'package:lotti/features/tasks/ui/saved_filters/sidebar/sidebar_saved_task_filters.dart';
+import 'package:lotti/features/tasks/ui/saved_filters/desktop/sidebar_saved_task_filters.dart';
 import 'package:lotti/features/theming/state/theming_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
@@ -285,6 +285,23 @@ class _TestHabitsLocation extends HabitsLocation {
   }
 }
 
+/// An [EventsLocation] whose pages are inert stubs: route matching (and
+/// therefore [isEventDetailRoute]) behaves exactly like production, without
+/// building the events overview or event page dependency trees.
+class _TestEventsLocation extends EventsLocation {
+  _TestEventsLocation(super.routeInformation);
+
+  @override
+  List<BeamPage> buildPages(BuildContext context, BeamState state) {
+    return [
+      BeamPage(
+        key: ValueKey('test-events-${state.uri.path}'),
+        child: const SizedBox.shrink(),
+      ),
+    ];
+  }
+}
+
 Future<BeamerDelegate> _createEmptyDelegate(String initialPath) async {
   final delegate = BeamerDelegate(
     setBrowserTabTitle: false,
@@ -334,6 +351,7 @@ Future<void> _stubNavService(
   BeamerDelegate? goalsDelegate,
   BeamerDelegate? habitsDelegate,
   BeamerDelegate? relationshipsDelegate,
+  BeamerDelegate? eventsDelegate,
 }) async {
   final taskStack = ValueNotifier<List<String>>([]);
   when(() => navService.desktopTaskDetailStack).thenReturn(taskStack);
@@ -346,7 +364,7 @@ Future<void> _stubNavService(
   habitsDelegate ??= await _createEmptyDelegate('/habits');
   final dashboardsDelegate = await _createEmptyDelegate('/dashboards');
   final journalDelegate = await _createEmptyDelegate('/journal');
-  final eventsDelegate = await _createEmptyDelegate('/events');
+  eventsDelegate ??= await _createEmptyDelegate('/events');
   // AppScreen listens to the goals delegate too, so the bottom bar can
   // slide away on the unified Goals tab's hosted goal pages.
   goalsDelegate ??= await _createEmptyDelegate('/goals');
@@ -938,6 +956,68 @@ void main() {
           reason: 'destination ${entry.key}',
         );
       }
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    "the events tab's create action leaves the launcher on an event's page "
+    'and comes back on the overview',
+    (tester) async {
+      final indexController = StreamController<int>.broadcast();
+      addTearDown(indexController.close);
+      final eventsDelegate = BeamerDelegate(
+        setBrowserTabTitle: false,
+        initialPath: '/events',
+        locationBuilder: (routeInformation, _) =>
+            _TestEventsLocation(routeInformation),
+      );
+      addTearDown(eventsDelegate.dispose);
+      await eventsDelegate.setNewRoutePath(
+        RouteInformation(uri: Uri.parse('/events')),
+      );
+      final nav = MockNavService()..relationshipsPageEnabled = true;
+      await _stubNavService(
+        nav,
+        indexStream: indexController.stream,
+        isProjectsEnabled: () => true,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => true,
+        isDashboardsEnabled: () => true,
+        isUnifiedGoalsEnabled: true,
+        isEventsEnabled: () => true,
+        eventsDelegate: eventsDelegate,
+      );
+      // Events sits at destination 8 (see the destination order above).
+      when(() => nav.index).thenReturn(8);
+      await _registerAppScreenGetIt(nav);
+      addTearDown(tearDownTestGetIt);
+      await _pumpAppScreen(tester, navService: nav);
+      indexController.add(8);
+      await tester.pumpAndSettle();
+
+      MobileNavDockAction? docked() => tester
+          .widget<MobileNavigationLauncher>(
+            find.byType(MobileNavigationLauncher),
+          )
+          .pageAction;
+      final newEvent = tester
+          .element(find.byType(MobileNavigationLauncher))
+          .messages
+          .eventsNewEvent;
+
+      expect(docked()?.label, newEvent);
+
+      // Only the events delegate moves — no tab switch — so the launcher
+      // has to hear about it from the route listener.
+      eventsDelegate.beamToNamed('/events/${const Uuid().v4()}');
+      await tester.pumpAndSettle();
+      expect(docked(), isNull);
+
+      eventsDelegate.beamToNamed('/events');
+      await tester.pumpAndSettle();
+      expect(docked()?.label, newEvent);
 
       await tester.pumpWidget(const SizedBox.shrink());
     },

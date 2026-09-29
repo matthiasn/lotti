@@ -474,31 +474,6 @@ void main() {
     expect(fakeRecents.noted.last, (RecentSearchSurface.tasks, ''));
   });
 
-  testWidgets(
-    'feeds nothing to Recents on the desktop layout, which shows no Recents',
-    (
-      tester,
-    ) async {
-      setTestSurfaceSize(tester, const Size(1280, 900));
-      await tester.pumpWidget(buildSubject(state: state()));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      await tester.enterText(find.byType(TextField), 'fish feeder');
-      await tester.pump();
-      await tester.tap(
-        find.descendant(
-          of: find.byType(TabSectionHeader),
-          matching: find.byIcon(LottiIcons.search),
-        ),
-      );
-      await tester.pump();
-
-      expect(fakeRecents.noted, isEmpty);
-      expect(fakeRecents.recorded, isEmpty);
-    },
-  );
-
   testWidgets('search updates, filter modal opens, and row taps navigate', (
     tester,
   ) async {

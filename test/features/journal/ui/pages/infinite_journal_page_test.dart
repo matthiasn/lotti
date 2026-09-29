@@ -754,25 +754,6 @@ void main() {
       expect(recents.noted.last, (RecentSearchSurface.logbook, ''));
     });
 
-    testWidgets(
-      'feeds nothing to Recents on the desktop layout, which shows no Recents',
-      (
-        tester,
-      ) async {
-        setTestSurfaceSize(tester, const Size(1280, 900));
-        final recents = FakeRecentSearchesController();
-        await pumpPage(tester, extraOverrides: [fakeRecentSearches(recents)]);
-
-        await tester.enterText(find.byType(TextField), 'ice pad');
-        await tester.pump();
-        await tester.tap(find.byIcon(LottiIcons.search));
-        await tester.pump();
-
-        expect(recents.noted, isEmpty);
-        expect(recents.recorded, isEmpty);
-      },
-    );
-
     testWidgets('header filter icon opens the logbook filter modal', (
       tester,
     ) async {

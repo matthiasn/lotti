@@ -23,7 +23,6 @@ import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/recent_searches/domain/recent_search.dart';
 import 'package:lotti/features/recent_searches/state/recent_searches_controller.dart';
-import 'package:lotti/features/recent_searches/ui/recent_search_recorder.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -231,10 +230,11 @@ class _InfiniteJournalPageBodyState
     final controller = ref.read(
       journalPageControllerProvider(false).notifier,
     );
-    // Feeds the mobile sidebar's Recents list, on a compact window only;
-    // see [recentSearchRecorder]. A cleared field needs no hook of its own —
-    // the search field reports it as a change to ''.
-    RecentSearchesController? recents() => recentSearchRecorder(context, ref);
+    // Feeds the mobile sidebar's Recents list. Read lazily: the controller
+    // is only created once a search is actually typed. A cleared field needs
+    // no hook of its own — the search field reports it as a change to ''.
+    RecentSearchesController recents() =>
+        ref.read(recentSearchesControllerProvider.notifier);
     final tokens = context.designTokens;
 
     return AppCommandScope(
@@ -264,7 +264,7 @@ class _InfiniteJournalPageBodyState
                   _entryTypesNarrowedByUser(state),
               onSearchChanged: (value) {
                 unawaited(controller.setSearchString(value));
-                recents()?.noteQuery(RecentSearchSurface.logbook, value);
+                recents().noteQuery(RecentSearchSurface.logbook, value);
               },
               onSearchCleared: () {
                 unawaited(controller.setSearchString(''));
@@ -272,7 +272,7 @@ class _InfiniteJournalPageBodyState
               onSearchPressed: (value) {
                 unawaited(controller.setSearchString(value));
                 unawaited(
-                  recents()?.record(RecentSearchSurface.logbook, value),
+                  recents().record(RecentSearchSurface.logbook, value),
                 );
               },
               onFilterPressed: () => showLogbookFilterModal(context),

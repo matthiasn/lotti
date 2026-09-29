@@ -1,12 +1,17 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_provider.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_mru_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
+import 'package:lotti/features/tasks/ui/saved_filters/desktop/sidebar_saved_task_filters.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filters_sheet.dart';
-import 'package:lotti/features/tasks/ui/saved_filters/sidebar/sidebar_saved_task_filters.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:material_ui/material_ui.dart';
@@ -44,13 +49,54 @@ class _StubSavedController extends SavedTaskFiltersController {
   Future<List<SavedTaskFilter>> build() async => seed;
 }
 
+/// Holds every batch filter update open until [release], so a test can act
+/// while a tapped filter is still landing.
+class _GatedJournalPageController extends FakeJournalPageController {
+  _GatedJournalPageController() : super(const JournalPageState());
+
+  final _gate = Completer<void>();
+
+  void release() => _gate.complete();
+
+  @override
+  Future<void> applyBatchFilterUpdate({
+    Set<String>? statuses,
+    Set<String>? categoryIds,
+    Set<String>? labelIds,
+    Set<String>? projectIds,
+    Set<String>? priorities,
+    TaskSortOption? sortOption,
+    AgentAssignmentFilter? agentAssignmentFilter,
+    SearchMode? searchMode,
+    bool? showCreationDate,
+    bool? showDueDate,
+  }) async {
+    await super.applyBatchFilterUpdate(
+      statuses: statuses,
+      categoryIds: categoryIds,
+      labelIds: labelIds,
+      projectIds: projectIds,
+      priorities: priorities,
+      sortOption: sortOption,
+      agentAssignmentFilter: agentAssignmentFilter,
+      searchMode: searchMode,
+      showCreationDate: showCreationDate,
+      showDueDate: showDueDate,
+    );
+    await _gate.future;
+  }
+}
+
 Future<FakeJournalPageController> _pumpSidebar(
   WidgetTester tester, {
   List<SavedTaskFilter> saved = _saved,
   JournalPageState pageState = const JournalPageState(),
   VoidCallback? onApplied,
+  FakeJournalPageController? pageController,
+  ValueListenable<bool>? showSidebar,
 }) async {
-  final page = FakeJournalPageController(pageState);
+  final page = pageController ?? FakeJournalPageController(pageState);
+  final sidebar = SidebarSavedTaskFilters(onApplied: onApplied);
   await tester.pumpWidget(
     makeTestableWidgetNoScroll(
       Scaffold(
@@ -58,7 +104,13 @@ Future<FakeJournalPageController> _pumpSidebar(
           alignment: Alignment.topLeft,
           child: SizedBox(
             width: dsTokensLight.spacing.step13 + dsTokensLight.spacing.step10,
-            child: SidebarSavedTaskFilters(onApplied: onApplied),
+            child: showSidebar == null
+                ? sidebar
+                : ValueListenableBuilder<bool>(
+                    valueListenable: showSidebar,
+                    builder: (_, show, _) =>
+                        show ? sidebar : const SizedBox.shrink(),
+                  ),
           ),
         ),
       ),
@@ -241,6 +293,50 @@ void main() {
       expect(page.applyBatchFilterUpdateCalled, 1);
     });
 
+    for (final (name, tapKey) in [
+      ('a saved filter', SidebarSavedTaskFiltersKeys.filter('blocked')),
+      ('All tasks', SidebarSavedTaskFiltersKeys.allTasks),
+    ]) {
+      testWidgets('does not fire when the list unmounted while $name was '
+          'landing', (tester) async {
+        final page = _GatedJournalPageController();
+        final show = ValueNotifier<bool>(true);
+        addTearDown(show.dispose);
+        var applied = 0;
+        await _pumpSidebar(
+          tester,
+          pageController: page,
+          showSidebar: show,
+          onApplied: () => applied++,
+        );
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(SidebarSavedTaskFilters)),
+        );
+
+        await tester.tap(find.byKey(tapKey));
+        await tester.pump();
+        expect(page.applyBatchFilterUpdateCalled, 1);
+
+        // The host goes away (e.g. the window crossed the desktop
+        // breakpoint) before the filter has landed.
+        show.value = false;
+        await tester.pump();
+        expect(find.byType(SidebarSavedTaskFilters), findsNothing);
+
+        page.release();
+        await tester.pump();
+
+        expect(applied, 0);
+        // The recency order is independent of the list's lifecycle.
+        expect(
+          container.read(savedTaskFilterMruProvider),
+          tapKey == SidebarSavedTaskFiltersKeys.allTasks
+              ? isEmpty
+              : ['blocked'],
+        );
+      });
+    }
+
     testWidgets('does not fire for Manage, More or Show fewer, which leave '
         'the list where it is', (tester) async {
       var applied = 0;
@@ -292,53 +388,5 @@ void main() {
     expect(label.style?.fontSize, caption.fontSize);
     expect(count.style?.fontFamily, caption.fontFamily);
     expect(count.style?.fontSize, caption.fontSize);
-  });
-
-  group('tap targets', () {
-    Size inkSize(WidgetTester tester, Key rowKey) => tester.getSize(
-      find.descendant(of: find.byKey(rowKey), matching: find.byType(InkWell)),
-    );
-
-    List<Key> rowKeys() => [
-      SidebarSavedTaskFiltersKeys.allTasks,
-      SidebarSavedTaskFiltersKeys.filter('alpha'),
-      SidebarSavedTaskFiltersKeys.showMore,
-    ];
-
-    testWidgets('meet the touch floor on a compact window, where the list '
-        'rides the mobile drawer', (tester) async {
-      setTestSurfaceSize(tester, const Size(390, 844));
-      await _pumpSidebar(tester);
-
-      for (final key in rowKeys()) {
-        expect(
-          inkSize(tester, key).height,
-          greaterThanOrEqualTo(TapTargets.minimum),
-          reason: '$key',
-        );
-      }
-      final manage = tester.getSize(
-        find.byKey(SidebarSavedTaskFiltersKeys.manage),
-      );
-      expect(manage.width, greaterThanOrEqualTo(TapTargets.minimum));
-      expect(manage.height, greaterThanOrEqualTo(TapTargets.minimum));
-    });
-
-    testWidgets('stay pointer-sized on the desktop rail', (tester) async {
-      setTestSurfaceSize(tester, const Size(1280, 800));
-      await _pumpSidebar(tester);
-
-      for (final key in rowKeys()) {
-        expect(
-          inkSize(tester, key).height,
-          lessThan(TapTargets.minimum),
-          reason: '$key',
-        );
-      }
-      final manage = tester.getSize(
-        find.byKey(SidebarSavedTaskFiltersKeys.manage),
-      );
-      expect(manage.height, lessThan(TapTargets.minimum));
-    });
   });
 }

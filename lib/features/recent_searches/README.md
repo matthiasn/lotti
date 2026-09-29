@@ -18,9 +18,7 @@ the launcher's menu button opens, which is the phone's navigation.
   fragment instead of adding a second row; a repeat moves up instead of
   doubling; the list keeps the twelve most recent.
 - **Private by construction.** The list lives in the device's settings store
-  and is never synced. *Clear* empties it. Only searches run while the phone
-  layout is showing are remembered: the desktop layout has no Recents to show
-  them in, or to clear them from.
+  and is never synced. *Clear* empties it.
 - **No dead rows.** A search remembered in a section that has since been
   switched off is hidden until that section comes back — but *Clear* stays
   reachable while anything is stored, so hidden history can still be deleted.
@@ -40,8 +38,7 @@ the app shell decides which sections are offered and hosts the section in the
 sidebar's `belowDestinations` slot.
 
 Adding a search surface is one `RecentSearchSurface` value, its root path in
-`recent_search_opener.dart`, and one recording call at the new field, made
-through `recentSearchRecorder` so it records only on a compact window.
+`recent_search_opener.dart`, and one recording call at the new field.
 
 ## Where the code lives
 
@@ -52,8 +49,7 @@ lib/features/recent_searches/
 ├── state/recent_searches_repository.dart
 ├── state/recent_searches_controller.dart
 ├── ui/recent_searches_section.dart
-├── ui/recent_search_opener.dart
-└── ui/recent_search_recorder.dart       records only on a compact window
+└── ui/recent_search_opener.dart
 ```
 
 ## How it works

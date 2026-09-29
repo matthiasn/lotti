@@ -69,7 +69,7 @@ import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/incoming_verification_modal.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
-import 'package:lotti/features/tasks/ui/saved_filters/sidebar/sidebar_saved_task_filters.dart';
+import 'package:lotti/features/tasks/ui/saved_filters/desktop/sidebar_saved_task_filters.dart';
 import 'package:lotti/features/theming/state/theming_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
@@ -517,6 +517,9 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     // but so the launcher drops the logbook's docked create action there.
     // See [isLogbookEntryDetailRoute].
     navService.journalDelegate,
+    // Likewise for an event's page, where the launcher drops the events
+    // tab's create action. See [isEventDetailRoute].
+    navService.eventsDelegate,
   ]);
 
   /// Identity for the tab content across the desktop/mobile breakpoint.
