@@ -329,7 +329,7 @@ The P0 and P1 bugs:
 | [#4480](https://github.com/matthiasn/lotti/pull/4480) | P1 | no | A project recommendation recorded again after an undo stayed removed on peers |
 
 <details>
-<summary>All 101 bugs</summary>
+<summary>All 101 bugs in the historical totals</summary>
 
 | PR | Level | TLC | Bug |
 |----|-------|-----|-----|
@@ -434,6 +434,14 @@ The P0 and P1 bugs:
 | [#4480](https://github.com/matthiasn/lotti/pull/4480) | P1 | no | A removal sorted before the concurrent edit it followed, so the entity returned |
 | [#4480](https://github.com/matthiasn/lotti/pull/4480) | P1 | no | Removing parsed items, versions or change sets used a stale snapshot clock |
 | [#4480](https://github.com/matthiasn/lotti/pull/4480) | P1 | no | A project recommendation recorded again after an undo stayed removed on peers |
+
+</details>
+
+<details>
+<summary>The 74 bugs fixed since (#4504 on), not in the historical totals</summary>
+
+| PR | Level | TLC | Bug |
+|----|-------|-----|-----|
 | [#4504](https://github.com/matthiasn/lotti/pull/4504) | P1 | yes | Adding or reordering a checklist item from a stale copy dropped an item synced in meanwhile, on every device |
 | [#4504](https://github.com/matthiasn/lotti/pull/4504) | P1 | yes | A task field edit, by the user or the agent, dropped a checklist listed since the task was read |
 | [#4504](https://github.com/matthiasn/lotti/pull/4504) | P1 | yes | A check saved from stale item state wrote an old back-link over a move made elsewhere |
