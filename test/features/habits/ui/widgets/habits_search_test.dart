@@ -15,6 +15,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/test_app.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../../recent_searches/test_utils.dart';
@@ -70,8 +71,11 @@ void main() {
   group('HabitsSearchWidget', () {
     testWidgets('renders search bar', (tester) async {
       await tester.pumpWidget(
-        const RiverpodWidgetTestBench(
-          child: HabitsSearchWidget(),
+        RiverpodWidgetTestBench(
+          // The real Recents controller reads the settings store as it is
+          // built, which this bench does not provide.
+          overrides: [fakeRecentSearches(FakeRecentSearchesController())],
+          child: const HabitsSearchWidget(),
         ),
       );
       await tester.pump(const Duration(milliseconds: 100));
@@ -85,6 +89,9 @@ void main() {
 
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
+          // The real Recents controller reads the settings store as it is
+          // built, which this bench does not provide.
+          overrides: [fakeRecentSearches(FakeRecentSearchesController())],
           child: Consumer(
             builder: (context, ref, _) {
               capturedRef = ref;
@@ -127,10 +134,33 @@ void main() {
       expect(recents.noted.last, (RecentSearchSurface.habits, ''));
     });
 
+    testWidgets('feeds nothing to Recents on the desktop layout, which '
+        'shows no Recents', (tester) async {
+      final recents = FakeRecentSearchesController();
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          mediaQueryData: phoneMediaQueryData.copyWith(
+            size: const Size(1280, 900),
+          ),
+          overrides: [fakeRecentSearches(recents)],
+          child: const HabitsSearchWidget(),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await tester.enterText(find.byType(TextField), 'Morning run');
+      await tester.pump();
+
+      expect(recents.noted, isEmpty);
+    });
+
     testWidgets('shows clear button when search has text', (tester) async {
       await tester.pumpWidget(
-        const RiverpodWidgetTestBench(
-          child: HabitsSearchWidget(),
+        RiverpodWidgetTestBench(
+          // The real Recents controller reads the settings store as it is
+          // built, which this bench does not provide.
+          overrides: [fakeRecentSearches(FakeRecentSearchesController())],
+          child: const HabitsSearchWidget(),
         ),
       );
       await tester.pump(const Duration(milliseconds: 100));
@@ -151,6 +181,9 @@ void main() {
 
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
+          // The real Recents controller reads the settings store as it is
+          // built, which this bench does not provide.
+          overrides: [fakeRecentSearches(FakeRecentSearchesController())],
           child: Consumer(
             builder: (context, ref, _) {
               capturedRef = ref;
@@ -181,8 +214,11 @@ void main() {
 
     testWidgets('search text persists across rebuilds', (tester) async {
       await tester.pumpWidget(
-        const RiverpodWidgetTestBench(
-          child: HabitsSearchWidget(),
+        RiverpodWidgetTestBench(
+          // The real Recents controller reads the settings store as it is
+          // built, which this bench does not provide.
+          overrides: [fakeRecentSearches(FakeRecentSearchesController())],
+          child: const HabitsSearchWidget(),
         ),
       );
       await tester.pump(const Duration(milliseconds: 100));
@@ -206,6 +242,9 @@ void main() {
 
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
+          // The real Recents controller reads the settings store as it is
+          // built, which this bench does not provide.
+          overrides: [fakeRecentSearches(FakeRecentSearchesController())],
           child: Consumer(
             builder: (context, ref, _) {
               capturedRef = ref;
@@ -234,6 +273,9 @@ void main() {
 
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
+          // The real Recents controller reads the settings store as it is
+          // built, which this bench does not provide.
+          overrides: [fakeRecentSearches(FakeRecentSearchesController())],
           child: Consumer(
             builder: (context, ref, _) {
               capturedRef = ref;

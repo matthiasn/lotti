@@ -3663,14 +3663,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Aktiviert die Matrix-Integration, um deine Einträge geräteübergreifend und mit anderen Matrix-Benutzern zu synchronisieren.';
 
   @override
-  String get configFlagEnableMobileSidebarNavigation =>
-      'Mobile Navigation als Seitenleiste';
-
-  @override
-  String get configFlagEnableMobileSidebarNavigationDescription =>
-      'Ersetze die Navigieren-Schaltfläche durch eine Menütaste unten links, die eine Seitenleiste mit allen Bereichen und deinen letzten Suchen öffnet.';
-
-  @override
   String get configFlagEnableNotificationsDescription =>
       'Erhalte Benachrichtigungen für Erinnerungen, Aktualisierungen und wichtige Ereignisse.';
 
@@ -9884,9 +9876,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get navTabTitleJournal => 'Logbuch';
-
-  @override
-  String get navTabTitleNavigate => 'Navigieren';
 
   @override
   String get navTabTitlePeople => 'Menschen';

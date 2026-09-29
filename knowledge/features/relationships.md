@@ -558,7 +558,8 @@ its own page on every layout. Phones keep the list alone.
 Adding a person is the page's bottom action, as adding a task is, never a
 header control: on desktop the list pane floats a worded "Add person"
 `DesignSystemFloatingActionButton`, on phones the mobile navigation launcher
-docks the same action (`peopleTabDockAction`) beside Navigate — see
+docks the same action (`peopleTabDockAction`) in the bottom-trailing corner,
+opposite the menu button — see
 [navigation](../architecture/navigation.md#the-launchers-row-and-the-page-action-docked-on-it).
 It is the one add control on every state of the list, the empty one
 included: the empty state adds no second one. It does say what the tab is

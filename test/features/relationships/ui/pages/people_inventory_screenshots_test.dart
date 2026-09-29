@@ -2706,7 +2706,7 @@ class _PeopleUnderLauncher extends StatelessWidget {
           right: 0,
           bottom: 0,
           child: MobileNavigationLauncher(
-            onNavigate: () {},
+            onOpenMenu: () {},
             pageAction: peopleTabDockAction(context),
           ),
         ),

@@ -85,13 +85,13 @@ class _BottomNavigationShellShowcase extends StatelessWidget {
           color: context.designTokens.colors.background.level01,
           child: SizedBox(
             height: 220,
-            // The mobile shell's navigation: the Navigate chip and, on the
-            // list tabs that hand one over, the page's create action docked
-            // beside it on the same glass row.
+            // The mobile shell's navigation: the menu button that opens the
+            // sidebar and, on the list tabs that hand one over, the page's
+            // create action in the opposite corner of the same row.
             child: Align(
               alignment: Alignment.bottomCenter,
               child: MobileNavigationLauncher(
-                onNavigate: () {},
+                onOpenMenu: () {},
                 pageAction: MobileNavDockAction.worded(
                   label: context.messages.addActionCreateTask,
                   icon: LottiIcons.add,

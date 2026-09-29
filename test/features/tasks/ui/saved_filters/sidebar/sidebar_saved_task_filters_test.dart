@@ -5,8 +5,8 @@ import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_provider.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
-import 'package:lotti/features/tasks/ui/saved_filters/desktop/sidebar_saved_task_filters.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filters_sheet.dart';
+import 'package:lotti/features/tasks/ui/saved_filters/sidebar/sidebar_saved_task_filters.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:material_ui/material_ui.dart';
@@ -48,6 +48,7 @@ Future<FakeJournalPageController> _pumpSidebar(
   WidgetTester tester, {
   List<SavedTaskFilter> saved = _saved,
   JournalPageState pageState = const JournalPageState(),
+  VoidCallback? onApplied,
 }) async {
   final page = FakeJournalPageController(pageState);
   await tester.pumpWidget(
@@ -57,7 +58,7 @@ Future<FakeJournalPageController> _pumpSidebar(
           alignment: Alignment.topLeft,
           child: SizedBox(
             width: dsTokensLight.spacing.step13 + dsTokensLight.spacing.step10,
-            child: const SidebarSavedTaskFilters(),
+            child: SidebarSavedTaskFilters(onApplied: onApplied),
           ),
         ),
       ),
@@ -202,6 +203,62 @@ void main() {
     expect(page.applyBatchFilterUpdateCalled, 2);
   });
 
+  group('onApplied', () {
+    testWidgets('fires once a saved filter has been applied', (tester) async {
+      late FakeJournalPageController page;
+      final appliedWith = <Set<String>>[];
+      page = await _pumpSidebar(
+        tester,
+        onApplied: () =>
+            appliedWith.add(page.setSelectedTaskStatusesCalls.last),
+      );
+
+      await tester.tap(
+        find.byKey(SidebarSavedTaskFiltersKeys.filter('blocked')),
+      );
+      await tester.pump();
+
+      // Called after the filter landed, not before: the page already holds
+      // the filter's statuses when the callback runs.
+      expect(appliedWith, [
+        {'BLOCKED'},
+      ]);
+    });
+
+    testWidgets('fires once All tasks has been applied', (tester) async {
+      late FakeJournalPageController page;
+      final appliedWith = <Set<String>>[];
+      page = await _pumpSidebar(
+        tester,
+        onApplied: () =>
+            appliedWith.add(page.setSelectedTaskStatusesCalls.last),
+      );
+
+      await tester.tap(find.byKey(SidebarSavedTaskFiltersKeys.allTasks));
+      await tester.pump();
+
+      expect(appliedWith, [<String>{}]);
+      expect(page.applyBatchFilterUpdateCalled, 1);
+    });
+
+    testWidgets('does not fire for Manage, More or Show fewer, which leave '
+        'the list where it is', (tester) async {
+      var applied = 0;
+      await _pumpSidebar(tester, onApplied: () => applied++);
+
+      await tester.tap(find.byKey(SidebarSavedTaskFiltersKeys.showMore));
+      await tester.pump();
+      await tester.tap(find.byKey(SidebarSavedTaskFiltersKeys.showLess));
+      await tester.pump();
+      await tester.tap(find.byKey(SidebarSavedTaskFiltersKeys.manage));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.byType(SavedTaskFiltersSheet), findsOneWidget);
+      expect(applied, 0);
+    });
+  });
+
   testWidgets('the manage action opens the saved-filters manager sheet', (
     tester,
   ) async {
@@ -235,5 +292,53 @@ void main() {
     expect(label.style?.fontSize, caption.fontSize);
     expect(count.style?.fontFamily, caption.fontFamily);
     expect(count.style?.fontSize, caption.fontSize);
+  });
+
+  group('tap targets', () {
+    Size inkSize(WidgetTester tester, Key rowKey) => tester.getSize(
+      find.descendant(of: find.byKey(rowKey), matching: find.byType(InkWell)),
+    );
+
+    List<Key> rowKeys() => [
+      SidebarSavedTaskFiltersKeys.allTasks,
+      SidebarSavedTaskFiltersKeys.filter('alpha'),
+      SidebarSavedTaskFiltersKeys.showMore,
+    ];
+
+    testWidgets('meet the touch floor on a compact window, where the list '
+        'rides the mobile drawer', (tester) async {
+      setTestSurfaceSize(tester, const Size(390, 844));
+      await _pumpSidebar(tester);
+
+      for (final key in rowKeys()) {
+        expect(
+          inkSize(tester, key).height,
+          greaterThanOrEqualTo(TapTargets.minimum),
+          reason: '$key',
+        );
+      }
+      final manage = tester.getSize(
+        find.byKey(SidebarSavedTaskFiltersKeys.manage),
+      );
+      expect(manage.width, greaterThanOrEqualTo(TapTargets.minimum));
+      expect(manage.height, greaterThanOrEqualTo(TapTargets.minimum));
+    });
+
+    testWidgets('stay pointer-sized on the desktop rail', (tester) async {
+      setTestSurfaceSize(tester, const Size(1280, 800));
+      await _pumpSidebar(tester);
+
+      for (final key in rowKeys()) {
+        expect(
+          inkSize(tester, key).height,
+          lessThan(TapTargets.minimum),
+          reason: '$key',
+        );
+      }
+      final manage = tester.getSize(
+        find.byKey(SidebarSavedTaskFiltersKeys.manage),
+      );
+      expect(manage.height, lessThan(TapTargets.minimum));
+    });
   });
 }

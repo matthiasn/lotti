@@ -5,7 +5,7 @@ description: The repeating patterns that are contract rather than coincidence �
 resource: ../../../lib/features/design_system/components
 tags: [design-system, components, accessibility, layout]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-28T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-29T12:00:00Z }
 stale_after: 2027-03-27
 sources:
   - id: components
@@ -453,8 +453,8 @@ glyph-only external destinations. Email comes first, followed by
 the Manual, GitHub and Discord. The envelope is intentionally no longer a
 labelled or otherwise privileged affordance: all four actions take the same
 target, icon theme, hover treatment, tooltip and semantic construction. The
-desktop sidebar pins the group beneath Settings; the mobile Navigate grid ends
-with it. See [navigation](../../architecture/navigation.md) for why nothing in
+desktop sidebar pins the group beneath Settings, and the mobile drawer — the
+same sidebar — carries it in the same `footerBand`. See [navigation](../../architecture/navigation.md) for why nothing in
 it is an app destination.
 
 **Its glyphs are deliberately not `DesignSystemIconAction`, and folding the two
@@ -657,10 +657,12 @@ their integration with the app shell, docked and slid away. The contract:
   existing page/FAB consumers without rebuilding their navigation stacks.
 - `MobileNavigationLauncher.barHeight(context)` owns launcher clearance, and is
   `chipHeight` plus one `spacing.step2` and the bottom inset (never less than
-  `spacing.step6`). `chipHeight` measures the localized Navigate label at the
-  current text scaler inside symmetric `spacing.step4` padding and never falls
-  below `TapTargets.minimum`. **Docking a page action does not change it** —
-  both chips share that one height, and so does the round button the action
+  `spacing.step6`). `chipHeight` is one `subtitle1` line — the larger of its
+  font size scaled by the current text scaler times its line height, and the
+  `lineHeight.subtitle1` token — inside symmetric `spacing.step4` padding, and
+  never falls below `TapTargets.minimum`; it is the menu button's diameter.
+  **Docking a page action does not change it** — both controls share that one
+  height, and so does the round button the action
   collapses to — so a page's clearance never moves as it gains or loses its
   action. The chips are `DsGlassPill` / `DsGlassRoundButton`
   ([glass_action_bar.dart](../../../lib/features/design_system/components/glass_action_bar.dart)):
@@ -691,24 +693,24 @@ their integration with the app shell, docked and slid away. The contract:
   half drops to its orb before anything truncates. The contract for *when*
   it shows is in
   [navigation](../../architecture/navigation.md#the-activity-island).
-- `MobileNavigationLauncher.labelsFit(context, action)` decides between the
-  two-label row and the glyph-only companion, budgeting `DsGlassPill.intrinsicWidth`
-  against `availableRowWidth`. The pill
+- `MobileNavigationLauncher.labelsFit(context, action)` decides whether a
+  worded action keeps its word, budgeting the menu button's one `chipHeight`
+  (the disc), `chipGap` and `DsGlassPill.intrinsicWidth` against
+  `availableRowWidth` — the window less its safe-area insets, the
+  `leadingGutter` (`spacing.step5`) before the menu button and the
+  `trailingGutter` (`spacing.step3`) after the action. The pill
   measures itself — padding, glyph, gap and label at the current text scale —
   because a caller that restated that arithmetic would drift silently the day
   the pill's own padding changed. The page
-  action is the half that gives: Navigate names the shell and has no icon-only
-  reading, while a `+` beside a list still reads as "add". It is consulted
+  action is the half that gives: the menu button is already a disc, while a
+  `+` beside a list still reads as "add". It is consulted
   only for a `MobileNavDockAction.worded` action — the two constructors carry
   the page's own decision about wording, the same one its floating button
-  made, and a `.glyph` action is a `DsGlassRoundButton` at every width. For
-  the sidebar arrangement (`MobileNavigationLauncher.sidebar`,
-  `opensSidebar: true`) the leading half is the round menu button, budgeted
-  as one `chipHeight` rather than a measured label.
+  made, and a `.glyph` action is a `DsGlassRoundButton` at every width.
 
 `DsGlassRoundButton` has two further rules. **`DsGlassRoundButton.glyph` takes
-a widget where the icon font has no matching mark** — the sidebar
-arrangement's menu button, around the two-stroke
+a widget where the icon font has no matching mark** — the mobile launcher's
+menu button, around the two-stroke
 [`DsMenuGlyph`](../../../lib/features/design_system/components/navigation/ds_menu_glyph.dart),
 is the case — and inks it through an `IconTheme` carrying `iconColor` and
 `iconSize`, so a painted mark tints and sizes exactly as an `Icon` would and
@@ -716,7 +718,8 @@ the button's chrome is never restated for the sake of one glyph. **A solid
 fill draws no edge at all.** A solid `backgroundColor` brings its own contrast
 (the recording mic's alert fill), so neither the glass hairline nor an
 `outlineColor` ring is drawn on it; the ring is a translucent button's way of
-reading as a peer of the bar's primary, as the idle mic does.
+reading as a peer of the bar's primary, as the idle mic does — and as the
+launcher's menu button does, wearing the accent as both ring and glyph ink.
 
 # Accessibility is enforced at construction
 

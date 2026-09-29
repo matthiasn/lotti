@@ -210,8 +210,9 @@ screenshot walk — both go through `bootStoreWorld` in
 between routes and holds still, this one moves the way a person does, and
 **only through what a phone can reach by touch**: it scrolls the task list,
 opens a task onto its cover art, ticks a checklist item, goes back, completes
-two habits through the Navigate sheet, and ends in the logbook, where both
-completions have just landed — what you did is what it keeps.
+two habits through the sidebar — the launcher's menu button opens the drawer
+and a tap on its Habits row goes there — and ends in the logbook, reached the
+same way, where both completions have just landed — what you did is what it keeps.
 Time analysis, which the screenshots show, is absent on purpose — its only entry
 point is the desktop sidebar, so on a phone the screenshot walk reaches it by
 route, and a video of a screen nobody can tap their way to would misdescribe

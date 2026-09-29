@@ -38,6 +38,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
 import 'package:lotti/features/design_system/theme/icon_tokens.dart';
 import 'package:lotti/features/habits/ui/habits_page.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_action_row.dart';
@@ -212,9 +213,10 @@ void main() {
     final task = harness.world.orbitalHabitatTask;
 
     final tasksPage = find.byType(TasksTabPage);
-    final navigate = find.descendant(
-      of: find.byType(MobileNavigationLauncher),
-      matching: find.text(messages.navTabTitleNavigate),
+    final openMenu = find.byKey(MobileNavigationLauncherKeys.menuButton);
+    Finder sidebarRow(String label) => find.descendant(
+      of: find.byType(DesktopNavigationSidebar),
+      matching: find.text(label),
     );
 
     // The host starts its recorder on this line and answers once the camera
@@ -258,11 +260,11 @@ void main() {
       );
     });
 
-    // 3. Habits, through the Navigate sheet, and two of them done for today.
+    // 3. Habits, through the sidebar, and two of them done for today.
     await walk.beat('habits', () async {
-      await walk.tap(navigate, then: const Duration(milliseconds: 900));
+      await walk.tap(openMenu, then: const Duration(milliseconds: 900));
       await walk.tap(
-        find.text(messages.navTabTitleHabits),
+        sidebarRow(messages.navTabTitleHabits),
         then: const Duration(milliseconds: 1400),
       );
       final completeHabit = find.descendant(
@@ -281,9 +283,9 @@ void main() {
     //    scrolling would push the two rows that close the story off the last
     //    frame.
     await walk.beat('logbook', () async {
-      await walk.tap(navigate, then: const Duration(milliseconds: 900));
+      await walk.tap(openMenu, then: const Duration(milliseconds: 900));
       await walk.tap(
-        find.text(messages.navTabTitleJournal),
+        sidebarRow(messages.navTabTitleJournal),
         then: const Duration(milliseconds: 600),
       );
       await pumpUntilFound(

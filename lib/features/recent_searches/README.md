@@ -1,12 +1,8 @@
 # Recent searches
 
 Remembers what the user searched for, anywhere in the app, and offers each
-search again from the mobile sidebar navigation's **Recents** section.
-
-It exists for one surface. The sidebar is an experiment behind
-`enable_mobile_sidebar_navigation`, and so is everything here: while that flag
-is off nothing is recorded, nothing is timed and the stored list is not even
-read.
+search again from the **Recents** section of the mobile sidebar — the drawer
+the launcher's menu button opens, which is the phone's navigation.
 
 ## What it does for the user
 
@@ -22,7 +18,9 @@ read.
   fragment instead of adding a second row; a repeat moves up instead of
   doubling; the list keeps the twelve most recent.
 - **Private by construction.** The list lives in the device's settings store
-  and is never synced. *Clear* empties it.
+  and is never synced. *Clear* empties it. Only searches run while the phone
+  layout is showing are remembered: the desktop layout has no Recents to show
+  them in, or to clear them from.
 - **No dead rows.** A search remembered in a section that has since been
   switched off is hidden until that section comes back — but *Clear* stays
   reachable while anything is stored, so hidden history can still be deleted.
@@ -42,7 +40,8 @@ the app shell decides which sections are offered and hosts the section in the
 sidebar's `belowDestinations` slot.
 
 Adding a search surface is one `RecentSearchSurface` value, its root path in
-`recent_search_opener.dart`, and one recording call at the new field.
+`recent_search_opener.dart`, and one recording call at the new field, made
+through `recentSearchRecorder` so it records only on a compact window.
 
 ## Where the code lives
 
@@ -53,12 +52,13 @@ lib/features/recent_searches/
 ├── state/recent_searches_repository.dart
 ├── state/recent_searches_controller.dart
 ├── ui/recent_searches_section.dart
-└── ui/recent_search_opener.dart
+├── ui/recent_search_opener.dart
+└── ui/recent_search_recorder.dart       records only on a compact window
 ```
 
 ## How it works
 
-The recording rules, the flag gate and its three states, the settle timer's
+The recording rules, how the stored list is loaded, the settle timer's
 lifecycle and the gotchas are in the knowledge bundle:
 
 **→ [knowledge/features/recent_searches.md](../../../knowledge/features/recent_searches.md)**

@@ -1,28 +1,24 @@
 ---
 type: Feature Module
 title: Recent searches
-description: The device-local list of searches run in Tasks, the Logbook, Projects and Habits that the mobile sidebar navigation offers again — what counts as one search, the flag gate that makes "off" cost nothing, and the settle timer's lifecycle.
+description: The device-local list of searches run in Tasks, the Logbook, Projects and Habits that the mobile sidebar offers again — where searches are recorded, what counts as one search, how the stored list is loaded, and the settle timer's lifecycle.
 resource: ../../lib/features/recent_searches
-tags: [recent-searches, search, navigation, mobile, config-flag]
+tags: [recent-searches, search, navigation, mobile]
 status: draft
-generated: { by: claude-code/fable-5.1, at: 2026-09-22T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-29T12:00:00Z }
 stale_after: 2027-03-21
 sources:
   - id: src
     resource: ../../lib/features/recent_searches
     title: Recent searches feature source
-    last_modified: 2026-09-22
+    last_modified: 2026-09-29
   - id: shell
     resource: ../../lib/beamer/beamer_app.dart
     title: App shell — hosts the Recents section in the mobile drawer
-    last_modified: 2026-09-22
+    last_modified: 2026-09-29
   - id: search-field
     resource: ../../lib/features/design_system/components/search/design_system_search.dart
     title: DesignSystemSearch — reports a clear as a change to the empty string
-    last_modified: 2026-09-21
-  - id: flag
-    resource: ../../lib/database/state/config_flag_provider.dart
-    title: configFlagProvider — the auto-disposing flag stream the gate listens to
     last_modified: 2026-09-21
 ---
 
@@ -33,10 +29,12 @@ widget reads it, and one function turns a row back into a search.
 
 ```mermaid
 flowchart LR
-  Tasks["Tasks header<br/>search field"] -->|noteQuery / record| Ctrl
-  Logbook["Logbook header<br/>search field"] -->|noteQuery / record| Ctrl
-  Projects["Projects header<br/>search field"] -->|noteQuery / record| Ctrl
-  Habits["HabitsSearchWidget"] -->|noteQuery| Ctrl
+  Tasks["Tasks header<br/>search field"] -->|noteQuery / record| Gate
+  Logbook["Logbook header<br/>search field"] -->|noteQuery / record| Gate
+  Projects["Projects header<br/>search field"] -->|noteQuery / record| Gate
+  Habits["HabitsSearchWidget"] -->|noteQuery| Gate
+  Gate{"recentSearchRecorder<br/>compact window?"} -->|yes| Ctrl
+  Gate -->|desktop: null| Drop["not remembered"]
   Ctrl["RecentSearchesController<br/>List&lt;RecentSearch&gt;"] <--> Repo["RecentSearchesRepository<br/>SettingsDb row RECENT_SEARCHES"]
   Ctrl --> Section["RecentSearchesSection<br/>(sidebar belowDestinations slot)"]
   Section -->|tap| Open["openRecentSearch"]
@@ -45,9 +43,20 @@ flowchart LR
   Open -->|record| Ctrl
 ```
 
-The module is a leaf of the [mobile sidebar navigation](../architecture/navigation.md#the-mobile-sidebar-navigation):
+The module is a leaf of the [mobile sidebar drawer](../architecture/navigation.md#the-drawer):
 the shell decides which surfaces are offered and hosts the section; nothing
-here knows the sidebar exists beyond the flag it shares with it.
+here knows the sidebar exists.
+
+# Only where Recents are shown
+
+Every field reaches the controller through `recentSearchRecorder(context,
+ref)`, which returns it on a compact window and null on the desktop layout.
+Recents are shown only in the mobile drawer, and the desktop layout neither
+lists them nor offers *Clear*, so a search run there is not remembered at all
+rather than piling up in a history the user cannot see or delete. The check
+runs at the moment of the search, so it follows the window's current width:
+narrowing a desktop window below the breakpoint brings the drawer, and
+recording, back.
 
 # What counts as one search
 
@@ -84,50 +93,17 @@ the state change and the write.
 Recording on one surface never removes or reorders another surface's entries;
 only the cap can trim the tail.
 
-# The flag gate
+# Loading the stored list
 
-The list has one reader, the sidebar's Recents section, and the sidebar is an
-experiment behind `enable_mobile_sidebar_navigation`. Because every search
-field in the app calls into this controller, **"off" has to mean no work at
-all** — no timer, no write, not even the settings read — or the experiment
-costs the users who never opted in.
+The controller reads the stored list as soon as it is built — by whichever
+caller reaches it first, often the first keystroke of a session or the first
+time the drawer opens — so the Recents section has it by the time it is
+shown. `build` returns the empty list and starts the read unawaited.
 
-The gate is a nullable bool fed by a `ref.listen` on `configFlagProvider`:
-
-```mermaid
-stateDiagram-v2
-  [*] --> Unknown: controller created (first keystroke or first drawer open)
-  Unknown --> On: flag stream emits true
-  Unknown --> Off: flag stream emits false, or errors
-  On --> Off: flag turned off — pending timers cancelled
-  Off --> On: flag turned on — stored list loaded
-  note right of Unknown
-    noteQuery still starts a timer;
-    the decision is taken when it fires.
-    record() awaits the first value.
-  end note
-  note right of Off
-    noteQuery and record return at once.
-    The store is never read.
-  end note
-```
-
-It is `listen`, not `watch`: a `watch` would re-run `build` on every flag
-emission and reset the list to empty. The listener is also what keeps the
-auto-disposing `configFlagProvider` alive, which is why `record` may safely
-`await` its `.future` for a submit that arrives before the first value — without
-a live subscription that read never resolves.
-
-**Unknown is not Off.** The controller is created lazily by whichever caller
-reaches it first, often the first keystroke of a session, when the flag has not
-reported yet. Treating that as off would silently drop the first search after
-every start. So a query noted while unknown is timed anyway, and the timer's
-`record` decides with whatever is known two seconds later.
-
-**The store is read once, and only when on.** `_ensureLoaded` memoizes a single
-`load()`; the listener starts it when the flag turns on, and `record` and
-`clear` await the same future. A record that beats the load therefore lands on
-top of the stored history instead of being overwritten by it.
+**The store is read once.** `_ensureLoaded` memoizes a single `load()`;
+`build` starts it, and `record` and `clear` await the same future. A record
+that beats the load therefore lands on top of the stored history instead of
+being overwritten by it.
 
 **A storage failure is reported, never thrown.** Every call reaches the
 controller unawaited from a search field, so an escaping error would be one
@@ -138,13 +114,11 @@ under `RecentSearchesController` instead, and the controller degrades:
 |---|---|
 | Reading the stored list | Only a *successful* read is memoized. The failed one is dropped, and the next caller reads again, so one bad read does not end Recents for the session. A `record` made while the list cannot be read is dropped — writing it would replace a history that was never read. A `clear` goes ahead: there is nothing it could bring back. |
 | Writing the list | The list in memory keeps what was recorded, and the next write carries it. |
-| The flag's first value, awaited by an early `record` | Read as off, as the listener reads a failing flag: nothing is recorded. |
 
 A failure that lands after the controller has been disposed is not reported:
 its caller's work ended with the controller.
 
-Turning the flag off does not delete what was recorded. It stays in the
-settings row and returns with the flag; *Clear* is how a user removes it.
+What was recorded stays in the settings row until *Clear* removes it.
 
 # A query's lifecycle
 
@@ -153,7 +127,7 @@ stateDiagram-v2
   [*] --> Settling: noteQuery, recordable text
   Settling --> Settling: noteQuery again — timer restarted
   Settling --> [*]: noteQuery with '' or one character — abandoned
-  Settling --> [*]: flag turns off, clear(), or controller disposed
+  Settling --> [*]: clear(), or controller disposed
   Settling --> Recorded: settleWindow elapses
   [*] --> Recorded: record() — submit, or a reused search
   Recorded --> [*]: written to SettingsDb
@@ -230,10 +204,6 @@ nothing stored does the section render nothing at all, heading included.
 
 # Gotchas
 
-- **The flag provider is auto-disposing.** Read its `.future` only while
-  something holds a subscription; the controller's own listener is that
-  something. A bare `container.read(configFlagProvider(x).future)` elsewhere
-  hangs.
 - **Settings-tree searches are deliberately absent.** The Config Flags,
   Definitions and AI Settings fields filter a settings list, not the user's
   content, and a row for them would have nowhere meaningful to beam.
@@ -249,6 +219,7 @@ nothing stored does the section render nothing at all, heading included.
 | Model, surfaces, storage format | [`domain/recent_search.dart`](../../lib/features/recent_searches/domain/recent_search.dart) |
 | What counts as one search | [`domain/recent_search_list.dart`](../../lib/features/recent_searches/domain/recent_search_list.dart) |
 | Settings-backed store | [`state/recent_searches_repository.dart`](../../lib/features/recent_searches/state/recent_searches_repository.dart) |
-| Flag gate, settle timers | [`state/recent_searches_controller.dart`](../../lib/features/recent_searches/state/recent_searches_controller.dart) |
+| Loading, settle timers, writes | [`state/recent_searches_controller.dart`](../../lib/features/recent_searches/state/recent_searches_controller.dart) |
+| Recording only on a compact window | [`ui/recent_search_recorder.dart`](../../lib/features/recent_searches/ui/recent_search_recorder.dart) |
 | The Recents section | [`ui/recent_searches_section.dart`](../../lib/features/recent_searches/ui/recent_searches_section.dart) |
 | Running a search again | [`ui/recent_search_opener.dart`](../../lib/features/recent_searches/ui/recent_search_opener.dart) |

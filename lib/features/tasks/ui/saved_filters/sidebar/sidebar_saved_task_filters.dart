@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
@@ -13,7 +14,7 @@ import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filters_
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Stable keys for the desktop sidebar's saved-filter secondary navigation.
+/// Stable keys for the sidebar's saved-filter secondary navigation.
 @visibleForTesting
 abstract final class SidebarSavedTaskFiltersKeys {
   static const Key root = Key('sidebar-saved-task-filters');
@@ -31,10 +32,26 @@ abstract final class SidebarSavedTaskFiltersKeys {
 /// Show fewer restores the compact state. There is deliberately no pinning
 /// model or upper limit: the sidebar itself scrolls, so users decide how much
 /// vertical space their expanded filter list consumes.
+///
+/// The same list rides the mobile drawer's Tasks row, which passes
+/// [onApplied] to close itself once a choice has landed. There every row and
+/// the Manage button grow to the touch floor ([TapTargets.minimum]); the
+/// desktop rail keeps its pointer-sized rows.
 class SidebarSavedTaskFilters extends ConsumerStatefulWidget {
-  const SidebarSavedTaskFilters({super.key});
+  const SidebarSavedTaskFilters({this.onApplied, super.key});
 
   static const int initialVisibleFilterCount = 5;
+
+  /// Called after a tap on All tasks or on a saved filter has applied it.
+  /// Not called for Manage, More or Show fewer, which leave the list where
+  /// it is.
+  final VoidCallback? onApplied;
+
+  /// The least height a row, and the least side the Manage button, takes:
+  /// the touch floor on a compact window — where this list only shows inside
+  /// the mobile drawer — and nothing beyond its content on the desktop rail.
+  static double minTapExtent(BuildContext context) =>
+      isDesktopLayout(context) ? 0 : TapTargets.minimum;
 
   @override
   ConsumerState<SidebarSavedTaskFilters> createState() =>
@@ -144,16 +161,20 @@ class _SidebarSavedTaskFiltersState
 
   Future<void> _applySaved(SavedTaskFilter filter) async {
     final mru = ref.read(savedTaskFilterMruProvider.notifier);
+    final onApplied = widget.onApplied;
     await SavedTaskFilterActivator(
       ref.read(journalPageControllerProvider(true).notifier),
     ).activate(filter);
     mru.touch(filter.id);
+    onApplied?.call();
   }
 
-  Future<void> _applyAll() {
-    return SavedTaskFilterActivator(
+  Future<void> _applyAll() async {
+    final onApplied = widget.onApplied;
+    await SavedTaskFilterActivator(
       ref.read(journalPageControllerProvider(true).notifier),
     ).clearToDefault();
+    onApplied?.call();
   }
 }
 
@@ -167,6 +188,7 @@ class _SectionHeader extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     final actionRadius = BorderRadius.circular(tokens.radii.s);
+    final minTapExtent = SidebarSavedTaskFilters.minTapExtent(context);
 
     return Padding(
       padding: EdgeInsetsDirectional.only(
@@ -201,12 +223,18 @@ class _SectionHeader extends StatelessWidget {
                     borderRadius: actionRadius,
                     hoverColor: tokens.colors.surface.hover,
                     focusColor: tokens.colors.surface.focusPressed,
-                    child: Padding(
-                      padding: EdgeInsets.all(tokens.spacing.step2),
-                      child: Icon(
-                        LottiIcons.tune,
-                        size: tokens.spacing.step4,
-                        color: tokens.colors.text.mediumEmphasis,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minWidth: minTapExtent,
+                        minHeight: minTapExtent,
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.all(tokens.spacing.step2),
+                        child: Icon(
+                          LottiIcons.tune,
+                          size: tokens.spacing.step4,
+                          color: tokens.colors.text.mediumEmphasis,
+                        ),
                       ),
                     ),
                   ),
@@ -274,41 +302,46 @@ class _FilterRow extends StatelessWidget {
                         child: SizedBox(width: tokens.spacing.step1),
                       ),
                     ),
-                  Padding(
-                    padding: EdgeInsetsDirectional.only(
-                      start: tokens.spacing.step4,
-                      top: tokens.spacing.step2,
-                      end: tokens.spacing.step3,
-                      bottom: tokens.spacing.step2,
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: SidebarSavedTaskFilters.minTapExtent(context),
                     ),
-                    child: Row(
-                      children: [
-                        leading,
-                        SizedBox(width: tokens.spacing.step3),
-                        Expanded(
-                          child: Tooltip(
-                            message: label,
-                            child: Text(
-                              label,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: tokens.typography.styles.others.caption
-                                  .copyWith(
-                                    color: tokens.colors.text.highEmphasis,
-                                    fontWeight: selected
-                                        ? tokens.typography.weight.semiBold
-                                        : null,
-                                  ),
+                    child: Padding(
+                      padding: EdgeInsetsDirectional.only(
+                        start: tokens.spacing.step4,
+                        top: tokens.spacing.step2,
+                        end: tokens.spacing.step3,
+                        bottom: tokens.spacing.step2,
+                      ),
+                      child: Row(
+                        children: [
+                          leading,
+                          SizedBox(width: tokens.spacing.step3),
+                          Expanded(
+                            child: Tooltip(
+                              message: label,
+                              child: Text(
+                                label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: tokens.typography.styles.others.caption
+                                    .copyWith(
+                                      color: tokens.colors.text.highEmphasis,
+                                      fontWeight: selected
+                                          ? tokens.typography.weight.semiBold
+                                          : null,
+                                    ),
+                              ),
                             ),
                           ),
-                        ),
-                        SizedBox(width: tokens.spacing.step2),
-                        SavedFilterCountText(
-                          count: count,
-                          selected: selected,
-                          minWidth: tokens.spacing.step6,
-                        ),
-                      ],
+                          SizedBox(width: tokens.spacing.step2),
+                          SavedFilterCountText(
+                            count: count,
+                            selected: selected,
+                            minWidth: tokens.spacing.step6,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -388,33 +421,38 @@ class _DisclosureRow extends StatelessWidget {
             borderRadius: radius,
             hoverColor: tokens.colors.surface.hover,
             focusColor: tokens.colors.surface.focusPressed,
-            child: Padding(
-              padding: EdgeInsetsDirectional.only(
-                start: tokens.spacing.step4,
-                top: tokens.spacing.step2,
-                end: tokens.spacing.step3,
-                bottom: tokens.spacing.step2,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: SidebarSavedTaskFilters.minTapExtent(context),
               ),
-              child: Row(
-                children: [
-                  Icon(
-                    icon,
-                    size: tokens.spacing.step4,
-                    color: tokens.colors.interactive.enabled,
-                  ),
-                  SizedBox(width: tokens.spacing.step3),
-                  Expanded(
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: tokens.typography.styles.others.caption.copyWith(
-                        color: tokens.colors.interactive.enabled,
-                        fontWeight: tokens.typography.weight.semiBold,
+              child: Padding(
+                padding: EdgeInsetsDirectional.only(
+                  start: tokens.spacing.step4,
+                  top: tokens.spacing.step2,
+                  end: tokens.spacing.step3,
+                  bottom: tokens.spacing.step2,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      icon,
+                      size: tokens.spacing.step4,
+                      color: tokens.colors.interactive.enabled,
+                    ),
+                    SizedBox(width: tokens.spacing.step3),
+                    Expanded(
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: tokens.colors.interactive.enabled,
+                          fontWeight: tokens.typography.weight.semiBold,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

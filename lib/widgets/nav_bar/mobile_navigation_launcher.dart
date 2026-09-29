@@ -11,23 +11,21 @@ import 'package:material_ui/material_ui.dart';
 /// Whether the mobile navigation launcher owns the bottom action row on the
 /// current surface.
 ///
-/// The launcher floats one centred control over the page instead of docking
-/// an edge-to-edge bar, which leaves the bottom-right corner — where a page
-/// would otherwise float its own action button — reading as a second,
-/// unrelated layer. While this is true a page hands its primary action to
-/// the launcher (see [MobileNavigationLauncher.pageAction]) rather than
-/// floating it above the launcher, so the two land on one row.
+/// The launcher floats its controls over the page instead of docking an
+/// edge-to-edge bar, so a page that floated its own action button in the
+/// bottom-trailing corner would put a second, unrelated control beside it.
+/// While this is true a page hands its primary action to the launcher (see
+/// [MobileNavigationLauncher.pageAction]) rather than floating it, so the
+/// two land on one row.
 ///
-/// True on every compact window: both mobile navigations float the
-/// launcher, the Navigate grid's centred row and the sidebar navigation's
-/// edge-pinned one alike. The desktop layout has none — the sidebar replaces
-/// the bottom navigation there — so floating actions keep their corner. This
+/// True on every compact window. The desktop layout has no launcher — the
+/// sidebar replaces it there — so floating actions keep their corner. This
 /// is the one place a page needs to ask.
 bool mobileNavigationLauncherOwnsPageActions(BuildContext context) =>
     !isDesktopLayout(context);
 
-/// A page-owned primary action docked beside the launcher's Navigate
-/// control while that page is the active tab.
+/// A page-owned primary action docked on the launcher's row, opposite the
+/// menu button, while that page is the active tab.
 ///
 /// Deliberately data, not a widget: the launcher owns the whole row's
 /// silhouette — one chip height, one radius, one glass treatment — so a
@@ -75,69 +73,52 @@ class MobileNavDockAction {
 /// Stable keys for the launcher's controls.
 @visibleForTesting
 abstract final class MobileNavigationLauncherKeys {
-  /// The sidebar navigation's menu button; see
-  /// [MobileNavigationLauncher.sidebar].
+  /// The menu button that opens the sidebar.
   static const Key menuButton = Key('mobile-navigation-menu-button');
 }
 
-/// The mobile navigation launcher: one floating glass row over the page.
+/// The mobile navigation launcher: one floating row over the page.
 ///
-/// The row holds the shell's navigation control and, on pages that hand one
-/// over, that page's primary action ([pageAction]) as an accent-filled peer
-/// of the same height. It comes in two arrangements, one per mobile
-/// navigation:
+/// A round menu button that opens the sidebar is pinned to the
+/// bottom-leading corner, and the active page's primary action
+/// ([pageAction]), on pages that hand one over, is pinned to the
+/// bottom-trailing one as an accent-filled peer of the same height. Both
+/// corners sit under the thumb, and the menu button never moves: it is in
+/// the same place on every tab whether or not the page docks an action.
 ///
-/// - **Navigate** (the default constructor): a labelled Navigate chip that
-///   opens the grid. The pair is centred as a group, so a page with an
-///   action reads as one deliberate cluster rather than a pill with
-///   something bolted to its side, and leaving that page returns the
-///   Navigate control to the centre on its own.
-/// - **Sidebar** ([MobileNavigationLauncher.sidebar]): a round menu button
-///   that opens the sidebar, pinned to the bottom-leading corner, and the
-///   page's action pinned to the bottom-trailing one. Both corners sit under
-///   the thumb, and the menu button never moves: it is in the same place on
-///   every tab whether or not the page docks an action.
+/// The menu button wears the accent as a ring and a glyph over the glass
+/// fill — the task action bar's record button, so the app's round
+/// lead-action buttons read as one family — and sits a wider gutter in from
+/// the leading edge than the action does from the trailing one, where a
+/// round control against the screen's rounded corner would otherwise read
+/// as crowded.
 ///
 /// The surrounding area stays transparent so the page remains visible; the
 /// shell owns the activity island (running timer / recording) floating
 /// above the row.
 class MobileNavigationLauncher extends StatelessWidget {
-  /// The Navigate arrangement: [onNavigate] opens the grid.
   const MobileNavigationLauncher({
-    required VoidCallback onNavigate,
+    required this.onOpenMenu,
     this.pageAction,
     super.key,
-  }) : onNavigationControl = onNavigate,
-       opensSidebar = false;
+  });
 
-  /// The sidebar arrangement: [onOpenMenu] opens the sidebar.
-  const MobileNavigationLauncher.sidebar({
-    required VoidCallback onOpenMenu,
-    this.pageAction,
-    super.key,
-  }) : onNavigationControl = onOpenMenu,
-       opensSidebar = true;
-
-  /// What the leading navigation control does: open the grid (the Navigate
-  /// chip) or the sidebar (the menu button), per [opensSidebar].
-  final VoidCallback onNavigationControl;
+  /// Opens the sidebar.
+  final VoidCallback onOpenMenu;
 
   /// The active page's primary action, or null when the page has none — the
-  /// navigation control then stands alone, centred or in its corner.
+  /// menu button then stands alone in its corner.
   final MobileNavDockAction? pageAction;
 
-  /// Whether this is the sidebar arrangement: a menu button pinned to the
-  /// leading edge rather than a Navigate chip centred with the action.
-  final bool opensSidebar;
-
-  /// Gap between the two chips, matching the task action bar's rhythm so
-  /// every glass row in the app spaces its controls identically.
+  /// The least the menu button and the page action may sit apart, matching
+  /// the task action bar's rhythm so every glass row in the app spaces its
+  /// controls identically.
   static double chipGap(BuildContext context) =>
       context.designTokens.spacing.step4;
 
   /// Height of one chip: a label line inside symmetric padding, never below
-  /// the tap-target floor. Both chips share it, so the row has one baseline
-  /// whether or not a page action is docked.
+  /// the tap-target floor. The menu button's diameter and the action's
+  /// height, so the row has one baseline whether or not an action is docked.
   static double chipHeight(BuildContext context) {
     final tokens = context.designTokens;
     return math.max(
@@ -153,67 +134,51 @@ class MobileNavigationLauncher extends StatelessWidget {
       context.designTokens.spacing.step2 +
       _bottomPadding(context);
 
-  /// Horizontal space the chip row gets, inside the launcher's own gutters
-  /// and the window's safe-area insets.
+  /// Gutter between the window's leading safe-area edge and the menu button.
+  static double leadingGutter(BuildContext context) =>
+      context.designTokens.spacing.step5;
+
+  /// Gutter between the page action and the window's trailing safe-area
+  /// edge.
+  static double trailingGutter(BuildContext context) =>
+      context.designTokens.spacing.step3;
+
+  /// Horizontal space the row gets, inside the launcher's own gutters and
+  /// the window's safe-area insets.
   static double availableRowWidth(BuildContext context) {
     final insets = MediaQuery.paddingOf(context);
     return MediaQuery.sizeOf(context).width -
         insets.left -
         insets.right -
-        context.designTokens.spacing.step3 * 2;
+        leadingGutter(context) -
+        trailingGutter(context);
   }
 
-  /// Whether the worded page action fits on the row beside the navigation
-  /// control with its label intact.
+  /// Whether the worded page action fits on the row beside the menu button
+  /// with its label intact.
   ///
-  /// Two worded chips on a phone are comfortable at the default text size
-  /// and impossible at the largest accessibility scales, where ellipsising
-  /// both would leave two unreadable stubs. Below the threshold the page
-  /// action drops to its glyph — still the same height, still the same
-  /// accent, still announcing its full name — and the Navigate control
-  /// keeps its word. It is the page action that gives because Navigate
-  /// names the shell and has no icon-only reading, while a `+` beside a
-  /// list still reads as "add".
-  ///
-  /// With [opensSidebar] the navigation control is the round menu button,
-  /// one chip height wide at every text scale, so the action keeps its word
-  /// far longer than beside the Navigate label.
+  /// At the largest accessibility text scales a worded action would be
+  /// ellipsised to an unreadable stub. Below the threshold it drops to its
+  /// glyph — still the same height, still the same accent, still announcing
+  /// its full name — since a `+` beside a list still reads as "add".
   ///
   /// Only consulted for a [MobileNavDockAction.worded] action; a
   /// [MobileNavDockAction.glyph] one is round at every width.
-  static bool labelsFit(
-    BuildContext context,
-    MobileNavDockAction action, {
-    bool opensSidebar = false,
-  }) =>
-      (opensSidebar
-              ? chipHeight(context)
-              : DsGlassPill.intrinsicWidth(
-                  context,
-                  label: context.messages.navTabTitleNavigate,
-                )) +
+  static bool labelsFit(BuildContext context, MobileNavDockAction action) =>
+      chipHeight(context) +
           chipGap(context) +
           DsGlassPill.intrinsicWidth(context, label: action.label) <=
       availableRowWidth(context);
 
+  /// One line of the chips' label style at the ambient text scale, never
+  /// shorter than the style's own line height.
   static double _labelLineHeight(BuildContext context) {
     final tokens = context.designTokens;
-    final painter = TextPainter(
-      text: TextSpan(
-        text: context.messages.navTabTitleNavigate,
-        style: tokens.typography.styles.subtitle.subtitle1,
-      ),
-      textDirection: Directionality.of(context),
-      textScaler: MediaQuery.textScalerOf(context),
-      locale: Localizations.maybeLocaleOf(context),
-      maxLines: 1,
-    )..layout();
-    final height = math.max(
-      painter.height,
+    final style = tokens.typography.styles.subtitle.subtitle1;
+    return math.max(
+      MediaQuery.textScalerOf(context).scale(style.fontSize!) * style.height!,
       tokens.typography.lineHeight.subtitle1,
     );
-    painter.dispose();
-    return height;
   }
 
   static double _bottomPadding(BuildContext context) => math.max(
@@ -224,111 +189,67 @@ class MobileNavigationLauncher extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final height = chipHeight(context);
+    final action = pageAction;
+    // The safe-area insets are physical; the gutters follow the reading
+    // direction.
+    final insets = MediaQuery.paddingOf(context);
+    final ltr = Directionality.of(context) == TextDirection.ltr;
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        MediaQuery.paddingOf(context).left + tokens.spacing.step3,
+      padding: EdgeInsetsDirectional.fromSTEB(
+        (ltr ? insets.left : insets.right) + leadingGutter(context),
         tokens.spacing.step2,
-        MediaQuery.paddingOf(context).right + tokens.spacing.step3,
+        (ltr ? insets.right : insets.left) + trailingGutter(context),
         _bottomPadding(context),
       ),
-      child: opensSidebar
-          ? _buildSidebarRow(context)
-          : _buildCentredRow(context),
-    );
-  }
-
-  Widget? _buildActionChip(BuildContext context, double height) {
-    final action = pageAction;
-    if (action == null) return null;
-    return _LauncherPageActionChip(
-      action: action,
-      height: height,
-      labeled:
-          action.worded &&
-          labelsFit(context, action, opensSidebar: opensSidebar),
-    );
-  }
-
-  Widget _buildCentredRow(BuildContext context) {
-    final height = chipHeight(context);
-    final actionChip = _buildActionChip(context, height);
-    return Row(
-      // Max, not min: the launcher spans the window (the shell positions
-      // it edge to edge) and centres its chips inside that span. A
-      // shrink-wrapped row would inherit whatever alignment its parent
-      // happened to impose, which is how a "centred" control ends up
-      // hugging the leading edge in a host that hands down loose
-      // constraints.
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Flexible(
-          child: DsGlassChipSurface(
-            radius: BorderRadius.circular(
-              context.designTokens.radii.badgesPills,
-            ),
+      child: Row(
+        children: [
+          // Translucent glass, blurred: the row floats over scrolling
+          // content, which the blur keeps legible behind the two strokes.
+          DsGlassChipSurface(
+            radius: BorderRadius.circular(height / 2),
             blurred: true,
-            child: DsGlassPill(
-              label: context.messages.navTabTitleNavigate,
-              icon: LottiIcons.menu,
-              onTap: onNavigationControl,
-              height: height,
+            child: DsGlassRoundButton.glyph(
+              key: MobileNavigationLauncherKeys.menuButton,
+              glyph: const DsMenuGlyph(),
+              semanticLabel: context.messages.navSidebarOpenLabel,
+              onPressed: onOpenMenu,
+              iconColor: tokens.colors.interactive.enabled,
+              outlineColor: tokens.colors.interactive.enabled,
+              diameter: height,
+              iconSize: IconSizes.l,
             ),
           ),
-        ),
-        if (actionChip != null) ...[
-          SizedBox(width: chipGap(context)),
-          Flexible(child: actionChip),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildSidebarRow(BuildContext context) {
-    final height = chipHeight(context);
-    final actionChip = _buildActionChip(context, height);
-    return Row(
-      children: [
-        // Translucent glass like the Navigate chip it stands in for: the
-        // row floats over scrolling content, which the blur keeps legible
-        // behind the two strokes.
-        DsGlassChipSurface(
-          radius: BorderRadius.circular(height / 2),
-          blurred: true,
-          child: DsGlassRoundButton.glyph(
-            key: MobileNavigationLauncherKeys.menuButton,
-            glyph: const DsMenuGlyph(),
-            semanticLabel: context.messages.navSidebarOpenLabel,
-            onPressed: onNavigationControl,
-            diameter: height,
-            iconSize: IconSizes.l,
-          ),
-        ),
-        if (actionChip != null) ...[
-          // The gap is the least the two may sit apart; the action takes
-          // whatever the row has left and hugs its trailing end.
-          SizedBox(width: chipGap(context)),
-          Expanded(
-            child: Align(
-              alignment: AlignmentDirectional.centerEnd,
-              // One chip tall, not as tall as the host allows: an unfactored
-              // Align fills any bounded height it is handed.
-              heightFactor: 1,
-              child: actionChip,
+          if (action != null) ...[
+            // The gap is the least the two may sit apart; the action takes
+            // whatever the row has left and hugs its trailing end.
+            SizedBox(width: chipGap(context)),
+            Expanded(
+              child: Align(
+                alignment: AlignmentDirectional.centerEnd,
+                // One chip tall, not as tall as the host allows: an
+                // unfactored Align fills any bounded height it is handed.
+                heightFactor: 1,
+                child: _LauncherPageActionChip(
+                  action: action,
+                  height: height,
+                  labeled: action.worded && labelsFit(context, action),
+                ),
+              ),
             ),
-          ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }
 
 /// The page action as it rides the launcher's row: the interactive accent
-/// on a chip the same height as the Navigate control beside it.
+/// on a chip the same height as the menu button across from it.
 ///
-/// Filled rather than translucent — it is the page's primary action, and a
-/// second glass chip would read as a pair of equals with nothing to choose
-/// between them. The fill is opaque, so it skips the backdrop blur its
-/// translucent neighbour needs.
+/// Filled rather than outlined — it is the page's primary action, and the
+/// row holds only one filled shape. The fill is opaque, so it skips the
+/// backdrop blur the translucent menu button needs.
 class _LauncherPageActionChip extends StatelessWidget {
   const _LauncherPageActionChip({
     required this.action,

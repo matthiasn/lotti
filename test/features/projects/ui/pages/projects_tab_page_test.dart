@@ -947,6 +947,30 @@ void main() {
     expect(recents.noted.last, (RecentSearchSurface.projects, ''));
   });
 
+  testWidgets(
+    'feeds nothing to Recents on the desktop layout, which shows no Recents',
+    (
+      tester,
+    ) async {
+      setTestSurfaceSize(tester, const Size(1280, 900));
+      final recents = FakeRecentSearchesController();
+      await pumpPage(
+        tester,
+        groups: [buildWorkGroup(), buildStudyGroup()],
+        overrideVisibleGroups: false,
+        extraOverrides: [fakeRecentSearches(recents)],
+      );
+
+      await tester.enterText(find.byType(TextField), 'sync');
+      await tester.pump();
+      await tester.tap(find.byIcon(LottiIcons.search));
+      await tester.pump();
+
+      expect(recents.noted, isEmpty);
+      expect(recents.recorded, isEmpty);
+    },
+  );
+
   testWidgets('shows loading indicator while data is loading', (
     tester,
   ) async {

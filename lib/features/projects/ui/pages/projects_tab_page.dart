@@ -32,7 +32,7 @@ import 'package:lotti/features/projects/ui/widgets/projects_filter_modal.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_overview_content.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/features/recent_searches/domain/recent_search.dart';
-import 'package:lotti/features/recent_searches/state/recent_searches_controller.dart';
+import 'package:lotti/features/recent_searches/ui/recent_search_recorder.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -375,11 +375,13 @@ class _ProjectsListScaffold extends ConsumerWidget {
                       ref
                           .read(projectsFilterControllerProvider.notifier)
                           .setTextQuery(value);
-                      // Feeds the mobile sidebar's Recents list; a cleared
-                      // field arrives here too, as a change to ''.
-                      ref
-                          .read(recentSearchesControllerProvider.notifier)
-                          .noteQuery(RecentSearchSurface.projects, value);
+                      // Feeds the mobile sidebar's Recents list on a
+                      // compact window; a cleared field arrives here too,
+                      // as a change to ''.
+                      recentSearchRecorder(
+                        context,
+                        ref,
+                      )?.noteQuery(RecentSearchSurface.projects, value);
                     },
                     onSearchCleared: () {
                       ref
@@ -391,9 +393,10 @@ class _ProjectsListScaffold extends ConsumerWidget {
                           .read(projectsFilterControllerProvider.notifier)
                           .setTextQuery(value);
                       unawaited(
-                        ref
-                            .read(recentSearchesControllerProvider.notifier)
-                            .record(RecentSearchSurface.projects, value),
+                        recentSearchRecorder(
+                          context,
+                          ref,
+                        )?.record(RecentSearchSurface.projects, value),
                       );
                     },
                     onFilterPressed: () => showProjectsFilterModal(

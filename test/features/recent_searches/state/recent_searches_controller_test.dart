@@ -3,12 +3,10 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/recent_searches/domain/recent_search.dart';
 import 'package:lotti/features/recent_searches/state/recent_searches_controller.dart';
 import 'package:lotti/features/recent_searches/state/recent_searches_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -30,14 +28,13 @@ RecentSearch _search(RecentSearchSurface surface, String query) =>
 int _settleTimers(FakeAsync async) =>
     async.pendingTimers.where((timer) => timer.duration == _settle).length;
 
-/// A controller over a mocked store and a flag stream the test owns.
+/// A controller over a mocked store.
 ///
 /// Built inside the test's `fakeAsync` zone, so the settle timers it creates
 /// run on the fake clock.
 class _Bench {
   _Bench(
     FakeAsync async, {
-    Stream<bool>? flag,
     Future<List<RecentSearch>> Function()? load,
     Future<void> Function()? save,
   }) {
@@ -49,13 +46,10 @@ class _Bench {
       overrides: [
         recentSearchesRepositoryProvider.overrideWithValue(repository),
         loggingServiceProvider.overrideWithValue(logging),
-        configFlagProvider(
-          enableMobileSidebarNavigationFlag,
-        ).overrideWith((ref) => flag ?? Stream.value(true)),
       ],
     );
-    // Hold the provider the way the sidebar does, then let the flag's first
-    // value and the stored list arrive.
+    // Hold the provider the way the sidebar does, then let the stored list
+    // arrive.
     container.listen(recentSearchesControllerProvider, (_, _) {});
     async.flushMicrotasks();
   }
@@ -110,22 +104,6 @@ void main() {
       });
     });
 
-    test('never reads the store while the flag is off', () {
-      fakeAsync((async) {
-        final bench = _Bench(async, flag: Stream.value(false));
-        addTearDown(bench.container.dispose);
-
-        bench.controller.noteQuery(_tasks, 'penguin');
-        unawaited(bench.controller.record(_tasks, 'penguin'));
-        async.elapse(_settle);
-
-        // Every search field in the app calls in here, so with the
-        // experiment off this must cost nothing — not even a settings read.
-        verifyNever(bench.repository.load);
-        expect(bench.state, isEmpty);
-      });
-    });
-
     test('reads the store once, however many callers need the list', () {
       fakeAsync((async) {
         final bench = _Bench(async);
@@ -137,28 +115,6 @@ void main() {
         async.flushMicrotasks();
 
         verify(bench.repository.load).called(1);
-      });
-    });
-
-    test('loads the history when the flag turns on later', () {
-      fakeAsync((async) {
-        final flag = StreamController<bool>();
-        final stored = [_search(_tasks, 'fish feeder')];
-        final bench = _Bench(
-          async,
-          flag: flag.stream,
-          load: () async => stored,
-        );
-        addTearDown(bench.container.dispose);
-        flag.add(false);
-        async.flushMicrotasks();
-        expect(bench.state, isEmpty);
-
-        flag.add(true);
-        async.flushMicrotasks();
-
-        expect(bench.state, stored);
-        unawaited(flag.close());
       });
     });
 
@@ -245,79 +201,6 @@ void main() {
         expect(bench.state, [_search(_habits, 'run'), _search(_tasks, 'fish')]);
       });
     });
-
-    test('times nothing while the flag is off', () {
-      fakeAsync((async) {
-        final bench = _Bench(async, flag: Stream.value(false));
-        addTearDown(bench.container.dispose);
-
-        bench.controller.noteQuery(_tasks, 'penguin');
-
-        expect(_settleTimers(async), 0);
-        async.elapse(_settle);
-        expect(bench.state, isEmpty);
-        bench.expectNothingSaved();
-      });
-    });
-
-    test('drops what was settling when the flag turns off', () {
-      fakeAsync((async) {
-        final flag = StreamController<bool>();
-        final bench = _Bench(async, flag: flag.stream);
-        addTearDown(bench.container.dispose);
-        flag.add(true);
-        async.flushMicrotasks();
-
-        bench.controller.noteQuery(_tasks, 'penguin');
-        flag.add(false);
-        async.flushMicrotasks();
-
-        expect(_settleTimers(async), 0);
-        async.elapse(_settle);
-        expect(bench.state, isEmpty);
-        unawaited(flag.close());
-      });
-    });
-
-    // A query can be typed before the flag has reported at all; the timer
-    // runs and the decision is taken with whatever is known when it fires.
-    for (final flagValue in [true, false]) {
-      test('a query noted before the flag reports is decided by '
-          'flag=$flagValue', () {
-        fakeAsync((async) {
-          final flag = StreamController<bool>();
-          final bench = _Bench(async, flag: flag.stream);
-          addTearDown(bench.container.dispose);
-
-          bench.controller.noteQuery(_tasks, 'penguin');
-          expect(_settleTimers(async), 1);
-          flag.add(flagValue);
-          async
-            ..flushMicrotasks()
-            ..elapse(_settle);
-
-          expect(
-            bench.state,
-            flagValue ? [_search(_tasks, 'penguin')] : isEmpty,
-          );
-          unawaited(flag.close());
-        });
-      });
-    }
-
-    test('treats a failing flag read as off', () {
-      fakeAsync((async) {
-        final bench = _Bench(
-          async,
-          flag: Stream<bool>.error(StateError('no database')),
-        );
-        addTearDown(bench.container.dispose);
-
-        bench.controller.noteQuery(_tasks, 'penguin');
-
-        expect(_settleTimers(async), 0);
-      });
-    });
   });
 
   group('RecentSearchesController.record', () {
@@ -349,68 +232,6 @@ void main() {
         bench.expectNothingSaved();
       });
     });
-
-    test('records nothing when the flag turns off while the stored list is '
-        'still loading', () {
-      fakeAsync((async) {
-        final flag = StreamController<bool>();
-        final load = Completer<List<RecentSearch>>();
-        final bench = _Bench(async, flag: flag.stream, load: () => load.future);
-        addTearDown(bench.container.dispose);
-        flag.add(true);
-        async.flushMicrotasks();
-
-        // The submit passes the flag check, then waits on the slow read…
-        unawaited(bench.controller.record(_tasks, 'penguin'));
-        async.flushMicrotasks();
-        // …during which the user switches the sidebar off.
-        flag.add(false);
-        async.flushMicrotasks();
-
-        load.complete([_search(_tasks, 'fish')]);
-        async.flushMicrotasks();
-
-        expect(bench.state, [_search(_tasks, 'fish')]);
-        bench.expectNothingSaved();
-        unawaited(flag.close());
-      });
-    });
-
-    test('does nothing while the flag is off', () {
-      fakeAsync((async) {
-        final bench = _Bench(async, flag: Stream.value(false));
-        addTearDown(bench.container.dispose);
-
-        unawaited(bench.controller.record(_tasks, 'penguin'));
-        async.flushMicrotasks();
-
-        expect(bench.state, isEmpty);
-        bench.expectNothingSaved();
-      });
-    });
-
-    for (final flagValue in [true, false]) {
-      test('a submit that beats the flag waits for flag=$flagValue', () {
-        fakeAsync((async) {
-          final flag = StreamController<bool>();
-          final bench = _Bench(async, flag: flag.stream);
-          addTearDown(bench.container.dispose);
-
-          unawaited(bench.controller.record(_tasks, 'penguin'));
-          async.flushMicrotasks();
-          expect(bench.state, isEmpty);
-
-          flag.add(flagValue);
-          async.flushMicrotasks();
-
-          expect(
-            bench.state,
-            flagValue ? [_search(_tasks, 'penguin')] : isEmpty,
-          );
-          unawaited(flag.close());
-        });
-      });
-    }
   });
 
   group('RecentSearchesController.clear', () {
@@ -589,27 +410,8 @@ void main() {
 
         expect(bench.state, isEmpty);
         expect(bench.saved.single, isEmpty);
-        // The flag's read and the clear's own.
+        // The read the controller starts on build, and the clear's own.
         bench.expectReported('load', 2);
-      });
-    });
-
-    test('a submit whose flag read fails is dropped, as the listener drops '
-        'a failing flag', () {
-      fakeAsync((async) {
-        final flag = StreamController<bool>();
-        final bench = _Bench(async, flag: flag.stream);
-        addTearDown(bench.container.dispose);
-
-        unawaited(bench.controller.record(_tasks, 'penguin'));
-        async.flushMicrotasks();
-        flag.addError(StateError('no database'));
-        async.flushMicrotasks();
-
-        expect(bench.state, isEmpty);
-        bench.expectNothingSaved();
-        verifyNever(bench.repository.load);
-        unawaited(flag.close());
       });
     });
 
@@ -667,28 +469,5 @@ void main() {
         });
       });
     }
-
-    test('a submit still waiting for the flag ends with the container', () {
-      fakeAsync((async) {
-        final flag = StreamController<bool>();
-        final bench = _Bench(async, flag: flag.stream);
-        final controller = bench.controller;
-
-        var settled = false;
-        unawaited(
-          controller
-              .record(_tasks, 'penguin')
-              .then((_) => settled = true, onError: (_) => settled = true),
-        );
-        async.flushMicrotasks();
-        bench.container.dispose();
-        flag.add(true);
-        async.flushMicrotasks();
-
-        bench.expectNothingSaved();
-        expect(settled, isTrue);
-        unawaited(flag.close());
-      });
-    });
   });
 }
