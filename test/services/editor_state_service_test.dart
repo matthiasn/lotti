@@ -589,6 +589,268 @@ void main() {
       });
     });
 
+    group('draftVersion and draftOn', () {
+      final typedAgainst = DateTime(2026, 9, 28, 14);
+      const draft = r'[{"insert":"typed\n"}]';
+
+      test('hold nothing for an entry without a draft', () {
+        expect(editorStateService.draftVersion('entry-a'), isNull);
+        expect(editorStateService.draftOn('entry-a', typedAgainst), isNull);
+      });
+
+      test('a typed draft is on the version it was typed against', () {
+        editorStateService.saveTempState(
+          id: 'entry-a',
+          lastSaved: typedAgainst,
+          json: draft,
+        );
+
+        expect(editorStateService.draftVersion('entry-a'), typedAgainst);
+        expect(editorStateService.draftOn('entry-a', typedAgainst), draft);
+      });
+
+      test('draftOn withholds a draft typed against another version', () {
+        editorStateService.saveTempState(
+          id: 'entry-a',
+          lastSaved: typedAgainst,
+          json: draft,
+        );
+
+        expect(
+          editorStateService.draftOn(
+            'entry-a',
+            typedAgainst.add(const Duration(minutes: 5)),
+          ),
+          isNull,
+        );
+      });
+
+      test('a draft restored at startup is on the version it was typed '
+          'against', () async {
+        when(() => mockEditorDb.allDrafts()).thenAnswer(
+          (_) => FakeDraftsQueryWithData([
+            EditorDraftState(
+              id: 'draft-id',
+              entryId: 'entry-a',
+              status: 'DRAFT',
+              createdAt: testEpochDateTime,
+              delta: draft,
+              lastSaved: typedAgainst,
+            ),
+          ]),
+        );
+        when(
+          () => mockJournalDb.journalEntitiesByIdsUnorderedAllPrivate(any()),
+        ).thenAnswer(
+          (_) => FakeJournalEntitiesQuery(<JournalDbEntity>[
+            FakeJournalDbEntity(id: 'entry-a', updatedAt: typedAgainst),
+          ]),
+        );
+
+        final service = EditorStateService();
+        await service.init();
+
+        expect(service.draftOn('entry-a', typedAgainst), draft);
+      });
+
+      test('a draft loaded for an open editor is on the version it was '
+          'typed against', () async {
+        when(
+          () => mockEditorDb.getLatestDraft(
+            'entry-a',
+            lastSaved: typedAgainst,
+          ),
+        ).thenAnswer(
+          (_) async => EditorDraftState(
+            id: 'draft-id',
+            entryId: 'entry-a',
+            status: 'DRAFT',
+            createdAt: testEpochDateTime,
+            delta: draft,
+            lastSaved: typedAgainst,
+          ),
+        );
+
+        await expectLater(
+          editorStateService.getUnsavedStream('entry-a', typedAgainst),
+          emitsInOrder([false, true]),
+        );
+
+        expect(editorStateService.draftOn('entry-a', typedAgainst), draft);
+      });
+    });
+
+    group('draftWasStored', () {
+      final typedAgainst = DateTime(2026, 9, 28, 14);
+      final storedAs = DateTime(2026, 9, 28, 14, 5);
+      const draft = r'[{"insert":"typed\n"}]';
+      const typedMeanwhile = r'[{"insert":"typed more\n"}]';
+
+      setUp(() {
+        when(
+          () => mockEditorDb.rebaseDraft(
+            entryId: any(named: 'entryId'),
+            from: any(named: 'from'),
+            to: any(named: 'to'),
+          ),
+        ).thenAnswer((_) async => 1);
+        // The real two-second debounce, so a write is actually pending.
+        final wasTestEnv = platform_utils.isTestEnv;
+        platform_utils.isTestEnv = false;
+        addTearDown(() => platform_utils.isTestEnv = wasTestEnv);
+      });
+
+      test('the stored draft is saved: forgotten, its rows marked saved '
+          'under either version, and the editor told', () {
+        fakeAsync((async) {
+          when(
+            () => mockEditorDb.getLatestDraft(
+              any(),
+              lastSaved: any(named: 'lastSaved'),
+            ),
+          ).thenAnswer((_) async => null);
+          final unsaved = <bool>[];
+          editorStateService
+              .getUnsavedStream('entry-a', typedAgainst)
+              .listen(unsaved.add);
+          editorStateService
+            ..saveTempState(
+              id: 'entry-a',
+              lastSaved: typedAgainst,
+              json: draft,
+            )
+            ..draftWasStored(
+              id: 'entry-a',
+              draft: draft,
+              from: typedAgainst,
+              to: storedAs,
+            );
+          async.elapse(const Duration(seconds: 3));
+
+          expect(editorStateService.entryIsUnsaved('entry-a'), isFalse);
+          expect(editorStateService.draftVersion('entry-a'), isNull);
+          expect(editorStateService.storedDraftVersion('entry-a'), storedAs);
+          expect(unsaved.last, isFalse);
+          verify(
+            () => mockEditorDb.setDraftSaved(
+              entryId: 'entry-a',
+              lastSaved: typedAgainst,
+            ),
+          ).called(1);
+          verify(
+            () => mockEditorDb.setDraftSaved(
+              entryId: 'entry-a',
+              lastSaved: storedAs,
+            ),
+          ).called(1);
+          // The debounced write of the stored draft never lands.
+          verifyNever(
+            () => mockEditorDb.insertDraftState(
+              entryId: any(named: 'entryId'),
+              lastSaved: any(named: 'lastSaved'),
+              draftDeltaJson: any(named: 'draftDeltaJson'),
+            ),
+          );
+        });
+      });
+
+      test('a draft typed while the write ran stays unsaved, moved onto '
+          'the stored version', () {
+        fakeAsync((async) {
+          editorStateService
+            ..saveTempState(
+              id: 'entry-a',
+              lastSaved: typedAgainst,
+              json: typedMeanwhile,
+            )
+            ..draftWasStored(
+              id: 'entry-a',
+              draft: draft,
+              from: typedAgainst,
+              to: storedAs,
+            );
+          async.elapse(const Duration(seconds: 3));
+
+          expect(editorStateService.entryIsUnsaved('entry-a'), isTrue);
+          expect(
+            editorStateService.draftOn('entry-a', storedAs),
+            typedMeanwhile,
+          );
+          expect(editorStateService.storedDraftVersion('entry-a'), isNull);
+          verifyNever(
+            () => mockEditorDb.setDraftSaved(
+              entryId: any(named: 'entryId'),
+              lastSaved: any(named: 'lastSaved'),
+            ),
+          );
+          verify(
+            () => mockEditorDb.rebaseDraft(
+              entryId: 'entry-a',
+              from: typedAgainst,
+              to: storedAs,
+            ),
+          ).called(1);
+          verify(
+            () => mockEditorDb.insertDraftState(
+              entryId: 'entry-a',
+              lastSaved: storedAs,
+              draftDeltaJson: typedMeanwhile,
+            ),
+          ).called(1);
+        });
+      });
+
+      group('the stored version is forgotten', () {
+        /// Stores [draft] through [EditorStateService.draftWasStored], so
+        /// the stored version is recorded.
+        Future<void> storeDraft() async {
+          editorStateService.saveTempState(
+            id: 'entry-a',
+            lastSaved: typedAgainst,
+            json: draft,
+          );
+          await editorStateService.draftWasStored(
+            id: 'entry-a',
+            draft: draft,
+            from: typedAgainst,
+            to: storedAs,
+          );
+          expect(editorStateService.storedDraftVersion('entry-a'), storedAs);
+        }
+
+        test('when the entry is saved', () async {
+          await storeDraft();
+
+          await editorStateService.entryWasSaved(
+            id: 'entry-a',
+            lastSaved: storedAs,
+            controller: FakeQuillController(),
+          );
+
+          expect(editorStateService.storedDraftVersion('entry-a'), isNull);
+        });
+
+        test('when the draft is discarded', () async {
+          await storeDraft();
+
+          await editorStateService.dropDraft(
+            id: 'entry-a',
+            lastSaved: storedAs,
+          );
+
+          expect(editorStateService.storedDraftVersion('entry-a'), isNull);
+        });
+
+        test('when every draft is reset', () async {
+          await storeDraft();
+
+          editorStateService.resetDrafts();
+
+          expect(editorStateService.storedDraftVersion('entry-a'), isNull);
+        });
+      });
+    });
+
     test(
       'resetDrafts forgets every draft, cancels pending writes and tells '
       'open editors they are saved',

@@ -51,14 +51,22 @@ String quillJsonFromDelta(Delta delta) {
 /// Snapshots a Quill `controller` into an [EntryText] holding all three
 /// representations the app stores: plain text, markdown, and the Quill JSON
 /// delta. This is the canonical editor → persistence conversion.
-EntryText entryTextFromController(QuillController controller) {
-  final delta = deltaFromController(controller);
-  final json = quillJsonFromDelta(delta);
-  final markdown = deltaToMarkdown(json);
+EntryText entryTextFromController(QuillController controller) =>
+    _entryTextFromDocument(controller.document);
+
+/// The [EntryText] of a serialized Quill JSON document — the form an unsaved
+/// editor draft is held in — for persisting a draft without an editor open
+/// on it.
+EntryText entryTextFromQuillJson(String quillJson) => _entryTextFromDocument(
+  Document.fromJson(json.decode(quillJson) as List<dynamic>),
+);
+
+EntryText _entryTextFromDocument(Document document) {
+  final json = quillJsonFromDelta(document.toDelta());
 
   return EntryText(
-    plainText: controller.document.toPlainText(),
-    markdown: markdown,
+    plainText: document.toPlainText(),
+    markdown: deltaToMarkdown(json),
     quill: json,
   );
 }

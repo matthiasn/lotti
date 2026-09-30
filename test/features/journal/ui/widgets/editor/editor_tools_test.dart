@@ -2,6 +2,8 @@
 // deliberately to exercise the real paste precedence end to end.
 // ignore_for_file: cascade_invocations, experimental_member_use
 
+import 'dart:convert';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_quill/quill_delta.dart';
@@ -442,6 +444,35 @@ Done ✅'''
       expect(entryText.plainText, 'Hello world\n');
       expect(entryText.markdown, 'Hello world\n');
       expect(entryText.quill, r'[{"insert":"Hello world\n"}]');
+    });
+  });
+
+  group('entryTextFromQuillJson', () {
+    test('holds the plain text, markdown and quill JSON of the '
+        'document', () {
+      final quill = jsonEncode([
+        {'insert': 'Fed the '},
+        {
+          'insert': 'fish',
+          'attributes': {'bold': true},
+        },
+        {'insert': '\n'},
+      ]);
+
+      final entryText = entryTextFromQuillJson(quill);
+
+      expect(entryText.plainText, 'Fed the fish\n');
+      expect(entryText.markdown, 'Fed the **fish**\n');
+      expect(entryText.quill, quill);
+    });
+
+    test('matches what the editor holding the same document saves', () {
+      const quill = r'[{"insert":"line one\nline two\n"}]';
+
+      expect(
+        entryTextFromQuillJson(quill),
+        entryTextFromController(makeController(serializedQuill: quill)),
+      );
     });
   });
 

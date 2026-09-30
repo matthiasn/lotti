@@ -4387,11 +4387,14 @@ void main() {
 
       /// Opens the controller on [testTextEntry], lets its deferred
       /// setController run, then delivers one update notification after
-      /// which the database holds [next]. Returns the notifier and the editor
-      /// controller it had before the update.
+      /// which the database holds the entry [next] returns — called on the
+      /// open notifier, so it can type into the editor first — and then one
+      /// more for each of [thenStored], in order. Returns the notifier and the
+      /// editor controller it had before the first update.
       Future<(EntryController, QuillController)> openThenUpdate(
-        JournalEntity next,
-      ) async {
+        JournalEntity Function(EntryController notifier) next, {
+        List<JournalEntity> thenStored = const [],
+      }) async {
         final streamController = StreamController<Set<String>>.broadcast();
         addTearDown(streamController.close);
         when(
@@ -4403,9 +4406,10 @@ void main() {
           ).thenAnswer((_) => Stream<Set<String>>.fromIterable([])),
         );
         var fetchCount = 0;
+        late JournalEntity stored;
         when(
           () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
-        ).thenAnswer((_) async => ++fetchCount == 1 ? testTextEntry : next);
+        ).thenAnswer((_) async => ++fetchCount == 1 ? testTextEntry : stored);
         addTearDown(
           () => when(
             () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
@@ -4418,12 +4422,48 @@ void main() {
         await container.read(provider.future);
         await container.pump();
         final editorBefore = notifier.controller;
+        stored = next(notifier);
+        // Lets an edit made by [next] reach the controller first.
+        await container.pump();
 
         streamController.add({testTextEntry.meta.id});
         await container.pump();
         await container.read(provider.future);
-        expect(container.read(provider).value?.entry, next);
+        expect(container.read(provider).value?.entry, stored);
+        for (final entry in thenStored) {
+          stored = entry;
+          streamController.add({testTextEntry.meta.id});
+          await container.pump();
+          await container.read(provider.future);
+          expect(container.read(provider).value?.entry, entry);
+        }
         return (notifier, editorBefore);
+      }
+
+      /// Makes the editor state report an unsaved draft of the entry, as
+      /// when more was typed while the autosave of an earlier one ran.
+      void holdUnsavedDraft() {
+        when(
+          () => mockEditorStateService.entryIsUnsaved(testTextEntry.meta.id),
+        ).thenReturn(true);
+        addTearDown(
+          () => when(
+            () => mockEditorStateService.entryIsUnsaved(any()),
+          ).thenReturn(false),
+        );
+      }
+
+      /// Makes the editor state report its held draft of the entry as being
+      /// on [version].
+      void holdDraftOn(DateTime version) {
+        when(
+          () => mockEditorStateService.draftVersion(testTextEntry.meta.id),
+        ).thenReturn(version);
+        addTearDown(
+          () => when(
+            () => mockEditorStateService.draftVersion(any()),
+          ).thenReturn(null),
+        );
       }
 
       /// Types one character, and returns the entry version the resulting
@@ -4454,7 +4494,7 @@ void main() {
 
       test('keeps the editor controller, so an open editor keeps its '
           'cursor', () async {
-        final (notifier, editorBefore) = await openThenUpdate(autosaved);
+        final (notifier, editorBefore) = await openThenUpdate((_) => autosaved);
 
         expect(notifier.controller, same(editorBefore));
       });
@@ -4463,7 +4503,7 @@ void main() {
           'state has loaded it, and keys later drafts there', () async {
         // entryIsUnsaved stays false: a draft restored from EditorDb is
         // loaded asynchronously, and the write can arrive first.
-        final (notifier, _) = await openThenUpdate(autosaved);
+        final (notifier, _) = await openThenUpdate((_) => autosaved);
 
         verify(
           () => mockEditorStateService.rebaseDraft(
@@ -4489,7 +4529,7 @@ void main() {
           entryText: const EntryText(plainText: 'changed elsewhere'),
         );
 
-        final (notifier, editorBefore) = await openThenUpdate(rewritten);
+        final (notifier, editorBefore) = await openThenUpdate((_) => rewritten);
 
         verifyNever(
           () => mockEditorStateService.rebaseDraft(
@@ -4500,6 +4540,137 @@ void main() {
         );
         expect(notifier.controller, same(editorBefore));
         expect(await typeAndCaptureDraftKey(notifier), base);
+      });
+
+      test('the autosave of the draft typed in the editor keeps the editor '
+          'controller and moves onto the new version', () async {
+        final (notifier, editorBefore) = await openThenUpdate((notifier) {
+          notifier.controller.document.insert(0, 'x');
+          return autosaved.copyWith(
+            entryText: entryTextFromController(notifier.controller),
+          );
+        });
+
+        expect(notifier.controller, same(editorBefore));
+        expect(
+          notifier.controller.document.toPlainText(),
+          'xtest entry text\n',
+        );
+        verify(
+          () => mockEditorStateService.rebaseDraft(
+            id: testTextEntry.meta.id,
+            from: base,
+            to: autosavedAt,
+          ),
+        ).called(1);
+      });
+
+      test('a draft the autosave moved on without the editor is keyed to '
+          'where it was moved', () async {
+        holdUnsavedDraft();
+        // The autosave stored an earlier draft; the editor has moved on.
+        final (notifier, editorBefore) = await openThenUpdate(
+          (_) => autosaved.copyWith(
+            entryText: const EntryText(plainText: 'an earlier draft'),
+          ),
+        );
+        holdDraftOn(autosavedAt);
+
+        expect(notifier.controller, same(editorBefore));
+        expect(await typeAndCaptureDraftKey(notifier), autosavedAt);
+      });
+
+      test('a draft typed against text sync replaced stays on its version '
+          'when a later write leaves the synced text alone', () async {
+        holdUnsavedDraft();
+        final syncedAt = base.add(const Duration(minutes: 1));
+        final synced = testTextEntry.copyWith(
+          entryText: const EntryText(plainText: 'synced from elsewhere'),
+          meta: testTextEntry.meta.copyWith(updatedAt: syncedAt),
+        );
+        // The timer's autosave, built on the synced version: the synced
+        // text, a new end time and version.
+        final autosavedOnSynced = synced.copyWith(
+          meta: synced.meta.copyWith(
+            dateTo: synced.meta.dateTo.add(const Duration(minutes: 5)),
+            updatedAt: autosavedAt,
+          ),
+        );
+
+        final (notifier, _) = await openThenUpdate(
+          (_) => synced,
+          thenStored: [autosavedOnSynced],
+        );
+
+        verifyNever(
+          () => mockEditorStateService.rebaseDraft(
+            id: any(named: 'id'),
+            from: any(named: 'from'),
+            to: any(named: 'to'),
+          ),
+        );
+        expect(await typeAndCaptureDraftKey(notifier), base);
+      });
+
+      test('discard drops the draft on the version the autosave moved it '
+          'to, so it is not restored after a restart', () async {
+        holdUnsavedDraft();
+        final (notifier, _) = await openThenUpdate(
+          (_) => autosaved.copyWith(
+            entryText: const EntryText(plainText: 'an earlier draft'),
+          ),
+        );
+        holdDraftOn(autosavedAt);
+
+        await notifier.discard();
+
+        verify(
+          () => mockEditorStateService.dropDraft(
+            id: testTextEntry.meta.id,
+            lastSaved: autosavedAt,
+          ),
+        ).called(1);
+      });
+
+      /// Makes the editor state report that the autosave stored the draft
+      /// of the entry as the text of [version].
+      void storedDraftAs(DateTime version) {
+        when(
+          () =>
+              mockEditorStateService.storedDraftVersion(testTextEntry.meta.id),
+        ).thenReturn(version);
+        addTearDown(
+          () => when(
+            () => mockEditorStateService.storedDraftVersion(any()),
+          ).thenReturn(null),
+        );
+      }
+
+      test('what is typed after the autosave stored the draft, before its '
+          'notification arrives, is keyed to the stored version', () async {
+        final container = makeProviderContainer();
+        final provider = entryControllerProvider(testTextEntry.meta.id);
+        final notifier = container.read(provider.notifier);
+        await container.read(provider.future);
+        await container.pump();
+        clearInteractions(mockEditorStateService);
+        // The autosave stored the draft and forgot it; the editor has not
+        // been told of the write yet.
+        storedDraftAs(autosavedAt);
+
+        expect(await typeAndCaptureDraftKey(notifier), autosavedAt);
+      });
+
+      test('a version the editor was rebuilt on since the autosave stored '
+          'the draft keys what is typed next', () async {
+        storedDraftAs(base);
+        final (notifier, _) = await openThenUpdate(
+          (_) => autosaved.copyWith(
+            entryText: const EntryText(plainText: 'changed elsewhere'),
+          ),
+        );
+
+        expect(await typeAndCaptureDraftKey(notifier), autosavedAt);
       });
     });
 

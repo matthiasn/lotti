@@ -61,6 +61,15 @@ void main() {
         to: any(named: 'to'),
       ),
     ).thenAnswer((_) async {});
+    when(
+      () => editorStateService.draftWasStored(
+        id: any(named: 'id'),
+        draft: any(named: 'draft'),
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+      ),
+    ).thenAnswer((_) async {});
+    when(() => editorStateService.draftOn(any(), any())).thenReturn(null);
 
     final mocks = await setUpTestGetIt(
       additionalSetup: () => getIt
@@ -184,6 +193,133 @@ void main() {
       );
     });
 
+    group('with an unsaved draft', () {
+      const draft = r'[{"insert":"typed so far\n"}]';
+
+      /// Holds [draft] as typed against the stored [version] of the entry.
+      void holdDraftOn(DateTime version) => when(
+        () => editorStateService.draftOn(timerId, version),
+      ).thenReturn(draft);
+
+      test('stores the draft as the text, with the end time', () async {
+        holdDraftOn(testTextEntry.meta.updatedAt);
+
+        await persistAtNow(testTextEntry);
+
+        final written = writtenEntities().single;
+        expect(written.entryText?.plainText, 'typed so far\n');
+        expect(written.entryText?.markdown, 'typed so far\n');
+        expect(written.entryText?.quill, draft);
+        expect(written.meta.dateTo, now);
+      });
+
+      test('marks the stored draft saved, rather than moving it', () async {
+        holdDraftOn(testTextEntry.meta.updatedAt);
+
+        await persistAtNow(testTextEntry);
+
+        verify(
+          () => editorStateService.draftWasStored(
+            id: timerId,
+            draft: draft,
+            from: testTextEntry.meta.updatedAt,
+            to: now,
+          ),
+        ).called(1);
+        verifyNever(
+          () => editorStateService.rebaseDraft(
+            id: any(named: 'id'),
+            from: any(named: 'from'),
+            to: any(named: 'to'),
+          ),
+        );
+      });
+
+      test('keeps the stored text when the draft was typed against a '
+          'version sync has replaced', () async {
+        holdDraftOn(
+          testTextEntry.meta.updatedAt.subtract(
+            const Duration(minutes: 1),
+          ),
+        );
+
+        await persistAtNow(testTextEntry);
+
+        expect(writtenEntities().single.entryText, testTextEntry.entryText);
+        verifyNever(
+          () => editorStateService.draftWasStored(
+            id: any(named: 'id'),
+            draft: any(named: 'draft'),
+            from: any(named: 'from'),
+            to: any(named: 'to'),
+          ),
+        );
+      });
+
+      test('a rebuilt write takes the draft on the version it is rebuilt '
+          'on', () async {
+        final synced = testTextEntry.copyWith(
+          entryText: const EntryText(plainText: 'synced meanwhile'),
+          meta: testTextEntry.meta.copyWith(
+            updatedAt: now.subtract(const Duration(seconds: 1)),
+            vectorClock: const VectorClock({'device': 7}),
+          ),
+        );
+        var reads = 0;
+        when(
+          () => journalDb.journalEntityById(timerId),
+        ).thenAnswer((_) async => ++reads == 1 ? testTextEntry : synced);
+        var writes = 0;
+        when(
+          () => persistenceLogic.updateDbEntity(
+            any(),
+            linkedId: any(named: 'linkedId'),
+            beforeNotify: any(named: 'beforeNotify'),
+            precondition: any(named: 'precondition'),
+          ),
+        ).thenAnswer((_) async => ++writes > 1);
+        // The draft was typed against the first version only.
+        holdDraftOn(testTextEntry.meta.updatedAt);
+
+        await persistAtNow(testTextEntry);
+
+        final written = writtenEntities();
+        expect(written.first.entryText?.quill, draft);
+        expect(written.last.entryText, synced.entryText);
+        verify(
+          () => editorStateService.rebaseDraft(
+            id: timerId,
+            from: synced.meta.updatedAt,
+            to: now,
+          ),
+        ).called(1);
+      });
+
+      test('the draft is not marked saved when the write does not '
+          'land', () async {
+        holdDraftOn(testTextEntry.meta.updatedAt);
+        when(
+          () => persistenceLogic.updateDbEntity(
+            any(),
+            linkedId: any(named: 'linkedId'),
+            beforeNotify: any(named: 'beforeNotify'),
+            precondition: any(named: 'precondition'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        await persistAtNow(testTextEntry);
+
+        verifyNever(
+          () => editorStateService.draftWasStored(
+            id: any(named: 'id'),
+            draft: any(named: 'draft'),
+            from: any(named: 'from'),
+            to: any(named: 'to'),
+          ),
+        );
+      });
+    });
+
     test('writes nothing for an entry that is not a text entry', () async {
       when(
         () => journalDb.journalEntityById(testTask.meta.id),
@@ -241,6 +377,24 @@ void main() {
           (timerId, now.add(const Duration(minutes: 10))),
         ],
       );
+    });
+
+    test('stores the draft typed so far with each five-minute '
+        'autosave', () async {
+      const draft = r'[{"insert":"typed so far\n"}]';
+      when(
+        () => editorStateService.draftOn(timerId, testTextEntry.meta.updatedAt),
+      ).thenReturn(draft);
+
+      await runService((service, async) {
+        async
+          ..run((_) => unawaited(service.start(testTextEntry, testTask)))
+          ..elapse(const Duration(minutes: 5));
+      });
+
+      final written = writtenEntities().single;
+      expect(written.entryText?.quill, draft);
+      expect(written.meta.dateTo, now.add(const Duration(minutes: 5)));
     });
 
     test(

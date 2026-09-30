@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Entry detail and saving
-description: The two-state detail machine, Markdown-aware rich-text paste, the save path that writes twice for a task, the running timer's five-minute autosave, and the date-time editor whose bounds can never desync.
+description: The two-state detail machine, Markdown-aware rich-text paste, the save path that writes twice for a task, the running timer's five-minute autosave of its end time and draft, and the date-time editor whose bounds can never desync.
 resource: ../../../lib/features/journal/state/entry_controller.dart
 tags: [journal, entry-controller, editor, drafts, datetime]
 status: stable
@@ -11,11 +11,11 @@ sources:
   - id: controller
     resource: ../../../lib/features/journal/state/entry_controller.dart
     title: EntryController
-    last_modified: 2026-09-28
+    last_modified: 2026-09-29
   - id: editor-tools
     resource: ../../../lib/features/journal/ui/widgets/editor/editor_tools.dart
     title: Editor conversion helpers
-    last_modified: 2026-08-15
+    last_modified: 2026-09-29
   - id: datetime
     resource: ../../../lib/features/journal/ui/widgets/entry_details/entry_datetime_range.dart
     title: EntryDateTimeRange
@@ -23,7 +23,7 @@ sources:
   - id: editor-service
     resource: ../../../lib/services/editor_state_service.dart
     title: EditorStateService
-    last_modified: 2026-09-28
+    last_modified: 2026-09-29
   - id: time-service
     resource: ../../../lib/services/time_service.dart
     title: TimeService
@@ -148,16 +148,27 @@ or sync set since the page loaded is kept (see
   after a short delay.
 - When an external update arrives and the entry is **not** dirty, the editor
   controller is rebuilt from the saved value — **but only when the stored text
-  changed**. An update that leaves the text alone (a new end time, a flag) keeps
-  the live controller, so the cursor of an open editor does not jump.
+  differs from what the editor shows**. An update that leaves the text alone (a
+  new end time, a flag), or that stored the very text the editor holds (the
+  timer's autosave of its draft), keeps the live controller, so the cursor of an
+  open editor does not jump.
 - **A draft is keyed to the entry version it was typed against** (`updatedAt`,
   the `lastSaved` of its `EditorDb` row), and is only restored onto that
-  version. The controller tracks that version as its draft base. A write that
-  leaves the text alone advances the base and moves an unsaved draft onto the
-  new version (`EditorStateService.rebaseDraft`, which also re-keys a debounced
-  write still pending), so the draft survives a restart. A write that changed
-  the text leaves the draft keyed to the old version — it was typed against
-  text that no longer exists.
+  version. `EditorStateService` records that version for every draft it holds
+  (`draftVersion`: typed, restored at startup, or loaded for an open editor),
+  and the controller tracks it as its draft base for when it holds none. A
+  write that leaves the editor's text alone advances the base and moves an
+  unsaved draft onto the new version (`EditorStateService.rebaseDraft`, which
+  also re-keys a debounced write still pending), so the draft survives a
+  restart. A write that changed the text leaves the draft keyed to the old
+  version — it was typed against text that no longer exists — and so does
+  every later write: the draft follows only a write that replaced the version
+  the editor is based on. Moved onto a later version, a draft typed against
+  text sync has replaced would be written over it by the next timer
+  autosave. The controller
+  keys new drafts, `save()` and `discard()` to the held draft's version before
+  its own base, so a draft the autosave moved on without the editor is
+  followed there.
 - When the entry **is** dirty, the controller keeps the user's unsaved editor
   state instead of bluntly resetting it.
 - **`discard()` is the inverse of `save()` without persisting**: it drops the
@@ -177,7 +188,8 @@ two-hour session shows as a sliver until the timer is stopped.
 every `runningTimerAutosaveInterval` (five minutes) it hands the running entry
 to the injected `autosave` callback. The app's instance comes from
 `buildPersistingTimeService()`, whose callback — for autosave and for a
-replaced timer alike — is `persistRunningTimerEnd`:
+replaced timer alike — is `persistRunningTimerEnd`. It writes the end time,
+and the unsaved editor draft as the entry's text:
 
 ```mermaid
 sequenceDiagram
@@ -189,26 +201,46 @@ sequenceDiagram
 
   loop every 5 minutes while running
     TS->>Persister: running entry
-    Persister->>Persist: stored row with dateTo: now
+    Persister->>Draft: draftOn(id, stored updatedAt)
+    Persister->>Persist: stored row with dateTo: now, and the draft as text
     alt stored row changed meanwhile
-      Persist->>Persist: rebuild on the newer row
+      Persist->>Persist: rebuild on the newer row, reading its draft again
     end
     Persist-->>Persister: written
-    Persister->>Draft: rebaseDraft(old updatedAt, new updatedAt)
+    alt a draft was written
+      Persister->>Draft: draftWasStored(draft, old updatedAt, new updatedAt)
+    else no draft on the stored version
+      Persister->>Draft: rebaseDraft(old updatedAt, new updatedAt)
+    end
     Persist-->>Ctl: UpdateNotifications
-    Ctl->>Ctl: refresh entry, keep editor (text unchanged)
+    Ctl->>Ctl: refresh entry, keep editor (it shows the stored text)
     Ctl->>Draft: rebaseDraft(base, new updatedAt), a no-op when already moved
   end
 ```
 
-- **Only the end time is written, never the draft.** Unsaved text stays the
-  user's to save or discard: it is not synced to other devices before they
-  save, and `discard()` still reverts everything typed since the last save.
-  The draft is protected against a crash by `EditorDb`, and rebased onto each
-  autosaved version by the write itself — so it is still restored when no
-  editor for the entry is open to follow the write. An open controller moves
-  it too, which is a no-op once the rows are moved, and also covers a draft
-  restored from `EditorDb` that `EditorStateService` has not loaded yet.
+- **The draft typed so far is written with the end time.** What the calendar
+  shows on every device is the session with its notes to date, not a note
+  that appears only when the timer stops. Only a draft typed against the
+  stored version is written (`EditorStateService.draftOn`): one typed against
+  text that sync has since replaced is left unsaved, and the stored text kept.
+- **A written draft is saved** (`draftWasStored`): it is dropped from memory,
+  its `EditorDb` rows are marked saved — under the old version, or the new one
+  if an open controller moved them first — and the editor is told it is no
+  longer unsaved, so the Save and Discard actions go away. `discard()` then
+  reverts only what was typed since the last autosave. Text typed while the
+  write ran is not what was written: it stays unsaved, moved onto the new
+  version.
+- **What is typed right after that write is keyed to the stored version.**
+  The editor only learns of the write once its update notification is
+  handled, so `EditorStateService` records the version the draft was stored
+  as (`storedDraftVersion`, until the entry is saved or discarded). The
+  controller keys a new draft to the later of that version and its own base,
+  so a keystroke in between is not orphaned on the superseded version.
+- **Without a draft, the write moves any draft on** (`rebaseDraft`), so it is
+  still restored when no editor for the entry is open to follow the write. An
+  open controller moves it too, which is a no-op once the rows are moved, and
+  also covers a draft restored from `EditorDb` that `EditorStateService` has
+  not loaded yet.
 - **The write is built on the stored row, and only lands on it**
   (`writeOnStored`). The entry the timer was started with is never written
   back, and a text save landing between the read and the write is built on
