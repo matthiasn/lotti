@@ -4362,6 +4362,18 @@ abstract class AppLocalizations {
   /// **'Show API Key'**
   String get apiKeyShowTooltip;
 
+  /// Body of the blocking notice shown while the app closes its databases on quit.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving everything. Please stand by.'**
+  String get appClosingMessage;
+
+  /// Heading of the blocking notice shown while the app shuts down after a quit.
+  ///
+  /// In en, this message translates to:
+  /// **'Closing Lotti…'**
+  String get appClosingTitle;
+
   /// No description provided for @audioPlayerPause.
   ///
   /// In en, this message translates to:

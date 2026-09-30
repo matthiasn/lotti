@@ -82,8 +82,10 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/services/window_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/uuid.dart';
+import 'package:lotti/widgets/app_closing_overlay.dart';
 import 'package:lotti/widgets/misc/contact_support_row.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/sidebar_activity_summary.dart';
@@ -1953,35 +1955,42 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
               final zoomController = ref.watch(
                 zoomControllerProvider.notifier,
               );
-              return AppCommandHost(
-                handlers: _globalCommandHandlers(),
-                onActivity: updateActivity,
-                onError: (id, error, stackTrace) {
-                  getIt<DomainLogger>().error(
-                    LogDomain.general,
-                    error,
-                    stackTrace: stackTrace,
-                    subDomain: 'keyboardCommand:${id.name}',
-                  );
-                },
-                child: DesktopMenuWrapper(
-                  onOpenManual: () => openManualInBrowser(
-                    systemLocale:
-                        WidgetsBinding.instance.platformDispatcher.locale,
-                    override: languageOverride,
-                  ),
-                  onZoomIn: zoomController.zoomIn,
-                  onZoomOut: zoomController.zoomOut,
-                  onZoomReset: zoomController.resetZoom,
-                  // The demo banner sits above the router's navigator, so
-                  // it survives every route change; the exit sheet needs a
-                  // context INSIDE that navigator to push from.
-                  child: DemoModeScaffold(
-                    sheetContext: () =>
-                        routerDelegate.navigatorKey.currentContext ?? context,
-                    child: ZoomWrapper(
-                      scale: ref.watch(zoomControllerProvider),
-                      child: child ?? const SizedBox.shrink(),
+              final closing = getIt.isRegistered<WindowService>()
+                  ? getIt<WindowService>().closing
+                  : null;
+              return AppClosingOverlay(
+                closing: closing,
+                child: AppCommandHost(
+                  handlers: _globalCommandHandlers(),
+                  onActivity: updateActivity,
+                  onError: (id, error, stackTrace) {
+                    getIt<DomainLogger>().error(
+                      LogDomain.general,
+                      error,
+                      stackTrace: stackTrace,
+                      subDomain: 'keyboardCommand:${id.name}',
+                    );
+                  },
+                  child: DesktopMenuWrapper(
+                    onOpenManual: () => openManualInBrowser(
+                      systemLocale:
+                          WidgetsBinding.instance.platformDispatcher.locale,
+                      override: languageOverride,
+                    ),
+                    onZoomIn: zoomController.zoomIn,
+                    onZoomOut: zoomController.zoomOut,
+                    onZoomReset: zoomController.resetZoom,
+                    closing: closing,
+                    // The demo banner sits above the router's navigator, so
+                    // it survives every route change; the exit sheet needs a
+                    // context INSIDE that navigator to push from.
+                    child: DemoModeScaffold(
+                      sheetContext: () =>
+                          routerDelegate.navigatorKey.currentContext ?? context,
+                      child: ZoomWrapper(
+                        scale: ref.watch(zoomControllerProvider),
+                        child: child ?? const SizedBox.shrink(),
+                      ),
                     ),
                   ),
                 ),

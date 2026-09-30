@@ -1654,6 +1654,14 @@
   "apiKeyProviderTypeHint": "Select a provider type",
   "apiKeyProviderTypeLabel": "Provider Type",
   "apiKeyShowTooltip": "Show API Key",
+  "appClosingMessage": "Saving everything. Please stand by.",
+  "@appClosingMessage": {
+    "description": "Body of the blocking notice shown while the app closes its databases on quit."
+  },
+  "appClosingTitle": "Closing Lotti…",
+  "@appClosingTitle": {
+    "description": "Heading of the blocking notice shown while the app shuts down after a quit."
+  },
   "audioPlayerPause": "Pause audio",
   "audioPlayerPlay": "Play audio",
   "audioPlayerPosition": "{current} of {total}",

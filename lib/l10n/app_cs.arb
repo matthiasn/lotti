@@ -1159,6 +1159,8 @@
   "apiKeyProviderTypeHint": "Vyber typ poskytovatele",
   "apiKeyProviderTypeLabel": "Typ poskytovatele",
   "apiKeyShowTooltip": "Zobrazit API klíč",
+  "appClosingMessage": "Ukládám všechno. Chvilku vydrž.",
+  "appClosingTitle": "Zavírám Lotti…",
   "audioPlayerPause": "Pozastavit zvuk",
   "audioPlayerPlay": "Přehrát zvuk",
   "audioPlayerPosition": "{current} z {total}",

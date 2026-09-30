@@ -2592,6 +2592,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get apiKeyShowTooltip => 'Afișați cheia API';
 
   @override
+  String get appClosingMessage => 'Se salvează totul. Vă rugăm să așteptați.';
+
+  @override
+  String get appClosingTitle => 'Se închide Lotti…';
+
+  @override
   String get audioPlayerPause => 'Întrerupeți redarea';
 
   @override

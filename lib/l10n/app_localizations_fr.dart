@@ -2589,6 +2589,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get apiKeyShowTooltip => 'Afficher la clé API';
 
   @override
+  String get appClosingMessage =>
+      'Enregistrement en cours. Patiente un instant.';
+
+  @override
+  String get appClosingTitle => 'Fermeture de Lotti…';
+
+  @override
   String get audioPlayerPause => 'Mettre l’audio en pause';
 
   @override

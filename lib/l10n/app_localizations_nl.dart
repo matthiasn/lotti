@@ -2564,6 +2564,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get apiKeyShowTooltip => 'API-sleutel tonen';
 
   @override
+  String get appClosingMessage => 'Alles wordt opgeslagen. Even geduld.';
+
+  @override
+  String get appClosingTitle => 'Lotti wordt afgesloten…';
+
+  @override
   String get audioPlayerPause => 'Audio pauzeren';
 
   @override

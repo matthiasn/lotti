@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:ui' show AppExitResponse;
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -15,6 +17,9 @@ import 'package:lotti/services/window_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
+
+/// Stands in for the real frame wait, which needs a rendering binding.
+Future<void> noClosingFrame() async {}
 
 void main() {
   setUpAll(() {
@@ -60,6 +65,7 @@ void main() {
 
       WindowService(
         skipWindowManagerSetup: true,
+        closingFrameOverride: noClosingFrame,
         isMacOSOverride: () => true,
         exitOverride: (code) {
           callOrder.add('exit');
@@ -82,6 +88,7 @@ void main() {
 
       WindowService(
         skipWindowManagerSetup: true,
+        closingFrameOverride: noClosingFrame,
         isMacOSOverride: () => true,
         exitOverride: exitCompleter.complete,
         playerDisposerOverride: () async {
@@ -101,6 +108,7 @@ void main() {
 
       WindowService(
         skipWindowManagerSetup: true,
+        closingFrameOverride: noClosingFrame,
         isMacOSOverride: () => true,
         exitOverride: exitCompleter.complete,
         playerDisposerOverride: () async {},
@@ -117,6 +125,7 @@ void main() {
 
       await WindowService(
         skipWindowManagerSetup: true,
+        closingFrameOverride: noClosingFrame,
         isMacOSOverride: () => true,
         exitOverride: (_) {},
         playerDisposerOverride: () async {},
@@ -139,6 +148,7 @@ void main() {
 
       await WindowService(
         skipWindowManagerSetup: true,
+        closingFrameOverride: noClosingFrame,
         isMacOSOverride: () => true,
         exitOverride: (_) {},
         playerDisposerOverride: () async {
@@ -163,6 +173,7 @@ void main() {
 
       WindowService(
         skipWindowManagerSetup: true,
+        closingFrameOverride: noClosingFrame,
         isMacOSOverride: () => true,
         exitOverride: exitCompleter.complete,
         playerDisposerOverride: () async {
@@ -180,6 +191,7 @@ void main() {
 
       final service = WindowService(
         skipWindowManagerSetup: true,
+        closingFrameOverride: noClosingFrame,
         isMacOSOverride: () => true,
         exitOverride: (_) => exitCalls++,
         playerDisposerOverride: () async {},
@@ -208,6 +220,7 @@ void main() {
 
         final service = WindowService(
           skipWindowManagerSetup: true,
+          closingFrameOverride: noClosingFrame,
           isMacOSOverride: () => true,
           exitOverride: (_) {
             exitCalls++;
@@ -238,6 +251,7 @@ void main() {
 
       final service = WindowService(
         skipWindowManagerSetup: true,
+        closingFrameOverride: noClosingFrame,
         isMacOSOverride: () => true,
         exitOverride: (_) {},
         playerDisposerOverride: () async {},
@@ -253,6 +267,142 @@ void main() {
 
       verify(() => getIt<SettingsDb>().close()).called(1);
       verify(() => getIt<OutboxService>().dispose()).called(1);
+    });
+
+    group('closing notice', () {
+      test('closing is false until a quit starts', () {
+        final service = WindowService(
+          skipWindowManagerSetup: true,
+          closingFrameOverride: noClosingFrame,
+          isMacOSOverride: () => true,
+          exitOverride: (_) {},
+          playerDisposerOverride: () async {},
+        );
+
+        expect(service.closing.value, isFalse);
+      });
+
+      test(
+        'raises closing and waits for its frame before closing databases',
+        () async {
+          final callOrder = <String>[];
+          final frameShown = Completer<void>();
+          late final WindowService service;
+          when(() => getIt<SettingsDb>().close()).thenAnswer((_) async {
+            callOrder.add('databaseClose');
+          });
+
+          service = WindowService(
+            skipWindowManagerSetup: true,
+            closingFrameOverride: () async {
+              callOrder.add('frame(closing=${service.closing.value})');
+              await frameShown.future;
+            },
+            isMacOSOverride: () => true,
+            exitOverride: (_) => callOrder.add('exit'),
+            playerDisposerOverride: () async {},
+          );
+
+          final close = service.closeWindow();
+          await Future<void>.value();
+          // Teardown is held until the notice has been painted.
+          expect(callOrder, ['frame(closing=true)']);
+
+          frameShown.complete();
+          await close;
+
+          expect(callOrder, ['frame(closing=true)', 'databaseClose', 'exit']);
+          expect(service.closing.value, isTrue);
+        },
+      );
+
+      test('a failing frame wait is logged and teardown still runs', () async {
+        final exitCodes = <int>[];
+
+        await WindowService(
+          skipWindowManagerSetup: true,
+          closingFrameOverride: () async => throw StateError('no binding'),
+          isMacOSOverride: () => true,
+          exitOverride: exitCodes.add,
+          playerDisposerOverride: () async {},
+        ).closeWindow();
+
+        expect(exitCodes, [0]);
+        verify(() => getIt<SettingsDb>().close()).called(1);
+        verify(
+          () => getIt<DomainLogger>().error(
+            LogDomain.general,
+            any<Object>(that: isA<StateError>()),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'dispose_closingNotice',
+          ),
+        ).called(1);
+      });
+
+      test('the frame is awaited once even when quit fires twice', () async {
+        var frames = 0;
+        final service = WindowService(
+          skipWindowManagerSetup: true,
+          closingFrameOverride: () async => frames++,
+          isMacOSOverride: () => true,
+          exitOverride: (_) {},
+          playerDisposerOverride: () async {},
+        );
+
+        await Future.wait([service.closeWindow(), service.closeWindow()]);
+
+        expect(frames, 1);
+      });
+    });
+
+    group('didRequestAppExit', () {
+      test('answers exit at once when no quit is in progress', () async {
+        final service = WindowService(
+          skipWindowManagerSetup: true,
+          closingFrameOverride: noClosingFrame,
+          isMacOSOverride: () => true,
+          exitOverride: (_) {},
+          playerDisposerOverride: () async {},
+        );
+
+        expect(await service.didRequestAppExit(), AppExitResponse.exit);
+        verifyNever(() => getIt<SettingsDb>().close());
+      });
+
+      test('holds a repeated quit until the running teardown ends', () async {
+        final allowOutboxToStop = Completer<void>();
+        final outboxStarted = Completer<void>();
+        when(() => getIt<OutboxService>().dispose()).thenAnswer((_) async {
+          outboxStarted.complete();
+          await allowOutboxToStop.future;
+        });
+        final exitCodes = <int>[];
+        final service = WindowService(
+          skipWindowManagerSetup: true,
+          closingFrameOverride: noClosingFrame,
+          isMacOSOverride: () => true,
+          exitOverride: exitCodes.add,
+          playerDisposerOverride: () async {},
+        );
+
+        final close = service.closeWindow();
+        await outboxStarted.future;
+
+        AppExitResponse? secondResponse;
+        unawaited(
+          service.didRequestAppExit().then((r) => secondResponse = r),
+        );
+        await Future<void>.value();
+        expect(secondResponse, isNull);
+        expect(exitCodes, isEmpty);
+
+        allowOutboxToStop.complete();
+        await close;
+        await Future<void>.value();
+
+        expect(exitCodes, [0]);
+        expect(secondResponse, AppExitResponse.exit);
+      });
     });
 
     group('window geometry persistence', () {
@@ -272,6 +422,7 @@ void main() {
 
       WindowService buildService(AppPrefs prefs) => WindowService(
         skipWindowManagerSetup: true,
+        closingFrameOverride: noClosingFrame,
         isMacOSOverride: () => false,
         exitOverride: (_) {},
         playerDisposerOverride: () async {},
@@ -348,6 +499,7 @@ void main() {
 
       WindowService(
         skipWindowManagerSetup: true,
+        closingFrameOverride: noClosingFrame,
         isMacOSOverride: () => false,
       ).onWindowClose();
 
@@ -359,6 +511,54 @@ void main() {
       verify(() => getIt<EmbeddingService>().stop()).called(1);
       verify(() => getIt<OutboxService>().dispose()).called(1);
       verify(() => getIt<MatrixService>().dispose()).called(1);
+    });
+  });
+
+  group('awaitClosingNoticeFrame', () {
+    testWidgets('resolves once the next frame is rendered', (tester) async {
+      var resolved = false;
+      unawaited(awaitClosingNoticeFrame().then((_) => resolved = true));
+
+      await tester.pump();
+
+      expect(resolved, isTrue);
+    });
+
+    testWidgets('resolves at once when frames are disabled', (tester) async {
+      // A detached engine (SIGTERM, logout) or hidden window renders nothing.
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.detached);
+      try {
+        expect(tester.binding.framesEnabled, isFalse);
+        var resolved = false;
+        unawaited(awaitClosingNoticeFrame().then((_) => resolved = true));
+
+        // Microtasks only: a pump would render a frame and hide the wait.
+        await Future<void>.value();
+        await Future<void>.value();
+
+        expect(resolved, isTrue);
+      } finally {
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+      }
+    });
+
+    test('gives up after the frame budget when no frame comes', () {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      fakeAsync((async) {
+        var resolved = false;
+        // An idle test binding never renders the frame endOfFrame waits for.
+        awaitClosingNoticeFrame().then((_) => resolved = true);
+
+        async.elapse(
+          closingNoticeFrameBudget - const Duration(milliseconds: 1),
+        );
+        expect(resolved, isFalse);
+
+        async.elapse(const Duration(milliseconds: 1));
+        expect(resolved, isTrue);
+      });
     });
   });
 }

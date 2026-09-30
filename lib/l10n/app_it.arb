@@ -1335,6 +1335,8 @@
   "apiKeyProviderTypeHint": "Selezionare un tipo di fornitore",
   "apiKeyProviderTypeLabel": "Tipo di fornitore",
   "apiKeyShowTooltip": "Mostra la chiave API",
+  "appClosingMessage": "Salvataggio in corso. Attendi un attimo.",
+  "appClosingTitle": "Chiusura di Lotti…",
   "audioPlayerPause": "Metti in pausa l’audio",
   "audioPlayerPlay": "Riproduci audio",
   "audioPlayerPosition": "{current} di {total}",

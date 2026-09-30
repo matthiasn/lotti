@@ -17,6 +17,7 @@ class DesktopMenuWrapper extends StatelessWidget {
     this.onZoomOut,
     this.onZoomReset,
     this.onOpenManual,
+    this.closing,
     super.key,
   });
 
@@ -25,6 +26,11 @@ class DesktopMenuWrapper extends StatelessWidget {
   final VoidCallback? onZoomOut;
   final VoidCallback? onZoomReset;
   final VoidCallback? onOpenManual;
+
+  /// While true, every menu item is disabled: a quit is closing the
+  /// databases, and the closing overlay cannot block native menu shortcuts.
+  /// Null in hosts without a window service.
+  final ValueListenable<bool>? closing;
 
   @override
   Widget build(BuildContext context) {
@@ -46,136 +52,150 @@ class DesktopMenuWrapper extends StatelessWidget {
       context: context,
       child: Builder(
         builder: (context) {
-          final commandController = AppCommandControllerProvider.maybeOf(
-            context,
-          );
-
-          PlatformMenuItem commandItem(AppCommandId id) {
-            final definition = AppCommandCatalog.definition(id);
-            final shortcut =
-                definition.bindings.first.resolve(TargetPlatform.macOS)
-                    as MenuSerializableShortcut?;
-            VoidCallback? onSelected;
-            if (commandController != null) {
-              if (commandController.isAvailable(context, id)) {
-                onSelected = () => unawaited(
-                  commandController.invoke(context, id),
-                );
-              }
-            } else {
-              onSelected = switch (id) {
-                AppCommandId.zoomIn => onZoomIn,
-                AppCommandId.zoomOut => onZoomOut,
-                AppCommandId.resetZoom => onZoomReset,
-                AppCommandId.createTextEntry => () async {
-                  final linkedId = await getIdFromSavedRoute();
-                  await createTextEntry(linkedId: linkedId);
-                },
-                AppCommandId.createTask => () async {
-                  final linkedId = await getIdFromSavedRoute();
-                  await createTask(linkedId: linkedId);
-                },
-                AppCommandId.captureScreenshot => () async {
-                  final linkedId = await getIdFromSavedRoute();
-                  await createScreenshot(linkedId: linkedId);
-                },
-                _ => null,
-              };
-            }
-            return PlatformMenuItem(
-              label: AppCommandText.label(context.messages, id),
-              shortcut: shortcut,
-              onSelected: onSelected,
-            );
-          }
-
-          return PlatformMenuBar(
-            menus: [
-              const PlatformMenu(
-                label: 'Lotti',
-                menus: [
-                  PlatformProvidedMenuItem(
-                    type: PlatformProvidedMenuItemType.about,
-                  ),
-                  PlatformMenuItemGroup(
-                    members: [
-                      PlatformProvidedMenuItem(
-                        type: PlatformProvidedMenuItemType.servicesSubmenu,
-                      ),
-                    ],
-                  ),
-                  PlatformMenuItemGroup(
-                    members: [
-                      PlatformProvidedMenuItem(
-                        type: PlatformProvidedMenuItemType.hide,
-                      ),
-                    ],
-                  ),
-                  PlatformProvidedMenuItem(
-                    type: PlatformProvidedMenuItemType.quit,
-                  ),
-                ],
-              ),
-              PlatformMenu(
-                label: context.messages.fileMenuTitle,
-                menus: [
-                  commandItem(AppCommandId.createTextEntry),
-                  PlatformMenu(
-                    label: context.messages.fileMenuNewEllipsis,
-                    menus: [
-                      commandItem(AppCommandId.createTask),
-                      commandItem(AppCommandId.captureScreenshot),
-                    ],
-                  ),
-                ],
-              ),
-              PlatformMenu(
-                label: context.messages.editMenuTitle,
-                menus: [],
-              ),
-              PlatformMenu(
-                label: context.messages.viewMenuTitle,
-                menus: [
-                  commandItem(AppCommandId.zoomIn),
-                  commandItem(AppCommandId.zoomOut),
-                  commandItem(AppCommandId.resetZoom),
-                  const PlatformProvidedMenuItem(
-                    type: PlatformProvidedMenuItemType.toggleFullScreen,
-                  ),
-                  const PlatformProvidedMenuItem(
-                    type: PlatformProvidedMenuItemType.zoomWindow,
-                  ),
-                ],
-              ),
-              PlatformMenu(
-                label: context.messages.goMenuTitle,
-                menus: [
-                  commandItem(AppCommandId.navigateTasks),
-                  commandItem(AppCommandId.navigateDailyOs),
-                  commandItem(AppCommandId.navigateProjects),
-                  commandItem(AppCommandId.navigateHabits),
-                  commandItem(AppCommandId.navigateDashboards),
-                  commandItem(AppCommandId.navigateJournal),
-                  commandItem(AppCommandId.navigateEvents),
-                  commandItem(AppCommandId.navigateSettings),
-                ],
-              ),
-              PlatformMenu(
-                label: context.messages.helpMenuTitle,
-                menus: [
-                  PlatformMenuItem(
-                    label: context.messages.navSidebarManualLabel,
-                    onSelected: onOpenManual,
-                  ),
-                  commandItem(AppCommandId.openCommandPalette),
-                  commandItem(AppCommandId.openShortcutHelp),
-                ],
-              ),
-            ],
-            child: child,
+          final closing = this.closing;
+          if (closing == null) return _menuBar(context, enabled: true);
+          return ValueListenableBuilder<bool>(
+            valueListenable: closing,
+            builder: (context, isClosing, _) =>
+                _menuBar(context, enabled: !isClosing),
           );
         },
       ),
+    );
+  }
+
+  /// Builds the macOS menu bar. With [enabled] false every item keeps its
+  /// label but loses its handler, so neither a click nor a native key
+  /// equivalent (which macOS dispatches outside Flutter's focus tree) can
+  /// act on the app.
+  PlatformMenuBar _menuBar(BuildContext context, {required bool enabled}) {
+    final commandController = AppCommandControllerProvider.maybeOf(
+      context,
+    );
+
+    PlatformMenuItem commandItem(AppCommandId id) {
+      final definition = AppCommandCatalog.definition(id);
+      final shortcut =
+          definition.bindings.first.resolve(TargetPlatform.macOS)
+              as MenuSerializableShortcut?;
+      VoidCallback? onSelected;
+      if (commandController != null) {
+        if (commandController.isAvailable(context, id)) {
+          onSelected = () => unawaited(
+            commandController.invoke(context, id),
+          );
+        }
+      } else {
+        onSelected = switch (id) {
+          AppCommandId.zoomIn => onZoomIn,
+          AppCommandId.zoomOut => onZoomOut,
+          AppCommandId.resetZoom => onZoomReset,
+          AppCommandId.createTextEntry => () async {
+            final linkedId = await getIdFromSavedRoute();
+            await createTextEntry(linkedId: linkedId);
+          },
+          AppCommandId.createTask => () async {
+            final linkedId = await getIdFromSavedRoute();
+            await createTask(linkedId: linkedId);
+          },
+          AppCommandId.captureScreenshot => () async {
+            final linkedId = await getIdFromSavedRoute();
+            await createScreenshot(linkedId: linkedId);
+          },
+          _ => null,
+        };
+      }
+      return PlatformMenuItem(
+        label: AppCommandText.label(context.messages, id),
+        shortcut: shortcut,
+        onSelected: enabled ? onSelected : null,
+      );
+    }
+
+    return PlatformMenuBar(
+      menus: [
+        const PlatformMenu(
+          label: 'Lotti',
+          menus: [
+            PlatformProvidedMenuItem(
+              type: PlatformProvidedMenuItemType.about,
+            ),
+            PlatformMenuItemGroup(
+              members: [
+                PlatformProvidedMenuItem(
+                  type: PlatformProvidedMenuItemType.servicesSubmenu,
+                ),
+              ],
+            ),
+            PlatformMenuItemGroup(
+              members: [
+                PlatformProvidedMenuItem(
+                  type: PlatformProvidedMenuItemType.hide,
+                ),
+              ],
+            ),
+            PlatformProvidedMenuItem(
+              type: PlatformProvidedMenuItemType.quit,
+            ),
+          ],
+        ),
+        PlatformMenu(
+          label: context.messages.fileMenuTitle,
+          menus: [
+            commandItem(AppCommandId.createTextEntry),
+            PlatformMenu(
+              label: context.messages.fileMenuNewEllipsis,
+              menus: [
+                commandItem(AppCommandId.createTask),
+                commandItem(AppCommandId.captureScreenshot),
+              ],
+            ),
+          ],
+        ),
+        PlatformMenu(
+          label: context.messages.editMenuTitle,
+          menus: [],
+        ),
+        PlatformMenu(
+          label: context.messages.viewMenuTitle,
+          menus: [
+            commandItem(AppCommandId.zoomIn),
+            commandItem(AppCommandId.zoomOut),
+            commandItem(AppCommandId.resetZoom),
+            const PlatformProvidedMenuItem(
+              type: PlatformProvidedMenuItemType.toggleFullScreen,
+            ),
+            const PlatformProvidedMenuItem(
+              type: PlatformProvidedMenuItemType.zoomWindow,
+            ),
+          ],
+        ),
+        PlatformMenu(
+          label: context.messages.goMenuTitle,
+          menus: [
+            commandItem(AppCommandId.navigateTasks),
+            commandItem(AppCommandId.navigateDailyOs),
+            commandItem(AppCommandId.navigateProjects),
+            commandItem(AppCommandId.navigateHabits),
+            commandItem(AppCommandId.navigateDashboards),
+            commandItem(AppCommandId.navigateJournal),
+            commandItem(AppCommandId.navigateEvents),
+            commandItem(AppCommandId.navigateSettings),
+          ],
+        ),
+        PlatformMenu(
+          label: context.messages.helpMenuTitle,
+          menus: [
+            PlatformMenuItem(
+              label: context.messages.navSidebarManualLabel,
+              onSelected: enabled ? onOpenManual : null,
+            ),
+            commandItem(AppCommandId.openCommandPalette),
+            commandItem(AppCommandId.openShortcutHelp),
+          ],
+        ),
+      ],
+      child: child,
     );
   }
 }

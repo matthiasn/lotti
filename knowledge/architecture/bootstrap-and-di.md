@@ -27,7 +27,11 @@ sources:
   - id: window-service
     resource: ../../lib/services/window_service.dart
     title: Ordered desktop shutdown
-    last_modified: 2026-08-01
+    last_modified: 2026-09-30
+  - id: app-closing-overlay
+    resource: ../../lib/widgets/app_closing_overlay.dart
+    title: Blocking closing notice shown during a quit
+    last_modified: 2026-09-30
 ---
 
 # Two containers, one boundary
@@ -214,6 +218,45 @@ then drains pending framework-error counts after service/player teardown and
 immediately before `LoggingService.flush()`, as described in
 [Logging and diagnostics](logging-and-diagnostics.md#the-gate-and-what-bypasses-it).
 
+Closing every database takes a few seconds, so a quit is made visible.
+`closeWindow()` first raises `WindowService.closing`; `AppClosingOverlay`, in
+`MaterialApp.router`'s builder, answers with an undismissable scrim and a
+spinner card over every page and dialog, and takes focus away from the shell so
+nothing keeps typing into a closing store. The macOS menu bar
+(`DesktopMenuWrapper`) takes the same flag and drops every item's handler,
+because native menu key equivalents are dispatched outside Flutter's focus tree
+and would slip past the overlay. Teardown waits for the frame that carries the
+notice, bounded by `closingNoticeFrameBudget` because an occluded window may
+never render it, and skipped entirely when frames are disabled (a hidden window,
+or a detached engine on SIGTERM or logout); a failure there is logged and never
+blocks the quit. The flag is never lowered — the process ends with the notice up.
+
+A second Cmd+Q during teardown cannot cut it short. `WindowService` is itself a
+`WidgetsBindingObserver`, and its `didRequestAppExit` holds any exit request
+until the running `closeWindow()` has finished — including after the
+`AppLifecycleListener` was disposed by the pre-flush callback, which would
+otherwise let the framework answer "exit" at once.
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant F as Flutter binding
+  participant W as WindowService
+  participant O as AppClosingOverlay
+  participant D as ServiceDisposer
+  U->>F: Cmd+Q / window close
+  F->>W: closeWindow()
+  W->>O: closing = true
+  O-->>W: notice painted (or frame budget elapsed)
+  W->>D: disposeAll() — sync stack, then databases
+  U->>F: Cmd+Q again
+  F->>W: didRequestAppExit()
+  Note over W: held until closeWindow() completes
+  D-->>W: done
+  W->>W: player, framework summaries, log flush
+  W->>F: exit(0) on macOS / destroy() elsewhere
+```
+
 # Where to look
 
 | Concern | File |
@@ -221,6 +264,8 @@ immediately before `LoggingService.flush()`, as described in
 | Entry point, zone guard, error handlers | [`lib/main.dart`](../../lib/main.dart) |
 | Process-once vs per-generation bootstrap | [`lib/app_bootstrap.dart`](../../lib/app_bootstrap.dart) |
 | Generation-keyed ProviderScope + switch splash | [`lib/app_root.dart`](../../lib/app_root.dart) |
+| Ordered shutdown, repeated-quit guard | [`lib/services/window_service.dart`](../../lib/services/window_service.dart) |
+| Closing notice shown during a quit | [`lib/widgets/app_closing_overlay.dart`](../../lib/widgets/app_closing_overlay.dart) |
 | Singleton graph | [`lib/get_it.dart`](../../lib/get_it.dart) |
 | Capability-gated sync registration | [`lib/get_it_sync.dart`](../../lib/get_it_sync.dart) |
 | Late/optional and platform-conditional services | [`lib/get_it_helpers.dart`](../../lib/get_it_helpers.dart) |

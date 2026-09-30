@@ -194,6 +194,88 @@ void main() {
         }
       });
 
+      testWidgets('a quit disables every menu item until it ends', (
+        tester,
+      ) async {
+        final closing = ValueNotifier(false);
+        addTearDown(closing.dispose);
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+        try {
+          await tester.pumpWidget(
+            makeTestableWidget(
+              AppCommandHost(
+                handlers: {
+                  AppCommandId.navigateTasks: AppCommandHandler(
+                    invoke: (_) {},
+                  ),
+                },
+                child: DesktopMenuWrapper(
+                  onOpenManual: () {},
+                  onZoomIn: () {},
+                  closing: closing,
+                  child: const Text('Menu Child'),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+
+          List<PlatformMenuItem> actionableItems() {
+            Iterable<PlatformMenuItem> walk(
+              List<PlatformMenuItem> items,
+            ) sync* {
+              for (final item in items) {
+                if (item is PlatformMenu) {
+                  yield* walk(item.menus);
+                } else if (item is PlatformMenuItemGroup) {
+                  yield* walk(item.members);
+                } else if (item is! PlatformProvidedMenuItem) {
+                  yield item;
+                }
+              }
+            }
+
+            final menuBar = tester.widget<PlatformMenuBar>(
+              find.byType(PlatformMenuBar),
+            );
+            return walk(menuBar.menus).toList();
+          }
+
+          final labelsBefore = [
+            for (final item in actionableItems())
+              if (item.onSelected != null) item.label,
+          ];
+          expect(labelsBefore, containsAll(['Go to Tasks', 'Manual']));
+
+          closing.value = true;
+          await tester.pump();
+
+          // Native key equivalents bypass the overlay, so no item may act.
+          final items = actionableItems();
+          expect(items, isNotEmpty);
+          expect(
+            [
+              for (final item in items)
+                if (item.onSelected != null) item.label,
+            ],
+            isEmpty,
+          );
+          expect(find.text('Menu Child'), findsOneWidget);
+
+          closing.value = false;
+          await tester.pump();
+          expect(
+            [
+              for (final item in actionableItems())
+                if (item.onSelected != null) item.label,
+            ],
+            labelsBefore,
+          );
+        } finally {
+          debugDefaultTargetPlatformOverride = null;
+        }
+      });
+
       testWidgets('unavailable shared commands do not use direct fallbacks', (
         tester,
       ) async {
