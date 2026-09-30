@@ -128,6 +128,11 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.byType(QuillEditor), findsNothing);
+    // Drops the entry controller the closed page leaves cached, as its cache
+    // expiry would, so the reopened page rebuilds it from the stored entry
+    // rather than showing the editor it kept.
+    container.invalidate(entryControllerProvider(entryId));
+    await tester.pump();
     harness.navService.beamToNamed('/journal/${saved!.meta.id}');
     await _pumpUntil(tester, find.byType(QuillEditor));
     final reloaded = tester.widget<QuillEditor>(find.byType(QuillEditor).first);

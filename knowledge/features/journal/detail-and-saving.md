@@ -161,7 +161,11 @@ or sync set since the page loaded is kept (see
   unsaved draft onto the new version (`EditorStateService.rebaseDraft`, which
   also re-keys a debounced write still pending), so the draft survives a
   restart. A write that changed the text leaves the draft keyed to the old
-  version — it was typed against text that no longer exists. The controller
+  version — it was typed against text that no longer exists — and so does
+  every later write: the draft follows only a write that replaced the version
+  the editor is based on. Moved onto a later version, a draft typed against
+  text sync has replaced would be written over it by the next timer
+  autosave. The controller
   keys new drafts, `save()` and `discard()` to the held draft's version before
   its own base, so a draft the autosave moved on without the editor is
   followed there.

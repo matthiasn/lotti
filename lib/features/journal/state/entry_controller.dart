@@ -119,7 +119,10 @@ class EntryController extends AsyncNotifier<EntryState?> {
               setController();
             }
           } else if (latest != null) {
-            await _rebaseEditorOnto(latest.meta.updatedAt);
+            await _rebaseEditorOnto(
+              from: previous?.meta.updatedAt,
+              to: latest.meta.updatedAt,
+            );
           }
         }
       }
@@ -157,19 +160,28 @@ class EntryController extends AsyncNotifier<EntryState?> {
   /// draft moves onto the new version so it is still restored after a
   /// restart.
   ///
+  /// The draft follows only a write that replaced the version the editor is
+  /// based on ([from]). A draft typed against text that sync has replaced
+  /// since stays on the version it was typed against — moved onto a later
+  /// version, the running timer's autosave would write it over the synced
+  /// text.
+  ///
   /// The draft is moved whether or not [EditorStateService] holds it in
   /// memory yet: a draft restored from `EditorDb` is loaded asynchronously,
   /// and the move is a no-op when there is no draft on [_draftBase].
-  Future<void> _rebaseEditorOnto(DateTime updatedAt) async {
+  Future<void> _rebaseEditorOnto({
+    required DateTime? from,
+    required DateTime to,
+  }) async {
     final base = _draftBase;
-    if (base == null || base == updatedAt) {
+    if (base == null || base == to || base != from) {
       return;
     }
-    _draftBase = updatedAt;
+    _draftBase = to;
     await _editorStateService.rebaseDraft(
       id: id,
       from: base,
-      to: updatedAt,
+      to: to,
     );
   }
 

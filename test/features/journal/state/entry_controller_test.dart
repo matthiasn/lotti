@@ -4388,11 +4388,13 @@ void main() {
       /// Opens the controller on [testTextEntry], lets its deferred
       /// setController run, then delivers one update notification after
       /// which the database holds the entry [next] returns — called on the
-      /// open notifier, so it can type into the editor first. Returns the
-      /// notifier and the editor controller it had before the update.
+      /// open notifier, so it can type into the editor first — and then one
+      /// more for each of [thenStored], in order. Returns the notifier and the
+      /// editor controller it had before the first update.
       Future<(EntryController, QuillController)> openThenUpdate(
-        JournalEntity Function(EntryController notifier) next,
-      ) async {
+        JournalEntity Function(EntryController notifier) next, {
+        List<JournalEntity> thenStored = const [],
+      }) async {
         final streamController = StreamController<Set<String>>.broadcast();
         addTearDown(streamController.close);
         when(
@@ -4404,7 +4406,7 @@ void main() {
           ).thenAnswer((_) => Stream<Set<String>>.fromIterable([])),
         );
         var fetchCount = 0;
-        late final JournalEntity stored;
+        late JournalEntity stored;
         when(
           () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
         ).thenAnswer((_) async => ++fetchCount == 1 ? testTextEntry : stored);
@@ -4428,6 +4430,13 @@ void main() {
         await container.pump();
         await container.read(provider.future);
         expect(container.read(provider).value?.entry, stored);
+        for (final entry in thenStored) {
+          stored = entry;
+          streamController.add({testTextEntry.meta.id});
+          await container.pump();
+          await container.read(provider.future);
+          expect(container.read(provider).value?.entry, entry);
+        }
         return (notifier, editorBefore);
       }
 
@@ -4569,6 +4578,38 @@ void main() {
 
         expect(notifier.controller, same(editorBefore));
         expect(await typeAndCaptureDraftKey(notifier), autosavedAt);
+      });
+
+      test('a draft typed against text sync replaced stays on its version '
+          'when a later write leaves the synced text alone', () async {
+        holdUnsavedDraft();
+        final syncedAt = base.add(const Duration(minutes: 1));
+        final synced = testTextEntry.copyWith(
+          entryText: const EntryText(plainText: 'synced from elsewhere'),
+          meta: testTextEntry.meta.copyWith(updatedAt: syncedAt),
+        );
+        // The timer's autosave, built on the synced version: the synced
+        // text, a new end time and version.
+        final autosavedOnSynced = synced.copyWith(
+          meta: synced.meta.copyWith(
+            dateTo: synced.meta.dateTo.add(const Duration(minutes: 5)),
+            updatedAt: autosavedAt,
+          ),
+        );
+
+        final (notifier, _) = await openThenUpdate(
+          (_) => synced,
+          thenStored: [autosavedOnSynced],
+        );
+
+        verifyNever(
+          () => mockEditorStateService.rebaseDraft(
+            id: any(named: 'id'),
+            from: any(named: 'from'),
+            to: any(named: 'to'),
+          ),
+        );
+        expect(await typeAndCaptureDraftKey(notifier), base);
       });
 
       test('discard drops the draft on the version the autosave moved it '
