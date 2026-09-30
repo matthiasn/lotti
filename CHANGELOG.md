@@ -4,6 +4,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.35]
+
+### Added
+
+- **The phone's sidebar now shows your saved task filters and your activity.**
+  While Tasks is open, every saved filter is listed under it in the sidebar,
+  with its task count, just as on the desktop — tap one to apply it. Above
+  Settings, the Activity section shows a running timer, a recording and what
+  your agents are working on; tap it for the details. Opening a task or an
+  agent from there closes the sidebar on its own.
+- **Show each project agent's inference profile in the projects list.** A new
+  *Show inference profile* switch in the projects filter tags every project
+  that has an agent with the name of its profile, or *No inference profile*.
+  An agent whose profile was deleted is flagged *Inference profile missing*.
+  It is off by default, and makes it easy to go through projects one by one
+  and fix the ones still on the wrong model.
+
+### Changed
+
+- **The sidebar is now how you get around on a phone.** The menu button in
+  the bottom-left corner, which opens a sidebar with every section, used to be
+  an experiment behind *Mobile sidebar navigation* in the settings. It is now
+  the mobile navigation for everyone; the Navigate button, its grid of
+  sections and the setting are gone. The menu button also has a new
+  look: a thin accent-coloured ring and an accent-coloured icon, like the
+  record button on a task, and a little more room from the left edge of the
+  screen.
+- **A running timer now autosaves what you have typed, too.** The five-minute
+  autosave already moved the entry's end time forward, so the calendar did not
+  show a gap. It now also saves the entry's text as it stands, so the calendar
+  and your other devices show the notes you have written so far, not an empty
+  entry until you save it yourself. After an autosave, Discard only reverts
+  what you typed since then.
+
+### Fixed
+
+- **A new project's agent ignored the category's inference profile.** Every
+  project created with an agent quietly ran on the agent template's built-in
+  Gemini model, whatever profile its category named. It now takes the
+  category's default inference profile. A category without a default still
+  leaves the agent on the template's profile or model.
+- **The projects list blinked out whenever an agent updated.** Each time a
+  project agent finished a report, the whole list vanished for a moment and
+  came back. It now stays on screen and switches to the new data once it is
+  ready.
+
 ## [1.1.34]
 
 ### Changed
