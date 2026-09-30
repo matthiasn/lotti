@@ -19,10 +19,16 @@ class EditorStateService {
   final selectionById = <String, TextSelection>{};
   final unsavedStreamById = <String, StreamController<bool>>{};
 
-  /// The entry version (`updatedAt`) each in-memory draft is keyed to when it
-  /// is written to [EditorDb]. Read when the debounced write fires, so a
-  /// [rebaseDraft] in the meantime is honoured.
+  /// The entry version (`updatedAt`) each in-memory draft was typed against,
+  /// and so is keyed to when it is written to [EditorDb]. Read when the
+  /// debounced write fires, so a [rebaseDraft] in the meantime is honoured.
   final _lastSavedById = <String, DateTime>{};
+
+  /// The entry version each entry's draft was last stored as the text of by
+  /// the running timer's autosave ([draftWasStored]). Kept until the entry
+  /// is saved or discarded, so an editor that has not caught up with that
+  /// write yet can key what is typed next to it ([storedDraftVersion]).
+  final _storedAsById = <String, DateTime>{};
 
   Future<void> init() async {
     final drafts = await _editorDb.allDrafts().get();
@@ -49,6 +55,7 @@ class EditorStateService {
     for (final draft in drafts) {
       if (entityById[draft.entryId]?.updatedAt == draft.lastSaved) {
         editorStateById[draft.entryId] = draft.delta;
+        _lastSavedById[draft.entryId] = draft.lastSaved;
       }
     }
   }
@@ -70,6 +77,7 @@ class EditorStateService {
       ) {
         if (value != null) {
           editorStateById[id] = value.delta;
+          _lastSavedById[id] = value.lastSaved;
           unsavedStreamController.add(editorStateById[id] != null);
         }
       });
@@ -137,6 +145,7 @@ class EditorStateService {
     final unsavedStreamController = unsavedStreamById[id];
     editorStateById.remove(id);
     _lastSavedById.remove(id);
+    _storedAsById.remove(id);
 
     if (unsavedStreamController != null) {
       unsavedStreamController.add(false);
@@ -157,6 +166,7 @@ class EditorStateService {
     EasyDebounce.cancel('persistDraftState-$id');
     editorStateById.remove(id);
     _lastSavedById.remove(id);
+    _storedAsById.remove(id);
     selectionById.remove(id);
     await _editorDb.setDraftSaved(entryId: id, lastSaved: lastSaved);
     unsavedStreamById[id]?.add(false);
@@ -180,6 +190,55 @@ class EditorStateService {
     await _editorDb.rebaseDraft(entryId: id, from: from, to: to);
   }
 
+  /// The entry version the in-memory draft of [id] was typed against, or was
+  /// moved onto since ([rebaseDraft]); `null` when none is held.
+  DateTime? draftVersion(String id) => _lastSavedById[id];
+
+  /// The entry version the autosave last stored the draft of [id] as the
+  /// text of ([draftWasStored]); `null` when it has not, or the entry was
+  /// saved or discarded since.
+  ///
+  /// An open editor learns of that write only once its update notification
+  /// has been handled, and what is typed in between is typed against this
+  /// version — not the one the editor was built on.
+  DateTime? storedDraftVersion(String id) => _storedAsById[id];
+
+  /// The unsaved draft of [id] as Quill JSON, when it was typed against the
+  /// entry version [version]; `null` when there is none, or when it was
+  /// typed against another version — text that is no longer the stored one,
+  /// which a write must not put back.
+  String? draftOn(String id, DateTime version) =>
+      draftVersion(id) == version ? editorStateById[id] : null;
+
+  /// Records that [draft], the unsaved draft of [id] typed against the entry
+  /// version [from], was stored as the text of the version [to] — by the
+  /// running timer's autosave, with no editor involved in the write.
+  ///
+  /// When the draft is still the one held, it is saved: it is dropped from
+  /// memory, its rows are marked saved (under [from], or [to] if an open
+  /// editor has already rebased them), and the editor is told the entry is
+  /// no longer unsaved; [to] is recorded as [storedDraftVersion]. When more
+  /// was typed while the write ran, that newer draft is kept and moved onto
+  /// [to] ([rebaseDraft]), still unsaved.
+  Future<void> draftWasStored({
+    required String id,
+    required String draft,
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    if (editorStateById[id] != draft) {
+      await rebaseDraft(id: id, from: from, to: to);
+      return;
+    }
+    EasyDebounce.cancel('persistDraftState-$id');
+    editorStateById.remove(id);
+    _lastSavedById.remove(id);
+    _storedAsById[id] = to;
+    await _editorDb.setDraftSaved(entryId: id, lastSaved: from);
+    await _editorDb.setDraftSaved(entryId: id, lastSaved: to);
+    unsavedStreamById[id]?.add(false);
+  }
+
   /// Forgets every draft held in memory without persisting any of it:
   /// cancels each pending debounced write, clears deltas and selections, and
   /// tells every open editor its entry is no longer unsaved.
@@ -195,6 +254,7 @@ class EditorStateService {
     }
     editorStateById.clear();
     _lastSavedById.clear();
+    _storedAsById.clear();
     selectionById.clear();
     for (final controller in unsavedStreamById.values) {
       if (!controller.isClosed) {

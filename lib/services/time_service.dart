@@ -48,9 +48,10 @@ class TimeService {
       // A new session is replacing one that is still running. Persist the
       // outgoing entry's real stop time before discarding it; otherwise it
       // keeps the stale `dateTo` it was created with (≈ its start time) and
-      // the whole elapsed span is lost. Only the end time is written, so
-      // the entry's existing text is preserved. A failure here must never
-      // block the new timer from starting.
+      // the whole elapsed span is lost. The write is built on the stored
+      // entry, so its text is kept — or, when the user typed a draft, that
+      // draft is stored with it. A failure here must never block the new
+      // timer from starting.
       await _persistSafely(
         _persistTimerStop,
         outgoing,

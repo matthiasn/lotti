@@ -113,7 +113,8 @@ class EntryController extends AsyncNotifier<EntryState?> {
         final previous = state.value?.entry;
         if (latest != previous) {
           state = AsyncData(state.value?.copyWith(entry: latest));
-          if (latest?.entryText != previous?.entryText) {
+          if (latest?.entryText != previous?.entryText &&
+              !_editorShows(latest)) {
             if (!_dirty && !_editorStateService.entryIsUnsaved(id)) {
               setController();
             }
@@ -125,8 +126,33 @@ class EntryController extends AsyncNotifier<EntryState?> {
     });
   }
 
-  /// Follows a write that changed the entry but not its text — such as the
-  /// running timer's periodic autosave of its end time. The editor keeps its
+  /// The entry version drafts of this editor are keyed to: the version its
+  /// held draft is on — which an autosave that stored an earlier draft moves
+  /// on without the editor — or else the later of [_draftBase] and the
+  /// version the autosave last stored the draft as. The latter covers what is
+  /// typed after that write but before its update notification advanced
+  /// [_draftBase]; [_draftBase] wins once the entry has moved on since.
+  DateTime? get _draftKey {
+    final held = _editorStateService.draftVersion(id);
+    if (held != null) {
+      return held;
+    }
+    final storedAs = _editorStateService.storedDraftVersion(id);
+    final base = _draftBase;
+    if (storedAs == null) return base;
+    if (base == null) return storedAs;
+    return storedAs.isAfter(base) ? storedAs : base;
+  }
+
+  /// Whether the editor already shows the text of [entry] — as it does after
+  /// the running timer's autosave stored the draft typed in it.
+  bool _editorShows(JournalEntity? entry) =>
+      entry?.entryText?.quill ==
+      quillJsonFromDelta(deltaFromController(controller));
+
+  /// Follows a write that left the editor's text as it is — such as the
+  /// running timer's periodic autosave of its end time and of the draft
+  /// typed in the editor. The editor keeps its
   /// controller, so an open editor's cursor does not jump, and an unsaved
   /// draft moves onto the new version so it is still restored after a
   /// restart.
@@ -394,7 +420,7 @@ class EntryController extends AsyncNotifier<EntryState?> {
 
     await _editorStateService.entryWasSaved(
       id: id,
-      lastSaved: _draftBase ?? entry.meta.updatedAt,
+      lastSaved: _draftKey ?? entry.meta.updatedAt,
       controller: controller,
     );
     await HapticFeedback.heavyImpact();
@@ -431,7 +457,7 @@ class EntryController extends AsyncNotifier<EntryState?> {
 
     await _editorStateService.dropDraft(
       id: id,
-      lastSaved: _draftBase ?? entry.meta.updatedAt,
+      lastSaved: _draftKey ?? entry.meta.updatedAt,
     );
     // Rebuild from the saved text: with the draft gone, setController falls back
     // to entry.entryText, reverting any unsaved edits.
@@ -772,7 +798,7 @@ class EntryController extends AsyncNotifier<EntryState?> {
       _editorStateService.saveTempState(
         id: id,
         json: quillJsonFromDelta(delta),
-        lastSaved: _draftBase ?? entry.meta.updatedAt,
+        lastSaved: _draftKey ?? entry.meta.updatedAt,
       );
       setDirty(value: true);
     });
