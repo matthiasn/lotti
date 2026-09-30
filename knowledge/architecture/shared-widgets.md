@@ -191,7 +191,9 @@ the current query's results.
 
 # The mobile navigation is app-level
 
-`MobileNavigationLauncher`, the activity island, the clearance contract
+`MobileNavigationLauncher` (the menu button and the docked page action), the
+sidebar drawer it opens (`MobileNavigationDrawerHost`), the activity island,
+the clearance contract
 (`DesignSystemBottomNavigationBar.occupiedHeight`) and its FAB clearance wrapper
 live here rather than in the design system, because the launcher is **an
 app-level overlay floating over each tab's page stack**, not a

@@ -17,7 +17,6 @@ import 'package:lotti/beamer/locations/relationships_location.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -84,7 +83,6 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/uuid.dart';
 import 'package:lotti/widgets/misc/contact_support_row.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
@@ -92,7 +90,6 @@ import 'package:lotti/widgets/misc/sidebar_activity_summary.dart';
 import 'package:lotti/widgets/misc/zoom_wrapper.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/nav_bar/mobile_activity_island.dart';
-import 'package:lotti/widgets/nav_bar/mobile_nav_sheet.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_drawer.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
@@ -411,8 +408,8 @@ class _AppNavigationDestination {
   final _AppNavigationDestinationKind kind;
   final String label;
 
-  /// Icon for this destination, shared by the desktop sidebar rows and the
-  /// mobile Navigate grid's tiles.
+  /// Icon for this destination, shared by the desktop sidebar rows, the
+  /// mobile drawer's rows and the Recents section's surface marks.
   final Widget Function({required bool active}) iconBuilder;
 
   /// Optional trailing widget shown on the right side of the desktop sidebar
@@ -426,15 +423,20 @@ class _AppNavigationDestination {
 
   /// [includeExpandedChild] drops the under-row subtree (saved filters, the
   /// month calendar) — lockdown uses this because those subtrees name things
-  /// outside the locked category.
+  /// outside the locked category. [expandedChild] replaces this
+  /// destination's own subtree when included: the mobile drawer hosts the
+  /// saved filters with a callback that closes it.
   DesktopSidebarDestination toDesktopSidebarDestination({
     bool includeExpandedChild = true,
+    Widget Function()? expandedChild,
   }) {
     return DesktopSidebarDestination(
       label: label,
       iconBuilder: iconBuilder,
       trailingBuilder: trailingBuilder,
-      expandedChildBuilder: includeExpandedChild ? expandedChildBuilder : null,
+      expandedChildBuilder: includeExpandedChild
+          ? expandedChild ?? expandedChildBuilder
+          : null,
     );
   }
 }
@@ -515,6 +517,9 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     // but so the launcher drops the logbook's docked create action there.
     // See [isLogbookEntryDetailRoute].
     navService.journalDelegate,
+    // Likewise for an event's page, where the launcher drops the events
+    // tab's create action. See [isEventDetailRoute].
+    navService.eventsDelegate,
   ]);
 
   /// Identity for the tab content across the desktop/mobile breakpoint.
@@ -540,6 +545,27 @@ class _AppScreenState extends ConsumerState<AppScreen> {
   late final MobileNavigationDrawerController _mobileDrawer = ref.read(
     mobileNavigationDrawerControllerProvider,
   );
+
+  @override
+  void initState() {
+    super.initState();
+    _routeChangeListenable.addListener(_closeMobileDrawerOnRouteChange);
+  }
+
+  @override
+  void dispose() {
+    _routeChangeListenable.removeListener(_closeMobileDrawerOnRouteChange);
+    super.dispose();
+  }
+
+  /// Any route change is a choice that has been made, so an open drawer
+  /// gets out of its way. This is what closes the drawer behind the rows
+  /// that navigate on their own — the running timer opening its task, an
+  /// agent wake opening its agent — without each of them having to know a
+  /// drawer exists.
+  void _closeMobileDrawerOnRouteChange() {
+    if (_mobileDrawer.isOpen) _mobileDrawer.close();
+  }
 
   /// The one tab host, shared by both layouts. Only the active tab animates
   /// and can take focus or participate in Hero transitions; the rest stay
@@ -1070,7 +1096,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                   .toggleSidebarCollapsed(),
               aboveSettings: lockdown.isActive
                   ? null
-                  : const _DesktopSidebarAboveSettings(),
+                  : const _SidebarAboveSettings(),
               footerBand: lockdown.isActive ? null : const ContactSupportRow(),
               logoMenuItems: logoMenuItems,
               logoMenuHeader: LockdownLogoMenu.header(context, lockdown),
@@ -1202,59 +1228,14 @@ class _AppScreenState extends ConsumerState<AppScreen> {
 
     final launcherHeight = MobileNavigationLauncher.barHeight(context);
 
-    // The experimental sidebar navigation swaps the launcher's Navigate chip
-    // for a menu button pinned to the bottom-leading corner, which slides a
-    // sidebar in from the side instead of raising the grid; the page's
-    // create action moves to the bottom-trailing corner. Off — the default,
-    // and the answer while the flag is still loading — leaves the shell
-    // exactly as it was.
-    final sidebarNavigation =
-        ref
-            .watch(configFlagProvider(enableMobileSidebarNavigationFlag))
-            .value ??
-        false;
-
-    // The launcher's row: the shell's navigation control and, on the list
-    // tabs that hand one over, the active page's create action. Navigate
-    // opens every enabled destination in a grid; taps route through the same
-    // NavService indices the IndexedStack uses. Built lazily: on routes that
-    // suppress the bar entirely the grid's per-destination closures are
-    // never constructed.
-    Widget buildLauncher() {
-      final pageAction = _launcherDockAction(
-        context,
-        destinations[index].kind,
-      );
-      if (sidebarNavigation) {
-        return MobileNavigationLauncher.sidebar(
-          onOpenMenu: _mobileDrawer.open,
-          pageAction: pageAction,
-        );
-      }
-      return MobileNavigationLauncher(
-        pageAction: pageAction,
-        onNavigate: () => showMobileNavSheet(
-          context: context,
-          footerTrailing: const SyncQueueCounts(),
-          items: [
-            for (final (i, destination) in destinations.indexed)
-              MobileNavSheetItem(
-                label: destination.label,
-                icon: destination.iconBuilder(active: i == index),
-                active: i == index,
-                // The index is resolved at tap time, not captured: a flag
-                // change (e.g. synced from another device) while the grid is
-                // open re-numbers the destinations, and a stale index would
-                // route the tap to the wrong tab.
-                onSelected: () {
-                  final tapIndex = _currentDestinationIndex(destination.kind);
-                  if (tapIndex != null) navService.tapIndex(tapIndex);
-                },
-              ),
-          ],
-        ),
-      );
-    }
+    // The launcher's row: the menu button that slides the sidebar in and,
+    // on the list tabs that hand one over, the active page's create action.
+    // Built lazily: on routes that suppress the bar entirely it is never
+    // constructed.
+    Widget buildLauncher() => MobileNavigationLauncher(
+      onOpenMenu: _mobileDrawer.open,
+      pageAction: _launcherDockAction(context, destinations[index].kind),
+    );
 
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
 
@@ -1310,13 +1291,8 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         ],
       ],
     );
-    final shell = Scaffold(extendBody: true, body: body);
-    if (!sidebarNavigation) return shell;
-
     // The whole mobile shell — page, launcher and activity island — is what
     // the drawer pushes aside, so nothing of it floats over the panel.
-    // Flipping the flag re-parents the keyed content stack rather than
-    // rebuilding it, exactly as crossing the desktop breakpoint does.
     return MobileNavigationDrawerHost(
       controller: _mobileDrawer,
       drawerBuilder: (context) => _buildMobileDrawer(
@@ -1324,21 +1300,27 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         index: index,
         destinations: destinations,
       ),
-      child: shell,
+      child: Scaffold(extendBody: true, body: body),
     );
   }
 
   /// The mobile sidebar navigation's panel: the desktop rail's own sidebar,
   /// never collapsed and without its toggle, with the app-wide Recents list
-  /// beneath the destinations.
+  /// beneath the destinations and the activity summary — recording, timer
+  /// and agent wakes — above Settings, as on desktop.
   ///
-  /// The under-row subtrees the desktop rail shows (saved filters, the month
-  /// calendar, the impact entry) are left out: they are desktop widgets that
-  /// neither size for touch nor know to close a drawer, and the phone keeps
-  /// its own saved-filter rail on the Tasks page.
+  /// Of the under-row subtrees the desktop rail shows, the saved filters
+  /// come along beneath an active Tasks row, so the phone reaches every
+  /// saved filter from the same place the desktop does. The month calendar
+  /// and the impact entry are left out: they are desktop surfaces that do
+  /// not size for touch.
   ///
-  /// Every choice closes the drawer first. Destination indices are resolved
-  /// at tap time, for the reason the Navigate grid resolves them then.
+  /// Every choice closes the drawer: a destination or a recent search
+  /// closes it before navigating, a saved filter once applied, and the
+  /// activity rows that navigate on their own close it through
+  /// [_closeMobileDrawerOnRouteChange]. Destination indices are resolved at
+  /// tap time, so a flag change while the drawer is open cannot route a tap
+  /// through a stale index.
   Widget _buildMobileDrawer(
     BuildContext context, {
     required int index,
@@ -1355,7 +1337,12 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     return DesktopNavigationSidebar(
       destinations: [
         for (final destination in sidebar.main)
-          destination.toDesktopSidebarDestination(includeExpandedChild: false),
+          destination.toDesktopSidebarDestination(
+            includeExpandedChild:
+                destination.kind == _AppNavigationDestinationKind.tasks,
+            expandedChild: () =>
+                SidebarSavedTaskFilters(onApplied: _mobileDrawer.close),
+          ),
       ],
       activeIndex: sidebar.mainActiveIndex,
       onDestinationSelected: (i) => select(sidebar.main[i].kind),
@@ -1383,6 +1370,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           openRecentSearch(ref, search, navService: navService);
         },
       ),
+      aboveSettings: const _SidebarAboveSettings(),
       footerBand: const ContactSupportRow(),
     );
   }
@@ -1406,11 +1394,10 @@ class _AppScreenState extends ConsumerState<AppScreen> {
   /// Exactly the destinations whose list page floats a create button on
   /// desktop: leaving it in the corner would stack two floating controls
   /// above the launcher, neither of them looking placed. Daily OS,
-  /// Dashboards and Settings float nothing, so they leave the navigation
-  /// control alone on the row — which is what makes a docked action read as
-  /// belonging to the page rather than to the shell. Both arrangements take
-  /// the same action: centred beside Navigate, or in the trailing corner
-  /// opposite the sidebar's menu button.
+  /// Dashboards and Settings float nothing, so they leave the menu button
+  /// alone on the row — which is what makes a docked action read as
+  /// belonging to the page rather than to the shell. The action sits in the
+  /// trailing corner, opposite the menu button.
   ///
   /// The page decides the chip's wording, not this switch: the task and
   /// people lists word their actions, the lists whose own heading says what
@@ -1556,7 +1543,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     final result = allDestinations
         .where((destination) => enabledKinds.contains(destination.kind))
         .toList(growable: false);
-    // The Navigate grid resolves tap indices from _enabledDestinationKinds
+    // The mobile drawer resolves tap indices from _enabledDestinationKinds
     // while this list (ordered by `allDestinations`) drives the
     // IndexedStack — a reorder of one without the other silently
     // misroutes taps, so pin their agreement.
@@ -1573,8 +1560,8 @@ class _AppScreenState extends ConsumerState<AppScreen> {
   /// Destination index of [kind] as enabled *right now*, read directly
   /// from the NavService flag getters — the same ordering
   /// [_buildNavigationDestinations] uses via [_enabledDestinationKinds].
-  /// Resolved at tap time by the Navigate grid so a flag change while the
-  /// grid is open cannot route a tap through a stale index. Null when
+  /// Resolved at tap time by the mobile drawer so a flag change while the
+  /// drawer is open cannot route a tap through a stale index. Null when
   /// [kind] got disabled in the meantime.
   int? _currentDestinationIndex(_AppNavigationDestinationKind kind) {
     final index = _enabledDestinationKinds(
@@ -1791,7 +1778,7 @@ class _SlideAwayBottomNav extends StatelessWidget {
 
 /// The enabled destination kinds in navigation order — the single source
 /// of truth for how flags map to tab indices, shared by the destination
-/// builder and the Navigate grid's tap-time index resolution.
+/// builder and the mobile drawer's tap-time index resolution.
 List<_AppNavigationDestinationKind> _enabledDestinationKinds({
   required bool isProjectsPageEnabled,
   required bool isDailyOsPageEnabled,
@@ -2085,13 +2072,14 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
   }
 }
 
-/// Composer for the desktop sidebar's `aboveSettings` slot.
+/// Composer for the sidebar's `aboveSettings` slot, on the desktop rail and
+/// in the mobile drawer alike.
 ///
 /// All transient systems share one compact summary surface. Selecting it
 /// expands the detailed recording, timer, and agent controls in place without
 /// permanently letting those operational tools displace primary navigation.
-class _DesktopSidebarAboveSettings extends StatelessWidget {
-  const _DesktopSidebarAboveSettings();
+class _SidebarAboveSettings extends StatelessWidget {
+  const _SidebarAboveSettings();
 
   @override
   Widget build(BuildContext context) {

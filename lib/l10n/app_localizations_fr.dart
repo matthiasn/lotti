@@ -3688,14 +3688,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Activer l\'intégration Matrix pour synchroniser tes entrées sur plusieurs appareils et avec d\'autres utilisateurs Matrix.';
 
   @override
-  String get configFlagEnableMobileSidebarNavigation =>
-      'Navigation mobile en barre latérale';
-
-  @override
-  String get configFlagEnableMobileSidebarNavigationDescription =>
-      'Remplace le bouton Naviguer par un bouton de menu en bas à gauche qui ouvre une barre latérale avec toutes les sections et tes recherches récentes.';
-
-  @override
   String get configFlagEnableNotificationsDescription =>
       'Recevoir des notifications pour les rappels, les mises à jour et les événements importants.';
 
@@ -9996,9 +9988,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get navTabTitleJournal => 'Journal';
-
-  @override
-  String get navTabTitleNavigate => 'Naviguer';
 
   @override
   String get navTabTitlePeople => 'Proches';

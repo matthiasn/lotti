@@ -1,9 +1,14 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_provider.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_mru_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/desktop/sidebar_saved_task_filters.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filters_sheet.dart';
@@ -44,12 +49,54 @@ class _StubSavedController extends SavedTaskFiltersController {
   Future<List<SavedTaskFilter>> build() async => seed;
 }
 
+/// Holds every batch filter update open until [release], so a test can act
+/// while a tapped filter is still landing.
+class _GatedJournalPageController extends FakeJournalPageController {
+  _GatedJournalPageController() : super(const JournalPageState());
+
+  final _gate = Completer<void>();
+
+  void release() => _gate.complete();
+
+  @override
+  Future<void> applyBatchFilterUpdate({
+    Set<String>? statuses,
+    Set<String>? categoryIds,
+    Set<String>? labelIds,
+    Set<String>? projectIds,
+    Set<String>? priorities,
+    TaskSortOption? sortOption,
+    AgentAssignmentFilter? agentAssignmentFilter,
+    SearchMode? searchMode,
+    bool? showCreationDate,
+    bool? showDueDate,
+  }) async {
+    await super.applyBatchFilterUpdate(
+      statuses: statuses,
+      categoryIds: categoryIds,
+      labelIds: labelIds,
+      projectIds: projectIds,
+      priorities: priorities,
+      sortOption: sortOption,
+      agentAssignmentFilter: agentAssignmentFilter,
+      searchMode: searchMode,
+      showCreationDate: showCreationDate,
+      showDueDate: showDueDate,
+    );
+    await _gate.future;
+  }
+}
+
 Future<FakeJournalPageController> _pumpSidebar(
   WidgetTester tester, {
   List<SavedTaskFilter> saved = _saved,
   JournalPageState pageState = const JournalPageState(),
+  VoidCallback? onApplied,
+  FakeJournalPageController? pageController,
+  ValueListenable<bool>? showSidebar,
 }) async {
-  final page = FakeJournalPageController(pageState);
+  final page = pageController ?? FakeJournalPageController(pageState);
+  final sidebar = SidebarSavedTaskFilters(onApplied: onApplied);
   await tester.pumpWidget(
     makeTestableWidgetNoScroll(
       Scaffold(
@@ -57,7 +104,13 @@ Future<FakeJournalPageController> _pumpSidebar(
           alignment: Alignment.topLeft,
           child: SizedBox(
             width: dsTokensLight.spacing.step13 + dsTokensLight.spacing.step10,
-            child: const SidebarSavedTaskFilters(),
+            child: showSidebar == null
+                ? sidebar
+                : ValueListenableBuilder<bool>(
+                    valueListenable: showSidebar,
+                    builder: (_, show, _) =>
+                        show ? sidebar : const SizedBox.shrink(),
+                  ),
           ),
         ),
       ),
@@ -200,6 +253,106 @@ void main() {
 
     expect(page.setSelectedTaskStatusesCalls.last, <String>{});
     expect(page.applyBatchFilterUpdateCalled, 2);
+  });
+
+  group('onApplied', () {
+    testWidgets('fires once a saved filter has been applied', (tester) async {
+      late FakeJournalPageController page;
+      final appliedWith = <Set<String>>[];
+      page = await _pumpSidebar(
+        tester,
+        onApplied: () =>
+            appliedWith.add(page.setSelectedTaskStatusesCalls.last),
+      );
+
+      await tester.tap(
+        find.byKey(SidebarSavedTaskFiltersKeys.filter('blocked')),
+      );
+      await tester.pump();
+
+      // Called after the filter landed, not before: the page already holds
+      // the filter's statuses when the callback runs.
+      expect(appliedWith, [
+        {'BLOCKED'},
+      ]);
+    });
+
+    testWidgets('fires once All tasks has been applied', (tester) async {
+      late FakeJournalPageController page;
+      final appliedWith = <Set<String>>[];
+      page = await _pumpSidebar(
+        tester,
+        onApplied: () =>
+            appliedWith.add(page.setSelectedTaskStatusesCalls.last),
+      );
+
+      await tester.tap(find.byKey(SidebarSavedTaskFiltersKeys.allTasks));
+      await tester.pump();
+
+      expect(appliedWith, [<String>{}]);
+      expect(page.applyBatchFilterUpdateCalled, 1);
+    });
+
+    for (final (name, tapKey) in [
+      ('a saved filter', SidebarSavedTaskFiltersKeys.filter('blocked')),
+      ('All tasks', SidebarSavedTaskFiltersKeys.allTasks),
+    ]) {
+      testWidgets('does not fire when the list unmounted while $name was '
+          'landing', (tester) async {
+        final page = _GatedJournalPageController();
+        final show = ValueNotifier<bool>(true);
+        addTearDown(show.dispose);
+        var applied = 0;
+        await _pumpSidebar(
+          tester,
+          pageController: page,
+          showSidebar: show,
+          onApplied: () => applied++,
+        );
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(SidebarSavedTaskFilters)),
+        );
+
+        await tester.tap(find.byKey(tapKey));
+        await tester.pump();
+        expect(page.applyBatchFilterUpdateCalled, 1);
+
+        // The host goes away (e.g. the window crossed the desktop
+        // breakpoint) before the filter has landed.
+        show.value = false;
+        await tester.pump();
+        expect(find.byType(SidebarSavedTaskFilters), findsNothing);
+
+        page.release();
+        await tester.pump();
+
+        expect(applied, 0);
+        // The recency order is independent of the list's lifecycle.
+        expect(
+          container.read(savedTaskFilterMruProvider),
+          tapKey == SidebarSavedTaskFiltersKeys.allTasks
+              ? isEmpty
+              : ['blocked'],
+        );
+      });
+    }
+
+    testWidgets('does not fire for Manage, More or Show fewer, which leave '
+        'the list where it is', (tester) async {
+      var applied = 0;
+      await _pumpSidebar(tester, onApplied: () => applied++);
+
+      await tester.tap(find.byKey(SidebarSavedTaskFiltersKeys.showMore));
+      await tester.pump();
+      await tester.tap(find.byKey(SidebarSavedTaskFiltersKeys.showLess));
+      await tester.pump();
+      await tester.tap(find.byKey(SidebarSavedTaskFiltersKeys.manage));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.byType(SavedTaskFiltersSheet), findsOneWidget);
+      expect(applied, 0);
+    });
   });
 
   testWidgets('the manage action opens the saved-filters manager sheet', (

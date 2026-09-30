@@ -889,9 +889,9 @@ Widget _dayShell(ScreenshotDevice device, {required DraftPlan draft}) {
         left: 0,
         right: 0,
         bottom: 0,
-        // Daily OS docks no page action, so the shell centres Navigate
-        // alone over the day page.
-        child: MobileNavigationLauncher(onNavigate: () {}),
+        // Daily OS docks no page action, so the menu button stands alone
+        // in its corner over the day page.
+        child: MobileNavigationLauncher(onOpenMenu: () {}),
       ),
     ],
   );

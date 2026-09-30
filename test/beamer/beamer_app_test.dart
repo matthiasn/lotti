@@ -20,7 +20,6 @@ import 'package:lotti/beamer/locations/tasks_location.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/nudge_models.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
@@ -69,6 +68,7 @@ import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_provider.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/desktop/sidebar_saved_task_filters.dart';
 import 'package:lotti/features/theming/state/theming_controller.dart';
@@ -88,7 +88,6 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/misc/contact_support_row.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/sidebar_activity_summary.dart';
@@ -286,6 +285,23 @@ class _TestHabitsLocation extends HabitsLocation {
   }
 }
 
+/// An [EventsLocation] whose pages are inert stubs: route matching (and
+/// therefore [isEventDetailRoute]) behaves exactly like production, without
+/// building the events overview or event page dependency trees.
+class _TestEventsLocation extends EventsLocation {
+  _TestEventsLocation(super.routeInformation);
+
+  @override
+  List<BeamPage> buildPages(BuildContext context, BeamState state) {
+    return [
+      BeamPage(
+        key: ValueKey('test-events-${state.uri.path}'),
+        child: const SizedBox.shrink(),
+      ),
+    ];
+  }
+}
+
 Future<BeamerDelegate> _createEmptyDelegate(String initialPath) async {
   final delegate = BeamerDelegate(
     setBrowserTabTitle: false,
@@ -335,6 +351,7 @@ Future<void> _stubNavService(
   BeamerDelegate? goalsDelegate,
   BeamerDelegate? habitsDelegate,
   BeamerDelegate? relationshipsDelegate,
+  BeamerDelegate? eventsDelegate,
 }) async {
   final taskStack = ValueNotifier<List<String>>([]);
   when(() => navService.desktopTaskDetailStack).thenReturn(taskStack);
@@ -347,7 +364,7 @@ Future<void> _stubNavService(
   habitsDelegate ??= await _createEmptyDelegate('/habits');
   final dashboardsDelegate = await _createEmptyDelegate('/dashboards');
   final journalDelegate = await _createEmptyDelegate('/journal');
-  final eventsDelegate = await _createEmptyDelegate('/events');
+  eventsDelegate ??= await _createEmptyDelegate('/events');
   // AppScreen listens to the goals delegate too, so the bottom bar can
   // slide away on the unified Goals tab's hosted goal pages.
   goalsDelegate ??= await _createEmptyDelegate('/goals');
@@ -425,6 +442,8 @@ Future<void> _pumpAppScreen(
   MockJournalDb? journalDb,
   Size viewportSize = _phoneViewportSize,
   AudioRecorderState? audioRecorderState,
+  List<SavedTaskFilter> savedFilters = const [],
+  List<RecentSearch> recents = const [],
   List<Override> extraOverrides = const [],
 }) async {
   _useViewport(tester, viewportSize);
@@ -488,10 +507,13 @@ Future<void> _pumpAppScreen(
         // Override them with safe defaults so this test doesn't transitively
         // trigger the real JournalPageController build chain.
         savedTaskFiltersControllerProvider.overrideWith(
-          () => _StubSavedTaskFiltersController(const []),
+          () => _StubSavedTaskFiltersController(savedFilters),
         ),
         currentSavedTaskFilterIdProvider.overrideWith((ref) => null),
         tasksFilterHasUnsavedClausesProvider.overrideWith((ref) => false),
+        // The drawer's Recents section reads this; the real controller
+        // would reach for the settings store.
+        fakeRecentSearches(FakeRecentSearchesController(recents)),
         ...extraOverrides,
       ],
       child: MaterialApp.router(
@@ -600,6 +622,7 @@ Future<void> _pumpAppScreenCustomProviders(
         ),
         currentSavedTaskFilterIdProvider.overrideWith((ref) => null),
         tasksFilterHasUnsavedClausesProvider.overrideWith((ref) => false),
+        fakeRecentSearches(FakeRecentSearchesController()),
         ...extraOverrides,
       ],
       child: MaterialApp.router(
@@ -705,6 +728,7 @@ Future<void> _pumpReadyMyBeamerApp(
         ),
         currentSavedTaskFilterIdProvider.overrideWith((ref) => null),
         tasksFilterHasUnsavedClausesProvider.overrideWith((ref) => false),
+        fakeRecentSearches(FakeRecentSearchesController()),
         ...extraOverrides,
       ],
       child: app,
@@ -713,6 +737,22 @@ Future<void> _pumpReadyMyBeamerApp(
   await tester.pump();
   await tester.pump();
 }
+
+final Finder _menuButton = find.byKey(MobileNavigationLauncherKeys.menuButton);
+
+/// Opens the mobile drawer from the launcher's menu button and lets the
+/// slide finish.
+Future<void> _openMobileDrawer(WidgetTester tester) async {
+  await tester.tap(_menuButton);
+  await tester.pumpAndSettle();
+}
+
+/// A destination row's label in the sidebar — the open mobile drawer's, or
+/// the desktop rail's.
+Finder _sidebarText(String label) => find.descendant(
+  of: find.byType(DesktopNavigationSidebar),
+  matching: find.text(label),
+);
 
 Stream<JournalEntity?> _emptyTimeStream(Invocation _) =>
     const Stream<JournalEntity?>.empty();
@@ -723,8 +763,9 @@ void main() {
   // (test/README.md, "Committed per-feature harnesses").
   setUpAll(loadAppFonts);
   testWidgets(
-    'the launcher is the mobile navigation: Navigate lists every enabled '
-    'section in nav order and routes the tapped one by its live index',
+    'the launcher is the mobile navigation: its menu button opens a drawer '
+    'listing every enabled section in nav order and routes the tapped one '
+    'by its live index',
     (tester) async {
       final nav = MockNavService()..relationshipsPageEnabled = true;
       await _stubNavService(
@@ -742,18 +783,19 @@ void main() {
       addTearDown(tearDownTestGetIt);
       await _pumpAppScreen(tester, navService: nav);
 
-      // Nothing to opt into: the launcher renders on the first frame, with
-      // no bar of slots anywhere in the tree.
+      // Nothing to opt into: the launcher and its menu button render on the
+      // first frame, and the drawer's host is always in the tree.
       expect(find.byType(MobileNavigationLauncher), findsOneWidget);
-      expect(find.text('Navigate'), findsOneWidget);
-      expect(find.text('More'), findsNothing);
+      expect(_menuButton, findsOneWidget);
+      expect(find.byType(MobileNavigationDrawerHost), findsOneWidget);
+      expect(find.byType(DesktopNavigationSidebar), findsNothing);
       verifyNever(() => nav.tapIndex(any()));
 
-      await tester.tap(find.text('Navigate'));
-      await tester.pumpAndSettle();
+      await _openMobileDrawer(tester);
+      verifyNever(() => nav.tapIndex(any()));
 
-      // All ten destinations, in the shell's navigation order, reading
-      // left-to-right then top-to-bottom through the two-column grid.
+      // All ten destinations, in the shell's navigation order, top to
+      // bottom, Settings pinned below the rest.
       const expectedOrder = [
         'Tasks',
         'DailyOS',
@@ -768,20 +810,17 @@ void main() {
       ];
       final positions = {
         for (final label in expectedOrder)
-          label: tester.getTopLeft(find.text(label)),
+          label: tester.getTopLeft(_sidebarText(label)).dy,
       };
       final ordered = expectedOrder.toList()
-        ..sort((a, b) {
-          final dy = positions[a]!.dy.compareTo(positions[b]!.dy);
-          return dy != 0 ? dy : positions[a]!.dx.compareTo(positions[b]!.dx);
-        });
+        ..sort((a, b) => positions[a]!.compareTo(positions[b]!));
       expect(ordered, expectedOrder);
 
-      await tester.tap(find.text('Events'));
+      await tester.tap(_sidebarText('Events'));
       await tester.pumpAndSettle();
       verify(() => nav.tapIndex(8)).called(1);
-      // Selection dismissed the grid.
-      expect(find.byType(ContactSupportRow), findsNothing);
+      // Selection closed the drawer.
+      expect(find.byKey(MobileNavigationDrawerKeys.panel), findsNothing);
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
@@ -825,8 +864,8 @@ void main() {
       );
       expect(find.bySemanticsLabel(onTasks.label), findsOneWidget);
 
-      // Daily OS sits at index 1 and contributes nothing: the Navigate
-      // control goes back to being alone in the centre.
+      // Daily OS sits at index 1 and contributes nothing: the menu button
+      // goes back to being alone on the row.
       index = 1;
       indexController.add(1);
       await tester.pumpAndSettle();
@@ -917,6 +956,68 @@ void main() {
           reason: 'destination ${entry.key}',
         );
       }
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    "the events tab's create action leaves the launcher on an event's page "
+    'and comes back on the overview',
+    (tester) async {
+      final indexController = StreamController<int>.broadcast();
+      addTearDown(indexController.close);
+      final eventsDelegate = BeamerDelegate(
+        setBrowserTabTitle: false,
+        initialPath: '/events',
+        locationBuilder: (routeInformation, _) =>
+            _TestEventsLocation(routeInformation),
+      );
+      addTearDown(eventsDelegate.dispose);
+      await eventsDelegate.setNewRoutePath(
+        RouteInformation(uri: Uri.parse('/events')),
+      );
+      final nav = MockNavService()..relationshipsPageEnabled = true;
+      await _stubNavService(
+        nav,
+        indexStream: indexController.stream,
+        isProjectsEnabled: () => true,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => true,
+        isDashboardsEnabled: () => true,
+        isUnifiedGoalsEnabled: true,
+        isEventsEnabled: () => true,
+        eventsDelegate: eventsDelegate,
+      );
+      // Events sits at destination 8 (see the destination order above).
+      when(() => nav.index).thenReturn(8);
+      await _registerAppScreenGetIt(nav);
+      addTearDown(tearDownTestGetIt);
+      await _pumpAppScreen(tester, navService: nav);
+      indexController.add(8);
+      await tester.pumpAndSettle();
+
+      MobileNavDockAction? docked() => tester
+          .widget<MobileNavigationLauncher>(
+            find.byType(MobileNavigationLauncher),
+          )
+          .pageAction;
+      final newEvent = tester
+          .element(find.byType(MobileNavigationLauncher))
+          .messages
+          .eventsNewEvent;
+
+      expect(docked()?.label, newEvent);
+
+      // Only the events delegate moves — no tab switch — so the launcher
+      // has to hear about it from the route listener.
+      eventsDelegate.beamToNamed('/events/${const Uuid().v4()}');
+      await tester.pumpAndSettle();
+      expect(docked(), isNull);
+
+      eventsDelegate.beamToNamed('/events');
+      await tester.pumpAndSettle();
+      expect(docked()?.label, newEvent);
 
       await tester.pumpWidget(const SizedBox.shrink());
     },
@@ -1195,12 +1296,11 @@ void main() {
         navService: mockNavService,
       );
 
-      // The grid is where destinations are named: Projects is absent from
-      // the first frame's grid, the always-on tabs are there.
-      await tester.tap(find.text('Navigate'));
-      await tester.pumpAndSettle();
-      expect(find.text('Projects'), findsNothing);
-      expect(find.text('Tasks'), findsOneWidget);
+      // The drawer is where destinations are named: Projects is absent from
+      // it on the first frame, the always-on tabs are there.
+      await _openMobileDrawer(tester);
+      expect(_sidebarText('Projects'), findsNothing);
+      expect(_sidebarText('Tasks'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
@@ -1312,7 +1412,7 @@ void main() {
     });
 
     testWidgets(
-      'lists Projects in the Navigate grid after a flag-driven nav update',
+      'lists Projects in the drawer after a flag-driven nav update',
       (tester) async {
         final mockNavService = MockNavService();
         final indexController = StreamController<int>.broadcast();
@@ -1341,19 +1441,22 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        // Nothing on the page names the new tab — the grid is where it
-        // appears, rebuilt from the live destinations when it opens.
+        // Nothing on the page names the new tab — the drawer is where it
+        // appears, built from the live destinations when it opens.
         expect(find.text('Projects'), findsNothing);
-        await tester.tap(find.text('Navigate'));
-        await tester.pumpAndSettle();
+        await _openMobileDrawer(tester);
 
-        expect(find.text('Projects'), findsOneWidget);
+        expect(_sidebarText('Projects'), findsOneWidget);
 
-        // The grid's footer carries the Settings sync counts, the way the
-        // desktop sidebar's Settings row does, instead of a badge cramped
-        // over the gear icon.
-        expect(find.byType(SyncQueueCounts), findsOneWidget);
-        expect(find.byIcon(LottiIcons.settings), findsOneWidget);
+        // The Settings row carries the sync counts, as the desktop rail's
+        // does.
+        expect(
+          find.descendant(
+            of: find.byType(DesktopNavigationSidebar),
+            matching: find.byType(SyncQueueCounts),
+          ),
+          findsOneWidget,
+        );
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
@@ -1361,7 +1464,7 @@ void main() {
     );
 
     testWidgets(
-      'a grid tile tapped after its flag was disabled closes the grid '
+      'a drawer row tapped after its flag was disabled closes the drawer '
       'without routing',
       (tester) async {
         final mockNavService = MockNavService();
@@ -1382,20 +1485,19 @@ void main() {
 
         await _pumpAppScreen(tester, navService: mockNavService);
 
-        // Open the grid while Projects is still enabled.
-        await tester.tap(find.text('Navigate'));
-        await tester.pumpAndSettle();
-        expect(find.text('Projects'), findsOneWidget);
+        // Open the drawer while Projects is still enabled.
+        await _openMobileDrawer(tester);
+        expect(_sidebarText('Projects'), findsOneWidget);
 
-        // The flag flips (e.g. synced from another device) while the grid
-        // is open. The tile is still visible, but its tap-time index
-        // resolution now returns null: the grid closes and the tap is
+        // The flag flips (e.g. synced from another device) while the drawer
+        // is open. The row is still visible, but its tap-time index
+        // resolution now returns null: the drawer closes and the tap is
         // dropped instead of routing through a stale index.
         isProjectsEnabled = false;
-        await tester.tap(find.text('Projects'));
+        await tester.tap(_sidebarText('Projects'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Projects'), findsNothing);
+        expect(find.byKey(MobileNavigationDrawerKeys.panel), findsNothing);
         verifyNever(() => mockNavService.tapIndex(any()));
 
         await tester.pumpWidget(const SizedBox.shrink());
@@ -1422,9 +1524,8 @@ void main() {
 
       await _pumpAppScreen(tester, navService: mockNavService);
 
-      await tester.tap(find.text('Navigate'));
-      await tester.pumpAndSettle();
-      expect(find.text('People'), findsOneWidget);
+      await _openMobileDrawer(tester);
+      expect(_sidebarText('People'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
@@ -1452,30 +1553,30 @@ void main() {
       return mockNavService;
     }
 
-    testWidgets('surfaces Events in the Navigate grid when the flag is '
-        'enabled', (tester) async {
+    testWidgets('surfaces Events in the drawer when the flag is enabled', (
+      tester,
+    ) async {
       await pumpShell(tester, eventsEnabled: true);
 
-      // Nothing on the page names it — the grid is where it lives.
+      // Nothing on the page names it — the drawer is where it lives.
       expect(find.text('Events'), findsNothing);
-      await tester.tap(find.text('Navigate'));
-      await tester.pumpAndSettle();
+      await _openMobileDrawer(tester);
 
-      expect(find.text('Events'), findsOneWidget);
+      expect(_sidebarText('Events'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
     });
 
-    testWidgets('keeps Events out of the grid when the flag is disabled', (
+    testWidgets('keeps Events out of the drawer when the flag is disabled', (
       tester,
     ) async {
       await pumpShell(tester, eventsEnabled: false);
 
-      await tester.tap(find.text('Navigate'));
-      await tester.pumpAndSettle();
+      await _openMobileDrawer(tester);
 
-      expect(find.text('Events'), findsNothing);
+      expect(_sidebarText('Tasks'), findsOneWidget);
+      expect(_sidebarText('Events'), findsNothing);
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
@@ -1588,8 +1689,8 @@ void main() {
 
     // With every flag enabled the full index space is 0 Tasks, 1 DailyOS,
     // 2 Projects, 3 Habits, 4 Dashboards, 5 Journal, 6 Settings. Every tab
-    // floats the same launcher; the Navigate grid is where the active
-    // destination shows, tinted with the accent.
+    // floats the same launcher; the drawer is where the active destination
+    // shows.
     const gridLabels = [
       'Tasks',
       'DailyOS',
@@ -1602,7 +1703,7 @@ void main() {
     for (final (index, label) in gridLabels.indexed) {
       testWidgets(
         'floats the launcher on the $label tab and marks it active in the '
-        'Navigate grid',
+        'drawer',
         (tester) async {
           final mockNavService = MockNavService();
 
@@ -1620,11 +1721,11 @@ void main() {
           await _pumpAppScreen(tester, navService: mockNavService);
 
           expect(find.byType(MobileNavigationLauncher), findsOneWidget);
-          expect(find.text('Navigate'), findsOneWidget);
+          expect(_menuButton, findsOneWidget);
 
           // Docked flush: the launcher's strip reaches the screen's bottom
-          // edge and spans the full width, so its chips centre on the
-          // window rather than on whatever its parent happened to be.
+          // edge and spans the full width, so its corners are the window's
+          // rather than whatever its parent happened to be.
           final rect = tester.getRect(find.byType(MobileNavigationLauncher));
           final screenSize =
               tester.view.physicalSize / tester.view.devicePixelRatio;
@@ -1632,18 +1733,16 @@ void main() {
           expect(rect.left, 0);
           expect(rect.right, screenSize.width);
 
-          await tester.tap(find.text('Navigate'));
-          await tester.pumpAndSettle();
+          await _openMobileDrawer(tester);
 
-          final tokens = tester.element(find.text(label)).designTokens;
-          for (final other in gridLabels) {
-            expect(
-              tester.widget<Text>(find.text(other)).style!.color,
-              other == label
-                  ? tokens.colors.interactive.enabled
-                  : tokens.colors.text.highEmphasis,
-              reason: '$other while $label is active',
-            );
+          final rail = tester.widget<DesktopNavigationSidebar>(
+            find.byType(DesktopNavigationSidebar),
+          );
+          if (label == 'Settings') {
+            expect(rail.isSettingsActive, isTrue);
+          } else {
+            expect(rail.isSettingsActive, isFalse);
+            expect(rail.destinations[rail.activeIndex].label, label);
           }
 
           await tester.pumpWidget(const SizedBox.shrink());
@@ -1653,8 +1752,8 @@ void main() {
     }
 
     testWidgets(
-      'keeps the launcher, centred, on a wide window below the desktop '
-      'breakpoint',
+      'keeps the launcher, menu button in its corner, on a wide window below '
+      'the desktop breakpoint',
       (tester) async {
         final mockNavService = MockNavService();
 
@@ -1679,11 +1778,14 @@ void main() {
 
         expect(find.byType(MobileNavigationLauncher), findsOneWidget);
         expect(find.byType(DesktopNavigationSidebar), findsNothing);
-        // Settings docks no page action, so the Navigate chip sits alone on
-        // the wider window's centre line.
+        // Settings docks no page action, so the menu button sits alone in
+        // the wider window's leading corner.
+        expect(find.byType(DsGlassPill), findsNothing);
         expect(
-          tester.getCenter(find.byType(DsGlassPill)).dx,
-          moreOrLessEquals(400, epsilon: 0.5),
+          tester.getRect(_menuButton).left,
+          MobileNavigationLauncher.leadingGutter(
+            tester.element(find.byType(MobileNavigationLauncher)),
+          ),
         );
       },
     );
@@ -2011,7 +2113,7 @@ void main() {
 
     for (final active in [true, false]) {
       testWidgets(
-        'the Tasks tile in the grid uses the plain list glyph while '
+        'the Tasks row in the drawer uses the plain list glyph while '
         '${active ? 'active' : 'inactive'}',
         (tester) async {
           final mockNavService = MockNavService();
@@ -2028,11 +2130,13 @@ void main() {
           addTearDown(tearDownTestGetIt);
 
           await _pumpAppScreen(tester, navService: mockNavService);
-          await tester.tap(find.text('Navigate'));
-          await tester.pumpAndSettle();
+          await _openMobileDrawer(tester);
 
           final tile = find
-              .ancestor(of: find.text('Tasks'), matching: find.byType(InkWell))
+              .ancestor(
+                of: _sidebarText('Tasks'),
+                matching: find.byType(InkWell),
+              )
               .first;
           final icon = tester.widget<Icon>(
             find.descendant(of: tile, matching: find.byType(Icon)),
@@ -3927,104 +4031,10 @@ void main() {
     );
   });
 
-  group('AppScreen mobile nav grid taps', () {
-    // Every grid tile routes through `navService.tapIndex(i)` with the
-    // destination's full index, resolved when the tile is tapped.
-    setUp(() {
-      TestWidgetsFlutterBinding.instance.platformDispatcher.views.first
-        ..physicalSize = const Size(800, 1200)
-        ..devicePixelRatio = 1.0;
-    });
-    tearDown(() {
-      TestWidgetsFlutterBinding.instance.platformDispatcher.views.first.reset();
-    });
-
-    Future<void> pumpAndOpenGrid(
-      WidgetTester tester,
-      MockNavService mockNavService, {
-      bool Function() isProjectsEnabled = _enabled,
-    }) async {
-      await _stubNavService(
-        mockNavService,
-        indexStream: Stream.value(0),
-        isProjectsEnabled: isProjectsEnabled,
-        isDailyOsEnabled: () => true,
-        isHabitsEnabled: () => true,
-        isDashboardsEnabled: () => true,
-      );
-      await _registerAppScreenGetIt(mockNavService);
-      addTearDown(tearDownTestGetIt);
-
-      await _pumpAppScreen(tester, navService: mockNavService);
-      await tester.tap(find.text('Navigate'));
-      await tester.pumpAndSettle();
-      // Opening the grid navigates nowhere.
-      verifyNever(() => mockNavService.tapIndex(any()));
-    }
-
-    // Grid tile → its full destination index with all flags enabled.
-    for (final (tabIndex, label) in <(int, String)>[
-      (0, 'Tasks'),
-      (1, 'DailyOS'),
-      (2, 'Projects'),
-      (3, 'Habits'),
-      (4, 'Insights'),
-      (5, 'Logbook'),
-      (6, 'Settings'),
-    ]) {
-      testWidgets(
-        'tapping $label in the grid dismisses it and calls tapIndex($tabIndex)',
-        (tester) async {
-          final mockNavService = MockNavService();
-          await pumpAndOpenGrid(tester, mockNavService);
-
-          await tester.tap(find.text(label));
-          await tester.pumpAndSettle();
-
-          verify(() => mockNavService.tapIndex(tabIndex)).called(1);
-          // The grid's footer went with it.
-          expect(find.byType(ContactSupportRow), findsNothing);
-
-          await tester.pumpWidget(const SizedBox.shrink());
-          await tester.pump();
-        },
-      );
-    }
-
-    testWidgets(
-      'grid taps resolve indices against the flags at tap time, not at '
-      'open time',
-      (tester) async {
-        final mockNavService = MockNavService();
-        var projectsEnabled = true;
-        await pumpAndOpenGrid(
-          tester,
-          mockNavService,
-          isProjectsEnabled: () => projectsEnabled,
-        );
-
-        // Projects gets disabled (e.g. a synced settings change) while the
-        // grid is open: every destination after it shifts down one index.
-        projectsEnabled = false;
-
-        await tester.tap(find.text('Habits'));
-        await tester.pumpAndSettle();
-
-        // Habits resolved to its new index 2 (after Tasks and DailyOS),
-        // not the index 3 it had when the grid captured its tiles.
-        verify(() => mockNavService.tapIndex(2)).called(1);
-
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pump();
-      },
-    );
-  });
-
   group('AppScreen mobile sidebar navigation', () {
-    // Behind `enable_mobile_sidebar_navigation`: the launcher trades its
-    // Navigate chip for a menu button pinned to the bottom-leading corner,
-    // which slides the desktop rail's sidebar in from the side; the page's
-    // create action rides the same row in the bottom-trailing corner.
+    // The launcher's menu button, pinned to the bottom-leading corner,
+    // slides the desktop rail's sidebar in from the side; the page's create
+    // action rides the same row in the bottom-trailing corner.
     const fish = RecentSearch(
       surface: RecentSearchSurface.tasks,
       query: 'fish feeder',
@@ -4035,17 +4045,14 @@ void main() {
       query: 'waddle',
     );
 
-    Override flag(Stream<bool> values) => configFlagProvider(
-      enableMobileSidebarNavigationFlag,
-    ).overrideWith((ref) => values);
-
     Future<void> pumpShell(
       WidgetTester tester,
       MockNavService mockNavService, {
-      Stream<bool>? flagValues,
       Stream<int>? indexStream,
       bool Function() isProjectsEnabled = _enabled,
       List<RecentSearch> recents = const [],
+      List<SavedTaskFilter> savedFilters = const [],
+      JournalEntity? runningTimer,
       List<Override> extraOverrides = const [],
     }) async {
       await _stubNavService(
@@ -4056,25 +4063,28 @@ void main() {
         isHabitsEnabled: () => true,
         isDashboardsEnabled: () => true,
       );
-      await _registerAppScreenGetIt(mockNavService);
+      await _registerAppScreenGetIt(mockNavService, runningTimer: runningTimer);
       addTearDown(tearDownTestGetIt);
+      if (savedFilters.isNotEmpty) {
+        // The saved-filter rows resolve their category markers through it.
+        final cache = MockEntitiesCacheService();
+        when(() => cache.getCategoryById(any())).thenReturn(null);
+        getIt.registerSingleton<EntitiesCacheService>(cache);
+      }
 
       await _pumpAppScreen(
         tester,
         navService: mockNavService,
-        extraOverrides: [
-          flag(flagValues ?? Stream.value(true)),
-          fakeRecentSearches(FakeRecentSearchesController(recents)),
-          ...extraOverrides,
-        ],
+        recents: recents,
+        savedFilters: savedFilters,
+        extraOverrides: extraOverrides,
       );
       await tester.pump();
     }
 
-    Future<void> openDrawer(WidgetTester tester) async {
-      await tester.tap(find.byKey(MobileNavigationLauncherKeys.menuButton));
-      await tester.pumpAndSettle();
-    }
+    Future<void> openDrawer(WidgetTester tester) => _openMobileDrawer(tester);
+
+    final panel = find.byKey(MobileNavigationDrawerKeys.panel);
 
     Future<void> unmount(WidgetTester tester) async {
       await tester.pumpWidget(const SizedBox.shrink());
@@ -4089,41 +4099,15 @@ void main() {
 
     final menuButton = find.byKey(MobileNavigationLauncherKeys.menuButton);
 
-    testWidgets('with the flag off Navigate still raises the grid, and '
-        'neither the menu button nor the drawer host is mounted', (
-      tester,
-    ) async {
-      final mockNavService = MockNavService();
-      await pumpShell(tester, mockNavService, flagValues: Stream.value(false));
-
-      expect(find.byType(MobileNavigationDrawerHost), findsNothing);
-      expect(menuButton, findsNothing);
-      expect(launcher(tester).opensSidebar, isFalse);
-
-      await tester.tap(find.text('Navigate'));
-      await tester.pumpAndSettle();
-
-      // The grid is a sheet with the contact row in its footer; the sidebar
-      // is nowhere.
-      expect(find.byType(ContactSupportRow), findsOneWidget);
-      expect(find.byType(DesktopNavigationSidebar), findsNothing);
-
-      await unmount(tester);
-    });
-
-    testWidgets('with the flag on the launcher trades Navigate for a menu '
-        'button pinned to the bottom-leading corner, and nothing is added at '
-        'the top', (tester) async {
+    testWidgets('the launcher pins the menu button to the bottom-leading '
+        'corner, and nothing is added at the top', (tester) async {
       final mockNavService = MockNavService();
       await pumpShell(tester, mockNavService);
-
-      expect(launcher(tester).opensSidebar, isTrue);
-      expect(find.text('Navigate'), findsNothing);
 
       final button = tester.getRect(menuButton);
       final shell = tester.getRect(find.byType(MobileNavigationDrawerHost));
       final context = tester.element(find.byType(MobileNavigationLauncher));
-      expect(button.left - shell.left, context.designTokens.spacing.step3);
+      expect(button.left - shell.left, context.designTokens.spacing.step5);
       // On the launcher's row: its bottom sits exactly the launcher's own
       // bottom padding above the shell's bottom edge.
       final launcherRect = tester.getRect(
@@ -4239,8 +4223,8 @@ void main() {
       await unmount(tester);
     });
 
-    testWidgets('hosts the rail expanded, without its toggle or its desktop '
-        'sub-sections, at the drawer width', (tester) async {
+    testWidgets('hosts the rail expanded, without its toggle, at the drawer '
+        'width, with the contact band at its foot', (tester) async {
       final mockNavService = MockNavService();
       await pumpShell(tester, mockNavService);
       await openDrawer(tester);
@@ -4264,13 +4248,6 @@ void main() {
           tester.element(find.byType(MobileNavigationDrawerHost)),
         ),
       );
-      // Tasks is active, and on desktop that would expand the saved-filter
-      // tree under its row.
-      expect(
-        rail.destinations.every((d) => d.expandedChildBuilder == null),
-        isTrue,
-      );
-      expect(find.byType(SidebarSavedTaskFilters), findsNothing);
       expect(
         find.descendant(
           of: find.byType(DesktopNavigationSidebar),
@@ -4336,10 +4313,6 @@ void main() {
       await _pumpAppScreen(
         tester,
         navService: mockNavService,
-        extraOverrides: [
-          flag(Stream.value(true)),
-          fakeRecentSearches(FakeRecentSearchesController()),
-        ],
       );
       // Activate the Projects tab (destinations: Tasks, Projects, Journal,
       // Settings).
@@ -4362,7 +4335,7 @@ void main() {
       double buttonTop() => tester.getRect(menuButton).top;
 
       // On the projects list navigation shows, and so does the menu button.
-      expect(launcher(tester).opensSidebar, isTrue);
+      expect(menuButton, findsOneWidget);
       expect(launcherHidden(), isFalse);
       final restingTop = buttonTop();
 
@@ -4389,8 +4362,9 @@ void main() {
       await unmount(tester);
     });
 
-    testWidgets('floats the activity island above the launcher, as with the '
-        'flag off', (tester) async {
+    testWidgets('floats the activity island above the launcher', (
+      tester,
+    ) async {
       final mockNavService = MockNavService();
       await _stubNavService(
         mockNavService,
@@ -4409,10 +4383,6 @@ void main() {
       await _pumpAppScreen(
         tester,
         navService: mockNavService,
-        extraOverrides: [
-          flag(Stream.value(true)),
-          fakeRecentSearches(FakeRecentSearchesController()),
-        ],
       );
       await tester.pump();
 
@@ -4562,30 +4532,6 @@ void main() {
       await unmount(tester);
     });
 
-    testWidgets('flipping the flag re-parents the tab content instead of '
-        'rebuilding it', (tester) async {
-      final mockNavService = MockNavService();
-      final flagValues = StreamController<bool>();
-      await pumpShell(tester, mockNavService, flagValues: flagValues.stream);
-      flagValues.add(false);
-      await tester.pump();
-      await tester.pump();
-      final contentBefore = tester.element(find.byType(IndexedStack));
-      expect(find.byType(MobileNavigationDrawerHost), findsNothing);
-
-      flagValues.add(true);
-      await tester.pump();
-      await tester.pump();
-
-      expect(find.byType(MobileNavigationDrawerHost), findsOneWidget);
-      expect(tester.element(find.byType(IndexedStack)), same(contentBefore));
-
-      await unmount(tester);
-      // Not awaited: under the test's fake clock the close future of a
-      // controller whose listener is gone never completes (test/README.md).
-      unawaited(flagValues.close());
-    });
-
     testWidgets('a drawer left open when the window crosses into the desktop '
         'layout is closed, not reopened, when the phone layout returns', (
       tester,
@@ -4613,6 +4559,295 @@ void main() {
       expect(find.byKey(MobileNavigationDrawerKeys.panel), findsNothing);
 
       await unmount(tester);
+    });
+
+    group('saved filters', () {
+      const dueToday = SavedTaskFilter(
+        id: 'due-today',
+        name: 'Due today',
+        filter: TasksFilter(selectedTaskStatuses: {'OPEN'}),
+      );
+      const blocked = SavedTaskFilter(
+        id: 'blocked',
+        name: 'Blocked',
+        filter: TasksFilter(selectedTaskStatuses: {'BLOCKED'}),
+      );
+
+      List<Override> countOverrides() => [
+        savedTaskFilterCountsProvider.overrideWith(
+          (ref) async => const {'due-today': 4, 'blocked': 2},
+        ),
+        allTasksTotalCountProvider.overrideWith((ref) async => 23),
+      ];
+
+      testWidgets('are listed under the active Tasks row, as on desktop', (
+        tester,
+      ) async {
+        final mockNavService = MockNavService();
+        await pumpShell(
+          tester,
+          mockNavService,
+          savedFilters: const [dueToday, blocked],
+          extraOverrides: countOverrides(),
+        );
+        await openDrawer(tester);
+
+        final filters = find.descendant(
+          of: panel,
+          matching: find.byType(SidebarSavedTaskFilters),
+        );
+        expect(filters, findsOneWidget);
+        expect(
+          find.descendant(of: filters, matching: find.text('Due today')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: filters, matching: find.text('Blocked')),
+          findsOneWidget,
+        );
+        // Beneath the Tasks row, above the next destination.
+        final list = tester.getRect(filters);
+        expect(
+          list.top,
+          greaterThan(tester.getRect(_sidebarText('Tasks')).bottom),
+        );
+        expect(
+          list.bottom,
+          lessThan(tester.getRect(_sidebarText('DailyOS')).top),
+        );
+
+        await unmount(tester);
+      });
+
+      testWidgets('only Tasks carries an under-row subtree: the month '
+          'calendar and the impact entry stay desktop-only', (tester) async {
+        final mockNavService = MockNavService();
+        await pumpShell(tester, mockNavService);
+        await openDrawer(tester);
+
+        final rail = sidebar(tester);
+        expect(
+          [
+            for (final destination in rail.destinations)
+              if (destination.expandedChildBuilder != null) destination.label,
+          ],
+          ['Tasks'],
+        );
+
+        await unmount(tester);
+      });
+
+      testWidgets('are not shown while another tab is active', (tester) async {
+        final mockNavService = MockNavService();
+        await pumpShell(
+          tester,
+          mockNavService,
+          indexStream: Stream.value(3),
+          savedFilters: const [dueToday],
+          extraOverrides: countOverrides(),
+        );
+        await openDrawer(tester);
+
+        expect(_sidebarText('Habits'), findsOneWidget);
+        expect(find.byType(SidebarSavedTaskFilters), findsNothing);
+        expect(find.text('Due today'), findsNothing);
+
+        await unmount(tester);
+      });
+
+      testWidgets('tapping one applies it and closes the drawer, without '
+          'navigating', (tester) async {
+        final mockNavService = MockNavService();
+        final tasksController = FakeJournalPageController(
+          const JournalPageState(),
+        );
+        await pumpShell(
+          tester,
+          mockNavService,
+          savedFilters: const [dueToday, blocked],
+          extraOverrides: [
+            ...countOverrides(),
+            journalPageControllerProvider(
+              true,
+            ).overrideWith(() => tasksController),
+          ],
+        );
+        await openDrawer(tester);
+
+        await tester.tap(
+          find.byKey(SidebarSavedTaskFiltersKeys.filter('blocked')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(tasksController.setSelectedTaskStatusesCalls.single, {
+          'BLOCKED',
+        });
+        expect(panel, findsNothing);
+        verifyNever(() => mockNavService.tapIndex(any()));
+
+        await unmount(tester);
+      });
+
+      testWidgets('tapping All tasks clears to the default and closes the '
+          'drawer', (tester) async {
+        final mockNavService = MockNavService();
+        final tasksController = FakeJournalPageController(
+          const JournalPageState(),
+        );
+        await pumpShell(
+          tester,
+          mockNavService,
+          savedFilters: const [dueToday],
+          extraOverrides: [
+            ...countOverrides(),
+            journalPageControllerProvider(
+              true,
+            ).overrideWith(() => tasksController),
+          ],
+        );
+        await openDrawer(tester);
+
+        await tester.tap(find.byKey(SidebarSavedTaskFiltersKeys.allTasks));
+        await tester.pumpAndSettle();
+
+        expect(tasksController.applyBatchFilterUpdateCalled, 1);
+        expect(panel, findsNothing);
+
+        await unmount(tester);
+      });
+    });
+
+    group('activity', () {
+      testWidgets('shows the activity summary above Settings, as on desktop', (
+        tester,
+      ) async {
+        final mockNavService = MockNavService();
+        await pumpShell(
+          tester,
+          mockNavService,
+          runningTimer: _runningTimerEntry,
+          extraOverrides: [
+            ongoingWakeRecordsProvider.overrideWith(
+              (ref) async => [
+                OngoingWakeRecord(
+                  agentId: 'agent-1',
+                  title: 'Penguin planner',
+                  startedAt: DateTime(2024, 3, 15, 10),
+                ),
+              ],
+            ),
+            pendingWakeRecordsProvider.overrideWith((ref) async => const []),
+          ],
+        );
+        await openDrawer(tester);
+
+        final summary = find.descendant(
+          of: panel,
+          matching: find.byKey(SidebarActivitySummaryKeys.root),
+        );
+        expect(summary, findsOneWidget);
+        expect(
+          find.descendant(
+            of: panel,
+            matching: find.byKey(SidebarActivitySummaryKeys.timer),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: panel,
+            matching: find.byKey(SidebarActivitySummaryKeys.agents),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          tester.getRect(summary).bottom,
+          lessThan(tester.getRect(_sidebarText('Settings')).top),
+        );
+
+        await unmount(tester);
+      });
+
+      testWidgets('keeps the recording out of the summary on Flatpak', (
+        tester,
+      ) async {
+        debugIsRunningInFlatpakOverride = true;
+        addTearDown(() => debugIsRunningInFlatpakOverride = null);
+        final mockNavService = MockNavService();
+        await pumpShell(tester, mockNavService);
+        await openDrawer(tester);
+
+        final summary = tester.widget<SidebarActivitySummary>(
+          find.descendant(
+            of: panel,
+            matching: find.byType(SidebarActivitySummary),
+          ),
+        );
+        expect(summary.showAudio, isFalse);
+
+        await unmount(tester);
+      });
+
+      testWidgets('shows the recording in the summary off Flatpak', (
+        tester,
+      ) async {
+        debugIsRunningInFlatpakOverride = false;
+        addTearDown(() => debugIsRunningInFlatpakOverride = null);
+        final mockNavService = MockNavService();
+        await pumpShell(tester, mockNavService);
+        await openDrawer(tester);
+
+        final summary = tester.widget<SidebarActivitySummary>(
+          find.descendant(
+            of: panel,
+            matching: find.byType(SidebarActivitySummary),
+          ),
+        );
+        expect(summary.showAudio, isTrue);
+
+        await unmount(tester);
+      });
+    });
+
+    group('a route change', () {
+      testWidgets('closes an open drawer — how rows that navigate on their '
+          'own, like the running timer or an agent wake, get it out of the '
+          'way', (tester) async {
+        final mockNavService = MockNavService();
+        await pumpShell(tester, mockNavService);
+        await openDrawer(tester);
+        expect(panel, findsOneWidget);
+
+        mockNavService.settingsDelegate.beamToNamed('/settings/agents');
+        await tester.pumpAndSettle();
+
+        expect(panel, findsNothing);
+        final drawer = ProviderScope.containerOf(
+          tester.element(find.byType(AppScreen)),
+        ).read(mobileNavigationDrawerControllerProvider);
+        expect(drawer.isOpen, isFalse);
+
+        await unmount(tester);
+      });
+
+      testWidgets('leaves a closed drawer closed', (tester) async {
+        final mockNavService = MockNavService();
+        await pumpShell(tester, mockNavService);
+        final drawer = ProviderScope.containerOf(
+          tester.element(find.byType(AppScreen)),
+        ).read(mobileNavigationDrawerControllerProvider);
+        var notifications = 0;
+        drawer.addListener(() => notifications++);
+
+        mockNavService.tasksDelegate.beamToNamed('/tasks/some-task');
+        await tester.pumpAndSettle();
+
+        expect(drawer.isOpen, isFalse);
+        expect(notifications, 0);
+        expect(panel, findsNothing);
+
+        await unmount(tester);
+      });
     });
   });
 
@@ -5911,12 +6146,6 @@ void main() {
           navService: mockNavService,
           userActivityService: activity,
         ),
-        extraOverrides: [
-          configFlagProvider(
-            enableMobileSidebarNavigationFlag,
-          ).overrideWith((ref) => Stream.value(true)),
-          fakeRecentSearches(FakeRecentSearchesController()),
-        ],
       );
       await tester.pump();
 

@@ -5,7 +5,7 @@ description: Ten independent Beamer stacks behind one IndexedStack, how the acti
 resource: ../../lib/beamer
 tags: [architecture, navigation, beamer, routing, app-shell]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-28T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-29T12:00:00Z }
 stale_after: 2027-03-27
 sources:
   - id: route-mirror
@@ -15,7 +15,7 @@ sources:
   - id: beamer-app
     resource: ../../lib/beamer/beamer_app.dart
     title: MyBeamerApp and AppScreen
-    last_modified: 2026-09-28
+    last_modified: 2026-09-29
   - id: activity-island
     resource: ../../lib/widgets/nav_bar/mobile_activity_island.dart
     title: The activity island floating above the mobile navigation
@@ -26,15 +26,11 @@ sources:
     last_modified: 2026-08-05
   - id: mobile-launcher
     resource: ../../lib/widgets/nav_bar/mobile_navigation_launcher.dart
-    title: MobileNavigationLauncher — both mobile navigations' bottom row and its docked page action
-    last_modified: 2026-09-28
-  - id: mobile-nav-sheet
-    resource: ../../lib/widgets/nav_bar/mobile_nav_sheet.dart
-    title: The Navigate grid of every enabled destination
-    last_modified: 2026-09-07
+    title: MobileNavigationLauncher — the menu button, the bottom row and its docked page action
+    last_modified: 2026-09-29
   - id: mobile-nav-drawer
     resource: ../../lib/widgets/nav_bar/mobile_navigation_drawer.dart
-    title: MobileNavigationDrawerHost — the experimental sidebar that pushes the page aside
+    title: MobileNavigationDrawerHost — the mobile sidebar that pushes the page aside
     last_modified: 2026-09-28
   - id: drawer-back-dispatcher
     resource: ../../lib/beamer/drawer_first_back_button_dispatcher.dart
@@ -131,10 +127,8 @@ flowchart TD
   Screen --> Chrome{"Form factor"}
   Chrome -->|desktop| Sidebar["DesktopSidebar"]
   Chrome -->|desktop| DayCol["DayViewSidePanel (right-docked day view)"]
-  Chrome -->|mobile| Launcher["MobileNavigationLauncher: glass Navigate chip (+ docked page action)"]
-  Launcher --> Grid["showMobileNavSheet: two-column grid of every enabled destination"]
-  Chrome -->|mobile, enable_mobile_sidebar_navigation| SidebarLauncher["MobileNavigationLauncher.sidebar: menu button bottom-leading (+ page action bottom-trailing)"]
-  SidebarLauncher --> Drawer["MobileNavigationDrawerHost: DesktopSidebar in a slide-over, plus Recents"]
+  Chrome -->|mobile| Launcher["MobileNavigationLauncher: menu button bottom-leading (+ page action bottom-trailing)"]
+  Launcher --> Drawer["MobileNavigationDrawerHost: DesktopSidebar in a slide-over, plus Recents"]
 ```
 
 An `IndexedStack` keeps every tab **mounted**. Tabs preserve scroll position and
@@ -552,59 +546,33 @@ Two consequences worth knowing before adding a settings page:
 
 ## The mobile launcher
 
-`MobileNavigationLauncher` is the mobile shell's navigation: a floating row of
-glass chips over the page rather than an edge-to-edge bar of slots. Its
-Navigate chip opens `showMobileNavSheet`, which presents every enabled section
-in a two-column grid with 16-point horizontal tile padding, the active section
-highlighted, support links on the left and sync counts on the right. Selection
-dismisses the grid and resolves the destination index at tap time
-(`_currentDestinationIndex`), so section flags changing while the grid is open
-cannot route to a stale index. Desktop never shows it: the sidebar replaces it
-there, with the Settings sync counts beside the Settings row.
+`MobileNavigationLauncher` is the mobile shell's navigation: a floating row
+over the page rather than an edge-to-edge bar of slots. It holds a **round
+menu button pinned to the bottom-leading corner**, which slides the sidebar
+in from the side and pushes the page aside (see [the drawer](#the-drawer)),
+and — on the tabs that hand one over — the page's create action pinned to the
+bottom-trailing corner. Desktop never shows it: the sidebar replaces it there.
 
 `DesignSystemBottomNavigationBar.occupiedHeight` reads
 `MobileNavigationLauncher.barHeight` directly, so page/FAB clearance and the
 activity island follow the launcher's rendered height on every window and text
 scale; there is no second navigation design whose height the shell would have
-to publish. The launcher measures its localized label with `TextPainter`,
-including nonlinear text scaling. The route-hiding rules above apply to it
-unchanged.
-
-The launcher and grid replaced the earlier five-slot bar and its More sheet.
-The `enable_mobile_navigation_launcher` flag that chose between the two is in
-`retiredConfigFlags`, so an upgraded install drops the stored row on its next
-start whichever way it was set.
-
-## The mobile sidebar navigation
-
-Behind `enable_mobile_sidebar_navigation` (Config Flags → Advanced, off by
-default) the launcher trades its Navigate chip for a **menu button pinned to
-the bottom-leading corner** that slides a sidebar in from the side and pushes
-the page aside. It is an experiment running beside the Navigate grid, not a
-replacement for it: with the flag off the shell builds exactly the tree it
-built before, and the drawer host is not mounted at all.
-
-**It is the same launcher, re-arranged.** Under the flag the shell floats
-`MobileNavigationLauncher.sidebar` where it would float the default launcher —
-same `Positioned` slot, same `_SlideAwayBottomNav`, same `barHeight` — so
-everything the launcher already answers for holds unchanged: every route that
-hides the launcher hides the menu button with it, pages hand it their create
-action through the same `_launcherDockAction`, `occupiedHeight` reserves the
-same row, and the activity island floats the same `gapAboveBar` above it.
-Only the leading control and the row's arrangement differ, and nothing above
-the page is added: no row takes the status-bar inset or any height from the
+to publish. The route-hiding rules above apply to it unchanged: every route
+that hides the launcher hides the menu button with it, and nothing above the
+page is added — no row takes the status-bar inset or any height from the
 page's own header.
+
+The launcher replaced, in turn, the five-slot bar with its More sheet and
+then a labelled glass *Navigate* chip that raised a two-column grid of every
+destination. Both flags that chose between these arrangements —
+`enable_mobile_navigation_launcher` and `enable_mobile_sidebar_navigation` —
+are in `retiredConfigFlags`, so an upgraded install drops the stored rows on
+its next start whichever way they were set.
 
 ### The menu button
 
-The row puts both controls under the thumb and keeps the button still:
-
-| | Navigate arrangement (default) | Sidebar arrangement (`.sidebar`) |
-|---|---|---|
-| Leading control | labelled Navigate chip, opens the grid | round menu button, opens the drawer |
-| Where it sits | centred as a pair with the page action | pinned to the leading gutter on every tab, action or none |
-| Page action | beside Navigate, pair centred | pinned to the trailing gutter, opposite the button |
-| `labelsFit` measures | the Navigate label + gap + the action label | one `chipHeight` (the disc) + gap + the action label |
+The row puts both controls under the thumb and keeps the button still: it
+sits in the leading corner on every tab, action or none.
 
 The button is a
 [`DsGlassRoundButton.glyph`](../../lib/features/design_system/components/glass_action_bar.dart)
@@ -612,14 +580,23 @@ around
 [`DsMenuGlyph`](../../lib/features/design_system/components/navigation/ds_menu_glyph.dart),
 the two-stroke mark — a long stroke over a shorter one, painted because no icon
 font carries it — at `chipHeight` diameter, so the row keeps one baseline and
-one height. It wears the translucent, blurred glass of the Navigate chip it
-stands in for: the row floats over scrolling content. It is keyed
+one height. It wears the accent (`colors.interactive.enabled`) twice: as a thin
+ring (`outlineColor`) and as the glyph's ink (`iconColor`), over the
+translucent, blurred glass fill — the row floats over scrolling content. That
+is the treatment of the task action bar's idle record button
+([`task_action_bar.dart`](../../lib/features/tasks/ui/widgets/task_action_bar.dart)),
+so the app's round lead-action buttons read as one family. It is keyed
 `MobileNavigationLauncherKeys.menuButton` and announces `navSidebarOpenLabel`.
-In a right-to-left locale the two corners mirror.
 
-The action takes whatever width the row has left and hugs its trailing end. A
-disc is narrower than the Navigate chip at every text scale, so a worded action
-keeps its word well past the point where it would collapse beside Navigate.
+The gutters are asymmetric: `leadingGutter` (`spacing.step5`) before the menu
+button, `trailingGutter` (`spacing.step3`) after the action — a round control
+against the screen's rounded corner reads as crowded at the narrower inset.
+Each gutter adds the matching safe-area inset, chosen by reading direction, so
+in a right-to-left locale the two corners mirror.
+`availableRowWidth` is the window less both insets and both gutters.
+
+The action takes whatever width the row has left, at least `chipGap`
+(`spacing.step4`) from the button, and hugs its trailing end.
 
 ```mermaid
 stateDiagram-v2
@@ -637,26 +614,30 @@ stateDiagram-v2
 
 The menu button's position is the same in all three states.
 
-The flag's first version put the button in a slim lane of the shell's own
-above every page. It cost every page a row of height at the top, and it was
-the one control on the phone out of the thumb's reach, so the button moved to
-the launcher's row.
+An early version put the button in a slim lane of the shell's own above every
+page. It cost every page a row of height at the top, and it was the one
+control on the phone out of the thumb's reach, so the button moved to the
+launcher's row.
 
 ### The drawer
 
 The panel is the desktop rail's own
 [`DesktopNavigationSidebar`](../../lib/features/design_system/components/navigation/desktop_navigation_sidebar.dart),
 hosted by
-[`MobileNavigationDrawerHost`](../../lib/widgets/nav_bar/mobile_navigation_drawer.dart).
+[`MobileNavigationDrawerHost`](../../lib/widgets/nav_bar/mobile_navigation_drawer.dart),
+which the mobile shell always wraps around itself.
 `_SidebarDestinations` in the shell is the one place that pins Settings apart
 from the other destinations and works out which row is active, so the two form
-factors cannot disagree. Three things differ from the desktop rail:
+factors cannot disagree. Settings carries the same `SyncQueueCounts` trailing
+widget as on desktop, and the activity summary sits above it through the same
+`_SidebarAboveSettings` composer. What differs from the desktop rail:
 
 | | Desktop rail | Mobile drawer |
 |---|---|---|
 | Collapse toggle | shown | `showToggle: false` — the panel is dismissed, never collapsed to icons |
 | Gap between destination rows | `spacing.step4` | `destinationGap: spacing.step1` — each row is a full touch target already, and Recents should show without a scroll on a phone with every section on |
-| Under-row subtrees (saved filters, month calendar, impact entry) | shown for the active row | left out: desktop widgets that neither size for touch nor know to close a drawer; the phone keeps its saved-filter rail on the Tasks page |
+| Under-row subtrees | saved filters, month calendar, impact entry, for the active row | the Tasks row's saved filters only, as `SidebarSavedTaskFilters(onApplied: close)` passed through `toDesktopSidebarDestination(expandedChild:)`; the month calendar and the impact entry are desktop surfaces that do not size for touch |
+| `aboveSettings` | `SidebarActivitySummary` — recording, timer, agent wakes | the same |
 | `belowDestinations` | empty | the app-wide [Recents](../features/recent_searches.md) list, scrolling with the destinations |
 | Scroll region | plain | its last `spacing.step7` fades out, and Settings stands a step clear — an open-ended section makes scrolling the normal case, so the region says where it ends instead of butting against the pinned row as if they were one list |
 
@@ -672,8 +653,8 @@ stateDiagram-v2
   Dragging --> Open: slow release in the open half, or a rightward fling
   Dragging --> Closing: slow release in the closed half, or a leftward fling
   Dragging --> Closed: dragged all the way shut — controller closed on the spot
-  Open --> Closing: tap on the dimmed page, system back, a destination or a recent search chosen
-  Open --> Closed: host unmounted (desktop layout, flag off) — controller closed
+  Open --> Closing: tap on the dimmed page, system back, a destination, recent search or saved filter chosen, or any tab route change
+  Open --> Closed: host unmounted (desktop layout) — controller closed
   Closing --> Closed: slide completes — panel and scrim unmounted
   note right of Open
     The page is translated, never rebuilt:
@@ -699,20 +680,17 @@ These contracts hold it together:
   `mobileNavigationDrawerControllerProvider`.
 - **The controller never says "open" with no drawer showing.** The dispatcher
   trusts it, so a stale "open" would spend a back press on nothing. The host
-  closes it when it is unmounted — the window crossed into the desktop layout,
-  or the flag was switched off — and when a drag carries the panel all the way
-  shut, since the panel's gesture detector leaves with it and no drag end ever
-  arrives.
+  closes it when it is unmounted — the window crossed into the desktop
+  layout — and when a drag carries the panel all the way shut, since the
+  panel's gesture detector leaves with it and no drag end ever arrives.
 - **The slide moves the panel, it does not rebuild it.** The panel's content
   is built when the host builds, while the drawer is at least partly on
   screen; the per-frame builder only translates, clips and dims what was
   built.
 - **The page is moved, not re-parented.** Open, closed or mid-slide, the shell's
   `Scaffold` sits under the same `Transform.translate`, so tab state survives a
-  visit to the drawer. Flipping the *flag* does change the tree above the
-  content stack — and that is what `_contentStackKey` already exists for:
-  the stack is re-parented, exactly as it is when the window crosses the
-  desktop breakpoint.
+  visit to the drawer. Crossing the desktop breakpoint does change the tree
+  above the content stack, and `_contentStackKey` re-parents the stack then.
 - **The whole mobile shell is pushed aside** — page, launcher and activity
   island together — so nothing of it floats over the panel.
 - **The page leaves as a card.** Its leading corners round off (`radii.xl`) in
@@ -724,12 +702,22 @@ These contracts hold it together:
   page's `Scaffold`, and plain text inside it — the Recents heading — would
   otherwise have no text style to inherit and render with Flutter's yellow
   debug underline.
-- **Every choice closes the drawer first**, and destination indices are
-  resolved at tap time through `_currentDestinationIndex`, for the reason the
-  grid resolves them then: a section flag can change while the panel is open.
+- **Every choice closes the drawer.** A destination or a recent search closes
+  it before navigating; a saved filter (or All tasks) once it has been
+  applied, through `onApplied` — Manage, More and Show fewer leave it open.
+  `onApplied` is skipped if the list unmounted while the filter was landing
+  (e.g. the window crossed the desktop breakpoint), so a late completion
+  cannot close a drawer opened since; the MRU touch still happens.
+  The activity rows that navigate on their own — a running timer opening its
+  task, an agent wake opening its agent — know nothing of the drawer:
+  `_closeMobileDrawerOnRouteChange`, listening on `_routeChangeListenable`
+  from `initState` to `dispose`, closes an open drawer on any tab route
+  change. Destination indices are resolved at tap time through
+  `_currentDestinationIndex`, since a section flag can change while the panel
+  is open and a stale index would route the tap to the wrong tab.
 - **There is no edge-swipe to open.** Pushed pages own the leading edge for the
   iOS back gesture, and habit rows and the Daily OS timeline own horizontal
-  drags of their own. The menu button opens it; the four exits above close it.
+  drags of their own. The menu button opens it; the exits above close it.
 
 The panel's width is the window less a `spacing.step11` strip of page left
 showing — what tells the user the page is still there, and where the
@@ -792,12 +780,12 @@ Three contracts hold it together:
 
 ### The launcher's row, and the page action docked on it
 
-The launcher is not a bar. It is a transparent strip holding a centred row of
+The launcher is not a bar. It is a transparent strip holding a row of
 chips built from the shared glass primitives in
 [`glass_action_bar.dart`](../../lib/features/design_system/components/glass_action_bar.dart)
 — the same `DsGlassPill` / `DsGlassRoundButton` vocabulary the task action bar
 uses, so every floating glass row in the app has one silhouette, one fill
-alpha, one hairline and one `spacing.step4` gap. Navigate is translucent and
+alpha, one hairline and one `spacing.step4` gap. The menu button is translucent and
 self-blurring: the `BackdropFilter` lives inside each chip's `ClipRRect` rather
 than around the row, because a filter spanning the row would also blur the
 transparent gap between the chips and smear the page the launcher exists to
@@ -853,39 +841,32 @@ Two deliberate divergences from what the floating button did:
 - **The Logbook keeps its docked action during the first-run zero state**,
   where the page withholds the corner button so its inline "Create new entry"
   CTA is the single primary action. In the corner a second copy competed; on
-  the rail the create chip is persistent chrome beside Navigate, and dropping
+  the rail the create chip is persistent chrome opposite the menu button, and dropping
   it only there would make the rail inconsistent across tabs.
 - **Projects docks unconditionally**, where the floating button waits for
   `visibleProjectGroupsProvider`. The create modal needs nothing from that
-  query, and a chip arriving one beat late would shove Navigate sideways under
-  the user's thumb; on its own layer in the corner the same delay cost nothing.
+  query, and a chip arriving one beat late would pop into the row under the
+  user's thumb; on its own layer in the corner the same delay cost nothing.
 
-Route sensitivity is needed in one place only. Projects, Goals, Habits and
+Route sensitivity is needed in two places only. Projects, Goals, Habits and
 People slide the whole launcher away on their detail routes (`slideNavAway`), so a
 stale action there is off screen anyway. The journal tab keeps the bar on an
 entry's page — and that page owns a *different* action, an `add linked entry`
 button with its own glyph — so `isLogbookEntryDetailRoute` drops the logbook's
-action from the rail there and lets the detail page keep floating its own.
-That check is why `navService.journalDelegate` joins `_routeChangeListenable`.
+action from the rail there and lets the detail page keep floating its own. The
+events tab keeps the bar on an event's page too, where a new-event plus would
+read as adding to that event, so `isEventDetailRoute` drops its action there.
+Opening an entry or an event moves only that tab's delegate, not the tab index,
+which is why `navService.journalDelegate` and `navService.eventsDelegate` both
+join `_routeChangeListenable` — without them the launcher would not rebuild and
+would keep the list's action beside the detail page.
 
-```mermaid
-stateDiagram-v2
-  [*] --> Centred
-  Centred --> Worded: Tasks or People becomes active
-  Centred --> Glyph: Logbook, Projects, Goals or Habits becomes active
-  Worded --> Centred: a destination with no create action becomes active
-  Glyph --> Centred: a destination with no create action becomes active
-  Worded --> Glyph: both labels no longer fit the row
-  Glyph --> Worded: labels fit again, on a worded action
-  Centred: Navigate alone, centred
-  Worded: Navigate + accent-filled labelled pill, pair centred
-  Glyph: Navigate + accent round button, pair centred
-```
+The row's states are [the menu button's](#the-menu-button) diagram.
 
-`labelsFit` measures both labels with a `TextPainter` at the current scaler
-against `availableRowWidth` — or, for the sidebar arrangement
-(`opensSidebar: true`), the menu button's one `chipHeight` in place of the
-Navigate label; see [the menu button](#the-menu-button). It is
+`labelsFit` budgets the menu button's one `chipHeight` (the disc), `chipGap`
+and the action's pill width (`DsGlassPill.intrinsicWidth`, which measures the
+label with a `TextPainter` at the current scaler) against
+`availableRowWidth`. It is
 consulted only for a `MobileNavDockAction.worded` action; a `.glyph` one is
 round at every width. Below the threshold a worded action drops to
 `DsGlassRoundButton` at the same diameter as the row's chip height — it keeps
@@ -940,8 +921,7 @@ factors:
 | Form factor | Where | Suppressed when |
 |-------------|-------|-----------------|
 | Desktop | sidebar `footerBand`, under Settings | the sidebar is collapsed |
-| Mobile | footer of the *Navigate* grid | never — the grid is its only home |
-| Mobile, sidebar navigation on | the drawer's sidebar `footerBand`, as on desktop | never — the drawer's sidebar is never collapsed |
+| Mobile | the drawer's sidebar `footerBand`, as on desktop | never — the drawer's sidebar is never collapsed |
 
 **No rule separates it from the rows above, on either surface.** These are the
 quietest controls the app's navigation has, and a divider gave them the weight
@@ -957,8 +937,7 @@ optional status row beneath Settings to displace it. Collapsing the sidebar
 removes the band entirely — the icon-only rail is 72 px, narrower than the four
 glyphs — and the Manual stays reachable from Settings meanwhile.
 
-The actions are right-aligned in the sidebar. The Navigate grid places the
-same intrinsic-width group on the left beside sync counts. Email is a plain envelope
+The actions are right-aligned in the sidebar, on both form factors. Email is a plain envelope
 button with the same 44 px target, colour, tooltip and semantics as Manual,
 GitHub and Discord; its localized “Contact Us” wording remains the accessible
 name rather than visible copy. With no label competing for width, all four
@@ -988,11 +967,12 @@ Two rules hold it together:
 | Index, delegate registry, flag gating, state persistence | [`lib/services/nav_service.dart`](../../lib/services/nav_service.dart) |
 | Restore hook, awaited before `runApp` | [`lib/get_it.dart`](../../lib/get_it.dart) |
 | Logbook auto-selection, the background-navigation case | [`lib/features/journal/ui/pages/journal_root_page.dart`](../../lib/features/journal/ui/pages/journal_root_page.dart) |
-| Mobile launcher — both arrangements — and its docked page action | [`lib/widgets/nav_bar/mobile_navigation_launcher.dart`](../../lib/widgets/nav_bar/mobile_navigation_launcher.dart) |
-| Navigate grid | [`lib/widgets/nav_bar/mobile_nav_sheet.dart`](../../lib/widgets/nav_bar/mobile_nav_sheet.dart) |
-| Sidebar drawer host (experimental) | [`lib/widgets/nav_bar/mobile_navigation_drawer.dart`](../../lib/widgets/nav_bar/mobile_navigation_drawer.dart) |
+| Mobile launcher — the menu button — and its docked page action | [`lib/widgets/nav_bar/mobile_navigation_launcher.dart`](../../lib/widgets/nav_bar/mobile_navigation_launcher.dart) |
+| Sidebar drawer host | [`lib/widgets/nav_bar/mobile_navigation_drawer.dart`](../../lib/widgets/nav_bar/mobile_navigation_drawer.dart) |
 | The two-stroke menu mark | [`lib/features/design_system/components/navigation/ds_menu_glyph.dart`](../../lib/features/design_system/components/navigation/ds_menu_glyph.dart) |
 | The sidebar both form factors host | [`lib/features/design_system/components/navigation/desktop_navigation_sidebar.dart`](../../lib/features/design_system/components/navigation/desktop_navigation_sidebar.dart) |
+| Saved task filters under the Tasks row (desktop rail and drawer) | [`lib/features/tasks/ui/saved_filters/desktop/sidebar_saved_task_filters.dart`](../../lib/features/tasks/ui/saved_filters/desktop/sidebar_saved_task_filters.dart) |
+| Activity summary above Settings (desktop rail and drawer) | [`lib/widgets/misc/sidebar_activity_summary.dart`](../../lib/widgets/misc/sidebar_activity_summary.dart) |
 | Recents list in the drawer | [`lib/features/recent_searches/`](../../lib/features/recent_searches) |
 | Bottom clearance contract, activity island scope | [`lib/widgets/nav_bar/design_system_bottom_navigation_bar.dart`](../../lib/widgets/nav_bar/design_system_bottom_navigation_bar.dart) |
 | Contact Us footer, wired | [`lib/widgets/misc/contact_support_row.dart`](../../lib/widgets/misc/contact_support_row.dart) |

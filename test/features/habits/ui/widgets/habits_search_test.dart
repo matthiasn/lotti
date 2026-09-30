@@ -70,8 +70,9 @@ void main() {
   group('HabitsSearchWidget', () {
     testWidgets('renders search bar', (tester) async {
       await tester.pumpWidget(
-        const RiverpodWidgetTestBench(
-          child: HabitsSearchWidget(),
+        RiverpodWidgetTestBench(
+          overrides: [fakeRecentSearches(FakeRecentSearchesController())],
+          child: const HabitsSearchWidget(),
         ),
       );
       await tester.pump(const Duration(milliseconds: 100));
@@ -85,6 +86,7 @@ void main() {
 
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
+          overrides: [fakeRecentSearches(FakeRecentSearchesController())],
           child: Consumer(
             builder: (context, ref, _) {
               capturedRef = ref;
@@ -129,8 +131,9 @@ void main() {
 
     testWidgets('shows clear button when search has text', (tester) async {
       await tester.pumpWidget(
-        const RiverpodWidgetTestBench(
-          child: HabitsSearchWidget(),
+        RiverpodWidgetTestBench(
+          overrides: [fakeRecentSearches(FakeRecentSearchesController())],
+          child: const HabitsSearchWidget(),
         ),
       );
       await tester.pump(const Duration(milliseconds: 100));
@@ -151,6 +154,7 @@ void main() {
 
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
+          overrides: [fakeRecentSearches(FakeRecentSearchesController())],
           child: Consumer(
             builder: (context, ref, _) {
               capturedRef = ref;
@@ -181,8 +185,9 @@ void main() {
 
     testWidgets('search text persists across rebuilds', (tester) async {
       await tester.pumpWidget(
-        const RiverpodWidgetTestBench(
-          child: HabitsSearchWidget(),
+        RiverpodWidgetTestBench(
+          overrides: [fakeRecentSearches(FakeRecentSearchesController())],
+          child: const HabitsSearchWidget(),
         ),
       );
       await tester.pump(const Duration(milliseconds: 100));
@@ -206,6 +211,7 @@ void main() {
 
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
+          overrides: [fakeRecentSearches(FakeRecentSearchesController())],
           child: Consumer(
             builder: (context, ref, _) {
               capturedRef = ref;
@@ -234,6 +240,7 @@ void main() {
 
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
+          overrides: [fakeRecentSearches(FakeRecentSearchesController())],
           child: Consumer(
             builder: (context, ref, _) {
               capturedRef = ref;

@@ -118,6 +118,9 @@ Future<MockNavService> _stubNavService() async {
   when(() => mockNav.journalDelegate).thenReturn(
     await _createEmptyDelegate('/journal'),
   );
+  when(() => mockNav.eventsDelegate).thenReturn(
+    await _createEmptyDelegate('/events'),
+  );
   when(() => mockNav.settingsDelegate).thenReturn(
     await _createEmptyDelegate('/settings'),
   );

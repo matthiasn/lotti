@@ -6132,18 +6132,6 @@ abstract class AppLocalizations {
   /// **'Enable the Matrix integration to sync your entries across devices and with other Matrix users.'**
   String get configFlagEnableMatrixDescription;
 
-  /// No description provided for @configFlagEnableMobileSidebarNavigation.
-  ///
-  /// In en, this message translates to:
-  /// **'Mobile sidebar navigation'**
-  String get configFlagEnableMobileSidebarNavigation;
-
-  /// No description provided for @configFlagEnableMobileSidebarNavigationDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Replace the Navigate button with a menu button in the bottom-left corner that opens a sidebar with every section and your recent searches.'**
-  String get configFlagEnableMobileSidebarNavigationDescription;
-
   /// No description provided for @configFlagEnableNotificationsDescription.
   ///
   /// In en, this message translates to:
@@ -16614,12 +16602,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Logbook'**
   String get navTabTitleJournal;
-
-  /// No description provided for @navTabTitleNavigate.
-  ///
-  /// In en, this message translates to:
-  /// **'Navigate'**
-  String get navTabTitleNavigate;
 
   /// No description provided for @navTabTitlePeople.
   ///

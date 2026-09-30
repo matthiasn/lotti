@@ -134,7 +134,7 @@ class _LogbookUnderLauncher extends ConsumerWidget {
           right: 0,
           bottom: 0,
           child: MobileNavigationLauncher(
-            onNavigate: () {},
+            onOpenMenu: () {},
             pageAction: logbookDockAction(context, ref),
           ),
         ),

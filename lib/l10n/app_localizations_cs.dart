@@ -3678,14 +3678,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Povolit integraci s Matrix pro synchronizaci vašich záznamů mezi zařízeními a s ostatními uživateli Matrix.';
 
   @override
-  String get configFlagEnableMobileSidebarNavigation =>
-      'Mobilní navigace v bočním panelu';
-
-  @override
-  String get configFlagEnableMobileSidebarNavigationDescription =>
-      'Nahraď tlačítko Navigovat tlačítkem nabídky v levém dolním rohu, které otevře boční panel se všemi sekcemi a tvými nedávnými hledáními.';
-
-  @override
   String get configFlagEnableNotificationsDescription =>
       'Přijímejte upozornění na připomínky, aktualizace a důležité události.';
 
@@ -9942,9 +9934,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get navTabTitleJournal => 'Zápisník';
-
-  @override
-  String get navTabTitleNavigate => 'Navigovat';
 
   @override
   String get navTabTitlePeople => 'Lidé';

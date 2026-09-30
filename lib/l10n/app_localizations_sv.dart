@@ -3640,14 +3640,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Aktivera Matrix-integrationen för att synkronisera dina poster mellan enheter och med andra Matrix-användare.';
 
   @override
-  String get configFlagEnableMobileSidebarNavigation =>
-      'Mobilnavigering i sidofält';
-
-  @override
-  String get configFlagEnableMobileSidebarNavigationDescription =>
-      'Ersätt knappen Navigera med en menyknapp nere till vänster som öppnar ett sidofält med alla avsnitt och dina senaste sökningar.';
-
-  @override
   String get configFlagEnableNotificationsDescription =>
       'Få notiser om påminnelser, uppdateringar och viktiga evenemang.';
 
@@ -9825,9 +9817,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get navTabTitleJournal => 'Loggbok';
-
-  @override
-  String get navTabTitleNavigate => 'Navigera';
 
   @override
   String get navTabTitlePeople => 'Personer';

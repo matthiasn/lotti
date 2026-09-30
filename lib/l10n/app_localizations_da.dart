@@ -3630,14 +3630,6 @@ class AppLocalizationsDa extends AppLocalizations {
       'Aktivér Matrix-integrationen for at synkronisere dine poster på tværs af enheder og med andre Matrix-brugere.';
 
   @override
-  String get configFlagEnableMobileSidebarNavigation =>
-      'Mobilnavigation i sidepanel';
-
-  @override
-  String get configFlagEnableMobileSidebarNavigationDescription =>
-      'Erstat Naviger-knappen med en menuknap nederst til venstre, der åbner et sidepanel med alle sektioner og dine seneste søgninger.';
-
-  @override
   String get configFlagEnableNotificationsDescription =>
       'Modtag notifikationer om påmindelser, opdateringer og vigtige begivenheder.';
 
@@ -9814,9 +9806,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get navTabTitleJournal => 'Logbog';
-
-  @override
-  String get navTabTitleNavigate => 'Naviger';
 
   @override
   String get navTabTitlePeople => 'Personer';

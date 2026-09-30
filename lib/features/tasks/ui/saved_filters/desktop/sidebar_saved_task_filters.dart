@@ -31,10 +31,20 @@ abstract final class SidebarSavedTaskFiltersKeys {
 /// Show fewer restores the compact state. There is deliberately no pinning
 /// model or upper limit: the sidebar itself scrolls, so users decide how much
 /// vertical space their expanded filter list consumes.
+///
+/// The same list rides the mobile drawer's Tasks row, which passes
+/// [onApplied] to close itself once a choice has landed.
 class SidebarSavedTaskFilters extends ConsumerStatefulWidget {
-  const SidebarSavedTaskFilters({super.key});
+  const SidebarSavedTaskFilters({this.onApplied, super.key});
 
   static const int initialVisibleFilterCount = 5;
+
+  /// Called after a tap on All tasks or on a saved filter has applied it.
+  /// Not called for Manage, More or Show fewer, which leave the list where
+  /// it is, nor when the list was unmounted while the filter was landing —
+  /// the drawer that asked to be closed may already have been replaced by
+  /// another one that did not.
+  final VoidCallback? onApplied;
 
   @override
   ConsumerState<SidebarSavedTaskFilters> createState() =>
@@ -144,16 +154,24 @@ class _SidebarSavedTaskFiltersState
 
   Future<void> _applySaved(SavedTaskFilter filter) async {
     final mru = ref.read(savedTaskFilterMruProvider.notifier);
+    final onApplied = widget.onApplied;
     await SavedTaskFilterActivator(
       ref.read(journalPageControllerProvider(true).notifier),
     ).activate(filter);
+    // The recency order belongs to the filter, not to this list, so it
+    // updates even if the list is gone by the time the filter has landed.
     mru.touch(filter.id);
+    if (!mounted) return;
+    onApplied?.call();
   }
 
-  Future<void> _applyAll() {
-    return SavedTaskFilterActivator(
+  Future<void> _applyAll() async {
+    final onApplied = widget.onApplied;
+    await SavedTaskFilterActivator(
       ref.read(journalPageControllerProvider(true).notifier),
     ).clearToDefault();
+    if (!mounted) return;
+    onApplied?.call();
   }
 }
 

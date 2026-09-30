@@ -3700,14 +3700,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Activați integrarea Matrix pentru a sincroniza intrările dvs. între dispozitive și cu alți utilizatori Matrix.';
 
   @override
-  String get configFlagEnableMobileSidebarNavigation =>
-      'Navigare mobilă cu bară laterală';
-
-  @override
-  String get configFlagEnableMobileSidebarNavigationDescription =>
-      'Înlocuiți butonul Navigare cu un buton de meniu în colțul din stânga jos, care deschide o bară laterală cu toate secțiunile și căutările dvs. recente.';
-
-  @override
   String get configFlagEnableNotificationsDescription =>
       'Primiți notificări pentru mementouri, actualizări și evenimente importante.';
 
@@ -10015,9 +10007,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get navTabTitleJournal => 'Jurnal';
-
-  @override
-  String get navTabTitleNavigate => 'Navigare';
 
   @override
   String get navTabTitlePeople => 'Persoane';

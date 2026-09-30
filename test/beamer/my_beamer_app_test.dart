@@ -279,6 +279,7 @@ void main() {
         '/habits',
         '/dashboards',
         '/journal',
+        '/events',
         '/settings',
         '/goals',
         '/people',
@@ -295,6 +296,7 @@ void main() {
       when(() => nav.habitsDelegate).thenReturn(delegates['/habits']!);
       when(() => nav.dashboardsDelegate).thenReturn(delegates['/dashboards']!);
       when(() => nav.journalDelegate).thenReturn(delegates['/journal']!);
+      when(() => nav.eventsDelegate).thenReturn(delegates['/events']!);
       when(() => nav.settingsDelegate).thenReturn(delegates['/settings']!);
       when(() => nav.goalsDelegate).thenReturn(delegates['/goals']!);
       when(

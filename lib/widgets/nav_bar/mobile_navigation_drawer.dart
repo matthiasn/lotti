@@ -65,7 +65,7 @@ final mobileNavigationDrawerControllerProvider =
 ///
 /// The controller never says "open" while no drawer is showing: a drag that
 /// carries the panel all the way shut closes it, and so does this host going
-/// away — crossing into the desktop layout, or the flag being switched off.
+/// away when the window crosses into the desktop layout.
 class MobileNavigationDrawerHost extends StatefulWidget {
   const MobileNavigationDrawerHost({
     required this.controller,

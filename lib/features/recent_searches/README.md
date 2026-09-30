@@ -1,12 +1,8 @@
 # Recent searches
 
 Remembers what the user searched for, anywhere in the app, and offers each
-search again from the mobile sidebar navigation's **Recents** section.
-
-It exists for one surface. The sidebar is an experiment behind
-`enable_mobile_sidebar_navigation`, and so is everything here: while that flag
-is off nothing is recorded, nothing is timed and the stored list is not even
-read.
+search again from the **Recents** section of the mobile sidebar — the drawer
+the launcher's menu button opens, which is the phone's navigation.
 
 ## What it does for the user
 
@@ -58,7 +54,7 @@ lib/features/recent_searches/
 
 ## How it works
 
-The recording rules, the flag gate and its three states, the settle timer's
+The recording rules, how the stored list is loaded, the settle timer's
 lifecycle and the gotchas are in the knowledge bundle:
 
 **→ [knowledge/features/recent_searches.md](../../../knowledge/features/recent_searches.md)**

@@ -3647,14 +3647,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Schakel de integratie van Matrix in om uw items te synchroniseren tussen apparaten en met andere Matrix-gebruikers.';
 
   @override
-  String get configFlagEnableMobileSidebarNavigation =>
-      'Mobiele navigatie als zijbalk';
-
-  @override
-  String get configFlagEnableMobileSidebarNavigationDescription =>
-      'Vervang de knop Navigeren door een menuknop linksonder die een zijbalk opent met alle onderdelen en je recente zoekopdrachten.';
-
-  @override
   String get configFlagEnableNotificationsDescription =>
       'Ontvang meldingen voor herinneringen, updates en belangrijke gebeurtenissen.';
 
@@ -9838,9 +9830,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get navTabTitleJournal => 'Logboek';
-
-  @override
-  String get navTabTitleNavigate => 'Navigeren';
 
   @override
   String get navTabTitlePeople => 'Mensen';

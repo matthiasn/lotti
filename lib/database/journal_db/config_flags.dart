@@ -43,13 +43,6 @@ Future<void> initConfigFlags(
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
-      name: enableMobileSidebarNavigationFlag,
-      description: 'Enable the experimental mobile sidebar navigation?',
-      status: false,
-    ),
-  );
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
       name: enableAiSummaryTtsFlag,
       description: 'Enable local AI summary playback?',
       status: false,
@@ -265,4 +258,7 @@ const retiredConfigFlags = <String>[
   // The glass Navigate launcher became the only mobile navigation; the
   // five-slot bar and More sheet this flag opted out of were removed with it.
   'enable_mobile_navigation_launcher',
+  // The sidebar navigation became the only mobile navigation; the Navigate
+  // grid this flag was the alternative to was removed with it.
+  'enable_mobile_sidebar_navigation',
 ];

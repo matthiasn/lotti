@@ -49,7 +49,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          MobileNavigationLauncher(onNavigate: () {}),
+          MobileNavigationLauncher(onOpenMenu: () {}),
           theme: DesignSystemTheme.light(),
           mediaQueryData: phone,
         ),
