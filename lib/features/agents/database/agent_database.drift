@@ -258,6 +258,10 @@ recordDeletedAgent: INSERT OR IGNORE INTO deleted_agents (agent_id, deleted_at) 
 
 deletedAgentIdsAmong: SELECT agent_id FROM deleted_agents WHERE agent_id IN :agentIds;
 
+deletedAgentAt: SELECT deleted_at FROM deleted_agents WHERE agent_id = :agentId;
+
+forgetDeletedAgent: DELETE FROM deleted_agents WHERE agent_id = :agentId;
+
 deleteAgentLinks: DELETE FROM agent_links WHERE from_id = :agentId OR to_id = :agentId OR from_id IN (SELECT id FROM agent_entities WHERE agent_id = :agentId) OR to_id IN (SELECT id FROM agent_entities WHERE agent_id = :agentId);
 
 deleteAgentWakeRuns: DELETE FROM wake_run_log WHERE agent_id = :agentId;

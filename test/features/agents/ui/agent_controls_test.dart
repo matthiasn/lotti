@@ -158,7 +158,7 @@ void main() {
 
     testWidgets('Pause button calls pauseAgent on service', (tester) async {
       when(
-        () => mockAgentService.pauseAgent(testAgentId),
+        () => mockAgentService.pauseAgent(testAgentId, byUser: true),
       ).thenAnswer((_) async => true);
 
       await tester.pumpWidget(
@@ -169,7 +169,9 @@ void main() {
       await tester.tap(find.text('Pause'));
       await tester.pump();
 
-      verify(() => mockAgentService.pauseAgent(testAgentId)).called(1);
+      verify(
+        () => mockAgentService.pauseAgent(testAgentId, byUser: true),
+      ).called(1);
     });
 
     group('Resume', () {
@@ -220,7 +222,7 @@ void main() {
             kind: AgentKinds.goalAgent,
           );
           when(
-            () => mockAgentService.resumeAgent(testAgentId),
+            () => mockAgentService.resumeAgent(testAgentId, byUser: true),
           ).thenAnswer((_) => resumed.future);
           stubPersisted(persisted);
           when(
@@ -266,7 +268,7 @@ void main() {
               kind: kind,
             );
             when(
-              () => mockAgentService.resumeAgent(testAgentId),
+              () => mockAgentService.resumeAgent(testAgentId, byUser: true),
             ).thenAnswer((_) async => true);
             stubPersisted(persisted);
             await pumpDormant(tester);
@@ -275,7 +277,7 @@ void main() {
             await tester.pump();
 
             verifyInOrder([
-              () => mockAgentService.resumeAgent(testAgentId),
+              () => mockAgentService.resumeAgent(testAgentId, byUser: true),
               () => mockTaskAgentService.restoreSubscriptionsForAgent(
                 testAgentId,
               ),
@@ -294,7 +296,7 @@ void main() {
             lifecycle: AgentLifecycle.dormant,
           );
           when(
-            () => mockAgentService.resumeAgent(testAgentId),
+            () => mockAgentService.resumeAgent(testAgentId, byUser: true),
           ).thenAnswer((_) async => true);
           stubPersisted(persisted);
           await pumpDormant(tester);
@@ -318,7 +320,7 @@ void main() {
         'a resume that finds no agent restores nothing',
         (tester) async {
           when(
-            () => mockAgentService.resumeAgent(testAgentId),
+            () => mockAgentService.resumeAgent(testAgentId, byUser: true),
           ).thenAnswer((_) async => false);
           await pumpDormant(tester);
 
@@ -338,7 +340,7 @@ void main() {
         'an agent that vanishes after resuming restores nothing',
         (tester) async {
           when(
-            () => mockAgentService.resumeAgent(testAgentId),
+            () => mockAgentService.resumeAgent(testAgentId, byUser: true),
           ).thenAnswer((_) async => true);
           stubPersisted(null);
           await pumpDormant(tester);
@@ -358,7 +360,7 @@ void main() {
         'a failed resume surfaces the error and restores nothing',
         (tester) async {
           when(
-            () => mockAgentService.resumeAgent(testAgentId),
+            () => mockAgentService.resumeAgent(testAgentId, byUser: true),
           ).thenAnswer((_) async => throw StateError('outbox down'));
           await pumpDormant(tester);
 
@@ -428,7 +430,12 @@ void main() {
         await tester.tap(find.text('Cancel'));
         await tester.pump();
 
-        verifyNever(() => mockAgentService.destroyAgent(any()));
+        verifyNever(
+          () => mockAgentService.destroyAgent(
+            any(),
+            byUser: any(named: 'byUser'),
+          ),
+        );
       },
     );
 
@@ -436,7 +443,7 @@ void main() {
       'Destroy dialog Confirm calls destroyAgent',
       (tester) async {
         when(
-          () => mockAgentService.destroyAgent(testAgentId),
+          () => mockAgentService.destroyAgent(testAgentId, byUser: true),
         ).thenAnswer((_) async => true);
 
         await tester.pumpWidget(
@@ -454,7 +461,9 @@ void main() {
         await tester.tap(destroyButtons.last);
         await tester.pump();
 
-        verify(() => mockAgentService.destroyAgent(testAgentId)).called(1);
+        verify(
+          () => mockAgentService.destroyAgent(testAgentId, byUser: true),
+        ).called(1);
       },
     );
 
@@ -508,7 +517,10 @@ void main() {
         await tester.tap(find.text('Cancel'));
         await tester.pump();
 
-        verifyNever(() => mockAgentService.deleteAgent(any()));
+        verifyNever(
+          () =>
+              mockAgentService.deleteAgent(any(), byUser: any(named: 'byUser')),
+        );
       },
     );
 
@@ -522,7 +534,7 @@ void main() {
           ),
         ).thenAnswer((_) async => []);
         when(
-          () => mockAgentService.deleteAgent(testAgentId),
+          () => mockAgentService.deleteAgent(testAgentId, byUser: true),
         ).thenAnswer((_) async {});
 
         await tester.pumpWidget(
@@ -538,7 +550,9 @@ void main() {
         await tester.tap(deleteButtons.last);
         await tester.pump();
 
-        verify(() => mockAgentService.deleteAgent(testAgentId)).called(1);
+        verify(
+          () => mockAgentService.deleteAgent(testAgentId, byUser: true),
+        ).called(1);
       },
     );
   });

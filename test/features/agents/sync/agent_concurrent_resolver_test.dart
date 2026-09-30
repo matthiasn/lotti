@@ -1325,4 +1325,274 @@ void main() {
       );
     });
   });
+
+  group('agent identity decisions merge field by field (ADR 0111)', () {
+    final t0 = DateTime(2026, 9);
+    DateTime t(int hour) => t0.add(Duration(hours: hour));
+
+    AgentIdentityEntity identity({
+      required Map<String, int> vc,
+      AgentLifecycle lifecycle = AgentLifecycle.active,
+      String displayName = 'Anna',
+      DateTime? updatedAt,
+      DateTime? lifecycleAt,
+      DateTime? stoppedAt,
+      AgentLifecycle? stoppedTo,
+      DateTime? resumedAt,
+    }) =>
+        AgentDomainEntity.agent(
+              id: 'agent-1',
+              agentId: 'agent-1',
+              kind: 'relationship_agent',
+              displayName: displayName,
+              lifecycle: lifecycle,
+              mode: AgentInteractionMode.autonomous,
+              allowedCategoryIds: const {},
+              currentStateId: 'state-1',
+              config: const AgentConfig(),
+              createdAt: t0,
+              updatedAt: updatedAt ?? t0,
+              vectorClock: VectorClock(vc),
+              lifecycleUpdatedAt: lifecycleAt,
+              userStoppedAt: stoppedAt,
+              userStopLifecycle: stoppedTo,
+              userResumedAt: resumedAt,
+            )
+            as AgentIdentityEntity;
+
+    test('a rename concurrent with a destroy keeps the destroy and the new '
+        'name — before, the later updatedAt revived the agent everywhere '
+        '(RelationshipAgentLifecycle FieldMerge)', () {
+      final destroyed = identity(
+        vc: {'A': 2},
+        lifecycle: AgentLifecycle.destroyed,
+        updatedAt: t(2),
+        lifecycleAt: t(2),
+      );
+      final renamed = identity(
+        vc: {'A': 1, 'B': 1},
+        displayName: 'Anna B.',
+        updatedAt: t(3),
+        lifecycleAt: t(1),
+      );
+      for (final (local, incoming) in [
+        (destroyed, renamed),
+        (renamed, destroyed),
+      ]) {
+        final merged =
+            resolveAgentEntityVersions(local: local, incoming: incoming)
+                as AgentIdentityEntity;
+        expect(merged.lifecycle, AgentLifecycle.destroyed);
+        expect(merged.displayName, 'Anna B.');
+      }
+    });
+
+    test("the user's stop and resume survive whichever side wins the row", () {
+      final stopped = identity(
+        vc: {'A': 2},
+        lifecycle: AgentLifecycle.dormant,
+        updatedAt: t(2),
+        lifecycleAt: t(2),
+        stoppedAt: t(2),
+        stoppedTo: AgentLifecycle.dormant,
+      );
+      final resumedEarlier = identity(
+        vc: {'A': 1, 'B': 1},
+        updatedAt: t(4),
+        lifecycleAt: t(1),
+        resumedAt: t(1),
+      );
+      final merged =
+          resolveAgentEntityVersions(local: resumedEarlier, incoming: stopped)
+              as AgentIdentityEntity;
+      expect(merged.userStoppedAt, t(2));
+      expect(merged.userStopLifecycle, AgentLifecycle.dormant);
+      expect(merged.userResumedAt, t(1));
+      expect(merged.lifecycle, AgentLifecycle.dormant);
+    });
+
+    test('a causal successor that lost a decision keeps the merged one — '
+        "the merge keeps the winner's clock, so its successors need not "
+        'carry the other side', () {
+      final merged = identity(
+        vc: {'A': 1},
+        lifecycle: AgentLifecycle.destroyed,
+        lifecycleAt: t(3),
+        stoppedAt: t(3),
+        stoppedTo: AgentLifecycle.destroyed,
+      );
+      final successor = identity(
+        vc: {'A': 2},
+        displayName: 'Anna B.',
+        updatedAt: t(4),
+        lifecycleAt: t(1),
+      );
+      final resolved =
+          resolveAgentEntityVersions(local: merged, incoming: successor)
+              as AgentIdentityEntity;
+      expect(resolved.displayName, 'Anna B.');
+      expect(resolved.lifecycle, AgentLifecycle.destroyed);
+      expect(resolved.userStoppedAt, t(3));
+    });
+
+    group('stampAgentIdentityWrite', () {
+      final base = identity(
+        vc: {'A': 1},
+        lifecycle: AgentLifecycle.destroyed,
+        updatedAt: t(1),
+        lifecycleAt: t(1),
+      );
+
+      AgentIdentityEntity stamp(
+        AgentIdentityEntity write, {
+        AgentIdentityEntity? persisted,
+        bool covered = true,
+      }) =>
+          stampAgentIdentityWrite(
+                write: write,
+                persisted: persisted,
+                covered: covered,
+              )
+              as AgentIdentityEntity;
+
+      test('a new row is stamped with its updatedAt', () {
+        final created = identity(vc: {'A': 1}, updatedAt: t(2));
+        expect(stamp(created).lifecycleUpdatedAt, t(2));
+      });
+
+      test('a rename keeps the stored stamp, so it never competes as a '
+          'lifecycle decision', () {
+        final renamed = base.copyWith(
+          displayName: 'Anna B.',
+          updatedAt: t(5),
+          lifecycleUpdatedAt: null,
+        );
+        expect(stamp(renamed, persisted: base).lifecycleUpdatedAt, t(1));
+      });
+
+      test('a lifecycle change without a stamp is stamped with its '
+          'updatedAt', () {
+        final revived = base.copyWith(
+          lifecycle: AgentLifecycle.active,
+          updatedAt: t(5),
+        );
+        expect(stamp(revived, persisted: base).lifecycleUpdatedAt, t(5));
+      });
+
+      test("a user's stop that keeps the lifecycle is still a decision", () {
+        final stopped = base.copyWith(
+          updatedAt: t(5),
+          userStoppedAt: t(5),
+          userStopLifecycle: AgentLifecycle.destroyed,
+        );
+        expect(stamp(stopped, persisted: base).lifecycleUpdatedAt, t(5));
+      });
+
+      test('an explicit newer stamp is kept', () {
+        final stamped = base.copyWith(
+          lifecycle: AgentLifecycle.dormant,
+          updatedAt: t(6),
+          lifecycleUpdatedAt: t(4),
+        );
+        expect(stamp(stamped, persisted: base).lifecycleUpdatedAt, t(4));
+      });
+
+      test('a stale write without a stamp gets its createdAt, so the '
+          'lifecycle it carried never beats a newer decision', () {
+        final stale = identity(
+          vc: {'B': 1},
+          updatedAt: t(6),
+        );
+        expect(
+          stamp(stale, persisted: base, covered: false).lifecycleUpdatedAt,
+          t0,
+        );
+      });
+
+      test('other variants pass through', () {
+        final other = AgentDomainEntity.agentState(
+          id: 's',
+          agentId: 'a',
+          slots: const AgentSlots(),
+          updatedAt: t0,
+          vectorClock: null,
+        );
+        expect(
+          stampAgentIdentityWrite(write: other, persisted: null),
+          same(other),
+        );
+      });
+    });
+
+    test('a stale local rename over a destroyed row keeps it destroyed', () {
+      final persisted = identity(
+        vc: {'A': 2},
+        lifecycle: AgentLifecycle.destroyed,
+        updatedAt: t(2),
+        lifecycleAt: t(2),
+      );
+      final staleRename = identity(
+        vc: {'A': 1},
+        displayName: 'Anna B.',
+        updatedAt: t(3),
+        lifecycleAt: t(1),
+      );
+      final written =
+          resolveLocalAgentWrite(persisted: persisted, write: staleRename)
+              as AgentIdentityEntity;
+      expect(written.lifecycle, AgentLifecycle.destroyed);
+      expect(written.displayName, 'Anna B.');
+    });
+
+    glados.Glados(
+      glados.any.list(glados.any.intInRange(0, 4)),
+    ).test(
+      'three concurrent versions reach the same decisions in any merge '
+      'order',
+      (seed) {
+        final s = [...seed, 0, 1, 2, 3, 0, 1];
+        const lifecycles = [
+          AgentLifecycle.active,
+          AgentLifecycle.dormant,
+          AgentLifecycle.destroyed,
+        ];
+        // Distinct lifecycle stamps and stop stamps: two equal ones would be
+        // the same decision, written once.
+        final versions = [
+          for (var i = 0; i < 3; i++)
+            identity(
+              vc: {'h$i': 1},
+              lifecycle: lifecycles[s[i] % 3],
+              updatedAt: t(s[i + 3]),
+              lifecycleAt: t(10 + i * 3 + s[i] % 3),
+              stoppedAt: s[i + 1].isEven ? null : t(20 + i),
+              stoppedTo: lifecycles[1 + s[i + 2] % 2],
+              resumedAt: s[i + 2] > 2 ? t(30 + i) : null,
+            ),
+        ];
+        AgentIdentityEntity m(AgentIdentityEntity a, AgentIdentityEntity b) =>
+            mergeConcurrentAgentEntities(local: a, incoming: b)
+                as AgentIdentityEntity;
+        List<Object?> decisions(AgentIdentityEntity e) => [
+          e.lifecycle,
+          identityLifecycleAt(e),
+          e.userStoppedAt,
+          e.userStopLifecycle,
+          e.userResumedAt,
+        ];
+        final [a, b, c] = versions;
+        final expected = decisions(m(m(a, b), c));
+        for (final order in [
+          m(m(b, a), c),
+          m(a, m(b, c)),
+          m(m(c, b), a),
+          m(c, m(a, b)),
+          m(b, m(c, a)),
+        ]) {
+          expect(decisions(order), expected, reason: '$versions');
+        }
+      },
+      tags: 'glados',
+    );
+  });
 }

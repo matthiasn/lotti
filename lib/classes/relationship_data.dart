@@ -168,6 +168,13 @@ abstract class RelationshipData with _$RelationshipData {
     /// The single consent switch for proactive behavior: only important
     /// relationships produce cadence nudges and reminders (ADR 0039).
     @Default(false) bool important,
+
+    /// When [important] was last switched on: the user's latest request for
+    /// the relationship agent (ADR 0111). Set only by
+    /// `RelationshipRepository` on the off→on transition, never by callers;
+    /// kept when [important] is switched off. Null for a person marked
+    /// before the stamp existed, which reads as "asked at the beginning".
+    DateTime? importantSince,
     @Default([]) List<RelationshipStatus> statusHistory,
 
     /// Desired check-in interval in days; only meaningful when [important]

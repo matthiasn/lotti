@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:drift/drift.dart' show Value, Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -3781,6 +3782,22 @@ void main() {
 
   group('hardDeleteAgent', () {
     final deleteDate = DateTime(2026, 2, 21);
+
+    test('records when the agent was deleted, and forgets it on request so '
+        'sync accepts the agent again (ADR 0111)', () async {
+      expect(await repo.deletedAgentAt(testAgentId), isNull);
+
+      await withClock(
+        Clock.fixed(deleteDate),
+        () => repo.hardDeleteAgent(testAgentId),
+      );
+      expect(await repo.deletedAgentAt(testAgentId), deleteDate);
+      expect(await repo.deletedAgentIdsAmong([testAgentId]), {testAgentId});
+
+      await repo.forgetDeletedAgent(testAgentId);
+      expect(await repo.deletedAgentAt(testAgentId), isNull);
+      expect(await repo.deletedAgentIdsAmong([testAgentId]), isEmpty);
+    });
 
     test('deletes all entities for the target agent', () async {
       await repo.upsertEntity(makeAgent());

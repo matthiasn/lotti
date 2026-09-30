@@ -1074,6 +1074,90 @@ void main() {
       });
     });
 
+    group("the user's lifecycle decisions (ADR 0111)", () {
+      final now = DateTime(2026, 9, 30, 8);
+
+      Future<AgentIdentityEntity> written(
+        Future<Object?> Function() action, {
+        AgentLifecycle from = AgentLifecycle.active,
+      }) async {
+        when(() => mockRepository.getEntity('agent-1')).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: 'agent-1',
+            agentId: 'agent-1',
+            lifecycle: from,
+          ),
+        );
+        when(
+          () => mockOrchestrator.removeSubscriptions('agent-1'),
+        ).thenReturn(null);
+        await withClock(Clock.fixed(now), action);
+        return verify(
+              () => mockSyncService.upsertEntity(captureAny()),
+            ).captured.first
+            as AgentIdentityEntity;
+      }
+
+      test(
+        'every lifecycle write stamps when the lifecycle was decided',
+        () async {
+          final identity = await written(() => service.destroyAgent('agent-1'));
+          expect(identity.lifecycleUpdatedAt, now);
+          // A teardown the app decided is not the user's stop.
+          expect(identity.userStoppedAt, isNull);
+        },
+      );
+
+      test("a destroy by the user records the user's stop", () async {
+        final identity = await written(
+          () => service.destroyAgent('agent-1', byUser: true),
+        );
+        expect(identity.userStoppedAt, now);
+        expect(identity.userStopLifecycle, AgentLifecycle.destroyed);
+      });
+
+      test('a pause by the user records a stop to dormant', () async {
+        final identity = await written(
+          () => service.pauseAgent('agent-1', byUser: true),
+        );
+        expect(identity.userStoppedAt, now);
+        expect(identity.userStopLifecycle, AgentLifecycle.dormant);
+      });
+
+      test('a resume by the user records the resume', () async {
+        final identity = await written(
+          () => service.resumeAgent('agent-1', byUser: true),
+          from: AgentLifecycle.dormant,
+        );
+        expect(identity.userResumedAt, now);
+        expect(identity.userStoppedAt, isNull);
+      });
+
+      test("a delete by the user syncs the user's stop before the rows go, "
+          'even over an agent already destroyed — the delete itself stays '
+          'on this device', () async {
+        final calls = <String>[];
+        when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {
+          calls.add('upsert');
+        });
+        when(() => mockRepository.hardDeleteAgent('agent-1')).thenAnswer((
+          _,
+        ) async {
+          calls.add('hardDelete');
+          return (entityIds: <String>[], linkIds: <String>[]);
+        });
+
+        final identity = await written(
+          () => service.deleteAgent('agent-1', byUser: true),
+          from: AgentLifecycle.destroyed,
+        );
+
+        expect(identity.lifecycle, AgentLifecycle.destroyed);
+        expect(identity.userStoppedAt, now);
+        expect(calls, ['upsert', 'hardDelete']);
+      });
+    });
+
     // Consolidated: all three lifecycle methods return false for missing agents.
     for (final entry in <String, Future<bool> Function(AgentService, String)>{
       'pauseAgent': (s, id) => s.pauseAgent(id),

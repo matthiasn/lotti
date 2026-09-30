@@ -93,6 +93,31 @@ class RelationshipRepository {
     return entity is RelationshipEntry ? entity : null;
   }
 
+  /// Whether this device holds the person [id] as deleted: its tombstone,
+  /// purged or not (a purge compacts it to a bare entry that keeps the
+  /// deletion). False for a live person, and for one no row has arrived
+  /// for — the reaper needs that difference, because a person this device
+  /// has not received yet is not a deleted one (ADR 0111).
+  Future<bool> isRelationshipDeleted(String id) async {
+    final entity = await _journalDb.journalEntityByIdIncludingDeleted(id);
+    return entity?.meta.deletedAt != null;
+  }
+
+  /// Every live person, private ones included: the agent maintenance pass's
+  /// view, which a display preference must not scope (see
+  /// [getRelationshipByIdUnfiltered]).
+  Future<List<RelationshipEntry>> getAllRelationshipsUnfiltered() =>
+      _journalDb.getAllRelationships();
+
+  /// The versions of the person [id] that this device holds as open sync
+  /// conflicts: concurrent edits the user has not resolved yet.
+  Future<List<RelationshipEntry>> openConflictVersions(String id) async => [
+    for (final conflict in await _journalDb.conflictsForEntry(id))
+      if (conflict.status == ConflictStatus.unresolved.index)
+        if (fromSerialized(conflict.serialized) case final RelationshipEntry r)
+          r,
+  ];
+
   /// Returns all non-deleted relationships with their newest check-in,
   /// most recently interacted-with first (plan v2 phase 2). People without a
   /// check-in yet sort by tracking start instead, so a freshly added person
@@ -187,7 +212,11 @@ class RelationshipRepository {
     );
     final relationship = RelationshipEntry(
       meta: meta,
-      data: data.withClampedImageFraming,
+      data: _stampImportantSince(
+        data,
+        stored: null,
+        now: started,
+      ).withClampedImageFraming,
       entryText: entryText,
     );
     final success = await _persistenceLogic.createDbEntity(relationship);
@@ -591,15 +620,39 @@ class RelationshipRepository {
   /// slip is corrected once here rather than defended against at every size
   /// the avatar is later drawn at.
   Future<bool> updateRelationship(RelationshipEntry relationship) async {
+    final stored = await getRelationshipByIdUnfiltered(relationship.id);
     final updatedMeta = await _persistenceLogic.updateMetadata(
       relationship.meta,
     );
     final updated = relationship.copyWith(
       meta: updatedMeta,
-      data: relationship.data.withClampedImageFraming,
+      data: _stampImportantSince(
+        relationship.data,
+        stored: stored,
+        now: clock.now(),
+      ).withClampedImageFraming,
     );
     final result = await _persistenceLogic.updateDbEntity(updated);
     return result ?? false;
+  }
+
+  /// [data] with `importantSince` owned by this repository (ADR 0111):
+  /// stamped [now] when `important` switches on, otherwise the stored
+  /// person's stamp (none for a new person), so no caller can move the
+  /// user's last request for the agent — not a stale form, not a contact
+  /// refresh.
+  RelationshipData _stampImportantSince(
+    RelationshipData data, {
+    required RelationshipEntry? stored,
+    required DateTime now,
+  }) {
+    final wasImportant = stored?.data.important ?? false;
+    final since = data.important && !wasImportant
+        ? now
+        : stored?.data.importantSince;
+    return since == data.importantSince
+        ? data
+        : data.copyWith(importantSince: since);
   }
 
   // ── Delete ─────────────────────────────────────────────────────────────────

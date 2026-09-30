@@ -1,8 +1,8 @@
 # ADR 0111: A Tracked Person Keeps Their Agent
 
-- Status: Proposed — model-checked in
-  `specs/tla/RelationshipAgentLifecycle.tla`; the Dart change follows in its
-  own pull request
+- Status: Accepted — model-checked in
+  `specs/tla/RelationshipAgentLifecycle.tla` and implemented; a conformance
+  trace replays the model against the real services
 - Date: 2026-09-29
 
 ## Context
@@ -66,7 +66,11 @@ failures:
 
   Each field is a join, so the merge is commutative and associative, and
   every device reaches the same version whatever the arrival order. A rename
-  no longer touches the lifecycle.
+  no longer touches the lifecycle. The code keeps the winner's clock, as
+  every agent merge does, and joins these fields on every receive — a
+  dominating one too — which is what the model's joined clock achieves: a
+  successor of one side never drops the other side's decision
+  (`joinIdentityDecisions`).
 - **The maintenance pass reconciles a live person's agent** to what the
   user asked for last:
   - the stop, if it is newer than the last mark and the last resume;
@@ -110,6 +114,11 @@ last" in the reconcile pass rather than in the merge, removes that failure.
   merge applies to every agent kind's identity. That also closes the
   residual `TaskAgentAssignment` records, where a concurrent config edit
   could revive a retired task agent.
+- An agent destroyed by a build from before this decision carries no stop,
+  so the pass cannot tell a reap that went wrong from a user's destroy. For a
+  person still marked important it brings the agent back on the first scan.
+  That repairs every person the old reaper lost; a user who destroyed the
+  agent by hand while keeping reminders on turns reminders off instead.
 - The pass writes on a device's own view. A device that holds a stale
   person can briefly write a lifecycle that a later delivery then corrects.
   The model checks that every quiescent state is correct.
@@ -133,5 +142,8 @@ The spec's README section lists the traces:
 - the ensure recreating over `deleted_agents`: `StopSticks`, hard-delete
   configuration, 15 states.
 
-The Dart change adds a conformance trace that replays these scenarios
-against the real services.
+The conformance trace
+(`test/features/relationships/runtime/relationship_agent_lifecycle_model_conformance.dart`)
+drives the real agent stack on two devices through generated traces of the
+model's actions, checks every property, and pins the counterexamples. With
+any one of the five decisions reverted, it fails.

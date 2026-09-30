@@ -1,4 +1,5 @@
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_trigger_tokens.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -16,8 +17,10 @@ import 'package:lotti/services/domain_logging.dart';
 /// [AgentRuntimeMaintenance] contract, the goal-runtime shape):
 /// subscriptions are in-memory and must be rebuilt every launch; cadence
 /// wakes are re-armed by each run but self-healed here in case the last
-/// run died before re-arming; and an agent whose person was deleted
-/// without its teardown running is reaped before anything is healed.
+/// run died before re-arming; an agent whose person was deleted without
+/// its teardown running is reaped before anything is healed; and every live
+/// person's agent is reconciled to what the user asked for last (ADR 0111,
+/// `specs/tla/RelationshipAgentLifecycle.tla`).
 ///
 /// Every per-agent repair is individually contained — one broken
 /// relationship must never take the others (or another feature's
@@ -98,6 +101,34 @@ class RelationshipRuntimeMaintenance implements AgentRuntimeMaintenance {
         _log('beforeWakeScan', identity.agentId, error, stackTrace);
       }
     }
+    await _reconcileLivePeople();
+  }
+
+  /// Every live person's agent to where the user's latest word puts it: a
+  /// missing one created, one the reaper or the cascade destroyed brought
+  /// back, the user's stop kept over whatever a concurrent write left
+  /// ([RelationshipAgentService.reconcileAgent]). Private people included —
+  /// a display preference must not decide whether someone is tracked.
+  Future<void> _reconcileLivePeople() async {
+    final List<RelationshipEntry> people;
+    try {
+      people = await _relationshipRepository.getAllRelationshipsUnfiltered();
+    } catch (error, stackTrace) {
+      _log('reconcile', 'listRelationships', error, stackTrace);
+      return;
+    }
+    for (final person in people) {
+      try {
+        await _relationshipAgentService.reconcileAgent(
+          person,
+          conflicting: await _relationshipRepository.openConflictVersions(
+            person.meta.id,
+          ),
+        );
+      } catch (error, stackTrace) {
+        _log('reconcile', person.meta.id, error, stackTrace);
+      }
+    }
   }
 
   /// A config repair shortens only pending, backed-off escalation retries.
@@ -159,14 +190,17 @@ class RelationshipRuntimeMaintenance implements AgentRuntimeMaintenance {
   /// The relationship is read UNFILTERED — a private person hidden by the
   /// display preference is not a deleted one, and reaping their agent would
   /// silently un-track them on that device alone. A missing link is the
-  /// creation race, not a deletion, so it never reaps.
+  /// creation race, not a deletion, so it never reaps; nor does a person
+  /// with no row at all, which has not arrived yet. Only a tombstone reaps
+  /// (ADR 0111): the agent and its link sync apart from the journal, and a
+  /// device that received them first once destroyed the agent everywhere.
   Future<bool> _reapIfRelationshipGone(String agentId) async {
     final relationshipId = await _relationshipAgentService
         .watchedRelationshipId(agentId);
     if (relationshipId == null) return false;
-    final relationship = await _relationshipRepository
-        .getRelationshipByIdUnfiltered(relationshipId);
-    if (relationship != null && relationship.meta.deletedAt == null) {
+    // No row is a person that has not arrived yet — the agent and its link
+    // travel apart from the journal and can come first — not a deleted one.
+    if (!await _relationshipRepository.isRelationshipDeleted(relationshipId)) {
       return false;
     }
     await _relationshipAgentService.handleRelationshipDeleted(relationshipId);

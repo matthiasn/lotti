@@ -4896,6 +4896,23 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     ).map((QueryRow row) => row.read<String>('agent_id'));
   }
 
+  Selectable<DateTime> deletedAgentAt(String agentId) {
+    return customSelect(
+      'SELECT deleted_at FROM deleted_agents WHERE agent_id = ?1',
+      variables: [Variable<String>(agentId)],
+      readsFrom: {deletedAgents},
+    ).map((QueryRow row) => row.read<DateTime>('deleted_at'));
+  }
+
+  Future<int> forgetDeletedAgent(String agentId) {
+    return customUpdate(
+      'DELETE FROM deleted_agents WHERE agent_id = ?1',
+      variables: [Variable<String>(agentId)],
+      updates: {deletedAgents},
+      updateKind: UpdateKind.delete,
+    );
+  }
+
   Future<int> deleteAgentLinks(String agentId) {
     return customUpdate(
       'DELETE FROM agent_links WHERE from_id = ?1 OR to_id = ?1 OR from_id IN (SELECT id FROM agent_entities WHERE agent_id = ?1) OR to_id IN (SELECT id FROM agent_entities WHERE agent_id = ?1)',

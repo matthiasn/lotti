@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'dart:io';
 
 import 'package:clock/clock.dart';
@@ -116,6 +118,9 @@ void main() {
     when(() => mockDb.getConfigFlag(any())).thenAnswer((_) async => false);
     // No check-in holds entries unless a test says so.
     when(() => mockDb.linksFromIds(any())).thenReturn(MockSelectable([]));
+    // No person is stored unless a test says so: an update reads the stored
+    // one to own `importantSince`.
+    when(() => mockDb.journalEntityById(any())).thenAnswer((_) async => null);
 
     when(
       () => mockPersistence.createMetadata(
@@ -440,6 +445,172 @@ void main() {
         isFalse,
       );
     });
+  });
+
+  group('the maintenance reads (ADR 0111)', () {
+    test('isRelationshipDeleted tells a tombstone — purged too — from a '
+        'person that has not arrived', () async {
+      when(
+        () => mockDb.journalEntityByIdIncludingDeleted('rel-001'),
+      ).thenAnswer((_) async => null);
+      expect(await repository.isRelationshipDeleted('rel-001'), isFalse);
+
+      when(
+        () => mockDb.journalEntityByIdIncludingDeleted('rel-001'),
+      ).thenAnswer((_) async => relationshipEntry());
+      expect(await repository.isRelationshipDeleted('rel-001'), isFalse);
+
+      when(
+        () => mockDb.journalEntityByIdIncludingDeleted('rel-001'),
+      ).thenAnswer((_) async => relationshipEntry(deletedAt: testDate));
+      expect(await repository.isRelationshipDeleted('rel-001'), isTrue);
+
+      // A purge compacts the person to a bare entry that keeps the deletion.
+      when(
+        () => mockDb.journalEntityByIdIncludingDeleted('rel-001'),
+      ).thenAnswer(
+        (_) async => JournalEntity.journalEntry(
+          meta: meta('rel-001', deletedAt: testDate),
+        ),
+      );
+      expect(await repository.isRelationshipDeleted('rel-001'), isTrue);
+    });
+
+    test('openConflictVersions returns the unresolved person versions '
+        'only', () async {
+      final concurrent = relationshipEntry().copyWith(
+        data: relationshipData(title: 'Anna (other device)'),
+      );
+      Conflict conflict(JournalEntity version, ConflictStatus status) =>
+          Conflict(
+            id: 'rel-001',
+            versionKey: '${status.index}',
+            createdAt: testDate,
+            updatedAt: testDate,
+            serialized: jsonEncode(version),
+            schemaVersion: 1,
+            status: status.index,
+          );
+      when(() => mockDb.conflictsForEntry('rel-001')).thenAnswer(
+        (_) async => [
+          conflict(concurrent, ConflictStatus.unresolved),
+          conflict(relationshipEntry(), ConflictStatus.resolved),
+        ],
+      );
+
+      final versions = await repository.openConflictVersions('rel-001');
+
+      expect(versions.map((v) => v.data.title), ['Anna (other device)']);
+    });
+
+    test('getAllRelationshipsUnfiltered reads the unfiltered list', () async {
+      when(
+        () => mockDb.getAllRelationships(),
+      ).thenAnswer((_) async => [relationshipEntry()]);
+      expect(
+        (await repository.getAllRelationshipsUnfiltered()).single.id,
+        'rel-001',
+      );
+    });
+  });
+
+  group('importantSince is owned by the repository (ADR 0111)', () {
+    final markedAt = DateTime(2026, 8, 1, 9);
+    final later = testDate.add(const Duration(days: 3));
+
+    RelationshipEntry person({required bool important, DateTime? since}) =>
+        relationshipEntry().copyWith(
+          data: relationshipData().copyWith(
+            important: important,
+            importantSince: since,
+          ),
+        );
+
+    Future<RelationshipData> updateOver({
+      required RelationshipEntry? stored,
+      required RelationshipEntry update,
+    }) async {
+      when(
+        () => mockDb.journalEntityById('rel-001'),
+      ).thenAnswer((_) async => stored);
+      when(
+        () => mockPersistence.updateDbEntity(any()),
+      ).thenAnswer((_) async => true);
+      await withClock(
+        Clock.fixed(later),
+        () => repository.updateRelationship(update),
+      );
+      final written =
+          verify(
+                () => mockPersistence.updateDbEntity(captureAny()),
+              ).captured.single
+              as RelationshipEntry;
+      return written.data;
+    }
+
+    test('switching important on stamps the moment it was asked for', () async {
+      final data = await updateOver(
+        stored: person(important: false),
+        update: person(important: true),
+      );
+      expect(data.importantSince, later);
+    });
+
+    test('switching it on again after an unmark stamps the new ask', () async {
+      final data = await updateOver(
+        stored: person(important: false, since: markedAt),
+        update: person(important: true, since: markedAt),
+      );
+      expect(data.importantSince, later);
+    });
+
+    test(
+      'an edit of an important person keeps the stored stamp, whatever the '
+      'caller carried — a stale form must not move the last ask',
+      () async {
+        final data = await updateOver(
+          stored: person(important: true, since: markedAt),
+          update: person(important: true, since: DateTime(2020)),
+        );
+        expect(data.importantSince, markedAt);
+      },
+    );
+
+    test('switching important off keeps the stamp of the last ask', () async {
+      final data = await updateOver(
+        stored: person(important: true, since: markedAt),
+        update: person(important: false),
+      );
+      expect(data.important, isFalse);
+      expect(data.importantSince, markedAt);
+    });
+
+    test('a person created important is stamped at creation', () async {
+      when(
+        () => mockPersistence.createDbEntity(any()),
+      ).thenAnswer((_) async => true);
+      final created = await withClock(
+        Clock.fixed(later),
+        () => repository.createRelationship(
+          data: relationshipData().copyWith(important: true),
+        ),
+      );
+      expect(created!.data.importantSince, later);
+    });
+
+    test(
+      'a person created unimportant carries no stamp, even one the caller '
+      'passed',
+      () async {
+        when(
+          () => mockPersistence.createDbEntity(any()),
+        ).thenAnswer((_) async => true);
+        final created = await repository.createRelationship(
+          data: relationshipData().copyWith(importantSince: markedAt),
+        );
+        expect(created!.data.importantSince, isNull);
+      },
+    );
   });
 
   group('image framing is clamped on the way to storage', () {

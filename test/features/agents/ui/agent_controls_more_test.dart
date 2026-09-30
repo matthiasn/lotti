@@ -77,7 +77,7 @@ void main() {
           ),
         ).thenAnswer((_) async => [link]);
         when(
-          () => mockAgentService.deleteAgent(testAgentId),
+          () => mockAgentService.deleteAgent(testAgentId, byUser: true),
         ).thenAnswer((_) async {});
 
         await tester.pumpWidget(
@@ -98,7 +98,9 @@ void main() {
             type: 'agent_task',
           ),
         ).called(1);
-        verify(() => mockAgentService.deleteAgent(testAgentId)).called(1);
+        verify(
+          () => mockAgentService.deleteAgent(testAgentId, byUser: true),
+        ).called(1);
       },
     );
 
@@ -123,7 +125,7 @@ void main() {
       'shows snackbar when pauseAgent throws',
       (tester) async {
         when(
-          () => mockAgentService.pauseAgent(testAgentId),
+          () => mockAgentService.pauseAgent(testAgentId, byUser: true),
         ).thenThrow(Exception('network error'));
 
         await tester.pumpWidget(
@@ -147,7 +149,7 @@ void main() {
         // Use a completer to control when the future resolves
         final completer = Completer<bool>();
         when(
-          () => mockAgentService.pauseAgent(testAgentId),
+          () => mockAgentService.pauseAgent(testAgentId, byUser: true),
         ).thenAnswer((_) => completer.future);
 
         await tester.pumpWidget(
@@ -181,7 +183,7 @@ void main() {
       'shows snackbar when resumeAgent throws',
       (tester) async {
         when(
-          () => mockAgentService.resumeAgent(testAgentId),
+          () => mockAgentService.resumeAgent(testAgentId, byUser: true),
         ).thenThrow(Exception('resume failed'));
 
         await tester.pumpWidget(
@@ -200,7 +202,7 @@ void main() {
       'shows snackbar when destroyAgent throws',
       (tester) async {
         when(
-          () => mockAgentService.destroyAgent(testAgentId),
+          () => mockAgentService.destroyAgent(testAgentId, byUser: true),
         ).thenThrow(Exception('destroy failed'));
 
         await tester.pumpWidget(
@@ -236,7 +238,12 @@ void main() {
         await tester.tapAt(Offset.zero);
         await tester.pump();
 
-        verifyNever(() => mockAgentService.destroyAgent(any()));
+        verifyNever(
+          () => mockAgentService.destroyAgent(
+            any(),
+            byUser: any(named: 'byUser'),
+          ),
+        );
       },
     );
 
@@ -344,7 +351,7 @@ void main() {
           ),
         ).thenAnswer((_) async => []);
         when(
-          () => mockAgentService.deleteAgent(testAgentId),
+          () => mockAgentService.deleteAgent(testAgentId, byUser: true),
         ).thenAnswer((_) => completer.future);
 
         await tester.pumpWidget(

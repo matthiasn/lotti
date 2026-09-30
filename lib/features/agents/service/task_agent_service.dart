@@ -192,6 +192,7 @@ class TaskAgentService {
           ? createdIdentity.copyWith(
               lifecycle: AgentLifecycle.dormant,
               updatedAt: clock.now(),
+              lifecycleUpdatedAt: clock.now(),
             )
           : createdIdentity;
       if (!identical(identity, createdIdentity)) {

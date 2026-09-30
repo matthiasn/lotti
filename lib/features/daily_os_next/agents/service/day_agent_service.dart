@@ -607,7 +607,11 @@ class DayAgentService {
         );
       }
       await syncService.upsertEntity(
-        agent.copyWith(lifecycle: AgentLifecycle.dormant, updatedAt: now),
+        agent.copyWith(
+          lifecycle: AgentLifecycle.dormant,
+          updatedAt: now,
+          lifecycleUpdatedAt: now,
+        ),
       );
 
       // Re-parent recent day-scoped entities onto the planner.
@@ -757,7 +761,11 @@ class DayAgentService {
         );
       }
       await syncService.upsertEntity(
-        agent.copyWith(lifecycle: AgentLifecycle.dormant, updatedAt: now),
+        agent.copyWith(
+          lifecycle: AgentLifecycle.dormant,
+          updatedAt: now,
+          lifecycleUpdatedAt: now,
+        ),
       );
     });
     // Surfaces watching lifecycle refresh on this, as they do for every other

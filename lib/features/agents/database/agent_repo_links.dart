@@ -693,4 +693,13 @@ class AgentRepoLinks {
     if (ids.isEmpty) return const {};
     return (await _db.deletedAgentIdsAmong(ids).get()).toSet();
   }
+
+  /// When this device deleted [agentId], or null when it did not.
+  Future<DateTime?> deletedAgentAt(String agentId) =>
+      _db.deletedAgentAt(agentId).getSingleOrNull();
+
+  /// Drops this device's record that it deleted [agentId], so sync accepts
+  /// writes about it again.
+  Future<void> forgetDeletedAgent(String agentId) =>
+      _db.forgetDeletedAgent(agentId);
 }

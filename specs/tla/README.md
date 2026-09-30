@@ -2271,6 +2271,20 @@ in three steps (the derived copy on both devices), keeping one side's
 checklist deleted on one device while its item is checked on the other), and
 no cascade in one.
 
+`RelationshipAgentLifecycle` is replayed by
+`test/features/relationships/runtime/relationship_agent_lifecycle_model_conformance.dart`
+(a part of `relationship_runtime_maintenance_test.dart`). It runs the real
+agent database, `AgentSyncService`, `AgentService`, `RelationshipAgentService`
+and `RelationshipRuntimeMaintenance` on two devices through the real receive
+decision (`ReplicaNetwork`). The journal side is a small store per device that
+applies a person version the way `JournalDb.updateJournalEntity` does. A
+Glados run of 100 generated traces covers marks, edits, deletes, user stops,
+resumes, hard deletes, conflicts, crashes, maintenance passes and arrival
+orders. After every pass it checks `NoReapOfLivePerson`, and once quiet it
+checks the other four properties. Eight pinned traces cover the
+counterexamples. Each of the five switches, reverted in the Dart code, fails
+the trace.
+
 ## Changing a spec
 
 Keep the header's action-to-code map current. When a change is meant to fix a
@@ -3010,9 +3024,11 @@ What the model leaves out, or shows as a residual:
   that were (every entity names its agent). A row joining nothing, read by
   nothing.
 - The model's lifecycle only moves from live to destroyed. A concurrent
-  identity edit (a config change) can win the lifecycle merge and revive a
-  retired agent. The pass then runs again on the next receive, wake or start,
-  and retires the agent again.
+  identity edit (a config change) no longer revives a retired agent: an
+  identity's lifecycle merges by its own stamp, and an edit that leaves it
+  alone keeps the stamp it read, so it never outranks the retirement
+  (`joinIdentityDecisions`, ADR 0111; `RelationshipAgentLifecycle`'s
+  `FieldMerge`).
 
 ## `DeepBackfill` — an inventory round that repairs what counters cannot see
 
@@ -3188,14 +3204,14 @@ order:
 - a crash that loses the unawaited jobs.
 
 The design it checks is
-[ADR 0111](../../docs/adr/0111-a-tracked-person-keeps-their-agent.md).
-Every switch is `FALSE` in the code at `9f1fec4e5`, and the Dart change
-follows in its own pull request. Three kinds of stamps the code does not
-have yet are modelled throughout, and only the design reads them:
+[ADR 0111](../../docs/adr/0111-a-tracked-person-keeps-their-agent.md), and the
+code implements it: every switch is `TRUE` in the code, and `FALSE` restores
+the code at `9f1fec4e5`. The stamps the design reads are:
 
-- the person's mark time;
-- the identity's lifecycle stamp;
-- the identity's user stop and user resume stamps.
+- the person's `importantSince`;
+- the identity's `lifecycleUpdatedAt`;
+- the identity's `userStoppedAt` (with `userStopLifecycle`) and
+  `userResumedAt`.
 
 | Property | Kind | Says |
 |----------|------|------|
@@ -3257,4 +3273,6 @@ Left out, or residual:
 - **While a conflict is open**, each device follows the person it holds. The
   maintenance pass only ever stops the agent then, judging the newest mark
   among the versions it holds.
-- **A conformance trace** against the Dart code lands with the Dart change.
+- **The model's joined clock.** The code keeps the winner's clock and joins
+  the decision fields on every receive (`joinIdentityDecisions`), which has
+  the same effect: no successor drops the other side's decision.

@@ -259,6 +259,42 @@ void main() {
     );
 
     test(
+      'getAllRelationships ignores the private filter and skips tombstones — '
+      'the agent maintenance pass must reconcile a private person too',
+      () async {
+        await db!.updateJournalEntity(
+          relationship('rel-public', trackedSince: baseTime),
+        );
+        await db!.updateJournalEntity(
+          relationship(
+            'rel-private',
+            trackedSince: baseTime.add(const Duration(days: 1)),
+            private: true,
+          ),
+        );
+        await db!.updateJournalEntity(
+          relationship(
+            'rel-deleted',
+            trackedSince: baseTime,
+            deletedAt: baseTime,
+          ),
+        );
+        await db!.upsertConfigFlag(
+          const ConfigFlag(
+            name: privateFlag,
+            description: 'Show private entries?',
+            status: false,
+          ),
+        );
+
+        expect(
+          (await db!.getAllRelationships()).map((r) => r.id).toSet(),
+          {'rel-public', 'rel-private'},
+        );
+      },
+    );
+
+    test(
       'getAllCheckInsForRelationship ignores the private filter — the delete '
       'cascade must reach every check-in',
       () async {

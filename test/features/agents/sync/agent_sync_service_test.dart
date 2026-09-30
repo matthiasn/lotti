@@ -409,6 +409,9 @@ void main() {
     createdAt: testDate,
     updatedAt: testDate,
     vectorClock: null,
+    // A row written today carries its lifecycle stamp; one without gets it
+    // from the write path (covered in the 'identity lifecycle stamp' group).
+    lifecycleUpdatedAt: testDate,
   );
 
   final testStateEntity = AgentDomainEntity.agentState(
@@ -665,6 +668,51 @@ void main() {
           verifyNever(() => mockRepository.upsertEntity(any()));
         },
       );
+    });
+
+    group('identity lifecycle stamp', () {
+      test('a new identity written without one is stamped with its '
+          'updatedAt on the way to storage (ADR 0111)', () async {
+        await syncService.upsertEntity(
+          (testEntity as AgentIdentityEntity).copyWith(
+            lifecycleUpdatedAt: null,
+          ),
+        );
+
+        final written =
+            verify(
+                  () => mockRepository.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentIdentityEntity;
+        expect(written.lifecycleUpdatedAt, testDate);
+      });
+
+      test("a rename over the stored identity keeps the stored row's "
+          'stamp, so it never competes with a lifecycle decision', () async {
+        final stored = (testEntity as AgentIdentityEntity).copyWith(
+          vectorClock: testClock,
+          lifecycleUpdatedAt: DateTime(2024),
+        );
+        when(
+          () => mockRepository.getEntityIncludingDeleted('agent-1'),
+        ).thenAnswer((_) async => stored);
+
+        await syncService.upsertEntity(
+          stored.copyWith(
+            displayName: 'Renamed',
+            updatedAt: testDate.add(const Duration(days: 1)),
+            lifecycleUpdatedAt: null,
+          ),
+        );
+
+        final written =
+            verify(
+                  () => mockRepository.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentIdentityEntity;
+        expect(written.displayName, 'Renamed');
+        expect(written.lifecycleUpdatedAt, DateTime(2024));
+      });
     });
 
     group('upsertEntity', () {

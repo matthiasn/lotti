@@ -75,7 +75,7 @@ class _AgentControlsState extends ConsumerState<AgentControls> {
 
                         await ref
                             .read(agentServiceProvider)
-                            .deleteAgent(widget.agentId);
+                            .deleteAgent(widget.agentId, byUser: true);
 
                         // Invalidate the task-level lookup so the chip
                         // switches from "Agent" back to "Create Agent".
@@ -144,7 +144,7 @@ class _AgentControlsState extends ConsumerState<AgentControls> {
                       onConfirmed: () async {
                         await ref
                             .read(agentServiceProvider)
-                            .destroyAgent(widget.agentId);
+                            .destroyAgent(widget.agentId, byUser: true);
                         ref.invalidate(agentIdentityProvider(widget.agentId));
                       },
                     ),
@@ -186,13 +186,15 @@ class _AgentControlsState extends ConsumerState<AgentControls> {
   }
 
   Future<void> _pauseAgent() async {
-    await ref.read(agentServiceProvider).pauseAgent(widget.agentId);
+    await ref
+        .read(agentServiceProvider)
+        .pauseAgent(widget.agentId, byUser: true);
     ref.invalidate(agentIdentityProvider(widget.agentId));
   }
 
   Future<void> _resumeAgent() async {
     final agentService = ref.read(agentServiceProvider);
-    if (await agentService.resumeAgent(widget.agentId)) {
+    if (await agentService.resumeAgent(widget.agentId, byUser: true)) {
       await _restoreRuntime(agentService);
     }
     ref.invalidate(agentIdentityProvider(widget.agentId));
