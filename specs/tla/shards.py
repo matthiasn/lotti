@@ -181,6 +181,14 @@ SECONDS = {
     "DeepBackfillIncremental": 219,
     "DeepBackfillMerge": 831,
     "DeepBackfillThree": 60,
+    # Local exhaustive runs, half as long again for a CI runner; refresh from
+    # CI measurements.
+    "RelationshipAgentLifecycle": 2,
+    "RelationshipAgentLifecycleCrash": 3,
+    "RelationshipAgentLifecycleConflict": 45,
+    "RelationshipAgentLifecycleHardDelete": 280,
+    "RelationshipAgentLifecyclePause": 15,
+    "RelationshipAgentLifecycleStop": 250,
 }
 
 # Pessimistic, so an unmeasured configuration is not piled onto a full shard.
