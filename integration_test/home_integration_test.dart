@@ -9,6 +9,8 @@ import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_button.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'tutorial/tutorial_harness.dart';
@@ -135,6 +137,24 @@ void main() {
     // and its build reads the entry from SQLite — real I/O the widget test's
     // fake clock does not run — before setController replaces the editor, so
     // that read is awaited outside the fake clock.
+    //
+    // save() reports the entry saved before it drops the in-memory draft
+    // (EditorStateService.entryWasSaved), and setController prefers a held
+    // draft to the stored text, so wait for the draft to go first; otherwise
+    // the rebuild could come from the draft rather than the stored entry.
+    final editorState = getIt<EditorStateService>();
+    for (
+      var frame = 0;
+      frame < 100 && editorState.entryIsUnsaved(entryId);
+      frame++
+    ) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(
+      editorState.entryIsUnsaved(entryId),
+      isFalse,
+      reason: 'The save must drop the draft before the editor is rebuilt',
+    );
     container.invalidate(entryControllerProvider(entryId));
     await tester.runAsync(
       () => container.read(entryControllerProvider(entryId).future),
