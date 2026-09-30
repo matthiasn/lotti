@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/agent_sidecar_reclaimer.dart';
+import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -381,7 +382,8 @@ class AgentService {
   ///
   /// The write stamps `lifecycleUpdatedAt`, so this decision outranks any
   /// earlier one in the identity merge; a [decision] also records the
-  /// user's stop or resume (ADR 0111).
+  /// user's stop or resume (ADR 0111). Each stamp lands after the one it
+  /// supersedes even when a peer's clock ran ahead ([decisionStampAfter]).
   Future<bool> _updateLifecycle(
     String agentId,
     AgentLifecycle lifecycle, {
@@ -400,19 +402,27 @@ class AgentService {
 
       final now = clock.now();
       final stops = decision == _UserDecision.stop;
+      // The user's stop and resume supersede each other's earlier stamps,
+      // even ones a peer's clock put ahead of this device's.
+      final decidedAt = decisionStampAfter(now, [
+        identity.userStoppedAt,
+        identity.userResumedAt,
+      ]);
       final updated = identity.copyWith(
         lifecycle: lifecycle,
         updatedAt: now,
-        lifecycleUpdatedAt: now,
+        lifecycleUpdatedAt: decisionStampAfter(now, [
+          identityLifecycleAt(identity),
+        ]),
         destroyedAt: lifecycle != AgentLifecycle.destroyed
             ? null
             : identity.lifecycle == AgentLifecycle.destroyed
             ? identity.destroyedAt ?? now
             : now,
-        userStoppedAt: stops ? now : identity.userStoppedAt,
+        userStoppedAt: stops ? decidedAt : identity.userStoppedAt,
         userStopLifecycle: stops ? lifecycle : identity.userStopLifecycle,
         userResumedAt: decision == _UserDecision.resume
-            ? now
+            ? decidedAt
             : identity.userResumedAt,
       );
       await syncService.upsertEntity(updated);

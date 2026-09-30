@@ -3265,7 +3265,13 @@ Left out, or residual:
 - **Lost deliveries** are not modelled. `JournalReplication` and
   `AgentReplication` cover loss and backfill; here every message arrives,
   however late.
-- **Clock skew.** Every stamp is the step order.
+- **Clock skew.** Every stamp is the step order. The code keeps that order
+  within an identity under skew: a decision built on a stamp its device's
+  clock has not reached lands a microsecond past it (`decisionStampAfter`).
+  A mark and a stop on two devices are still ordered by wall clock.
+- **Brief me** is not modelled. It recreates an agent this device deleted as
+  a user resume (`ensureAgentForRelationship`'s `askedByUser`), which the
+  model's `Resume` step already covers once the agent exists.
 - **Three devices** add only arrival orders. With the base bounds and
   `N = 3`, TLC passes all five properties over 43,534,917 distinct states in
   about eight minutes locally. That is too long for its value in a CI shard,

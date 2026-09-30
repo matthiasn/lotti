@@ -781,9 +781,11 @@ evaluation queued. Re-entry on an existing agent is a fast path with one
 write-through: a renamed person's title refreshes the identity's
 `displayName` (the chat page titles itself from the stored identity), while
 everything else is returned untouched. The rename leaves the identity's
-lifecycle stamp alone, so it cannot overturn a concurrent destroy, and an
-agent this device deleted (`deleted_agents`) is not created again here —
-see [the agent follows the user's latest word](#the-agent-follows-the-users-latest-word).
+lifecycle stamp alone, so it cannot overturn a concurrent destroy. An agent
+this device deleted (`deleted_agents`) is created again here only for a mark
+newer than the delete, read from the stored person, or for *Brief me*, which
+records the user's resume (`askedByUser`) — see
+[the agent follows the user's latest word](#the-agent-follows-the-users-latest-word).
 
 # The agent follows the user's latest word
 
@@ -811,10 +813,14 @@ reaper or the cascade left. While the person has an open sync conflict it
 only ever stops the agent. A hard delete by the user first syncs the user's
 stop, so no other device brings the agent back.
 
-Every stamp only grows along a causal chain, and identities merge field by
-field (`joinIdentityDecisions`): the lifecycle by `lifecycleUpdatedAt`, the
-stop and resume by their stamps. Every device therefore reaches the same
-stamps, computes the same target, and converges.
+Every stamp only grows along a causal chain — a decision built on a stamp
+from a peer whose clock ran ahead lands a microsecond past it
+(`decisionStampAfter`) — and identities merge field by field
+(`joinIdentityDecisions`): the lifecycle by `lifecycleUpdatedAt`, the stop
+and resume by their stamps. Every device therefore reaches the same stamps,
+computes the same target, and converges. A mark and a stop are still
+compared by wall clock: two made on different devices within their clock
+skew can be ordered the wrong way round.
 
 ```mermaid
 stateDiagram-v2
@@ -825,7 +831,7 @@ stateDiagram-v2
   dormant --> destroyed: user destroy, cascade, reconcile to a destroy
   destroyed --> active: reconcile, when the destroy was the app's or older than the last ask
   destroyed --> deleted: user delete (syncs the stop first)
-  deleted --> active: maintenance create, for a mark newer than the delete
+  deleted --> active: a mark newer than the delete (ensure or maintenance create), or Brief me
 ```
 
 An agent destroyed by a build from before ADR 0111 carries no stop, so a

@@ -280,6 +280,22 @@ AgentDomainEntity joinConvergentAgentFields({
 DateTime identityLifecycleAt(AgentIdentityEntity identity) =>
     identity.lifecycleUpdatedAt ?? identity.updatedAt;
 
+/// A decision stamp for a write at [now] that supersedes [supersedes]: [now],
+/// or a microsecond past the latest of [supersedes] when [now] is not later
+/// (ADR 0111). The stamps are wall-clock times from several devices, and a
+/// peer whose clock runs ahead leaves one this device's clock has not
+/// reached; a decision built on it must still outrank it, or the merge would
+/// hand its successor's field back to it.
+DateTime decisionStampAfter(DateTime now, Iterable<DateTime?> supersedes) {
+  var at = now;
+  for (final stamp in supersedes) {
+    if (stamp != null && !at.isAfter(stamp)) {
+      at = stamp.add(const Duration(microseconds: 1));
+    }
+  }
+  return at;
+}
+
 /// [winner] with the later decisions of [winner] and [other] (ADR 0111):
 ///
 /// - the lifecycle (and its `destroyedAt`) of the side with the later
@@ -347,7 +363,9 @@ DateTime? _later(DateTime? a, DateTime? b) {
 /// - a new row ([persisted] null or another variant) is stamped with its
 ///   `updatedAt`;
 /// - a write built on [persisted] ([covered]) that changed the lifecycle or
-///   a user decision without a newer stamp is stamped with its `updatedAt`;
+///   a user decision without a newer stamp is stamped with its `updatedAt`,
+///   pushed past [persisted]'s stamp when a peer's clock ran ahead
+///   ([decisionStampAfter]) — it succeeds that decision and must outrank it;
 ///   one that changed neither (a rename, a config edit) keeps [persisted]'s
 ///   stamp, so it never competes as a lifecycle decision;
 /// - a write built on an older snapshot keeps the stamp it read. Without one
@@ -373,7 +391,7 @@ AgentDomainEntity stampAgentIdentityWrite({
     at = stamped != null && stamped.isAfter(baseAt)
         ? stamped
         : decided
-        ? write.updatedAt
+        ? decisionStampAfter(write.updatedAt, [baseAt])
         : baseAt;
   } else {
     at = write.lifecycleUpdatedAt ?? write.createdAt;

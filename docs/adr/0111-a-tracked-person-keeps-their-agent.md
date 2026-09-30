@@ -58,7 +58,12 @@ failures:
     how (destroy, pause or delete); when the user last resumed it; and
     when its lifecycle last changed.
   - Every stamp is the time of the write that sets it, so along any causal
-    chain it only grows.
+    chain it only grows. The times come from several devices' wall clocks,
+    so a write that supersedes a stamp its own clock has not reached — a
+    peer's clock ran ahead — takes a microsecond past it instead
+    (`decisionStampAfter`). Without that, the field join would hand a
+    causal successor's lifecycle, stop or resume back to the decision it
+    replaced.
 - **Identities merge field by field.** For two concurrent identity versions:
   - the lifecycle with the later lifecycle stamp wins;
   - the stop with the later stop stamp wins, and so does the resume;
@@ -85,9 +90,11 @@ failures:
   converge.
 - **A hard delete tells the other devices.** `deleteAgent` first writes the
   user's stop, which syncs, then removes the rows here. The background
-  ensure never recreates an agent this device deleted. Only the maintenance
-  pass does, for a mark newer than the delete, and it clears the
-  `deleted_agents` entry.
+  ensure recreates an agent this device deleted only as the maintenance
+  pass would — for a mark newer than the delete, read from the stored
+  person — and clears the `deleted_agents` entry when it does. An explicit
+  request (*Brief me*) also recreates it, recorded as the user's resume so
+  that it outranks the delete's stop on every device.
 
 The user's latest word wins. A mark or resume newer than a stop brings the
 agent back, and a stop newer than both keeps it stopped. Whether a newer mark
@@ -119,6 +126,11 @@ last" in the reconcile pass rather than in the merge, removes that failure.
   person still marked important it brings the agent back on the first scan.
   That repairs every person the old reaper lost; a user who destroyed the
   agent by hand while keeping reminders on turns reminders off instead.
+- A mark (`importantSince`, on the person) and a stop (on the identity)
+  are compared by wall clock, and no write orders one after the other. A
+  mark and a stop made on two devices within their clock skew of each other
+  can be ordered the wrong way round. The stamps within one identity are
+  kept in causal order (`decisionStampAfter`).
 - The pass writes on a device's own view. A device that holds a stale
   person can briefly write a lifecycle that a later delivery then corrects.
   The model checks that every quiescent state is correct.

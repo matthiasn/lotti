@@ -1080,14 +1080,16 @@ void main() {
       Future<AgentIdentityEntity> written(
         Future<Object?> Function() action, {
         AgentLifecycle from = AgentLifecycle.active,
+        AgentIdentityEntity Function(AgentIdentityEntity)? stored,
       }) async {
-        when(() => mockRepository.getEntity('agent-1')).thenAnswer(
-          (_) async => makeTestIdentity(
-            id: 'agent-1',
-            agentId: 'agent-1',
-            lifecycle: from,
-          ),
+        final identity = makeTestIdentity(
+          id: 'agent-1',
+          agentId: 'agent-1',
+          lifecycle: from,
         );
+        when(
+          () => mockRepository.getEntity('agent-1'),
+        ).thenAnswer((_) async => stored?.call(identity) ?? identity);
         when(
           () => mockOrchestrator.removeSubscriptions('agent-1'),
         ).thenReturn(null);
@@ -1132,6 +1134,29 @@ void main() {
         expect(identity.userResumedAt, now);
         expect(identity.userStoppedAt, isNull);
       });
+
+      test(
+        'a resume over a stop from a peer whose clock ran ahead lands '
+        'after it, so the stop cannot win back the agent it superseded',
+        () async {
+          final ahead = now.add(const Duration(hours: 1));
+          final identity = await written(
+            () => service.resumeAgent('agent-1', byUser: true),
+            from: AgentLifecycle.destroyed,
+            stored: (identity) => identity.copyWith(
+              lifecycleUpdatedAt: ahead,
+              userStoppedAt: ahead,
+              userStopLifecycle: AgentLifecycle.destroyed,
+            ),
+          );
+          final pastAhead = ahead.add(const Duration(microseconds: 1));
+          expect(identity.lifecycle, AgentLifecycle.active);
+          expect(identity.userResumedAt, pastAhead);
+          expect(identity.lifecycleUpdatedAt, pastAhead);
+          // The row's own write time stays this device's clock.
+          expect(identity.updatedAt, now);
+        },
+      );
 
       test("a delete by the user syncs the user's stop before the rows go, "
           'even over an agent already destroyed — the delete itself stays '

@@ -242,6 +242,7 @@ class _LifeDevice {
       repository: replica.repository,
       syncService: replica.syncService,
       orchestrator: orchestrator,
+      relationshipRepository: people,
     );
     maintenance = RelationshipRuntimeMaintenance(
       agentService: agents,

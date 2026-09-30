@@ -1435,6 +1435,23 @@ void main() {
       expect(resolved.userStoppedAt, t(3));
     });
 
+    group('decisionStampAfter', () {
+      test('is now when now is later than everything it supersedes', () {
+        expect(decisionStampAfter(t(5), [t(1), null, t(4)]), t(5));
+      });
+
+      test('is a microsecond past the latest stamp now has not passed — a '
+          "peer's clock ran ahead, or the same instant", () {
+        const us = Duration(microseconds: 1);
+        expect(decisionStampAfter(t(5), [t(9), t(7)]), t(9).add(us));
+        expect(decisionStampAfter(t(5), [t(5)]), t(5).add(us));
+      });
+
+      test('is now when there is nothing to supersede', () {
+        expect(decisionStampAfter(t(5), [null]), t(5));
+      });
+    });
+
     group('stampAgentIdentityWrite', () {
       final base = identity(
         vc: {'A': 1},
@@ -1497,6 +1514,21 @@ void main() {
         expect(stamp(stamped, persisted: base).lifecycleUpdatedAt, t(4));
       });
 
+      test('a lifecycle change built on a stamp from a clock that ran ahead '
+          'is stamped past it: it succeeds that decision and must outrank '
+          'it', () {
+        final ahead = base.copyWith(lifecycleUpdatedAt: t(9));
+        final revived = ahead.copyWith(
+          lifecycle: AgentLifecycle.active,
+          updatedAt: t(5),
+          lifecycleUpdatedAt: t(5),
+        );
+        expect(
+          stamp(revived, persisted: ahead).lifecycleUpdatedAt,
+          t(9).add(const Duration(microseconds: 1)),
+        );
+      });
+
       test('a stale write without a stamp gets its createdAt, so the '
           'lifecycle it carried never beats a newer decision', () {
         final stale = identity(
@@ -1522,6 +1554,33 @@ void main() {
           same(other),
         );
       });
+    });
+
+    test('a local resume over a destroy stamped by a clock that ran ahead '
+        'stays resumed — its successor never hands the lifecycle back', () {
+      final destroyedAhead = identity(
+        vc: {'A': 1},
+        lifecycle: AgentLifecycle.destroyed,
+        updatedAt: t(9),
+        lifecycleAt: t(9),
+        stoppedAt: t(9),
+        stoppedTo: AgentLifecycle.destroyed,
+      );
+      // Built on the destroy (same clock; the write path steps it), on a
+      // device whose clock is behind.
+      final resumed = destroyedAhead.copyWith(
+        lifecycle: AgentLifecycle.active,
+        updatedAt: t(5),
+        lifecycleUpdatedAt: t(5),
+      );
+      final written =
+          resolveLocalAgentWrite(persisted: destroyedAhead, write: resumed)
+              as AgentIdentityEntity;
+      expect(written.lifecycle, AgentLifecycle.active);
+      expect(
+        identityLifecycleAt(written),
+        t(9).add(const Duration(microseconds: 1)),
+      );
     });
 
     test('a stale local rename over a destroyed row keeps it destroyed', () {

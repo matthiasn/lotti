@@ -723,8 +723,12 @@ stamps `lifecycleUpdatedAt`. The local write path covers the rest
 the stored row keeps that row's stamp unless it changed the lifecycle or a
 user decision; a stale write keeps the stamp it read, or its `createdAt` if
 it has none, so its lifecycle never beats a newer decision. A row from before
-the stamp reads `updatedAt`. Each stamp only grows along a causal chain, so
-the join converges in any order
+the stamp reads `updatedAt`. A decision built on a stamp its device's clock
+has not reached — a peer's clock ran ahead — lands a microsecond past it
+(`decisionStampAfter`), in `stampAgentIdentityWrite` and in
+`AgentService`'s lifecycle writes alike, so a causal successor never loses a
+field to the decision it replaced. Each stamp only grows along a causal
+chain, so the join converges in any order
 (`specs/tla/RelationshipAgentLifecycle.tla`, `FieldMerge`).
 
 ## Change sets merge item by item

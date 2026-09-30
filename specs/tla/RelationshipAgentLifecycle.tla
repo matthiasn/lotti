@@ -270,6 +270,14 @@ Target(d) ==
     ELSE IF person[d].imp THEN "active"
     ELSE ident[d].lc
 
+\* A missing agent may be created over this device's delete only for a
+\* live, unconflicted, important person marked after the delete.
+AskedSinceDelete(d) ==
+    /\ person[d].st = "live"
+    /\ pconf[d] = {}
+    /\ person[d].imp
+    /\ gone[d] < person[d].mt
+
 \* The pass creates a missing agent -- a lost background ensure, a peer's
 \* creation not yet arrived, a delete older than the last mark -- and sets
 \* the target over whatever the merge, the reaper or the cascade left.
@@ -278,7 +286,7 @@ CanReconcile(d) ==
     /\ Reconcile
     /\ person[d].st = "live"
     /\ IF ident[d].lc = "none"
-       THEN pconf[d] = {} /\ person[d].imp /\ gone[d] < person[d].mt
+       THEN AskedSinceDelete(d)
        ELSE /\ Target(d) # ident[d].lc
             /\ pconf[d] = {} \/ Target(d) \in {"dormant", "destroyed"}
 
@@ -334,15 +342,18 @@ Resolve(d, c, keepLocal) ==
                    badReap, lastMark, lastResume, lastStop>>
 
 \* The background ensure. With no identity it creates one -- over a
-\* `deleted_agents` entry too, unless CreateHonorsDeleted. An existing one
-\* is kept whatever its lifecycle; "save" writes the title through, which
-\* rewrites the row with the lifecycle it read.
+\* `deleted_agents` entry too, unless CreateHonorsDeleted, which lets it
+\* create over one only as the pass would (AskedSinceDelete). An existing
+\* one is kept whatever its lifecycle; "save" writes the title through,
+\* which rewrites the row with the lifecycle it read.
 Ensure(d, why) ==
     /\ why \in pend[d] \cap {"mark", "save"}
     /\ pend' = [pend EXCEPT ![d] = @ \ {why}]
     /\ IF ident[d].lc = "none"
        THEN IF CreateHonorsDeleted /\ gone[d] > 0
-            THEN UNCHANGED <<ident, link, gone, hc, aw, now, inbox>>
+            THEN IF AskedSinceDelete(d)
+                 THEN Create(d, TRUE)
+                 ELSE UNCHANGED <<ident, link, gone, hc, aw, now, inbox>>
             ELSE Create(d, FALSE)
        ELSE IF why = "save"
        THEN IWrite(d, ident[d].lc, "none") /\ UNCHANGED <<link, gone>>
