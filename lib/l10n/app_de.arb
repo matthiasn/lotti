@@ -1152,6 +1152,8 @@
   "apiKeyProviderTypeHint": "Anbietertyp auswählen",
   "apiKeyProviderTypeLabel": "Anbietertyp",
   "apiKeyShowTooltip": "API-Schlüssel anzeigen",
+  "appClosingMessage": "Alles wird gespeichert. Einen Moment noch.",
+  "appClosingTitle": "Lotti wird geschlossen…",
   "audioPlayerPause": "Audio pausieren",
   "audioPlayerPlay": "Audio abspielen",
   "audioPlayerPosition": "{current} von {total}",

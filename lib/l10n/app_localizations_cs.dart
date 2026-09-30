@@ -2579,6 +2579,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get apiKeyShowTooltip => 'Zobrazit API klíč';
 
   @override
+  String get appClosingMessage => 'Ukládám všechno. Chvilku vydrž.';
+
+  @override
+  String get appClosingTitle => 'Zavírám Lotti…';
+
+  @override
   String get audioPlayerPause => 'Pozastavit zvuk';
 
   @override

@@ -1335,6 +1335,8 @@
   "apiKeyProviderTypeHint": "Välj en leverantörstyp",
   "apiKeyProviderTypeLabel": "Leverantörstyp",
   "apiKeyShowTooltip": "Visa API-nyckel",
+  "appClosingMessage": "Sparar allt. Vänta ett ögonblick.",
+  "appClosingTitle": "Stänger Lotti…",
   "audioPlayerPause": "Pausa ljud",
   "audioPlayerPlay": "Spela upp ljud",
   "audioPlayerPosition": "{current} av {total}",

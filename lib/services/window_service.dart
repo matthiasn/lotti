@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:ui' show AppExitResponse;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
@@ -21,6 +23,24 @@ typedef AsyncDisposer = Future<void> Function();
 /// Function signature for platform checks (e.g. macOS detection).
 typedef PlatformCheck = bool Function();
 
+/// How long a quit waits for the closing notice to reach the screen before
+/// tearing services down regardless. A hidden or occluded window may never
+/// produce the frame, and the quit must not hang on it.
+const closingNoticeFrameBudget = Duration(milliseconds: 250);
+
+/// Resolves once the next frame — the one carrying the closing notice — has
+/// been rendered, or after [closingNoticeFrameBudget], whichever is first.
+///
+/// Resolves at once when frames are disabled (a hidden window, or a detached
+/// engine during a SIGTERM or logout shutdown): no frame can come, and those
+/// quits should not spend the budget waiting for one.
+@visibleForTesting
+Future<void> awaitClosingNoticeFrame() async {
+  final binding = WidgetsBinding.instance;
+  if (!binding.framesEnabled) return;
+  await binding.endOfFrame.timeout(closingNoticeFrameBudget, onTimeout: () {});
+}
+
 class WindowService with WidgetsBindingObserver implements WindowListener {
   WindowService({
     @visibleForTesting ExitCallback? exitOverride,
@@ -29,12 +49,14 @@ class WindowService with WidgetsBindingObserver implements WindowListener {
     AsyncDisposer? beforeLogFlush,
     @visibleForTesting bool skipWindowManagerSetup = false,
     @visibleForTesting AppPrefs? prefsOverride,
+    @visibleForTesting AsyncDisposer? closingFrameOverride,
   }) : _exitFn = exitOverride ?? immediateExit,
        _playerDisposer =
            playerDisposerOverride ?? AudioPlayerController.disposeActivePlayer,
        _beforeLogFlush = beforeLogFlush ?? (() async {}),
        _isMacOS = isMacOSOverride ?? (() => isMacOS),
-       _prefs = prefsOverride ?? makeSharedPrefsService() {
+       _prefs = prefsOverride ?? makeSharedPrefsService(),
+       _awaitClosingFrame = closingFrameOverride ?? awaitClosingNoticeFrame {
     if (!skipWindowManagerSetup) {
       windowManager.addListener(this);
       if (isDesktop) {
@@ -55,6 +77,14 @@ class WindowService with WidgetsBindingObserver implements WindowListener {
   final AsyncDisposer _beforeLogFlush;
   final PlatformCheck _isMacOS;
   final AppPrefs _prefs;
+  final AsyncDisposer _awaitClosingFrame;
+  final ValueNotifier<bool> _closing = ValueNotifier(false);
+
+  /// True from the moment a quit starts until the process exits. The app
+  /// shell covers itself with a blocking "closing" notice while it is set,
+  /// because closing every database takes a few seconds and a window that
+  /// silently ignores the user in that time looks hung.
+  ValueListenable<bool> get closing => _closing;
 
   final sizeKey = 'WINDOW_SIZE';
   final offsetKey = 'WINDOW_OFFSET';
@@ -165,6 +195,17 @@ class WindowService with WidgetsBindingObserver implements WindowListener {
     unawaited(closeWindow());
   }
 
+  /// Holds a repeated quit request (a second Cmd+Q) until the teardown that
+  /// is already running has finished, so it cannot end the process while
+  /// databases are still closing. This keeps holding after the app-exit
+  /// listener itself is disposed near the end of teardown. Without a quit in
+  /// progress the request passes through to that listener.
+  @override
+  Future<AppExitResponse> didRequestAppExit() async {
+    await _closeFuture;
+    return AppExitResponse.exit;
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.detached) {
@@ -225,10 +266,18 @@ class WindowService with WidgetsBindingObserver implements WindowListener {
     }
   }
 
-  /// Runs the shared teardown and then terminates the desktop window once.
+  /// Raises [closing], gives the closing notice a frame to appear, then runs
+  /// the shared teardown and terminates the desktop window once.
   Future<void> closeWindow() => _closeFuture ??= _closeWindow();
 
   Future<void> _closeWindow() async {
+    _closing.value = true;
+    // Best-effort: the notice is feedback, the teardown is what matters.
+    try {
+      await _awaitClosingFrame();
+    } catch (e, s) {
+      _logDisposalError(e, s, 'closingNotice');
+    }
     await shutdown();
     if (_isMacOS()) {
       // All SQLite handles have been released while Dart FFI callbacks are

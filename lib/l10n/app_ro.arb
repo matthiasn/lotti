@@ -1152,6 +1152,8 @@
   "apiKeyProviderTypeHint": "Selectați un tip de furnizor",
   "apiKeyProviderTypeLabel": "Tip furnizor",
   "apiKeyShowTooltip": "Afișați cheia API",
+  "appClosingMessage": "Se salvează totul. Vă rugăm să așteptați.",
+  "appClosingTitle": "Se închide Lotti…",
   "audioPlayerPause": "Întrerupeți redarea",
   "audioPlayerPlay": "Redați înregistrarea",
   "audioPlayerPosition": "{current} din {total}",

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:beamer/beamer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/app_root.dart';
 import 'package:lotti/beamer/beamer_app.dart';
@@ -17,6 +18,8 @@ import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provid
 import 'package:lotti/features/demo/ui/demo_exit_sheet.dart';
 import 'package:lotti/features/demo/ui/demo_mode_banner.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/profiles/model/profile.dart' as profiles;
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
@@ -33,9 +36,12 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/services/window_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:lotti/widgets/app_closing_overlay.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/zoom_wrapper.dart';
 import 'package:material_ui/material_ui.dart';
@@ -318,6 +324,50 @@ void main() {
       when(() => nav.index).thenReturn(0);
     }
 
+    /// The overrides that boot the full shell against mocks: a ready theme,
+    /// quiet sync streams and an idle recorder. [extra] adds per-test ones.
+    List<Override> shellOverrides({List<Override> extra = const []}) {
+      final mockMatrix = MockMatrixService();
+      when(
+        mockMatrix.getIncomingKeyVerificationStream,
+      ).thenAnswer((_) => const Stream<KeyVerification>.empty());
+      when(
+        () => mockMatrix.incomingKeyVerificationRunnerStream,
+      ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+      final mockOutboxService = MockOutboxService();
+      when(
+        () => mockOutboxService.notLoggedInGateStream,
+      ).thenAnswer((_) => const Stream<void>.empty());
+      return [
+        ...extra,
+        themingControllerProvider.overrideWith(ReadyThemingController.new),
+        enableTooltipsProvider.overrideWith((ref) => Stream.value(true)),
+        zoomControllerProvider.overrideWith(TestZoomController.new),
+        agentInitializationProvider.overrideWith((ref) async {}),
+        dayProcessingRuntimeProvider.overrideWithValue(
+          MockDayProcessingRuntime(),
+        ),
+        matrixServiceProvider.overrideWithValue(mockMatrix),
+        loginStateStreamProvider.overrideWith(
+          (ref) => Stream.value(LoginState.loggedIn),
+        ),
+        outboxServiceProvider.overrideWithValue(mockOutboxService),
+        audioRecorderControllerProvider.overrideWith(
+          () => StubAudioRecorderController(
+            AudioRecorderState(
+              status: AudioRecorderStatus.stopped,
+              progress: Duration.zero,
+              vu: -20,
+              dBFS: -160,
+              showIndicator: false,
+              modalVisible: false,
+            ),
+          ),
+        ),
+        shouldAutoShowWhatsNewProvider.overrideWith((ref) async => false),
+      ];
+    }
+
     setUp(() async {
       // Pin a mobile-width surface so MyBeamerApp's AppScreen takes the
       // mobile-shell branch regardless of view-size leakage from earlier
@@ -375,59 +425,15 @@ void main() {
         ).thenAnswer((_) async => true);
 
         try {
-          final mockMatrix = MockMatrixService();
-          when(
-            mockMatrix.getIncomingKeyVerificationStream,
-          ).thenAnswer((_) => const Stream<KeyVerification>.empty());
-          when(
-            () => mockMatrix.incomingKeyVerificationRunnerStream,
-          ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
-
-          final mockOutboxService = MockOutboxService();
-          when(
-            () => mockOutboxService.notLoggedInGateStream,
-          ).thenAnswer((_) => const Stream<void>.empty());
-
           await tester.pumpWidget(
             ProviderScope(
-              overrides: [
-                themingControllerProvider.overrideWith(
-                  ReadyThemingController.new,
-                ),
-                enableTooltipsProvider.overrideWith(
-                  (ref) => Stream.value(true),
-                ),
-                zoomControllerProvider.overrideWith(
-                  TestZoomController.new,
-                ),
-                manualLanguageControllerProvider.overrideWith(
-                  _GermanManualLanguageController.new,
-                ),
-                agentInitializationProvider.overrideWith((ref) async {}),
-                dayProcessingRuntimeProvider.overrideWithValue(
-                  MockDayProcessingRuntime(),
-                ),
-                matrixServiceProvider.overrideWithValue(mockMatrix),
-                loginStateStreamProvider.overrideWith(
-                  (ref) => Stream.value(LoginState.loggedIn),
-                ),
-                outboxServiceProvider.overrideWithValue(mockOutboxService),
-                audioRecorderControllerProvider.overrideWith(
-                  () => StubAudioRecorderController(
-                    AudioRecorderState(
-                      status: AudioRecorderStatus.stopped,
-                      progress: Duration.zero,
-                      vu: -20,
-                      dBFS: -160,
-                      showIndicator: false,
-                      modalVisible: false,
-                    ),
+              overrides: shellOverrides(
+                extra: [
+                  manualLanguageControllerProvider.overrideWith(
+                    _GermanManualLanguageController.new,
                   ),
-                ),
-                shouldAutoShowWhatsNewProvider.overrideWith(
-                  (ref) async => false,
-                ),
-              ],
+                ],
+              ),
               child: MyBeamerApp(navService: mockNavService),
             ),
           );
@@ -481,18 +487,6 @@ void main() {
       'in a demo world the banner exit opens the exit sheet through a '
       "context INSIDE the router's navigator",
       (tester) async {
-        final mockMatrix = MockMatrixService();
-        when(
-          mockMatrix.getIncomingKeyVerificationStream,
-        ).thenAnswer((_) => const Stream<KeyVerification>.empty());
-        when(
-          () => mockMatrix.incomingKeyVerificationRunnerStream,
-        ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
-        final mockOutboxService = MockOutboxService();
-        when(
-          () => mockOutboxService.notLoggedInGateStream,
-        ).thenAnswer((_) => const Stream<void>.empty());
-
         // The exit sheet's candidate load runs against the production
         // getIt path in the active (demo) generation.
         final journalDb = getIt<JournalDb>() as MockJournalDb;
@@ -539,40 +533,9 @@ void main() {
           ProfileSwitcherScope(
             switcher: switcher,
             child: ProviderScope(
-              overrides: [
-                profileContextProvider.overrideWithValue(guestContext),
-                themingControllerProvider.overrideWith(
-                  ReadyThemingController.new,
-                ),
-                enableTooltipsProvider.overrideWith(
-                  (ref) => Stream.value(true),
-                ),
-                zoomControllerProvider.overrideWith(TestZoomController.new),
-                agentInitializationProvider.overrideWith((ref) async {}),
-                dayProcessingRuntimeProvider.overrideWithValue(
-                  MockDayProcessingRuntime(),
-                ),
-                matrixServiceProvider.overrideWithValue(mockMatrix),
-                loginStateStreamProvider.overrideWith(
-                  (ref) => Stream.value(LoginState.loggedIn),
-                ),
-                outboxServiceProvider.overrideWithValue(mockOutboxService),
-                audioRecorderControllerProvider.overrideWith(
-                  () => StubAudioRecorderController(
-                    AudioRecorderState(
-                      status: AudioRecorderStatus.stopped,
-                      progress: Duration.zero,
-                      vu: -20,
-                      dBFS: -160,
-                      showIndicator: false,
-                      modalVisible: false,
-                    ),
-                  ),
-                ),
-                shouldAutoShowWhatsNewProvider.overrideWith(
-                  (ref) async => false,
-                ),
-              ],
+              overrides: shellOverrides(
+                extra: [profileContextProvider.overrideWithValue(guestContext)],
+              ),
               child: MyBeamerApp(navService: mockNavService),
             ),
           ),
@@ -608,6 +571,116 @@ void main() {
         await tester.pumpAndSettle();
       },
     );
+
+    testWidgets('without a WindowService the shell has no closing signal', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: shellOverrides(),
+          child: MyBeamerApp(navService: mockNavService),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final overlay = tester.widget<AppClosingOverlay>(
+        find.byType(AppClosingOverlay),
+      );
+      expect(overlay.closing, isNull);
+      expect(find.byType(AppClosingNotice), findsNothing);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets(
+      "a quit covers the shell with the WindowService's closing notice",
+      (tester) async {
+        final closing = ValueNotifier(false);
+        addTearDown(closing.dispose);
+        final windowService = MockWindowService();
+        when(() => windowService.closing).thenReturn(closing);
+        getIt.registerSingleton<WindowService>(windowService);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: shellOverrides(),
+            child: MyBeamerApp(navService: mockNavService),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        final overlay = tester.widget<AppClosingOverlay>(
+          find.byType(AppClosingOverlay),
+        );
+        expect(overlay.closing, same(closing));
+        // The native menu gets the same signal, since its shortcuts bypass
+        // the overlay.
+        expect(
+          tester
+              .widget<DesktopMenuWrapper>(find.byType(DesktopMenuWrapper))
+              .closing,
+          same(closing),
+        );
+        expect(find.byType(AppClosingNotice), findsNothing);
+
+        closing.value = true;
+        await tester.pump();
+
+        expect(find.text('Closing Lotti…'), findsOneWidget);
+        // The notice sits above the router, covering every page and dialog.
+        expect(
+          find.ancestor(
+            of: find.byType(AppClosingNotice),
+            matching: find.byType(ZoomWrapper),
+          ),
+          findsNothing,
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets('a failing keyboard command is logged under its command id', (
+      tester,
+    ) async {
+      final logger = MockDomainLogger();
+      getIt
+        ..unregister<DomainLogger>()
+        ..registerSingleton<DomainLogger>(logger);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: shellOverrides(),
+          child: MyBeamerApp(navService: mockNavService),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final error = StateError('command failed');
+      final stackTrace = StackTrace.current;
+      tester.widget<AppCommandHost>(find.byType(AppCommandHost)).onError!(
+        AppCommandId.createTask,
+        error,
+        stackTrace,
+      );
+
+      verify(
+        () => logger.error(
+          LogDomain.general,
+          error,
+          stackTrace: stackTrace,
+          subDomain: 'keyboardCommand:createTask',
+        ),
+      ).called(1);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    });
   });
 }
 

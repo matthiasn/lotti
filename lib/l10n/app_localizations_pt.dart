@@ -2578,6 +2578,12 @@ class AppLocalizationsPt extends AppLocalizations {
   String get apiKeyShowTooltip => 'Mostrar chave de API';
 
   @override
+  String get appClosingMessage => 'Salvando tudo. Aguarde um instante.';
+
+  @override
+  String get appClosingTitle => 'Fechando o Lotti…';
+
+  @override
   String get audioPlayerPause => 'Pausar áudio';
 
   @override

@@ -1335,6 +1335,8 @@
   "apiKeyProviderTypeHint": "Vælg en udbydertype",
   "apiKeyProviderTypeLabel": "Udbydertype",
   "apiKeyShowTooltip": "Vis API-nøgle",
+  "appClosingMessage": "Gemmer alt. Vent et øjeblik.",
+  "appClosingTitle": "Lukker Lotti…",
   "audioPlayerPause": "Sæt lyden på pause",
   "audioPlayerPlay": "Afspil lyd",
   "audioPlayerPosition": "{current} af {total}",

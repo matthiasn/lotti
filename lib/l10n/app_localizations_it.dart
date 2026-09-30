@@ -2587,6 +2587,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get apiKeyShowTooltip => 'Mostra la chiave API';
 
   @override
+  String get appClosingMessage => 'Salvataggio in corso. Attendi un attimo.';
+
+  @override
+  String get appClosingTitle => 'Chiusura di Lotti…';
+
+  @override
   String get audioPlayerPause => 'Metti in pausa l’audio';
 
   @override

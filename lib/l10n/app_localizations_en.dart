@@ -2542,6 +2542,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get apiKeyShowTooltip => 'Show API Key';
 
   @override
+  String get appClosingMessage => 'Saving everything. Please stand by.';
+
+  @override
+  String get appClosingTitle => 'Closing Lotti…';
+
+  @override
   String get audioPlayerPause => 'Pause audio';
 
   @override

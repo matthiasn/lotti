@@ -2552,6 +2552,12 @@ class AppLocalizationsDa extends AppLocalizations {
   String get apiKeyShowTooltip => 'Vis API-nøgle';
 
   @override
+  String get appClosingMessage => 'Gemmer alt. Vent et øjeblik.';
+
+  @override
+  String get appClosingTitle => 'Lukker Lotti…';
+
+  @override
   String get audioPlayerPause => 'Sæt lyden på pause';
 
   @override

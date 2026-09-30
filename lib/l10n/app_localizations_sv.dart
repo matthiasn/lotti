@@ -2561,6 +2561,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get apiKeyShowTooltip => 'Visa API-nyckel';
 
   @override
+  String get appClosingMessage => 'Sparar allt. Vänta ett ögonblick.';
+
+  @override
+  String get appClosingTitle => 'Stänger Lotti…';
+
+  @override
   String get audioPlayerPause => 'Pausa ljud';
 
   @override

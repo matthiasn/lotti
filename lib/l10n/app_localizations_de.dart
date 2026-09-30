@@ -2575,6 +2575,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get apiKeyShowTooltip => 'API-Schlüssel anzeigen';
 
   @override
+  String get appClosingMessage => 'Alles wird gespeichert. Einen Moment noch.';
+
+  @override
+  String get appClosingTitle => 'Lotti wird geschlossen…';
+
+  @override
   String get audioPlayerPause => 'Audio pausieren';
 
   @override

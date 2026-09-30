@@ -1334,6 +1334,8 @@
   "apiKeyProviderTypeHint": "Selecteer een providertype",
   "apiKeyProviderTypeLabel": "Type aanbieder",
   "apiKeyShowTooltip": "API-sleutel tonen",
+  "appClosingMessage": "Alles wordt opgeslagen. Even geduld.",
+  "appClosingTitle": "Lotti wordt afgesloten…",
   "audioPlayerPause": "Audio pauzeren",
   "audioPlayerPlay": "Audio afspelen",
   "audioPlayerPosition": "{current} van {total}",

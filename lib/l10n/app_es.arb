@@ -1152,6 +1152,8 @@
   "apiKeyProviderTypeHint": "Selecciona un tipo de proveedor",
   "apiKeyProviderTypeLabel": "Tipo de proveedor",
   "apiKeyShowTooltip": "Mostrar clave API",
+  "appClosingMessage": "Guardando todo. Espera un momento.",
+  "appClosingTitle": "Cerrando Lotti…",
   "audioPlayerPause": "Pausar audio",
   "audioPlayerPlay": "Reproducir audio",
   "audioPlayerPosition": "{current} de {total}",

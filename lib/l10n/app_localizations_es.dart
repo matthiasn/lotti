@@ -2579,6 +2579,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get apiKeyShowTooltip => 'Mostrar clave API';
 
   @override
+  String get appClosingMessage => 'Guardando todo. Espera un momento.';
+
+  @override
+  String get appClosingTitle => 'Cerrando Lotti…';
+
+  @override
   String get audioPlayerPause => 'Pausar audio';
 
   @override
