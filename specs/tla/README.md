@@ -3231,7 +3231,7 @@ lost, and the maintenance pass has nothing left to do on any device.
 | `RelationshipAgentLifecycleConflict` | 4 | 4 | the conflict page, resolved either way | 3,930,590 |
 | `RelationshipAgentLifecycleStop` | 4 | 4 | one user destroy | 23,914,852 |
 | `RelationshipAgentLifecyclePause` | 3 | 4 | one pause, and resumes | 1,292,995 |
-| `RelationshipAgentLifecycleHardDelete` | 4 | 4 | one stop, a hard delete among them | 26,485,019 |
+| `RelationshipAgentLifecycleHardDelete` | 4 | 4 | one stop, a hard delete among them | 26,484,827 |
 
 Each design switch set to `FALSE` has a counterexample. The traces come from
 multi-worker runs, so they are not guaranteed to be the shortest:
@@ -3242,7 +3242,7 @@ multi-worker runs, so they are not guaranteed to be the shortest:
 | `Reconcile` | nothing gives a live, important person an agent after the background ensure | `Tracked`, crash configuration, 5 states: A marks and dies before its ensure runs; both devices settle on an important person with no agent |
 | `FieldMerge` | concurrent identities merge as a whole row by `updatedAt` | `StopSticks`, stop configuration, 12 states: A creates the agent and the user destroys it there; B, holding the person but not yet the agent, creates it; B's later `updatedAt` wins the merge on A, and the user's stop is lost with the row |
 | `HardDeleteStops` | a hard delete is local | `StopSticks`, hard-delete configuration, 14 states: A deletes the person, B marks it; A reaps the agent and the user hard-deletes it there; B, which holds the person live, brings the agent back, since nothing told it the user deleted it |
-| `CreateHonorsDeleted` | the background ensure creates the agent over a `deleted_agents` entry | `StopSticks`, hard-delete configuration, 15 states: the user hard-deletes the agent on A while A's ensure from an earlier mark is still pending; the ensure recreates it, and it is active on both devices |
+| `CreateHonorsDeleted` | the background ensure creates the agent over a `deleted_agents` entry | `StopSticks`, hard-delete configuration with `MaxAgentWrites = 5`, 17 states: A deletes the person while B marks it; B's pass creates the agent and A's teardown destroys it; the user hard-deletes it on B, and B's ensure from the mark, still pending, recreates it; A reaps the copy it receives, but B, having deleted the agent, refuses A's destroy and keeps it active. The checked-in bound of four agent writes is one short of this trace, so the checked-in configuration passes with the switch off; the five-write bound is not checked in because it does not finish in a CI shard (over 64 million distinct states when TLC stopped at the violation) |
 
 Designs TLC rejected on the way, each with its counterexample in the ADR or
 here:

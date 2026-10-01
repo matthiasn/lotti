@@ -37,7 +37,8 @@
 (*   Ensure      RelationshipAgentService.ensureAgentForRelationship: an   *)
 (*               existing identity, whatever its lifecycle, is kept        *)
 (*               (renamed on "save"); with none, identity and link are     *)
-(*               written in one transaction                                *)
+(*               written in one transaction, over this device's delete     *)
+(*               only for a mark newer than it (_askedSinceDeletion)       *)
 (*   Teardown    handleRelationshipDeleted: AgentService.destroyAgent      *)
 (*   Reap        RelationshipRuntimeMaintenance._reapIfRelationshipGone,   *)
 (*               before every scheduled-wake scan, for each ACTIVE agent   *)
@@ -100,10 +101,11 @@ CONSTANTS
                         \* `updatedAt`
     HardDeleteStops,    \* a hard delete first sends the user's stop, so
                         \* every device learns of it; FALSE: local only
-    CreateHonorsDeleted \* the background ensure never recreates an agent
-                        \* this device deleted; only the maintenance pass
-                        \* does, for a mark newer than the delete, clearing
-                        \* the `deleted_agents` entry
+    CreateHonorsDeleted \* the background ensure recreates an agent this
+                        \* device deleted only as the maintenance pass
+                        \* would (AskedSinceDelete: a mark newer than the
+                        \* delete), clearing the `deleted_agents` entry;
+                        \* FALSE: it creates over the entry regardless
 
 ASSUME N >= 2
 ASSUME \A b \in {Conflicts, Pauses, HardDeletes, ReapNeedsTombstone,

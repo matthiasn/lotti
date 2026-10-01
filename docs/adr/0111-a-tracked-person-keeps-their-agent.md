@@ -139,7 +139,7 @@ last" in the reconcile pass rather than in the merge, removes that failure.
 
 `specs/tla/RelationshipAgentLifecycle.tla` checks this design in six
 configurations, which run in CI: base, crash, conflict, stop, pause and hard
-delete. Together they reach 55,713,551 distinct states, and every one passes.
+delete. Together they reach 55,713,359 distinct states, and every one passes.
 With every switch off (the code at `9f1fec4e5`) TLC breaks
 `NoReapOfLivePerson` in 6 states.
 
@@ -152,7 +152,8 @@ The spec's README section lists the traces:
 - a local-only hard delete: `StopSticks`, hard-delete configuration,
   14 states;
 - the ensure recreating over `deleted_agents`: `StopSticks`, hard-delete
-  configuration, 15 states.
+  configuration with one more agent write than the checked-in bound,
+  17 states.
 
 The conformance trace
 (`test/features/relationships/runtime/relationship_agent_lifecycle_model_conformance.dart`)

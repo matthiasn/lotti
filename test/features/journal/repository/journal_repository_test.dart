@@ -2364,6 +2364,10 @@ void main() {
         when(
           () => mockJournalDb.getLinkedToEntities(imageId),
         ).thenAnswer((_) async => [dbEntityFor(linked)]);
+        // The relationship write reads the stored person first.
+        when(
+          () => mockJournalDb.journalEntityById(linked.meta.id),
+        ).thenAnswer((_) async => linked);
         when(() => mockPersistenceLogic.updateMetadata(any())).thenAnswer(
           (invocation) async =>
               invocation.positionalArguments.first as Metadata,
@@ -2426,11 +2430,13 @@ void main() {
           when(
             () => mockJournalDb.journalEntityById(imageId),
           ).thenAnswer((_) async => image());
+          final linked = person(avatarImageId: imageId);
           when(
             () => mockJournalDb.getLinkedToEntities(imageId),
-          ).thenAnswer(
-            (_) async => [dbEntityFor(person(avatarImageId: imageId))],
-          );
+          ).thenAnswer((_) async => [dbEntityFor(linked)]);
+          when(
+            () => mockJournalDb.journalEntityById(linked.meta.id),
+          ).thenAnswer((_) async => linked);
           when(() => mockPersistenceLogic.updateMetadata(any())).thenAnswer(
             (invocation) async =>
                 invocation.positionalArguments.first as Metadata,

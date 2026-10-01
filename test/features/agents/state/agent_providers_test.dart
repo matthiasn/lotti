@@ -438,8 +438,12 @@ void main() {
 
       await syncService.upsertEntity(entity);
 
-      // Entity is stamped with vector clock before persisting.
-      final stamped = entity.copyWith(vectorClock: stampedClock);
+      // Entity is stamped with vector clock before persisting, and a new
+      // identity with its lifecycle stamp (ADR 0111).
+      final stamped = entity.copyWith(
+        vectorClock: stampedClock,
+        lifecycleUpdatedAt: entity.updatedAt,
+      );
       verify(() => mockRepository.upsertEntity(stamped)).called(1);
       verify(() => mockOutboxService.enqueueMessage(any())).called(1);
     });
