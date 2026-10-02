@@ -103,7 +103,7 @@ class SyncDatabase extends _$SyncDatabase
 
   /// The schema this build writes. A restored backup may carry an
   /// older schema, which Drift migrates, but never a newer one.
-  static const int currentSchemaVersion = 32;
+  static const int currentSchemaVersion = 33;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -650,6 +650,21 @@ class SyncDatabase extends _$SyncDatabase
             deepBackfillRequests,
             deepBackfillRequests.mediaSize,
           );
+        }
+        if (from < 33) {
+          // Upgrades from below v12 create the current inbound_event_queue in
+          // the `from < 12` branch above, column included; adding it again
+          // would fail with a duplicate-column error. Check the live table.
+          final queueColumns = await customSelect(
+            "SELECT name FROM pragma_table_info('inbound_event_queue')",
+          ).get();
+          final names = queueColumns.map((row) => row.read<String>('name'));
+          if (names.isNotEmpty && !names.contains('descriptor_attempts')) {
+            await m.addColumn(
+              inboundEventQueue,
+              inboundEventQueue.descriptorAttempts,
+            );
+          }
         }
       },
     );

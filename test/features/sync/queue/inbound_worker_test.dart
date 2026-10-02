@@ -73,6 +73,7 @@ class _ExpectedWorkerLifecycle {
   final DateTime enqueuedAt;
   final int maxAttempts;
   int attempts = 0;
+  int descriptorAttempts = 0;
   bool active = true;
   bool applied = false;
   bool abandoned = false;
@@ -104,12 +105,13 @@ class _ExpectedWorkerLifecycle {
         }
         return 0;
       case ApplyOutcome.pendingDescriptor:
-        if (attempts + 1 >= 2880 &&
+        if (descriptorAttempts + 1 >= 2880 &&
             now.difference(enqueuedAt) >= const Duration(hours: 24)) {
           active = false;
           abandoned = true;
         } else {
           attempts++;
+          descriptorAttempts++;
         }
         return 0;
       case ApplyOutcome.pendingBarrier:
@@ -400,7 +402,10 @@ void main() {
     // 24 h of 30 s retries — the worker's minimum attempt budget.
     const attemptBudget = 2880;
 
-    Future<void> seedDescriptorRow({required int priorAttempts}) async {
+    Future<void> seedDescriptorRow({
+      required int priorDescriptorAttempts,
+      int? priorAttempts,
+    }) async {
       await queue.enqueueLive(
         _buildSyncEvent(
           eventId: r'$never-descriptor',
@@ -410,7 +415,12 @@ void main() {
       );
       await db
           .update(db.inboundEventQueue)
-          .write(InboundEventQueueCompanion(attempts: Value(priorAttempts)));
+          .write(
+            InboundEventQueueCompanion(
+              attempts: Value(priorAttempts ?? priorDescriptorAttempts),
+              descriptorAttempts: Value(priorDescriptorAttempts),
+            ),
+          );
     }
 
     test(
@@ -418,7 +428,7 @@ void main() {
       () async {
         var virtualNow = DateTime(2024);
         await withClock(Clock(() => virtualNow), () async {
-          await seedDescriptorRow(priorAttempts: attemptBudget - 1);
+          await seedDescriptorRow(priorDescriptorAttempts: attemptBudget - 1);
           virtualNow = virtualNow.add(const Duration(hours: 24));
           final worker = buildWorker(
             apply: (_) async => ApplyOutcome.pendingDescriptor,
@@ -438,7 +448,7 @@ void main() {
     test('keeps retrying a spent budget until a day has passed', () async {
       var virtualNow = DateTime(2024);
       await withClock(Clock(() => virtualNow), () async {
-        await seedDescriptorRow(priorAttempts: attemptBudget - 1);
+        await seedDescriptorRow(priorDescriptorAttempts: attemptBudget - 1);
         virtualNow = virtualNow.add(const Duration(hours: 23));
         final worker = buildWorker(
           apply: (_) async => ApplyOutcome.pendingDescriptor,
@@ -452,10 +462,37 @@ void main() {
       });
     });
 
+    test(
+      'does not count no-room or barrier retries toward the budget',
+      () async {
+        var virtualNow = DateTime(2024);
+        await withClock(Clock(() => virtualNow), () async {
+          // A week of 2 s no-room retries, then the first descriptor miss.
+          await seedDescriptorRow(
+            priorDescriptorAttempts: 0,
+            priorAttempts: 7 * 43200,
+          );
+          virtualNow = virtualNow.add(const Duration(days: 7));
+          final worker = buildWorker(
+            apply: (_) async => ApplyOutcome.pendingDescriptor,
+          );
+
+          expect(await worker.drainToCompletion(), 0);
+
+          final stats = await queue.stats();
+          expect(stats.retrying, 1);
+          expect(stats.abandoned, 0);
+          final row = await db.select(db.inboundEventQueue).getSingle();
+          expect(row.descriptorAttempts, 1);
+          expect(row.attempts, 7 * 43200 + 1);
+        });
+      },
+    );
+
     test('keeps retrying an old row whose budget is not spent', () async {
       var virtualNow = DateTime(2024);
       await withClock(Clock(() => virtualNow), () async {
-        await seedDescriptorRow(priorAttempts: attemptBudget - 2);
+        await seedDescriptorRow(priorDescriptorAttempts: attemptBudget - 2);
         virtualNow = virtualNow.add(const Duration(days: 7));
         final worker = buildWorker(
           apply: (_) async => ApplyOutcome.pendingDescriptor,

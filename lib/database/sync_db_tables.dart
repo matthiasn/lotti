@@ -471,6 +471,13 @@ class InboundEventQueue extends Table {
   /// `InboundWorker` to avoid eternal wedges on a single bad event.
   IntColumn get attempts => integer().withDefault(const Constant(0))();
 
+  /// Retries scheduled for `pendingDescriptor` alone. [attempts] also
+  /// counts no-room and barrier retries, so it cannot tell whether a row
+  /// actually spent its time waiting on a descriptor; the worker's
+  /// descriptor backstop reads this counter instead.
+  IntColumn get descriptorAttempts =>
+      integer().named('descriptor_attempts').withDefault(const Constant(0))();
+
   /// Earliest time (ms since epoch) at which this entry is eligible
   /// for re-peek. 0 = ready now.
   IntColumn get nextDueAt =>

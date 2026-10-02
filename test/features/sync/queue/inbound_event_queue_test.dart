@@ -1919,6 +1919,33 @@ void main() {
         });
       },
     );
+
+    test(
+      'counts descriptor retries separately from every other reason',
+      () async {
+        await withClock(Clock.fixed(DateTime(2024)), () async {
+          await queue.enqueueLive(
+            _buildSyncEvent(eventId: r'$d1', roomId: roomA, originTsMs: 1),
+          );
+          Future<InboundEventQueueItem> retry(RetryReason reason) async {
+            final entry = InboundQueueEntry.fromRow(
+              await db.select(db.inboundEventQueue).getSingle(),
+            );
+            await queue.scheduleRetry(entry, Duration.zero, reason: reason);
+            return db.select(db.inboundEventQueue).getSingle();
+          }
+
+          var row = await retry(RetryReason.pendingDescriptor);
+          expect((row.attempts, row.descriptorAttempts), (1, 1));
+          row = await retry(RetryReason.retriable);
+          expect((row.attempts, row.descriptorAttempts), (2, 1));
+          row = await retry(RetryReason.pendingBarrier);
+          expect((row.attempts, row.descriptorAttempts), (3, 1));
+          row = await retry(RetryReason.pendingDescriptor);
+          expect((row.attempts, row.descriptorAttempts), (4, 2));
+        });
+      },
+    );
   });
 
   group('pruneStrandedEntries (F6)', () {
@@ -2175,8 +2202,17 @@ void main() {
         );
         await queue.enqueueLive(event);
         final batch = await queue.peekBatchReady();
-        await queue.markSkipped(
+        await queue.scheduleRetry(
           batch.first,
+          Duration.zero,
+          reason: RetryReason.pendingDescriptor,
+        );
+        await queue.markSkipped(
+          InboundQueueEntry.fromRow(
+            await (db.select(
+              db.inboundEventQueue,
+            )..where((t) => t.queueId.equals(batch.first.queueId))).getSingle(),
+          ),
           reason: 'maxAttempts(pendingAttachment)',
         );
         expect(await statusOf(batch.first.queueId), 'abandoned');
@@ -2189,6 +2225,7 @@ void main() {
           db.inboundEventQueue,
         )..where((t) => t.queueId.equals(batch.first.queueId))).getSingle();
         expect(row.attempts, 0);
+        expect(row.descriptorAttempts, 0);
         expect(row.nextDueAt, 0);
         expect(row.lastErrorReason, isNull);
         expect(row.abandonedAt, isNull);

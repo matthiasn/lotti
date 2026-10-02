@@ -190,6 +190,7 @@ class InboundQueueResurrection {
           status: const Constant(InboundQueueStatuses.enqueued),
           resurrectionCount: table.resurrectionCount + const Constant(1),
           attempts: const Constant(0),
+          descriptorAttempts: const Constant(0),
           nextDueAt: const Constant(0),
           leaseUntil: const Constant(0),
           enqueuedAt: Constant(nowMs),

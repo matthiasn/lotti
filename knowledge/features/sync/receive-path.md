@@ -138,8 +138,12 @@ recovery state, with one exception: media the homeserver answers with
 so prepare yields nothing and the row is skipped rather than parked. As a
 backstop, a `pendingDescriptor` row is abandoned (`pendingDescriptorTimeout`)
 only once both a day has passed since it was queued and a day's worth of
-30-second retries (2880 attempts) has run, so neither a long app shutdown nor
-an offline day alone drops it. Abandoned rows stay resurrectable. Local cache writes preserve their original filesystem error and
+30-second descriptor retries (2880) has run, so neither a long app shutdown nor
+an offline day alone drops it. Those retries are counted in the row's own
+`descriptor_attempts` column (sync DB v33), because `attempts` also grows with
+no-room and barrier retries; a row that waited a day for its room is not
+dropped on its first descriptor miss. Resurrection resets both counters, and
+abandoned rows stay resurrectable. Local cache writes preserve their original filesystem error and
 use bounded generic retries; a parent bundle descriptor does not turn a child
 cache-write failure into unlimited attachment recovery.
 An envelope already older than ten minutes at restart therefore stays active
@@ -401,7 +405,7 @@ flowchart TD
     Outcome -->|decryptionPending| DecryptRetry["scheduleRetry (short backoff)"]
     Outcome -->|pendingAttachment| AttachmentRetry["scheduleRetry until arrival deadline"]
     Outcome -->|pendingBarrier| PeriodicRetry["scheduleRetry without age or attempt cap"]
-    Outcome -->|pendingDescriptor| DescriptorRetry{"queued ≥ 24 h and<br/>≥ 2880 attempts?"}
+    Outcome -->|pendingDescriptor| DescriptorRetry{"queued ≥ 24 h and<br/>≥ 2880 descriptor retries?"}
     DescriptorRetry -->|no| PeriodicRetry
     DescriptorRetry -->|yes| Skip
     Outcome -->|permanentSkip| Skip["markSkipped"]

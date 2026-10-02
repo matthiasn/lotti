@@ -341,7 +341,7 @@ class InboundWorker {
   ) async {
     final nextAttempts = entry.attempts + 1;
     if (reason == RetryReason.pendingDescriptor &&
-        nextAttempts >= _minPendingDescriptorAttempts &&
+        entry.descriptorAttempts + 1 >= _minPendingDescriptorAttempts &&
         clock.now().millisecondsSinceEpoch - entry.enqueuedAt >=
             _maxPendingDescriptorWait.inMilliseconds) {
       await _queue.markSkipped(entry, reason: 'pendingDescriptorTimeout');
@@ -445,7 +445,8 @@ class InboundWorker {
   // Backstop for descriptors that never become available. Exact-descriptor
   // recovery must survive restarts and offline stretches, so the row is only
   // abandoned once BOTH a day has passed since it was queued AND a day's
-  // worth of 30 s retries has actually run. Wall clock alone would drop rows
+  // worth of 30 s descriptor retries has actually run — counted apart from
+  // no-room and barrier retries, which also bump the row's `attempts`. Wall clock alone would drop rows
   // the moment an app closed for a week reopens offline; attempts alone
   // would drop them after one long offline day. Abandoned rows stay durable
   // and resurrectable, so a descriptor that does arrive later still applies.
