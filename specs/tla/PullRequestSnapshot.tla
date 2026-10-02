@@ -57,7 +57,8 @@ CONSTANTS
     GuardDeleted,           \* Persist skips a deleted entry, and never revives one
     MergedFirst,            \* a merged observation wins a same-stamp tie
     ResolveConcurrent,      \* concurrent versions are merged, not left to the user
-    SuggestRequiresRefresh  \* suggestions only after this context's refresh succeeded
+    SuggestRequiresRefresh, \* suggestions only after this context's refresh succeeded
+    PreferOwnRead           \* a context uses its own read unless the stored one is provably later
 
 ASSUME
     /\ Linker \in Devices
@@ -83,15 +84,15 @@ VARIABLES
     store,      \* per device: the stored entry
     msgs,       \* sync messages in flight
     pc,         \* per job: progress through the refresh
-    startedAt,  \* per job: server stamp when the refresh was requested
+    startedAt,  \* per job: ghost, the tick at which the refresh was requested
     rsnap,      \* per job: what the read returned
-    rstamp,     \* per job: the stamp it carries
-    basis,      \* per job: the observation the context will use
+    rtick,      \* per job: ghost, the tick of the read; its stamp is Stamp(rtick)
+    basis,      \* per job: the observation this refresh read
     ok,         \* per job: the refresh succeeded on a live entry
     unlinks,
     built       \* ghost: every context built, with what it claimed
 
-vars == <<now, hist, store, msgs, pc, startedAt, rsnap, rstamp, basis, ok,
+vars == <<now, hist, store, msgs, pc, startedAt, rsnap, rtick, basis, ok,
           unlinks, built>>
 
 Remote == hist[now + 1]
@@ -128,8 +129,9 @@ Join(a, b) == [d \in Devices |-> IF a[d] >= b[d] THEN a[d] ELSE b[d]]
 -----------------------------------------------------------------------------
 (* The stored entry *)
 
+\* `at` is a ghost: the tick at which the stored observation was read.
 Absent == [present |-> FALSE, deleted |-> FALSE, snap |-> NoSnap,
-           asOf |-> -1, clock |-> ZeroClock]
+           asOf |-> -1, at |-> -1, clock |-> ZeroClock]
 
 Live(r) == r.present /\ ~r.deleted
 
@@ -146,7 +148,7 @@ Merge(a, b) ==
 
 Linked ==
     [present |-> TRUE, deleted |-> FALSE, snap |-> NoSnap, asOf |-> -1,
-     clock |-> [ZeroClock EXCEPT ![Linker] = 1]]
+     at |-> -1, clock |-> [ZeroClock EXCEPT ![Linker] = 1]]
 
 Init ==
     /\ now = 0
@@ -156,13 +158,13 @@ Init ==
     /\ pc = [j \in Jobs |-> "idle"]
     /\ startedAt = [j \in Jobs |-> 0]
     /\ rsnap = [j \in Jobs |-> NoSnap]
-    /\ rstamp = [j \in Jobs |-> -1]
+    /\ rtick = [j \in Jobs |-> -1]
     /\ basis = [j \in Jobs |-> Absent]
     /\ ok = [j \in Jobs |-> FALSE]
     /\ unlinks = 0
     /\ built = {}
 
-jobVars == <<pc, startedAt, rsnap, rstamp, basis, ok>>
+jobVars == <<pc, startedAt, rsnap, rtick, basis, ok>>
 
 -----------------------------------------------------------------------------
 (* The world *)
@@ -190,15 +192,15 @@ Request(j) ==
     /\ pc[j] = "idle"
     /\ Live(store[j[1]])
     /\ pc' = [pc EXCEPT ![j] = "requested"]
-    /\ startedAt' = [startedAt EXCEPT ![j] = Stamp(now)]
-    /\ UNCHANGED <<now, hist, store, msgs, rsnap, rstamp, basis, ok, unlinks, built>>
+    /\ startedAt' = [startedAt EXCEPT ![j] = now]
+    /\ UNCHANGED <<now, hist, store, msgs, rsnap, rtick, basis, ok, unlinks, built>>
 
 ReadOk(j) ==
     /\ pc[j] = "requested"
     /\ j[1] \in TokenDevices
     /\ pc' = [pc EXCEPT ![j] = "read"]
     /\ rsnap' = [rsnap EXCEPT ![j] = Remote]
-    /\ rstamp' = [rstamp EXCEPT ![j] = Stamp(now)]
+    /\ rtick' = [rtick EXCEPT ![j] = now]
     /\ UNCHANGED <<now, hist, store, msgs, startedAt, basis, ok, unlinks, built>>
 
 ReadFails(j) ==
@@ -206,20 +208,20 @@ ReadFails(j) ==
     /\ FetchCanFail \/ j[1] \notin TokenDevices
     /\ pc' = [pc EXCEPT ![j] = "failed"]
     /\ ok' = [ok EXCEPT ![j] = FALSE]
-    /\ UNCHANGED <<now, hist, store, msgs, startedAt, rsnap, rstamp, basis,
+    /\ UNCHANGED <<now, hist, store, msgs, startedAt, rsnap, rtick, basis,
                    unlinks, built>>
 
 \* One transaction: re-read the stored entry, then write or skip. It writes
 \* only a changed snapshot, or the same one once the stored stamp is
 \* RestampAfter old: every write notifies the task, and a write on every
-\* refresh would wake the task agent whose context started the refresh. A
-\* skipped observation that is still the newest is what the context uses: it
-\* was read after the request, and the stored entry holds no newer one.
+\* refresh would wake the task agent whose context started the refresh.
+\* Written or not, the observation is what the context starts from.
 Persist(j) ==
     LET d == j[1]
         s == store[d]
         obs == [s EXCEPT !.snap = rsnap[j],
-                         !.asOf = IF StampAtRead THEN rstamp[j] ELSE Stamp(now),
+                         !.asOf = IF StampAtRead THEN Stamp(rtick[j]) ELSE Stamp(now),
+                         !.at = rtick[j],
                          !.deleted = IF GuardDeleted THEN @ ELSE FALSE,
                          !.clock[d] = @ + 1]
         changed == \/ obs.snap # s.snap
@@ -237,16 +239,30 @@ Persist(j) ==
             /\ msgs' = Send(d, obs)
        ELSE UNCHANGED <<store, msgs>>
     /\ ok' = [ok EXCEPT ![j] = writes \/ Live(s)]
-    /\ basis' = [basis EXCEPT ![j] = IF writes THEN obs ELSE Newest(obs, s)]
-    /\ UNCHANGED <<now, hist, startedAt, rsnap, rstamp, unlinks, built>>
+    /\ basis' = [basis EXCEPT ![j] = obs]
+    /\ UNCHANGED <<now, hist, startedAt, rsnap, rtick, unlinks, built>>
 
-\* The context reads the entry again: it may have been unlinked, or a newer
+\* A stored observation the context may use instead of its own read: one
+\* provably read later. A later stamp is; so is a merged one in the same
+\* second as an unmerged read, because a merge is final. Within one second
+\* the Key's digest says nothing about time, so the newest by Key can be a
+\* read made before the request.
+LaterThan(st, own) ==
+    \/ st.asOf > own.asOf
+    \/ /\ st.asOf = own.asOf
+       /\ st.snap.life = "merged" /\ own.snap.life # "merged"
+
+\* The context reads the entry again: it may have been unlinked, or a later
 \* observation may have synced in, since the refresh finished.
 Build(j) ==
     LET d == j[1]
         s == store[d]
         refreshed == pc[j] = "persisted" /\ ok[j] /\ Live(s)
-        use == IF refreshed THEN Newest(basis[j], s) ELSE s
+        own == basis[j]
+        use == IF ~refreshed THEN s
+               ELSE IF PreferOwnRead
+                    THEN IF LaterThan(s, own) THEN s ELSE own
+                    ELSE Newest(own, s)
         suggest == IF SuggestRequiresRefresh THEN refreshed ELSE TRUE
     IN
     /\ j[2] = "context"
@@ -254,17 +270,18 @@ Build(j) ==
     /\ pc' = [pc EXCEPT ![j] = "done"]
     /\ built' = IF Live(s) /\ use.asOf >= 0
                 THEN built \cup {[startedAt |-> startedAt[j], asOf |-> use.asOf,
+                                  at |-> use.at,
                                   snap |-> use.snap, current |-> refreshed,
                                   suggest |-> suggest]}
                 ELSE built
-    /\ UNCHANGED <<now, hist, store, msgs, startedAt, rsnap, rstamp, basis, ok,
+    /\ UNCHANGED <<now, hist, store, msgs, startedAt, rsnap, rtick, basis, ok,
                    unlinks>>
 
 Finish(j) ==
     /\ j[2] = "manual"
     /\ pc[j] \in {"persisted", "failed"}
     /\ pc' = [pc EXCEPT ![j] = "done"]
-    /\ UNCHANGED <<now, hist, store, msgs, startedAt, rsnap, rstamp, basis, ok,
+    /\ UNCHANGED <<now, hist, store, msgs, startedAt, rsnap, rtick, basis, ok,
                    unlinks, built>>
 
 -----------------------------------------------------------------------------
@@ -334,6 +351,7 @@ View(d) ==
 
 StoreRec == [present : BOOLEAN, deleted : BOOLEAN,
              snap : Snapshot \cup {NoSnap}, asOf : -1..MaxTime,
+             at : -1..MaxTime,
              clock : [Devices -> Nat]]
 
 TypeOK ==
@@ -353,16 +371,17 @@ SnapshotHonest ==
     \A d \in Devices : store[d].asOf >= 0 => HonestAt(store[d].snap, store[d].asOf)
 
 \* What a context claimed was true when it claimed it, and a context only
-\* calls the pull request current when it was observed after the request.
+\* calls the pull request current when it was read after the request — at
+\* the instant, not merely within the same second of `Date`.
 ContextHonest ==
     \A c \in built :
         /\ HonestAt(c.snap, c.asOf)
-        /\ c.current => c.asOf >= c.startedAt
+        /\ c.current => c.at >= c.startedAt
 
 \* Checklist suggestions are derived only from a snapshot observed after the
 \* context was requested, by a refresh that succeeded.
 SuggestionsFromRefreshed ==
-    \A c \in built : c.suggest => (c.current /\ c.asOf >= c.startedAt)
+    \A c \in built : c.suggest => (c.current /\ c.at >= c.startedAt)
 
 \* A version with a newer clock never carries an older observation: so the
 \* clock order sync already applies agrees with the observation order.

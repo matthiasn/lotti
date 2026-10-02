@@ -86,18 +86,42 @@ mixin _JournalDbEntityOps
   /// Whether two concurrent versions are merged here rather than left to the
   /// user as a conflict.
   static bool _mergesConcurrent(JournalEntity a, JournalEntity b) =>
-      _bothDeleted(a, b) || (a is PullRequestEntry && b is PullRequestEntry);
+      _bothDeleted(a, b) || _pullRequestPair(a, b);
+
+  /// Two concurrent versions of one pull request entry. A purge reduces a
+  /// deleted pull request to a [JournalEntry] tombstone (ADR 0095), so either
+  /// side may be one, as long as the other is still a pull request.
+  static bool _pullRequestPair(JournalEntity a, JournalEntity b) =>
+      (a is PullRequestEntry || a.isPurgedTombstone) &&
+      (b is PullRequestEntry || b.isPurgedTombstone) &&
+      (a is PullRequestEntry || b is PullRequestEntry);
 
   /// The merged row for two concurrent versions [_mergesConcurrent] accepts.
+  ///
+  /// A pull request pair is decided by observation, deleted or not, so two
+  /// unlinks keep the newer snapshot too. Against a purge's tombstone the
+  /// unlink wins under the join of both clocks; [_overStored] then compacts
+  /// it as it does for every entry type.
   static JournalEntity _mergeConcurrent(
     JournalEntity stored,
     JournalEntity incoming,
-  ) => _bothDeleted(stored, incoming)
-      ? _mergeDeletions(stored, incoming)
-      : mergeConcurrentPullRequestVersions(
-          stored as PullRequestEntry,
-          incoming as PullRequestEntry,
-        );
+  ) {
+    if (!_pullRequestPair(stored, incoming)) {
+      return _mergeDeletions(stored, incoming);
+    }
+    if (stored is PullRequestEntry && incoming is PullRequestEntry) {
+      return mergeConcurrentPullRequestVersions(stored, incoming);
+    }
+    final tombstone = stored.isPurgedTombstone ? stored : incoming;
+    return tombstone.copyWith(
+      meta: tombstone.meta.copyWith(
+        vectorClock: VectorClock.merge(
+          stored.meta.vectorClock,
+          incoming.meta.vectorClock,
+        ),
+      ),
+    );
+  }
 
   /// Stores [incoming] as an unresolved conflict of its entry, one row per
   /// version (ADR 0092).

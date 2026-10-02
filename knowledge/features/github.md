@@ -109,14 +109,14 @@ sequenceDiagram
     S->>R: persistObservation(entryId, observation)
     R->>DB: one transaction: re-read including deleted
     alt deleted, or stored observation is newer or equal
-        R-->>S: skipped, with the newer of the two
+        R-->>S: skipped
     else unchanged and stored stamp younger than the restamp interval
-        R-->>S: skipped, with the read observation
+        R-->>S: skipped
     else changed, or stale stamp
         R->>DB: write a new version (new clock)
         R-->>S: written
     end
-    S-->>C: RefreshOutcome current(observation) or failed(reason, cached)
+    S-->>C: RefreshOutcome current(read observation) or failed(reason, cached)
 ```
 
 Four rules, each a design switch in the model with the counterexample its
@@ -141,7 +141,11 @@ journal rule would make that a `Conflict` row for the user to settle in
 Settings, which is wrong for data the app fetched itself. `updateJournalEntity`
 already merges one concurrent case on its own — two deletions — and the pull
 request entry is the second: the newer observation by the key above, deleted
-if either side is, under the join of both clocks. Every device that sees the
+if either side is, under the join of both clocks. Two unlinks are ordered by
+observation too, not by clock. A purge reduces an unlinked entry to a
+`JournalEntry` tombstone (ADR 0095); against one, a live pull request version
+merges to the tombstone, so a device that was offline through the unlink and
+the purge still ends unlinked. Every device that sees the
 pair computes the same row, so nothing is sent back (`ResolveConcurrent`;
 without it the replicas never converge). An unlink beats a concurrent refresh:
 the refresh is the app's, the unlink is the user's.
@@ -206,8 +210,11 @@ entry stores, which is why the diagram has no transition into them.
 # In the task context
 
 Whenever a task context is built, every linked pull request is refreshed first,
-in parallel and with a short timeout. The context uses the newer of what the
-refresh read and what is stored.
+in parallel and with a short timeout. The context uses what its own refresh
+read, unless the stored observation is provably later — a later `Date`
+second, or the same second and merged. The newest by the ordering key is not
+enough: within one second the digest says nothing about time, and the stored
+one may have been read before the request (`PreferOwnRead`).
 
 - **Coding prompt** (`SkillPromptBuilder`): a `Pull Requests` section with
   each pull request's status, checks, mergeability, review state and

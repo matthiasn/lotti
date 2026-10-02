@@ -2941,8 +2941,8 @@ deliberately against recency, so nothing relies on it to find the newer state.
 | Property | Kind | Says |
 |----------|------|------|
 | `SnapshotHonest` | invariant | every stored snapshot was the pull request's real state at an instant carrying the stamp it shows |
-| `ContextHonest` | invariant | a context's snapshot was true at its stamp, and a context calls it current only if it was observed after the request |
-| `SuggestionsFromRefreshed` | invariant | checklist suggestions come only from a context whose own refresh succeeded, on a snapshot observed after the request |
+| `ContextHonest` | invariant | a context's snapshot was true at its stamp, and a context calls it current only if it was read after the request — at the instant, not merely within the same second of `Date` |
+| `SuggestionsFromRefreshed` | invariant | checklist suggestions come only from a context whose own refresh succeeded, on a snapshot read after the request |
 | `NewerClockNeverOlderData` | invariant | a version with a newer clock never carries an older observation, so sync's clock order and the observation order agree |
 | `Converged` | invariant | with no message in flight, every replica holds the same entry |
 | `NoRegression` | action | no replica moves to an older observation, shows a merged pull request open again, or loses its entry |
@@ -2954,21 +2954,24 @@ deliberately against recency, so nothing relies on it to find the newer state.
 |---------------|--------:|-----------|------|----------------:|
 | `PullRequestSnapshot` | 1 | context and manual, racing | failing reads, an unlink, pushes, close, reopen, merge | 1,053,817 |
 | `PullRequestSnapshotSync` | 2 | a context on each | versions crossing in sync, concurrent ones resolved | 1,649,481 |
-| `PullRequestSnapshotCoarse` | 1 | context and manual | server stamps at half the clock's resolution, so ties | 1,040,359 |
+| `PullRequestSnapshotCoarse` | 1 | context and manual | server stamps at half the clock's resolution, so ties | 4,531,753 |
 | `PullRequestSnapshotNoToken` | 2 | a context on each | the second device holds no token | 220,458 |
 | `PullRequestSnapshotLiveness` | 2 | a context on each | `RefreshesEnd` and `SyncSettles` | 257,179 |
 
 Each switch is the proposed design; set to `FALSE` (in a copy outside this
-directory) it has a counterexample:
+directory) it has a counterexample. `PreferOwnRead` came from review of the
+first draft, whose invariants compared second-resolution stamps and so missed
+it:
 
 | Switch | Alternative | Counterexample |
 |--------|-------------|----------------|
-| `StampAtRead` | stamp the observation when it is written, the natural `clock.now()` in the persist step | `SnapshotHonest`, six states: the read sees the pull request open, it is closed, and the write labels "open" with an instant at which it was already closed |
+| `StampAtRead` | stamp the observation when it is written, the natural `clock.now()` in the persist step | `SnapshotHonest`, five states: the read sees the pull request open, it is closed, and the write labels "open" with an instant at which it was already closed |
 | `GuardNewer` | write whatever the refresh read | `NoRegression`, eight states: two refreshes read at different ticks and persist in the opposite order, so the older observation replaces the newer |
-| `GuardDeleted` | build the write from the entry read before the fetch | `UnlinkIsFinal`, nine states: the user unlinks while a refresh is in flight, and its write brings the entry back |
+| `GuardDeleted` | build the write from the entry read before the fetch | `UnlinkIsFinal`, six states: the user unlinks while a refresh is in flight, and its write brings the entry back |
 | `MergedFirst` | order same-stamp observations by digest alone | `NoRegression` in the coarse configuration, eight states: one read sees the pull request open and another sees it merged within the same server second, and the digest picks "open" |
-| `ResolveConcurrent` | the default journal rule: a concurrent version is a conflict for the user | `Converged` in the sync configuration, eleven states: one device refreshes while the other unlinks, and each keeps its own version until someone opens the Conflicts screen |
+| `ResolveConcurrent` | the default journal rule: a concurrent version is a conflict for the user | `Converged` in the sync configuration, eight states: one device refreshes while the other unlinks, and each keeps its own version until someone opens the Conflicts screen |
 | `SuggestRequiresRefresh` | suggest from whatever snapshot is stored | `SuggestionsFromRefreshed`, eight states: the context's refresh fails and it still derives suggestions, from a snapshot it never confirmed |
+| `PreferOwnRead` | the context uses the newest of its own read and the stored observation, by `Key` | `ContextHonest` in the coarse configuration, eleven states: a manual refresh reads the pull request, it is pushed, and the context's request and read follow, all within one second of `Date`; the digest ranks the manual read higher, so the context calls a read made before its request current and may suggest from it |
 
 Two decisions the model settled:
 
@@ -2978,10 +2981,13 @@ Two decisions the model settled:
   merge is final, so within one second a merged observation is the later one.
   Between open and closed within one second nothing can tell, and either is
   true at that stamp.
-- **A context does not compare timestamps.** It trusts the outcome of its own
-  refresh, then uses the newer of what that refresh read and what is stored.
-  `ContextHonest` shows that this alone guarantees an observation from after
-  the request — no comparison between the device clock and the server's.
+- **A context uses its own read.** It trusts the outcome of its own refresh
+  and uses what that refresh read, unless the stored observation is provably
+  later: a later `Date` second, or the same second and merged. It never
+  compares the device clock with the server's. Taking the newest by `Key`
+  instead is not enough, because within one second the digest says nothing
+  about time (`PreferOwnRead`). The stamps and the request are related through
+  ghost read ticks, so `ContextHonest` holds at the instant, not the second.
 
 Left out, deliberately: the several REST reads one refresh makes (the pull
 request, then its checks and reviews by head commit) are one instant here, so

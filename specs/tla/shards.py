@@ -171,7 +171,7 @@ SECONDS = {
     # Local exhaustive runs with twenty workers; refresh from CI measurements.
     "PullRequestSnapshot": 5,
     "PullRequestSnapshotSync": 8,
-    "PullRequestSnapshotCoarse": 5,
+    "PullRequestSnapshotCoarse": 15,
     "PullRequestSnapshotNoToken": 2,
     "PullRequestSnapshotLiveness": 30,
     "AgentReplicationRemoval": 596,

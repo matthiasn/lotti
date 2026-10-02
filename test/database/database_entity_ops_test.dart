@@ -1621,6 +1621,64 @@ void main() {
         );
 
         test(
+          'two concurrent unlinks keep the newer snapshot in either order, '
+          'not the canonically greater clock',
+          () async {
+            // Node `a` decides the canonical clock order, so the older
+            // observation holds the canonically greater clock.
+            final newer = prEntry(
+              clock: {'a': 1, 'b': 2},
+              snapshot: prSnapshot(second: 3, status: PullRequestStatus.merged),
+              deleted: true,
+            );
+            final older = prEntry(
+              clock: {'a': 2, 'b': 1},
+              snapshot: prSnapshot(),
+              deleted: true,
+            );
+
+            final newerFirst = await receive(newer, older);
+            final olderFirst = await receive(older, newer);
+
+            expect(newerFirst, olderFirst);
+            expect(newerFirst?.data.snapshot?.status, PullRequestStatus.merged);
+            expect(newerFirst?.meta.deletedAt, isNotNull);
+          },
+        );
+
+        test(
+          'a live pull request and a purged unlink merge to the unlink in '
+          'either order, without a conflict',
+          () async {
+            final live = prEntry(
+              clock: {'a': 1, 'b': 1},
+              snapshot: prSnapshot(second: 3),
+            );
+            final purged = prEntry(
+              clock: {'a': 2},
+              snapshot: prSnapshot(),
+              deleted: true,
+            ).toPurgedTombstone(prFixtureEpoch);
+            const joined = VectorClock({'a': 2, 'b': 1});
+
+            for (final (first, second) in [(live, purged), (purged, live)]) {
+              await clearAllTables(db!);
+              await db!.updateJournalEntity(first);
+              final result = await db!.updateJournalEntity(second);
+
+              expect(result.applied, isTrue);
+              expect(await db!.conflictsForEntry(live.meta.id), isEmpty);
+              final stored = await db!.journalEntityByIdIncludingDeleted(
+                live.meta.id,
+              );
+              expect(stored?.meta.deletedAt, isNotNull);
+              expect(stored?.meta.vectorClock, joined);
+              expect(await db!.journalEntityById(live.meta.id), isNull);
+            }
+          },
+        );
+
+        test(
           'an edit concurrent with another entry type is still a conflict',
           () async {
             await db!.updateJournalEntity(version({'a': 2}, 'mine'));
