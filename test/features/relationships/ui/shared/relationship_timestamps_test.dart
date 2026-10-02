@@ -10,6 +10,8 @@ import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.d
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
 
 import '../../../../widget_test_utils.dart';
 
@@ -17,6 +19,7 @@ void main() {
   final now = DateTime(2026, 8, 18, 14, 20);
 
   setUpAll(initializeDateFormatting);
+  setUpAll(tz_data.initializeTimeZones);
 
   // The relative words are the caller's to supply — every case below reads
   // them in English so the assertions stay legible; the locale-specific
@@ -183,7 +186,8 @@ void main() {
       );
     });
 
-    test('is cadenceDays after the last check-in', () {
+    test('is the calendar day cadenceDays after the last check-in, at '
+        'local midnight — a day, not an instant', () {
       withClock(Clock.fixed(now), () {
         final last = DateTime(2026, 8, 11, 10, 0);
         expect(
@@ -192,7 +196,7 @@ void main() {
             trackingStartedAt: now,
             cadenceDays: 7,
           ),
-          DateTime(2026, 8, 18, 10, 0),
+          DateTime(2026, 8, 18),
         );
       });
     });
@@ -206,7 +210,7 @@ void main() {
             trackingStartedAt: started,
             cadenceDays: 14,
           ),
-          DateTime(2026, 8, 15, 9, 0),
+          DateTime(2026, 8, 15),
         );
       });
     });
@@ -219,7 +223,32 @@ void main() {
             trackingStartedAt: null,
             cadenceDays: 7,
           ),
-          now.add(const Duration(days: 7)),
+          DateTime(2026, 8, 25),
+        );
+      });
+    });
+
+    test('counts days on the calendar, not hours: a DST transition in the '
+        'week does not move the due day', () {
+      // Berlin springs forward on 2026-03-29. Seven times twenty-four hours
+      // after 23:30 on the 22nd is 00:30 on the 30th; the calendar says the
+      // 29th — the day the agent derives too (`deriveCadenceFacts`).
+      final late = tz.TZDateTime(
+        tz.getLocation('Europe/Berlin'),
+        2026,
+        3,
+        22,
+        23,
+        30,
+      );
+      withClock(Clock.fixed(now), () {
+        expect(
+          cadenceDueDate(
+            lastCheckInAt: late,
+            trackingStartedAt: now,
+            cadenceDays: 7,
+          ),
+          DateTime(2026, 3, 29),
         );
       });
     });
@@ -268,6 +297,23 @@ void main() {
           cadenceDays: 7,
         );
         expect(due, 0);
+      });
+    });
+
+    test('the 23-hour day of a spring-forward counts as one day over, not '
+        'zero', () {
+      // Due on the 29th, the day Berlin springs forward; read on the 30th.
+      // Local midnights 23 hours apart floor to zero days, which read "due
+      // today" for a person a day over — on a host whose own zone switches
+      // that night. Correct everywhere, discriminating off UTC.
+      final berlin = tz.getLocation('Europe/Berlin');
+      withClock(Clock.fixed(tz.TZDateTime(berlin, 2026, 3, 30, 10)), () {
+        final over = cadenceOverdueDays(
+          lastCheckInAt: tz.TZDateTime(berlin, 2026, 3, 22, 10),
+          trackingStartedAt: null,
+          cadenceDays: 7,
+        );
+        expect(over, 1);
       });
     });
   });

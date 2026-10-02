@@ -3,8 +3,10 @@ import 'dart:convert';
 import 'package:clock/clock.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/classes/relationship_data.dart';
@@ -15,16 +17,26 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
+import 'package:lotti/features/relationships/model/relationship_calendar.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
+import 'package:lotti/features/relationships/workflow/relationship_agent_workflow.dart';
+import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
+import '../../agents/sync/agent_replica_bench.dart';
+import '../../agents/test_data/entity_factories.dart';
+
+part 'relationship_cadence_model_conformance.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
+  setUpAll(tz_data.initializeTimeZones);
 
   const agentId = 'relationship_agent:person-1';
   const relationshipId = 'person-1';
@@ -66,6 +78,7 @@ void main() {
     DateTime? dateFrom,
     DateTime? deletedAt,
     DateTime? updatedAt,
+    int? utcOffset,
   }) => Metadata(
     id: id,
     createdAt: testDate,
@@ -73,6 +86,7 @@ void main() {
     dateFrom: dateFrom ?? testDate,
     dateTo: dateFrom ?? testDate,
     deletedAt: deletedAt,
+    utcOffset: utcOffset,
   );
 
   RelationshipEntry relationship({
@@ -81,8 +95,14 @@ void main() {
     RelationshipStatus? status,
     DateTime? trackingStart,
     DateTime? deletedAt,
+    int? utcOffset,
   }) => RelationshipEntry(
-    meta: meta(relationshipId, dateFrom: trackingStart, deletedAt: deletedAt),
+    meta: meta(
+      relationshipId,
+      dateFrom: trackingStart,
+      deletedAt: deletedAt,
+      utcOffset: utcOffset,
+    ),
     data: RelationshipData(
       title: 'Anna',
       important: important,
@@ -98,15 +118,25 @@ void main() {
   );
 
   /// A check-in that happened at [at] and — unless [savedAt] says it was
-  /// logged later, or gained an entry since — was last saved then.
-  CheckInEntry checkIn(String id, DateTime at, {DateTime? savedAt}) =>
-      CheckInEntry(
-        meta: meta(id, dateFrom: at, updatedAt: savedAt ?? at),
-        data: const CheckInData(
-          relationshipId: relationshipId,
-          interactionType: CheckInInteractionType.call,
-        ),
-      );
+  /// logged later, or gained an entry since — was last saved then, by a
+  /// device at [utcOffset] minutes from UTC.
+  CheckInEntry checkIn(
+    String id,
+    DateTime at, {
+    DateTime? savedAt,
+    int? utcOffset,
+  }) => CheckInEntry(
+    meta: meta(
+      id,
+      dateFrom: at,
+      updatedAt: savedAt ?? at,
+      utcOffset: utcOffset,
+    ),
+    data: const CheckInData(
+      relationshipId: relationshipId,
+      interactionType: CheckInInteractionType.call,
+    ),
+  );
 
   Future<WakeResult> run() async => phaseA.execute(
     agentIdentity: identity(),
@@ -345,33 +375,87 @@ void main() {
   group('the episode key is zone-free', () {
     // The due day IS the episode key: `_upsertRegister` compares `dueAt` and
     // `relationshipEscalationWake` mints its workspace key from `dueDayKey`.
-    // Deriving either through the device's local calendar makes two devices
-    // in different timezones disagree about the same check-in — they then
+    // Deriving either through the device's zone makes two devices in
+    // different timezones disagree about the same check-in — they then
     // rewrite the register at each other forever, and pay for the same lapse
     // twice.
     //
-    // A single process cannot hold two timezones, so these assert the UTC
-    // contract directly. They are CORRECT on every machine; the first one is
-    // only DISCRIMINATING off UTC, where the reference instant's local
-    // calendar day differs from its UTC one.
-    test("the reference instant's UTC day drives the due day, not the "
-        "device's local calendar day", () async {
-      // 23:30Z — a later local day everywhere east of Greenwich, an earlier
-      // one everywhere west. UTC day 10, plus the fixture's 7-day cadence.
-      final reference = DateTime.utc(2026, 8, 10, 23, 30);
-      when(
-        () => relationshipRepository.getRelationshipByIdUnfiltered(
-          relationshipId,
-        ),
-      ).thenAnswer((_) async => relationship(trackingStart: reference));
+    // A single process has one zone, and CI's is UTC, where a stored value's
+    // components are its UTC components and nothing can disagree. A
+    // `TZDateTime` carries its own zone, so the same stored components as
+    // Berlin and as Tokyo parse them exist side by side here: what a
+    // check-in serialized without an offset becomes on each device.
+    test("the check-in's calendar day drives the due day, read the same by "
+        'a device in Berlin and one in Tokyo', () async {
+      // Saved in Berlin at 02:00 on the 18th: 00:00 UTC, so the 18th on
+      // the writer's calendar and in UTC. Tokyo parses the same components
+      // as 17:00 UTC on the 17th — through `.toUtc()`, a day earlier.
+      final berlin = tz.getLocation('Europe/Berlin');
+      final tokyo = tz.getLocation('Asia/Tokyo');
+      final asWritten = tz.TZDateTime(berlin, 2026, 8, 18, 2);
+      final asTokyoReads = tz.TZDateTime(tokyo, 2026, 8, 18, 2);
+      expect(
+        GoalWindow.dayUtc(asTokyoReads.toUtc()),
+        DateTime.utc(2026, 8, 17),
+      );
+      final clockAt = Clock.fixed(DateTime.utc(2026, 8, 20, 12));
 
-      await withClock(Clock.fixed(now), run);
+      for (final parsed in [asWritten, asTokyoReads]) {
+        upserts.clear();
+        when(
+          () => relationshipRepository.getAllCheckInsForRelationship(
+            relationshipId,
+          ),
+        ).thenAnswer(
+          (_) async => [checkIn('c-1', parsed, utcOffset: 120)],
+        );
+        await withClock(clockAt, run);
 
-      final register = writtenRegister()!;
-      expect(register.referenceAt, reference);
-      expect(register.cadenceDays, 7);
-      expect(register.dueAt, DateTime.utc(2026, 8, 17));
-      expect(register.dueAt.isUtc, isTrue);
+        final register = writtenRegister()!;
+        expect(register.dueAt, DateTime.utc(2026, 8, 25), reason: '$parsed');
+        expect(register.dueAt.isUtc, isTrue);
+        // The instants, too, are the writer's: the stored components back
+        // through the stored offset, not through the reader's zone.
+        expect(
+          register.referenceAt,
+          DateTime.utc(2026, 8, 18),
+          reason: '$parsed',
+        );
+        expect(
+          register.lastCheckInAt,
+          DateTime.utc(2026, 8, 18),
+          reason: '$parsed',
+        );
+      }
+    });
+
+    test('the tracking start is read the same way when there is no '
+        'check-in yet', () async {
+      // Created in Tokyo at 00:30 on the 10th: the 10th on the writer's
+      // calendar, the 9th in UTC. Berlin parses the same components as the
+      // 9th at 22:30 UTC — the same calendar day, a different instant.
+      final tokyo = tz.getLocation('Asia/Tokyo');
+      final berlin = tz.getLocation('Europe/Berlin');
+      for (final parsed in [
+        tz.TZDateTime(tokyo, 2026, 8, 10, 0, 30),
+        tz.TZDateTime(berlin, 2026, 8, 10, 0, 30),
+      ]) {
+        upserts.clear();
+        when(
+          () => relationshipRepository.getRelationshipByIdUnfiltered(
+            relationshipId,
+          ),
+        ).thenAnswer(
+          (_) async => relationship(trackingStart: parsed, utcOffset: 540),
+        );
+        await withClock(Clock.fixed(now), run);
+
+        final register = writtenRegister()!;
+        expect(register.lastCheckInAt, isNull);
+        expect(register.referenceAt, DateTime.utc(2026, 8, 9, 15, 30));
+        expect(register.cadenceDays, 7);
+        expect(register.dueAt, DateTime.utc(2026, 8, 17), reason: '$parsed');
+      }
     });
 
     test('the escalation workspace key and its deadline are minted from the '
@@ -851,30 +935,6 @@ void main() {
     });
   });
 
-  group('relationshipStoredInstant', () {
-    // Written in Berlin at 09:20 summer time, read by any device: the
-    // components and the recorded offset name 07:20 UTC wherever the reader
-    // sits, which the device's own zone could not.
-    test('turns stored components and their offset into one instant', () {
-      expect(
-        relationshipStoredInstant(DateTime(2026, 8, 15, 9, 20, 5, 7, 9), 120),
-        DateTime.utc(2026, 8, 15, 7, 20, 5, 7, 9),
-      );
-      expect(
-        relationshipStoredInstant(DateTime(2026, 8, 15, 1, 30), -300),
-        DateTime.utc(2026, 8, 15, 6, 30),
-      );
-    });
-
-    test('takes a UTC value, or one without an offset, as it is', () {
-      final utc = DateTime.utc(2026, 8, 15, 9, 20);
-      final local = DateTime(2026, 8, 15, 9, 20);
-
-      expect(relationshipStoredInstant(utc, 120), utc);
-      expect(relationshipStoredInstant(local, null), local.toUtc());
-    });
-  });
-
   // The window is the whole bound on refresh spend: a refresh is a
   // *scheduled* wake, so it bypasses WakeOrchestrator.throttleWindow, the
   // gate that coalesces bursty edits for every subscription-triggered wake.
@@ -1238,22 +1298,24 @@ void main() {
 
   group('relationshipCadenceWake', () {
     test('before the cadence hour it targets today, after it tomorrow — '
-        'calendar components, not durations', () {
+        'calendar components, not durations — and the deadline is the '
+        'instant in UTC, which every zone reads alike', () {
       final early = relationshipCadenceWake(
         agentId,
         DateTime(2026, 8, 16, 5),
       );
       expect(
         (early as ScheduledWakeEntity).scheduledAt,
-        DateTime(2026, 8, 16, relationshipCadenceHour),
+        DateTime(2026, 8, 16, relationshipCadenceHour).toUtc(),
       );
+      expect(early.scheduledAt.isUtc, isTrue);
       final late_ = relationshipCadenceWake(
         agentId,
         DateTime(2026, 8, 16, 12),
       );
       expect(
         (late_ as ScheduledWakeEntity).scheduledAt,
-        DateTime(2026, 8, 17, relationshipCadenceHour),
+        DateTime(2026, 8, 17, relationshipCadenceHour).toUtc(),
       );
       expect(late_.workspaceKey, relationshipCadenceWorkspaceKey);
     });
@@ -1416,6 +1478,8 @@ void main() {
       expect(writtenRegister(), isNotNull);
     });
   });
+
+  _registerRelationshipCadenceConformance();
 }
 
 /// [MockAgentSyncService] with the transaction boundary made observable.

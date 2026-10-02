@@ -749,7 +749,10 @@ multi-device benches rather than building its own:
   `AgentTestDevice`s that delivers every committed write as its own message,
   in whatever order the trace chooses. A lost delivery is an index marked
   received without being applied; `causallyBefore` is the models' causal
-  order, independent of `VectorClock.compare`.
+  order, independent of `VectorClock.compare`. `join(host, reads:)` is the
+  serialization boundary for a trace whose devices sit in different zones:
+  a local stamp is re-read as the writer's components in the receiver's
+  zone (a `TZDateTime` in its location), a UTC stamp as it is.
 - `features/agents/wake/wake_device_bench.dart` — adds a process per device: a
   real `WakeOrchestrator`, `WakeIntentStore` and `ScheduledWakeManager`, with
   the lease's host lookup and the intent write held until the trace releases

@@ -300,6 +300,23 @@ void main() {
     expect(facts.toLowerCase(), isNot(contains('email')));
   });
 
+  test('daysSinceLastCheckIn counts calendar days, so a spring-forward '
+      'in between is not a day lost', () {
+    // 47 hours apart across the night Berlin springs forward: two calendar
+    // days. Floored hours made it one — on a host whose own zone switches
+    // that night; correct everywhere, discriminating off UTC.
+    final facts = renderer.render(
+      relationship: relationship(),
+      derivation: derivation(lastCheckInAt: DateTime(2026, 3, 28, 10)),
+      checkIns: [checkIn('c-1', DateTime(2026, 3, 28, 10))],
+      linkedTasks: const [],
+      previousReport: null,
+      nudges: const [],
+      now: DateTime(2026, 3, 30, 10),
+    );
+    expect(facts, contains('daysSinceLastCheckIn: 2'));
+  });
+
   test('renders the person, cadence state and recency from the derivation', () {
     final facts = render(
       checkIns: [checkIn('c-1', DateTime(2026, 8, 14, 20))],

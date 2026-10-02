@@ -2285,11 +2285,30 @@ checks the other four properties. Eight pinned traces cover the
 counterexamples. Each of the five switches, reverted in the Dart code, fails
 the trace.
 
-`RelationshipCadence` has no trace yet: none of its switches is in the code,
-and the fix PR for R-03 and R-11g brings the trace with it, on
-`relationship_agent_phase_a.dart` over real journals in two zones. Until
-then the unit tests in `relationship_agent_phase_a_test.dart` assert the
-UTC contract the code has today.
+`RelationshipCadence` is replayed by
+`test/features/relationships/runtime/relationship_cadence_model_conformance.dart`
+(a part of `relationship_agent_phase_a_test.dart`). Two devices, Berlin
+and Tokyo, each run the real `RelationshipAgentPhaseA` over the real agent
+database, `AgentRepository` and `AgentSyncService` (`ReplicaNetwork`), and
+stamp their check-ins through the real `MetadataService`; the journal side
+is a small store per device of the check-in versions it has received. The
+zone is what the trace supplies: a device's clock is a `TZDateTime` in its
+location, and every stamp a device receives — a check-in's `dateFrom` and
+`updatedAt`, an agent entity's local stamps — is read the way
+`DateTime.parse` reads a value serialized without an offset, the writer's
+components in the reader's zone (the bench's `reads` hook). A single
+process has one zone and CI's is UTC, where a local stamp cannot disagree
+with itself; `TZDateTime` is what lets two zones exist at once. The run is
+the real derivation and the workflow's own stand-down gate and stamps
+(`relationshipEscalationStandsDown`, `relationshipBriefingCreatedAt`,
+`relationshipReportHeadUpdatedAt`) over the trace's own report row. A Glados
+run of 120 generated traces covers saves, touches, ticks, runs, deliveries
+and hours; after every step it checks `DueDayAgreed` and
+`EscalationKeyIsTheDueDay`, and once everything has arrived
+`StalenessAgreed`, `BriefedOnNewEvidence`, `RegisterStable` (ticks until a
+round writes no register) and `Converged`. Five pinned traces cover the
+counterexamples. Each of the three switches in the code, reverted, fails
+the trace; so does the cadence deadline written in local time.
 
 ## Changing a spec
 
@@ -3335,15 +3354,17 @@ so the order of arrival is immaterial.
 Both run from a day in, over one more day in six-hour steps; the person was
 created at noon and marked at noon the next day. The base run takes 100 s
 on ten workers. The design switches are the fixes of plan items R-03, R-11g
-and R-10 and one finding of this spec; `FALSE` is the code at `a0f9af57f`.
-Each set to its code value alone has a counterexample:
+and R-10 and one finding of this spec; `FALSE` was the code at `a0f9af57f`,
+and ADR 0114 is the fix. Each set to its code value alone has a
+counterexample, and each reverted in the Dart code fails the trace in
+"From the model to the code":
 
-| Switch | Code today | Counterexample |
-|--------|------------|----------------|
-| `DayFromWallClock` | the due day is the UTC day of `dateFrom.toUtc()`, which parses the stored components in the reader's zone (`deriveCadenceFacts`) | `DueDayAgreed`, 3 states: Berlin saves a check-in at 02:00; Tokyo reads the same components as 17:00 UTC the day before, and the two due days are a day apart. `RegisterStable`, 5 states: Berlin's tick writes its due day, Tokyo receives the row and the check-in and derives another — its next tick rewrites the row, and the two rewrite it at each other for as long as the check-in is the newest. `EscalationKeyIsTheDueDay`, 7 states: Tokyo saves a check-in at 03:00 and ticks a day later, and the lapse escalation it arms is keyed by a day no calendar names for that check-in — the second episode, and the second briefing, for one lapse |
-| `OffsetRefreshed` | `updateMetadata` keeps the creation `utcOffset` beside a new local `updatedAt` | `BriefedOnNewEvidence`, 9 states: Tokyo saves a check-in, Berlin briefs on it; Berlin then touches the check-in, and the touch's `updatedAt` read back through Tokyo's offset names an instant before the briefing — no device sees the briefing as stale, and the refresh is never armed. `StalenessAgreed`, 8 states |
-| `ReportStampUtc` | the briefing's `createdAt` is the writer's wall clock, serialized without an offset (`relationship_agent_workflow.dart`; the nudge's stamps are UTC) | `StalenessAgreed`, 6 states: Berlin briefs at 02:00; Tokyo reads the same components as 17:00 UTC the day before, behind the evidence it was written for, and arms a refresh for evidence already briefed. `BriefedOnNewEvidence` holds: the writing device reads its own stamp correctly |
-| `TrackingStart = "creation"` | with no check-in the cadence counts from the person's `dateFrom` | `FirstReminderAfterMark` in the enroll configuration, 2 states: a person created a day before being marked is due on the first tick |
+| Switch | Code at `a0f9af57f` | Counterexample | Dart test |
+|--------|---------------------|----------------|-----------|
+| `DayFromWallClock` | the due day is the UTC day of `dateFrom.toUtc()`, which parses the stored components in the reader's zone (`deriveCadenceFacts`) | `DueDayAgreed`, 3 states: Berlin saves a check-in at 02:00; Tokyo reads the same components as 17:00 UTC the day before, and the two due days are a day apart. `RegisterStable`, 5 states: Berlin's tick writes its due day, Tokyo receives the row and the check-in and derives another — its next tick rewrites the row, and the two rewrite it at each other for as long as the check-in is the newest. `EscalationKeyIsTheDueDay`, 7 states: Tokyo saves a check-in at 03:00 and ticks a day later, and the lapse escalation it arms is keyed by a day no calendar names for that check-in — the second episode, and the second briefing, for one lapse | the three pinned traces named after the properties; `relationship_agent_phase_a_test.dart` "the check-in's calendar day drives the due day, read the same by a device in Berlin and one in Tokyo" |
+| `OffsetRefreshed` | `updateMetadata` keeps the creation `utcOffset` beside a new local `updatedAt` | `BriefedOnNewEvidence`, 9 states: Tokyo saves a check-in, Berlin briefs on it; Berlin then touches the check-in, and the touch's `updatedAt` read back through Tokyo's offset names an instant before the briefing — no device sees the briefing as stale, and the refresh is never armed. `StalenessAgreed`, 8 states | the pinned `BriefedOnNewEvidence` trace; `metadata_service_test.dart` "stamps this device's offset and zone beside the new updatedAt" |
+| `ReportStampUtc` | the briefing's `createdAt` is the writer's wall clock, serialized without an offset (`relationship_agent_workflow.dart`; the nudge's stamps are UTC) | `StalenessAgreed`, 6 states: Berlin briefs at 02:00; Tokyo reads the same components as 17:00 UTC the day before, behind the evidence it was written for, and arms a refresh for evidence already briefed. `BriefedOnNewEvidence` holds: the writing device reads its own stamp correctly | the pinned `StalenessAgreed` trace; `relationship_agent_workflow_test.dart` "the briefing is stamped with the instant in UTC" |
+| `TrackingStart = "creation"` | with no check-in the cadence counts from the person's `dateFrom` | `FirstReminderAfterMark` in the enroll configuration, 2 states: a person created a day before being marked is due on the first tick | none: the code's value, a product decision still open (R-10) |
 
 What the model leaves out, deliberately or as a residual:
 
@@ -3352,19 +3373,21 @@ What the model leaves out, deliberately or as a residual:
   `AgentReplication`; here nothing is lost. **The nudges** (R-08, rejected),
   **the OS reminder and the card** (projections of the register) and
   **concurrent touches** of one check-in are not modelled.
-- **The daily cadence wake's deadline** is a local 07:00 serialized without
-  an offset (R-11f): a peer parses it in its own zone and fires at its own
-  07:00, which is what the device would have done anyway. Abstracted into
-  the tick running at any hour; the fix writes the deadline in UTC alongside
-  R-03.
+- **The daily cadence wake's deadline** was a local 07:00 serialized without
+  an offset (R-11f): a peer parsed it in its own zone and fired at its own
+  07:00. Abstracted into the tick running at any hour; the fix writes the
+  deadline in UTC, and the trace's `Converged` check covers the cadence
+  record too.
 - **A run that fails and backs off**, and the maintenance repair that moves
   a backed-off retry to now (`_resumeConfiguredEscalations`), are not
   modelled: that successor leaves the later `scheduledAt` it built on, the
   `RankDrop` residual of the sync pipeline README, and it is a property of
   the scheduled-wake resolver, not of the cadence.
-- **DST**: an offset is a constant per device. The DST off-by-one in
-  `_wholeDaysBetween` (R-11a) is a one-device arithmetic bug, pinned by a
-  property test in its fix.
+- **DST**: an offset is a constant per device. The DST off-by-one in the
+  UI's overdue count (R-11a) was a one-device arithmetic bug, fixed by
+  counting on day keys (`relationshipCalendarDaysBetween`) and pinned by
+  `relationship_calendar_test.dart` over every day of the year in three
+  zones.
 - **The stamp of the person's own `dateFrom`** has the same zone problem as
   a check-in's: created near midnight, two zones disagree about the tracking
   start as they do about a check-in. The configurations create the person at

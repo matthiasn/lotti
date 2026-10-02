@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
 import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
+import 'package:lotti/features/relationships/model/relationship_calendar.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 
@@ -332,15 +333,9 @@ class RelationshipFactsRenderer {
     return '${local.year}-$month-$day';
   }
 
-  int _daysBetween(DateTime from, DateTime to) {
-    final a = from.toLocal();
-    final b = to.toLocal();
-    return DateTime(
-      b.year,
-      b.month,
-      b.day,
-    ).difference(DateTime(a.year, a.month, a.day)).inDays;
-  }
+  /// Calendar days between two instants, on this device's calendar.
+  int _daysBetween(DateTime from, DateTime to) =>
+      relationshipCalendarDaysBetween(from.toLocal(), to.toLocal());
 
   /// One check-in entry as the model reads it: what kind it is, when it was
   /// added, and its words — or, for a recording or photo without words yet,

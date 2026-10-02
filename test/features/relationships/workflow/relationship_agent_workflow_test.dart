@@ -714,6 +714,124 @@ void main() {
     },
   );
 
+  group('the stamps a run writes', () {
+    test('the briefing is stamped with the instant in UTC', () {
+      final local = DateTime(2026, 8, 16, 12);
+      final stamp = relationshipBriefingCreatedAt(local);
+      expect(stamp.isUtc, isTrue);
+      expect(stamp.isAtSameMomentAs(local), isTrue);
+      expect(stamp, local.toUtc());
+    });
+
+    test("the head's timestamp is the due day's end once it is over, else "
+        'the instant — in UTC either way', () {
+      final dueDay = DateTime.utc(2026, 8, 8);
+      final after = relationshipReportHeadUpdatedAt(
+        dueDay,
+        DateTime(2026, 8, 16, 12),
+      );
+      expect(after, DateTime.utc(2026, 8, 8, 23, 59, 59));
+      final before = relationshipReportHeadUpdatedAt(
+        dueDay,
+        DateTime(2026, 8, 8, 9),
+      );
+      expect(before, DateTime(2026, 8, 8, 9).toUtc());
+      expect(before.isUtc, isTrue);
+    });
+  });
+
+  group('the stand-down gate', () {
+    RelationshipCadenceDerivation facts({
+      RelationshipCadenceStatus status = RelationshipCadenceStatus.ok,
+      DateTime? lastEvidenceAt,
+      String? lastEvidenceKey,
+    }) => (
+      status: status,
+      previousStatus: null,
+      cadenceDays: 7,
+      referenceAt: testDate,
+      lastCheckInAt: lastEvidenceAt,
+      lastEvidenceAt: lastEvidenceAt,
+      lastEvidenceKey: lastEvidenceKey,
+      dueDayUtc: DateTime.utc(2026, 8, 8),
+      dueDayKey: '2026-08-08',
+    );
+    final covered =
+        AgentDomainEntity.agentReport(
+              id: 'report-0',
+              agentId: agentId,
+              scope: AgentReportScopes.current,
+              createdAt: DateTime.utc(2026, 8, 15, 20),
+              vectorClock: null,
+              content: 'covered',
+            )
+            as AgentReportEntity;
+
+    test('stands down when the cadence is not due and the briefing covers '
+        'the evidence', () {
+      expect(
+        relationshipEscalationStandsDown(
+          derivation: facts(lastEvidenceAt: DateTime.utc(2026, 8, 15, 18)),
+          previousReport: covered,
+          escalationKey: '2026-08-08',
+          eligible: true,
+        ),
+        isTrue,
+      );
+    });
+
+    test('runs for a due cadence, and for evidence the briefing does not '
+        'cover', () {
+      expect(
+        relationshipEscalationStandsDown(
+          derivation: facts(status: RelationshipCadenceStatus.due),
+          previousReport: covered,
+          escalationKey: '2026-08-08',
+          eligible: true,
+        ),
+        isFalse,
+      );
+      expect(
+        relationshipEscalationStandsDown(
+          derivation: facts(
+            lastEvidenceAt: DateTime.utc(2026, 8, 15, 21),
+            lastEvidenceKey: '20260815T210000000',
+          ),
+          previousReport: covered,
+          escalationKey: 'refresh-20260815T210000000',
+          eligible: true,
+        ),
+        isFalse,
+      );
+    });
+
+    test('a refresh overtaken by newer evidence stands down, and so does '
+        'an ineligible person', () {
+      final newer = facts(
+        lastEvidenceAt: DateTime.utc(2026, 8, 15, 22),
+        lastEvidenceKey: '20260815T220000000',
+      );
+      expect(
+        relationshipEscalationStandsDown(
+          derivation: newer,
+          previousReport: covered,
+          escalationKey: 'refresh-20260815T210000000',
+          eligible: true,
+        ),
+        isTrue,
+      );
+      expect(
+        relationshipEscalationStandsDown(
+          derivation: facts(status: RelationshipCadenceStatus.due),
+          previousReport: covered,
+          escalationKey: '2026-08-08',
+          eligible: false,
+        ),
+        isTrue,
+      );
+    });
+  });
+
   test('a due escalation produces the briefing report (with the grounded '
       'band as provenance) and mints ONE banner with the deterministic '
       'run-scoped id', () async {
@@ -759,6 +877,11 @@ void main() {
     expect(result.reportUpdated, isTrue);
     final report = upserts.whereType<AgentReportEntity>().single;
     expect(report.tldr, contains('two weeks'));
+    // Stamped in UTC: the row syncs, and a local instant serializes without
+    // an offset, which a peer in another zone read as hours behind the
+    // evidence it covers (RelationshipCadence.tla, ReportStampUtc).
+    expect(report.createdAt, now.toUtc());
+    expect(report.createdAt.isUtc, isTrue);
     expect(
       report.provenance[RelationshipReportProvenanceKeys.healthBand],
       'needsAttention',
@@ -1014,8 +1137,9 @@ void main() {
       );
     });
 
-    test('is stamped with the wall clock while the due day is still '
-        'running — an in-period head must not be back-dated', () async {
+    test('is stamped with the wall clock, in UTC, while the due day is '
+        'still running — an in-period head must not be back-dated, and a '
+        'peer in another zone must read the same instant', () async {
       // Check-in on the 15th, 7-day cadence → due day 2026-08-22, ahead of
       // `now`. A report-refresh episode still publishes a briefing.
       when(
@@ -1052,10 +1176,9 @@ void main() {
 
       await run(tokens: {relationshipReportRefreshTriggerToken});
 
-      expect(
-        upserts.whereType<AgentReportHeadEntity>().single.updatedAt,
-        now,
-      );
+      final head = upserts.whereType<AgentReportHeadEntity>().single;
+      expect(head.updatedAt, now.toUtc());
+      expect(head.updatedAt.isUtc, isTrue);
     });
 
     test('does not advance when the published briefing carries a NEWER due '

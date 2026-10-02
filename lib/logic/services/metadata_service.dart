@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -49,7 +50,7 @@ class MetadataService {
     EntryFlag? flag,
     String? id,
   }) async {
-    final now = DateTime.now();
+    final now = clock.now();
     final entryId = id ?? generateId(uuidV5Input: uuidV5Input);
     final vc = await _vectorClockService.getNextVectorClock(
       payload: (id: entryId, type: SyncSequencePayloadType.journalEntity),
@@ -91,7 +92,16 @@ class MetadataService {
   /// Updates existing [Metadata] with a new vector clock and optional field changes.
   ///
   /// Always increments the vector clock based on the previous clock.
-  /// The `updatedAt` timestamp is set to the current time.
+  /// The `updatedAt` timestamp is set to the current time, and `utcOffset`
+  /// and `timezone` to this device's: the pair describes the stamp beside
+  /// it, as it does at creation. Kept from creation, a check-in touched from
+  /// another zone carried a new `updatedAt` beside the old offset, and every
+  /// device read the touch as an instant hours off — before the briefing it
+  /// should have made stale (`relationshipStoredInstant`, ADR 0114). A
+  /// `dateFrom`'s own instant was never recoverable from the offset: a
+  /// backdated entry carries the offset of the day it was saved, not of the
+  /// day it names, which is why the cadence reads `dateFrom` by its
+  /// calendar components.
   ///
   /// Use [clearCategoryId] to explicitly clear the category (set to null).
   /// Use [clearLabelIds] to explicitly clear the labels (set to null).
@@ -104,16 +114,24 @@ class MetadataService {
     DateTime? deletedAt,
     List<String>? labelIds,
     bool clearLabelIds = false,
-  }) async => metadata.copyWith(
-    updatedAt: DateTime.now(),
-    vectorClock: await _vectorClockService.getNextVectorClock(
-      previous: metadata.vectorClock,
-      payload: (id: metadata.id, type: SyncSequencePayloadType.journalEntity),
-    ),
-    dateFrom: dateFrom ?? metadata.dateFrom,
-    dateTo: dateTo ?? metadata.dateTo,
-    categoryId: clearCategoryId ? null : categoryId ?? metadata.categoryId,
-    deletedAt: deletedAt ?? metadata.deletedAt,
-    labelIds: clearLabelIds ? null : labelIds ?? metadata.labelIds,
-  );
+  }) async {
+    final now = clock.now();
+    return metadata.copyWith(
+      updatedAt: now,
+      utcOffset: now.timeZoneOffset.inMinutes,
+      timezone: await getLocalTimezone(),
+      vectorClock: await _vectorClockService.getNextVectorClock(
+        previous: metadata.vectorClock,
+        payload: (
+          id: metadata.id,
+          type: SyncSequencePayloadType.journalEntity,
+        ),
+      ),
+      dateFrom: dateFrom ?? metadata.dateFrom,
+      dateTo: dateTo ?? metadata.dateTo,
+      categoryId: clearCategoryId ? null : categoryId ?? metadata.categoryId,
+      deletedAt: deletedAt ?? metadata.deletedAt,
+      labelIds: clearLabelIds ? null : labelIds ?? metadata.labelIds,
+    );
+  }
 }
