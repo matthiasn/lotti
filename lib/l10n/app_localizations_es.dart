@@ -1284,6 +1284,33 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentToolGoalRevisionLabel => 'Propuesta de revisión del objetivo';
 
   @override
+  String get agentWakeBudgetDecrease => 'Bajar el límite diario';
+
+  @override
+  String get agentWakeBudgetExhausted =>
+      'Límite alcanzado: las actualizaciones automáticas se reanudan mañana';
+
+  @override
+  String get agentWakeBudgetHelp =>
+      'Las actualizaciones automáticas se detienen al alcanzar el límite. Actualizar ahora sigue funcionando, hasta el doble del límite.';
+
+  @override
+  String get agentWakeBudgetIncrease => 'Subir el límite diario';
+
+  @override
+  String get agentWakeBudgetLabel => 'Límite diario de activaciones';
+
+  @override
+  String agentWakeBudgetUsage(int used, int max) {
+    return '$used de $max usadas hoy';
+  }
+
+  @override
+  String agentWakeBudgetValue(int count) {
+    return '$count al día';
+  }
+
+  @override
   String get aggregationDailyAvg => 'Promedio diario';
 
   @override

@@ -106,6 +106,14 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     @Default({}) Map<String, int> processedCounterByHost,
     @Default({}) Map<String, int> toolCounterByKey,
 
+    /// Wakes claimed per calendar day and host, keyed `<yyyy-MM-dd>|<host>`:
+    /// the ledger the daily wake budget is enforced against (see
+    /// `wake_budget.dart`). A G-counter, so concurrent claims on two devices
+    /// both survive the merge and neither can reset the other's count.
+    @Default(GCounter.empty())
+    @JsonKey(name: 'dailyWakesByDayHost')
+    GCounter dailyWakes,
+
     /// Most recent relevant task change observed while automatic updates were
     /// disabled. This is a monotonic watermark rather than a boolean so a wake
     /// cannot accidentally clear a newer change that arrived during inference.

@@ -1906,6 +1906,39 @@ void main() {
     );
   });
 
+  // Regression: a revoked key was retried at once, on every scheduler pass,
+  // for as long as it stayed revoked.
+  test(
+    'a wake refused for its API key backs off like a setup problem',
+    () async {
+      stubGlmResolution();
+      conversationRepository.sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0,
+            strategy,
+          }) async => throw Exception(
+            'Gemini streaming error 403 for model gemini-3-flash: '
+            '{"error": {"status": "PERMISSION_DENIED"}}. '
+            'If rate-limited (429), wait and retry.',
+          );
+
+      final result = await run(
+        tokens: {relationshipEscalationWorkspaceKey('2026-08-08')},
+      );
+
+      expect(result.success, isFalse);
+      final rearmed = upserts.whereType<ScheduledWakeEntity>().single;
+      expect(rearmed.scheduledAt, now.toUtc().add(const Duration(hours: 1)));
+    },
+  );
+
   test('a re-arm write failure is contained — the wake still reports its '
       'own error', () async {
     when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {

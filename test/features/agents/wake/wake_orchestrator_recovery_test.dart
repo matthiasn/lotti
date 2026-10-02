@@ -1263,7 +1263,7 @@ void main() {
               'persisted-policy-run',
               WakeRunStatus.aborted.name,
               completedAt: any(named: 'completedAt'),
-              errorMessage: 'wake dropped by current automation policy',
+              errorMessage: 'wake refused: automaticUpdatesOff',
             ),
           ).called(1);
 

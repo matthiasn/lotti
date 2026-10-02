@@ -30,7 +30,12 @@ mixin _$AgentConfig {
 /// independently from profile/model selection. Legacy task agents read
 /// null as off; legacy goal agents preserve their shipped on behavior in
 /// the goal service.
- bool? get automaticUpdatesEnabled;/// Improver ritual cadence in days. Re-homed from `AgentSlots` (PR 4 B4):
+ bool? get automaticUpdatesEnabled;/// How many wakes this agent may run per calendar day, across all devices.
+///
+/// Synced with the identity so every device enforces the same bound. Null
+/// reads as `WakeBudget.defaultMaxWakesPerDay`; every value is clamped by
+/// `effectiveMaxWakesPerDay`, so a peer cannot lift the bound.
+ int? get maxWakesPerDay;/// Improver ritual cadence in days. Re-homed from `AgentSlots` (PR 4 B4):
 /// it is configuration set once at creation, not mutable derived state.
 /// Null falls back to the default window. Reads accept the legacy
 /// `AgentSlots.feedbackWindowDays` for agents created before the re-home.
@@ -50,16 +55,16 @@ $AgentConfigCopyWith<AgentConfig> get copyWith => _$AgentConfigCopyWithImpl<Agen
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentConfig&&(identical(other.maxTurnsPerWake, maxTurnsPerWake) || other.maxTurnsPerWake == maxTurnsPerWake)&&(identical(other.modelId, modelId) || other.modelId == modelId)&&(identical(other.profileId, profileId) || other.profileId == profileId)&&(identical(other.inferenceSetup, inferenceSetup) || other.inferenceSetup == inferenceSetup)&&(identical(other.automaticUpdatesEnabled, automaticUpdatesEnabled) || other.automaticUpdatesEnabled == automaticUpdatesEnabled)&&(identical(other.feedbackWindowDays, feedbackWindowDays) || other.feedbackWindowDays == feedbackWindowDays)&&(identical(other.recursionDepth, recursionDepth) || other.recursionDepth == recursionDepth));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentConfig&&(identical(other.maxTurnsPerWake, maxTurnsPerWake) || other.maxTurnsPerWake == maxTurnsPerWake)&&(identical(other.modelId, modelId) || other.modelId == modelId)&&(identical(other.profileId, profileId) || other.profileId == profileId)&&(identical(other.inferenceSetup, inferenceSetup) || other.inferenceSetup == inferenceSetup)&&(identical(other.automaticUpdatesEnabled, automaticUpdatesEnabled) || other.automaticUpdatesEnabled == automaticUpdatesEnabled)&&(identical(other.maxWakesPerDay, maxWakesPerDay) || other.maxWakesPerDay == maxWakesPerDay)&&(identical(other.feedbackWindowDays, feedbackWindowDays) || other.feedbackWindowDays == feedbackWindowDays)&&(identical(other.recursionDepth, recursionDepth) || other.recursionDepth == recursionDepth));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,maxTurnsPerWake,modelId,profileId,inferenceSetup,automaticUpdatesEnabled,feedbackWindowDays,recursionDepth);
+int get hashCode => Object.hash(runtimeType,maxTurnsPerWake,modelId,profileId,inferenceSetup,automaticUpdatesEnabled,maxWakesPerDay,feedbackWindowDays,recursionDepth);
 
 @override
 String toString() {
-  return 'AgentConfig(maxTurnsPerWake: $maxTurnsPerWake, modelId: $modelId, profileId: $profileId, inferenceSetup: $inferenceSetup, automaticUpdatesEnabled: $automaticUpdatesEnabled, feedbackWindowDays: $feedbackWindowDays, recursionDepth: $recursionDepth)';
+  return 'AgentConfig(maxTurnsPerWake: $maxTurnsPerWake, modelId: $modelId, profileId: $profileId, inferenceSetup: $inferenceSetup, automaticUpdatesEnabled: $automaticUpdatesEnabled, maxWakesPerDay: $maxWakesPerDay, feedbackWindowDays: $feedbackWindowDays, recursionDepth: $recursionDepth)';
 }
 
 
@@ -70,7 +75,7 @@ abstract mixin class $AgentConfigCopyWith<$Res>  {
   factory $AgentConfigCopyWith(AgentConfig value, $Res Function(AgentConfig) _then) = _$AgentConfigCopyWithImpl;
 @useResult
 $Res call({
- int maxTurnsPerWake, String modelId, String? profileId, AgentInferenceSetup? inferenceSetup, bool? automaticUpdatesEnabled, int? feedbackWindowDays, int? recursionDepth
+ int maxTurnsPerWake, String modelId, String? profileId, AgentInferenceSetup? inferenceSetup, bool? automaticUpdatesEnabled, int? maxWakesPerDay, int? feedbackWindowDays, int? recursionDepth
 });
 
 
@@ -87,14 +92,15 @@ class _$AgentConfigCopyWithImpl<$Res>
 
 /// Create a copy of AgentConfig
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? maxTurnsPerWake = null,Object? modelId = null,Object? profileId = freezed,Object? inferenceSetup = freezed,Object? automaticUpdatesEnabled = freezed,Object? feedbackWindowDays = freezed,Object? recursionDepth = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? maxTurnsPerWake = null,Object? modelId = null,Object? profileId = freezed,Object? inferenceSetup = freezed,Object? automaticUpdatesEnabled = freezed,Object? maxWakesPerDay = freezed,Object? feedbackWindowDays = freezed,Object? recursionDepth = freezed,}) {
   return _then(_self.copyWith(
 maxTurnsPerWake: null == maxTurnsPerWake ? _self.maxTurnsPerWake : maxTurnsPerWake // ignore: cast_nullable_to_non_nullable
 as int,modelId: null == modelId ? _self.modelId : modelId // ignore: cast_nullable_to_non_nullable
 as String,profileId: freezed == profileId ? _self.profileId : profileId // ignore: cast_nullable_to_non_nullable
 as String?,inferenceSetup: freezed == inferenceSetup ? _self.inferenceSetup : inferenceSetup // ignore: cast_nullable_to_non_nullable
 as AgentInferenceSetup?,automaticUpdatesEnabled: freezed == automaticUpdatesEnabled ? _self.automaticUpdatesEnabled : automaticUpdatesEnabled // ignore: cast_nullable_to_non_nullable
-as bool?,feedbackWindowDays: freezed == feedbackWindowDays ? _self.feedbackWindowDays : feedbackWindowDays // ignore: cast_nullable_to_non_nullable
+as bool?,maxWakesPerDay: freezed == maxWakesPerDay ? _self.maxWakesPerDay : maxWakesPerDay // ignore: cast_nullable_to_non_nullable
+as int?,feedbackWindowDays: freezed == feedbackWindowDays ? _self.feedbackWindowDays : feedbackWindowDays // ignore: cast_nullable_to_non_nullable
 as int?,recursionDepth: freezed == recursionDepth ? _self.recursionDepth : recursionDepth // ignore: cast_nullable_to_non_nullable
 as int?,
   ));
@@ -193,10 +199,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int maxTurnsPerWake,  String modelId,  String? profileId,  AgentInferenceSetup? inferenceSetup,  bool? automaticUpdatesEnabled,  int? feedbackWindowDays,  int? recursionDepth)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int maxTurnsPerWake,  String modelId,  String? profileId,  AgentInferenceSetup? inferenceSetup,  bool? automaticUpdatesEnabled,  int? maxWakesPerDay,  int? feedbackWindowDays,  int? recursionDepth)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AgentConfig() when $default != null:
-return $default(_that.maxTurnsPerWake,_that.modelId,_that.profileId,_that.inferenceSetup,_that.automaticUpdatesEnabled,_that.feedbackWindowDays,_that.recursionDepth);case _:
+return $default(_that.maxTurnsPerWake,_that.modelId,_that.profileId,_that.inferenceSetup,_that.automaticUpdatesEnabled,_that.maxWakesPerDay,_that.feedbackWindowDays,_that.recursionDepth);case _:
   return orElse();
 
 }
@@ -214,10 +220,10 @@ return $default(_that.maxTurnsPerWake,_that.modelId,_that.profileId,_that.infere
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int maxTurnsPerWake,  String modelId,  String? profileId,  AgentInferenceSetup? inferenceSetup,  bool? automaticUpdatesEnabled,  int? feedbackWindowDays,  int? recursionDepth)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int maxTurnsPerWake,  String modelId,  String? profileId,  AgentInferenceSetup? inferenceSetup,  bool? automaticUpdatesEnabled,  int? maxWakesPerDay,  int? feedbackWindowDays,  int? recursionDepth)  $default,) {final _that = this;
 switch (_that) {
 case _AgentConfig():
-return $default(_that.maxTurnsPerWake,_that.modelId,_that.profileId,_that.inferenceSetup,_that.automaticUpdatesEnabled,_that.feedbackWindowDays,_that.recursionDepth);case _:
+return $default(_that.maxTurnsPerWake,_that.modelId,_that.profileId,_that.inferenceSetup,_that.automaticUpdatesEnabled,_that.maxWakesPerDay,_that.feedbackWindowDays,_that.recursionDepth);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -234,10 +240,10 @@ return $default(_that.maxTurnsPerWake,_that.modelId,_that.profileId,_that.infere
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int maxTurnsPerWake,  String modelId,  String? profileId,  AgentInferenceSetup? inferenceSetup,  bool? automaticUpdatesEnabled,  int? feedbackWindowDays,  int? recursionDepth)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int maxTurnsPerWake,  String modelId,  String? profileId,  AgentInferenceSetup? inferenceSetup,  bool? automaticUpdatesEnabled,  int? maxWakesPerDay,  int? feedbackWindowDays,  int? recursionDepth)?  $default,) {final _that = this;
 switch (_that) {
 case _AgentConfig() when $default != null:
-return $default(_that.maxTurnsPerWake,_that.modelId,_that.profileId,_that.inferenceSetup,_that.automaticUpdatesEnabled,_that.feedbackWindowDays,_that.recursionDepth);case _:
+return $default(_that.maxTurnsPerWake,_that.modelId,_that.profileId,_that.inferenceSetup,_that.automaticUpdatesEnabled,_that.maxWakesPerDay,_that.feedbackWindowDays,_that.recursionDepth);case _:
   return null;
 
 }
@@ -249,7 +255,7 @@ return $default(_that.maxTurnsPerWake,_that.modelId,_that.profileId,_that.infere
 @JsonSerializable()
 
 class _AgentConfig implements AgentConfig {
-  const _AgentConfig({this.maxTurnsPerWake = 10, this.modelId = 'models/gemini-3-flash-preview', this.profileId, this.inferenceSetup, this.automaticUpdatesEnabled, this.feedbackWindowDays, this.recursionDepth});
+  const _AgentConfig({this.maxTurnsPerWake = 10, this.modelId = 'models/gemini-3-flash-preview', this.profileId, this.inferenceSetup, this.automaticUpdatesEnabled, this.maxWakesPerDay, this.feedbackWindowDays, this.recursionDepth});
   factory _AgentConfig.fromJson(Map<String, dynamic> json) => _$AgentConfigFromJson(json);
 
 /// Maximum number of tool-call turns per wake.
@@ -272,6 +278,12 @@ class _AgentConfig implements AgentConfig {
 /// null as off; legacy goal agents preserve their shipped on behavior in
 /// the goal service.
 @override final  bool? automaticUpdatesEnabled;
+/// How many wakes this agent may run per calendar day, across all devices.
+///
+/// Synced with the identity so every device enforces the same bound. Null
+/// reads as `WakeBudget.defaultMaxWakesPerDay`; every value is clamped by
+/// `effectiveMaxWakesPerDay`, so a peer cannot lift the bound.
+@override final  int? maxWakesPerDay;
 /// Improver ritual cadence in days. Re-homed from `AgentSlots` (PR 4 B4):
 /// it is configuration set once at creation, not mutable derived state.
 /// Null falls back to the default window. Reads accept the legacy
@@ -295,16 +307,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentConfig&&(identical(other.maxTurnsPerWake, maxTurnsPerWake) || other.maxTurnsPerWake == maxTurnsPerWake)&&(identical(other.modelId, modelId) || other.modelId == modelId)&&(identical(other.profileId, profileId) || other.profileId == profileId)&&(identical(other.inferenceSetup, inferenceSetup) || other.inferenceSetup == inferenceSetup)&&(identical(other.automaticUpdatesEnabled, automaticUpdatesEnabled) || other.automaticUpdatesEnabled == automaticUpdatesEnabled)&&(identical(other.feedbackWindowDays, feedbackWindowDays) || other.feedbackWindowDays == feedbackWindowDays)&&(identical(other.recursionDepth, recursionDepth) || other.recursionDepth == recursionDepth));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AgentConfig&&(identical(other.maxTurnsPerWake, maxTurnsPerWake) || other.maxTurnsPerWake == maxTurnsPerWake)&&(identical(other.modelId, modelId) || other.modelId == modelId)&&(identical(other.profileId, profileId) || other.profileId == profileId)&&(identical(other.inferenceSetup, inferenceSetup) || other.inferenceSetup == inferenceSetup)&&(identical(other.automaticUpdatesEnabled, automaticUpdatesEnabled) || other.automaticUpdatesEnabled == automaticUpdatesEnabled)&&(identical(other.maxWakesPerDay, maxWakesPerDay) || other.maxWakesPerDay == maxWakesPerDay)&&(identical(other.feedbackWindowDays, feedbackWindowDays) || other.feedbackWindowDays == feedbackWindowDays)&&(identical(other.recursionDepth, recursionDepth) || other.recursionDepth == recursionDepth));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,maxTurnsPerWake,modelId,profileId,inferenceSetup,automaticUpdatesEnabled,feedbackWindowDays,recursionDepth);
+int get hashCode => Object.hash(runtimeType,maxTurnsPerWake,modelId,profileId,inferenceSetup,automaticUpdatesEnabled,maxWakesPerDay,feedbackWindowDays,recursionDepth);
 
 @override
 String toString() {
-  return 'AgentConfig(maxTurnsPerWake: $maxTurnsPerWake, modelId: $modelId, profileId: $profileId, inferenceSetup: $inferenceSetup, automaticUpdatesEnabled: $automaticUpdatesEnabled, feedbackWindowDays: $feedbackWindowDays, recursionDepth: $recursionDepth)';
+  return 'AgentConfig(maxTurnsPerWake: $maxTurnsPerWake, modelId: $modelId, profileId: $profileId, inferenceSetup: $inferenceSetup, automaticUpdatesEnabled: $automaticUpdatesEnabled, maxWakesPerDay: $maxWakesPerDay, feedbackWindowDays: $feedbackWindowDays, recursionDepth: $recursionDepth)';
 }
 
 
@@ -315,7 +327,7 @@ abstract mixin class _$AgentConfigCopyWith<$Res> implements $AgentConfigCopyWith
   factory _$AgentConfigCopyWith(_AgentConfig value, $Res Function(_AgentConfig) _then) = __$AgentConfigCopyWithImpl;
 @override @useResult
 $Res call({
- int maxTurnsPerWake, String modelId, String? profileId, AgentInferenceSetup? inferenceSetup, bool? automaticUpdatesEnabled, int? feedbackWindowDays, int? recursionDepth
+ int maxTurnsPerWake, String modelId, String? profileId, AgentInferenceSetup? inferenceSetup, bool? automaticUpdatesEnabled, int? maxWakesPerDay, int? feedbackWindowDays, int? recursionDepth
 });
 
 
@@ -332,14 +344,15 @@ class __$AgentConfigCopyWithImpl<$Res>
 
 /// Create a copy of AgentConfig
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? maxTurnsPerWake = null,Object? modelId = null,Object? profileId = freezed,Object? inferenceSetup = freezed,Object? automaticUpdatesEnabled = freezed,Object? feedbackWindowDays = freezed,Object? recursionDepth = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? maxTurnsPerWake = null,Object? modelId = null,Object? profileId = freezed,Object? inferenceSetup = freezed,Object? automaticUpdatesEnabled = freezed,Object? maxWakesPerDay = freezed,Object? feedbackWindowDays = freezed,Object? recursionDepth = freezed,}) {
   return _then(_AgentConfig(
 maxTurnsPerWake: null == maxTurnsPerWake ? _self.maxTurnsPerWake : maxTurnsPerWake // ignore: cast_nullable_to_non_nullable
 as int,modelId: null == modelId ? _self.modelId : modelId // ignore: cast_nullable_to_non_nullable
 as String,profileId: freezed == profileId ? _self.profileId : profileId // ignore: cast_nullable_to_non_nullable
 as String?,inferenceSetup: freezed == inferenceSetup ? _self.inferenceSetup : inferenceSetup // ignore: cast_nullable_to_non_nullable
 as AgentInferenceSetup?,automaticUpdatesEnabled: freezed == automaticUpdatesEnabled ? _self.automaticUpdatesEnabled : automaticUpdatesEnabled // ignore: cast_nullable_to_non_nullable
-as bool?,feedbackWindowDays: freezed == feedbackWindowDays ? _self.feedbackWindowDays : feedbackWindowDays // ignore: cast_nullable_to_non_nullable
+as bool?,maxWakesPerDay: freezed == maxWakesPerDay ? _self.maxWakesPerDay : maxWakesPerDay // ignore: cast_nullable_to_non_nullable
+as int?,feedbackWindowDays: freezed == feedbackWindowDays ? _self.feedbackWindowDays : feedbackWindowDays // ignore: cast_nullable_to_non_nullable
 as int?,recursionDepth: freezed == recursionDepth ? _self.recursionDepth : recursionDepth // ignore: cast_nullable_to_non_nullable
 as int?,
   ));

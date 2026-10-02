@@ -2233,6 +2233,48 @@ abstract class AppLocalizations {
   /// **'Goal revision proposal'**
   String get agentToolGoalRevisionLabel;
 
+  /// Tooltip of the stepper button lowering the daily wake limit.
+  ///
+  /// In en, this message translates to:
+  /// **'Lower the daily limit'**
+  String get agentWakeBudgetDecrease;
+
+  /// Shown when today's wake limit is used up: automatic updates have stopped until tomorrow, a manual update still works.
+  ///
+  /// In en, this message translates to:
+  /// **'Limit reached — automatic updates resume tomorrow'**
+  String get agentWakeBudgetExhausted;
+
+  /// Tooltip explaining the daily wake limit.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic updates stop once the limit is reached. Update now still works, up to twice the limit.'**
+  String get agentWakeBudgetHelp;
+
+  /// Tooltip of the stepper button raising the daily wake limit.
+  ///
+  /// In en, this message translates to:
+  /// **'Raise the daily limit'**
+  String get agentWakeBudgetIncrease;
+
+  /// Label of the daily wake limit row in the agent internals band: how many times a day the agent may run, across all devices.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily wake limit'**
+  String get agentWakeBudgetLabel;
+
+  /// How much of today's wake limit has been used, counted across all devices.
+  ///
+  /// In en, this message translates to:
+  /// **'{used} of {max} used today'**
+  String agentWakeBudgetUsage(int used, int max);
+
+  /// The selected daily wake limit, shown inside the stepper.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} per day'**
+  String agentWakeBudgetValue(int count);
+
   /// No description provided for @aggregationDailyAvg.
   ///
   /// In en, this message translates to:

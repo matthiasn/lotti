@@ -863,6 +863,7 @@ AgentStateEntity mergeAgentStateCounters({
 }) {
   return winner.copyWith(
     wakeCounter: local.wakeCounter.merge(incoming.wakeCounter),
+    dailyWakes: local.dailyWakes.merge(incoming.dailyWakes),
     reportStaleAt: _latestInstant(
       local.reportStaleAt,
       incoming.reportStaleAt,

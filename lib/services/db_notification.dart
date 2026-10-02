@@ -151,6 +151,23 @@ const agentExecutionZoneKey = #agentExecution;
 /// wake cycle.
 bool get isAgentExecution => Zone.current[agentExecutionZoneKey] == true;
 
+/// Zone key holding a `bool Function()` that reports whether the running
+/// agent wake has been aborted — by the user's cancel, by pausing the agent,
+/// or by the run timeout.
+///
+/// Dart cannot cancel the executor's future, so an aborted wake used to keep
+/// running its model turns, and paying for them, until the model stopped on
+/// its own. Long-running loops check [isAgentWakeAborted] before each paid
+/// step instead.
+const agentWakeAbortedZoneKey = #agentWakeAborted;
+
+/// Whether the agent wake this code runs in has been aborted. False outside a
+/// wake.
+bool get isAgentWakeAborted {
+  final check = Zone.current[agentWakeAbortedZoneKey];
+  return check is bool Function() && check();
+}
+
 const projectEntityUpdatePrefix = 'PROJECT_ENTITY_UPDATE:';
 
 String projectEntityUpdateNotification(String projectId) {

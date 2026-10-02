@@ -1038,6 +1038,7 @@ void main() {
                   config: const AgentConfig(
                     profileId: 'profile-1',
                     automaticUpdatesEnabled: false,
+                    maxWakesPerDay: 3,
                     inferenceSetup: AgentInferenceSetup(
                       mode: AgentInferenceSetupMode.configured,
                       origin: AgentInferenceSetupOrigin.categorySnapshot,
@@ -1077,6 +1078,66 @@ void main() {
         expect(applied.displayName, 'Renamed by older client');
         expect(applied.config.automaticUpdatesEnabled, isFalse);
         expect(applied.config.inferenceSetup, local.config.inferenceSetup);
+        expect(applied.config.maxWakesPerDay, 3);
+      },
+    );
+
+    test(
+      'a rewrite that omits only the daily wake budget keeps the local one',
+      () async {
+        // The other preferences are explicit, so before the budget joined the
+        // overlay this payload was applied verbatim and an older peer reset a
+        // user's lower limit to the default on every device.
+        final local =
+            AgentDomainEntity.agent(
+                  id: 'project-agent-budget-rewrite',
+                  agentId: 'project-agent-budget-rewrite',
+                  kind: AgentKinds.projectAgent,
+                  displayName: 'Project Agent',
+                  lifecycle: AgentLifecycle.active,
+                  mode: AgentInteractionMode.autonomous,
+                  allowedCategoryIds: const {},
+                  currentStateId: 'state-budget-rewrite',
+                  config: const AgentConfig(
+                    automaticUpdatesEnabled: true,
+                    maxWakesPerDay: 2,
+                    inferenceSetup: AgentInferenceSetup(
+                      mode: AgentInferenceSetupMode.configured,
+                      origin: AgentInferenceSetupOrigin.user,
+                      baseProfileId: 'profile-1',
+                    ),
+                  ),
+                  createdAt: DateTime(2024, 3, 15),
+                  updatedAt: DateTime(2024, 3, 15),
+                  vectorClock: null,
+                )
+                as AgentIdentityEntity;
+        final incoming = local.copyWith(
+          displayName: 'Renamed by older client',
+          config: local.config.copyWith(maxWakesPerDay: null),
+          updatedAt: DateTime(2024, 3, 16),
+        );
+        when(
+          () => mockAgentRepo.getEntity(incoming.id),
+        ).thenAnswer((_) async => local);
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.agentEntity(
+              agentEntity: incoming,
+              status: SyncEntryStatus.update,
+            ),
+          ),
+        );
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        final applied =
+            verify(
+                  () => mockAgentRepo.upsertEntity(captureAny()),
+                ).captured.first
+                as AgentIdentityEntity;
+        expect(applied.displayName, 'Renamed by older client');
+        expect(applied.config.maxWakesPerDay, 2);
       },
     );
 
@@ -3760,6 +3821,7 @@ void main() {
 
       setUp(() {
         mockOrchestrator = MockWakeOrchestrator();
+        when(() => mockOrchestrator.haltAgent(any())).thenReturn(false);
         processor.wakeOrchestrator = mockOrchestrator;
         when(
           () => mockOrchestrator.removeSubscriptions(any()),
@@ -3931,7 +3993,7 @@ void main() {
         verify(() => mockAgentRepo.upsertEntity(head)).called(1);
       });
 
-      test('removes subscriptions when agent is dormant', () async {
+      test('halts the agent when it is dormant', () async {
         final entity = AgentDomainEntity.agent(
           id: 'agent-dormant',
           agentId: 'agent-dormant',
@@ -3964,9 +4026,12 @@ void main() {
         verify(
           () => mockOrchestrator.removeSubscriptions('agent-dormant'),
         ).called(1);
+        // A stop on another device halts this device's queued and running
+        // work too, not only future subscriptions.
+        verify(() => mockOrchestrator.haltAgent('agent-dormant')).called(1);
       });
 
-      test('removes subscriptions when agent is destroyed', () async {
+      test('halts the agent when it is destroyed', () async {
         final entity = AgentDomainEntity.agent(
           id: 'agent-destroyed',
           agentId: 'agent-destroyed',
@@ -3999,6 +4064,9 @@ void main() {
         verify(
           () => mockOrchestrator.removeSubscriptions('agent-destroyed'),
         ).called(1);
+        // A stop on another device halts this device's queued and running
+        // work too, not only future subscriptions.
+        verify(() => mockOrchestrator.haltAgent('agent-destroyed')).called(1);
       });
 
       test(
@@ -4054,7 +4122,7 @@ void main() {
           expect(clearedState.updatedAt, localState.updatedAt);
           expect(clearedState.vectorClock, localState.vectorClock);
           verify(
-            () => mockOrchestrator.removeSubscriptions(identity.agentId),
+            () => mockOrchestrator.haltAgent(identity.agentId),
           ).called(1);
           verify(
             () => mockOrchestrator.disableAutomaticUpdatesRuntime(
@@ -4175,7 +4243,7 @@ void main() {
                     mode: AgentInteractionMode.autonomous,
                     allowedCategoryIds: const {},
                     currentStateId: 'state-project-equal-replay',
-                    config: const AgentConfig(),
+                    config: const AgentConfig(automaticUpdatesEnabled: true),
                     createdAt: DateTime(2024, 3, 15),
                     updatedAt: DateTime(2026, 8, 14, 9),
                     vectorClock: vectorClock,
@@ -4249,7 +4317,7 @@ void main() {
                     mode: AgentInteractionMode.autonomous,
                     allowedCategoryIds: const {},
                     currentStateId: 'state-project-state-replay',
-                    config: const AgentConfig(),
+                    config: const AgentConfig(automaticUpdatesEnabled: true),
                     createdAt: DateTime(2024, 3, 15),
                     updatedAt: DateTime(2026, 8, 14, 9),
                     vectorClock: const VectorClock({'remote': 2}),
@@ -4441,7 +4509,7 @@ void main() {
             mode: AgentInteractionMode.autonomous,
             allowedCategoryIds: const {},
             currentStateId: 'state-1',
-            config: const AgentConfig(),
+            config: const AgentConfig(automaticUpdatesEnabled: true),
             createdAt: DateTime(2024, 3, 15),
             updatedAt: DateTime(2024, 3, 15),
             vectorClock: null,
@@ -4505,7 +4573,7 @@ void main() {
             mode: AgentInteractionMode.autonomous,
             allowedCategoryIds: const {},
             currentStateId: 'state-1',
-            config: const AgentConfig(),
+            config: const AgentConfig(automaticUpdatesEnabled: true),
             createdAt: DateTime(2024, 3, 15),
             updatedAt: DateTime(2024, 3, 15),
             vectorClock: null,
@@ -4577,7 +4645,7 @@ void main() {
             mode: AgentInteractionMode.autonomous,
             allowedCategoryIds: const {},
             currentStateId: 'state-imported',
-            config: const AgentConfig(),
+            config: const AgentConfig(automaticUpdatesEnabled: true),
             createdAt: DateTime(2024, 3, 15),
             updatedAt: DateTime(2024, 3, 15),
             vectorClock: null,
@@ -4939,7 +5007,7 @@ void main() {
       );
 
       test(
-        'removes subscriptions for dormant project_agent identity',
+        'halts a dormant project_agent identity',
         () async {
           final entity = AgentDomainEntity.agent(
             id: 'project-agent-dormant',
@@ -4964,7 +5032,7 @@ void main() {
           await processor.process(event: event, journalDb: journalDb);
 
           verify(
-            () => mockOrchestrator.removeSubscriptions('project-agent-dormant'),
+            () => mockOrchestrator.haltAgent('project-agent-dormant'),
           ).called(1);
           verifyNever(
             () => mockAgentRepo.getLinksFrom(
@@ -5178,6 +5246,7 @@ void main() {
 
       setUp(() {
         mockOrchestrator = MockWakeOrchestrator();
+        when(() => mockOrchestrator.haltAgent(any())).thenReturn(false);
         processor.wakeOrchestrator = mockOrchestrator;
         when(
           () => mockOrchestrator.disableAutomaticUpdatesRuntime(any()),
@@ -5426,7 +5495,7 @@ void main() {
             mode: AgentInteractionMode.autonomous,
             allowedCategoryIds: const {},
             currentStateId: 'state-1',
-            config: const AgentConfig(),
+            config: const AgentConfig(automaticUpdatesEnabled: true),
             createdAt: DateTime(2024, 3, 15),
             updatedAt: DateTime(2024, 3, 15),
             vectorClock: null,

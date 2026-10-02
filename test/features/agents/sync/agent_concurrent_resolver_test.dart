@@ -120,6 +120,7 @@ void main() {
     AgentStateEntity stateWith({
       GCounter wakeCounter = const GCounter.empty(),
       GCounter totalSessions = const GCounter.empty(),
+      GCounter dailyWakes = const GCounter.empty(),
       int revision = 1,
       String? activeTaskId,
       DateTime? reportStaleAt,
@@ -136,6 +137,7 @@ void main() {
             updatedAt: DateTime(2024, 3, 15),
             vectorClock: null,
             wakeCounter: wakeCounter,
+            dailyWakes: dailyWakes,
             reportStaleAt: reportStaleAt,
             reportFreshAt: reportFreshAt,
           )
@@ -170,6 +172,40 @@ void main() {
       // Non-counter fields: from the winner (local here).
       expect(merged.revision, 2);
       expect(merged.slots.activeTaskId, 'task-local');
+    });
+
+    test('joins the daily wake ledger so a concurrent claim is never lost', () {
+      // Two devices claimed wakes against the budget concurrently. Whichever
+      // side wins the row, the ledger must carry both devices' claims — a
+      // last-writer-wins ledger would let each device reset the other's
+      // count and the budget would bound nothing.
+      final local = stateWith(
+        dailyWakes: const GCounter({
+          '2026-10-02|host-a': 3,
+          '2026-10-01|host-b': 1,
+        }),
+        activeTaskId: 'local-winner',
+      );
+      final incoming = stateWith(
+        dailyWakes: const GCounter({
+          '2026-10-02|host-a': 2,
+          '2026-10-02|host-b': 4,
+        }),
+        activeTaskId: 'incoming-loser',
+      );
+
+      final merged = mergeAgentStateCounters(
+        winner: local,
+        local: local,
+        incoming: incoming,
+      );
+
+      expect(merged.dailyWakes.byHost, {
+        '2026-10-02|host-a': 3,
+        '2026-10-01|host-b': 1,
+        '2026-10-02|host-b': 4,
+      });
+      expect(merged.slots.activeTaskId, 'local-winner');
     });
 
     test('joins report freshness watermarks by latest observed event', () {

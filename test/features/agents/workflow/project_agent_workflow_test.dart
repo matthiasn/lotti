@@ -106,7 +106,10 @@ void main() {
 
   final testAgentIdentity = makeTestIdentity(
     kind: 'project_agent',
-    config: const AgentConfig(profileId: 'profile-001'),
+    config: const AgentConfig(
+      profileId: 'profile-001',
+      automaticUpdatesEnabled: true,
+    ),
   );
 
   final testAgentState = makeTestState(

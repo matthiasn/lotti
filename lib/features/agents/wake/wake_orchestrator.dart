@@ -13,6 +13,8 @@ import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/wake/agent_wake_coordinator.dart';
 import 'package:lotti/features/agents/wake/run_key_factory.dart';
+import 'package:lotti/features/agents/wake/wake_audit.dart';
+import 'package:lotti/features/agents/wake/wake_budget.dart';
 import 'package:lotti/features/agents/wake/wake_intent_store.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
@@ -233,6 +235,9 @@ class WakeRunCompletion {
 
 int _defaultMaxConcurrentWakes() => defaultAgentWakeConcurrency;
 
+/// The budget key of claims made before this device's host id is known.
+const _unknownBudgetHost = 'unknown-host';
+
 /// Notification-driven wake orchestrator.
 ///
 /// Responsibilities:
@@ -259,11 +264,15 @@ class WakeOrchestrator with AgentErrorLogging {
     this.syncEntityWriter,
     this.syncAgentStateUpdater,
     this.onWakeStart,
+    this.localHostId,
     this.maxConcurrentWakes = _defaultMaxConcurrentWakes,
     this.intentStore,
   }) {
     queue
-      ..onEnqueued = _recordIntent
+      ..onEnqueued = (job) {
+        _auditQueued(job);
+        _recordIntent(job);
+      }
       ..onMerged = (job, _) => _recordIntent(job);
     _throttle = WakeThrottleCoordinator(
       repository: repository,
@@ -317,6 +326,16 @@ class WakeOrchestrator with AgentErrorLogging {
 
   /// Optional transactional state updater for partial state mutations.
   SyncAgentStateUpdater? syncAgentStateUpdater;
+
+  /// This device's sync host id, the key its daily-budget claims are
+  /// counted under. Null before the vector clock service is wired; claims
+  /// then count under a shared placeholder key rather than not at all.
+  Future<String?> Function()? localHostId;
+
+  /// Run keys whose daily-budget claim has been persisted, so a run a
+  /// superseded drain hands back is not counted a second time. Released
+  /// when the run completes.
+  final _budgetClaimedRunKeys = <String>{};
 
   /// Optional cross-device coordination: of several devices about to wake the
   /// same agent over the same state, one runs and the others stand down (see
@@ -613,6 +632,7 @@ class WakeOrchestrator with AgentErrorLogging {
     DateTime? startedAt,
     bool? reportUpdated,
   }) {
+    _budgetClaimedRunKeys.remove(job.runKey);
     if (_runCompletions.isClosed) return;
     _runCompletions.add(
       WakeRunCompletion(
@@ -861,6 +881,44 @@ class WakeOrchestrator with AgentErrorLogging {
     domainLogger?.log(LogDomain.agentRuntime, message, subDomain: subDomain);
   }
 
+  /// Every job enters the queue through here, whatever asked for it — a
+  /// subscription match, a scheduled or restored wake, a content wake, the
+  /// user — so this one line records the source of every wake that follows.
+  void _auditQueued(WakeJob job) {
+    _log(
+      formatWakeAudit(
+        stage: 'enqueue',
+        agentId: job.agentId,
+        cause: WakeDecisionCause.allowed,
+        reason: job.reason,
+        initiator: job.initiator,
+        reasonId: job.reasonId,
+        tokenCount: job.triggerTokens.length,
+      ),
+      subDomain: 'wakeAudit',
+    );
+  }
+
+  /// Records a wake the router declined to queue, and why.
+  void _auditRouted(
+    AgentSubscription sub,
+    Set<String> matched,
+    WakeDecisionCause cause,
+  ) {
+    _log(
+      formatWakeAudit(
+        stage: 'route',
+        agentId: sub.agentId,
+        cause: cause,
+        reason: WakeReason.subscription.name,
+        initiator: WakeInitiator.automation,
+        reasonId: sub.id,
+        tokenCount: matched.length,
+      ),
+      subDomain: 'wakeAudit',
+    );
+  }
+
   // ── Subscription management ────────────────────────────────────────────────
 
   /// Register a subscription so that the agent is woken when matching tokens
@@ -892,6 +950,19 @@ class WakeOrchestrator with AgentErrorLogging {
     _wakeCounters.remove(agentId);
     _agentsAwaitingContent.remove(agentId);
     clearThrottle(agentId);
+  }
+
+  /// Stops every wake of [agentId] on this device, now: subscriptions and
+  /// throttle go, queued work in every workspace is cancelled, and a running
+  /// wake is aborted — which also stops its conversation before the next
+  /// model turn (see `isAgentWakeAborted`).
+  ///
+  /// The kill-switch behind Pause, locally and when a pause arrives by sync.
+  /// Returns whether a running wake was signalled.
+  bool haltAgent(String agentId) {
+    removeSubscriptions(agentId);
+    cancelPendingWakes(agentId, allWorkspaces: true);
+    return abortRunningWake(agentId);
   }
 
   /// Disable automatic inference while retaining change observation.

@@ -5,9 +5,17 @@ description: The digest-shaped project agent that resists waking on every linked
 resource: ../../../lib/features/agents/workflow/project_agent_workflow.dart
 tags: [agents, project-agent, event-agent, digest, notifications]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-09-29T12:00:00Z }
-stale_after: 2026-10-29
+generated: { by: claude-code/opus-5.5, at: 2026-10-02T18:00:00Z }
+stale_after: 2027-01-02
 sources:
+  - id: adr-0112
+    resource: ../../../docs/adr/0112-a-daily-wake-budget-bounds-every-agent-wake.md
+    title: ADR 0112 — automation defaults off; a daily budget bounds every wake
+    last_modified: 2026-10-02
+  - id: automation-policy
+    resource: ../../../lib/features/agents/model/agent_automation_policy.dart
+    title: Project-agent automation policy
+    last_modified: 2026-10-02
   - id: project-execution
     resource: ../../../lib/features/agents/workflow/project_agent_execute.dart
     title: Project wake persistence and recommendation replacement
@@ -205,10 +213,15 @@ stateDiagram-v2
 - **Explicit requests** (`creation` and manual `reanalysis`) bypass the
   subscription throttle and enqueue immediately.
 - **Automation policy** is shared across local monitoring, workflow fallback
-  creation, startup restoration, and synced identity/link restoration. An
-  active legacy project agent with no stored preference retains its shipped-on
-  behavior; explicit opt-out, inactive lifecycle, and disabled inference block
-  automatic subscription and fallback wakes while observation remains wired.
+  creation, startup restoration, and synced identity/link restoration. A
+  project agent with no stored preference has automation **off**, exactly as
+  the switch shows it: until 2026-10 the runtime read a missing value as on
+  while the switch showed off, so every untoggled project agent woke on its
+  own ([ADR 0112](../../../docs/adr/0112-a-daily-wake-budget-bounds-every-agent-wake.md)).
+  Opt-out, inactive lifecycle, and disabled inference block automatic
+  subscription and fallback wakes while observation remains wired. Whatever
+  the policy allows, every wake still passes the
+  [daily wake budget](wake-orchestration.md#the-daily-wake-budget).
   Identity, state, and project-link apply paths all reconcile the marker, so
   every valid sync arrival order arms already-pending work once policy becomes
   evaluable; startup restoration performs the same repair after a restart.

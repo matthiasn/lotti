@@ -270,6 +270,10 @@ extension _AgentHandlers on SyncEventProcessor {
             wakeOrchestrator!
               ..removeSubscriptions(appliedIdentity.agentId)
               ..disableAutomaticUpdatesRuntime(appliedIdentity.agentId);
+            // A pause on another device halts this device's work as well.
+            if (appliedIdentity.lifecycle != AgentLifecycle.active) {
+              wakeOrchestrator!.haltAgent(appliedIdentity.agentId);
+            }
           } else {
             if (appliedIdentity.config.automaticUpdatesEnabledEffective) {
               wakeOrchestrator!.enableAutomaticUpdatesRuntime(
@@ -423,7 +427,8 @@ extension _AgentHandlers on SyncEventProcessor {
   }) {
     if ((incoming.kind != 'task_agent' && incoming.kind != 'project_agent') ||
         (incoming.config.automaticUpdatesEnabled != null &&
-            incoming.config.inferenceSetup != null)) {
+            incoming.config.inferenceSetup != null &&
+            incoming.config.maxWakesPerDay != null)) {
       return incoming;
     }
     if (local is! AgentIdentityEntity) return incoming;
@@ -433,14 +438,20 @@ extension _AgentHandlers on SyncEventProcessor {
         local.config.automaticUpdatesEnabled;
     final inferenceSetup =
         incoming.config.inferenceSetup ?? local.config.inferenceSetup;
+    // An older client cannot carry the daily wake budget; dropping it would
+    // silently reset a user's lower limit to the default on every device.
+    final maxWakesPerDay =
+        incoming.config.maxWakesPerDay ?? local.config.maxWakesPerDay;
     if (automaticUpdatesEnabled == incoming.config.automaticUpdatesEnabled &&
-        inferenceSetup == incoming.config.inferenceSetup) {
+        inferenceSetup == incoming.config.inferenceSetup &&
+        maxWakesPerDay == incoming.config.maxWakesPerDay) {
       return incoming;
     }
     return incoming.copyWith(
       config: incoming.config.copyWith(
         automaticUpdatesEnabled: automaticUpdatesEnabled,
         inferenceSetup: inferenceSetup,
+        maxWakesPerDay: maxWakesPerDay,
       ),
     );
   }
@@ -609,8 +620,9 @@ extension _AgentHandlers on SyncEventProcessor {
     });
 
     if (!policy.active) {
+      // A pause on another device halts this device's work as well.
       wakeOrchestrator!
-        ..removeSubscriptions(identity.agentId)
+        ..haltAgent(identity.agentId)
         ..disableAutomaticUpdatesRuntime(identity.agentId);
       return scheduleChanged;
     }

@@ -180,6 +180,7 @@ extension WakeDrainEngine on WakeOrchestrator {
     WakeJob job, {
     required String reason,
     required bool emitUnpersistedCompletion,
+    required Object error,
   }) async {
     _forgetDrainOwnedJob(job);
     _settleIntent(job);
@@ -188,13 +189,10 @@ extension WakeDrainEngine on WakeOrchestrator {
         job,
         reason: reason,
         emitCompletion: true,
+        error: error,
       );
     } else if (emitUnpersistedCompletion) {
-      _emitRunCompletion(
-        job,
-        WakeRunStatus.aborted,
-        error: StateError(reason),
-      );
+      _emitRunCompletion(job, WakeRunStatus.aborted, error: error);
     }
   }
 
@@ -277,7 +275,7 @@ extension WakeDrainEngine on WakeOrchestrator {
           _trackDrainOwnedJob(job);
           inspectedJobs++;
 
-          final wakeAllowed = await _wakeAllowedByCurrentPolicy(job);
+          final decision = await _currentPolicyDecision(job);
           if (_discardCancelledDrainOwnedJob(generation, job)) {
             if (_drainGeneration != generation) return;
             continue;
@@ -286,18 +284,14 @@ extension WakeDrainEngine on WakeOrchestrator {
             _handOffSupersededJob(generation, job);
             return;
           }
-          if (!wakeAllowed) {
-            const reason = 'wake dropped by current automation policy';
+          if (!decision.allowed) {
             await _dropDrainOwnedJob(
               job,
-              reason: reason,
+              reason: 'wake refused: ${decision.cause.name}',
               emitUnpersistedCompletion: true,
+              error: WakeRefusedError(decision.cause),
             );
-            _log(
-              'drain policy dropped automatic/disabled wake for '
-              '${DomainLogger.sanitizeId(job.agentId)}',
-              subDomain: 'drain',
-            );
+            _auditDecision(job, decision, stage: 'dispatch');
             continue;
           }
 
@@ -344,10 +338,12 @@ extension WakeDrainEngine on WakeOrchestrator {
                 'for ${DomainLogger.sanitizeId(job.agentId)}',
                 subDomain: 'drain',
               );
+              const reason = 'wake dropped by suppression re-check';
               await _dropDrainOwnedJob(
                 job,
-                reason: 'wake dropped by suppression re-check',
+                reason: reason,
                 emitUnpersistedCompletion: false,
+                error: StateError(reason),
               );
               _releaseDrainLease(generation, lease);
               continue;
@@ -416,10 +412,12 @@ extension WakeDrainEngine on WakeOrchestrator {
             return;
           }
           if (shouldSkipForAwaitingContent) {
+            const reason = 'wake skipped while awaiting content';
             await _dropDrainOwnedJob(
               job,
-              reason: 'wake skipped while awaiting content',
+              reason: reason,
               emitUnpersistedCompletion: false,
+              error: StateError(reason),
             );
             _releaseDrainLease(generation, lease);
             continue;
@@ -576,10 +574,12 @@ extension WakeDrainEngine on WakeOrchestrator {
     // gone: the peer's done may already have arrived since [coverage] was
     // decided, and its notification finds a hand-over only once it exists.
     if (!coverage.completed) _handedToPeer.add(job.agentId);
+    const reason = 'wake covered by a peer device';
     await _dropDrainOwnedJob(
       job,
-      reason: 'wake covered by a peer device',
+      reason: reason,
       emitUnpersistedCompletion: false,
+      error: StateError(reason),
     );
     _releaseDrainLease(generation, lease);
     if (!coverage.completed) {
@@ -634,35 +634,172 @@ extension WakeDrainEngine on WakeOrchestrator {
     );
   }
 
-  Future<bool> _wakeAllowedByCurrentPolicy(WakeJob job) async {
+  /// The current policy's decision on [job], with the cause of a refusal.
+  ///
+  /// Identity policy first: lifecycle, disabled inference and the automatic
+  /// updates preference. A policy that cannot be read fails closed for
+  /// automatic work — an unreadable row must not become a licence to bill —
+  /// and open for an explicit request, which the user is watching.
+  ///
+  /// Project agents then answer to their daily wake budget. With
+  /// [claimBudget] false this only reads the ledger (the pre-dispatch check);
+  /// with it true the read, the verdict and the increment run in one state
+  /// transaction (the pre-executor check), and a run key claims at most once,
+  /// so a superseded drain handing the run back cannot count it twice.
+  Future<WakePolicyDecision> _currentPolicyDecision(
+    WakeJob job, {
+    bool claimBudget = false,
+  }) async {
     late final AgentDomainEntity? entity;
     try {
       entity = await repository.getEntity(job.agentId);
     } catch (error, stackTrace) {
       logError(
-        'failed to load agent policy; allowing wake to proceed',
+        'failed to load agent policy for '
+        '${DomainLogger.sanitizeId(job.agentId)}',
         error: error,
         stackTrace: stackTrace,
       );
-      return true;
+      return job.initiator == WakeInitiator.user
+          ? WakePolicyDecision.allowedUnbudgeted
+          : const WakePolicyDecision(WakeDecisionCause.policyUnreadable);
     }
     if (entity is! AgentIdentityEntity) {
-      return true;
+      return WakePolicyDecision.allowedUnbudgeted;
     }
-    if (entity.kind == AgentKinds.projectAgent) {
-      return projectAgentWakeAllowed(
-        config: entity.config,
-        lifecycle: entity.lifecycle,
-        initiator: job.initiator,
+    final identityCause = _identityPolicyCause(entity, job.initiator);
+    if (identityCause != null) return WakePolicyDecision(identityCause);
+    if (entity.kind != AgentKinds.projectAgent) {
+      return WakePolicyDecision.allowedUnbudgeted;
+    }
+    final maxPerDay = effectiveMaxWakesPerDay(entity.config);
+    if (claimBudget) return _claimWakeBudget(job, maxPerDay);
+    try {
+      final state = await repository.getAgentState(job.agentId);
+      final used = state == null
+          ? 0
+          : wakesUsedOn(state.dailyWakes, wakeBudgetDay(clock.now()));
+      return WakePolicyDecision.fromBudget(
+        evaluateWakeBudget(
+          used: used,
+          maxPerDay: maxPerDay,
+          initiator: job.initiator,
+        ),
+        used: used,
+        max: maxPerDay,
       );
+    } catch (error, stackTrace) {
+      // The claim before the executor decides for real; a failed read here
+      // only defers that decision.
+      logError(
+        'failed to read wake budget for '
+        '${DomainLogger.sanitizeId(job.agentId)}',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return WakePolicyDecision.allowedUnbudgeted;
     }
-    if (entity.kind != AgentKinds.taskAgent) {
-      return entity.lifecycle == AgentLifecycle.active;
+  }
+
+  WakeDecisionCause? _identityPolicyCause(
+    AgentIdentityEntity identity,
+    WakeInitiator initiator,
+  ) {
+    final bool allowed;
+    if (identity.kind == AgentKinds.projectAgent) {
+      allowed = projectAgentWakeAllowed(
+        config: identity.config,
+        lifecycle: identity.lifecycle,
+        initiator: initiator,
+      );
+    } else if (identity.kind == AgentKinds.taskAgent) {
+      allowed = taskAgentWakeAllowed(
+        config: identity.config,
+        lifecycle: identity.lifecycle,
+        initiator: initiator,
+      );
+    } else {
+      allowed = identity.lifecycle == AgentLifecycle.active;
     }
-    return taskAgentWakeAllowed(
-      config: entity.config,
-      lifecycle: entity.lifecycle,
-      initiator: job.initiator,
+    if (allowed) return null;
+    if (identity.lifecycle != AgentLifecycle.active) {
+      return WakeDecisionCause.agentInactive;
+    }
+    if (identity.config.inferenceSetup?.mode ==
+        AgentInferenceSetupMode.disabled) {
+      return WakeDecisionCause.inferenceDisabled;
+    }
+    return WakeDecisionCause.automaticUpdatesOff;
+  }
+
+  /// Claims one wake of [job]'s agent against today's budget of [maxPerDay].
+  ///
+  /// Claim-then-execute: the increment is persisted and synced before the
+  /// executor starts, so a wake that fails or is aborted still counts — it
+  /// may have spent tokens. A claim that cannot be persisted refuses the wake.
+  Future<WakePolicyDecision> _claimWakeBudget(
+    WakeJob job,
+    int maxPerDay,
+  ) async {
+    if (_budgetClaimedRunKeys.contains(job.runKey)) {
+      return WakePolicyDecision.allowedUnbudgeted;
+    }
+    final updater = syncAgentStateUpdater;
+    if (updater == null) {
+      // Worlds without sync (tests, guest previews) enforce nothing durable.
+      return WakePolicyDecision.allowedUnbudgeted;
+    }
+    try {
+      final host = await localHostId?.call() ?? _unknownBudgetHost;
+      final day = wakeBudgetDay(clock.now());
+      var verdict = WakeBudgetVerdict.allowed;
+      var used = 0;
+      await updater(job.agentId, (current) {
+        used = wakesUsedOn(current.dailyWakes, day);
+        verdict = evaluateWakeBudget(
+          used: used,
+          maxPerDay: maxPerDay,
+          initiator: job.initiator,
+        );
+        if (!verdict.isAllowed) return null;
+        return current.copyWith(
+          dailyWakes: recordWake(current.dailyWakes, day: day, host: host),
+        );
+      });
+      if (verdict.isAllowed) {
+        _budgetClaimedRunKeys.add(job.runKey);
+        used++;
+      }
+      return WakePolicyDecision.fromBudget(verdict, used: used, max: maxPerDay);
+    } catch (error, stackTrace) {
+      logError(
+        'failed to claim wake budget for '
+        '${DomainLogger.sanitizeId(job.agentId)}',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return const WakePolicyDecision(WakeDecisionCause.budgetClaimFailed);
+    }
+  }
+
+  void _auditDecision(
+    WakeJob job,
+    WakePolicyDecision decision, {
+    required String stage,
+  }) {
+    _log(
+      formatWakeAudit(
+        stage: stage,
+        agentId: job.agentId,
+        cause: decision.cause,
+        reason: job.reason,
+        initiator: job.initiator,
+        reasonId: job.reasonId,
+        tokenCount: job.triggerTokens.length,
+        budgetUsed: decision.budgetUsed,
+        budgetMax: decision.budgetMax,
+      ),
+      subDomain: 'wakeAudit',
     );
   }
 
@@ -670,6 +807,7 @@ extension WakeDrainEngine on WakeOrchestrator {
     WakeJob job, {
     required String reason,
     required bool emitCompletion,
+    Object? error,
   }) async {
     await _safeUpdateStatus(
       job.runKey,
@@ -678,11 +816,7 @@ extension WakeDrainEngine on WakeOrchestrator {
       errorMessage: reason,
     );
     if (emitCompletion) {
-      _emitRunCompletion(
-        job,
-        WakeRunStatus.aborted,
-        error: StateError(reason),
-      );
+      _emitRunCompletion(job, WakeRunStatus.aborted, error: error);
     }
   }
 
@@ -794,7 +928,11 @@ extension WakeDrainEngine on WakeOrchestrator {
       // gating, run persistence, or the pre-wake hook. Re-read immediately
       // before executor setup so disabling automation cannot launch paid work
       // from a job that has already left the queue.
-      final wakeAllowed = await _wakeAllowedByCurrentPolicy(job);
+      //
+      // The daily budget is claimed here, last: every wake path — subscription,
+      // fallback, restored intent, manual — reaches the executor only through
+      // this point, so this is the one place a bound on paid inference holds.
+      final decision = await _currentPolicyDecision(job, claimBudget: true);
       final finalPolicyCancellation = _takeDrainOwnedCancellation(job);
       if (finalPolicyCancellation != null) {
         await _abortPersistedWake(
@@ -809,20 +947,23 @@ extension WakeDrainEngine on WakeOrchestrator {
         _handOffSupersededJob(generation, job, lease: lease);
         return;
       }
-      if (!wakeAllowed) {
+      if (!decision.allowed) {
         _forgetDrainOwnedJob(job);
-        _log(
-          'pre-execution policy dropped automatic/disabled wake for '
-          '${DomainLogger.sanitizeId(job.agentId)}',
-          subDomain: 'drain',
-        );
+        _auditDecision(job, decision, stage: 'execute');
         await _safeUpdateStatus(
           job.runKey,
           WakeRunStatus.aborted.name,
+          completedAt: clock.now(),
+          errorMessage: 'wake refused: ${decision.cause.name}',
         );
-        _emitRunCompletion(job, WakeRunStatus.aborted);
+        _emitRunCompletion(
+          job,
+          WakeRunStatus.aborted,
+          error: WakeRefusedError(decision.cause),
+        );
         return;
       }
+      _auditDecision(job, decision, stage: 'execute');
 
       _forgetDrainOwnedJob(job);
       final startTime = clock.now();
@@ -882,7 +1023,12 @@ extension WakeDrainEngine on WakeOrchestrator {
             job.triggerTokens,
             threadId,
           ),
-          zoneValues: {agentExecutionZoneKey: true},
+          zoneValues: {
+            agentExecutionZoneKey: true,
+            // Read by the conversation loop before each model turn, so an
+            // abort stops further paid turns instead of only being ignored.
+            agentWakeAbortedZoneKey: () => aborted.isCompleted,
+          },
         );
         _trackExecutor(job, executorFuture);
         unawaited(

@@ -34,6 +34,13 @@ abstract class AgentConfig with _$AgentConfig {
     /// the goal service.
     bool? automaticUpdatesEnabled,
 
+    /// How many wakes this agent may run per calendar day, across all devices.
+    ///
+    /// Synced with the identity so every device enforces the same bound. Null
+    /// reads as `WakeBudget.defaultMaxWakesPerDay`; every value is clamped by
+    /// `effectiveMaxWakesPerDay`, so a peer cannot lift the bound.
+    int? maxWakesPerDay,
+
     /// Improver ritual cadence in days. Re-homed from `AgentSlots` (PR 4 B4):
     /// it is configuration set once at creation, not mutable derived state.
     /// Null falls back to the default window. Reads accept the legacy

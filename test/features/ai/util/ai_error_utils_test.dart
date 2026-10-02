@@ -1059,6 +1059,70 @@ OpenAIClientException({
     });
   });
 
+  group('isAuthenticationFailure', () {
+    // Gemini's streaming error text, which every agent wake sees.
+    String gemini(int status, String body) =>
+        'Exception: Gemini streaming error $status for model gemini-3-flash: '
+        '$body. If rate-limited (429), wait and retry.';
+
+    test('recognises every way a provider refuses a key', () {
+      for (final error in [
+        Exception(gemini(400, '{"message": "API key not valid."}')),
+        Exception(gemini(400, '{"reason": "API_KEY_INVALID"}')),
+        Exception(gemini(403, '{"status": "PERMISSION_DENIED"}')),
+        Exception(gemini(401, '{"status": "UNAUTHENTICATED"}')),
+        Exception('HTTP 401 Unauthorized'),
+        Exception('status code: 403'),
+        // Mistral reports the status in parentheses and drops the body.
+        Exception('MistralInferenceException: Mistral API error (HTTP 401)'),
+        Exception('MistralInferenceException: Mistral API error (HTTP 403)'),
+        Exception('Incorrect API key provided: sk-…'),
+      ]) {
+        expect(
+          AiErrorUtils.isAuthenticationFailure(error),
+          isTrue,
+          reason: '$error',
+        );
+      }
+    });
+
+    test('does not mistake other failures for a refused key', () {
+      for (final error in [
+        Exception(gemini(429, '{"status": "RESOURCE_EXHAUSTED"}')),
+        Exception(gemini(500, '{"status": "INTERNAL"}')),
+        Exception('SocketException: Failed host lookup'),
+        Exception('request 4013 timed out'),
+        Exception('MistralInferenceException: Mistral API error (HTTP 429)'),
+        null,
+      ]) {
+        expect(
+          AiErrorUtils.isAuthenticationFailure(error),
+          isFalse,
+          reason: '$error',
+        );
+      }
+    });
+
+    // Regression: the "(429)" hint in Gemini's error text made a refused key
+    // read as a rate limit, telling the user to wait for something that
+    // would never clear.
+    test('categorizes a refused Gemini key as authentication, not a rate '
+        'limit', () {
+      for (final status in [400, 403]) {
+        final result = AiErrorUtils.categorizeError(
+          Exception(gemini(status, '{"status": "PERMISSION_DENIED"}')),
+        );
+        expect(result.type, InferenceErrorType.authentication);
+      }
+      expect(
+        AiErrorUtils.categorizeError(
+          Exception(gemini(429, '{"status": "RESOURCE_EXHAUSTED"}')),
+        ).type,
+        InferenceErrorType.rateLimit,
+      );
+    });
+  });
+
   group('extractDetailedErrorMessage uncovered branches', () {
     test('reads the "detail" field from a JSON string body', () {
       final message = AiErrorUtils.extractDetailedErrorMessage(

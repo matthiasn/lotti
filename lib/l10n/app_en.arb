@@ -887,6 +887,47 @@
   "agentTokenUsageTotalTokens": "Total",
   "agentTokenUsageWakeCount": "Wakes",
   "agentToolGoalRevisionLabel": "Goal revision proposal",
+  "agentWakeBudgetDecrease": "Lower the daily limit",
+  "@agentWakeBudgetDecrease": {
+    "description": "Tooltip of the stepper button lowering the daily wake limit."
+  },
+  "agentWakeBudgetExhausted": "Limit reached — automatic updates resume tomorrow",
+  "@agentWakeBudgetExhausted": {
+    "description": "Shown when today's wake limit is used up: automatic updates have stopped until tomorrow, a manual update still works."
+  },
+  "agentWakeBudgetHelp": "Automatic updates stop once the limit is reached. Update now still works, up to twice the limit.",
+  "@agentWakeBudgetHelp": {
+    "description": "Tooltip explaining the daily wake limit."
+  },
+  "agentWakeBudgetIncrease": "Raise the daily limit",
+  "@agentWakeBudgetIncrease": {
+    "description": "Tooltip of the stepper button raising the daily wake limit."
+  },
+  "agentWakeBudgetLabel": "Daily wake limit",
+  "@agentWakeBudgetLabel": {
+    "description": "Label of the daily wake limit row in the agent internals band: how many times a day the agent may run, across all devices."
+  },
+  "agentWakeBudgetUsage": "{used} of {max} used today",
+  "@agentWakeBudgetUsage": {
+    "description": "How much of today's wake limit has been used, counted across all devices.",
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "agentWakeBudgetValue": "{count} per day",
+  "@agentWakeBudgetValue": {
+    "description": "The selected daily wake limit, shown inside the stepper.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "aggregationDailyAvg": "Daily average",
   "aggregationDailyMax": "Daily maximum",
   "aggregationDailySum": "Daily sum",

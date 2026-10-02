@@ -74,6 +74,89 @@ void main() {
       });
     });
 
+    test('every routing and dispatch decision leaves one wakeAudit line '
+        'naming its cause', () {
+      fakeAsync((async) {
+        final logger = MockDomainLogger();
+        final audit = <String>[];
+        when(
+          () => logger.log(
+            any(),
+            any(),
+            subDomain: any(named: 'subDomain'),
+            level: any(named: 'level'),
+          ),
+        ).thenAnswer((invocation) {
+          if (invocation.namedArguments[#subDomain] == 'wakeAudit') {
+            audit.add(invocation.positionalArguments[1] as String);
+          }
+        });
+        final auditedRepo = MockAgentRepository();
+        stubWakeRepositoryDefaults(auditedRepo);
+        when(() => auditedRepo.getEntity('project-off')).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: 'project-off',
+            agentId: 'project-off',
+            kind: 'project_agent',
+            config: const AgentConfig(automaticUpdatesEnabled: false),
+          ),
+        );
+        final auditedQueue = WakeQueue();
+        final audited = WakeOrchestrator(
+          repository: auditedRepo,
+          queue: auditedQueue,
+          runner: WakeRunner(),
+          domainLogger: logger,
+        )..wakeExecutor = noOpExecutor;
+        final controller = StreamController<Set<String>>.broadcast();
+        audited
+          ..addSubscription(
+            makeSub(
+              id: 'sub-off',
+              agentId: 'agent-off',
+              matchEntityIds: {'entity-off'},
+            ),
+          )
+          ..disableAutomaticUpdatesRuntime('agent-off')
+          ..start(controller.stream);
+
+        // A watched change for an agent whose automatic updates are off.
+        emitTokens(async, controller, {'entity-off'});
+        // An automatic wake that reaches the drain for an opted-out project.
+        auditedQueue.enqueue(
+          WakeJob(
+            runKey: 'rk-off',
+            agentId: 'project-off',
+            reason: WakeReason.scheduled.name,
+            initiator: WakeInitiator.automation,
+            triggerTokens: const {},
+            createdAt: DateTime(2026, 10, 2),
+          ),
+        );
+        unawaited(audited.processNext());
+        async.flushMicrotasks();
+
+        final offAgent = DomainLogger.sanitizeId('agent-off');
+        final offSource = DomainLogger.sanitizeId('sub-off');
+        final project = DomainLogger.sanitizeId('project-off');
+        final routed =
+            'wake suppressed stage=route agent=$offAgent '
+            'cause=automaticUpdatesOff reason=subscription '
+            'initiator=automation source=$offSource tokens=1';
+        final queued =
+            'wake allowed stage=enqueue agent=$project '
+            'cause=allowed reason=scheduled initiator=automation tokens=0';
+        final dispatched =
+            'wake suppressed stage=dispatch agent=$project '
+            'cause=automaticUpdatesOff reason=scheduled '
+            'initiator=automation tokens=0';
+        expect(audit, [routed, queued, dispatched]);
+
+        unawaited(controller.close());
+        unawaited(audited.stop());
+      });
+    });
+
     group('content gating', () {
       test(
         'skips wake when agent is awaitingContent and task has no content',
@@ -743,9 +826,83 @@ void main() {
         // Verify that outside the executor context, the zone flag is false.
         expect(isAgentExecution, isFalse);
       });
+
+      test('the executor sees its own abort, so it can stop paying for '
+          'further model turns', () {
+        fakeAsync((async) {
+          final gate = Completer<void>();
+          final seen = <bool>[];
+          orchestrator.wakeExecutor = (_, _, _, _) async {
+            seen.add(isAgentWakeAborted);
+            await gate.future;
+            seen.add(isAgentWakeAborted);
+            return null;
+          };
+          queue.enqueue(makeJob());
+          unawaited(orchestrator.processNext());
+          async.flushMicrotasks();
+
+          expect(orchestrator.abortRunningWake('agent-1'), isTrue);
+          async.flushMicrotasks();
+          gate.complete();
+          async.flushMicrotasks();
+
+          expect(seen, [false, true]);
+        });
+      });
+
+      test('isAgentWakeAborted is false outside a wake', () {
+        expect(isAgentWakeAborted, isFalse);
+      });
     });
 
     group('abort and timeout', () {
+      test('haltAgent cancels queued work in every workspace and aborts the '
+          'running wake, leaving other agents alone', () {
+        fakeAsync((async) {
+          final gate = Completer<Map<String, VectorClock>?>();
+          final ran = <String>[];
+          orchestrator.wakeExecutor = (agentId, runKey, _, _) {
+            ran.add(runKey);
+            return gate.future;
+          };
+          final completions = <WakeRunCompletion>[];
+          final sub = orchestrator.runCompletions.listen(completions.add);
+          queue.enqueue(makeJob(runKey: 'running', workspaceKey: 'day:a'));
+          unawaited(orchestrator.processNext());
+          async.flushMicrotasks();
+          queue
+            ..enqueue(makeJob(runKey: 'queued-b', workspaceKey: 'day:b'))
+            ..enqueue(makeJob(runKey: 'other', agentId: 'agent-2'));
+
+          final abortedRun = orchestrator.haltAgent('agent-1');
+          async.flushMicrotasks();
+
+          expect(abortedRun, isTrue);
+          expect(runner.isRunning('agent-1'), isFalse);
+          expect(queue.hasQueuedJobForAgent('agent-1'), isFalse);
+          // The other agent's work is untouched — it dispatches as usual.
+          expect(ran, ['running', 'other']);
+          expect(
+            {
+              for (final completion in completions)
+                completion.runKey: completion.status,
+            },
+            {
+              'running': WakeRunStatus.aborted,
+              'queued-b': WakeRunStatus.aborted,
+            },
+          );
+          gate.complete(null);
+          async.flushMicrotasks();
+          unawaited(sub.cancel());
+        });
+      });
+
+      test('haltAgent on an idle agent reports no running wake', () {
+        expect(orchestrator.haltAgent('agent-idle'), isFalse);
+      });
+
       test(
         'pending-work probe tracks queued, running, and detached execution',
         () {

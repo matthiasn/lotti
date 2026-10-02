@@ -28,6 +28,7 @@ import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
+import 'package:lotti/features/ai/util/ai_error_utils.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
@@ -727,6 +728,9 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
           relationshipEscalationWorkspaceKey(escalationDueDay),
           triggerTokens,
           now,
+          // A refused API key is a setup problem: back off like one rather
+          // than retrying on every scheduler pass until the key changes.
+          configurationFailure: AiErrorUtils.isAuthenticationFailure(error),
         );
       }
       return WakeResult.failed(kind: 'Relationship Phase B', error: error);

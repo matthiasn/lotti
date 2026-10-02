@@ -12,9 +12,11 @@ import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/agent_model_sheet.dart';
+import 'package:lotti/features/agents/ui/agent_wake_budget_row.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/agents/ui/task_agent_identity_region.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
+import 'package:lotti/features/agents/wake/wake_budget.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -201,6 +203,28 @@ class _AgentMaintenanceSectionState
                   },
                 ),
               ),
+              // The daily limit is enforced for project agents, whose
+              // digest-shaped wakes are the ones that ran away; it sits with
+              // the schedule because it is part of "when does it update".
+              if (widget.scope.kind == AgentMaintenanceKind.project &&
+                  identity != null)
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: tokens.spacing.step2,
+                    vertical: tokens.spacing.step2,
+                  ),
+                  child: AgentWakeBudgetRow(
+                    used: state == null
+                        ? 0
+                        : wakesUsedOn(
+                            state.dailyWakes,
+                            wakeBudgetDay(clock.now()),
+                          ),
+                    maxPerDay: effectiveMaxWakesPerDay(identity.config),
+                    onChanged: (value) =>
+                        unawaited(_updateMaxWakesPerDay(value)),
+                  ),
+                ),
               // No declared gap: the automation row's last box (`step7`) and
               // the identity row below it (`step6`) are minimums with smaller
               // ink inside, so air already exists between the two baselines.
@@ -275,6 +299,15 @@ class _AgentMaintenanceSectionState
     } finally {
       if (mounted) setState(() => _automationBusy = false);
     }
+  }
+
+  Future<void> _updateMaxWakesPerDay(int value) async {
+    await _guarded('Failed to update the daily wake limit', () async {
+      await ref
+          .read(agentServiceProvider)
+          .updateMaxWakesPerDay(widget.agentId, value);
+      ref.invalidate(agentIdentityProvider(widget.agentId));
+    });
   }
 
   /// Runs [action], reporting a failure once — in the log for the developer

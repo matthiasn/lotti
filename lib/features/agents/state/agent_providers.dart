@@ -296,6 +296,7 @@ WakeOrchestrator wakeOrchestrator(Ref ref) {
     syncAgentStateUpdater: (agentId, update) =>
         ref.read(agentSyncServiceProvider).updateAgentState(agentId, update),
     onWakeStart: onWakeStart,
+    localHostId: _localHostId,
     // Device-local, like the throttle deadline; guest worlds without a
     // settings database simply do not persist wake intents.
     intentStore: getIt.isRegistered<SettingsDb>()

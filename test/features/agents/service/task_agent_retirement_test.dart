@@ -29,6 +29,7 @@ MockWakeOrchestrator _permissiveOrchestrator() {
   final orchestrator = MockWakeOrchestrator();
   when(() => orchestrator.addSubscription(any())).thenReturn(null);
   when(() => orchestrator.removeSubscriptions(any())).thenReturn(null);
+  when(() => orchestrator.haltAgent(any())).thenReturn(false);
   when(
     () => orchestrator.enableAutomaticUpdatesRuntime(any()),
   ).thenReturn(null);

@@ -1288,6 +1288,33 @@ class AppLocalizationsIt extends AppLocalizations {
       'Proposta di revisione dell\'obiettivo';
 
   @override
+  String get agentWakeBudgetDecrease => 'Abbassa il limite giornaliero';
+
+  @override
+  String get agentWakeBudgetExhausted =>
+      'Limite raggiunto: gli aggiornamenti automatici riprendono domani';
+
+  @override
+  String get agentWakeBudgetHelp =>
+      'Gli aggiornamenti automatici si fermano al raggiungimento del limite. Aggiorna ora funziona ancora, fino al doppio del limite.';
+
+  @override
+  String get agentWakeBudgetIncrease => 'Alza il limite giornaliero';
+
+  @override
+  String get agentWakeBudgetLabel => 'Limite giornaliero di risvegli';
+
+  @override
+  String agentWakeBudgetUsage(int used, int max) {
+    return '$used di $max usati oggi';
+  }
+
+  @override
+  String agentWakeBudgetValue(int count) {
+    return '$count al giorno';
+  }
+
+  @override
   String get aggregationDailyAvg => 'Media giornaliera';
 
   @override

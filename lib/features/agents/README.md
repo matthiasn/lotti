@@ -23,6 +23,10 @@ applied until the user confirms it.
 - **Updates itself when things change**, if the user wants it to. Automatic
   updates are off by default and per-agent; with them off the report is simply
   marked out of date and an *Update now* button appears.
+- **Never runs without bound.** A project agent may wake at most a set number of
+  times a day (ten by default, chosen in its internals and synced), counted
+  across all devices; past it, automatic updates wait for tomorrow and the
+  internals say so. Pausing an agent stops its queued and running work at once.
 - **Withdraws its own stale suggestions.** When a proposal no longer makes sense,
   the agent retracts it rather than leaving it in the list.
 - **Summarizes at other scopes too.** A project agent refreshes its digest after
@@ -71,6 +75,7 @@ and agents read them on demand.
 ```text
 lib/features/agents/
 ├── wake/         # orchestrator, queue, runner, scheduling, durable wake intents,
+│                 # the daily wake budget and its audit trail,
 │                 # cross-device wake coordination
 ├── workflow/     # one per agent kind, plus evolution and improver
 ├── service/      # creation, change-set confirmation, souls, templates

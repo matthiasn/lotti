@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
+import 'package:lotti/features/agents/wake/wake_budget.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
@@ -142,7 +143,7 @@ class _GeneratedAgentLifecycleScenario {
     };
   }
 
-  bool get expectsRemoveSubscriptions {
+  bool get expectsHalt {
     return switch (operation) {
       _GeneratedAgentLifecycleOperation.pause ||
       _GeneratedAgentLifecycleOperation.destroy => hasIdentity,
@@ -245,6 +246,7 @@ void main() {
   setUp(() {
     mockRepository = MockAgentRepository();
     mockOrchestrator = MockWakeOrchestrator();
+    when(() => mockOrchestrator.haltAgent(any())).thenReturn(false);
     mockSyncService = MockAgentSyncService();
     notifiedAgentIds = [];
 
@@ -810,6 +812,66 @@ void main() {
       });
     });
 
+    group('updateMaxWakesPerDay', () {
+      test('writes the limit on the synced identity', () async {
+        final identity = makeTestIdentity(id: 'agent-1', agentId: 'agent-1');
+        when(
+          () => mockRepository.getEntity('agent-1'),
+        ).thenAnswer((_) async => identity);
+
+        final updated = await withClock(
+          Clock.fixed(DateTime(2026, 10, 2, 9)),
+          () => service.updateMaxWakesPerDay('agent-1', 5),
+        );
+
+        expect(updated, isTrue);
+        final written =
+            verify(
+                  () => mockSyncService.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentIdentityEntity;
+        expect(written.config.maxWakesPerDay, 5);
+        expect(written.updatedAt, DateTime(2026, 10, 2, 9));
+      });
+
+      test('clamps a value outside the enforced range', () async {
+        when(() => mockRepository.getEntity('agent-1')).thenAnswer(
+          (_) async => makeTestIdentity(id: 'agent-1', agentId: 'agent-1'),
+        );
+
+        await service.updateMaxWakesPerDay('agent-1', 1000);
+
+        final written =
+            verify(
+                  () => mockSyncService.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentIdentityEntity;
+        expect(written.config.maxWakesPerDay, WakeBudget.maxMaxWakesPerDay);
+      });
+
+      test('does not write when the limit is unchanged', () async {
+        when(() => mockRepository.getEntity('agent-1')).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: 'agent-1',
+            agentId: 'agent-1',
+            config: const AgentConfig(maxWakesPerDay: 5),
+          ),
+        );
+
+        expect(await service.updateMaxWakesPerDay('agent-1', 5), isTrue);
+        verifyNever(() => mockSyncService.upsertEntity(any()));
+      });
+
+      test('reports a missing agent', () async {
+        when(
+          () => mockRepository.getEntity('missing'),
+        ).thenAnswer((_) async => null);
+
+        expect(await service.updateMaxWakesPerDay('missing', 5), isFalse);
+        verifyNever(() => mockSyncService.upsertEntity(any()));
+      });
+    });
+
     group('pauseAgent', () {
       glados.Glados(
         glados.any.agentLifecycleScenario,
@@ -833,8 +895,8 @@ void main() {
           () => generatedSyncService.upsertEntity(any()),
         ).thenAnswer((_) async {});
         when(
-          () => generatedOrchestrator.removeSubscriptions(agentId),
-        ).thenReturn(null);
+          () => generatedOrchestrator.haltAgent(agentId),
+        ).thenReturn(false);
         when(
           () => generatedRepository.hardDeleteAgent(agentId),
         ).thenAnswer(
@@ -873,13 +935,13 @@ void main() {
           verifyNever(() => generatedSyncService.upsertEntity(any()));
         }
 
-        if (scenario.expectsRemoveSubscriptions) {
+        if (scenario.expectsHalt) {
           verify(
-            () => generatedOrchestrator.removeSubscriptions(agentId),
+            () => generatedOrchestrator.haltAgent(agentId),
           ).called(1);
         } else {
           verifyNever(
-            () => generatedOrchestrator.removeSubscriptions(agentId),
+            () => generatedOrchestrator.haltAgent(agentId),
           );
         }
 
@@ -898,8 +960,8 @@ void main() {
         ).thenAnswer((_) async => identity);
         // syncService stubs set up in setUp
         when(
-          () => mockOrchestrator.removeSubscriptions('agent-1'),
-        ).thenReturn(null);
+          () => mockOrchestrator.haltAgent('agent-1'),
+        ).thenReturn(false);
 
         final result = await service.pauseAgent('agent-1');
 
@@ -912,7 +974,7 @@ void main() {
         expect(updated.lifecycle, AgentLifecycle.dormant);
         expect(updated.destroyedAt, isNull);
 
-        verify(() => mockOrchestrator.removeSubscriptions('agent-1')).called(1);
+        verify(() => mockOrchestrator.haltAgent('agent-1')).called(1);
       });
 
       test(
@@ -943,8 +1005,8 @@ void main() {
             () => mockRepository.upsertEntity(any()),
           ).thenAnswer((_) async {});
           when(
-            () => mockOrchestrator.removeSubscriptions('agent-1'),
-          ).thenReturn(null);
+            () => mockOrchestrator.haltAgent('agent-1'),
+          ).thenReturn(false);
 
           expect(await service.pauseAgent('agent-1'), isTrue);
 
@@ -1056,8 +1118,8 @@ void main() {
         ).thenAnswer((_) async => identity);
         // syncService stubs set up in setUp
         when(
-          () => mockOrchestrator.removeSubscriptions('agent-1'),
-        ).thenReturn(null);
+          () => mockOrchestrator.haltAgent('agent-1'),
+        ).thenReturn(false);
 
         final result = await service.destroyAgent('agent-1');
 
@@ -1070,7 +1132,7 @@ void main() {
         expect(updated.lifecycle, AgentLifecycle.destroyed);
         expect(updated.destroyedAt, isNotNull);
 
-        verify(() => mockOrchestrator.removeSubscriptions('agent-1')).called(1);
+        verify(() => mockOrchestrator.haltAgent('agent-1')).called(1);
       });
     });
 
@@ -1091,8 +1153,8 @@ void main() {
           () => mockRepository.getEntity('agent-1'),
         ).thenAnswer((_) async => stored?.call(identity) ?? identity);
         when(
-          () => mockOrchestrator.removeSubscriptions('agent-1'),
-        ).thenReturn(null);
+          () => mockOrchestrator.haltAgent('agent-1'),
+        ).thenReturn(false);
         await withClock(Clock.fixed(now), action);
         return verify(
               () => mockSyncService.upsertEntity(captureAny()),
@@ -1229,8 +1291,8 @@ void main() {
             ),
           ).thenAnswer((_) async => [projectLink]);
           when(
-            () => mockOrchestrator.removeSubscriptions(identity.agentId),
-          ).thenReturn(null);
+            () => mockOrchestrator.haltAgent(identity.agentId),
+          ).thenReturn(false);
           when(
             () => mockRepository.hardDeleteAgent(identity.agentId),
           ).thenAnswer(
@@ -1267,8 +1329,8 @@ void main() {
           () => mockRepository.getEntity('agent-1'),
         ).thenAnswer((_) async => null);
         when(
-          () => mockOrchestrator.removeSubscriptions('agent-1'),
-        ).thenReturn(null);
+          () => mockOrchestrator.haltAgent('agent-1'),
+        ).thenReturn(false);
         when(() => mockRepository.hardDeleteAgent('agent-1')).thenAnswer(
           (_) async => (
             entityIds: <String>['e-1', 'e-2'],
@@ -1301,8 +1363,8 @@ void main() {
           ).thenAnswer((_) async => identity);
           // syncService stubs set up in setUp
           when(
-            () => mockOrchestrator.removeSubscriptions('agent-1'),
-          ).thenReturn(null);
+            () => mockOrchestrator.haltAgent('agent-1'),
+          ).thenReturn(false);
           when(
             () => mockRepository.hardDeleteAgent('agent-1'),
           ).thenAnswer(
@@ -1322,7 +1384,7 @@ void main() {
 
           // subscriptions removed via destroyAgent
           verify(
-            () => mockOrchestrator.removeSubscriptions('agent-1'),
+            () => mockOrchestrator.haltAgent('agent-1'),
           ).called(1);
 
           // hard-delete called after destroy
@@ -1342,8 +1404,8 @@ void main() {
           () => mockRepository.getEntity('agent-2'),
         ).thenAnswer((_) async => destroyedIdentity);
         when(
-          () => mockOrchestrator.removeSubscriptions('agent-2'),
-        ).thenReturn(null);
+          () => mockOrchestrator.haltAgent('agent-2'),
+        ).thenReturn(false);
         when(
           () => mockRepository.hardDeleteAgent('agent-2'),
         ).thenAnswer(
@@ -1356,7 +1418,7 @@ void main() {
         verifyNever(() => mockSyncService.upsertEntity(any()));
 
         // subscriptions still removed
-        verify(() => mockOrchestrator.removeSubscriptions('agent-2')).called(1);
+        verify(() => mockOrchestrator.haltAgent('agent-2')).called(1);
 
         // hard-delete still called
         verify(() => mockRepository.hardDeleteAgent('agent-2')).called(1);
@@ -1367,8 +1429,8 @@ void main() {
           () => mockRepository.getEntity('non-existent'),
         ).thenAnswer((_) async => null);
         when(
-          () => mockOrchestrator.removeSubscriptions('non-existent'),
-        ).thenReturn(null);
+          () => mockOrchestrator.haltAgent('non-existent'),
+        ).thenReturn(false);
         when(
           () => mockRepository.hardDeleteAgent('non-existent'),
         ).thenAnswer(
@@ -1382,7 +1444,7 @@ void main() {
 
         // subscriptions removed even when agent not found
         verify(
-          () => mockOrchestrator.removeSubscriptions('non-existent'),
+          () => mockOrchestrator.haltAgent('non-existent'),
         ).called(1);
 
         // hard-delete still called

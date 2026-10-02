@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/services/audio_transcription_service.dart'
     show AttributedTranscriptionException;
+import 'package:lotti/features/ai/util/ai_error_utils.dart';
 import 'package:lotti/features/daily_os_next/services/day_agent_job_executor.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
@@ -352,6 +353,16 @@ DayProcessingFailure classifyDayProcessingFailure(Object error) {
         retryAfter: null,
       );
     }
+  }
+  // A refused key reaches here as a plain exception: Gemini's audio path
+  // reports its HTTP failures as text, not as a TranscriptionException with
+  // a status. Read as a timeout it was retried every few minutes for as long
+  // as the key stayed revoked; only Settings can fix it.
+  if (AiErrorUtils.isAuthenticationFailure(error)) {
+    return (
+      failureClass: DayProcessingFailureClass.setupRequired,
+      retryAfter: null,
+    );
   }
   // Model/provider configuration gaps surface as plain exceptions from
   // model resolution, before any HTTP status exists — waiting for the
