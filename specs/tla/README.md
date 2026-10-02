@@ -3767,5 +3767,9 @@ Left out, or residual:
   `NoDuplicateUnlessWriteDropped` allows, and the budget bounds it.
 - **"Update now" is not deduplicated** across devices: the user asked on
   each, and each counts.
+- **One day.** The model has one budget day, so a slot the budget refuses is
+  consumed with no run. The code also re-arms it for the next budget day
+  (`ProjectUpdateCadence.rearmAfterRefusal`), so the report is not left
+  stale with nothing pending once the budget resets.
 - **Clocks.** Slot starts are wall-clock instants on the 06:00 grid; devices
   in different zones arm different grids. The model has one clock.

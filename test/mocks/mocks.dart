@@ -1330,6 +1330,14 @@ class MockWakeOrchestrator extends Mock implements WakeOrchestrator {
       super.noSuchMethod(Invocation.method(#haltAgent, [agentId])) as bool? ??
       false;
 
+  /// The runtime listens to this at start-up. Unstubbed it is empty, so every
+  /// suite that initialises the runtime need not stub it; `when` still works.
+  @override
+  Stream<WakeRunCompletion> get runCompletions =>
+      super.noSuchMethod(Invocation.getter(#runCompletions))
+          as Stream<WakeRunCompletion>? ??
+      const Stream.empty();
+
   @override
   void markScheduledWindow(String runKey, String window) =>
       markedWindows.add((runKey, window));

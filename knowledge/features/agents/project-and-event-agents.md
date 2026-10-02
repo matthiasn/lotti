@@ -270,8 +270,14 @@ stateDiagram-v2
   [daily wake budget](wake-orchestration.md#the-daily-wake-budget).
 - **A slot over a fresh report runs no inference.** An "Update now" or a
   peer's run that freshened the report first read everything the slot was
-  armed for; the workflow returns success without capturing input or calling
-  the model, and the manager consumes the slot.
+  armed for. The drain refuses the slot's wake before the budget is claimed
+  (`reportAlreadyFresh`), so it costs nothing of the day's allowance; the
+  workflow repeats the check for a report freshened between the claim and
+  its read, returning success without capturing input or calling the model.
+- **A refused slot is re-armed.** The manager consumes a slot before its wake
+  reaches the drain, so a refusal — the day's budget used up, a claim that
+  could not be written — re-arms (`rearmAfterRefusal`): for the next budget
+  day after a budget refusal, the next slot otherwise.
 - **The end of a run.** Success stamps `reportFreshAt` with the run's start
   (when the run wrote a report) and, for a slot update, `lastDailyWakeAt`;
   a change that landed during the run is newer, keeps the report stale and

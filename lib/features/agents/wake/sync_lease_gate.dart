@@ -14,6 +14,11 @@ import 'dart:async';
 ///   connection losses; a claim made in an earlier epoch is re-made, which
 ///   restarts its settle where peers can see it.
 ///
+/// The gate does not assume a connection it has not seen: `currentlyOnline`
+/// seeds it before the first [ready], because a connectivity stream need not
+/// replay the state it started in, and a device started offline would
+/// otherwise claim where no peer can see it.
+///
 /// With sync off there are no peers to race, so the gate is always open and
 /// the epoch never moves.
 class SyncLeaseGate {
@@ -22,12 +27,15 @@ class SyncLeaseGate {
     required this._connected,
     required Stream<bool> connectivityChanges,
     required this._waitForInboxDrained,
+    Future<bool> Function()? currentlyOnline,
     this.drainTimeout = const Duration(minutes: 2),
   }) {
     _subscription = connectivityChanges.listen((online) {
+      _reported = true;
       if (_online && !online) _epoch++;
       _online = online;
     });
+    if (currentlyOnline != null) _seeded = _seed(currentlyOnline);
   }
 
   final Future<bool> Function() _syncEnabled;
@@ -41,6 +49,20 @@ class SyncLeaseGate {
   var _online = true;
   var _epoch = 0;
 
+  /// Whether the stream has reported since start; a report outranks the
+  /// seed, which may have been read before it.
+  var _reported = false;
+  Future<void>? _seeded;
+
+  Future<void> _seed(Future<bool> Function() currentlyOnline) async {
+    try {
+      final online = await currentlyOnline();
+      if (!_reported) _online = online;
+    } on Object {
+      // A probe that fails says nothing; the stream still decides.
+    }
+  }
+
   /// How many times the connection has been lost since start.
   int get epoch => _epoch;
 
@@ -48,6 +70,7 @@ class SyncLeaseGate {
   /// device is connected and its inbox drained within [drainTimeout].
   Future<bool> ready() async {
     if (!await _syncEnabled()) return true;
+    await _seeded;
     if (!_online || !_connected()) return false;
     try {
       await _waitForInboxDrained(drainTimeout);

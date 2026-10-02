@@ -55,9 +55,12 @@ while a wake per edit per device costs a model call each.
    explicit and run at once; the daily budget still bounds both.
 
 5. **A slot over a fresh report runs nothing.** If "Update now" or a peer got
-   there first, the workflow returns without inference and the slot is
-   consumed. A run stamps the report fresh as of its start; a change during
-   the run, or a failure, leaves it stale and arms the next slot.
+   there first, the drain refuses the slot's wake before the budget is
+   claimed, so it costs nothing. A run stamps the report fresh as of its
+   start; a change during the run, or a failure, leaves it stale and arms the
+   next slot. A slot whose wake the drain refuses is re-armed — for the next
+   budget day when the budget refused it — since the manager consumed it
+   before the drain decided.
 
 6. **The user sees the state, not the machinery.** The project card reads
    "Out of date" with "Update now · 34:59" counting down to the next slot;

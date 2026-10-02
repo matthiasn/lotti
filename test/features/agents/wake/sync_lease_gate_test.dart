@@ -9,6 +9,7 @@ class _GateBench {
   _GateBench({
     this.syncEnabled = true,
     this.connected = true,
+    Future<bool> Function()? currentlyOnline,
   }) {
     gate = SyncLeaseGate(
       syncEnabled: () async => syncEnabled,
@@ -18,6 +19,7 @@ class _GateBench {
         drainTimeouts.add(timeout);
         await onDrain?.call();
       },
+      currentlyOnline: currentlyOnline,
       drainTimeout: const Duration(seconds: 30),
     );
   }
@@ -115,6 +117,44 @@ void main() {
       addTearDown(bench.dispose);
 
       expect(await bench.gate.ready(), isFalse);
+    });
+  });
+
+  group('SyncLeaseGate seeding', () {
+    test('a device that starts offline stays closed until a report says '
+        'otherwise', () async {
+      // A connectivity stream need not replay the state it started in.
+      final bench = _GateBench(currentlyOnline: () async => false);
+      addTearDown(bench.dispose);
+
+      expect(await bench.gate.ready(), isFalse);
+      expect(bench.drainTimeouts, isEmpty);
+
+      await bench.report(online: true);
+      expect(await bench.gate.ready(), isTrue);
+    });
+
+    test(
+      'a stream report that arrives before the probe answers wins',
+      () async {
+        final probe = Completer<bool>();
+        final bench = _GateBench(currentlyOnline: () => probe.future);
+        addTearDown(bench.dispose);
+
+        await bench.report(online: true);
+        probe.complete(false);
+
+        expect(await bench.gate.ready(), isTrue);
+      },
+    );
+
+    test('a failing probe leaves the stream to decide', () async {
+      final bench = _GateBench(
+        currentlyOnline: () async => throw StateError('no plugin'),
+      );
+      addTearDown(bench.dispose);
+
+      expect(await bench.gate.ready(), isTrue);
     });
   });
 

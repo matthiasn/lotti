@@ -1944,8 +1944,13 @@ void main() {
         final device = AgentTestDevice(host);
         addTearDown(device.close);
         await device.repository.upsertEntity(identity);
+        // Stale, as every slot is armed over a stale report; a run's
+        // executor here writes no freshness, so it stays stale.
         await device.repository.upsertEntity(
-          makeTestState(id: 'state-$agentId', agentId: agentId),
+          makeTestState(
+            id: 'state-$agentId',
+            agentId: agentId,
+          ).copyWith(reportStaleAt: DateTime(2024, 3, 15)),
         );
         return device;
       }
@@ -1980,6 +1985,16 @@ void main() {
         final completion = runtime.runCompletions.firstWhere(
           (event) => event.runKey == runKey,
         );
+        if (initiator == WakeInitiator.automation) {
+          // A slot is armed only over a stale report, and a completed run
+          // marks it fresh: re-mark it stale, as the next change would.
+          final state = (await runtime.repository.getAgentState(agentId))!;
+          await runtime.repository.upsertEntity(
+            state.copyWith(
+              reportStaleAt: state.reportFreshAt ?? state.reportStaleAt,
+            ),
+          );
+        }
         runtime.queue.enqueue(
           WakeJob(
             runKey: runKey,
@@ -2077,6 +2092,61 @@ void main() {
             WakeDecisionCause.hardCeilingReached,
           );
           expect(await usedToday(device), 2);
+        });
+      });
+
+      test('a slot over a fresh report is refused before the budget is '
+          'claimed; Update now still runs', () async {
+        await withClock(Clock.fixed(today), () async {
+          final device = await seededDevice(
+            'host-a',
+            budgetIdentity(maxWakesPerDay: 1),
+          );
+          // "Update now" or a peer's run freshened the report after the slot
+          // was armed.
+          final state = (await device.repository.getAgentState(agentId))!;
+          await device.repository.upsertEntity(
+            state.copyWith(
+              reportFreshAt: state.reportStaleAt!.add(
+                const Duration(minutes: 1),
+              ),
+            ),
+          );
+          final runtime = budgetRuntime(device);
+          final completion = runtime.orchestrator.runCompletions.firstWhere(
+            (event) => event.runKey == 'fresh-slot',
+          );
+          runtime.orchestrator.queue.enqueue(
+            WakeJob(
+              runKey: 'fresh-slot',
+              agentId: agentId,
+              reason: WakeReason.scheduled.name,
+              initiator: WakeInitiator.automation,
+              triggerTokens: const {ProjectUpdateSlots.triggerToken},
+              createdAt: today,
+            ),
+          );
+          await runtime.orchestrator.processNext();
+
+          expect(
+            (await completion).error,
+            isA<WakeRefusedError>().having(
+              (error) => error.cause,
+              'cause',
+              WakeDecisionCause.reportAlreadyFresh,
+            ),
+          );
+          expect(runtime.ran, isEmpty);
+          // It cost nothing of the day's allowance.
+          expect(await usedToday(device), 0);
+
+          final manual = await wake(
+            runtime.orchestrator,
+            'update-now',
+            initiator: WakeInitiator.user,
+          );
+          expect(manual.status, WakeRunStatus.completed);
+          expect(await usedToday(device), 1);
         });
       });
 

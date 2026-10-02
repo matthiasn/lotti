@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/project_update_cadence.dart';
 import 'package:lotti/features/agents/wake/project_update_slots.dart';
+import 'package:lotti/features/agents/wake/wake_audit.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../agent_test_device.dart';
@@ -158,6 +159,72 @@ void main() {
 
         expect(onA.id, onB!.id);
         expect(await b.cadence.pendingSlots(agentId), hasLength(1));
+      });
+    });
+  });
+
+  group('rearmAfterRefusal', () {
+    test(
+      'a slot refused for the budget waits for the next budget day',
+      () async {
+        await withClock(Clock.fixed(now), () async {
+          for (final cause in [
+            WakeDecisionCause.budgetExhausted,
+            WakeDecisionCause.hardCeilingReached,
+          ]) {
+            final setup = await setUpDevice(identity(), stale);
+
+            final armed = await setup.cadence.rearmAfterRefusal(agentId, cause);
+
+            // Hourly slots start on the hour, so midnight itself is a slot.
+            expect(
+              armed!.scheduledAt,
+              DateTime(2026, 10, 3).toUtc(),
+              reason: '$cause',
+            );
+          }
+        });
+      },
+    );
+
+    test("a daily agent refused for the budget gets the next day's 06:00 "
+        'slot', () async {
+      await withClock(Clock.fixed(now), () async {
+        final setup = await setUpDevice(
+          identity(intervalMinutes: 1440),
+          stale,
+        );
+
+        final armed = await setup.cadence.rearmAfterRefusal(
+          agentId,
+          WakeDecisionCause.budgetExhausted,
+        );
+
+        expect(armed!.scheduledAt, DateTime(2026, 10, 3, 6).toUtc());
+      });
+    });
+
+    test('any other refusal takes the next slot, which the policy may still '
+        'decline', () async {
+      await withClock(Clock.fixed(now), () async {
+        final setup = await setUpDevice(identity(), stale);
+        final armed = await setup.cadence.rearmAfterRefusal(
+          agentId,
+          WakeDecisionCause.budgetClaimFailed,
+        );
+        expect(armed!.scheduledAt, DateTime(2026, 10, 2, 11).toUtc());
+
+        final paused = await setUpDevice(
+          identity(lifecycle: AgentLifecycle.dormant),
+          stale,
+        );
+        expect(
+          await paused.cadence.rearmAfterRefusal(
+            agentId,
+            WakeDecisionCause.agentInactive,
+          ),
+          isNull,
+        );
       });
     });
   });

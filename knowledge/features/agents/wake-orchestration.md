@@ -398,7 +398,9 @@ flowchart TD
   Kind -->|"no"| Run["run"]
   Kind -->|"yes"| Slot{"automatic and not an update slot?"}
   Slot -->|"yes"| NotSlot["refuse: notAnUpdateSlot"]
-  Slot -->|"no"| Used{"used today"}
+  Slot -->|"no"| Fresh{"automatic, report already fresh?"}
+  Fresh -->|"yes"| AlreadyFresh["refuse: reportAlreadyFresh"]
+  Fresh -->|"no"| Used{"used today"}
   Used -->|"automatic, used ≥ limit"| Exhausted["refuse: budgetExhausted"]
   Used -->|"any, used ≥ 2 × limit"| Ceiling["refuse: hardCeilingReached"]
   Used -->|"below"| Claim["claim: increment own host, sync"]
@@ -652,10 +654,19 @@ stateDiagram-v2
 ```
 
 The gate is `null` where sync is not wired; with sync disabled it is always
-open and its epoch never moves. A closed gate leaves the slot pending and
+open and its epoch never moves. It is seeded from
+`Connectivity.checkConnectivity()` before its first decision — a
+connectivity stream need not replay the state it started in, and a device
+that started offline must not claim — and a stream report outranks the seed. A closed gate leaves the slot pending and
 retries after `syncGateRetry` (one minute). The dispatched wake carries
 `ProjectUpdateSlots.triggerToken`; the drain refuses any automatic project
-wake without it (`notAnUpdateSlot`), and the budget still applies.
+wake without it (`notAnUpdateSlot`), refuses one over a report that is
+already fresh before the budget is read or claimed (`reportAlreadyFresh`), and
+the budget still applies. The manager consumes a slot before its wake reaches
+the drain, so `wireProjectSlotRefusals` re-arms after any refusal of a slot
+wake (`ProjectUpdateCadence.rearmAfterRefusal`): a budget refusal arms the
+first slot of the next budget day, any other the next slot, which the cadence
+declines when the policy or a fresh report says none is owed.
 
 # One device per state: cross-device coordination
 

@@ -35,6 +35,7 @@ import 'package:lotti/features/agents/wake/agent_wake_coordinator.dart';
 import 'package:lotti/features/agents/wake/project_update_slots.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
 import 'package:lotti/features/agents/wake/sync_lease_gate.dart';
+import 'package:lotti/features/agents/wake/wake_audit.dart';
 import 'package:lotti/features/agents/wake/wake_intent_store.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
@@ -423,6 +424,16 @@ Future<void> Function(String agentId) armProjectUpdate(Ref ref) =>
       if (armed != null) _announceProjectSlot(ref, agentId);
     };
 
+/// Re-arms a project agent whose slot's wake the drain refused
+/// (`ProjectUpdateCadence.rearmAfterRefusal`).
+Future<void> Function(String agentId, WakeDecisionCause cause)
+rearmRefusedProjectSlot(Ref ref) => (agentId, cause) async {
+  final armed = await ref
+      .read(projectUpdateCadenceProvider)
+      .rearmAfterRefusal(agentId, cause);
+  if (armed != null) _announceProjectSlot(ref, agentId);
+};
+
 /// Re-plans a project agent's pending update slot after its interval
 /// changed (`ProjectUpdateCadence.replan`), for the interval control.
 final replanProjectUpdateProvider =
@@ -462,6 +473,8 @@ final syncLeaseGateProvider = Provider<SyncLeaseGate?>(
       connectivityChanges: Connectivity().onConnectivityChanged
           .map(reachesSyncServer)
           .handleError((Object _) {}),
+      currentlyOnline: () async =>
+          reachesSyncServer(await Connectivity().checkConnectivity()),
       waitForInboxDrained: (timeout) => matrixService.queueCoordinator.queue
           .waitForDrainAtMostTo(0, timeout: timeout),
     );
@@ -719,6 +732,10 @@ Future<void> agentInitialization(Ref ref) async {
     retireIfSuperseded: (agentId) =>
         taskAgentService.retirement.retireIfSuperseded(agentId),
   );
+
+  // 2.25. A project slot whose wake the drain refused was already consumed;
+  //       re-arm so a stale report is not left with no slot pending.
+  wireProjectSlotRefusals(ref, orchestrator);
 
   // 2.5. Coordinate wakes with peer devices: a peer's claim or completion
   //      re-drains the jobs it held back.

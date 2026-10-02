@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/project_update_slots.dart';
+import 'package:lotti/features/agents/wake/wake_audit.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// When a project agent updates its report on its own: at most once per
@@ -43,8 +44,8 @@ class ProjectUpdateCadence {
   /// Arms the next update slot of [agentId] when its report is stale, its
   /// automatic updates are on and no slot is pending. Returns the pending
   /// slot — the one armed, or the one already there — or null when none is
-  /// owed.
-  Future<ScheduledWakeEntity?> arm(String agentId) =>
+  /// owed. With [notBefore], the slot starts no earlier than it.
+  Future<ScheduledWakeEntity?> arm(String agentId, {DateTime? notBefore}) =>
       _syncService.runInTransaction(() async {
         final identity = await _repository.getEntity(agentId);
         if (identity is! AgentIdentityEntity ||
@@ -62,7 +63,12 @@ class ProjectUpdateCadence {
 
         final now = clock.now();
         final interval = effectiveUpdateIntervalMinutes(identity.config);
-        var slot = nextProjectUpdateSlot(now, intervalMinutes: interval);
+        // A slot starting exactly at [notBefore] is allowed: the grid's
+        // "next slot" is strictly after the instant it is given.
+        final from = notBefore != null && notBefore.isAfter(now)
+            ? notBefore.subtract(const Duration(microseconds: 1))
+            : now;
+        var slot = nextProjectUpdateSlot(from, intervalMinutes: interval);
         for (var i = 0; i < _maxSlotsAhead; i++) {
           final existing = await _repository.getEntity(
             projectUpdateSlotRecordId(agentId, slot),
@@ -92,6 +98,32 @@ class ProjectUpdateCadence {
         final stored = await _repository.getEntity(record.id);
         return stored is ScheduledWakeEntity ? stored : record;
       });
+
+  /// Re-arms after the drain refused a slot's wake. The scheduled-wake
+  /// manager consumed the slot before the refusal, so without this a stale
+  /// report would be left with no slot pending until something else arms
+  /// one. A slot refused for the day's budget waits for the next budget day;
+  /// any other refusal takes the next slot, and [arm] declines it when the
+  /// refusal was the policy's (paused, automation off) or the report is
+  /// already fresh.
+  Future<ScheduledWakeEntity?> rearmAfterRefusal(
+    String agentId,
+    WakeDecisionCause cause,
+  ) {
+    final now = clock.now();
+    return arm(
+      agentId,
+      notBefore: switch (cause) {
+        WakeDecisionCause.budgetExhausted ||
+        WakeDecisionCause.hardCeilingReached => DateTime(
+          now.year,
+          now.month,
+          now.day + 1,
+        ),
+        _ => null,
+      },
+    );
+  }
 
   /// Re-plans [agentId]'s pending slot after its update interval changed: a
   /// slot off the new grid's next start is consumed, and the next slot on the
