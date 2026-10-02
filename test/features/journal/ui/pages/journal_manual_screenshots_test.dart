@@ -53,6 +53,7 @@ import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/ratings/ui/session_rating_modal.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/speech_modal.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/transcripts_list_item.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -73,6 +74,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../helpers/manual_demo_world.dart';
+import '../../../../helpers/stub_audio_recorder_controller.dart';
 import '../../../../helpers/target_platform.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
@@ -621,6 +623,11 @@ void main() {
   });
 
   List<Override> overrides() => [
+    // The entry page's action bar watches the recorder controller; the real
+    // one boots the platform recorder, which a widget test cannot host.
+    audioRecorderControllerProvider.overrideWith(
+      StubAudioRecorderController.new,
+    ),
     journalPageControllerProvider(false).overrideWith(
       () => _ManualJournalPageController(pageState),
     ),

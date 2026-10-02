@@ -25,7 +25,8 @@ responses and ratings are all journal entries with different shapes.
   being timed.
 - **Captures quickly.** Create from the button, paste an image from the
   clipboard, drag a file onto an entry, take a screenshot, or start a recording —
-  all from the same place.
+  all from the same place. An entry's own page ends in a bar that adds a task
+  linked to it, records a voice note, or opens the full Add menu.
 - **Keeps pasted reports formatted.** Markdown copied as plain text becomes
   headings, emphasis, code, quotes, rules and lists in the rich-text editor;
   ordinary text remains ordinary text.

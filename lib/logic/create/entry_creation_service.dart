@@ -1,12 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_modal.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/create/create_entry.dart' as create_entry;
 import 'package:lotti/logic/image_import.dart' as image_import;
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -57,6 +61,32 @@ class EntryCreationService {
       }
     }
     return timerItem;
+  }
+
+  /// Creates a task linked to [linkedId] and categorized by [categoryId],
+  /// hands it the category's default agent, and opens it — the one journey
+  /// the Add sheet's task row and the entry action bar share. Returns the
+  /// task, or null when creation failed, in which case nothing is opened.
+  ///
+  /// The agent assignment is fire-and-forget (it logs its own failures) so
+  /// the task page opens without waiting on it. Reading the agent service
+  /// through this service's own [Ref] rather than a widget's lets a caller
+  /// that the navigation unmounts — the entry action bar — await this safely.
+  Future<Task?> createTaskAndOpen({
+    String? linkedId,
+    String? categoryId,
+  }) async {
+    final task = await create_entry.createTask(
+      linkedId: linkedId,
+      categoryId: categoryId,
+    );
+    if (task == null) return null;
+    final agentService = _ref?.read(taskAgentServiceProvider);
+    if (agentService != null) {
+      unawaited(create_entry.autoAssignCategoryAgentWith(agentService, task));
+    }
+    beamToNamed('/tasks/${task.meta.id}');
+    return task;
   }
 
   /// Shows the audio recording modal.

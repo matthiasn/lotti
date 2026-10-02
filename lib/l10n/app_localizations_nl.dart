@@ -72,7 +72,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addHabitDateLabel => 'Voltooid op';
 
   @override
-  String get addLinkedEntryLabel => 'Add linked entry';
+  String get addLinkedEntryLabel => 'Gekoppeld item toevoegen';
 
   @override
   String get addMeasurementCommentLabel => 'Opmerking';
@@ -6362,6 +6362,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get enterCategoryName => 'Categorienaam invoeren';
+
+  @override
+  String get entryActionBarAddLinkedTask =>
+      'Taak toevoegen, gekoppeld aan dit item';
 
   @override
   String get entryActions => 'Acties';

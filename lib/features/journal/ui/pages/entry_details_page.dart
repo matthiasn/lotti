@@ -13,7 +13,7 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/journal_focus_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/mixins/highlight_scroll_mixin.dart';
-import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_button.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_action_bar.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked_from.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/journal_app_bar.dart';
@@ -36,8 +36,11 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// Composes the scrollable detail stack: the primary [EntryDetailsWidget],
 /// the entry's outgoing links via [LinkedEntriesWithTimer], incoming links via
-/// [LinkedFromEntriesWidget], and checklist/task back-references. Acts as a
-/// [MediaDropTarget] so dropped media is imported and linked to this entry.
+/// [LinkedFromEntriesWidget], and checklist/task back-references. A sticky
+/// [EntryActionBar] sits in the `bottomNavigationBar` slot; `extendBody` lets
+/// its glass blur read the scrolling body and a trailing [SliverPadding]
+/// reserves the bar's height so the last card can scroll clear of it. Acts as
+/// a [MediaDropTarget] so dropped media is imported and linked to this entry.
 ///
 /// Uses [HighlightScrollMixin] to scroll-to and briefly highlight a target
 /// entry: it listens to [journalFocusControllerProvider] for focus intents
@@ -169,6 +172,116 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
       return const EmptyScaffoldWithTitle('');
     }
 
+    final scaffold = Scaffold(
+      // One unified canvas across the whole logbook: the detail page
+      // shares the list column's page surface, and the entry body sits on
+      // it as a card — the same card-on-canvas recipe as the list rows.
+      backgroundColor: dsPageSurface(context),
+      // extendBody so the BackdropFilter inside [EntryActionBar]'s glass
+      // strip has body content underneath to actually blur. The body's
+      // bottom inset is reserved automatically for the bottomNavigationBar
+      // slot, so the slivers need no magic-number bottom padding.
+      extendBody: true,
+      // Always, including in the desktop split pane: this bar creates
+      // entries *linked to this one*, which the list pane's button cannot —
+      // that one creates a standalone entry. The mobile shell unmounts its
+      // launcher on `/journal/<uuid>` (see isLogbookEntryDetailRoute), so the
+      // bar docks flush with the home indicator; it pads its own bottom
+      // safe inset.
+      bottomNavigationBar: EntryActionBar(
+        entry: item,
+        topSlot: AiRunningDecoderBars(
+          entryId: widget.itemId,
+          isInteractive: true,
+          responseTypes: const {
+            AiResponseType.imageAnalysis,
+            AiResponseType.audioTranscription,
+            AiResponseType.audioSummary,
+            AiResponseType.promptGeneration,
+          },
+        ),
+      ),
+      // Builder so MediaQuery.paddingOf reads the Scaffold-modified value:
+      // with extendBody: true, Scaffold adds the bottomNavigationBar slot
+      // height (action bar + inline AI activity slot when running) to
+      // padding.bottom on the body's MediaQuery. The trailing SliverPadding
+      // consumes that inset so the last card can scroll fully above the bar
+      // instead of being hidden behind it.
+      body: Builder(
+        builder: (context) => CustomScrollView(
+          scrollCacheExtent: const ScrollCacheExtent.pixels(4000),
+          controller: _scrollController,
+          slivers: [
+            JournalSliverAppBar(
+              entryId: widget.itemId,
+              showBackButton: widget.showBackButton,
+            ),
+            SliverToBoxAdapter(
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  // The same reading measure as the tasks detail pane:
+                  // in a wide split the text must not run the full pane.
+                  constraints: const BoxConstraints(
+                    maxWidth: kDetailContentMaxWidth,
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      vertical: tokens.spacing.step3,
+                    ),
+                    child:
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: <Widget>[
+                            EntryDetailsWidget(
+                              itemId: widget.itemId,
+                              showTaskDetails: true,
+                              showAiEntry: true,
+                              linkedFrom: linkedFrom,
+                              link: sourceLink,
+                            ),
+                            // Linked rows carry only the tight step2
+                            // embedded card inset; pad the sections up
+                            // to the standalone card's step5 rail so
+                            // every card on the page shares one exact
+                            // left/right edge.
+                            Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: tokens.spacing.step4,
+                              ),
+                              child: Column(
+                                children: <Widget>[
+                                  LinkedEntriesWithTimer(
+                                    item: item,
+                                    entryKeyBuilder: _getEntryKey,
+                                    highlightedEntryId: highlightedEntryId,
+                                  ),
+                                  LinkedFromEntriesWidget(item),
+                                  if (item is ChecklistItem)
+                                    LinkedFromChecklistWidget(item),
+                                  if (item is Checklist)
+                                    LinkedFromTaskWidget(item),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ).animate().fadeIn(
+                          duration: MotionDurations.short2,
+                        ),
+                  ),
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.paddingOf(context).bottom,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
     return AppCommandScope(
       handlers: {
         AppCommandId.save: AppCommandHandler(
@@ -182,109 +295,12 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
           categoryId: item.meta.categoryId,
           analysisTrigger: ref.read(automaticImageAnalysisTriggerProvider),
         ),
-        child: Scaffold(
-          // One unified canvas across the whole logbook: the detail page
-          // shares the list column's page surface, and the entry body sits on
-          // it as a card — the same card-on-canvas recipe as the list rows.
-          backgroundColor: dsPageSurface(context),
-          // Always, including in the desktop split pane: this FAB creates an
-          // entry *linked to this one*, which the list pane's FAB cannot —
-          // that one creates a standalone entry. Dropping it as a duplicate
-          // left desktop with no way to create a linked entry at all.
-          floatingActionButton: FloatingAddActionButton(
-            linkedFromId: item.meta.id,
-            categoryId: item.meta.categoryId,
-          ),
-          body: Stack(
-            children: [
-              const CorrectionCaptureToastListener(
-                child: SizedBox.shrink(),
-              ),
-              CustomScrollView(
-                scrollCacheExtent: const ScrollCacheExtent.pixels(4000),
-                controller: _scrollController,
-                slivers: [
-                  JournalSliverAppBar(
-                    entryId: widget.itemId,
-                    showBackButton: widget.showBackButton,
-                  ),
-                  SliverToBoxAdapter(
-                    child: Align(
-                      alignment: Alignment.topCenter,
-                      child: ConstrainedBox(
-                        // The same reading measure as the tasks detail pane:
-                        // in a wide split the text must not run the full pane.
-                        constraints: const BoxConstraints(
-                          maxWidth: kDetailContentMaxWidth,
-                        ),
-                        child: Padding(
-                          padding: EdgeInsets.only(
-                            top: tokens.spacing.step3,
-                            // Room to scroll the last section clear of the FAB
-                            // and the AI running strip pinned to the bottom.
-                            bottom: tokens.spacing.step11 * 2,
-                          ),
-                          child:
-                              Column(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: <Widget>[
-                                  EntryDetailsWidget(
-                                    itemId: widget.itemId,
-                                    showTaskDetails: true,
-                                    showAiEntry: true,
-                                    linkedFrom: linkedFrom,
-                                    link: sourceLink,
-                                  ),
-                                  // Linked rows carry only the tight step2
-                                  // embedded card inset; pad the sections up
-                                  // to the standalone card's step5 rail so
-                                  // every card on the page shares one exact
-                                  // left/right edge.
-                                  Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: tokens.spacing.step4,
-                                    ),
-                                    child: Column(
-                                      children: <Widget>[
-                                        LinkedEntriesWithTimer(
-                                          item: item,
-                                          entryKeyBuilder: _getEntryKey,
-                                          highlightedEntryId:
-                                              highlightedEntryId,
-                                        ),
-                                        LinkedFromEntriesWidget(item),
-                                        if (item is ChecklistItem)
-                                          LinkedFromChecklistWidget(item),
-                                        if (item is Checklist)
-                                          LinkedFromTaskWidget(item),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ).animate().fadeIn(
-                                duration: MotionDurations.short2,
-                              ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: AiRunningDecoderBars(
-                  entryId: widget.itemId,
-                  isInteractive: true,
-                  responseTypes: const {
-                    AiResponseType.imageAnalysis,
-                    AiResponseType.audioTranscription,
-                    AiResponseType.audioSummary,
-                    AiResponseType.promptGeneration,
-                  },
-                ),
-              ),
-            ],
-          ),
+        // Scope toasts triggered from inside the entry details subtree to a
+        // nested ScaffoldMessenger so SnackBars float above the sticky
+        // [EntryActionBar] (the Scaffold's bottomNavigationBar) instead of
+        // the screen / window bottom edge, where the bar would cover them.
+        child: ScaffoldMessenger(
+          child: CorrectionCaptureToastListener(child: scaffold),
         ),
       ),
     );

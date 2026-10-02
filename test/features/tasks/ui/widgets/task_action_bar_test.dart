@@ -610,7 +610,10 @@ void main() {
           .element(find.byKey(TaskActionBar.audioKey))
           .designTokens;
       final button = tester.widget<DsGlassRoundButton>(
-        find.byKey(TaskActionBar.audioKey),
+        find.descendant(
+          of: find.byKey(TaskActionBar.audioKey),
+          matching: find.byType(DsGlassRoundButton),
+        ),
       );
 
       // Tracked time and captured thoughts are equally load-bearing for a
@@ -665,7 +668,10 @@ void main() {
       );
 
       final button = tester.widget<DsGlassRoundButton>(
-        find.byKey(TaskActionBar.audioKey),
+        find.descendant(
+          of: find.byKey(TaskActionBar.audioKey),
+          matching: find.byType(DsGlassRoundButton),
+        ),
       );
       expect(button.outlineColor, isNull);
       expect(button.iconColor, Colors.white);

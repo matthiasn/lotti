@@ -6449,6 +6449,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get enterCategoryName => 'Introduceți numele categoriei';
 
   @override
+  String get entryActionBarAddLinkedTask =>
+      'Adăugați o sarcină asociată acestei intrări';
+
+  @override
   String get entryActions => 'Acțiuni';
 
   @override

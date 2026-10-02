@@ -6422,6 +6422,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get enterCategoryName => 'Introduce el nombre de la categoría';
 
   @override
+  String get entryActionBarAddLinkedTask =>
+      'Añadir una tarea vinculada a esta entrada';
+
+  @override
   String get entryActions => 'Acciones';
 
   @override

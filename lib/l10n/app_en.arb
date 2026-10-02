@@ -3619,6 +3619,7 @@
   "embeddingUnselectAll": "Deselect All",
   "enhancedPromptFormPreconfiguredPromptDescription": "Choose from ready-made prompt templates",
   "enterCategoryName": "Enter category name",
+  "entryActionBarAddLinkedTask": "Add a task linked to this entry",
   "entryActions": "Actions",
   "entryLabelsActionSubtitle": "Assign labels to organize this entry",
   "entryLabelsActionTitle": "Labels",

@@ -72,7 +72,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get addHabitDateLabel => 'Færdiggjort i';
 
   @override
-  String get addLinkedEntryLabel => 'Add linked entry';
+  String get addLinkedEntryLabel => 'Tilføj tilknyttet post';
 
   @override
   String get addMeasurementCommentLabel => 'Kommentar';
@@ -6336,6 +6336,10 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get enterCategoryName => 'Indtast kategorinavn';
+
+  @override
+  String get entryActionBarAddLinkedTask =>
+      'Tilføj en opgave knyttet til denne post';
 
   @override
   String get entryActions => 'Handlinger';

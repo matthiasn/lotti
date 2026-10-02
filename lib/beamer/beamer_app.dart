@@ -131,10 +131,11 @@ bool isTaskDetailRoute(BeamLocation<dynamic>? location, int activeTabIndex) {
 /// Whether the journal tab is showing one entry's detail page rather than
 /// the logbook feed.
 ///
-/// The logbook's create action docks on the mobile navigation launcher; an
-/// entry's own page creates a *linked* entry instead — a different action
-/// with a different glyph — and keeps floating its own button, so the
-/// logbook's must not stay on the rail underneath it.
+/// Like a task's page, an entry's page docks its own sticky action bar
+/// (`EntryActionBar`: add a linked task, record, and the Add sheet) at the
+/// bottom edge, so the mobile shell unmounts the launcher there — menu
+/// button, docked create action and activity island alike — exactly as it
+/// does for [isTaskDetailRoute].
 bool isLogbookEntryDetailRoute(BeamLocation<dynamic>? location) {
   if (location is! JournalLocation) return false;
   return isUuid(location.state.pathParameters['entryId']);
@@ -445,12 +446,13 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     navService.goalsDelegate,
     navService.habitsDelegate,
     navService.relationshipsDelegate,
-    // Not for hiding the bar — the journal tab keeps it on an entry's page —
-    // but so the launcher drops the logbook's docked create action there.
-    // See [isLogbookEntryDetailRoute].
+    // So the launcher unmounts on an entry's page, where the page docks its
+    // own action bar, and comes back when the page pops. See
+    // [isLogbookEntryDetailRoute].
     navService.journalDelegate,
-    // Likewise for an event's page, where the launcher drops the events
-    // tab's create action. See [isEventDetailRoute].
+    // Not for hiding the bar — the events tab keeps it on an event's page —
+    // but so the launcher drops the events tab's create action there. See
+    // [isEventDetailRoute].
     navService.eventsDelegate,
   ]);
 
@@ -856,12 +858,12 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           Beamer(routerDelegate: navService.settingsDelegate),
         ];
 
-        // Listen to the tasks, projects, settings, goals, habits and
-        // relationships
-        // delegates so the mobile shell rebuilds when their routes change
-        // (push to / pop from task, project, goal or person details, into /
-        // out of settings entity editors). That's how we know whether to
-        // hide the mobile bottom nav. See [_isTaskDetailRoute],
+        // Listen to the tasks, journal, projects, settings, goals, habits
+        // and relationships delegates so the mobile shell rebuilds when
+        // their routes change (push to / pop from task, entry, project, goal
+        // or person details, into / out of settings entity editors). That's
+        // how we know whether to hide the mobile bottom nav. See
+        // [_isTaskDetailRoute], [_isLogbookEntryDetailRoute],
         // [projectsRouteHidesBottomNav], [settingsRouteHidesBottomNav],
         // [goalsRouteHidesBottomNav], [habitsRouteHidesBottomNav] and
         // [peopleRouteHidesBottomNav].
@@ -893,6 +895,13 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     navService.tasksDelegate.currentBeamLocation,
     activeTabIndex,
   );
+
+  /// Whether the active tab is the journal and it is showing an entry's page.
+  /// Opening an entry moves only the journal delegate, not the tab index, so
+  /// the journal location alone would also match while another tab is up.
+  bool _isLogbookEntryDetailRoute(_AppNavigationDestinationKind activeKind) =>
+      activeKind == _AppNavigationDestinationKind.journal &&
+      isLogbookEntryDetailRoute(navService.journalDelegate.currentBeamLocation);
 
   Widget _buildDesktopLayout({
     required BuildContext context,
@@ -1119,11 +1128,14 @@ class _AppScreenState extends ConsumerState<AppScreen> {
   }) {
     // Visibility is a pure function of the active beamer route. Routes
     // that take over the bottom edge with their own sticky surface
-    // (e.g. `/tasks/<uuid>` with TaskActionBar) suppress the nav pill —
-    // including the activity island that floats above it — so the
-    // page-owned bar can dock flush against the home indicator. The
-    // enclosing ListenableBuilder ensures we rebuild on every route change.
-    final showBottomNav = !_isTaskDetailRoute(index);
+    // (`/tasks/<uuid>` with TaskActionBar, `/journal/<uuid>` with
+    // EntryActionBar) suppress the nav pill — including the activity island
+    // that floats above it — so the page-owned bar can dock flush against
+    // the home indicator. The enclosing ListenableBuilder ensures we rebuild
+    // on every route change.
+    final showBottomNav =
+        !_isTaskDetailRoute(index) &&
+        !_isLogbookEntryDetailRoute(destinations[index].kind);
 
     // Settings *detail* routes — terminal pages you navigate to rather than
     // menus you navigate from (the whole AI & Agents sections, every Sync and
@@ -1336,20 +1348,16 @@ class _AppScreenState extends ConsumerState<AppScreen> {
   /// gets added keep the bare glyph (see [MobileNavDockAction]).
   ///
   /// Route-sensitive only where a tab's detail page keeps the bar *and* owns
-  /// a different action: an entry's own page creates a linked entry, so the
-  /// logbook's action leaves the rail there, and an event's page is not where
-  /// a new event is made. The projects, goals, habits and
-  /// people tabs slide the whole launcher away on their detail routes, so their
-  /// actions need no such check.
+  /// a different action: an event's page is not where a new event is made.
+  /// The projects, goals, habits and people tabs slide the whole launcher
+  /// away on their detail routes, and an entry's page unmounts it for its
+  /// own action bar, so their actions need no such check.
   MobileNavDockAction? _launcherDockAction(
     BuildContext context,
     _AppNavigationDestinationKind kind,
   ) => switch (kind) {
     _AppNavigationDestinationKind.tasks => tasksTabDockAction(context, ref),
-    _AppNavigationDestinationKind.journal =>
-      isLogbookEntryDetailRoute(navService.journalDelegate.currentBeamLocation)
-          ? null
-          : logbookDockAction(context, ref),
+    _AppNavigationDestinationKind.journal => logbookDockAction(context, ref),
     _AppNavigationDestinationKind.goals => unifiedGoalsDockAction(context, ref),
     _AppNavigationDestinationKind.habits => habitsTabDockAction(context, ref),
     _AppNavigationDestinationKind.projects => projectsTabDockAction(

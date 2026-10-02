@@ -30,6 +30,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/editor_state_service.dart';
@@ -38,6 +39,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/stub_audio_recorder_controller.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
@@ -187,6 +189,9 @@ void main() {
         ),
         mediaQueryData: mediaQueryData,
         overrides: [
+          audioRecorderControllerProvider.overrideWith(
+            StubAudioRecorderController.new,
+          ),
           if (sourceDetailLoading)
             entryControllerProvider(
               sourceDetailId,
