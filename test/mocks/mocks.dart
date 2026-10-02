@@ -1321,6 +1321,14 @@ class MockWakeOrchestrator extends Mock implements WakeOrchestrator {
   @override
   Future<bool> owesWake(String window) async => owedWindows.contains(window);
 
+  /// Pause, destroy and delete call this. Unstubbed it reports no running
+  /// wake, so every suite that drives those lifecycle calls through a real
+  /// service need not stub it; `when`/`verify` still work through the mock.
+  @override
+  bool haltAgent(String agentId) =>
+      super.noSuchMethod(Invocation.method(#haltAgent, [agentId])) as bool? ??
+      false;
+
   @override
   void markScheduledWindow(String runKey, String window) =>
       markedWindows.add((runKey, window));
