@@ -412,13 +412,21 @@ class ProjectAgentService {
         for (final link in links) {
           _registerProjectSubscription(agent.agentId, link.toId);
         }
-        if (projectAgentAutomaticWakesAllowed(
-          config: agent.config,
-          lifecycle: agent.lifecycle,
-        )) {
+        // The bulk listing is only a hint: re-read the identity so a
+        // concurrent pause or opt-out controls the runtime restored here.
+        final current = await repository.getEntity(agent.agentId);
+        final identity = current is AgentIdentityEntity ? current : null;
+        if (identity != null &&
+            projectAgentAutomaticWakesAllowed(
+              config: identity.config,
+              lifecycle: identity.lifecycle,
+            )) {
           orchestrator.enableAutomaticUpdatesRuntime(agent.agentId);
           await armProjectUpdate?.call(agent.agentId);
         } else {
+          if (identity?.lifecycle != AgentLifecycle.active) {
+            orchestrator.removeSubscriptions(agent.agentId);
+          }
           orchestrator.disableAutomaticUpdatesRuntime(agent.agentId);
         }
         count++;

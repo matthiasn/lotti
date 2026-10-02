@@ -1,6 +1,7 @@
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/wake/agent_wake_coordinator.dart';
+import 'package:lotti/features/agents/wake/project_update_slots.dart';
 import 'package:lotti/features/agents/wake/wake_audit.dart';
 import 'package:lotti/features/agents/wake/wake_budget.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
@@ -85,6 +86,61 @@ void main() {
       );
 
       test(
+        'an automatic project wake that is not an update slot is refused, '
+        'a user request is not',
+        () async {
+          // ProjectWakeGovernor.tla, StaleDoesNotTriggerWork: a project agent
+          // does automatic work only in an update slot. A subscription
+          // match, a transcript, a restored intent — anything else that
+          // queued automatic work for it — is refused here.
+          when(() => mockRepository.getEntity('project-1')).thenAnswer(
+            (_) async => makeTestIdentity(
+              id: 'project-1',
+              agentId: 'project-1',
+              kind: 'project_agent',
+              config: const AgentConfig(automaticUpdatesEnabled: true),
+            ),
+          );
+          final ran = <String>[];
+          orchestrator.wakeExecutor = (_, runKey, _, _) async {
+            ran.add(runKey);
+            return null;
+          };
+          final completions = <WakeRunCompletion>[];
+          final sub = orchestrator.runCompletions.listen(completions.add);
+          addTearDown(sub.cancel);
+          for (final (runKey, initiator) in [
+            ('subscription-wake', WakeInitiator.automation),
+            ('user-wake', WakeInitiator.user),
+          ]) {
+            queue.enqueue(
+              WakeJob(
+                runKey: runKey,
+                agentId: 'project-1',
+                reason: WakeReason.subscription.name,
+                initiator: initiator,
+                triggerTokens: const {'PROJECT_ENTITY_UPDATE:p1'},
+                createdAt: DateTime(2024, 3, 15),
+              ),
+            );
+            await orchestrator.processNext();
+          }
+
+          expect(ran, ['user-wake']);
+          expect(
+            completions
+                .singleWhere((c) => c.runKey == 'subscription-wake')
+                .error,
+            isA<WakeRefusedError>().having(
+              (error) => error.cause,
+              'cause',
+              WakeDecisionCause.notAnUpdateSlot,
+            ),
+          );
+        },
+      );
+
+      test(
         'a ledger that cannot be read before dispatch defers the budget '
         'decision to the claim instead of dropping the wake',
         () async {
@@ -110,7 +166,7 @@ void main() {
               agentId: 'project-1',
               reason: WakeReason.subscription.name,
               initiator: WakeInitiator.automation,
-              triggerTokens: const {'project-token'},
+              triggerTokens: const {ProjectUpdateSlots.triggerToken},
               createdAt: DateTime(2024, 3, 15),
             ),
           );
@@ -263,7 +319,7 @@ void main() {
               agentId: 'project-agent-1',
               reason: WakeReason.scheduled.name,
               initiator: WakeInitiator.automation,
-              triggerTokens: const {},
+              triggerTokens: const {ProjectUpdateSlots.triggerToken},
               createdAt: DateTime(2024, 3, 15),
             ),
           );
@@ -1930,9 +1986,12 @@ void main() {
             agentId: agentId,
             reason: initiator == WakeInitiator.user
                 ? WakeReason.reanalysis.name
-                : WakeReason.subscription.name,
+                : WakeReason.scheduled.name,
             initiator: initiator,
-            triggerTokens: const {},
+            // Automatic project work is always an update slot.
+            triggerTokens: initiator == WakeInitiator.user
+                ? const {}
+                : const {ProjectUpdateSlots.triggerToken},
             createdAt: today,
           ),
         );

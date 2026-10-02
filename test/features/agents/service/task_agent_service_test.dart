@@ -213,6 +213,14 @@ void main() {
   late MockUpdateNotifications mockUpdateNotifications;
   late TaskAgentService service;
 
+  /// Project agents the service asked to arm, or to consume, update slots.
+  final armedAgentIds = <String>[];
+  final consumedAgentIds = <String>[];
+
+  Future<void> recordArm(String agentId) async => armedAgentIds.add(agentId);
+  Future<void> recordConsume(String agentId) async =>
+      consumedAgentIds.add(agentId);
+
   AgentIdentityEntity makeIdentity({
     String agentId = 'agent-1',
     String kind = 'task_agent',
@@ -245,6 +253,8 @@ void main() {
   }
 
   setUp(() {
+    armedAgentIds.clear();
+    consumedAgentIds.clear();
     mockAgentService = MockAgentService();
     mockRepository = MockAgentRepository();
     mockOrchestrator = MockWakeOrchestrator();
@@ -307,6 +317,8 @@ void main() {
       updateNotifications: mockUpdateNotifications,
       domainLogger: DomainLogger(loggingService: LoggingService())
         ..enabledDomains.add(LogDomain.agentRuntime),
+      armProjectUpdate: recordArm,
+      cancelProjectUpdates: recordConsume,
     );
   });
 
@@ -1429,15 +1441,13 @@ void main() {
                   ).captured.single
                   as AgentSubscription;
           expect(subscription.id, 'agent-1_project_direct_project-1');
-          final persisted =
-              verify(
-                    () => mockRepository.upsertEntity(captureAny()),
-                  ).captured.single
-                  as AgentStateEntity;
-          expect(persisted.scheduledWakeAt, DateTime(2026, 8, 15, 6));
-          expect(persisted.updatedAt, pendingState.updatedAt);
-          expect(persisted.vectorClock, pendingState.vectorClock);
+          // Project activity only marks the report stale.
+          expect(subscription.reportStaleOnly, isTrue);
+          // Restoring writes no state: the cadence arms the next update slot.
+          verifyNever(() => mockRepository.upsertEntity(any()));
           verifyNever(() => mockSyncService.upsertEntity(any()));
+          expect(armedAgentIds, ['agent-1']);
+          expect(consumedAgentIds, isEmpty);
           verify(
             () => mockOrchestrator.enableAutomaticUpdatesRuntime('agent-1'),
           ).called(1);
@@ -1445,14 +1455,13 @@ void main() {
       );
 
       test(
-        'keeps a resumed opted-out project agent local and non-waking',
+        'a resumed opted-out project agent consumes its update slots',
         () async {
           final state = makeState().copyWith(
             slots: makeState().slots.copyWith(
               activeProjectId: 'project-1',
               pendingProjectActivityAt: DateTime(2026, 8, 14, 11),
             ),
-            scheduledWakeAt: DateTime(2026, 8, 15, 6),
             updatedAt: DateTime(2026, 8, 14, 10),
             vectorClock: const VectorClock({'peer-a': 4}),
           );
@@ -1481,15 +1490,12 @@ void main() {
 
           await service.restoreSubscriptionsForAgent('agent-1');
 
-          final persisted =
-              verify(
-                    () => mockRepository.upsertEntity(captureAny()),
-                  ).captured.single
-                  as AgentStateEntity;
-          expect(persisted.scheduledWakeAt, isNull);
-          expect(persisted.slots.pendingProjectActivityAt, isNotNull);
-          expect(persisted.updatedAt, state.updatedAt);
-          expect(persisted.vectorClock, state.vectorClock);
+          // Opted out: pending update slots are consumed, none is armed, and
+          // the stale mark stays for the card to show.
+          verifyNever(() => mockRepository.upsertEntity(any()));
+          verifyNever(() => mockSyncService.upsertEntity(any()));
+          expect(armedAgentIds, isEmpty);
+          expect(consumedAgentIds, ['agent-1']);
           verify(
             () => mockOrchestrator.disableAutomaticUpdatesRuntime('agent-1'),
           ).called(1);
@@ -2415,7 +2421,7 @@ void main() {
       }
 
       test(
-        'disabling project inference clears its local fallback',
+        'disabling project inference consumes its update slots',
         () async {
           final now = DateTime(2026, 8, 14, 12);
           final identity = makeIdentity(
@@ -2454,7 +2460,6 @@ void main() {
               activeProjectId: 'project-1',
               pendingProjectActivityAt: pendingAt,
             ),
-            scheduledWakeAt: DateTime(2026, 8, 15, 6),
           );
           when(
             () => mockRepository.getAgentState('agent-1'),
@@ -2467,13 +2472,9 @@ void main() {
             );
           });
 
-          final clearedState =
-              verify(
-                    () => mockRepository.upsertEntity(captureAny()),
-                  ).captured.single
-                  as AgentStateEntity;
-          expect(clearedState.scheduledWakeAt, isNull);
-          expect(clearedState.slots.pendingProjectActivityAt, pendingAt);
+          verifyNever(() => mockRepository.upsertEntity(any()));
+          expect(armedAgentIds, isEmpty);
+          expect(consumedAgentIds, ['agent-1']);
           verify(
             () => mockOrchestrator.removeSubscriptions('agent-1'),
           ).called(1);
@@ -2484,7 +2485,8 @@ void main() {
       );
 
       test(
-        'post-commit inference disable failure still clears project runtime',
+        'post-commit inference disable failure still consumes project '
+        'update slots',
         () async {
           final now = DateTime(2026, 8, 14, 12);
           final identity = makeIdentity(
@@ -2520,7 +2522,6 @@ void main() {
               activeProjectId: 'project-1',
               pendingProjectActivityAt: pendingAt,
             ),
-            scheduledWakeAt: DateTime(2026, 8, 15, 6),
           );
           when(
             () => mockRepository.getAgentState('agent-1'),
@@ -2533,6 +2534,8 @@ void main() {
             orchestrator: mockOrchestrator,
             syncService: failingSync,
             updateNotifications: mockUpdateNotifications,
+            armProjectUpdate: recordArm,
+            cancelProjectUpdates: recordConsume,
           );
 
           await expectLater(
@@ -2545,13 +2548,9 @@ void main() {
             throwsA(isA<StateError>()),
           );
 
-          final clearedState =
-              verify(
-                    () => mockRepository.upsertEntity(captureAny()),
-                  ).captured.single
-                  as AgentStateEntity;
-          expect(clearedState.scheduledWakeAt, isNull);
-          expect(clearedState.slots.pendingProjectActivityAt, pendingAt);
+          verifyNever(() => mockRepository.upsertEntity(any()));
+          expect(armedAgentIds, isEmpty);
+          expect(consumedAgentIds, ['agent-1']);
           verify(
             () => mockOrchestrator.removeSubscriptions('agent-1'),
           ).called(1);
@@ -2950,7 +2949,8 @@ void main() {
       );
 
       test(
-        'turning on a project agent arms pending activity for next 06:00',
+        'turning on a project agent arms its next update slot and wakes '
+        'nothing now',
         () async {
           final now = DateTime(2026, 8, 14, 12);
           final state = makeState().copyWith(
@@ -3018,19 +3018,9 @@ void main() {
             () => mockSyncService.upsertEntity(captureAny()),
           ).captured;
           expect(syncedEntities.whereType<AgentStateEntity>(), isEmpty);
-          final writtenStates = verify(
-            () => mockRepository.upsertEntity(captureAny()),
-          ).captured.whereType<AgentStateEntity>();
-          expect(
-            writtenStates.single.scheduledWakeAt,
-            DateTime(2026, 8, 15, 6),
-          );
-          expect(
-            writtenStates.single.slots.pendingProjectActivityAt,
-            DateTime(2026, 8, 14, 11),
-          );
-          expect(writtenStates.single.updatedAt, state.updatedAt);
-          expect(writtenStates.single.vectorClock, state.vectorClock);
+          verifyNever(() => mockRepository.upsertEntity(any()));
+          expect(armedAgentIds, ['agent-1']);
+          expect(consumedAgentIds, isEmpty);
           final subscription =
               verify(
                     () => mockOrchestrator.addSubscription(captureAny()),
@@ -3042,18 +3032,19 @@ void main() {
             subscription.matchEntityIds,
             {projectEntityUpdateNotification('project-1')},
           );
-          verify(
+          // It catches up in the armed slot, never with an immediate wake.
+          verifyNever(
             () => mockOrchestrator.enqueueManualWake(
-              agentId: 'agent-1',
-              reason: WakeReason.reanalysis.name,
-              initiator: WakeInitiator.automation,
+              agentId: any(named: 'agentId'),
+              reason: any(named: 'reason'),
+              initiator: any(named: 'initiator'),
             ),
-          ).called(1);
+          );
         },
       );
 
       test(
-        'project fallback arming rechecks a concurrent opt-out',
+        'project slot arming rechecks a concurrent opt-out',
         () async {
           final pendingState = makeState().copyWith(
             slots: makeState().slots.copyWith(
@@ -3103,6 +3094,8 @@ void main() {
 
           expect(identityReads, 2);
           verifyNever(() => mockRepository.upsertEntity(any()));
+          expect(armedAgentIds, isEmpty);
+          expect(consumedAgentIds, ['agent-1']);
           verifyNever(
             () => mockOrchestrator.enableAutomaticUpdatesRuntime('agent-1'),
           );
@@ -3113,7 +3106,7 @@ void main() {
       );
 
       test(
-        'project fallback clearing rechecks a concurrent opt-in',
+        'project slot consuming rechecks a concurrent opt-in',
         () async {
           final currentIdentity = makeIdentity(
             kind: AgentKinds.projectAgent,
@@ -3129,13 +3122,11 @@ void main() {
           when(
             () => mockAgentService.getAgent('agent-1'),
           ).thenAnswer((_) async => currentIdentity);
-          final scheduledAt = DateTime(2026, 8, 15, 6);
           final pendingState = makeState().copyWith(
             slots: makeState().slots.copyWith(
               activeProjectId: 'project-1',
               pendingProjectActivityAt: DateTime(2026, 8, 14, 11),
             ),
-            scheduledWakeAt: scheduledAt,
           );
           when(
             () => mockRepository.getAgentState('agent-1'),
@@ -3153,6 +3144,8 @@ void main() {
           );
 
           verifyNever(() => mockRepository.upsertEntity(any()));
+          expect(armedAgentIds, ['agent-1']);
+          expect(consumedAgentIds, isEmpty);
           verify(
             () => mockOrchestrator.enableAutomaticUpdatesRuntime('agent-1'),
           ).called(1);
@@ -3163,8 +3156,8 @@ void main() {
       );
 
       test(
-        'turning off marks a project report stale without a freshness '
-        'watermark and clears only its automatic fallback',
+        'turning off a project agent consumes its update slots and keeps '
+        'its stale mark',
         () async {
           final now = DateTime(2026, 8, 14, 12);
           final pendingAt = DateTime(2026, 8, 14, 11);
@@ -3173,7 +3166,7 @@ void main() {
               activeProjectId: 'project-1',
               pendingProjectActivityAt: pendingAt,
             ),
-            scheduledWakeAt: DateTime(2026, 8, 15, 6),
+            reportStaleAt: pendingAt,
             updatedAt: DateTime(2026, 8, 14, 10),
             vectorClock: const VectorClock({'peer-a': 8}),
           );
@@ -3230,85 +3223,15 @@ void main() {
             );
           });
 
-          final syncedStates = verify(
-            () => mockSyncService.upsertEntity(captureAny()),
-          ).captured.whereType<AgentStateEntity>();
-          expect(syncedStates.single.reportStaleAt, now);
-          expect(syncedStates.single.isReportStale, isTrue);
-          final writtenStates = verify(
-            () => mockRepository.upsertEntity(captureAny()),
-          ).captured.whereType<AgentStateEntity>();
-          expect(writtenStates.single.scheduledWakeAt, isNull);
-          expect(
-            writtenStates.single.slots.pendingProjectActivityAt,
-            pendingAt,
-          );
-          expect(writtenStates.single.updatedAt, state.updatedAt);
-          expect(writtenStates.single.vectorClock, state.vectorClock);
-        },
-      );
-
-      test(
-        'turning off clears a markerless project creation fallback',
-        () async {
-          final now = DateTime(2026, 8, 14, 12);
-          final state = makeState().copyWith(
-            slots: makeState().slots.copyWith(
-              activeProjectId: 'project-1',
-            ),
-            scheduledWakeAt: DateTime(2026, 8, 15, 6),
-            updatedAt: DateTime(2026, 8, 14, 10),
-            vectorClock: const VectorClock({'peer-a': 9}),
-          );
-          final identity = makeIdentity(
-            kind: AgentKinds.projectAgent,
-            config: const AgentConfig(
-              automaticUpdatesEnabled: true,
-              inferenceSetup: AgentInferenceSetup(
-                mode: AgentInferenceSetupMode.configured,
-                origin: AgentInferenceSetupOrigin.user,
-                baseProfileId: 'profile-1',
-              ),
-            ),
-          );
-          var identityReads = 0;
-          when(() => mockAgentService.getAgent('agent-1')).thenAnswer((
-            _,
-          ) async {
-            identityReads += 1;
-            return identityReads == 1
-                ? identity
-                : identity.copyWith(
-                    config: identity.config.copyWith(
-                      automaticUpdatesEnabled: false,
-                    ),
-                    updatedAt: now,
-                  );
-          });
-          when(
-            () => mockRepository.getAgentState('agent-1'),
-          ).thenAnswer((_) async => state);
-
-          await withClock(Clock.fixed(now), () {
-            return service.updateAutomaticUpdates(
-              agentId: 'agent-1',
-              enabled: false,
-            );
-          });
-
+          // A pending slot exists only over a stale report, so there is no
+          // stale mark to add and no freshness to claim.
           final syncedStates = verify(
             () => mockSyncService.upsertEntity(captureAny()),
           ).captured.whereType<AgentStateEntity>();
           expect(syncedStates, isEmpty);
-          final writtenState =
-              verify(
-                    () => mockRepository.upsertEntity(captureAny()),
-                  ).captured.single
-                  as AgentStateEntity;
-          expect(writtenState.scheduledWakeAt, isNull);
-          expect(writtenState.slots.pendingProjectActivityAt, isNull);
-          expect(writtenState.updatedAt, state.updatedAt);
-          expect(writtenState.vectorClock, state.vectorClock);
+          verifyNever(() => mockRepository.upsertEntity(any()));
+          expect(armedAgentIds, isEmpty);
+          expect(consumedAgentIds, ['agent-1']);
         },
       );
 
@@ -3372,6 +3295,8 @@ void main() {
             orchestrator: mockOrchestrator,
             syncService: failingSync,
             updateNotifications: mockUpdateNotifications,
+            armProjectUpdate: recordArm,
+            cancelProjectUpdates: recordConsume,
           );
 
           await expectLater(
@@ -3384,12 +3309,8 @@ void main() {
             throwsA(isA<StateError>()),
           );
 
-          final persisted =
-              verify(
-                    () => mockRepository.upsertEntity(captureAny()),
-                  ).captured.single
-                  as AgentStateEntity;
-          expect(persisted.scheduledWakeAt, DateTime(2026, 8, 15, 6));
+          verifyNever(() => mockRepository.upsertEntity(any()));
+          expect(armedAgentIds, ['agent-1']);
           verify(
             () => mockOrchestrator.enableAutomaticUpdatesRuntime('agent-1'),
           ).called(1);
@@ -3407,7 +3328,6 @@ void main() {
               activeProjectId: 'project-1',
               pendingProjectActivityAt: pendingAt,
             ),
-            scheduledWakeAt: DateTime(2026, 8, 15, 6),
           );
           final enabledIdentity = makeIdentity(
             kind: AgentKinds.projectAgent,
@@ -3442,6 +3362,8 @@ void main() {
             orchestrator: mockOrchestrator,
             syncService: failingSync,
             updateNotifications: mockUpdateNotifications,
+            armProjectUpdate: recordArm,
+            cancelProjectUpdates: recordConsume,
           );
 
           await expectLater(
@@ -3454,13 +3376,8 @@ void main() {
             throwsA(isA<StateError>()),
           );
 
-          final persisted =
-              verify(
-                    () => mockRepository.upsertEntity(captureAny()),
-                  ).captured.single
-                  as AgentStateEntity;
-          expect(persisted.scheduledWakeAt, isNull);
-          expect(persisted.slots.pendingProjectActivityAt, pendingAt);
+          verifyNever(() => mockRepository.upsertEntity(any()));
+          expect(consumedAgentIds, ['agent-1']);
           verify(
             () => mockOrchestrator.disableAutomaticUpdatesRuntime('agent-1'),
           ).called(1);

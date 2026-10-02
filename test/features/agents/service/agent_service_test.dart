@@ -11,7 +11,6 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/wake/wake_budget.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -976,54 +975,6 @@ void main() {
 
         verify(() => mockOrchestrator.haltAgent('agent-1')).called(1);
       });
-
-      test(
-        'pausing a project agent clears its device-local fallback',
-        () async {
-          final identity = makeTestIdentity(
-            id: 'agent-1',
-            agentId: 'agent-1',
-            kind: AgentKinds.projectAgent,
-          );
-          final state = makeTestState(
-            agentId: 'agent-1',
-            slots: AgentSlots(
-              activeProjectId: 'project-1',
-              pendingProjectActivityAt: DateTime(2026, 8, 14, 11),
-            ),
-            scheduledWakeAt: DateTime(2026, 8, 15, 6),
-            updatedAt: DateTime(2026, 8, 14, 10),
-            vectorClock: const VectorClock({'peer-a': 3}),
-          );
-          when(
-            () => mockRepository.getEntity('agent-1'),
-          ).thenAnswer((_) async => identity);
-          when(
-            () => mockRepository.getAgentState('agent-1'),
-          ).thenAnswer((_) async => state);
-          when(
-            () => mockRepository.upsertEntity(any()),
-          ).thenAnswer((_) async {});
-          when(
-            () => mockOrchestrator.haltAgent('agent-1'),
-          ).thenReturn(false);
-
-          expect(await service.pauseAgent('agent-1'), isTrue);
-
-          final persisted =
-              verify(
-                    () => mockRepository.upsertEntity(captureAny()),
-                  ).captured.single
-                  as AgentStateEntity;
-          expect(persisted.scheduledWakeAt, isNull);
-          expect(
-            persisted.slots.pendingProjectActivityAt,
-            state.slots.pendingProjectActivityAt,
-          );
-          expect(persisted.updatedAt, state.updatedAt);
-          expect(persisted.vectorClock, state.vectorClock);
-        },
-      );
     });
 
     group('resumeAgent', () {

@@ -8,7 +8,6 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
-import 'package:lotti/features/agents/service/project_activity_monitor.dart';
 import 'package:lotti/features/agents/service/project_agent_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -34,14 +33,6 @@ enum _GeneratedProjectStateSlot { present, missing }
 enum _GeneratedProjectProfileSlot { none, profile }
 
 enum _GeneratedProjectCategorySlot { empty, single, pair }
-
-class _PostCommitFailingAgentSyncService extends MockAgentSyncService {
-  @override
-  Future<T> runInTransaction<T>(Future<T> Function() action) async {
-    await action();
-    throw StateError('outbox flush failed');
-  }
-}
 
 class _GeneratedProjectAgentCreateScenario {
   const _GeneratedProjectAgentCreateScenario({
@@ -149,6 +140,9 @@ void main() {
   late MockAgentSyncService mockSyncService;
   late ProjectAgentService service;
   late List<String> notifiedAgentIds;
+
+  /// Project agents the service asked to arm their next update slot.
+  late List<String> armedAgentIds;
   late bool scopeIsCurrent;
 
   AgentIdentityEntity makeIdentity({
@@ -188,6 +182,7 @@ void main() {
     mockOrchestrator = MockWakeOrchestrator();
     mockSyncService = MockAgentSyncService();
     notifiedAgentIds = [];
+    armedAgentIds = [];
     scopeIsCurrent = true;
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
@@ -222,6 +217,7 @@ void main() {
       domainLogger: DomainLogger(loggingService: LoggingService())
         ..enabledDomains.add(LogDomain.agentRuntime),
       onPersistedStateChanged: notifiedAgentIds.add,
+      armProjectUpdate: (agentId) async => armedAgentIds.add(agentId),
     );
   });
 
@@ -506,11 +502,11 @@ void main() {
           projectId,
           reason: '$scenario',
         );
-        expect(
-          updatedState.scheduledWakeAt,
-          DateTime(2026, 3, 21, 6),
-          reason: '$scenario',
-        );
+        // No report yet: stale until the creation wake writes one, and
+        // never a device-local deadline.
+        expect(updatedState.reportStaleAt, testDate, reason: '$scenario');
+        expect(updatedState.isReportStale, isTrue, reason: '$scenario');
+        expect(updatedState.scheduledWakeAt, isNull, reason: '$scenario');
         expect(
           updatedState.slots.pendingProjectActivityAt,
           testDate,
@@ -725,7 +721,7 @@ void main() {
       );
 
       test(
-        'persists a one-shot fallback for the explicit creation wake',
+        'marks a new agent stale for its creation wake, with no deadline',
         () async {
           final identity = makeIdentity();
           final template = makeTestTemplate(
@@ -774,7 +770,9 @@ void main() {
             () => mockSyncService.upsertEntity(captureAny()),
           ).captured;
           final updatedState = stateCalls.first as AgentStateEntity;
-          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
+          expect(updatedState.reportStaleAt, testDate);
+          expect(updatedState.isReportStale, isTrue);
+          expect(updatedState.scheduledWakeAt, isNull);
           expect(updatedState.slots.pendingProjectActivityAt, testDate);
         },
       );
@@ -1594,7 +1592,8 @@ void main() {
       });
 
       test(
-        're-registers direct project subscriptions for project agents',
+        'registers stale-only subscriptions, retires a legacy throttle '
+        'deadline and arms the next slot',
         () async {
           final projectAgent = makeIdentity(agentId: 'pa-1');
           final otherAgent = makeIdentity(
@@ -1609,12 +1608,14 @@ void main() {
             updatedAt: kAgentTestDate,
             vectorClock: null,
           );
-          final nextWakeAt = DateTime(2026, 3, 23, 8);
           final state = makeState(agentId: 'pa-1').copyWith(
             slots: AgentSlots(
               pendingProjectActivityAt: DateTime(2026, 3, 22, 9),
             ),
-            nextWakeAt: nextWakeAt,
+            // A throttle deadline an older build left behind.
+            nextWakeAt: DateTime(2026, 3, 23, 8),
+            updatedAt: DateTime(2026, 3, 22, 9),
+            vectorClock: const VectorClock({'peer-a': 2}),
           );
 
           when(
@@ -1653,12 +1654,27 @@ void main() {
             subscription.matchEntityIds,
             {projectEntityUpdateNotification('project-1')},
           );
-          verify(
+          // A direct edit only marks the report stale.
+          expect(subscription.reportStaleOnly, isTrue);
+          // The legacy throttle deadline is retired, locally: the synced
+          // timestamp and clock are kept so it cannot win a peer merge.
+          verify(() => mockOrchestrator.clearThrottle('pa-1')).called(1);
+          final retired =
+              verify(
+                    () => mockRepository.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(retired.nextWakeAt, isNull);
+          expect(retired.updatedAt, state.updatedAt);
+          expect(retired.vectorClock, state.vectorClock);
+          verifyNever(() => mockSyncService.upsertEntity(any()));
+          verifyNever(
             () => mockOrchestrator.restorePendingWake(
-              agentId: 'pa-1',
-              dueAt: nextWakeAt,
+              agentId: any(named: 'agentId'),
+              dueAt: any(named: 'dueAt'),
             ),
-          ).called(1);
+          );
+          expect(armedAgentIds, ['pa-1']);
           verifyNever(
             () => mockRepository.getLinksFrom(
               any(),
@@ -1682,7 +1698,8 @@ void main() {
       );
 
       test(
-        'does not hydrate a startup batch consumed after the bulk snapshot',
+        'writes nothing when the legacy deadlines cleared after the bulk '
+        'snapshot',
         () async {
           final projectAgent = makeIdentity(agentId: 'pa-consumed-race');
           final nextWakeAt = DateTime(2026, 3, 23, 8);
@@ -1726,19 +1743,13 @@ void main() {
 
           await service.restoreSubscriptions();
 
-          verifyNever(
-            () => mockOrchestrator.restorePendingWake(
-              agentId: any(named: 'agentId'),
-              dueAt: any(named: 'dueAt'),
-            ),
-          );
           verifyNever(() => mockRepository.upsertEntity(any()));
+          expect(armedAgentIds, ['pa-consumed-race']);
         },
       );
 
       test(
-        'keeps observation but suppresses countdown hydration when automation '
-        'is off',
+        'keeps observation but arms nothing when automation is off',
         () async {
           final projectAgent = makeIdentity(agentId: 'pa-manual').copyWith(
             config: const AgentConfig(automaticUpdatesEnabled: false),
@@ -1782,17 +1793,13 @@ void main() {
             () => mockOrchestrator.disableAutomaticUpdatesRuntime('pa-manual'),
           ).called(1);
           verify(() => mockOrchestrator.addSubscription(any())).called(1);
-          verifyNever(
-            () => mockOrchestrator.restorePendingWake(
-              agentId: any(named: 'agentId'),
-              dueAt: any(named: 'dueAt'),
-            ),
-          );
+          verifyNever(() => mockOrchestrator.removeSubscriptions(any()));
+          expect(armedAgentIds, isEmpty);
         },
       );
 
       test(
-        'clears a markerless fallback for an already opted-out agent',
+        'retires a legacy deadline for an opted-out agent',
         () async {
           final projectAgent = makeIdentity(agentId: 'pa-opted-out').copyWith(
             config: const AgentConfig(
@@ -1846,6 +1853,7 @@ void main() {
           expect(persisted.updatedAt, state.updatedAt);
           expect(persisted.vectorClock, state.vectorClock);
           verifyNever(() => mockSyncService.upsertEntity(any()));
+          expect(armedAgentIds, isEmpty);
           verify(
             () => mockOrchestrator.disableAutomaticUpdatesRuntime(
               'pa-opted-out',
@@ -1855,7 +1863,7 @@ void main() {
       );
 
       test(
-        'clears a legacy daily schedule when no project activity is pending',
+        'retires a legacy daily schedule without touching synced fields',
         () async {
           final projectAgent = makeIdentity(agentId: 'pa-dormant');
           final link = AgentLink.agentProject(
@@ -1916,17 +1924,15 @@ void main() {
           expect(repaired.vectorClock, state.vectorClock);
           verifyNever(() => mockSyncService.upsertEntity(any()));
           expect(notifiedAgentIds, ['pa-dormant']);
-          verifyNever(
-            () => mockOrchestrator.restorePendingWake(
-              agentId: any(named: 'agentId'),
-              dueAt: any(named: 'dueAt'),
-            ),
-          );
+          // Whether a slot is due is the cadence's call: it arms only over a
+          // stale report.
+          expect(armedAgentIds, ['pa-dormant']);
         },
       );
 
       test(
-        'does not clear activity that arrives after the startup snapshot',
+        'retires a legacy deadline but keeps activity that arrived after the '
+        'startup snapshot',
         () async {
           final projectAgent = makeIdentity(agentId: 'pa-racing');
           final link = AgentLink.agentProject(
@@ -1978,125 +1984,26 @@ void main() {
 
           await service.restoreSubscriptions();
 
+          // Retirement re-reads the row in its transaction: the deadline goes,
+          // the activity that arrived after the snapshot stays.
+          final retired =
+              verify(
+                    () => mockRepository.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(retired.scheduledWakeAt, isNull);
+          expect(
+            retired.slots.pendingProjectActivityAt,
+            DateTime(2026, 3, 22, 9, 59),
+          );
+          expect(retired.updatedAt, current.updatedAt);
           verifyNever(() => mockSyncService.upsertEntity(any()));
-          verifyNever(() => mockRepository.upsertEntity(any()));
-          verify(
-            () => mockRepository.getAgentState('pa-racing'),
-          ).called(2);
+          expect(armedAgentIds, ['pa-racing']);
         },
       );
 
       test(
-        'does not clear a newer manual schedule after the startup snapshot',
-        () async {
-          final projectAgent = makeIdentity(agentId: 'pa-manual-race');
-          final link = AgentLink.agentProject(
-            id: 'link-manual-race',
-            fromId: 'pa-manual-race',
-            toId: 'project-manual-race',
-            createdAt: kAgentTestDate,
-            updatedAt: kAgentTestDate,
-            vectorClock: null,
-          );
-          final snapshot =
-              makeState(
-                id: 'state-pa-manual-race',
-                agentId: 'pa-manual-race',
-                activeProjectId: 'project-manual-race',
-              ).copyWith(
-                lastWakeAt: DateTime(2026, 3, 20, 6),
-                scheduledWakeAt: DateTime(2026, 3, 23, 6),
-                updatedAt: DateTime(2026, 3, 22, 9),
-              );
-          final current = snapshot.copyWith(
-            scheduledWakeAt: DateTime(2026, 3, 23, 7),
-            updatedAt: DateTime(2026, 3, 22, 9, 59),
-          );
-
-          when(
-            () => mockAgentService.listAgents(
-              lifecycle: AgentLifecycle.active,
-            ),
-          ).thenAnswer((_) async => [projectAgent]);
-          when(
-            () => mockRepository.getAgentStatesByAgentIds(['pa-manual-race']),
-          ).thenAnswer((_) async => {'pa-manual-race': snapshot});
-          when(
-            () => mockRepository.getAgentState('pa-manual-race'),
-          ).thenAnswer((_) async => current);
-          when(
-            () => mockRepository.getLinksFromMultiple(
-              ['pa-manual-race'],
-              type: AgentLinkTypes.agentProject,
-            ),
-          ).thenAnswer(
-            (_) async => {
-              'pa-manual-race': [link],
-            },
-          );
-
-          await service.restoreSubscriptions();
-
-          verifyNever(() => mockSyncService.upsertEntity(any()));
-          verifyNever(() => mockRepository.upsertEntity(any()));
-          verify(
-            () => mockRepository.getAgentState('pa-manual-race'),
-          ).called(2);
-        },
-      );
-
-      test(
-        'retains a legacy schedule while project activity is pending',
-        () async {
-          final projectAgent = makeIdentity(agentId: 'pa-active');
-          final link = AgentLink.agentProject(
-            id: 'link-active',
-            fromId: 'pa-active',
-            toId: 'project-active',
-            createdAt: kAgentTestDate,
-            updatedAt: kAgentTestDate,
-            vectorClock: null,
-          );
-          final pendingAt = DateTime(2026, 3, 22, 9);
-          final state =
-              makeState(
-                id: 'state-pa-active',
-                agentId: 'pa-active',
-                activeProjectId: 'project-active',
-              ).copyWith(
-                slots: AgentSlots(
-                  activeProjectId: 'project-active',
-                  pendingProjectActivityAt: pendingAt,
-                ),
-                scheduledWakeAt: DateTime(2026, 3, 23, 6),
-              );
-
-          when(
-            () => mockAgentService.listAgents(lifecycle: AgentLifecycle.active),
-          ).thenAnswer((_) async => [projectAgent]);
-          when(
-            () => mockRepository.getAgentStatesByAgentIds(['pa-active']),
-          ).thenAnswer((_) async => {'pa-active': state});
-          when(
-            () => mockRepository.getLinksFromMultiple(
-              ['pa-active'],
-              type: AgentLinkTypes.agentProject,
-            ),
-          ).thenAnswer(
-            (_) async => {
-              'pa-active': [link],
-            },
-          );
-
-          await service.restoreSubscriptions();
-
-          verifyNever(() => mockSyncService.upsertEntity(any()));
-          verify(() => mockOrchestrator.addSubscription(any())).called(1);
-        },
-      );
-
-      test(
-        'arms pending activity that has no local fallback after restart',
+        'asks the cadence to arm after a restart and writes no deadline',
         () async {
           final projectAgent = makeIdentity(agentId: 'pa-pending');
           final link = AgentLink.agentProject(
@@ -2144,23 +2051,12 @@ void main() {
             return service.restoreSubscriptions();
           });
 
-          final persisted =
-              verify(
-                    () => mockRepository.upsertEntity(captureAny()),
-                  ).captured.single
-                  as AgentStateEntity;
-          expect(persisted.scheduledWakeAt, DateTime(2026, 3, 23, 6));
-          expect(
-            persisted.slots.pendingProjectActivityAt,
-            DateTime(2026, 3, 22, 9),
-          );
-          expect(
-            persisted.updatedAt,
-            pendingState.updatedAt,
-            reason: 'A local-only deadline must not affect synced LWW data.',
-          );
+          // The repair for an arm lost to a process death: no deadline is
+          // written, the cadence arms the next synced slot.
+          verifyNever(() => mockRepository.upsertEntity(any()));
           verifyNever(() => mockSyncService.upsertEntity(any()));
-          expect(notifiedAgentIds, ['pa-pending']);
+          expect(notifiedAgentIds, isEmpty);
+          expect(armedAgentIds, ['pa-pending']);
         },
       );
 
@@ -2232,6 +2128,7 @@ void main() {
               'pa-paused-race',
             ),
           );
+          expect(armedAgentIds, isEmpty);
         },
       );
 

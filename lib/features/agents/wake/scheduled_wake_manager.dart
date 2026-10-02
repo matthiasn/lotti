@@ -380,9 +380,9 @@ class ScheduledWakeManager with AgentErrorLogging {
           }
 
           // A project agent's state schedule is never fired, only retired:
-          // its updates are slots (see _shouldRetireDormantProjectSchedule).
-          if (_shouldRetireDormantProjectSchedule(currentState)) {
-            if (await _retireDormantProjectSchedule(currentState, now)) {
+          // its updates are slots (see _isLegacyProjectSchedule).
+          if (_isLegacyProjectSchedule(currentState)) {
+            if (await _retireLegacyProjectSchedule(currentState, now)) {
               retired++;
             }
             continue;
@@ -862,11 +862,11 @@ class ScheduledWakeManager with AgentErrorLogging {
   /// update in synced slots (`ProjectUpdateCadence`); a `scheduledWakeAt` on
   /// one is a device-local fallback an older build left behind, and firing it
   /// would be a wake the cadence knows nothing about.
-  bool _shouldRetireDormantProjectSchedule(AgentStateEntity state) =>
+  bool _isLegacyProjectSchedule(AgentStateEntity state) =>
       state.slots.activeProjectId != null;
 
-  /// Clear an obsolete project `scheduledWakeAt` without executing a wake.
-  Future<bool> _retireDormantProjectSchedule(
+  /// Clears a legacy project `scheduledWakeAt` without executing a wake.
+  Future<bool> _retireLegacyProjectSchedule(
     AgentStateEntity state,
     DateTime now,
   ) async {
@@ -880,7 +880,7 @@ class ScheduledWakeManager with AgentErrorLogging {
       if (currentState == null ||
           currentSchedule == null ||
           currentSchedule.isAfter(now) ||
-          !_shouldRetireDormantProjectSchedule(currentState)) {
+          !_isLegacyProjectSchedule(currentState)) {
         return;
       }
 
@@ -897,7 +897,7 @@ class ScheduledWakeManager with AgentErrorLogging {
     onPersistedStateChanged?.call(retired.agentId);
 
     _log(
-      'retired dormant project schedule for '
+      'retired legacy project schedule for '
       '${DomainLogger.sanitizeId(retired.agentId)}',
     );
     return true;

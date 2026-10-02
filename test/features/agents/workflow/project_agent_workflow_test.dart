@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:clock/clock.dart';
@@ -11,17 +10,16 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/wake/project_update_slots.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/projection/content_digest.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
-import 'package:lotti/features/agents/service/project_agent_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
+import 'package:lotti/features/agents/wake/project_update_slots.dart';
 import 'package:lotti/features/agents/workflow/project_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/project_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
@@ -42,52 +40,6 @@ import '../../../widget_test_utils.dart';
 import '../../ai_consumption/test_utils.dart';
 import '../test_utils.dart';
 import 'task_agent_workflow_test_helpers.dart';
-
-const Symbol _transactionZoneKey = #projectWakeTransactionTest;
-
-/// Minimal stateful sync double used to prove cross-service transaction order.
-class _SerializingStateSyncService extends MockAgentSyncService {
-  _SerializingStateSyncService(this.state);
-
-  AgentStateEntity state;
-  final failureWriteStarted = Completer<void>();
-  final releaseFailureWrite = Completer<void>();
-  Future<void> _transactionTail = Future<void>.value();
-
-  @override
-  Future<T> runInTransaction<T>(Future<T> Function() action) async {
-    if (Zone.current[_transactionZoneKey] == true) return action();
-
-    final previous = _transactionTail;
-    final turnCompleted = Completer<void>();
-    _transactionTail = turnCompleted.future;
-    await previous;
-    try {
-      return await runZoned(
-        action,
-        zoneValues: {_transactionZoneKey: true},
-      );
-    } finally {
-      turnCompleted.complete();
-    }
-  }
-
-  @override
-  Future<AgentStateEntity?> reconciledAgentState(String agentId) async => state;
-
-  @override
-  Future<void> upsertEntity(
-    AgentDomainEntity entity, {
-    bool fromSync = false,
-  }) async {
-    if (entity is! AgentStateEntity) return;
-    if (entity.consecutiveFailureCount > state.consecutiveFailureCount) {
-      if (!failureWriteStarted.isCompleted) failureWriteStarted.complete();
-      await releaseFailureWrite.future;
-    }
-    await runInTransaction(() async => state = entity);
-  }
-}
 
 void main() {
   late MockAgentRepository mockAgentRepository;
@@ -422,7 +374,14 @@ void main() {
                   () => mockSyncService.upsertEntity(captureAny()),
                 ).captured.single
                 as AgentStateEntity;
-        // The report stays stale; its next update slot retries it.
+        // The failure is counted and the activity kept: the report stays
+        // stale and its next update slot retries it.
+        expect(updatedState.consecutiveFailureCount, 1);
+        expect(
+          updatedState.slots.pendingProjectActivityAt,
+          DateTime(2026, 3, 20, 9),
+        );
+        expect(updatedState.reportFreshAt, isNull);
         expect(armedAgentIds, [agentId]);
       });
 
@@ -470,7 +429,14 @@ void main() {
                   () => mockSyncService.upsertEntity(captureAny()),
                 ).captured.single
                 as AgentStateEntity;
-        // The report stays stale; its next update slot retries it.
+        // The failure is counted and the activity kept: the report stays
+        // stale and its next update slot retries it.
+        expect(updatedState.consecutiveFailureCount, 1);
+        expect(
+          updatedState.slots.pendingProjectActivityAt,
+          DateTime(2026, 3, 20, 9),
+        );
+        expect(updatedState.reportFreshAt, isNull);
         expect(armedAgentIds, [agentId]);
       });
 
@@ -1304,6 +1270,11 @@ void main() {
           ).captured;
           final updatedState = captured.whereType<AgentStateEntity>().last;
           // The report stays stale; its next update slot retries it.
+          expect(updatedState.consecutiveFailureCount, 1);
+          expect(
+            updatedState.slots.pendingProjectActivityAt,
+            DateTime(2026, 3, 20, 9),
+          );
           expect(armedAgentIds, [agentId]);
         },
       );
@@ -1507,6 +1478,7 @@ void main() {
           (state) => state.consecutiveFailureCount > 0,
         );
         // The report stays stale; its next update slot retries it.
+        expect(updatedState.reportFreshAt, isNull);
         expect(armedAgentIds, [agentId]);
         expect(notifiedAgentIds, [agentId]);
       });

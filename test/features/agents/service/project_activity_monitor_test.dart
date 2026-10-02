@@ -30,6 +30,9 @@ void main() {
   late StreamController<Set<String>> syncUpdateController;
   late ProjectActivityMonitor monitor;
 
+  /// Agents the monitor asked to arm their next update slot.
+  final armedAgentIds = <String>[];
+
   setUp(() {
     notifications = MockUpdateNotifications();
     repository = MockAgentRepository();
@@ -66,12 +69,14 @@ void main() {
       ),
     );
 
+    armedAgentIds.clear();
     monitor = ProjectActivityMonitor(
       notifications: notifications,
       agentRepository: repository,
       projectRepository: projectRepository,
       syncService: syncService,
       clock: Clock.fixed(now),
+      armProjectUpdate: (agentId) async => armedAgentIds.add(agentId),
     );
   });
 
@@ -416,11 +421,14 @@ void main() {
             hGeneratedProjectActivityNow,
             reason: '$scenario',
           );
+          // Stale, never a device-local deadline: the next update is a
+          // synced slot the cadence arms.
           expect(
-            state.scheduledWakeAt,
-            DateTime(2026, 4, 4, 6),
+            state.reportStaleAt,
+            hGeneratedProjectActivityNow,
             reason: '$scenario',
           );
+          expect(state.scheduledWakeAt, isNull, reason: '$scenario');
           expect(state.updatedAt, hGeneratedProjectActivityNow);
         }
 
@@ -435,6 +443,12 @@ void main() {
         expect(
           bench.uiNotifications,
           expectedUiNotifications,
+          reason: '$scenario',
+        );
+        // Arming follows only a committed stale mark.
+        expect(
+          bench.armedAgentIds,
+          [for (final ids in expectedUiNotifications) ids.first],
           reason: '$scenario',
         );
 
@@ -490,7 +504,12 @@ void main() {
               as AgentStateEntity;
       expect(captured.slots.activeProjectId, 'project-1');
       expect(captured.slots.pendingProjectActivityAt, now);
-      expect(captured.scheduledWakeAt, DateTime(2026, 3, 23, 6));
+      expect(captured.reportStaleAt, now);
+      expect(captured.isReportStale, isTrue);
+      // Activity never schedules a device-local wake; it asks the cadence
+      // to arm the next synced update slot, after the stale mark commits.
+      expect(captured.scheduledWakeAt, isNull);
+      expect(armedAgentIds, ['agent-1']);
 
       verify(
         () => notifications.notifyUiOnly({'agent-1', agentNotification}),
@@ -498,7 +517,8 @@ void main() {
     });
 
     test(
-      'preserves a stale watermark written while activity is resolved',
+      'never lowers a later stale watermark written while activity is '
+      'resolved',
       () async {
         final link = AgentLink.agentProject(
           id: 'link-stale-race',
@@ -512,7 +532,9 @@ void main() {
           agentId: 'agent-1',
           slots: const AgentSlots(activeProjectId: 'project-1'),
         );
-        final staleAt = now.subtract(const Duration(minutes: 1));
+        // A peer's later stale mark arrived by sync after the snapshot. The
+        // watermark is max-joined, so this write must not lower it.
+        final staleAt = now.add(const Duration(minutes: 1));
         final concurrent = snapshot.copyWith(reportStaleAt: staleAt);
         var stateRead = 0;
         when(
@@ -578,6 +600,7 @@ void main() {
         verifyNever(
           () => notifications.notifyUiOnly(any()),
         );
+        expect(armedAgentIds, isEmpty);
       },
     );
 
@@ -619,11 +642,12 @@ void main() {
               ).captured.single
               as AgentStateEntity;
       expect(captured.slots.pendingProjectActivityAt, now);
-      expect(captured.scheduledWakeAt, DateTime(2026, 3, 23, 6));
+      expect(captured.reportStaleAt, now);
+      expect(armedAgentIds, ['agent-1']);
     });
 
     test(
-      'preserves an existing explicit wake while refreshing activity',
+      'leaves a legacy deadline for the service to retire',
       () async {
         final link = AgentLink.agentProject(
           id: 'link-existing-wake',
@@ -659,13 +683,16 @@ void main() {
                   () => syncService.upsertEntity(captureAny()),
                 ).captured.single
                 as AgentStateEntity;
+        // The monitor neither honours nor clears the legacy field;
+        // ProjectAgentService retires it on restore.
         expect(captured.scheduledWakeAt, existingWake);
         expect(captured.slots.pendingProjectActivityAt, now);
       },
     );
 
     test(
-      'marks activity stale without arming a wake when automation is off',
+      'marks activity stale when automation is off; the cadence decides '
+      'whether to arm',
       () async {
         final link = AgentLink.agentProject(
           id: 'link-automation-off',
@@ -709,7 +736,11 @@ void main() {
                 ).captured.single
                 as AgentStateEntity;
         expect(captured.slots.pendingProjectActivityAt, now);
+        expect(captured.reportStaleAt, now);
         expect(captured.scheduledWakeAt, isNull);
+        // The arm request is inert: ProjectUpdateCadence.arm refuses an agent
+        // whose automation is off.
+        expect(armedAgentIds, ['agent-1']);
       },
     );
 

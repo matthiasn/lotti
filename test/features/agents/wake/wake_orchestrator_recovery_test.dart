@@ -1,3 +1,4 @@
+import 'package:lotti/features/agents/wake/project_update_slots.dart';
 import 'package:lotti/features/agents/wake/run_key_factory.dart';
 
 import 'wake_orchestrator_test_harness.dart';
@@ -1216,7 +1217,7 @@ void main() {
               agentId: 'persisted-policy-agent',
               reason: WakeReason.scheduled.name,
               initiator: WakeInitiator.automation,
-              triggerTokens: const {},
+              triggerTokens: const {ProjectUpdateSlots.triggerToken},
               createdAt: DateTime(2024, 3, 15),
             ),
           );

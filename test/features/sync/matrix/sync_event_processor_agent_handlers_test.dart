@@ -43,7 +43,13 @@ void main() {
   group('SyncEventProcessor - Agent Entities and Links', () {
     late MockAgentRepository mockAgentRepo;
 
+    /// Project agents sync asked to arm their next update slot.
+    late List<String> armedAgentIds;
+
     setUp(() {
+      armedAgentIds = [];
+      processor.armProjectUpdate = (agentId) async =>
+          armedAgentIds.add(agentId);
       mockAgentRepo = MockAgentRepository();
       when(() => mockAgentRepo.upsertEntity(any())).thenAnswer((_) async {});
       when(() => mockAgentRepo.upsertLink(any())).thenAnswer((_) async {});
@@ -4070,7 +4076,8 @@ void main() {
       });
 
       test(
-        'synced dormant project identity clears the local fallback',
+        'synced dormant project identity retires a legacy deadline and '
+        'arms nothing',
         () async {
           final pendingAt = DateTime(2026, 8, 14, 9);
           final localState =
@@ -4124,6 +4131,7 @@ void main() {
           verify(
             () => mockOrchestrator.haltAgent(identity.agentId),
           ).called(1);
+          expect(armedAgentIds, isEmpty);
           verify(
             () => mockOrchestrator.disableAutomaticUpdatesRuntime(
               identity.agentId,
@@ -4133,7 +4141,7 @@ void main() {
       );
 
       test(
-        'stale synced opt-out does not clear a newer local opt-in fallback',
+        'stale synced opt-out does not stop a newer local opt-in',
         () async {
           final pendingAt = DateTime(2026, 8, 14, 9);
           final state =
@@ -4144,7 +4152,6 @@ void main() {
                       activeProjectId: 'project-42',
                       pendingProjectActivityAt: pendingAt,
                     ),
-                    scheduledWakeAt: DateTime(2026, 8, 15, 6),
                     updatedAt: DateTime(2026, 8, 14, 9),
                     vectorClock: const VectorClock({'local': 4}),
                   )
@@ -4225,11 +4232,13 @@ void main() {
           verifyNever(
             () => mockOrchestrator.disableAutomaticUpdatesRuntime(any()),
           );
+          // The re-read identity, not the incoming stale one, decides.
+          expect(armedAgentIds, [incomingDormant.agentId]);
         },
       );
 
       test(
-        'equal project identity replay retries local fallback repair',
+        'equal project identity replay retries legacy deadline retirement',
         () async {
           final now = DateTime(2026, 8, 14, 10);
           const vectorClock = VectorClock({'remote': 2});
@@ -4257,6 +4266,8 @@ void main() {
                       activeProjectId: 'project-42',
                       pendingProjectActivityAt: DateTime(2026, 8, 14, 9),
                     ),
+                    // A deadline an older build left behind.
+                    scheduledWakeAt: DateTime(2026, 8, 15, 6),
                     updatedAt: DateTime(2026, 8, 14, 9),
                     vectorClock: const VectorClock({'remote': 3}),
                   )
@@ -4285,9 +4296,10 @@ void main() {
                     () => mockAgentRepo.upsertEntity(captureAny()),
                   ).captured.single
                   as AgentStateEntity;
-          expect(repaired.scheduledWakeAt, DateTime(2026, 8, 15, 6));
+          expect(repaired.scheduledWakeAt, isNull);
           expect(repaired.updatedAt, pendingState.updatedAt);
           expect(repaired.vectorClock, pendingState.vectorClock);
+          expect(armedAgentIds, [identity.agentId]);
           verify(
             () => mockOrchestrator.enableAutomaticUpdatesRuntime(
               identity.agentId,
@@ -4303,7 +4315,7 @@ void main() {
       );
 
       test(
-        'equal project state replay retries local fallback repair',
+        'equal project state replay retries legacy deadline retirement',
         () async {
           final now = DateTime(2026, 8, 14, 10);
           const vectorClock = VectorClock({'remote': 3});
@@ -4331,6 +4343,8 @@ void main() {
                       activeProjectId: 'project-42',
                       pendingProjectActivityAt: DateTime(2026, 8, 14, 9),
                     ),
+                    // A deadline an older build left behind.
+                    scheduledWakeAt: DateTime(2026, 8, 15, 6),
                     updatedAt: DateTime(2026, 8, 14, 9),
                     vectorClock: vectorClock,
                   )
@@ -4362,9 +4376,10 @@ void main() {
                     () => mockAgentRepo.upsertEntity(captureAny()),
                   ).captured.single
                   as AgentStateEntity;
-          expect(repaired.scheduledWakeAt, DateTime(2026, 8, 15, 6));
+          expect(repaired.scheduledWakeAt, isNull);
           expect(repaired.updatedAt, pendingState.updatedAt);
           expect(repaired.vectorClock, pendingState.vectorClock);
+          expect(armedAgentIds, [identity.agentId]);
           verify(
             () => updateNotifications.notify(
               {identity.agentId, 'AGENT_CHANGED'},
@@ -4497,7 +4512,8 @@ void main() {
       );
 
       test(
-        'project identity arms activity observed before the identity arrived',
+        'project identity arms the slot for activity observed before it '
+        'arrived',
         () async {
           final now = DateTime(2026, 8, 14, 10);
           final entity = AgentDomainEntity.agent(
@@ -4549,19 +4565,18 @@ void main() {
             return processor.process(event: event, journalDb: journalDb);
           });
 
+          // The arrival asks the cadence for one synced slot; it writes no
+          // device-local deadline.
           final persistedStates = verify(
             () => mockAgentRepo.upsertEntity(captureAny()),
-          ).captured.whereType<AgentStateEntity>().toList();
-          expect(persistedStates, hasLength(1));
-          expect(
-            persistedStates.single.scheduledWakeAt,
-            DateTime(2026, 8, 15, 6),
-          );
+          ).captured.whereType<AgentStateEntity>();
+          expect(persistedStates, isEmpty);
+          expect(armedAgentIds, ['project-agent-1']);
         },
       );
 
       test(
-        'project state arms pending activity when the identity arrived first',
+        'project state arms the slot when the identity arrived first',
         () async {
           final now = DateTime(2026, 8, 14, 10);
           final identity = AgentDomainEntity.agent(
@@ -4618,21 +4633,14 @@ void main() {
           ).captured.whereType<AgentStateEntity>().toList();
           expect(
             persistedStates.map((state) => state.scheduledWakeAt),
-            contains(DateTime(2026, 8, 15, 6)),
+            everyElement(isNull),
           );
-          final repaired = persistedStates.singleWhere(
-            (state) => state.scheduledWakeAt != null,
-          );
-          expect(
-            repaired.updatedAt,
-            pendingState.updatedAt,
-            reason: 'A device-local deadline must not change synced LWW data.',
-          );
+          expect(armedAgentIds, ['project-agent-1']);
         },
       );
 
       test(
-        'project state rebuilds an imported fallback from the local clock',
+        'project state never imports a peer deadline and arms a slot',
         () async {
           final now = DateTime(2026, 8, 14, 10);
           final remoteFallback = DateTime(2026, 8, 14, 18);
@@ -4699,8 +4707,9 @@ void main() {
             persistedStates.map((state) => state.scheduledWakeAt),
             isNot(contains(remoteFallback)),
           );
-          expect(storedState?.scheduledWakeAt, DateTime(2026, 8, 15, 6));
+          expect(storedState?.scheduledWakeAt, isNull);
           expect(storedState?.updatedAt, incoming.updatedAt);
+          expect(armedAgentIds, [identity.agentId]);
         },
       );
 
@@ -5483,7 +5492,8 @@ void main() {
       );
 
       test(
-        'agent_project link repairs pending activity without a deadline',
+        'agent_project link registers a stale-only subscription and arms '
+        'a slot',
         () async {
           final now = DateTime(2026, 8, 14, 10);
           final activeAgent = AgentDomainEntity.agent(
@@ -5528,6 +5538,13 @@ void main() {
             updatedAt: DateTime(2024, 3, 15),
             vectorClock: null,
           );
+          // The link is persisted before the runtime re-reads it.
+          when(
+            () => mockAgentRepo.getLinksFrom(
+              'project-agent-1',
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer((_) async => [link]);
           when(
             () => event.text,
           ).thenReturn(
@@ -5543,17 +5560,24 @@ void main() {
             return processor.process(event: event, journalDb: journalDb);
           });
 
-          final persistedState =
-              verify(
-                    () => mockAgentRepo.upsertEntity(captureAny()),
-                  ).captured.single
-                  as AgentStateEntity;
-          expect(persistedState.scheduledWakeAt, DateTime(2026, 8, 15, 6));
+          verifyNever(() => mockAgentRepo.upsertEntity(any()));
+          verify(
+            () => mockOrchestrator.addSubscription(
+              any(
+                that: isA<AgentSubscription>().having(
+                  (subscription) => subscription.reportStaleOnly,
+                  'reportStaleOnly',
+                  isTrue,
+                ),
+              ),
+            ),
+          ).called(1);
+          expect(armedAgentIds, ['project-agent-1']);
         },
       );
 
       test(
-        'agent_project fallback repair rechecks a concurrent opt-out',
+        'agent_project slot arming rechecks a concurrent opt-out',
         () async {
           final activeAgent =
               AgentDomainEntity.agent(
@@ -5615,6 +5639,7 @@ void main() {
           await processor.process(event: event, journalDb: journalDb);
 
           verifyNever(() => mockAgentRepo.upsertEntity(any()));
+          expect(armedAgentIds, isEmpty);
           verify(
             () => mockOrchestrator.disableAutomaticUpdatesRuntime(
               activeAgent.agentId,
