@@ -13,7 +13,9 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/wake/project_update_slots.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
+import 'package:lotti/features/agents/wake/sync_lease_gate.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
@@ -28,6 +30,7 @@ import '../test_utils.dart';
 import 'wake_device_bench.dart';
 
 part 'scheduled_wake_manager_model_conformance.dart';
+part 'scheduled_wake_manager_project_slots.dart';
 
 enum _GeneratedScheduledWakeStateKind {
   nonProjectNeverWoken,
@@ -78,8 +81,16 @@ class _GeneratedScheduledWakeSpec {
   final _GeneratedScheduledWakeStateKind kind;
   final _GeneratedScheduledWakeTimeSlot timeSlot;
 
-  bool get expectsRetirement =>
-      kind == _GeneratedScheduledWakeStateKind.projectDormant;
+  /// A project agent updates in synced slots, so every state-level schedule
+  /// on one is a legacy deadline: retired, never fired — dormant, never
+  /// woken or with pending activity alike.
+  bool get expectsRetirement => switch (kind) {
+    _GeneratedScheduledWakeStateKind.projectNeverWoken ||
+    _GeneratedScheduledWakeStateKind.projectDormant ||
+    _GeneratedScheduledWakeStateKind.projectPendingActivity => true,
+    _GeneratedScheduledWakeStateKind.nonProjectNeverWoken ||
+    _GeneratedScheduledWakeStateKind.nonProjectPreviouslyWoken => false,
+  };
 
   bool get expectsEnqueue => !expectsRetirement;
 
@@ -2049,7 +2060,7 @@ void main() {
       });
     });
 
-    test('clears dormant project schedules without enqueuing a wake', () {
+    test('retires a project schedule without enqueuing a wake', () {
       final now = DateTime(2024, 3, 15, 10, 30);
       final pastSchedule = DateTime(2024, 3, 13, 6);
       final dormantState = makeTestState(
@@ -2091,7 +2102,8 @@ void main() {
       });
     });
 
-    test('does not retire project activity that arrives during the scan', () {
+    test('retires a project schedule but keeps activity that arrived during '
+        'the scan', () {
       final now = DateTime(2024, 3, 15, 10, 30);
       final dormantSnapshot = makeTestState(
         scheduledWakeAt: DateTime(2024, 3, 13, 6),
@@ -2119,13 +2131,26 @@ void main() {
           final manager = createAndStart();
           async.flushMicrotasks();
 
-          verifyNever(() => syncService.upsertEntity(any()));
-          verify(
+          // Project work runs only in update slots: activity leaves the
+          // report stale for the cadence, it never revives this deadline.
+          verifyNever(
             () => orchestrator.enqueueManualWake(
-              agentId: kTestAgentId,
-              reason: WakeReason.scheduled.name,
+              agentId: any(named: 'agentId'),
+              reason: any(named: 'reason'),
             ),
-          ).called(1);
+          );
+          final retired =
+              verify(
+                    () => repository.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(retired.scheduledWakeAt, isNull);
+          expect(
+            retired.slots.pendingProjectActivityAt,
+            DateTime(2024, 3, 15, 10, 15),
+          );
+          expect(retired.updatedAt, currentState.updatedAt);
+          verifyNever(() => syncService.upsertEntity(any()));
 
           manager.stop();
         });
@@ -2133,7 +2158,7 @@ void main() {
     });
 
     test(
-      'rechecks dormant retirement inside the write transaction',
+      'rechecks retirement inside the write transaction',
       () {
         final now = DateTime(2024, 3, 15, 10, 30);
         final dormantSnapshot = makeTestState(
@@ -2141,13 +2166,9 @@ void main() {
           lastWakeAt: DateTime(2024, 3, 13, 6, 5),
           slots: const AgentSlots(activeProjectId: 'project-1'),
         );
-        final activeState = dormantSnapshot.copyWith(
-          slots: AgentSlots(
-            activeProjectId: 'project-1',
-            pendingProjectActivityAt: DateTime(2024, 3, 15, 10, 15),
-          ),
-          nextWakeAt: DateTime(2024, 3, 15, 10, 35),
-        );
+        // Restoration retired the deadline between the scan's read and the
+        // write transaction.
+        final retiredState = dormantSnapshot.copyWith(scheduledWakeAt: null);
         final trackingRepository = _TrackingTransactionRepository();
         when(
           () => trackingRepository.upsertEntity(any()),
@@ -2168,7 +2189,7 @@ void main() {
               () => trackingRepository.getAgentState(kTestAgentId),
             ).thenAnswer(
               (_) async => trackingRepository.insideTransaction
-                  ? activeState
+                  ? retiredState
                   : dormantSnapshot,
             );
 
@@ -2187,11 +2208,12 @@ void main() {
     );
 
     test(
-      'enqueues never-woken project schedules as creation fallbacks',
+      'retires a never-woken project creation fallback instead of firing it',
       () {
         final now = DateTime(2024, 3, 15, 10, 30);
         final pastSchedule = DateTime(2024, 3, 14, 6);
-        // lastWakeAt is null → first run, must execute.
+        // An older build's creation fallback: the creation wake itself is
+        // durable through its wake intent, so this deadline is redundant.
         final neverWokenState = makeTestState(
           scheduledWakeAt: pastSchedule,
           slots: const AgentSlots(activeProjectId: 'project-1'),
@@ -2202,16 +2224,25 @@ void main() {
             when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
               (_) async => [neverWokenState],
             );
+            when(
+              () => repository.getAgentState(kTestAgentId),
+            ).thenAnswer((_) async => neverWokenState);
 
             final manager = createAndStart();
             async.flushMicrotasks();
 
-            verify(
+            verifyNever(
               () => orchestrator.enqueueManualWake(
-                agentId: kTestAgentId,
-                reason: WakeReason.scheduled.name,
+                agentId: any(named: 'agentId'),
+                reason: any(named: 'reason'),
               ),
-            ).called(1);
+            );
+            final retired =
+                verify(
+                      () => repository.upsertEntity(captureAny()),
+                    ).captured.single
+                    as AgentStateEntity;
+            expect(retired.scheduledWakeAt, isNull);
             verifyNever(() => syncService.upsertEntity(any()));
 
             manager.stop();
@@ -2256,12 +2287,13 @@ void main() {
       },
     );
 
-    test('mixed batch: retires dormant schedule and enqueues active', () {
+    test('mixed batch: retires the project schedule and enqueues the task '
+        'agent', () {
       final now = DateTime(2024, 3, 15, 10, 30);
       final pastSchedule = DateTime(2024, 3, 13, 6);
 
-      const activeId = 'agent-active';
-      const dormantId = 'agent-dormant';
+      const activeId = 'agent-task';
+      const dormantId = 'agent-project';
 
       final dormantState = makeTestState(
         agentId: dormantId,
@@ -2273,10 +2305,7 @@ void main() {
         agentId: activeId,
         scheduledWakeAt: pastSchedule,
         lastWakeAt: DateTime(2024, 3, 13, 6, 5),
-        slots: AgentSlots(
-          activeProjectId: 'project-2',
-          pendingProjectActivityAt: DateTime(2024, 3, 15, 9),
-        ),
+        slots: const AgentSlots(activeTaskId: 'task-2'),
       );
 
       fakeAsync((async) {
@@ -2301,7 +2330,7 @@ void main() {
             ),
           ).called(1);
 
-          // Dormant agent NOT enqueued.
+          // Project agent NOT enqueued.
           verifyNever(
             () => orchestrator.enqueueManualWake(
               agentId: dormantId,
@@ -2309,7 +2338,7 @@ void main() {
             ),
           );
 
-          // Dormant schedule retired as device-local state only.
+          // Project schedule retired as device-local state only.
           verify(() => repository.upsertEntity(any())).called(1);
           verifyNever(() => syncService.upsertEntity(any()));
 
@@ -3461,4 +3490,5 @@ void main() {
   });
 
   _registerLeaseModelConformance();
+  _registerProjectSlotRules();
 }

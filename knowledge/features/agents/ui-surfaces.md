@@ -94,7 +94,8 @@ Contents:
 the maintenance band in the internals panel. Task, project and goal agents
 therefore share the same freshness, manual update, countdown, Skip once, and
 automatic-update interaction rather than maintaining parallel responsive
-implementations. Each feature supplies its own scheduling service and state;
+implementations (a project band offers no Skip once: its countdown is to a
+synced update slot, which the next change would arm again). Each feature supplies its own scheduling service and state;
 the widget owns only the presentation and countdown expiry callback.
 
 ## Reading column and information grouping
@@ -163,9 +164,11 @@ Ticking digits move nothing here either: the label uses tabular figures
 (`DesignSystemButton.tabularFigures`), and the button holds the widest width it
 has shown for the current deadline, so `10:00` → `9:59` cannot pull its leading
 edge in. The full schedule sentence, *Skip once* and the switch stay in the
-internals panel. The project card passes no deadline or timestamp, still reads
-the watermark alone, and keeps `showsFreshConfirmation: false`, so its strip
-still takes no height while its report is current.
+internals panel. The project card reads the watermark alone for `isStale` and
+passes its next update slot (`projectNextUpdateProvider`) as the deadline, so
+a stale project summary reads *Out of date* beside *Update now · 34:59*; it
+keeps `showsFreshConfirmation: false`, so its strip still takes no height
+while its report is current.
 
 Everything else that used to sit in a footer under the summary — the schedule,
 *Skip once*, the automatic-updates switch, the model identity and the setup
@@ -195,8 +198,14 @@ it is the switch's readout, and putting the trigger between the two halves made
 "Automatic updates" read as a caption for the button.
 
 **The band derives its own state** from the agent providers keyed by `agentId`,
-and dispatches `triggerReanalysis` / `cancelScheduledWake` on the scope's kind
-(`TaskAgentService` or `ProjectAgentService`). It does not take callbacks from
+and dispatches `triggerReanalysis` on the scope's kind (`TaskAgentService` or
+`ProjectAgentService`), and a task band's `cancelScheduledWake`. A project band
+adds two settings rows under the switch: the daily wake limit
+(`AgentWakeBudgetRow`, see [the daily wake budget](wake-orchestration.md#the-daily-wake-budget))
+and the update frequency (`AgentUpdateIntervalRow`, a stepper over
+`ProjectUpdateSlots.choices` that writes `AgentService.updateUpdateIntervalMinutes`
+and then re-plans a pending slot onto the new grid, see
+[update slots](project-and-event-agents.md#stale-reports-and-update-slots)). It does not take callbacks from
 whoever opened it: it renders inside a pushed route, and the surface underneath
 is free to rebuild or go away. The automatic-updates switch is the exception
 that is *not* dispatched — it writes `AgentConfig`, the same record whoever owns

@@ -10,7 +10,6 @@ class ProjectRecord {
     required this.project,
     required this.category,
     required this.healthMetrics,
-    required this.reportNextWakeAt,
     required this.completedTaskCount,
     required this.totalTaskCount,
     required this.blockedTaskCount,
@@ -24,7 +23,6 @@ class ProjectRecord {
   final ProjectEntry project;
   final CategoryDefinition? category;
   final ProjectHealthMetrics? healthMetrics;
-  final DateTime? reportNextWakeAt;
   final int completedTaskCount;
   final int totalTaskCount;
   final int blockedTaskCount;

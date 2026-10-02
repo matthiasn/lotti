@@ -17,6 +17,7 @@ _AgentConfig _$AgentConfigFromJson(Map<String, dynamic> json) => _AgentConfig(
         ),
   automaticUpdatesEnabled: json['automaticUpdatesEnabled'] as bool?,
   maxWakesPerDay: (json['maxWakesPerDay'] as num?)?.toInt(),
+  updateIntervalMinutes: (json['updateIntervalMinutes'] as num?)?.toInt(),
   feedbackWindowDays: (json['feedbackWindowDays'] as num?)?.toInt(),
   recursionDepth: (json['recursionDepth'] as num?)?.toInt(),
 );
@@ -29,6 +30,7 @@ Map<String, dynamic> _$AgentConfigToJson(_AgentConfig instance) =>
       'inferenceSetup': instance.inferenceSetup,
       'automaticUpdatesEnabled': instance.automaticUpdatesEnabled,
       'maxWakesPerDay': instance.maxWakesPerDay,
+      'updateIntervalMinutes': instance.updateIntervalMinutes,
       'feedbackWindowDays': instance.feedbackWindowDays,
       'recursionDepth': instance.recursionDepth,
     };

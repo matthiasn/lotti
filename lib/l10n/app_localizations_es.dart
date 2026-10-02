@@ -1284,6 +1284,37 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentToolGoalRevisionLabel => 'Propuesta de revisión del objetivo';
 
   @override
+  String get agentUpdateIntervalDaily => 'Una vez al día';
+
+  @override
+  String get agentUpdateIntervalDecrease => 'Actualizar más a menudo';
+
+  @override
+  String get agentUpdateIntervalHelp =>
+      'Un cambio en el proyecto marca su resumen como desactualizado; uno de tus dispositivos lo renueva en el siguiente turno de actualización. Actualizar ahora lo renueva al momento.';
+
+  @override
+  String get agentUpdateIntervalHint =>
+      'Los resúmenes desactualizados se renuevan como mucho con esta frecuencia';
+
+  @override
+  String agentUpdateIntervalHours(int hours) {
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: 'Cada $hours horas',
+      one: 'Cada hora',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get agentUpdateIntervalIncrease => 'Actualizar con menos frecuencia';
+
+  @override
+  String get agentUpdateIntervalLabel => 'Frecuencia de actualización';
+
+  @override
   String get agentWakeBudgetDecrease => 'Bajar el límite diario';
 
   @override
@@ -11098,6 +11129,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get projectsEmptyTitle => 'Empieza tu primer proyecto';
+
+  @override
+  String get projectsFilterOnlyOutOfDate => 'Solo resúmenes desactualizados';
 
   @override
   String get projectsFilterStatusLabel => 'Estado:';

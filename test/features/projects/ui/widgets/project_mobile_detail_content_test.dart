@@ -1438,7 +1438,6 @@ ProjectRecord _makeRecordWithNoCategory() {
     ),
     category: null,
     healthMetrics: null,
-    reportNextWakeAt: null,
     completedTaskCount: 0,
     totalTaskCount: 0,
     blockedTaskCount: 0,

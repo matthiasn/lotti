@@ -1265,6 +1265,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentToolGoalRevisionLabel => 'Goal revision proposal';
 
   @override
+  String get agentUpdateIntervalDaily => 'Once a day';
+
+  @override
+  String get agentUpdateIntervalDecrease => 'Update more often';
+
+  @override
+  String get agentUpdateIntervalHelp =>
+      'A change to the project marks its summary out of date; one of your devices refreshes it in the next update slot. Update now refreshes it right away.';
+
+  @override
+  String get agentUpdateIntervalHint =>
+      'Out-of-date summaries refresh at most this often';
+
+  @override
+  String agentUpdateIntervalHours(int hours) {
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: 'Every $hours hours',
+      one: 'Every hour',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get agentUpdateIntervalIncrease => 'Update less often';
+
+  @override
+  String get agentUpdateIntervalLabel => 'Update frequency';
+
+  @override
   String get agentWakeBudgetDecrease => 'Lower the daily limit';
 
   @override
@@ -10893,6 +10924,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get projectsEmptyTitle => 'Start your first project';
+
+  @override
+  String get projectsFilterOnlyOutOfDate => 'Only out-of-date summaries';
 
   @override
   String get projectsFilterStatusLabel => 'Status:';

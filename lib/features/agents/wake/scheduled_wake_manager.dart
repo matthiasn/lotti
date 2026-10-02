@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
+import 'package:lotti/features/agents/wake/sync_lease_gate.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/services/domain_logging.dart';
 
@@ -31,10 +32,10 @@ class _HandledCheckSequence {
 /// schedule (e.g., weekly one-on-one rituals).
 ///
 /// On startup and then hourly, queries for agents with overdue
-/// `scheduledWakeAt`. Legacy project schedules with no pending activity are
-/// retired instead of advanced, because project work is now scheduled by
-/// update-driven subscription wakes.
-/// Non-project agents (e.g., improver agents) are always enqueued.
+/// `scheduledWakeAt` and enqueues them — except project agents, whose state
+/// schedules are legacy fallbacks and are retired unfired: project updates
+/// are synced, leased slot records (`ProjectUpdateCadence`), fired by the
+/// record path below like every other [ScheduledWakeEntity].
 class ScheduledWakeManager with AgentErrorLogging {
   ScheduledWakeManager({
     required this._repository,
@@ -48,6 +49,10 @@ class ScheduledWakeManager with AgentErrorLogging {
     this.beforeCheck,
     this.leaseSettle = const Duration(minutes: 3),
     this.leaseDuration = const Duration(minutes: 30),
+    this.syncGate,
+    this.requiresSyncGate,
+    this.exclusiveGroupOf,
+    this.syncGateRetry = const Duration(minutes: 1),
   });
 
   final AgentRepository _repository;
@@ -102,6 +107,36 @@ class ScheduledWakeManager with AgentErrorLogging {
   /// How long a claim stands before any device may take it over. Must exceed
   /// [leaseSettle], or a claim would lapse before it could be confirmed.
   final Duration leaseDuration;
+
+  /// Whether this device may claim or fire a leased record now — connected,
+  /// with its sync inbox drained — and how often its connection was lost.
+  final SyncLeaseGate? syncGate;
+
+  /// Leased records that go through [syncGate]: a claim is made and fired only
+  /// while it is open, and a claim the connection dropped under is re-made
+  /// instead of confirmed (`specs/tla/ProjectWakeGovernor.tla`,
+  /// `ConnectedClaims`).
+  final bool Function(ScheduledWakeEntity record)? requiresSyncGate;
+
+  /// Records that stand for one piece of work: of a group, only the earliest
+  /// pending record fires, and firing it consumes the rest. One project
+  /// agent's update slots are a group — two devices can arm different slots
+  /// for one change, and one run covers both (`EarliestSlot`).
+  final String? Function(ScheduledWakeEntity record)? exclusiveGroupOf;
+
+  /// How soon a record the closed [syncGate] held back is looked at again.
+  final Duration syncGateRetry;
+
+  /// The [SyncLeaseGate.epoch] each of this device's gated claims was made
+  /// in. A claim missing here — made before a restart — counts as made in an
+  /// earlier epoch and is re-made.
+  final _claimEpochs = <String, int>{};
+
+  /// The sync gate's answer for the pass under way, per connectivity epoch.
+  /// [SyncLeaseGate.ready] can wait out its drain timeout, so asking it once
+  /// per gated record would let one backlog stall every record behind it; a
+  /// connection lost mid-pass starts a new epoch and is asked again.
+  Map<int, Future<bool>>? _passGateReads;
 
   Timer? _timer;
   Timer? _settleTimer;
@@ -350,11 +385,13 @@ class ScheduledWakeManager with AgentErrorLogging {
             continue;
           }
 
-          if (_shouldRetireDormantProjectSchedule(currentState)) {
-            if (await _retireDormantProjectSchedule(currentState, now)) {
+          // A project agent's state schedule is never fired, only retired:
+          // its updates are slots (see _isLegacyProjectSchedule).
+          if (_isLegacyProjectSchedule(currentState)) {
+            if (await _retireLegacyProjectSchedule(currentState, now)) {
               retired++;
-              continue;
             }
+            continue;
           }
 
           // The due query is only a snapshot. A cancellation may clear the
@@ -441,6 +478,19 @@ class ScheduledWakeManager with AgentErrorLogging {
     int generation,
     _HandledCheckSequence handled,
   ) async {
+    _passGateReads = {};
+    try {
+      return await _processDueRecordsOnce(now, generation, handled);
+    } finally {
+      _passGateReads = null;
+    }
+  }
+
+  Future<int> _processDueRecordsOnce(
+    DateTime now,
+    int generation,
+    _HandledCheckSequence handled,
+  ) async {
     final dueRecords = await _repository.getDueScheduledWakeRecords(now);
     var enqueued = 0;
     for (final record in dueRecords) {
@@ -484,6 +534,10 @@ class ScheduledWakeManager with AgentErrorLogging {
           await _consumeFiredRecord(record, clock.now());
           continue;
         }
+        final group = exclusiveGroupOf?.call(record);
+        if (group != null && await _earlierPendingInGroup(record, group)) {
+          continue;
+        }
         final approved = await _leaseApprovedRecord(record, generation);
         if (approved == null) continue;
         // `stop()` can land while the lease check is awaiting the host lookup.
@@ -517,6 +571,10 @@ class ScheduledWakeManager with AgentErrorLogging {
                 !current.scheduledAt.isAtSameMomentAs(approved.scheduledAt))) {
           continue;
         }
+        // The gate again, at the last moment: the settle may have spanned a
+        // backlog arriving — a peer's consume of this very slot among it.
+        if (!await _gateOpen(approved, generation)) continue;
+        if (generation != _generation) continue;
         // Marked before the enqueue, not after: if the consume-write below
         // fails the record is still pending, and a re-run microseconds later
         // would fire it a second time — a transient write error must not
@@ -542,6 +600,8 @@ class ScheduledWakeManager with AgentErrorLogging {
         // (`specs/tla/ScheduledWakeLease.tla`, `NoLostWindow`).
         await _orchestrator.flushWakeIntents();
         await _consumeFiredRecord(record, firedAt);
+        _claimEpochs.remove(record.id);
+        if (group != null) await _consumeGroup(record, group, firedAt);
         enqueued++;
       } catch (e, s) {
         logError(
@@ -601,7 +661,16 @@ class ScheduledWakeManager with AgentErrorLogging {
     if (refreshed is! ScheduledWakeEntity) return null;
     if (refreshed.status != ScheduledWakeStatus.pending) return null;
     if (!refreshed.scheduledAt.isAtSameMomentAs(due.scheduledAt)) return null;
-    final record = refreshed;
+    if (!await _gateOpen(refreshed, generation)) return null;
+    // The gate can wait for the inbox to drain, which may have applied a
+    // peer's claim or consume: decide from the row as it is now.
+    final current = await _repository.getEntity(due.id);
+    if (current is! ScheduledWakeEntity ||
+        current.status != ScheduledWakeStatus.pending ||
+        !current.scheduledAt.isAtSameMomentAs(due.scheduledAt)) {
+      return null;
+    }
+    final record = current;
 
     final at = clock.now();
 
@@ -619,7 +688,7 @@ class ScheduledWakeManager with AgentErrorLogging {
       _scheduleRecheck(until.difference(at), generation);
       return null;
     }
-    if (held && record.leaseHostId == hostId) {
+    if (held && record.leaseHostId == hostId && !_claimTainted(record)) {
       // Claim time is derived from the deadline rather than read off
       // updatedAt: `leaseUntil` is written in UTC and so means the same
       // instant on every device, whereas updatedAt is serialized without an
@@ -639,6 +708,10 @@ class ScheduledWakeManager with AgentErrorLogging {
       return record;
     }
 
+    final gate = syncGate;
+    if (gate != null && (requiresSyncGate?.call(record) ?? false)) {
+      _claimEpochs[record.id] = gate.epoch;
+    }
     await _syncService.upsertEntity(
       record.copyWith(
         leaseHostId: hostId,
@@ -654,6 +727,65 @@ class ScheduledWakeManager with AgentErrorLogging {
     );
     _scheduleRecheck(leaseSettle, generation);
     return null;
+  }
+
+  bool _gated(ScheduledWakeEntity record) =>
+      syncGate != null && (requiresSyncGate?.call(record) ?? false);
+
+  /// Whether [record] may be claimed or fired now. A closed gate re-checks
+  /// the record after [syncGateRetry] rather than at the next hourly tick.
+  Future<bool> _gateOpen(ScheduledWakeEntity record, int generation) async {
+    if (!_gated(record)) return true;
+    final gate = syncGate!;
+    final reads = _passGateReads;
+    final ready = reads == null
+        ? gate.ready()
+        : reads.putIfAbsent(gate.epoch, gate.ready);
+    if (await ready) return true;
+    _log(
+      'sync gate closed for ${DomainLogger.sanitizeId(record.id)}: '
+      'offline or inbox not drained',
+    );
+    _scheduleRecheck(syncGateRetry, generation);
+    return false;
+  }
+
+  /// Whether this device's claim on [record] was made in an earlier
+  /// connectivity epoch — or before a restart — and so may not have reached
+  /// any peer: its settle proved nothing, and it is re-made.
+  bool _claimTainted(ScheduledWakeEntity record) =>
+      _gated(record) && _claimEpochs[record.id] != syncGate!.epoch;
+
+  /// Whether a pending record of [group] is due earlier than [record]; that
+  /// one fires first, and its firing consumes [record].
+  Future<bool> _earlierPendingInGroup(
+    ScheduledWakeEntity record,
+    String group,
+  ) async {
+    final pending = await _repository.getPendingScheduledWakeRecords();
+    return pending.any(
+      (other) =>
+          other.id != record.id &&
+          exclusiveGroupOf?.call(other) == group &&
+          other.scheduledAt.isBefore(record.scheduledAt),
+    );
+  }
+
+  /// Consumes the other pending records of [group]: the run [fired] queued
+  /// covers the work each of them stood for.
+  Future<void> _consumeGroup(
+    ScheduledWakeEntity fired,
+    String group,
+    DateTime at,
+  ) async {
+    final pending = await _repository.getPendingScheduledWakeRecords();
+    for (final other in pending) {
+      if (other.id == fired.id || exclusiveGroupOf?.call(other) != group) {
+        continue;
+      }
+      _claimEpochs.remove(other.id);
+      await _consumeFiredRecord(other, at);
+    }
   }
 
   /// Whether [agentId]'s identity is live (lifecycle `active`). A missing,
@@ -750,20 +882,15 @@ class ScheduledWakeManager with AgentErrorLogging {
     );
   }
 
-  /// Whether this legacy project schedule should be retired without a wake.
-  bool _shouldRetireDormantProjectSchedule(AgentStateEntity state) {
-    final isProjectAgent = state.slots.activeProjectId != null;
-    if (!isProjectAgent) return false;
+  /// Whether this is a project agent's state-level schedule. Project agents
+  /// update in synced slots (`ProjectUpdateCadence`); a `scheduledWakeAt` on
+  /// one is a device-local fallback an older build left behind, and firing it
+  /// would be a wake the cadence knows nothing about.
+  bool _isLegacyProjectSchedule(AgentStateEntity state) =>
+      state.slots.activeProjectId != null;
 
-    final hasPendingActivity = state.slots.pendingProjectActivityAt != null;
-    // A never-woken project agent may still be waiting for its explicit
-    // creation wake. That job is in-memory, so its one-shot state schedule is
-    // the restart fallback until the first successful run records lastWakeAt.
-    return !hasPendingActivity && state.lastWakeAt != null;
-  }
-
-  /// Clear an obsolete project `scheduledWakeAt` without executing a wake.
-  Future<bool> _retireDormantProjectSchedule(
+  /// Clears a legacy project `scheduledWakeAt` without executing a wake.
+  Future<bool> _retireLegacyProjectSchedule(
     AgentStateEntity state,
     DateTime now,
   ) async {
@@ -777,7 +904,7 @@ class ScheduledWakeManager with AgentErrorLogging {
       if (currentState == null ||
           currentSchedule == null ||
           currentSchedule.isAfter(now) ||
-          !_shouldRetireDormantProjectSchedule(currentState)) {
+          !_isLegacyProjectSchedule(currentState)) {
         return;
       }
 
@@ -794,7 +921,7 @@ class ScheduledWakeManager with AgentErrorLogging {
     onPersistedStateChanged?.call(retired.agentId);
 
     _log(
-      'retired dormant project schedule for '
+      'retired legacy project schedule for '
       '${DomainLogger.sanitizeId(retired.agentId)}',
     );
     return true;

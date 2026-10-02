@@ -729,6 +729,50 @@ void main() {
       expect(find.byIcon(LottiIcons.checkAll), findsOneWidget);
     });
 
+    testWidgets('a stale summary leads the meta line with Out of date', (
+      tester,
+    ) async {
+      for (final stale in [true, false]) {
+        final item = makeTestProjectListItemData().withAgentSidecar(
+          oneLiner: null,
+          hasProjectAgent: true,
+          inferenceProfileName: null,
+          inferenceProfileMissing: false,
+          inferenceProfileLoaded: false,
+          reportStale: stale,
+        );
+        await tester.pumpWidget(
+          wrap(
+            ProjectRow(
+              item: item,
+              selected: false,
+              topOverlap: 0,
+              bottomOverlap: 0,
+              onHoverChanged: (_) {},
+              onTap: () {},
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final marker = find.byKey(
+          ValueKey('project-row-out-of-date-${item.project.meta.id}'),
+        );
+        expect(marker, stale ? findsOneWidget : findsNothing);
+        final meta = find.textContaining('Out of date', findRichText: true);
+        expect(meta, stale ? findsOneWidget : findsNothing);
+        if (stale) {
+          // First on the line, so a narrow row truncates the progress, not
+          // the warning.
+          final text = tester.widget<RichText>(meta).text.toPlainText();
+          expect(
+            text,
+            startsWith('${String.fromCharCode(0xFFFC)} Out of date · '),
+          );
+        }
+      }
+    });
+
     testWidgets('displays one-liner when available', (tester) async {
       const oneLiner = 'Steady progress; next milestone is API v2.';
       final item = makeTestProjectListItemData(oneLiner: oneLiner);

@@ -1277,6 +1277,37 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentToolGoalRevisionLabel => 'Voorstel tot doelherziening';
 
   @override
+  String get agentUpdateIntervalDaily => 'Eén keer per dag';
+
+  @override
+  String get agentUpdateIntervalDecrease => 'Vaker bijwerken';
+
+  @override
+  String get agentUpdateIntervalHelp =>
+      'Een wijziging in het project markeert de samenvatting als verouderd; een van je apparaten werkt hem bij in het volgende updatemoment. Nu bijwerken doet het meteen.';
+
+  @override
+  String get agentUpdateIntervalHint =>
+      'Verouderde samenvattingen worden hooguit zo vaak bijgewerkt';
+
+  @override
+  String agentUpdateIntervalHours(int hours) {
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: 'Elke $hours uur',
+      one: 'Elk uur',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get agentUpdateIntervalIncrease => 'Minder vaak bijwerken';
+
+  @override
+  String get agentUpdateIntervalLabel => 'Updatefrequentie';
+
+  @override
   String get agentWakeBudgetDecrease => 'Daglimiet verlagen';
 
   @override
@@ -10966,6 +10997,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get projectsEmptyTitle => 'Start je eerste project';
+
+  @override
+  String get projectsFilterOnlyOutOfDate => 'Alleen verouderde samenvattingen';
 
   @override
   String get projectsFilterStatusLabel => 'Status:';

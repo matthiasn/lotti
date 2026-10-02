@@ -1280,6 +1280,38 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentToolGoalRevisionLabel => 'Návrh úpravy cíle';
 
   @override
+  String get agentUpdateIntervalDaily => 'Jednou denně';
+
+  @override
+  String get agentUpdateIntervalDecrease => 'Aktualizovat častěji';
+
+  @override
+  String get agentUpdateIntervalHelp =>
+      'Změna v projektu označí souhrn jako neaktuální; jedno z tvých zařízení ho obnoví v příštím termínu aktualizace. Aktualizovat nyní ho obnoví hned.';
+
+  @override
+  String get agentUpdateIntervalHint =>
+      'Neaktuální souhrny se obnovují nejvýše takto často';
+
+  @override
+  String agentUpdateIntervalHours(int hours) {
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: 'Každých $hours hodin',
+      few: 'Každé $hours hodiny',
+      one: 'Každou hodinu',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get agentUpdateIntervalIncrease => 'Aktualizovat méně často';
+
+  @override
+  String get agentUpdateIntervalLabel => 'Frekvence aktualizací';
+
+  @override
   String get agentWakeBudgetDecrease => 'Snížit denní limit';
 
   @override
@@ -11094,6 +11126,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get projectsEmptyTitle => 'Začni prvním projektem';
+
+  @override
+  String get projectsFilterOnlyOutOfDate => 'Jen neaktuální souhrny';
 
   @override
   String get projectsFilterStatusLabel => 'Stav:';

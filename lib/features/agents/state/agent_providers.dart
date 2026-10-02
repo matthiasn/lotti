@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:clock/clock.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/day_agent_trigger_tokens.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
@@ -21,6 +22,7 @@ import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
 import 'package:lotti/features/agents/service/improver_agent_service.dart';
 import 'package:lotti/features/agents/service/project_activity_monitor.dart';
+import 'package:lotti/features/agents/service/project_update_cadence.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/state/agent_wiring.dart';
@@ -30,7 +32,10 @@ import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/sync/fork_healer.dart';
 import 'package:lotti/features/agents/wake/agent_wake_coordinator.dart';
+import 'package:lotti/features/agents/wake/project_update_slots.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
+import 'package:lotti/features/agents/wake/sync_lease_gate.dart';
+import 'package:lotti/features/agents/wake/wake_audit.dart';
 import 'package:lotti/features/agents/wake/wake_intent_store.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
@@ -41,6 +46,7 @@ import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/ai/util/seed_tombstone_migration.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
+import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart'
@@ -398,6 +404,86 @@ AgentWakeCoordinator agentWakeCoordinator(Ref ref) {
   return coordinator;
 }
 
+/// When a project agent updates on its own: one synced slot at a time, fired
+/// on one device (`ProjectUpdateCadence`).
+final projectUpdateCadenceProvider = Provider<ProjectUpdateCadence>(
+  (ref) => ProjectUpdateCadence(
+    repository: ref.watch(agentRepositoryProvider),
+    syncService: ref.watch(agentSyncServiceProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
+  ),
+  name: 'projectUpdateCadenceProvider',
+);
+
+/// Arms a project agent's next update slot and makes the scheduled-wake
+/// manager look at it, so a slot due within the hour gets its own wake-up
+/// rather than waiting for the hourly scan.
+Future<void> Function(String agentId) armProjectUpdate(Ref ref) =>
+    (agentId) async {
+      final armed = await ref.read(projectUpdateCadenceProvider).arm(agentId);
+      if (armed != null) _announceProjectSlot(ref, agentId);
+    };
+
+/// Re-arms a project agent whose slot's wake the drain refused
+/// (`ProjectUpdateCadence.rearmAfterRefusal`).
+Future<void> Function(String agentId, WakeDecisionCause cause)
+rearmRefusedProjectSlot(Ref ref) => (agentId, cause) async {
+  final armed = await ref
+      .read(projectUpdateCadenceProvider)
+      .rearmAfterRefusal(agentId, cause);
+  if (armed != null) _announceProjectSlot(ref, agentId);
+};
+
+/// Re-plans a project agent's pending update slot after its interval
+/// changed (`ProjectUpdateCadence.replan`), for the interval control.
+final replanProjectUpdateProvider =
+    Provider<Future<void> Function(String agentId)>(
+      (ref) => (agentId) async {
+        await ref.read(projectUpdateCadenceProvider).replan(agentId);
+        _announceProjectSlot(ref, agentId);
+      },
+      name: 'replanProjectUpdateProvider',
+    );
+
+void _announceProjectSlot(Ref ref, String agentId) {
+  ref.read(scheduledWakeManagerProvider).requestCheck();
+  // The countdown reads the slot; an agent-store write announces nothing.
+  persistedStateChangedNotifier(ref.read(updateNotificationsProvider))(agentId);
+}
+
+/// Whether a connectivity report can reach the sync server: any link other
+/// than none or Bluetooth.
+bool reachesSyncServer(List<ConnectivityResult> results) => results.any(
+  (result) =>
+      result != ConnectivityResult.none &&
+      result != ConnectivityResult.bluetooth,
+);
+
+/// Whether this device may claim or fire a leased project update slot now:
+/// connected, with its sync inbox drained. Null where sync is not wired (a
+/// guest world, a test), where there are no peers to race.
+final syncLeaseGateProvider = Provider<SyncLeaseGate?>(
+  (ref) {
+    if (!getIt.isRegistered<MatrixService>()) return null;
+    final matrixService = getIt<MatrixService>();
+    final journalDb = ref.watch(journalDbProvider);
+    final gate = SyncLeaseGate(
+      syncEnabled: () => journalDb.getConfigFlag(enableMatrixFlag),
+      connected: matrixService.isLoggedIn,
+      connectivityChanges: Connectivity().onConnectivityChanged
+          .map(reachesSyncServer)
+          .handleError((Object _) {}),
+      currentlyOnline: () async =>
+          reachesSyncServer(await Connectivity().checkConnectivity()),
+      waitForInboxDrained: (timeout) => matrixService.queueCoordinator.queue
+          .waitForDrainAtMostTo(0, timeout: timeout),
+    );
+    ref.onDispose(gate.dispose);
+    return gate;
+  },
+  name: 'syncLeaseGateProvider',
+);
+
 /// The scheduled wake manager for time-based agent wakes.
 final scheduledWakeManagerProvider = Provider<ScheduledWakeManager>(
   scheduledWakeManager,
@@ -422,7 +508,16 @@ ScheduledWakeManager scheduledWakeManager(Ref ref) {
         record.workspaceKey == coordinatorDigestWorkspaceKey ||
         isGoalEscalationWorkspace(record.workspaceKey) ||
         isGoalChatRecoveryWorkspace(record.workspaceKey) ||
-        isRelationshipEscalationWorkspace(record.workspaceKey),
+        isRelationshipEscalationWorkspace(record.workspaceKey) ||
+        isProjectUpdateWorkspace(record.workspaceKey),
+    // A project's update slots follow the rules ProjectWakeGovernor.tla
+    // checks: claimed and fired only while connected with the inbox drained,
+    // re-claimed after a connection drop, and one run per agent however many
+    // slots devices armed for one change.
+    syncGate: ref.watch(syncLeaseGateProvider),
+    requiresSyncGate: (record) => isProjectUpdateWorkspace(record.workspaceKey),
+    exclusiveGroupOf: (record) =>
+        isProjectUpdateWorkspace(record.workspaceKey) ? record.agentId : null,
     // A host id read before the vector clock service initialised would
     // throw; the manager would catch that as a per-record failure and leave a
     // due digest neither claimed nor fired until the next hourly tick.
@@ -458,14 +553,8 @@ ScheduledWakeManager scheduledWakeManager(Ref ref) {
   return manager;
 }
 
-/// Tracks local project/task changes and marks project reports stale while the
-/// project subscription chooses the appropriate short or morning wake delay.
-final projectActivityCancellationCoordinatorProvider =
-    Provider<ProjectActivityCancellationCoordinator>(
-      (_) => ProjectActivityCancellationCoordinator(),
-      name: 'projectActivityCancellationCoordinatorProvider',
-    );
-
+/// Tracks local project/task changes, marks project reports stale and arms
+/// their next update slot.
 final projectActivityMonitorProvider = Provider<ProjectActivityMonitor>(
   projectActivityMonitor,
   name: 'projectActivityMonitorProvider',
@@ -490,10 +579,8 @@ ProjectActivityMonitor projectActivityMonitor(Ref ref) {
           projectId: projectId,
           allowedCategoryIds: allowedCategoryIds,
         ),
+    armProjectUpdate: armProjectUpdate(ref),
     domainLogger: ref.watch(domainLoggerProvider),
-    cancellationCoordinator: ref.watch(
-      projectActivityCancellationCoordinatorProvider,
-    ),
   );
   ref.onDispose(() {
     unawaited(monitor.stop());
@@ -645,6 +732,10 @@ Future<void> agentInitialization(Ref ref) async {
     retireIfSuperseded: (agentId) =>
         taskAgentService.retirement.retireIfSuperseded(agentId),
   );
+
+  // 2.25. A project slot whose wake the drain refused was already consumed;
+  //       re-arm so a stale report is not left with no slot pending.
+  wireProjectSlotRefusals(ref, orchestrator);
 
   // 2.5. Coordinate wakes with peer devices: a peer's claim or completion
   //      re-drains the jobs it held back.

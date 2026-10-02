@@ -142,6 +142,7 @@ ProjectAgentWorkflow projectAgentWorkflow(Ref ref) {
     logSummarizer: AgentLogLlmSummarizer(
       inferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
     ),
+    armProjectUpdate: armProjectUpdate(ref),
   );
 }
 

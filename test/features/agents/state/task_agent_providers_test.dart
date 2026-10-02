@@ -56,6 +56,35 @@ void main() {
       expect(service.orchestrator, same(orchestrator));
       expect(service.syncService, same(mockSyncService));
     });
+
+    test(
+      'ending automatic updates consumes the pending update slots',
+      () async {
+        final cadence = MockProjectUpdateCadence();
+        when(
+          () => cadence.consumeAll('project-agent'),
+        ).thenAnswer((_) async => 2);
+        final container = ProviderContainer(
+          overrides: [
+            agentServiceProvider.overrideWithValue(MockAgentService()),
+            agentRepositoryProvider.overrideWithValue(MockAgentRepository()),
+            wakeOrchestratorProvider.overrideWithValue(MockWakeOrchestrator()),
+            agentSyncServiceProvider.overrideWithValue(MockAgentSyncService()),
+            projectUpdateCadenceProvider.overrideWithValue(cadence),
+            domainLoggerProvider.overrideWithValue(
+              DomainLogger(loggingService: LoggingService()),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(taskAgentServiceProvider).cancelProjectUpdates!(
+          'project-agent',
+        );
+
+        verify(() => cadence.consumeAll('project-agent')).called(1);
+      },
+    );
   });
 
   group('taskAgentProvider', () {

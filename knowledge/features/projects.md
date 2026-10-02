@@ -280,7 +280,18 @@ id → name map changes, since profile edits emit no project or agent
 notification; a rename shows the new name and a deletion (local or synced)
 turns into the missing warning, while edits to a profile's model slots do not
 reload. It is a display switch, so it never counts as an active
-filter and the name is not searchable. Background enrichment
+filter and the name is not searchable.
+
+The same sidecar carries `ProjectListItemData.reportStale`, from one batched
+`getAgentStatesByAgentIds` read: whether the agent's summary is out of date
+(see [stale reports](agents/project-and-event-agents.md#stale-reports-and-update-slots)).
+A stale row leads its meta line with a warning glyph and *Out of date*, ahead
+of the progress, so a narrow row truncates the progress rather than the
+warning. The filter sheet's *Only out-of-date summaries* switch
+(`ProjectsFilter.onlyOutOfDate`) narrows the list to those rows. Unlike the
+profile switch it is a filter: it counts as active, shows a removable chip,
+offers *Clear filters* when it empties the list, and `resetToCurrent` turns it
+off. Background enrichment
 listens through `projectAgentOverviewUpdateStreamProvider`, which bulk-resolves
 the affected agent IDs and emits only when at least one is a project agent;
 unrelated task, event, day and improver writes therefore do not rebuild the

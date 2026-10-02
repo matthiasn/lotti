@@ -25,7 +25,6 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
-import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/sync/agent_entity_receive.dart';
@@ -266,6 +265,13 @@ class SyncEventProcessor {
   /// can mirror runtime state (subscriptions) mid-session.
   List<AgentRuntimeMaintenance> runtimeMaintenance =
       const <AgentRuntimeMaintenance>[];
+
+  /// Arms a project agent's next update slot when the state that arrived
+  /// leaves its report stale (`ProjectUpdateCadence.arm`), injected alongside
+  /// the orchestrator. Arming is inert — the received state never starts work
+  /// on this device; at most it schedules the one synced slot every device
+  /// shares (`specs/tla/ProjectWakeGovernor.tla`, StaleDoesNotTriggerWork).
+  Future<void> Function(String agentId)? armProjectUpdate;
 
   /// Keeps a task at one live task agent (ADR 0104), injected alongside the
   /// orchestrator. Called with the task id after an `agent_task` link, or a

@@ -56,12 +56,6 @@ final projectDetailRecordProvider = FutureProvider.autoDispose
           ? null
           : await ref.watch(agentReportProvider(identity.agentId).future);
       final report = reportEntity?.mapOrNull(agentReport: (value) => value);
-      final agentState = identity == null
-          ? null
-          : await ref.watch(agentStateProvider(identity.agentId).future);
-      final nextWakeAt = agentState?.mapOrNull(
-        agentState: (value) => value.nextWakeAt ?? value.scheduledWakeAt,
-      );
 
       final aiSummary = _resolveAiSummary(report);
 
@@ -72,7 +66,6 @@ final projectDetailRecordProvider = FutureProvider.autoDispose
         project: project,
         category: category,
         healthMetrics: metrics,
-        reportNextWakeAt: nextWakeAt,
         completedTaskCount: completedTaskCount,
         totalTaskCount: linkedTasks.length,
         blockedTaskCount: blockedTaskCount,

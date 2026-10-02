@@ -33,10 +33,8 @@ ProjectAgentService projectAgentService(Ref ref) {
     },
     mutationCoordinator: ref.watch(projectAgentMutationCoordinatorProvider),
     domainLogger: ref.watch(domainLoggerProvider),
-    cancellationCoordinator: ref.watch(
-      projectActivityCancellationCoordinatorProvider,
-    ),
     onPersistedStateChanged: persistedStateChangedNotifier(notifications),
+    armProjectUpdate: armProjectUpdate(ref),
   );
 }
 

@@ -113,6 +113,10 @@ class ProjectsFilterController extends Notifier<ProjectsFilter> {
     state = state.copyWith(sortMode: sortMode);
   }
 
+  void setOnlyOutOfDate({required bool onlyOutOfDate}) {
+    state = state.copyWith(onlyOutOfDate: onlyOutOfDate);
+  }
+
   /// Clears every narrowing filter back to the current-work scope. The
   /// profile pill is a display preference, not a filter, so it survives.
   void resetToCurrent() {
@@ -143,6 +147,7 @@ typedef _ProjectAgentSidecar = ({
   String? inferenceProfileName,
   bool inferenceProfileMissing,
   bool inferenceProfileLoaded,
+  bool reportStale,
 });
 
 /// Last successfully loaded agent sidecars, keyed by project id.
@@ -307,6 +312,7 @@ void _replaceProjectAgentSidecarCache(
           inferenceProfileName: item.inferenceProfileName,
           inferenceProfileMissing: item.inferenceProfileMissing,
           inferenceProfileLoaded: item.inferenceProfileLoaded,
+          reportStale: item.reportStale,
         )),
       ),
     );
@@ -327,6 +333,7 @@ ProjectsOverviewSnapshot _restoreCachedProjectAgentSidecars(
       // A sidecar cached while profiles were not looked up stays unloaded, so
       // its empty profile fields never render as "no inference profile".
       inferenceProfileLoaded: cached.inferenceProfileLoaded,
+      reportStale: cached.reportStale,
     );
   });
 }
@@ -356,11 +363,12 @@ Future<ProjectsOverviewSnapshot> _attachProjectAgentSidecars(
   final agentIds = agentIdsByProjectId.values.toSet().toList(growable: false);
   if (agentIds.isEmpty) return snapshot;
 
-  final (reportsByAgentId, profileNamesByAgentId) = await (
+  final (reportsByAgentId, statesByAgentId, profileNamesByAgentId) = await (
     agentRepository.getLatestReportsByAgentIds(
       agentIds,
       AgentReportScopes.current,
     ),
+    agentRepository.getAgentStatesByAgentIds(agentIds),
     aiConfigRepository == null
         ? Future.value(const <String, String?>{})
         : _assignedProfileNamesByAgentId(
@@ -379,6 +387,7 @@ Future<ProjectsOverviewSnapshot> _attachProjectAgentSidecars(
       inferenceProfileMissing:
           profileName == null && profileNamesByAgentId.containsKey(agentId),
       inferenceProfileLoaded: aiConfigRepository != null,
+      reportStale: statesByAgentId[agentId]?.isReportStale ?? false,
     );
   });
 }

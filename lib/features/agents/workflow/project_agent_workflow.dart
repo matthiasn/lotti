@@ -1,12 +1,10 @@
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
-import 'package:lotti/features/agents/model/agent_automation_policy.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/project_agent_report_contract.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
@@ -20,6 +18,7 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/util/text_utils.dart';
+import 'package:lotti/features/agents/wake/project_update_slots.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/agent_wake_memory.dart';
 import 'package:lotti/features/agents/workflow/carrierless_attribution.dart';
@@ -68,6 +67,7 @@ class ProjectAgentWorkflow with AgentErrorLogging {
     this.onPersistedStateChanged,
     this.inputCaptureService,
     this.logSummarizer,
+    this.armProjectUpdate,
     this.compactionTailBudgetTokens = 50000,
     this.compactionTailRetainTokens = 20000,
   });
@@ -93,6 +93,11 @@ class ProjectAgentWorkflow with AgentErrorLogging {
 
   /// LLM edge for compaction folds (ADR 0017).
   final AgentLogLlmSummarizer? logSummarizer;
+
+  /// Arms the agent's next update slot when its report is still stale and
+  /// automatic updates are on (`ProjectUpdateCadence.arm`). Called after a
+  /// run, successful or not; arming is inert and idempotent.
+  final Future<void> Function(String agentId)? armProjectUpdate;
 
   /// Compaction watermarks — see `TaskAgentWorkflow` for the rationale.
   final int compactionTailBudgetTokens;
@@ -144,24 +149,28 @@ class ProjectAgentWorkflow with AgentErrorLogging {
 
   // ── Private helpers ────────────────────────────────────────────────────────
 
-  /// Reads the current identity policy at the point a fallback is persisted.
-  ///
-  /// A wake can outlive an automation toggle, so the identity passed at wake
-  /// start is not authoritative for retry or follow-up scheduling.
-  Future<bool> _automaticFallbackAllowed(String agentId) async {
-    final currentIdentity = await agentRepository.getEntity(agentId);
-    return currentIdentity is AgentIdentityEntity &&
-        projectAgentAutomaticWakesAllowed(
-          config: currentIdentity.config,
-          lifecycle: currentIdentity.lifecycle,
-        );
+  /// Arms the next update slot, containing a failure: a missed arm delays
+  /// the next update, it must not fail the run that already happened.
+  Future<void> _armNextUpdate(String agentId) async {
+    final arm = armProjectUpdate;
+    if (arm == null) return;
+    try {
+      await arm(agentId);
+    } catch (error, stackTrace) {
+      logError(
+        'failed to arm the next update slot',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
-  /// Records one failed attempt and creates or advances its automatic fallback.
+  /// Records one failed attempt; the report stays stale, so the next update
+  /// slot retries it — once per slot, within the daily budget, never on every
+  /// scheduler scan.
   ///
   /// This is shared by inference failures inside [executeImpl] and setup
-  /// failures caught by [execute], so an exception before conversation
-  /// creation cannot leave an overdue fallback firing on every scheduler scan.
+  /// failures caught by [execute].
   Future<WakeResult> _handleWakeFailure({
     required AgentIdentityEntity agentIdentity,
     required String runKey,
@@ -186,25 +195,8 @@ class ProjectAgentWorkflow with AgentErrorLogging {
           agentIdentity.agentId,
         );
         if (latestState == null) return;
-        final hasPendingActivity =
-            latestState.slots.pendingProjectActivityAt != null;
-        final isUnfinishedLegacyCreation =
-            latestState.lastWakeAt == null &&
-            latestState.scheduledWakeAt != null;
         await syncService.upsertEntity(
           latestState.copyWith(
-            scheduledWakeAt: _nextProjectActivityFallback(
-              currentSchedule: latestState.scheduledWakeAt,
-              pendingActivityAt: hasPendingActivity
-                  ? latestState.slots.pendingProjectActivityAt
-                  : isUnfinishedLegacyCreation
-                  ? latestState.scheduledWakeAt
-                  : null,
-              automaticFallbackAllowed: await _automaticFallbackAllowed(
-                agentIdentity.agentId,
-              ),
-              now: failureAt,
-            ),
             updatedAt: failureAt,
             consecutiveFailureCount: latestState.consecutiveFailureCount + 1,
           ),
@@ -214,6 +206,7 @@ class ProjectAgentWorkflow with AgentErrorLogging {
       if (persistedFailure) {
         onPersistedStateChanged?.call(agentIdentity.agentId);
       }
+      await _armNextUpdate(agentIdentity.agentId);
     } catch (stateError, stateStackTrace) {
       logError(
         'failed to update failure count',
@@ -223,42 +216,6 @@ class ProjectAgentWorkflow with AgentErrorLogging {
     }
 
     return WakeResult.failed(kind: 'Project agent', error: error);
-  }
-
-  Future<void> _skipDormantScheduledWake({
-    required AgentStateEntity state,
-    required DateTime now,
-  }) async {
-    final hostId = await syncService.localHost();
-    await syncService.runInTransaction(() async {
-      // A transform of the current row, not of the caller's snapshot, so a
-      // write that landed since cannot be overwritten (ADR 0068).
-      await syncService.updateAgentState(
-        state.agentId,
-        (current) => current.copyWith(
-          lastWakeAt: now,
-          scheduledWakeAt: null,
-          updatedAt: now,
-          consecutiveFailureCount: 0,
-          wakeCounter: current.wakeCounter.increment(hostId),
-        ),
-      );
-
-      // The dormant skip still advances `lastWakeAt`, so it event-sources the
-      // same marker as a full wake (PR 4, B2). No wake thread here — the marker
-      // gets its own thread.
-      await syncService.appendMilestone(
-        agentId: state.agentId,
-        milestone: AgentMilestone.wakeCompleted,
-        createdAt: now,
-      );
-    });
-    onPersistedStateChanged?.call(state.agentId);
-
-    _log(
-      'retired legacy scheduled wake: no pending project activity',
-      subDomain: 'execute',
-    );
   }
 
   Future<void> _persistTokenUsage({

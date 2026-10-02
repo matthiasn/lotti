@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/agent_sidecar_reclaimer.dart';
 import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/agents/wake/project_update_slots.dart';
 import 'package:lotti/features/agents/wake/wake_budget.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -406,6 +407,30 @@ class AgentService {
         return true;
       });
 
+  /// Sets how often [agentId] — a project agent — may update its stale report
+  /// on its own, on every device: one of [ProjectUpdateSlots.choices], in
+  /// minutes. The preference lives on the identity, so it syncs with it; a
+  /// slot already pending on the old grid is the caller's to re-plan
+  /// (`ProjectUpdateCadence.replan`). Returns `false` when the agent does not
+  /// exist.
+  Future<bool> updateUpdateIntervalMinutes(String agentId, int minutes) {
+    if (!ProjectUpdateSlots.choices.contains(minutes)) {
+      throw ArgumentError.value(minutes, 'minutes', 'not an offered interval');
+    }
+    return syncService.runInTransaction(() async {
+      final identity = await getAgent(agentId);
+      if (identity == null) return false;
+      if (identity.config.updateIntervalMinutes == minutes) return true;
+      await syncService.upsertEntity(
+        identity.copyWith(
+          config: identity.config.copyWith(updateIntervalMinutes: minutes),
+          updatedAt: clock.now(),
+        ),
+      );
+      return true;
+    });
+  }
+
   /// Returns `true` when the agent was found and its lifecycle was updated,
   /// `false` when the agent does not exist.
   ///
@@ -455,17 +480,6 @@ class AgentService {
             : identity.userResumedAt,
       );
       await syncService.upsertEntity(updated);
-      if (identity.kind == AgentKinds.projectAgent &&
-          lifecycle != AgentLifecycle.active) {
-        final state = await repository.getAgentState(agentId);
-        if (state != null && state.scheduledWakeAt != null) {
-          // Project fallback deadlines are device-local. Clear them in the
-          // same database transaction without advancing synced LWW metadata.
-          await repository.upsertEntity(
-            state.copyWith(scheduledWakeAt: null),
-          );
-        }
-      }
       return true;
     });
     // Pause/resume/destroy must reach every agent surface: the goal

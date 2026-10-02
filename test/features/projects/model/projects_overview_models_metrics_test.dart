@@ -42,6 +42,7 @@ void main() {
       required ProjectStatus status,
       CategoryDefinition? category,
       String? categoryId,
+      bool stale = false,
     }) {
       final project = makeTestProject(
         title: title,
@@ -52,6 +53,7 @@ void main() {
         project: project,
         category: category,
         taskRollup: const ProjectTaskRollupData(),
+        reportStale: stale,
       );
     }
 
@@ -73,12 +75,14 @@ void main() {
                 status: activeStatus,
                 category: catEngineering,
                 categoryId: 'cat-eng',
+                stale: true,
               ),
               makeItem(
                 title: 'Legacy Cleanup',
                 status: completedStatus,
                 category: catEngineering,
                 categoryId: 'cat-eng',
+                stale: true,
               ),
             ],
           ),
@@ -112,6 +116,34 @@ void main() {
       expect(result, hasLength(2));
       expect(result[0].projects, hasLength(3));
       expect(result[1].projects, hasLength(2));
+    });
+
+    test('only out-of-date keeps stale summaries and drops emptied groups', () {
+      final result = applyProjectsFilter(
+        makeSnapshot(),
+        const ProjectsFilter(onlyOutOfDate: true),
+      );
+
+      expect(result.map((group) => group.categoryId), ['cat-eng']);
+      expect(
+        result.single.projects.map((item) => item.project.data.title),
+        ['CI Pipeline', 'Legacy Cleanup'],
+      );
+    });
+
+    test('only out-of-date narrows together with the status filter', () {
+      final result = applyProjectsFilter(
+        makeSnapshot(),
+        const ProjectsFilter(
+          onlyOutOfDate: true,
+          selectedStatusIds: {ProjectStatusFilterIds.completed},
+        ),
+      );
+
+      expect(
+        result.single.projects.map((item) => item.project.data.title),
+        ['Legacy Cleanup'],
+      );
     });
 
     test('actionable sort puts active work before open and completed work', () {

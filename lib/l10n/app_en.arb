@@ -887,6 +887,39 @@
   "agentTokenUsageTotalTokens": "Total",
   "agentTokenUsageWakeCount": "Wakes",
   "agentToolGoalRevisionLabel": "Goal revision proposal",
+  "agentUpdateIntervalDaily": "Once a day",
+  "@agentUpdateIntervalDaily": {
+    "description": "The daily update interval inside the stepper."
+  },
+  "agentUpdateIntervalDecrease": "Update more often",
+  "@agentUpdateIntervalDecrease": {
+    "description": "Tooltip of the stepper button that shortens the update interval."
+  },
+  "agentUpdateIntervalHelp": "A change to the project marks its summary out of date; one of your devices refreshes it in the next update slot. Update now refreshes it right away.",
+  "@agentUpdateIntervalHelp": {
+    "description": "Tooltip explaining how a project summary is kept up to date."
+  },
+  "agentUpdateIntervalHint": "Out-of-date summaries refresh at most this often",
+  "@agentUpdateIntervalHint": {
+    "description": "Secondary line under the update-frequency label."
+  },
+  "agentUpdateIntervalHours": "{hours, plural, =1{Every hour} other{Every {hours} hours}}",
+  "@agentUpdateIntervalHours": {
+    "description": "An update interval of whole hours inside the stepper (1, 2, 4 or 8).",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "agentUpdateIntervalIncrease": "Update less often",
+  "@agentUpdateIntervalIncrease": {
+    "description": "Tooltip of the stepper button that lengthens the update interval."
+  },
+  "agentUpdateIntervalLabel": "Update frequency",
+  "@agentUpdateIntervalLabel": {
+    "description": "Label of a project agent's update-frequency control in agent internals."
+  },
   "agentWakeBudgetDecrease": "Lower the daily limit",
   "@agentWakeBudgetDecrease": {
     "description": "Tooltip of the stepper button lowering the daily wake limit."
@@ -6425,6 +6458,10 @@
   "projectsEmptyFilteredBody": "Adjust your search or filters to bring matching projects back into view.",
   "projectsEmptyFilteredTitle": "No projects match this view",
   "projectsEmptyTitle": "Start your first project",
+  "projectsFilterOnlyOutOfDate": "Only out-of-date summaries",
+  "@projectsFilterOnlyOutOfDate": {
+    "description": "Projects filter toggle: show only projects whose agent summary is out of date."
+  },
   "projectsFilterStatusLabel": "Status:",
   "projectsFilterTooltip": "Filter projects",
   "projectShowcaseAiReportTitle": "AI Report",

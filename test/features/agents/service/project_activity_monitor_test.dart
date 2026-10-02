@@ -30,6 +30,9 @@ void main() {
   late StreamController<Set<String>> syncUpdateController;
   late ProjectActivityMonitor monitor;
 
+  /// Agents the monitor asked to arm their next update slot.
+  final armedAgentIds = <String>[];
+
   setUp(() {
     notifications = MockUpdateNotifications();
     repository = MockAgentRepository();
@@ -66,12 +69,14 @@ void main() {
       ),
     );
 
+    armedAgentIds.clear();
     monitor = ProjectActivityMonitor(
       notifications: notifications,
       agentRepository: repository,
       projectRepository: projectRepository,
       syncService: syncService,
       clock: Clock.fixed(now),
+      armProjectUpdate: (agentId) async => armedAgentIds.add(agentId),
     );
   });
 
@@ -375,265 +380,6 @@ void main() {
       },
     );
 
-    test(
-      'failed cancellation restores eligibility for the older activity batch',
-      () async {
-        final coordinator = ProjectActivityCancellationCoordinator();
-        final observedSequence = coordinator.captureActivity();
-
-        await expectLater(
-          coordinator.runCancellation<void>(
-            agentId: 'agent-1',
-            action: (_) async => throw StateError('rollback'),
-          ),
-          throwsA(isA<StateError>()),
-        );
-
-        var activityPersisted = false;
-        final accepted = await coordinator.runActivityWrite(
-          agentId: 'agent-1',
-          observedSequence: observedSequence,
-          action: () async => activityPersisted = true,
-        );
-
-        expect(accepted, isTrue);
-        expect(activityPersisted, isTrue);
-      },
-    );
-
-    test(
-      'confirmed commit keeps the cutoff when later work throws',
-      () async {
-        final coordinator = ProjectActivityCancellationCoordinator();
-        final observedSequence = coordinator.captureActivity();
-
-        await expectLater(
-          coordinator.runCancellation<void>(
-            agentId: 'agent-1',
-            action: (confirmCommit) async {
-              confirmCommit();
-              throw StateError('outbox flush failed');
-            },
-          ),
-          throwsA(isA<StateError>()),
-        );
-
-        var activityPersisted = false;
-        final accepted = await coordinator.runActivityWrite(
-          agentId: 'agent-1',
-          observedSequence: observedSequence,
-          action: () async => activityPersisted = true,
-        );
-
-        expect(accepted, isFalse);
-        expect(activityPersisted, isFalse);
-      },
-    );
-
-    test(
-      'a cancellation requested while an older batch waits in line rejects '
-      'it before the cancellation itself has run',
-      () async {
-        final coordinator = ProjectActivityCancellationCoordinator();
-        await coordinator.runCancellation<void>(
-          agentId: 'agent-1',
-          action: (_) async {},
-        );
-        final blockingObserved = coordinator.captureActivity();
-        final waitingObserved = coordinator.captureActivity();
-        final releaseBlocking = Completer<void>();
-        final writes = <String>[];
-
-        final blocking = coordinator.runActivityWrite(
-          agentId: 'agent-1',
-          observedSequence: blockingObserved,
-          action: () async {
-            await releaseBlocking.future;
-            writes.add('blocking');
-          },
-        );
-        final waiting = coordinator.runActivityWrite(
-          agentId: 'agent-1',
-          observedSequence: waitingObserved,
-          action: () async => writes.add('waiting'),
-        );
-        // Let the blocking write take its turn before the cancellation arrives.
-        await pumpEventQueue();
-        final cancellation = coordinator.runCancellation<void>(
-          agentId: 'agent-1',
-          action: (_) async => writes.add('cancelled'),
-        );
-
-        releaseBlocking.complete();
-
-        expect(await blocking, isTrue);
-        expect(await waiting, isFalse);
-        await cancellation;
-        expect(writes, ['blocking', 'cancelled']);
-
-        // The second cancellation committed a later cutoff than the first,
-        // so a batch observed before it stays rejected afterwards too.
-        expect(
-          await coordinator.runActivityWrite(
-            agentId: 'agent-1',
-            observedSequence: waitingObserved,
-            action: () async => writes.add('late'),
-          ),
-          isFalse,
-        );
-        expect(
-          await coordinator.runActivityWrite(
-            agentId: 'agent-1',
-            observedSequence: coordinator.captureActivity(),
-            action: () async => writes.add('fresh'),
-          ),
-          isTrue,
-        );
-        expect(writes, ['blocking', 'cancelled', 'fresh']);
-      },
-    );
-
-    test(
-      'overlapping failed cancellations leave no stale activity cutoff',
-      () async {
-        final coordinator = ProjectActivityCancellationCoordinator();
-        final observedSequence = coordinator.captureActivity();
-        final firstStarted = Completer<void>();
-        final releaseFirst = Completer<void>();
-        final secondStarted = Completer<void>();
-        final releaseSecond = Completer<void>();
-
-        final firstExpectation = expectLater(
-          coordinator.runCancellation<void>(
-            agentId: 'agent-1',
-            action: (_) async {
-              firstStarted.complete();
-              await releaseFirst.future;
-              throw StateError('first rollback');
-            },
-          ),
-          throwsA(isA<StateError>()),
-        );
-        await firstStarted.future;
-        final secondExpectation = expectLater(
-          coordinator.runCancellation<void>(
-            agentId: 'agent-1',
-            action: (_) async {
-              secondStarted.complete();
-              await releaseSecond.future;
-              throw StateError('second rollback');
-            },
-          ),
-          throwsA(isA<StateError>()),
-        );
-
-        releaseFirst.complete();
-        await firstExpectation;
-        await secondStarted.future;
-        releaseSecond.complete();
-        await secondExpectation;
-
-        var activityPersisted = false;
-        final accepted = await coordinator.runActivityWrite(
-          agentId: 'agent-1',
-          observedSequence: observedSequence,
-          action: () async => activityPersisted = true,
-        );
-
-        expect(accepted, isTrue);
-        expect(activityPersisted, isTrue);
-      },
-    );
-
-    test(
-      'cancellation rejects an older batch still resolving project links',
-      () async {
-        final coordinator = ProjectActivityCancellationCoordinator();
-        final linksStarted = Completer<void>();
-        final releaseLinks = Completer<void>();
-        final link = AgentLink.agentProject(
-          id: 'link-cancel-race',
-          fromId: 'agent-1',
-          toId: 'project-1',
-          createdAt: kAgentTestDate,
-          updatedAt: kAgentTestDate,
-          vectorClock: null,
-        );
-        var state = makeTestState(
-          agentId: 'agent-1',
-          slots: AgentSlots(
-            activeProjectId: 'project-1',
-            pendingProjectActivityAt: now.subtract(
-              const Duration(minutes: 5),
-            ),
-          ),
-          nextWakeAt: now.add(const Duration(minutes: 2)),
-          scheduledWakeAt: DateTime(2026, 3, 23, 6),
-        );
-        when(
-          () => repository.getLinksTo(
-            'project-1',
-            type: AgentLinkTypes.agentProject,
-          ),
-        ).thenAnswer((_) async {
-          linksStarted.complete();
-          await releaseLinks.future;
-          return [link];
-        });
-        when(
-          () => repository.getAgentState('agent-1'),
-        ).thenAnswer((_) async => state);
-        when(() => syncService.upsertEntity(any())).thenAnswer((
-          invocation,
-        ) async {
-          state = invocation.positionalArguments.single as AgentStateEntity;
-        });
-
-        final orchestrator = MockWakeOrchestrator();
-        when(() => orchestrator.clearThrottle('agent-1')).thenReturn(null);
-        when(
-          () => orchestrator.cancelPendingWakes(
-            'agent-1',
-            allWorkspaces: true,
-          ),
-        ).thenReturn(const []);
-        final projectService = ProjectAgentService(
-          agentService: MockAgentService(),
-          repository: repository,
-          orchestrator: orchestrator,
-          syncService: syncService,
-          projectScopeIsCurrent: (_, _) async => true,
-          mutationCoordinator: ProjectAgentMutationCoordinator(),
-          cancellationCoordinator: coordinator,
-        );
-        final raceMonitor = ProjectActivityMonitor(
-          notifications: notifications,
-          agentRepository: repository,
-          projectRepository: projectRepository,
-          syncService: syncService,
-          clock: Clock.fixed(now),
-          cancellationCoordinator: coordinator,
-        );
-        addTearDown(raceMonitor.stop);
-
-        raceMonitor.start();
-        updateController.add({'project-1'});
-        await linksStarted.future;
-
-        await withClock(
-          Clock.fixed(now.add(const Duration(minutes: 1))),
-          () => projectService.cancelScheduledWake('agent-1'),
-        );
-        releaseLinks.complete();
-        await pumpEventQueue(times: 3);
-
-        expect(state.slots.pendingProjectActivityAt, isNull);
-        expect(state.nextWakeAt, isNull);
-        expect(state.scheduledWakeAt, isNull);
-        verify(() => syncService.upsertEntity(any())).called(1);
-      },
-    );
-
     glados.Glados(
       glados.any.projectActivityScenario,
       glados.ExploreConfig(numRuns: 180),
@@ -675,11 +421,14 @@ void main() {
             hGeneratedProjectActivityNow,
             reason: '$scenario',
           );
+          // Stale, never a device-local deadline: the next update is a
+          // synced slot the cadence arms.
           expect(
-            state.scheduledWakeAt,
-            DateTime(2026, 4, 4, 6),
+            state.reportStaleAt,
+            hGeneratedProjectActivityNow,
             reason: '$scenario',
           );
+          expect(state.scheduledWakeAt, isNull, reason: '$scenario');
           expect(state.updatedAt, hGeneratedProjectActivityNow);
         }
 
@@ -694,6 +443,12 @@ void main() {
         expect(
           bench.uiNotifications,
           expectedUiNotifications,
+          reason: '$scenario',
+        );
+        // Arming follows only a committed stale mark.
+        expect(
+          bench.armedAgentIds,
+          [for (final ids in expectedUiNotifications) ids.first],
           reason: '$scenario',
         );
 
@@ -749,7 +504,12 @@ void main() {
               as AgentStateEntity;
       expect(captured.slots.activeProjectId, 'project-1');
       expect(captured.slots.pendingProjectActivityAt, now);
-      expect(captured.scheduledWakeAt, DateTime(2026, 3, 23, 6));
+      expect(captured.reportStaleAt, now);
+      expect(captured.isReportStale, isTrue);
+      // Activity never schedules a device-local wake; it asks the cadence
+      // to arm the next synced update slot, after the stale mark commits.
+      expect(captured.scheduledWakeAt, isNull);
+      expect(armedAgentIds, ['agent-1']);
 
       verify(
         () => notifications.notifyUiOnly({'agent-1', agentNotification}),
@@ -757,7 +517,8 @@ void main() {
     });
 
     test(
-      'preserves a stale watermark written while activity is resolved',
+      'never lowers a later stale watermark written while activity is '
+      'resolved',
       () async {
         final link = AgentLink.agentProject(
           id: 'link-stale-race',
@@ -771,7 +532,9 @@ void main() {
           agentId: 'agent-1',
           slots: const AgentSlots(activeProjectId: 'project-1'),
         );
-        final staleAt = now.subtract(const Duration(minutes: 1));
+        // A peer's later stale mark arrived by sync after the snapshot. The
+        // watermark is max-joined, so this write must not lower it.
+        final staleAt = now.add(const Duration(minutes: 1));
         final concurrent = snapshot.copyWith(reportStaleAt: staleAt);
         var stateRead = 0;
         when(
@@ -837,6 +600,7 @@ void main() {
         verifyNever(
           () => notifications.notifyUiOnly(any()),
         );
+        expect(armedAgentIds, isEmpty);
       },
     );
 
@@ -878,11 +642,12 @@ void main() {
               ).captured.single
               as AgentStateEntity;
       expect(captured.slots.pendingProjectActivityAt, now);
-      expect(captured.scheduledWakeAt, DateTime(2026, 3, 23, 6));
+      expect(captured.reportStaleAt, now);
+      expect(armedAgentIds, ['agent-1']);
     });
 
     test(
-      'preserves an existing explicit wake while refreshing activity',
+      'leaves a legacy deadline for the service to retire',
       () async {
         final link = AgentLink.agentProject(
           id: 'link-existing-wake',
@@ -918,13 +683,16 @@ void main() {
                   () => syncService.upsertEntity(captureAny()),
                 ).captured.single
                 as AgentStateEntity;
+        // The monitor neither honours nor clears the legacy field;
+        // ProjectAgentService retires it on restore.
         expect(captured.scheduledWakeAt, existingWake);
         expect(captured.slots.pendingProjectActivityAt, now);
       },
     );
 
     test(
-      'marks activity stale without arming a wake when automation is off',
+      'marks activity stale when automation is off; the cadence decides '
+      'whether to arm',
       () async {
         final link = AgentLink.agentProject(
           id: 'link-automation-off',
@@ -968,7 +736,11 @@ void main() {
                 ).captured.single
                 as AgentStateEntity;
         expect(captured.slots.pendingProjectActivityAt, now);
+        expect(captured.reportStaleAt, now);
         expect(captured.scheduledWakeAt, isNull);
+        // The arm request is inert: ProjectUpdateCadence.arm refuses an agent
+        // whose automation is off.
+        expect(armedAgentIds, ['agent-1']);
       },
     );
 

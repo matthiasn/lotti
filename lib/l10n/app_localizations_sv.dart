@@ -1279,6 +1279,37 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentToolGoalRevisionLabel => 'Förslag på måljustering';
 
   @override
+  String get agentUpdateIntervalDaily => 'En gång om dagen';
+
+  @override
+  String get agentUpdateIntervalDecrease => 'Uppdatera oftare';
+
+  @override
+  String get agentUpdateIntervalHelp =>
+      'En ändring i projektet markerar sammanfattningen som inaktuell; en av dina enheter uppdaterar den vid nästa uppdateringstillfälle. Uppdatera nu gör det direkt.';
+
+  @override
+  String get agentUpdateIntervalHint =>
+      'Inaktuella sammanfattningar uppdateras högst så här ofta';
+
+  @override
+  String agentUpdateIntervalHours(int hours) {
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: 'Med $hours timmars mellanrum',
+      one: 'Varje timme',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get agentUpdateIntervalIncrease => 'Uppdatera mer sällan';
+
+  @override
+  String get agentUpdateIntervalLabel => 'Uppdateringsfrekvens';
+
+  @override
   String get agentWakeBudgetDecrease => 'Sänk den dagliga gränsen';
 
   @override
@@ -10955,6 +10986,10 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get projectsEmptyTitle => 'Starta ditt första projekt';
+
+  @override
+  String get projectsFilterOnlyOutOfDate =>
+      'Endast inaktuella sammanfattningar';
 
   @override
   String get projectsFilterStatusLabel => 'Status:';

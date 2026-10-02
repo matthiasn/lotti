@@ -428,7 +428,8 @@ extension _AgentHandlers on SyncEventProcessor {
     if ((incoming.kind != 'task_agent' && incoming.kind != 'project_agent') ||
         (incoming.config.automaticUpdatesEnabled != null &&
             incoming.config.inferenceSetup != null &&
-            incoming.config.maxWakesPerDay != null)) {
+            incoming.config.maxWakesPerDay != null &&
+            incoming.config.updateIntervalMinutes != null)) {
       return incoming;
     }
     if (local is! AgentIdentityEntity) return incoming;
@@ -442,9 +443,13 @@ extension _AgentHandlers on SyncEventProcessor {
     // silently reset a user's lower limit to the default on every device.
     final maxWakesPerDay =
         incoming.config.maxWakesPerDay ?? local.config.maxWakesPerDay;
+    final updateIntervalMinutes =
+        incoming.config.updateIntervalMinutes ??
+        local.config.updateIntervalMinutes;
     if (automaticUpdatesEnabled == incoming.config.automaticUpdatesEnabled &&
         inferenceSetup == incoming.config.inferenceSetup &&
-        maxWakesPerDay == incoming.config.maxWakesPerDay) {
+        maxWakesPerDay == incoming.config.maxWakesPerDay &&
+        updateIntervalMinutes == incoming.config.updateIntervalMinutes) {
       return incoming;
     }
     return incoming.copyWith(
@@ -452,6 +457,7 @@ extension _AgentHandlers on SyncEventProcessor {
         automaticUpdatesEnabled: automaticUpdatesEnabled,
         inferenceSetup: inferenceSetup,
         maxWakesPerDay: maxWakesPerDay,
+        updateIntervalMinutes: updateIntervalMinutes,
       ),
     );
   }
@@ -565,7 +571,12 @@ extension _AgentHandlers on SyncEventProcessor {
   String _projectSubscriptionId(AgentProjectLink link) =>
       '${link.fromId}_project_direct_${link.toId}';
 
-  /// Reconciles receiver-local project scheduling and runtime after sync.
+  /// Reconciles a project agent's runtime on this device after sync, and
+  /// arms its next update slot when the arrival left its report stale.
+  ///
+  /// Nothing here schedules device-local work: a stale report gets one synced
+  /// slot, shared by every device, which one of them fires. A device-local
+  /// deadline an older build left behind is retired.
   Future<bool> _reconcileProjectAgentRuntime(
     AgentIdentityEntity identity,
   ) async {
@@ -594,27 +605,12 @@ extension _AgentHandlers on SyncEventProcessor {
         return;
       }
 
-      final shouldArm =
-          automaticWakesAllowed &&
-          state.slots.pendingProjectActivityAt != null &&
-          state.scheduledWakeAt == null;
-      final shouldClear =
-          !automaticWakesAllowed && state.scheduledWakeAt != null;
-      if (!shouldArm && !shouldClear) {
-        return;
-      }
+      if (state.scheduledWakeAt == null && state.nextWakeAt == null) return;
 
       // Scheduling fields are device-local. Keep synced LWW metadata intact
       // so this repair cannot win a peer conflict for unrelated state fields.
       await agentRepository!.upsertEntity(
-        state.copyWith(
-          scheduledWakeAt: shouldArm
-              ? nextOccurrenceOf(
-                  clock.now(),
-                  hour: AgentSchedules.projectDailyDigestHour,
-                )
-              : null,
-        ),
+        state.copyWith(scheduledWakeAt: null, nextWakeAt: null),
       );
       scheduleChanged = true;
     });
@@ -638,6 +634,9 @@ extension _AgentHandlers on SyncEventProcessor {
     for (final link in links.whereType<AgentProjectLink>()) {
       if (link.deletedAt == null) _addProjectSubscription(link);
     }
+    if (policy.automaticWakesAllowed) {
+      await armProjectUpdate?.call(identity.agentId);
+    }
     return scheduleChanged;
   }
 
@@ -647,6 +646,9 @@ extension _AgentHandlers on SyncEventProcessor {
         id: _projectSubscriptionId(link),
         agentId: link.fromId,
         matchEntityIds: {projectEntityUpdateNotification(link.toId)},
+        // Project work runs only in update slots: a direct edit marks the
+        // report stale and nothing more.
+        reportStaleOnly: true,
       ),
     );
   }

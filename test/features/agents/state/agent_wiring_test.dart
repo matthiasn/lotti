@@ -1,9 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/state/agent_wiring.dart';
+import 'package:lotti/features/agents/wake/project_update_slots.dart';
+import 'package:lotti/features/agents/wake/wake_audit.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -389,5 +395,134 @@ void main() {
         expect((result! as WakeExecutorResult).reportUpdated, isTrue);
       },
     );
+  });
+
+  group('wireProjectSlotRefusals', () {
+    late StreamController<WakeRunCompletion> completions;
+    late MockWakeOrchestrator orchestrator;
+    late MockProjectUpdateCadence cadence;
+    late MockScheduledWakeManager manager;
+    late MockUpdateNotifications notifications;
+    late ProviderContainer container;
+
+    final slot =
+        AgentDomainEntity.scheduledWake(
+              id: 'slot-next',
+              agentId: 'project-agent',
+              scheduledAt: DateTime.utc(2026, 10, 3),
+              status: ScheduledWakeStatus.pending,
+              reason: 'scheduled',
+              updatedAt: DateTime(2026, 10, 2),
+              vectorClock: null,
+            )
+            as ScheduledWakeEntity;
+
+    WakeRunCompletion completion({
+      Object? error,
+      Set<String> tokens = const {ProjectUpdateSlots.triggerToken},
+    }) => WakeRunCompletion(
+      runKey: 'run-1',
+      agentId: 'project-agent',
+      status: error == null ? WakeRunStatus.completed : WakeRunStatus.aborted,
+      triggerTokens: tokens,
+      error: error,
+    );
+
+    setUp(() {
+      completions = StreamController<WakeRunCompletion>.broadcast();
+      addTearDown(completions.close);
+      orchestrator = MockWakeOrchestrator();
+      when(
+        () => orchestrator.runCompletions,
+      ).thenAnswer((_) => completions.stream);
+      cadence = MockProjectUpdateCadence();
+      manager = MockScheduledWakeManager();
+      when(manager.requestCheck).thenReturn(null);
+      notifications = MockUpdateNotifications();
+      when(() => notifications.notifyUiOnly(any())).thenReturn(null);
+      container = ProviderContainer(
+        overrides: [
+          projectUpdateCadenceProvider.overrideWithValue(cadence),
+          scheduledWakeManagerProvider.overrideWithValue(manager),
+          updateNotificationsProvider.overrideWithValue(notifications),
+        ],
+      );
+      addTearDown(container.dispose);
+      wireProjectSlotRefusals(
+        container.read(Provider((ref) => ref)),
+        orchestrator,
+      );
+    });
+
+    test(
+      'a refused slot wake re-arms with its cause and announces the slot',
+      () async {
+        when(
+          () => cadence.rearmAfterRefusal(
+            'project-agent',
+            WakeDecisionCause.budgetExhausted,
+          ),
+        ).thenAnswer((_) async => slot);
+
+        completions.add(
+          completion(
+            error: const WakeRefusedError(WakeDecisionCause.budgetExhausted),
+          ),
+        );
+        await pumpEventQueue();
+
+        verify(
+          () => cadence.rearmAfterRefusal(
+            'project-agent',
+            WakeDecisionCause.budgetExhausted,
+          ),
+        ).called(1);
+        verify(manager.requestCheck).called(1);
+        verify(
+          () =>
+              notifications.notifyUiOnly({'project-agent', agentNotification}),
+        ).called(1);
+      },
+    );
+
+    test('a finished slot, or a refused wake that was not a slot, re-arms '
+        'nothing', () async {
+      completions
+        ..add(completion())
+        ..add(
+          completion(
+            error: const WakeRefusedError(WakeDecisionCause.notAnUpdateSlot),
+            tokens: const {'PROJECT_ENTITY_UPDATE:p1'},
+          ),
+        )
+        ..add(completion(error: StateError('model failed')));
+      await pumpEventQueue();
+
+      verifyNever(() => cadence.rearmAfterRefusal(any(), any()));
+    });
+
+    test('a re-arm that fails is contained, and nothing re-arms after '
+        'dispose', () async {
+      when(
+        () => cadence.rearmAfterRefusal(any(), any()),
+      ).thenAnswer((_) async => throw StateError('database locked'));
+
+      completions.add(
+        completion(
+          error: const WakeRefusedError(WakeDecisionCause.budgetClaimFailed),
+        ),
+      );
+      await pumpEventQueue();
+      verifyNever(manager.requestCheck);
+
+      container.dispose();
+      completions.add(
+        completion(
+          error: const WakeRefusedError(WakeDecisionCause.budgetClaimFailed),
+        ),
+      );
+      await pumpEventQueue();
+      verify(() => cadence.rearmAfterRefusal(any(), any())).called(1);
+    });
   });
 }

@@ -1,15 +1,47 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
+import 'package:lotti/features/agents/wake/project_update_slots.dart';
+import 'package:lotti/features/agents/wake/wake_audit.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:riverpod/riverpod.dart';
+
+/// Re-arms a project agent whenever the drain refuses one of its update
+/// slots' wakes. The scheduled-wake manager consumes a slot before the wake
+/// reaches the drain, so a refusal — the day's budget used up, a claim that
+/// could not be written — would otherwise leave a stale report with no slot
+/// pending until some unrelated change armed one.
+void wireProjectSlotRefusals(Ref ref, WakeOrchestrator orchestrator) {
+  final rearm = rearmRefusedProjectSlot(ref);
+  final subscription = orchestrator.runCompletions.listen((completion) {
+    final error = completion.error;
+    final agentId = completion.agentId;
+    if (error is! WakeRefusedError ||
+        agentId == null ||
+        !completion.triggerTokens.contains(ProjectUpdateSlots.triggerToken)) {
+      return;
+    }
+    unawaited(
+      rearm(agentId, error.cause).catchError((Object error, StackTrace st) {
+        developer.log(
+          'failed to re-arm a refused project update slot',
+          name: 'wireProjectSlotRefusals',
+          error: error,
+          stackTrace: st,
+        );
+      }),
+    );
+  });
+  ref.onDispose(subscription.cancel);
+}
 
 /// Wires the wake executor into the orchestrator, routing to the appropriate
 /// workflow based on the agent's `kind` field.
@@ -295,12 +327,14 @@ void wireSyncEventProcessor(
     // identity is offered to each contributor so subscriptions follow the
     // agent onto this device mid-session.
     ..runtimeMaintenance = ref.read(agentRuntimeMaintenanceProvider)
-    ..retireSupersededTaskAgents = retireSupersededTaskAgents;
+    ..retireSupersededTaskAgents = retireSupersededTaskAgents
+    ..armProjectUpdate = armProjectUpdate(ref);
   ref.onDispose(() {
     processor
       ..wakeOrchestrator = null
       ..agentWakeCoordinator = null
       ..runtimeMaintenance = const []
-      ..retireSupersededTaskAgents = null;
+      ..retireSupersededTaskAgents = null
+      ..armProjectUpdate = null;
   });
 }

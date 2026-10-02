@@ -672,6 +672,21 @@ extension WakeDrainEngine on WakeOrchestrator {
     if (entity.kind != AgentKinds.projectAgent) {
       return WakePolicyDecision.allowedUnbudgeted;
     }
+    // The only automatic work a project agent does is an update slot,
+    // fired on one device by the slot's lease (ProjectWakeGovernor.tla,
+    // StaleDoesNotTriggerWork). Whatever else queued an automatic wake —
+    // a subscription, a transcript, a restored intent — is refused here.
+    if (job.initiator == WakeInitiator.automation &&
+        !job.triggerTokens.contains(ProjectUpdateSlots.triggerToken)) {
+      return const WakePolicyDecision(WakeDecisionCause.notAnUpdateSlot);
+    }
+    // A slot over a report an "Update now" or a peer's run already
+    // freshened has nothing to do (ProjectWakeGovernor.tla, NoWorkWhenFresh);
+    // refused before the budget is read or claimed, so it costs nothing.
+    if (job.initiator == WakeInitiator.automation &&
+        await _reportAlreadyFresh(job.agentId)) {
+      return const WakePolicyDecision(WakeDecisionCause.reportAlreadyFresh);
+    }
     final maxPerDay = effectiveMaxWakesPerDay(entity.config);
     if (claimBudget) return _claimWakeBudget(job, maxPerDay);
     try {
@@ -698,6 +713,23 @@ extension WakeDrainEngine on WakeOrchestrator {
         stackTrace: stackTrace,
       );
       return WakePolicyDecision.allowedUnbudgeted;
+    }
+  }
+
+  /// Whether [agentId]'s report is already fresh. A state that cannot be
+  /// read is treated as stale: the budget claim that follows decides.
+  Future<bool> _reportAlreadyFresh(String agentId) async {
+    try {
+      final state = await repository.getAgentState(agentId);
+      return state != null && !state.isReportStale;
+    } catch (error, stackTrace) {
+      logError(
+        'failed to read report freshness for '
+        '${DomainLogger.sanitizeId(agentId)}',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return false;
     }
   }
 

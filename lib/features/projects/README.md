@@ -41,6 +41,13 @@ project agent is attached — a summary and health read that the agent maintains
   profile* switch in the filter sheet (off by default) tags every project that
   has an agent with the name of its inference profile, or *No inference
   profile*, so projects can be checked and reassigned one by one.
+- **Says which summaries are out of date.** A project change marks its
+  agent's summary out of date; with automatic updates on, the summary
+  refreshes in the agent's next update slot, at most once per slot across
+  devices. The card shows *Out of
+  date* with *Update now* and a countdown to that slot, the list marks such
+  projects and can filter to them, and agent internals set how often the slot
+  comes round (hourly to daily).
 - **Gives a new project's agent the category's profile.** The agent created
   with a project uses the category's default inference profile. When the
   category names none, the agent falls back to the template's profile or

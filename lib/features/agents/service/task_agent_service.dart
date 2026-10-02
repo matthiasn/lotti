@@ -14,7 +14,6 @@ import 'package:lotti/features/agents/model/agent_enums.dart'
         WakeInitiator,
         WakeReason;
 import 'package:lotti/features/agents/model/agent_link.dart';
-import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/task_agent_retirement.dart';
@@ -37,9 +36,20 @@ class TaskAgentService {
     required this.syncService,
     this.updateNotifications,
     this.domainLogger,
+    this.armProjectUpdate,
+    this.cancelProjectUpdates,
   });
 
   final AgentService agentService;
+
+  /// Arms a project agent's next update slot when its report is stale
+  /// (`ProjectUpdateCadence.arm`); the shared automation switch also governs
+  /// project agents.
+  final Future<void> Function(String agentId)? armProjectUpdate;
+
+  /// Consumes a project agent's pending update slots when its automatic
+  /// updates are switched off (`ProjectUpdateCadence.consumeAll`).
+  final Future<void> Function(String agentId)? cancelProjectUpdates;
   final AgentRepository repository;
   final WakeOrchestrator orchestrator;
 
@@ -505,22 +515,11 @@ class TaskAgentService {
           final pendingWake = state?.nextWakeAt;
           if (state != null) {
             var updatedState = state;
+            // A project agent's pending update is a slot whose report the
+            // activity monitor already marked stale.
             final hasPendingTaskWake =
                 pendingWake != null && pendingWake.isAfter(now);
-            var hasPendingProjectWake = false;
-            if (identity.kind == AgentKinds.projectAgent &&
-                state.scheduledWakeAt != null) {
-              final hasCompletedReport =
-                  state.reportFreshAt != null ||
-                  await repository.getLatestReport(
-                        agentId,
-                        AgentReportScopes.current,
-                      ) !=
-                      null;
-              hasPendingProjectWake = hasCompletedReport;
-            }
-            if ((hasPendingTaskWake || hasPendingProjectWake) &&
-                !state.isReportStale) {
+            if (hasPendingTaskWake && !state.isReportStale) {
               updatedState = updatedState.copyWith(reportStaleAt: now);
             }
             if (updatedState != state) {
@@ -584,7 +583,12 @@ class TaskAgentService {
     // After the runtime is enabled and subscriptions are restored, so the
     // catch-up wake cannot race its own scheduling setup. Inactive agents and
     // disabled setups never reach here.
-    if (activating && wakeOnEnable && await _catchUpOwed(agentId)) {
+    // A project agent catches up in its next update slot, which enabling
+    // armed above, never with an immediate wake.
+    if (activating &&
+        wakeOnEnable &&
+        identity.kind != AgentKinds.projectAgent &&
+        await _catchUpOwed(agentId)) {
       orchestrator.enqueueManualWake(
         agentId: agentId,
         reason: WakeReason.reanalysis.name,
@@ -599,11 +603,10 @@ class TaskAgentService {
   /// its absence does not mean the agent never reported: an agent whose report
   /// was never marked stale has none. Reading it as "no report" spent a paid
   /// wake on every switch-on. A catch-up is owed when there is no current
-  /// report yet, the report is stale, or project activity is still pending.
+  /// report yet or the report is stale.
   Future<bool> _catchUpOwed(String agentId) async {
     final state = await repository.getAgentState(agentId);
     if (state == null || state.isReportStale) return true;
-    if (state.slots.pendingProjectActivityAt != null) return true;
     return await repository.getLatestReport(
           agentId,
           AgentReportScopes.current,
@@ -718,72 +721,37 @@ class TaskAgentService {
           id: '${agentId}_project_direct_${link.toId}',
           agentId: agentId,
           matchEntityIds: {projectEntityUpdateNotification(link.toId)},
+          // Project work runs only in update slots; a direct edit marks the
+          // report stale and the activity monitor arms the slot.
+          reportStaleOnly: true,
         ),
       );
     }
   }
 
-  /// Adds the device-local durability fallback for unfinished project work.
-  ///
-  /// The pending marker is synced, but its scheduling deadline is not. Re-read
-  /// and write inside one repository transaction so a concurrent completion
-  /// wins, while preserving the synced timestamp and vector clock.
-  Future<({bool active, bool automaticWakesAllowed})>
-  _reconcilePendingProjectActivityFallback(String agentId) async {
-    var changed = false;
-    var policy = (active: false, automaticWakesAllowed: false);
-    await repository.runInTransaction(() async {
-      final state = await repository.getAgentState(agentId);
-      final currentIdentity = await agentService.getAgent(agentId);
-      final active =
-          currentIdentity?.kind == AgentKinds.projectAgent &&
-          currentIdentity?.lifecycle == AgentLifecycle.active;
-      final automaticWakesAllowed =
-          currentIdentity != null &&
-          currentIdentity.kind == AgentKinds.projectAgent &&
-          projectAgentAutomaticWakesAllowed(
-            config: currentIdentity.config,
-            lifecycle: currentIdentity.lifecycle,
-          );
-      policy = (
-        active: active,
-        automaticWakesAllowed: automaticWakesAllowed,
-      );
-      if (state == null || state.deletedAt != null) {
-        return;
-      }
-      if (!automaticWakesAllowed) {
-        if (state.scheduledWakeAt != null) {
-          await repository.upsertEntity(
-            state.copyWith(scheduledWakeAt: null),
-          );
-          changed = true;
-        }
-        return;
-      }
-      if (state.slots.pendingProjectActivityAt == null ||
-          state.scheduledWakeAt != null) {
-        return;
-      }
-      await repository.upsertEntity(
-        state.copyWith(
-          scheduledWakeAt: nextOccurrenceOf(
-            clock.now(),
-            hour: AgentSchedules.projectDailyDigestHour,
-          ),
-        ),
-      );
-      changed = true;
-    });
-    if (changed) {
-      updateNotifications?.notifyUiOnly({agentId, agentNotification});
+  /// The current project policy: whether the agent is active, and whether it
+  /// may update on its own.
+  Future<({bool active, bool automaticWakesAllowed})> _projectPolicy(
+    String agentId,
+  ) async {
+    final identity = await agentService.getAgent(agentId);
+    if (identity == null || identity.kind != AgentKinds.projectAgent) {
+      return (active: false, automaticWakesAllowed: false);
     }
-    return policy;
+    return (
+      active: identity.lifecycle == AgentLifecycle.active,
+      automaticWakesAllowed: projectAgentAutomaticWakesAllowed(
+        config: identity.config,
+        lifecycle: identity.lifecycle,
+      ),
+    );
   }
 
-  /// Applies the current persisted project policy to local runtime state.
+  /// Applies the current persisted project policy to local runtime state:
+  /// with automatic updates on, the next update slot is armed when the report
+  /// is stale; with them off, pending slots are consumed so none fires.
   Future<bool> _reconcileProjectRuntime(String agentId) async {
-    final policy = await _reconcilePendingProjectActivityFallback(agentId);
+    final policy = await _projectPolicy(agentId);
     if (policy.active) {
       await _restoreProjectSubscriptionsForAgent(agentId);
     } else {
@@ -791,17 +759,19 @@ class TaskAgentService {
     }
     if (policy.automaticWakesAllowed) {
       orchestrator.enableAutomaticUpdatesRuntime(agentId);
+      await armProjectUpdate?.call(agentId);
       return true;
     }
     orchestrator.disableAutomaticUpdatesRuntime(agentId);
+    await cancelProjectUpdates?.call(agentId);
     return false;
   }
 
   /// Re-register wake subscriptions for a single resumed agent.
   ///
-  /// Project agents restore their direct-project observation and reconcile a
-  /// pending device-local fallback. Other kinds retain the task-link behavior
-  /// used by the existing lifecycle controls.
+  /// Project agents restore their direct-project observation and arm their
+  /// next update slot. Other kinds retain the task-link behavior used by the
+  /// existing lifecycle controls.
   Future<void> restoreSubscriptionsForAgent(
     String agentId, {
     bool restoreCountdown = true,

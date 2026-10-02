@@ -1285,6 +1285,37 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentToolGoalRevisionLabel => 'Vorschlag zur Zielanpassung';
 
   @override
+  String get agentUpdateIntervalDaily => 'Einmal täglich';
+
+  @override
+  String get agentUpdateIntervalDecrease => 'Öfter aktualisieren';
+
+  @override
+  String get agentUpdateIntervalHelp =>
+      'Eine Änderung am Projekt markiert die Zusammenfassung als veraltet; eines deiner Geräte aktualisiert sie im nächsten Aktualisierungsfenster. Jetzt aktualisieren tut es sofort.';
+
+  @override
+  String get agentUpdateIntervalHint =>
+      'Veraltete Zusammenfassungen werden höchstens so oft aktualisiert';
+
+  @override
+  String agentUpdateIntervalHours(int hours) {
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: 'Alle $hours Stunden',
+      one: 'Stündlich',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get agentUpdateIntervalIncrease => 'Seltener aktualisieren';
+
+  @override
+  String get agentUpdateIntervalLabel => 'Aktualisierungsintervall';
+
+  @override
   String get agentWakeBudgetDecrease => 'Tageslimit senken';
 
   @override
@@ -11020,6 +11051,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get projectsEmptyTitle => 'Starte dein erstes Projekt';
+
+  @override
+  String get projectsFilterOnlyOutOfDate => 'Nur veraltete Zusammenfassungen';
 
   @override
   String get projectsFilterStatusLabel => 'Status:';

@@ -121,6 +121,14 @@ void main() {
         expect(a.hashCode, isNot(equals(b.hashCode)));
       });
 
+      test('not equal when onlyOutOfDate differs', () {
+        const a = ProjectsFilter();
+        const b = ProjectsFilter(onlyOutOfDate: true);
+        expect(a.onlyOutOfDate, isFalse);
+        expect(a, isNot(equals(b)));
+        expect(a.hashCode, isNot(equals(b.hashCode)));
+      });
+
       test('the inference profile pill is off by default', () {
         expect(const ProjectsFilter().showInferenceProfile, isFalse);
       });
@@ -179,12 +187,20 @@ void main() {
         expect(copied.selectedCategoryIds, {'a'});
       });
 
+      test('copies with new onlyOutOfDate', () {
+        const original = ProjectsFilter(selectedCategoryIds: {'a'});
+        final copied = original.copyWith(onlyOutOfDate: true);
+        expect(copied.onlyOutOfDate, isTrue);
+        expect(copied.selectedCategoryIds, {'a'});
+      });
+
       test('retains all fields when no arguments given', () {
         const original = ProjectsFilter(
           selectedCategoryIds: {'z'},
           textQuery: 'keep',
           searchMode: ProjectsSearchMode.localText,
           showInferenceProfile: true,
+          onlyOutOfDate: true,
         );
         final copied = original.copyWith();
         expect(copied, equals(original));
@@ -301,9 +317,11 @@ void main() {
           inferenceProfileName: 'Local Qwen',
           inferenceProfileMissing: false,
           inferenceProfileLoaded: true,
+          reportStale: true,
         );
 
         expect(updated.oneLiner, 'new line');
+        expect(updated.reportStale, isTrue);
         expect(updated.hasProjectAgent, isTrue);
         expect(updated.inferenceProfileName, 'Local Qwen');
         expect(updated.inferenceProfileMissing, isFalse);
@@ -327,9 +345,11 @@ void main() {
           inferenceProfileName: null,
           inferenceProfileMissing: false,
           inferenceProfileLoaded: false,
+          reportStale: false,
         );
 
         expect(updated.oneLiner, isNull);
+        expect(updated.reportStale, isFalse);
         expect(updated.hasProjectAgent, isFalse);
         expect(updated.inferenceProfileName, isNull);
         expect(updated.inferenceProfileMissing, isFalse);

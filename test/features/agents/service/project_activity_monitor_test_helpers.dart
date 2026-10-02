@@ -302,6 +302,7 @@ class GeneratedProjectActivityBench {
     final controller = StreamController<Set<String>>.broadcast();
     final writtenStates = <AgentStateEntity>[];
     final uiNotifications = <Set<String>>[];
+    final armedAgentIds = <String>[];
 
     when(
       () => notifications.localUpdateStream,
@@ -371,6 +372,7 @@ class GeneratedProjectActivityBench {
       projectRepository: projectRepository,
       syncService: syncService,
       clock: Clock.fixed(hGeneratedProjectActivityNow),
+      armProjectUpdate: (agentId) async => armedAgentIds.add(agentId),
     );
 
     return GeneratedProjectActivityBench._(
@@ -382,6 +384,7 @@ class GeneratedProjectActivityBench {
       monitor: monitor,
       writtenStates: writtenStates,
       uiNotifications: uiNotifications,
+      armedAgentIds: armedAgentIds,
     );
   }
 
@@ -394,7 +397,11 @@ class GeneratedProjectActivityBench {
     required this.monitor,
     required this.writtenStates,
     required this.uiNotifications,
+    required this.armedAgentIds,
   });
+
+  /// Agents the monitor asked to arm their next update slot.
+  final List<String> armedAgentIds;
 
   final MockUpdateNotifications notifications;
   final MockAgentRepository repository;

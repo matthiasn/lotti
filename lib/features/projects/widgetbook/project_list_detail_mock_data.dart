@@ -100,9 +100,6 @@ ProjectListData buildProjectListDetailMockData() {
           rationale:
               'Offline mode implementation is behind and one critical task is blocked.',
         ),
-        reportNextWakeAt: currentTime.add(
-          const Duration(minutes: 2, seconds: 15),
-        ),
         completedTaskCount: 3,
         totalTaskCount: 5,
         blockedTaskCount: 1,
@@ -157,7 +154,6 @@ Device Sync is progressing well. The sync engine core is complete and conflict r
           rationale:
               'The auth adapter landed and the migration is back on plan.',
         ),
-        reportNextWakeAt: null,
         completedTaskCount: 2,
         totalTaskCount: 3,
         blockedTaskCount: 0,
@@ -181,7 +177,6 @@ API Migration is on track after the auth adapter landed.
           band: ProjectHealthBand.onTrack,
           rationale: 'The refreshed pipeline is stable and fully automated.',
         ),
-        reportNextWakeAt: null,
         completedTaskCount: 8,
         totalTaskCount: 8,
         blockedTaskCount: 0,
@@ -201,7 +196,6 @@ API Migration is on track after the auth adapter landed.
           rationale:
               'The work is active, but shopping and prep windows keep slipping.',
         ),
-        reportNextWakeAt: null,
         completedTaskCount: 1,
         totalTaskCount: 4,
         blockedTaskCount: 0,
@@ -221,7 +215,6 @@ API Migration is on track after the auth adapter landed.
           rationale:
               'The course is archived after priorities shifted elsewhere.',
         ),
-        reportNextWakeAt: null,
         completedTaskCount: 1,
         totalTaskCount: 6,
         blockedTaskCount: 0,
@@ -241,7 +234,6 @@ API Migration is on track after the auth adapter landed.
           rationale:
               'The project is complete and the takeaways are already in use.',
         ),
-        reportNextWakeAt: null,
         completedTaskCount: 2,
         totalTaskCount: 2,
         blockedTaskCount: 0,

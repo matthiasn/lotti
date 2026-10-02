@@ -41,6 +41,13 @@ abstract class AgentConfig with _$AgentConfig {
     /// `effectiveMaxWakesPerDay`, so a peer cannot lift the bound.
     int? maxWakesPerDay,
 
+    /// How often a project agent may update its report on its own, in
+    /// minutes: at most once per update slot of this length, on one device.
+    ///
+    /// Synced with the identity. Null reads as hourly; see
+    /// `ProjectUpdateCadence` for the slots and the offered values.
+    int? updateIntervalMinutes,
+
     /// Improver ritual cadence in days. Re-homed from `AgentSlots` (PR 4 B4):
     /// it is configuration set once at creation, not mutable derived state.
     /// Null falls back to the default window. Reads accept the legacy

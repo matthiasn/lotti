@@ -1199,11 +1199,6 @@ void main() {
           when(
             () => agentService.triggerReanalysis(any()),
           ).thenReturn(null);
-          // Registered so the assertion below that nothing cancels a wake
-          // can fail loudly rather than on a missing stub.
-          when(
-            () => agentService.cancelScheduledWake(any()),
-          ).thenAnswer((_) async {});
 
           final identity = makeTestIdentity(agentId: 'agent-project-1');
 
@@ -1291,15 +1286,11 @@ void main() {
           expect(opened, isEmpty);
 
           // Invoking the wired callback must dispatch to the project agent
-          // service for the resolved agent ID, and to the manual reanalysis
-          // rather than any other lifecycle method. Cancelling a scheduled
-          // wake is no longer the page's to wire: it lives with the
-          // countdown, in the agent internals panel.
+          // service for the resolved agent ID: the manual reanalysis.
           content.onRefreshReport!();
           verify(
             () => agentService.triggerReanalysis('agent-project-1'),
           ).called(1);
-          verifyNever(() => agentService.cancelScheduledWake(any()));
         },
       );
 

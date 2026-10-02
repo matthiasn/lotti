@@ -53,6 +53,12 @@ SECONDS = {
     "AgentReplicationIntentTerminal": 627,
     "DayProcessingJobDraft": 358,
     "AgentLinksLossy": 323,
+    # Local runs with twenty workers; refresh from CI measurements.
+    "ProjectWakeGovernor": 2,
+    "ProjectWakeGovernorBacklog": 2,
+    "ProjectWakeGovernorBudget": 30,
+    "ProjectWakeGovernorPause": 10,
+    "ProjectWakeGovernorThree": 25,
     # Local runs, a few seconds each; refresh from CI measurements.
     "EntryLinkIdentity": 10,
     "EntryLinkIdentityLegacy": 10,

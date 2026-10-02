@@ -423,6 +423,47 @@ void main() {
       return container;
     }
 
+    group('projectNextUpdateProvider', () {
+      test('is the earliest pending slot, in local time, or null', () async {
+        final cadence = MockProjectUpdateCadence();
+        final slot =
+            AgentDomainEntity.scheduledWake(
+                  id: 'slot-1',
+                  agentId: 'project-agent',
+                  scheduledAt: DateTime.utc(2026, 10, 2, 11),
+                  status: ScheduledWakeStatus.pending,
+                  reason: 'scheduled',
+                  updatedAt: DateTime(2026, 10, 2, 10),
+                  vectorClock: null,
+                )
+                as ScheduledWakeEntity;
+        when(
+          () => cadence.pendingSlots('project-agent'),
+        ).thenAnswer((_) async => [slot]);
+        when(() => cadence.pendingSlots('idle-agent')).thenAnswer(
+          (_) async => const [],
+        );
+        final container = ProviderContainer(
+          overrides: [
+            agentServiceProvider.overrideWithValue(mockService),
+            agentRepositoryProvider.overrideWithValue(mockRepository),
+            projectUpdateCadenceProvider.overrideWithValue(cadence),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final next = await container.read(
+          projectNextUpdateProvider('project-agent').future,
+        );
+        expect(next, DateTime.utc(2026, 10, 2, 11).toLocal());
+        expect(next!.isUtc, isFalse);
+        expect(
+          await container.read(projectNextUpdateProvider('idle-agent').future),
+          isNull,
+        );
+      });
+    });
+
     group('agentRecentMessagesProvider', () {
       test('returns messages in DB order (newest-first)', () async {
         // The DB query sorts by created_at DESC, so the mock returns

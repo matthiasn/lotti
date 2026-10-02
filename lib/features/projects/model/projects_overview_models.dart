@@ -92,6 +92,7 @@ class ProjectsFilter {
     this.searchMode = ProjectsSearchMode.disabled,
     this.sortMode = ProjectsSortMode.actionable,
     this.showInferenceProfile = false,
+    this.onlyOutOfDate = false,
   });
 
   final Set<String> selectedStatusIds;
@@ -105,6 +106,10 @@ class ProjectsFilter {
   /// filter. Off by default.
   final bool showInferenceProfile;
 
+  /// Narrows the list to projects whose agent summary is out of date — the
+  /// ones waiting for their next update slot.
+  final bool onlyOutOfDate;
+
   ProjectsFilter copyWith({
     Set<String>? selectedStatusIds,
     Set<String>? selectedCategoryIds,
@@ -112,6 +117,7 @@ class ProjectsFilter {
     ProjectsSearchMode? searchMode,
     ProjectsSortMode? sortMode,
     bool? showInferenceProfile,
+    bool? onlyOutOfDate,
   }) {
     return ProjectsFilter(
       selectedStatusIds: selectedStatusIds ?? this.selectedStatusIds,
@@ -120,6 +126,7 @@ class ProjectsFilter {
       searchMode: searchMode ?? this.searchMode,
       sortMode: sortMode ?? this.sortMode,
       showInferenceProfile: showInferenceProfile ?? this.showInferenceProfile,
+      onlyOutOfDate: onlyOutOfDate ?? this.onlyOutOfDate,
     );
   }
 
@@ -138,7 +145,8 @@ class ProjectsFilter {
             other.textQuery == textQuery &&
             other.searchMode == searchMode &&
             other.sortMode == sortMode &&
-            other.showInferenceProfile == showInferenceProfile;
+            other.showInferenceProfile == showInferenceProfile &&
+            other.onlyOutOfDate == onlyOutOfDate;
   }
 
   @override
@@ -149,6 +157,7 @@ class ProjectsFilter {
     searchMode,
     sortMode,
     showInferenceProfile,
+    onlyOutOfDate,
   );
 }
 
@@ -213,6 +222,7 @@ class ProjectListItemData {
     this.inferenceProfileName,
     this.inferenceProfileMissing = false,
     this.inferenceProfileLoaded = false,
+    this.reportStale = false,
   });
 
   final ProjectEntry project;
@@ -224,6 +234,10 @@ class ProjectListItemData {
   final bool inferenceProfileMissing;
   final bool inferenceProfileLoaded;
 
+  /// Whether the project agent's summary is out of date: a change landed
+  /// after its last update, and the next update slot has not run yet.
+  final bool reportStale;
+
   /// Replaces the agent-derived sidecar fields, keeping the project data.
   ///
   /// All of them are set together because they come from one agent lookup: a
@@ -234,6 +248,7 @@ class ProjectListItemData {
     required String? inferenceProfileName,
     required bool inferenceProfileMissing,
     required bool inferenceProfileLoaded,
+    required bool reportStale,
   }) {
     return ProjectListItemData(
       project: project,
@@ -244,6 +259,7 @@ class ProjectListItemData {
       inferenceProfileName: inferenceProfileName,
       inferenceProfileMissing: inferenceProfileMissing,
       inferenceProfileLoaded: inferenceProfileLoaded,
+      reportStale: reportStale,
     );
   }
 
@@ -304,9 +320,11 @@ class ProjectsOverviewSnapshot {
 ///
 /// Filtering is layered: groups are first kept by selected category (empty =
 /// all), then each surviving group's projects are kept by selected status
-/// (empty = all) and, when the search mode is `localText` with a non-empty
+/// (empty = all), when the search mode is `localText` with a non-empty
 /// query, by a case-insensitive substring match against
-/// [ProjectListItemData.searchableText]. Groups left with no projects are
+/// [ProjectListItemData.searchableText], and with
+/// [ProjectsFilter.onlyOutOfDate] by a stale summary. Groups left with no
+/// projects are
 /// dropped. This is the pure model behind `visibleProjectGroupsProvider`.
 List<ProjectCategoryGroup> applyProjectsFilter(
   ProjectsOverviewSnapshot overview,
@@ -339,7 +357,9 @@ List<ProjectCategoryGroup> applyProjectsFilter(
                   project.searchableText.toLowerCase().contains(
                     normalizedQuery,
                   );
-              return matchesStatus && matchesQuery;
+              final matchesFreshness =
+                  !filter.onlyOutOfDate || project.reportStale;
+              return matchesStatus && matchesQuery && matchesFreshness;
             }).toList()..sort(
               (left, right) => _compareProjects(left, right, filter.sortMode),
             );

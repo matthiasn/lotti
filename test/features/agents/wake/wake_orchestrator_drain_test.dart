@@ -1,6 +1,7 @@
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/wake/agent_wake_coordinator.dart';
+import 'package:lotti/features/agents/wake/project_update_slots.dart';
 import 'package:lotti/features/agents/wake/wake_audit.dart';
 import 'package:lotti/features/agents/wake/wake_budget.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
@@ -85,6 +86,61 @@ void main() {
       );
 
       test(
+        'an automatic project wake that is not an update slot is refused, '
+        'a user request is not',
+        () async {
+          // ProjectWakeGovernor.tla, StaleDoesNotTriggerWork: a project agent
+          // does automatic work only in an update slot. A subscription
+          // match, a transcript, a restored intent — anything else that
+          // queued automatic work for it — is refused here.
+          when(() => mockRepository.getEntity('project-1')).thenAnswer(
+            (_) async => makeTestIdentity(
+              id: 'project-1',
+              agentId: 'project-1',
+              kind: 'project_agent',
+              config: const AgentConfig(automaticUpdatesEnabled: true),
+            ),
+          );
+          final ran = <String>[];
+          orchestrator.wakeExecutor = (_, runKey, _, _) async {
+            ran.add(runKey);
+            return null;
+          };
+          final completions = <WakeRunCompletion>[];
+          final sub = orchestrator.runCompletions.listen(completions.add);
+          addTearDown(sub.cancel);
+          for (final (runKey, initiator) in [
+            ('subscription-wake', WakeInitiator.automation),
+            ('user-wake', WakeInitiator.user),
+          ]) {
+            queue.enqueue(
+              WakeJob(
+                runKey: runKey,
+                agentId: 'project-1',
+                reason: WakeReason.subscription.name,
+                initiator: initiator,
+                triggerTokens: const {'PROJECT_ENTITY_UPDATE:p1'},
+                createdAt: DateTime(2024, 3, 15),
+              ),
+            );
+            await orchestrator.processNext();
+          }
+
+          expect(ran, ['user-wake']);
+          expect(
+            completions
+                .singleWhere((c) => c.runKey == 'subscription-wake')
+                .error,
+            isA<WakeRefusedError>().having(
+              (error) => error.cause,
+              'cause',
+              WakeDecisionCause.notAnUpdateSlot,
+            ),
+          );
+        },
+      );
+
+      test(
         'a ledger that cannot be read before dispatch defers the budget '
         'decision to the claim instead of dropping the wake',
         () async {
@@ -110,7 +166,7 @@ void main() {
               agentId: 'project-1',
               reason: WakeReason.subscription.name,
               initiator: WakeInitiator.automation,
-              triggerTokens: const {'project-token'},
+              triggerTokens: const {ProjectUpdateSlots.triggerToken},
               createdAt: DateTime(2024, 3, 15),
             ),
           );
@@ -263,7 +319,7 @@ void main() {
               agentId: 'project-agent-1',
               reason: WakeReason.scheduled.name,
               initiator: WakeInitiator.automation,
-              triggerTokens: const {},
+              triggerTokens: const {ProjectUpdateSlots.triggerToken},
               createdAt: DateTime(2024, 3, 15),
             ),
           );
@@ -1888,8 +1944,13 @@ void main() {
         final device = AgentTestDevice(host);
         addTearDown(device.close);
         await device.repository.upsertEntity(identity);
+        // Stale, as every slot is armed over a stale report; a run's
+        // executor here writes no freshness, so it stays stale.
         await device.repository.upsertEntity(
-          makeTestState(id: 'state-$agentId', agentId: agentId),
+          makeTestState(
+            id: 'state-$agentId',
+            agentId: agentId,
+          ).copyWith(reportStaleAt: DateTime(2024, 3, 15)),
         );
         return device;
       }
@@ -1924,15 +1985,28 @@ void main() {
         final completion = runtime.runCompletions.firstWhere(
           (event) => event.runKey == runKey,
         );
+        if (initiator == WakeInitiator.automation) {
+          // A slot is armed only over a stale report, and a completed run
+          // marks it fresh: re-mark it stale, as the next change would.
+          final state = (await runtime.repository.getAgentState(agentId))!;
+          await runtime.repository.upsertEntity(
+            state.copyWith(
+              reportStaleAt: state.reportFreshAt ?? state.reportStaleAt,
+            ),
+          );
+        }
         runtime.queue.enqueue(
           WakeJob(
             runKey: runKey,
             agentId: agentId,
             reason: initiator == WakeInitiator.user
                 ? WakeReason.reanalysis.name
-                : WakeReason.subscription.name,
+                : WakeReason.scheduled.name,
             initiator: initiator,
-            triggerTokens: const {},
+            // Automatic project work is always an update slot.
+            triggerTokens: initiator == WakeInitiator.user
+                ? const {}
+                : const {ProjectUpdateSlots.triggerToken},
             createdAt: today,
           ),
         );
@@ -2018,6 +2092,61 @@ void main() {
             WakeDecisionCause.hardCeilingReached,
           );
           expect(await usedToday(device), 2);
+        });
+      });
+
+      test('a slot over a fresh report is refused before the budget is '
+          'claimed; Update now still runs', () async {
+        await withClock(Clock.fixed(today), () async {
+          final device = await seededDevice(
+            'host-a',
+            budgetIdentity(maxWakesPerDay: 1),
+          );
+          // "Update now" or a peer's run freshened the report after the slot
+          // was armed.
+          final state = (await device.repository.getAgentState(agentId))!;
+          await device.repository.upsertEntity(
+            state.copyWith(
+              reportFreshAt: state.reportStaleAt!.add(
+                const Duration(minutes: 1),
+              ),
+            ),
+          );
+          final runtime = budgetRuntime(device);
+          final completion = runtime.orchestrator.runCompletions.firstWhere(
+            (event) => event.runKey == 'fresh-slot',
+          );
+          runtime.orchestrator.queue.enqueue(
+            WakeJob(
+              runKey: 'fresh-slot',
+              agentId: agentId,
+              reason: WakeReason.scheduled.name,
+              initiator: WakeInitiator.automation,
+              triggerTokens: const {ProjectUpdateSlots.triggerToken},
+              createdAt: today,
+            ),
+          );
+          await runtime.orchestrator.processNext();
+
+          expect(
+            (await completion).error,
+            isA<WakeRefusedError>().having(
+              (error) => error.cause,
+              'cause',
+              WakeDecisionCause.reportAlreadyFresh,
+            ),
+          );
+          expect(runtime.ran, isEmpty);
+          // It cost nothing of the day's allowance.
+          expect(await usedToday(device), 0);
+
+          final manual = await wake(
+            runtime.orchestrator,
+            'update-now',
+            initiator: WakeInitiator.user,
+          );
+          expect(manual.status, WakeRunStatus.completed);
+          expect(await usedToday(device), 1);
         });
       });
 

@@ -75,9 +75,9 @@ void main() {
     );
   });
 
-  group('buildProjectsFilterSheetState — inference profile toggle', () {
+  group('buildProjectsFilterSheetState — toggles', () {
     for (final show in [false, true]) {
-      testWidgets('offers the switch, seeded ${show ? 'on' : 'off'}', (
+      testWidgets('offers both switches, seeded ${show ? 'on' : 'off'}', (
         tester,
       ) async {
         late BuildContext context;
@@ -94,15 +94,31 @@ void main() {
 
         final state = buildProjectsFilterSheetState(
           context,
-          filter: ProjectsFilter(showInferenceProfile: show),
+          filter: ProjectsFilter(
+            showInferenceProfile: show,
+            onlyOutOfDate: !show,
+          ),
           categories: const [],
         );
 
-        expect(state.toggles, hasLength(1));
-        final toggle = state.toggles.single;
-        expect(toggle.id, ProjectsFilterToggleIds.showInferenceProfile);
-        expect(toggle.label, 'Show inference profile');
-        expect(toggle.value, show);
+        // The narrowing switch first, the display one after it.
+        expect(
+          state.toggles.map(
+            (toggle) => (toggle.id, toggle.label, toggle.value),
+          ),
+          [
+            (
+              ProjectsFilterToggleIds.onlyOutOfDate,
+              'Only out-of-date summaries',
+              !show,
+            ),
+            (
+              ProjectsFilterToggleIds.showInferenceProfile,
+              'Show inference profile',
+              show,
+            ),
+          ],
+        );
       });
     }
   });
@@ -147,6 +163,27 @@ void main() {
       expect(filter.showInferenceProfile, isFalse);
     });
 
+    test('the out-of-date switch maps back on its own', () {
+      final filter = projectsFilterFromSheetState(
+        sheetWith(const [
+          DesignSystemTaskFilterToggle(
+            id: ProjectsFilterToggleIds.onlyOutOfDate,
+            label: 'Only out-of-date summaries',
+            value: true,
+          ),
+          DesignSystemTaskFilterToggle(
+            id: ProjectsFilterToggleIds.showInferenceProfile,
+            label: 'Show inference profile',
+            value: false,
+          ),
+        ]),
+        baseFilter: const ProjectsFilter(showInferenceProfile: true),
+      );
+
+      expect(filter.onlyOutOfDate, isTrue);
+      expect(filter.showInferenceProfile, isFalse);
+    });
+
     test('an unrelated enabled toggle does not turn the pill on', () {
       final filter = projectsFilterFromSheetState(
         sheetWith(const [
@@ -156,10 +193,12 @@ void main() {
             value: true,
           ),
         ]),
-        baseFilter: const ProjectsFilter(),
+        baseFilter: const ProjectsFilter(onlyOutOfDate: true),
       );
 
       expect(filter.showInferenceProfile, isFalse);
+      // An absent switch reads as off, like every other sheet field.
+      expect(filter.onlyOutOfDate, isFalse);
     });
   });
 

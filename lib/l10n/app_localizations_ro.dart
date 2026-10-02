@@ -1290,6 +1290,38 @@ class AppLocalizationsRo extends AppLocalizations {
       'Propunere de revizuire a obiectivului';
 
   @override
+  String get agentUpdateIntervalDaily => 'O dată pe zi';
+
+  @override
+  String get agentUpdateIntervalDecrease => 'Actualizați mai des';
+
+  @override
+  String get agentUpdateIntervalHelp =>
+      'O modificare a proiectului marchează rezumatul ca neactualizat; unul dintre dispozitivele dumneavoastră îl actualizează în următorul interval de actualizare. Actualizați acum îl actualizează imediat.';
+
+  @override
+  String get agentUpdateIntervalHint =>
+      'Rezumatele neactualizate se reîmprospătează cel mult atât de des';
+
+  @override
+  String agentUpdateIntervalHours(int hours) {
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: 'La fiecare $hours de ore',
+      few: 'La fiecare $hours ore',
+      one: 'În fiecare oră',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get agentUpdateIntervalIncrease => 'Actualizați mai rar';
+
+  @override
+  String get agentUpdateIntervalLabel => 'Frecvența actualizărilor';
+
+  @override
   String get agentWakeBudgetDecrease => 'Scădeți limita zilnică';
 
   @override
@@ -11162,6 +11194,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get projectsEmptyTitle => 'Începeți primul proiect';
+
+  @override
+  String get projectsFilterOnlyOutOfDate => 'Doar rezumatele neactualizate';
 
   @override
   String get projectsFilterStatusLabel => 'Stare:';

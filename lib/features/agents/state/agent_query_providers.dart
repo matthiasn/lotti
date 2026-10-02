@@ -106,6 +106,22 @@ Future<AgentDomainEntity?> agentState(
   return repository.getAgentState(agentId);
 }
 
+/// When a project agent next updates on its own: the start of its earliest
+/// pending update slot, in local time, or `null` when none is pending
+/// (`ProjectUpdateCadence`).
+final FutureProviderFamily<DateTime?, String> projectNextUpdateProvider =
+    FutureProvider.autoDispose.family<DateTime?, String>(
+      projectNextUpdate,
+      name: 'projectNextUpdateProvider',
+    );
+Future<DateTime?> projectNextUpdate(Ref ref, String agentId) async {
+  ref.watch(agentUpdateStreamProvider(agentId));
+  final slots = await ref
+      .watch(projectUpdateCadenceProvider)
+      .pendingSlots(agentId);
+  return slots.isEmpty ? null : slots.first.scheduledAt.toLocal();
+}
+
 /// Fetch agent identity by agentId.
 ///
 /// Returns [AgentDomainEntity] (variant: [AgentIdentityEntity]) or `null`.
