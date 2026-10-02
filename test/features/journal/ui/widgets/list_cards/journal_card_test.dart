@@ -16,6 +16,7 @@ import 'package:lotti/classes/goal_data.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
@@ -205,6 +206,48 @@ void main() {
       expect(find.text('Waddle to the ice shelf daily'), findsOneWidget);
       expect(find.byIcon(LottiIcons.flag), findsOneWidget);
     });
+
+    testWidgets(
+      'a pull request renders as a merge row titled with its snapshot, or '
+      'with owner/repo#number before the first refresh',
+      (tester) async {
+        PullRequestEntry pr(PullRequestSnapshot? snapshot) => PullRequestEntry(
+          meta: testTextEntry.meta.copyWith(id: 'pr-entry'),
+          data: PullRequestData(
+            owner: 'Penguin',
+            repo: 'Colony',
+            number: 12,
+            snapshot: snapshot,
+          ),
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidget(ModernJournalCard(item: pr(null))),
+        );
+        expect(find.text('penguin/colony#12'), findsOneWidget);
+        expect(find.byIcon(LottiIcons.merge), findsOneWidget);
+
+        await tester.pumpWidget(
+          makeTestableWidget(
+            ModernJournalCard(
+              item: pr(
+                PullRequestSnapshot(
+                  observedAt: DateTime.utc(2024, 3, 15),
+                  title: 'Waddle faster',
+                  status: PullRequestStatus.open,
+                  htmlUrl: 'https://github.com/Penguin/Colony/pull/12',
+                  headSha: 'abc1234',
+                  headRef: 'waddle',
+                  baseRef: 'main',
+                ),
+              ),
+            ),
+          ),
+        );
+        expect(find.text('Waddle faster'), findsOneWidget);
+        expect(find.text('penguin/colony#12'), findsNothing);
+      },
+    );
 
     testWidgets('selected flag reaches the base card', (tester) async {
       await tester.pumpWidget(

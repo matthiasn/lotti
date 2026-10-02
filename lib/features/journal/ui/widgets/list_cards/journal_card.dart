@@ -4,6 +4,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -319,6 +320,15 @@ class _EntryCardContent extends StatelessWidget {
         icon: LottiIcons.flag,
         iconColor: _categoryColor(context, item),
         title: _titleText(context, g.data.title),
+      ),
+      // A linked pull request lives in its task's pull request section. It is
+      // rendered here only so the switch stays exhaustive: the journal's
+      // entry-type filter does not offer it.
+      final PullRequestEntry pr => _scaffold(
+        context,
+        icon: LottiIcons.merge,
+        iconColor: _categoryColor(context, item),
+        title: _titleText(context, pr.data.snapshot?.title ?? pr.data.key),
       ),
     };
   }

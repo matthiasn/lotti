@@ -53,7 +53,9 @@ mixin _JournalDbEntityOps
   /// late copy from before clocks existed would otherwise undo every edit
   /// made since (ADR 0083). Two concurrent deletions are not a conflict:
   /// there is nothing for the user to choose, and [updateJournalEntity]
-  /// merges them.
+  /// merges them. Nor are two versions of a pull request entry: their
+  /// snapshots are fetched, not written by anyone, and [updateJournalEntity]
+  /// keeps the newer observation.
   Future<VclockStatus> detectConflict(
     JournalEntity existing,
     JournalEntity updated,
@@ -65,7 +67,7 @@ mixin _JournalDbEntityOps
       final status = VectorClock.compare(vcA, vcB);
 
       if (status == VclockStatus.concurrent &&
-          !_bothDeleted(existing, updated)) {
+          !_mergesConcurrent(existing, updated)) {
         DevLogger.warning(
           name: 'JournalDb',
           message: 'Conflicting vector clocks: $status',
@@ -80,6 +82,22 @@ mixin _JournalDbEntityOps
 
   static bool _bothDeleted(JournalEntity a, JournalEntity b) =>
       a.meta.deletedAt != null && b.meta.deletedAt != null;
+
+  /// Whether two concurrent versions are merged here rather than left to the
+  /// user as a conflict.
+  static bool _mergesConcurrent(JournalEntity a, JournalEntity b) =>
+      _bothDeleted(a, b) || (a is PullRequestEntry && b is PullRequestEntry);
+
+  /// The merged row for two concurrent versions [_mergesConcurrent] accepts.
+  static JournalEntity _mergeConcurrent(
+    JournalEntity stored,
+    JournalEntity incoming,
+  ) => _bothDeleted(stored, incoming)
+      ? _mergeDeletions(stored, incoming)
+      : mergeConcurrentPullRequestVersions(
+          stored as PullRequestEntry,
+          incoming as PullRequestEntry,
+        );
 
   /// Stores [incoming] as an unresolved conflict of its entry, one row per
   /// version (ADR 0092).
@@ -261,7 +279,9 @@ mixin _JournalDbEntityOps
   /// too: [_overStored] keeps it compacted, or applies an incoming one to the
   /// stored copy's own fields (ADR 0095). Only a creation ([overwrite] false)
   /// replaces a deleted row outright, as it always has. Two concurrent
-  /// deletions are merged ([_mergeDeletions]). An applied write marks the
+  /// deletions are merged ([_mergeDeletions]), and so are two concurrent
+  /// versions of a pull request entry ([mergeConcurrentPullRequestVersions],
+  /// `specs/tla/PullRequestSnapshot.tla`). An applied write marks the
   /// entry's conflict resolved only when it includes the conflict's version
   /// (ADR 0083).
   ///
@@ -306,9 +326,9 @@ mixin _JournalDbEntityOps
 
         final merged =
             status == VclockStatus.concurrent &&
-            _bothDeleted(existing, updated);
+            _mergesConcurrent(existing, updated);
         if (merged) {
-          written = _mergeDeletions(existing, updated);
+          written = _mergeConcurrent(existing, updated);
         }
 
         if (status == VclockStatus.b_gt_a || merged) {

@@ -2911,6 +2911,85 @@ lost or revoked could block its referrer forever, which a follow-up spec should
 settle — along with certificate delivery, signature forgery, content and its
 commitments, and the approval flow (to be modelled on `ChangeSetLifecycle`).
 
+## `PullRequestSnapshot` — a linked pull request's cached state (a design model)
+
+**Written before the code.** A task can link GitHub pull requests; each link is
+a journal entry carrying a snapshot of the pull request (description, open,
+closed or merged, checks, mergeability, reviews) and the server time it was
+observed at. Refreshes replace the snapshot: one runs whenever the pull request
+goes into a task context — a coding prompt, a task-agent wake — and the user
+can start one. The entry syncs like any journal entry, so a device without a
+GitHub token still shows what a device with one last saw. The header's
+action-to-code map names the classes that will implement it; the concept is
+[GitHub pull requests](../../knowledge/features/github.md).
+
+The remote pull request changes freely, and a ghost history records what it
+was at every tick. A refresh reads it at one instant, stamped with the
+response's server `Date`, and persists later in a transaction that re-reads
+the stored entry. It writes only a changed snapshot, or an unchanged one
+whose stamp is `RestampAfter` old: every write notifies the task, so writing
+on every refresh would wake the task agent whose context started it. Sync applies a newer clock, refuses an older one, and hands a
+concurrent version to a resolver for this entry type: the default journal rule
+would raise a conflict for the user to settle, which is wrong for data the app
+fetched itself.
+
+An observation is ordered by its stamp, then by whether it shows the pull
+request merged, then by a digest of its content. The digest only makes the
+order total, so every device picks the same winner. The model's digest is
+deliberately against recency, so nothing relies on it to find the newer state.
+
+| Property | Kind | Says |
+|----------|------|------|
+| `SnapshotHonest` | invariant | every stored snapshot was the pull request's real state at an instant carrying the stamp it shows |
+| `ContextHonest` | invariant | a context's snapshot was true at its stamp, and a context calls it current only if it was observed after the request |
+| `SuggestionsFromRefreshed` | invariant | checklist suggestions come only from a context whose own refresh succeeded, on a snapshot observed after the request |
+| `NewerClockNeverOlderData` | invariant | a version with a newer clock never carries an older observation, so sync's clock order and the observation order agree |
+| `Converged` | invariant | with no message in flight, every replica holds the same entry |
+| `NoRegression` | action | no replica moves to an older observation, shows a merged pull request open again, or loses its entry |
+| `UnlinkIsFinal` | action | an unlinked entry stays unlinked |
+| `RefreshesEnd` | liveness | every requested refresh ends |
+| `SyncSettles` | liveness | replication settles |
+
+| Configuration | Devices | Refreshes | Adds | Distinct states |
+|---------------|--------:|-----------|------|----------------:|
+| `PullRequestSnapshot` | 1 | context and manual, racing | failing reads, an unlink, pushes, close, reopen, merge | 1,053,817 |
+| `PullRequestSnapshotSync` | 2 | a context on each | versions crossing in sync, concurrent ones resolved | 1,649,481 |
+| `PullRequestSnapshotCoarse` | 1 | context and manual | server stamps at half the clock's resolution, so ties | 1,040,359 |
+| `PullRequestSnapshotNoToken` | 2 | a context on each | the second device holds no token | 220,458 |
+| `PullRequestSnapshotLiveness` | 2 | a context on each | `RefreshesEnd` and `SyncSettles` | 257,179 |
+
+Each switch is the proposed design; set to `FALSE` (in a copy outside this
+directory) it has a counterexample:
+
+| Switch | Alternative | Counterexample |
+|--------|-------------|----------------|
+| `StampAtRead` | stamp the observation when it is written, the natural `clock.now()` in the persist step | `SnapshotHonest`, six states: the read sees the pull request open, it is closed, and the write labels "open" with an instant at which it was already closed |
+| `GuardNewer` | write whatever the refresh read | `NoRegression`, eight states: two refreshes read at different ticks and persist in the opposite order, so the older observation replaces the newer |
+| `GuardDeleted` | build the write from the entry read before the fetch | `UnlinkIsFinal`, nine states: the user unlinks while a refresh is in flight, and its write brings the entry back |
+| `MergedFirst` | order same-stamp observations by digest alone | `NoRegression` in the coarse configuration, eight states: one read sees the pull request open and another sees it merged within the same server second, and the digest picks "open" |
+| `ResolveConcurrent` | the default journal rule: a concurrent version is a conflict for the user | `Converged` in the sync configuration, eleven states: one device refreshes while the other unlinks, and each keeps its own version until someone opens the Conflicts screen |
+| `SuggestRequiresRefresh` | suggest from whatever snapshot is stored | `SuggestionsFromRefreshed`, eight states: the context's refresh fails and it still derives suggestions, from a snapshot it never confirmed |
+
+Two decisions the model settled:
+
+- **The server's clock orders observations.** Devices disagree about the time;
+  `Date` on GitHub's response is one clock for all of them. Its resolution is a
+  second, which is what makes ties possible and `MergedFirst` necessary: a
+  merge is final, so within one second a merged observation is the later one.
+  Between open and closed within one second nothing can tell, and either is
+  true at that stamp.
+- **A context does not compare timestamps.** It trusts the outcome of its own
+  refresh, then uses the newer of what that refresh read and what is stored.
+  `ContextHonest` shows that this alone guarantees an observation from after
+  the request — no comparison between the device clock and the server's.
+
+Left out, deliberately: the several REST reads one refresh makes (the pull
+request, then its checks and reviews by head commit) are one instant here, so
+a snapshot can straddle a change for the length of one refresh; rate limiting
+and back-off, which only decide when a refresh fails; several pull requests,
+which share nothing; and a re-link after an unlink, which creates a new
+entry.
+
 ## `ChecklistMembership` — which checklists a task shows, and which items
 
 A task's checklists and a checklist's items are stored as whole id lists on

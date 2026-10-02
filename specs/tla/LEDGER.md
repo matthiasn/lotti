@@ -89,6 +89,14 @@ design switches each have a counterexample, and it surfaced two open design
 questions (orphaned envelopes, where a revocation cuts). Not included in the
 historical totals above.
 
+The `PullRequestSnapshot` design model adds one spec, five configurations,
+nine named properties and 4,221,294 distinct states. It models GitHub pull
+requests linked to tasks before most of their code exists: server-stamped
+observations, racing refreshes, unlinks, replication with a concurrent-version
+resolver, and the task contexts and suggestions built from them. Its six
+design switches each have a counterexample. Not included in the historical
+totals above.
+
 The `SavedTaskFilterSync` model (#4506) adds one spec, two configurations,
 five named properties and 2,753,540 distinct states. It came with a fix for
 saved filters that never reached a peer; all nine bugs were found by auditing

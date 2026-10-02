@@ -14,6 +14,7 @@ import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
@@ -531,6 +532,20 @@ void main() {
             data: data(snapshotOf: 'goal-1'),
           ).affectedIds,
           <String>{'entity-1', 'goal-1', goalNotification},
+        );
+      },
+    );
+
+    test(
+      'a pull request notifies pullRequestNotification, never its task: a '
+      'refresh must not look like an edit of the task',
+      () {
+        expect(
+          JournalEntity.pullRequest(
+            meta: meta,
+            data: const PullRequestData(owner: 'o', repo: 'r', number: 1),
+          ).affectedIds,
+          <String>{'entity-1', pullRequestNotification},
         );
       },
     );

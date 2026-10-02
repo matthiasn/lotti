@@ -21,6 +21,7 @@ import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart';
@@ -288,6 +289,10 @@ void main() {
         ),
       ),
       'Goal': _goalEntry('goal'),
+      'PullRequest': JournalEntity.pullRequest(
+        meta: _meta('pull-request'),
+        data: const PullRequestData(owner: 'o', repo: 'r', number: 1),
+      ),
     };
 
     entries.forEach((expectedType, entity) {
@@ -359,6 +364,22 @@ void main() {
         ).subtype,
         'goal-live',
       );
+    },
+  );
+
+  test(
+    'toDbEntity keys a pull request by owner/repo#number, lower-cased, so a '
+    'duplicate link is found whatever case its URL used',
+    () {
+      final entry = JournalEntity.pullRequest(
+        meta: _meta('pull-request-subtype'),
+        data: const PullRequestData(
+          owner: 'MatthiasN',
+          repo: 'Lotti',
+          number: 4501,
+        ),
+      );
+      expect(toDbEntity(entry).subtype, 'matthiasn/lotti#4501');
     },
   );
 
@@ -492,6 +513,7 @@ void main() {
         relationship: (_) => throw StateError('unexpected variant'),
         checkIn: (_) => throw StateError('unexpected variant'),
         goal: (_) => throw StateError('unexpected variant'),
+        pullRequest: (_) => throw StateError('unexpected variant'),
       );
     }
 
