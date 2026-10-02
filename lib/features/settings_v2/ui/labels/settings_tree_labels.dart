@@ -182,6 +182,8 @@ SettingsTreeLabelResolver settingsTreeLabelsFor(BuildContext context) {
         );
       case 'advanced/flags':
         return (title: m.settingsFlagsTitle, desc: m.settingsFlagsSubtitle);
+      case 'advanced/github':
+        return (title: m.settingsGitHubTitle, desc: m.settingsGitHubSubtitle);
       case 'advanced/manual-language':
         return (
           title: m.settingsManualLanguageTitle,

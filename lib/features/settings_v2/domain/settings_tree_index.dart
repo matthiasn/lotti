@@ -87,6 +87,7 @@ const Map<String, String> settingsNodeUrls = {
   // stays `/settings/flags` for deep-link compatibility.
   'advanced/flags': '/settings/flags',
   'advanced': '/settings/advanced',
+  'advanced/github': '/settings/advanced/github',
   'advanced/manual-language': '/settings/advanced/manual-language',
   'advanced/logging': '/settings/advanced/logging_domains',
   'advanced/system-health': '/settings/advanced/system_health',

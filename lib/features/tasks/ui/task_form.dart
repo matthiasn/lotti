@@ -3,6 +3,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
 import 'package:lotti/features/design_system/components/motion/staggered_entrance.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/github/ui/task_pull_requests_section.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklists_widget.dart';
@@ -184,6 +185,11 @@ class TaskForm extends ConsumerWidget {
             key: linkedTasksRegionKey,
             child: LinkedTasksWidget(taskId: taskId),
           ),
+        ),
+        ViewportStableSizeReporter(
+          key: ValueKey('pull-requests-size-reporter-$taskId'),
+          offscreenOnly: true,
+          child: TaskPullRequestsSection(taskId: taskId),
         ),
         if (isFirstRun)
           Padding(

@@ -1770,6 +1770,8 @@
   "configFlagEnableEventsDescription": "Visa funktionen Händelser för att skapa, följa och hantera händelser i din journal.",
   "configFlagEnableForkHealing": "Agentgaffelläkning",
   "configFlagEnableForkHealingDescription": "Läka divergerande agenthistorier från användning med flera enheter genom att slå ihop dem vid nästa vak.",
+  "configFlagEnableGitHubPullRequests": "Aktivera pull requests från GitHub",
+  "configFlagEnableGitHubPullRequestsDescription": "Koppla pull requests från GitHub till uppgifter och följ deras kontroller, granskningar och status.",
   "configFlagEnableHabitsPage": "Aktivera Habits-sidan",
   "configFlagEnableHabitsPageDescription": "Visa sidan Vanor i huvudnavigeringen. Följ och hantera dina dagliga vanor här.",
   "configFlagEnableLogging": "Aktivera loggning",
@@ -2964,6 +2966,80 @@
   "geminiThinkingModeMinimalLabel": "Minimal",
   "generateCoverArt": "Generera omslagskonst",
   "generateCoverArtSubtitle": "Skapa bild från röstbeskrivning",
+  "githubChecksFailing": "{count, plural, =1{1 kontroll misslyckades} other{{count} kontroller misslyckades}}",
+  "@githubChecksFailing": {
+    "description": "Status line part: how many CI checks of a pull request fail.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "githubChecksPassing": "Kontroller godkända",
+  "githubChecksPending": "Kontroller körs",
+  "githubConnectButton": "Anslut",
+  "githubConnectedAs": "Ansluten som @{login}",
+  "@githubConnectedAs": {
+    "description": "Shown in the GitHub settings when a token is stored.",
+    "placeholders": {
+      "login": {
+        "type": "String",
+        "example": "octocat"
+      }
+    }
+  },
+  "githubDisconnectButton": "Koppla från",
+  "githubFailureForbidden": "Din token får inte läsa det här. Kontrollera dess behörigheter.",
+  "githubFailureInvalidResponse": "GitHub skickade ett svar som Lotti inte kunde läsa.",
+  "githubFailureNotFound": "Hittades inte, eller så kan din token inte se det här repot.",
+  "githubFailureNoToken": "Lägg först till din GitHub-token under Inställningar → Avancerade inställningar → GitHub.",
+  "githubFailureOffline": "Det gick inte att nå GitHub. Kontrollera din anslutning.",
+  "githubFailureRateLimited": "GitHubs gräns för förfrågningar är nådd. Lotti frågar igen efter {time}.",
+  "@githubFailureRateLimited": {
+    "description": "A GitHub call hit the rate limit; time is when calls resume.",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "14:30"
+      }
+    }
+  },
+  "githubFailureRateLimitedLater": "GitHubs gräns för förfrågningar är nådd. Försök igen senare.",
+  "githubFailureServer": "GitHub hade ett problem. Försök igen senare.",
+  "githubFailureUnauthorized": "GitHub avvisade din token. Den kan ha gått ut eller återkallats.",
+  "githubLinkAlreadyLinked": "Den här pull requesten är redan kopplad till den här uppgiften.",
+  "githubLinkButton": "Koppla",
+  "githubLinkNotAPullRequest": "Det är inte en pull request.",
+  "githubLinkNotGitHub": "Det är inte en länk till github.com.",
+  "githubLinkPullRequestHint": "Följ dess kontroller, granskningar och status här.",
+  "githubLinkPullRequestTitle": "Koppla en pull request",
+  "githubLinkUrlHelper": "Eller skriv agare/repo#123.",
+  "githubLinkUrlHint": "https://github.com/agare/repo/pull/123",
+  "githubLinkUrlLabel": "URL till pull request",
+  "githubMergeBehind": "Efter basgrenen",
+  "githubMergeBlocked": "Blockerad av grenregler",
+  "githubMergeConflicts": "Sammanfogningskonflikter",
+  "githubNotRefreshed": "Kunde inte uppdatera",
+  "githubNotRefreshedYet": "Inte uppdaterad än",
+  "githubOpenOnGitHub": "Öppna på GitHub",
+  "githubPullRequestActions": "Åtgärder för pull request",
+  "githubPullRequestsTitle": "Pull requests",
+  "githubRefreshingPullRequest": "Uppdaterar pull request",
+  "githubRefreshPullRequest": "Uppdatera pull request",
+  "githubReviewApproved": "Godkänd",
+  "githubReviewChangesRequested": "Ändringar begärda",
+  "githubReviewPending": "Granskning begärd",
+  "githubStatusClosed": "Stängd",
+  "githubStatusDraft": "Utkast",
+  "githubStatusMerged": "Sammanfogad",
+  "githubStatusOpen": "Öppen",
+  "githubTokenHide": "Dölj token",
+  "githubTokenIntro": "Lotti läser de pull requests du kopplar till uppgifter med din egen personliga åtkomsttoken. Ge den läsåtkomst till pull requests, commitstatus och kontroller i de repon du arbetar i.",
+  "githubTokenKeptOnDevice": "Token stannar på den här enheten: den synkas aldrig och skickas bara till api.github.com.",
+  "githubTokenLabel": "Personlig åtkomsttoken",
+  "githubTokenShow": "Visa token",
+  "githubUnlinkPullRequest": "Koppla bort pull request",
   "goalAssessmentHistoryTitle": "Dagliga reflektioner",
   "goalAssessmentImproving": "Förbättras",
   "goalAssessmentMeasuredReadOnly": "Uppmätt av Lotti — den här delen är inte redigerbar.",
@@ -5596,6 +5672,8 @@
   "settingsFlagsSearchHint": "Sökflaggor",
   "settingsFlagsSubtitle": "Konfigurera funktionsflaggor och alternativ",
   "settingsFlagsTitle": "Konfigurationsflaggor",
+  "settingsGitHubSubtitle": "Din token för att koppla pull requests till uppgifter",
+  "settingsGitHubTitle": "GitHub",
   "settingsHabitsCreateTitle": "Skapa vana",
   "settingsHabitsDeleteTooltip": "Radera vana",
   "settingsHabitsDescriptionLabel": "Beskrivning (valfritt)",

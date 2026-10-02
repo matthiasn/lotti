@@ -23,6 +23,7 @@ const enableTooltipFlag = 'enable_tooltip';
 const enableAiStreamingFlag = 'enable_ai_streaming';
 const enableQueryChatFlag = 'enable_query_chat';
 const enableAiSummaryTtsFlag = 'enable_ai_summary_tts';
+const enableGitHubPullRequestsFlag = 'enable_github_pull_requests';
 const resendAttachments = 'resend_attachments';
 const enableLoggingFlag = 'enable_logging';
 

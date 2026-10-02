@@ -1770,6 +1770,8 @@
   "configFlagEnableEventsDescription": "Vis Events-funktionen for at oprette, spore og administrere begivenheder i din journal.",
   "configFlagEnableForkHealing": "Agent gaffel-helbredelse",
   "configFlagEnableForkHealingDescription": "Helbred divergerende agenthistorier fra brug af flere enheder ved at sammenflette dem ved næste våge.",
+  "configFlagEnableGitHubPullRequests": "Aktivér pull requests fra GitHub",
+  "configFlagEnableGitHubPullRequestsDescription": "Knyt pull requests fra GitHub til opgaver, og følg deres tjek, reviews og status.",
   "configFlagEnableHabitsPage": "Aktivér Vaner-siden",
   "configFlagEnableHabitsPageDescription": "Vis siden Vaner i hovednavigationen. Følg og styr dine daglige vaner her.",
   "configFlagEnableLogging": "Aktiver logning",
@@ -2964,6 +2966,80 @@
   "geminiThinkingModeMinimalLabel": "Minimal",
   "generateCoverArt": "Generer coverkunst",
   "generateCoverArtSubtitle": "Opret billede ud fra stemmebeskrivelse",
+  "githubChecksFailing": "{count, plural, =1{1 tjek fejlede} other{{count} tjek fejlede}}",
+  "@githubChecksFailing": {
+    "description": "Status line part: how many CI checks of a pull request fail.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "githubChecksPassing": "Tjek bestået",
+  "githubChecksPending": "Tjek kører",
+  "githubConnectButton": "Forbind",
+  "githubConnectedAs": "Forbundet som @{login}",
+  "@githubConnectedAs": {
+    "description": "Shown in the GitHub settings when a token is stored.",
+    "placeholders": {
+      "login": {
+        "type": "String",
+        "example": "octocat"
+      }
+    }
+  },
+  "githubDisconnectButton": "Afbryd forbindelsen",
+  "githubFailureForbidden": "Tokenet må ikke læse dette. Tjek dets tilladelser.",
+  "githubFailureInvalidResponse": "GitHub sendte et svar, som Lotti ikke kunne læse.",
+  "githubFailureNotFound": "Ikke fundet, eller dit token kan ikke se dette repository.",
+  "githubFailureNoToken": "Tilføj først dit GitHub-token under Indstillinger → Avancerede indstillinger → GitHub.",
+  "githubFailureOffline": "GitHub kunne ikke nås. Tjek din forbindelse.",
+  "githubFailureRateLimited": "GitHubs grænse for forespørgsler er nået. Lotti spørger igen efter {time}.",
+  "@githubFailureRateLimited": {
+    "description": "A GitHub call hit the rate limit; time is when calls resume.",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "14:30"
+      }
+    }
+  },
+  "githubFailureRateLimitedLater": "GitHubs grænse for forespørgsler er nået. Prøv igen senere.",
+  "githubFailureServer": "GitHub havde et problem. Prøv igen senere.",
+  "githubFailureUnauthorized": "GitHub afviste tokenet. Det er måske udløbet eller tilbagekaldt.",
+  "githubLinkAlreadyLinked": "Denne pull request er allerede knyttet til denne opgave.",
+  "githubLinkButton": "Knyt",
+  "githubLinkNotAPullRequest": "Det er ikke en pull request.",
+  "githubLinkNotGitHub": "Det er ikke et link til github.com.",
+  "githubLinkPullRequestHint": "Følg dens tjek, reviews og status her.",
+  "githubLinkPullRequestTitle": "Knyt en pull request",
+  "githubLinkUrlHelper": "Eller skriv ejer/repo#123.",
+  "githubLinkUrlHint": "https://github.com/ejer/repo/pull/123",
+  "githubLinkUrlLabel": "URL til pull request",
+  "githubMergeBehind": "Bagud i forhold til basisgrenen",
+  "githubMergeBlocked": "Blokeret af grenregler",
+  "githubMergeConflicts": "Flettekonflikter",
+  "githubNotRefreshed": "Kunne ikke opdatere",
+  "githubNotRefreshedYet": "Ikke opdateret endnu",
+  "githubOpenOnGitHub": "Åbn på GitHub",
+  "githubPullRequestActions": "Handlinger for pull request",
+  "githubPullRequestsTitle": "Pull requests",
+  "githubRefreshingPullRequest": "Opdaterer pull request",
+  "githubRefreshPullRequest": "Opdater pull request",
+  "githubReviewApproved": "Godkendt",
+  "githubReviewChangesRequested": "Ændringer anmodet",
+  "githubReviewPending": "Review anmodet",
+  "githubStatusClosed": "Lukket",
+  "githubStatusDraft": "Kladde",
+  "githubStatusMerged": "Flettet",
+  "githubStatusOpen": "Åben",
+  "githubTokenHide": "Skjul token",
+  "githubTokenIntro": "Lotti læser de pull requests, du knytter til opgaver, med dit eget personlige adgangstoken. Giv det læseadgang til pull requests, commitstatus og tjek i de repositories, du arbejder i.",
+  "githubTokenKeptOnDevice": "Tokenet bliver på denne enhed: det synkroniseres aldrig og sendes kun til api.github.com.",
+  "githubTokenLabel": "Personligt adgangstoken",
+  "githubTokenShow": "Vis token",
+  "githubUnlinkPullRequest": "Fjern pull request",
   "goalAssessmentHistoryTitle": "Daglige refleksioner",
   "goalAssessmentImproving": "Bedring",
   "goalAssessmentMeasuredReadOnly": "Målt af Lotti - denne del kan ikke redigeres.",
@@ -5596,6 +5672,8 @@
   "settingsFlagsSearchHint": "Søgeflag",
   "settingsFlagsSubtitle": "Konfigurer funktionsflag og indstillinger",
   "settingsFlagsTitle": "Konfigurationsflag",
+  "settingsGitHubSubtitle": "Dit token til at knytte pull requests til opgaver",
+  "settingsGitHubTitle": "GitHub",
   "settingsHabitsCreateTitle": "Skab vaner",
   "settingsHabitsDeleteTooltip": "Slet vane",
   "settingsHabitsDescriptionLabel": "Beskrivelse (valgfrit)",

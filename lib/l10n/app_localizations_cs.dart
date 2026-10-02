@@ -3722,6 +3722,14 @@ class AppLocalizationsCs extends AppLocalizations {
       'Sloučí rozvětvené historie agenta z více zařízení při příštím probuzení.';
 
   @override
+  String get configFlagEnableGitHubPullRequests =>
+      'Zapnout pull requesty z GitHubu';
+
+  @override
+  String get configFlagEnableGitHubPullRequestsDescription =>
+      'Propoj pull requesty z GitHubu s úkoly a sleduj jejich kontroly, revize a stav.';
+
+  @override
   String get configFlagEnableHabitsPage => 'Povolit stránku Návyků';
 
   @override
@@ -6542,6 +6550,171 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get generateCoverArtSubtitle => 'Vytvořit obrázek z hlasového popisu';
+
+  @override
+  String githubChecksFailing(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count kontrol selhalo',
+      few: '$count kontroly selhaly',
+      one: '1 kontrola selhala',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get githubChecksPassing => 'Kontroly prošly';
+
+  @override
+  String get githubChecksPending => 'Kontroly běží';
+
+  @override
+  String get githubConnectButton => 'Připojit';
+
+  @override
+  String githubConnectedAs(String login) {
+    return 'Připojeno jako @$login';
+  }
+
+  @override
+  String get githubDisconnectButton => 'Odpojit';
+
+  @override
+  String get githubFailureForbidden =>
+      'Token nemá oprávnění tohle číst. Zkontroluj jeho oprávnění.';
+
+  @override
+  String get githubFailureInvalidResponse =>
+      'GitHub poslal odpověď, kterou Lotti nedokázal přečíst.';
+
+  @override
+  String get githubFailureNotFound =>
+      'Nenalezeno, nebo tvůj token tento repozitář nevidí.';
+
+  @override
+  String get githubFailureNoToken =>
+      'Nejdřív přidej svůj token GitHubu v Nastavení → Pokročilá nastavení → GitHub.';
+
+  @override
+  String get githubFailureOffline =>
+      'GitHub není dostupný. Zkontroluj připojení.';
+
+  @override
+  String githubFailureRateLimited(String time) {
+    return 'Byl dosažen limit požadavků GitHubu. Lotti se znovu zeptá po $time.';
+  }
+
+  @override
+  String get githubFailureRateLimitedLater =>
+      'Byl dosažen limit požadavků GitHubu. Zkus to později.';
+
+  @override
+  String get githubFailureServer => 'GitHub měl problém. Zkus to později.';
+
+  @override
+  String get githubFailureUnauthorized =>
+      'GitHub token odmítl. Možná vypršel nebo byl zrušen.';
+
+  @override
+  String get githubLinkAlreadyLinked =>
+      'Tento pull request už je s tímto úkolem propojený.';
+
+  @override
+  String get githubLinkButton => 'Propojit';
+
+  @override
+  String get githubLinkNotAPullRequest => 'To není pull request.';
+
+  @override
+  String get githubLinkNotGitHub => 'To není odkaz na github.com.';
+
+  @override
+  String get githubLinkPullRequestHint =>
+      'Sleduj tady jeho kontroly, revize a stav.';
+
+  @override
+  String get githubLinkPullRequestTitle => 'Propojit pull request';
+
+  @override
+  String get githubLinkUrlHelper => 'Nebo napiš vlastnik/repo#123.';
+
+  @override
+  String get githubLinkUrlHint => 'https://github.com/vlastnik/repo/pull/123';
+
+  @override
+  String get githubLinkUrlLabel => 'URL pull requestu';
+
+  @override
+  String get githubMergeBehind => 'Za základní větví';
+
+  @override
+  String get githubMergeBlocked => 'Blokováno pravidly větve';
+
+  @override
+  String get githubMergeConflicts => 'Konflikty při slučování';
+
+  @override
+  String get githubNotRefreshed => 'Aktualizace se nezdařila';
+
+  @override
+  String get githubNotRefreshedYet => 'Zatím neaktualizováno';
+
+  @override
+  String get githubOpenOnGitHub => 'Otevřít na GitHubu';
+
+  @override
+  String get githubPullRequestActions => 'Akce pull requestu';
+
+  @override
+  String get githubPullRequestsTitle => 'Pull requesty';
+
+  @override
+  String get githubRefreshingPullRequest => 'Pull request se aktualizuje';
+
+  @override
+  String get githubRefreshPullRequest => 'Aktualizovat pull request';
+
+  @override
+  String get githubReviewApproved => 'Schváleno';
+
+  @override
+  String get githubReviewChangesRequested => 'Vyžádány změny';
+
+  @override
+  String get githubReviewPending => 'Vyžádána revize';
+
+  @override
+  String get githubStatusClosed => 'Uzavřený';
+
+  @override
+  String get githubStatusDraft => 'Koncept';
+
+  @override
+  String get githubStatusMerged => 'Sloučený';
+
+  @override
+  String get githubStatusOpen => 'Otevřený';
+
+  @override
+  String get githubTokenHide => 'Skrýt token';
+
+  @override
+  String get githubTokenIntro =>
+      'Lotti čte pull requesty, které propojíš s úkoly, pomocí tvého vlastního osobního přístupového tokenu. Dej mu přístup ke čtení pull requestů, stavů commitů a kontrol v repozitářích, ve kterých pracuješ.';
+
+  @override
+  String get githubTokenKeptOnDevice =>
+      'Token zůstává v tomto zařízení: nikdy se nesynchronizuje a posílá se jen na api.github.com.';
+
+  @override
+  String get githubTokenLabel => 'Osobní přístupový token';
+
+  @override
+  String get githubTokenShow => 'Zobrazit token';
+
+  @override
+  String get githubUnlinkPullRequest => 'Odpojit pull request';
 
   @override
   String get goalAssessmentHistoryTitle => 'Denní úvahy';
@@ -13452,6 +13625,13 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsFlagsTitle => 'Konfigurační příznaky';
+
+  @override
+  String get settingsGitHubSubtitle =>
+      'Tvůj token pro propojení pull requestů s úkoly';
+
+  @override
+  String get settingsGitHubTitle => 'GitHub';
 
   @override
   String get settingsHabitsCreateTitle => 'Vytvořit návyk';

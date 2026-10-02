@@ -6192,6 +6192,18 @@ abstract class AppLocalizations {
   /// **'Heal divergent agent histories from multi-device use by merging them at the next wake.'**
   String get configFlagEnableForkHealingDescription;
 
+  /// No description provided for @configFlagEnableGitHubPullRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable GitHub pull requests'**
+  String get configFlagEnableGitHubPullRequests;
+
+  /// No description provided for @configFlagEnableGitHubPullRequestsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Link GitHub pull requests to tasks and follow their checks, reviews and status.'**
+  String get configFlagEnableGitHubPullRequestsDescription;
+
   /// No description provided for @configFlagEnableHabitsPage.
   ///
   /// In en, this message translates to:
@@ -11062,6 +11074,288 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create image from voice description'**
   String get generateCoverArtSubtitle;
+
+  /// Status line part: how many CI checks of a pull request fail.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 check failing} other{{count} checks failing}}'**
+  String githubChecksFailing(int count);
+
+  /// No description provided for @githubChecksPassing.
+  ///
+  /// In en, this message translates to:
+  /// **'Checks passing'**
+  String get githubChecksPassing;
+
+  /// No description provided for @githubChecksPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Checks running'**
+  String get githubChecksPending;
+
+  /// No description provided for @githubConnectButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get githubConnectButton;
+
+  /// Shown in the GitHub settings when a token is stored.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected as @{login}'**
+  String githubConnectedAs(String login);
+
+  /// No description provided for @githubDisconnectButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect'**
+  String get githubDisconnectButton;
+
+  /// No description provided for @githubFailureForbidden.
+  ///
+  /// In en, this message translates to:
+  /// **'The token is not allowed to read this. Check its permissions.'**
+  String get githubFailureForbidden;
+
+  /// No description provided for @githubFailureInvalidResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub sent a response Lotti could not read.'**
+  String get githubFailureInvalidResponse;
+
+  /// No description provided for @githubFailureNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Not found, or your token cannot see this repository.'**
+  String get githubFailureNotFound;
+
+  /// No description provided for @githubFailureNoToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your GitHub token in Settings → Advanced Settings → GitHub first.'**
+  String get githubFailureNoToken;
+
+  /// No description provided for @githubFailureOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub could not be reached. Check your connection.'**
+  String get githubFailureOffline;
+
+  /// A GitHub call hit the rate limit; time is when calls resume.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub\'s rate limit is reached. Lotti asks again after {time}.'**
+  String githubFailureRateLimited(String time);
+
+  /// No description provided for @githubFailureRateLimitedLater.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub\'s rate limit is reached. Try again later.'**
+  String get githubFailureRateLimitedLater;
+
+  /// No description provided for @githubFailureServer.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub had a problem. Try again later.'**
+  String get githubFailureServer;
+
+  /// No description provided for @githubFailureUnauthorized.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub rejected the token. It may have expired or been revoked.'**
+  String get githubFailureUnauthorized;
+
+  /// No description provided for @githubLinkAlreadyLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'This pull request is already linked to this task.'**
+  String get githubLinkAlreadyLinked;
+
+  /// No description provided for @githubLinkButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Link'**
+  String get githubLinkButton;
+
+  /// No description provided for @githubLinkNotAPullRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'That is not a pull request.'**
+  String get githubLinkNotAPullRequest;
+
+  /// No description provided for @githubLinkNotGitHub.
+  ///
+  /// In en, this message translates to:
+  /// **'That is not a link to github.com.'**
+  String get githubLinkNotGitHub;
+
+  /// No description provided for @githubLinkPullRequestHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow its checks, reviews and status here.'**
+  String get githubLinkPullRequestHint;
+
+  /// No description provided for @githubLinkPullRequestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Link a pull request'**
+  String get githubLinkPullRequestTitle;
+
+  /// No description provided for @githubLinkUrlHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Or write owner/repo#123.'**
+  String get githubLinkUrlHelper;
+
+  /// No description provided for @githubLinkUrlHint.
+  ///
+  /// In en, this message translates to:
+  /// **'https://github.com/owner/repo/pull/123'**
+  String get githubLinkUrlHint;
+
+  /// No description provided for @githubLinkUrlLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull request URL'**
+  String get githubLinkUrlLabel;
+
+  /// No description provided for @githubMergeBehind.
+  ///
+  /// In en, this message translates to:
+  /// **'Behind base branch'**
+  String get githubMergeBehind;
+
+  /// No description provided for @githubMergeBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked by branch rules'**
+  String get githubMergeBlocked;
+
+  /// No description provided for @githubMergeConflicts.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge conflicts'**
+  String get githubMergeConflicts;
+
+  /// No description provided for @githubNotRefreshed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not refresh'**
+  String get githubNotRefreshed;
+
+  /// No description provided for @githubNotRefreshedYet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not refreshed yet'**
+  String get githubNotRefreshedYet;
+
+  /// No description provided for @githubOpenOnGitHub.
+  ///
+  /// In en, this message translates to:
+  /// **'Open on GitHub'**
+  String get githubOpenOnGitHub;
+
+  /// No description provided for @githubPullRequestActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull request actions'**
+  String get githubPullRequestActions;
+
+  /// No description provided for @githubPullRequestsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull requests'**
+  String get githubPullRequestsTitle;
+
+  /// No description provided for @githubRefreshingPullRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Refreshing pull request'**
+  String get githubRefreshingPullRequest;
+
+  /// No description provided for @githubRefreshPullRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh pull request'**
+  String get githubRefreshPullRequest;
+
+  /// No description provided for @githubReviewApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved'**
+  String get githubReviewApproved;
+
+  /// No description provided for @githubReviewChangesRequested.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes requested'**
+  String get githubReviewChangesRequested;
+
+  /// No description provided for @githubReviewPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Review requested'**
+  String get githubReviewPending;
+
+  /// No description provided for @githubStatusClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get githubStatusClosed;
+
+  /// No description provided for @githubStatusDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get githubStatusDraft;
+
+  /// No description provided for @githubStatusMerged.
+  ///
+  /// In en, this message translates to:
+  /// **'Merged'**
+  String get githubStatusMerged;
+
+  /// No description provided for @githubStatusOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get githubStatusOpen;
+
+  /// No description provided for @githubTokenHide.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide token'**
+  String get githubTokenHide;
+
+  /// No description provided for @githubTokenIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Lotti reads the pull requests you link to tasks with your own personal access token. Give it read access to pull requests, commit statuses and checks in the repositories you work in.'**
+  String get githubTokenIntro;
+
+  /// No description provided for @githubTokenKeptOnDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'The token stays on this device: it is never synced, and it is only ever sent to api.github.com.'**
+  String get githubTokenKeptOnDevice;
+
+  /// No description provided for @githubTokenLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal access token'**
+  String get githubTokenLabel;
+
+  /// No description provided for @githubTokenShow.
+  ///
+  /// In en, this message translates to:
+  /// **'Show token'**
+  String get githubTokenShow;
+
+  /// No description provided for @githubUnlinkPullRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlink pull request'**
+  String get githubUnlinkPullRequest;
 
   /// No description provided for @goalAssessmentHistoryTitle.
   ///
@@ -22066,6 +22360,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Config Flags'**
   String get settingsFlagsTitle;
+
+  /// No description provided for @settingsGitHubSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your token for linking pull requests to tasks'**
+  String get settingsGitHubSubtitle;
+
+  /// No description provided for @settingsGitHubTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub'**
+  String get settingsGitHubTitle;
 
   /// No description provided for @settingsHabitsCreateTitle.
   ///

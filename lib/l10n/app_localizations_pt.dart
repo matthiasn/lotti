@@ -3712,6 +3712,14 @@ class AppLocalizationsPt extends AppLocalizations {
       'Cure históricos de agentes divergentes do uso de vários dispositivos, mesclando-os no próximo despertar.';
 
   @override
+  String get configFlagEnableGitHubPullRequests =>
+      'Ativar pull requests do GitHub';
+
+  @override
+  String get configFlagEnableGitHubPullRequestsDescription =>
+      'Vincule pull requests do GitHub às tarefas e acompanhe as verificações, revisões e o status.';
+
+  @override
   String get configFlagEnableHabitsPage => 'Habilitar página de hábitos';
 
   @override
@@ -6536,6 +6544,171 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get generateCoverArtSubtitle =>
       'Criar imagem a partir da descrição de voz';
+
+  @override
+  String githubChecksFailing(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count verificações com falha',
+      one: '1 verificação com falha',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get githubChecksPassing => 'Verificações aprovadas';
+
+  @override
+  String get githubChecksPending => 'Verificações em andamento';
+
+  @override
+  String get githubConnectButton => 'Conectar';
+
+  @override
+  String githubConnectedAs(String login) {
+    return 'Conectado como @$login';
+  }
+
+  @override
+  String get githubDisconnectButton => 'Desconectar';
+
+  @override
+  String get githubFailureForbidden =>
+      'O token não tem permissão para ler isto. Verifique as permissões dele.';
+
+  @override
+  String get githubFailureInvalidResponse =>
+      'O GitHub enviou uma resposta que o Lotti não conseguiu ler.';
+
+  @override
+  String get githubFailureNotFound =>
+      'Não encontrado, ou seu token não consegue ver este repositório.';
+
+  @override
+  String get githubFailureNoToken =>
+      'Primeiro adicione seu token do GitHub em Configurações → Configurações avançadas → GitHub.';
+
+  @override
+  String get githubFailureOffline =>
+      'Não foi possível acessar o GitHub. Verifique sua conexão.';
+
+  @override
+  String githubFailureRateLimited(String time) {
+    return 'O limite de requisições do GitHub foi atingido. O Lotti tenta de novo depois das $time.';
+  }
+
+  @override
+  String get githubFailureRateLimitedLater =>
+      'O limite de requisições do GitHub foi atingido. Tente de novo mais tarde.';
+
+  @override
+  String get githubFailureServer =>
+      'O GitHub teve um problema. Tente de novo mais tarde.';
+
+  @override
+  String get githubFailureUnauthorized =>
+      'O GitHub recusou o token. Ele pode ter expirado ou sido revogado.';
+
+  @override
+  String get githubLinkAlreadyLinked =>
+      'Esta pull request já está vinculada a esta tarefa.';
+
+  @override
+  String get githubLinkButton => 'Vincular';
+
+  @override
+  String get githubLinkNotAPullRequest => 'Isso não é uma pull request.';
+
+  @override
+  String get githubLinkNotGitHub => 'Isso não é um link para github.com.';
+
+  @override
+  String get githubLinkPullRequestHint =>
+      'Acompanhe aqui as verificações, revisões e o status.';
+
+  @override
+  String get githubLinkPullRequestTitle => 'Vincular uma pull request';
+
+  @override
+  String get githubLinkUrlHelper => 'Ou escreva dono/repo#123.';
+
+  @override
+  String get githubLinkUrlHint => 'https://github.com/dono/repo/pull/123';
+
+  @override
+  String get githubLinkUrlLabel => 'URL da pull request';
+
+  @override
+  String get githubMergeBehind => 'Atrás do branch base';
+
+  @override
+  String get githubMergeBlocked => 'Bloqueada pelas regras do branch';
+
+  @override
+  String get githubMergeConflicts => 'Conflitos de mesclagem';
+
+  @override
+  String get githubNotRefreshed => 'Não foi possível atualizar';
+
+  @override
+  String get githubNotRefreshedYet => 'Ainda não atualizada';
+
+  @override
+  String get githubOpenOnGitHub => 'Abrir no GitHub';
+
+  @override
+  String get githubPullRequestActions => 'Ações da pull request';
+
+  @override
+  String get githubPullRequestsTitle => 'Pull requests';
+
+  @override
+  String get githubRefreshingPullRequest => 'Atualizando pull request';
+
+  @override
+  String get githubRefreshPullRequest => 'Atualizar pull request';
+
+  @override
+  String get githubReviewApproved => 'Aprovada';
+
+  @override
+  String get githubReviewChangesRequested => 'Alterações solicitadas';
+
+  @override
+  String get githubReviewPending => 'Revisão solicitada';
+
+  @override
+  String get githubStatusClosed => 'Fechada';
+
+  @override
+  String get githubStatusDraft => 'Rascunho';
+
+  @override
+  String get githubStatusMerged => 'Mesclada';
+
+  @override
+  String get githubStatusOpen => 'Aberta';
+
+  @override
+  String get githubTokenHide => 'Ocultar token';
+
+  @override
+  String get githubTokenIntro =>
+      'O Lotti lê as pull requests que você vincula às tarefas com seu próprio token de acesso pessoal. Dê a ele acesso de leitura a pull requests, status de commit e verificações nos repositórios em que você trabalha.';
+
+  @override
+  String get githubTokenKeptOnDevice =>
+      'O token fica neste dispositivo: nunca é sincronizado e só é enviado para api.github.com.';
+
+  @override
+  String get githubTokenLabel => 'Token de acesso pessoal';
+
+  @override
+  String get githubTokenShow => 'Mostrar token';
+
+  @override
+  String get githubUnlinkPullRequest => 'Desvincular pull request';
 
   @override
   String get goalAssessmentHistoryTitle => 'Reflexões diárias';
@@ -13392,6 +13565,13 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get settingsFlagsTitle => 'Sinalizadores de configuração';
+
+  @override
+  String get settingsGitHubSubtitle =>
+      'Seu token para vincular pull requests às tarefas';
+
+  @override
+  String get settingsGitHubTitle => 'GitHub';
 
   @override
   String get settingsHabitsCreateTitle => 'Crie hábito';

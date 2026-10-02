@@ -1769,6 +1769,8 @@
   "configFlagEnableEventsDescription": "Toon de functie Evenementen om gebeurtenissen aan te maken, te volgen en te beheren in uw journal.",
   "configFlagEnableForkHealing": "Agent vork genezing",
   "configFlagEnableForkHealingDescription": "Genees uiteenlopende agent geschiedenissen van multi-apparaat gebruik door ze samen te voegen bij de volgende wake.",
+  "configFlagEnableGitHubPullRequests": "GitHub-pull requests inschakelen",
+  "configFlagEnableGitHubPullRequestsDescription": "Koppel GitHub-pull requests aan taken en volg hun checks, reviews en status.",
   "configFlagEnableHabitsPage": "Gewoontespagina inschakelen",
   "configFlagEnableHabitsPageDescription": "Toon de Habits pagina in de hoofdnavigatie. Volg en beheer uw dagelijkse gewoonten hier.",
   "configFlagEnableLogging": "Loggen inschakelen",
@@ -2963,6 +2965,80 @@
   "geminiThinkingModeMinimalLabel": "Minimaal",
   "generateCoverArt": "Omslagkunst genereren",
   "generateCoverArtSubtitle": "Afbeelding aanmaken van spraakbeschrijving",
+  "githubChecksFailing": "{count, plural, =1{1 check mislukt} other{{count} checks mislukt}}",
+  "@githubChecksFailing": {
+    "description": "Status line part: how many CI checks of a pull request fail.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "githubChecksPassing": "Checks geslaagd",
+  "githubChecksPending": "Checks lopen",
+  "githubConnectButton": "Verbinden",
+  "githubConnectedAs": "Verbonden als @{login}",
+  "@githubConnectedAs": {
+    "description": "Shown in the GitHub settings when a token is stored.",
+    "placeholders": {
+      "login": {
+        "type": "String",
+        "example": "octocat"
+      }
+    }
+  },
+  "githubDisconnectButton": "Verbinding verbreken",
+  "githubFailureForbidden": "Het token mag dit niet lezen. Controleer de rechten ervan.",
+  "githubFailureInvalidResponse": "GitHub stuurde een antwoord dat Lotti niet kon lezen.",
+  "githubFailureNotFound": "Niet gevonden, of je token kan deze repository niet zien.",
+  "githubFailureNoToken": "Voeg eerst je GitHub-token toe via Instellingen → Geavanceerde instellingen → GitHub.",
+  "githubFailureOffline": "GitHub is niet bereikbaar. Controleer je verbinding.",
+  "githubFailureRateLimited": "De limiet van GitHub is bereikt. Lotti vraagt het na {time} opnieuw.",
+  "@githubFailureRateLimited": {
+    "description": "A GitHub call hit the rate limit; time is when calls resume.",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "14:30"
+      }
+    }
+  },
+  "githubFailureRateLimitedLater": "De limiet van GitHub is bereikt. Probeer het later opnieuw.",
+  "githubFailureServer": "GitHub had een probleem. Probeer het later opnieuw.",
+  "githubFailureUnauthorized": "GitHub heeft het token geweigerd. Het is misschien verlopen of ingetrokken.",
+  "githubLinkAlreadyLinked": "Deze pull request is al aan deze taak gekoppeld.",
+  "githubLinkButton": "Koppelen",
+  "githubLinkNotAPullRequest": "Dat is geen pull request.",
+  "githubLinkNotGitHub": "Dat is geen link naar github.com.",
+  "githubLinkPullRequestHint": "Volg hier de checks, reviews en status.",
+  "githubLinkPullRequestTitle": "Pull request koppelen",
+  "githubLinkUrlHelper": "Of schrijf eigenaar/repo#123.",
+  "githubLinkUrlHint": "https://github.com/eigenaar/repo/pull/123",
+  "githubLinkUrlLabel": "URL van de pull request",
+  "githubMergeBehind": "Achter op de basisbranch",
+  "githubMergeBlocked": "Geblokkeerd door branchregels",
+  "githubMergeConflicts": "Mergeconflicten",
+  "githubNotRefreshed": "Vernieuwen mislukt",
+  "githubNotRefreshedYet": "Nog niet vernieuwd",
+  "githubOpenOnGitHub": "Openen op GitHub",
+  "githubPullRequestActions": "Acties voor de pull request",
+  "githubPullRequestsTitle": "Pull requests",
+  "githubRefreshingPullRequest": "Pull request wordt vernieuwd",
+  "githubRefreshPullRequest": "Pull request vernieuwen",
+  "githubReviewApproved": "Goedgekeurd",
+  "githubReviewChangesRequested": "Wijzigingen gevraagd",
+  "githubReviewPending": "Review gevraagd",
+  "githubStatusClosed": "Gesloten",
+  "githubStatusDraft": "Concept",
+  "githubStatusMerged": "Samengevoegd",
+  "githubStatusOpen": "Open",
+  "githubTokenHide": "Token verbergen",
+  "githubTokenIntro": "Lotti leest de pull requests die je aan taken koppelt met je eigen persoonlijke toegangstoken. Geef het leestoegang tot pull requests, commitstatussen en checks in de repository's waarin je werkt.",
+  "githubTokenKeptOnDevice": "Het token blijft op dit apparaat: het wordt nooit gesynchroniseerd en alleen naar api.github.com verstuurd.",
+  "githubTokenLabel": "Persoonlijk toegangstoken",
+  "githubTokenShow": "Token tonen",
+  "githubUnlinkPullRequest": "Pull request ontkoppelen",
   "goalAssessmentHistoryTitle": "Dagelijkse reflecties",
   "goalAssessmentImproving": "Verbeterend",
   "goalAssessmentMeasuredReadOnly": "Gemeten door Lotti — dit deel kan niet worden bewerkt.",
@@ -5595,6 +5671,8 @@
   "settingsFlagsSearchHint": "Zoekvlaggen",
   "settingsFlagsSubtitle": "Functievlaggen en -opties configureren",
   "settingsFlagsTitle": "Vlaggen instellen",
+  "settingsGitHubSubtitle": "Je token om pull requests aan taken te koppelen",
+  "settingsGitHubTitle": "GitHub",
   "settingsHabitsCreateTitle": "Gebruiking maken",
   "settingsHabitsDeleteTooltip": "Gewoonte verwijderen",
   "settingsHabitsDescriptionLabel": "Beschrijving (facultatief)",

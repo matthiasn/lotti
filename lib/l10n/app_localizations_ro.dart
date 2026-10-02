@@ -3744,6 +3744,14 @@ class AppLocalizationsRo extends AppLocalizations {
       'Îmbină istoricurile divergente ale agentului rezultate din utilizarea pe mai multe dispozitive la următoarea activare.';
 
   @override
+  String get configFlagEnableGitHubPullRequests =>
+      'Activați pull request-urile GitHub';
+
+  @override
+  String get configFlagEnableGitHubPullRequestsDescription =>
+      'Legați pull request-uri GitHub de sarcini și urmăriți verificările, revizuirile și starea lor.';
+
+  @override
   String get configFlagEnableHabitsPage => 'Activați pagina Obiceiuri';
 
   @override
@@ -6584,6 +6592,172 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get generateCoverArtSubtitle =>
       'Creează imagine din descrierea vocală';
+
+  @override
+  String githubChecksFailing(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de verificări eșuate',
+      few: '$count verificări eșuate',
+      one: '1 verificare eșuată',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get githubChecksPassing => 'Verificări reușite';
+
+  @override
+  String get githubChecksPending => 'Verificări în curs';
+
+  @override
+  String get githubConnectButton => 'Conectați';
+
+  @override
+  String githubConnectedAs(String login) {
+    return 'Conectat ca @$login';
+  }
+
+  @override
+  String get githubDisconnectButton => 'Deconectați';
+
+  @override
+  String get githubFailureForbidden =>
+      'Tokenul nu are voie să citească acest lucru. Verificați-i permisiunile.';
+
+  @override
+  String get githubFailureInvalidResponse =>
+      'GitHub a trimis un răspuns pe care Lotti nu l-a putut citi.';
+
+  @override
+  String get githubFailureNotFound =>
+      'Nu a fost găsit sau tokenul dvs. nu vede acest depozit.';
+
+  @override
+  String get githubFailureNoToken =>
+      'Adăugați mai întâi tokenul dvs. GitHub în Setări → Setări avansate → GitHub.';
+
+  @override
+  String get githubFailureOffline =>
+      'GitHub nu poate fi accesat. Verificați conexiunea.';
+
+  @override
+  String githubFailureRateLimited(String time) {
+    return 'Limita de solicitări GitHub a fost atinsă. Lotti va încerca din nou după $time.';
+  }
+
+  @override
+  String get githubFailureRateLimitedLater =>
+      'Limita de solicitări GitHub a fost atinsă. Încercați din nou mai târziu.';
+
+  @override
+  String get githubFailureServer =>
+      'GitHub a avut o problemă. Încercați din nou mai târziu.';
+
+  @override
+  String get githubFailureUnauthorized =>
+      'GitHub a respins tokenul. Este posibil să fi expirat sau să fi fost revocat.';
+
+  @override
+  String get githubLinkAlreadyLinked =>
+      'Acest pull request este deja legat de această sarcină.';
+
+  @override
+  String get githubLinkButton => 'Legați';
+
+  @override
+  String get githubLinkNotAPullRequest => 'Acesta nu este un pull request.';
+
+  @override
+  String get githubLinkNotGitHub => 'Acesta nu este un link către github.com.';
+
+  @override
+  String get githubLinkPullRequestHint =>
+      'Urmăriți aici verificările, revizuirile și starea acestuia.';
+
+  @override
+  String get githubLinkPullRequestTitle => 'Legați un pull request';
+
+  @override
+  String get githubLinkUrlHelper => 'Sau scrieți proprietar/repo#123.';
+
+  @override
+  String get githubLinkUrlHint => 'https://github.com/proprietar/repo/pull/123';
+
+  @override
+  String get githubLinkUrlLabel => 'URL-ul pull request-ului';
+
+  @override
+  String get githubMergeBehind => 'În urma ramurii de bază';
+
+  @override
+  String get githubMergeBlocked => 'Blocat de regulile ramurii';
+
+  @override
+  String get githubMergeConflicts => 'Conflicte de îmbinare';
+
+  @override
+  String get githubNotRefreshed => 'Actualizarea a eșuat';
+
+  @override
+  String get githubNotRefreshedYet => 'Neactualizat încă';
+
+  @override
+  String get githubOpenOnGitHub => 'Deschideți pe GitHub';
+
+  @override
+  String get githubPullRequestActions => 'Acțiuni pentru pull request';
+
+  @override
+  String get githubPullRequestsTitle => 'Pull request-uri';
+
+  @override
+  String get githubRefreshingPullRequest => 'Se actualizează pull request-ul';
+
+  @override
+  String get githubRefreshPullRequest => 'Actualizați pull request-ul';
+
+  @override
+  String get githubReviewApproved => 'Aprobat';
+
+  @override
+  String get githubReviewChangesRequested => 'Modificări solicitate';
+
+  @override
+  String get githubReviewPending => 'Revizuire solicitată';
+
+  @override
+  String get githubStatusClosed => 'Închis';
+
+  @override
+  String get githubStatusDraft => 'Ciornă';
+
+  @override
+  String get githubStatusMerged => 'Îmbinat';
+
+  @override
+  String get githubStatusOpen => 'Deschis';
+
+  @override
+  String get githubTokenHide => 'Ascundeți tokenul';
+
+  @override
+  String get githubTokenIntro =>
+      'Lotti citește pull request-urile pe care le legați de sarcini cu propriul dvs. token de acces personal. Acordați-i acces de citire la pull request-uri, stări de commit și verificări în depozitele în care lucrați.';
+
+  @override
+  String get githubTokenKeptOnDevice =>
+      'Tokenul rămâne pe acest dispozitiv: nu este sincronizat niciodată și este trimis doar către api.github.com.';
+
+  @override
+  String get githubTokenLabel => 'Token de acces personal';
+
+  @override
+  String get githubTokenShow => 'Afișați tokenul';
+
+  @override
+  String get githubUnlinkPullRequest => 'Dezlegați pull request-ul';
 
   @override
   String get goalAssessmentHistoryTitle => 'Reflecții zilnice';
@@ -13534,6 +13708,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsFlagsTitle => 'Marcaje';
+
+  @override
+  String get settingsGitHubSubtitle =>
+      'Tokenul dvs. pentru legarea pull request-urilor de sarcini';
+
+  @override
+  String get settingsGitHubTitle => 'GitHub';
 
   @override
   String get settingsHabitsCreateTitle => 'Creare obicei';

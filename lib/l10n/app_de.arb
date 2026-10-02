@@ -1592,6 +1592,8 @@
   "configFlagEnableEventsDescription": "Ereignisfunktion anzeigen, um Ereignisse in deinem Journal zu erstellen, zu verfolgen und zu verwalten.",
   "configFlagEnableForkHealing": "Agenten-Fork-Heilung",
   "configFlagEnableForkHealingDescription": "Auseinandergelaufene Agenten-Verläufe aus der Nutzung mehrerer Geräte beim nächsten Aufwachen zusammenführen.",
+  "configFlagEnableGitHubPullRequests": "GitHub-Pull-Requests aktivieren",
+  "configFlagEnableGitHubPullRequestsDescription": "Verknüpfe GitHub-Pull-Requests mit Aufgaben und verfolge ihre Checks, Reviews und ihren Status.",
   "configFlagEnableHabitsPage": "Seite Gewohnheiten aktivieren",
   "configFlagEnableHabitsPageDescription": "Zeigt die Seite \"Gewohnheiten\" in der Hauptnavigation an. Verfolge und verwalte hier deine täglichen Gewohnheiten.",
   "configFlagEnableLogging": "Protokollierung aktivieren",
@@ -2707,6 +2709,80 @@
   "geminiThinkingModeMinimalLabel": "Minimal",
   "generateCoverArt": "Titelbild generieren",
   "generateCoverArtSubtitle": "Bild aus einer Beschreibung erstellen",
+  "githubChecksFailing": "{count, plural, =1{1 Check fehlgeschlagen} other{{count} Checks fehlgeschlagen}}",
+  "@githubChecksFailing": {
+    "description": "Status line part: how many CI checks of a pull request fail.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "githubChecksPassing": "Checks bestanden",
+  "githubChecksPending": "Checks laufen",
+  "githubConnectButton": "Verbinden",
+  "githubConnectedAs": "Verbunden als @{login}",
+  "@githubConnectedAs": {
+    "description": "Shown in the GitHub settings when a token is stored.",
+    "placeholders": {
+      "login": {
+        "type": "String",
+        "example": "octocat"
+      }
+    }
+  },
+  "githubDisconnectButton": "Trennen",
+  "githubFailureForbidden": "Der Token darf das nicht lesen. Prüfe seine Berechtigungen.",
+  "githubFailureInvalidResponse": "GitHub hat eine Antwort geschickt, die Lotti nicht lesen konnte.",
+  "githubFailureNotFound": "Nicht gefunden, oder dein Token sieht dieses Repository nicht.",
+  "githubFailureNoToken": "Hinterlege zuerst deinen GitHub-Token unter Einstellungen → Erweiterte Einstellungen → GitHub.",
+  "githubFailureOffline": "GitHub ist nicht erreichbar. Prüfe deine Verbindung.",
+  "githubFailureRateLimited": "Das Rate-Limit von GitHub ist erreicht. Lotti fragt ab {time} wieder.",
+  "@githubFailureRateLimited": {
+    "description": "A GitHub call hit the rate limit; time is when calls resume.",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "14:30"
+      }
+    }
+  },
+  "githubFailureRateLimitedLater": "Das Rate-Limit von GitHub ist erreicht. Versuch es später noch einmal.",
+  "githubFailureServer": "GitHub hatte ein Problem. Versuch es später noch einmal.",
+  "githubFailureUnauthorized": "GitHub hat den Token abgelehnt. Er ist vielleicht abgelaufen oder wurde widerrufen.",
+  "githubLinkAlreadyLinked": "Dieser Pull-Request ist schon mit dieser Aufgabe verknüpft.",
+  "githubLinkButton": "Verknüpfen",
+  "githubLinkNotAPullRequest": "Das ist kein Pull-Request.",
+  "githubLinkNotGitHub": "Das ist kein Link zu github.com.",
+  "githubLinkPullRequestHint": "Verfolge hier seine Checks, Reviews und seinen Status.",
+  "githubLinkPullRequestTitle": "Pull-Request verknüpfen",
+  "githubLinkUrlHelper": "Oder schreib besitzer/repo#123.",
+  "githubLinkUrlHint": "https://github.com/besitzer/repo/pull/123",
+  "githubLinkUrlLabel": "URL des Pull-Requests",
+  "githubMergeBehind": "Hinter dem Basis-Branch",
+  "githubMergeBlocked": "Durch Branch-Regeln blockiert",
+  "githubMergeConflicts": "Merge-Konflikte",
+  "githubNotRefreshed": "Aktualisierung fehlgeschlagen",
+  "githubNotRefreshedYet": "Noch nicht aktualisiert",
+  "githubOpenOnGitHub": "Auf GitHub öffnen",
+  "githubPullRequestActions": "Aktionen für den Pull-Request",
+  "githubPullRequestsTitle": "Pull-Requests",
+  "githubRefreshingPullRequest": "Pull-Request wird aktualisiert",
+  "githubRefreshPullRequest": "Pull-Request aktualisieren",
+  "githubReviewApproved": "Freigegeben",
+  "githubReviewChangesRequested": "Änderungen angefordert",
+  "githubReviewPending": "Review angefragt",
+  "githubStatusClosed": "Geschlossen",
+  "githubStatusDraft": "Entwurf",
+  "githubStatusMerged": "Gemergt",
+  "githubStatusOpen": "Offen",
+  "githubTokenHide": "Token verbergen",
+  "githubTokenIntro": "Lotti liest die Pull-Requests, die du mit Aufgaben verknüpfst, mit deinem eigenen Personal Access Token. Gib ihm Lesezugriff auf Pull-Requests, Commit-Status und Checks in den Repositories, in denen du arbeitest.",
+  "githubTokenKeptOnDevice": "Der Token bleibt auf diesem Gerät: Er wird nie synchronisiert und nur an api.github.com gesendet.",
+  "githubTokenLabel": "Personal Access Token",
+  "githubTokenShow": "Token anzeigen",
+  "githubUnlinkPullRequest": "Pull-Request lösen",
   "goalAssessmentHistoryTitle": "Tägliche Reflexionen",
   "goalAssessmentImproving": "Verbessert sich",
   "goalAssessmentMeasuredReadOnly": "Gemessen von Lotti – dieser Teil kann nicht bearbeitet werden.",
@@ -5093,6 +5169,8 @@
   "settingsFlagsSearchHint": "Flags durchsuchen",
   "settingsFlagsSubtitle": "Feature-Flags und Optionen konfigurieren",
   "settingsFlagsTitle": "Konfigurationsflags",
+  "settingsGitHubSubtitle": "Dein Token, um Pull-Requests mit Aufgaben zu verknüpfen",
+  "settingsGitHubTitle": "GitHub",
   "settingsHabitsCreateTitle": "Gewohnheit erstellen",
   "settingsHabitsDeleteTooltip": "Gewohnheit löschen",
   "settingsHabitsDescriptionLabel": "Beschreibung (optional)",

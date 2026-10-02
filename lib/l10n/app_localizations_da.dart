@@ -3673,6 +3673,14 @@ class AppLocalizationsDa extends AppLocalizations {
       'Helbred divergerende agenthistorier fra brug af flere enheder ved at sammenflette dem ved næste våge.';
 
   @override
+  String get configFlagEnableGitHubPullRequests =>
+      'Aktivér pull requests fra GitHub';
+
+  @override
+  String get configFlagEnableGitHubPullRequestsDescription =>
+      'Knyt pull requests fra GitHub til opgaver, og følg deres tjek, reviews og status.';
+
+  @override
   String get configFlagEnableHabitsPage => 'Aktivér Vaner-siden';
 
   @override
@@ -6471,6 +6479,171 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get generateCoverArtSubtitle =>
       'Opret billede ud fra stemmebeskrivelse';
+
+  @override
+  String githubChecksFailing(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tjek fejlede',
+      one: '1 tjek fejlede',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get githubChecksPassing => 'Tjek bestået';
+
+  @override
+  String get githubChecksPending => 'Tjek kører';
+
+  @override
+  String get githubConnectButton => 'Forbind';
+
+  @override
+  String githubConnectedAs(String login) {
+    return 'Forbundet som @$login';
+  }
+
+  @override
+  String get githubDisconnectButton => 'Afbryd forbindelsen';
+
+  @override
+  String get githubFailureForbidden =>
+      'Tokenet må ikke læse dette. Tjek dets tilladelser.';
+
+  @override
+  String get githubFailureInvalidResponse =>
+      'GitHub sendte et svar, som Lotti ikke kunne læse.';
+
+  @override
+  String get githubFailureNotFound =>
+      'Ikke fundet, eller dit token kan ikke se dette repository.';
+
+  @override
+  String get githubFailureNoToken =>
+      'Tilføj først dit GitHub-token under Indstillinger → Avancerede indstillinger → GitHub.';
+
+  @override
+  String get githubFailureOffline =>
+      'GitHub kunne ikke nås. Tjek din forbindelse.';
+
+  @override
+  String githubFailureRateLimited(String time) {
+    return 'GitHubs grænse for forespørgsler er nået. Lotti spørger igen efter $time.';
+  }
+
+  @override
+  String get githubFailureRateLimitedLater =>
+      'GitHubs grænse for forespørgsler er nået. Prøv igen senere.';
+
+  @override
+  String get githubFailureServer =>
+      'GitHub havde et problem. Prøv igen senere.';
+
+  @override
+  String get githubFailureUnauthorized =>
+      'GitHub afviste tokenet. Det er måske udløbet eller tilbagekaldt.';
+
+  @override
+  String get githubLinkAlreadyLinked =>
+      'Denne pull request er allerede knyttet til denne opgave.';
+
+  @override
+  String get githubLinkButton => 'Knyt';
+
+  @override
+  String get githubLinkNotAPullRequest => 'Det er ikke en pull request.';
+
+  @override
+  String get githubLinkNotGitHub => 'Det er ikke et link til github.com.';
+
+  @override
+  String get githubLinkPullRequestHint =>
+      'Følg dens tjek, reviews og status her.';
+
+  @override
+  String get githubLinkPullRequestTitle => 'Knyt en pull request';
+
+  @override
+  String get githubLinkUrlHelper => 'Eller skriv ejer/repo#123.';
+
+  @override
+  String get githubLinkUrlHint => 'https://github.com/ejer/repo/pull/123';
+
+  @override
+  String get githubLinkUrlLabel => 'URL til pull request';
+
+  @override
+  String get githubMergeBehind => 'Bagud i forhold til basisgrenen';
+
+  @override
+  String get githubMergeBlocked => 'Blokeret af grenregler';
+
+  @override
+  String get githubMergeConflicts => 'Flettekonflikter';
+
+  @override
+  String get githubNotRefreshed => 'Kunne ikke opdatere';
+
+  @override
+  String get githubNotRefreshedYet => 'Ikke opdateret endnu';
+
+  @override
+  String get githubOpenOnGitHub => 'Åbn på GitHub';
+
+  @override
+  String get githubPullRequestActions => 'Handlinger for pull request';
+
+  @override
+  String get githubPullRequestsTitle => 'Pull requests';
+
+  @override
+  String get githubRefreshingPullRequest => 'Opdaterer pull request';
+
+  @override
+  String get githubRefreshPullRequest => 'Opdater pull request';
+
+  @override
+  String get githubReviewApproved => 'Godkendt';
+
+  @override
+  String get githubReviewChangesRequested => 'Ændringer anmodet';
+
+  @override
+  String get githubReviewPending => 'Review anmodet';
+
+  @override
+  String get githubStatusClosed => 'Lukket';
+
+  @override
+  String get githubStatusDraft => 'Kladde';
+
+  @override
+  String get githubStatusMerged => 'Flettet';
+
+  @override
+  String get githubStatusOpen => 'Åben';
+
+  @override
+  String get githubTokenHide => 'Skjul token';
+
+  @override
+  String get githubTokenIntro =>
+      'Lotti læser de pull requests, du knytter til opgaver, med dit eget personlige adgangstoken. Giv det læseadgang til pull requests, commitstatus og tjek i de repositories, du arbejder i.';
+
+  @override
+  String get githubTokenKeptOnDevice =>
+      'Tokenet bliver på denne enhed: det synkroniseres aldrig og sendes kun til api.github.com.';
+
+  @override
+  String get githubTokenLabel => 'Personligt adgangstoken';
+
+  @override
+  String get githubTokenShow => 'Vis token';
+
+  @override
+  String get githubUnlinkPullRequest => 'Fjern pull request';
 
   @override
   String get goalAssessmentHistoryTitle => 'Daglige refleksioner';
@@ -13271,6 +13444,13 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get settingsFlagsTitle => 'Konfigurationsflag';
+
+  @override
+  String get settingsGitHubSubtitle =>
+      'Dit token til at knytte pull requests til opgaver';
+
+  @override
+  String get settingsGitHubTitle => 'GitHub';
 
   @override
   String get settingsHabitsCreateTitle => 'Skab vaner';

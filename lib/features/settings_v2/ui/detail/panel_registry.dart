@@ -15,6 +15,7 @@ import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/daily_os_settings_page.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/github/ui/github_settings_page.dart';
 import 'package:lotti/features/habits/ui/pages/habit_editor_page.dart';
 import 'package:lotti/features/keyboard/ui/keyboard_shortcuts_page.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
@@ -177,6 +178,10 @@ const Map<String, SettingsPanelSpec> kSettingsPanels =
         build: _preferencesAnimationsPanel,
         scrollable: true,
       ),
+      'advanced-github': SettingsPanelSpec(
+        build: _advancedGitHubPanel,
+        scrollable: true,
+      ),
       'advanced-manual-language': SettingsPanelSpec(
         build: _advancedManualLanguagePanel,
         scrollable: true,
@@ -273,6 +278,7 @@ Widget _advancedSystemHealthPanel(BuildContext context) =>
     const SystemHealthBody();
 Widget _preferencesAnimationsPanel(BuildContext context) =>
     const CelebrationSettingsBody();
+Widget _advancedGitHubPanel(BuildContext context) => const GitHubSettingsBody();
 Widget _advancedManualLanguagePanel(BuildContext context) =>
     const ManualLanguageSettingsBody();
 
