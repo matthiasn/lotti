@@ -1869,7 +1869,9 @@ void main() {
           final queue = [textItem(id: 1)];
           stubBatchClaimFromQueue(repo, queue);
           when(() => repo.markFailed(any())).thenAnswer((_) async {});
-          when(() => sender.send(any())).thenThrow(tooLarge);
+          when(
+            () => sender.send(any()),
+          ).thenAnswer((_) => Future<bool>.error(tooLarge));
           final events = _captureEvents(log);
 
           final proc = OutboxProcessor(
@@ -1988,7 +1990,9 @@ void main() {
           stubBatchClaimFromQueue(repo, queue);
           // The released rows are taken elsewhere: none come back.
           when(() => repo.releaseClaims(any())).thenAnswer((_) async {});
-          when(() => sender.send(any())).thenThrow(tooLarge);
+          when(
+            () => sender.send(any()),
+          ).thenAnswer((_) => Future<bool>.error(tooLarge));
           _stubSilentLogging(log);
 
           final proc = OutboxProcessor(
@@ -2022,11 +2026,13 @@ void main() {
           stubBatchClaimFromQueue(repo, queue);
           when(
             () => repo.releaseClaims(any()),
-          ).thenThrow(StateError('db closed'));
+          ).thenAnswer((_) => Future<void>.error(StateError('db closed')));
           when(
             () => repo.markFailed(any()),
-          ).thenThrow(StateError('db closed'));
-          when(() => sender.send(any())).thenThrow(tooLarge);
+          ).thenAnswer((_) => Future<void>.error(StateError('db closed')));
+          when(
+            () => sender.send(any()),
+          ).thenAnswer((_) => Future<bool>.error(tooLarge));
           _stubSilentLogging(log);
 
           final proc = OutboxProcessor(

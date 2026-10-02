@@ -1569,7 +1569,9 @@ void main() {
           parseCommands: any<bool>(named: 'parseCommands'),
           parseMarkdown: any<bool>(named: 'parseMarkdown'),
         ),
-      ).thenThrow(EventTooLarge(60000, 61234));
+      ).thenAnswer(
+        (_) => Future<String?>.error(EventTooLarge(60000, 61234)),
+      );
 
       var calls = 0;
       await expectLater(
