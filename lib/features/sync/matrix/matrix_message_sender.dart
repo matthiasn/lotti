@@ -8,6 +8,7 @@ import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/matrix_payload_sender.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/model/sync_message_too_large_exception.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -142,6 +143,11 @@ class MatrixMessageSender {
   /// Sends [message] to Matrix, ensuring that any event IDs emitted by the SDK
   /// are registered with [SentEventRegistry] so downstream timelines can
   /// suppress the echoed payload.
+  ///
+  /// Returns `false` on a failure worth retrying. Throws
+  /// [SyncMessageTooLargeException] when the payload can never fit — the
+  /// inline event is over the SDK's body cap, or a gzipped manifest is over
+  /// `SyncTuning.outboxBundleMaxBytes` — because resending it is futile.
   Future<bool> sendMatrixMessage({
     required SyncMessage message,
     required MatrixMessageContext context,
@@ -333,6 +339,17 @@ class MatrixMessageSender {
           );
       }
       return true;
+    } on SyncMessageTooLargeException {
+      rethrow;
+    } on EventTooLarge catch (error) {
+      // The SDK checks the request body before it goes out, so this payload
+      // fails identically on every attempt. Not a transient failure: hand the
+      // outbox a typed signal instead of a retryable `false`.
+      final detail =
+          'type=${message.runtimeType} inline event body '
+          '${error.actualSize} bytes exceeds ${error.maxSize}';
+      _trace('TOO_LARGE $detail', subDomain: 'matrix.send.error');
+      throw SyncMessageTooLargeException(detail);
     } catch (error, stackTrace) {
       _trace(
         'EXCEPTION type=${message.runtimeType} '

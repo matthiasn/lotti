@@ -711,6 +711,88 @@ void main() {
         await realRepo.markRetryBatch(<OutboxItem>[]);
       });
 
+      test(
+        'markFailed flips every row straight to error on its first attempt, '
+        'counting it, and stamps updated_at from clock.now()',
+        () async {
+          final fixedNow = DateTime(2026, 10, 2, 22, 7);
+          final freshId = await insertRow(status: OutboxStatus.sending);
+          final retriedId = await insertRow(
+            status: OutboxStatus.sending,
+            retries: 1,
+          );
+          final untouchedId = await insertRow(status: OutboxStatus.pending);
+          final items = <OutboxItem>[
+            (await realDb.getOutboxItemById(freshId))!,
+            (await realDb.getOutboxItemById(retriedId))!,
+          ];
+
+          await withClock(
+            Clock.fixed(fixedNow),
+            () => realRepo.markFailed(items),
+          );
+
+          final fresh = (await realDb.getOutboxItemById(freshId))!;
+          expect(fresh.status, OutboxStatus.error.index);
+          expect(fresh.retries, 1);
+          expect(fresh.updatedAt, fixedNow);
+          final retried = (await realDb.getOutboxItemById(retriedId))!;
+          expect(retried.status, OutboxStatus.error.index);
+          expect(retried.retries, 2);
+          final untouched = (await realDb.getOutboxItemById(untouchedId))!;
+          expect(untouched.status, OutboxStatus.pending.index);
+          expect(untouched.retries, 0);
+        },
+      );
+
+      test(
+        'releaseClaims returns rows to pending without counting an attempt, '
+        'leaving a row already at the cap in error',
+        () async {
+          final fixedNow = DateTime(2026, 10, 2, 22, 8);
+          final claimedId = await insertRow(
+            status: OutboxStatus.sending,
+            retries: 1,
+          );
+          // A folded-in failed row: claimed to ride the send, past the cap.
+          final foldedErrorId = await insertRow(
+            status: OutboxStatus.sending,
+            retries: 2,
+          );
+          final items = <OutboxItem>[
+            (await realDb.getOutboxItemById(claimedId))!,
+            (await realDb.getOutboxItemById(foldedErrorId))!,
+          ];
+
+          await withClock(
+            Clock.fixed(fixedNow),
+            () => realRepo.releaseClaims(items),
+          );
+
+          final claimed = (await realDb.getOutboxItemById(claimedId))!;
+          expect(claimed.status, OutboxStatus.pending.index);
+          expect(claimed.retries, 1);
+          expect(claimed.updatedAt, fixedNow);
+          final folded = (await realDb.getOutboxItemById(foldedErrorId))!;
+          expect(folded.status, OutboxStatus.error.index);
+          expect(folded.retries, 2);
+        },
+      );
+
+      test(
+        'markFailed and releaseClaims are no-ops for an empty list',
+        () async {
+          final id = await insertRow(status: OutboxStatus.sending);
+
+          await realRepo.markFailed(<OutboxItem>[]);
+          await realRepo.releaseClaims(<OutboxItem>[]);
+
+          final row = (await realDb.getOutboxItemById(id))!;
+          expect(row.status, OutboxStatus.sending.index);
+          expect(row.retries, 0);
+        },
+      );
+
       glados.Glados(
         glados.any.repositoryBatchScenario,
         glados.ExploreConfig(numRuns: 140),

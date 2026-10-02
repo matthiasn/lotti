@@ -5,13 +5,13 @@ description: Outbox staging as one immutable row per version, the dequeue-time c
 resource: ../../../lib/features/sync/outbox
 tags: [sync, outbox, bundling, retries]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-26T12:59:31Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-02T23:30:00Z }
 stale_after: 2026-12-25
 sources:
   - id: outbox
     resource: ../../../lib/features/sync/outbox
     title: Outbox service, processor, repository
-    last_modified: 2026-09-25
+    last_modified: 2026-10-02
   - id: outbox-db
     resource: ../../../lib/database/sync_db_outbox.dart
     title: SyncDatabase outbox queue — claim, release, mark
@@ -39,7 +39,7 @@ sources:
   - id: payload-sender
     resource: ../../../lib/features/sync/matrix/matrix_payload_sender.dart
     title: MatrixPayloadSender — wire encoding
-    last_modified: 2026-09-25
+    last_modified: 2026-10-02
   - id: agent-payload-sender
     resource: ../../../lib/features/sync/matrix/matrix_payload_sender_notifications.dart
     title: Agent and notification payload encoding
@@ -55,7 +55,7 @@ sources:
   - id: tuning
     resource: ../../../lib/features/sync/tuning.dart
     title: SyncTuning
-    last_modified: 2026-08-02
+    last_modified: 2026-10-02
 ---
 
 # Staging
@@ -82,8 +82,10 @@ sequenceDiagram
   alt send succeeds
     Proc->>Repo: markSent() every collapsed row
     Proc->>Repo: hasMorePending()
+  else rejected as too large
+    Proc->>Repo: markFailed() (single) or releaseClaims() (bundle)
   else send fails
-    Proc->>Repo: markRetry() or markError()
+    Proc->>Repo: markRetry(), error once retries reach the cap
   end
 ```
 
@@ -326,6 +328,8 @@ stateDiagram-v2
     sending --> sent: delivered (markSent)
     sending --> pending: failure below the cap (markRetry, retries++)
     sending --> error: failure at the cap (retries reach maxRetries)
+    sending --> error: single send rejected as too large (markFailed)
+    sending --> pending: bundle rejected as too large, released uncounted
     sending --> pending: orphaned claim released before the next drain
     sending --> sending: expired lease reclaimed
     error --> sending: collapsed into a newer version's send
@@ -339,6 +343,29 @@ error delay 15 s, send timeout 20 s, claim lease 1 minute
 (`SyncTuning`). A failed send (the sender returns `false`, throws, or times
 out) and a throwing `markSent` both take the `markRetry` path, so a delivered
 row can be sent again: a duplicate, never a loss.
+
+**A payload too large to send is never retried verbatim.** The size checks are
+deterministic, so the sender throws `SyncMessageTooLargeException` instead of
+returning `false`: the Matrix SDK refuses a request body over 60 000 bytes
+(`EventTooLarge`) before it goes out, and a gzipped manifest over
+`SyncTuning.outboxBundleMaxBytes` is refused before upload. The processor
+treats that as final:
+
+- **A single send** has its rows flipped straight to `error`
+  (`OutboxRepository.markFailed`), logged as `sendDropped … reason=tooLarge`,
+  and the queue moves on at once. The row stays in the monitor; its Retry
+  fails the same way. Previously it burned all ten attempts and then dropped
+  anyway.
+- **A bundle** says nothing about any one of its rows. They return to the queue
+  without counting an attempt (`releaseClaims`, logged as `bundleTooLarge`), and
+  the next claims take one row each until that many have gone out, so only a
+  row too large on its own is dropped. The count lives in memory: after a
+  restart the rows bundle again, fail again by size and fall back again,
+  still uncounted.
+
+Producers that know their size keep under the limits up front: backfill
+requests are split at `SyncTuning.maxInlineBackfillRequestJsonBytes` when they
+are enqueued, and deep-backfill lists travel as an attachment.
 
 A claim can end without any mark: the process dies between the send and
 `markSent`, or `markSent` and `markRetry` both throw. Its rows stay `sending`.
@@ -434,12 +461,14 @@ sequenceDiagram
 
 The post-gzip cap `SyncTuning.outboxBundleMaxBytes` is **8 MiB**, and it is a
 send-side guard only. When the gzipped manifest exceeds it,
-`sendOutboxBundlePayload` returns `null`, which triggers
-`OutboxRepository.markRetryBatch` to re-queue every row for the next pass.
+`sendOutboxBundlePayload` throws `SyncMessageTooLargeException`, and the
+processor sends the bundle's rows one at a time
+([item lifecycle](#item-lifecycle)). Re-queueing them for another bundle would
+fail identically: the next claim takes the same rows.
 
-Rows stay pending until acknowledged, so a failed manifest send simply
-re-bundles from outbox state next drain — no on-disk artifact survives across
-attempts.
+Any other failed manifest send (`null`) re-queues the rows through
+`markRetryBatch` and re-bundles from outbox state on the next drain — no
+on-disk artifact survives across attempts.
 
 A journal child absent even from the including-deleted lookup was hard-purged,
 not merely soft-deleted. The sender aborts that bundle rather than silently

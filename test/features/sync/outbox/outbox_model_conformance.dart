@@ -179,6 +179,18 @@ class _FaultyRepository implements OutboxRepository {
   }
 
   @override
+  Future<void> markFailed(List<OutboxItem> items) async {
+    if (markRetryThrows) throw const _MarkFailed();
+    await _inner.markFailed(items);
+  }
+
+  @override
+  Future<void> releaseClaims(List<OutboxItem> items) async {
+    if (markRetryThrows) throw const _MarkFailed();
+    await _inner.releaseClaims(items);
+  }
+
+  @override
   Future<int> pruneSentOutboxItems({
     required Duration retention,
     DateTime? now,

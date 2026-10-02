@@ -13,6 +13,7 @@ import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
 import 'package:lotti/features/sync/media/entry_media.dart';
 import 'package:lotti/features/sync/model/sync_attachment_policy.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/model/sync_message_too_large_exception.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/sync/vector_clock_logging.dart';
@@ -426,7 +427,8 @@ class MatrixPayloadSender {
   /// single Matrix file event. Returns the stripped [SyncOutboxBundle] (i.e.
   /// `children` cleared, `jsonPath` set to the just-uploaded relative path)
   /// for the caller to send as the text envelope; returns `null` when the
-  /// bundle is empty, exceeds the size cap, or the upload fails.
+  /// bundle is empty or the upload fails, and throws
+  /// [SyncMessageTooLargeException] when the manifest exceeds the size cap.
   ///
   /// The manifest is a single JSON document — the bundle never fans out into
   /// per-child file events. The receiver's `OutboxBundleUnpacker` resolves
@@ -608,9 +610,10 @@ class MatrixPayloadSender {
 
   /// Gzips [document], uploads it as a verified file event under
   /// [relativePath] and registers the event as sent. Returns the event id,
-  /// or null after logging when encoding, the size cap or the upload fails.
-  /// [label] names the payload in log sub-domains; [detail] describes it when
-  /// it exceeds [SyncTuning.outboxBundleMaxBytes].
+  /// or null after logging when encoding or the upload fails. Throws
+  /// [SyncMessageTooLargeException] when the gzipped document exceeds
+  /// [SyncTuning.outboxBundleMaxBytes]. [label] names the payload in log
+  /// sub-domains and in that exception; [detail] describes it there.
   Future<String?> _uploadGzippedJson({
     required Room room,
     required String relativePath,
@@ -635,14 +638,12 @@ class MatrixPayloadSender {
     }
 
     if (gzipped.length > SyncTuning.outboxBundleMaxBytes) {
-      loggingService.error(
-        LogDomain.sync,
-        '$label exceeds max bytes: '
-        'gzipped=${gzipped.length} '
+      // The same document gzips to the same size on every attempt: retrying
+      // cannot help, so the outbox gets a typed signal rather than `null`.
+      throw SyncMessageTooLargeException(
+        '$label gzipped=${gzipped.length} '
         'max=${SyncTuning.outboxBundleMaxBytes} $detail',
-        subDomain: 'sendMatrixMsg.$label.tooLarge',
       );
-      return null;
     }
 
     // Wire display name carries `.gz` to hint at the compressed bytes —
@@ -703,7 +704,8 @@ class MatrixPayloadSender {
   /// event; inside an outbox bundle the lists ride inline instead, in the
   /// bundle's own gzipped manifest, so this runs only for a message sent on
   /// its own. Returns [message] unchanged for any other type, and null when
-  /// the upload fails.
+  /// the upload fails. Throws [SyncMessageTooLargeException] when the
+  /// gzipped lists exceed `SyncTuning.outboxBundleMaxBytes`.
   Future<SyncMessage?> sendDeepBackfillPayload({
     required Room room,
     required SyncMessage message,

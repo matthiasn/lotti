@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/model/sync_message_too_large_exception.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
@@ -1830,6 +1831,240 @@ void main() {
         );
       },
     );
+
+    group('payloads the transport rejects by size', () {
+      const tooLarge = SyncMessageTooLargeException(
+        'type=SyncAiConfigDelete inline event body 61234 bytes exceeds 60000',
+      );
+
+      /// Puts released rows back at the head of [queue], in their order, as
+      /// the database's claim order would find them.
+      void stubReleaseIntoQueue(
+        MockOutboxRepository repo,
+        List<OutboxItem> queue,
+      ) {
+        when(() => repo.releaseClaims(any())).thenAnswer((inv) async {
+          final rows = inv.positionalArguments[0] as List<OutboxItem>;
+          queue.insertAll(0, rows);
+        });
+      }
+
+      List<int> captureClaimSizes(MockOutboxRepository repo) => verify(
+        () => repo.claimNextBatch(
+          maxSize: captureAny(named: 'maxSize'),
+          leaseDuration: any(named: 'leaseDuration'),
+        ),
+      ).captured.cast<int>();
+
+      const bundle = SyncTuning.outboxBundleMaxSize;
+
+      test(
+        'a single send rejected as too large goes straight to error, is '
+        'never retried, and the queue moves on at once',
+        () async {
+          final repo = MockOutboxRepository();
+          final sender = MockOutboxMessageSender();
+          final log = MockDomainLogger();
+
+          final queue = [textItem(id: 1)];
+          stubBatchClaimFromQueue(repo, queue);
+          when(() => repo.markFailed(any())).thenAnswer((_) async {});
+          when(
+            () => sender.send(any()),
+          ).thenAnswer((_) => Future<bool>.error(tooLarge));
+          final events = _captureEvents(log);
+
+          final proc = OutboxProcessor(
+            repository: repo,
+            messageSender: sender,
+            loggingService: log,
+          );
+
+          final result = await proc.processQueue();
+
+          expect(result.nextDelay, Duration.zero);
+          final failed =
+              verify(() => repo.markFailed(captureAny())).captured.single
+                  as List<OutboxItem>;
+          expect(failed.map((r) => r.id), [1]);
+          verifyNever(() => repo.markRetry(any()));
+          verifyNever(() => repo.markRetryBatch(any()));
+          verifyNever(
+            () => log.error(
+              any<LogDomain>(),
+              any<Object>(),
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              subDomain: any<String>(named: 'subDomain'),
+            ),
+          );
+          expect(
+            events,
+            contains(
+              'sendDropped subject=host:t:1 rows=1 reason=tooLarge '
+              '${tooLarge.detail} → status=error',
+            ),
+          );
+        },
+      );
+
+      test(
+        'a bundle rejected as too large is released uncounted and its rows '
+        'go out one at a time; only the row too large on its own is dropped, '
+        'then bundling resumes',
+        () async {
+          final repo = MockOutboxRepository();
+          final sender = MockOutboxMessageSender();
+          final log = MockDomainLogger();
+
+          final queue = [for (var i = 1; i <= 3; i++) textItem(id: i)];
+          stubBatchClaimFromQueue(repo, queue);
+          stubReleaseIntoQueue(repo, queue);
+          when(() => repo.markSent(any())).thenAnswer((_) async {});
+          when(() => repo.markFailed(any())).thenAnswer((_) async {});
+          when(() => sender.send(any())).thenAnswer((inv) async {
+            final message = inv.positionalArguments[0] as SyncMessage;
+            if (message is SyncOutboxBundle ||
+                (message is SyncAiConfigDelete && message.id == 'cfg-2')) {
+              throw tooLarge;
+            }
+            return true;
+          });
+          final events = _captureEvents(log);
+
+          final proc = OutboxProcessor(
+            repository: repo,
+            messageSender: sender,
+            loggingService: log,
+          );
+
+          final first = await proc.processQueue();
+          expect(first.nextDelay, Duration.zero);
+          expect(
+            events,
+            contains(
+              'bundleTooLarge size=3 rows=3 headSubject=host:t:1 '
+              '${tooLarge.detail} → sending rows singly',
+            ),
+          );
+          verifyNever(() => repo.markRetryBatch(any()));
+          final released =
+              verify(() => repo.releaseClaims(captureAny())).captured.single
+                  as List<OutboxItem>;
+          expect(released.map((r) => r.id), [1, 2, 3]);
+
+          for (var pass = 0; pass < 3; pass++) {
+            await proc.processQueue();
+          }
+          final sentIds = verify(
+            () => repo.markSent(captureAny()),
+          ).captured.cast<OutboxItem>().map((r) => r.id);
+          expect(sentIds, [1, 3]);
+          final failed =
+              verify(() => repo.markFailed(captureAny())).captured.single
+                  as List<OutboxItem>;
+          expect(failed.map((r) => r.id), [2]);
+          verifyNever(() => repo.markRetry(any()));
+
+          // Fallback spent: the next claim bundles again.
+          queue.addAll([textItem(id: 4), textItem(id: 5)]);
+          when(() => repo.markSentBatch(any())).thenAnswer((_) async {});
+          when(() => sender.send(any())).thenAnswer((_) async => true);
+          await proc.processQueue();
+
+          expect(
+            captureClaimSizes(repo),
+            [bundle, 1, 1, 1, bundle],
+          );
+          verify(() => repo.markSentBatch(any())).called(1);
+        },
+      );
+
+      test(
+        'an empty queue ends the single-send fallback early',
+        () async {
+          final repo = MockOutboxRepository();
+          final sender = MockOutboxMessageSender();
+          final log = MockDomainLogger();
+
+          final queue = [textItem(id: 1), textItem(id: 2)];
+          stubBatchClaimFromQueue(repo, queue);
+          // The released rows are taken elsewhere: none come back.
+          when(() => repo.releaseClaims(any())).thenAnswer((_) async {});
+          when(
+            () => sender.send(any()),
+          ).thenAnswer((_) => Future<bool>.error(tooLarge));
+          _stubSilentLogging(log);
+
+          final proc = OutboxProcessor(
+            repository: repo,
+            messageSender: sender,
+            loggingService: log,
+          );
+
+          await proc.processQueue();
+          final drained = await proc.processQueue();
+          expect(drained.shouldSchedule, isFalse);
+
+          queue.addAll([textItem(id: 3), textItem(id: 4)]);
+          when(() => repo.markSentBatch(any())).thenAnswer((_) async {});
+          when(() => sender.send(any())).thenAnswer((_) async => true);
+          await proc.processQueue();
+
+          expect(captureClaimSizes(repo), [bundle, 1, bundle]);
+        },
+      );
+
+      test(
+        'a mark that throws while dropping or splitting is logged and the '
+        'pass still advances without a retry',
+        () async {
+          final repo = MockOutboxRepository();
+          final sender = MockOutboxMessageSender();
+          final log = MockDomainLogger();
+
+          final queue = [textItem(id: 1), textItem(id: 2)];
+          stubBatchClaimFromQueue(repo, queue);
+          when(
+            () => repo.releaseClaims(any()),
+          ).thenAnswer((_) => Future<void>.error(StateError('db closed')));
+          when(
+            () => repo.markFailed(any()),
+          ).thenAnswer((_) => Future<void>.error(StateError('db closed')));
+          when(
+            () => sender.send(any()),
+          ).thenAnswer((_) => Future<bool>.error(tooLarge));
+          _stubSilentLogging(log);
+
+          final proc = OutboxProcessor(
+            repository: repo,
+            messageSender: sender,
+            loggingService: log,
+          );
+
+          final split = await proc.processQueue();
+          // The rows stayed `sending` (the next drain releases them); a fresh
+          // row arrives and is claimed alone, because the fallback still holds.
+          queue.add(textItem(id: 3));
+          final dropped = await proc.processQueue();
+
+          expect(split.nextDelay, Duration.zero);
+          expect(dropped.nextDelay, Duration.zero);
+          for (final subDomain in ['sendNext.split', 'sendNext.drop']) {
+            verify(
+              () => log.error(
+                LogDomain.sync,
+                any<Object>(that: isA<StateError>()),
+                stackTrace: any<StackTrace?>(named: 'stackTrace'),
+                subDomain: subDomain,
+              ),
+            ).called(1);
+          }
+          verifyNever(() => repo.markRetry(any()));
+          verifyNever(() => repo.markRetryBatch(any()));
+          expect(captureClaimSizes(repo), [bundle, 1]);
+        },
+      );
+    });
   });
 
   // ADR 0086: every version is its own immutable row; the processor collapses

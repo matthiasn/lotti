@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/model/sync_message_too_large_exception.dart';
 import 'package:lotti/features/sync/outbox/outbox_collapse.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/tuning.dart';
@@ -12,7 +13,9 @@ import 'package:lotti/services/domain_logging.dart';
 /// Transport seam for the outbox: turns a queued [SyncMessage] into an actual
 /// send (over Matrix in production). Returns `true` on confirmed delivery and
 /// `false` on a recoverable failure, which the [OutboxProcessor] treats as a
-/// retry signal. Implementations must not throw for ordinary send failures.
+/// retry signal. Implementations must not throw for ordinary send failures;
+/// they throw [SyncMessageTooLargeException] when the message can never fit,
+/// which the processor treats as final.
 abstract class OutboxMessageSender {
   Future<bool> send(SyncMessage message);
 }
@@ -47,6 +50,11 @@ class OutboxProcessingResult {
 /// several are packed into a `SyncMessage.outboxBundle` so consecutive text
 /// rows ride one Matrix event (media attachments always travel alone). [maxRetriesForDiagnostics] only controls log verbosity and the
 /// fast-path "cap reached" scheduling, not the actual retry ceiling.
+///
+/// A send the transport rejects by size ([SyncMessageTooLargeException]) is
+/// never retried verbatim. A single send's rows go straight to `error`; a
+/// bundle's rows return to the queue uncounted and the next passes claim them
+/// one at a time, so only a row too large on its own is dropped.
 class OutboxProcessor {
   OutboxProcessor({
     required this._repository,
@@ -91,6 +99,12 @@ class OutboxProcessor {
   String? _lastFailedSubject;
   int _lastFailedRepeats = 0;
 
+  /// Claims still to make one row at a time after a bundle was too large.
+  /// The released rows sit at the head of the queue, so this many single
+  /// claims send them individually. Kept in memory only: after a restart the
+  /// rows bundle again, fail again by size and fall back again, uncounted.
+  int _singleClaimsRemaining = 0;
+
   /// Claims and processes the next batch (single send or bundle), returning
   /// [OutboxProcessingResult.none] when the queue is empty or fully drained, or
   /// [OutboxProcessingResult.schedule] with the delay before the next pass
@@ -102,12 +116,14 @@ class OutboxProcessor {
     // attachments always travel alone; text rows pack up to [bundleMaxSize]
     // consecutive rows stopping before the next attachment.
     final batch = await _repository.claimNextBatch(
-      maxSize: bundleMaxSize,
+      maxSize: _singleClaimsRemaining > 0 ? 1 : bundleMaxSize,
       leaseDuration: claimLease,
     );
     if (batch.isEmpty) {
+      _singleClaimsRemaining = 0;
       return OutboxProcessingResult.none;
     }
+    if (_singleClaimsRemaining > 0) _singleClaimsRemaining--;
     _claimedIds = {for (final row in batch) row.id};
 
     final List<_OutboxSend> sends;
@@ -302,6 +318,62 @@ class OutboxProcessor {
     }
   }
 
+  /// A single send the transport rejected by size: every row it settles goes
+  /// straight to `error` and the queue moves on at once. A mark that throws
+  /// leaves the rows `sending`; the next drain releases them as orphans.
+  Future<OutboxProcessingResult> _dropTooLarge(
+    List<OutboxItem> rows, {
+    required String? subject,
+    required SyncMessageTooLargeException error,
+  }) async {
+    try {
+      await _repository.markFailed(rows);
+      _loggingService.log(
+        LogDomain.sync,
+        'sendDropped subject=$subject rows=${rows.length} '
+        'reason=tooLarge ${error.detail} → status=error',
+        subDomain: 'outbox.drop',
+      );
+    } catch (markError, stackTrace) {
+      _loggingService.error(
+        LogDomain.sync,
+        markError,
+        stackTrace: stackTrace,
+        subDomain: 'sendNext.drop',
+      );
+    }
+    return OutboxProcessingResult.schedule(Duration.zero);
+  }
+
+  /// A bundle too large as a whole says nothing about any one row: its rows
+  /// return to the queue without counting an attempt, and the next claims
+  /// send them one at a time.
+  Future<OutboxProcessingResult> _splitTooLargeBundle(
+    List<OutboxItem> rows, {
+    required String? headSubject,
+    required int bundleSize,
+    required SyncMessageTooLargeException error,
+  }) async {
+    _singleClaimsRemaining = rows.length;
+    try {
+      await _repository.releaseClaims(rows);
+      _loggingService.log(
+        LogDomain.sync,
+        'bundleTooLarge size=$bundleSize rows=${rows.length} '
+        'headSubject=$headSubject ${error.detail} → sending rows singly',
+        subDomain: 'outbox.split',
+      );
+    } catch (markError, stackTrace) {
+      _loggingService.error(
+        LogDomain.sync,
+        markError,
+        stackTrace: stackTrace,
+        subDomain: 'sendNext.split',
+      );
+    }
+    return OutboxProcessingResult.schedule(Duration.zero);
+  }
+
   Future<OutboxProcessingResult> _processSingle(_OutboxSend send) async {
     final rows = send.rows;
     final head = _claimedOf(rows).first;
@@ -363,6 +435,8 @@ class OutboxProcessor {
       return hasMore
           ? OutboxProcessingResult.schedule(Duration.zero)
           : OutboxProcessingResult.none;
+    } on SyncMessageTooLargeException catch (error) {
+      return _dropTooLarge(rows, subject: head.subject, error: error);
     } catch (error, stackTrace) {
       _loggingService.error(
         LogDomain.sync,
@@ -465,6 +539,13 @@ class OutboxProcessor {
       return hasMore
           ? OutboxProcessingResult.schedule(Duration.zero)
           : OutboxProcessingResult.none;
+    } on SyncMessageTooLargeException catch (error) {
+      return _splitTooLargeBundle(
+        rows,
+        headSubject: headSubject,
+        bundleSize: bundleSize,
+        error: error,
+      );
     } catch (error, stackTrace) {
       _loggingService.error(
         LogDomain.sync,

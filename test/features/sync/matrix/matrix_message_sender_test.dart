@@ -20,7 +20,9 @@ import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/model/sync_message_too_large_exception.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
@@ -1555,6 +1557,52 @@ void main() {
       ),
     ).called(1);
   });
+
+  test(
+    'throws SyncMessageTooLargeException, not a retryable false, when the '
+    'SDK rejects the inline event body as too large',
+    () async {
+      when(
+        () => room.sendTextEvent(
+          any<String>(),
+          msgtype: any<String>(named: 'msgtype'),
+          parseCommands: any<bool>(named: 'parseCommands'),
+          parseMarkdown: any<bool>(named: 'parseMarkdown'),
+        ),
+      ).thenAnswer(
+        (_) => Future<String?>.error(EventTooLarge(60000, 61234)),
+      );
+
+      var calls = 0;
+      await expectLater(
+        sender.sendMatrixMessage(
+          message: const SyncMessage.aiConfigDelete(id: 'abc'),
+          context: buildContext(),
+          onSent: (_, _) => calls++,
+        ),
+        throwsA(
+          isA<SyncMessageTooLargeException>().having(
+            (e) => e.detail,
+            'detail',
+            allOf(
+              contains('SyncAiConfigDelete'),
+              contains('61234 bytes exceeds 60000'),
+            ),
+          ),
+        ),
+      );
+      expect(calls, 0);
+      // A final rejection, not an unexpected failure: no stack trace logged.
+      verifyNever(
+        () => loggingService.error(
+          LogDomain.sync,
+          any<Object>(),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: any<String>(named: 'subDomain'),
+        ),
+      );
+    },
+  );
 
   test('sends text message and invokes callback once', () async {
     when(
@@ -3742,10 +3790,9 @@ void main() {
     );
 
     test(
-      'aborts with a tooLarge captureException when the gzipped manifest '
-      'exceeds SyncTuning.outboxBundleMaxBytes — defence-in-depth so a '
-      'pathologically large bundle never goes on the wire and the row '
-      'falls back to the standard retry/cap path',
+      'throws SyncMessageTooLargeException when the gzipped manifest '
+      'exceeds SyncTuning.outboxBundleMaxBytes — the bundle never goes on '
+      'the wire, and the outbox splits it instead of retrying it verbatim',
       () async {
         // A single child whose JournalEntity body is ~12 MiB of base64
         // encoded random bytes. base64 of true random bytes is
@@ -3774,40 +3821,38 @@ void main() {
           ),
         ).thenAnswer((_) async => {'huge-entry': entity});
 
-        final result = await sender.sendOutboxBundlePayloadForTesting(
-          room: room,
-          message: SyncOutboxBundle(
-            children: [
-              SyncMessage.journalEntity(
-                id: 'huge-entry',
-                jsonPath: '/journal/2026-04-25/huge-entry.entry.json',
-                vectorClock: const VectorClock({'host-A': 1}),
-                status: SyncEntryStatus.initial,
+        await expectLater(
+          sender.sendOutboxBundlePayloadForTesting(
+            room: room,
+            message: SyncOutboxBundle(
+              children: [
+                SyncMessage.journalEntity(
+                  id: 'huge-entry',
+                  jsonPath: '/journal/2026-04-25/huge-entry.entry.json',
+                  vectorClock: const VectorClock({'host-A': 1}),
+                  status: SyncEntryStatus.initial,
+                ),
+              ],
+            ),
+          ),
+          throwsA(
+            isA<SyncMessageTooLargeException>().having(
+              (e) => e.detail,
+              'detail',
+              allOf(
+                startsWith('outboxBundle gzipped='),
+                contains('max=${SyncTuning.outboxBundleMaxBytes}'),
+                contains('children=1'),
               ),
-            ],
+            ),
           ),
         );
-
-        expect(result, isNull);
         verifyNever(
           () => room.sendFileEvent(
             any<MatrixFile>(),
             extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
           ),
         );
-        verify(
-          () => loggingService.error(
-            LogDomain.sync,
-            any<Object>(
-              that: isA<String>().having(
-                (msg) => msg,
-                'message',
-                contains('outboxBundle exceeds max bytes'),
-              ),
-            ),
-            subDomain: 'sendMatrixMsg.outboxBundle.tooLarge',
-          ),
-        ).called(1);
       },
     );
 
