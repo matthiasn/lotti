@@ -315,6 +315,62 @@ void main() {
       });
     });
 
+    test('stops counting while its listener is paused — a desktop tab '
+        'switched away from keeps the page mounted offstage — and counts in '
+        'full at once when it resumes', () {
+      fakeAsync((async) {
+        stubCounts();
+        final subscription = container.listen(
+          deepBackfillRecordCountsProvider,
+          (_, _) {},
+        );
+        async.flushMicrotasks();
+        expect(counted, [null]);
+
+        subscription.pause();
+        changes.add(agents);
+        async
+          ..elapse(SyncTuning.recordCountsFullRecountInterval * 4)
+          ..flushMicrotasks();
+        expect(counted, [null], reason: 'nothing counted for an unseen page');
+
+        subscription.resume();
+        async.flushMicrotasks();
+        expect(counted, [null, null]);
+        changes.add(journal);
+        async
+          ..elapse(SyncTuning.recordCountsRefreshInterval)
+          ..flushMicrotasks();
+        expect(counted.last, {journal}, reason: 'and follows changes again');
+      });
+    });
+
+    test('a hidden app stays quiet when the page resumes behind it', () {
+      final binding = TestWidgetsFlutterBinding.instance
+        ..handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      addTearDown(
+        () => binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed),
+      );
+      fakeAsync((async) {
+        stubCounts();
+        final subscription = container.listen(
+          deepBackfillRecordCountsProvider,
+          (_, _) {},
+        );
+        async.flushMicrotasks();
+
+        subscription.pause();
+        binding
+          ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
+          ..handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+        subscription.resume();
+        async
+          ..elapse(SyncTuning.recordCountsFullRecountInterval * 2)
+          ..flushMicrotasks();
+        expect(counted, [null]);
+      });
+    });
+
     test('stops counting while the app is hidden, and counts in full at '
         'once when it shows again', () {
       final binding = TestWidgetsFlutterBinding.instance

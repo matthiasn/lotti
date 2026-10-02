@@ -242,6 +242,48 @@ void main() {
       await tester.pump(SyncTuning.recordCountsFullRecountInterval * 2);
       expect(counts, atExit);
     });
+
+    testWidgets('stop counting while the page sits on a background tab, and '
+        'count once it is shown again', (tester) async {
+      final onScreen = ValueNotifier(true);
+      addTearDown(onScreen.dispose);
+      tester.view
+        ..physicalSize = const Size(800, 2400)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      // The desktop shell keeps every tab mounted in an IndexedStack and
+      // turns TickerMode off for the ones not shown.
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          child: ValueListenableBuilder<bool>(
+            valueListenable: onScreen,
+            builder: (context, enabled, child) =>
+                TickerMode(enabled: enabled, child: child!),
+            child: const SingleChildScrollView(child: BackfillSettingsBody()),
+          ),
+        ),
+      );
+      await tester.pump();
+      final shown = counts;
+      final statsLoads = verify(
+        () => mockSequenceService.getBackfillStats(),
+      ).callCount;
+
+      onScreen.value = false;
+      await tester.pump();
+      changes.add(SyncSequencePayloadType.journalEntity);
+      await tester.pump(const Duration(minutes: 5));
+      expect(counts, shown, reason: 'no record counts for an unseen page');
+      verifyNever(() => mockSequenceService.getBackfillStats());
+
+      onScreen.value = true;
+      await tester.pump();
+      await tester.pump();
+      expect(counts, shown + 1, reason: 'counts at once when shown');
+      verify(() => mockSequenceService.getBackfillStats()).called(1);
+      expect(statsLoads, greaterThan(0));
+      await tester.pumpWidget(const SizedBox());
+    });
   });
 
   group('BackfillSettingsBody · sync statistics ledger', () {

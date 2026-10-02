@@ -66,9 +66,13 @@ class BackfillStatsState {
 ///
 /// Zero cost when the page is closed: the provider is auto-disposed,
 /// so Riverpod tears it down on last unwatch,
-/// firing the `ref.onDispose` that cancels this timer. Zero cost
-/// when the app is backgrounded: the `AppLifecycleListener` stops
-/// the timer on `onHide` and re-arms it on `onShow`.
+/// firing the `ref.onDispose` that cancels this timer. Zero cost when
+/// the page is mounted but off screen — a desktop tab the user switched
+/// away from stays mounted offstage — because Riverpod pauses the page's
+/// subscription there (`TickerMode`) and `ref.onCancel` stops the timer.
+/// Zero cost when the app is backgrounded: the `AppLifecycleListener`
+/// stops the timer on `onHide`. Either way the stats refresh at once on
+/// return, then every interval.
 const Duration _autoRefreshInterval = Duration(seconds: 30);
 
 /// Live missing-row count for the Sync health page.
@@ -100,6 +104,9 @@ class BackfillStatsController extends Notifier<BackfillStatsState> {
   AppLifecycleListener? _lifecycleListener;
   bool _appVisible = true;
 
+  /// False while every listener is paused: the page is mounted off screen.
+  bool _listened = true;
+
   /// Guard against overlapping silent refreshes when the underlying
   /// aggregation query runs slower than [_autoRefreshInterval] (large
   /// `sync_sequence_log`, contended SQLite). Without this, the timer
@@ -116,35 +123,49 @@ class BackfillStatsController extends Notifier<BackfillStatsState> {
     // Settings provider still technically alive because a nav stack
     // kept it mounted) doesn't keep running the aggregation.
     _lifecycleListener = AppLifecycleListener(
-      onShow: () {
-        _appVisible = true;
-        _startTimer();
-      },
-      onHide: () {
-        _appVisible = false;
-        _autoRefreshTimer?.cancel();
-        _autoRefreshTimer = null;
-      },
+      onShow: () => _setActive(appVisible: true),
+      onHide: () => _setActive(appVisible: false),
     );
 
     _startTimer();
 
-    ref.onDispose(() {
-      _autoRefreshTimer?.cancel();
-      _autoRefreshTimer = null;
-      _lifecycleListener?.dispose();
-      _lifecycleListener = null;
-    });
+    ref
+      ..onCancel(() => _setActive(listened: false))
+      ..onResume(() => _setActive(listened: true))
+      ..onDispose(() {
+        _autoRefreshTimer?.cancel();
+        _autoRefreshTimer = null;
+        _lifecycleListener?.dispose();
+        _lifecycleListener = null;
+      });
 
     return const BackfillStatsState(isLoading: true);
   }
 
+  bool get _active => _listened && _appVisible;
+
+  /// Stops the auto-refresh once the page is off screen or the app hidden,
+  /// and refreshes at once when both hold again.
+  void _setActive({bool? listened, bool? appVisible}) {
+    final wasActive = _active;
+    _listened = listened ?? _listened;
+    _appVisible = appVisible ?? _appVisible;
+    if (_active == wasActive) return;
+    if (_active) {
+      if (!_silentRefreshInFlight) unawaited(_loadStatsSilent());
+      _startTimer();
+    } else {
+      _autoRefreshTimer?.cancel();
+      _autoRefreshTimer = null;
+    }
+  }
+
   void _startTimer() {
     _autoRefreshTimer?.cancel();
-    if (!_appVisible) return;
+    if (!_active) return;
     _autoRefreshTimer = Timer.periodic(_autoRefreshInterval, (_) {
       if (!ref.mounted) return;
-      if (!_appVisible) return;
+      if (!_active) return;
       // Skip while a manual action is running — those paths call
       // `_loadStats` themselves on completion.
       if (state.isProcessing ||
