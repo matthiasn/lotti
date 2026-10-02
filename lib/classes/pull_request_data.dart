@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/features/github/domain/pull_request_ref.dart';
 
 part 'pull_request_data.freezed.dart';
 part 'pull_request_data.g.dart';
@@ -141,7 +142,10 @@ abstract class PullRequestReviews with _$PullRequestReviews {
 }
 
 extension PullRequestDataX on PullRequestData {
-  /// `owner/repo#number`, lower-cased: the journal row's subtype, so a
-  /// duplicate link is an indexed lookup. GitHub names are case-insensitive.
-  String get key => '${owner.toLowerCase()}/${repo.toLowerCase()}#$number';
+  PullRequestRef get ref =>
+      PullRequestRef(owner: owner, repo: repo, number: number);
+
+  /// [PullRequestRef.key]: the journal row's subtype, so a duplicate link is
+  /// an indexed lookup.
+  String get key => ref.key;
 }
