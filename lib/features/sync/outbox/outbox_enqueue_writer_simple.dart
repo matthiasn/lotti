@@ -258,13 +258,35 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
       });
       return;
     }
-    await enqueueSimple(
-      commonFields: commonFields,
-      subject: 'backfillRequest:batch:${msg.entries.length}',
-      logMessage:
-          'enqueue type=SyncBackfillRequest '
-          'entries=${msg.entries.length}',
-    );
+    final chunks = splitBackfillRequestEntries(msg);
+    if (chunks.length == 1) {
+      await enqueueSimple(
+        commonFields: commonFields,
+        subject: 'backfillRequest:batch:${msg.entries.length}',
+        logMessage:
+            'enqueue type=SyncBackfillRequest '
+            'entries=${msg.entries.length}',
+      );
+      return;
+    }
+    // One row per chunk, written atomically: a request too large for one
+    // inline Matrix event would fail with `EventTooLarge` on every attempt
+    // until the outbox retry cap dropped it.
+    await _syncDatabase.transaction(() async {
+      for (final chunk in chunks) {
+        final jsonString = json.encode(msg.copyWith(entries: chunk));
+        await enqueueSimple(
+          commonFields: commonFields.copyWith(
+            message: Value(jsonString),
+            payloadSize: Value(utf8.encode(jsonString).length),
+          ),
+          subject: 'backfillRequest:batch:${chunk.length}',
+          logMessage:
+              'enqueue type=SyncBackfillRequest '
+              'entries=${chunk.length} split=${chunks.length}',
+        );
+      }
+    });
   }
 
   Future<void> enqueueMediaRequest({
@@ -326,4 +348,40 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
         'enqueue type=SyncBackfillResponse hostId=${msg.hostId} '
         'counter=${msg.counter} deleted=${msg.deleted}',
   );
+}
+
+/// Splits [request]'s entries, in order, into chunks whose request JSON stays
+/// within [maxJsonBytes] — by default
+/// [SyncTuning.maxInlineBackfillRequestJsonBytes], the budget under which the
+/// request still fits one inline Matrix event once base64-encoded and
+/// encrypted.
+///
+/// Sizes are exact rather than estimated: the request with no entries costs a
+/// fixed number of bytes, and each entry adds its own encoded length plus a
+/// separating comma. A chunk always holds at least one entry, so a request
+/// with no entries yields a single empty chunk.
+@visibleForTesting
+List<List<BackfillRequestEntry>> splitBackfillRequestEntries(
+  SyncBackfillRequest request, {
+  int maxJsonBytes = SyncTuning.maxInlineBackfillRequestJsonBytes,
+}) {
+  final entries = request.entries;
+  final baseBytes = utf8
+      .encode(json.encode(request.copyWith(entries: const [])))
+      .length;
+  final chunks = <List<BackfillRequestEntry>>[];
+  var current = <BackfillRequestEntry>[];
+  var currentBytes = baseBytes;
+  for (final entry in entries) {
+    final entryBytes = utf8.encode(json.encode(entry)).length;
+    if (current.isNotEmpty && currentBytes + entryBytes + 1 > maxJsonBytes) {
+      chunks.add(current);
+      current = <BackfillRequestEntry>[];
+      currentBytes = baseBytes;
+    }
+    currentBytes += current.isEmpty ? entryBytes : entryBytes + 1;
+    current.add(entry);
+  }
+  chunks.add(current);
+  return chunks;
 }
