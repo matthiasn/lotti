@@ -104,7 +104,7 @@ void main() {
     group('daily wake limit', () {
       final today = DateTime(2026, 10, 2, 9);
 
-      testWidgets('a project band shows today\'s usage counted across '
+      testWidgets("a project band shows today's usage counted across "
           'devices', (tester) async {
         await withClock(Clock.fixed(today), () async {
           await tester.pumpWidget(

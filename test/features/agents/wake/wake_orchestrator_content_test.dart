@@ -136,18 +136,21 @@ void main() {
         unawaited(audited.processNext());
         async.flushMicrotasks();
 
-        expect(audit, [
-          'wake suppressed stage=route agent=${DomainLogger.sanitizeId('agent-off')} '
-              'cause=automaticUpdatesOff reason=subscription '
-              'initiator=automation source=${DomainLogger.sanitizeId('sub-off')} '
-              'tokens=1',
-          'wake allowed stage=enqueue agent=${DomainLogger.sanitizeId('project-off')} '
-              'cause=allowed reason=scheduled initiator=automation tokens=0',
-          'wake suppressed stage=dispatch '
-              'agent=${DomainLogger.sanitizeId('project-off')} '
-              'cause=automaticUpdatesOff reason=scheduled '
-              'initiator=automation tokens=0',
-        ]);
+        final offAgent = DomainLogger.sanitizeId('agent-off');
+        final offSource = DomainLogger.sanitizeId('sub-off');
+        final project = DomainLogger.sanitizeId('project-off');
+        final routed =
+            'wake suppressed stage=route agent=$offAgent '
+            'cause=automaticUpdatesOff reason=subscription '
+            'initiator=automation source=$offSource tokens=1';
+        final queued =
+            'wake allowed stage=enqueue agent=$project '
+            'cause=allowed reason=scheduled initiator=automation tokens=0';
+        final dispatched =
+            'wake suppressed stage=dispatch agent=$project '
+            'cause=automaticUpdatesOff reason=scheduled '
+            'initiator=automation tokens=0';
+        expect(audit, [routed, queued, dispatched]);
 
         unawaited(controller.close());
         unawaited(audited.stop());
