@@ -672,6 +672,14 @@ extension WakeDrainEngine on WakeOrchestrator {
     if (entity.kind != AgentKinds.projectAgent) {
       return WakePolicyDecision.allowedUnbudgeted;
     }
+    // The only automatic work a project agent does is an update slot,
+    // fired on one device by the slot's lease (ProjectWakeGovernor.tla,
+    // StaleDoesNotTriggerWork). Whatever else queued an automatic wake —
+    // a subscription, a transcript, a restored intent — is refused here.
+    if (job.initiator == WakeInitiator.automation &&
+        !job.triggerTokens.contains(ProjectUpdateSlots.triggerToken)) {
+      return const WakePolicyDecision(WakeDecisionCause.notAnUpdateSlot);
+    }
     final maxPerDay = effectiveMaxWakesPerDay(entity.config);
     if (claimBudget) return _claimWakeBudget(job, maxPerDay);
     try {

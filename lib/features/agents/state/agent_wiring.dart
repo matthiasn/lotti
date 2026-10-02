@@ -295,12 +295,14 @@ void wireSyncEventProcessor(
     // identity is offered to each contributor so subscriptions follow the
     // agent onto this device mid-session.
     ..runtimeMaintenance = ref.read(agentRuntimeMaintenanceProvider)
-    ..retireSupersededTaskAgents = retireSupersededTaskAgents;
+    ..retireSupersededTaskAgents = retireSupersededTaskAgents
+    ..armProjectUpdate = armProjectUpdate(ref);
   ref.onDispose(() {
     processor
       ..wakeOrchestrator = null
       ..agentWakeCoordinator = null
       ..runtimeMaintenance = const []
-      ..retireSupersededTaskAgents = null;
+      ..retireSupersededTaskAgents = null
+      ..armProjectUpdate = null;
   });
 }

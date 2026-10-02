@@ -196,8 +196,10 @@ class _AgentMaintenanceSectionState
                   onAutomaticUpdatesChanged: (enabled) =>
                       unawaited(_updateAutomaticUpdates(enabled: enabled)),
                   onRunNow: inferenceAvailable ? _runNow : null,
-                  onSkipScheduledUpdate: () =>
-                      unawaited(_skipScheduledUpdate(nextWakeAt)),
+                  onSkipScheduledUpdate:
+                      widget.scope.kind == AgentMaintenanceKind.task
+                      ? () => unawaited(_skipScheduledUpdate(nextWakeAt))
+                      : null,
                   onCountdownExpired: () {
                     if (mounted) setState(() {});
                   },
@@ -252,22 +254,15 @@ class _AgentMaintenanceSectionState
     }
   }
 
+  /// Task agents only: a project agent's next update is a synced slot that
+  /// any later change or restart re-arms, so skipping it would not stick.
   Future<void> _skipScheduledUpdate(DateTime? wakeAt) async {
     setState(() => _skippedWakeAt = wakeAt);
     final cancelled = await _guarded(
       'Failed to cancel scheduled wake',
-      () async {
-        switch (widget.scope.kind) {
-          case AgentMaintenanceKind.task:
-            ref
-                .read(taskAgentServiceProvider)
-                .cancelScheduledWake(widget.agentId);
-          case AgentMaintenanceKind.project:
-            await ref
-                .read(projectAgentServiceProvider)
-                .cancelScheduledWake(widget.agentId);
-        }
-      },
+      () async => ref
+          .read(taskAgentServiceProvider)
+          .cancelScheduledWake(widget.agentId),
     );
     // The latch is optimistic — it hides the countdown on the tap rather than
     // on the round trip. A cancellation that did not happen leaves the wake

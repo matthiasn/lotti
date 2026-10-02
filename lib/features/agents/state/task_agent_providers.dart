@@ -17,6 +17,9 @@ TaskAgentService taskAgentService(Ref ref) {
     syncService: ref.watch(agentSyncServiceProvider),
     updateNotifications: ref.watch(maybeUpdateNotificationsProvider),
     domainLogger: ref.watch(domainLoggerProvider),
+    armProjectUpdate: armProjectUpdate(ref),
+    cancelProjectUpdates: (agentId) =>
+        ref.read(projectUpdateCadenceProvider).consumeAll(agentId),
   );
 }
 

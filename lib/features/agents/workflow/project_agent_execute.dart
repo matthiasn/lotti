@@ -1,29 +1,5 @@
 part of 'project_agent_workflow.dart';
 
-/// Keeps a future one-shot deadline for pending project activity.
-///
-/// A due deadline has already spent its attempt, so retaining it would make
-/// every scheduler scan retry immediately. Advancing it to the next local
-/// digest window gives the pending batch a durable retry without recurrence,
-/// but only when automatic project wakes are allowed. A future explicit
-/// schedule is always retained because it may have been requested manually.
-DateTime? _nextProjectActivityFallback({
-  required DateTime? currentSchedule,
-  required DateTime? pendingActivityAt,
-  required bool automaticFallbackAllowed,
-  required DateTime now,
-}) {
-  if (pendingActivityAt == null) return null;
-  if (currentSchedule != null && currentSchedule.isAfter(now)) {
-    return currentSchedule;
-  }
-  if (!automaticFallbackAllowed) return null;
-  return nextOccurrenceOf(
-    now,
-    hour: AgentSchedules.projectDailyDigestHour,
-  );
-}
-
 /// The full wake-cycle execution of [ProjectAgentWorkflow]. Extracted into a
 /// part-file extension to keep the workflow under the size limit; the class
 /// keeps a thin public [ProjectAgentWorkflow.execute] delegator so mocks keep
@@ -62,41 +38,27 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
     }
 
     final now = clock.now();
-    // 2. Load the latest report and decide whether a due scheduled wake can be
-    // skipped cheaply because no new project activity was recorded.
+    // 2. An automatic update slot over a report that is already fresh — an
+    // "Update now", or a peer's run, got there first — costs no inference:
+    // the run that freshened it read everything this slot was armed for
+    // (`specs/tla/ProjectWakeGovernor.tla`, `NoWorkWhenFresh`). A report that
+    // does not exist yet is never fresh.
     final lastReport = await agentRepository.getLatestReport(
       agentId,
       AgentReportScopes.current,
     );
-    final initialScheduledWakeWasDue =
-        state.scheduledWakeAt != null && !state.scheduledWakeAt!.isAfter(now);
-    if (initialScheduledWakeWasDue && lastReport != null) {
+    final slotUpdate = triggerTokens.contains(ProjectUpdateSlots.triggerToken);
+    if (slotUpdate && lastReport != null) {
       final latestState = await agentRepository.getAgentState(agentId) ?? state;
-      final latestScheduledWakeWasDue =
-          latestState.scheduledWakeAt != null &&
-          !latestState.scheduledWakeAt!.isAfter(now);
-
-      if (!latestScheduledWakeWasDue) {
+      if (!latestState.isReportStale) {
         _log(
-          'scheduled wake already handled elsewhere — skipping duplicate run',
+          'update slot fired over a fresh report — no inference',
           subDomain: 'execute',
         );
         return const WakeResult(success: true);
       }
-
-      if (latestState.slots.pendingProjectActivityAt == null) {
-        await _skipDormantScheduledWake(
-          state: latestState,
-          now: now,
-        );
-        return const WakeResult(success: true);
-      }
-
       state = latestState;
     }
-
-    final scheduledWakeWasDue =
-        state.scheduledWakeAt != null && !state.scheduledWakeAt!.isAfter(now);
 
     // 2a. Capture this wake's project-linked journal entries into the log
     // (ADR 0020) — same substrate and renderer as the task agent (only
@@ -374,9 +336,6 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
       await syncService.runInTransaction(() async {
         final latestState =
             await agentRepository.getAgentState(agentId) ?? state;
-        final automaticFallbackAllowed = await _automaticFallbackAllowed(
-          agentId,
-        );
 
         // Persist thought.
         final thoughtText = strategy.finalResponse;
@@ -543,25 +502,24 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
                 latestPendingActivityAt.isAfter(now)
             ? latestPendingActivityAt
             : null;
-        final nextSlots = scheduledWakeWasDue
+        final nextSlots = slotUpdate
             ? latestState.slots.copyWith(lastDailyWakeAt: now)
             : latestState.slots;
         final hostId = await syncService.localHost();
+        final freshAt = latestState.reportFreshAt;
         await syncService.upsertEntity(
           latestState.copyWith(
             slots: nextSlots.copyWith(
               pendingProjectActivityAt: nextPendingActivityAt,
             ),
             lastWakeAt: now,
-            // Activity newer than this run stays pending. Keep its durable
-            // one-shot fallback too; otherwise a suspension before the
-            // in-memory follow-up drains would strand the newer work.
-            scheduledWakeAt: _nextProjectActivityFallback(
-              currentSchedule: latestState.scheduledWakeAt,
-              pendingActivityAt: nextPendingActivityAt,
-              automaticFallbackAllowed: automaticFallbackAllowed,
-              now: now,
-            ),
+            // The report now reflects everything up to this run's start. A
+            // change that landed during the run stays newer, keeps the
+            // report stale, and arms the next slot below.
+            reportFreshAt:
+                reportId != null && (freshAt == null || freshAt.isBefore(now))
+                ? now
+                : freshAt,
             updatedAt: now,
             consecutiveFailureCount: 0,
             wakeCounter: latestState.wakeCounter.increment(hostId),
@@ -570,7 +528,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
 
         // Event-source the watermarks updated above (PR 4, B2): the markers'
         // createdAt is what the projection folds. `lastWakeAt` updates on every
-        // wake; `lastDailyWakeAt` only when the scheduled daily wake was due.
+        // wake; `lastDailyWakeAt` only for an automatic update slot.
         // The cached row stays the read source until the cutover (B6).
         await syncService.appendMilestone(
           agentId: agentId,
@@ -579,7 +537,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
           threadId: threadId,
           runKey: runKey,
         );
-        if (scheduledWakeWasDue) {
+        if (slotUpdate) {
           await syncService.appendMilestone(
             agentId: agentId,
             milestone: AgentMilestone.dailyWakeCompleted,
@@ -608,6 +566,9 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
         );
       }
       onPersistedStateChanged?.call(agentId);
+      // Still stale: a change landed while this run was reading. The next
+      // slot covers it; nothing re-runs now.
+      await _armNextUpdate(agentId);
 
       _log(
         'wake completed: ${observations.length} observations, '

@@ -32,10 +32,10 @@ class _HandledCheckSequence {
 /// schedule (e.g., weekly one-on-one rituals).
 ///
 /// On startup and then hourly, queries for agents with overdue
-/// `scheduledWakeAt`. Legacy project schedules with no pending activity are
-/// retired instead of advanced, because project work is now scheduled by
-/// update-driven subscription wakes.
-/// Non-project agents (e.g., improver agents) are always enqueued.
+/// `scheduledWakeAt` and enqueues them — except project agents, whose state
+/// schedules are legacy fallbacks and are retired unfired: project updates
+/// are synced, leased slot records (`ProjectUpdateCadence`), fired by the
+/// record path below like every other [ScheduledWakeEntity].
 class ScheduledWakeManager with AgentErrorLogging {
   ScheduledWakeManager({
     required this._repository,
@@ -379,11 +379,13 @@ class ScheduledWakeManager with AgentErrorLogging {
             continue;
           }
 
+          // A project agent's state schedule is never fired, only retired:
+          // its updates are slots (see _shouldRetireDormantProjectSchedule).
           if (_shouldRetireDormantProjectSchedule(currentState)) {
             if (await _retireDormantProjectSchedule(currentState, now)) {
               retired++;
-              continue;
             }
+            continue;
           }
 
           // The due query is only a snapshot. A cancellation may clear the
@@ -856,17 +858,12 @@ class ScheduledWakeManager with AgentErrorLogging {
     );
   }
 
-  /// Whether this legacy project schedule should be retired without a wake.
-  bool _shouldRetireDormantProjectSchedule(AgentStateEntity state) {
-    final isProjectAgent = state.slots.activeProjectId != null;
-    if (!isProjectAgent) return false;
-
-    final hasPendingActivity = state.slots.pendingProjectActivityAt != null;
-    // A never-woken project agent may still be waiting for its explicit
-    // creation wake. That job is in-memory, so its one-shot state schedule is
-    // the restart fallback until the first successful run records lastWakeAt.
-    return !hasPendingActivity && state.lastWakeAt != null;
-  }
+  /// Whether this is a project agent's state-level schedule. Project agents
+  /// update in synced slots (`ProjectUpdateCadence`); a `scheduledWakeAt` on
+  /// one is a device-local fallback an older build left behind, and firing it
+  /// would be a wake the cadence knows nothing about.
+  bool _shouldRetireDormantProjectSchedule(AgentStateEntity state) =>
+      state.slots.activeProjectId != null;
 
   /// Clear an obsolete project `scheduledWakeAt` without executing a wake.
   Future<bool> _retireDormantProjectSchedule(

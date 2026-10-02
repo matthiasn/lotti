@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/pending_wake_record.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/wake/project_update_slots.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 
@@ -113,8 +114,12 @@ final pendingWakeRecordsProvider = FutureProvider<List<PendingWakeRecord>>((
 /// `dayplan-2026-06-08`).
 /// Namespace-agnostic so this stays a generic agents-layer concern. Returns
 /// `null` for a null/empty key so the caller falls back to the agent name.
+///
+/// A project update slot's key is its start instant, which says nothing a
+/// reader wants as a title; it returns `null` so the row shows the project.
 String? _workspaceSubjectLabel(String? workspaceKey) {
   if (workspaceKey == null || workspaceKey.isEmpty) return null;
+  if (isProjectUpdateWorkspace(workspaceKey)) return null;
   final colon = workspaceKey.indexOf(':');
   if (colon < 0) return workspaceKey;
   final id = workspaceKey.substring(colon + 1).trim();

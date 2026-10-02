@@ -39,6 +39,11 @@ enum WakeDecisionCause {
 
   /// The change only marked the report stale; no wake was queued.
   markedStaleOnly,
+
+  /// An automatic project-agent wake that is not an update slot. Project
+  /// agents update on their own only in slots (`ProjectUpdateCadence`); any
+  /// other automatic trigger is refused, whatever path queued it.
+  notAnUpdateSlot,
 }
 
 /// The wake runtime's decision on one queued wake.

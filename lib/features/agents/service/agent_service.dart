@@ -455,17 +455,6 @@ class AgentService {
             : identity.userResumedAt,
       );
       await syncService.upsertEntity(updated);
-      if (identity.kind == AgentKinds.projectAgent &&
-          lifecycle != AgentLifecycle.active) {
-        final state = await repository.getAgentState(agentId);
-        if (state != null && state.scheduledWakeAt != null) {
-          // Project fallback deadlines are device-local. Clear them in the
-          // same database transaction without advancing synced LWW metadata.
-          await repository.upsertEntity(
-            state.copyWith(scheduledWakeAt: null),
-          );
-        }
-      }
       return true;
     });
     // Pause/resume/destroy must reach every agent surface: the goal
