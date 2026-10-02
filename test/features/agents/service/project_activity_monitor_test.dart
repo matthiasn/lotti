@@ -59,7 +59,12 @@ void main() {
     });
     when(
       () => repository.getEntity(any()),
-    ).thenAnswer((_) async => makeTestIdentity(kind: AgentKinds.projectAgent));
+    ).thenAnswer(
+      (_) async => makeTestIdentity(
+        kind: AgentKinds.projectAgent,
+        config: const AgentConfig(automaticUpdatesEnabled: true),
+      ),
+    );
 
     monitor = ProjectActivityMonitor(
       notifications: notifications,

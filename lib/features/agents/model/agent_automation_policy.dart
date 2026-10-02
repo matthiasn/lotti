@@ -23,10 +23,13 @@ bool taskAgentWakeAllowed({
 
 /// Whether a project agent may schedule subscription or fallback wakes.
 ///
-/// Project agents shipped with event-driven automation before the preference
-/// was persisted, so a missing legacy value remains enabled. An explicit
-/// opt-out, inactive lifecycle, or disabled inference blocks automatic work;
-/// user-requested wakes are handled separately by the orchestrator.
+/// Automatic inference is opt-in: a missing preference reads as off, exactly
+/// as the "Automatic updates" switch renders it
+/// ([AgentConfigAutomation.automaticUpdatesEnabledEffective]). Project agents
+/// once treated a missing value as on, so every agent that was never toggled
+/// showed the switch off while still waking on its own — the runaway-wake
+/// incident of 2026-10. Inactive lifecycle or disabled inference also block
+/// automatic work; user-requested wakes are handled separately.
 bool projectAgentAutomaticWakesAllowed({
   required AgentConfig config,
   required AgentLifecycle lifecycle,
@@ -50,5 +53,5 @@ bool projectAgentWakeAllowed({
     return false;
   }
   return initiator == WakeInitiator.user ||
-      config.automaticUpdatesEnabled != false;
+      config.automaticUpdatesEnabledEffective;
 }

@@ -423,7 +423,8 @@ extension _AgentHandlers on SyncEventProcessor {
   }) {
     if ((incoming.kind != 'task_agent' && incoming.kind != 'project_agent') ||
         (incoming.config.automaticUpdatesEnabled != null &&
-            incoming.config.inferenceSetup != null)) {
+            incoming.config.inferenceSetup != null &&
+            incoming.config.maxWakesPerDay != null)) {
       return incoming;
     }
     if (local is! AgentIdentityEntity) return incoming;
@@ -433,14 +434,20 @@ extension _AgentHandlers on SyncEventProcessor {
         local.config.automaticUpdatesEnabled;
     final inferenceSetup =
         incoming.config.inferenceSetup ?? local.config.inferenceSetup;
+    // An older client cannot carry the daily wake budget; dropping it would
+    // silently reset a user's lower limit to the default on every device.
+    final maxWakesPerDay =
+        incoming.config.maxWakesPerDay ?? local.config.maxWakesPerDay;
     if (automaticUpdatesEnabled == incoming.config.automaticUpdatesEnabled &&
-        inferenceSetup == incoming.config.inferenceSetup) {
+        inferenceSetup == incoming.config.inferenceSetup &&
+        maxWakesPerDay == incoming.config.maxWakesPerDay) {
       return incoming;
     }
     return incoming.copyWith(
       config: incoming.config.copyWith(
         automaticUpdatesEnabled: automaticUpdatesEnabled,
         inferenceSetup: inferenceSetup,
+        maxWakesPerDay: maxWakesPerDay,
       ),
     );
   }

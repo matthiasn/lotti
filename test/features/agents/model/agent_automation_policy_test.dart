@@ -94,10 +94,21 @@ void main() {
   );
 
   group('projectAgentAutomaticWakesAllowed', () {
-    test('keeps the legacy null preference enabled for active agents', () {
+    // Regression: a missing preference used to read as on here while the
+    // switch rendered it off, so untoggled project agents woke on their own.
+    test('reads a missing preference as off, matching the switch', () {
+      const config = AgentConfig();
+      expect(config.automaticUpdatesEnabledEffective, isFalse);
       expect(
         projectAgentAutomaticWakesAllowed(
-          config: const AgentConfig(),
+          config: config,
+          lifecycle: AgentLifecycle.active,
+        ),
+        isFalse,
+      );
+      expect(
+        projectAgentAutomaticWakesAllowed(
+          config: const AgentConfig(automaticUpdatesEnabled: true),
           lifecycle: AgentLifecycle.active,
         ),
         isTrue,

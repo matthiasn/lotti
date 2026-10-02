@@ -13,6 +13,8 @@ import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/wake/agent_wake_coordinator.dart';
 import 'package:lotti/features/agents/wake/run_key_factory.dart';
+import 'package:lotti/features/agents/wake/wake_audit.dart';
+import 'package:lotti/features/agents/wake/wake_budget.dart';
 import 'package:lotti/features/agents/wake/wake_intent_store.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
@@ -233,6 +235,9 @@ class WakeRunCompletion {
 
 int _defaultMaxConcurrentWakes() => defaultAgentWakeConcurrency;
 
+/// The budget key of claims made before this device's host id is known.
+const _unknownBudgetHost = 'unknown-host';
+
 /// Notification-driven wake orchestrator.
 ///
 /// Responsibilities:
@@ -259,6 +264,7 @@ class WakeOrchestrator with AgentErrorLogging {
     this.syncEntityWriter,
     this.syncAgentStateUpdater,
     this.onWakeStart,
+    this.localHostId,
     this.maxConcurrentWakes = _defaultMaxConcurrentWakes,
     this.intentStore,
   }) {
@@ -317,6 +323,16 @@ class WakeOrchestrator with AgentErrorLogging {
 
   /// Optional transactional state updater for partial state mutations.
   SyncAgentStateUpdater? syncAgentStateUpdater;
+
+  /// This device's sync host id, the key its daily-budget claims are
+  /// counted under. Null before the vector clock service is wired; claims
+  /// then count under a shared placeholder key rather than not at all.
+  Future<String?> Function()? localHostId;
+
+  /// Run keys whose daily-budget claim has been persisted, so a run a
+  /// superseded drain hands back is not counted a second time. Released
+  /// when the run completes.
+  final _budgetClaimedRunKeys = <String>{};
 
   /// Optional cross-device coordination: of several devices about to wake the
   /// same agent over the same state, one runs and the others stand down (see
@@ -613,6 +629,7 @@ class WakeOrchestrator with AgentErrorLogging {
     DateTime? startedAt,
     bool? reportUpdated,
   }) {
+    _budgetClaimedRunKeys.remove(job.runKey);
     if (_runCompletions.isClosed) return;
     _runCompletions.add(
       WakeRunCompletion(

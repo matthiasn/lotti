@@ -1,8 +1,12 @@
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/wake/agent_wake_coordinator.dart';
+import 'package:lotti/features/agents/wake/wake_audit.dart';
+import 'package:lotti/features/agents/wake/wake_budget.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 
+import '../agent_test_device.dart';
 import 'wake_orchestrator_test_harness.dart';
 
 void main() {
@@ -43,6 +47,40 @@ void main() {
           verifyNever(
             () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
           );
+        },
+      );
+
+      test(
+        'an unreadable policy refuses automatic work but not a user request',
+        () async {
+          when(
+            () => mockRepository.getEntity('agent-1'),
+          ).thenThrow(StateError('agent database unavailable'));
+          final ran = <String>[];
+          orchestrator.wakeExecutor = (_, runKey, _, _) async {
+            ran.add(runKey);
+            return null;
+          };
+          for (final (runKey, initiator) in [
+            ('automatic-unreadable', WakeInitiator.automation),
+            ('manual-unreadable', WakeInitiator.user),
+          ]) {
+            queue.enqueue(
+              WakeJob(
+                runKey: runKey,
+                agentId: 'agent-1',
+                reason: WakeReason.subscription.name,
+                initiator: initiator,
+                triggerTokens: const {'task-1'},
+                createdAt: DateTime(2024, 3, 15),
+              ),
+            );
+            await orchestrator.processNext();
+          }
+
+          // Before the fix a failed read allowed every wake: an unreadable
+          // row licensed paid inference.
+          expect(ran, ['manual-unreadable']);
         },
       );
 
@@ -1780,6 +1818,282 @@ void main() {
 
     // Cross-device coordination (specs/tla/AgentWakeCoordination.tla): the
     // drain asks the coordinator before it runs a job.
+    // The daily wake budget is enforced at the drain's last policy check,
+    // which every wake path reaches. These run the real orchestrator over a
+    // real in-memory agent database per device, so the claim is what the
+    // state transaction actually commits and what sync actually carries.
+    group('daily wake budget', () {
+      final today = DateTime(2026, 10, 2, 10);
+      const agentId = 'project-agent-budget';
+
+      AgentIdentityEntity budgetIdentity({
+        int? maxWakesPerDay,
+        bool automatic = true,
+        AgentLifecycle lifecycle = AgentLifecycle.active,
+      }) => makeTestIdentity(
+        id: agentId,
+        agentId: agentId,
+        kind: AgentKinds.projectAgent,
+        lifecycle: lifecycle,
+        currentStateId: 'state-$agentId',
+        config: AgentConfig(
+          automaticUpdatesEnabled: automatic,
+          maxWakesPerDay: maxWakesPerDay,
+        ),
+      );
+
+      Future<AgentTestDevice> seededDevice(
+        String host,
+        AgentIdentityEntity identity,
+      ) async {
+        final device = AgentTestDevice(host);
+        addTearDown(device.close);
+        await device.repository.upsertEntity(identity);
+        await device.repository.upsertEntity(
+          makeTestState(id: 'state-$agentId', agentId: agentId),
+        );
+        return device;
+      }
+
+      /// A real orchestrator on [device] whose executor counts its runs.
+      ({WakeOrchestrator orchestrator, List<String> ran}) budgetRuntime(
+        AgentTestDevice device,
+      ) {
+        final ran = <String>[];
+        final runtime =
+            WakeOrchestrator(
+                repository: device.repository,
+                queue: WakeQueue(),
+                runner: WakeRunner(),
+                syncAgentStateUpdater: device.sync.updateAgentState,
+                localHostId: () async => device.host,
+              )
+              ..wakeExecutor = (_, runKey, _, _) async {
+                ran.add(runKey);
+                return null;
+              };
+        addTearDown(runtime.stop);
+        return (orchestrator: runtime, ran: ran);
+      }
+
+      /// Queues one wake and drains it, returning how it completed.
+      Future<WakeRunCompletion> wake(
+        WakeOrchestrator runtime,
+        String runKey, {
+        WakeInitiator initiator = WakeInitiator.automation,
+      }) async {
+        final completion = runtime.runCompletions.firstWhere(
+          (event) => event.runKey == runKey,
+        );
+        runtime.queue.enqueue(
+          WakeJob(
+            runKey: runKey,
+            agentId: agentId,
+            reason: initiator == WakeInitiator.user
+                ? WakeReason.reanalysis.name
+                : WakeReason.subscription.name,
+            initiator: initiator,
+            triggerTokens: const {},
+            createdAt: today,
+          ),
+        );
+        await runtime.processNext();
+        return completion;
+      }
+
+      Future<int> usedToday(AgentTestDevice device) async {
+        final state = await device.repository.getAgentState(agentId);
+        return wakesUsedOn(state!.dailyWakes, wakeBudgetDay(today));
+      }
+
+      test('automatic wakes stop at the budget and every claim is synced '
+          'before its run', () async {
+        await withClock(Clock.fixed(today), () async {
+          final device = await seededDevice(
+            'host-a',
+            budgetIdentity(maxWakesPerDay: 2),
+          );
+          final runtime = budgetRuntime(device);
+
+          final first = await wake(runtime.orchestrator, 'auto-1');
+          final second = await wake(runtime.orchestrator, 'auto-2');
+          final third = await wake(runtime.orchestrator, 'auto-3');
+
+          expect(runtime.ran, ['auto-1', 'auto-2']);
+          expect(first.status, WakeRunStatus.completed);
+          expect(second.status, WakeRunStatus.completed);
+          expect(third.status, WakeRunStatus.aborted);
+          expect(
+            third.error,
+            isA<WakeRefusedError>().having(
+              (error) => error.cause,
+              'cause',
+              WakeDecisionCause.budgetExhausted,
+            ),
+          );
+          expect(await usedToday(device), 2);
+          // Refused before dispatch, from the ledger alone: no run row is
+          // written, so a suppressed storm costs no storage either.
+          expect(
+            await device.repository.getWakeRunByThreadId(agentId, 'auto-3'),
+            isNull,
+          );
+          // Each claim left the device as a state write, so peers count it.
+          final sentLedgers = device.sentEntities
+              .whereType<AgentStateEntity>()
+              .map((state) => wakesUsedOn(state.dailyWakes, '2026-10-02'))
+              .toList();
+          expect(sentLedgers, [1, 2]);
+        });
+      });
+
+      test('an explicit request runs past the budget until twice it', () async {
+        await withClock(Clock.fixed(today), () async {
+          final device = await seededDevice(
+            'host-a',
+            budgetIdentity(maxWakesPerDay: 1),
+          );
+          final runtime = budgetRuntime(device);
+
+          await wake(runtime.orchestrator, 'auto-1');
+          final automatic = await wake(runtime.orchestrator, 'auto-2');
+          final manual = await wake(
+            runtime.orchestrator,
+            'manual-1',
+            initiator: WakeInitiator.user,
+          );
+          final pastCeiling = await wake(
+            runtime.orchestrator,
+            'manual-2',
+            initiator: WakeInitiator.user,
+          );
+
+          expect(runtime.ran, ['auto-1', 'manual-1']);
+          expect(
+            (automatic.error! as WakeRefusedError).cause,
+            WakeDecisionCause.budgetExhausted,
+          );
+          expect(manual.status, WakeRunStatus.completed);
+          expect(
+            (pastCeiling.error! as WakeRefusedError).cause,
+            WakeDecisionCause.hardCeilingReached,
+          );
+          expect(await usedToday(device), 2);
+        });
+      });
+
+      test('a new day starts a fresh budget', () async {
+        final device = await withClock(
+          Clock.fixed(today),
+          () => seededDevice('host-a', budgetIdentity(maxWakesPerDay: 1)),
+        );
+        final runtime = budgetRuntime(device);
+        await withClock(
+          Clock.fixed(today),
+          () => wake(runtime.orchestrator, 'day-1'),
+        );
+        final tomorrow = await withClock(
+          Clock.fixed(today.add(const Duration(days: 1))),
+          () => wake(runtime.orchestrator, 'day-2'),
+        );
+
+        expect(tomorrow.status, WakeRunStatus.completed);
+        expect(runtime.ran, ['day-1', 'day-2']);
+      });
+
+      test('two offline devices each stay within the budget, and once synced '
+          'neither runs automatic work past it', () async {
+        await withClock(Clock.fixed(today), () async {
+          final identity = budgetIdentity(maxWakesPerDay: 2);
+          final a = await seededDevice('host-a', identity);
+          final b = await seededDevice('host-b', identity);
+          final onA = budgetRuntime(a);
+          final onB = budgetRuntime(b);
+
+          // Partitioned: each device sees only its own claims, so together
+          // they run at most devices × budget — the documented offline bound.
+          for (var i = 0; i < 3; i++) {
+            await wake(onA.orchestrator, 'a-$i');
+            await wake(onB.orchestrator, 'b-$i');
+          }
+          expect(onA.ran, ['a-0', 'a-1']);
+          expect(onB.ran, ['b-0', 'b-1']);
+
+          // The partition heals: each device receives the other's last state.
+          await b.receiveEntity(
+            a.sentEntities.whereType<AgentStateEntity>().last,
+          );
+          await a.receiveEntity(
+            b.sentEntities.whereType<AgentStateEntity>().last,
+          );
+
+          // The concurrent resolver joined the ledgers: four wakes counted
+          // on both devices, none lost to last-writer-wins.
+          expect(await usedToday(a), 4);
+          expect(await usedToday(b), 4);
+          final afterHealA = await wake(onA.orchestrator, 'a-after');
+          final afterHealB = await wake(onB.orchestrator, 'b-after');
+          expect(afterHealA.status, WakeRunStatus.aborted);
+          expect(afterHealB.status, WakeRunStatus.aborted);
+          expect(onA.ran, hasLength(2));
+          expect(onB.ran, hasLength(2));
+        });
+      });
+
+      test(
+        'a paused agent runs nothing, not even an explicit request',
+        () async {
+          await withClock(Clock.fixed(today), () async {
+            final device = await seededDevice(
+              'host-a',
+              budgetIdentity(lifecycle: AgentLifecycle.dormant),
+            );
+            final runtime = budgetRuntime(device);
+
+            final manual = await wake(
+              runtime.orchestrator,
+              'manual-paused',
+              initiator: WakeInitiator.user,
+            );
+
+            expect(runtime.ran, isEmpty);
+            expect(manual.status, WakeRunStatus.aborted);
+            // Refused before any claim: pausing does not spend budget.
+            expect(await usedToday(device), 0);
+          });
+        },
+      );
+
+      test('a claim that cannot be written refuses the wake rather than '
+          'running it unaccounted', () async {
+        await withClock(Clock.fixed(today), () async {
+          final device = await seededDevice('host-a', budgetIdentity());
+          final runtime = WakeOrchestrator(
+            repository: device.repository,
+            queue: WakeQueue(),
+            runner: WakeRunner(),
+            syncAgentStateUpdater: (_, _) async =>
+                throw StateError('agent database locked'),
+            localHostId: () async => device.host,
+          );
+          addTearDown(runtime.stop);
+          var executions = 0;
+          runtime.wakeExecutor = (_, _, _, _) async {
+            executions++;
+            return null;
+          };
+
+          final completion = await wake(runtime, 'unclaimable');
+
+          expect(executions, 0);
+          expect(
+            (completion.error! as WakeRefusedError).cause,
+            WakeDecisionCause.budgetClaimFailed,
+          );
+        });
+      });
+    });
+
     group('cross-device coordination', () {
       /// The task this device's wake reads was last written as its own
       /// counter [counter]; its watermark holds exactly that.

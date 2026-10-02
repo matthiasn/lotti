@@ -1038,6 +1038,7 @@ void main() {
                   config: const AgentConfig(
                     profileId: 'profile-1',
                     automaticUpdatesEnabled: false,
+                    maxWakesPerDay: 3,
                     inferenceSetup: AgentInferenceSetup(
                       mode: AgentInferenceSetupMode.configured,
                       origin: AgentInferenceSetupOrigin.categorySnapshot,
@@ -1077,6 +1078,66 @@ void main() {
         expect(applied.displayName, 'Renamed by older client');
         expect(applied.config.automaticUpdatesEnabled, isFalse);
         expect(applied.config.inferenceSetup, local.config.inferenceSetup);
+        expect(applied.config.maxWakesPerDay, 3);
+      },
+    );
+
+    test(
+      'a rewrite that omits only the daily wake budget keeps the local one',
+      () async {
+        // The other preferences are explicit, so before the budget joined the
+        // overlay this payload was applied verbatim and an older peer reset a
+        // user's lower limit to the default on every device.
+        final local =
+            AgentDomainEntity.agent(
+                  id: 'project-agent-budget-rewrite',
+                  agentId: 'project-agent-budget-rewrite',
+                  kind: AgentKinds.projectAgent,
+                  displayName: 'Project Agent',
+                  lifecycle: AgentLifecycle.active,
+                  mode: AgentInteractionMode.autonomous,
+                  allowedCategoryIds: const {},
+                  currentStateId: 'state-budget-rewrite',
+                  config: const AgentConfig(
+                    automaticUpdatesEnabled: true,
+                    maxWakesPerDay: 2,
+                    inferenceSetup: AgentInferenceSetup(
+                      mode: AgentInferenceSetupMode.configured,
+                      origin: AgentInferenceSetupOrigin.user,
+                      baseProfileId: 'profile-1',
+                    ),
+                  ),
+                  createdAt: DateTime(2024, 3, 15),
+                  updatedAt: DateTime(2024, 3, 15),
+                  vectorClock: null,
+                )
+                as AgentIdentityEntity;
+        final incoming = local.copyWith(
+          displayName: 'Renamed by older client',
+          config: local.config.copyWith(maxWakesPerDay: null),
+          updatedAt: DateTime(2024, 3, 16),
+        );
+        when(
+          () => mockAgentRepo.getEntity(incoming.id),
+        ).thenAnswer((_) async => local);
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.agentEntity(
+              agentEntity: incoming,
+              status: SyncEntryStatus.update,
+            ),
+          ),
+        );
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        final applied =
+            verify(
+                  () => mockAgentRepo.upsertEntity(captureAny()),
+                ).captured.first
+                as AgentIdentityEntity;
+        expect(applied.displayName, 'Renamed by older client');
+        expect(applied.config.maxWakesPerDay, 2);
       },
     );
 
@@ -4175,7 +4236,7 @@ void main() {
                     mode: AgentInteractionMode.autonomous,
                     allowedCategoryIds: const {},
                     currentStateId: 'state-project-equal-replay',
-                    config: const AgentConfig(),
+                    config: const AgentConfig(automaticUpdatesEnabled: true),
                     createdAt: DateTime(2024, 3, 15),
                     updatedAt: DateTime(2026, 8, 14, 9),
                     vectorClock: vectorClock,
@@ -4249,7 +4310,7 @@ void main() {
                     mode: AgentInteractionMode.autonomous,
                     allowedCategoryIds: const {},
                     currentStateId: 'state-project-state-replay',
-                    config: const AgentConfig(),
+                    config: const AgentConfig(automaticUpdatesEnabled: true),
                     createdAt: DateTime(2024, 3, 15),
                     updatedAt: DateTime(2026, 8, 14, 9),
                     vectorClock: const VectorClock({'remote': 2}),
@@ -4441,7 +4502,7 @@ void main() {
             mode: AgentInteractionMode.autonomous,
             allowedCategoryIds: const {},
             currentStateId: 'state-1',
-            config: const AgentConfig(),
+            config: const AgentConfig(automaticUpdatesEnabled: true),
             createdAt: DateTime(2024, 3, 15),
             updatedAt: DateTime(2024, 3, 15),
             vectorClock: null,
@@ -4505,7 +4566,7 @@ void main() {
             mode: AgentInteractionMode.autonomous,
             allowedCategoryIds: const {},
             currentStateId: 'state-1',
-            config: const AgentConfig(),
+            config: const AgentConfig(automaticUpdatesEnabled: true),
             createdAt: DateTime(2024, 3, 15),
             updatedAt: DateTime(2024, 3, 15),
             vectorClock: null,
@@ -4577,7 +4638,7 @@ void main() {
             mode: AgentInteractionMode.autonomous,
             allowedCategoryIds: const {},
             currentStateId: 'state-imported',
-            config: const AgentConfig(),
+            config: const AgentConfig(automaticUpdatesEnabled: true),
             createdAt: DateTime(2024, 3, 15),
             updatedAt: DateTime(2024, 3, 15),
             vectorClock: null,
@@ -5426,7 +5487,7 @@ void main() {
             mode: AgentInteractionMode.autonomous,
             allowedCategoryIds: const {},
             currentStateId: 'state-1',
-            config: const AgentConfig(),
+            config: const AgentConfig(automaticUpdatesEnabled: true),
             createdAt: DateTime(2024, 3, 15),
             updatedAt: DateTime(2024, 3, 15),
             vectorClock: null,

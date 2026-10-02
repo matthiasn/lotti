@@ -113,59 +113,61 @@ const _$AgentInteractionModeEnumMap = {
   AgentInteractionMode.hybrid: 'hybrid',
 };
 
-AgentStateEntity _$AgentStateEntityFromJson(Map<String, dynamic> json) =>
-    AgentStateEntity(
-      id: json['id'] as String,
-      agentId: json['agentId'] as String,
-      slots: AgentSlots.fromJson(json['slots'] as Map<String, dynamic>),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
-      vectorClock: json['vectorClock'] == null
-          ? null
-          : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
-      revision: (json['revision'] as num?)?.toInt() ?? 0,
-      lastWakeAt: json['lastWakeAt'] == null
-          ? null
-          : DateTime.parse(json['lastWakeAt'] as String),
-      nextWakeAt: json['nextWakeAt'] == null
-          ? null
-          : DateTime.parse(json['nextWakeAt'] as String),
-      sleepUntil: json['sleepUntil'] == null
-          ? null
-          : DateTime.parse(json['sleepUntil'] as String),
-      scheduledWakeAt: json['scheduledWakeAt'] == null
-          ? null
-          : DateTime.parse(json['scheduledWakeAt'] as String),
-      recentHeadMessageId: json['recentHeadMessageId'] as String?,
-      latestSummaryMessageId: json['latestSummaryMessageId'] as String?,
-      consecutiveFailureCount:
-          (json['consecutiveFailureCount'] as num?)?.toInt() ?? 0,
-      wakeCounter: json['wakeCounterByHost'] == null
-          ? const GCounter.empty()
-          : GCounter.fromJson(
-              json['wakeCounterByHost'] as Map<String, dynamic>,
-            ),
-      processedCounterByHost:
-          (json['processedCounterByHost'] as Map<String, dynamic>?)?.map(
-            (k, e) => MapEntry(k, (e as num).toInt()),
-          ) ??
-          const {},
-      toolCounterByKey:
-          (json['toolCounterByKey'] as Map<String, dynamic>?)?.map(
-            (k, e) => MapEntry(k, (e as num).toInt()),
-          ) ??
-          const {},
-      reportStaleAt: json['reportStaleAt'] == null
-          ? null
-          : DateTime.parse(json['reportStaleAt'] as String),
-      reportFreshAt: json['reportFreshAt'] == null
-          ? null
-          : DateTime.parse(json['reportFreshAt'] as String),
-      awaitingContent: json['awaitingContent'] as bool? ?? false,
-      deletedAt: json['deletedAt'] == null
-          ? null
-          : DateTime.parse(json['deletedAt'] as String),
-      $type: json['runtimeType'] as String?,
-    );
+AgentStateEntity _$AgentStateEntityFromJson(
+  Map<String, dynamic> json,
+) => AgentStateEntity(
+  id: json['id'] as String,
+  agentId: json['agentId'] as String,
+  slots: AgentSlots.fromJson(json['slots'] as Map<String, dynamic>),
+  updatedAt: DateTime.parse(json['updatedAt'] as String),
+  vectorClock: json['vectorClock'] == null
+      ? null
+      : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+  revision: (json['revision'] as num?)?.toInt() ?? 0,
+  lastWakeAt: json['lastWakeAt'] == null
+      ? null
+      : DateTime.parse(json['lastWakeAt'] as String),
+  nextWakeAt: json['nextWakeAt'] == null
+      ? null
+      : DateTime.parse(json['nextWakeAt'] as String),
+  sleepUntil: json['sleepUntil'] == null
+      ? null
+      : DateTime.parse(json['sleepUntil'] as String),
+  scheduledWakeAt: json['scheduledWakeAt'] == null
+      ? null
+      : DateTime.parse(json['scheduledWakeAt'] as String),
+  recentHeadMessageId: json['recentHeadMessageId'] as String?,
+  latestSummaryMessageId: json['latestSummaryMessageId'] as String?,
+  consecutiveFailureCount:
+      (json['consecutiveFailureCount'] as num?)?.toInt() ?? 0,
+  wakeCounter: json['wakeCounterByHost'] == null
+      ? const GCounter.empty()
+      : GCounter.fromJson(json['wakeCounterByHost'] as Map<String, dynamic>),
+  processedCounterByHost:
+      (json['processedCounterByHost'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, (e as num).toInt()),
+      ) ??
+      const {},
+  toolCounterByKey:
+      (json['toolCounterByKey'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, (e as num).toInt()),
+      ) ??
+      const {},
+  dailyWakes: json['dailyWakesByDayHost'] == null
+      ? const GCounter.empty()
+      : GCounter.fromJson(json['dailyWakesByDayHost'] as Map<String, dynamic>),
+  reportStaleAt: json['reportStaleAt'] == null
+      ? null
+      : DateTime.parse(json['reportStaleAt'] as String),
+  reportFreshAt: json['reportFreshAt'] == null
+      ? null
+      : DateTime.parse(json['reportFreshAt'] as String),
+  awaitingContent: json['awaitingContent'] as bool? ?? false,
+  deletedAt: json['deletedAt'] == null
+      ? null
+      : DateTime.parse(json['deletedAt'] as String),
+  $type: json['runtimeType'] as String?,
+);
 
 Map<String, dynamic> _$AgentStateEntityToJson(AgentStateEntity instance) =>
     <String, dynamic>{
@@ -185,6 +187,7 @@ Map<String, dynamic> _$AgentStateEntityToJson(AgentStateEntity instance) =>
       'wakeCounterByHost': instance.wakeCounter,
       'processedCounterByHost': instance.processedCounterByHost,
       'toolCounterByKey': instance.toolCounterByKey,
+      'dailyWakesByDayHost': instance.dailyWakes,
       'reportStaleAt': instance.reportStaleAt?.toIso8601String(),
       'reportFreshAt': instance.reportFreshAt?.toIso8601String(),
       'awaitingContent': instance.awaitingContent,

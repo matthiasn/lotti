@@ -156,6 +156,7 @@ void main() {
     String kind = 'project_agent',
     String displayName = 'Project Agent',
     AgentLifecycle lifecycle = AgentLifecycle.active,
+    AgentConfig config = const AgentConfig(automaticUpdatesEnabled: true),
   }) {
     return makeTestIdentity(
       id: agentId,
@@ -163,6 +164,7 @@ void main() {
       kind: kind,
       displayName: displayName,
       lifecycle: lifecycle,
+      config: config,
       currentStateId: 'state-$agentId',
     );
   }
