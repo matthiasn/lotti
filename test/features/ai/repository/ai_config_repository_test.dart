@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:async/async.dart';
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/ai/database/ai_api_key_storage.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -796,6 +799,33 @@ void main() {
       });
     });
 
+    test(
+      'an identical replay from an older sender keeps its type listed',
+      () async {
+        final model = AiConfig.model(
+          id: 'replayed-model',
+          name: 'Replayed',
+          providerModelId: 'prov/replayed',
+          inferenceProviderId: 'prov',
+          createdAt: fixedDate,
+          updatedAt: fixedDate,
+          inputModalities: const [Modality.text],
+          outputModalities: const [Modality.text],
+          isReasoningModel: false,
+        );
+        await repository.saveConfig(model, fromSync: true, fallbackStamp: 1);
+        // Load the all-configs snapshot, as any settings page watching does.
+        await repository.watchConfigsByType(AiConfigType.model).first;
+
+        // "Send settings" on a peer that predates stamps replays the row
+        // exactly as stored here; its later server timestamp applies it again.
+        await repository.saveConfig(model, fromSync: true, fallbackStamp: 2);
+
+        final models = await repository.getConfigsByType(AiConfigType.model);
+        expect(models.map((config) => config.id), ['replayed-model']);
+      },
+    );
+
     test('saveConfig and getConfigById work correctly', () async {
       // Arrange
       final apiKeyConfig = AiConfig.inferenceProvider(
@@ -1268,6 +1298,455 @@ void main() {
     );
   });
 
+  // Two devices, each a repository over its own database and keychain, joined
+  // by the messages each sends: delivered as SyncEventProcessor routes them,
+  // stamps and all, in whatever order a test chooses.
+  group('replication across devices', () {
+    late List<AiConfigDb> dbs;
+    late List<AiApiKeyStorage> keychains;
+    late AiConfigRepository deviceA;
+    late AiConfigRepository deviceB;
+    final sent = <SyncMessage>[];
+    final t1 = DateTime(2024, 3, 15, 12);
+    final t2 = DateTime(2024, 3, 15, 13);
+    final t3 = DateTime(2024, 3, 15, 14);
+
+    AiConfigRepository device() {
+      final keychain = AiApiKeyStorage.inMemory();
+      final db = AiConfigDb(inMemoryDatabase: true, apiKeyStorage: keychain);
+      keychains.add(keychain);
+      dbs.add(db);
+      return AiConfigRepository(db);
+    }
+
+    /// Runs [write] on a device at [at], and returns the messages it sent.
+    Future<List<SyncMessage>> at(
+      DateTime at,
+      Future<void> Function() write,
+    ) async {
+      sent.clear();
+      await withClock(Clock.fixed(at), write);
+      return [...sent];
+    }
+
+    Future<void> deliver(
+      AiConfigRepository to,
+      Iterable<SyncMessage> messages,
+    ) async {
+      for (final message in messages) {
+        switch (message) {
+          case SyncAiConfig(:final aiConfig, :final versionStamp):
+            await to.saveConfig(
+              aiConfig,
+              fromSync: true,
+              versionStamp: versionStamp,
+            );
+          case SyncAiConfigDelete(:final id, :final versionStamp):
+            await to.hardDeleteConfig(
+              id,
+              fromSync: true,
+              versionStamp: versionStamp,
+            );
+          default:
+            fail('unexpected message $message');
+        }
+      }
+    }
+
+    Future<AiConfig?> stored(AiConfigRepository on, String id) =>
+        on.getConfigById(id, includeDeleted: true);
+
+    SyncMessage only(List<SyncMessage> messages, String id) =>
+        messages.singleWhere(
+          (message) => switch (message) {
+            SyncAiConfig(:final aiConfig) => aiConfig.id == id,
+            SyncAiConfigDelete(id: final deleted) => deleted == id,
+            _ => false,
+          },
+        );
+
+    int? stampOf(SyncMessage message) => switch (message) {
+      SyncAiConfig(:final versionStamp) => versionStamp,
+      SyncAiConfigDelete(:final versionStamp) => versionStamp,
+      _ => null,
+    };
+
+    int ms(DateTime time) => time.millisecondsSinceEpoch;
+
+    final provider =
+        AiConfig.inferenceProvider(
+              id: 'provider',
+              baseUrl: 'https://api.example.com',
+              apiKey: 'secret-key',
+              name: 'Provider',
+              createdAt: fixedDate,
+              inferenceProviderType: InferenceProviderType.genericOpenAi,
+            )
+            as AiConfigInferenceProvider;
+    final model =
+        AiConfig.model(
+              id: 'model',
+              name: 'Model',
+              providerModelId: 'provider/model',
+              inferenceProviderId: 'provider',
+              createdAt: fixedDate,
+              inputModalities: const [Modality.text],
+              outputModalities: const [Modality.text],
+              isReasoningModel: false,
+            )
+            as AiConfigModel;
+
+    /// Both devices hold [configs], as written on A at [t1].
+    Future<void> seedBoth(List<AiConfig> configs) async {
+      final sent = await at(t1, () async {
+        for (final config in configs) {
+          await deviceA.saveConfig(config);
+        }
+      });
+      await deliver(deviceB, sent);
+    }
+
+    setUp(() {
+      dbs = [];
+      keychains = [];
+      deviceA = device();
+      deviceB = device();
+      when(() => mockOutboxService.enqueueMessage(any())).thenAnswer((
+        invocation,
+      ) async {
+        sent.add(invocation.positionalArguments.first as SyncMessage);
+      });
+    });
+
+    tearDown(() async {
+      await deviceA.close();
+      await deviceB.close();
+    });
+
+    test('concurrent edits settle on the newer one on both devices', () async {
+      await seedBoth([model]);
+      final fromA = await at(
+        t2,
+        () => deviceA.saveConfig(model.copyWith(name: 'Edited on A')),
+      );
+      final fromB = await at(
+        t3,
+        () => deviceB.saveConfig(model.copyWith(name: 'Edited on B')),
+      );
+
+      // Each receives the other's edit.
+      await deliver(deviceA, fromB);
+      await deliver(deviceB, fromA);
+
+      expect((await stored(deviceA, 'model'))?.name, 'Edited on B');
+      expect((await stored(deviceB, 'model'))?.name, 'Edited on B');
+    });
+
+    test('edits with the same stamp settle on the same one', () async {
+      await seedBoth([model]);
+      final fromA = await at(
+        t2,
+        () => deviceA.saveConfig(model.copyWith(name: 'A')),
+      );
+      final fromB = await at(
+        t2,
+        () => deviceB.saveConfig(model.copyWith(name: 'B')),
+      );
+
+      await deliver(deviceA, fromB);
+      await deliver(deviceB, fromA);
+
+      final onA = await stored(deviceA, 'model');
+      expect(onA, await stored(deviceB, 'model'));
+      expect(onA?.name, 'B');
+    });
+
+    test('a replayed older tombstone does not undo a newer restore', () async {
+      await seedBoth([model]);
+      final delete = await at(t2, () => deviceA.deleteConfig('model'));
+      await deliver(deviceB, delete);
+      final restore = await at(t3, () => deviceB.restoreConfig('model'));
+      await deliver(deviceA, restore);
+
+      // A stale copy of the deletion is still in flight to B.
+      await deliver(deviceB, delete);
+
+      expect((await stored(deviceA, 'model'))?.deletedAt, isNull);
+      expect((await stored(deviceB, 'model'))?.deletedAt, isNull);
+    });
+
+    test(
+      'a model a peer created before the deletion is deleted with it',
+      () async {
+        await seedBoth([provider]);
+        final cascade = await at(
+          t2,
+          () => deviceA.deleteInferenceProviderWithModels('provider'),
+        );
+        // Meanwhile B backfills a model for the provider it still holds.
+        final backfill = await at(t2, () => deviceB.saveConfig(model));
+
+        // Each device, once it holds both, deletes the model and sends the
+        // deletion: the same one, stamped with the provider's deletion rather
+        // than either device's clock.
+        final fromA = await at(t3, () => deliver(deviceA, backfill));
+        final fromB = await at(t3, () => deliver(deviceB, cascade));
+        expect(fromA.single, isA<SyncAiConfigDelete>());
+        expect(fromB.single, fromA.single);
+        expect(stampOf(fromA.single), stampOf(only(cascade, 'provider')));
+        await deliver(deviceA, fromB);
+        await deliver(deviceB, fromA);
+
+        for (final repository in [deviceA, deviceB]) {
+          expect(await stored(repository, 'model'), isNull);
+        }
+        for (final db in dbs) {
+          expect(await db.versionStamp('model'), ms(t2));
+        }
+      },
+    );
+
+    test(
+      'a model created after the deletion, on a clock running ahead, is '
+      'deleted with it',
+      () async {
+        await seedBoth([provider]);
+        final cascade = await at(
+          t2,
+          () => deviceA.deleteInferenceProviderWithModels('provider'),
+        );
+        // B has not heard of the deletion, and its clock is ahead of A's. The
+        // model it creates takes the stamp of the provider it hangs off.
+        final backfill = await at(t3, () => deviceB.saveConfig(model));
+        expect(stampOf(backfill.single), ms(t1));
+
+        final fromA = await at(t3, () => deliver(deviceA, backfill));
+        final fromB = await at(t3, () => deliver(deviceB, cascade));
+        await deliver(deviceA, fromB);
+        await deliver(deviceB, fromA);
+
+        expect(await deviceA.getConfigById('model'), isNull);
+        expect(await deviceB.getConfigById('model'), isNull);
+      },
+    );
+
+    test('an edit of a model takes the next local stamp, not its '
+        "provider's", () async {
+      await seedBoth([provider, model]);
+      final edit = await at(
+        t2,
+        () => deviceA.saveConfig(model.copyWith(name: 'Edited')),
+      );
+
+      expect(stampOf(edit.single), ms(t2));
+    });
+
+    test(
+      'a provider undo whose model arrives before the provider sticks',
+      () async {
+        await seedBoth([provider, model]);
+        final cascade = await at(
+          t2,
+          () => deviceA.deleteInferenceProviderWithModels('provider'),
+        );
+        await deliver(deviceB, cascade);
+        final undo = await at(
+          t3,
+          () => deviceA.restoreProviderWithModels(provider, [model]),
+        );
+
+        // B receives the model's restore while it still holds the provider's
+        // deletion, and the provider's restore only after.
+        final fromB = await at(
+          t3.add(const Duration(hours: 1)),
+          () => deliver(deviceB, [
+            only(undo, 'model'),
+            only(undo, 'provider'),
+          ]),
+        );
+        await deliver(deviceA, fromB);
+
+        expect(fromB, isEmpty);
+        for (final repository in [deviceA, deviceB]) {
+          expect(await repository.getConfigById('provider'), isNotNull);
+          expect(await repository.getConfigById('model'), isNotNull);
+        }
+      },
+    );
+
+    test(
+      "a receiver's orphan deletion does not outrank a later undo",
+      () async {
+        await seedBoth([provider, model]);
+        // B edits the model; A deletes the provider before it hears of that.
+        final edit = await at(
+          t2,
+          () => deviceB.saveConfig(model.copyWith(name: 'Edited on B')),
+        );
+        final cascade = await at(
+          t2,
+          () => deviceA.deleteInferenceProviderWithModels('provider'),
+        );
+        // B receives the provider's deletion first and, its clock an hour
+        // ahead, deletes its edit as an orphan.
+        final orphan = await at(
+          t3,
+          () => deliver(deviceB, [
+            only(cascade, 'provider'),
+            only(cascade, 'model'),
+          ]),
+        );
+        // A undoes before B's deletion reaches it.
+        final undo = await at(
+          t2,
+          () => deviceA.restoreProviderWithModels(provider, [model]),
+        );
+        await deliver(deviceA, [...edit, ...orphan]);
+        await deliver(deviceB, undo);
+
+        for (final repository in [deviceA, deviceB]) {
+          expect(await repository.getConfigById('model'), isNotNull);
+        }
+        // The orphan carries the deletion's stamp, not B's clock.
+        expect(stampOf(orphan.single), ms(t2));
+      },
+    );
+
+    test(
+      'a provider undo stamps its models past a provider stamp that ran ahead',
+      () async {
+        await seedBoth([provider, model]);
+        // A peer whose clock ran an hour ahead last edited the provider.
+        final edit = await at(
+          t3,
+          () => deviceB.saveConfig(provider.copyWith(name: 'Ahead')),
+        );
+        await deliver(deviceA, edit);
+        final cascade = await at(
+          t2,
+          () => deviceA.deleteInferenceProviderWithModels('provider'),
+        );
+        await deliver(deviceB, cascade);
+        final undo = await at(
+          t2,
+          () => deviceA.restoreProviderWithModels(
+            (edit.single as SyncAiConfig).aiConfig as AiConfigInferenceProvider,
+            [model],
+          ),
+        );
+
+        // The model's own deletion is at t2, the provider's past t3: the
+        // model's restore is lifted to the provider's.
+        expect(stampOf(only(cascade, 'model')), ms(t2));
+        expect(stampOf(only(cascade, 'provider')), greaterThan(ms(t3)));
+        expect(stampOf(only(undo, 'model')), stampOf(only(undo, 'provider')));
+        final fromB = await at(
+          t2,
+          () => deliver(deviceB, [only(undo, 'model')]),
+        );
+        await deliver(deviceB, [only(undo, 'provider')]);
+        await deliver(deviceA, fromB);
+
+        expect(fromB, isEmpty);
+        expect(await deviceB.getConfigById('model'), isNotNull);
+        expect(await deviceA.getConfigById('model'), isNotNull);
+      },
+    );
+
+    test(
+      'a provider deletion delivered again after an interrupted cleanup '
+      'finishes it',
+      () async {
+        final model2 = model.copyWith(id: 'model2');
+        await seedBoth([provider]);
+        // Only B holds these models: A's cascade does not name them.
+        await at(t1, () async {
+          await deviceB.saveConfig(model);
+          await deviceB.saveConfig(model2);
+        });
+        final cascade = await at(
+          t2,
+          () => deviceA.deleteInferenceProviderWithModels('provider'),
+        );
+
+        // B's outbox takes the first orphan's deletion and fails the second.
+        var sends = 0;
+        when(() => mockOutboxService.enqueueMessage(any())).thenAnswer((
+          invocation,
+        ) async {
+          if (++sends == 2) throw Exception('outbox unavailable');
+          sent.add(invocation.positionalArguments.first as SyncMessage);
+        });
+        await expectLater(
+          at(t3, () => deliver(deviceB, cascade)),
+          throwsException,
+        );
+        final live = await deviceB.getConfigsByType(AiConfigType.model);
+        expect(live, hasLength(1));
+
+        // Sync delivers the same message again.
+        final retry = await at(t3, () => deliver(deviceB, cascade));
+
+        expect(
+          (retry.single as SyncAiConfigDelete).id,
+          live.single.id,
+        );
+        expect(await deviceB.getConfigsByType(AiConfigType.model), isEmpty);
+      },
+    );
+
+    test(
+      'a model delivered again after an interrupted cleanup is deleted then',
+      () async {
+        await seedBoth([provider]);
+        final backfill = await at(t1, () => deviceB.saveConfig(model));
+        await at(
+          t2,
+          () => deviceA.deleteInferenceProviderWithModels('provider'),
+        );
+
+        // A applies B's model, but its outbox refuses the orphan's deletion.
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenThrow(Exception('outbox unavailable'));
+        await expectLater(deliver(deviceA, backfill), throwsException);
+        expect(await deviceA.getConfigById('model'), isNotNull);
+
+        // Sync delivers the same message again, which changes no row.
+        when(() => mockOutboxService.enqueueMessage(any())).thenAnswer((
+          invocation,
+        ) async {
+          sent.add(invocation.positionalArguments.first as SyncMessage);
+        });
+        final retry = await at(t3, () => deliver(deviceA, backfill));
+
+        expect((retry.single as SyncAiConfigDelete).id, 'model');
+        expect(await deviceA.getConfigById('model'), isNull);
+      },
+    );
+
+    test('a received provider without a key keeps the key held here', () async {
+      await seedBoth([provider]);
+      // A's keychain lost the key (a restored backup, a reset keychain), so
+      // its next send carries none.
+      final sent = await at(
+        t2,
+        () =>
+            deviceA.saveConfig(provider.copyWith(apiKey: '', name: 'Renamed')),
+      );
+      await deliver(deviceB, sent);
+
+      final onB =
+          await stored(deviceB, 'provider') as AiConfigInferenceProvider?;
+      expect(onB?.name, 'Renamed');
+      expect(onB?.apiKey, 'secret-key');
+      expect(
+        await keychains[1].read(apiKeyStorageKeyFor('provider')),
+        'secret-key',
+      );
+    });
+  });
+
   group('AiConfigRepository with mocks — error handling', () {
     late MockAiConfigDb mockDb;
     late MockDomainLogger mockDomainLogger;
@@ -1645,6 +2124,8 @@ void main() {
       repository = AiConfigRepository(mockDb);
 
       when(() => mockDb.saveConfig(any())).thenAnswer((_) async => 1);
+      when(() => mockDb.versionStamp(any())).thenAnswer((_) async => null);
+      when(() => mockDb.getConfigById(any())).thenAnswer((_) async => null);
       when(() => mockDb.getAllConfigs()).thenAnswer((_) async => []);
       when(
         () => mockDb.watchAllConfigs(),
@@ -1654,6 +2135,60 @@ void main() {
 
     tearDown(() async {
       await repository.close();
+    });
+
+    // When the database watch had already put the write in the snapshot, the
+    // unchanged snapshot returned early and left the type unlisted: every
+    // later read of it answered "none" — the cascade then deleted a provider
+    // but none of its models, and the backfill re-created known models.
+    test('a write the database watch delivered first stays listed', () async {
+      final watch = StreamController<List<AiConfigDbEntity>>();
+      addTearDown(watch.close);
+      when(() => mockDb.watchAllConfigs()).thenAnswer((_) => watch.stream);
+      final model = AiConfig.model(
+        id: 'watched-model',
+        name: 'Watched',
+        providerModelId: 'prov/watched',
+        inferenceProviderId: 'prov',
+        createdAt: fixedDate,
+        inputModalities: const [Modality.text],
+        outputModalities: const [Modality.text],
+        isReasoningModel: false,
+      );
+      final entity = AiConfigDbEntity(
+        id: model.id,
+        type: AiConfigType.model.name,
+        name: model.name,
+        serialized: jsonEncode(model.toJson()),
+        createdAt: fixedDate,
+      );
+      final snapshots = StreamQueue(
+        repository.watchConfigsByType(AiConfigType.model),
+      );
+      addTearDown(snapshots.cancel);
+      expect(await snapshots.next, isEmpty);
+
+      final reachedDb = Completer<void>();
+      final dbWrite = Completer<int>();
+      when(() => mockDb.saveConfig(any())).thenAnswer((_) {
+        reachedDb.complete();
+        return dbWrite.future;
+      });
+      final saving = repository.saveConfig(model);
+      await reachedDb.future;
+      // The row is in the database; its watch reports it before the save
+      // returns.
+      watch.add([entity]);
+      expect((await snapshots.next).map((config) => config.id), [model.id]);
+      dbWrite.complete(1);
+      await saving;
+
+      expect(
+        (await repository.getConfigsByType(
+          AiConfigType.model,
+        )).map((config) => config.id),
+        [model.id],
+      );
     });
 
     test(

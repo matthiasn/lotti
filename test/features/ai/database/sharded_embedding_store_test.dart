@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/database/embedding_store.dart';
@@ -63,6 +64,7 @@ void main() {
       String categoryId = '',
       String taskId = '',
       String subtype = '',
+      DateTime? createdAt,
     }) {
       return EmbeddingChunkEntity(
         embeddingKey: '$entityId:$chunkIndex',
@@ -71,7 +73,7 @@ void main() {
         entityType: entityType,
         modelId: modelId,
         contentHash: contentHash,
-        createdAt: testDate,
+        createdAt: createdAt ?? testDate,
         categoryId: categoryId,
         taskId: taskId,
         subtype: subtype,
@@ -129,11 +131,13 @@ void main() {
     );
 
     /// Opens a store with pre-existing shard directories so that
-    /// _ensureAllShardsOpen discovers them.
+    /// _ensureAllShardsOpen discovers them. [writtenAt] is when each shard's
+    /// copy of an entity was written (its chunks' `createdAt`).
     Future<ShardedEmbeddingStore> openStoreWithShards(
       List<String> shardKeys, {
       double distanceCutoff = 0.7,
       Map<String, List<EntityMetadataRow>>? metadata,
+      Map<String, DateTime>? writtenAt,
     }) async {
       // Create shard directories before opening.
       for (final key in shardKeys) {
@@ -148,6 +152,18 @@ void main() {
           final key = p.basename(directory);
           if (metadata != null && metadata.containsKey(key)) {
             when(mock.queryAllEntityMetadata).thenReturn(metadata[key]!);
+          }
+          final at = writtenAt?[key];
+          if (at != null) {
+            when(
+              () => mock.findFirstByEntityId(any()),
+            ).thenAnswer(
+              (i) => makeEntity(
+                entityId: i.positionalArguments.first as String,
+                categoryId: key,
+                createdAt: at,
+              ),
+            );
           }
           return mock;
         },
@@ -771,6 +787,31 @@ void main() {
         expect(await store.getCategoryId('entity-1'), 'cat-b');
       });
 
+      test(
+        'keeps the copy written last, not the shard whose name sorts last',
+        () async {
+          // A recategorising write reached cat-a, and the process died before
+          // the older copy in cat-b was deleted.
+          await openStoreWithShards(
+            ['cat-a', 'cat-b'],
+            metadata: {
+              'cat-a': [(entityId: 'entity-1', taskId: '')],
+              'cat-b': [(entityId: 'entity-1', taskId: '')],
+            },
+            writtenAt: {
+              'cat-a': testDate.add(const Duration(minutes: 1)),
+              'cat-b': testDate,
+            },
+          );
+
+          verify(
+            () => getShardOps('cat-b').findIdsByEntityId('entity-1'),
+          ).called(1);
+          verifyNever(() => getShardOps('cat-a').findIdsByEntityId(any()));
+          expect(await store.getCategoryId('entity-1'), 'cat-a');
+        },
+      );
+
       test('builds reverseTaskIndex from metadata', () async {
         await openStoreWithShards(
           ['cat-a'],
@@ -861,9 +902,16 @@ void main() {
           () => oldOps.findEntitiesByEntityId('entity-1'),
         ).thenReturn(chunks);
 
-        await store.moveEntityToShard('entity-1', 'cat-b');
+        final movedAt = DateTime.utc(2024, 3, 16);
+        await withClock(
+          Clock.fixed(movedAt),
+          () => store.moveEntityToShard('entity-1', 'cat-b'),
+        );
 
-        // Chunks should have updated categoryId and reset id.
+        // Chunks should have updated categoryId and reset id, and be stamped
+        // as written now, so a crash before the old copy is deleted keeps
+        // this one.
+        expect(chunks.map((c) => c.createdAt), everyElement(movedAt));
         expect(chunks[0].categoryId, 'cat-b');
         expect(chunks[0].id, 0);
         expect(chunks[1].categoryId, 'cat-b');

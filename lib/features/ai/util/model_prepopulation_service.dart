@@ -97,6 +97,13 @@ class ModelPrepopulationService {
         continue;
       }
 
+      // Skip an id this device holds a deletion of. A hard delete leaves only
+      // its stamp, no row, so the check above reads it as missing: the model
+      // a receiver deleted under a provider deleted elsewhere would come back,
+      // stamped past that deletion, before the provider's own deletion lands.
+      // A re-added provider gets a new id, and so do its models.
+      if (await _repository.versionStamp(modelId) != null) continue;
+
       // Create the new model
       final newModel = knownModel.toAiConfigModel(
         id: modelId,

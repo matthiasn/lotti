@@ -82,6 +82,20 @@ class AiConfigRepository {
   /// ordered by [fallbackStamp] (the Matrix server timestamp) instead, after
   /// the tombstone screen that guarded such copies before. [fromSync] with
   /// neither is a local write that is not sent.
+  ///
+  /// A received live provider without an API key keeps the key this device
+  /// holds: the sender's keychain read came back empty, which is not the user
+  /// removing the key. Every received provider or model version, applied or
+  /// not, then runs the orphan cleanup ([_deleteOrphanedModels]), so a model
+  /// a peer created before it heard of its provider's deletion does not
+  /// outlive it, and a cleanup that failed part-way resumes when sync
+  /// delivers the message again.
+  ///
+  /// A model created on this device takes its provider's stamp rather than
+  /// the clock: it belongs to the provider as it was, so a deletion of the
+  /// provider that outranks that version outranks the model too, whatever
+  /// the clocks say. The model TLC checks all this against is
+  /// `specs/tla/AiConfigReplication.tla`.
   Future<void> saveConfig(
     AiConfig config, {
     bool fromSync = false,
@@ -101,24 +115,110 @@ class AiConfigRepository {
     }
     final receivedStamp = versionStamp ?? fallbackStamp;
     if (fromSync && receivedStamp != null) {
-      final applied = await _db.applyConfigVersion(
+      final received = _withKeptApiKey(
         config,
+        await getConfigById(config.id, includeDeleted: true),
+      );
+      final applied = await _db.applyConfigVersion(
+        received,
         stamp: receivedStamp,
       );
-      if (applied) _storeConfig(config);
+      if (applied) _storeConfig(received);
+      switch (received) {
+        case AiConfigInferenceProvider(:final id):
+          await _deleteOrphanedModels(id);
+        case AiConfigModel(:final inferenceProviderId):
+          await _deleteOrphanedModels(inferenceProviderId);
+        default:
+      }
       return;
     }
-    final stamp = await _db.saveConfig(config);
+    final stamp = await _saveLocal(config);
     _storeConfig(config);
-    if (!fromSync) {
+    if (!fromSync) await _enqueue(config, stamp);
+  }
+
+  /// Writes a local version of [config] and returns its stamp: a model this
+  /// device has never held a version of takes its live provider's stamp,
+  /// anything else the next local stamp.
+  Future<int> _saveLocal(AiConfig config) async {
+    if (config is AiConfigModel && await _db.versionStamp(config.id) == null) {
+      final provider = await getConfigById(config.inferenceProviderId);
+      final providerStamp = provider == null
+          ? null
+          : await _db.versionStamp(provider.id);
+      if (providerStamp != null &&
+          await _db.applyConfigVersion(config, stamp: providerStamp)) {
+        return providerStamp;
+      }
+    }
+    return _db.saveConfig(config);
+  }
+
+  Future<void> _enqueue(AiConfig config, int stamp) {
+    return getIt<OutboxService>().enqueueMessage(
+      SyncMessage.aiConfig(
+        aiConfig: config,
+        status: SyncEntryStatus.initial,
+        versionStamp: stamp,
+      ),
+    );
+  }
+
+  /// A received live provider without a key, holding the key stored here.
+  static AiConfig _withKeptApiKey(AiConfig incoming, AiConfig? existing) {
+    if (incoming is AiConfigInferenceProvider &&
+        incoming.deletedAt == null &&
+        incoming.apiKey.isEmpty &&
+        existing is AiConfigInferenceProvider &&
+        existing.apiKey.isNotEmpty) {
+      return incoming.copyWith(apiKey: existing.apiKey);
+    }
+    return incoming;
+  }
+
+  /// Deletes, and sends the deletion of, every live model of [providerId]
+  /// once this device holds that provider's deletion.
+  ///
+  /// Only a model not newer than the deletion is an orphan. One stamped after
+  /// it was written after the deletion — the provider undo restores the
+  /// models and the provider as separate messages, and a peer may receive a
+  /// model before its provider — so deleting it would defeat that write on
+  /// every device.
+  ///
+  /// The deletion carries the provider deletion's stamp, not this device's
+  /// clock, so every device that derives it records the same version, and a
+  /// restore stamped past the provider's deletion always outranks it. Each
+  /// deletion is sent before it is stored: if the send throws, the model is
+  /// still live here, and the next delivery of the message, which runs this
+  /// cleanup again, picks it up.
+  Future<void> _deleteOrphanedModels(String providerId) async {
+    final provider = await getConfigById(providerId, includeDeleted: true);
+    if (provider != null && provider.deletedAt == null) return;
+    final deletion = await _db.versionStamp(providerId);
+    if (deletion == null) return;
+    for (final model in await _liveModelsOf(providerId)) {
+      final held = await _db.versionStamp(model.id);
+      if (held != null && held > deletion) continue;
       await getIt<OutboxService>().enqueueMessage(
-        SyncMessage.aiConfig(
-          aiConfig: config,
-          status: SyncEntryStatus.initial,
-          versionStamp: stamp,
+        SyncMessage.aiConfigDelete(
+          id: model.id,
+          hardDelete: true,
+          versionStamp: deletion,
         ),
       );
+      if (await _db.applyConfigDeletion(model.id, stamp: deletion)) {
+        _invalidateConfig(model.id);
+      }
     }
+  }
+
+  Future<List<AiConfigModel>> _liveModelsOf(String providerId) async {
+    final models = await getConfigsByType(AiConfigType.model);
+    return models
+        .whereType<AiConfigModel>()
+        .where((model) => model.inferenceProviderId == providerId)
+        .toList(growable: false);
   }
 
   /// The stamp of the version held for [id], which a resend of the stored
@@ -228,17 +328,20 @@ class AiConfigRepository {
 
   /// Removes the row outright, leaving nothing for the seeding passes to see.
   ///
-  /// Reserved for deletions the app performs on the user's behalf and expects
-  /// to undo later: `removeOrphanedDefaultSeeds` sheds bundled profiles whose
-  /// provider type has no usable provider and deliberately re-seeds them if
-  /// that provider returns, so a soft delete there would make the removal
+  /// Reserved for deletions that must not keep the row's content — a prompt's
+  /// or skill's messages — and for the app's own removals it expects to undo
+  /// later: `removeOrphanedDefaultSeeds` sheds bundled profiles whose provider
+  /// type has no usable provider and deliberately re-seeds them if that
+  /// provider returns, so a soft delete there would make the removal
   /// permanent — the opposite of what that pass means.
   ///
   /// A local delete stamps the deletion and sends it with that stamp. A
   /// received one passes its [versionStamp] and is skipped when this device
-  /// holds a newer version (ADR 0094). [fromSync] without a stamp is that
-  /// prune: it stays on this device, so the device also forgets the version
-  /// it held and a peer's next copy of the config applies again.
+  /// holds a newer version (ADR 0094); either way, a received deletion of a
+  /// provider then deletes the models it leaves behind
+  /// ([_deleteOrphanedModels]). [fromSync] without a stamp is that prune: it
+  /// stays on this device, so the device also forgets the version it held
+  /// and a peer's next copy of the config applies again.
   Future<void> hardDeleteConfig(
     String id, {
     bool fromSync = false,
@@ -264,20 +367,46 @@ class AiConfigRepository {
     if (await _db.applyConfigDeletion(id, stamp: versionStamp)) {
       _invalidateConfig(id);
     }
+    await _deleteOrphanedModels(id);
   }
 
   /// Clears a `deletedAt` stamp, so the seeding passes may recreate the row.
   ///
   /// Used when the user deliberately sets something up again — re-running
-  /// onboarding for a provider whose bundled profile they had deleted.
+  /// onboarding for a provider whose bundled profile they had deleted — and
+  /// by the delete toast's undo of a model or profile. A hard-deleted row
+  /// (a prompt, a skill) has no stamp to clear; its undo re-saves it.
   Future<void> restoreConfig(String id) async {
     final config = await getConfigById(id, includeDeleted: true);
     if (config == null || config.deletedAt == null) return;
-    // Stamped so this restore is newer than the tombstone it clears, and
-    // therefore wins on any peer applying both.
+    // Its local stamp outranks the tombstone it clears, so it wins on any
+    // peer applying both.
     await saveConfig(
       config.copyWith(deletedAt: null, updatedAt: DateTime.now()),
     );
+  }
+
+  /// Undoes [deleteInferenceProviderWithModels]: re-saves [provider] and
+  /// [models] as they were before it, each stamped past its deletion.
+  ///
+  /// Each row travels as its own message, so a peer may receive a model
+  /// before the provider, while it still holds the provider's deletion. It
+  /// keeps the model only when the model is newer than that deletion (see
+  /// [_deleteOrphanedModels]), so every model is stamped no earlier than the
+  /// restored provider — itself past the provider's deletion, which a
+  /// model's own deletion need not be when the provider's stamp ran ahead.
+  Future<void> restoreProviderWithModels(
+    AiConfigInferenceProvider provider,
+    List<AiConfigModel> models,
+  ) async {
+    final providerStamp = await _db.saveConfig(provider);
+    _storeConfig(provider);
+    await _enqueue(provider, providerStamp);
+    for (final model in models) {
+      final stamp = await _db.saveConfig(model, notBefore: providerStamp);
+      _storeConfig(model);
+      await _enqueue(model, stamp);
+    }
   }
 
   /// Whether an incoming synced [incoming] row would resurrect a local
@@ -308,7 +437,9 @@ class AiConfigRepository {
   /// 3. Deletes the provider itself
   ///
   /// If any deletion fails, the entire transaction is rolled back to maintain
-  /// data integrity and prevent partial deletions.
+  /// data integrity and prevent partial deletions. Each deletion leaves its
+  /// stamp behind (ADR 0094), so no older copy brings a row back, and the
+  /// undo is [restoreProviderWithModels].
   ///
   /// The transaction performs database writes only. Cache invalidation and the
   /// outbox messages that propagate the deletion to peers run *after* it
@@ -325,12 +456,7 @@ class AiConfigRepository {
 
     final result = await _db.transaction(() async {
       try {
-        // Get all models to find those associated with this provider
-        final allModels = await getConfigsByType(AiConfigType.model);
-        final associatedModels = allModels
-            .whereType<AiConfigModel>()
-            .where((model) => model.inferenceProviderId == providerId)
-            .toList();
+        final associatedModels = await _liveModelsOf(providerId);
 
         // Hard deletes: re-adding this provider must bring its models back, so
         // the cascade must not leave tombstones behind.
@@ -732,17 +858,22 @@ class AiConfigRepository {
     );
   }
 
+  /// Makes [configs] the loaded snapshot and rebuilds both caches from it.
+  ///
+  /// The caches are rebuilt even when the snapshot is unchanged: a write
+  /// drops its type's list before calling this, and the snapshot can already
+  /// hold that write (the database watch got there first, or a replay stored
+  /// the row it already had). Returning early there left the type unlisted,
+  /// so every later read of it answered "none".
   void _replaceAllConfigsSnapshot(List<AiConfig> configs) {
     final nextSnapshot = List<AiConfig>.unmodifiable(configs);
 
     _allConfigsLoaded = true;
 
-    if (const ListEquality<AiConfig>().equals(
+    final unchanged = const ListEquality<AiConfig>().equals(
       _allConfigsSnapshot,
       nextSnapshot,
-    )) {
-      return;
-    }
+    );
 
     _allConfigsSnapshot = nextSnapshot;
     _configByIdCache
@@ -762,7 +893,7 @@ class AiConfigRepository {
           ),
         ),
       );
-    _emitAllConfigs();
+    if (!unchanged) _emitAllConfigs();
   }
 
   void _emitAllConfigs() {

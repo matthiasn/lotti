@@ -366,15 +366,9 @@ class AiConfigDeleteService {
     CascadeDeletionResult result,
   ) async {
     try {
-      final repository = ref.read(aiConfigRepositoryProvider);
-
-      // Restore the provider first
-      await repository.saveConfig(provider);
-
-      // Restore all deleted models
-      for (final model in result.deletedModels) {
-        await repository.saveConfig(model);
-      }
+      await ref
+          .read(aiConfigRepositoryProvider)
+          .restoreProviderWithModels(provider, result.deletedModels);
     } catch (error) {
       // Handle undo errors silently - the config is already deleted
       // Log for debugging purposes in case undo fails consistently
@@ -396,11 +390,17 @@ class AiConfigDeleteService {
   Future<void> _undoConfigDeletion(WidgetRef ref, AiConfig config) async {
     try {
       final repository = ref.read(aiConfigRepositoryProvider);
-      // Deletion soft-deletes, so undo clears the stamp rather than writing
-      // the row back. Re-saving the pre-delete snapshot would also work today
-      // — it predates the stamp — but only by accident, and it would silently
-      // revert any change made between the delete and the undo.
-      await repository.restoreConfig(config.id);
+      if (config is AiConfigPrompt || config is AiConfigSkill) {
+        // A prompt or skill is hard-deleted — its content must not be kept —
+        // so there is no `deletedAt` to clear: undo writes the row back.
+        await repository.saveConfig(config);
+      } else {
+        // Models and profiles are soft-deleted, so undo clears `deletedAt`
+        // rather than writing the row back, which would silently revert any
+        // change made between the delete and the undo. (A provider always
+        // comes with its cascade, undone by _undoProviderDeletion.)
+        await repository.restoreConfig(config.id);
+      }
     } catch (error) {
       // Handle undo errors silently - the config is already deleted
       // Log for debugging purposes in case undo fails consistently

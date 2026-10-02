@@ -64,6 +64,156 @@ When<Stream<CreateChatCompletionStreamResponse>> _stubGenerateText(
   );
 }
 
+CreateChatCompletionStreamResponse _deltaResponse(
+  ChatCompletionStreamResponseDelta delta,
+) => CreateChatCompletionStreamResponse(
+  id: 'loop-response',
+  choices: [ChatCompletionStreamResponseChoice(index: 0, delta: delta)],
+  object: 'chat.completion.chunk',
+  created: 1710500000,
+);
+
+CreateChatCompletionStreamResponse _contentResponse(String content) =>
+    _deltaResponse(ChatCompletionStreamResponseDelta(content: content));
+
+/// [count] complete tool calls in one delta without ids or indices: Gemini's
+/// style for two or more, one OpenAI-style call without an id for one. Either
+/// way the repository synthesizes the ids.
+CreateChatCompletionStreamResponse _idlessToolCallsResponse(int count) =>
+    _deltaResponse(
+      ChatCompletionStreamResponseDelta(
+        toolCalls: [
+          for (var i = 0; i < count; i++)
+            ChatCompletionStreamMessageToolCallChunk(
+              type: ChatCompletionStreamMessageToolCallChunkType.function,
+              function: ChatCompletionStreamMessageFunctionCall(
+                name: 'tool_$i',
+                arguments: '{"n":$i}',
+              ),
+            ),
+        ],
+      ),
+    );
+
+/// The history of a send whose one tool round nobody ran (no strategy, or
+/// one that did not answer): the user turn, the assistant's [calls] as
+/// (id, name, arguments), and one [unansweredToolCallResult] per call.
+void _expectToolRoundNotRun(
+  ConversationManager? manager,
+  List<(String, String, String)> calls,
+) {
+  final messages = manager!.messages;
+  expect(messages.map((m) => m.role), [
+    ChatCompletionMessageRole.user,
+    ChatCompletionMessageRole.assistant,
+    for (final _ in calls) ChatCompletionMessageRole.tool,
+  ]);
+  expect(
+    messages[1]
+        .mapOrNull(assistant: (assistant) => assistant.toolCalls)
+        ?.map((c) => (c.id, c.function.name, c.function.arguments)),
+    calls,
+  );
+  expect(
+    messages
+        .skip(2)
+        .map((m) => m.mapOrNull(tool: (t) => (t.toolCallId, t.content))),
+    [for (final call in calls) (call.$1, unansweredToolCallResult)],
+  );
+}
+
+/// What a strict provider rejects in a request's history: the request-time
+/// invariants of `specs/tla/ConversationLoop.tla` (`OpensWithUserTurn`,
+/// `NoOrphanResult`, `EveryCallAnswered`).
+List<String> _protocolFaults(List<ChatCompletionMessage> messages) {
+  final faults = <String>[];
+  final turns = messages
+      .where((message) => message.role != ChatCompletionMessageRole.system)
+      .toList();
+  if (turns.isNotEmpty && turns.first.role != ChatCompletionMessageRole.user) {
+    faults.add('opens with ${turns.first.role.name}');
+  }
+  var roundIds = <String>{};
+  var open = <String>{};
+  for (final message in turns) {
+    final result = message.mapOrNull(tool: (tool) => tool.toolCallId);
+    if (result != null) {
+      if (!roundIds.contains(result)) faults.add('orphan result $result');
+      open.remove(result);
+      continue;
+    }
+    if (open.isNotEmpty) faults.add('unanswered $open');
+    roundIds = {
+      ...?message
+          .mapOrNull(assistant: (assistant) => assistant.toolCalls)
+          ?.map((call) => call.id),
+    };
+    open = {...roundIds};
+  }
+  if (open.isNotEmpty) faults.add('unanswered $open');
+  return faults;
+}
+
+/// One adversarial wake: the model calls `callsPerRound[r]` tools in round r
+/// (cycling), and the strategy answers every call and always continues, like
+/// a task agent that never calls `update_report`. The provider fails every
+/// request past [requestCap], so a loop without a working limit ends too.
+Future<({List<List<ChatCompletionMessage>> requests, List<String> ids})>
+_runAdversarialWake({
+  required ConversationRepository repository,
+  required AiConfigInferenceProvider provider,
+  required int maxTurns,
+  required List<int> callsPerRound,
+  int requestCap = 60,
+}) async {
+  final requests = <List<ChatCompletionMessage>>[];
+  final ids = <String>[];
+  final inference = MockOllamaInferenceRepository();
+  final strategy = MockConversationStrategy();
+  _stubGenerateText(inference).thenAnswer((invocation) {
+    requests.add(
+      invocation.namedArguments[#messages] as List<ChatCompletionMessage>,
+    );
+    if (requests.length > requestCap) {
+      return Stream.error(StateError('runaway loop'));
+    }
+    return Stream.value(
+      _idlessToolCallsResponse(
+        callsPerRound[(requests.length - 1) % callsPerRound.length],
+      ),
+    );
+  });
+  when(
+    () => strategy.processToolCalls(
+      toolCalls: any(named: 'toolCalls'),
+      manager: any(named: 'manager'),
+    ),
+  ).thenAnswer((invocation) async {
+    final manager = invocation.namedArguments[#manager] as ConversationManager;
+    for (final call
+        in invocation.namedArguments[#toolCalls]
+            as List<ChatCompletionMessageToolCall>) {
+      ids.add(call.id);
+      manager.addToolResponse(toolCallId: call.id, response: 'ok');
+    }
+    return ConversationAction.continueConversation;
+  });
+  when(() => strategy.getContinuationPrompt(any())).thenReturn('Continue.');
+
+  await repository.sendMessage(
+    conversationId: repository.createConversation(
+      systemMessage: 'system',
+      maxTurns: maxTurns,
+    ),
+    message: 'wake',
+    model: 'test-model',
+    provider: provider,
+    inferenceRepo: inference,
+    strategy: strategy,
+  );
+  return (requests: requests, ids: ids);
+}
+
 void main() {
   late ProviderContainer container;
   late ConversationRepository repository;
@@ -525,12 +675,9 @@ void main() {
         );
 
         final manager = repository.getConversation(conversationId)!;
-        expect(manager.messages.length, 2);
-        // Verify tool calls were processed
-        final assistantMsg = manager.messages.last;
-        expect(assistantMsg.role, ChatCompletionMessageRole.assistant);
-        // Tool calls would have been added to the assistant message
-        // The exact structure depends on the ChatCompletionMessage implementation
+        _expectToolRoundNotRun(manager, [
+          ('tool-1', 'test_function', '{"arg": "value"}'),
+        ]);
       });
 
       test('handles strategy with continue action', () async {
@@ -865,16 +1012,10 @@ void main() {
           await streamController.close();
           await sendFuture;
 
-          // Verify the conversation was updated
-          final manager = repository.getConversation(conversationId);
-          expect(manager, isNotNull);
-
-          // The assistant message should have the complete tool call with proper JSON
-          final messages = manager!.messages;
-          expect(messages.length, 2); // User + Assistant
-
-          // Tool calls would have been accumulated properly
-          // Arguments would be '{"arg": "value"}'
+          // The fragments reassemble into one call with its complete JSON.
+          _expectToolRoundNotRun(repository.getConversation(conversationId), [
+            ('tool-1', 'test_function', '{"arg": "value"}'),
+          ]);
         },
       );
 
@@ -964,7 +1105,9 @@ void main() {
         // Verify the conversation was updated with proper UTF-8 handling
         final manager = repository.getConversation(conversationId);
         expect(manager, isNotNull);
-        expect(manager!.messages.length, 2);
+        _expectToolRoundNotRun(manager, [
+          ('tool-1', 'test_function', '{"emoji": "😀"}'),
+        ]);
       });
 
       test('handles invalid tool call with missing function name', () async {
@@ -1016,7 +1159,7 @@ void main() {
         // Tool call should be added with empty function name
         final manager = repository.getConversation(conversationId);
         expect(manager, isNotNull);
-        expect(manager!.messages.length, 2);
+        _expectToolRoundNotRun(manager, [('tool-1', '', '{"arg": "value"}')]);
       });
 
       test('handles empty tool call IDs', () async {
@@ -1105,7 +1248,9 @@ void main() {
         // Verify the conversation was updated with auto-generated ID
         final manager = repository.getConversation(conversationId);
         expect(manager, isNotNull);
-        expect(manager!.messages.length, 2);
+        _expectToolRoundNotRun(manager, [
+          ('tool_turn1_0', 'test_function', '{"arg": "value"}'),
+        ]);
       });
 
       test('handles multiple tool calls with separate buffers', () async {
@@ -1220,17 +1365,10 @@ void main() {
         // Verify both tool calls were accumulated separately
         final manager = repository.getConversation(conversationId);
         expect(manager, isNotNull);
-        expect(manager!.messages.length, 2);
-
-        // Since ChatCompletionMessage is a sealed class without direct access to toolCalls,
-        // we can only verify the basic message properties
-        final assistantMsg = manager.messages.last;
-        expect(assistantMsg.role, ChatCompletionMessageRole.assistant);
-
-        // The actual tool calls would have been accumulated properly with separate buffers
-        // Each tool call would have its own complete JSON:
-        // - function_a with arguments: {"a": 1}
-        // - function_b with arguments: {"b": 2}
+        _expectToolRoundNotRun(manager, [
+          ('tool-1', 'function_a', '{"a": 1}'),
+          ('tool-2', 'function_b', '{"b": 2}'),
+        ]);
       });
 
       test(
@@ -1304,14 +1442,10 @@ void main() {
           // Verify both tool calls were detected as Gemini-style and processed
           final manager = repository.getConversation(conversationId);
           expect(manager, isNotNull);
-          expect(manager!.messages.length, 2);
-
-          // The assistant message should have the tool calls
-          final assistantMsg = manager.messages.last;
-          expect(assistantMsg.role, ChatCompletionMessageRole.assistant);
-
-          // Tool calls would have been given turn-prefixed IDs:
-          // tool_turn0_0 and tool_turn0_1
+          _expectToolRoundNotRun(manager, [
+            ('tool_turn1_0', 'function_a', '{"param": "value1"}'),
+            ('tool_turn1_1', 'function_b', '{"param": "value2"}'),
+          ]);
         },
       );
 
@@ -1451,7 +1585,7 @@ void main() {
 
         // Should only have 2 messages (user + assistant) since loop ended
         final manager = repository.getConversation(conversationId);
-        expect(manager!.messages.length, 2);
+        _expectToolRoundNotRun(manager, [('tool-1', 'test_function', '{}')]);
       });
       test('returns accumulated usage from single-turn response', () async {
         final streamController =
@@ -2353,6 +2487,7 @@ void main() {
           ConversationRepository.accumulateOpenAiToolCallChunks(
             toolCalls: toolCalls,
             argumentBuffers: buffers,
+            turn: 1,
             chunks: [
               chunk(id: 'tool-1', index: 0, name: 'fn', arguments: '{"arg'),
             ],
@@ -2360,6 +2495,7 @@ void main() {
           ConversationRepository.accumulateOpenAiToolCallChunks(
             toolCalls: toolCalls,
             argumentBuffers: buffers,
+            turn: 1,
             chunks: [chunk(id: 'tool-1', index: 0, arguments: '": "value"}')],
           );
 
@@ -2392,6 +2528,7 @@ void main() {
           ConversationRepository.accumulateOpenAiToolCallChunks(
             toolCalls: toolCalls,
             argumentBuffers: buffers,
+            turn: 1,
             chunks: [chunk(id: 'tool-pre', arguments: 'true}')],
           );
 
@@ -2402,7 +2539,7 @@ void main() {
 
       test(
         'accumulateOpenAiToolCallChunks matches by index when id is absent '
-        'and synthesizes ids for new calls',
+        'and synthesizes turn-scoped ids for new calls',
         () {
           final toolCalls = <ChatCompletionMessageToolCall>[];
           final buffers = <String, StringBuffer>{};
@@ -2411,18 +2548,143 @@ void main() {
           ConversationRepository.accumulateOpenAiToolCallChunks(
             toolCalls: toolCalls,
             argumentBuffers: buffers,
+            turn: 1,
             chunks: [chunk(index: 0, name: 'fn', arguments: '{"k')],
           );
-          expect(toolCalls.single.id, 'tool_0');
+          expect(toolCalls.single.id, 'tool_turn1_0');
 
           // Continuation chunk carries only the index.
           ConversationRepository.accumulateOpenAiToolCallChunks(
             toolCalls: toolCalls,
             argumentBuffers: buffers,
+            turn: 1,
             chunks: [chunk(index: 0, arguments: '":true}')],
           );
           expect(toolCalls.single.function.arguments, '{"k":true}');
         },
+      );
+
+      test(
+        'accumulateOpenAiToolCallChunks starts a new call for a new id even '
+        'when its index is taken',
+        () {
+          final toolCalls = <ChatCompletionMessageToolCall>[];
+          final buffers = <String, StringBuffer>{};
+
+          // A provider that numbers every call 0 but names each one.
+          for (final (id, args) in [('a', '{"x":1}'), ('b', '{"y":2}')]) {
+            ConversationRepository.accumulateOpenAiToolCallChunks(
+              toolCalls: toolCalls,
+              argumentBuffers: buffers,
+              turn: 1,
+              chunks: [
+                chunk(id: id, index: 0, name: 'fn_$id', arguments: args),
+              ],
+            );
+          }
+
+          expect(
+            toolCalls.map((c) => (c.id, c.function.name, c.function.arguments)),
+            [('a', 'fn_a', '{"x":1}'), ('b', 'fn_b', '{"y":2}')],
+          );
+        },
+      );
+
+      test(
+        'accumulateOpenAiToolCallChunks treats an empty id as none, so two '
+        'calls share neither an id nor an argument buffer',
+        () {
+          final toolCalls = <ChatCompletionMessageToolCall>[];
+          final buffers = <String, StringBuffer>{};
+
+          ConversationRepository.accumulateOpenAiToolCallChunks(
+            toolCalls: toolCalls,
+            argumentBuffers: buffers,
+            turn: 4,
+            chunks: [
+              chunk(id: '', index: 0, name: 'first', arguments: '{"a"'),
+              chunk(id: '', index: 1, name: 'second', arguments: '{"b"'),
+            ],
+          );
+          ConversationRepository.accumulateOpenAiToolCallChunks(
+            toolCalls: toolCalls,
+            argumentBuffers: buffers,
+            turn: 4,
+            chunks: [
+              chunk(id: '', index: 0, arguments: ':1}'),
+              chunk(id: '', index: 1, arguments: ':2}'),
+            ],
+          );
+
+          expect(
+            toolCalls.map((c) => (c.id, c.function.arguments)),
+            [('tool_turn4_0', '{"a":1}'), ('tool_turn4_1', '{"b":2}')],
+          );
+        },
+      );
+
+      glados.Glados2<List<int>, bool>(
+        glados.ListAnys(glados.any).listWithLengthInRange(
+          1,
+          5,
+          glados.IntAnys(glados.any).intInRange(0, 3 * 40),
+        ),
+        glados.BoolAny(glados.any).bool,
+        glados.ExploreConfig(numRuns: 150),
+      ).test(
+        'accumulateOpenAiToolCallChunks reassembles any calls streamed in '
+        'fragments',
+        (seeds, zeroIndices) {
+          // seed % 3 picks the id the provider sends (one, none, empty);
+          // seed ~/ 3 where the arguments split. A provider may number every
+          // call 0 only when it names each one.
+          final idKinds = [for (final seed in seeds) seed % 3];
+          final numbersAllZero = zeroIndices && idKinds.every((k) => k == 0);
+          final toolCalls = <ChatCompletionMessageToolCall>[];
+          final buffers = <String, StringBuffer>{};
+          final expected = <(String, String, String)>[];
+
+          for (final (i, seed) in seeds.indexed) {
+            final args = '{"call":$i,"pad":"${'x' * (seed ~/ 3)}"}';
+            final split = (seed ~/ 3) % args.length;
+            final id = switch (idKinds[i]) {
+              0 => 'call-$i',
+              1 => null,
+              _ => '',
+            };
+            final index = numbersAllZero ? 0 : i;
+            for (final fragment in [
+              chunk(
+                id: id,
+                index: index,
+                name: 'fn$i',
+                arguments: args.substring(0, split),
+              ),
+              chunk(id: id, index: index, arguments: args.substring(split)),
+            ]) {
+              ConversationRepository.accumulateOpenAiToolCallChunks(
+                toolCalls: toolCalls,
+                argumentBuffers: buffers,
+                turn: 7,
+                chunks: [fragment],
+              );
+            }
+            expected.add((
+              idKinds[i] == 0 ? 'call-$i' : 'tool_turn7_$i',
+              'fn$i',
+              args,
+            ));
+          }
+
+          expect(
+            toolCalls.map(
+              (c) => (c.id, c.function.name, c.function.arguments),
+            ),
+            expected,
+            reason: 'seeds $seeds, all indices 0: $numbersAllZero',
+          );
+        },
+        tags: 'glados',
       );
     });
 
@@ -2776,5 +3038,242 @@ void main() {
 
       expect(captured?.map((tool) => tool.function.name), ['wide_tool']);
     });
+  });
+
+  group('the conversation loop (specs/tla/ConversationLoop.tla)', () {
+    late AiConfigInferenceProvider provider;
+
+    setUp(() {
+      // The provider is auto-dispose: keep it alive while a test pumps the
+      // event queue with sends in flight.
+      final keepAlive = container.listen(
+        conversationRepositoryProvider,
+        (_, _) {},
+      );
+      addTearDown(keepAlive.close);
+      provider = AiConfigInferenceProvider(
+        id: 'test-provider',
+        name: 'Test Provider',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        createdAt: DateTime(2024, 3, 15, 10, 30),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+    });
+
+    test(
+      'a wake calling nine tools a round stops at maxTurnsPerWake although '
+      'its history is trimmed (BoundedRounds, Terminates)',
+      () async {
+        final run = await _runAdversarialWake(
+          repository: repository,
+          provider: provider,
+          maxTurns: 10,
+          callsPerRound: [9],
+        );
+
+        // The opening message is turn 1; each continuation is the next one.
+        expect(run.requests, hasLength(9));
+        expect(run.requests.last.length, lessThanOrEqualTo(100));
+        expect(run.ids.toSet(), hasLength(run.ids.length));
+      },
+    );
+
+    test(
+      'synthesized tool-call ids never repeat across a trimmed 20-turn '
+      'session (UniqueToolCallIds)',
+      () async {
+        final run = await _runAdversarialWake(
+          repository: repository,
+          provider: provider,
+          maxTurns: 20,
+          callsPerRound: [5],
+        );
+
+        expect(
+          run.ids.toSet(),
+          hasLength(run.ids.length),
+          reason: run.ids.join(' '),
+        );
+        expect(
+          run.requests.last[1].content,
+          contains('truncated'),
+          reason: 'seven messages a round outgrow the 100-message history',
+        );
+        expect(run.requests, hasLength(19));
+        expect(run.ids.last, 'tool_turn19_4');
+      },
+    );
+
+    glados.Glados2<List<int>, int>(
+      glados.ListAnys(glados.any).listWithLengthInRange(
+        1,
+        4,
+        glados.IntAnys(glados.any).intInRange(1, 15),
+      ),
+      glados.IntAnys(glados.any).intInRange(1, 21),
+      glados.ExploreConfig(numRuns: 60),
+    ).test(
+      'any tool calls a round: the loop ends within maxTurns, ids are unique '
+      'and every request is one a strict provider accepts',
+      (callsPerRound, maxTurns) async {
+        final run = await _runAdversarialWake(
+          repository: repository,
+          provider: provider,
+          maxTurns: maxTurns,
+          callsPerRound: callsPerRound,
+        );
+        final scenario = 'calls $callsPerRound, maxTurns $maxTurns';
+
+        expect(run.requests, hasLength(maxTurns - 1), reason: scenario);
+        expect(run.ids.toSet(), hasLength(run.ids.length), reason: scenario);
+        for (final (i, request) in run.requests.indexed) {
+          expect(
+            _protocolFaults(request),
+            isEmpty,
+            reason: '$scenario, request ${i + 1}',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+
+    test(
+      'a message sent during a tool round waits until that send returns '
+      '(Serialize)',
+      () async {
+        final conversationId = repository.createConversation(
+          systemMessage: 'system',
+        );
+        final toolsRun = Completer<void>();
+        final requests = <List<ChatCompletionMessage>>[];
+        _stubGenerateText(mockOllamaRepo).thenAnswer((invocation) {
+          requests.add(
+            invocation.namedArguments[#messages] as List<ChatCompletionMessage>,
+          );
+          return Stream.value(
+            requests.length == 1
+                ? _idlessToolCallsResponse(2)
+                : _contentResponse('done'),
+          );
+        });
+        when(
+          () => mockStrategy.processToolCalls(
+            toolCalls: any(named: 'toolCalls'),
+            manager: any(named: 'manager'),
+          ),
+        ).thenAnswer((invocation) async {
+          await toolsRun.future;
+          final manager =
+              invocation.namedArguments[#manager] as ConversationManager;
+          for (final call
+              in invocation.namedArguments[#toolCalls]
+                  as List<ChatCompletionMessageToolCall>) {
+            manager.addToolResponse(toolCallId: call.id, response: 'ok');
+          }
+          return ConversationAction.wait;
+        });
+
+        Future<InferenceUsage?> send(String message) => repository.sendMessage(
+          conversationId: conversationId,
+          message: message,
+          model: 'test-model',
+          provider: provider,
+          inferenceRepo: mockOllamaRepo,
+          strategy: mockStrategy,
+        );
+        final first = send('first');
+        final second = send('second');
+        await pumpEventQueue();
+
+        expect(
+          requests,
+          hasLength(1),
+          reason: 'the second message is not sent while tools run',
+        );
+        expect(
+          repository.getConversation(conversationId)!.messages.last.role,
+          ChatCompletionMessageRole.assistant,
+        );
+
+        toolsRun.complete();
+        await Future.wait([first, second]);
+
+        expect(requests, hasLength(2));
+        expect(_protocolFaults(requests.last), isEmpty);
+        expect(
+          repository
+              .getConversation(conversationId)!
+              .messages
+              .map((m) => m.role),
+          [
+            ChatCompletionMessageRole.system,
+            ChatCompletionMessageRole.user,
+            ChatCompletionMessageRole.assistant,
+            ChatCompletionMessageRole.tool,
+            ChatCompletionMessageRole.tool,
+            ChatCompletionMessageRole.user,
+            ChatCompletionMessageRole.assistant,
+          ],
+        );
+      },
+    );
+
+    test(
+      'a strategy that throws mid-round leaves no call unanswered for the '
+      'next message (EveryCallAnswered)',
+      () async {
+        final conversationId = repository.createConversation(
+          systemMessage: 'system',
+        );
+        final requests = <List<ChatCompletionMessage>>[];
+        _stubGenerateText(mockOllamaRepo).thenAnswer((invocation) {
+          requests.add(
+            invocation.namedArguments[#messages] as List<ChatCompletionMessage>,
+          );
+          return Stream.value(
+            requests.length == 1
+                ? _idlessToolCallsResponse(2)
+                : _contentResponse('done'),
+          );
+        });
+        when(
+          () => mockStrategy.processToolCalls(
+            toolCalls: any(named: 'toolCalls'),
+            manager: any(named: 'manager'),
+          ),
+        ).thenAnswer((invocation) async {
+          final calls =
+              invocation.namedArguments[#toolCalls]
+                  as List<ChatCompletionMessageToolCall>;
+          (invocation.namedArguments[#manager] as ConversationManager)
+              .addToolResponse(toolCallId: calls.first.id, response: 'ok');
+          throw StateError('writing the action log failed');
+        });
+
+        Future<InferenceUsage?> send(String message) => repository.sendMessage(
+          conversationId: conversationId,
+          message: message,
+          model: 'test-model',
+          provider: provider,
+          inferenceRepo: mockOllamaRepo,
+          strategy: mockStrategy,
+        );
+        await send('first');
+        final manager = repository.getConversation(conversationId)!;
+        expect(manager.lastError, contains('writing the action log failed'));
+
+        await send('the forced report retry');
+
+        expect(requests, hasLength(2));
+        expect(_protocolFaults(requests.last), isEmpty);
+        expect(
+          requests.last
+              .map((m) => m.mapOrNull(tool: (tool) => tool.content))
+              .nonNulls,
+          ['ok', unansweredToolCallResult],
+        );
+      },
+    );
   });
 }

@@ -482,6 +482,45 @@ void main() {
         verify(() => mockRepository.restoreConfig(testModel.id)).called(1);
       });
 
+      // A prompt is hard-deleted, so there is no stamp to clear: restoring
+      // by id found no row and the undo did nothing.
+      testWidgets('undoing a prompt deletion writes the prompt back', (
+        WidgetTester tester,
+      ) async {
+        when(
+          () => mockRepository.deleteConfig(testPrompt.id),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockRepository.saveConfig(testPrompt),
+        ).thenAnswer((_) async {});
+
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Delete Prompt'),
+            onPressed: (context, ref) async {
+              await deleteService.deleteConfig(
+                context: context,
+                ref: ref,
+                config: testPrompt,
+              );
+            },
+          ),
+        );
+
+        await tester.tap(find.text('Delete Prompt'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('Delete'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 800));
+        await tester.tap(find.text('Undo'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        verify(() => mockRepository.saveConfig(testPrompt)).called(1);
+        verifyNever(() => mockRepository.restoreConfig(any()));
+      });
+
       testWidgets('should undo provider deletion with associated models', (
         WidgetTester tester,
       ) async {
@@ -495,9 +534,11 @@ void main() {
               mockRepository.deleteInferenceProviderWithModels(testProvider.id),
         ).thenAnswer((_) async => cascadeResult);
         when(
-          () => mockRepository.saveConfig(testProvider),
+          () => mockRepository.restoreProviderWithModels(
+            testProvider,
+            associatedModels,
+          ),
         ).thenAnswer((_) async {});
-        when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
 
         await tester.pumpWidget(
           createTestWidget(
@@ -530,11 +571,16 @@ void main() {
           () =>
               mockRepository.deleteInferenceProviderWithModels(testProvider.id),
         ).called(1);
-        verify(() => mockRepository.saveConfig(testProvider)).called(1);
-        // Verify all associated models are restored
-        for (final model in associatedModels) {
-          verify(() => mockRepository.saveConfig(model)).called(1);
-        }
+        // The provider and the models its cascade took are restored together,
+        // so the repository can stamp each model past the provider.
+        verify(
+          () => mockRepository.restoreProviderWithModels(
+            testProvider,
+            associatedModels,
+          ),
+        ).called(1);
+        verifyNever(() => mockRepository.saveConfig(any()));
+        verifyNever(() => mockRepository.restoreConfig(any()));
       });
 
       testWidgets('should handle undo errors gracefully', (
@@ -952,6 +998,45 @@ void main() {
                 as AiConfigSkill;
       });
 
+      // A skill is hard-deleted, like a prompt: its content must not be
+      // kept, so undo writes the row back rather than clearing a stamp.
+      testWidgets('undoing a skill deletion writes the skill back', (
+        WidgetTester tester,
+      ) async {
+        when(
+          () => mockRepository.deleteConfig(testSkill.id),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockRepository.saveConfig(testSkill),
+        ).thenAnswer((_) async {});
+
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Delete Skill'),
+            onPressed: (context, ref) async {
+              await deleteService.deleteConfig(
+                context: context,
+                ref: ref,
+                config: testSkill,
+              );
+            },
+          ),
+        );
+
+        await tester.tap(find.text('Delete Skill'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('Delete'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 800));
+        await tester.tap(find.text('Undo'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        verify(() => mockRepository.saveConfig(testSkill)).called(1);
+        verifyNever(() => mockRepository.restoreConfig(any()));
+      });
+
       testWidgets('should successfully delete skill and show skill toast', (
         WidgetTester tester,
       ) async {
@@ -1122,9 +1207,11 @@ void main() {
               testProvider.id,
             ),
           ).thenAnswer((_) async => cascadeResult);
-          // saveConfig throws on any call (provider restore + model restores).
           when(
-            () => mockRepository.saveConfig(any()),
+            () => mockRepository.restoreProviderWithModels(
+              testProvider,
+              associatedModels,
+            ),
           ).thenThrow(Exception('Provider undo failed – logger path'));
 
           await tester.pumpWidget(
@@ -1150,8 +1237,13 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 
-          // saveConfig was called (and threw); service must not propagate.
-          verify(() => mockRepository.saveConfig(any())).called(1);
+          // The restore was called (and threw); service must not propagate.
+          verify(
+            () => mockRepository.restoreProviderWithModels(
+              testProvider,
+              associatedModels,
+            ),
+          ).called(1);
           // The UI stays stable — no error shown to the user for undo failures.
           expect(
             find.text("Couldn't delete ${testProvider.name}"),

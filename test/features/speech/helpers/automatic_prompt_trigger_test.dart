@@ -92,6 +92,7 @@ void main() {
         audioEntryId: any(named: 'audioEntryId'),
         automationResult: any(named: 'automationResult'),
         linkedTaskId: any(named: 'linkedTaskId'),
+        onError: any(named: 'onError'),
       ),
     ).thenAnswer((_) async {});
     return result;
@@ -221,6 +222,7 @@ void main() {
           audioEntryId: entryId,
           automationResult: result,
           linkedTaskId: any(named: 'linkedTaskId'),
+          onError: any(named: 'onError'),
         ),
       ).called(1);
       verify(
@@ -259,6 +261,7 @@ void main() {
           audioEntryId: any(named: 'audioEntryId'),
           automationResult: any(named: 'automationResult'),
           linkedTaskId: any(named: 'linkedTaskId'),
+          onError: any(named: 'onError'),
         ),
       );
     });
@@ -326,6 +329,7 @@ void main() {
           audioEntryId: entryId,
           automationResult: result,
           linkedTaskId: subjectId,
+          onError: any(named: 'onError'),
         ),
       ).called(1);
     });
@@ -349,6 +353,7 @@ void main() {
           automationResult: result,
           // ignore: avoid_redundant_argument_values
           linkedTaskId: null,
+          onError: any(named: 'onError'),
         ),
       ).called(1);
     });
@@ -369,6 +374,7 @@ void main() {
           automationResult: result,
           // ignore: avoid_redundant_argument_values
           linkedTaskId: null,
+          onError: any(named: 'onError'),
         ),
       ).called(1);
     });
@@ -477,6 +483,43 @@ void main() {
       );
     });
 
+    // A run that reports an error saved no transcript: waking the agent
+    // spends an inference on a subject that has nothing new to read.
+    test('does not wake when the transcription run failed', () async {
+      const subjectId = 'task-failed-run';
+      await stubHandledTranscription(subjectId, entity: testTask);
+      when(
+        () => mockSubjectAgentResolver(subjectId),
+      ).thenAnswer((_) async => makeTestIdentity(agentId: 'agent-failed'));
+      when(
+        () => mockRunner.runTranscription(
+          audioEntryId: any(named: 'audioEntryId'),
+          automationResult: any(named: 'automationResult'),
+          linkedTaskId: any(named: 'linkedTaskId'),
+          onError: any(named: 'onError'),
+        ),
+      ).thenAnswer((invocation) async {
+        final onError =
+            invocation.namedArguments[#onError] as void Function(Object)?;
+        onError?.call(StateError('Transcript for $entryId was not saved'));
+      });
+
+      await trigger().triggerAutomaticPrompts(
+        entryId,
+        stoppedState(),
+        linkedSubjectId: subjectId,
+      );
+
+      verifyNever(
+        () => mockWakeOrchestrator.requestContentWake(
+          agentId: any(named: 'agentId'),
+          reason: any(named: 'reason'),
+          triggerTokens: any(named: 'triggerTokens'),
+        ),
+      );
+      verifyNever(() => mockSubjectAgentResolver(subjectId));
+    });
+
     test('does not wake when automation never transcribed', () async {
       const subjectId = 'subject-skip';
       when(
@@ -577,6 +620,7 @@ void main() {
             audioEntryId: any(named: 'audioEntryId'),
             automationResult: any(named: 'automationResult'),
             linkedTaskId: any(named: 'linkedTaskId'),
+            onError: any(named: 'onError'),
           ),
         );
       },

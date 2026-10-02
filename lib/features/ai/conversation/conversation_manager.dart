@@ -20,6 +20,7 @@ class ConversationManager {
   final int maxHistorySize;
 
   final List<ChatCompletionMessage> _messages = [];
+  int _turnCount = 0;
   String? _lastError;
 
   /// Thought signatures from Gemini 3 models, keyed by tool call ID.
@@ -41,13 +42,22 @@ class ConversationManager {
   Map<String, String> get thoughtSignatures =>
       Map.unmodifiable(_thoughtSignatures);
 
-  int get turnCount =>
-      _messages.where((m) => m.role == ChatCompletionMessageRole.user).length;
+  /// The number of user turns added since [initialize], continuation prompts
+  /// included.
+  ///
+  /// It counts turns ever added, not the user messages the history still
+  /// holds: trimming drops old user messages, and a count of what is left
+  /// stops growing once a round's tool calls fill the history, so
+  /// [canContinue] would never refuse and the loop would never end. The turn
+  /// also scopes synthesized tool-call ids (`tool_turn<turn>_<n>`), which
+  /// must never repeat, so it must never go back.
+  int get turnCount => _turnCount;
 
   /// Initialize conversation with optional system message
   void initialize({String? systemMessage}) {
     _messages.clear();
     _thoughtSignatures.clear(); // Clear signatures from previous conversation
+    _turnCount = 0;
     _lastError = null;
 
     if (systemMessage != null) {
@@ -55,13 +65,15 @@ class ConversationManager {
     }
   }
 
-  /// Add a user message to the conversation
+  /// Adds a user turn to the conversation, counts it in [turnCount], and
+  /// trims the history if it has grown past [maxHistorySize].
   void addUserMessage(String message) {
     _messages.add(
       ChatCompletionMessage.user(
         content: ChatCompletionUserMessageContent.string(message),
       ),
     );
+    _turnCount++;
 
     _trimHistoryIfNeeded();
   }
@@ -102,7 +114,35 @@ class ConversationManager {
     );
   }
 
-  /// Check if we can continue the conversation
+  /// Answers every tool call of the latest assistant message that has no
+  /// tool response yet with [response].
+  ///
+  /// A strategy that throws part-way through a batch, or a loop that ends
+  /// without a strategy to run the calls, leaves calls unanswered; strict
+  /// providers reject every later request whose history holds one, so the
+  /// next message on this conversation would fail too.
+  void answerPendingToolCalls(String response) {
+    final assistantIndex = _messages.lastIndexWhere(
+      (message) => message.role == ChatCompletionMessageRole.assistant,
+    );
+    if (assistantIndex < 0) return;
+    final toolCalls = _messages[assistantIndex].mapOrNull(
+      assistant: (assistant) => assistant.toolCalls,
+    );
+    if (toolCalls == null || toolCalls.isEmpty) return;
+
+    final answered = {
+      for (final message in _messages.skip(assistantIndex + 1))
+        ?message.mapOrNull(tool: (tool) => tool.toolCallId),
+    };
+    for (final toolCall in toolCalls) {
+      if (!answered.contains(toolCall.id)) {
+        addToolResponse(toolCallId: toolCall.id, response: response);
+      }
+    }
+  }
+
+  /// Whether another turn fits under [maxTurns].
   bool canContinue() {
     return turnCount < maxTurns;
   }
@@ -153,16 +193,16 @@ class ConversationManager {
     if (tailStart == 0 && !hadTruncationNotice) return;
 
     final retainedTail = bodyMessages.skip(tailStart).toList();
-    // The retained tail must not begin with an orphan `tool` message whose
-    // assistant tool_use parent was dropped by the trim above — strict
-    // providers reject a tool result that has no preceding tool call. Drop
-    // any such leading orphans so the tail starts on an assistant/user
-    // boundary. Trimming only ever runs from [addUserMessage], so the
-    // just-added user turn always survives at the tail end and this strip
+    // The retained tail must open on a user turn. A cut through a tool round
+    // leaves either tool results whose assistant tool call was dropped, which
+    // strict providers reject, or an assistant turn with nothing before it,
+    // and Gemini requires a function call turn to follow a user turn or a
+    // function response. Trimming only ever runs from [addUserMessage], so
+    // the just-added user turn always survives at the tail end and this strip
     // cannot empty the tail today; the guard below future-proofs against a
     // caller that trims after a tool/assistant append.
     while (retainedTail.isNotEmpty &&
-        retainedTail.first.role == ChatCompletionMessageRole.tool) {
+        retainedTail.first.role != ChatCompletionMessageRole.user) {
       retainedTail.removeAt(0);
     }
     if (retainedTail.isEmpty) return;

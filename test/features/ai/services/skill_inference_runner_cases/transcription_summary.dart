@@ -202,6 +202,31 @@ extension _TranscriptionSummaryCases on _SkillInferenceTestSetup {
         },
       );
 
+      // The recording already held a summarizable transcript, so only the
+      // outcome gate can stop a paid summary of words that are not new.
+      test(
+        'does NOT summarize when the transcript was not saved',
+        () async {
+          final audio = makeAudioEntity(plainText: longTranscript);
+          await stubTranscriptionThrough(audio);
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => false);
+          stubLoggingException();
+          final errors = <Object>[];
+
+          await runner.runTranscription(
+            audioEntryId: 'audio-1',
+            automationResult: makeTranscriptionResultWithSummary(),
+            linkedTaskId: 'task-1',
+            onError: errors.add,
+          );
+
+          expect(errors.single, isA<StateError>());
+          verifyNotSummarized();
+        },
+      );
+
       test(
         'does NOT summarize a recording with no resolved task — the summary '
         'is framed by a task, and a check-in or standalone note has none',
@@ -323,6 +348,55 @@ extension _TranscriptionSummaryCases on _SkillInferenceTestSetup {
             ),
             isNot(InferenceStatus.error),
           );
+        },
+      );
+
+      // Bookkeeping after the save is not the run: a transcript that exists
+      // is summarized and reported as a success even when its attribution
+      // record cannot be finalized.
+      test(
+        'summarizes and reports no error when finalizing the attribution '
+        'fails after the transcript was saved',
+        () async {
+          final audio = makeAudioEntity();
+          await stubTranscriptionThrough(audio);
+          stubLoggingException();
+          final attribution = _registerInteractionCapture();
+          final ledgerFailure = StateError('ledger closed');
+          var finalizeCalls = 0;
+          when(() => attribution.service.finalize(any())).thenAnswer((_) async {
+            // Only the transcription's own finalize fails; the summary's
+            // later one succeeds.
+            if (finalizeCalls++ == 0) throw ledgerFailure;
+          });
+          final errors = <Object>[];
+
+          await runner.runTranscription(
+            audioEntryId: 'audio-1',
+            automationResult: makeTranscriptionResultWithSummary(),
+            linkedTaskId: 'task-1',
+            onError: errors.add,
+          );
+
+          expect(errors, isEmpty);
+          expect(
+            container.read(
+              inferenceStatusControllerProvider((
+                id: 'audio-1',
+                aiResponseType: AiResponseType.audioTranscription,
+              )),
+            ),
+            InferenceStatus.idle,
+          );
+          verifySummarized();
+          verify(
+            () => mockLoggingService.error(
+              LogDomain.ai,
+              ledgerFailure,
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              subDomain: 'runTranscription.accounting',
+            ),
+          ).called(1);
         },
       );
 

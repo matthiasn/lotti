@@ -84,11 +84,18 @@ class AutomaticPromptTrigger {
       );
 
       final runner = ref.read(skillInferenceRunnerProvider);
+      var failed = false;
       await runner.runTranscription(
         audioEntryId: entryId,
         automationResult: result,
         linkedTaskId: await _taskIdIfTask(linkedSubjectId),
+        onError: (_) => failed = true,
       );
+
+      // A failed run added nothing for the agent to read, and its error is on
+      // the recording. A later successful run reaches the agent through the
+      // standard subscription path.
+      if (failed) return;
 
       // Transcription added real content to the subject — nudge its agent
       // immediately so it processes the new transcript without waiting out
