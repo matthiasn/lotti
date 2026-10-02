@@ -14,6 +14,7 @@ import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_re
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:meta/meta.dart';
 import 'package:openai_dart/openai_dart.dart' hide Error;
 import 'package:uuid/uuid.dart';
@@ -301,6 +302,15 @@ class ConversationRepository extends Notifier<void> {
     var accumulated = InferenceUsage.empty;
 
     while (shouldContinue) {
+      // An aborted agent wake — cancelled, paused or timed out — must not
+      // start another paid turn; its result would be discarded anyway.
+      if (isAgentWakeAborted) {
+        developer.log(
+          'agent wake aborted — stopping before the next model turn',
+          name: 'ConversationRepository',
+        );
+        break;
+      }
       try {
         // Get all messages for the request
         final messages = manager.getMessagesForRequest();

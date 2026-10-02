@@ -63,6 +63,7 @@ extension WakeBatchRouter on WakeOrchestrator {
           'matched=${allMatched.map(DomainLogger.sanitizeId)}',
           subDomain: 'suppression',
         );
+        _auditRouted(sub, allMatched, WakeDecisionCause.selfNotification);
         continue;
       }
       _log(
@@ -77,6 +78,7 @@ extension WakeBatchRouter on WakeOrchestrator {
       if (predicate != null && !predicate(allMatched)) continue;
 
       if (sub.reportStaleOnly) {
+        _auditRouted(sub, allMatched, WakeDecisionCause.markedStaleOnly);
         _scheduleReportStale(sub.agentId, clock.now());
         _log(
           'marked report stale without scheduling a wake for '
@@ -101,8 +103,10 @@ extension WakeBatchRouter on WakeOrchestrator {
             '${DomainLogger.sanitizeId(sub.agentId)}',
             subDomain: 'stale',
           );
+          _auditRouted(sub, allMatched, WakeDecisionCause.selfNotification);
           continue;
         }
+        _auditRouted(sub, allMatched, WakeDecisionCause.automaticUpdatesOff);
         _scheduleReportStale(sub.agentId, clock.now());
         _log(
           'marked report stale instead of scheduling automatic inference for '

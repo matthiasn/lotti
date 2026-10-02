@@ -243,9 +243,14 @@ class AgentService {
       decision: byUser ? _UserDecision.stop : null,
     );
     if (!updated) return false;
-    orchestrator.removeSubscriptions(agentId);
+    // A kill-switch, not just an unsubscribe: queued work and a running wake
+    // stop too. Before this, a paused agent's queued wakes were only dropped
+    // when the drain happened to re-check policy, and a running one kept
+    // paying for model turns until it finished.
+    final abortedRun = orchestrator.haltAgent(agentId);
     developer.log(
-      'Paused agent ${DomainLogger.sanitizeId(agentId)}',
+      'Paused agent ${DomainLogger.sanitizeId(agentId)}'
+      '${abortedRun ? ' (running wake aborted)' : ''}',
       name: 'AgentService',
     );
     return true;
@@ -320,7 +325,7 @@ class AgentService {
       decision: byUser ? _UserDecision.stop : null,
     );
     if (!updated) return false;
-    orchestrator.removeSubscriptions(agentId);
+    orchestrator.haltAgent(agentId);
     developer.log(
       'Destroyed agent ${DomainLogger.sanitizeId(agentId)}',
       name: 'AgentService',
@@ -355,7 +360,7 @@ class AgentService {
         (byUser || identity.lifecycle != AgentLifecycle.destroyed)) {
       await destroyAgent(agentId, byUser: byUser);
     } else {
-      orchestrator.removeSubscriptions(agentId);
+      orchestrator.haltAgent(agentId);
     }
 
     final removed = await repository.hardDeleteAgent(agentId);

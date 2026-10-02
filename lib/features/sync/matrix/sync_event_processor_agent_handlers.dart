@@ -270,6 +270,10 @@ extension _AgentHandlers on SyncEventProcessor {
             wakeOrchestrator!
               ..removeSubscriptions(appliedIdentity.agentId)
               ..disableAutomaticUpdatesRuntime(appliedIdentity.agentId);
+            // A pause on another device halts this device's work as well.
+            if (appliedIdentity.lifecycle != AgentLifecycle.active) {
+              wakeOrchestrator!.haltAgent(appliedIdentity.agentId);
+            }
           } else {
             if (appliedIdentity.config.automaticUpdatesEnabledEffective) {
               wakeOrchestrator!.enableAutomaticUpdatesRuntime(
@@ -616,8 +620,9 @@ extension _AgentHandlers on SyncEventProcessor {
     });
 
     if (!policy.active) {
+      // A pause on another device halts this device's work as well.
       wakeOrchestrator!
-        ..removeSubscriptions(identity.agentId)
+        ..haltAgent(identity.agentId)
         ..disableAutomaticUpdatesRuntime(identity.agentId);
       return scheduleChanged;
     }

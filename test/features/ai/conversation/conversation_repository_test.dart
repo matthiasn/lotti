@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -626,6 +627,66 @@ void main() {
           ),
         ).called(1);
         verify(() => mockStrategy.getContinuationPrompt(any())).called(1);
+      });
+
+      test('an aborted agent wake stops before the next paid turn', () async {
+        // The strategy would keep the conversation going for every turn the
+        // manager allows. Once the surrounding wake is aborted — cancelled,
+        // paused or timed out — no further model call may be made.
+        var modelCalls = 0;
+        _stubGenerateText(mockOllamaRepo).thenAnswer((_) {
+          modelCalls++;
+          return Stream.value(
+            CreateChatCompletionStreamResponse(
+              id: 'turn-$modelCalls',
+              choices: const [
+                ChatCompletionStreamResponseChoice(
+                  index: 0,
+                  delta: ChatCompletionStreamResponseDelta(
+                    toolCalls: [
+                      ChatCompletionStreamMessageToolCallChunk(
+                        index: 0,
+                        id: 'tool-1',
+                        type: ChatCompletionStreamMessageToolCallChunkType
+                            .function,
+                        function: ChatCompletionStreamMessageFunctionCall(
+                          name: 'test_function',
+                          arguments: '{}',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              object: 'chat.completion.chunk',
+              created: 1710500000,
+            ),
+          );
+        });
+        when(
+          () => mockStrategy.processToolCalls(
+            toolCalls: any(named: 'toolCalls'),
+            manager: any(named: 'manager'),
+          ),
+        ).thenAnswer((_) async => ConversationAction.continueConversation);
+        when(
+          () => mockStrategy.getContinuationPrompt(any()),
+        ).thenReturn('Continue');
+
+        await runZoned(
+          () => repository.sendMessage(
+            conversationId: conversationId,
+            message: 'Analyse',
+            model: 'test-model',
+            provider: provider,
+            inferenceRepo: mockOllamaRepo,
+            strategy: mockStrategy,
+          ),
+          // The wake is aborted while the first turn runs.
+          zoneValues: {agentWakeAbortedZoneKey: () => modelCalls >= 1},
+        );
+
+        expect(modelCalls, 1);
       });
 
       test('handles strategy with complete action', () async {

@@ -1025,7 +1025,12 @@ extension WakeDrainEngine on WakeOrchestrator {
             job.triggerTokens,
             threadId,
           ),
-          zoneValues: {agentExecutionZoneKey: true},
+          zoneValues: {
+            agentExecutionZoneKey: true,
+            // Read by the conversation loop before each model turn, so an
+            // abort stops further paid turns instead of only being ignored.
+            agentWakeAbortedZoneKey: () => aborted.isCompleted,
+          },
         );
         _trackExecutor(job, executorFuture);
         unawaited(

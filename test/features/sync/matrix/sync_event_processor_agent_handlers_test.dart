@@ -3821,6 +3821,7 @@ void main() {
 
       setUp(() {
         mockOrchestrator = MockWakeOrchestrator();
+        when(() => mockOrchestrator.haltAgent(any())).thenReturn(false);
         processor.wakeOrchestrator = mockOrchestrator;
         when(
           () => mockOrchestrator.removeSubscriptions(any()),
@@ -3992,7 +3993,7 @@ void main() {
         verify(() => mockAgentRepo.upsertEntity(head)).called(1);
       });
 
-      test('removes subscriptions when agent is dormant', () async {
+      test('halts the agent when it is dormant', () async {
         final entity = AgentDomainEntity.agent(
           id: 'agent-dormant',
           agentId: 'agent-dormant',
@@ -4025,9 +4026,12 @@ void main() {
         verify(
           () => mockOrchestrator.removeSubscriptions('agent-dormant'),
         ).called(1);
+        // A stop on another device halts this device's queued and running
+        // work too, not only future subscriptions.
+        verify(() => mockOrchestrator.haltAgent('agent-dormant')).called(1);
       });
 
-      test('removes subscriptions when agent is destroyed', () async {
+      test('halts the agent when it is destroyed', () async {
         final entity = AgentDomainEntity.agent(
           id: 'agent-destroyed',
           agentId: 'agent-destroyed',
@@ -4060,6 +4064,9 @@ void main() {
         verify(
           () => mockOrchestrator.removeSubscriptions('agent-destroyed'),
         ).called(1);
+        // A stop on another device halts this device's queued and running
+        // work too, not only future subscriptions.
+        verify(() => mockOrchestrator.haltAgent('agent-destroyed')).called(1);
       });
 
       test(
@@ -4115,7 +4122,7 @@ void main() {
           expect(clearedState.updatedAt, localState.updatedAt);
           expect(clearedState.vectorClock, localState.vectorClock);
           verify(
-            () => mockOrchestrator.removeSubscriptions(identity.agentId),
+            () => mockOrchestrator.haltAgent(identity.agentId),
           ).called(1);
           verify(
             () => mockOrchestrator.disableAutomaticUpdatesRuntime(
@@ -5000,7 +5007,7 @@ void main() {
       );
 
       test(
-        'removes subscriptions for dormant project_agent identity',
+        'halts a dormant project_agent identity',
         () async {
           final entity = AgentDomainEntity.agent(
             id: 'project-agent-dormant',
@@ -5025,7 +5032,7 @@ void main() {
           await processor.process(event: event, journalDb: journalDb);
 
           verify(
-            () => mockOrchestrator.removeSubscriptions('project-agent-dormant'),
+            () => mockOrchestrator.haltAgent('project-agent-dormant'),
           ).called(1);
           verifyNever(
             () => mockAgentRepo.getLinksFrom(
@@ -5239,6 +5246,7 @@ void main() {
 
       setUp(() {
         mockOrchestrator = MockWakeOrchestrator();
+        when(() => mockOrchestrator.haltAgent(any())).thenReturn(false);
         processor.wakeOrchestrator = mockOrchestrator;
         when(
           () => mockOrchestrator.disableAutomaticUpdatesRuntime(any()),
