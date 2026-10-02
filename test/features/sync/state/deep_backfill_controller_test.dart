@@ -108,98 +108,256 @@ void main() {
   });
 
   group('deepBackfillRecordCountsProvider', () {
+    const journal = SyncSequencePayloadType.journalEntity;
+    const agents = SyncSequencePayloadType.agentEntity;
+    late StreamController<SyncSequencePayloadType> changes;
+    late List<Set<SyncSequencePayloadType>?> counted;
+
+    /// Stubs a service holding [journal] and [agents] rows that grow by one
+    /// with every count of their type; [fail] decides which counts throw.
+    void stubCounts({
+      bool Function(Set<SyncSequencePayloadType>? only)? fail,
+    }) {
+      var journalRows = 100;
+      var agentRows = 200;
+      when(
+        () => service.recordCounts(only: any(named: 'only')),
+      ).thenAnswer((invocation) async {
+        final only =
+            invocation.namedArguments[#only] as Set<SyncSequencePayloadType>?;
+        counted.add(only);
+        if (fail?.call(only) ?? false) throw StateError('database busy');
+        return {
+          if (only == null || only.contains(journal)) journal: ++journalRows,
+          if (only == null || only.contains(agents)) agents: ++agentRows,
+        };
+      });
+    }
+
+    setUp(() {
+      changes = StreamController<SyncSequencePayloadType>.broadcast();
+      counted = [];
+      when(() => service.recordChanges).thenAnswer((_) => changes.stream);
+    });
+
+    tearDown(() => changes.close());
+
     test('reads the counts from the deep backfill service', () async {
-      when(service.recordCounts).thenAnswer(
-        (_) async => {SyncSequencePayloadType.journalEntity: 276711},
-      );
+      stubCounts();
 
       // An auto-dispose provider needs a listener to outlive its first read.
       container.listen(deepBackfillRecordCountsProvider, (_, _) {});
 
       expect(await container.read(deepBackfillRecordCountsProvider.future), {
-        SyncSequencePayloadType.journalEntity: 276711,
+        journal: 101,
+        agents: 201,
       });
     });
 
-    test('re-counts every interval while listened, keeps polling past a '
-        'failed count, and stops once nothing listens', () {
+    test('counts nothing again while no table changes, until the full '
+        'recount interval has passed', () {
       fakeAsync((async) {
-        var calls = 0;
-        when(service.recordCounts).thenAnswer((_) async {
-          calls++;
-          if (calls == 2) throw StateError('database busy');
-          return {SyncSequencePayloadType.journalEntity: calls};
-        });
-        final seen = <AsyncValue<Map<SyncSequencePayloadType, int>?>>[];
-        final subscription = container.listen(
+        stubCounts();
+        final seen = <Map<SyncSequencePayloadType, int>?>[];
+        container.listen(
           deepBackfillRecordCountsProvider,
-          (_, next) => seen.add(next),
+          (_, next) => seen.add(next.value),
         );
-
         async.flushMicrotasks();
-        expect(calls, 1);
-        expect(seen.last.value, {SyncSequencePayloadType.journalEntity: 1});
+        expect(counted, [null]);
+
+        async
+          ..elapse(
+            SyncTuning.recordCountsFullRecountInterval -
+                SyncTuning.recordCountsRefreshInterval,
+          )
+          ..flushMicrotasks();
+        expect(counted, [null], reason: 'an idle page costs no counts');
 
         async
           ..elapse(SyncTuning.recordCountsRefreshInterval)
           ..flushMicrotasks();
+        expect(
+          counted,
+          [null, null],
+          reason:
+              'the backstop for writes the '
+              'database does not report',
+        );
+        expect(seen.last, {journal: 102, agents: 202});
+      });
+    });
+
+    test('re-counts only the types whose table changed, on the next tick, '
+        'over the last counts', () {
+      fakeAsync((async) {
+        stubCounts();
+        final seen = <Map<SyncSequencePayloadType, int>?>[];
+        container.listen(
+          deepBackfillRecordCountsProvider,
+          (_, next) => seen.add(next.value),
+        );
+        async.flushMicrotasks();
+
+        changes
+          ..add(agents)
+          ..add(agents);
+        async.flushMicrotasks();
+        expect(counted, [null], reason: 'changes wait for the tick');
+
+        async
+          ..elapse(SyncTuning.recordCountsRefreshInterval)
+          ..flushMicrotasks();
+        expect(counted, [
+          null,
+          {agents},
+        ]);
+        expect(seen.last, {journal: 101, agents: 202});
+
+        async
+          ..elapse(SyncTuning.recordCountsRefreshInterval * 3)
+          ..flushMicrotasks();
+        expect(counted, hasLength(2), reason: 'a change is counted once');
+      });
+    });
+
+    test('a change that lands while its type is being counted is counted '
+        'again on the next tick', () {
+      fakeAsync((async) {
+        final release = Completer<void>();
+        var calls = 0;
+        when(
+          () => service.recordCounts(only: any(named: 'only')),
+        ).thenAnswer((invocation) async {
+          calls++;
+          if (calls == 2) await release.future;
+          return {agents: calls};
+        });
+        container.listen(deepBackfillRecordCountsProvider, (_, _) {});
+        async.flushMicrotasks();
+
+        changes.add(agents);
+        async
+          ..elapse(SyncTuning.recordCountsRefreshInterval)
+          ..flushMicrotasks();
         expect(calls, 2);
+
+        changes.add(agents);
+        release.complete();
+        async
+          ..flushMicrotasks()
+          ..elapse(SyncTuning.recordCountsRefreshInterval)
+          ..flushMicrotasks();
+        expect(calls, 3);
+      });
+    });
+
+    test('a failed count surfaces as an error and is retried on the next '
+        'tick, a full one in full and a changed type alone', () {
+      fakeAsync((async) {
+        var failNext = true;
+        stubCounts(
+          fail: (_) {
+            final fail = failNext;
+            failNext = false;
+            return fail;
+          },
+        );
+        final seen = <AsyncValue<Map<SyncSequencePayloadType, int>?>>[];
+        container.listen(
+          deepBackfillRecordCountsProvider,
+          (_, next) => seen.add(next),
+        );
+        async.flushMicrotasks();
         expect(seen.last.hasError, isTrue);
 
         async
           ..elapse(SyncTuning.recordCountsRefreshInterval)
           ..flushMicrotasks();
-        expect(calls, 3);
-        expect(seen.last.value, {SyncSequencePayloadType.journalEntity: 3});
+        expect(counted, [null, null]);
+        expect(seen.last.value, {journal: 101, agents: 201});
+
+        failNext = true;
+        changes.add(journal);
+        async
+          ..elapse(SyncTuning.recordCountsRefreshInterval)
+          ..flushMicrotasks();
+        expect(seen.last.hasError, isTrue);
+
+        async
+          ..elapse(SyncTuning.recordCountsRefreshInterval)
+          ..flushMicrotasks();
+        expect(counted.skip(2), [
+          {journal},
+          {journal},
+        ]);
+        expect(seen.last.value, {journal: 102, agents: 201});
+      });
+    });
+
+    test('stops counting and listening for changes once nothing listens', () {
+      fakeAsync((async) {
+        stubCounts();
+        final subscription = container.listen(
+          deepBackfillRecordCountsProvider,
+          (_, _) {},
+        );
+        async.flushMicrotasks();
+        expect(changes.hasListener, isTrue);
 
         subscription.close();
         async
           ..flushMicrotasks()
-          ..elapse(SyncTuning.recordCountsRefreshInterval * 5)
+          ..elapse(SyncTuning.recordCountsFullRecountInterval * 2)
           ..flushMicrotasks();
-        expect(calls, 3);
+        expect(counted, [null]);
+        expect(changes.hasListener, isFalse);
       });
     });
 
-    test('stops counting while the app is hidden, and counts at once when '
-        'it shows again', () {
+    test('stops counting while the app is hidden, and counts in full at '
+        'once when it shows again', () {
       final binding = TestWidgetsFlutterBinding.instance
         ..handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       addTearDown(
         () => binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed),
       );
       fakeAsync((async) {
-        var calls = 0;
-        when(service.recordCounts).thenAnswer((_) async {
-          calls++;
-          return {SyncSequencePayloadType.journalEntity: calls};
-        });
+        stubCounts();
         final subscription = container.listen(
           deepBackfillRecordCountsProvider,
           (_, _) {},
         );
         async.flushMicrotasks();
-        expect(calls, 1);
+        expect(counted, [null]);
 
         binding
           ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
           ..handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+        changes.add(agents);
         async
-          ..elapse(SyncTuning.recordCountsRefreshInterval * 5)
+          ..elapse(SyncTuning.recordCountsFullRecountInterval * 2)
           ..flushMicrotasks();
         // A route kept on the stack keeps the provider alive in the
         // background; it must not keep counting there.
-        expect(calls, 1);
+        expect(counted, [null]);
 
         binding
           ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
           ..handleAppLifecycleStateChanged(AppLifecycleState.resumed);
         async.flushMicrotasks();
-        expect(calls, 2, reason: 'counts at once on return');
+        expect(
+          counted,
+          [null, null],
+          reason:
+              'counts at once on return, the '
+              'change made while hidden included',
+        );
+        changes.add(journal);
         async
           ..elapse(SyncTuning.recordCountsRefreshInterval)
           ..flushMicrotasks();
-        expect(calls, 3, reason: 'and polls again');
+        expect(counted.last, {journal}, reason: 'and follows changes again');
 
         subscription.close();
         async.flushMicrotasks();

@@ -519,10 +519,16 @@ only what it shows, so a signal several times a second rebuilds one card, not
 the page:
 
 - `deepBackfillRecordCountsProvider` leads the page with the records per
-  synced type. It re-counts every `SyncTuning.recordCountsRefreshInterval`
-  (one second) while the page listens and the app is visible, skips a tick
-  whose previous count is still running, counts at once when the app shows
-  again, and stops when the page goes (auto-dispose).
+  synced type. Every `SyncTuning.recordCountsRefreshInterval` (one second)
+  it re-counts only the types whose table drift reported written to
+  (`DeepBackfillService.recordChanges`, from each store's `changes`), and
+  every `SyncTuning.recordCountsFullRecountInterval` (30 s) all of them, for
+  the writes drift does not report (`customStatement`, other connections).
+  A `COUNT(*)` is a full scan of the table's smallest index: counting every
+  table each second was the top slow query on a device that left the page
+  open. It counts only while the page listens and the app is visible, skips
+  a tick whose previous count is still running, counts in full at once when
+  the app shows again, and stops when the page goes (auto-dispose).
 - `_QueueDepthScope` subscribes to `InboundQueue.depthChanges` (seeded by a
   one-shot `depthSnapshot()`) and publishes the latest signal through a
   `ValueListenable`: its subtree builds once, and only the status row

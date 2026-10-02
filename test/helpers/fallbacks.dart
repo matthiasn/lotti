@@ -265,6 +265,9 @@ class FallbackDeepBackfillStore extends DeepBackfillStore {
   Future<int> count() => throw UnimplementedError();
 
   @override
+  Stream<void> get changes => throw UnimplementedError();
+
+  @override
   Future<List<DeepBackfillRow>> page({
     required String? after,
     required int limit,

@@ -259,6 +259,47 @@ void main() {
       expect(message.entryLink.deletedAt, _date);
       expect(message.status, SyncEntryStatus.update);
     });
+
+    test('each store reports writes to its own table only, though both '
+        'share the journal database', () async {
+      final links = entryLinkDeepBackfillStore(
+        journalDb: db,
+        outboxService: outbox,
+      );
+      final entries = JournalDeepBackfillStore(
+        journalDb: db,
+        outboxService: outbox,
+        documentsDirectory: Directory.systemTemp,
+      );
+      var linkChanges = 0;
+      var entryChanges = 0;
+      final subscriptions = [
+        links.changes.listen((_) => linkChanges++),
+        entries.changes.listen((_) => entryChanges++),
+      ];
+      addTearDown(() async {
+        for (final subscription in subscriptions) {
+          await subscription.cancel();
+        }
+      });
+
+      await db.upsertEntryLink(
+        EntryLink.basic(
+          id: 'link-2',
+          fromId: 'from',
+          toId: 'to',
+          createdAt: _date,
+          updatedAt: _date,
+          vectorClock: const VectorClock({'h': 5}),
+        ),
+      );
+      await pumpEventQueue();
+      expect((linkChanges, entryChanges), (1, 0));
+
+      await db.upsertJournalDbEntity(toDbEntity(testTextEntry));
+      await pumpEventQueue();
+      expect((linkChanges, entryChanges), (1, 1));
+    });
   });
 
   group('agent stores', () {

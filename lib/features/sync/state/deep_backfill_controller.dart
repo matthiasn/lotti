@@ -8,13 +8,12 @@ import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/get_it.dart';
 
 /// Records of each synced type on this device, deletions included, or null
-/// where no sync stack runs (a demo world). Re-counted every
-/// [SyncTuning.recordCountsRefreshInterval] while something listens — the
-/// page, while it is shown — and the app is visible: a backgrounded app keeps
-/// a retained route (and so this provider) alive, and must not keep counting.
-/// On return to the foreground it counts at once. A count that fails
-/// surfaces as an error without ending the polling, so the next successful
-/// count replaces it.
+/// where no sync stack runs (a demo world). Kept current while something
+/// listens — the page, while it is shown — and the app is visible: a
+/// backgrounded app keeps a retained route (and so this provider) alive, and
+/// must not keep counting. On return to the foreground it counts at once. A
+/// count that fails surfaces as an error without ending the polling, so the
+/// next successful count replaces it.
 final StreamProvider<Map<SyncSequencePayloadType, int>?>
 deepBackfillRecordCountsProvider =
     StreamProvider.autoDispose<Map<SyncSequencePayloadType, int>?>(
@@ -29,33 +28,52 @@ deepBackfillRecordCountsProvider =
       name: 'deepBackfillRecordCountsProvider',
     );
 
-/// Counts at once, then on every tick while the app is visible. A tick that
-/// finds the previous count still running is skipped, so slow counts never
-/// pile up.
+/// Counts every type at once, then every
+/// [SyncTuning.recordCountsRefreshInterval] re-counts only the types whose
+/// table the database reported written to, and every
+/// [SyncTuning.recordCountsFullRecountInterval] all of them, for the writes
+/// it does not report. A full `COUNT(*)` of a large table each second was
+/// the top source of slow queries while the page stayed open. Nothing is
+/// counted while the app is hidden; a tick that finds the previous count
+/// still running is skipped, so slow counts never pile up.
 class _RecordCountsPoller {
   _RecordCountsPoller(this._service) {
     _lifecycle = AppLifecycleListener(
       onShow: () {
-        unawaited(_count());
+        unawaited(_countAll());
         _start();
       },
       onHide: _stop,
     );
-    unawaited(_count());
+    _changes = _service.recordChanges.listen(_changed.add);
+    unawaited(_countAll());
     _start();
   }
+
+  /// Ticks between two full counts.
+  static final int _ticksPerFullCount =
+      SyncTuning.recordCountsFullRecountInterval.inMicroseconds ~/
+      SyncTuning.recordCountsRefreshInterval.inMicroseconds;
 
   final DeepBackfillService _service;
   final _controller = StreamController<Map<SyncSequencePayloadType, int>>();
   late final AppLifecycleListener _lifecycle;
+  late final StreamSubscription<SyncSequencePayloadType> _changes;
+  final _changed = <SyncSequencePayloadType>{};
+  Map<SyncSequencePayloadType, int> _last = const {};
   Timer? _timer;
   bool _inFlight = false;
+
+  /// Every type needs counting: none has been yet, the last full count
+  /// failed, or a full interval has passed since.
+  bool _fullDue = true;
+  int _ticksSinceFull = 0;
 
   Stream<Map<SyncSequencePayloadType, int>> get counts => _controller.stream;
 
   void _start() => _timer ??= Timer.periodic(
     SyncTuning.recordCountsRefreshInterval,
-    (_) => unawaited(_count()),
+    (_) => unawaited(_tick()),
   );
 
   void _stop() {
@@ -63,13 +81,42 @@ class _RecordCountsPoller {
     _timer = null;
   }
 
-  Future<void> _count() async {
+  Future<void> _tick() async {
+    if (++_ticksSinceFull >= _ticksPerFullCount) _fullDue = true;
+    if (_fullDue) return _countAll();
+    if (_changed.isEmpty) return;
+    await _count(only: {..._changed});
+  }
+
+  Future<void> _countAll() async {
+    _fullDue = true;
+    await _count();
+  }
+
+  /// Counts [only] those types (every type when null), publishes them over
+  /// the last counts, and clears what it counted from the pending work. A
+  /// change that lands while the count runs stays pending; what a failed
+  /// count covered stays pending too, so the next tick retries it.
+  Future<void> _count({Set<SyncSequencePayloadType>? only}) async {
     if (_inFlight) return;
     _inFlight = true;
+    if (only == null) {
+      _fullDue = false;
+      _ticksSinceFull = 0;
+      _changed.clear();
+    } else {
+      _changed.removeAll(only);
+    }
     try {
-      final counts = await _service.recordCounts();
-      if (!_controller.isClosed) _controller.add(counts);
+      final counts = await _service.recordCounts(only: only);
+      _last = only == null ? counts : {..._last, ...counts};
+      if (!_controller.isClosed) _controller.add(_last);
     } catch (error, stackTrace) {
+      if (only == null) {
+        _fullDue = true;
+      } else {
+        _changed.addAll(only);
+      }
       if (!_controller.isClosed) _controller.addError(error, stackTrace);
     } finally {
       _inFlight = false;
@@ -79,6 +126,7 @@ class _RecordCountsPoller {
   void dispose() {
     _stop();
     _lifecycle.dispose();
+    unawaited(_changes.cancel());
     unawaited(_controller.close());
   }
 }
