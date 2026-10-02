@@ -14,6 +14,7 @@ import 'package:lotti/features/sync/matrix/pipeline/matrix_event_classifier.dart
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
+import 'package:lotti/features/sync/matrix/sync_event_trust.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/queue/attachment_aware_bootstrap_sink.dart';
 import 'package:lotti/features/sync/queue/bootstrap_sink.dart';
@@ -63,6 +64,7 @@ class QueuePipelineCoordinator {
     required this._sequenceLogService,
     required this._activityGate,
     required DomainLogger logging,
+    required SyncEventTrust syncEventTrust,
     this._attachmentIndex,
     this._updateNotifications,
     this._attachmentIngestor,
@@ -74,7 +76,10 @@ class QueuePipelineCoordinator {
   }) : _syncDb = syncDb,
        _settingsDb = settingsDb,
        _logging = logging,
-       _queue = queueOverride ?? InboundQueue(db: syncDb, logging: logging),
+       _syncEventTrust = syncEventTrust,
+       _queue =
+           queueOverride ??
+           InboundQueue(db: syncDb, logging: logging, trust: syncEventTrust),
        _seeder =
            seederOverride ??
            QueueMarkerSeeder(
@@ -119,6 +124,7 @@ class QueuePipelineCoordinator {
   final SyncSequenceLogService _sequenceLogService;
   final UserActivityGate? _activityGate;
   final DomainLogger _logging;
+  final SyncEventTrust _syncEventTrust;
   final AttachmentIndex? _attachmentIndex;
   final UpdateNotifications? _updateNotifications;
   final AttachmentIngestor? _attachmentIngestor;
@@ -462,11 +468,22 @@ class QueuePipelineCoordinator {
   /// Fire-and-forget ingestor hook. No-op when either the ingestor
   /// is not wired (tests without attachment paths) or the event is
   /// not an attachment descriptor (the ingestor gates internally on
-  /// `content['relativePath']`).
+  /// `content['relativePath']`). A descriptor from a sender
+  /// [SyncEventTrust] does not trust is neither indexed nor downloaded, so
+  /// it can never stand in for a payload's JSON.
   Future<void> _processAttachment(Event event) async {
     final ingestor = _attachmentIngestor;
     if (ingestor == null) return;
     try {
+      final relativePath = event.content['relativePath'];
+      if (relativePath is String &&
+          relativePath.isNotEmpty &&
+          !await _syncEventTrust.admits(
+            event,
+            subDomain: '$_logSub.attachmentTrust',
+          )) {
+        return;
+      }
       await ingestor.process(
         event: event,
         logging: _logging,

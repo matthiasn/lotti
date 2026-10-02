@@ -6,7 +6,11 @@ extension _ReconnectAttachmentCases on _QueueCoordinatorTestSetup {
       'forward walk sends a freshly-decrypted descriptor through the '
       'AttachmentIngestor before queue classification',
       () async {
-        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        final realQueue = InboundQueue(
+          trust: AdmittingSyncEventTrust(),
+          db: syncDb,
+          logging: logging,
+        );
         addTearDown(realQueue.dispose);
         final encryption = MockEncryption();
         final firstProcessed = Completer<Event>();
@@ -18,6 +22,7 @@ extension _ReconnectAttachmentCases on _QueueCoordinatorTestSetup {
         when(() => client.encryption).thenReturn(encryption);
 
         final coordinator = QueuePipelineCoordinator(
+          syncEventTrust: AdmittingSyncEventTrust(),
           syncDb: syncDb,
           settingsDb: settingsDb,
           journalDb: journalDb,
@@ -126,7 +131,11 @@ extension _ReconnectAttachmentCases on _QueueCoordinatorTestSetup {
       'backward walk sends a freshly-decrypted descriptor through the '
       'AttachmentIngestor before queue classification',
       () async {
-        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        final realQueue = InboundQueue(
+          trust: AdmittingSyncEventTrust(),
+          db: syncDb,
+          logging: logging,
+        );
         addTearDown(realQueue.dispose);
         final encryption = MockEncryption();
         final firstProcessed = Completer<Event>();
@@ -136,6 +145,7 @@ extension _ReconnectAttachmentCases on _QueueCoordinatorTestSetup {
         when(() => client.encryption).thenReturn(encryption);
 
         final coordinator = QueuePipelineCoordinator(
+          syncEventTrust: AdmittingSyncEventTrust(),
           syncDb: syncDb,
           settingsDb: settingsDb,
           journalDb: journalDb,

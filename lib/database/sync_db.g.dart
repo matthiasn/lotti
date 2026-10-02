@@ -4328,6 +4328,331 @@ class DeepBackfillRequestsCompanion
   }
 }
 
+class $TrustedSyncSendersTable extends TrustedSyncSenders
+    with TableInfo<$TrustedSyncSendersTable, TrustedSyncSenderItem> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TrustedSyncSendersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _curve25519KeyMeta = const VerificationMeta(
+    'curve25519Key',
+  );
+  @override
+  late final GeneratedColumn<String> curve25519Key = GeneratedColumn<String>(
+    'curve25519_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deviceIdMeta = const VerificationMeta(
+    'deviceId',
+  );
+  @override
+  late final GeneratedColumn<String> deviceId = GeneratedColumn<String>(
+    'device_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _trustedAtMeta = const VerificationMeta(
+    'trustedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> trustedAt = GeneratedColumn<DateTime>(
+    'trusted_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    userId,
+    curve25519Key,
+    deviceId,
+    trustedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'trusted_sync_senders';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TrustedSyncSenderItem> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('curve25519_key')) {
+      context.handle(
+        _curve25519KeyMeta,
+        curve25519Key.isAcceptableOrUnknown(
+          data['curve25519_key']!,
+          _curve25519KeyMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_curve25519KeyMeta);
+    }
+    if (data.containsKey('device_id')) {
+      context.handle(
+        _deviceIdMeta,
+        deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_deviceIdMeta);
+    }
+    if (data.containsKey('trusted_at')) {
+      context.handle(
+        _trustedAtMeta,
+        trustedAt.isAcceptableOrUnknown(data['trusted_at']!, _trustedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_trustedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {userId, curve25519Key};
+  @override
+  TrustedSyncSenderItem map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TrustedSyncSenderItem(
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      curve25519Key: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}curve25519_key'],
+      )!,
+      deviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}device_id'],
+      )!,
+      trustedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}trusted_at'],
+      )!,
+    );
+  }
+
+  @override
+  $TrustedSyncSendersTable createAlias(String alias) {
+    return $TrustedSyncSendersTable(attachedDatabase, alias);
+  }
+}
+
+class TrustedSyncSenderItem extends DataClass
+    implements Insertable<TrustedSyncSenderItem> {
+  final String userId;
+  final String curve25519Key;
+  final String deviceId;
+  final DateTime trustedAt;
+  const TrustedSyncSenderItem({
+    required this.userId,
+    required this.curve25519Key,
+    required this.deviceId,
+    required this.trustedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['user_id'] = Variable<String>(userId);
+    map['curve25519_key'] = Variable<String>(curve25519Key);
+    map['device_id'] = Variable<String>(deviceId);
+    map['trusted_at'] = Variable<DateTime>(trustedAt);
+    return map;
+  }
+
+  TrustedSyncSendersCompanion toCompanion(bool nullToAbsent) {
+    return TrustedSyncSendersCompanion(
+      userId: Value(userId),
+      curve25519Key: Value(curve25519Key),
+      deviceId: Value(deviceId),
+      trustedAt: Value(trustedAt),
+    );
+  }
+
+  factory TrustedSyncSenderItem.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TrustedSyncSenderItem(
+      userId: serializer.fromJson<String>(json['userId']),
+      curve25519Key: serializer.fromJson<String>(json['curve25519Key']),
+      deviceId: serializer.fromJson<String>(json['deviceId']),
+      trustedAt: serializer.fromJson<DateTime>(json['trustedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'userId': serializer.toJson<String>(userId),
+      'curve25519Key': serializer.toJson<String>(curve25519Key),
+      'deviceId': serializer.toJson<String>(deviceId),
+      'trustedAt': serializer.toJson<DateTime>(trustedAt),
+    };
+  }
+
+  TrustedSyncSenderItem copyWith({
+    String? userId,
+    String? curve25519Key,
+    String? deviceId,
+    DateTime? trustedAt,
+  }) => TrustedSyncSenderItem(
+    userId: userId ?? this.userId,
+    curve25519Key: curve25519Key ?? this.curve25519Key,
+    deviceId: deviceId ?? this.deviceId,
+    trustedAt: trustedAt ?? this.trustedAt,
+  );
+  TrustedSyncSenderItem copyWithCompanion(TrustedSyncSendersCompanion data) {
+    return TrustedSyncSenderItem(
+      userId: data.userId.present ? data.userId.value : this.userId,
+      curve25519Key: data.curve25519Key.present
+          ? data.curve25519Key.value
+          : this.curve25519Key,
+      deviceId: data.deviceId.present ? data.deviceId.value : this.deviceId,
+      trustedAt: data.trustedAt.present ? data.trustedAt.value : this.trustedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrustedSyncSenderItem(')
+          ..write('userId: $userId, ')
+          ..write('curve25519Key: $curve25519Key, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('trustedAt: $trustedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(userId, curve25519Key, deviceId, trustedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TrustedSyncSenderItem &&
+          other.userId == this.userId &&
+          other.curve25519Key == this.curve25519Key &&
+          other.deviceId == this.deviceId &&
+          other.trustedAt == this.trustedAt);
+}
+
+class TrustedSyncSendersCompanion
+    extends UpdateCompanion<TrustedSyncSenderItem> {
+  final Value<String> userId;
+  final Value<String> curve25519Key;
+  final Value<String> deviceId;
+  final Value<DateTime> trustedAt;
+  final Value<int> rowid;
+  const TrustedSyncSendersCompanion({
+    this.userId = const Value.absent(),
+    this.curve25519Key = const Value.absent(),
+    this.deviceId = const Value.absent(),
+    this.trustedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TrustedSyncSendersCompanion.insert({
+    required String userId,
+    required String curve25519Key,
+    required String deviceId,
+    required DateTime trustedAt,
+    this.rowid = const Value.absent(),
+  }) : userId = Value(userId),
+       curve25519Key = Value(curve25519Key),
+       deviceId = Value(deviceId),
+       trustedAt = Value(trustedAt);
+  static Insertable<TrustedSyncSenderItem> custom({
+    Expression<String>? userId,
+    Expression<String>? curve25519Key,
+    Expression<String>? deviceId,
+    Expression<DateTime>? trustedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (userId != null) 'user_id': userId,
+      if (curve25519Key != null) 'curve25519_key': curve25519Key,
+      if (deviceId != null) 'device_id': deviceId,
+      if (trustedAt != null) 'trusted_at': trustedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TrustedSyncSendersCompanion copyWith({
+    Value<String>? userId,
+    Value<String>? curve25519Key,
+    Value<String>? deviceId,
+    Value<DateTime>? trustedAt,
+    Value<int>? rowid,
+  }) {
+    return TrustedSyncSendersCompanion(
+      userId: userId ?? this.userId,
+      curve25519Key: curve25519Key ?? this.curve25519Key,
+      deviceId: deviceId ?? this.deviceId,
+      trustedAt: trustedAt ?? this.trustedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (curve25519Key.present) {
+      map['curve25519_key'] = Variable<String>(curve25519Key.value);
+    }
+    if (deviceId.present) {
+      map['device_id'] = Variable<String>(deviceId.value);
+    }
+    if (trustedAt.present) {
+      map['trusted_at'] = Variable<DateTime>(trustedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrustedSyncSendersCompanion(')
+          ..write('userId: $userId, ')
+          ..write('curve25519Key: $curve25519Key, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('trustedAt: $trustedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$SyncDatabase extends GeneratedDatabase {
   _$SyncDatabase(QueryExecutor e) : super(e);
   _$SyncDatabase.connect(DatabaseConnection c) : super.connect(c);
@@ -4344,6 +4669,8 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
       $OnboardingSyncRoundsTable(this);
   late final $DeepBackfillRequestsTable deepBackfillRequests =
       $DeepBackfillRequestsTable(this);
+  late final $TrustedSyncSendersTable trustedSyncSenders =
+      $TrustedSyncSendersTable(this);
   late final Index idxOutboxStatusPriorityCreatedAt = Index(
     'idx_outbox_status_priority_created_at',
     'CREATE INDEX idx_outbox_status_priority_created_at ON outbox (status, priority, created_at)',
@@ -4452,6 +4779,7 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     queueMarkers,
     onboardingSyncRounds,
     deepBackfillRequests,
+    trustedSyncSenders,
     idxOutboxStatusPriorityCreatedAt,
     idxOutboxActionablePriorityCreatedAt,
     idxOutboxActionableSubject,
@@ -6551,6 +6879,202 @@ typedef $$DeepBackfillRequestsTableProcessedTableManager =
       DeepBackfillRequestItem,
       PrefetchHooks Function()
     >;
+typedef $$TrustedSyncSendersTableCreateCompanionBuilder =
+    TrustedSyncSendersCompanion Function({
+      required String userId,
+      required String curve25519Key,
+      required String deviceId,
+      required DateTime trustedAt,
+      Value<int> rowid,
+    });
+typedef $$TrustedSyncSendersTableUpdateCompanionBuilder =
+    TrustedSyncSendersCompanion Function({
+      Value<String> userId,
+      Value<String> curve25519Key,
+      Value<String> deviceId,
+      Value<DateTime> trustedAt,
+      Value<int> rowid,
+    });
+
+class $$TrustedSyncSendersTableFilterComposer
+    extends Composer<_$SyncDatabase, $TrustedSyncSendersTable> {
+  $$TrustedSyncSendersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get curve25519Key => $composableBuilder(
+    column: $table.curve25519Key,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get deviceId => $composableBuilder(
+    column: $table.deviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get trustedAt => $composableBuilder(
+    column: $table.trustedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$TrustedSyncSendersTableOrderingComposer
+    extends Composer<_$SyncDatabase, $TrustedSyncSendersTable> {
+  $$TrustedSyncSendersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get curve25519Key => $composableBuilder(
+    column: $table.curve25519Key,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get deviceId => $composableBuilder(
+    column: $table.deviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get trustedAt => $composableBuilder(
+    column: $table.trustedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$TrustedSyncSendersTableAnnotationComposer
+    extends Composer<_$SyncDatabase, $TrustedSyncSendersTable> {
+  $$TrustedSyncSendersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get curve25519Key => $composableBuilder(
+    column: $table.curve25519Key,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get deviceId =>
+      $composableBuilder(column: $table.deviceId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get trustedAt =>
+      $composableBuilder(column: $table.trustedAt, builder: (column) => column);
+}
+
+class $$TrustedSyncSendersTableTableManager
+    extends
+        RootTableManager<
+          _$SyncDatabase,
+          $TrustedSyncSendersTable,
+          TrustedSyncSenderItem,
+          $$TrustedSyncSendersTableFilterComposer,
+          $$TrustedSyncSendersTableOrderingComposer,
+          $$TrustedSyncSendersTableAnnotationComposer,
+          $$TrustedSyncSendersTableCreateCompanionBuilder,
+          $$TrustedSyncSendersTableUpdateCompanionBuilder,
+          (
+            TrustedSyncSenderItem,
+            BaseReferences<
+              _$SyncDatabase,
+              $TrustedSyncSendersTable,
+              TrustedSyncSenderItem
+            >,
+          ),
+          TrustedSyncSenderItem,
+          PrefetchHooks Function()
+        > {
+  $$TrustedSyncSendersTableTableManager(
+    _$SyncDatabase db,
+    $TrustedSyncSendersTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TrustedSyncSendersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TrustedSyncSendersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TrustedSyncSendersTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> userId = const Value.absent(),
+                Value<String> curve25519Key = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
+                Value<DateTime> trustedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TrustedSyncSendersCompanion(
+                userId: userId,
+                curve25519Key: curve25519Key,
+                deviceId: deviceId,
+                trustedAt: trustedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String userId,
+                required String curve25519Key,
+                required String deviceId,
+                required DateTime trustedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => TrustedSyncSendersCompanion.insert(
+                userId: userId,
+                curve25519Key: curve25519Key,
+                deviceId: deviceId,
+                trustedAt: trustedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$TrustedSyncSendersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$SyncDatabase,
+      $TrustedSyncSendersTable,
+      TrustedSyncSenderItem,
+      $$TrustedSyncSendersTableFilterComposer,
+      $$TrustedSyncSendersTableOrderingComposer,
+      $$TrustedSyncSendersTableAnnotationComposer,
+      $$TrustedSyncSendersTableCreateCompanionBuilder,
+      $$TrustedSyncSendersTableUpdateCompanionBuilder,
+      (
+        TrustedSyncSenderItem,
+        BaseReferences<
+          _$SyncDatabase,
+          $TrustedSyncSendersTable,
+          TrustedSyncSenderItem
+        >,
+      ),
+      TrustedSyncSenderItem,
+      PrefetchHooks Function()
+    >;
 
 class $SyncDatabaseManager {
   final _$SyncDatabase _db;
@@ -6569,4 +7093,6 @@ class $SyncDatabaseManager {
       $$OnboardingSyncRoundsTableTableManager(_db, _db.onboardingSyncRounds);
   $$DeepBackfillRequestsTableTableManager get deepBackfillRequests =>
       $$DeepBackfillRequestsTableTableManager(_db, _db.deepBackfillRequests);
+  $$TrustedSyncSendersTableTableManager get trustedSyncSenders =>
+      $$TrustedSyncSendersTableTableManager(_db, _db.trustedSyncSenders);
 }

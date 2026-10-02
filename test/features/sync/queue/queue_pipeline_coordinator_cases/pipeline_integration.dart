@@ -39,6 +39,7 @@ extension _PipelineIntegrationCases on _QueueCoordinatorTestSetup {
         AttachmentIndex? attachmentIndex,
         AttachmentIngestor? attachmentIngestor,
       }) => QueuePipelineCoordinator(
+        syncEventTrust: AdmittingSyncEventTrust(),
         syncDb: syncDb,
         settingsDb: settingsDb,
         journalDb: journalDb,

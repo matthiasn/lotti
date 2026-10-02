@@ -51,6 +51,7 @@ extension _CatchUpClaimCases on _QueueCoordinatorTestSetup {
 
     QueuePipelineCoordinator buildReal(InboundQueue realQueue) =>
         QueuePipelineCoordinator(
+          syncEventTrust: AdmittingSyncEventTrust(),
           syncDb: syncDb,
           settingsDb: settingsDb,
           journalDb: journalDb,
@@ -121,7 +122,11 @@ extension _CatchUpClaimCases on _QueueCoordinatorTestSetup {
           reachedStore.complete();
           await releaseStore.future;
         });
-        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        final realQueue = InboundQueue(
+          trust: AdmittingSyncEventTrust(),
+          db: syncDb,
+          logging: logging,
+        );
         addTearDown(realQueue.dispose);
         final coordinator = buildReal(realQueue);
         await coordinator.start();
@@ -177,7 +182,11 @@ extension _CatchUpClaimCases on _QueueCoordinatorTestSetup {
         when(() => room.partial).thenReturn(false);
         when(() => room.client).thenReturn(client);
         when(() => roomManager.currentRoom).thenReturn(room);
-        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        final realQueue = InboundQueue(
+          trust: AdmittingSyncEventTrust(),
+          db: syncDb,
+          logging: logging,
+        );
         addTearDown(realQueue.dispose);
         final coordinator = buildReal(realQueue);
         await coordinator.start();
@@ -242,7 +251,11 @@ extension _CatchUpClaimCases on _QueueCoordinatorTestSetup {
       'unavailable response room retains its range before later payloads',
       () async {
         await seedMarker(ts: 5000, eventId: r'$anchor');
-        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        final realQueue = InboundQueue(
+          trust: AdmittingSyncEventTrust(),
+          db: syncDb,
+          logging: logging,
+        );
         addTearDown(realQueue.dispose);
         final coordinator = buildReal(realQueue);
         await coordinator.start();
@@ -298,7 +311,11 @@ extension _CatchUpClaimCases on _QueueCoordinatorTestSetup {
         when(
           () => encryption.decryptRoomEvent(any()),
         ).thenThrow(StateError('key store unavailable'));
-        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        final realQueue = InboundQueue(
+          trust: AdmittingSyncEventTrust(),
+          db: syncDb,
+          logging: logging,
+        );
         addTearDown(realQueue.dispose);
         final coordinator = buildReal(realQueue);
         await coordinator.start();
@@ -390,7 +407,11 @@ extension _CatchUpClaimCases on _QueueCoordinatorTestSetup {
           if (legacyReads == 1) throw StateError('database is locked');
           return '5000';
         });
-        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        final realQueue = InboundQueue(
+          trust: AdmittingSyncEventTrust(),
+          db: syncDb,
+          logging: logging,
+        );
         addTearDown(realQueue.dispose);
         final coordinator = buildReal(realQueue);
         await coordinator.start();
@@ -487,6 +508,7 @@ extension _CatchUpClaimCases on _QueueCoordinatorTestSetup {
       () async {
         when(() => client.getRoomById(roomId)).thenReturn(null);
         final coordinator = QueuePipelineCoordinator(
+          syncEventTrust: AdmittingSyncEventTrust(),
           syncDb: syncDb,
           settingsDb: settingsDb,
           journalDb: journalDb,
@@ -534,7 +556,11 @@ extension _CatchUpClaimCases on _QueueCoordinatorTestSetup {
       'runs forward from the anchor',
       () async {
         await seedMarker(ts: 5000, eventId: r'$anchor');
-        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        final realQueue = InboundQueue(
+          trust: AdmittingSyncEventTrust(),
+          db: syncDb,
+          logging: logging,
+        );
         addTearDown(realQueue.dispose);
         final coordinator = buildReal(realQueue);
         await coordinator.start();
@@ -560,7 +586,11 @@ extension _CatchUpClaimCases on _QueueCoordinatorTestSetup {
       'page for good)',
       () async {
         await seedMarker(ts: 100);
-        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        final realQueue = InboundQueue(
+          trust: AdmittingSyncEventTrust(),
+          db: syncDb,
+          logging: logging,
+        );
         addTearDown(realQueue.dispose);
         final coordinator = buildReal(realQueue);
 
@@ -617,7 +647,11 @@ extension _CatchUpClaimCases on _QueueCoordinatorTestSetup {
       'once the marker reaches it (CheckpointForward, CheckpointAtCursor)',
       () async {
         await seedMarker(ts: 100, eventId: r'$anchor');
-        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        final realQueue = InboundQueue(
+          trust: AdmittingSyncEventTrust(),
+          db: syncDb,
+          logging: logging,
+        );
         addTearDown(realQueue.dispose);
         final coordinator = buildReal(realQueue);
 

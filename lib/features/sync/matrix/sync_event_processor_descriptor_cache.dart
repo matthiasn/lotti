@@ -45,7 +45,10 @@ extension _DescriptorCache on SyncEventProcessor {
       _ => (null, null),
     };
     final index = _attachmentIndex;
-    if (id == null || index == null || error.path != path) return false;
+    final trust = _syncEventTrust;
+    if (id == null || index == null || trust == null || error.path != path) {
+      return false;
+    }
     // Do not promote disk failures (including a bundled child's cache write)
     // into an unlimited descriptor retry merely because its parent has an ID.
     if (error is! _SyncDescriptorFetchException &&
@@ -82,9 +85,15 @@ extension _DescriptorCache on SyncEventProcessor {
         descriptor = await _decryptDescriptor(descriptor, envelope.room);
         source = 'server';
       }
+      // The server answers an id lookup with whatever it holds; only a
+      // descriptor encrypted by a trusted device may name the payload's JSON.
       if (descriptor != null &&
           descriptor.eventId == id &&
-          descriptor.roomId == envelope.roomId) {
+          descriptor.roomId == envelope.roomId &&
+          await trust.admits(
+            descriptor,
+            subDomain: 'processor.resolve.descriptorTrust',
+          )) {
         index.record(descriptor);
       }
       _trace(

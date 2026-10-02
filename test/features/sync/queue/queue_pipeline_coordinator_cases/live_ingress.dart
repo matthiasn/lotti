@@ -521,6 +521,7 @@ extension _LiveIngressCases on _QueueCoordinatorTestSetup {
           final ingestor = _FakeAttachmentIngestor();
 
           final coordinator = QueuePipelineCoordinator(
+            syncEventTrust: AdmittingSyncEventTrust(),
             syncDb: syncDb,
             settingsDb: settingsDb,
             journalDb: journalDb,
@@ -552,6 +553,65 @@ extension _LiveIngressCases on _QueueCoordinatorTestSetup {
       );
 
       test(
+        'a descriptor from an untrusted sender is neither indexed nor '
+        'downloaded, so it cannot stand in for a payload JSON',
+        () async {
+          final room = MockRoom();
+          when(() => room.id).thenReturn(roomId);
+          when(() => room.partial).thenReturn(false);
+          when(() => room.client).thenReturn(client);
+          when(() => roomManager.currentRoom).thenReturn(room);
+          final trust = MockSyncEventTrust();
+          final ingestor = _FakeAttachmentIngestor();
+          final coordinator = build(
+            attachmentIngestor: ingestor,
+            syncEventTrust: trust,
+          );
+          await coordinator.start();
+
+          Event descriptor(String eventId) => Event(
+            type: EventTypes.Message,
+            eventId: eventId,
+            senderId: '@peer:example.org',
+            originServerTs: DateTime.utc(2026),
+            room: room,
+            content: {
+              'msgtype': MessageTypes.File,
+              'relativePath': '/attachment.json',
+              'url': 'mxc://example.org/attachment',
+            },
+          );
+          final forged = descriptor(r'$forged');
+          final genuine = descriptor(r'$genuine');
+          when(
+            () => trust.admits(
+              forged,
+              subDomain: 'queue.coordinator.attachmentTrust',
+            ),
+          ).thenAnswer((_) async => false);
+          when(
+            () => trust.admits(
+              genuine,
+              subDomain: 'queue.coordinator.attachmentTrust',
+            ),
+          ).thenAnswer((_) async => true);
+
+          timelineCtl
+            ..add(forged)
+            ..add(genuine);
+          await pumpEventQueue();
+
+          expect(
+            ingestor.processCalls.map(
+              (call) => (call[#event]! as Event).eventId,
+            ),
+            [r'$genuine'],
+          );
+          await coordinator.stop();
+        },
+      );
+
+      test(
         'when AttachmentIngestor.process throws, the failure is logged '
         'and the queue enqueue still happens — a broken ingestor must '
         'not strand incoming sync-payload events',
@@ -575,6 +635,7 @@ extension _LiveIngressCases on _QueueCoordinatorTestSetup {
           });
 
           final coordinator = QueuePipelineCoordinator(
+            syncEventTrust: AdmittingSyncEventTrust(),
             syncDb: syncDb,
             settingsDb: settingsDb,
             journalDb: journalDb,
@@ -625,6 +686,7 @@ extension _LiveIngressCases on _QueueCoordinatorTestSetup {
           final registry = SentEventRegistry();
           final ingestor = _FakeAttachmentIngestor();
           final coordinator = QueuePipelineCoordinator(
+            syncEventTrust: AdmittingSyncEventTrust(),
             syncDb: syncDb,
             settingsDb: settingsDb,
             journalDb: journalDb,
@@ -672,6 +734,7 @@ extension _LiveIngressCases on _QueueCoordinatorTestSetup {
         () async {
           final registry = SentEventRegistry();
           final coordinator = QueuePipelineCoordinator(
+            syncEventTrust: AdmittingSyncEventTrust(),
             syncDb: syncDb,
             settingsDb: settingsDb,
             journalDb: journalDb,
@@ -746,6 +809,7 @@ extension _LiveIngressCases on _QueueCoordinatorTestSetup {
         () async {
           final registry = SentEventRegistry();
           final coordinator = QueuePipelineCoordinator(
+            syncEventTrust: AdmittingSyncEventTrust(),
             syncDb: syncDb,
             settingsDb: settingsDb,
             journalDb: journalDb,

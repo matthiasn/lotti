@@ -278,6 +278,8 @@ void main() {
         'wrongPath',
         'encrypted',
         'timeout',
+        'untrusted',
+        'noPolicy',
       ]) {
         final indexed = lookup == 'indexed';
         final serverLookup = lookup.startsWith('server');
@@ -382,6 +384,13 @@ void main() {
               if (lookup == 'cachedCiphertext') return ciphertext;
               return lookup == 'missing' ? null : descriptor;
             });
+            final trust = MockSyncEventTrust();
+            when(
+              () => trust.admits(
+                any(),
+                subDomain: 'processor.resolve.descriptorTrust',
+              ),
+            ).thenAnswer((_) async => lookup != 'untrusted');
             final exactProcessor = SyncEventProcessor(
               loggingService: loggingService,
               updateNotifications: updateNotifications,
@@ -391,6 +400,9 @@ void main() {
               journalEntityLoader: journalEntityLoader,
               documentsDirectory: tempDir,
               attachmentIndex: index,
+              // Without a policy the processor cannot vouch for a fetched
+              // descriptor, so it must not look one up at all.
+              syncEventTrust: lookup == 'noPolicy' ? null : trust,
             );
             const message = SyncMessage.outboxBundle(
               children: [],
@@ -458,6 +470,12 @@ void main() {
               if (lookup == 'wrongPath' || lookup == 'serverWrongPath') {
                 // The exact event exists, but it cannot satisfy this envelope.
                 await attempt;
+              } else if (lookup == 'noPolicy') {
+                await expectLater(
+                  attempt,
+                  throwsA(isNot(isA<PendingSyncDescriptorException>())),
+                );
+                expect(index.findByEventId('exact-process-event'), isNull);
               } else {
                 await expectLater(
                   attempt,
@@ -483,7 +501,7 @@ void main() {
                 ),
               ).called(1);
             }
-            if (indexed) {
+            if (indexed || lookup == 'noPolicy') {
               verifyNever(() => room.getEventById(any()));
             } else {
               verify(() => room.getEventById('exact-process-event')).called(1);

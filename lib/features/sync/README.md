@@ -32,6 +32,12 @@ merge of two users' work.
   device — a fresh install awaiting its ceremony, or a dead session left by
   an uninstalled app — receives ciphertext it cannot read, while every
   verified device keeps syncing. Nothing ever halts.
+- **Accepts changes only from verified devices.** The inbound side mirrors the
+  rule above: a change or attachment is applied only when a device this
+  session shares its keys with encrypted it (ADR 0113). Plaintext posted into
+  the room, and anything from an unverified or blocked device, is dropped —
+  so neither the homeserver's operator nor someone holding the password can
+  inject changes.
 - **Adds a device from any device already syncing.** "Add device" sits on the
   device roster and mints a handover code on demand — a phone that outlives its
   desktop can onboard the replacement. The code is shown only when asked for,

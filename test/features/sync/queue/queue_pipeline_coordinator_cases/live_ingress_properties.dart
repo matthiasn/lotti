@@ -310,6 +310,7 @@ class _GladosBench {
     UpdateNotifications? updateNotifications,
   }) {
     return QueuePipelineCoordinator(
+      syncEventTrust: AdmittingSyncEventTrust(),
       syncDb: syncDb,
       settingsDb: settingsDb,
       journalDb: journalDb,

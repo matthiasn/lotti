@@ -570,7 +570,7 @@ void main() {
 
     test('schema version is the current one', () {
       expect(db.schemaVersion, SyncDatabase.currentSchemaVersion);
-      expect(db.schemaVersion, 33);
+      expect(db.schemaVersion, 34);
     });
 
     test('OutboxStatus indices used by the partial-index annotation '

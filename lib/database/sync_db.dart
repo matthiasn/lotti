@@ -19,6 +19,7 @@ part 'sync_db_outbox_prune.dart';
 part 'sync_db_onboarding.dart';
 part 'sync_db_sequence.dart';
 part 'sync_db_tables.dart';
+part 'sync_db_trusted_senders.dart';
 part 'sync_db_watermarks.dart';
 part 'sync_sequence_status.dart';
 
@@ -57,6 +58,7 @@ const _idxInboundEventQueueActiveStatusRoom =
     QueueMarkers,
     OnboardingSyncRounds,
     DeepBackfillRequests,
+    TrustedSyncSenders,
   ],
 )
 class SyncDatabase extends _$SyncDatabase
@@ -69,7 +71,8 @@ class SyncDatabase extends _$SyncDatabase
         _SyncDbOnboarding,
         _SyncDbBackfill,
         _SyncDbDeepBackfill,
-        _SyncDbSequenceLifecycle {
+        _SyncDbSequenceLifecycle,
+        _SyncDbTrustedSenders {
   SyncDatabase({
     this.inMemoryDatabase = false,
     String? overriddenFilename,
@@ -103,7 +106,7 @@ class SyncDatabase extends _$SyncDatabase
 
   /// The schema this build writes. A restored backup may carry an
   /// older schema, which Drift migrates, but never a newer one.
-  static const int currentSchemaVersion = 33;
+  static const int currentSchemaVersion = 34;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -665,6 +668,9 @@ class SyncDatabase extends _$SyncDatabase
               inboundEventQueue.descriptorAttempts,
             );
           }
+        }
+        if (from < 34) {
+          await m.createTable(trustedSyncSenders);
         }
       },
     );

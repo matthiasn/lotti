@@ -511,6 +511,7 @@ extension _QueueLifecycleCases on _QueueCoordinatorTestSetup {
         when(() => client.getRoomById(roomId)).thenReturn(null);
 
         final coordinator = QueuePipelineCoordinator(
+          syncEventTrust: AdmittingSyncEventTrust(),
           syncDb: syncDb,
           settingsDb: settingsDb,
           journalDb: journalDb,

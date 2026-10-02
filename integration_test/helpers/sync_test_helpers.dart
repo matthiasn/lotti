@@ -20,6 +20,7 @@ import 'package:lotti/features/sync/matrix/pipeline/attachment_ingestor.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
+import 'package:lotti/features/sync/matrix/sync_event_trust.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -345,6 +346,12 @@ Future<SyncTestDevice> createSyncTestDevice({
     vectorClockService: vectorClockService,
     loggingService: loggingService,
   );
+  // The real policy: these suites run SAS verification, so sync between
+  // the verified devices exercises the inbound trust gate end to end.
+  final syncEventTrust = SyncEventTrust(
+    syncDb: syncDb,
+    logging: loggingService,
+  );
   final eventProcessor = SyncEventProcessor(
     loggingService: loggingService,
     updateNotifications: updateNotifications,
@@ -360,6 +367,7 @@ Future<SyncTestDevice> createSyncTestDevice({
     sequenceLogService: sequenceLogService,
     journalDb: journalDb,
     vectorClockService: vectorClockService,
+    syncEventTrust: syncEventTrust,
     savedTaskFiltersRepository: SavedTaskFiltersRepository(
       SavedTaskFiltersPersistence(settingsDb),
       updateNotifications,
@@ -389,6 +397,7 @@ Future<SyncTestDevice> createSyncTestDevice({
     sequenceLogService: sequenceLogService,
     activityGate: activityGate,
     logging: loggingService,
+    syncEventTrust: syncEventTrust,
     attachmentIndex: sharedAttachmentIndex,
     updateNotifications: updateNotifications,
     attachmentIngestor: queueAttachmentIngestor,

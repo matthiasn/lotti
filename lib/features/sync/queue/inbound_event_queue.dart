@@ -5,6 +5,7 @@ import 'package:clock/clock.dart';
 import 'package:drift/drift.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_event_classifier.dart';
+import 'package:lotti/features/sync/matrix/sync_event_trust.dart';
 import 'package:lotti/features/sync/queue/inbound_queue_models.dart';
 import 'package:lotti/features/sync/queue/inbound_queue_resurrection.dart';
 import 'package:lotti/features/sync/queue/queue_depth_emitter.dart';
@@ -31,11 +32,17 @@ class InboundQueue {
   InboundQueue({
     required this._db,
     required this._logging,
+    required this._trust,
     Duration? leaseDuration,
   }) : _leaseDuration = leaseDuration ?? SyncTuning.inboundWorkerLeaseDuration;
 
   final SyncDatabase _db;
   final DomainLogger _logging;
+
+  /// Admits only payloads encrypted by a device this one shares keys with
+  /// (F8). Every producer reaches the queue through [enqueueBatch], so no
+  /// path can apply an untrusted event.
+  final SyncEventTrust _trust;
   final Duration _leaseDuration;
 
   late final QueueDepthEmitter _depthEmitter = QueueDepthEmitter(
@@ -162,6 +169,7 @@ class InboundQueue {
     var duplicates = 0;
     var filteredOut = 0;
     var deferred = 0;
+    var untrusted = 0;
     final nowMs = clock.now().millisecondsSinceEpoch;
 
     final toInsert = <InboundEventQueueCompanion>[];
@@ -179,6 +187,13 @@ class InboundQueue {
       // F4: drop non-payload events at the boundary.
       if (!MatrixEventClassifier.isSyncPayloadEvent(event)) {
         filteredOut++;
+        continue;
+      }
+      // F8: drop payloads not encrypted by a device this one would share
+      // its own keys with. A dropped event never had a legitimate sender, so
+      // the marker may pass it like any other non-payload event.
+      if (!await _trust.admits(event, subDomain: _logSubEnqueue)) {
+        untrusted++;
         continue;
       }
 
@@ -225,7 +240,8 @@ class InboundQueue {
       'queue.enqueue producer=${producer.name} '
       'accepted=$accepted dupes=$duplicates '
       'filteredOutByType=$filteredOut '
-      'deferredPendingDecryption=$deferred',
+      'deferredPendingDecryption=$deferred '
+      'rejectedUntrusted=$untrusted',
       subDomain: _logSubEnqueue,
     );
 
@@ -238,6 +254,7 @@ class InboundQueue {
       duplicatesDropped: duplicates,
       filteredOutByType: filteredOut,
       deferredPendingDecryption: deferred,
+      rejectedUntrusted: untrusted,
     );
   }
 

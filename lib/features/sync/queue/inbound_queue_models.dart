@@ -4,14 +4,15 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:matrix/matrix.dart';
 
 /// Public result of a queue-side enqueue call. `accepted + dupes +
-/// filteredOutByType + deferredPendingDecryption` always equals the
-/// number of events passed in.
+/// filteredOutByType + deferredPendingDecryption + rejectedUntrusted` always
+/// equals the number of events passed in.
 class EnqueueResult {
   const EnqueueResult({
     required this.accepted,
     required this.duplicatesDropped,
     required this.filteredOutByType,
     required this.deferredPendingDecryption,
+    required this.rejectedUntrusted,
   });
 
   final int accepted;
@@ -27,11 +28,17 @@ class EnqueueResult {
   /// decryption key (F3).
   final int deferredPendingDecryption;
 
+  /// Rejected because `SyncEventTrust` did not trust its sender: plaintext,
+  /// a forwarded or unknown session, or a device this one does not share
+  /// its keys with (F8). Never applied and never retried.
+  final int rejectedUntrusted;
+
   static const empty = EnqueueResult(
     accepted: 0,
     duplicatesDropped: 0,
     filteredOutByType: 0,
     deferredPendingDecryption: 0,
+    rejectedUntrusted: 0,
   );
 }
 

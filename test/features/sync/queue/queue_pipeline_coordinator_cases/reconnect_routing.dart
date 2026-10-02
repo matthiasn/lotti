@@ -6,9 +6,14 @@ extension _ReconnectRoutingCases on _QueueCoordinatorTestSetup {
       'a resume floor behind the applied anchor dispatches backward from '
       'the floor instead of stepping over the known gap',
       () async {
-        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        final realQueue = InboundQueue(
+          trust: AdmittingSyncEventTrust(),
+          db: syncDb,
+          logging: logging,
+        );
         addTearDown(realQueue.dispose);
         final coordinator = QueuePipelineCoordinator(
+          syncEventTrust: AdmittingSyncEventTrust(),
           syncDb: syncDb,
           settingsDb: settingsDb,
           journalDb: journalDb,
@@ -78,9 +83,14 @@ extension _ReconnectRoutingCases on _QueueCoordinatorTestSetup {
       'and NOT to the backward walk — this is the load-bearing reconnect '
       'path that closes gaps the cached backward timeline cannot',
       () async {
-        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        final realQueue = InboundQueue(
+          trust: AdmittingSyncEventTrust(),
+          db: syncDb,
+          logging: logging,
+        );
         addTearDown(realQueue.dispose);
         final coordinator = QueuePipelineCoordinator(
+          syncEventTrust: AdmittingSyncEventTrust(),
           syncDb: syncDb,
           settingsDb: settingsDb,
           journalDb: journalDb,
@@ -142,9 +152,14 @@ extension _ReconnectRoutingCases on _QueueCoordinatorTestSetup {
       'so reconnect never silently no-ops when the anchor has been '
       'compacted out',
       () async {
-        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        final realQueue = InboundQueue(
+          trust: AdmittingSyncEventTrust(),
+          db: syncDb,
+          logging: logging,
+        );
         addTearDown(realQueue.dispose);
         final coordinator = QueuePipelineCoordinator(
+          syncEventTrust: AdmittingSyncEventTrust(),
           syncDb: syncDb,
           settingsDb: settingsDb,
           journalDb: journalDb,
@@ -211,9 +226,14 @@ extension _ReconnectRoutingCases on _QueueCoordinatorTestSetup {
       'boundaryReached to completed is what let a walk cover 51 events of a '
       '150-message burst and report success, stranding the rest',
       () async {
-        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        final realQueue = InboundQueue(
+          trust: AdmittingSyncEventTrust(),
+          db: syncDb,
+          logging: logging,
+        );
         addTearDown(realQueue.dispose);
         final coordinator = QueuePipelineCoordinator(
+          syncEventTrust: AdmittingSyncEventTrust(),
           syncDb: syncDb,
           settingsDb: settingsDb,
           journalDb: journalDb,
@@ -307,9 +327,14 @@ extension _ReconnectRoutingCases on _QueueCoordinatorTestSetup {
       'progress, so the retry machinery should bounce rather than '
       'redoing the already-applied pages via the backward path',
       () async {
-        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        final realQueue = InboundQueue(
+          trust: AdmittingSyncEventTrust(),
+          db: syncDb,
+          logging: logging,
+        );
         addTearDown(realQueue.dispose);
         final coordinator = QueuePipelineCoordinator(
+          syncEventTrust: AdmittingSyncEventTrust(),
           syncDb: syncDb,
           settingsDb: settingsDb,
           journalDb: journalDb,
@@ -391,9 +416,14 @@ extension _ReconnectRoutingCases on _QueueCoordinatorTestSetup {
       'a later gap signal does not spuriously trigger an unbounded '
       'recovery walk when the forward walk already closed the gap',
       () async {
-        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        final realQueue = InboundQueue(
+          trust: AdmittingSyncEventTrust(),
+          db: syncDb,
+          logging: logging,
+        );
         addTearDown(realQueue.dispose);
         final coordinator = QueuePipelineCoordinator(
+          syncEventTrust: AdmittingSyncEventTrust(),
           syncDb: syncDb,
           settingsDb: settingsDb,
           journalDb: journalDb,
@@ -555,8 +585,13 @@ extension _ReconnectRoutingCases on _QueueCoordinatorTestSetup {
             ];
 
         for (final scenario in cases) {
-          final realQueue = InboundQueue(db: syncDb, logging: logging);
+          final realQueue = InboundQueue(
+            trust: AdmittingSyncEventTrust(),
+            db: syncDb,
+            logging: logging,
+          );
           final coordinator = QueuePipelineCoordinator(
+            syncEventTrust: AdmittingSyncEventTrust(),
             syncDb: syncDb,
             settingsDb: settingsDb,
             journalDb: journalDb,

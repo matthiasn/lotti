@@ -44,6 +44,7 @@ import 'package:lotti/features/sync/matrix/journal_entity_dedup_cache.dart';
 import 'package:lotti/features/sync/matrix/outbox_bundle_unpacker.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/smart_journal_entity_loader.dart';
+import 'package:lotti/features/sync/matrix/sync_event_trust.dart';
 import 'package:lotti/features/sync/matrix/sync_journal_entity_loader.dart';
 import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
 import 'package:lotti/features/sync/media/media_request_handler.dart';
@@ -153,6 +154,7 @@ class SyncEventProcessor {
     this._notificationPreferenceEffects,
     this._syncNodeProfileRepository,
     this._fts5Db,
+    this._syncEventTrust,
   }) : _documentsDirectory =
            journalEntityLoader?.documentsDirectory ?? documentsDirectory,
        _journalEntityLoader =
@@ -177,6 +179,11 @@ class SyncEventProcessor {
   final SyncJournalEntityLoader _journalEntityLoader;
   final SyncSequenceLogService? _sequenceLogService;
   final AttachmentIndex? _attachmentIndex;
+
+  /// Vets a descriptor fetched by event id before it is indexed. Without it
+  /// the processor cannot vouch for a fetched descriptor, so exact-id
+  /// recovery stays off rather than trusting whatever the server returns.
+  final SyncEventTrust? _syncEventTrust;
   // Optional prepare-phase DB handle — only the outbox bundle resolver uses
   // it today, for a single bulk vector-clock dominance check across every
   // journal entity in the manifest. Apply-phase DB writes still flow

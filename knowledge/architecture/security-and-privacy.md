@@ -5,13 +5,17 @@ description: What is encrypted, what is not, where secrets live, and what leaves
 resource: ../..
 tags: [architecture, security, privacy, encryption, secure-storage]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T20:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-03T12:00:00Z }
 stale_after: 2027-01-11
 sources:
   - id: secure-storage
     resource: ../../lib/features/sync/secure_storage.dart
     title: SecureStorage
     last_modified: 2026-06-16
+  - id: event-trust
+    resource: ../../lib/features/sync/matrix/sync_event_trust.dart
+    title: SyncEventTrust — inbound sender trust
+    last_modified: 2026-10-03
   - id: privacy-policy
     resource: ../../PRIVACY.md
     title: Lotti privacy policy
@@ -114,14 +118,23 @@ flowchart LR
   Sender --> Enc["Olm/Megolm encryption (vodozemac)"]
   Enc --> Room["Encrypted Matrix room on the homeserver"]
   Room --> Dec["Decryption on the peer device"]
-  Dec --> Queue["InboundEventQueue"]
+  Dec --> Trust["SyncEventTrust: sender device verified?"]
+  Trust --> Queue["InboundEventQueue"]
   Queue --> Apply["SyncEventProcessor → local databases"]
 ```
 
 The homeserver relays ciphertext it cannot read. Device trust is established
-through Matrix key verification (`key_verification_runner.dart`), and events
-that arrive before their session key lower a durable receive-floor timestamp
-before being skipped. The Matrix SDK retains the ciphertext; late key traffic
+through Matrix key verification (`key_verification_runner.dart`) and enforced
+in both directions. Outbound, room keys are shared only with directly verified
+devices ([ADR 0045](../../docs/adr/0045-exclude-unverified-devices-from-key-sharing.md)).
+Inbound, `SyncEventTrust` applies an event only when a device this one shares
+its keys with created the Megolm session that decrypted it; plaintext, forwarded
+sessions and unverified or blocked devices are dropped
+([ADR 0113](../../docs/adr/0113-inbound-sync-trusts-only-key-sharing-peers.md)).
+Without the inbound half, whoever can post into the room — the account holder
+or the homeserver's operator — could inject sync payloads, because the Matrix
+SDK checks neither. Events that arrive before their session key lower a durable
+receive-floor timestamp before being skipped. The Matrix SDK retains the ciphertext; late key traffic
 then triggers a catch-up walk back to that floor, including across app restart.
 Because SDK pagination may return a cached encrypted event even after storing
 the key, the bootstrap sink makes one fresh SDK decryption attempt on each
@@ -162,5 +175,6 @@ export, not a tap.
 | Keystore wrapper | [`lib/features/sync/secure_storage.dart`](../../lib/features/sync/secure_storage.dart) |
 | Matrix client creation | [`lib/features/sync/matrix/client.dart`](../../lib/features/sync/matrix/client.dart) |
 | Key verification | [`lib/features/sync/matrix/key_verification_runner.dart`](../../lib/features/sync/matrix/key_verification_runner.dart) |
+| Inbound sender trust | [`lib/features/sync/matrix/sync_event_trust.dart`](../../lib/features/sync/matrix/sync_event_trust.dart) |
 | Late-key handling | [`lib/features/sync/queue/bootstrap_sink.dart`](../../lib/features/sync/queue/bootstrap_sink.dart), [`lib/features/sync/queue/bridge_coordinator.dart`](../../lib/features/sync/queue/bridge_coordinator.dart) |
 | Published policy | [`PRIVACY.md`](../../PRIVACY.md) |

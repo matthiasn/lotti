@@ -15,6 +15,7 @@ import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../database/slow_query_logging_test_utils.dart';
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import 'test_utils.dart';
 
@@ -632,6 +633,7 @@ Future<void> _withFreshInboundQueue(
 ) async {
   final db = SyncDatabase(inMemoryDatabase: true);
   final queue = InboundQueue(
+    trust: AdmittingSyncEventTrust(),
     db: db,
     logging: MockDomainLogger(),
     leaseDuration: const Duration(seconds: 1),
@@ -652,9 +654,7 @@ void main() {
   const roomA = '!roomA:example.org';
   const roomB = '!roomB:example.org';
 
-  setUpAll(() {
-    registerFallbackValue(StackTrace.empty);
-  });
+  setUpAll(registerAllFallbackValues);
 
   _registerModelConformance();
 
@@ -662,6 +662,7 @@ void main() {
     db = SyncDatabase(inMemoryDatabase: true);
     logging = MockDomainLogger();
     queue = InboundQueue(
+      trust: AdmittingSyncEventTrust(),
       db: db,
       logging: logging,
       leaseDuration: const Duration(seconds: 1),
@@ -741,6 +742,79 @@ void main() {
         expect(stats.total, 0);
       },
     );
+
+    group('untrusted senders (F8)', () {
+      late MockSyncEventTrust trust;
+      late InboundQueue guarded;
+
+      setUp(() {
+        trust = MockSyncEventTrust();
+        guarded = InboundQueue(trust: trust, db: db, logging: logging);
+      });
+
+      tearDown(() => guarded.dispose());
+
+      test(
+        'a payload the trust policy rejects never enters the queue',
+        () async {
+          final forged = _buildSyncEvent(
+            eventId: r'$forged',
+            roomId: roomA,
+            originTsMs: 5000,
+          );
+          final genuine = _buildSyncEvent(
+            eventId: r'$genuine',
+            roomId: roomA,
+            originTsMs: 5001,
+          );
+          when(
+            () => trust.admits(forged, subDomain: 'queue.enqueue'),
+          ).thenAnswer((_) async => false);
+          when(
+            () => trust.admits(genuine, subDomain: 'queue.enqueue'),
+          ).thenAnswer((_) async => true);
+
+          final result = await guarded.enqueueBatch(
+            [forged, genuine],
+            producer: InboundEventProducer.bootstrap,
+          );
+
+          expect(result.accepted, 1);
+          expect(result.rejectedUntrusted, 1);
+          final ready = await guarded.peekBatchReady(maxBatch: 10);
+          expect(ready.map((entry) => entry.eventId), [r'$genuine']);
+        },
+      );
+
+      test(
+        'ciphertext and non-payload events never reach the policy',
+        () async {
+          final result = await guarded.enqueueBatch([
+            _buildSyncEvent(
+              eventId: r'$enc',
+              roomId: roomA,
+              originTsMs: 6000,
+              type: EventTypes.Encrypted,
+              content: <String, dynamic>{'algorithm': 'm.megolm.v1.aes-sha2'},
+            ),
+            _buildSyncEvent(
+              eventId: r'$state',
+              roomId: roomA,
+              originTsMs: 6001,
+              type: EventTypes.RoomName,
+              content: <String, dynamic>{'name': 'Renamed'},
+            ),
+          ], producer: InboundEventProducer.live);
+
+          expect(result.deferredPendingDecryption, 1);
+          expect(result.filteredOutByType, 1);
+          expect(result.rejectedUntrusted, 0);
+          verifyNever(
+            () => trust.admits(any(), subDomain: any(named: 'subDomain')),
+          );
+        },
+      );
+    });
 
     test(
       'a failed floor write blocks later plaintext until the retained floor '
@@ -1255,6 +1329,7 @@ void main() {
           ),
         );
         final loggedQueue = InboundQueue(
+          trust: AdmittingSyncEventTrust(),
           db: loggedDb,
           logging: MockDomainLogger(),
           leaseDuration: const Duration(seconds: 1),

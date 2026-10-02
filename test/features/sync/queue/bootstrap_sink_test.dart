@@ -200,7 +200,11 @@ void main() {
   setUp(() {
     db = SyncDatabase(inMemoryDatabase: true);
     logging = MockDomainLogger();
-    queue = InboundQueue(db: db, logging: logging);
+    queue = InboundQueue(
+      trust: AdmittingSyncEventTrust(),
+      db: db,
+      logging: logging,
+    );
   });
 
   tearDown(() async {
@@ -473,6 +477,7 @@ void main() {
           duplicatesDropped: 0,
           filteredOutByType: 0,
           deferredPendingDecryption: 0,
+          rejectedUntrusted: 0,
         );
       });
       when(
@@ -609,6 +614,7 @@ void main() {
           duplicatesDropped: events.length - accepted,
           filteredOutByType: 0,
           deferredPendingDecryption: 0,
+          rejectedUntrusted: 0,
         );
       });
       when(
