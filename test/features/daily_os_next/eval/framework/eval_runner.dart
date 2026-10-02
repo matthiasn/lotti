@@ -823,6 +823,7 @@ class EvalPromptRecorder extends ConversationRepository {
       consumptionWakeRunKey: consumptionWakeRunKey,
       consumptionThreadId: consumptionThreadId,
       rethrowInferenceErrors: rethrowInferenceErrors,
+      turnBudget: turnBudget,
     );
   }
 

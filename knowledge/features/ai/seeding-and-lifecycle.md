@@ -296,7 +296,7 @@ deliberate user choice rather than a gap to fill.
 What `upgradeExisting()` does backfill, after model rows exist:
 
 - **Heals dangling model slots on default profiles.** Deleting a provider
-  tombstones its model rows, but the seeded profile kept pointing at the dead
+  hard-deletes its model rows, but the seeded profile kept pointing at the dead
   ids. Each such slot resets to the seed template's provider-native default and
   re-resolves once the rows are recreated. Catalog-known provider-native values
   are treated as *pending*, not dangling.
