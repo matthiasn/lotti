@@ -42,8 +42,9 @@ project agent is attached — a summary and health read that the agent maintains
   has an agent with the name of its inference profile, or *No inference
   profile*, so projects can be checked and reassigned one by one.
 - **Says which summaries are out of date.** A project change marks its
-  agent's summary out of date; the summary refreshes in the agent's next
-  update slot, at most once per slot across devices. The card shows *Out of
+  agent's summary out of date; with automatic updates on, the summary
+  refreshes in the agent's next update slot, at most once per slot across
+  devices. The card shows *Out of
   date* with *Update now* and a countdown to that slot, the list marks such
   projects and can filter to them, and agent internals set how often the slot
   comes round (hourly to daily).

@@ -3032,7 +3032,25 @@ void main() {
             subscription.matchEntityIds,
             {projectEntityUpdateNotification('project-1')},
           );
-          // It catches up in the armed slot, never with an immediate wake.
+          // It catches up in the armed slot, never with an immediate wake —
+          // in any call shape.
+          verifyNever(
+            () => mockOrchestrator.enqueueManualWake(
+              agentId: any(named: 'agentId'),
+              reason: any(named: 'reason'),
+              triggerTokens: any(named: 'triggerTokens'),
+              workspaceKey: any(named: 'workspaceKey'),
+              supersede: any(named: 'supersede'),
+              initiator: any(named: 'initiator'),
+            ),
+          );
+          verifyNever(
+            () => mockOrchestrator.enqueueManualWake(
+              agentId: any(named: 'agentId'),
+              reason: any(named: 'reason'),
+            ),
+          );
+          // The shape the catch-up wake for other kinds uses.
           verifyNever(
             () => mockOrchestrator.enqueueManualWake(
               agentId: any(named: 'agentId'),

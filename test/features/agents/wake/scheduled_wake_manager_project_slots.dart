@@ -16,6 +16,7 @@ class _GateControl {
       connected: () => connected,
       connectivityChanges: changes.stream,
       waitForInboxDrained: (_) async {
+        drainWaits++;
         if (!drained) throw TimeoutException('inbox busy');
       },
     );
@@ -25,6 +26,10 @@ class _GateControl {
   late final SyncLeaseGate gate;
   bool connected = true;
   bool drained = true;
+
+  /// How often the manager waited for the inbox, each wait up to the drain
+  /// timeout in the app.
+  int drainWaits = 0;
 
   void drop() {
     connected = false;
@@ -151,6 +156,52 @@ void _registerProjectSlotRules() {
 
         expect(bench.slot(slotStart).leaseHostId, 'hA');
         expect(bench.runs, isEmpty, reason: 'claimed, not yet settled');
+        bench.dispose();
+      }, initialTime: DateTime(2026, 10, 2, 10));
+    });
+
+    test('one pass waits for the inbox once, however many slots are due', () {
+      fakeAsync((async) {
+        final bench = _SlotBench(async);
+        async.elapse(slotStart.difference(clock.now()));
+        bench
+          ..control.drained = false
+          ..seed([slotStart]);
+        // A second project agent with its own due slot.
+        const otherAgent = 'project-agent-other';
+        unawaited(
+          Future.wait([
+            bench.device.replica.repository.upsertEntity(
+              makeTestIdentity(
+                id: otherAgent,
+                agentId: otherAgent,
+                kind: AgentKinds.projectAgent,
+                config: const AgentConfig(automaticUpdatesEnabled: true),
+              ),
+            ),
+            bench.device.replica.repository.upsertEntity(
+              AgentDomainEntity.scheduledWake(
+                id: projectUpdateSlotRecordId(otherAgent, slotStart),
+                agentId: otherAgent,
+                scheduledAt: slotStart.toUtc(),
+                status: ScheduledWakeStatus.pending,
+                reason: WakeReason.scheduled.name,
+                updatedAt: slotStart,
+                vectorClock: null,
+                workspaceKey: projectUpdateWorkspaceKey(slotStart),
+                triggerTokens: const [ProjectUpdateSlots.triggerToken],
+              ),
+            ),
+          ]),
+        );
+        bench
+          ..settle()
+          ..control.drainWaits = 0
+          ..scan();
+
+        // One backlog must not stall the pass once per gated record.
+        expect(bench.control.drainWaits, 1);
+        expect(bench.slot(slotStart).leaseHostId, isNull);
         bench.dispose();
       }, initialTime: DateTime(2026, 10, 2, 10));
     });

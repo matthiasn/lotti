@@ -3720,7 +3720,7 @@ claim and keeps a consumed window consumed is `ScheduledWakeLease`'s
 | Property | Kind | Says |
 |----------|------|------|
 | `NoDuplicateScheduledWake` | invariant | while devices stay connected, no slot runs on two devices |
-| `NoDuplicateUnlessWriteDropped` | invariant | with partitions, only a device that fired and lost its connection before its consume left can cause a second run of a slot |
+| `NoDuplicateUnlessWriteDropped` | invariant | with partitions, a slot runs twice only if a device ran it and lost its connection before that slot's consume left (the ghost `droppedSlots`) |
 | `WakeBudgetRespected` | invariant | each device keeps automatic runs within the budget and all runs within twice it |
 | `SharedBudget` | invariant | connected devices share one budget for automatic work |
 | `StaleDoesNotTriggerWork` | invariant | every run is a leased slot or a user's request — stale state arriving by sync starts nothing |
@@ -3731,7 +3731,7 @@ claim and keeps a consumed window consumed is `ScheduledWakeLease`'s
 | Configuration | Devices | Adds | Distinct states |
 |---------------|--------:|------|----------------:|
 | `ProjectWakeGovernor` | 2 | connected, prompt apply; checks liveness | 7,653 |
-| `ProjectWakeGovernorBacklog` | 2 | one offline spell, an apply lag longer than the settle | 189,821 |
+| `ProjectWakeGovernorBacklog` | 2 | one offline spell, an apply lag longer than the settle | 137,384 |
 | `ProjectWakeGovernorBudget` | 2 | a budget of one over three slots, "Update now" and a failure | 4,577,837 |
 | `ProjectWakeGovernorPause` | 2 | a pause during a run | 1,116,559 |
 | `ProjectWakeGovernorThree` | 3 | a third device | 2,590,810 |

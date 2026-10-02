@@ -30,8 +30,10 @@ applied until the user confirms it.
 - **Withdraws its own stale suggestions.** When a proposal no longer makes sense,
   the agent retracts it rather than leaving it in the list.
 - **Summarizes at other scopes too.** A project agent's report goes out of date
-  when the project or a linked task changes, and refreshes in its next update
-  slot — hourly by default, on one device — or at once with *Update now*; an
+  when the project or a linked task changes. With automatic updates on it
+  refreshes in its next update slot — hourly by default, on one device, and
+  the next day once the daily limit is reached — and at once with *Update
+  now* either way; an
   event agent writes a recap of a trip or gathering from its photos and notes;
   the Daily OS planner plans a day.
 - **Learns from feedback.** Agents periodically hold a "one-on-one" — a

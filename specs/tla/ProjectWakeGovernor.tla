@@ -175,11 +175,12 @@ VARIABLES
     edits,     \* ghost: instants of local changes
     pausedRun, \* ghost: a run went on while its device knew it was paused
     tainted,   \* per device: the connection dropped since its last claim
-    dropped,   \* ghost: a device lost its connection with writes unsent
+    droppedSlots, \* ghost: slots a device ran, then lost its connection
+                  \* with the slot's consume still unsent
     nEdits, nManual, nFailures, nOffline
 
 vars == <<now, rep, chan, inbox, up, run, ran, autoRuns, allRuns,
-          causes, edits, pausedRun, tainted, dropped, nEdits, nManual, nFailures,
+          causes, edits, pausedRun, tainted, droppedSlots, nEdits, nManual, nFailures,
           nOffline>>
 
 Empty == [stale |-> 0, fresh |-> 0, ledger |-> [x \in Devices |-> 0],
@@ -199,7 +200,7 @@ Init ==
     /\ edits = {}
     /\ pausedRun = FALSE
     /\ tainted = [d \in Devices |-> FALSE]
-    /\ dropped = FALSE
+    /\ droppedSlots = {}
     /\ nEdits = 0
     /\ nManual = 0
     /\ nFailures = 0
@@ -228,7 +229,7 @@ Edit(d) ==
     /\ edits' = edits \cup {now}
     /\ Write(d, ArmNext([rep[d] EXCEPT !.stale = now], now))
     /\ UNCHANGED <<now, inbox, up, run, ran, autoRuns, allRuns, causes,
-                   pausedRun, tainted, dropped, nManual, nFailures, nOffline>>
+                   pausedRun, tainted, droppedSlots, nManual, nFailures, nOffline>>
 
 \* Delivery needs both ends connected: the sender to upload, the receiver
 \* to download. Within MaxDelay once both are (see Tick).
@@ -240,7 +241,7 @@ Deliver(d, e) ==
                    ELSE [@ EXCEPT !.snap = Join(@, chan[d][e].snap)]]
     /\ chan' = [chan EXCEPT ![d][e] = Null]
     /\ UNCHANGED <<now, rep, up, run, ran, autoRuns, allRuns, causes, edits,
-                   pausedRun, tainted, dropped, nEdits, nManual, nFailures,
+                   pausedRun, tainted, droppedSlots, nEdits, nManual, nFailures,
                    nOffline>>
 
 \* Applying received state. It never starts work. A stale report with no
@@ -259,7 +260,7 @@ Apply(d) ==
                        IF HaltOnPause /\ ~armed.active THEN Idle ELSE @]
     /\ inbox' = [inbox EXCEPT ![d] = Null]
     /\ UNCHANGED <<now, chan, up, ran, autoRuns, allRuns, causes, edits,
-                   pausedRun, tainted, dropped, nEdits, nManual, nFailures,
+                   pausedRun, tainted, droppedSlots, nEdits, nManual, nFailures,
                    nOffline>>
 
 \* Losing the connection taints this device's claims: they may not have
@@ -270,7 +271,11 @@ Offline(d) ==
     /\ nOffline' = nOffline + 1
     /\ up' = [up EXCEPT ![d] = FALSE]
     /\ tainted' = [tainted EXCEPT ![d] = TRUE]
-    /\ dropped' = (dropped \/ \E e \in Devices : chan[d][e] # Null)
+    /\ droppedSlots' = droppedSlots \cup
+         {s \in SlotIds :
+            /\ d \in ran[s]
+            /\ \E e \in Devices : /\ chan[d][e] # Null
+                                 /\ chan[d][e].snap.rec[s].st = "consumed"}
     /\ UNCHANGED <<now, rep, chan, inbox, run, ran, autoRuns, allRuns, causes,
                    edits, pausedRun, nEdits, nManual, nFailures>>
 
@@ -282,7 +287,7 @@ Online(d) ==
                   IF (e = d \/ x = d) /\ chan[x][e] # Null
                   THEN [chan[x][e] EXCEPT !.at = now] ELSE chan[x][e]]]
     /\ UNCHANGED <<now, rep, inbox, run, ran, autoRuns, allRuns, causes,
-                   edits, pausedRun, tainted, dropped, nEdits, nManual, nFailures,
+                   edits, pausedRun, tainted, droppedSlots, nEdits, nManual, nFailures,
                    nOffline>>
 
 ----------------------------------------------------------------------------
@@ -319,7 +324,7 @@ Claim(d, s) ==
                    [st |-> "pending", host |-> d, until |-> now + Lease]])
     /\ tainted' = [tainted EXCEPT ![d] = FALSE]
     /\ UNCHANGED <<now, inbox, up, run, ran, autoRuns, allRuns, causes, edits,
-                   pausedRun, dropped, nEdits, nManual, nFailures, nOffline>>
+                   pausedRun, droppedSlots, nEdits, nManual, nFailures, nOffline>>
 
 Settled(r) == r.until > now /\ now >= r.until - Lease + Settle
 
@@ -362,7 +367,7 @@ Fire(d, s) ==
                     {IF SyncedSlots THEN "lease" ELSE "local"}
           ELSE /\ Write(d, consumed)
                /\ UNCHANGED <<run, ran, autoRuns, allRuns, causes>>
-    /\ UNCHANGED <<now, inbox, up, edits, pausedRun, tainted, dropped, nEdits,
+    /\ UNCHANGED <<now, inbox, up, edits, pausedRun, tainted, droppedSlots, nEdits,
                    nManual, nFailures, nOffline>>
 
 ----------------------------------------------------------------------------
@@ -382,7 +387,7 @@ Manual(d) ==
     /\ allRuns' = [allRuns EXCEPT ![d] = @ + 1]
     /\ causes' = causes \cup {"manual"}
     /\ UNCHANGED <<now, inbox, up, ran, autoRuns, edits, pausedRun,
-                   tainted, dropped, nEdits, nFailures, nOffline>>
+                   tainted, droppedSlots, nEdits, nFailures, nOffline>>
 
 \* Success: the report is fresh as of the run's start. Still stale (a change
 \* arrived meanwhile) re-arms.
@@ -393,7 +398,7 @@ Complete(d) ==
        IN Write(d, IF Stale(fresh) THEN ArmNext(fresh, now) ELSE fresh)
     /\ run' = [run EXCEPT ![d] = Idle]
     /\ UNCHANGED <<now, inbox, up, ran, autoRuns, allRuns, causes, edits,
-                   pausedRun, tainted, dropped, nEdits, nManual, nFailures,
+                   pausedRun, tainted, droppedSlots, nEdits, nManual, nFailures,
                    nOffline>>
 
 Fail(d) ==
@@ -403,7 +408,7 @@ Fail(d) ==
     /\ Write(d, IF Stale(rep[d]) THEN ArmNext(rep[d], now) ELSE rep[d])
     /\ run' = [run EXCEPT ![d] = Idle]
     /\ UNCHANGED <<now, inbox, up, ran, autoRuns, allRuns, causes, edits,
-                   pausedRun, tainted, dropped, nEdits, nManual, nOffline>>
+                   pausedRun, tainted, droppedSlots, nEdits, nManual, nOffline>>
 
 Pause(d) ==
     /\ AllowPause
@@ -411,7 +416,7 @@ Pause(d) ==
     /\ Write(d, [rep[d] EXCEPT !.active = FALSE])
     /\ run' = [run EXCEPT ![d] = IF HaltOnPause THEN Idle ELSE @]
     /\ UNCHANGED <<now, inbox, up, ran, autoRuns, allRuns, causes, edits,
-                   pausedRun, tainted, dropped, nEdits, nManual, nFailures,
+                   pausedRun, tainted, droppedSlots, nEdits, nManual, nFailures,
                    nOffline>>
 
 ----------------------------------------------------------------------------
@@ -436,7 +441,7 @@ Tick ==
     /\ pausedRun' = (pausedRun \/ \E d \in Devices :
                         run[d] # Idle /\ ~rep[d].active)
     /\ UNCHANGED <<rep, chan, inbox, up, run, ran, autoRuns, allRuns, causes,
-                   edits, tainted, dropped, nEdits, nManual, nFailures,
+                   edits, tainted, droppedSlots, nEdits, nManual, nFailures,
                    nOffline>>
 
 Next ==
@@ -464,6 +469,7 @@ TypeOK ==
     /\ \A d \in Devices : up[d] \in BOOLEAN
     /\ \A s \in SlotIds : ran[s] \subseteq Devices
     /\ causes \subseteq {"lease", "manual", "local"}
+    /\ droppedSlots \subseteq SlotIds
 
 Sum(f) == LET F[x \in SUBSET Devices] ==
                 IF x = {} THEN 0
@@ -475,9 +481,11 @@ NoDuplicateScheduledWake == \A s \in SlotIds : Cardinality(ran[s]) <= 1
 
 \* What a partition can still cost: a device that fired and lost its
 \* connection before its consume left cannot tell its peers, which take the
-\* slot over once its lease lapses. Nothing else runs a slot twice — not a
+\* slot over once its lease lapses. The exception covers that slot alone,
+\* not every slot after any unsent write. Nothing else runs a slot twice — not a
 \* device that claimed while offline, nor one that came back to a backlog.
-NoDuplicateUnlessWriteDropped == NoDuplicateScheduledWake \/ dropped
+NoDuplicateUnlessWriteDropped ==
+    \A s \in SlotIds : Cardinality(ran[s]) <= 1 \/ s \in droppedSlots
 
 \* Each device keeps its own claims within the budget: automatic runs stop
 \* at the budget, every run at twice it.

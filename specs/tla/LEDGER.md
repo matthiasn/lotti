@@ -171,7 +171,7 @@ and recorded new residuals in the README sections it touched. Not included in
 the historical totals above.
 
 The `ProjectWakeGovernor` model ([#4602](https://github.com/matthiasn/lotti/pull/4602)) adds one spec, five
-configurations, eight named properties and 8,482,680 distinct states. It
+configurations, eight named properties and 8,430,243 distinct states. It
 came with the cadence that replaced device-local project fallbacks with
 synced, leased update slots; TLC found both shipped bugs through
 `SyncedSlots` and rejected three drafts of the replacement. Each of its

@@ -132,6 +132,12 @@ class ScheduledWakeManager with AgentErrorLogging {
   /// earlier epoch and is re-made.
   final _claimEpochs = <String, int>{};
 
+  /// The sync gate's answer for the pass under way, per connectivity epoch.
+  /// [SyncLeaseGate.ready] can wait out its drain timeout, so asking it once
+  /// per gated record would let one backlog stall every record behind it; a
+  /// connection lost mid-pass starts a new epoch and is asked again.
+  Map<int, Future<bool>>? _passGateReads;
+
   Timer? _timer;
   Timer? _settleTimer;
 
@@ -472,6 +478,19 @@ class ScheduledWakeManager with AgentErrorLogging {
     int generation,
     _HandledCheckSequence handled,
   ) async {
+    _passGateReads = {};
+    try {
+      return await _processDueRecordsOnce(now, generation, handled);
+    } finally {
+      _passGateReads = null;
+    }
+  }
+
+  Future<int> _processDueRecordsOnce(
+    DateTime now,
+    int generation,
+    _HandledCheckSequence handled,
+  ) async {
     final dueRecords = await _repository.getDueScheduledWakeRecords(now);
     var enqueued = 0;
     for (final record in dueRecords) {
@@ -717,7 +736,12 @@ class ScheduledWakeManager with AgentErrorLogging {
   /// the record after [syncGateRetry] rather than at the next hourly tick.
   Future<bool> _gateOpen(ScheduledWakeEntity record, int generation) async {
     if (!_gated(record)) return true;
-    if (await syncGate!.ready()) return true;
+    final gate = syncGate!;
+    final reads = _passGateReads;
+    final ready = reads == null
+        ? gate.ready()
+        : reads.putIfAbsent(gate.epoch, gate.ready);
+    if (await ready) return true;
     _log(
       'sync gate closed for ${DomainLogger.sanitizeId(record.id)}: '
       'offline or inbox not drained',

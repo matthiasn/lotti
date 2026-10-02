@@ -37,10 +37,12 @@ while a wake per edit per device costs a model call each.
    (hourly by default; 1, 2, 4, 8 hours or daily, chosen in agent internals
    and synced on the identity as `updateIntervalMinutes`). A slot is a synced
    `ScheduledWakeEntity` whose id is derived from the agent and the slot's
-   start, so every device that arms "the next slot" arms the same row. At
-   most one slot is pending per agent; arming is inert and idempotent, so
-   every path that may have noticed staleness calls it
-   (`ProjectUpdateCadence.arm`).
+   start, so every device that arms "the next slot" arms the same row. A
+   device arms only when it sees no pending slot of the agent, so its own
+   replica holds at most one; two devices that arm before seeing each other's
+   slot can still leave two pending, which decision 3's earliest-slot rule
+   resolves. Arming is inert and idempotent, so every path that may have
+   noticed staleness calls it (`ProjectUpdateCadence.arm`).
 
 3. **One device fires a slot.** The scheduled-wake manager leases it like the
    coordinator digest (ADR 0069), with three rules that TLC showed necessary:
@@ -89,8 +91,11 @@ it off produces a counterexample for the property it protects.
   one run per slot across all devices — 24 a day at the hourly default,
   before the budget — instead of one per change per device. With a daily
   interval it is one run a day.
-- **A report can be up to one interval behind** without the user acting.
-  The card says so, with the countdown, and "Update now" is one tap.
+- **The interval is a cadence, not a maximum age.** A change waits for the
+  next slot — nearly a full interval when it lands just after one starts —
+  and then for the lease to settle, the inbox to drain and the run itself
+  before the report reads fresh. The card says it is out of date, with the
+  countdown, and "Update now" is one tap.
 - **Offline devices do not fire.** A device that is not connected, or whose
   inbox has not drained within two minutes, leaves the slot pending; with
   sync disabled the gate is always open, since there are no peers to race.

@@ -657,7 +657,9 @@ The gate is `null` where sync is not wired; with sync disabled it is always
 open and its epoch never moves. It is seeded from
 `Connectivity.checkConnectivity()` before its first decision — a
 connectivity stream need not replay the state it started in, and a device
-that started offline must not claim — and a stream report outranks the seed. A closed gate leaves the slot pending and
+that started offline must not claim — and a stream report outranks the seed. A
+due-records pass asks the gate once per connectivity epoch, so one backlog
+waits out the drain timeout once rather than once per gated record. A closed gate leaves the slot pending and
 retries after `syncGateRetry` (one minute). The dispatched wake carries
 `ProjectUpdateSlots.triggerToken`; the drain refuses any automatic project
 wake without it (`notAnUpdateSlot`), refuses one over a report that is
