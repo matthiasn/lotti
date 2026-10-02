@@ -63,9 +63,9 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
     // 2a. Capture this wake's project-linked journal entries into the log
     // (ADR 0020) — same substrate and renderer as the task agent (only
     // text/audio/image log entries are kept; member TASKS are state, not
-    // log, and stay in the linked-tasks context). Runs AFTER the dormant
-    // skip so no-activity scheduled wakes stay cheap (a dormant wake has
-    // nothing new to capture). Non-fatal.
+    // log, and stay in the linked-tasks context). Runs AFTER the
+    // fresh-report skip so a slot with nothing to do stays cheap.
+    // Non-fatal.
     final memory = AgentWakeMemory(
       syncService: syncService,
       inputCaptureService: inputCaptureService,

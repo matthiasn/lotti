@@ -162,6 +162,78 @@ void main() {
     });
   });
 
+  group('replan', () {
+    test(
+      'moves a pending slot to the new grid when the interval changes',
+      () async {
+        await withClock(Clock.fixed(now), () async {
+          final setup = await setUpDevice(identity(), stale);
+          final hourly = await setup.cadence.arm(agentId);
+          expect(hourly!.scheduledAt, DateTime(2026, 10, 2, 11).toUtc());
+          await setup.device.repository.upsertEntity(
+            identity(intervalMinutes: 480),
+          );
+
+          final replanned = await setup.cadence.replan(agentId);
+
+          expect(replanned!.scheduledAt, DateTime(2026, 10, 2, 14).toUtc());
+          expect(await setup.cadence.pendingSlots(agentId), [replanned]);
+          final old = await setup.device.repository.getEntity(hourly.id);
+          expect(
+            (old! as ScheduledWakeEntity).status,
+            ScheduledWakeStatus.consumed,
+          );
+        });
+      },
+    );
+
+    test('keeps a pending slot already at the grid\'s next start', () async {
+      await withClock(Clock.fixed(now), () async {
+        final setup = await setUpDevice(identity(), stale);
+        final armed = await setup.cadence.arm(agentId);
+
+        final replanned = await setup.cadence.replan(agentId);
+
+        expect(replanned, armed);
+        expect(await setup.cadence.pendingSlots(agentId), [armed]);
+      });
+    });
+
+    test(
+      'consumes the old slot and arms nothing once the report is fresh',
+      () async {
+        await withClock(Clock.fixed(now), () async {
+          final setup = await setUpDevice(identity(), stale);
+          await setup.cadence.arm(agentId);
+          await setup.device.repository.upsertEntity(
+            identity(intervalMinutes: 480),
+          );
+          await setup.device.repository.upsertEntity(
+            state(
+              staleAt: DateTime(2026, 10, 2, 10),
+              freshAt: DateTime(2026, 10, 2, 10, 20),
+            ),
+          );
+
+          expect(await setup.cadence.replan(agentId), isNull);
+          expect(await setup.cadence.pendingSlots(agentId), isEmpty);
+        });
+      },
+    );
+
+    test('touches nothing for another kind of agent', () async {
+      await withClock(Clock.fixed(now), () async {
+        final setup = await setUpDevice(
+          identity(kind: AgentKinds.taskAgent),
+          stale,
+        );
+
+        expect(await setup.cadence.replan(agentId), isNull);
+        expect(setup.device.sentEntities, isEmpty);
+      });
+    });
+  });
+
   group('consumeAll', () {
     test('consumes every pending slot of the agent and only those', () async {
       await withClock(Clock.fixed(now), () async {

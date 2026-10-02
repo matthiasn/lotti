@@ -52,6 +52,7 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
+import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -63,7 +64,8 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/utils/consts.dart' show enableForkHealingFlag;
+import 'package:lotti/utils/consts.dart'
+    show enableForkHealingFlag, enableMatrixFlag;
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/entity_factories.dart';
@@ -3439,6 +3441,134 @@ void main() {
       expect(headsOfLog(bench.repo.messages, bench.repo.links), [
         computeJoinId(['a', 'b']),
       ]);
+    });
+  });
+
+  group('project update slots', () {
+    late MockProjectUpdateCadence cadence;
+    late MockScheduledWakeManager manager;
+    late MockUpdateNotifications notifications;
+    late ProviderContainer container;
+
+    final armHelperProvider = Provider<Future<void> Function(String)>(
+      armProjectUpdate,
+    );
+
+    final slot =
+        AgentDomainEntity.scheduledWake(
+              id: 'slot-1',
+              agentId: 'project-agent',
+              scheduledAt: DateTime.utc(2026, 10, 2, 11),
+              status: ScheduledWakeStatus.pending,
+              reason: WakeReason.scheduled.name,
+              updatedAt: DateTime(2026, 10, 2, 10),
+              vectorClock: null,
+            )
+            as ScheduledWakeEntity;
+
+    setUp(() {
+      cadence = MockProjectUpdateCadence();
+      manager = MockScheduledWakeManager();
+      notifications = MockUpdateNotifications();
+      when(manager.requestCheck).thenReturn(null);
+      when(() => notifications.notifyUiOnly(any())).thenReturn(null);
+      container = ProviderContainer(
+        overrides: [
+          projectUpdateCadenceProvider.overrideWithValue(cadence),
+          scheduledWakeManagerProvider.overrideWithValue(manager),
+          updateNotificationsProvider.overrideWithValue(notifications),
+        ],
+      );
+      addTearDown(container.dispose);
+    });
+
+    test(
+      'arming a slot wakes the manager and refreshes the countdown',
+      () async {
+        when(() => cadence.arm('project-agent')).thenAnswer((_) async => slot);
+
+        await container.read(armHelperProvider)('project-agent');
+
+        verify(manager.requestCheck).called(1);
+        verify(
+          () =>
+              notifications.notifyUiOnly({'project-agent', agentNotification}),
+        ).called(1);
+      },
+    );
+
+    test('nothing to arm announces nothing', () async {
+      when(() => cadence.arm('project-agent')).thenAnswer((_) async => null);
+
+      await container.read(armHelperProvider)('project-agent');
+
+      verifyNever(manager.requestCheck);
+      verifyNever(() => notifications.notifyUiOnly(any()));
+    });
+
+    test('re-planning always announces: the old slot may be gone', () async {
+      when(
+        () => cadence.replan('project-agent'),
+      ).thenAnswer((_) async => null);
+
+      await container.read(replanProjectUpdateProvider)('project-agent');
+
+      verify(() => cadence.replan('project-agent')).called(1);
+      verify(manager.requestCheck).called(1);
+      verify(
+        () => notifications.notifyUiOnly({'project-agent', agentNotification}),
+      ).called(1);
+    });
+  });
+
+  group('syncLeaseGateProvider', () {
+    test('is absent where sync is not wired', () {
+      if (getIt.isRegistered<MatrixService>()) {
+        getIt.unregister<MatrixService>();
+      }
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      expect(container.read(syncLeaseGateProvider), isNull);
+    });
+
+    test('opens with sync off, and with sync on only while logged in with '
+        'the inbox drained', () async {
+      final matrixService = MockMatrixService();
+      final coordinator = MockQueuePipelineCoordinator();
+      final queue = MockInboundQueue();
+      when(() => matrixService.queueCoordinator).thenReturn(coordinator);
+      when(() => coordinator.queue).thenReturn(queue);
+      when(
+        () => queue.waitForDrainAtMostTo(0, timeout: any(named: 'timeout')),
+      ).thenAnswer((_) async {});
+      var loggedIn = false;
+      when(matrixService.isLoggedIn).thenAnswer((_) => loggedIn);
+      if (getIt.isRegistered<MatrixService>()) {
+        getIt.unregister<MatrixService>();
+      }
+      getIt.registerSingleton<MatrixService>(matrixService);
+      addTearDown(() => getIt.unregister<MatrixService>());
+      final journalDb = MockJournalDb();
+      var syncEnabled = false;
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => syncEnabled);
+      final container = ProviderContainer(
+        overrides: [journalDbProvider.overrideWithValue(journalDb)],
+      );
+      addTearDown(container.dispose);
+
+      final gate = container.read(syncLeaseGateProvider)!;
+
+      expect(await gate.ready(), isTrue);
+      syncEnabled = true;
+      expect(await gate.ready(), isFalse);
+      loggedIn = true;
+      expect(await gate.ready(), isTrue);
+      verify(
+        () => queue.waitForDrainAtMostTo(0, timeout: gate.drainTimeout),
+      ).called(1);
     });
   });
 }

@@ -44,6 +44,10 @@ void main() {
     source: AgentSetupResolutionSource.legacyModel,
   );
 
+  /// Agents whose pending update slot the band asked to re-plan.
+  final replannedAgentIds = <String>[];
+  setUp(replannedAgentIds.clear);
+
   Widget build({
     AgentStateEntity? state,
     AgentReportEntity? report,
@@ -55,6 +59,7 @@ void main() {
     MockAgentService? agentService,
     AgentMaintenanceKind kind = AgentMaintenanceKind.task,
     int? maxWakesPerDay,
+    int? updateIntervalMinutes,
     DateTime? nextProjectUpdate,
   }) {
     return RiverpodWidgetTestBench(
@@ -65,12 +70,17 @@ void main() {
             config: AgentConfig(
               automaticUpdatesEnabled: automaticUpdates,
               maxWakesPerDay: maxWakesPerDay,
+              updateIntervalMinutes: updateIntervalMinutes,
             ),
           ),
         ),
         agentStateProvider.overrideWith((ref, id) async => state),
         projectNextUpdateProvider.overrideWith(
           (ref, id) async => nextProjectUpdate,
+        ),
+        replanProjectUpdateProvider.overrideWith(
+          (ref) =>
+              (id) async => replannedAgentIds.add(id),
         ),
         agentReportProvider.overrideWith((ref, id) async => report),
         agentIsRunningProvider.overrideWith(
@@ -178,6 +188,79 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Error'), findsWidgets);
+      });
+    });
+
+    group('update frequency', () {
+      testWidgets('a project band shows its interval; a task band has none', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          build(
+            kind: AgentMaintenanceKind.project,
+            updateIntervalMinutes: 240,
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Every 4 hours'), findsOneWidget);
+
+        await tester.pumpWidget(build());
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey('agentUpdateIntervalRow')),
+          findsNothing,
+        );
+      });
+
+      testWidgets('stepping the interval writes it, then re-plans the '
+          'pending slot onto the new grid', (tester) async {
+        final agentService = MockAgentService();
+        when(
+          () => agentService.updateUpdateIntervalMinutes(any(), any()),
+        ).thenAnswer((_) async => true);
+
+        await tester.pumpWidget(
+          build(
+            kind: AgentMaintenanceKind.project,
+            agentService: agentService,
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Every hour'), findsOneWidget);
+
+        await tester.tap(
+          find.byKey(const ValueKey('agentUpdateIntervalIncrease')),
+        );
+        await tester.pumpAndSettle();
+
+        verify(
+          () => agentService.updateUpdateIntervalMinutes(agentId, 120),
+        ).called(1);
+        expect(replannedAgentIds, [agentId]);
+      });
+
+      testWidgets('a failed write tells the user and re-plans nothing', (
+        tester,
+      ) async {
+        final agentService = MockAgentService();
+        when(
+          () => agentService.updateUpdateIntervalMinutes(any(), any()),
+        ).thenAnswer((_) async => throw StateError('database locked'));
+
+        await tester.pumpWidget(
+          build(
+            kind: AgentMaintenanceKind.project,
+            agentService: agentService,
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.byKey(const ValueKey('agentUpdateIntervalIncrease')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Error'), findsWidgets);
+        expect(replannedAgentIds, isEmpty);
       });
     });
 

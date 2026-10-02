@@ -1288,6 +1288,37 @@ class AppLocalizationsIt extends AppLocalizations {
       'Proposta di revisione dell\'obiettivo';
 
   @override
+  String get agentUpdateIntervalDaily => 'Una volta al giorno';
+
+  @override
+  String get agentUpdateIntervalDecrease => 'Aggiorna più spesso';
+
+  @override
+  String get agentUpdateIntervalHelp =>
+      'Una modifica al progetto segna il riassunto come non aggiornato; uno dei tuoi dispositivi lo aggiorna alla prossima finestra di aggiornamento. Aggiorna ora lo aggiorna subito.';
+
+  @override
+  String get agentUpdateIntervalHint =>
+      'I riassunti non aggiornati si aggiornano al massimo con questa frequenza';
+
+  @override
+  String agentUpdateIntervalHours(int hours) {
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: 'Ogni $hours ore',
+      one: 'Ogni ora',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get agentUpdateIntervalIncrease => 'Aggiorna meno spesso';
+
+  @override
+  String get agentUpdateIntervalLabel => 'Frequenza di aggiornamento';
+
+  @override
   String get agentWakeBudgetDecrease => 'Abbassa il limite giornaliero';
 
   @override
@@ -11082,6 +11113,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get projectsEmptyTitle => 'Avvia il tuo primo progetto';
+
+  @override
+  String get projectsFilterOnlyOutOfDate => 'Solo riassunti non aggiornati';
 
   @override
   String get projectsFilterStatusLabel => 'Stato:';

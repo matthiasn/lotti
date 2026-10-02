@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -287,6 +289,61 @@ void main() {
       },
     );
   }
+
+  testWidgets('a stale report counts down to its next update slot beside '
+      'Update now', (tester) async {
+    final now = DateTime(2026, 10, 2, 10, 25);
+    await withClock(Clock.fixed(now), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: ProjectAgentSummaryCard(
+              projectId: 'project-1',
+              record: makeTestProjectRecord(aiSummary: 'Launch is on track.'),
+              identity: makeIdentity(),
+              hasProjectAgent: true,
+              isMutating: false,
+              onRefresh: () {},
+            ),
+          ),
+          overrides: [
+            agentReportProvider.overrideWith(
+              (ref, id) async => makeTestReport(agentId: id),
+            ),
+            agentIdentityProvider.overrideWith((ref, id) async => null),
+            agentStateProvider.overrideWith(
+              (ref, id) async => makeTestState(agentId: id).copyWith(
+                reportStaleAt: DateTime(2026, 10, 2, 10),
+                reportFreshAt: DateTime(2026, 10, 2, 9),
+              ),
+            ),
+            projectNextUpdateProvider.overrideWith(
+              (ref, id) async => DateTime(2026, 10, 2, 11),
+            ),
+            agentIsRunningProvider.overrideWith(
+              (ref, id) => Stream.value(false),
+            ),
+            taskAgentResolvedSetupProvider.overrideWith(
+              (ref, id) async => ResolvedAgentSetup(
+                status: AgentSetupResolutionStatus.resolved,
+                profile: ResolvedProfile(
+                  thinkingModelId: testAiModel().providerModelId,
+                  thinkingProvider: testInferenceProvider(),
+                  thinkingModel: testAiModel(),
+                ),
+              ),
+            ),
+            templateForAgentProvider.overrideWith((ref, id) async => null),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Out of date'), findsOneWidget);
+      expect(find.text('Update now · 35:00'), findsOneWidget);
+    });
+  });
 
   testWidgets(
     'a report with no separate summary still counts as content',

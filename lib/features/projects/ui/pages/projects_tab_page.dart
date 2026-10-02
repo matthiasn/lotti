@@ -297,6 +297,7 @@ class _ProjectsListScaffold extends ConsumerWidget {
               filter.selectedStatusIds,
               currentProjectStatusFilterIds,
             )) ||
+        filter.onlyOutOfDate ||
         filter.sortMode != ProjectsSortMode.actionable;
     // While the mobile navigation launcher carries this page's create action
     // on its own row (see [projectsTabDockAction]) the page floats no button
@@ -325,6 +326,7 @@ class _ProjectsListScaffold extends ConsumerWidget {
           currentProjectStatusFilterIds,
         ) &&
         filter.selectedCategoryIds.isEmpty &&
+        !filter.onlyOutOfDate &&
         filter.textQuery.trim().isEmpty;
     final floatingActionButton =
         visibleGroupsAsync.value == null || launcherOwnsCreateAction
@@ -547,7 +549,7 @@ String _sortModeLabel(BuildContext context, ProjectsSortMode mode) =>
     };
 
 /// Renders a chip row reflecting the currently active Projects-tab filters
-/// (status + category). Each chip removes its filter when tapped or when
+/// (out-of-date, status and category). Each chip removes its filter when tapped or when
 /// its ✕ is pressed. Hidden entirely when no filters are active.
 class _ProjectsTabActiveFilters extends ConsumerWidget {
   const _ProjectsTabActiveFilters({required this.categories});
@@ -567,11 +569,19 @@ class _ProjectsTabActiveFilters extends ConsumerWidget {
       currentProjectStatusFilterIds,
     );
     final categoryIds = filter.selectedCategoryIds;
-    if (statusIds.isEmpty && categoryIds.isEmpty) {
+    if (statusIds.isEmpty && categoryIds.isEmpty && !filter.onlyOutOfDate) {
       return const SizedBox.shrink();
     }
 
-    final chips = <Widget>[];
+    final chips = <Widget>[
+      if (filter.onlyOutOfDate)
+        ActiveFilterChip(
+          label: context.messages.projectsFilterOnlyOutOfDate,
+          accentColor: tokens.colors.alert.warning.defaultColor,
+          leadingIcon: LottiIcons.warning,
+          onRemove: () => controller.setOnlyOutOfDate(onlyOutOfDate: false),
+        ),
+    ];
 
     for (final id in showStatusChips ? statusIds : const <String>{}) {
       final kind = projectStatusKindFromFilterId(id);

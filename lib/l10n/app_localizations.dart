@@ -2233,6 +2233,48 @@ abstract class AppLocalizations {
   /// **'Goal revision proposal'**
   String get agentToolGoalRevisionLabel;
 
+  /// The daily update interval inside the stepper.
+  ///
+  /// In en, this message translates to:
+  /// **'Once a day'**
+  String get agentUpdateIntervalDaily;
+
+  /// Tooltip of the stepper button that shortens the update interval.
+  ///
+  /// In en, this message translates to:
+  /// **'Update more often'**
+  String get agentUpdateIntervalDecrease;
+
+  /// Tooltip explaining how a project summary is kept up to date.
+  ///
+  /// In en, this message translates to:
+  /// **'A change to the project marks its summary out of date; one of your devices refreshes it in the next update slot. Update now refreshes it right away.'**
+  String get agentUpdateIntervalHelp;
+
+  /// Secondary line under the update-frequency label.
+  ///
+  /// In en, this message translates to:
+  /// **'Out-of-date summaries refresh at most this often'**
+  String get agentUpdateIntervalHint;
+
+  /// An update interval of whole hours inside the stepper (1, 2, 4 or 8).
+  ///
+  /// In en, this message translates to:
+  /// **'{hours, plural, =1{Every hour} other{Every {hours} hours}}'**
+  String agentUpdateIntervalHours(int hours);
+
+  /// Tooltip of the stepper button that lengthens the update interval.
+  ///
+  /// In en, this message translates to:
+  /// **'Update less often'**
+  String get agentUpdateIntervalIncrease;
+
+  /// Label of a project agent's update-frequency control in agent internals.
+  ///
+  /// In en, this message translates to:
+  /// **'Update frequency'**
+  String get agentUpdateIntervalLabel;
+
   /// Tooltip of the stepper button lowering the daily wake limit.
   ///
   /// In en, this message translates to:
@@ -18402,6 +18444,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Start your first project'**
   String get projectsEmptyTitle;
+
+  /// Projects filter toggle: show only projects whose agent summary is out of date.
+  ///
+  /// In en, this message translates to:
+  /// **'Only out-of-date summaries'**
+  String get projectsFilterOnlyOutOfDate;
 
   /// No description provided for @projectsFilterStatusLabel.
   ///

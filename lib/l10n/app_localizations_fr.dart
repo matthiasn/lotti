@@ -1290,6 +1290,37 @@ class AppLocalizationsFr extends AppLocalizations {
       'Proposition de révision de l\'objectif';
 
   @override
+  String get agentUpdateIntervalDaily => 'Une fois par jour';
+
+  @override
+  String get agentUpdateIntervalDecrease => 'Mettre à jour plus souvent';
+
+  @override
+  String get agentUpdateIntervalHelp =>
+      'Une modification du projet marque son résumé comme obsolète ; l’un de tes appareils l’actualise au prochain créneau de mise à jour. Mettre à jour l’actualise tout de suite.';
+
+  @override
+  String get agentUpdateIntervalHint =>
+      'Les résumés obsolètes sont actualisés au plus à cette fréquence';
+
+  @override
+  String agentUpdateIntervalHours(int hours) {
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: 'Toutes les $hours heures',
+      one: 'Toutes les heures',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get agentUpdateIntervalIncrease => 'Mettre à jour moins souvent';
+
+  @override
+  String get agentUpdateIntervalLabel => 'Fréquence de mise à jour';
+
+  @override
   String get agentWakeBudgetDecrease => 'Baisser la limite quotidienne';
 
   @override
@@ -11134,6 +11165,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get projectsEmptyTitle => 'Lance ton premier projet';
+
+  @override
+  String get projectsFilterOnlyOutOfDate => 'Seulement les résumés obsolètes';
 
   @override
   String get projectsFilterStatusLabel => 'Statut :';

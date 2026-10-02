@@ -54,6 +54,9 @@ void main() {
       () => mockAgentRepo.getEntitiesByIds(any()),
     ).thenAnswer((_) async => <String, AgentDomainEntity>{});
     when(
+      () => mockAgentRepo.getAgentStatesByAgentIds(any()),
+    ).thenAnswer((_) async => <String, AgentStateEntity>{});
+    when(
       () => mockAiConfigRepo.getConfigById(any()),
     ).thenAnswer((_) async => null);
     when(
@@ -192,6 +195,17 @@ void main() {
           },
         );
 
+        when(
+          () => mockAgentRepo.getAgentStatesByAgentIds(['agent-work']),
+        ).thenAnswer(
+          (_) async => {
+            'agent-work': makeTestState(agentId: 'agent-work').copyWith(
+              reportStaleAt: DateTime(2026, 4, 2, 10),
+              reportFreshAt: DateTime(2026, 4, 2, 9),
+            ),
+          },
+        );
+
         final subscription = container.listen(
           projectsOverviewProvider,
           (previous, next) {},
@@ -205,6 +219,10 @@ void main() {
           'Release review is ready',
         );
         expect(result.groups[1].projects.single.oneLiner, isNull);
+        // One batched state read marks the stale summary; a project with no
+        // agent is never stale.
+        expect(result.groups.first.projects.single.reportStale, isTrue);
+        expect(result.groups[1].projects.single.reportStale, isFalse);
         verify(
           () => mockAgentRepo.getLinksToMultiple(
             ['project-work', 'project-study'],
@@ -292,6 +310,15 @@ void main() {
             ),
           },
         );
+        when(
+          () => mockAgentRepo.getAgentStatesByAgentIds(['agent-work']),
+        ).thenAnswer(
+          (_) async => {
+            'agent-work': makeTestState(
+              agentId: 'agent-work',
+            ).copyWith(reportStaleAt: DateTime(2026, 4, 2, 10)),
+          },
+        );
         final scopedContainer = ProviderContainer(
           overrides: [
             projectRepositoryProvider.overrideWithValue(mockRepo),
@@ -330,6 +357,7 @@ void main() {
           values.last.groups.first.projects.single.oneLiner,
           'Release review is ready',
         );
+        expect(values.last.groups.first.projects.single.reportStale, isTrue);
       },
     );
 
@@ -1362,6 +1390,26 @@ void main() {
         expect(state, isA<AsyncData<List<ProjectCategoryGroup>>>());
         expect(state.value, hasLength(2));
       });
+    });
+
+    test('the out-of-date filter is set and cleared by the controller, and '
+        'reset clears it', () {
+      final scopedContainer = ProviderContainer();
+      addTearDown(scopedContainer.dispose);
+      final controller = scopedContainer.read(
+        projectsFilterControllerProvider.notifier,
+      )..setOnlyOutOfDate(onlyOutOfDate: true);
+      expect(
+        scopedContainer.read(projectsFilterControllerProvider).onlyOutOfDate,
+        isTrue,
+      );
+
+      controller.resetToCurrent();
+
+      expect(
+        scopedContainer.read(projectsFilterControllerProvider).onlyOutOfDate,
+        isFalse,
+      );
     });
 
     test('resetToCurrent keeps the inference profile display switch', () {

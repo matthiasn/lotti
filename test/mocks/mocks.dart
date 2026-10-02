@@ -46,6 +46,7 @@ import 'package:lotti/features/agents/service/project_activity_monitor.dart';
 import 'package:lotti/features/agents/service/project_agent_service.dart';
 import 'package:lotti/features/agents/service/project_proposal_service.dart';
 import 'package:lotti/features/agents/service/project_recommendation_service.dart';
+import 'package:lotti/features/agents/service/project_update_cadence.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/service/subject_agent_lookup.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
@@ -1674,6 +1675,8 @@ class MockDayProcessingOutboxRepository extends Mock
 class MockDayProcessingRuntime extends Mock implements DayProcessingRuntime {}
 
 class MockScheduledWakeManager extends Mock implements ScheduledWakeManager {}
+
+class MockProjectUpdateCadence extends Mock implements ProjectUpdateCadence {}
 
 class MockProjectActivityMonitor extends Mock
     implements ProjectActivityMonitor {}

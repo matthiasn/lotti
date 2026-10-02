@@ -1271,6 +1271,37 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentToolGoalRevisionLabel => 'Forslag til måljustering';
 
   @override
+  String get agentUpdateIntervalDaily => 'Én gang om dagen';
+
+  @override
+  String get agentUpdateIntervalDecrease => 'Opdater oftere';
+
+  @override
+  String get agentUpdateIntervalHelp =>
+      'En ændring i projektet markerer resuméet som forældet; en af dine enheder opdaterer det ved næste opdateringstidspunkt. Opdater nu opdaterer det med det samme.';
+
+  @override
+  String get agentUpdateIntervalHint =>
+      'Forældede resuméer opdateres højst så ofte';
+
+  @override
+  String agentUpdateIntervalHours(int hours) {
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: 'Hver $hours. time',
+      one: 'Hver time',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get agentUpdateIntervalIncrease => 'Opdater sjældnere';
+
+  @override
+  String get agentUpdateIntervalLabel => 'Opdateringsfrekvens';
+
+  @override
   String get agentWakeBudgetDecrease => 'Sænk den daglige grænse';
 
   @override
@@ -10943,6 +10974,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get projectsEmptyTitle => 'Start dit første projekt';
+
+  @override
+  String get projectsFilterOnlyOutOfDate => 'Kun forældede resuméer';
 
   @override
   String get projectsFilterStatusLabel => 'Status:';

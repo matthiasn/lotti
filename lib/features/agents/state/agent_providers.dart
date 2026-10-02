@@ -420,13 +420,25 @@ final projectUpdateCadenceProvider = Provider<ProjectUpdateCadence>(
 Future<void> Function(String agentId) armProjectUpdate(Ref ref) =>
     (agentId) async {
       final armed = await ref.read(projectUpdateCadenceProvider).arm(agentId);
-      if (armed == null) return;
-      ref.read(scheduledWakeManagerProvider).requestCheck();
-      // The countdown reads the slot; an agent-store write announces nothing.
-      persistedStateChangedNotifier(
-        ref.read(updateNotificationsProvider),
-      )(agentId);
+      if (armed != null) _announceProjectSlot(ref, agentId);
     };
+
+/// Re-plans a project agent's pending update slot after its interval
+/// changed (`ProjectUpdateCadence.replan`), for the interval control.
+final replanProjectUpdateProvider =
+    Provider<Future<void> Function(String agentId)>(
+      (ref) => (agentId) async {
+        await ref.read(projectUpdateCadenceProvider).replan(agentId);
+        _announceProjectSlot(ref, agentId);
+      },
+      name: 'replanProjectUpdateProvider',
+    );
+
+void _announceProjectSlot(Ref ref, String agentId) {
+  ref.read(scheduledWakeManagerProvider).requestCheck();
+  // The countdown reads the slot; an agent-store write announces nothing.
+  persistedStateChangedNotifier(ref.read(updateNotificationsProvider))(agentId);
+}
 
 /// Whether this device may claim or fire a leased project update slot now:
 /// connected, with its sync inbox drained. Null where sync is not wired (a

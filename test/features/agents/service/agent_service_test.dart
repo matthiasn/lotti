@@ -871,6 +871,65 @@ void main() {
       });
     });
 
+    group('updateUpdateIntervalMinutes', () {
+      test('writes the interval on the synced identity', () async {
+        when(() => mockRepository.getEntity('agent-1')).thenAnswer(
+          (_) async => makeTestIdentity(id: 'agent-1', agentId: 'agent-1'),
+        );
+
+        final updated = await withClock(
+          Clock.fixed(DateTime(2026, 10, 2, 9)),
+          () => service.updateUpdateIntervalMinutes('agent-1', 240),
+        );
+
+        expect(updated, isTrue);
+        final written =
+            verify(
+                  () => mockSyncService.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentIdentityEntity;
+        expect(written.config.updateIntervalMinutes, 240);
+        expect(written.updatedAt, DateTime(2026, 10, 2, 9));
+      });
+
+      test('refuses an interval the grid does not offer', () {
+        // 90 minutes does not divide a day into the shared slot grid.
+        expect(
+          () => service.updateUpdateIntervalMinutes('agent-1', 90),
+          throwsArgumentError,
+        );
+        verifyNever(() => mockSyncService.upsertEntity(any()));
+      });
+
+      test('does not write when the interval is unchanged', () async {
+        when(() => mockRepository.getEntity('agent-1')).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: 'agent-1',
+            agentId: 'agent-1',
+            config: const AgentConfig(updateIntervalMinutes: 120),
+          ),
+        );
+
+        expect(
+          await service.updateUpdateIntervalMinutes('agent-1', 120),
+          isTrue,
+        );
+        verifyNever(() => mockSyncService.upsertEntity(any()));
+      });
+
+      test('reports a missing agent', () async {
+        when(
+          () => mockRepository.getEntity('missing'),
+        ).thenAnswer((_) async => null);
+
+        expect(
+          await service.updateUpdateIntervalMinutes('missing', 60),
+          isFalse,
+        );
+        verifyNever(() => mockSyncService.upsertEntity(any()));
+      });
+    });
+
     group('pauseAgent', () {
       glados.Glados(
         glados.any.agentLifecycleScenario,

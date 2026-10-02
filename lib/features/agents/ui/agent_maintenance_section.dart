@@ -12,10 +12,12 @@ import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/agent_model_sheet.dart';
+import 'package:lotti/features/agents/ui/agent_update_interval_row.dart';
 import 'package:lotti/features/agents/ui/agent_wake_budget_row.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/agents/ui/task_agent_identity_region.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
+import 'package:lotti/features/agents/wake/project_update_slots.dart';
 import 'package:lotti/features/agents/wake/wake_budget.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
@@ -227,6 +229,23 @@ class _AgentMaintenanceSectionState
                         unawaited(_updateMaxWakesPerDay(value)),
                   ),
                 ),
+              // How often a stale summary may refresh on its own: the length
+              // of the update slots the countdown above counts down to.
+              if (widget.scope.kind == AgentMaintenanceKind.project &&
+                  identity != null)
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: tokens.spacing.step2,
+                    vertical: tokens.spacing.step2,
+                  ),
+                  child: AgentUpdateIntervalRow(
+                    intervalMinutes: effectiveUpdateIntervalMinutes(
+                      identity.config,
+                    ),
+                    onChanged: (value) =>
+                        unawaited(_updateUpdateInterval(value)),
+                  ),
+                ),
               // No declared gap: the automation row's last box (`step7`) and
               // the identity row below it (`step6`) are minimums with smaller
               // ink inside, so air already exists between the two baselines.
@@ -294,6 +313,17 @@ class _AgentMaintenanceSectionState
     } finally {
       if (mounted) setState(() => _automationBusy = false);
     }
+  }
+
+  Future<void> _updateUpdateInterval(int minutes) async {
+    await _guarded('Failed to update the update interval', () async {
+      await ref
+          .read(agentServiceProvider)
+          .updateUpdateIntervalMinutes(widget.agentId, minutes);
+      ref.invalidate(agentIdentityProvider(widget.agentId));
+      // A slot pending on the old grid moves to the new one.
+      await ref.read(replanProjectUpdateProvider)(widget.agentId);
+    });
   }
 
   Future<void> _updateMaxWakesPerDay(int value) async {

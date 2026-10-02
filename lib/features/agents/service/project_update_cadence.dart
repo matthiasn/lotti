@@ -93,6 +93,28 @@ class ProjectUpdateCadence {
         return stored is ScheduledWakeEntity ? stored : record;
       });
 
+  /// Re-plans [agentId]'s pending slot after its update interval changed: a
+  /// slot off the new grid's next start is consumed, and the next slot on the
+  /// new grid armed when one is owed ([arm]). A pending slot already at that
+  /// start is kept, so re-planning to the grid it is on changes nothing.
+  Future<ScheduledWakeEntity?> replan(String agentId) =>
+      _syncService.runInTransaction(() async {
+        final identity = await _repository.getEntity(agentId);
+        if (identity is! AgentIdentityEntity ||
+            identity.kind != AgentKinds.projectAgent) {
+          return null;
+        }
+        final now = clock.now();
+        final next = nextProjectUpdateSlot(
+          now,
+          intervalMinutes: effectiveUpdateIntervalMinutes(identity.config),
+        ).toUtc();
+        for (final record in await pendingSlots(agentId)) {
+          if (record.scheduledAt.toUtc() != next) await _consume(record, now);
+        }
+        return arm(agentId);
+      });
+
   /// The pending update slots of [agentId], earliest first.
   Future<List<ScheduledWakeEntity>> pendingSlots(String agentId) async {
     final pending = await _repository.getPendingScheduledWakeRecords();
@@ -112,16 +134,19 @@ class ProjectUpdateCadence {
         final now = clock.now();
         final pending = await pendingSlots(agentId);
         for (final record in pending) {
-          await _syncService.upsertEntity(
-            record.copyWith(
-              status: ScheduledWakeStatus.consumed,
-              consumedAt: now,
-              updatedAt: now,
-            ),
-          );
+          await _consume(record, now);
         }
         return pending.length;
       });
+
+  Future<void> _consume(ScheduledWakeEntity record, DateTime now) =>
+      _syncService.upsertEntity(
+        record.copyWith(
+          status: ScheduledWakeStatus.consumed,
+          consumedAt: now,
+          updatedAt: now,
+        ),
+      );
 
   void _log(String message) =>
       domainLogger?.log(LogDomain.agentRuntime, message, subDomain: 'cadence');

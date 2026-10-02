@@ -15,8 +15,9 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// A single project row in the list, with task-progress ring, task count,
-/// due label, and status tag. With [showInferenceProfile], a project that has
-/// an agent also shows that agent's inference profile as a pill.
+/// due label, and status tag. A project whose agent summary is out of date
+/// says so first on its meta line. With [showInferenceProfile], a project that
+/// has an agent also shows that agent's inference profile as a pill.
 class ProjectRow extends StatelessWidget {
   const ProjectRow({
     required this.item,
@@ -102,11 +103,11 @@ class ProjectRow extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   text: TextSpan(
                     style: metaStyle,
-                    children: _metaSpans(
-                      context,
-                      metaStyle,
-                      item,
-                    ),
+                    children: [
+                      if (item.reportStale)
+                        ..._outOfDateSpans(context, metaStyle, projectId),
+                      ..._metaSpans(context, metaStyle, item),
+                    ],
                   ),
                 ),
                 if (showInferenceProfile &&
@@ -193,6 +194,33 @@ class ProjectInferenceProfilePill extends StatelessWidget {
       ),
     );
   }
+}
+
+/// "⚠ Out of date · ", leading the meta line of a project whose agent summary
+/// is waiting for its next update.
+List<InlineSpan> _outOfDateSpans(
+  BuildContext context,
+  TextStyle metaStyle,
+  String projectId,
+) {
+  final tokens = context.designTokens;
+  final warning = tokens.colors.alert.warning.defaultColor;
+  return [
+    WidgetSpan(
+      alignment: PlaceholderAlignment.middle,
+      child: Icon(
+        LottiIcons.warning,
+        key: ValueKey('project-row-out-of-date-$projectId'),
+        size: tokens.spacing.step5,
+        color: warning,
+      ),
+    ),
+    TextSpan(
+      text: ' ${context.messages.taskAgentStatusOutOfDate}',
+      style: metaStyle.copyWith(color: warning),
+    ),
+    TextSpan(text: ' · ', style: metaStyle),
+  ];
 }
 
 List<InlineSpan> _metaSpans(

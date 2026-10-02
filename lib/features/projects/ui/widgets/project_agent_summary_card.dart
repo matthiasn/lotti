@@ -123,6 +123,9 @@ class _ProjectAgentSummaryCardState
     final isRunning =
         (ref.watch(agentIsRunningProvider(agentId)).value ?? false) ||
         widget.isRefreshing;
+    // The next update slot: a stale report counts down to it beside
+    // "Update now".
+    final nextUpdateAt = ref.watch(projectNextUpdateProvider(agentId)).value;
     final setup = ref.watch(taskAgentResolvedSetupProvider(agentId)).value;
     final provenance = report == null
         ? null
@@ -169,6 +172,7 @@ class _ProjectAgentSummaryCardState
       isRunning: isRunning,
       hasReportContent: hasReportContent,
       isStale: state?.isReportStale ?? false,
+      nextWakeAt: nextUpdateAt,
       showsFreshConfirmation: false,
       onRunNow: widget.isMutating ? null : widget.onRefresh,
     );

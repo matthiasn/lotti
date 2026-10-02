@@ -672,6 +672,7 @@ void main() {
             inferenceProfileName: 'Claude Sonnet',
             inferenceProfileMissing: false,
             inferenceProfileLoaded: true,
+            reportStale: false,
           ),
           work.projects.last.withAgentSidecar(
             oneLiner: null,
@@ -679,6 +680,7 @@ void main() {
             inferenceProfileName: null,
             inferenceProfileMissing: false,
             inferenceProfileLoaded: true,
+            reportStale: false,
           ),
         ],
       );
@@ -967,6 +969,37 @@ void main() {
     expect(filter.selectedStatusIds, currentProjectStatusFilterIds);
   });
 
+  testWidgets('only out-of-date with nothing stale offers to clear the '
+      'filter, which resets it', (tester) async {
+    await pumpPage(
+      tester,
+      groups: [],
+      overviewGroups: [buildWorkGroup()],
+    );
+    final pageContext = tester.element(find.byType(ProjectsTabPage));
+    final container = ProviderScope.containerOf(pageContext);
+    container
+        .read(projectsFilterControllerProvider.notifier)
+        .setOnlyOutOfDate(onlyOutOfDate: true);
+    await tester.pump();
+
+    expect(
+      find.text(pageContext.messages.projectsClearFilters),
+      findsOneWidget,
+    );
+    tester
+        .widget<ProjectsOverviewContent>(
+          find.byType(ProjectsOverviewContent),
+        )
+        .onEmptyAction!();
+    await tester.pump();
+
+    expect(
+      container.read(projectsFilterControllerProvider).onlyOutOfDate,
+      isFalse,
+    );
+  });
+
   testWidgets('filters visible projects by substring search', (tester) async {
     await pumpPage(
       tester,
@@ -1228,6 +1261,33 @@ void main() {
         );
       },
     );
+  });
+
+  testWidgets('the out-of-date filter shows a chip that clears it', (
+    tester,
+  ) async {
+    await pumpPage(tester, groups: [buildWorkGroup()]);
+    final pageContext = tester.element(find.byType(ProjectsTabPage));
+    final container = ProviderScope.containerOf(pageContext);
+    container
+        .read(projectsFilterControllerProvider.notifier)
+        .setOnlyOutOfDate(onlyOutOfDate: true);
+    await tester.pumpAndSettle();
+
+    final chip = find.widgetWithText(
+      ActiveFilterChip,
+      pageContext.messages.projectsFilterOnlyOutOfDate,
+    );
+    expect(chip, findsOneWidget);
+
+    await tester.tap(chip);
+    await tester.pumpAndSettle();
+
+    expect(
+      container.read(projectsFilterControllerProvider).onlyOutOfDate,
+      isFalse,
+    );
+    expect(find.byType(ActiveFilterChip), findsNothing);
   });
 
   group('desktop split layout', () {
