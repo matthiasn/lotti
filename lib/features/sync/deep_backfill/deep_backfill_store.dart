@@ -22,6 +22,12 @@ abstract class DeepBackfillStore {
   /// How many rows a round will advertise, tombstones included.
   Future<int> count();
 
+  /// Fires after a write the database reports on this store's table, so a
+  /// reader of [count] knows when to look again. A write the database
+  /// cannot see — a raw statement, another connection — does not fire, so
+  /// this is a hint to re-count sooner, never the only reason to.
+  Stream<void> get changes;
+
   /// Up to [limit] rows whose id sorts after [after] (from the first when
   /// null), in id order, tombstones included.
   Future<List<DeepBackfillRow>> page({
@@ -81,6 +87,10 @@ class DeepBackfillTableQueries {
         .getSingle();
     return row.read<int>('n');
   }
+
+  /// The database's update notifications for [table].
+  Stream<void> get changes =>
+      db.tableUpdates(TableUpdateQuery.onTableName(table));
 
   Future<List<DeepBackfillRow>> page({
     required String? after,

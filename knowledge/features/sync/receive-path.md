@@ -5,8 +5,8 @@ description: The Drift-backed inbound queue, the anchored catch-up bridge, per-r
 resource: ../../../lib/features/sync/queue
 tags: [sync, inbound-queue, catch-up, matrix]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-27T21:30:00Z }
-stale_after: 2026-12-25
+generated: { by: claude-code/opus-5.5, at: 2026-10-02T21:10:00Z }
+stale_after: 2027-01-02
 sources:
   - id: descriptor-recovery
     resource: ../../../lib/features/sync/matrix/sync_event_processor_descriptor_cache.dart
@@ -55,7 +55,19 @@ sources:
   - id: tuning
     resource: ../../../lib/features/sync/tuning.dart
     title: SyncTuning
-    last_modified: 2026-05-30
+    last_modified: 2026-10-02
+  - id: record-counts-poller
+    resource: ../../../lib/features/sync/state/deep_backfill_controller.dart
+    title: Change-driven record counts on the Sync health page
+    last_modified: 2026-10-02
+  - id: backfill-stats-controller
+    resource: ../../../lib/features/sync/state/backfill_stats_controller.dart
+    title: Sync health stats refresh, paused off screen
+    last_modified: 2026-10-02
+  - id: deep-backfill-store
+    resource: ../../../lib/features/sync/deep_backfill/deep_backfill_store.dart
+    title: Per-table counts and change notifications
+    last_modified: 2026-10-02
 ---
 
 # The queue pipeline is the only receive path
@@ -532,10 +544,43 @@ only what it shows, so a signal several times a second rebuilds one card, not
 the page:
 
 - `deepBackfillRecordCountsProvider` leads the page with the records per
-  synced type. It re-counts every `SyncTuning.recordCountsRefreshInterval`
-  (one second) while the page listens and the app is visible, skips a tick
-  whose previous count is still running, counts at once when the app shows
-  again, and stops when the page goes (auto-dispose).
+  synced type. Every `SyncTuning.recordCountsRefreshInterval` (one second)
+  it re-counts only the types whose table drift reported written to
+  (`DeepBackfillService.recordChanges`, from each store's `changes`), and
+  every `SyncTuning.recordCountsFullRecountInterval` (30 s) all of them, for
+  the writes drift does not report (`customStatement`, other connections).
+  A `COUNT(*)` is a full scan of the table's smallest index: counting every
+  table each second was the top slow query on a desktop that left the page
+  on a background tab. The desktop shell keeps every tab mounted offstage in
+  an `IndexedStack` with `TickerMode` off, so the provider outlives the
+  visit; Riverpod pauses a `ConsumerWidget`'s subscriptions under a disabled
+  `TickerMode`, which reaches the provider as `ref.onCancel` (and
+  `ref.onResume` on return). The poller — and `BackfillStatsController`'s
+  30-second stats refresh, for the same reason — therefore runs only while
+  its page is on screen *and* the app is visible, skips a tick whose
+  previous count is still running, counts in full at once on return, and
+  stops when the page goes (auto-dispose). Pausing alone would not stop
+  either: a paused subscription silences the listener, not the provider's
+  own timer.
+
+  ```mermaid
+  stateDiagram-v2
+      [*] --> Counting: created, count every type
+      Idle --> Counting: tick, full recount due (30 s passed or last full count failed)
+      Idle --> Counting: tick, some types changed, count only those
+      Idle --> Idle: tick, nothing changed
+      Counting --> Counting: tick skipped, changes recorded as pending
+      Counting --> Idle: counts published over the last ones
+      Counting --> Idle: count failed, error published, its types stay pending
+      Idle --> Paused: page off screen or app hidden, timer stopped
+      Counting --> Paused: page off screen or app hidden, in-flight count still publishes
+      Paused --> Paused: changes recorded, nothing counted
+      Paused --> Counting: page on screen and app visible, count every type
+      Idle --> Disposed: page gone
+      Counting --> Disposed: page gone
+      Paused --> Disposed: page gone
+      Disposed --> [*]
+  ```
 - `_QueueDepthScope` subscribes to `InboundQueue.depthChanges` (seeded by a
   one-shot `depthSnapshot()`) and publishes the latest signal through a
   `ValueListenable`: its subtree builds once, and only the status row

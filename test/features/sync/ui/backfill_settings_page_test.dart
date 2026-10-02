@@ -193,15 +193,21 @@ void main() {
 
   group('BackfillSettingsBody · records on this device', () {
     late MockDeepBackfillService deepBackfill;
+    late StreamController<SyncSequencePayloadType> changes;
     late int counts;
 
     setUp(() {
       deepBackfill = MockDeepBackfillService();
+      changes = StreamController<SyncSequencePayloadType>.broadcast();
+      addTearDown(changes.close);
       counts = 0;
-      when(deepBackfill.recordCounts).thenAnswer((_) async {
+      when(
+        () => deepBackfill.recordCounts(only: any(named: 'only')),
+      ).thenAnswer((_) async {
         counts++;
         return {SyncSequencePayloadType.journalEntity: 1000 + counts};
       });
+      when(() => deepBackfill.recordChanges).thenAnswer((_) => changes.stream);
       getIt.registerSingleton<DeepBackfillService>(deepBackfill);
     });
 
@@ -214,12 +220,16 @@ void main() {
       );
     });
 
-    testWidgets('re-count every interval while shown, and stop once the '
-        'page is gone', (tester) async {
+    testWidgets('re-count once a synced table changes while shown, and stop '
+        'once the page is gone', (tester) async {
       await pumpBody(tester);
       final shown = counts;
       expect(find.text('1,00$shown'), findsOneWidget);
 
+      await tester.pump(SyncTuning.recordCountsRefreshInterval);
+      expect(counts, shown, reason: 'nothing changed, nothing re-counted');
+
+      changes.add(SyncSequencePayloadType.journalEntity);
       await tester.pump(SyncTuning.recordCountsRefreshInterval);
       await tester.pump();
       expect(counts, shown + 1);
@@ -228,8 +238,51 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
       final atExit = counts;
-      await tester.pump(SyncTuning.recordCountsRefreshInterval * 5);
+      changes.add(SyncSequencePayloadType.journalEntity);
+      await tester.pump(SyncTuning.recordCountsFullRecountInterval * 2);
       expect(counts, atExit);
+    });
+
+    testWidgets('stop counting while the page sits on a background tab, and '
+        'count once it is shown again', (tester) async {
+      final onScreen = ValueNotifier(true);
+      addTearDown(onScreen.dispose);
+      tester.view
+        ..physicalSize = const Size(800, 2400)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      // The desktop shell keeps every tab mounted in an IndexedStack and
+      // turns TickerMode off for the ones not shown.
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          child: ValueListenableBuilder<bool>(
+            valueListenable: onScreen,
+            builder: (context, enabled, child) =>
+                TickerMode(enabled: enabled, child: child!),
+            child: const SingleChildScrollView(child: BackfillSettingsBody()),
+          ),
+        ),
+      );
+      await tester.pump();
+      final shown = counts;
+      final statsLoads = verify(
+        () => mockSequenceService.getBackfillStats(),
+      ).callCount;
+
+      onScreen.value = false;
+      await tester.pump();
+      changes.add(SyncSequencePayloadType.journalEntity);
+      await tester.pump(const Duration(minutes: 5));
+      expect(counts, shown, reason: 'no record counts for an unseen page');
+      verifyNever(() => mockSequenceService.getBackfillStats());
+
+      onScreen.value = true;
+      await tester.pump();
+      await tester.pump();
+      expect(counts, shown + 1, reason: 'counts at once when shown');
+      verify(() => mockSequenceService.getBackfillStats()).called(1);
+      expect(statsLoads, greaterThan(0));
+      await tester.pumpWidget(const SizedBox());
     });
   });
 

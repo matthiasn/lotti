@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:async/async.dart' show StreamGroup;
 import 'package:drift/drift.dart' show Value;
 
 import 'package:lotti/database/sync_db.dart';
@@ -111,10 +112,22 @@ class DeepBackfillService {
 
   /// How many records of each registered type this device holds, deletions
   /// included: the numbers a deep backfill makes equal across devices,
-  /// unlike the sequence log's counters.
-  Future<Map<SyncSequencePayloadType, int>> recordCounts() async => {
-    for (final store in _stores.values) store.payloadType: await store.count(),
+  /// unlike the sequence log's counters. With [only], just those of the
+  /// registered types in it.
+  Future<Map<SyncSequencePayloadType, int>> recordCounts({
+    Set<SyncSequencePayloadType>? only,
+  }) async => {
+    for (final store in _stores.values)
+      if (only == null || only.contains(store.payloadType))
+        store.payloadType: await store.count(),
   };
+
+  /// The type of each store whose table the database reports written to —
+  /// see [DeepBackfillStore.changes] for what it cannot see.
+  Stream<SyncSequencePayloadType> get recordChanges => StreamGroup.merge([
+    for (final store in _stores.values)
+      store.changes.map((_) => store.payloadType),
+  ]);
 
   /// The payload types a round advertises and a request can be answered for.
   Set<SyncSequencePayloadType> get payloadTypes => _stores.keys.toSet();

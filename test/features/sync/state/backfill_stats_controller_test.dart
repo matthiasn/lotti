@@ -1089,6 +1089,77 @@ void main() {
       );
     });
 
+    group('paused subscription (page mounted off screen)', () {
+      test('stops refreshing while every listener is paused — a desktop tab '
+          'switched away from keeps the page mounted offstage — and refreshes '
+          'at once when it resumes', () {
+        fakeAsync((async) {
+          var callCount = 0;
+          when(() => mockSequenceService.getBackfillStats()).thenAnswer((
+            _,
+          ) async {
+            callCount++;
+            return testStats;
+          });
+          container = ProviderContainer();
+          final subscription = container.listen(
+            backfillStatsControllerProvider,
+            (_, _) {},
+          );
+          async.flushMicrotasks();
+          expect(callCount, 1);
+
+          subscription.pause();
+          async
+            ..elapse(const Duration(minutes: 5))
+            ..flushMicrotasks();
+          expect(callCount, 1, reason: 'no aggregation for an unseen page');
+
+          subscription.resume();
+          async.flushMicrotasks();
+          expect(callCount, 2);
+          async
+            ..elapse(const Duration(seconds: 30))
+            ..flushMicrotasks();
+          expect(callCount, 3, reason: 'and the timer runs again');
+        });
+      });
+
+      test('a hidden app stays quiet when the page resumes behind it', () {
+        final binding = WidgetsFlutterBinding.ensureInitialized()
+          ..handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+        addTearDown(
+          () =>
+              binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed),
+        );
+        fakeAsync((async) {
+          var callCount = 0;
+          when(() => mockSequenceService.getBackfillStats()).thenAnswer((
+            _,
+          ) async {
+            callCount++;
+            return testStats;
+          });
+          container = ProviderContainer();
+          final subscription = container.listen(
+            backfillStatsControllerProvider,
+            (_, _) {},
+          );
+          async.flushMicrotasks();
+
+          subscription.pause();
+          binding
+            ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
+            ..handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+          subscription.resume();
+          async
+            ..elapse(const Duration(minutes: 5))
+            ..flushMicrotasks();
+          expect(callCount, 1);
+        });
+      });
+    });
+
     group('app visibility lifecycle', () {
       late WidgetsBinding binding;
 
@@ -1162,12 +1233,14 @@ void main() {
             expect(callCount, 1); // confirmed paused
 
             // Foreground the app again: hidden -> inactive fires onShow,
-            // which sets _appVisible = true and restarts the timer.
+            // which refreshes at once and restarts the timer.
             binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+            async.flushMicrotasks();
+            expect(callCount, 2, reason: 'stale stats refresh on return');
 
             // The re-armed timer fires after one more interval.
             async.elapse(const Duration(seconds: 30));
-            expect(callCount, 2);
+            expect(callCount, 3);
           });
         },
       );
@@ -1211,9 +1284,10 @@ void main() {
               ..handleAppLifecycleStateChanged(AppLifecycleState.hidden);
 
             // Many intervals pass while backgrounded; the cancelled timer must
-            // never fire.
+            // never fire. The one extra load is the at-once refresh of the
+            // brief show in the middle.
             async.elapse(const Duration(seconds: 120));
-            expect(callCount, 1);
+            expect(callCount, 2);
           });
         },
       );

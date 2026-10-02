@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_service.dart';
@@ -35,6 +37,10 @@ class _FakeStore extends DeepBackfillStore {
   final Map<String, List<VectorClock>> conflicts;
   final Map<String, int> media;
   final resent = <({Set<String> ids, Set<String> withMedia})>[];
+  final changed = StreamController<void>.broadcast();
+
+  @override
+  Stream<void> get changes => changed.stream;
 
   bool _inRange(String id, String? start, String? end) =>
       (start == null || id.compareTo(start) >= 0) &&
@@ -772,4 +778,28 @@ void main() {
       expect(counts, {_journal: 2, _links: 0});
     },
   );
+
+  test('recordCounts with only counts just those types', () async {
+    final links = _FakeStore(_links, rows: {'l': null});
+    final svc = service(stores: [_FakeStore(_journal), links]);
+
+    expect(await svc.recordCounts(only: {_links}), {_links: 1});
+    expect(await svc.recordCounts(only: const {}), isEmpty);
+  });
+
+  test('recordChanges names the type of each store whose table changed', () {
+    fakeAsync((async) {
+      final journal = _FakeStore(_journal);
+      final links = _FakeStore(_links);
+      final seen = <SyncSequencePayloadType>[];
+      service(stores: [journal, links]).recordChanges.listen(seen.add);
+
+      links.changed.add(null);
+      journal.changed.add(null);
+      links.changed.add(null);
+      async.flushMicrotasks();
+
+      expect(seen, [_links, _journal, _links]);
+    });
+  });
 }

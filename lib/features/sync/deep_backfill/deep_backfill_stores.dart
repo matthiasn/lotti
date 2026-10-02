@@ -44,6 +44,9 @@ class TableDeepBackfillStore extends DeepBackfillStore {
   Future<int> count() => queries.count();
 
   @override
+  Stream<void> get changes => queries.changes;
+
+  @override
   Future<List<DeepBackfillRow>> page({
     required String? after,
     required int limit,
@@ -100,6 +103,9 @@ class JournalDeepBackfillStore extends DeepBackfillStore {
 
   @override
   Future<int> count() => _queries.count();
+
+  @override
+  Stream<void> get changes => _queries.changes;
 
   @override
   Future<List<DeepBackfillRow>> page({

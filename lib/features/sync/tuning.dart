@@ -255,11 +255,19 @@ class SyncTuning {
   /// floor while the earlier request or its response may still be in flight.
   static const Duration backfillRequestRetryCooldown = Duration(hours: 1);
 
-  /// How often the backfill page re-counts the records on this device while
-  /// it is shown, so the numbers follow a sync or deep backfill as it lands.
-  /// A count is a `COUNT(*)` per synced table; the next one starts only
-  /// after the previous finished.
+  /// How often the backfill page re-counts the record types whose table was
+  /// written to since the last look, so the numbers follow a sync or deep
+  /// backfill as it lands. A count is a `COUNT(*)` per table — a full scan
+  /// of its smallest index — so an unchanged table is not counted again;
+  /// the next look starts only after the previous one finished.
   static const Duration recordCountsRefreshInterval = Duration(seconds: 1);
+
+  /// How often the backfill page re-counts every type regardless, to catch
+  /// writes the database does not report: raw statements and other
+  /// connections.
+  static const Duration recordCountsFullRecountInterval = Duration(
+    seconds: 30,
+  );
 
   // Large-gap logging threshold.
   // Gaps larger than this are still fully materialized so backfill can recover
