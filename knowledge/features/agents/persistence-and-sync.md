@@ -186,7 +186,14 @@ sync refuses late writes about them (see
   sync as agent-domain entities and validate through `GoalSpecValidator` at
   every decode path.
 - `AgentUnknownEntity` — the forward-compat fallback for variants an older
-  client cannot decode.
+  client cannot decode. That older client stores the fallback with only its
+  envelope fields but keeps the original `runtimeType`, so a newer build can
+  later read such a stub as a variant it does know. `AgentDomainEntity.fromJson`
+  catches this before anything else: a payload that holds nothing beyond those
+  envelope keys decodes as `AgentUnknownEntity` again. The compatibility
+  repairs and validators run only after that check, so none of them can add a
+  field to a stub or reject it for a field it never had. The receive path then
+  replaces the stub with the full version that arrives.
 
 ## Links
 

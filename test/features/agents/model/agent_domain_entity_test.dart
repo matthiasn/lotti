@@ -1310,6 +1310,40 @@ void main() {
         );
       }
 
+      test(
+        "an older peer's truncated weekRollup round-trip with a canonical id "
+        'degrades to unknown instead of throwing',
+        () {
+          // Reverting the ordering lets the legacy repair derive `weekStart`
+          // from the canonical id first; the stub then no longer looks like
+          // one, and the generated decoder throws a TypeError for the
+          // `updatedAt` the old peer dropped — retried, then skipped, for
+          // every received version of the row.
+          final decoded = AgentDomainEntity.fromJson(
+            oldPeerRoundTrip('weekRollup')..['id'] = 'week_rollup:2026-09-28',
+          );
+
+          expect(decoded, isA<AgentUnknownEntity>());
+          expect(decoded.id, equals('week_rollup:2026-09-28'));
+          expect(decoded.agentId, equals('agent-003'));
+        },
+      );
+
+      test(
+        "an older peer's truncated goalSpecVersion round-trip degrades to "
+        'unknown instead of throwing',
+        () {
+          // Reverting the ordering rejects the stub as a goal spec without a
+          // `version` — a FormatException for a row that never had one.
+          final decoded = AgentDomainEntity.fromJson(
+            oldPeerRoundTrip('goalSpecVersion'),
+          );
+
+          expect(decoded, isA<AgentUnknownEntity>());
+          expect(decoded.id, equals('truncated-001'));
+        },
+      );
+
       test('a payload keeping ANY field of its own still throws', () {
         // The degradation must not swallow genuine corruption: a row that
         // still carries part of its real payload is not an old peer's

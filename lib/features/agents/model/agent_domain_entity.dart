@@ -1243,12 +1243,16 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
 /// The public factory must stay expression-bodied: Freezed uses that shape to
 /// decide whether it should generate JSON support for the union variants.
 AgentDomainEntity _decodeAgentDomainEntity(Map<String, dynamic> json) {
+  // The stub check reads the raw keys, so it runs before anything adds or
+  // demands one: the weekRollup repair derives `weekStart` from a stub's
+  // canonical id, which made the stub look like a real payload, and the
+  // goal-spec validation rejects a stub for the `version` it never had.
+  if (_isUnknownFallbackRoundTrip(json)) {
+    return AgentUnknownEntity.fromJson(json);
+  }
   final repaired = _repairLegacyWeekRollup(json);
   _validateGoalSpecJson(repaired);
   _validateNudgeJson(repaired);
-  if (_isUnknownFallbackRoundTrip(repaired)) {
-    return AgentUnknownEntity.fromJson(repaired);
-  }
   final entity = _$AgentDomainEntityFromJson(repaired);
   if (entity is GoalSpecVersionEntity) {
     final issues = GoalSpecValidator.criterionIssues(entity.criteria);
