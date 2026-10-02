@@ -23,9 +23,6 @@ void main() {
 
     setUp(() {
       mockRepository = MockAiConfigRepository();
-      when(
-        () => mockRepository.versionStamp(any()),
-      ).thenAnswer((_) async => null);
       service = ModelPrepopulationService(repository: mockRepository);
     });
 
@@ -426,9 +423,6 @@ void main() {
         'matches generated provider prepopulation skip semantics',
         (scenario) async {
           final generatedRepository = MockAiConfigRepository();
-          when(
-            () => generatedRepository.versionStamp(any()),
-          ).thenAnswer((_) async => null);
           final generatedService = ModelPrepopulationService(
             repository: generatedRepository,
           );
@@ -577,9 +571,6 @@ void main() {
 
     setUp(() {
       mockRepository = MockAiConfigRepository();
-      when(
-        () => mockRepository.versionStamp(any()),
-      ).thenAnswer((_) async => null);
       service = ModelPrepopulationService(repository: mockRepository);
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async => {});
     });
@@ -708,9 +699,6 @@ void main() {
 
     setUp(() {
       mockRepository = MockAiConfigRepository();
-      when(
-        () => mockRepository.versionStamp(any()),
-      ).thenAnswer((_) async => null);
       service = ModelPrepopulationService(repository: mockRepository);
     });
 

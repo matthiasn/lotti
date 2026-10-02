@@ -151,9 +151,6 @@ void main() {
 
   setUp(() {
     mockRepo = MockAiConfigRepository();
-    when(
-      () => mockRepo.versionStamp(any()),
-    ).thenAnswer((_) async => null);
     service = ProfileSeedingService(aiConfigRepository: mockRepo);
     saved = [];
 
