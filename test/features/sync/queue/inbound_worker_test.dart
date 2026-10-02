@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -102,8 +103,16 @@ class _ExpectedWorkerLifecycle {
           attempts++;
         }
         return 0;
-      case ApplyOutcome.pendingBarrier:
       case ApplyOutcome.pendingDescriptor:
+        if (attempts + 1 >= 2880 &&
+            now.difference(enqueuedAt) >= const Duration(hours: 24)) {
+          active = false;
+          abandoned = true;
+        } else {
+          attempts++;
+        }
+        return 0;
+      case ApplyOutcome.pendingBarrier:
         attempts++;
         return 0;
       case ApplyOutcome.permanentSkip:
@@ -386,6 +395,80 @@ void main() {
       });
     },
   );
+
+  group('pendingDescriptor backstop', () {
+    // 24 h of 30 s retries — the worker's minimum attempt budget.
+    const attemptBudget = 2880;
+
+    Future<void> seedDescriptorRow({required int priorAttempts}) async {
+      await queue.enqueueLive(
+        _buildSyncEvent(
+          eventId: r'$never-descriptor',
+          roomId: roomId,
+          originTsMs: 1,
+        ),
+      );
+      await db
+          .update(db.inboundEventQueue)
+          .write(InboundEventQueueCompanion(attempts: Value(priorAttempts)));
+    }
+
+    test(
+      'abandons the row once a day has passed and the retry budget is spent',
+      () async {
+        var virtualNow = DateTime(2024);
+        await withClock(Clock(() => virtualNow), () async {
+          await seedDescriptorRow(priorAttempts: attemptBudget - 1);
+          virtualNow = virtualNow.add(const Duration(hours: 24));
+          final worker = buildWorker(
+            apply: (_) async => ApplyOutcome.pendingDescriptor,
+          );
+
+          expect(await worker.drainToCompletion(), 0);
+
+          final stats = await queue.stats();
+          expect(stats.retrying, 0);
+          expect(stats.abandoned, 1);
+          final row = await db.select(db.inboundEventQueue).getSingle();
+          expect(row.lastErrorReason, 'pendingDescriptorTimeout');
+        });
+      },
+    );
+
+    test('keeps retrying a spent budget until a day has passed', () async {
+      var virtualNow = DateTime(2024);
+      await withClock(Clock(() => virtualNow), () async {
+        await seedDescriptorRow(priorAttempts: attemptBudget - 1);
+        virtualNow = virtualNow.add(const Duration(hours: 23));
+        final worker = buildWorker(
+          apply: (_) async => ApplyOutcome.pendingDescriptor,
+        );
+
+        expect(await worker.drainToCompletion(), 0);
+
+        final stats = await queue.stats();
+        expect(stats.retrying, 1);
+        expect(stats.abandoned, 0);
+      });
+    });
+
+    test('keeps retrying an old row whose budget is not spent', () async {
+      var virtualNow = DateTime(2024);
+      await withClock(Clock(() => virtualNow), () async {
+        await seedDescriptorRow(priorAttempts: attemptBudget - 2);
+        virtualNow = virtualNow.add(const Duration(days: 7));
+        final worker = buildWorker(
+          apply: (_) async => ApplyOutcome.pendingDescriptor,
+        );
+
+        expect(await worker.drainToCompletion(), 0);
+
+        final stats = await queue.stats();
+        expect(stats.retrying, 1);
+        expect(stats.abandoned, 0);
+      });
+    });
+  });
 
   test('pendingBarrier stays active beyond the generic attempt cap', () async {
     var virtualNow = DateTime(2024);

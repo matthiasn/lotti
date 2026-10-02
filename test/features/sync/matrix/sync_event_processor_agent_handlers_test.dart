@@ -6779,6 +6779,59 @@ void main() {
           },
         );
 
+        test(
+          'skips the envelope when the homeserver no longer has the media',
+          () async {
+            when(descriptorEvent.downloadAndDecryptAttachment).thenThrow(
+              MatrixException.fromJson(const {
+                'errcode': 'M_NOT_FOUND',
+                'error': 'Not found',
+              }),
+            );
+
+            attachmentIndex.record(descriptorEvent);
+
+            const message = SyncMessage.agentEntity(
+              status: SyncEntryStatus.update,
+              jsonPath: '/agent_entities/agent-desc.json',
+            );
+            when(() => event.text).thenReturn(encodeMessage(message));
+
+            // Completes instead of throwing a retryable descriptor error:
+            // prepare yields nothing, so the queue marks the row skipped.
+            expect(await processorWithIndex.prepare(event: event), isNull);
+
+            verify(descriptorEvent.downloadAndDecryptAttachment).called(1);
+            verifyNever(() => mockAgentRepo.upsertEntity(any()));
+          },
+        );
+
+        test(
+          'keeps other homeserver errors retryable',
+          () async {
+            when(descriptorEvent.downloadAndDecryptAttachment).thenThrow(
+              MatrixException.fromJson(const {
+                'errcode': 'M_LIMIT_EXCEEDED',
+                'error': 'Too many requests',
+              }),
+            );
+
+            attachmentIndex.record(descriptorEvent);
+
+            const message = SyncMessage.agentEntity(
+              status: SyncEntryStatus.update,
+              jsonPath: '/agent_entities/agent-desc.json',
+            );
+            when(() => event.text).thenReturn(encodeMessage(message));
+
+            await expectLater(
+              processorWithIndex.prepare(event: event),
+              throwsA(isA<FileSystemException>()),
+            );
+            verifyNever(() => mockAgentRepo.upsertEntity(any()));
+          },
+        );
+
         test('throws when descriptor returns empty bytes', () async {
           when(descriptorEvent.downloadAndDecryptAttachment).thenAnswer(
             (_) async => MatrixFile(bytes: Uint8List(0), name: 'e.json'),

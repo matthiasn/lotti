@@ -340,6 +340,13 @@ class InboundWorker {
     RetryReason reason,
   ) async {
     final nextAttempts = entry.attempts + 1;
+    if (reason == RetryReason.pendingDescriptor &&
+        nextAttempts >= _minPendingDescriptorAttempts &&
+        clock.now().millisecondsSinceEpoch - entry.enqueuedAt >=
+            _maxPendingDescriptorWait.inMilliseconds) {
+      await _queue.markSkipped(entry, reason: 'pendingDescriptorTimeout');
+      return;
+    }
     if (reason == RetryReason.pendingBarrier ||
         reason == RetryReason.pendingDescriptor) {
       await _queue.scheduleRetry(
@@ -435,6 +442,17 @@ class InboundWorker {
     seconds: 30,
   );
   static const Duration _pendingBarrierRetryInterval = Duration(seconds: 5);
+  // Backstop for descriptors that never become available. Exact-descriptor
+  // recovery must survive restarts and offline stretches, so the row is only
+  // abandoned once BOTH a day has passed since it was queued AND a day's
+  // worth of 30 s retries has actually run. Wall clock alone would drop rows
+  // the moment an app closed for a week reopens offline; attempts alone
+  // would drop them after one long offline day. Abandoned rows stay durable
+  // and resurrectable, so a descriptor that does arrive later still applies.
+  static const Duration _maxPendingDescriptorWait = Duration(hours: 24);
+  static final int _minPendingDescriptorAttempts =
+      _maxPendingDescriptorWait.inSeconds ~/
+      _pendingAttachmentInitialBackoff.inSeconds;
   static const Duration _maxPendingAttachmentWait = Duration(minutes: 10);
   // Bounded by the wait deadline: a single backoff at the cap exhausts
   // the entire grace window, so capping the backoff above the deadline
