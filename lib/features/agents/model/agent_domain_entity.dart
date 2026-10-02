@@ -59,6 +59,24 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     required VectorClock? vectorClock,
     DateTime? deletedAt,
     DateTime? destroyedAt,
+
+    /// When `lifecycle` last changed, or a user decided it (ADR 0111). A
+    /// rename or config edit leaves it alone. Two concurrent versions keep
+    /// the lifecycle of the one with the later stamp, so an edit that
+    /// carried a stale lifecycle can no longer overturn a destroy. A writer
+    /// that changes the lifecycle stamps it; the sync write path
+    /// (`stampAgentIdentityWrite`) covers every other write. Null on rows
+    /// written before it existed, which read `updatedAt`.
+    DateTime? lifecycleUpdatedAt,
+
+    /// When the user last stopped this agent — destroy, pause or delete from
+    /// the agent controls — and the lifecycle that stop set. Merged by the
+    /// later stamp, so no device loses the user's stop to a concurrent write.
+    DateTime? userStoppedAt,
+    AgentLifecycle? userStopLifecycle,
+
+    /// When the user last resumed this agent. Merged by the later stamp.
+    DateTime? userResumedAt,
   }) = AgentIdentityEntity;
 
   /// Durable state snapshot.

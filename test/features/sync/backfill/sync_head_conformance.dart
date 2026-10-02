@@ -486,9 +486,6 @@ void registerMixedFamilyBackfillConformanceTests() {
                 firstEntity.copyWith(displayName: 'successor', updatedAt: now),
               );
               final successor = (await origin.drain()).single;
-              final expectedAgent = await origin.agents.repository.getEntity(
-                sharedId,
-              );
               final link = EntryLink.basic(
                 id: sharedId,
                 fromId: 'from',
@@ -528,6 +525,12 @@ void registerMixedFamilyBackfillConformanceTests() {
                   );
                 }
               }
+              // The origin, having received the fork, holds what every device
+              // converges on: the successor, with the fork's later lifecycle
+              // stamp joined in (ADR 0111).
+              final expectedAgent = await origin.agents.repository.getEntity(
+                sharedId,
+              );
               expect(await lagging.journal.entryLinkById(sharedId), isNull);
               // A domain commit succeeds but its receipt fails. The only later
               // input is a periodic head and backfill; no manual retry/restart.

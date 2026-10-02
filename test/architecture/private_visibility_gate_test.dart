@@ -100,6 +100,10 @@ const _ungatedDeclarations = <String, String>{
           'getAllCheckInsForRelationship':
       "the delete cascade's view of a person's check-ins, private ones "
       'included, so a deletion cannot strand them (ADR 0037 §5)',
+  'lib/database/database_relationship_queries.dart:getAllRelationships':
+      "the agent maintenance pass's view of every person, private ones "
+      'included, so a display preference cannot decide who is tracked '
+      '(ADR 0111); no row content is shown',
   'lib/logic/create/create_entry.dart:_softDeleteFailedProjectTask':
       'verifies by id that the task it just wrote is tombstoned; no row '
       'content is shown',

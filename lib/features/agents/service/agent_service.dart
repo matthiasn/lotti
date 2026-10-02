@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/agent_sidecar_reclaimer.dart';
+import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -229,10 +230,18 @@ class AgentService {
   /// Transition agent to [AgentLifecycle.dormant], unregister wake
   /// subscriptions, and remove any device-local project fallback.
   ///
+  /// [byUser] marks the pause as the user's own stop (the agent controls):
+  /// it is recorded on the identity and synced, so no other device's write
+  /// undoes it (ADR 0111).
+  ///
   /// Returns `true` if the agent was found and paused, `false` if the agent
   /// does not exist.
-  Future<bool> pauseAgent(String agentId) async {
-    final updated = await _updateLifecycle(agentId, AgentLifecycle.dormant);
+  Future<bool> pauseAgent(String agentId, {bool byUser = false}) async {
+    final updated = await _updateLifecycle(
+      agentId,
+      AgentLifecycle.dormant,
+      decision: byUser ? _UserDecision.stop : null,
+    );
     if (!updated) return false;
     orchestrator.removeSubscriptions(agentId);
     developer.log(
@@ -248,10 +257,17 @@ class AgentService {
   /// call (subscription details are agent-kind-specific); the agent controls
   /// do so through the task service and the runtime-maintenance contributors.
   ///
+  /// [byUser] marks the resume as the user's own (the agent controls): it
+  /// is recorded on the identity and outranks an older stop (ADR 0111).
+  ///
   /// Returns `true` if the agent was found and resumed, `false` if the agent
   /// does not exist.
-  Future<bool> resumeAgent(String agentId) async {
-    final updated = await _updateLifecycle(agentId, AgentLifecycle.active);
+  Future<bool> resumeAgent(String agentId, {bool byUser = false}) async {
+    final updated = await _updateLifecycle(
+      agentId,
+      AgentLifecycle.active,
+      decision: byUser ? _UserDecision.resume : null,
+    );
     if (!updated) return false;
     developer.log(
       'Resumed agent ${DomainLogger.sanitizeId(agentId)}',
@@ -290,10 +306,19 @@ class AgentService {
   /// Does not delete data — the agent's history is preserved for audit.
   /// To permanently remove all data, call [deleteAgent] afterwards.
   ///
+  /// [byUser] marks the destroy as the user's own stop (the agent controls),
+  /// as opposed to a teardown the app decided — a deleted person, a retired
+  /// task agent. Only the user's stop keeps an agent the user still asks for
+  /// destroyed (ADR 0111).
+  ///
   /// Returns `true` if the agent was found and destroyed, `false` if the
   /// agent does not exist.
-  Future<bool> destroyAgent(String agentId) async {
-    final updated = await _updateLifecycle(agentId, AgentLifecycle.destroyed);
+  Future<bool> destroyAgent(String agentId, {bool byUser = false}) async {
+    final updated = await _updateLifecycle(
+      agentId,
+      AgentLifecycle.destroyed,
+      decision: byUser ? _UserDecision.stop : null,
+    );
     if (!updated) return false;
     orchestrator.removeSubscriptions(agentId);
     developer.log(
@@ -313,7 +338,12 @@ class AgentService {
   /// all entities, links, wake runs, and saga ops from the database. Linked
   /// project IDs are captured first so project detail/list providers can drop
   /// agent-authored summaries after the link rows disappear.
-  Future<void> deleteAgent(String agentId) async {
+  ///
+  /// [byUser] marks the delete as the user's stop. It is written and synced
+  /// before the rows go, even over an agent already destroyed: the delete
+  /// itself stays on this device, and without the stop another device could
+  /// bring the agent back (ADR 0111).
+  Future<void> deleteAgent(String agentId, {bool byUser = false}) async {
     final identity = await getAgent(agentId);
     final projectIds = identity?.kind == AgentKinds.projectAgent
         ? (await repository.getLinksFrom(
@@ -321,8 +351,9 @@ class AgentService {
             type: AgentLinkTypes.agentProject,
           )).map((link) => link.toId).toSet()
         : const <String>{};
-    if (identity != null && identity.lifecycle != AgentLifecycle.destroyed) {
-      await destroyAgent(agentId);
+    if (identity != null &&
+        (byUser || identity.lifecycle != AgentLifecycle.destroyed)) {
+      await destroyAgent(agentId, byUser: byUser);
     } else {
       orchestrator.removeSubscriptions(agentId);
     }
@@ -348,10 +379,16 @@ class AgentService {
 
   /// Returns `true` when the agent was found and its lifecycle was updated,
   /// `false` when the agent does not exist.
+  ///
+  /// The write stamps `lifecycleUpdatedAt`, so this decision outranks any
+  /// earlier one in the identity merge; a [decision] also records the
+  /// user's stop or resume (ADR 0111). Each stamp lands after the one it
+  /// supersedes even when a peer's clock ran ahead ([decisionStampAfter]).
   Future<bool> _updateLifecycle(
     String agentId,
-    AgentLifecycle lifecycle,
-  ) async {
+    AgentLifecycle lifecycle, {
+    _UserDecision? decision,
+  }) async {
     final updated = await syncService.runInTransaction(() async {
       final identity = await getAgent(agentId);
       if (identity == null) {
@@ -364,10 +401,29 @@ class AgentService {
       }
 
       final now = clock.now();
+      final stops = decision == _UserDecision.stop;
+      // The user's stop and resume supersede each other's earlier stamps,
+      // even ones a peer's clock put ahead of this device's.
+      final decidedAt = decisionStampAfter(now, [
+        identity.userStoppedAt,
+        identity.userResumedAt,
+      ]);
       final updated = identity.copyWith(
         lifecycle: lifecycle,
         updatedAt: now,
-        destroyedAt: lifecycle == AgentLifecycle.destroyed ? now : null,
+        lifecycleUpdatedAt: decisionStampAfter(now, [
+          identityLifecycleAt(identity),
+        ]),
+        destroyedAt: lifecycle != AgentLifecycle.destroyed
+            ? null
+            : identity.lifecycle == AgentLifecycle.destroyed
+            ? identity.destroyedAt ?? now
+            : now,
+        userStoppedAt: stops ? decidedAt : identity.userStoppedAt,
+        userStopLifecycle: stops ? lifecycle : identity.userStopLifecycle,
+        userResumedAt: decision == _UserDecision.resume
+            ? decidedAt
+            : identity.userResumedAt,
       );
       await syncService.upsertEntity(updated);
       if (identity.kind == AgentKinds.projectAgent &&
@@ -390,3 +446,7 @@ class AgentService {
     return updated;
   }
 }
+
+/// A lifecycle change the user made in the agent controls, as opposed to one
+/// the app made on its own.
+enum _UserDecision { stop, resume }

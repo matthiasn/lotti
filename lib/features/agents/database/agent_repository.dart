@@ -646,6 +646,17 @@ class AgentRepository {
   Future<Set<String>> deletedAgentIdsAmong(Iterable<String> agentIds) =>
       _links.deletedAgentIdsAmong(agentIds);
 
+  /// When this device deleted [agentId] ([hardDeleteAgent]), or null when
+  /// it did not.
+  Future<DateTime?> deletedAgentAt(String agentId) =>
+      _links.deletedAgentAt(agentId);
+
+  /// Forgets that this device deleted [agentId], so sync accepts writes
+  /// about it again. Only an agent the user asked for again after the
+  /// deletion is brought back this way (ADR 0111).
+  Future<void> forgetDeletedAgent(String agentId) =>
+      _links.forgetDeletedAgent(agentId);
+
   // ── Retention ───────────────────────────────────────────────────────────
 
   /// Deletes day-status events created before [cutoff], keeping each day's

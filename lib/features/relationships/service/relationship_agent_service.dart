@@ -12,7 +12,9 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
+import 'package:lotti/features/relationships/runtime/relationship_agent_reconciliation.dart';
 
 /// The lazy-create trigger every door that turns reminders on shares — the
 /// person editor, the person page's card and contact import (ADR 0059
@@ -58,12 +60,14 @@ class RelationshipAgentService {
     required this._repository,
     required this._syncService,
     required this._orchestrator,
+    required this._relationshipRepository,
   });
 
   final AgentService _agentService;
   final AgentRepository _repository;
   final AgentSyncService _syncService;
   final WakeOrchestrator _orchestrator;
+  final RelationshipRepository _relationshipRepository;
 
   /// Ensures the agent for [relationship] exists and is live: identity,
   /// agent→relationship link and first cadence tick land in ONE
@@ -74,15 +78,23 @@ class RelationshipAgentService {
   /// Idempotent: an existing identity — whatever its lifecycle — is
   /// preserved, with one refresh: a renamed person's title is written
   /// through to `displayName` (the goal revision-service precedent), so
-  /// the chat page never stays labeled with a stale name. Un-marking
+  /// the chat page never stays labeled with a stale name. The rename leaves
+  /// the lifecycle stamp alone, so it never overturns a concurrent destroy
+  /// (ADR 0111). An agent this device deleted is created again only when
+  /// the user asked for it since: [askedByUser] (an explicit request, such
+  /// as *Brief me*, recorded as the user's resume so no device's pass stops
+  /// it again), or a mark newer than the delete on the stored person — the
+  /// pass's own rule ([reconcileRelationshipAgent]). Otherwise null is
+  /// returned. Un-marking
   /// `important` deliberately does NOT touch the agent: Phase A gates on
   /// eligibility every tick, so the switch is instant in both directions
   /// with no re-wiring. Instant includes the banner already on the dock —
   /// Phase A retires it on the ineligible path, since the render side
   /// filters on the person existing rather than on their consent.
-  Future<AgentIdentityEntity> ensureAgentForRelationship(
-    RelationshipEntry relationship,
-  ) async {
+  Future<AgentIdentityEntity?> ensureAgentForRelationship(
+    RelationshipEntry relationship, {
+    bool askedByUser = false,
+  }) async {
     final relationshipId = relationship.meta.id;
     final agentId = relationshipAgentIdFor(relationshipId);
     final now = clock.now();
@@ -99,6 +111,14 @@ class RelationshipAgentService {
         );
         await _syncService.upsertEntity(renamed);
         return renamed;
+      }
+      final deletedAt = await _repository.deletedAgentAt(agentId);
+      if (deletedAt != null) {
+        if (!askedByUser &&
+            !await _askedSinceDeletion(relationshipId, deletedAt)) {
+          return null;
+        }
+        await _repository.forgetDeletedAgent(agentId);
       }
       final created = await _agentService.createAgent(
         kind: AgentKinds.relationshipAgent,
@@ -120,15 +140,112 @@ class RelationshipAgentService {
       await _syncService.upsertEntity(
         relationshipCadenceWake(agentId, now),
       );
+      // The user's stop that came with the delete synced to every device;
+      // an explicit request must outrank it there, or their pass stops the
+      // agent again.
+      if (deletedAt != null && askedByUser) {
+        await _agentService.resumeAgent(agentId, byUser: true);
+      }
       return created;
     });
+    if (identity == null) return null;
 
-    await registerSubscription(agentId, relationshipId: relationshipId);
-    _orchestrator.enqueueManualWake(
-      agentId: agentId,
+    await _activateRuntime(
+      agentId,
+      relationshipId: relationshipId,
       reason: 'relationship marked important',
     );
     return identity;
+  }
+
+  /// Whether the stored person was marked important after this device
+  /// deleted their agent at [deletedAt] — the pass's condition for creating
+  /// it again, read from the stored person rather than the caller's copy,
+  /// which a save may have stamped since.
+  Future<bool> _askedSinceDeletion(
+    String relationshipId,
+    DateTime deletedAt,
+  ) async {
+    final stored = await _relationshipRepository.getRelationshipByIdUnfiltered(
+      relationshipId,
+    );
+    if (stored == null) return false;
+    final conflicting = await _relationshipRepository.openConflictVersions(
+      relationshipId,
+    );
+    return reconcileRelationshipAgent(
+          person: stored.data,
+          identity: null,
+          deletedAt: deletedAt,
+          conflicting: [for (final version in conflicting) version.data],
+        ) ==
+        RelationshipAgentReconciliation.create;
+  }
+
+  /// Sets [relationship]'s agent to what the user asked for last (ADR 0111,
+  /// [reconcileRelationshipAgent]): the maintenance pass's repair for a
+  /// live person. It creates an agent a lost background ensure never wrote,
+  /// brings back one the reaper or the delete cascade destroyed, and keeps
+  /// the user's stop when it is newer than every mark and resume, whatever
+  /// a concurrent write left. [conflicting] are the person's versions held
+  /// as open sync conflicts.
+  Future<void> reconcileAgent(
+    RelationshipEntry relationship, {
+    List<RelationshipEntry> conflicting = const [],
+  }) async {
+    final agentId = relationshipAgentIdFor(relationship.meta.id);
+    final existing = await _repository.getEntity(agentId);
+    final identity = existing is AgentIdentityEntity ? existing : null;
+    final deletedAt = identity == null
+        ? await _repository.deletedAgentAt(agentId)
+        : null;
+    final decision = reconcileRelationshipAgent(
+      person: relationship.data,
+      identity: identity,
+      deletedAt: deletedAt,
+      conflicting: [for (final version in conflicting) version.data],
+    );
+    switch (decision) {
+      case RelationshipAgentReconciliation.none:
+        return;
+      case RelationshipAgentReconciliation.create:
+        await ensureAgentForRelationship(relationship);
+      case RelationshipAgentReconciliation.activate:
+        if (await _agentService.resumeAgent(agentId)) {
+          await _activateRuntime(
+            agentId,
+            relationshipId: relationship.meta.id,
+            reason: 'relationship agent reconciled',
+          );
+        }
+      case RelationshipAgentReconciliation.pause:
+        if (await _agentService.pauseAgent(agentId)) {
+          _stopRuntime(agentId);
+        }
+      case RelationshipAgentReconciliation.destroy:
+        if (await _agentService.destroyAgent(agentId)) {
+          _stopRuntime(agentId);
+        }
+    }
+  }
+
+  /// Subscribes an active agent and queues one €0 evaluation, so a person
+  /// asked for after the cadence hour need not wait a day for a register.
+  Future<void> _activateRuntime(
+    String agentId, {
+    required String relationshipId,
+    required String reason,
+  }) async {
+    await registerSubscription(agentId, relationshipId: relationshipId);
+    _orchestrator.enqueueManualWake(agentId: agentId, reason: reason);
+  }
+
+  /// Takes a paused or destroyed agent out of every wake path.
+  void _stopRuntime(String agentId) {
+    _agentService
+      ..cancelPendingWake(agentId)
+      ..abortRunningWake(agentId);
+    removeSubscription(agentId);
   }
 
   /// Subscribes the agent to its relationship's wake token. Check-ins emit
@@ -170,24 +287,22 @@ class RelationshipAgentService {
     if (existing is! AgentIdentityEntity) return false;
     final destroyed = await _agentService.destroyAgent(agentId);
     if (!destroyed) return false;
-    _agentService
-      ..cancelPendingWake(agentId)
-      ..abortRunningWake(agentId);
-    removeSubscription(agentId);
+    _stopRuntime(agentId);
     return true;
   }
 
   /// The explicit "Brief me" trigger (plan v2 phase 5 item 5): ensures
   /// the agent exists — Brief me on a not-yet-important person is the
-  /// plan's "explicit enable" — then routes one manual wake through the
+  /// plan's "explicit enable", and it brings back an agent this device
+  /// deleted ([ensureAgentForRelationship]'s `askedByUser`) — then routes one manual wake through the
   /// LLM tier via the report-refresh token. There is no confirmation step:
   /// the briefing card names the model and provider before this is called
   /// (ADR 0061). A missing model surfaces as the failed wake's *Choose a
   /// model*.
   Future<void> requestBriefing(RelationshipEntry relationship) async {
-    final identity = await ensureAgentForRelationship(relationship);
+    await ensureAgentForRelationship(relationship, askedByUser: true);
     _orchestrator.enqueueManualWake(
-      agentId: identity.agentId,
+      agentId: relationshipAgentIdFor(relationship.meta.id),
       reason: 'brief me',
       triggerTokens: const {relationshipReportRefreshTriggerToken},
     );

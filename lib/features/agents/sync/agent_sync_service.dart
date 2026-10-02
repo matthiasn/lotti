@@ -317,7 +317,7 @@ class AgentSyncService {
         AgentDomainEntity? persisted,
       }) async {
         final fields = persisted == null
-            ? entityToWrite
+            ? stampAgentIdentityWrite(write: entityToWrite, persisted: null)
             : resolveLocalAgentWrite(
                 persisted: persisted,
                 write: entityToWrite,

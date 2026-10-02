@@ -121,6 +121,9 @@ _RelationshipData _$RelationshipDataFromJson(
           .toList() ??
       const [],
   important: json['important'] as bool? ?? false,
+  importantSince: json['importantSince'] == null
+      ? null
+      : DateTime.parse(json['importantSince'] as String),
   statusHistory:
       (json['statusHistory'] as List<dynamic>?)
           ?.map((e) => RelationshipStatus.fromJson(e as Map<String, dynamic>))
@@ -157,6 +160,7 @@ Map<String, dynamic> _$RelationshipDataToJson(_RelationshipData instance) =>
       'nickname': instance.nickname,
       'knownTerms': instance.knownTerms,
       'important': instance.important,
+      'importantSince': instance.importantSince?.toIso8601String(),
       'statusHistory': instance.statusHistory,
       'checkInCadenceDays': instance.checkInCadenceDays,
       'birthday': instance.birthday?.toIso8601String(),

@@ -1,5 +1,7 @@
 import 'package:clock/clock.dart';
+import 'package:flutter/foundation.dart' show immutable, mapEquals;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/relationship_trigger_tokens.dart';
@@ -7,16 +9,23 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/runtime/relationship_runtime_maintenance.dart';
+import 'package:lotti/features/relationships/service/relationship_agent_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../agents/sync/agent_replica_bench.dart';
 import '../../agents/test_data/entity_factories.dart';
+
+part 'relationship_agent_lifecycle_model_conformance.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
+
+  _registerRelationshipAgentLifecycleConformance();
 
   const agentId = 'relationship_agent:person-1';
   final testDate = DateTime(2026, 8, 1, 9);
@@ -110,10 +119,21 @@ void main() {
       () => relationshipAgentService.handleRelationshipDeleted(any()),
     ).thenAnswer((_) async => true);
     when(
-      () => relationshipRepository.getRelationshipByIdUnfiltered(
-        relationshipId,
+      () => relationshipRepository.isRelationshipDeleted(relationshipId),
+    ).thenAnswer((_) async => false);
+    // The reconcile pass has no people to visit unless a test lists some.
+    when(
+      () => relationshipRepository.getAllRelationshipsUnfiltered(),
+    ).thenAnswer((_) async => []);
+    when(
+      () => relationshipRepository.openConflictVersions(any()),
+    ).thenAnswer((_) async => []);
+    when(
+      () => relationshipAgentService.reconcileAgent(
+        any(),
+        conflicting: any(named: 'conflicting'),
       ),
-    ).thenAnswer((_) async => person());
+    ).thenAnswer((_) async {});
   });
 
   test(
@@ -336,10 +356,8 @@ void main() {
     test('a tombstoned relationship tears the agent down instead of '
         're-arming it — the orphan would otherwise wake forever', () async {
       when(
-        () => relationshipRepository.getRelationshipByIdUnfiltered(
-          relationshipId,
-        ),
-      ).thenAnswer((_) async => person(deletedAt: testDate));
+        () => relationshipRepository.isRelationshipDeleted(relationshipId),
+      ).thenAnswer((_) async => true);
 
       await withClock(Clock.fixed(now), maintenance.beforeWakeScan);
 
@@ -353,33 +371,20 @@ void main() {
       verifyNever(() => syncService.upsertEntity(any()));
     });
 
-    test('a relationship that no longer resolves at all is reaped too — a '
-        'purged row leaves the same orphan behind', () async {
-      when(
-        () => relationshipRepository.getRelationshipByIdUnfiltered(
-          relationshipId,
-        ),
-      ).thenAnswer((_) async => null);
+    test(
+      'a person that has not arrived yet is NOT reaped: the agent and its '
+      'link sync apart from the journal, and reaping here destroyed the '
+      'agent on every device (ADR 0111, NoReapOfLivePerson)',
+      () async {
+        // isRelationshipDeleted is false for a person with no row at all.
+        await withClock(Clock.fixed(now), maintenance.beforeWakeScan);
 
-      await withClock(Clock.fixed(now), maintenance.beforeWakeScan);
-
-      verify(
-        () => relationshipAgentService.handleRelationshipDeleted(
-          relationshipId,
-        ),
-      ).called(1);
-      verifyNever(() => syncService.upsertEntity(any()));
-    });
-
-    test('a live person is never reaped — the cadence record is healed as '
-        'before', () async {
-      await withClock(Clock.fixed(now), maintenance.beforeWakeScan);
-
-      verifyNever(
-        () => relationshipAgentService.handleRelationshipDeleted(any()),
-      );
-      verify(() => syncService.upsertEntity(any())).called(1);
-    });
+        verifyNever(
+          () => relationshipAgentService.handleRelationshipDeleted(any()),
+        );
+        verify(() => syncService.upsertEntity(any())).called(1);
+      },
+    );
 
     test('an agent whose link is not written yet is left alone — that is '
         'the creation race, not a deletion', () async {
@@ -393,32 +398,16 @@ void main() {
         () => relationshipAgentService.handleRelationshipDeleted(any()),
       );
       verifyNever(
-        () => relationshipRepository.getRelationshipByIdUnfiltered(any()),
+        () => relationshipRepository.isRelationshipDeleted(any()),
       );
       verify(() => syncService.upsertEntity(any())).called(1);
-    });
-
-    test('the read is UNFILTERED: hiding private entries must not reap a '
-        "private person's agent on that device alone", () async {
-      await withClock(Clock.fixed(now), maintenance.beforeWakeScan);
-
-      verify(
-        () => relationshipRepository.getRelationshipByIdUnfiltered(
-          relationshipId,
-        ),
-      ).called(1);
-      verifyNever(
-        () => relationshipRepository.getRelationshipById(any()),
-      );
     });
 
     test(
       'a reap failure is contained and logged like any other repair',
       () async {
         when(
-          () => relationshipRepository.getRelationshipByIdUnfiltered(
-            relationshipId,
-          ),
+          () => relationshipRepository.isRelationshipDeleted(relationshipId),
         ).thenThrow(StateError('db closed'));
 
         await expectLater(maintenance.beforeWakeScan(), completes);
@@ -433,6 +422,113 @@ void main() {
         ).called(1);
       },
     );
+  });
+
+  group('beforeWakeScan reconciles every live person (ADR 0111)', () {
+    RelationshipEntry another(String id, {bool private = false}) =>
+        person().copyWith(
+          meta: person().meta.copyWith(id: id, private: private),
+        );
+
+    test('each live person, private ones included, is reconciled with the '
+        'versions it holds as open conflicts', () async {
+      final anna = person();
+      final ben = another('person-2', private: true);
+      final annaConflict = another(relationshipId);
+      when(
+        () => relationshipRepository.getAllRelationshipsUnfiltered(),
+      ).thenAnswer((_) async => [anna, ben]);
+      when(
+        () => relationshipRepository.openConflictVersions(relationshipId),
+      ).thenAnswer((_) async => [annaConflict]);
+
+      await withClock(Clock.fixed(now), maintenance.beforeWakeScan);
+
+      verify(
+        () => relationshipAgentService.reconcileAgent(
+          anna,
+          conflicting: [annaConflict],
+        ),
+      ).called(1);
+      verify(
+        () => relationshipAgentService.reconcileAgent(ben, conflicting: []),
+      ).called(1);
+    });
+
+    test('the reap runs before the reconcile pass, so a deleted person is '
+        'never brought back in the same scan', () async {
+      when(
+        () => relationshipRepository.isRelationshipDeleted(relationshipId),
+      ).thenAnswer((_) async => true);
+      when(
+        () => relationshipRepository.getAllRelationshipsUnfiltered(),
+      ).thenAnswer((_) async => [person()]);
+
+      await withClock(Clock.fixed(now), maintenance.beforeWakeScan);
+
+      verifyInOrder([
+        () => relationshipAgentService.handleRelationshipDeleted(
+          relationshipId,
+        ),
+        () => relationshipAgentService.reconcileAgent(
+          any(),
+          conflicting: any(named: 'conflicting'),
+        ),
+      ]);
+    });
+
+    test(
+      'one failing person is contained; the rest are still reconciled',
+      () async {
+        final ben = another('person-2');
+        when(
+          () => relationshipRepository.getAllRelationshipsUnfiltered(),
+        ).thenAnswer((_) async => [person(), ben]);
+        when(
+          () => relationshipAgentService.reconcileAgent(
+            person(),
+            conflicting: any(named: 'conflicting'),
+          ),
+        ).thenThrow(StateError('broken'));
+
+        await expectLater(maintenance.beforeWakeScan(), completes);
+
+        verify(
+          () => relationshipAgentService.reconcileAgent(ben, conflicting: []),
+        ).called(1);
+        verify(
+          () => logger.error(
+            any(),
+            any<Object>(),
+            message: any(named: 'message', that: contains('reconcile')),
+            stackTrace: any(named: 'stackTrace'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test('a failure listing people is contained and logged', () async {
+      when(
+        () => relationshipRepository.getAllRelationshipsUnfiltered(),
+      ).thenThrow(StateError('db closed'));
+
+      await expectLater(maintenance.beforeWakeScan(), completes);
+
+      verifyNever(
+        () => relationshipAgentService.reconcileAgent(
+          any(),
+          conflicting: any(named: 'conflicting'),
+        ),
+      );
+      verify(
+        () => logger.error(
+          any(),
+          any<Object>(),
+          message: any(named: 'message', that: contains('reconcile')),
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).called(1);
+    });
   });
 
   group('onIdentityReceived', () {

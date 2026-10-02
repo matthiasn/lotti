@@ -60,6 +60,19 @@ AgentIdentityEntity _$AgentIdentityEntityFromJson(Map<String, dynamic> json) =>
       destroyedAt: json['destroyedAt'] == null
           ? null
           : DateTime.parse(json['destroyedAt'] as String),
+      lifecycleUpdatedAt: json['lifecycleUpdatedAt'] == null
+          ? null
+          : DateTime.parse(json['lifecycleUpdatedAt'] as String),
+      userStoppedAt: json['userStoppedAt'] == null
+          ? null
+          : DateTime.parse(json['userStoppedAt'] as String),
+      userStopLifecycle: $enumDecodeNullable(
+        _$AgentLifecycleEnumMap,
+        json['userStopLifecycle'],
+      ),
+      userResumedAt: json['userResumedAt'] == null
+          ? null
+          : DateTime.parse(json['userResumedAt'] as String),
       $type: json['runtimeType'] as String?,
     );
 
@@ -80,6 +93,10 @@ Map<String, dynamic> _$AgentIdentityEntityToJson(
   'vectorClock': instance.vectorClock,
   'deletedAt': instance.deletedAt?.toIso8601String(),
   'destroyedAt': instance.destroyedAt?.toIso8601String(),
+  'lifecycleUpdatedAt': instance.lifecycleUpdatedAt?.toIso8601String(),
+  'userStoppedAt': instance.userStoppedAt?.toIso8601String(),
+  'userStopLifecycle': _$AgentLifecycleEnumMap[instance.userStopLifecycle],
+  'userResumedAt': instance.userResumedAt?.toIso8601String(),
   'runtimeType': instance.$type,
 };
 

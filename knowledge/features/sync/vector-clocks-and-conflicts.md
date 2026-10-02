@@ -8,6 +8,10 @@ status: stable
 generated: { by: claude-code/opus-5.5, at: 2026-09-27T12:00:00Z }
 stale_after: 2026-12-27
 sources:
+  - id: tla-relationship-lifecycle
+    resource: ../../../specs/tla/RelationshipAgentLifecycle.tla
+    title: TLA+ model of an agent identity's lifecycle, merged field by field
+    last_modified: 2026-09-30
   - id: entity-receive
     resource: ../../../lib/features/agents/sync/agent_entity_receive.dart
     title: resolveReceivedAgentEntity — the receive of one agent entity, tombstone included
@@ -532,8 +536,8 @@ row:
 |------------|-----------|
 | a clock missing on either side | Apply the incoming version — for agent state with the heads merged (below) |
 | `a_gt_b` / `equal` (local wins) | Skip the upsert, restore the local JSON cache when the message came via `jsonPath`, but still record the sequence-log receipt so backfill stops asking |
-| `b_gt_a` (incoming wins) | Apply — with agent state's G-counters and report watermarks joined in from the local row, and the local head kept when it is known to descend from the incoming one (below) |
-| `concurrent` | The type's override, then last-writer-wins on `updatedAt`, then the canonical clock tiebreak; agent-state G-counters and nudge accumulators merge, the agent head follows the message DAG (below), and change sets merge item by item |
+| `b_gt_a` (incoming wins) | Apply — with agent state's G-counters and report watermarks, and an identity's lifecycle and user decisions, joined in from the local row, and the local head kept when it is known to descend from the incoming one (below) |
+| `concurrent` | The type's override, then last-writer-wins on `updatedAt`, then the canonical clock tiebreak; agent-state G-counters and nudge accumulators merge, identities merge their decisions field by field (below), the agent head follows the message DAG (below), and change sets merge item by item |
 
 The concurrent case picks the strictly-newer `updatedAt`, falling back to a
 replica-independent canonical clock comparison on ties
@@ -664,7 +668,7 @@ flowchart TD
   Q -- no --> C{write's clock covers the row's?}
   C -- yes --> F
   C -- "no: stale snapshot or vectorClock null" --> M[resolve against the row as if concurrent]
-  F --> J[join agent-state G-counters and watermarks with the row]
+  F --> J[join agent-state G-counters and watermarks, and identity decisions, with the row]
   M --> J
   J --> T[raise updatedAt to at least the row's]
   T --> V["stamp with join(write clock, row clock) + own counter"]
@@ -697,6 +701,35 @@ scheduled-wake cleanups of `scheduledWakeAt` — because a local timestamp
 peers never see would let this device keep a row that every other device
 rejects. Workflow outcome writes that also set `scheduledWakeAt` (the day
 and project agents) go through `AgentSyncService` like any other state write.
+
+## An identity's lifecycle is decided field by field
+
+An agent identity carries a name and config that any edit rewrites, and a
+lifecycle that only a decision should move. Merged as a whole row, a rename
+that carried a stale `active` and a later `updatedAt` beat a concurrent
+destroy and revived the agent on every device. So an identity's decisions are
+joined separately (`joinIdentityDecisions`, ADR 0111), on the concurrent
+merge and on every dominating receive:
+
+- the lifecycle, and its `destroyedAt`, of the side with the later
+  `lifecycleUpdatedAt` (on a tie, the canonical clock order);
+- the user's stop (`userStoppedAt` with the `userStopLifecycle` it set) with
+  the later stamp, and the later `userResumedAt`;
+- every other field from the row that won by `updatedAt`.
+
+A writer that changes the lifecycle, or records the user's stop or resume,
+stamps `lifecycleUpdatedAt`. The local write path covers the rest
+(`stampAgentIdentityWrite`): a new row takes its `updatedAt`; a write built on
+the stored row keeps that row's stamp unless it changed the lifecycle or a
+user decision; a stale write keeps the stamp it read, or its `createdAt` if
+it has none, so its lifecycle never beats a newer decision. A row from before
+the stamp reads `updatedAt`. A decision built on a stamp its device's clock
+has not reached — a peer's clock ran ahead — lands a microsecond past it
+(`decisionStampAfter`), in `stampAgentIdentityWrite` and in
+`AgentService`'s lifecycle writes alike, so a causal successor never loses a
+field to the decision it replaced. Each stamp only grows along a causal
+chain, so the join converges in any order
+(`specs/tla/RelationshipAgentLifecycle.tla`, `FieldMerge`).
 
 ## Change sets merge item by item
 

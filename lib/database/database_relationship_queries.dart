@@ -15,6 +15,14 @@ mixin _JournalDbRelationshipQueries on _$JournalDb, _JournalDbConfigFlags {
     return rows.map(fromDbEntity).whereType<RelationshipEntry>().toList();
   }
 
+  /// Every non-deleted relationship, private ones included — the agent
+  /// maintenance pass's view. Deliberately NOT private-filtered, for the
+  /// reason [getAllCheckInsForRelationship] is not.
+  Future<List<RelationshipEntry>> getAllRelationships() async {
+    final rows = await _relationshipRows().get();
+    return rows.map(fromDbEntity).whereType<RelationshipEntry>().toList();
+  }
+
   /// Returns all non-deleted check-ins belonging to [relationshipId],
   /// newest interaction first. Respects the private-entry filter — this is a
   /// display query. A *mutation* over the same set must use

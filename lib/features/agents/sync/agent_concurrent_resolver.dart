@@ -236,6 +236,17 @@ AgentDomainEntity mergeConcurrentAgentEntities({
       ),
     (final ChangeSetEntity l, final ChangeSetEntity i) =>
       mergeConcurrentChangeSets(local: l, incoming: i) ?? winner,
+    (final AgentIdentityEntity l, final AgentIdentityEntity i) =>
+      joinIdentityDecisions(
+        winner: winner as AgentIdentityEntity,
+        other: identical(winner, l) ? i : l,
+        otherWinsLifecycleTie:
+            VectorClock.compareCanonically(
+              (identical(winner, l) ? i : l).vectorClock ?? _emptyClock,
+              winner.vectorClock ?? _emptyClock,
+            ) >
+            0,
+      ),
     // A cross-variant pair (a goal nudge and a relationship nudge sharing an
     // id) is unreachable — their id shapes are disjoint at mint time — and
     // keeps the plain winner rather than joining histories across kinds.
@@ -243,20 +254,155 @@ AgentDomainEntity mergeConcurrentAgentEntities({
   };
 }
 
-/// [winner] with [other]'s convergent agent-state fields joined in: the
-/// G-counters by element-wise max, the report watermarks by latest instant.
-/// Other variants come back unchanged.
+/// [winner] with [other]'s convergent fields joined in: for agent state the
+/// G-counters by element-wise max and the report watermarks by latest
+/// instant; for an agent identity the lifecycle and the user's stop and
+/// resume by their stamps ([joinIdentityDecisions]). Other variants come
+/// back unchanged.
 ///
 /// Applied even when [winner] causally dominates [other]. A concurrent merge
-/// joins counters into a row without moving its clock, so a version that
-/// succeeds one side of that merge need not carry the other side's
-/// increments; overwriting the merged row with it would lose them.
+/// joins these fields into a row without moving its clock, so a version that
+/// succeeds one side of that merge need not carry the other side's; letting
+/// it overwrite the merged row would lose them.
 AgentDomainEntity joinConvergentAgentFields({
   required AgentDomainEntity winner,
   required AgentDomainEntity other,
-}) => winner is AgentStateEntity && other is AgentStateEntity
-    ? mergeAgentStateCounters(winner: winner, local: other, incoming: winner)
-    : winner;
+}) => switch ((winner, other)) {
+  (final AgentStateEntity w, final AgentStateEntity o) =>
+    mergeAgentStateCounters(winner: w, local: o, incoming: w),
+  (final AgentIdentityEntity w, final AgentIdentityEntity o) =>
+    joinIdentityDecisions(winner: w, other: o),
+  _ => winner,
+};
+
+/// When [identity]'s lifecycle was last decided: its stamp, or `updatedAt`
+/// for a row written before the stamp existed.
+DateTime identityLifecycleAt(AgentIdentityEntity identity) =>
+    identity.lifecycleUpdatedAt ?? identity.updatedAt;
+
+/// A decision stamp for a write at [now] that supersedes [supersedes]: [now],
+/// or a microsecond past the latest of [supersedes] when [now] is not later
+/// (ADR 0111). The stamps are wall-clock times from several devices, and a
+/// peer whose clock runs ahead leaves one this device's clock has not
+/// reached; a decision built on it must still outrank it, or the merge would
+/// hand its successor's field back to it.
+DateTime decisionStampAfter(DateTime now, Iterable<DateTime?> supersedes) {
+  var at = now;
+  for (final stamp in supersedes) {
+    if (stamp != null && !at.isAfter(stamp)) {
+      at = stamp.add(const Duration(microseconds: 1));
+    }
+  }
+  return at;
+}
+
+/// [winner] with the later decisions of [winner] and [other] (ADR 0111):
+///
+/// - the lifecycle (and its `destroyedAt`) of the side with the later
+///   [identityLifecycleAt]; on equal stamps [winner]'s, or [other]'s when
+///   [otherWinsLifecycleTie] — the concurrent merge breaks that tie by the
+///   canonical clock order, so both replicas pick the same side;
+/// - the user's stop with the later `userStoppedAt` (on equal stamps the
+///   more final lifecycle), and the later `userResumedAt`.
+///
+/// Every other field is [winner]'s. Each joined field only ever moves to a
+/// later stamp, and a lifecycle stamp only grows along a causal chain, so
+/// joining on every receive converges whatever the arrival order
+/// (`specs/tla/RelationshipAgentLifecycle.tla`, FieldMerge).
+AgentIdentityEntity joinIdentityDecisions({
+  required AgentIdentityEntity winner,
+  required AgentIdentityEntity other,
+  bool otherWinsLifecycleTie = false,
+}) {
+  final winnerAt = identityLifecycleAt(winner);
+  final otherAt = identityLifecycleAt(other);
+  final lifecycleFromOther =
+      otherAt.isAfter(winnerAt) ||
+      (otherAt == winnerAt && otherWinsLifecycleTie);
+  final lifecycleSide = lifecycleFromOther ? other : winner;
+  final stopSide = _laterUserStop(winner, other);
+  final resumedAt = _later(winner.userResumedAt, other.userResumedAt);
+  final joined = winner.copyWith(
+    lifecycle: lifecycleSide.lifecycle,
+    lifecycleUpdatedAt: lifecycleFromOther
+        ? otherAt
+        : winner.lifecycleUpdatedAt,
+    destroyedAt: lifecycleSide.destroyedAt,
+    userStoppedAt: stopSide.userStoppedAt,
+    userStopLifecycle: stopSide.userStopLifecycle,
+    userResumedAt: resumedAt,
+  );
+  return joined == winner ? winner : joined;
+}
+
+AgentIdentityEntity _laterUserStop(
+  AgentIdentityEntity a,
+  AgentIdentityEntity b,
+) {
+  final atA = a.userStoppedAt;
+  final atB = b.userStoppedAt;
+  if (atB == null) return a;
+  if (atA == null || atB.isAfter(atA)) return b;
+  if (atA.isAfter(atB)) return a;
+  return (b.userStopLifecycle?.index ?? -1) > (a.userStopLifecycle?.index ?? -1)
+      ? b
+      : a;
+}
+
+DateTime? _later(DateTime? a, DateTime? b) {
+  if (a == null) return b;
+  if (b == null) return a;
+  return b.isAfter(a) ? b : a;
+}
+
+/// [write]'s lifecycle stamp, set against the row it replaces (ADR 0111).
+///
+/// A writer that changes the lifecycle, or records the user's stop or
+/// resume, stamps `lifecycleUpdatedAt` itself. This covers every other write:
+///
+/// - a new row ([persisted] null or another variant) is stamped with its
+///   `updatedAt`;
+/// - a write built on [persisted] ([covered]) that changed the lifecycle or
+///   a user decision without a newer stamp is stamped with its `updatedAt`,
+///   pushed past [persisted]'s stamp when a peer's clock ran ahead
+///   ([decisionStampAfter]) — it succeeds that decision and must outrank it;
+///   one that changed neither (a rename, a config edit) keeps [persisted]'s
+///   stamp, so it never competes as a lifecycle decision;
+/// - a write built on an older snapshot keeps the stamp it read. Without one
+///   (a row from before the stamp) it is stamped with its `createdAt`, so the
+///   lifecycle it carried from that snapshot never beats a newer decision.
+AgentDomainEntity stampAgentIdentityWrite({
+  required AgentDomainEntity write,
+  required AgentDomainEntity? persisted,
+  bool covered = true,
+}) {
+  if (write is! AgentIdentityEntity) return write;
+  final base = persisted is AgentIdentityEntity ? persisted : null;
+  final DateTime at;
+  if (base == null) {
+    at = write.lifecycleUpdatedAt ?? write.updatedAt;
+  } else if (covered) {
+    final baseAt = identityLifecycleAt(base);
+    final stamped = write.lifecycleUpdatedAt;
+    final decided =
+        write.lifecycle != base.lifecycle ||
+        _isNewer(write.userStoppedAt, base.userStoppedAt) ||
+        _isNewer(write.userResumedAt, base.userResumedAt);
+    at = stamped != null && stamped.isAfter(baseAt)
+        ? stamped
+        : decided
+        ? decisionStampAfter(write.updatedAt, [baseAt])
+        : baseAt;
+  } else {
+    at = write.lifecycleUpdatedAt ?? write.createdAt;
+  }
+  return write.lifecycleUpdatedAt == at
+      ? write
+      : write.copyWith(lifecycleUpdatedAt: at);
+}
+
+bool _isNewer(DateTime? candidate, DateTime? than) =>
+    candidate != null && (than == null || candidate.isAfter(than));
 
 /// The row a **local** write of [write] persists over [persisted] (ADR
 /// 0068). The caller stamps it with a clock that covers both [write]'s and
@@ -279,6 +425,9 @@ AgentDomainEntity joinConvergentAgentFields({
 ///   deleted. Its writer read no row (reads hide tombstones), so it could not
 ///   build on the tombstone's clock; it keeps its fields, and the stamped
 ///   clock makes it the removal's successor everywhere (ADR 0081, addendum).
+/// - An agent identity's lifecycle stamp is set against [persisted] first
+///   ([stampAgentIdentityWrite]), so a rename never competes with a lifecycle
+///   decision and a stale write never beats a newer one (ADR 0111).
 ///
 /// Append-only variants (last-writer-wins on `createdAt`) and a stub or
 /// different variant in [persisted] keep [write]'s fields unchanged.
@@ -289,15 +438,22 @@ AgentDomainEntity resolveLocalAgentWrite({
   if (persisted is AgentUnknownEntity ||
       persisted.runtimeType != write.runtimeType ||
       !write.lwwOnUpdatedAt) {
-    return write;
+    return stampAgentIdentityWrite(write: write, persisted: null);
   }
   final recreates =
       persisted.deletedAt != null &&
       write.deletedAt == null &&
       write.vectorClock == null;
-  final fields = recreates || _covers(write.vectorClock, persisted.vectorClock)
-      ? write
-      : mergeConcurrentAgentEntities(local: persisted, incoming: write);
+  final covered =
+      recreates || _covers(write.vectorClock, persisted.vectorClock);
+  final stamped = stampAgentIdentityWrite(
+    write: write,
+    persisted: recreates ? null : persisted,
+    covered: covered,
+  );
+  final fields = covered
+      ? stamped
+      : mergeConcurrentAgentEntities(local: persisted, incoming: stamped);
   return joinConvergentAgentFields(
     winner: fields,
     other: persisted,

@@ -26,15 +26,22 @@ void main() {
   late MockAgentRepository repository;
   late MockAgentSyncService syncService;
   late MockWakeOrchestrator orchestrator;
+  late MockRelationshipRepository people;
   late RelationshipAgentService service;
 
-  AgentIdentityEntity identity() =>
+  AgentIdentityEntity identity({
+    AgentLifecycle lifecycle = AgentLifecycle.active,
+    DateTime? userStoppedAt,
+    AgentLifecycle? userStopLifecycle,
+  }) =>
       AgentDomainEntity.agent(
             id: agentId,
             agentId: agentId,
             kind: AgentKinds.relationshipAgent,
             displayName: 'Anna',
-            lifecycle: AgentLifecycle.active,
+            lifecycle: lifecycle,
+            userStoppedAt: userStoppedAt,
+            userStopLifecycle: userStopLifecycle,
             mode: AgentInteractionMode.autonomous,
             allowedCategoryIds: const {},
             currentStateId: '$agentId:state',
@@ -45,7 +52,10 @@ void main() {
           )
           as AgentIdentityEntity;
 
-  RelationshipEntry relationship({String title = 'Anna'}) => RelationshipEntry(
+  RelationshipEntry relationship({
+    String title = 'Anna',
+    DateTime? importantSince,
+  }) => RelationshipEntry(
     meta: Metadata(
       id: relationshipId,
       createdAt: testDate,
@@ -56,6 +66,7 @@ void main() {
     data: RelationshipData(
       title: title,
       important: true,
+      importantSince: importantSince,
       status: RelationshipStatus.active(
         id: 'status-1',
         createdAt: testDate,
@@ -69,13 +80,23 @@ void main() {
     repository = MockAgentRepository();
     syncService = MockAgentSyncService();
     orchestrator = MockWakeOrchestrator();
+    people = MockRelationshipRepository();
     service = RelationshipAgentService(
       agentService: agentService,
       repository: repository,
       syncService: syncService,
       orchestrator: orchestrator,
+      relationshipRepository: people,
     );
+    when(
+      () => people.getRelationshipByIdUnfiltered(relationshipId),
+    ).thenAnswer((_) async => relationship());
+    when(
+      () => people.openConflictVersions(relationshipId),
+    ).thenAnswer((_) async => []);
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
+    when(() => repository.deletedAgentAt(any())).thenAnswer((_) async => null);
+    when(() => repository.forgetDeletedAgent(any())).thenAnswer((_) async {});
     when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
     when(() => syncService.upsertLink(any())).thenAnswer((_) async {});
     when(
@@ -104,7 +125,7 @@ void main() {
         () => service.ensureAgentForRelationship(relationship()),
       );
 
-      expect(created.agentId, agentId);
+      expect(created!.agentId, agentId);
       verify(
         () => agentService.createAgent(
           kind: AgentKinds.relationshipAgent,
@@ -157,7 +178,7 @@ void main() {
         () => service.ensureAgentForRelationship(relationship()),
       );
 
-      expect(returned.agentId, agentId);
+      expect(returned!.agentId, agentId);
       verifyNever(
         () => agentService.createAgent(
           kind: any(named: 'kind'),
@@ -191,7 +212,7 @@ void main() {
         ),
       );
 
-      expect(returned.displayName, 'Anna Schmidt');
+      expect(returned!.displayName, 'Anna Schmidt');
       final renamed = verify(
         () => syncService.upsertEntity(captureAny()),
       ).captured.whereType<AgentIdentityEntity>().single;
@@ -207,6 +228,280 @@ void main() {
         ),
       );
       verifyNever(() => syncService.upsertLink(any()));
+    });
+  });
+
+  group('an agent this device deleted (ADR 0111)', () {
+    final deletedAt = testDate.subtract(const Duration(days: 1));
+
+    void verifyNotCreated() => verifyNever(
+      () => agentService.createAgent(
+        kind: any(named: 'kind'),
+        displayName: any(named: 'displayName'),
+        config: any(named: 'config'),
+        agentId: any(named: 'agentId'),
+      ),
+    );
+
+    setUp(() {
+      when(
+        () => repository.deletedAgentAt(agentId),
+      ).thenAnswer((_) async => deletedAt);
+    });
+
+    test('is not created again by the background ensure while the stored '
+        'mark is older than the delete', () async {
+      when(
+        () => people.getRelationshipByIdUnfiltered(relationshipId),
+      ).thenAnswer(
+        (_) async => relationship(
+          importantSince: deletedAt.subtract(const Duration(hours: 1)),
+        ),
+      );
+
+      final created = await service.ensureAgentForRelationship(
+        relationship(),
+      );
+
+      expect(created, isNull);
+      verifyNotCreated();
+      verifyNever(() => repository.forgetDeletedAgent(any()));
+      verifyNever(() => orchestrator.addSubscription(any()));
+    });
+
+    test('is created again by the background ensure for a mark newer than '
+        'the delete, read from the stored person — the caller holds the '
+        'copy from before the save stamped it', () async {
+      when(
+        () => people.getRelationshipByIdUnfiltered(relationshipId),
+      ).thenAnswer(
+        (_) async => relationship(
+          importantSince: deletedAt.add(const Duration(hours: 1)),
+        ),
+      );
+
+      final created = await service.ensureAgentForRelationship(
+        relationship(),
+      );
+
+      expect(created, isNotNull);
+      verifyInOrder([
+        () => repository.forgetDeletedAgent(agentId),
+        () => agentService.createAgent(
+          kind: AgentKinds.relationshipAgent,
+          displayName: any(named: 'displayName'),
+          config: any(named: 'config'),
+          agentId: agentId,
+        ),
+      ]);
+      // A mark outranks the delete's stop on every device by itself.
+      verifyNever(
+        () => agentService.resumeAgent(any(), byUser: any(named: 'byUser')),
+      );
+      verify(() => orchestrator.addSubscription(any())).called(1);
+    });
+
+    test('is not created again while the person has an open conflict, even '
+        'for a newer mark', () async {
+      final marked = relationship(
+        importantSince: deletedAt.add(const Duration(hours: 1)),
+      );
+      when(
+        () => people.getRelationshipByIdUnfiltered(relationshipId),
+      ).thenAnswer((_) async => marked);
+      when(
+        () => people.openConflictVersions(relationshipId),
+      ).thenAnswer((_) async => [marked]);
+
+      expect(await service.ensureAgentForRelationship(marked), isNull);
+      verifyNotCreated();
+    });
+
+    test("Brief me brings it back as the user's resume, so no device's pass "
+        'stops it again, and queues the briefing', () async {
+      when(
+        () => agentService.resumeAgent(agentId, byUser: true),
+      ).thenAnswer((_) async => true);
+      when(
+        () => orchestrator.enqueueManualWake(
+          agentId: any(named: 'agentId'),
+          reason: any(named: 'reason'),
+          triggerTokens: any(named: 'triggerTokens'),
+        ),
+      ).thenReturn('brief-run-1');
+
+      await service.requestBriefing(relationship());
+
+      verifyInOrder([
+        () => repository.forgetDeletedAgent(agentId),
+        () => agentService.createAgent(
+          kind: AgentKinds.relationshipAgent,
+          displayName: any(named: 'displayName'),
+          config: any(named: 'config'),
+          agentId: agentId,
+        ),
+        () => agentService.resumeAgent(agentId, byUser: true),
+      ]);
+      verify(
+        () => orchestrator.enqueueManualWake(
+          agentId: agentId,
+          reason: 'brief me',
+          triggerTokens: {relationshipReportRefreshTriggerToken},
+        ),
+      ).called(1);
+    });
+  });
+
+  group('reconcileAgent (ADR 0111)', () {
+    final markedAt = testDate.subtract(const Duration(days: 2));
+
+    void stubRuntimeStops() {
+      when(() => agentService.cancelPendingWake(agentId)).thenAnswer((_) {});
+      when(() => agentService.abortRunningWake(agentId)).thenReturn(false);
+    }
+
+    test('creates the agent a lost background ensure never wrote', () async {
+      await service.reconcileAgent(relationship(importantSince: markedAt));
+
+      verify(
+        () => agentService.createAgent(
+          kind: AgentKinds.relationshipAgent,
+          displayName: any(named: 'displayName'),
+          config: any(named: 'config'),
+          agentId: agentId,
+        ),
+      ).called(1);
+      verify(() => orchestrator.addSubscription(any())).called(1);
+    });
+
+    test('creates it again over a delete older than the mark, forgetting '
+        'the delete first so sync accepts the agent here again', () async {
+      // The table forgets the delete, as the real one does.
+      DateTime? deletedAt = markedAt.subtract(const Duration(hours: 1));
+      when(
+        () => repository.deletedAgentAt(agentId),
+      ).thenAnswer((_) async => deletedAt);
+      when(() => repository.forgetDeletedAgent(agentId)).thenAnswer((_) async {
+        deletedAt = null;
+      });
+
+      when(
+        () => people.getRelationshipByIdUnfiltered(relationshipId),
+      ).thenAnswer((_) async => relationship(importantSince: markedAt));
+
+      await service.reconcileAgent(relationship(importantSince: markedAt));
+
+      verifyInOrder([
+        () => repository.forgetDeletedAgent(agentId),
+        () => agentService.createAgent(
+          kind: AgentKinds.relationshipAgent,
+          displayName: any(named: 'displayName'),
+          config: any(named: 'config'),
+          agentId: agentId,
+        ),
+      ]);
+    });
+
+    test('leaves a delete newer than the mark alone', () async {
+      when(() => repository.deletedAgentAt(agentId)).thenAnswer(
+        (_) async => markedAt.add(const Duration(hours: 1)),
+      );
+
+      await service.reconcileAgent(relationship(importantSince: markedAt));
+
+      verifyNever(() => repository.forgetDeletedAgent(any()));
+      verifyNever(
+        () => agentService.createAgent(
+          kind: any(named: 'kind'),
+          displayName: any(named: 'displayName'),
+          config: any(named: 'config'),
+          agentId: any(named: 'agentId'),
+        ),
+      );
+    });
+
+    test('brings back an agent the system destroyed — the reaper or the '
+        'cascade — and puts it back on every wake path', () async {
+      when(() => repository.getEntity(agentId)).thenAnswer(
+        (_) async => identity(lifecycle: AgentLifecycle.destroyed),
+      );
+      when(
+        () => agentService.resumeAgent(agentId),
+      ).thenAnswer((_) async => true);
+
+      await service.reconcileAgent(relationship(importantSince: markedAt));
+
+      verify(() => agentService.resumeAgent(agentId)).called(1);
+      verify(() => orchestrator.addSubscription(any())).called(1);
+      verify(
+        () => orchestrator.enqueueManualWake(
+          agentId: agentId,
+          reason: any(named: 'reason'),
+        ),
+      ).called(1);
+    });
+
+    test("restores the user's destroy over a merge that left the agent "
+        'active', () async {
+      stubRuntimeStops();
+      when(() => repository.getEntity(agentId)).thenAnswer(
+        (_) async => identity(
+          userStoppedAt: markedAt.add(const Duration(hours: 1)),
+          userStopLifecycle: AgentLifecycle.destroyed,
+        ),
+      );
+      when(
+        () => agentService.destroyAgent(agentId),
+      ).thenAnswer((_) async => true);
+
+      await service.reconcileAgent(relationship(importantSince: markedAt));
+
+      verify(() => agentService.destroyAgent(agentId)).called(1);
+      verify(() => agentService.cancelPendingWake(agentId)).called(1);
+      verify(() => orchestrator.removeSubscriptions(agentId)).called(1);
+    });
+
+    test("restores the user's pause the same way", () async {
+      stubRuntimeStops();
+      when(() => repository.getEntity(agentId)).thenAnswer(
+        (_) async => identity(
+          userStoppedAt: markedAt.add(const Duration(hours: 1)),
+          userStopLifecycle: AgentLifecycle.dormant,
+        ),
+      );
+      when(
+        () => agentService.pauseAgent(agentId),
+      ).thenAnswer((_) async => true);
+
+      await service.reconcileAgent(relationship(importantSince: markedAt));
+
+      verify(() => agentService.pauseAgent(agentId)).called(1);
+      verify(() => orchestrator.removeSubscriptions(agentId)).called(1);
+    });
+
+    test('an agent already where the user left it is not written', () async {
+      when(
+        () => repository.getEntity(agentId),
+      ).thenAnswer((_) async => identity());
+
+      await service.reconcileAgent(relationship(importantSince: markedAt));
+
+      verifyNever(() => agentService.resumeAgent(any()));
+      verifyNever(() => agentService.pauseAgent(any()));
+      verifyNever(() => agentService.destroyAgent(any()));
+    });
+
+    test('an open conflict holds back a revive', () async {
+      when(() => repository.getEntity(agentId)).thenAnswer(
+        (_) async => identity(lifecycle: AgentLifecycle.destroyed),
+      );
+
+      await service.reconcileAgent(
+        relationship(importantSince: markedAt),
+        conflicting: [relationship(importantSince: markedAt)],
+      );
+
+      verifyNever(() => agentService.resumeAgent(any()));
     });
   });
 

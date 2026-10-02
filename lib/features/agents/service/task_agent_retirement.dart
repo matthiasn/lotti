@@ -98,6 +98,7 @@ class TaskAgentRetirement {
             lifecycle: AgentLifecycle.destroyed,
             destroyedAt: now,
             updatedAt: now,
+            lifecycleUpdatedAt: now,
           ),
         );
         retired.add(identity.agentId);

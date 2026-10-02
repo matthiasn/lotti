@@ -7,8 +7,13 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/relationships/runtime/relationship_agent_reconciliation.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -49,11 +54,17 @@ class RelationshipRepository {
     required this._journalDb,
     required this._journalRepository,
     required this._persistenceLogic,
+    required this._agentRepository,
   });
 
   final JournalDb _journalDb;
   final JournalRepository _journalRepository;
   final PersistenceLogic _persistenceLogic;
+
+  /// Read only when `important` switches on, for the decisions this device
+  /// holds about the person's agent that the mark must land past
+  /// ([markStampAfter]).
+  final AgentRepository _agentRepository;
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
 
@@ -92,6 +103,31 @@ class RelationshipRepository {
     final entity = await _journalDb.journalEntityById(id);
     return entity is RelationshipEntry ? entity : null;
   }
+
+  /// Whether this device holds the person [id] as deleted: its tombstone,
+  /// purged or not (a purge compacts it to a bare entry that keeps the
+  /// deletion). False for a live person, and for one no row has arrived
+  /// for — the reaper needs that difference, because a person this device
+  /// has not received yet is not a deleted one (ADR 0111).
+  Future<bool> isRelationshipDeleted(String id) async {
+    final entity = await _journalDb.journalEntityByIdIncludingDeleted(id);
+    return entity?.meta.deletedAt != null;
+  }
+
+  /// Every live person, private ones included: the agent maintenance pass's
+  /// view, which a display preference must not scope (see
+  /// [getRelationshipByIdUnfiltered]).
+  Future<List<RelationshipEntry>> getAllRelationshipsUnfiltered() =>
+      _journalDb.getAllRelationships();
+
+  /// The versions of the person [id] that this device holds as open sync
+  /// conflicts: concurrent edits the user has not resolved yet.
+  Future<List<RelationshipEntry>> openConflictVersions(String id) async => [
+    for (final conflict in await _journalDb.conflictsForEntry(id))
+      if (conflict.status == ConflictStatus.unresolved.index)
+        if (fromSerialized(conflict.serialized) case final RelationshipEntry r)
+          r,
+  ];
 
   /// Returns all non-deleted relationships with their newest check-in,
   /// most recently interacted-with first (plan v2 phase 2). People without a
@@ -185,9 +221,15 @@ class RelationshipRepository {
       // the person is written under, or crash recovery burns their counter.
       id: id,
     );
+    final stamped = await _stampImportantSince(
+      meta.id,
+      data,
+      stored: null,
+      now: started,
+    );
     final relationship = RelationshipEntry(
       meta: meta,
-      data: data.withClampedImageFraming,
+      data: stamped.withClampedImageFraming,
       entryText: entryText,
     );
     final success = await _persistenceLogic.createDbEntity(relationship);
@@ -591,15 +633,67 @@ class RelationshipRepository {
   /// slip is corrected once here rather than defended against at every size
   /// the avatar is later drawn at.
   Future<bool> updateRelationship(RelationshipEntry relationship) async {
+    final stored = await getRelationshipByIdUnfiltered(relationship.id);
     final updatedMeta = await _persistenceLogic.updateMetadata(
       relationship.meta,
     );
+    final stamped = await _stampImportantSince(
+      relationship.id,
+      relationship.data,
+      stored: stored,
+      now: clock.now(),
+    );
     final updated = relationship.copyWith(
       meta: updatedMeta,
-      data: relationship.data.withClampedImageFraming,
+      data: stamped.withClampedImageFraming,
     );
     final result = await _persistenceLogic.updateDbEntity(updated);
     return result ?? false;
+  }
+
+  /// [data] with `importantSince` owned by this repository (ADR 0111):
+  /// stamped when `important` switches on, otherwise the stored person's
+  /// stamp (none for a new person), so no caller can move the user's last
+  /// request for the agent — not a stale form, not a contact refresh. The
+  /// stamp is [now], or lands past every decision this device holds about
+  /// the person's agent ([markStampAfter]): a stop a peer's clock put ahead
+  /// of this one, which the user has seen and is overruling, must not
+  /// outrank the mark. Only the switch reads the agent store.
+  Future<RelationshipData> _stampImportantSince(
+    String relationshipId,
+    RelationshipData data, {
+    required RelationshipEntry? stored,
+    required DateTime now,
+  }) async {
+    final wasImportant = stored?.data.important ?? false;
+    final since = data.important && !wasImportant
+        ? await _markStamp(
+            relationshipId,
+            now,
+            previousMark: stored?.data.importantSince,
+          )
+        : stored?.data.importantSince;
+    return since == data.importantSince
+        ? data
+        : data.copyWith(importantSince: since);
+  }
+
+  /// The stamp of a mark on [relationshipId] at [now]: past the identity
+  /// this device holds for the person's agent, and past this device's
+  /// deletion of it (`deleted_agents`).
+  Future<DateTime> _markStamp(
+    String relationshipId,
+    DateTime now, {
+    required DateTime? previousMark,
+  }) async {
+    final agentId = relationshipAgentIdFor(relationshipId);
+    final identity = await _agentRepository.getEntity(agentId);
+    return markStampAfter(
+      now,
+      identity: identity is AgentIdentityEntity ? identity : null,
+      deletedAt: await _agentRepository.deletedAgentAt(agentId),
+      previousMark: previousMark,
+    );
   }
 
   // ── Delete ─────────────────────────────────────────────────────────────────
@@ -760,6 +854,7 @@ final relationshipRepositoryProvider = Provider<RelationshipRepository>(
     // registered there.
     journalRepository: JournalRepository(),
     persistenceLogic: getIt<PersistenceLogic>(),
+    agentRepository: ref.watch(agentRepositoryProvider),
   ),
   name: 'relationshipRepositoryProvider',
 );

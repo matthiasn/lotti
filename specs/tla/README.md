@@ -2271,6 +2271,20 @@ in three steps (the derived copy on both devices), keeping one side's
 checklist deleted on one device while its item is checked on the other), and
 no cascade in one.
 
+`RelationshipAgentLifecycle` is replayed by
+`test/features/relationships/runtime/relationship_agent_lifecycle_model_conformance.dart`
+(a part of `relationship_runtime_maintenance_test.dart`). It runs the real
+agent database, `AgentSyncService`, `AgentService`, `RelationshipAgentService`
+and `RelationshipRuntimeMaintenance` on two devices through the real receive
+decision (`ReplicaNetwork`). The journal side is a small store per device that
+applies a person version the way `JournalDb.updateJournalEntity` does. A
+Glados run of 100 generated traces covers marks, edits, deletes, user stops,
+resumes, hard deletes, conflicts, crashes, maintenance passes and arrival
+orders. After every pass it checks `NoReapOfLivePerson`, and once quiet it
+checks the other four properties. Eight pinned traces cover the
+counterexamples. Each of the five switches, reverted in the Dart code, fails
+the trace.
+
 ## Changing a spec
 
 Keep the header's action-to-code map current. When a change is meant to fix a
@@ -3010,9 +3024,11 @@ What the model leaves out, or shows as a residual:
   that were (every entity names its agent). A row joining nothing, read by
   nothing.
 - The model's lifecycle only moves from live to destroyed. A concurrent
-  identity edit (a config change) can win the lifecycle merge and revive a
-  retired agent. The pass then runs again on the next receive, wake or start,
-  and retires the agent again.
+  identity edit (a config change) no longer revives a retired agent: an
+  identity's lifecycle merges by its own stamp, and an edit that leaves it
+  alone keeps the stamp it read, so it never outranks the retirement
+  (`joinIdentityDecisions`, ADR 0111; `RelationshipAgentLifecycle`'s
+  `FieldMerge`).
 
 ## `DeepBackfill` — an inventory round that repairs what counters cannot see
 
@@ -3164,3 +3180,107 @@ and the relay of a file between two recipients (as in `DeepBackfill`, a third
 device's larger copy travels as its push when it diffs another's inventory).
 The plan and the mapping to code are in
 [docs/implementation_plans/2026-09-27_deep_backfill_media.md](../../docs/implementation_plans/2026-09-27_deep_backfill_media.md).
+
+## `RelationshipAgentLifecycle` — a tracked person keeps their agent
+
+One person and the relationship agent that follows them, on two devices. The
+person is a journal row with an `important` flag, the consent switch for the
+agent. The agent's identity has an id derived from the person's, and an
+`agentRelationship` link names the person it watches. The two travel on
+different sync paths that nothing orders against each other. The person
+merges like any journal row: a concurrent pair is a conflict for the user.
+The identity merges like any agent entity: a concurrent pair is decided as a
+whole row by `updatedAt`.
+
+The spec models every writer of the agent's lifecycle, and every arrival
+order:
+
+- the background ensure after a mark or an edit;
+- the person page's delete cascade and the generic journal delete, which has
+  no cascade;
+- the reaper in `RelationshipRuntimeMaintenance`;
+- the agent controls (pause, resume, destroy, hard delete);
+- the conflict page;
+- a crash that loses the unawaited jobs.
+
+The design it checks is
+[ADR 0111](../../docs/adr/0111-a-tracked-person-keeps-their-agent.md), and the
+code implements it: every switch is `TRUE` in the code, and `FALSE` restores
+the code at `9f1fec4e5`. The stamps the design reads are:
+
+- the person's `importantSince`;
+- the identity's `lifecycleUpdatedAt`;
+- the identity's `userStoppedAt` (with `userStopLifecycle`) and
+  `userResumedAt`.
+
+| Property | Kind | Says |
+|----------|------|------|
+| `NoReapOfLivePerson` | invariant | the reaper tears down an agent only when somebody deleted its person |
+| `Tracked` | invariant | once quiet, with the devices agreed on a live, important person, every device holds an active agent, unless the user stopped it after the mark the person carries (or a later resume) |
+| `Untracked` | invariant | once quiet, with the devices agreed on a deleted person, no device holds an active agent |
+| `StopSticks` | invariant | once quiet, a user stop newer than every mark and resume leaves no device with an active agent |
+| `Converged` | invariant | once quiet, with the devices agreed on the person, every device holds the same lifecycle (a device that deleted the agent counts as destroyed) |
+
+"Quiet" means every message is applied, every unawaited job has run or was
+lost, and the maintenance pass has nothing left to do on any device.
+
+| Configuration | Person writes | Identity writes | Adds | Distinct states |
+|---------------|--------------:|----------------:|------|----------------:|
+| `RelationshipAgentLifecycle` | 3 | 3 | mark, unmark, edit, delete from either path | 34,560 |
+| `RelationshipAgentLifecycleCrash` | 3 | 3 | one crash with its jobs not run | 55,535 |
+| `RelationshipAgentLifecycleConflict` | 4 | 4 | the conflict page, resolved either way | 3,930,590 |
+| `RelationshipAgentLifecycleStop` | 4 | 4 | one user destroy | 23,914,852 |
+| `RelationshipAgentLifecyclePause` | 3 | 4 | one pause, and resumes | 1,292,995 |
+| `RelationshipAgentLifecycleHardDelete` | 4 | 4 | one stop, a hard delete among them | 26,484,827 |
+
+Each design switch set to `FALSE` has a counterexample. The traces come from
+multi-worker runs, so they are not guaranteed to be the shortest:
+
+| Switch | Code at `9f1fec4e5` | Counterexample |
+|--------|---------------------|----------------|
+| `ReapNeedsTombstone` | the reaper reads the person through `journalEntityById`, which returns no row for a tombstone and for a row that has not arrived alike | `NoReapOfLivePerson`, 6 states, with every switch off or only this one: A marks the person and creates the agent; B receives the agent and its link before the person, and reaps it. The destroy syncs to A |
+| `Reconcile` | nothing gives a live, important person an agent after the background ensure | `Tracked`, crash configuration, 5 states: A marks and dies before its ensure runs; both devices settle on an important person with no agent |
+| `FieldMerge` | concurrent identities merge as a whole row by `updatedAt` | `StopSticks`, stop configuration, 12 states: A creates the agent and the user destroys it there; B, holding the person but not yet the agent, creates it; B's later `updatedAt` wins the merge on A, and the user's stop is lost with the row |
+| `HardDeleteStops` | a hard delete is local | `StopSticks`, hard-delete configuration, 14 states: A deletes the person, B marks it; A reaps the agent and the user hard-deletes it there; B, which holds the person live, brings the agent back, since nothing told it the user deleted it |
+| `CreateHonorsDeleted` | the background ensure creates the agent over a `deleted_agents` entry | `StopSticks`, hard-delete configuration with `MaxAgentWrites = 5`, 17 states: A deletes the person while B marks it; B's pass creates the agent and A's teardown destroys it; the user hard-deletes it on B, and B's ensure from the mark, still pending, recreates it; A reaps the copy it receives, but B, having deleted the agent, refuses A's destroy and keeps it active. The checked-in bound of four agent writes is one short of this trace, so the checked-in configuration passes with the switch off; the five-write bound is not checked in because it does not finish in a CI shard (over 64 million distinct states when TLC stopped at the violation) |
+
+Designs TLC rejected on the way, each with its counterexample in the ADR or
+here:
+
+- **The lifecycle merge by finality** ("destroyed beats dormant beats
+  active"). A stale rename that carries `dormant` defeats the user's later
+  resume (`Tracked`).
+- **Stamping a revive with the time of the mark it acts on.** A revive then
+  carries an older lifecycle stamp than the destroy it supersedes, and two
+  devices settle on different lifecycles under the same clock
+  (`Converged`, 17 states).
+- **Holding the reaper while the person has an open conflict.** No property
+  distinguishes it. It saves a destroy that the reconcile pass undoes once
+  the conflict resolves to the live person, so it was left out.
+
+Left out, or residual:
+
+- **Phase A and Phase B** are not modelled. A destroyed or dormant agent never
+  wakes, because the wake engine refuses it.
+- **Lost deliveries** are not modelled. `JournalReplication` and
+  `AgentReplication` cover loss and backfill; here every message arrives,
+  however late.
+- **Clock skew.** Every stamp is the step order. The code keeps that order
+  under skew for the decisions a device holds: one built on a stamp its
+  clock has not reached lands a microsecond past it (`decisionStampAfter`
+  within an identity, `markStampAfter` for a mark over the identity and
+  the device's own delete). A mark and a stop made on two devices before
+  either received the other are still ordered by wall clock.
+- **Brief me** is not modelled. It recreates an agent this device deleted as
+  a user resume (`ensureAgentForRelationship`'s `askedByUser`), which the
+  model's `Resume` step already covers once the agent exists.
+- **Three devices** add only arrival orders. With the base bounds and
+  `N = 3`, TLC passes all five properties over 43,534,917 distinct states in
+  about eight minutes locally. That is too long for its value in a CI shard,
+  so it is not checked in.
+- **While a conflict is open**, each device follows the person it holds. The
+  maintenance pass only ever stops the agent then, judging the newest mark
+  among the versions it holds.
+- **The model's joined clock.** The code keeps the winner's clock and joins
+  the decision fields on every receive (`joinIdentityDecisions`), which has
+  the same effect: no successor drops the other side's decision.

@@ -8,6 +8,18 @@ status: stable
 generated: { by: claude-code/opus-5.5, at: 2026-09-25T18:00:00Z }
 stale_after: 2027-03-01
 sources:
+  - id: tla-lifecycle
+    resource: ../../specs/tla/RelationshipAgentLifecycle.tla
+    title: The person, their agent and every writer of its lifecycle, model-checked
+    last_modified: 2026-09-30
+  - id: adr-0111
+    resource: ../../docs/adr/0111-a-tracked-person-keeps-their-agent.md
+    title: ADR 0111 — a tracked person keeps their agent
+    last_modified: 2026-09-30
+  - id: reconciliation
+    resource: ../../lib/features/relationships/runtime/relationship_agent_reconciliation.dart
+    title: reconcileRelationshipAgent and markStampAfter — where the user's latest word puts the agent, and how a mark is stamped
+    last_modified: 2026-10-02
   - id: sync-runtime
     resource: ../../lib/features/sync/matrix/sync_event_processor_agent_handlers.dart
     title: Runtime restoration after synced relationship prerequisites arrive
@@ -715,12 +727,15 @@ deletion — the page would navigate away from a person who is still there.
   That "runtime maintenance repairs the rest" is a real mechanism, not a
   hope: `RelationshipRuntimeMaintenance.beforeWakeScan` resolves each active
   relationship agent's watched person before healing anything, and tears the
-  identity down when the person is deleted or gone. It has to, because the
-  delete surfaces are not the only path — the generic journal delete
-  (a deep link to the entry, the journal detail page) reaches
-  `RelationshipRepository.deleteRelationship` without the agent leg at all.
-  A missing agent→relationship link is the creation race, not a deletion, and
-  never reaps.
+  identity down when this device holds the person's **tombstone**, purged or
+  not (`isRelationshipDeleted`). It has to, because the delete surfaces are
+  not the only path — the generic journal delete (a deep link to the entry,
+  the journal detail page) reaches `RelationshipRepository.deleteRelationship`
+  without the agent leg at all. A missing agent→relationship link is the
+  creation race, not a deletion, and never reaps; nor does a person with no
+  row at all. The agent and its link sync apart from the journal and can
+  arrive first, and reaping on "not found" once destroyed a tracked person's
+  agent on every device (ADR 0111).
 - ~~Pending OS reminders.~~ Since plan v2 phase 8 the delete surface also
   retracts them (ADR 0037 §5). This one cannot be left to the next Phase A
   tick the way the eligibility cases are, because destroying the agent is
@@ -765,7 +780,64 @@ transaction; the agent leaves creation subscribed and with one immediate €0
 evaluation queued. Re-entry on an existing agent is a fast path with one
 write-through: a renamed person's title refreshes the identity's
 `displayName` (the chat page titles itself from the stored identity), while
-everything else is returned untouched.
+everything else is returned untouched. The rename leaves the identity's
+lifecycle stamp alone, so it cannot overturn a concurrent destroy. An agent
+this device deleted (`deleted_agents`) is created again here only for a mark
+newer than the delete, read from the stored person, or for *Brief me*, which
+records the user's resume (`askedByUser`) — see
+[the agent follows the user's latest word](#the-agent-follows-the-users-latest-word).
+
+# The agent follows the user's latest word
+
+The person and the agent sync on different paths that nothing orders
+against each other, and several writers set the agent's lifecycle. ADR 0111
+settles what the lifecycle should be as a rule over recorded intent, and
+`specs/tla/RelationshipAgentLifecycle.tla` checks it on two devices:
+
+- **The ask.** `RelationshipData.importantSince`, stamped by the repository
+  on the off→on switch of `important` and never by a caller, past every
+  decision the device holds about the agent (`markStampAfter`); and the
+  identity's `userResumedAt`, from the agent controls' resume.
+- **The stop.** The identity's `userStoppedAt` and `userStopLifecycle`, from
+  the agent controls' destroy, pause or delete (`byUser: true`). A teardown
+  the app decides — a deleted person, a retired task agent — is not the
+  user's stop.
+- **The rule.** A stop newer than every ask keeps the agent stopped;
+  otherwise an important person's agent is active; an unimportant person's
+  agent is left as it is (`reconcileRelationshipAgent`).
+
+The maintenance pass applies the rule to every live person on every scan
+(`RelationshipAgentService.reconcileAgent`). It creates a missing agent — a
+lost background ensure, a peer's creation not yet arrived, a delete older
+than the last mark — and writes the target over whatever the merge, the
+reaper or the cascade left. While the person has an open sync conflict it
+only ever stops the agent. A hard delete by the user first syncs the user's
+stop, so no other device brings the agent back.
+
+Every stamp only grows along a causal chain — a decision built on a stamp
+from a peer whose clock ran ahead lands a microsecond past it
+(`decisionStampAfter`) — and identities merge field by field
+(`joinIdentityDecisions`): the lifecycle by `lifecycleUpdatedAt`, the stop
+and resume by their stamps. Every device therefore reaches the same stamps,
+computes the same target, and converges. A mark and a stop are still
+compared by wall clock: a mark made after the stop arrived lands past it,
+but two made on different devices within their clock skew, before either
+received the other, can be ordered the wrong way round.
+
+```mermaid
+stateDiagram-v2
+  [*] --> active: mark (ensure) or maintenance create
+  active --> dormant: user pause, or reconcile to a pause
+  dormant --> active: user resume, or a mark newer than the pause
+  active --> destroyed: user destroy, cascade, reaper (tombstone), reconcile to a destroy
+  dormant --> destroyed: user destroy, cascade, reconcile to a destroy
+  destroyed --> active: reconcile, when the destroy was the app's or older than the last ask
+  destroyed --> deleted: user delete (syncs the stop first)
+  deleted --> active: a mark newer than the delete (ensure or maintenance create), or Brief me
+```
+
+An agent destroyed by a build from before ADR 0111 carries no stop, so a
+person still marked important gets it back on the first scan.
 
 ```mermaid
 flowchart TD
@@ -773,7 +845,7 @@ flowchart TD
   A --> L{agent link?}
   L -->|none| OK1[no-op]
   L --> G{"person still there?<br/>(unfiltered read)"}
-  G -->|"deleted / gone"| STOP["write NOTHING — not even the tick.<br/>maintenance reaps the orphaned identity"]
+  G -->|"tombstone / not arrived"| STOP["write NOTHING — not even the tick.<br/>maintenance reaps only over a tombstone"]
   G --> R[re-arm daily cadence wake<br/>skip if unchanged]
   R --> E{important AND active?}
   E -->|no| OK2[done — the tick keeps checking]

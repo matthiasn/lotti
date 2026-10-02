@@ -1083,7 +1083,12 @@ mixin _$RelationshipData {
 /// dictionary, because a speech model mishears names it has never seen.
  List<String> get knownTerms;/// The single consent switch for proactive behavior: only important
 /// relationships produce cadence nudges and reminders (ADR 0039).
- bool get important; List<RelationshipStatus> get statusHistory;/// Desired check-in interval in days; only meaningful when [important]
+ bool get important;/// When [important] was last switched on: the user's latest request for
+/// the relationship agent (ADR 0111). Set only by
+/// `RelationshipRepository` on the off→on transition, never by callers;
+/// kept when [important] is switched off. Null for a person marked
+/// before the stamp existed, which reads as "asked at the beginning".
+ DateTime? get importantSince; List<RelationshipStatus> get statusHistory;/// Desired check-in interval in days; only meaningful when [important]
 /// is set. Defaults to 30 at the evaluation site when unset.
  int? get checkInCadenceDays; DateTime? get birthday;/// Inference profile ID for the relationship agent (ADR 0040),
 /// mirroring `ProjectData.profileId`.
@@ -1116,16 +1121,16 @@ $RelationshipDataCopyWith<RelationshipData> get copyWith => _$RelationshipDataCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RelationshipData&&(identical(other.title, title) || other.title == title)&&(identical(other.status, status) || other.status == status)&&(identical(other.nickname, nickname) || other.nickname == nickname)&&const DeepCollectionEquality().equals(other.knownTerms, knownTerms)&&(identical(other.important, important) || other.important == important)&&const DeepCollectionEquality().equals(other.statusHistory, statusHistory)&&(identical(other.checkInCadenceDays, checkInCadenceDays) || other.checkInCadenceDays == checkInCadenceDays)&&(identical(other.birthday, birthday) || other.birthday == birthday)&&(identical(other.profileId, profileId) || other.profileId == profileId)&&(identical(other.languageCode, languageCode) || other.languageCode == languageCode)&&(identical(other.avatarImageId, avatarImageId) || other.avatarImageId == avatarImageId)&&(identical(other.avatarCrop, avatarCrop) || other.avatarCrop == avatarCrop)&&(identical(other.bannerImageId, bannerImageId) || other.bannerImageId == bannerImageId)&&(identical(other.bannerCropX, bannerCropX) || other.bannerCropX == bannerCropX)&&const DeepCollectionEquality().equals(other.contactChannels, contactChannels)&&const DeepCollectionEquality().equals(other.contactRefs, contactRefs));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RelationshipData&&(identical(other.title, title) || other.title == title)&&(identical(other.status, status) || other.status == status)&&(identical(other.nickname, nickname) || other.nickname == nickname)&&const DeepCollectionEquality().equals(other.knownTerms, knownTerms)&&(identical(other.important, important) || other.important == important)&&(identical(other.importantSince, importantSince) || other.importantSince == importantSince)&&const DeepCollectionEquality().equals(other.statusHistory, statusHistory)&&(identical(other.checkInCadenceDays, checkInCadenceDays) || other.checkInCadenceDays == checkInCadenceDays)&&(identical(other.birthday, birthday) || other.birthday == birthday)&&(identical(other.profileId, profileId) || other.profileId == profileId)&&(identical(other.languageCode, languageCode) || other.languageCode == languageCode)&&(identical(other.avatarImageId, avatarImageId) || other.avatarImageId == avatarImageId)&&(identical(other.avatarCrop, avatarCrop) || other.avatarCrop == avatarCrop)&&(identical(other.bannerImageId, bannerImageId) || other.bannerImageId == bannerImageId)&&(identical(other.bannerCropX, bannerCropX) || other.bannerCropX == bannerCropX)&&const DeepCollectionEquality().equals(other.contactChannels, contactChannels)&&const DeepCollectionEquality().equals(other.contactRefs, contactRefs));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,title,status,nickname,const DeepCollectionEquality().hash(knownTerms),important,const DeepCollectionEquality().hash(statusHistory),checkInCadenceDays,birthday,profileId,languageCode,avatarImageId,avatarCrop,bannerImageId,bannerCropX,const DeepCollectionEquality().hash(contactChannels),const DeepCollectionEquality().hash(contactRefs));
+int get hashCode => Object.hash(runtimeType,title,status,nickname,const DeepCollectionEquality().hash(knownTerms),important,importantSince,const DeepCollectionEquality().hash(statusHistory),checkInCadenceDays,birthday,profileId,languageCode,avatarImageId,avatarCrop,bannerImageId,bannerCropX,const DeepCollectionEquality().hash(contactChannels),const DeepCollectionEquality().hash(contactRefs));
 
 @override
 String toString() {
-  return 'RelationshipData(title: $title, status: $status, nickname: $nickname, knownTerms: $knownTerms, important: $important, statusHistory: $statusHistory, checkInCadenceDays: $checkInCadenceDays, birthday: $birthday, profileId: $profileId, languageCode: $languageCode, avatarImageId: $avatarImageId, avatarCrop: $avatarCrop, bannerImageId: $bannerImageId, bannerCropX: $bannerCropX, contactChannels: $contactChannels, contactRefs: $contactRefs)';
+  return 'RelationshipData(title: $title, status: $status, nickname: $nickname, knownTerms: $knownTerms, important: $important, importantSince: $importantSince, statusHistory: $statusHistory, checkInCadenceDays: $checkInCadenceDays, birthday: $birthday, profileId: $profileId, languageCode: $languageCode, avatarImageId: $avatarImageId, avatarCrop: $avatarCrop, bannerImageId: $bannerImageId, bannerCropX: $bannerCropX, contactChannels: $contactChannels, contactRefs: $contactRefs)';
 }
 
 
@@ -1136,7 +1141,7 @@ abstract mixin class $RelationshipDataCopyWith<$Res>  {
   factory $RelationshipDataCopyWith(RelationshipData value, $Res Function(RelationshipData) _then) = _$RelationshipDataCopyWithImpl;
 @useResult
 $Res call({
- String title, RelationshipStatus status, String? nickname, List<String> knownTerms, bool important, List<RelationshipStatus> statusHistory, int? checkInCadenceDays, DateTime? birthday, String? profileId, String? languageCode, String? avatarImageId,@JsonKey(fromJson: avatarCropFromJson) AvatarCrop? avatarCrop, String? bannerImageId,@JsonKey(fromJson: cropFractionFromJson) double bannerCropX, List<ContactChannel> contactChannels, Map<String, String> contactRefs
+ String title, RelationshipStatus status, String? nickname, List<String> knownTerms, bool important, DateTime? importantSince, List<RelationshipStatus> statusHistory, int? checkInCadenceDays, DateTime? birthday, String? profileId, String? languageCode, String? avatarImageId,@JsonKey(fromJson: avatarCropFromJson) AvatarCrop? avatarCrop, String? bannerImageId,@JsonKey(fromJson: cropFractionFromJson) double bannerCropX, List<ContactChannel> contactChannels, Map<String, String> contactRefs
 });
 
 
@@ -1153,14 +1158,15 @@ class _$RelationshipDataCopyWithImpl<$Res>
 
 /// Create a copy of RelationshipData
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? title = null,Object? status = null,Object? nickname = freezed,Object? knownTerms = null,Object? important = null,Object? statusHistory = null,Object? checkInCadenceDays = freezed,Object? birthday = freezed,Object? profileId = freezed,Object? languageCode = freezed,Object? avatarImageId = freezed,Object? avatarCrop = freezed,Object? bannerImageId = freezed,Object? bannerCropX = null,Object? contactChannels = null,Object? contactRefs = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? title = null,Object? status = null,Object? nickname = freezed,Object? knownTerms = null,Object? important = null,Object? importantSince = freezed,Object? statusHistory = null,Object? checkInCadenceDays = freezed,Object? birthday = freezed,Object? profileId = freezed,Object? languageCode = freezed,Object? avatarImageId = freezed,Object? avatarCrop = freezed,Object? bannerImageId = freezed,Object? bannerCropX = null,Object? contactChannels = null,Object? contactRefs = null,}) {
   return _then(_self.copyWith(
 title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as RelationshipStatus,nickname: freezed == nickname ? _self.nickname : nickname // ignore: cast_nullable_to_non_nullable
 as String?,knownTerms: null == knownTerms ? _self.knownTerms : knownTerms // ignore: cast_nullable_to_non_nullable
 as List<String>,important: null == important ? _self.important : important // ignore: cast_nullable_to_non_nullable
-as bool,statusHistory: null == statusHistory ? _self.statusHistory : statusHistory // ignore: cast_nullable_to_non_nullable
+as bool,importantSince: freezed == importantSince ? _self.importantSince : importantSince // ignore: cast_nullable_to_non_nullable
+as DateTime?,statusHistory: null == statusHistory ? _self.statusHistory : statusHistory // ignore: cast_nullable_to_non_nullable
 as List<RelationshipStatus>,checkInCadenceDays: freezed == checkInCadenceDays ? _self.checkInCadenceDays : checkInCadenceDays // ignore: cast_nullable_to_non_nullable
 as int?,birthday: freezed == birthday ? _self.birthday : birthday // ignore: cast_nullable_to_non_nullable
 as DateTime?,profileId: freezed == profileId ? _self.profileId : profileId // ignore: cast_nullable_to_non_nullable
@@ -1277,10 +1283,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String title,  RelationshipStatus status,  String? nickname,  List<String> knownTerms,  bool important,  List<RelationshipStatus> statusHistory,  int? checkInCadenceDays,  DateTime? birthday,  String? profileId,  String? languageCode,  String? avatarImageId, @JsonKey(fromJson: avatarCropFromJson)  AvatarCrop? avatarCrop,  String? bannerImageId, @JsonKey(fromJson: cropFractionFromJson)  double bannerCropX,  List<ContactChannel> contactChannels,  Map<String, String> contactRefs)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String title,  RelationshipStatus status,  String? nickname,  List<String> knownTerms,  bool important,  DateTime? importantSince,  List<RelationshipStatus> statusHistory,  int? checkInCadenceDays,  DateTime? birthday,  String? profileId,  String? languageCode,  String? avatarImageId, @JsonKey(fromJson: avatarCropFromJson)  AvatarCrop? avatarCrop,  String? bannerImageId, @JsonKey(fromJson: cropFractionFromJson)  double bannerCropX,  List<ContactChannel> contactChannels,  Map<String, String> contactRefs)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RelationshipData() when $default != null:
-return $default(_that.title,_that.status,_that.nickname,_that.knownTerms,_that.important,_that.statusHistory,_that.checkInCadenceDays,_that.birthday,_that.profileId,_that.languageCode,_that.avatarImageId,_that.avatarCrop,_that.bannerImageId,_that.bannerCropX,_that.contactChannels,_that.contactRefs);case _:
+return $default(_that.title,_that.status,_that.nickname,_that.knownTerms,_that.important,_that.importantSince,_that.statusHistory,_that.checkInCadenceDays,_that.birthday,_that.profileId,_that.languageCode,_that.avatarImageId,_that.avatarCrop,_that.bannerImageId,_that.bannerCropX,_that.contactChannels,_that.contactRefs);case _:
   return orElse();
 
 }
@@ -1298,10 +1304,10 @@ return $default(_that.title,_that.status,_that.nickname,_that.knownTerms,_that.i
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String title,  RelationshipStatus status,  String? nickname,  List<String> knownTerms,  bool important,  List<RelationshipStatus> statusHistory,  int? checkInCadenceDays,  DateTime? birthday,  String? profileId,  String? languageCode,  String? avatarImageId, @JsonKey(fromJson: avatarCropFromJson)  AvatarCrop? avatarCrop,  String? bannerImageId, @JsonKey(fromJson: cropFractionFromJson)  double bannerCropX,  List<ContactChannel> contactChannels,  Map<String, String> contactRefs)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String title,  RelationshipStatus status,  String? nickname,  List<String> knownTerms,  bool important,  DateTime? importantSince,  List<RelationshipStatus> statusHistory,  int? checkInCadenceDays,  DateTime? birthday,  String? profileId,  String? languageCode,  String? avatarImageId, @JsonKey(fromJson: avatarCropFromJson)  AvatarCrop? avatarCrop,  String? bannerImageId, @JsonKey(fromJson: cropFractionFromJson)  double bannerCropX,  List<ContactChannel> contactChannels,  Map<String, String> contactRefs)  $default,) {final _that = this;
 switch (_that) {
 case _RelationshipData():
-return $default(_that.title,_that.status,_that.nickname,_that.knownTerms,_that.important,_that.statusHistory,_that.checkInCadenceDays,_that.birthday,_that.profileId,_that.languageCode,_that.avatarImageId,_that.avatarCrop,_that.bannerImageId,_that.bannerCropX,_that.contactChannels,_that.contactRefs);case _:
+return $default(_that.title,_that.status,_that.nickname,_that.knownTerms,_that.important,_that.importantSince,_that.statusHistory,_that.checkInCadenceDays,_that.birthday,_that.profileId,_that.languageCode,_that.avatarImageId,_that.avatarCrop,_that.bannerImageId,_that.bannerCropX,_that.contactChannels,_that.contactRefs);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1318,10 +1324,10 @@ return $default(_that.title,_that.status,_that.nickname,_that.knownTerms,_that.i
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String title,  RelationshipStatus status,  String? nickname,  List<String> knownTerms,  bool important,  List<RelationshipStatus> statusHistory,  int? checkInCadenceDays,  DateTime? birthday,  String? profileId,  String? languageCode,  String? avatarImageId, @JsonKey(fromJson: avatarCropFromJson)  AvatarCrop? avatarCrop,  String? bannerImageId, @JsonKey(fromJson: cropFractionFromJson)  double bannerCropX,  List<ContactChannel> contactChannels,  Map<String, String> contactRefs)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String title,  RelationshipStatus status,  String? nickname,  List<String> knownTerms,  bool important,  DateTime? importantSince,  List<RelationshipStatus> statusHistory,  int? checkInCadenceDays,  DateTime? birthday,  String? profileId,  String? languageCode,  String? avatarImageId, @JsonKey(fromJson: avatarCropFromJson)  AvatarCrop? avatarCrop,  String? bannerImageId, @JsonKey(fromJson: cropFractionFromJson)  double bannerCropX,  List<ContactChannel> contactChannels,  Map<String, String> contactRefs)?  $default,) {final _that = this;
 switch (_that) {
 case _RelationshipData() when $default != null:
-return $default(_that.title,_that.status,_that.nickname,_that.knownTerms,_that.important,_that.statusHistory,_that.checkInCadenceDays,_that.birthday,_that.profileId,_that.languageCode,_that.avatarImageId,_that.avatarCrop,_that.bannerImageId,_that.bannerCropX,_that.contactChannels,_that.contactRefs);case _:
+return $default(_that.title,_that.status,_that.nickname,_that.knownTerms,_that.important,_that.importantSince,_that.statusHistory,_that.checkInCadenceDays,_that.birthday,_that.profileId,_that.languageCode,_that.avatarImageId,_that.avatarCrop,_that.bannerImageId,_that.bannerCropX,_that.contactChannels,_that.contactRefs);case _:
   return null;
 
 }
@@ -1333,7 +1339,7 @@ return $default(_that.title,_that.status,_that.nickname,_that.knownTerms,_that.i
 @JsonSerializable()
 
 class _RelationshipData implements RelationshipData {
-  const _RelationshipData({required this.title, required this.status, this.nickname, final  List<String> knownTerms = const [], this.important = false, final  List<RelationshipStatus> statusHistory = const [], this.checkInCadenceDays, this.birthday, this.profileId, this.languageCode, this.avatarImageId, @JsonKey(fromJson: avatarCropFromJson) this.avatarCrop, this.bannerImageId, @JsonKey(fromJson: cropFractionFromJson) this.bannerCropX = 0.5, final  List<ContactChannel> contactChannels = const [], final  Map<String, String> contactRefs = const <String, String>{}}): _knownTerms = knownTerms,_statusHistory = statusHistory,_contactChannels = contactChannels,_contactRefs = contactRefs;
+  const _RelationshipData({required this.title, required this.status, this.nickname, final  List<String> knownTerms = const [], this.important = false, this.importantSince, final  List<RelationshipStatus> statusHistory = const [], this.checkInCadenceDays, this.birthday, this.profileId, this.languageCode, this.avatarImageId, @JsonKey(fromJson: avatarCropFromJson) this.avatarCrop, this.bannerImageId, @JsonKey(fromJson: cropFractionFromJson) this.bannerCropX = 0.5, final  List<ContactChannel> contactChannels = const [], final  Map<String, String> contactRefs = const <String, String>{}}): _knownTerms = knownTerms,_statusHistory = statusHistory,_contactChannels = contactChannels,_contactRefs = contactRefs;
   factory _RelationshipData.fromJson(Map<String, dynamic> json) => _$RelationshipDataFromJson(json);
 
 /// The person's display name.
@@ -1360,6 +1366,12 @@ class _RelationshipData implements RelationshipData {
 /// The single consent switch for proactive behavior: only important
 /// relationships produce cadence nudges and reminders (ADR 0039).
 @override@JsonKey() final  bool important;
+/// When [important] was last switched on: the user's latest request for
+/// the relationship agent (ADR 0111). Set only by
+/// `RelationshipRepository` on the off→on transition, never by callers;
+/// kept when [important] is switched off. Null for a person marked
+/// before the stamp existed, which reads as "asked at the beginning".
+@override final  DateTime? importantSince;
  final  List<RelationshipStatus> _statusHistory;
 @override@JsonKey() List<RelationshipStatus> get statusHistory {
   if (_statusHistory is EqualUnmodifiableListView) return _statusHistory;
@@ -1427,16 +1439,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RelationshipData&&(identical(other.title, title) || other.title == title)&&(identical(other.status, status) || other.status == status)&&(identical(other.nickname, nickname) || other.nickname == nickname)&&const DeepCollectionEquality().equals(other._knownTerms, _knownTerms)&&(identical(other.important, important) || other.important == important)&&const DeepCollectionEquality().equals(other._statusHistory, _statusHistory)&&(identical(other.checkInCadenceDays, checkInCadenceDays) || other.checkInCadenceDays == checkInCadenceDays)&&(identical(other.birthday, birthday) || other.birthday == birthday)&&(identical(other.profileId, profileId) || other.profileId == profileId)&&(identical(other.languageCode, languageCode) || other.languageCode == languageCode)&&(identical(other.avatarImageId, avatarImageId) || other.avatarImageId == avatarImageId)&&(identical(other.avatarCrop, avatarCrop) || other.avatarCrop == avatarCrop)&&(identical(other.bannerImageId, bannerImageId) || other.bannerImageId == bannerImageId)&&(identical(other.bannerCropX, bannerCropX) || other.bannerCropX == bannerCropX)&&const DeepCollectionEquality().equals(other._contactChannels, _contactChannels)&&const DeepCollectionEquality().equals(other._contactRefs, _contactRefs));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RelationshipData&&(identical(other.title, title) || other.title == title)&&(identical(other.status, status) || other.status == status)&&(identical(other.nickname, nickname) || other.nickname == nickname)&&const DeepCollectionEquality().equals(other._knownTerms, _knownTerms)&&(identical(other.important, important) || other.important == important)&&(identical(other.importantSince, importantSince) || other.importantSince == importantSince)&&const DeepCollectionEquality().equals(other._statusHistory, _statusHistory)&&(identical(other.checkInCadenceDays, checkInCadenceDays) || other.checkInCadenceDays == checkInCadenceDays)&&(identical(other.birthday, birthday) || other.birthday == birthday)&&(identical(other.profileId, profileId) || other.profileId == profileId)&&(identical(other.languageCode, languageCode) || other.languageCode == languageCode)&&(identical(other.avatarImageId, avatarImageId) || other.avatarImageId == avatarImageId)&&(identical(other.avatarCrop, avatarCrop) || other.avatarCrop == avatarCrop)&&(identical(other.bannerImageId, bannerImageId) || other.bannerImageId == bannerImageId)&&(identical(other.bannerCropX, bannerCropX) || other.bannerCropX == bannerCropX)&&const DeepCollectionEquality().equals(other._contactChannels, _contactChannels)&&const DeepCollectionEquality().equals(other._contactRefs, _contactRefs));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,title,status,nickname,const DeepCollectionEquality().hash(_knownTerms),important,const DeepCollectionEquality().hash(_statusHistory),checkInCadenceDays,birthday,profileId,languageCode,avatarImageId,avatarCrop,bannerImageId,bannerCropX,const DeepCollectionEquality().hash(_contactChannels),const DeepCollectionEquality().hash(_contactRefs));
+int get hashCode => Object.hash(runtimeType,title,status,nickname,const DeepCollectionEquality().hash(_knownTerms),important,importantSince,const DeepCollectionEquality().hash(_statusHistory),checkInCadenceDays,birthday,profileId,languageCode,avatarImageId,avatarCrop,bannerImageId,bannerCropX,const DeepCollectionEquality().hash(_contactChannels),const DeepCollectionEquality().hash(_contactRefs));
 
 @override
 String toString() {
-  return 'RelationshipData(title: $title, status: $status, nickname: $nickname, knownTerms: $knownTerms, important: $important, statusHistory: $statusHistory, checkInCadenceDays: $checkInCadenceDays, birthday: $birthday, profileId: $profileId, languageCode: $languageCode, avatarImageId: $avatarImageId, avatarCrop: $avatarCrop, bannerImageId: $bannerImageId, bannerCropX: $bannerCropX, contactChannels: $contactChannels, contactRefs: $contactRefs)';
+  return 'RelationshipData(title: $title, status: $status, nickname: $nickname, knownTerms: $knownTerms, important: $important, importantSince: $importantSince, statusHistory: $statusHistory, checkInCadenceDays: $checkInCadenceDays, birthday: $birthday, profileId: $profileId, languageCode: $languageCode, avatarImageId: $avatarImageId, avatarCrop: $avatarCrop, bannerImageId: $bannerImageId, bannerCropX: $bannerCropX, contactChannels: $contactChannels, contactRefs: $contactRefs)';
 }
 
 
@@ -1447,7 +1459,7 @@ abstract mixin class _$RelationshipDataCopyWith<$Res> implements $RelationshipDa
   factory _$RelationshipDataCopyWith(_RelationshipData value, $Res Function(_RelationshipData) _then) = __$RelationshipDataCopyWithImpl;
 @override @useResult
 $Res call({
- String title, RelationshipStatus status, String? nickname, List<String> knownTerms, bool important, List<RelationshipStatus> statusHistory, int? checkInCadenceDays, DateTime? birthday, String? profileId, String? languageCode, String? avatarImageId,@JsonKey(fromJson: avatarCropFromJson) AvatarCrop? avatarCrop, String? bannerImageId,@JsonKey(fromJson: cropFractionFromJson) double bannerCropX, List<ContactChannel> contactChannels, Map<String, String> contactRefs
+ String title, RelationshipStatus status, String? nickname, List<String> knownTerms, bool important, DateTime? importantSince, List<RelationshipStatus> statusHistory, int? checkInCadenceDays, DateTime? birthday, String? profileId, String? languageCode, String? avatarImageId,@JsonKey(fromJson: avatarCropFromJson) AvatarCrop? avatarCrop, String? bannerImageId,@JsonKey(fromJson: cropFractionFromJson) double bannerCropX, List<ContactChannel> contactChannels, Map<String, String> contactRefs
 });
 
 
@@ -1464,14 +1476,15 @@ class __$RelationshipDataCopyWithImpl<$Res>
 
 /// Create a copy of RelationshipData
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? title = null,Object? status = null,Object? nickname = freezed,Object? knownTerms = null,Object? important = null,Object? statusHistory = null,Object? checkInCadenceDays = freezed,Object? birthday = freezed,Object? profileId = freezed,Object? languageCode = freezed,Object? avatarImageId = freezed,Object? avatarCrop = freezed,Object? bannerImageId = freezed,Object? bannerCropX = null,Object? contactChannels = null,Object? contactRefs = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? title = null,Object? status = null,Object? nickname = freezed,Object? knownTerms = null,Object? important = null,Object? importantSince = freezed,Object? statusHistory = null,Object? checkInCadenceDays = freezed,Object? birthday = freezed,Object? profileId = freezed,Object? languageCode = freezed,Object? avatarImageId = freezed,Object? avatarCrop = freezed,Object? bannerImageId = freezed,Object? bannerCropX = null,Object? contactChannels = null,Object? contactRefs = null,}) {
   return _then(_RelationshipData(
 title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as RelationshipStatus,nickname: freezed == nickname ? _self.nickname : nickname // ignore: cast_nullable_to_non_nullable
 as String?,knownTerms: null == knownTerms ? _self._knownTerms : knownTerms // ignore: cast_nullable_to_non_nullable
 as List<String>,important: null == important ? _self.important : important // ignore: cast_nullable_to_non_nullable
-as bool,statusHistory: null == statusHistory ? _self._statusHistory : statusHistory // ignore: cast_nullable_to_non_nullable
+as bool,importantSince: freezed == importantSince ? _self.importantSince : importantSince // ignore: cast_nullable_to_non_nullable
+as DateTime?,statusHistory: null == statusHistory ? _self._statusHistory : statusHistory // ignore: cast_nullable_to_non_nullable
 as List<RelationshipStatus>,checkInCadenceDays: freezed == checkInCadenceDays ? _self.checkInCadenceDays : checkInCadenceDays // ignore: cast_nullable_to_non_nullable
 as int?,birthday: freezed == birthday ? _self.birthday : birthday // ignore: cast_nullable_to_non_nullable
 as DateTime?,profileId: freezed == profileId ? _self.profileId : profileId // ignore: cast_nullable_to_non_nullable

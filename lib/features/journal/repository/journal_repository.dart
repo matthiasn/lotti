@@ -8,6 +8,8 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_types.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -47,6 +49,9 @@ class JournalRepository {
         journalDb: getIt<JournalDb>(),
         journalRepository: this,
         persistenceLogic: persistenceLogic,
+        // Over the registered agent store, as the project integrity guard
+        // builds it: this class has no ref to reach the provider through.
+        agentRepository: AgentRepository(getIt<AgentDatabase>()),
       );
 
   /// Clears references to a deleted image from the entities that point at it,
