@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/wake/project_update_slots.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
@@ -161,6 +162,9 @@ void main() {
   /// Builds a [ProjectAgentWorkflow] wired to the suite's mocks, overriding
   /// only the collaborators a test swaps in — previously 13 copies of the
   /// 8-parameter construction.
+  /// Agents the workflow asked to arm their next update slot.
+  final armedAgentIds = <String>[];
+
   ProjectAgentWorkflow buildWorkflow({
     ConversationRepository? conversationRepository,
     AgentInputCaptureService? inputCaptureService,
@@ -181,10 +185,60 @@ void main() {
       soulDocumentService: soulDocumentService,
       domainLogger: domainLogger,
       onPersistedStateChanged: onPersistedStateChanged,
+      armProjectUpdate: (agentId) async => armedAgentIds.add(agentId),
     );
   }
 
+  /// Makes the next conversation write a report, as a model run would.
+  void respondWithReport() {
+    mockConversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          if (strategy == null) return null;
+          final manager = mockConversationRepository.getConversation(
+            conversationId,
+          )!;
+          when(
+            () => manager.addToolResponse(
+              toolCallId: any(named: 'toolCallId'),
+              response: any(named: 'response'),
+            ),
+          ).thenReturn(null);
+          await strategy.processToolCalls(
+            toolCalls: [
+              ChatCompletionMessageToolCall(
+                id: 'call-report',
+                type: ChatCompletionMessageToolCallType.function,
+                function: ChatCompletionMessageFunctionCall(
+                  name: ProjectAgentToolNames.updateProjectReport,
+                  arguments: jsonEncode({
+                    'markdown': '# Status\nTwo tasks moved.',
+                    'tldr': 'Two tasks moved.',
+                    'one_liner': 'Two tasks moved.',
+                    'health_band': 'on_track',
+                    'health_rationale': 'Work is landing.',
+                    'health_confidence': 0.8,
+                  }),
+                ),
+              ),
+            ],
+            manager: manager,
+          );
+          return null;
+        };
+  }
+
   setUp(() async {
+    armedAgentIds.clear();
     mockAgentRepository = MockAgentRepository();
     mockSyncService = MockAgentSyncService();
     mockConversationManager = MockConversationManager();
@@ -333,7 +387,8 @@ void main() {
                 ).captured.single
                 as AgentStateEntity;
         expect(updatedState.consecutiveFailureCount, 1);
-        expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
+        // The report stays stale; its next update slot retries it.
+        expect(armedAgentIds, [agentId]);
       });
 
       test('returns failure when project entity not found', () async {
@@ -367,7 +422,8 @@ void main() {
                   () => mockSyncService.upsertEntity(captureAny()),
                 ).captured.single
                 as AgentStateEntity;
-        expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
+        // The report stays stale; its next update slot retries it.
+        expect(armedAgentIds, [agentId]);
       });
 
       test('returns failure when no template resolved', () async {
@@ -414,7 +470,8 @@ void main() {
                   () => mockSyncService.upsertEntity(captureAny()),
                 ).captured.single
                 as AgentStateEntity;
-        expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
+        // The report stays stale; its next update slot retries it.
+        expect(armedAgentIds, [agentId]);
       });
 
       test('returns failure when profile resolution fails', () async {
@@ -805,231 +862,135 @@ void main() {
         );
       });
 
-      test(
-        'skips due scheduled wake when no pending project activity exists',
-        () async {
-          final testDate = DateTime(2026, 3, 20, 6, 30);
-          final dueState = makeTestState(
-            slots: const AgentSlots(activeProjectId: projectId),
-            scheduledWakeAt: DateTime(2026, 3, 20, 6),
-          );
-          when(
-            () => mockAgentRepository.getAgentState(agentId),
-          ).thenAnswer((_) async => dueState);
-          when(
-            () => mockAgentRepository.getLatestReport(agentId, 'current'),
-          ).thenAnswer((_) async => makeTestReport());
-
-          await withClock(Clock.fixed(testDate), () async {
-            await workflow.execute(
-              agentIdentity: testAgentIdentity,
-              runKey: runKey,
-              triggerTokens: const {},
-              threadId: threadId,
+      // ProjectWakeGovernor.tla, NoWorkWhenFresh: an "Update now" or a
+      // peer's run freshened the report before the slot fired.
+      test('an update slot over a fresh report runs no inference, captures '
+          'nothing and writes nothing', () async {
+        final freshState =
+            makeTestState(
+              slots: const AgentSlots(activeProjectId: projectId),
+            ).copyWith(
+              reportStaleAt: DateTime(2026, 3, 20, 5),
+              reportFreshAt: DateTime(2026, 3, 20, 6),
             );
-          });
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => freshState);
+        when(
+          () => mockAgentRepository.getLatestReport(agentId, 'current'),
+        ).thenAnswer((_) async => makeTestReport());
+        final recorder = _RecordingCaptureService();
+        final capturingWorkflow = buildWorkflow(inputCaptureService: recorder);
 
-          final captured = verify(
-            () => mockSyncService.upsertEntity(captureAny()),
-          ).captured;
-          final updatedState = captured.single as AgentStateEntity;
-          expect(updatedState.scheduledWakeAt, isNull);
-          expect(updatedState.slots.lastDailyWakeAt, isNull);
-          // The dormant skip is a successful no-op wake — the failure
-          // streak must reset alongside the reschedule.
-          expect(updatedState.consecutiveFailureCount, 0);
-          expect(mockConversationRepository.deletedConversationIds, isEmpty);
-          // The dormant skip still advances lastWakeAt → emits wakeCompleted
-          // only (no daily-wake marker, since the digest didn't run).
-          final milestones = capturedMilestones(mockSyncService);
-          expect(milestones, [AgentMilestone.wakeCompleted]);
-          verifyNever(
-            () => mockAgentRepository.updateWakeRunTemplate(
-              any(),
-              any(),
-              any(),
-              resolvedModelId: any(named: 'resolvedModelId'),
-              soulId: any(named: 'soulId'),
-              soulVersionId: any(named: 'soulVersionId'),
-            ),
+        final result = await withClock(
+          Clock.fixed(DateTime(2026, 3, 20, 7)),
+          () => capturingWorkflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: const {ProjectUpdateSlots.triggerToken},
+            threadId: threadId,
+          ),
+        );
+
+        expect(result.success, isTrue);
+        expect(result.reportUpdated, isFalse);
+        expect(recorder.callCount, 0);
+        verifyNever(() => mockSyncService.upsertEntity(any()));
+        expect(mockConversationRepository.deletedConversationIds, isEmpty);
+        expect(armedAgentIds, isEmpty);
+      });
+
+      test('an update slot over a stale report runs, stamps the report '
+          'fresh as of its start and records a daily wake', () async {
+        final testDate = DateTime(2026, 3, 20, 7);
+        final staleState = makeTestState(
+          slots: AgentSlots(
+            activeProjectId: projectId,
+            pendingProjectActivityAt: DateTime(2026, 3, 20, 5),
+          ),
+        ).copyWith(reportStaleAt: DateTime(2026, 3, 20, 5));
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => staleState);
+        when(
+          () => mockAgentRepository.getLatestReport(agentId, 'current'),
+        ).thenAnswer((_) async => makeTestReport());
+        respondWithReport();
+
+        await withClock(Clock.fixed(testDate), () async {
+          await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: const {ProjectUpdateSlots.triggerToken},
+            threadId: threadId,
           );
-        },
-      );
+        });
 
-      test(
-        'dormant scheduled wake skips input capture entirely',
-        () async {
-          // The capture block runs AFTER the dormant-skip decision so a
-          // no-activity wake never loads linked entities or writes deltas.
-          final testDate = DateTime(2026, 3, 20, 6, 30);
-          final dueState = makeTestState(
-            slots: const AgentSlots(activeProjectId: projectId),
-            scheduledWakeAt: DateTime(2026, 3, 20, 6),
+        final updatedState = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured.whereType<AgentStateEntity>().last;
+        expect(updatedState.reportFreshAt, testDate);
+        expect(updatedState.isReportStale, isFalse);
+        expect(updatedState.slots.lastDailyWakeAt, testDate);
+        expect(updatedState.slots.pendingProjectActivityAt, isNull);
+        expect(
+          capturedMilestones(mockSyncService),
+          unorderedEquals([
+            AgentMilestone.wakeCompleted,
+            AgentMilestone.dailyWakeCompleted,
+          ]),
+        );
+        // Asked after the run; with the report fresh the cadence arms
+        // nothing.
+        expect(armedAgentIds, [agentId]);
+      });
+
+      test('a change during the run keeps the report stale and asks for the '
+          'next slot', () async {
+        final testDate = DateTime(2026, 3, 20, 7);
+        final initialState = makeTestState(
+          slots: AgentSlots(
+            activeProjectId: projectId,
+            pendingProjectActivityAt: DateTime(2026, 3, 20, 5),
+          ),
+        ).copyWith(reportStaleAt: DateTime(2026, 3, 20, 5));
+        // A linked task changed after this run started reading.
+        final newerState = initialState.copyWith(
+          slots: initialState.slots.copyWith(
+            pendingProjectActivityAt: DateTime(2026, 3, 20, 7, 1),
+          ),
+          reportStaleAt: DateTime(2026, 3, 20, 7, 1),
+        );
+        var stateRead = 0;
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer(
+          (_) async => stateRead++ == 0 ? initialState : newerState,
+        );
+        respondWithReport();
+
+        await withClock(Clock.fixed(testDate), () async {
+          await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: const {'entity-a'},
+            threadId: threadId,
           );
-          when(
-            () => mockAgentRepository.getAgentState(agentId),
-          ).thenAnswer((_) async => dueState);
-          when(
-            () => mockAgentRepository.getLatestReport(agentId, 'current'),
-          ).thenAnswer((_) async => makeTestReport());
+        });
 
-          final recorder = _RecordingCaptureService();
-          final capturingWorkflow = buildWorkflow(
-            inputCaptureService: recorder,
-          );
-
-          await withClock(Clock.fixed(testDate), () async {
-            final result = await capturingWorkflow.execute(
-              agentIdentity: testAgentIdentity,
-              runKey: runKey,
-              triggerTokens: const {},
-              threadId: threadId,
-            );
-            expect(result.success, isTrue);
-          });
-
-          expect(recorder.callCount, 0);
-          verifyNever(
-            () => mockJournalRepository.getLinkedEntities(
-              linkedTo: any(named: 'linkedTo'),
-            ),
-          );
-        },
-      );
-
-      test(
-        'retires the legacy daily digest schedule after processing activity',
-        () async {
-          final testDate = DateTime(2026, 3, 20, 6, 30);
-          final dueState = makeTestState(
-            slots: AgentSlots(
-              activeProjectId: projectId,
-              pendingProjectActivityAt: DateTime(2026, 3, 20, 5),
-            ),
-            scheduledWakeAt: DateTime(2026, 3, 20, 6),
-          );
-          when(
-            () => mockAgentRepository.getAgentState(agentId),
-          ).thenAnswer((_) async => dueState);
-          when(
-            () => mockAgentRepository.getLatestReport(agentId, 'current'),
-          ).thenAnswer((_) async => makeTestReport());
-
-          await withClock(Clock.fixed(testDate), () async {
-            await workflow.execute(
-              agentIdentity: testAgentIdentity,
-              runKey: runKey,
-              triggerTokens: const {},
-              threadId: threadId,
-            );
-          });
-
-          final captured = verify(
-            () => mockSyncService.upsertEntity(captureAny()),
-          ).captured;
-          final updatedState = captured.whereType<AgentStateEntity>().last;
-          expect(updatedState.scheduledWakeAt, isNull);
-          expect(updatedState.slots.lastDailyWakeAt, testDate);
-          expect(updatedState.slots.pendingProjectActivityAt, isNull);
-          // A due scheduled wake advances both watermarks → exactly those two
-          // markers, no duplicates or extras.
-          expect(
-            capturedMilestones(mockSyncService),
-            unorderedEquals([
-              AgentMilestone.wakeCompleted,
-              AgentMilestone.dailyWakeCompleted,
-            ]),
-          );
-        },
-      );
-
-      test(
-        'retires a future legacy digest schedule after a non-due wake',
-        () async {
-          final testDate = DateTime(2026, 3, 20, 9);
-          final futureSchedule = DateTime(2026, 3, 21, 6);
-          final scheduledState = makeTestState(
-            slots: AgentSlots(
-              activeProjectId: projectId,
-              pendingProjectActivityAt: DateTime(2026, 3, 20, 8),
-            ),
-            scheduledWakeAt: futureSchedule,
-          );
-          when(
-            () => mockAgentRepository.getAgentState(agentId),
-          ).thenAnswer((_) async => scheduledState);
-          when(
-            () => mockAgentRepository.getLatestReport(agentId, 'current'),
-          ).thenAnswer((_) async => makeTestReport());
-
-          await withClock(Clock.fixed(testDate), () async {
-            await workflow.execute(
-              agentIdentity: testAgentIdentity,
-              runKey: runKey,
-              triggerTokens: {'entity-a'},
-              threadId: threadId,
-            );
-          });
-
-          final captured = verify(
-            () => mockSyncService.upsertEntity(captureAny()),
-          ).captured;
-          final updatedState = captured.whereType<AgentStateEntity>().last;
-          expect(updatedState.scheduledWakeAt, isNull);
-          expect(updatedState.slots.lastDailyWakeAt, isNull);
-          expect(updatedState.slots.pendingProjectActivityAt, isNull);
-          // A non-due wake advances lastWakeAt but not lastDailyWakeAt →
-          // exactly one wakeCompleted marker and nothing else.
-          expect(
-            capturedMilestones(mockSyncService),
-            unorderedEquals([AgentMilestone.wakeCompleted]),
-          );
-        },
-      );
-
-      test(
-        'retains a next-day fallback for activity arriving during a due wake',
-        () async {
-          final testDate = DateTime(2026, 3, 20, 6, 30);
-          final initialState = makeTestState(
-            slots: AgentSlots(
-              activeProjectId: projectId,
-              pendingProjectActivityAt: DateTime(2026, 3, 20, 5),
-            ),
-            scheduledWakeAt: DateTime(2026, 3, 20, 6),
-          );
-          final newerState = initialState.copyWith(
-            slots: initialState.slots.copyWith(
-              pendingProjectActivityAt: DateTime(2026, 3, 20, 6, 31),
-            ),
-          );
-          var stateRead = 0;
-          when(
-            () => mockAgentRepository.getAgentState(agentId),
-          ).thenAnswer(
-            (_) async => stateRead++ == 0 ? initialState : newerState,
-          );
-
-          await withClock(Clock.fixed(testDate), () async {
-            await workflow.execute(
-              agentIdentity: testAgentIdentity,
-              runKey: runKey,
-              triggerTokens: const {},
-              threadId: threadId,
-            );
-          });
-
-          final captured = verify(
-            () => mockSyncService.upsertEntity(captureAny()),
-          ).captured;
-          final updatedState = captured.whereType<AgentStateEntity>().last;
-          expect(
-            updatedState.slots.pendingProjectActivityAt,
-            DateTime(2026, 3, 20, 6, 31),
-          );
-          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
-        },
-      );
+        final updatedState = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured.whereType<AgentStateEntity>().last;
+        expect(updatedState.reportFreshAt, testDate);
+        expect(updatedState.isReportStale, isTrue);
+        expect(
+          updatedState.slots.pendingProjectActivityAt,
+          DateTime(2026, 3, 20, 7, 1),
+        );
+        // Never a device-local deadline: the next update is a synced slot.
+        expect(updatedState.scheduledWakeAt, isNull);
+        expect(armedAgentIds, [agentId]);
+      });
 
       test(
         'does not synthesize a fallback after an automation-off manual wake',
@@ -1342,48 +1303,8 @@ void main() {
             () => mockSyncService.upsertEntity(captureAny()),
           ).captured;
           final updatedState = captured.whereType<AgentStateEntity>().last;
-          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
-        },
-      );
-
-      test(
-        'first legacy creation failure advances its markerless fallback',
-        () async {
-          final now = DateTime(2026, 3, 20, 10);
-          final legacyCreationState = testAgentState.copyWith(
-            lastWakeAt: null,
-            scheduledWakeAt: DateTime(2026, 3, 20, 6),
-          );
-          when(
-            () => mockAgentRepository.getAgentState(agentId),
-          ).thenAnswer((_) async => legacyCreationState);
-          final mockSoulService = MockSoulDocumentService();
-          when(
-            () => mockSoulService.resolveActiveSoulForTemplate(
-              testTemplate.id,
-            ),
-          ).thenThrow(Exception('Soul DB error'));
-
-          final soulWorkflow = buildWorkflow(
-            soulDocumentService: mockSoulService,
-          );
-
-          final result = await withClock(Clock.fixed(now), () {
-            return soulWorkflow.execute(
-              agentIdentity: testAgentIdentity,
-              runKey: runKey,
-              triggerTokens: {'entity-a'},
-              threadId: threadId,
-            );
-          });
-
-          expect(result.success, isFalse);
-          final captured = verify(
-            () => mockSyncService.upsertEntity(captureAny()),
-          ).captured;
-          final updatedState = captured.whereType<AgentStateEntity>().last;
-          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
-          expect(updatedState.slots.pendingProjectActivityAt, isNull);
+          // The report stays stale; its next update slot retries it.
+          expect(armedAgentIds, [agentId]);
         },
       );
 
@@ -1534,7 +1455,7 @@ void main() {
           (s) => s.consecutiveFailureCount > 0,
         );
         expect(stateUpdates, isNotEmpty);
-        expect(stateUpdates.single.scheduledWakeAt, DateTime(2026, 3, 21, 6));
+        expect(armedAgentIds, [agentId]);
         expect(
           stateUpdates.single.slots.pendingProjectActivityAt,
           DateTime(2026, 3, 20, 9),
@@ -1585,70 +1506,10 @@ void main() {
         final updatedState = captured.whereType<AgentStateEntity>().lastWhere(
           (state) => state.consecutiveFailureCount > 0,
         );
-        expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
+        // The report stays stale; its next update slot retries it.
+        expect(armedAgentIds, [agentId]);
         expect(notifiedAgentIds, [agentId]);
       });
-
-      test(
-        'a concurrent cancellation wins over failed-wake retry persistence',
-        () async {
-          final pendingState = testAgentStateNoProject.copyWith(
-            slots: testAgentStateNoProject.slots.copyWith(
-              pendingProjectActivityAt: DateTime(2026, 3, 20, 9),
-            ),
-            scheduledWakeAt: DateTime(2026, 3, 20, 6),
-          );
-          final statefulSync = _SerializingStateSyncService(pendingState);
-          when(
-            () => mockAgentRepository.getAgentState(agentId),
-          ).thenAnswer((_) async => statefulSync.state);
-          when(
-            () => mockAgentRepository.getEntity(agentId),
-          ).thenAnswer((_) async => testAgentIdentity);
-          final raceWorkflow = ProjectAgentWorkflow(
-            agentRepository: mockAgentRepository,
-            conversationRepository: mockConversationRepository,
-            aiConfigRepository: mockAiConfigRepository,
-            cloudInferenceRepository: mockCloudInferenceRepository,
-            journalRepository: mockJournalRepository,
-            syncService: statefulSync,
-            templateService: mockTemplateService,
-          );
-          final orchestrator = MockWakeOrchestrator();
-          when(
-            () => orchestrator.cancelPendingWakes(
-              any(),
-              allWorkspaces: any(named: 'allWorkspaces'),
-            ),
-          ).thenReturn(const []);
-          final projectService = ProjectAgentService(
-            agentService: MockAgentService(),
-            repository: mockAgentRepository,
-            orchestrator: orchestrator,
-            syncService: statefulSync,
-            projectScopeIsCurrent: (_, _) async => true,
-            mutationCoordinator: ProjectAgentMutationCoordinator(),
-          );
-
-          final wake = withClock(Clock.fixed(DateTime(2026, 3, 20, 10)), () {
-            return raceWorkflow.execute(
-              agentIdentity: testAgentIdentity,
-              runKey: runKey,
-              triggerTokens: {'manual'},
-              threadId: threadId,
-            );
-          });
-          await statefulSync.failureWriteStarted.future;
-          final cancellation = projectService.cancelScheduledWake(agentId);
-          await pumpEventQueue();
-          statefulSync.releaseFailureWrite.complete();
-          await Future.wait([wake, cancellation]);
-
-          expect(statefulSync.state.slots.pendingProjectActivityAt, isNull);
-          expect(statefulSync.state.nextWakeAt, isNull);
-          expect(statefulSync.state.scheduledWakeAt, isNull);
-        },
-      );
 
       test('does not restore state deleted during a failed wake', () async {
         when(
@@ -3555,28 +3416,24 @@ void main() {
       });
 
       test(
-        'skips duplicate scheduled wake when second state read shows wake '
-        'already handled elsewhere',
+        'a slot whose report a peer freshened in the meantime runs no '
+        'inference',
         () async {
-          final testDate = DateTime(2026, 3, 20, 6, 30);
-          // Initial state has a past scheduled wake.
-          final initialState = makeTestState(
+          final testDate = DateTime(2026, 3, 20, 7);
+          final staleState = makeTestState(
             slots: const AgentSlots(activeProjectId: projectId),
-            scheduledWakeAt: DateTime(2026, 3, 20, 6),
+          ).copyWith(reportStaleAt: DateTime(2026, 3, 20, 5));
+          // A peer's run of the same change arrived by sync before this
+          // device's slot read the state a second time.
+          final freshenedByPeer = staleState.copyWith(
+            reportFreshAt: DateTime(2026, 3, 20, 6, 58),
           );
-          // Second read returns a state where the wake has already been
-          // rolled forward — no longer due.
-          final alreadyHandledState = makeTestState(
-            slots: const AgentSlots(activeProjectId: projectId),
-            scheduledWakeAt: DateTime(2026, 3, 21, 6),
-          );
-
           var callCount = 0;
-          when(
-            () => mockAgentRepository.getAgentState(agentId),
-          ).thenAnswer((_) async {
+          when(() => mockAgentRepository.getAgentState(agentId)).thenAnswer((
+            _,
+          ) async {
             callCount++;
-            return callCount == 1 ? initialState : alreadyHandledState;
+            return callCount == 1 ? staleState : freshenedByPeer;
           });
           when(
             () => mockAgentRepository.getLatestReport(agentId, 'current'),
@@ -3587,12 +3444,11 @@ void main() {
             result = await workflow.execute(
               agentIdentity: testAgentIdentity,
               runKey: runKey,
-              triggerTokens: const {},
+              triggerTokens: const {ProjectUpdateSlots.triggerToken},
               threadId: threadId,
             );
           });
 
-          // Should return success without running the conversation.
           expect(result.success, isTrue);
           expect(result.error, isNull);
           // No conversation was started, so conversation repo had no deletions.

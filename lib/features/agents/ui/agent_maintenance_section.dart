@@ -142,11 +142,11 @@ class _AgentMaintenanceSectionState
     final automaticUpdatesEnabled =
         identity?.config.automaticUpdatesEnabledEffective ?? false;
 
-    // The live deadline, then the persisted one: a project agent's pending
-    // wake is recorded in `scheduledWakeAt` while the runtime holds
-    // `nextWakeAt`, and a band that read only one of the two would promise
-    // nothing about a run that is genuinely queued.
-    final nextWakeAt = state?.nextWakeAt ?? state?.scheduledWakeAt;
+    // A task agent's next run is its throttle deadline (or a scheduled
+    // wake); a project agent's is its next update slot, a synced record.
+    final nextWakeAt = widget.scope.kind == AgentMaintenanceKind.project
+        ? ref.watch(projectNextUpdateProvider(agentId)).value
+        : state?.nextWakeAt ?? state?.scheduledWakeAt;
     final remaining = nextWakeAt == null
         ? Duration.zero
         : nextWakeAt.difference(clock.now());

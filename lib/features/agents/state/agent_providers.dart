@@ -420,7 +420,12 @@ final projectUpdateCadenceProvider = Provider<ProjectUpdateCadence>(
 Future<void> Function(String agentId) armProjectUpdate(Ref ref) =>
     (agentId) async {
       final armed = await ref.read(projectUpdateCadenceProvider).arm(agentId);
-      if (armed != null) ref.read(scheduledWakeManagerProvider).requestCheck();
+      if (armed == null) return;
+      ref.read(scheduledWakeManagerProvider).requestCheck();
+      // The countdown reads the slot; an agent-store write announces nothing.
+      persistedStateChangedNotifier(
+        ref.read(updateNotificationsProvider),
+      )(agentId);
     };
 
 /// Whether this device may claim or fire a leased project update slot now:

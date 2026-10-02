@@ -55,6 +55,7 @@ void main() {
     MockAgentService? agentService,
     AgentMaintenanceKind kind = AgentMaintenanceKind.task,
     int? maxWakesPerDay,
+    DateTime? nextProjectUpdate,
   }) {
     return RiverpodWidgetTestBench(
       mediaQueryData: const MediaQueryData(size: Size(900, 800)),
@@ -68,6 +69,9 @@ void main() {
           ),
         ),
         agentStateProvider.overrideWith((ref, id) async => state),
+        projectNextUpdateProvider.overrideWith(
+          (ref, id) async => nextProjectUpdate,
+        ),
         agentReportProvider.overrideWith((ref, id) async => report),
         agentIsRunningProvider.overrideWith(
           (ref, id) => Stream.value(isRunning),
@@ -288,36 +292,30 @@ void main() {
       });
     });
 
-    testWidgets('a project scope cancels through the project service', (
-      tester,
-    ) async {
-      final taskAgentService = MockTaskAgentService();
-      final projectAgentService = MockProjectAgentService();
-      when(
-        () => projectAgentService.cancelScheduledWake(any()),
-      ).thenAnswer((_) async {});
-
+    testWidgets('a project band counts down to its next update slot and '
+        'offers no Skip', (tester) async {
+      // A project agent's next update is a synced slot that any later change
+      // re-arms, so skipping it would not stick: the band shows when it is
+      // due, and Update now, but no Skip.
       await withClock(Clock.fixed(DateTime(2026, 5, 4, 12)), () async {
         await tester.pumpWidget(
           build(
             kind: AgentMaintenanceKind.project,
             automaticUpdates: true,
+            // A stale throttle field must not drive a project countdown.
             state: makeTestState(nextWakeAt: DateTime(2026, 5, 4, 12, 0, 30)),
-            taskAgentService: taskAgentService,
-            projectAgentService: projectAgentService,
+            nextProjectUpdate: DateTime(2026, 5, 4, 12, 35),
             report: makeTestReport(tldr: 'Tldr line.'),
           ),
         );
         await tester.pumpAndSettle();
-        await tester.tap(
-          find.byKey(const ValueKey('taskAgentSkipScheduledUpdate')),
-        );
-        await tester.pumpAndSettle();
 
-        verify(
-          () => projectAgentService.cancelScheduledWake(agentId),
-        ).called(1);
-        verifyNever(() => taskAgentService.cancelScheduledWake(any()));
+        expect(find.textContaining('35:00'), findsOneWidget);
+        expect(find.textContaining('0:30'), findsNothing);
+        expect(
+          find.byKey(const ValueKey('taskAgentSkipScheduledUpdate')),
+          findsNothing,
+        );
       });
     });
 
@@ -338,39 +336,6 @@ void main() {
               automaticUpdates: true,
               state: makeTestState(nextWakeAt: DateTime(2026, 5, 4, 12, 0, 30)),
               taskAgentService: taskAgentService,
-              report: makeTestReport(tldr: 'Tldr line.'),
-            ),
-          );
-          await tester.pumpAndSettle();
-          await tester.tap(
-            find.byKey(const ValueKey('taskAgentSkipScheduledUpdate')),
-          );
-          await tester.pumpAndSettle();
-
-          expect(find.text('Error'), findsOneWidget);
-          expect(find.text('Skip once'), findsOneWidget);
-          expect(find.textContaining('0:30'), findsOneWidget);
-        });
-      },
-    );
-
-    testWidgets(
-      'a project cancellation that rejects also restores the countdown',
-      (tester) async {
-        // The project service returns a Future, so its failure arrives
-        // asynchronously — a case a synchronous throw would not exercise.
-        final projectAgentService = MockProjectAgentService();
-        when(() => projectAgentService.cancelScheduledWake(any())).thenAnswer(
-          (_) => Future<void>.error(StateError('cancel failed')),
-        );
-
-        await withClock(Clock.fixed(DateTime(2026, 5, 4, 12)), () async {
-          await tester.pumpWidget(
-            build(
-              kind: AgentMaintenanceKind.project,
-              automaticUpdates: true,
-              state: makeTestState(nextWakeAt: DateTime(2026, 5, 4, 12, 0, 30)),
-              projectAgentService: projectAgentService,
               report: makeTestReport(tldr: 'Tldr line.'),
             ),
           );
@@ -619,12 +584,11 @@ void main() {
     testWidgets('a persisted scheduled wake counts down like a live one', (
       tester,
     ) async {
-      // A project agent records its pending wake in `scheduledWakeAt` while
-      // the runtime holds `nextWakeAt`; the band reads both.
+      // A scheduled wake is recorded in `scheduledWakeAt` while the runtime
+      // holds `nextWakeAt`; for a non-project agent the band reads both.
       await withClock(Clock.fixed(DateTime(2026, 5, 4, 12)), () async {
         await tester.pumpWidget(
           build(
-            kind: AgentMaintenanceKind.project,
             automaticUpdates: true,
             state: makeTestState().copyWith(
               scheduledWakeAt: DateTime(2026, 5, 4, 12, 0, 45),
