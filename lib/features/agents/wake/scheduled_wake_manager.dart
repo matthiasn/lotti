@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
+import 'package:lotti/features/agents/wake/sync_lease_gate.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/services/domain_logging.dart';
 
@@ -48,6 +49,10 @@ class ScheduledWakeManager with AgentErrorLogging {
     this.beforeCheck,
     this.leaseSettle = const Duration(minutes: 3),
     this.leaseDuration = const Duration(minutes: 30),
+    this.syncGate,
+    this.requiresSyncGate,
+    this.exclusiveGroupOf,
+    this.syncGateRetry = const Duration(minutes: 1),
   });
 
   final AgentRepository _repository;
@@ -102,6 +107,30 @@ class ScheduledWakeManager with AgentErrorLogging {
   /// How long a claim stands before any device may take it over. Must exceed
   /// [leaseSettle], or a claim would lapse before it could be confirmed.
   final Duration leaseDuration;
+
+  /// Whether this device may claim or fire a leased record now — connected,
+  /// with its sync inbox drained — and how often its connection was lost.
+  final SyncLeaseGate? syncGate;
+
+  /// Leased records that go through [syncGate]: a claim is made and fired only
+  /// while it is open, and a claim the connection dropped under is re-made
+  /// instead of confirmed (`specs/tla/ProjectWakeGovernor.tla`,
+  /// `ConnectedClaims`).
+  final bool Function(ScheduledWakeEntity record)? requiresSyncGate;
+
+  /// Records that stand for one piece of work: of a group, only the earliest
+  /// pending record fires, and firing it consumes the rest. One project
+  /// agent's update slots are a group — two devices can arm different slots
+  /// for one change, and one run covers both (`EarliestSlot`).
+  final String? Function(ScheduledWakeEntity record)? exclusiveGroupOf;
+
+  /// How soon a record the closed [syncGate] held back is looked at again.
+  final Duration syncGateRetry;
+
+  /// The [SyncLeaseGate.epoch] each of this device's gated claims was made
+  /// in. A claim missing here — made before a restart — counts as made in an
+  /// earlier epoch and is re-made.
+  final _claimEpochs = <String, int>{};
 
   Timer? _timer;
   Timer? _settleTimer;
@@ -484,6 +513,10 @@ class ScheduledWakeManager with AgentErrorLogging {
           await _consumeFiredRecord(record, clock.now());
           continue;
         }
+        final group = exclusiveGroupOf?.call(record);
+        if (group != null && await _earlierPendingInGroup(record, group)) {
+          continue;
+        }
         final approved = await _leaseApprovedRecord(record, generation);
         if (approved == null) continue;
         // `stop()` can land while the lease check is awaiting the host lookup.
@@ -517,6 +550,10 @@ class ScheduledWakeManager with AgentErrorLogging {
                 !current.scheduledAt.isAtSameMomentAs(approved.scheduledAt))) {
           continue;
         }
+        // The gate again, at the last moment: the settle may have spanned a
+        // backlog arriving — a peer's consume of this very slot among it.
+        if (!await _gateOpen(approved, generation)) continue;
+        if (generation != _generation) continue;
         // Marked before the enqueue, not after: if the consume-write below
         // fails the record is still pending, and a re-run microseconds later
         // would fire it a second time — a transient write error must not
@@ -542,6 +579,8 @@ class ScheduledWakeManager with AgentErrorLogging {
         // (`specs/tla/ScheduledWakeLease.tla`, `NoLostWindow`).
         await _orchestrator.flushWakeIntents();
         await _consumeFiredRecord(record, firedAt);
+        _claimEpochs.remove(record.id);
+        if (group != null) await _consumeGroup(record, group, firedAt);
         enqueued++;
       } catch (e, s) {
         logError(
@@ -601,7 +640,16 @@ class ScheduledWakeManager with AgentErrorLogging {
     if (refreshed is! ScheduledWakeEntity) return null;
     if (refreshed.status != ScheduledWakeStatus.pending) return null;
     if (!refreshed.scheduledAt.isAtSameMomentAs(due.scheduledAt)) return null;
-    final record = refreshed;
+    if (!await _gateOpen(refreshed, generation)) return null;
+    // The gate can wait for the inbox to drain, which may have applied a
+    // peer's claim or consume: decide from the row as it is now.
+    final current = await _repository.getEntity(due.id);
+    if (current is! ScheduledWakeEntity ||
+        current.status != ScheduledWakeStatus.pending ||
+        !current.scheduledAt.isAtSameMomentAs(due.scheduledAt)) {
+      return null;
+    }
+    final record = current;
 
     final at = clock.now();
 
@@ -619,7 +667,7 @@ class ScheduledWakeManager with AgentErrorLogging {
       _scheduleRecheck(until.difference(at), generation);
       return null;
     }
-    if (held && record.leaseHostId == hostId) {
+    if (held && record.leaseHostId == hostId && !_claimTainted(record)) {
       // Claim time is derived from the deadline rather than read off
       // updatedAt: `leaseUntil` is written in UTC and so means the same
       // instant on every device, whereas updatedAt is serialized without an
@@ -639,6 +687,10 @@ class ScheduledWakeManager with AgentErrorLogging {
       return record;
     }
 
+    final gate = syncGate;
+    if (gate != null && (requiresSyncGate?.call(record) ?? false)) {
+      _claimEpochs[record.id] = gate.epoch;
+    }
     await _syncService.upsertEntity(
       record.copyWith(
         leaseHostId: hostId,
@@ -654,6 +706,60 @@ class ScheduledWakeManager with AgentErrorLogging {
     );
     _scheduleRecheck(leaseSettle, generation);
     return null;
+  }
+
+  bool _gated(ScheduledWakeEntity record) =>
+      syncGate != null && (requiresSyncGate?.call(record) ?? false);
+
+  /// Whether [record] may be claimed or fired now. A closed gate re-checks
+  /// the record after [syncGateRetry] rather than at the next hourly tick.
+  Future<bool> _gateOpen(ScheduledWakeEntity record, int generation) async {
+    if (!_gated(record)) return true;
+    if (await syncGate!.ready()) return true;
+    _log(
+      'sync gate closed for ${DomainLogger.sanitizeId(record.id)}: '
+      'offline or inbox not drained',
+    );
+    _scheduleRecheck(syncGateRetry, generation);
+    return false;
+  }
+
+  /// Whether this device's claim on [record] was made in an earlier
+  /// connectivity epoch — or before a restart — and so may not have reached
+  /// any peer: its settle proved nothing, and it is re-made.
+  bool _claimTainted(ScheduledWakeEntity record) =>
+      _gated(record) && _claimEpochs[record.id] != syncGate!.epoch;
+
+  /// Whether a pending record of [group] is due earlier than [record]; that
+  /// one fires first, and its firing consumes [record].
+  Future<bool> _earlierPendingInGroup(
+    ScheduledWakeEntity record,
+    String group,
+  ) async {
+    final pending = await _repository.getPendingScheduledWakeRecords();
+    return pending.any(
+      (other) =>
+          other.id != record.id &&
+          exclusiveGroupOf?.call(other) == group &&
+          other.scheduledAt.isBefore(record.scheduledAt),
+    );
+  }
+
+  /// Consumes the other pending records of [group]: the run [fired] queued
+  /// covers the work each of them stood for.
+  Future<void> _consumeGroup(
+    ScheduledWakeEntity fired,
+    String group,
+    DateTime at,
+  ) async {
+    final pending = await _repository.getPendingScheduledWakeRecords();
+    for (final other in pending) {
+      if (other.id == fired.id || exclusiveGroupOf?.call(other) != group) {
+        continue;
+      }
+      _claimEpochs.remove(other.id);
+      await _consumeFiredRecord(other, at);
+    }
   }
 
   /// Whether [agentId]'s identity is live (lifecycle `active`). A missing,

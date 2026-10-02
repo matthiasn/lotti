@@ -13,7 +13,9 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/wake/project_update_slots.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
+import 'package:lotti/features/agents/wake/sync_lease_gate.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
@@ -28,6 +30,7 @@ import '../test_utils.dart';
 import 'wake_device_bench.dart';
 
 part 'scheduled_wake_manager_model_conformance.dart';
+part 'scheduled_wake_manager_project_slots.dart';
 
 enum _GeneratedScheduledWakeStateKind {
   nonProjectNeverWoken,
@@ -3461,4 +3464,5 @@ void main() {
   });
 
   _registerLeaseModelConformance();
+  _registerProjectSlotRules();
 }

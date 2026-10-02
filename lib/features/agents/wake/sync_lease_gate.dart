@@ -18,14 +18,12 @@ import 'dart:async';
 /// the epoch never moves.
 class SyncLeaseGate {
   SyncLeaseGate({
-    required Future<bool> Function() syncEnabled,
-    required bool Function() connected,
+    required this._syncEnabled,
+    required this._connected,
     required Stream<bool> connectivityChanges,
-    required Future<void> Function(Duration timeout) waitForInboxDrained,
+    required this._waitForInboxDrained,
     this.drainTimeout = const Duration(minutes: 2),
-  }) : _syncEnabled = syncEnabled,
-       _connected = connected,
-       _waitForInboxDrained = waitForInboxDrained {
+  }) {
     _subscription = connectivityChanges.listen((online) {
       if (_online && !online) _epoch++;
       _online = online;

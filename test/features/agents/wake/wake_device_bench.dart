@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
+import 'package:lotti/features/agents/wake/sync_lease_gate.dart';
 import 'package:lotti/features/agents/wake/wake_intent_store.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
@@ -144,6 +145,9 @@ class WakeDevice {
     this.leaseSettle = const Duration(minutes: 3),
     this.leaseDuration = const Duration(minutes: 5),
     this.holdSteps = true,
+    this.syncGate,
+    this.requiresSyncGate,
+    this.exclusiveGroupOf,
   }) : settings = GatedSettings(held: holdSteps) {
     boot();
   }
@@ -158,6 +162,12 @@ class WakeDevice {
   final Duration leaseDuration;
   final bool holdSteps;
   final GatedSettings settings;
+
+  /// The manager's sync gate and the records that go through it, and the
+  /// groups of records one firing consumes (`ProjectWakeGovernor.tla`).
+  final SyncLeaseGate? syncGate;
+  final bool Function(ScheduledWakeEntity record)? requiresSyncGate;
+  final String? Function(ScheduledWakeEntity record)? exclusiveGroupOf;
 
   /// Run key to the scheduled-wake windows the job fires, for the life of
   /// the device (a restored job keeps its windows).
@@ -205,6 +215,9 @@ class WakeDevice {
       beforeCheck: before == null ? null : () => before(this),
       leaseSettle: leaseSettle,
       leaseDuration: leaseDuration,
+      syncGate: syncGate,
+      requiresSyncGate: requiresSyncGate,
+      exclusiveGroupOf: exclusiveGroupOf,
     )..start();
   }
 
