@@ -393,6 +393,138 @@ void main() {
     });
   });
 
+  group('DomainLogger.error stack-trace repeats', () {
+    late MockLoggingService mockLoggingService;
+    late DomainLogger logger;
+    late DateTime now;
+    final trace = StackTrace.fromString('#0  retry (package:lotti/x.dart:1)');
+
+    setUp(() {
+      mockLoggingService = MockLoggingService();
+      stubLoggingService(mockLoggingService);
+      logger = DomainLogger(loggingService: mockLoggingService);
+      now = DateTime(2026, 10, 2, 10);
+    });
+
+    void logAt(
+      DateTime at, {
+      Object error = 'M_NOT_FOUND',
+      String? subDomain = 'descriptorFetch',
+      StackTrace? stackTrace,
+    }) {
+      withClock(Clock.fixed(at), () {
+        logger.error(
+          LogDomain.sync,
+          error,
+          subDomain: subDomain,
+          stackTrace: stackTrace ?? trace,
+        );
+      });
+    }
+
+    List<(String, Object?)> captured() {
+      final values = verify(
+        () => mockLoggingService.captureException(
+          captureAny<Object>(),
+          domain: 'sync',
+          subDomain: any(named: 'subDomain'),
+          stackTrace: captureAny<Object?>(named: 'stackTrace'),
+        ),
+      ).captured;
+      return [
+        for (var i = 0; i < values.length; i += 2)
+          (values[i] as String, values[i + 1]),
+      ];
+    }
+
+    test('an identical repeat keeps its line but omits the trace', () {
+      logAt(now);
+      logAt(now.add(const Duration(seconds: 30)));
+      logAt(now.add(const Duration(minutes: 1)));
+
+      final calls = captured();
+      expect(calls[0], ('M_NOT_FOUND', trace));
+      expect(calls[1], (
+        'M_NOT_FOUND [stack trace omitted: repeat 1 of the trace logged at '
+            '2026-10-02T10:00:00.000]',
+        null,
+      ));
+      expect(calls[2].$1, contains('repeat 2 of the trace logged at'));
+      expect(calls[2].$2, isNull);
+    });
+
+    test('distinct errors, subDomains and stacks each log their trace', () {
+      final otherTrace = StackTrace.fromString('#0  other (package:lotti/y:1)');
+      logAt(now);
+      logAt(now, error: 'M_LIMIT_EXCEEDED');
+      logAt(now, subDomain: 'queue.apply');
+      logAt(now, stackTrace: otherTrace);
+
+      final calls = captured();
+      expect(calls.map((c) => c.$2), [trace, trace, trace, otherTrace]);
+      expect(calls.map((c) => c.$1), everyElement(isNot(contains('omitted'))));
+    });
+
+    test('the trace is logged again once the repeat window has passed', () {
+      logAt(now);
+      logAt(
+        now
+            .add(DomainLogger.errorTraceRepeatWindow)
+            .subtract(
+              const Duration(seconds: 1),
+            ),
+      );
+      logAt(now.add(DomainLogger.errorTraceRepeatWindow));
+      logAt(now.add(DomainLogger.errorTraceRepeatWindow * 1.5));
+
+      expect(captured().map((c) => c.$2), [trace, null, trace, null]);
+    });
+
+    test('a new calendar day logs the trace again inside the window', () {
+      logAt(DateTime(2026, 10, 2, 23, 59));
+      logAt(DateTime(2026, 10, 3, 0, 1));
+
+      expect(captured().map((c) => c.$2), [trace, trace]);
+    });
+
+    test('errors without a stack trace are never annotated', () {
+      withClock(Clock.fixed(now), () {
+        logger
+          ..error(LogDomain.sync, 'plain', subDomain: 'x')
+          ..error(LogDomain.sync, 'plain', subDomain: 'x');
+      });
+
+      final calls = captured();
+      expect(calls, [('plain', null), ('plain', null)]);
+    });
+
+    test('an evicted fingerprint logs its trace again', () {
+      logAt(now);
+      for (var i = 0; i < 256; i++) {
+        logAt(now, error: 'error $i');
+      }
+      logAt(now);
+
+      final calls = captured();
+      expect(calls.first.$2, trace);
+      expect(calls.last, ('M_NOT_FOUND', trace));
+    });
+
+    test('a recently repeated error is not the one evicted', () {
+      logAt(now);
+      for (var i = 0; i < 255; i++) {
+        logAt(now, error: 'error $i');
+      }
+      logAt(now);
+      logAt(now, error: 'one more');
+      logAt(now);
+
+      final calls = captured();
+      expect(calls.last.$2, isNull);
+      expect(calls.last.$1, contains('repeat 2'));
+    });
+  });
+
   // ---------------------------------------------------------------------------
   // _writeLine — non-test-env file-sink path (covers lines 36, 185-197)
   // ---------------------------------------------------------------------------
@@ -509,6 +641,35 @@ void main() {
       expect(content, contains('[ERROR]'));
       expect(content, contains('write failed'));
       expect(content, contains('disk full'));
+    });
+
+    test('identical repeats write each trace to each file once', () async {
+      final stackTrace = StackTrace.fromString(
+        '#0  repeated_frame (package:lotti/fake.dart:1:1)',
+      );
+      for (var i = 0; i < 3; i++) {
+        logger
+          ..error(LogDomain.agentRuntime, 'loop error', stackTrace: stackTrace)
+          ..error(LogDomain.sync, 'sync loop error', stackTrace: stackTrace);
+      }
+
+      await loggingService.flush();
+      // The general log and the full error mirror receive both domains.
+      const tracesPerFile = {
+        'agentRuntime-': 1,
+        'sync-': 1,
+        'error-2': 2,
+        'lotti-': 2,
+      };
+      for (final MapEntry(key: stem, value: traces) in tracesPerFile.entries) {
+        final content = findLogFile(stem)!.readAsStringSync();
+        expect(
+          'repeated_frame'.allMatches(content).length,
+          traces,
+          reason: stem,
+        );
+        expect(content, contains('[stack trace omitted: repeat 2'));
+      }
     });
 
     test('error appends stackTrace lines to domain log file', () async {
