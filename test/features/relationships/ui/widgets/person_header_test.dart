@@ -8,6 +8,7 @@ import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -237,7 +238,10 @@ void main() {
       tester,
     ) async {
       // The form behind the button reads GetIt: the shared setup, plus the
-      // category cache its category row consults.
+      // category cache its category row consults, and the agent store the
+      // relationship repository is built over — read only when a person is
+      // marked important, which opening the form never does, so a mock
+      // that refuses every call proves it.
       await setUpTestGetIt(
         additionalSetup: () {
           getIt
@@ -245,7 +249,8 @@ void main() {
               MockEntitiesCacheService(),
             )
             ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
-            ..registerSingleton<EditorStateService>(MockEditorStateService());
+            ..registerSingleton<EditorStateService>(MockEditorStateService())
+            ..registerSingleton<AgentDatabase>(MockAgentDatabase());
         },
       );
       addTearDown(tearDownTestGetIt);
