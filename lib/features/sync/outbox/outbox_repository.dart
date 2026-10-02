@@ -87,6 +87,19 @@ abstract class OutboxRepository {
   /// individual sends).
   Future<void> markRetryBatch(List<OutboxItem> items);
 
+  /// Flip every row in [items] straight to `error`, counting the attempt.
+  /// Used when the transport rejected the send by size: the same payload
+  /// fails the same way every time, so retrying it to the cap only delays
+  /// the head of the queue. The rows stay visible in the outbox monitor.
+  Future<void> markFailed(List<OutboxItem> items);
+
+  /// Return every row in [items] to the queue without counting an attempt —
+  /// the status a failed attempt would have left, `pending` below the cap
+  /// and `error` at it, but with `retries` unchanged. Used when a bundle was
+  /// too large as a whole: its rows go out one at a time instead, and the
+  /// bundle's failure says nothing about any single row.
+  Future<void> releaseClaims(List<OutboxItem> items);
+
   /// Delete rows with `status = sent` older than [retention]. Never
   /// touches `pending`, `sending`, or `error` — error rows are kept
   /// forever so persistent failures remain inspectable.
@@ -243,6 +256,47 @@ class DatabaseOutboxRepository implements OutboxRepository {
           OutboxCompanion(
             status: Value(newStatus),
             retries: Value(retries),
+            updatedAt: Value(now),
+          ),
+          where: (t) => t.id.equals(item.id),
+        );
+      }
+    });
+  }
+
+  @override
+  Future<void> markFailed(List<OutboxItem> items) async {
+    if (items.isEmpty) return;
+    final now = clock.now();
+    await _database.batch((batch) {
+      for (final item in items) {
+        batch.update(
+          _database.outbox,
+          OutboxCompanion(
+            status: Value(OutboxStatus.error.index),
+            retries: Value(item.retries + 1),
+            updatedAt: Value(now),
+          ),
+          where: (t) => t.id.equals(item.id),
+        );
+      }
+    });
+  }
+
+  @override
+  Future<void> releaseClaims(List<OutboxItem> items) async {
+    if (items.isEmpty) return;
+    final now = clock.now();
+    await _database.batch((batch) {
+      for (final item in items) {
+        // A folded-in `error` row is past the cap already and stays failed.
+        final status = item.retries < maxRetries
+            ? OutboxStatus.pending.index
+            : OutboxStatus.error.index;
+        batch.update(
+          _database.outbox,
+          OutboxCompanion(
+            status: Value(status),
             updatedAt: Value(now),
           ),
           where: (t) => t.id.equals(item.id),

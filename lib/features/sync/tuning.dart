@@ -109,8 +109,9 @@ class SyncTuning {
   /// The cap is a defence-in-depth signal: an outbox bundle of
   /// [outboxBundleMaxSize] text-only rows is expected to land well under this
   /// budget in production. If a bundle's gzipped manifest exceeds this size,
-  /// `MatrixMessageSender` aborts the send and the rows stay pending so the
-  /// next drain pass can re-claim a smaller batch.
+  /// the sender throws `SyncMessageTooLargeException` and `OutboxProcessor`
+  /// sends the bundle's rows one at a time instead; a single message whose
+  /// own payload exceeds it is dropped (status `error`).
   static const int outboxBundleMaxBytes = 8 * 1024 * 1024;
 
   /// Schema version for outbox bundle manifests. Bumped when the on-the-wire

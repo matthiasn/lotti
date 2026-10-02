@@ -647,7 +647,8 @@ class MatrixOutboxService extends _OutboxServiceBase
 
 /// Production [OutboxMessageSender] that delivers a queued [SyncMessage] over
 /// Matrix by delegating to [MatrixService.sendMatrixMsg]. The boolean it
-/// returns is the processor's retry signal.
+/// returns is the processor's retry signal; a `SyncMessageTooLargeException`
+/// it lets through is the processor's drop signal.
 class MatrixOutboxMessageSender implements OutboxMessageSender {
   MatrixOutboxMessageSender(this._matrixService);
 

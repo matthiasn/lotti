@@ -366,20 +366,6 @@ class MatrixService {
     );
   }
 
-  /// Sends a Matrix sync payload and records basic "sent" metrics.
-  ///
-  /// Every [`SyncMessage`] variant is mapped to a coarse message-type bucket:
-  /// `journalEntity`, `entityDefinition`, `entryLink`, `aiConfig`,
-  /// `aiConfigDelete`, `savedTaskFilter`, `savedTaskFilterDelete`, `configFlag`,
-  /// `themingSelection`, `dailyOsUserName`, `notification`,
-  /// `notificationStateUpdate`, `onboardingSnapshotBegin`,
-  /// `onboardingSnapshotAccepted`, `onboardingTerminalCounters`,
-  /// `onboardingSnapshotEnd`, `consumptionEvent`, `backfillRequest`,
-  /// `mediaRequest`, `agentWakeCoordination`, `backfillResponse`,
-  /// `agentEntity`, `agentLink`,
-  /// `agentBundle`, `outboxBundle`, and `syncNodeProfile`. When the SDK reports
-  /// a successful send, the corresponding counter is incremented and
-  /// debounced stats are emitted to the Matrix Stats UI.
   /// Completes once the ADR 0045 megolm rotation has run for this session.
   ///
   /// `OutboxService` reacts to `LoginState.loggedIn` independently of
@@ -392,6 +378,24 @@ class MatrixService {
   Future<void> ensureExclusionPolicyRotation() =>
       _megolmRotationGate ??= _ops.rotateOutboundSessionsForExclusionPolicy();
 
+  /// Sends a Matrix sync payload and records basic "sent" metrics.
+  ///
+  /// Every [`SyncMessage`] variant is mapped to a coarse message-type bucket:
+  /// `journalEntity`, `entityDefinition`, `entryLink`, `aiConfig`,
+  /// `aiConfigDelete`, `savedTaskFilter`, `savedTaskFilterDelete`, `configFlag`,
+  /// `themingSelection`, `dailyOsUserName`, `notification`,
+  /// `notificationStateUpdate`, `onboardingSnapshotBegin`,
+  /// `onboardingSnapshotAccepted`, `onboardingTerminalCounters`,
+  /// `onboardingSnapshotEnd`, `consumptionEvent`, `backfillRequest`,
+  /// `mediaRequest`, `deepBackfillInventory`, `deepBackfillRequest`,
+  /// `agentWakeCoordination`, `backfillResponse`, `agentEntity`, `agentLink`,
+  /// `agentBundle`, `outboxBundle`, and `syncNodeProfile`. When the SDK reports
+  /// a successful send, the corresponding counter is incremented and
+  /// debounced stats are emitted to the Matrix Stats UI.
+  ///
+  /// Returns `false` on a retryable failure. Lets
+  /// `SyncMessageTooLargeException` through when the payload can never fit
+  /// (see [MatrixMessageSender.sendMatrixMessage]).
   Future<bool> sendMatrixMsg(
     SyncMessage syncMessage, {
     String? myRoomId,
