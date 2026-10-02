@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart';
+import 'package:lotti/features/github/ui/task_pull_requests_section.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
@@ -360,6 +361,7 @@ void main() {
         for (final band in [
           find.byType(ChecklistsWidget),
           find.byType(LinkedTasksWidget),
+          find.byType(TaskPullRequestsSection),
         ]) {
           expect(reporterFor(tester, band).offscreenOnly, isTrue);
         }
@@ -391,10 +393,10 @@ void main() {
               .map((reporter) => reporter.key)
               .toList();
 
-          // Header, AI card, checklist, linked tasks — the AI card leads the
-          // page right below the identity header so a reader lands on "what
-          // is this task about" before the work sections.
-          expect(keys, hasLength(4));
+          // Header, AI card, checklist, linked tasks, pull requests — the AI
+          // card leads the page right below the identity header so a reader
+          // lands on "what is this task about" before the work sections.
+          expect(keys, hasLength(5));
           expect(keys.toSet(), hasLength(keys.length));
           expect(
             keys.map((key) => (key! as ValueKey<String>).value).toList(),
@@ -403,6 +405,7 @@ void main() {
               'ai-card-size-reporter-${task.meta.id}',
               'checklist-size-reporter-${task.meta.id}',
               'linked-tasks-size-reporter-${task.meta.id}',
+              'pull-requests-size-reporter-${task.meta.id}',
             ],
           );
         }

@@ -18,6 +18,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
 import '../../../mocks/mocks.dart';
+import '../../github/pull_request_fixtures.dart';
 import 'linked_entries_controller_test_helpers.dart';
 
 void main() {
@@ -103,6 +104,29 @@ void main() {
       // Assert
       expect(result, isFalse);
     });
+
+    test(
+      'returns false when the only links are tasks and pull requests, which '
+      'have their own sections',
+      () {
+        final container = ProviderContainer(
+          overrides: [
+            resolvedOutgoingLinkedEntriesProvider(testId).overrideWith(
+              (ref) => [
+                buildTask('linked-id-1'),
+                prEntry(clock: {'a': 1}),
+              ],
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        expect(
+          container.read(hasNonTaskLinkedEntriesProvider(testId)),
+          isFalse,
+        );
+      },
+    );
 
     test('returns false when all entries are Tasks', () {
       // Arrange

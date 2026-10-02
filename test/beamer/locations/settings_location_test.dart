@@ -185,6 +185,7 @@ void main() {
         '/settings/preferences',
         '/settings/advanced',
         '/settings/advanced/animations',
+        '/settings/advanced/github',
         '/settings/advanced/manual-language',
         '/settings/advanced/logging_domains',
         '/settings/advanced/system_health',

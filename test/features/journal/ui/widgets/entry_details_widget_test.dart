@@ -66,6 +66,7 @@ import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../ai_consumption/test_utils.dart';
 import '../../../design_system/test_utils.dart';
+import '../../../github/pull_request_fixtures.dart';
 
 // ---------------------------------------------------------------------------
 // Fake entry controllers used by the coverage tests below.
@@ -748,6 +749,39 @@ void main() {
         // Widget renders but the EntryDetailsContent is hidden (SizedBox.shrink)
         // so neither EntryDetailsContent nor ModernJournalCard should appear.
         expect(find.byType(EntryDetailsContent), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'a pull request is left to its own section on a task, and shown '
+      'elsewhere',
+      (tester) async {
+        final pr = prEntry(clock: {'a': 1}, snapshot: prSnapshot());
+        Future<void> pumpWith({required bool hideTaskEntries}) async {
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              ProviderScope(
+                overrides: [
+                  entryControllerProvider(pr.meta.id).overrideWith(
+                    () => _FakeEntryController(pr),
+                  ),
+                ],
+                child: EntryDetailsWidget(
+                  itemId: pr.meta.id,
+                  showAiEntry: false,
+                  hideTaskEntries: hideTaskEntries,
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+        }
+
+        await pumpWith(hideTaskEntries: true);
+        expect(find.byType(EntryDetailsContent), findsNothing);
+
+        await pumpWith(hideTaskEntries: false);
+        expect(find.byType(EntryDetailsContent), findsOneWidget);
       },
     );
 
