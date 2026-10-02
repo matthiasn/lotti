@@ -86,8 +86,10 @@ const recordedLocalBucketingRule = 'recordedLocal';
 /// which is what made two devices disagree about the same entry's week.
 ///
 /// The stamped `Metadata.utcOffset` is deliberately NOT consulted. It records
-/// the offset at *creation* time rather than at `dateFrom`, so a backfilled or
-/// cross-DST entry carries an offset that does not apply to its own timestamp;
+/// the offset of the entry's *latest stamp* — `createdAt`, then each
+/// `updatedAt` (ADR 0114) — rather than of `dateFrom`, so a backfilled,
+/// cross-DST or cross-zone-touched entry carries an offset that does not
+/// apply to its own timestamp;
 /// and it is absent on older entries, which would leave them on a different
 /// rule from everything else. The components need neither.
 DateTime recordedWallClock(DateTime start) => DateTime.utc(

@@ -114,19 +114,26 @@ bool relationshipEscalationStandsDown({
 /// briefing's is, and bumped a microsecond past the stamps the row already
 /// holds ([decisionStampAfter]), so an outcome written with knowledge of an
 /// earlier one outranks it even when another device's clock ran ahead. The
-/// failure streak is reset or bumped as before: it feeds the configuration
-/// backoff and the Stats tab, never a face.
+/// bump reaches the watermark only, forced back to UTC — a 1.1.35 peer's
+/// stamp is a local wall clock, and the bump would inherit its zone — and
+/// never the row's `updatedAt`, which stays the wall clock: it decides
+/// last-writer-wins for every field the join does not cover, and a row
+/// stamped hours ahead on a peer's clock would outrank every concurrent
+/// write of them for as long. The failure streak is reset or bumped as
+/// before: it feeds the configuration backoff and the Stats tab, never a
+/// face.
 AgentStateEntity relationshipWakeOutcome(
   AgentStateEntity state, {
   required DateTime now,
   required bool succeeded,
 }) {
-  final at = decisionStampAfter(now.toUtc(), [
+  final endedAt = now.toUtc();
+  final at = decisionStampAfter(endedAt, [
     state.lastWakeAt,
     state.lastWakeFailedAt,
-  ]);
+  ]).toUtc();
   return state.copyWith(
-    updatedAt: at,
+    updatedAt: endedAt,
     lastWakeAt: succeeded ? at : state.lastWakeAt,
     lastWakeFailedAt: succeeded ? state.lastWakeFailedAt : at,
     consecutiveFailureCount: succeeded ? 0 : state.consecutiveFailureCount + 1,

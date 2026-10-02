@@ -460,6 +460,57 @@ void main() {
       }
     });
 
+    test("the derivation names the check-in's calendar day beside its "
+        'instant — the day key a reader names a day from, which the offset '
+        'beside the entry cannot move', () async {
+      // Saved at 00:30 on the 18th and since touched from Tokyo, so the
+      // entry carries +09:00 beside components written at +02:00
+      // (`updateMetadata` stamps the toucher's offset): the instant shifts
+      // with the offset, the day does not — and neither depends on the
+      // zone that parsed the components.
+      final berlin = tz.getLocation('Europe/Berlin');
+      final tokyo = tz.getLocation('Asia/Tokyo');
+      for (final parsed in [
+        tz.TZDateTime(berlin, 2026, 8, 18, 0, 30),
+        tz.TZDateTime(tokyo, 2026, 8, 18, 0, 30),
+      ]) {
+        when(
+          () => relationshipRepository.getAllCheckInsForRelationship(
+            relationshipId,
+          ),
+        ).thenAnswer(
+          (_) async => [checkIn('c-1', parsed, utcOffset: 540)],
+        );
+
+        final derivation = await phaseA.deriveCadenceFacts(
+          agentId: agentId,
+          relationship: relationship(),
+          now: DateTime.utc(2026, 8, 20, 12),
+        );
+
+        expect(
+          derivation.lastCheckInDay,
+          DateTime.utc(2026, 8, 18),
+          reason: '$parsed',
+        );
+        expect(derivation.lastCheckInAt, DateTime.utc(2026, 8, 17, 15, 30));
+        expect(derivation.dueDayUtc, DateTime.utc(2026, 8, 25));
+      }
+
+      when(
+        () => relationshipRepository.getAllCheckInsForRelationship(
+          relationshipId,
+        ),
+      ).thenAnswer((_) async => []);
+      final none = await phaseA.deriveCadenceFacts(
+        agentId: agentId,
+        relationship: relationship(),
+        now: DateTime.utc(2026, 8, 20, 12),
+      );
+      expect(none.lastCheckInDay, isNull);
+      expect(none.lastCheckInAt, isNull);
+    });
+
     test('the escalation workspace key and its deadline are minted from the '
         'same UTC day, across a month boundary', () async {
       final reference = DateTime.utc(2026, 8, 28, 22);
@@ -950,6 +1001,7 @@ void main() {
       cadenceDays: 7,
       referenceAt: DateTime.utc(2026, 8, 15),
       lastCheckInAt: DateTime.utc(2026, 8, 15),
+      lastCheckInDay: DateTime.utc(2026, 8, 15),
       lastEvidenceAt: evidenceAt,
       lastEvidenceKey: relationshipEvidenceKey(evidenceAt),
       dueDayUtc: DateTime.utc(2026, 8, 22),
@@ -1029,6 +1081,7 @@ void main() {
       cadenceDays: 7,
       referenceAt: DateTime.utc(2026, 8, 15),
       lastCheckInAt: DateTime.utc(2026, 8, 15),
+      lastCheckInDay: DateTime.utc(2026, 8, 15),
       lastEvidenceAt: DateTime.utc(2026, 8, 15, 7, 20),
       lastEvidenceKey: '20260815T092000000',
       dueDayUtc: DateTime.utc(2026, 8, 22),

@@ -8,6 +8,7 @@ import 'package:lotti/classes/relationship_trigger_tokens.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
+import 'package:lotti/features/relationships/model/relationship_calendar.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/workflow/relationship_facts_renderer.dart';
 
@@ -79,6 +80,7 @@ void main() {
   RelationshipCadenceDerivation derivation({
     RelationshipCadenceStatus status = RelationshipCadenceStatus.ok,
     DateTime? lastCheckInAt,
+    DateTime? lastCheckInDay,
     DateTime? lastEvidenceAt,
   }) => (
     status: status,
@@ -86,6 +88,9 @@ void main() {
     cadenceDays: 7,
     referenceAt: lastCheckInAt ?? testDate,
     lastCheckInAt: lastCheckInAt,
+    lastCheckInDay:
+        lastCheckInDay ??
+        (lastCheckInAt == null ? null : relationshipCalendarDay(lastCheckInAt)),
     lastEvidenceAt: lastEvidenceAt ?? lastCheckInAt,
     lastEvidenceKey: null,
     dueDayUtc: DateTime.utc(2026, 8, 21),
@@ -327,6 +332,30 @@ void main() {
     expect(facts, contains('desiredIntervalDays: 7'));
     expect(facts, contains('status: ok'));
     expect(facts, contains('lastCheckIn: 2026-08-14'));
+    expect(facts, contains('daysSinceLastCheckIn: 2'));
+  });
+
+  test("lastCheckIn is the check-in's calendar day, not its instant's — a "
+      'check-in logged at 00:30 in Tokyo is the 18th on every device, '
+      'though its instant falls on the 17th west of there', () {
+    // The instant is read through the offset beside the entry, which a
+    // touch from another zone moves; the day key is read off the stored
+    // components and cannot be moved. Discriminates on any host west of
+    // Tokyo, UTC runners included: `toLocal()` on the instant names the
+    // 17th there and counts three days.
+    final facts = renderer.render(
+      relationship: relationship(),
+      derivation: derivation(
+        lastCheckInAt: DateTime.utc(2026, 8, 17, 15, 30),
+        lastCheckInDay: DateTime.utc(2026, 8, 18),
+      ),
+      checkIns: [checkIn('c-1', DateTime(2026, 8, 18, 0, 30))],
+      linkedTasks: const [],
+      previousReport: null,
+      nudges: const [],
+      now: DateTime(2026, 8, 20, 10),
+    );
+    expect(facts, contains('lastCheckIn: 2026-08-18'));
     expect(facts, contains('daysSinceLastCheckIn: 2'));
   });
 

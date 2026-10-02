@@ -55,12 +55,16 @@ times as the code does. Against the code at `a0f9af57f`, TLC finds:
     (`relationshipCalendarDay`): the day the writer saw on their own
     calendar, the same on every device;
   - its **instant** is the components rebuilt through the entry's own
-    `utcOffset` (`relationshipStoredInstant`), the moment the writer meant.
+    `utcOffset` (`relationshipStoredInstant`): the moment the writer meant
+    for the stamp the offset was written beside, and for any other stamp
+    the same moment on every device.
 
   Never `.toUtc()` on a stored value. The due day is the reference's
   calendar day plus the cadence, counted on day keys
   (`relationshipDueDay`); the register's `referenceAt` and `lastCheckInAt`
-  are stored instants. The lapse is still detected at UTC midnight of the
+  are stored instants, and the facts the model reads take the check-in's
+  day from its day key (`lastCheckInDay`), never from the instant. The
+  lapse is still detected at UTC midnight of the
   due day — one instant for every device — which keeps the register's
   status convergent. The UI's due date and overdue count use the same day
   arithmetic (`cadenceDueDate`, `cadenceOverdueDays`), so the list, the
@@ -94,11 +98,14 @@ times as the code does. Against the code at `a0f9af57f`, TLC finds:
   another zone may read it as stale once more and refresh it once; after
   that every briefing is read alike. Reports have no offset to recover an
   older stamp with, and a second refresh is the cheaper repair.
-- The cadence tick converges on one instant a day fleet-wide: the resolver
-  keeps the later deadline, so the westernmost device's 07:00 wins and an
-  eastern device's re-arm is a dominated write, not a disagreement. Which
-  hour the €0 tick runs at does not matter; that every device reads the
-  same hour does.
+- The cadence tick's deadline is one instant every device reads alike. It
+  is not one tick a day fleet-wide: concurrent re-arms are decided by the
+  later deadline, but a causal re-arm by whichever device ran the tick
+  replaces it with that device's own 07:00, so the deadline may move
+  between zones and a day may see a tick from each. Harmless — the tick is
+  free, and the escalation it arms is keyed by episode. Which hour the €0
+  tick runs at does not matter; that every device reads one deadline alike
+  does.
 - Whether the cadence should count from `importantSince` rather than the
   person's `dateFrom` (the plan's R-10) is a product choice this ADR does
   not make; the model carries both.

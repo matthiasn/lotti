@@ -264,6 +264,7 @@ void main() {
         expect(metadata.updatedAt, at);
         expect(metadata.dateFrom, at);
         expect(metadata.utcOffset, at.timeZoneOffset.inMinutes);
+        expect(metadata.timezone, at.timeZoneName);
       });
 
       test(
@@ -369,7 +370,10 @@ void main() {
           utcOffset: 540,
           timezone: 'Asia/Tokyo',
         );
-        final at = DateTime(2024, 6, 1, 12);
+        // Mid-winter, so on a host with DST the fixed clock's zone name
+        // differs from the wall clock's for half the year, and reading the
+        // zone off the wall clock would show.
+        final at = DateTime(2024, 1, 15, 12);
 
         final updated = await withClock(
           Clock.fixed(at),
@@ -378,8 +382,9 @@ void main() {
 
         expect(updated.updatedAt, at);
         expect(updated.utcOffset, at.timeZoneOffset.inMinutes);
-        expect(updated.timezone, DateTime.now().timeZoneName);
-        expect(updated.timezone, isNot('Asia/Tokyo'));
+        // The zone, too, is read off the ambient clock the test holds, not
+        // off the wall clock.
+        expect(updated.timezone, at.timeZoneName);
       });
 
       test('preserves original values when not specified', () async {

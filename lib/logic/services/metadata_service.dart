@@ -67,7 +67,7 @@ class MetadataService {
       labelIds: labelIds,
       categoryId: categoryId,
       starred: starred,
-      timezone: await getLocalTimezone(),
+      timezone: await getLocalTimezone(clock: clock.now),
       utcOffset: now.timeZoneOffset.inMinutes,
       flag: flag,
     );
@@ -119,7 +119,7 @@ class MetadataService {
     return metadata.copyWith(
       updatedAt: now,
       utcOffset: now.timeZoneOffset.inMinutes,
-      timezone: await getLocalTimezone(),
+      timezone: await getLocalTimezone(clock: clock.now),
       vectorClock: await _vectorClockService.getNextVectorClock(
         previous: metadata.vectorClock,
         payload: (

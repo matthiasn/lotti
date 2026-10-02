@@ -53,7 +53,10 @@ success" has no meaning without an order between devices.
   (`relationshipWakeOutcome`, through `updateAgentState`): in UTC, as the
   briefing is, and a microsecond past the stamps the row already holds
   (`decisionStampAfter`), so an outcome written with knowledge of an earlier
-  one outranks it even when another device's clock ran ahead.
+  one outranks it even when another device's clock ran ahead. The bump
+  reaches the watermark only; the row's `updatedAt` stays the wall clock,
+  since it decides last-writer-wins for every field the join does not
+  cover.
 - **The failure count stays last-writer-wins and decides no face.** It
   feeds the configuration backoff and the Stats tab. The card reads
   `lastWakeFailed`. The maintenance pass (`_resumeConfiguredEscalations`)

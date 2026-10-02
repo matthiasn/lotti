@@ -898,8 +898,9 @@ Four decisions keep multi-device runs convergent (ADR 0059 Decision 2):
   the newest check-in's calendar day plus `cadenceDays`, counted on day
   keys (`relationshipDueDay`) rather than by adding hours, so DST moves
   nothing; the register's `referenceAt` and `lastCheckInAt` are stored
-  instants; the lapse is detected at UTC midnight of the due day, one
-  instant for every device. This is not cosmetic: derived through the
+  instants, and the facts the model reads take the check-in's day from its
+  day key (`lastCheckInDay`), never from the instant; the lapse is detected
+  at UTC midnight of the due day, one instant for every device. This is not cosmetic: derived through the
   reader's zone, a check-in near midnight gave two devices two due days,
   the register's `dueAt` differed per device so the two rewrote it at each
   other on every sync, and the episode key below minted one escalation per
@@ -1336,9 +1337,10 @@ workflow, through `relationshipWakeOutcome`): `lastWakeAt` on success,
 on and returned before inference — and the failure streak reset or bumped
 beside them. The two stamps are watermarks every device joins by latest
 instant (`mergeAgentStateCounters`), stamped in UTC and a microsecond past
-the stamps the row already holds (`decisionStampAfter`), so the failed face
-is the same on every device: a failure counts while nothing newer
-completed. It was read from `consecutiveFailureCount`, last-writer-wins
+the stamps the row already holds (`decisionStampAfter`) — the row's own
+`updatedAt` stays the wall clock, since it decides last-writer-wins for the
+fields the join does not cover — so the failed face is the same on every
+device: a failure counts while nothing newer completed. It was read from `consecutiveFailureCount`, last-writer-wins
 with the row, stamped with the wake's *start*: a short failure elsewhere
 that began after a long success began outranked it, and a later unrelated
 write of the row carried one device's stale count over another's good

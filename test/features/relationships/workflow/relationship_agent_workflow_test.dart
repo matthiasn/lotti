@@ -23,6 +23,7 @@ import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
+import 'package:lotti/features/relationships/model/relationship_calendar.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/workflow/relationship_agent_contract.dart';
@@ -751,6 +752,9 @@ void main() {
       cadenceDays: 7,
       referenceAt: testDate,
       lastCheckInAt: lastEvidenceAt,
+      lastCheckInDay: lastEvidenceAt == null
+          ? null
+          : relationshipCalendarDay(lastEvidenceAt),
       lastEvidenceAt: lastEvidenceAt,
       lastEvidenceKey: lastEvidenceKey,
       dueDayUtc: DateTime.utc(2026, 8, 8),
@@ -3014,7 +3018,8 @@ void main() {
     test('a stamp written with knowledge of a newer stamp lands a microsecond '
         'past it — a peer whose clock ran ahead cannot outrank an outcome '
         'that supersedes it', () {
-      final ahead = DateTime.utc(2026, 8, 16, 12, 30);
+      // Half an hour past this wake's end on any host, whatever its zone.
+      final ahead = now.toUtc().add(const Duration(minutes: 30));
       final state = stateRow(lastWakeFailedAt: ahead);
       final success = relationshipWakeOutcome(
         state,
@@ -3023,6 +3028,10 @@ void main() {
       );
       expect(success.lastWakeAt, ahead.add(const Duration(microseconds: 1)));
       expect(success.lastWakeFailed, isFalse);
+      // The row's own stamp stays the wall clock: it decides last-writer-wins
+      // for every field the join does not cover, and must not jump ahead on
+      // a peer's clock.
+      expect(success.updatedAt, now.toUtc());
       final failure = relationshipWakeOutcome(
         stateRow(lastWakeAt: ahead),
         now: now,
@@ -3033,6 +3042,25 @@ void main() {
         ahead.add(const Duration(microseconds: 1)),
       );
       expect(failure.lastWakeFailed, isTrue);
+      expect(failure.updatedAt, now.toUtc());
+    });
+
+    test('a bump past a peer stamp written as local wall clock (1.1.35) '
+        'still lands in UTC — the watermark never inherits the zone it '
+        'supersedes', () {
+      final aheadLocal = now.add(const Duration(minutes: 30));
+      expect(aheadLocal.isUtc, isFalse);
+      final success = relationshipWakeOutcome(
+        stateRow(lastWakeFailedAt: aheadLocal),
+        now: now,
+        succeeded: true,
+      );
+      expect(success.lastWakeAt!.isUtc, isTrue);
+      expect(
+        success.lastWakeAt,
+        aheadLocal.add(const Duration(microseconds: 1)).toUtc(),
+      );
+      expect(success.updatedAt, now.toUtc());
     });
 
     test('a wake that finds no model to run on is stamped as failed too — '

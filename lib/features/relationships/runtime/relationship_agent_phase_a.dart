@@ -47,12 +47,25 @@ typedef RelationshipCadenceDerivation = ({
   /// `dateFrom`, or the person's own when there is none, rebuilt from the
   /// stored components and the entry's `utcOffset`
   /// ([relationshipStoredInstant]) so every device derives the same instant
-  /// — see the normalization note in `deriveCadenceFacts`.
+  /// — see the normalization note in `deriveCadenceFacts`. The same on
+  /// every device, but not always the instant the writer meant: the offset
+  /// is the entry's latest stamp's (`updateMetadata`), so a touch from
+  /// another zone moves this by the zones' difference, once, everywhere.
+  /// The register carries it; nothing names a day from it — a day is
+  /// [lastCheckInDay], which the offset cannot move.
   DateTime referenceAt,
 
   /// The newest check-in's instant, in UTC, read like [referenceAt]; null
   /// when there is no check-in.
   DateTime? lastCheckInAt,
+
+  /// The newest check-in's calendar day, as a midnight-UTC day key: the day
+  /// its stored `dateFrom` components name ([relationshipCalendarDay]), the
+  /// day the writer saw, from which [dueDayUtc] counts. Exact on every
+  /// device whatever offset sits beside the entry, so this — never
+  /// [lastCheckInAt] — is what a reader names a day from. Null when there is
+  /// no check-in.
+  DateTime? lastCheckInDay,
 
   /// When the evidence last changed, as a UTC instant: the newest
   /// `updatedAt` among the person's check-ins, reconstructed from its stored
@@ -447,6 +460,9 @@ class RelationshipAgentPhaseA {
               newest.meta.dateFrom,
               newest.meta.utcOffset,
             ),
+      lastCheckInDay: newest == null
+          ? null
+          : relationshipCalendarDay(newest.meta.dateFrom),
       lastEvidenceAt: lastEvidenceAt,
       lastEvidenceKey: lastEvidenceKey,
       dueDayUtc: dueDayUtc,
@@ -525,7 +541,11 @@ class RelationshipAgentPhaseA {
   /// the refresh waits for the transcript, or for its timeout when it never
   /// comes. A transcript that does land saves the check-in again, which
   /// mints a new, earlier-due refresh; this one then finds the briefing
-  /// fresh and ends at €0.
+  /// fresh and ends at €0. The timeout counts from the recording's
+  /// `createdAt`, read through the offset of the entry's latest stamp:
+  /// exact until a wordless recording is touched from another zone, which
+  /// moves the deadline by the zones' difference — a bound on the wait,
+  /// the same on every device, not a disagreement.
   Future<DateTime?> _pendingTranscriptDeadline(
     String relationshipId, {
     required DateTime? since,
@@ -574,11 +594,14 @@ class RelationshipAgentPhaseA {
 /// The deadline is written in UTC. The record syncs, and a local 07:00
 /// serialized without an offset is read as 07:00 in every zone, so the one
 /// shared record named a different instant on every device and each tick
-/// rewrote it in its own zone. As an instant it is the same everywhere; the
-/// resolver keeps the later one, so devices in different zones settle on
-/// one tick a day at the westernmost 07:00, and an eastern device's re-arm
-/// is a dominated write rather than a disagreement. Which hour the €0 tick
-/// runs at does not matter; that every device reads the same hour does.
+/// rewrote it in its own zone. As an instant it is the same everywhere:
+/// concurrent re-arms are decided by the later deadline, and a causal
+/// re-arm by whichever device ran the tick replaces it with that device's
+/// own 07:00 — so the one deadline may move between zones, and a day may
+/// see a tick from each. Harmless: the tick is free, and the escalation it
+/// arms is keyed by episode, so a second tick of the same day arms nothing
+/// twice. Which hour the €0 tick runs at does not matter; that every
+/// device reads one deadline alike does.
 AgentDomainEntity relationshipCadenceWake(String agentId, DateTime now) {
   final today = DateTime(now.year, now.month, now.day, relationshipCadenceHour);
   // Calendar components, not a Duration: adding 24 elapsed hours across a
