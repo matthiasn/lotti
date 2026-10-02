@@ -82,11 +82,10 @@ jobs:
             # dependency lockfile (the Matrix SDK and drift live there), and
             # the Matrix harness itself. Everything else waits for the
             # weekly scheduled run. The test/ helpers the harness executes
-            # are listed — they almost never change, so they cost nothing.
-            # test/mocks/mocks.dart is not: most pushes add a mock to it, the
-            # harness only instantiates three behaviour-free mocks from it,
-            # and `flutter analyze` (which covers integration_test/ on every
-            # push) catches a mock that is renamed or removed.
+            # are listed too: mocks.dart carries default behaviour the
+            # harness relies on (`withVcScope` passthrough, the empty
+            # `updateStream`), and nearly every push that edits it already
+            # touches a path above, so it costs almost nothing.
             sync:
               - '.github/workflows/flutter-matrix-test.yml'
               - 'pubspec.lock'
@@ -102,6 +101,7 @@ jobs:
               - 'integration_test/helpers/**'
               - 'integration_test/docker/**'
               - 'integration_test/*.sh'
+              - 'test/mocks/mocks.dart'
               - 'test/utils/utils.dart'
               - 'test/test_resources/test_audio_data.dart'
               - 'test/widget_test_utils.dart'

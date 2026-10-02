@@ -110,9 +110,9 @@ feature's `sync/`), the database layer (`lib/database`, any feature's
 `database/`), persistence logic (`lib/logic`), the shared model classes
 (`lib/classes`), `pubspec.lock`, the Matrix harness and the `test/` helpers it
 executes, or the workflow itself changed — not for release version bumps or
-other features. `test/mocks/mocks.dart` is left out: most pushes add a mock to
-it, the harness only instantiates three behaviour-free mocks from it, and
-`flutter analyze` covers `integration_test/` on every push. The journal persistence test runs when
+other features. The helpers include `test/mocks/mocks.dart`, whose default
+mock behaviour (the `withVcScope` passthrough, the empty `updateStream`) the
+harness relies on. The journal persistence test runs when
 shared core (dependencies, `lib/classes`, `lib/services`, `lib/utils`, the
 GetIt wiring, the Linux runner, the workflow), the database, persistence or
 journal code, or the tutorial harness and fixtures it boots the app with
