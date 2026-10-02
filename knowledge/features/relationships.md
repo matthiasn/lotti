@@ -12,6 +12,10 @@ sources:
     resource: ../../specs/tla/RelationshipAgentLifecycle.tla
     title: The person, their agent and every writer of its lifecycle, model-checked
     last_modified: 2026-09-30
+  - id: tla-cadence
+    resource: ../../specs/tla/RelationshipCadence.tla
+    title: The check-in cadence derived on devices in different time zones, model-checked
+    last_modified: 2026-10-02
   - id: adr-0111
     resource: ../../docs/adr/0111-a-tracked-person-keeps-their-agent.md
     title: ADR 0111 — a tracked person keeps their agent
@@ -870,12 +874,23 @@ Four decisions keep multi-device runs convergent (ADR 0059 Decision 2):
   hides private entries.
 - **Every derived day is a UTC calendar day.** The due day is
   `UTC-day(referenceAt) + cadenceDays`, computed with calendar components
-  rather than a `Duration` — UTC has no DST, so the arithmetic is exact and
-  the answer is the same in every timezone. Deriving it through the device's
-  local calendar is not cosmetic: the register's `dueAt` would differ per
-  device, so two peers would rewrite it at each other on every sync, and the
-  episode key below would mint one escalation per timezone and pay for the
-  same lapse twice.
+  rather than a `Duration` — UTC has no DST, so the arithmetic is exact.
+  Deriving it through the device's local calendar is not cosmetic: the
+  register's `dueAt` would differ per device, so two peers would rewrite it
+  at each other on every sync, and the episode key below would mint one
+  escalation per timezone and pay for the same lapse twice. The intent is
+  one answer in every timezone; the code does not deliver it yet.
+  `referenceAt` is a check-in's `dateFrom`, stored as the writer's
+  wall-clock components without an offset, and `.toUtc()` parses them in
+  the reader's zone — so for a check-in near midnight, two devices in
+  different zones derive different due days, and the register and the
+  escalations do exactly what this paragraph warns of.
+  `specs/tla/RelationshipCadence.tla` reproduces it (`DueDayAgreed`,
+  `EscalationKeyIsTheDueDay`, `RegisterStable`), along with a touch from
+  another zone that keeps the creation `utcOffset` and so names the wrong
+  evidence instant, and a briefing whose `createdAt` is written in local
+  time and read elsewhere as another instant; the fixes are the plan's
+  R-03 and R-11g.
 - **The register is recomputed wholesale, never accumulated**, carries the
   vector clock of the row it read, and is skipped entirely when identical —
   so the uneventful daily tick is a true no-write no-op.

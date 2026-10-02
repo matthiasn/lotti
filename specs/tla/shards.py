@@ -189,6 +189,9 @@ SECONDS = {
     "RelationshipAgentLifecycleHardDelete": 280,
     "RelationshipAgentLifecyclePause": 15,
     "RelationshipAgentLifecycleStop": 250,
+    # Local runs on ten workers (base 100 s, 10.2M states); refresh from CI.
+    "RelationshipCadence": 100,
+    "RelationshipCadenceEnroll": 2,
 }
 
 # Pessimistic, so an unmeasured configuration is not piled onto a full shard.
