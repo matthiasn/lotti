@@ -4,6 +4,70 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.37]
+
+### Added
+
+- **A daily wake limit for project agents.** Each project agent may run at most
+  ten times a day by default, counted across all your devices; Agent internals
+  shows how much of today's limit is used and lets you choose another limit.
+  Once it is reached, automatic updates pause until tomorrow and the panel says
+  so. Update now keeps working, up to twice the limit.
+
+### Fixed
+
+- **Project agents woke on their own even with Automatic updates switched
+  off.** A project agent that had never had the switch touched showed it off,
+  yet ran its analysis whenever its project changed — in the worst case
+  hundreds of times a day, each run a paid model call. The switch now means
+  what it shows: off is off.
+- **Pausing an agent now stops it at once.** Pause, Destroy and Delete used to
+  stop only future triggers; a wake already queued could still start, and one
+  already running kept paying for further model turns until it finished. Now
+  queued work is dropped and a running wake stops before its next model call,
+  on every device the pause reaches.
+- **A revoked or invalid API key no longer keeps the app retrying.** Goal and
+  relationship briefings and Daily OS transcriptions retried a refused key
+  every few minutes or on every check, forever; they now wait for the key to be
+  fixed. The error says the key was refused instead of "rate limit exceeded".
+- **Switching Automatic updates on no longer always starts a paid update.** It
+  now runs one only when the report is missing or out of date.
+- **Weekly planning totals stopped updating on a device that had been upgraded
+  from an older version.** That older version had stored each week's totals as
+  a placeholder it could not read. After the upgrade, every update to those
+  totals arriving from another device failed against the placeholder and was
+  dropped after a few retries. The placeholder is now replaced by the full
+  totals when they arrive.
+- **A sync item whose attachment was deleted from the server no longer stays
+  stuck retrying forever.** When the sync server had already purged the file
+  an incoming item depended on, the app kept retrying it every 30 seconds for
+  as long as it ran, filling the sync log with the same error. It now skips
+  such an item as soon as the server reports the file gone, and gives up on
+  any item whose file has still not appeared after a full day of retrying.
+- **A device that fell far behind could fail to ask for the entries it was
+  missing.** When it noticed hundreds of missing entries at once, it put them
+  all into one request that was too large to send. Every attempt failed the
+  same way until the request was dropped, so those entries could stay missing.
+  Large requests are now split into pieces that each fit.
+- **A sync message too large to send no longer holds up the queue, or takes
+  other changes down with it.** Sync tried such a message ten times, although
+  it could never fit, before marking it as failed. When it travelled in a
+  batch with other changes, every change in that batch failed with it. A
+  message that is too large now fails at once, and a batch that is too large
+  goes out one change at a time, so only a change that cannot fit on its own
+  is marked as failed in the outbox.
+- **A manual full sync backfill could hang for seconds before it started.**
+  Each batch of missing entries was found by reading the whole sync history
+  instead of only the entries still waiting to arrive, which took over four
+  seconds on a long-used desktop. It now reads only those entries.
+- **The Sync health page kept querying the database after you switched to
+  another tab.** On desktop the page stays loaded in the background, and it
+  went on re-counting every synced table once a second and re-reading the sync
+  statistics every 30 seconds — for hours, competing with sync for the
+  database. It now pauses while it is out of sight and refreshes as soon as
+  you come back. While it is open, the record counts are re-read only for the
+  types that actually changed.
+
 ## [1.1.36]
 
 ### Added
