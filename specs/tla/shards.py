@@ -217,6 +217,9 @@ SECONDS = {
     "EmbeddingFreshnessTwo": 65,
     "ConversationLoop": 10,
     "ConversationLoopConcurrent": 11,
+    # Local runs on ten workers (base 100 s, 10.2M states); refresh from CI.
+    "RelationshipCadence": 100,
+    "RelationshipCadenceEnroll": 2,
 }
 
 # Pessimistic, so an unmeasured configuration is not piled onto a full shard.
