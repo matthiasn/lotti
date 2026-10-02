@@ -75,6 +75,7 @@ import '../../../../widget_test_utils.dart';
 import '../../../agents/test_data/change_set_factories.dart';
 import '../../../agents/test_data/entity_factories.dart';
 import '../../../daily_os_next/screenshot_harness.dart';
+import '../../shown_items_stub.dart';
 import '../pages/task_details_page_test_helpers.dart';
 
 class _ManualRunningInferenceController extends InferenceStatusController {
@@ -441,6 +442,12 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       return world.entityById(id);
     });
+    // A checklist shows the items whose back-link names it, read in bulk
+    // (readShownChecklistItems, ADR 0105), so both reads come from the world.
+    final rowsById = {
+      for (final entity in world.journalEntities) entity.meta.id: entity,
+    };
+    stubShownChecklistReads(mocks.journalDb, () => rowsById);
     when(
       () => mocks.journalDb.getCategoryById(manualDemoCategoryId),
     ).thenAnswer((_) async => world.category);
