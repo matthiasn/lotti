@@ -428,7 +428,8 @@ extension _AgentHandlers on SyncEventProcessor {
     if ((incoming.kind != 'task_agent' && incoming.kind != 'project_agent') ||
         (incoming.config.automaticUpdatesEnabled != null &&
             incoming.config.inferenceSetup != null &&
-            incoming.config.maxWakesPerDay != null)) {
+            incoming.config.maxWakesPerDay != null &&
+            incoming.config.updateIntervalMinutes != null)) {
       return incoming;
     }
     if (local is! AgentIdentityEntity) return incoming;
@@ -442,9 +443,13 @@ extension _AgentHandlers on SyncEventProcessor {
     // silently reset a user's lower limit to the default on every device.
     final maxWakesPerDay =
         incoming.config.maxWakesPerDay ?? local.config.maxWakesPerDay;
+    final updateIntervalMinutes =
+        incoming.config.updateIntervalMinutes ??
+        local.config.updateIntervalMinutes;
     if (automaticUpdatesEnabled == incoming.config.automaticUpdatesEnabled &&
         inferenceSetup == incoming.config.inferenceSetup &&
-        maxWakesPerDay == incoming.config.maxWakesPerDay) {
+        maxWakesPerDay == incoming.config.maxWakesPerDay &&
+        updateIntervalMinutes == incoming.config.updateIntervalMinutes) {
       return incoming;
     }
     return incoming.copyWith(
@@ -452,6 +457,7 @@ extension _AgentHandlers on SyncEventProcessor {
         automaticUpdatesEnabled: automaticUpdatesEnabled,
         inferenceSetup: inferenceSetup,
         maxWakesPerDay: maxWakesPerDay,
+        updateIntervalMinutes: updateIntervalMinutes,
       ),
     );
   }
