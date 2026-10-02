@@ -17,6 +17,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 
 part 'outbox_enqueue_writer_agent.dart';

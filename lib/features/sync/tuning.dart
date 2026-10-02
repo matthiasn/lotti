@@ -118,6 +118,17 @@ class SyncTuning {
   /// unknown versions and rely on the surrounding outbox-row retry to
   /// re-deliver under a future-compatible code path.
   static const int outboxBundleManifestVersion = 1;
+
+  /// Byte budget for the JSON of a `SyncBackfillRequest` sent as a single
+  /// inline Matrix event. The Matrix SDK rejects a send whose request body
+  /// exceeds 60 000 bytes (`EventTooLarge`). The JSON is base64-encoded into
+  /// the event body (×4/3), and Megolm base64-encodes the encrypted event
+  /// again (×4/3, plus a few hundred bytes of envelope), so 30 000 JSON bytes
+  /// land near 54 000 on the wire. A real request entry costs about 67 bytes,
+  /// so one event carries roughly 440 entries; observed failures began at
+  /// 500. The outbox enqueue writer splits larger requests at this budget.
+  static const int maxInlineBackfillRequestJsonBytes = 30000;
+
   static const Duration outboxRetryDelay = Duration(seconds: 5);
   static const Duration outboxErrorDelay = Duration(seconds: 15);
   static const int outboxMaxRetriesDiagnostics = 10; // surface issues w/o loops

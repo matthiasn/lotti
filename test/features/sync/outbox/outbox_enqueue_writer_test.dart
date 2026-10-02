@@ -4,7 +4,7 @@ import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 
-import 'package:drift/drift.dart' show Value;
+import 'package:drift/drift.dart' show OrderingTerm, Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_link.dart';
@@ -23,6 +23,7 @@ import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
@@ -831,6 +832,90 @@ void main() {
       },
     );
 
+    // A 500-entry request failed every send with EventTooLarge and was dropped
+    // at the outbox retry cap; 385 entries fitted. Real host ids and counters.
+    test(
+      'splits a request too large for one inline event into ordered rows '
+      'that each fit the inline budget',
+      () async {
+        final writer = realWriter();
+        final entries = [
+          for (var i = 0; i < 2000; i++)
+            BackfillRequestEntry(
+              hostId: i.isEven
+                  ? '35ffc425-ff2d-4b08-9dae-a2788cceded5'
+                  : '6d4abd2d-814c-4346-ba01-0aa318a2fd7c',
+              counter: 358017 + i,
+            ),
+        ];
+        final message = SyncBackfillRequest(
+          entries: entries,
+          requesterId: 'requester',
+        );
+
+        await writer.enqueueBackfillRequest(
+          msg: message,
+          commonFields: _commonFields(message, priority: 2),
+        );
+
+        final rows = await (db.select(
+          db.outbox,
+        )..orderBy([(t) => OrderingTerm.asc(t.id)])).get();
+        expect(rows.length, greaterThan(4));
+        final sent = <BackfillRequestEntry>[];
+        for (final row in rows) {
+          final jsonBytes = utf8.encode(row.message).length;
+          expect(
+            jsonBytes,
+            lessThanOrEqualTo(SyncTuning.maxInlineBackfillRequestJsonBytes),
+          );
+          // The inline body is base64 of this JSON; 500 entries reached
+          // ~45 000 base64 bytes and overflowed once encrypted.
+          expect(
+            base64.encode(utf8.encode(row.message)).length,
+            lessThanOrEqualTo(40000),
+          );
+          expect(row.payloadSize, jsonBytes);
+          expect(row.priority, 2);
+          expect(row.status, OutboxStatus.pending.index);
+          final decoded =
+              SyncMessage.fromJson(
+                    jsonDecode(row.message) as Map<String, dynamic>,
+                  )
+                  as SyncBackfillRequest;
+          expect(decoded.requesterId, 'requester');
+          expect(
+            row.subject,
+            'backfillRequest:batch:${decoded.entries.length}',
+          );
+          sent.addAll(decoded.entries);
+        }
+        expect(sent, entries);
+        expect(await db.getPendingBackfillEntries(), hasLength(2000));
+      },
+    );
+
+    test(
+      'keeps a request within the budget as its single original row',
+      () async {
+        final writer = realWriter();
+        const message = SyncBackfillRequest(
+          entries: [BackfillRequestEntry(hostId: 'host', counter: 1)],
+          requesterId: 'requester',
+        );
+        final commonFields = _commonFields(message);
+
+        await writer.enqueueBackfillRequest(
+          msg: message,
+          commonFields: commonFields,
+        );
+
+        final rows = await db.select(db.outbox).get();
+        expect(rows.single.message, commonFields.message.value);
+        expect(rows.single.subject, 'backfillRequest:batch:1');
+      },
+    );
+
     Future<void> enqueueAgentAt(OutboxEnqueueWriter writer, int counter) {
       final msg =
           SyncMessage.agentEntity(
@@ -1139,5 +1224,59 @@ void main() {
         );
       }
     }
+  });
+
+  group('splitBackfillRequestEntries', () {
+    int jsonBytes(SyncBackfillRequest request, List<BackfillRequestEntry> c) =>
+        utf8.encode(json.encode(request.copyWith(entries: c))).length;
+
+    test('yields one empty chunk for a request without entries', () {
+      const request = SyncBackfillRequest(entries: [], requesterId: 'r');
+      expect(splitBackfillRequestEntries(request), [
+        <BackfillRequestEntry>[],
+      ]);
+    });
+
+    test('packs each chunk as full as the budget allows, in order', () {
+      final entries = [
+        for (var i = 0; i < 25; i++)
+          BackfillRequestEntry(hostId: 'host-$i', counter: i * 997),
+      ];
+      final request = SyncBackfillRequest(entries: entries, requesterId: 'r');
+      final maxJsonBytes = jsonBytes(request, entries.take(4).toList()) + 3;
+
+      final chunks = splitBackfillRequestEntries(
+        request,
+        maxJsonBytes: maxJsonBytes,
+      );
+
+      expect(chunks.length, greaterThan(1));
+      expect(chunks.expand((c) => c).toList(), entries);
+      for (var i = 0; i < chunks.length; i++) {
+        expect(jsonBytes(request, chunks[i]), lessThanOrEqualTo(maxJsonBytes));
+        if (i < chunks.length - 1) {
+          // Adding the next chunk's first entry would overflow the budget.
+          expect(
+            jsonBytes(request, [...chunks[i], chunks[i + 1].first]),
+            greaterThan(maxJsonBytes),
+          );
+        }
+      }
+    });
+
+    test('gives an entry larger than the budget a chunk of its own', () {
+      const request = SyncBackfillRequest(
+        entries: [
+          BackfillRequestEntry(hostId: 'a', counter: 1),
+          BackfillRequestEntry(hostId: 'b', counter: 2),
+        ],
+        requesterId: 'r',
+      );
+
+      expect(splitBackfillRequestEntries(request, maxJsonBytes: 1), [
+        [const BackfillRequestEntry(hostId: 'a', counter: 1)],
+        [const BackfillRequestEntry(hostId: 'b', counter: 2)],
+      ]);
+    });
   });
 }

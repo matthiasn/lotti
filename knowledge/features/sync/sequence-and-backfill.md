@@ -479,9 +479,21 @@ in the [formal model scope](../../../specs/tla/README.md#syncpipeline--the-compo
 # Requesting
 
 `BackfillRequestService` sends bounded batches of missing counters on a
-2-minute interval (`backfillRequestInterval`, up to `backfillMaxRequestCount`
-= 10 per batch), supports a manual full historical backfill, and can re-request
-entries previously requested but never resolved.
+2-minute interval (`backfillRequestInterval`, up to
+`backfillProcessingBatchSize` = 2000 per pass, each counter requested at most
+`backfillMaxRequestCount` = 10 times), supports a manual full historical
+backfill, and can re-request entries previously requested but never resolved.
+
+A pass's batch is not necessarily one Matrix event. A request travels inline
+— base64 JSON in the event body, then Megolm-encrypted — and the Matrix SDK
+rejects a send body over 60 000 bytes with `EventTooLarge`, a deterministic
+failure the outbox would retry until its cap dropped the row. The outbox
+enqueue writer therefore splits a request whose JSON exceeds
+`SyncTuning.maxInlineBackfillRequestJsonBytes` (30 000, about 440 entries)
+into consecutive rows in one transaction (`splitBackfillRequestEntries`, exact
+byte accounting, order kept). Each row's subject records its own entry count,
+and the pending-request filter reads every `backfillRequest:` row, so the
+pieces dedupe like one request.
 
 Ordinary `missing` rows retain the 10-minute ordering debounce. Fresh origin
 heads use the bounded discovery path above without that debounce. A queue-drain
