@@ -16354,4 +16354,31 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
+
+  @override
+  String get agentWakeBudgetLabel => 'Denní limit probuzení';
+
+  @override
+  String agentWakeBudgetValue(int count) {
+    return '$count denně';
+  }
+
+  @override
+  String agentWakeBudgetUsage(int used, int max) {
+    return 'Dnes využito $used z $max';
+  }
+
+  @override
+  String get agentWakeBudgetExhausted =>
+      'Limit dosažen — automatické aktualizace pokračují zítra';
+
+  @override
+  String get agentWakeBudgetHelp =>
+      'Automatické aktualizace se po dosažení limitu zastaví. Aktualizovat teď funguje dál, až do dvojnásobku limitu.';
+
+  @override
+  String get agentWakeBudgetDecrease => 'Snížit denní limit';
+
+  @override
+  String get agentWakeBudgetIncrease => 'Zvýšit denní limit';
 }

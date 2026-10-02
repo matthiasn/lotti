@@ -16150,4 +16150,31 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Spring over';
+
+  @override
+  String get agentWakeBudgetLabel => 'Daglig grænse for vækninger';
+
+  @override
+  String agentWakeBudgetValue(int count) {
+    return '$count pr. dag';
+  }
+
+  @override
+  String agentWakeBudgetUsage(int used, int max) {
+    return '$used af $max brugt i dag';
+  }
+
+  @override
+  String get agentWakeBudgetExhausted =>
+      'Grænsen er nået — automatiske opdateringer fortsætter i morgen';
+
+  @override
+  String get agentWakeBudgetHelp =>
+      'Automatiske opdateringer stopper, når grænsen er nået. Opdater nu virker stadig, op til det dobbelte af grænsen.';
+
+  @override
+  String get agentWakeBudgetDecrease => 'Sænk den daglige grænse';
+
+  @override
+  String get agentWakeBudgetIncrease => 'Hæv den daglige grænse';
 }

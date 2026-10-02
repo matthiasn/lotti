@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/agent_sidecar_reclaimer.dart';
 import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/agents/wake/wake_budget.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
@@ -381,6 +382,29 @@ class AgentService {
       name: 'AgentService',
     );
   }
+
+  /// Sets how many wakes [agentId] may run per day, on every device.
+  ///
+  /// The limit lives on the identity, so it syncs with it; [maxWakesPerDay]
+  /// is clamped into the range every device enforces. Returns `false` when
+  /// the agent does not exist.
+  Future<bool> updateMaxWakesPerDay(String agentId, int maxWakesPerDay) =>
+      syncService.runInTransaction(() async {
+        final identity = await getAgent(agentId);
+        if (identity == null) return false;
+        final clamped = maxWakesPerDay.clamp(
+          WakeBudget.minMaxWakesPerDay,
+          WakeBudget.maxMaxWakesPerDay,
+        );
+        if (identity.config.maxWakesPerDay == clamped) return true;
+        await syncService.upsertEntity(
+          identity.copyWith(
+            config: identity.config.copyWith(maxWakesPerDay: clamped),
+            updatedAt: clock.now(),
+          ),
+        );
+        return true;
+      });
 
   /// Returns `true` when the agent was found and its lifecycle was updated,
   /// `false` when the agent does not exist.

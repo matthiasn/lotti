@@ -16305,4 +16305,31 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Pular';
+
+  @override
+  String get agentWakeBudgetLabel => 'Limite diário de despertares';
+
+  @override
+  String agentWakeBudgetValue(int count) {
+    return '$count por dia';
+  }
+
+  @override
+  String agentWakeBudgetUsage(int used, int max) {
+    return '$used de $max usados hoje';
+  }
+
+  @override
+  String get agentWakeBudgetExhausted =>
+      'Limite atingido — as atualizações automáticas retomam amanhã';
+
+  @override
+  String get agentWakeBudgetHelp =>
+      'As atualizações automáticas param quando o limite é atingido. Atualizar agora continua a funcionar, até ao dobro do limite.';
+
+  @override
+  String get agentWakeBudgetDecrease => 'Baixar o limite diário';
+
+  @override
+  String get agentWakeBudgetIncrease => 'Subir o limite diário';
 }

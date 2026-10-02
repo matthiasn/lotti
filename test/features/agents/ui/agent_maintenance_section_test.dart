@@ -13,6 +13,7 @@ import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/icon_tokens.dart';
+import 'package:lotti/features/sync/g_counter.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -51,14 +52,19 @@ void main() {
     ResolvedAgentSetup? setup,
     MockTaskAgentService? taskAgentService,
     MockProjectAgentService? projectAgentService,
+    MockAgentService? agentService,
     AgentMaintenanceKind kind = AgentMaintenanceKind.task,
+    int? maxWakesPerDay,
   }) {
     return RiverpodWidgetTestBench(
       mediaQueryData: const MediaQueryData(size: Size(900, 800)),
       overrides: [
         agentIdentityProvider.overrideWith(
           (ref, id) async => makeTestIdentity(
-            config: AgentConfig(automaticUpdatesEnabled: automaticUpdates),
+            config: AgentConfig(
+              automaticUpdatesEnabled: automaticUpdates,
+              maxWakesPerDay: maxWakesPerDay,
+            ),
           ),
         ),
         agentStateProvider.overrideWith((ref, id) async => state),
@@ -82,6 +88,8 @@ void main() {
           projectAgentServiceProvider.overrideWith(
             (ref) => projectAgentService,
           ),
+        if (agentService != null)
+          agentServiceProvider.overrideWith((ref) => agentService),
       ],
       child: SingleChildScrollView(
         child: AgentMaintenanceSection(
@@ -93,6 +101,82 @@ void main() {
   }
 
   group('AgentMaintenanceSection', () {
+    group('daily wake limit', () {
+      final today = DateTime(2026, 10, 2, 9);
+
+      testWidgets('a project band shows today\'s usage counted across '
+          'devices', (tester) async {
+        await withClock(Clock.fixed(today), () async {
+          await tester.pumpWidget(
+            build(
+              kind: AgentMaintenanceKind.project,
+              maxWakesPerDay: 5,
+              state: makeTestState().copyWith(
+                dailyWakes: const GCounter({
+                  '2026-10-02|desktop': 2,
+                  '2026-10-02|phone': 1,
+                  '2026-10-01|desktop': 9,
+                }),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('3 of 5 used today'), findsOneWidget);
+          expect(find.text('5 per day'), findsOneWidget);
+        });
+      });
+
+      testWidgets('a task band has no limit row', (tester) async {
+        await tester.pumpWidget(build());
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const ValueKey('agentWakeBudgetRow')), findsNothing);
+      });
+
+      testWidgets('stepping the limit writes it through the agent service', (
+        tester,
+      ) async {
+        final agentService = MockAgentService();
+        when(
+          () => agentService.updateMaxWakesPerDay(any(), any()),
+        ).thenAnswer((_) async => true);
+
+        await tester.pumpWidget(
+          build(
+            kind: AgentMaintenanceKind.project,
+            agentService: agentService,
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('10 per day'), findsOneWidget);
+
+        await tester.tap(find.byKey(const ValueKey('agentWakeBudgetDecrease')));
+        await tester.pumpAndSettle();
+
+        verify(() => agentService.updateMaxWakesPerDay(agentId, 5)).called(1);
+      });
+
+      testWidgets('a failed write tells the user', (tester) async {
+        final agentService = MockAgentService();
+        when(
+          () => agentService.updateMaxWakesPerDay(any(), any()),
+        ).thenAnswer((_) async => throw StateError('database locked'));
+
+        await tester.pumpWidget(
+          build(
+            kind: AgentMaintenanceKind.project,
+            agentService: agentService,
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('agentWakeBudgetIncrease')));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Error'), findsWidgets);
+      });
+    });
+
     testWidgets('carries the schedule, the switch and the model identity', (
       tester,
     ) async {

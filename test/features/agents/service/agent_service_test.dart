@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
+import 'package:lotti/features/agents/wake/wake_budget.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
@@ -808,6 +809,66 @@ void main() {
         ).called(1);
         verifyNever(() => mockSyncService.upsertEntity(any()));
         expect(notifiedAgentIds, ['daily_os_planner']);
+      });
+    });
+
+    group('updateMaxWakesPerDay', () {
+      test('writes the limit on the synced identity', () async {
+        final identity = makeTestIdentity(id: 'agent-1', agentId: 'agent-1');
+        when(
+          () => mockRepository.getEntity('agent-1'),
+        ).thenAnswer((_) async => identity);
+
+        final updated = await withClock(
+          Clock.fixed(DateTime(2026, 10, 2, 9)),
+          () => service.updateMaxWakesPerDay('agent-1', 5),
+        );
+
+        expect(updated, isTrue);
+        final written =
+            verify(
+                  () => mockSyncService.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentIdentityEntity;
+        expect(written.config.maxWakesPerDay, 5);
+        expect(written.updatedAt, DateTime(2026, 10, 2, 9));
+      });
+
+      test('clamps a value outside the enforced range', () async {
+        when(() => mockRepository.getEntity('agent-1')).thenAnswer(
+          (_) async => makeTestIdentity(id: 'agent-1', agentId: 'agent-1'),
+        );
+
+        await service.updateMaxWakesPerDay('agent-1', 1000);
+
+        final written =
+            verify(
+                  () => mockSyncService.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentIdentityEntity;
+        expect(written.config.maxWakesPerDay, WakeBudget.maxMaxWakesPerDay);
+      });
+
+      test('does not write when the limit is unchanged', () async {
+        when(() => mockRepository.getEntity('agent-1')).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: 'agent-1',
+            agentId: 'agent-1',
+            config: const AgentConfig(maxWakesPerDay: 5),
+          ),
+        );
+
+        expect(await service.updateMaxWakesPerDay('agent-1', 5), isTrue);
+        verifyNever(() => mockSyncService.upsertEntity(any()));
+      });
+
+      test('reports a missing agent', () async {
+        when(
+          () => mockRepository.getEntity('missing'),
+        ).thenAnswer((_) async => null);
+
+        expect(await service.updateMaxWakesPerDay('missing', 5), isFalse);
+        verifyNever(() => mockSyncService.upsertEntity(any()));
       });
     });
 

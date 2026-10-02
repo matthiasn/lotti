@@ -16056,6 +16056,33 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
+
+  @override
+  String get agentWakeBudgetLabel => 'Daily wake limit';
+
+  @override
+  String agentWakeBudgetValue(int count) {
+    return '$count per day';
+  }
+
+  @override
+  String agentWakeBudgetUsage(int used, int max) {
+    return '$used of $max used today';
+  }
+
+  @override
+  String get agentWakeBudgetExhausted =>
+      'Limit reached — automatic updates resume tomorrow';
+
+  @override
+  String get agentWakeBudgetHelp =>
+      'Automatic updates stop once the limit is reached. Update now still works, up to twice the limit.';
+
+  @override
+  String get agentWakeBudgetDecrease => 'Lower the daily limit';
+
+  @override
+  String get agentWakeBudgetIncrease => 'Raise the daily limit';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

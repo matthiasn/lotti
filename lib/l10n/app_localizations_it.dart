@@ -16351,4 +16351,31 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Salta!';
+
+  @override
+  String get agentWakeBudgetLabel => 'Limite giornaliero di sveglie';
+
+  @override
+  String agentWakeBudgetValue(int count) {
+    return '$count al giorno';
+  }
+
+  @override
+  String agentWakeBudgetUsage(int used, int max) {
+    return '$used di $max usate oggi';
+  }
+
+  @override
+  String get agentWakeBudgetExhausted =>
+      'Limite raggiunto: gli aggiornamenti automatici riprendono domani';
+
+  @override
+  String get agentWakeBudgetHelp =>
+      'Gli aggiornamenti automatici si fermano al raggiungimento del limite. Aggiorna ora funziona ancora, fino al doppio del limite.';
+
+  @override
+  String get agentWakeBudgetDecrease => 'Abbassa il limite giornaliero';
+
+  @override
+  String get agentWakeBudgetIncrease => 'Alza il limite giornaliero';
 }
