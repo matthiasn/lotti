@@ -58,7 +58,7 @@ jobs:
             # persistence test drives through the app shell, and the tutorial
             # harness that boots that app on real databases, with the test
             # fixtures it imports.
-            database: &database
+            database:
               - *core
               - 'lib/database/**'
               - 'lib/features/*/database/**'
@@ -76,17 +76,24 @@ jobs:
               - 'test/helpers/fallbacks.dart'
               - 'test/helpers/manual_demo_world.dart'
               - 'test/mocks/mocks.dart'
-            # Sync sits on top of the database layer, so it includes all of
-            # it, plus the sync features and what the Matrix harness imports.
+            # The Matrix suites only, which are slow: the sync features, the
+            # database layer and persistence logic they write through, the
+            # shared model classes that travel as sync payloads, the
+            # dependency lockfile (the Matrix SDK and drift live there), and
+            # the Matrix harness itself. Everything else waits for the
+            # weekly scheduled run. Test helpers the harness imports from
+            # test/ are not listed: `flutter analyze` covers integration_test/
+            # on every push, so a helper change that breaks the harness fails
+            # there first.
             sync:
-              - *database
+              - '.github/workflows/flutter-matrix-test.yml'
+              - 'pubspec.lock'
+              - 'lib/classes/**'
+              - 'lib/database/**'
+              - 'lib/features/*/database/**'
+              - 'lib/logic/**'
               - 'lib/features/sync/**'
               - 'lib/features/*/sync/**'
-              - 'test/features/sync/**'
-              - 'test/features/*/sync/**'
-              - 'test/vector_clock*_test.dart'
-              - 'test/test_resources/test_audio_data.dart'
-              - 'test/utils/utils.dart'
               - 'integration_test/matrix_service_test.dart'
               - 'integration_test/matrix_test_room.dart'
               - 'integration_test/sync_resilience_test.dart'
