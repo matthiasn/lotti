@@ -182,6 +182,7 @@ void main() {
         expect(relationshipCalendarDaysBetween(from, to), span);
         expect(relationshipDueDay(from, span), relationshipCalendarDay(to));
       },
+      tags: 'glados',
     );
   });
 }
