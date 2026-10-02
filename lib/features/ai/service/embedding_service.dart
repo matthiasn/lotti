@@ -135,7 +135,10 @@ class EmbeddingService {
     if (error is! EmbeddingEndpointUnavailableException) {
       final attempts = (_failedAttempts[entityId] ?? 0) + 1;
       if (attempts >= maxFailedAttempts) {
+        // Also out of the retry set: an earlier failure may have parked it
+        // there, and the timer would otherwise try it once more.
         _failedAttempts.remove(entityId);
+        _retryEntityIds.remove(entityId);
         return;
       }
       _failedAttempts[entityId] = attempts;

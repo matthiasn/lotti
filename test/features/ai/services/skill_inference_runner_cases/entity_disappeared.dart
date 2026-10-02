@@ -58,7 +58,12 @@ extension _EntityDisappearedCases on _SkillInferenceTestSetup {
 
           // The StateError is caught by _withStatusTracking and forwarded to
           // the logging service — no entity update must have been attempted.
-          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+          verifyNever(
+            () => mockJournalRepo.updateJournalEntity(
+              any(),
+              onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+            ),
+          );
           verify(
             () => mockLoggingService.error(
               LogDomain.ai,

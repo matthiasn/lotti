@@ -85,9 +85,10 @@ conversation.
   `canContinue()` is `turnCount < maxTurns`, checked after each user turn is
   added, so one send makes at most `maxTurns - 1` requests after its opening
   turn. Wakes pass `maxTurnsPerWake` (10 by default); evolution sessions keep
-  the default of 20. The count is per conversation: a send made after the loop
-  used every turn — the task agent's forced `update_report` retry — is refused
-  at once.
+  the default of 20. The count is per conversation, so a send made after the
+  loop used every turn would be refused at once. The task and event agents'
+  forced `update_report` retry therefore passes `turnBudget: 1`: its own limit,
+  counted from its own message, in place of `maxTurns`.
 - **The history is trimmed to `maxHistorySize`** (100) whenever a user turn is
   added: the system prompt, a truncation notice, and the newest messages,
   cut so the retained tail opens on a user turn. A cut inside a tool round

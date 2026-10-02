@@ -14,21 +14,24 @@
 (* gives up on onError (CheckInTranscriptionService).                     *)
 (*                                                                         *)
 (* The entity is its stored text, the transcripts in its history          *)
-(* (`persisted`, by the run that wrote each), and the peer's component of *)
-(* its vector clock. A peer's synced edit raises that component; a write  *)
-(* derived from a re-read taken before it is concurrent with the stored   *)
-(* row, and JournalDb.updateJournalEntity refuses it. A local user edit   *)
-(* only raises this host's counter, which the run's own write passes, so  *)
-(* the run's write is applied over it.                                    *)
+(* (`persisted`, by the run that wrote each; `appends` counts how often), *)
+(* the peer's component of its vector clock, and its stored version       *)
+(* (`ver`), which every stored write moves. A peer's synced edit raises   *)
+(* the peer component; a write derived from a re-read taken before it is  *)
+(* concurrent with the stored row, and JournalDb.updateJournalEntity      *)
+(* refuses it. A local user edit only raises this host's counter, which   *)
+(* the run's own write passes — unless the write is guarded on the        *)
+(* version it was built on.                                               *)
 (*                                                                         *)
 (*   Request     runTranscription: the entity's first read (step 1); with *)
 (*               SingleFlight, TranscriptionRuns joins a run in flight    *)
 (*   Infer(Fail) the provider call and _recordAttributedConsumption       *)
 (*               (steps 5-6); a provider error surfaces as a failure     *)
 (*   Reread      EntityStateHelper.getCurrentEntityState (step 7)         *)
-(*   Write       JournalRepository.updateJournalEntity, which returns     *)
-(*               false both on a vector-clock refusal and on a throw it   *)
-(*               logged; then _finalizeAttribution                        *)
+(*   Write       JournalRepository.updateJournalEntity(onlyIfUnchanged),  *)
+(*               which returns false on a refusal and on a throw it       *)
+(*               logged — including a throw after the row was stored;    *)
+(*               then _finalizeAttribution                                *)
 (*   Summary     _maybeRunAudioSummary                                    *)
 (*   Return      the caller after the call: the agent nudge, onError      *)
 (*   WaiterSees  the check-in waiter re-reading on a notification         *)
@@ -46,9 +49,12 @@
 (*                      flight joins it instead of paying for another     *)
 (*   KeepConcurrentEdit text edited since the run's first read is kept;   *)
 (*                      the transcript still joins the history            *)
-(* and one residual, not a fix:                                           *)
-(*   EditInWriteWindow  a local edit may land between the re-read and the *)
-(*                      write, which the run's write then passes          *)
+(*   GuardedWrite       the write applies only while the stored row is   *)
+(*                      the version it was built on; before, a local edit *)
+(*                      between the re-read and the write was overwritten *)
+(*   IdempotentRetry    a re-read that already holds the transcript       *)
+(*                      counts as saved: it is not appended again, and    *)
+(*                      after the last attempt it is not reported lost    *)
 (***************************************************************************)
 EXTENDS Naturals, FiniteSets
 
@@ -56,7 +62,7 @@ CONSTANTS N, Nudger, Waiter,
           PeerEditBudget, UserEditBudget, InferFailBudget, ThrowBudget,
           MaxAttempts,
           CheckWrite, RetryConflict, SettleOnOutcome, SingleFlight,
-          KeepConcurrentEdit, EditInWriteWindow
+          KeepConcurrentEdit, GuardedWrite, IdempotentRetry
 
 Runs == 1..N
 ASSUME Nudger \in Runs /\ Waiter \in Runs /\ MaxAttempts >= 1
@@ -80,13 +86,18 @@ Registered == {"infer", "reread", "write", "summary"}
 (* A paid inference, or the write of its result, is under way. *)
 InFlight == {"infer", "reread", "write"}
 
-VARIABLES pc, owner, firstText, firstEdits, readText, readPeer, refusals,
-          outcome, cause, attr, status, text, peer, persisted, summarized,
-          nudged, waiter, editLost, peerEdits, userEdits, inferFails, throws
+VARIABLES pc, owner, firstText, firstEdits, readText, readPeer, readVer,
+          refusals, outcome, cause, attr, status, text, peer, ver, persisted,
+          appends, summarized, nudged, waiter, editLost, peerEdits,
+          userEdits, inferFails, throws
 
-vars == <<pc, owner, firstText, firstEdits, readText, readPeer, refusals,
-          outcome, cause, attr, status, text, peer, persisted, summarized,
-          nudged, waiter, editLost, peerEdits, userEdits, inferFails, throws>>
+vars == <<pc, owner, firstText, firstEdits, readText, readPeer, readVer,
+          refusals, outcome, cause, attr, status, text, peer, ver, persisted,
+          appends, summarized, nudged, waiter, editLost, peerEdits,
+          userEdits, inferFails, throws>>
+
+(* What only the write path changes. *)
+writeVars == <<ver, appends, readVer>>
 
 EditsMade == peerEdits + userEdits
 
@@ -97,6 +108,7 @@ Init ==
     /\ firstEdits = [r \in Runs |-> 0]
     /\ readText = [r \in Runs |-> 0]
     /\ readPeer = [r \in Runs |-> 0]
+    /\ readVer = [r \in Runs |-> 0]
     /\ refusals = [r \in Runs |-> 0]
     /\ outcome = [r \in Runs |-> "none"]
     /\ cause = [r \in Runs |-> "none"]
@@ -104,7 +116,9 @@ Init ==
     /\ status = "idle"
     /\ text = 0
     /\ peer = 0
+    /\ ver = 0
     /\ persisted = {}
+    /\ appends = [r \in Runs |-> 0]
     /\ summarized = {}
     /\ nudged = {}
     /\ waiter = "off"
@@ -130,6 +144,7 @@ Request(r) ==
             /\ firstEdits' = [firstEdits EXCEPT ![r] = EditsMade]
             /\ status' = "running"
             /\ UNCHANGED owner
+    /\ UNCHANGED writeVars
     /\ UNCHANGED <<readText, readPeer, refusals, outcome, cause, attr, text,
                    peer, persisted, summarized, nudged, editLost, peerEdits,
                    userEdits, inferFails, throws>>
@@ -149,6 +164,7 @@ Infer(r) ==
     /\ pc[r] = "infer"
     /\ pc' = [pc EXCEPT ![r] = "reread"]
     /\ attr' = [attr EXCEPT ![r] = "open"]
+    /\ UNCHANGED writeVars
     /\ UNCHANGED <<owner, firstText, firstEdits, readText, readPeer, refusals,
                    outcome, cause, status, text, peer, persisted, summarized,
                    nudged, waiter, editLost, peerEdits, userEdits, inferFails,
@@ -158,6 +174,7 @@ InferFail(r) ==
     /\ pc[r] = "infer" /\ inferFails < InferFailBudget
     /\ Fail(r, "infer")
     /\ inferFails' = inferFails + 1
+    /\ UNCHANGED writeVars
     /\ UNCHANGED <<owner, firstText, firstEdits, readText, readPeer, refusals,
                    text, peer, persisted, summarized, nudged, waiter,
                    editLost, peerEdits, userEdits, throws>>
@@ -167,9 +184,11 @@ Reread(r) ==
     /\ pc' = [pc EXCEPT ![r] = "write"]
     /\ readText' = [readText EXCEPT ![r] = text]
     /\ readPeer' = [readPeer EXCEPT ![r] = peer]
+    /\ readVer' = [readVer EXCEPT ![r] = ver]
     /\ UNCHANGED <<owner, firstText, firstEdits, refusals, outcome, cause,
-                   attr, status, text, peer, persisted, summarized, nudged,
-                   waiter, editLost, peerEdits, userEdits, inferFails, throws>>
+                   attr, status, text, peer, ver, persisted, appends,
+                   summarized, nudged, waiter, editLost, peerEdits, userEdits,
+                   inferFails, throws>>
 
 (* The text the write stores: the transcript, unless the text changed     *)
 (* since the first read, in which case the re-read copy's text is kept.   *)
@@ -177,43 +196,84 @@ NewText(r) ==
     IF KeepConcurrentEdit /\ readText[r] # firstText[r] THEN readText[r]
     ELSE Transcript(r)
 
-WriteApplied(r) ==
-    /\ pc[r] = "write" /\ peer = readPeer[r]
+(* The write is refused: with GuardedWrite, when any version was stored   *)
+(* since the re-read; before, only when a peer's edit made it concurrent. *)
+Moved(r) == IF GuardedWrite THEN ver # readVer[r] ELSE peer # readPeer[r]
+
+(* The re-read already holds this run's transcript: it is saved.          *)
+Saved(r) == IdempotentRetry /\ r \in persisted
+
+(* The run's transcript is saved: status idle, attribution succeeded.     *)
+Succeed(r) ==
+    /\ pc' = [pc EXCEPT ![r] = "summary"]
+    /\ outcome' = [outcome EXCEPT ![r] = "ok"]
+    /\ attr' = [attr EXCEPT ![r] = "succeeded"]
+    /\ status' = "idle"
+    /\ UNCHANGED cause
+
+(* The row stores this run's write: the transcript joins the history and  *)
+(* the text becomes NewText(r).                                           *)
+Store(r) ==
     /\ persisted' = persisted \cup {r}
+    /\ appends' = [appends EXCEPT ![r] = @ + 1]
+    /\ ver' = ver + 1
     /\ text' = NewText(r)
     \* The stored text is an edit made after this run's first read, and the
     \* write replaces it.
     /\ editLost' = (editLost \/ (IsEdit(text) /\ text > firstEdits[r]
                                  /\ NewText(r) # text))
-    /\ pc' = [pc EXCEPT ![r] = "summary"]
-    /\ outcome' = [outcome EXCEPT ![r] = "ok"]
-    /\ attr' = [attr EXCEPT ![r] = "succeeded"]
-    /\ status' = "idle"
-    /\ UNCHANGED <<owner, firstText, firstEdits, readText, readPeer, refusals,
-                   cause, peer, summarized, nudged, waiter, peerEdits,
-                   userEdits, inferFails, throws>>
 
-(* updateJournalEntity returned false: refused on the vector clock (a     *)
-(* peer's edit landed since the re-read), or it threw and was logged.     *)
-WriteNotApplied(r) ==
-    /\ pc[r] = "write"
-    /\ \/ peer # readPeer[r] /\ UNCHANGED throws
-       \/ throws < ThrowBudget /\ throws' = throws + 1
+(* updateJournalEntity returned false, whether or not the row was stored. *)
+(* A run that ran out of attempts re-reads once more, and with            *)
+(* IdempotentRetry a transcript it finds there is saved after all.        *)
+NotApplied(r) ==
     /\ refusals' = [refusals EXCEPT ![r] = @ + 1]
     /\ IF ~CheckWrite
        THEN \* The bool was dropped: the run carried on as if it had saved.
-            /\ pc' = [pc EXCEPT ![r] = "summary"]
-            /\ outcome' = [outcome EXCEPT ![r] = "ok"]
-            /\ attr' = [attr EXCEPT ![r] = "succeeded"]
-            /\ status' = "idle"
-            /\ UNCHANGED cause
+            Succeed(r)
        ELSE IF RetryConflict /\ refusals[r] + 1 < MaxAttempts
        THEN /\ pc' = [pc EXCEPT ![r] = "reread"]
             /\ UNCHANGED <<outcome, cause, attr, status>>
+       ELSE IF IdempotentRetry /\ r \in persisted'
+       THEN Succeed(r)
        ELSE Fail(r, "write")
-    /\ UNCHANGED <<owner, firstText, firstEdits, readText, readPeer, text,
-                   peer, persisted, summarized, nudged, waiter, editLost,
-                   peerEdits, userEdits, inferFails>>
+
+WriteApplied(r) ==
+    /\ pc[r] = "write" /\ ~Saved(r) /\ ~Moved(r)
+    /\ Store(r)
+    /\ Succeed(r)
+    /\ UNCHANGED <<owner, firstText, firstEdits, readText, readPeer, readVer,
+                   refusals, peer, summarized, nudged, waiter, peerEdits,
+                   userEdits, inferFails, throws>>
+
+(* Refused (the row moved since the re-read), or it threw before storing. *)
+WriteNotApplied(r) ==
+    /\ pc[r] = "write" /\ ~Saved(r)
+    /\ \/ Moved(r) /\ UNCHANGED throws
+       \/ throws < ThrowBudget /\ throws' = throws + 1
+    /\ UNCHANGED <<owner, firstText, firstEdits, readText, readPeer, readVer,
+                   text, peer, ver, persisted, appends, summarized, nudged,
+                   waiter, editLost, peerEdits, userEdits, inferFails>>
+    /\ NotApplied(r)
+
+(* The row was stored, and a step after the commit threw. *)
+WriteStoredButFailed(r) ==
+    /\ pc[r] = "write" /\ ~Saved(r) /\ ~Moved(r)
+    /\ throws < ThrowBudget /\ throws' = throws + 1
+    /\ Store(r)
+    /\ NotApplied(r)
+    /\ UNCHANGED <<owner, firstText, firstEdits, readText, readPeer, readVer,
+                   peer, summarized, nudged, waiter, peerEdits, userEdits,
+                   inferFails>>
+
+(* A retry's re-read finds the transcript an earlier attempt stored. *)
+AlreadySaved(r) ==
+    /\ pc[r] = "write" /\ Saved(r)
+    /\ Succeed(r)
+    /\ UNCHANGED <<owner, firstText, firstEdits, readText, readPeer, readVer,
+                   refusals, text, peer, ver, persisted, appends, summarized,
+                   nudged, waiter, editLost, peerEdits, userEdits, inferFails,
+                   throws>>
 
 (* The shared future completes after the summary; the registry entry goes *)
 (* with it.                                                               *)
@@ -222,6 +282,7 @@ Summary(r) ==
     /\ pc' = [pc EXCEPT ![r] = "return"]
     /\ summarized' = IF SettleOnOutcome /\ outcome[r] # "ok"
                      THEN summarized ELSE summarized \cup {r}
+    /\ UNCHANGED writeVars
     /\ UNCHANGED <<owner, firstText, firstEdits, readText, readPeer, refusals,
                    outcome, cause, attr, status, text, peer, persisted,
                    nudged, waiter, editLost, peerEdits, userEdits, inferFails,
@@ -247,6 +308,7 @@ Return(r) ==
     /\ waiter' = IF r = Waiter /\ waiter = "waiting"
                     /\ OutcomeOf(r) = "failed"
                  THEN "cancelled" ELSE waiter
+    /\ UNCHANGED writeVars
     /\ UNCHANGED <<owner, firstText, firstEdits, readText, readPeer, refusals,
                    cause, attr, status, text, peer, persisted, summarized,
                    editLost, peerEdits, userEdits, inferFails, throws>>
@@ -254,6 +316,7 @@ Return(r) ==
 WaiterSees ==
     /\ waiter = "waiting" /\ text # 0
     /\ waiter' = "text"
+    /\ UNCHANGED writeVars
     /\ UNCHANGED <<pc, owner, firstText, firstEdits, readText, readPeer,
                    refusals, outcome, cause, attr, status, text, peer,
                    persisted, summarized, nudged, editLost, peerEdits,
@@ -266,33 +329,36 @@ PeerEdit ==
     /\ peerEdits < PeerEditBudget
     /\ peerEdits' = peerEdits + 1
     /\ peer' = peer + 1
+    /\ ver' = ver + 1
     \* A peer may edit the words, or something else about the recording.
     /\ text' \in {text, EditsMade + 1}
     /\ UNCHANGED <<pc, owner, firstText, firstEdits, readText, readPeer,
-                   refusals, outcome, cause, attr, status, persisted,
-                   summarized, nudged, waiter, editLost, userEdits,
+                   readVer, refusals, outcome, cause, attr, status, persisted,
+                   appends, summarized, nudged, waiter, editLost, userEdits,
                    inferFails, throws>>
 
 UserEdit ==
     /\ userEdits < UserEditBudget
-    /\ EditInWriteWindow \/ \A r \in Runs : pc[r] # "write"
     /\ userEdits' = userEdits + 1
+    /\ ver' = ver + 1
     /\ text' = EditsMade + 1
     /\ UNCHANGED <<pc, owner, firstText, firstEdits, readText, readPeer,
-                   refusals, outcome, cause, attr, status, peer, persisted,
-                   summarized, nudged, waiter, editLost, peerEdits,
-                   inferFails, throws>>
+                   readVer, refusals, outcome, cause, attr, status, peer,
+                   persisted, appends, summarized, nudged, waiter, editLost,
+                   peerEdits, inferFails, throws>>
 
 Next ==
     \/ \E r \in Runs :
          \/ Request(r) \/ Infer(r) \/ InferFail(r) \/ Reread(r)
-         \/ WriteApplied(r) \/ WriteNotApplied(r) \/ Summary(r) \/ Return(r)
+         \/ WriteApplied(r) \/ WriteNotApplied(r) \/ WriteStoredButFailed(r)
+         \/ AlreadySaved(r) \/ Summary(r) \/ Return(r)
     \/ WaiterSees \/ PeerEdit \/ UserEdit
 
 Spec == Init /\ [][Next]_vars
         /\ \A r \in Runs :
              /\ WF_vars(Infer(r)) /\ WF_vars(Reread(r))
              /\ WF_vars(WriteApplied(r)) /\ WF_vars(WriteNotApplied(r))
+             /\ WF_vars(AlreadySaved(r))
              /\ WF_vars(Summary(r)) /\ WF_vars(Return(r))
         /\ WF_vars(WaiterSees)
 
@@ -305,13 +371,15 @@ TypeOK ==
     /\ firstText \in [Runs -> Texts] /\ readText \in [Runs -> Texts]
     /\ firstEdits \in [Runs -> 0..Edits]
     /\ readPeer \in [Runs -> 0..PeerEditBudget]
-    /\ refusals \in [Runs -> 0..(PeerEditBudget + ThrowBudget)]
+    /\ readVer \in [Runs -> Nat]
+    /\ refusals \in [Runs -> 0..(Edits + ThrowBudget)]
     /\ outcome \in [Runs -> Outcomes]
     /\ cause \in [Runs -> {"none", "infer", "write"}]
     /\ attr \in [Runs -> Attrs]
     /\ status \in {"idle", "running", "error"}
-    /\ text \in Texts /\ peer \in 0..PeerEditBudget
+    /\ text \in Texts /\ peer \in 0..PeerEditBudget /\ ver \in Nat
     /\ persisted \subseteq Runs /\ summarized \subseteq Runs
+    /\ appends \in [Runs -> Nat]
     /\ nudged \subseteq Runs
     /\ waiter \in {"off", "waiting", "text", "cancelled"}
     /\ editLost \in BOOLEAN
@@ -338,6 +406,12 @@ StatusShowsRunning ==
 
 (* An edit made while the run was under way survives its write. *)
 NoLostEdit == ~editLost
+
+(* A run's transcript joins the history once. *)
+NoDuplicateTranscript == \A r \in Runs : appends[r] <= 1
+
+(* A run reports a lost transcript only when it is not stored. *)
+WriteFailureIsReal == \A r \in Runs : cause[r] = "write" => r \notin persisted
 
 (* A write that did not land fails the run only after MaxAttempts tries. *)
 ConflictIsTransient ==

@@ -66,7 +66,7 @@ const _logTag = 'SkillInferenceRunner';
 const _audioSummaryMinChars = 200;
 
 /// How many times a transcript write that did not land is re-read and tried
-/// before the run fails. A refusal means a synced edit landed between the
+/// before the run fails. A refusal means a version was stored between the
 /// re-read and the write; the next re-read carries it.
 const _transcriptSaveAttempts = 3;
 
@@ -196,43 +196,43 @@ class SkillInferenceRunner {
         'skill=${skill != null}, profile=${profile != null}',
       );
     }
-    final target = await _resolveTranscriptionTarget(
-      profile: profile,
-      overrideModelId: overrideModelId,
-    );
-    final provider = target.provider;
-    final modelId = target.modelId;
-    final effectiveThinkingMode = _geminiThinkingModeForTarget(
-      target,
-      geminiThinkingMode,
-    );
-    if (provider == null || modelId == null) {
-      developer.log(
-        'Profile missing transcription provider/model for $audioEntryId',
-        name: _logTag,
-      );
-      return;
-    }
-
     // One run per recording at a time: a request while one is in flight
     // joins it and gets its outcome, rather than paying for a second
-    // inference that would append a second transcript and summary.
-    final failure = await _ref
-        .read(transcriptionRunsProvider)
-        .run(
-          audioEntryId,
-          () => _transcribeAndSummarize(
-            audioEntryId: audioEntryId,
-            automationResult: automationResult,
-            skill: skill,
-            profile: profile,
-            provider: provider,
-            modelId: modelId,
-            effectiveThinkingMode: effectiveThinkingMode,
-            linkedTaskId: linkedTaskId,
-            knownTerms: knownTerms,
-          ),
+    // inference that would append a second transcript and summary. The
+    // model is resolved inside the run, so the request that registers first
+    // is the one whose model is used, however long its lookup takes.
+    final failure = await _ref.read(transcriptionRunsProvider).run(
+      audioEntryId,
+      () async {
+        final target = await _resolveTranscriptionTarget(
+          profile: profile,
+          overrideModelId: overrideModelId,
         );
+        final provider = target.provider;
+        final modelId = target.modelId;
+        if (provider == null || modelId == null) {
+          developer.log(
+            'Profile missing transcription provider/model for $audioEntryId',
+            name: _logTag,
+          );
+          return null;
+        }
+        return _transcribeAndSummarize(
+          audioEntryId: audioEntryId,
+          automationResult: automationResult,
+          skill: skill,
+          profile: profile,
+          provider: provider,
+          modelId: modelId,
+          effectiveThinkingMode: _geminiThinkingModeForTarget(
+            target,
+            geminiThinkingMode,
+          ),
+          linkedTaskId: linkedTaskId,
+          knownTerms: knownTerms,
+        );
+      },
+    );
     if (failure != null) onError?.call(failure);
   }
 
@@ -508,14 +508,20 @@ class SkillInferenceRunner {
   ///   model was listening — that text is kept and the transcript only joins
   ///   the history. A re-transcription of text edited *before* the run still
   ///   replaces it, as the user asked.
+  /// - **The write applies only to the row it was built on.** It is guarded
+  ///   on the re-read's version (`onlyIfUnchanged`), so an edit stored after
+  ///   the re-read — synced, or typed here — refuses it instead of being
+  ///   overwritten, and the next attempt is built on that edit.
   /// - **A write that does not land is retried, then fails the run.**
-  ///   `updateJournalEntity` returns false when the database refuses the
-  ///   write — a synced edit landed between the re-read and the write, so the
-  ///   write's vector clock is concurrent with the stored one — or when it
-  ///   threw and logged. A fresh re-read carries the peer's change, so the
-  ///   next attempt normally lands. After [_transcriptSaveAttempts] this
-  ///   throws, so the run reports an error instead of claiming a transcript
-  ///   nobody can find.
+  ///   `updateJournalEntity` returns false when the write was refused — a
+  ///   version was stored since the re-read — or when it threw and logged. A
+  ///   fresh re-read carries the change, so the next attempt normally lands.
+  ///   After [_transcriptSaveAttempts] this throws, so the run reports an
+  ///   error instead of claiming a transcript nobody can find.
+  /// - **A transcript is saved once.** A write can commit and still report
+  ///   false, when a step after the commit throws. Every re-read therefore
+  ///   first looks for the transcript's id: once it is there the transcript
+  ///   is saved, and it is neither appended again nor reported lost.
   Future<void> _saveTranscript({
     required String audioEntryId,
     required EntryText? textAtStart,
@@ -532,9 +538,18 @@ class SkillInferenceRunner {
       if (currentAudio == null) {
         throw StateError('Audio entity $audioEntryId disappeared mid-run');
       }
+      final existingTranscripts = currentAudio.data.transcripts ?? [];
+      if (existingTranscripts.any((saved) => saved.id == transcript.id)) {
+        return;
+      }
+      if (attempt > _transcriptSaveAttempts) {
+        throw StateError(
+          'Transcript for $audioEntryId was not saved after '
+          '$_transcriptSaveAttempts attempts',
+        );
+      }
 
       final editedDuringRun = currentAudio.entryText != textAtStart;
-      final existingTranscripts = currentAudio.data.transcripts ?? [];
       final updated = currentAudio.copyWith(
         data: currentAudio.data.copyWith(
           transcripts: [...existingTranscripts, transcript],
@@ -543,16 +558,16 @@ class SkillInferenceRunner {
             ? currentAudio.entryText
             : EntryText(plainText: text, markdown: text),
       );
-      if (await _journalRepository.updateJournalEntity(updated)) return;
-      if (attempt >= _transcriptSaveAttempts) {
-        throw StateError(
-          'Transcript for $audioEntryId was not saved after $attempt attempts',
-        );
+      if (await _journalRepository.updateJournalEntity(
+        updated,
+        onlyIfUnchanged: true,
+      )) {
+        return;
       }
       _loggingService.log(
         LogDomain.ai,
         'Transcript write for $audioEntryId did not land '
-        '(attempt $attempt); re-reading and retrying',
+        '(attempt $attempt); re-reading',
         subDomain: 'runTranscription',
       );
     }

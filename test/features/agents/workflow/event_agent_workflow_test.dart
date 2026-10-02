@@ -741,8 +741,9 @@ void main() {
 
       final result = await run();
       expect(result.success, isTrue);
-      // The forced retry fired.
+      // The forced retry fired, with a turn of its own.
       expect(mockConversationRepository.sendMessageDelegateCallCount, 2);
+      expect(mockConversationRepository.turnBudgets, [null, 1]);
 
       final captured = verify(
         () => mockSyncService.upsertEntity(captureAny()),

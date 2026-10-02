@@ -227,9 +227,10 @@ class ConversationRepository extends Notifier<void> {
   ///
   /// Calls on one conversation run one at a time, in the order they were
   /// made: a second call waits until the first has returned. The loop ends
-  /// when the strategy stops, a reply has no tool calls, or
-  /// [ConversationManager.canContinue] refuses the next turn; any tool call
-  /// it leaves unanswered is answered with [unansweredToolCallResult].
+  /// when the strategy stops, a reply has no tool calls, or the turn limit
+  /// ([ConversationManager.canContinue], or [turnBudget]) refuses the next
+  /// turn; any tool call it leaves unanswered is answered with
+  /// [unansweredToolCallResult].
   ///
   /// When [toolChoice] is supplied it overrides the provider default (`auto`)
   /// for every inference call this `sendMessage` makes. This is the hook the
@@ -245,6 +246,12 @@ class ConversationRepository extends Notifier<void> {
   /// Set [rethrowInferenceErrors] for orchestration that owns retry/failure
   /// state. Interactive callers keep the default behavior, which stores the
   /// error in [ConversationManager.lastError] and ends the conversation.
+  ///
+  /// [turnBudget], when given, is the most requests this call may make,
+  /// counted from its own message, in place of the conversation's
+  /// [ConversationManager.maxTurns]. The turn count spans every call on the
+  /// conversation, so a follow-up such as the forced `update_report` retry
+  /// would otherwise be refused at once after a wake that used every turn.
   Future<InferenceUsage?> sendMessage({
     required String conversationId,
     required String message,
@@ -264,7 +271,9 @@ class ConversationRepository extends Notifier<void> {
     String? consumptionWakeRunKey,
     String? consumptionThreadId,
     bool rethrowInferenceErrors = false,
+    int? turnBudget,
   }) => _serialized(conversationId, () async {
+    assert(turnBudget == null || turnBudget > 0, 'turnBudget must be positive');
     final manager = _conversations[conversationId];
     if (manager == null) {
       throw ArgumentError('Conversation $conversationId not found');
@@ -275,8 +284,13 @@ class ConversationRepository extends Notifier<void> {
       ..clearLastError()
       ..addUserMessage(message);
 
+    final firstTurn = manager.turnCount;
+    bool canContinue() => turnBudget == null
+        ? manager.canContinue()
+        : manager.turnCount - firstTurn < turnBudget;
+
     // Check if we can continue
-    if (!manager.canContinue()) {
+    if (!canContinue()) {
       manager.lastError = 'Maximum conversation turns reached';
       return null;
     }
@@ -554,7 +568,7 @@ class ConversationRepository extends Notifier<void> {
         }
 
         // Check turn limit
-        if (!manager.canContinue()) {
+        if (!canContinue()) {
           shouldContinue = false;
         }
       } catch (e, stackTrace) {

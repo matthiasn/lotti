@@ -95,6 +95,7 @@ class _TestConversationRepository extends ConversationRepository {
     String? consumptionWakeRunKey,
     String? consumptionThreadId,
     bool rethrowInferenceErrors = false,
+    int? turnBudget,
   }) async {
     lastConsumptionAgentId = consumptionAgentId;
     lastConsumptionThreadId = consumptionThreadId;

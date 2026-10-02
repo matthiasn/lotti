@@ -58,7 +58,10 @@ extension _TranscriptionSummaryCases on _SkillInferenceTestSetup {
           () => mockAiInputRepo.getEntity(audioEntity.meta.id),
         ).thenAnswer((_) async => current);
         when(
-          () => mockJournalRepo.updateJournalEntity(any()),
+          () => mockJournalRepo.updateJournalEntity(
+            any(),
+            onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+          ),
         ).thenAnswer((invocation) async {
           final written = invocation.positionalArguments.first;
           if (written is JournalAudio) current = written;
@@ -210,7 +213,10 @@ extension _TranscriptionSummaryCases on _SkillInferenceTestSetup {
           final audio = makeAudioEntity(plainText: longTranscript);
           await stubTranscriptionThrough(audio);
           when(
-            () => mockJournalRepo.updateJournalEntity(any()),
+            () => mockJournalRepo.updateJournalEntity(
+              any(),
+              onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+            ),
           ).thenAnswer((_) async => false);
           stubLoggingException();
           final errors = <Object>[];
@@ -332,7 +338,10 @@ extension _TranscriptionSummaryCases on _SkillInferenceTestSetup {
           // The transcript still landed on the audio entry.
           final persisted =
               verify(
-                    () => mockJournalRepo.updateJournalEntity(captureAny()),
+                    () => mockJournalRepo.updateJournalEntity(
+                      captureAny(),
+                      onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+                    ),
                   ).captured.last
                   as JournalAudio;
           expect(persisted.entryText?.plainText, longTranscript);
@@ -449,7 +458,10 @@ extension _TranscriptionSummaryCases on _SkillInferenceTestSetup {
           ).called(1);
           final persisted =
               verify(
-                    () => mockJournalRepo.updateJournalEntity(captureAny()),
+                    () => mockJournalRepo.updateJournalEntity(
+                      captureAny(),
+                      onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+                    ),
                   ).captured.last
                   as JournalAudio;
           expect(persisted.entryText?.plainText, longTranscript);

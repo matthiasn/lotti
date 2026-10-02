@@ -906,6 +906,63 @@ void main() {
         expect(manager.messages.length, lessThanOrEqualTo(5));
       });
 
+      test(
+        'a send with its own turn budget runs after an earlier send used '
+        'every turn, and stops at that budget',
+        () async {
+          conversationId = repository.createConversation(maxTurns: 3);
+          var requests = 0;
+          _stubGenerateText(mockOllamaRepo).thenAnswer((_) {
+            requests++;
+            return Stream.value(_idlessToolCallsResponse(1));
+          });
+          // Like a task agent that never calls `update_report`.
+          when(
+            () => mockStrategy.processToolCalls(
+              toolCalls: any(named: 'toolCalls'),
+              manager: any(named: 'manager'),
+            ),
+          ).thenAnswer((invocation) async {
+            final manager =
+                invocation.namedArguments[#manager] as ConversationManager;
+            for (final call
+                in invocation.namedArguments[#toolCalls]
+                    as List<ChatCompletionMessageToolCall>) {
+              manager.addToolResponse(toolCallId: call.id, response: 'ok');
+            }
+            return ConversationAction.continueConversation;
+          });
+          when(
+            () => mockStrategy.getContinuationPrompt(any()),
+          ).thenReturn('Continue.');
+          Future<void> send(String message, {int? turnBudget}) =>
+              repository.sendMessage(
+                conversationId: conversationId,
+                message: message,
+                model: 'test-model',
+                provider: provider,
+                inferenceRepo: mockOllamaRepo,
+                strategy: mockStrategy,
+                turnBudget: turnBudget,
+              );
+
+          await send('wake');
+          expect(requests, 2);
+
+          // The conversation's turns are used up: a plain send is refused.
+          await send('retry');
+          expect(requests, 2);
+          expect(
+            repository.getConversation(conversationId)!.lastError,
+            'Maximum conversation turns reached',
+          );
+
+          // One with its own budget still runs, and only that far.
+          await send('forced retry', turnBudget: 1);
+          expect(requests, 3);
+        },
+      );
+
       test('handles errors during API call', () async {
         // Use the shared 8-argument stub so the matcher includes `turnIndex`
         // (which `sendMessage` always supplies). An inline stub that omits

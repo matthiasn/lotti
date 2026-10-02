@@ -272,7 +272,7 @@ stops, the AI popup and the timelines' Retry through `triggerSkillProvider`
 host, and the relationship check-in service — ends in
 `SkillInferenceRunner.runTranscription`. Daily OS capture does not: it
 transcribes through `AudioTranscriptionService` ([batch
-transcription](batch-transcription.md)). Four rules hold the run together, each
+transcription](batch-transcription.md)). Five rules hold the run together, each
 pinned by a switch in the `TranscriptionRun` TLA+ model
 ([specs/tla/README.md](../../../specs/tla/README.md)):
 
@@ -281,14 +281,23 @@ pinned by a switch in the `TranscriptionRun` TLA+ model
   is rebuilt with its dependencies) keys the run by audio id. A request while one
   is in flight joins it: no second paid inference, no second transcript or
   summary, and the joiner's `onError` fires with the run's failure. The joiner's
-  own model override and known terms are not used.
-- **The write is checked.** The transcript is appended to the history of a fresh
-  re-read. `JournalRepository.updateJournalEntity` returns `false` both when the
-  database refuses the write on its vector clock — a synced edit landed between
-  the re-read and the write — and when it threw and logged. The runner re-reads
-  and tries again, up to three attempts, and then fails the run: status `error`,
-  `onError`, and no attribution finalized as succeeded (the in-memory session is
-  left unfinalized, as a failed image analysis leaves its own).
+  own model override and known terms are not used. The model is resolved inside
+  the run, so the request that registers first is the one whose model is used.
+- **The write is guarded and checked.** The transcript is appended to the
+  history of a fresh re-read, and
+  `JournalRepository.updateJournalEntity(onlyIfUnchanged: true)` applies it only
+  while the stored row is still that re-read's version: an edit stored in
+  between — synced, or typed on this device — refuses the write instead of
+  being overwritten. The call returns `false` on a refusal and when it threw and
+  logged. The runner re-reads and tries again, up to three attempts, and then
+  fails the run: status `error`, `onError`, and no attribution finalized as
+  succeeded (the in-memory session is left unfinalized, as a failed image
+  analysis leaves its own).
+- **A transcript is saved once.** A write can be stored and still return
+  `false`, when a step after the commit throws. Every re-read — including one
+  after the last attempt — first looks for the transcript's id; once it is
+  there the transcript counts as saved, and is neither appended again nor
+  reported lost.
 - **An edit made during the run wins.** When the re-read text differs from the
   text at the run's first read, it is kept and the transcript only joins the
   history. Re-transcribing text that was there *before* the run replaces it, as
@@ -307,8 +316,8 @@ stateDiagram-v2
   Inferring --> Failed: provider error
   Inferring --> Saving: usage recorded
   Saving --> Saving: write refused or threw, re-read (up to 3 attempts)
-  Saving --> Failed: disappeared, or attempts used up
-  Saving --> Saved: write applied, attribution finalized
+  Saving --> Failed: disappeared, or attempts used up and no transcript stored
+  Saving --> Saved: write applied, or the re-read holds the transcript
   Saved --> Summary: status idle
   Summary --> [*]: caller nudges its agent
   Failed --> [*]: status error, onError, no summary, no nudge

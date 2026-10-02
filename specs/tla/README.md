@@ -2624,11 +2624,11 @@ host, the check-in service), the provider call, the re-read and the write of
 the transcript back onto the `JournalAudio`, the audio summary, and what the
 callers do once the call returns — `AutomaticPromptTrigger` nudges the
 subject's agent, the check-in waiter gives up on `onError`. A peer's synced
-edit can land at any point; one landing between the re-read and the write
-makes the write's vector clock concurrent with the stored one, and
-`JournalDb.updateJournalEntity` refuses it. `JournalRepository` also turns a
-throw into `false`. A local edit only raises this host's counter, which the
-run's own write passes. The runner's contract is described in
+edit can land at any point, and so can the user's own. The write is guarded
+on the version it was built on (`updateJournalEntity(onlyIfUnchanged: true)`),
+so any version stored since the re-read refuses it. `JournalRepository` also
+turns a throw into `false` — including one thrown after the row was stored.
+The runner's contract is described in
 [AI execution paths](../../knowledge/features/ai/execution-paths.md#saving-a-transcript).
 
 | Property | Kind | Says |
@@ -2640,13 +2640,15 @@ run's own write passes. The runner's contract is described in
 | `StatusShowsRunning` | invariant | while a transcription is under way its status says so |
 | `NoLostEdit` | invariant | text edited while a run was under way survives its write |
 | `ConflictIsTransient` | invariant | a write that did not land fails the run only after `MaxAttempts` tries |
+| `NoDuplicateTranscript` | invariant | a run's transcript joins the history once |
+| `WriteFailureIsReal` | invariant | a run reports its transcript lost only when it is not stored |
 | `EveryRequestSettles` | liveness | every request returns, succeeded or visibly failed |
 | `WaiterResolves` | liveness | the check-in waiter ends with the words or with the error, never only by its timeout |
 
 | Configuration | Requests | Peer edits | User edits | Provider failures | Write throws | Write attempts | Distinct states |
 |---------------|----------|------------|------------|-------------------|--------------|----------------|-----------------|
-| `TranscriptionRun` | 2 | 1 | 1 | 1 | 1 | 3 | 20,533 |
-| `TranscriptionRunExhaust` | 2 | 2 | 1 | 0 | 1 | 2 | 93,568 |
+| `TranscriptionRun` | 2 | 1 | 1 | 1 | 1 | 3 | 41,000 |
+| `TranscriptionRunExhaust` | 2 | 2 | 1 | 0 | 1 | 2 | 184,823 |
 
 The second lets a run use up its write attempts, so the failure path after the
 last retry is explored too. Each fix has a switch; setting one to `FALSE` in a
@@ -2659,17 +2661,11 @@ temporary copy of `TranscriptionRun.cfg` gives:
 | `SettleOnOutcome = FALSE` | `FollowUpsNeedTranscript` (4 states): the provider fails and the summary runs anyway — over whatever the recording held before; the agent nudge after it likewise |
 | `SingleFlight = FALSE` | `SingleInference` (3 states): two requests for one recording both start an inference. Checking `StatusShowsRunning` alone (4 states): the second run fails and sets the status to error while the first is still running |
 | `KeepConcurrentEdit = FALSE` | `NoLostEdit` (6 states): a synced edit of the text lands during the inference, the re-read sees it, and the write replaces it with the transcript |
-| `EditInWriteWindow = TRUE` | `NoLostEdit` (6 states) — a residual, below |
+| `GuardedWrite = FALSE` | `NoLostEdit` (6 states): the user types into the recording between the run's re-read and its write; the write, built on the re-read, replaces the edit with the transcript |
+| `IdempotentRetry = FALSE` | `NoDuplicateTranscript` (7 states): the write is stored but a step after the commit throws, so it reports false; the retry re-reads and appends the transcript a second time. On `TranscriptionRunExhaust`, checking `WriteFailureIsReal` alone (8 states): the last attempt is stored the same way and the run reports the transcript lost |
 
 What the model leaves out:
 
-- **A local edit between the re-read and the write** (`EditInWriteWindow`). The
-  run compares the re-read text with the text at its first read; an edit that
-  commits after the re-read, with a smaller counter than the one the run's write
-  then reserves, is still overwritten. The window is a few local database
-  calls long.
-  Closing it means a compare-and-set write (`updateDbEntity`'s `precondition`),
-  which `JournalRepository.updateJournalEntity` does not expose.
 - **Re-transcription replaces text edited before the run.** That is the
   request: the user asked for new words. The earlier transcripts stay in the
   history, but typed corrections do not.
@@ -2783,6 +2779,8 @@ roles and tool-call ids (`tool_turn<t>_<n>`, the ids the Gemini adapters and
 the repository synthesize from the turn index), lets the model answer each
 round with any number of tool calls up to `MaxCalls`, and lets the strategy
 continue for ever — a task agent continues until it calls `update_report`.
+A send may carry its own turn budget instead (`turnBudget`), as the forced
+`update_report` retry does.
 The awaits inside one send (the stream, every tool execution) are where a
 second send on the same conversation interleaves, and a strategy can throw
 part-way through a round. The loop is described in
@@ -2795,15 +2793,17 @@ part-way through a round. The loop is described in
 | `NoOrphanResult` | invariant | no request carries a tool result without its call in the assistant turn before it |
 | `EveryCallAnswered` | invariant | no request carries a tool call without its result |
 | `OpensWithUserTurn` | invariant | after the system instructions, every request opens on a user turn (Gemini rejects a function call that follows neither a user turn nor a function response) |
+| `RetryRuns` | invariant | the forced `update_report` retry makes at least one request, however many turns the wake before it used |
 | `Terminates` | liveness | every send returns |
 
-| Configuration | Senders | Sends each | `maxTurns` | History | Calls a round | Throws | Distinct states |
-|---------------|---------|------------|------------|---------|---------------|--------|-----------------|
-| `ConversationLoop` | 1 | 2 | 6 | 9 | 0–3 | 1 | 21,926 |
-| `ConversationLoopConcurrent` | 2 | 2 | 5 | 8 | 0–2 | 1 | 35,319 |
+| Configuration | Senders | Sends each | `maxTurns` | Retry budget | History | Calls a round | Throws | Distinct states |
+|---------------|---------|------------|------------|--------------|---------|---------------|--------|-----------------|
+| `ConversationLoop` | 1 | 2 | 6 | 1 | 9 | 0–3 | 1 | 24,224 |
+| `ConversationLoopConcurrent` | 2 | 2 | 5 | — | 8 | 0–2 | 1 | 36,415 |
 
 The second send of `ConversationLoop` is the task agent's forced
-`update_report` retry, or the next message of an evolution chat. Both
+`update_report` retry, with its one-turn budget; the sends of
+`ConversationLoopConcurrent` are evolution chat messages, with none. Both
 configurations check `TypeOK` and every property above. Each fix has a switch;
 setting one to `FALSE` in a temporary copy of the configuration named gives:
 
@@ -2812,6 +2812,7 @@ setting one to `FALSE` in a temporary copy of the configuration named gives:
 | `MonotonicTurns = FALSE` (`ConversationLoop`) | `BoundedRounds` (27 states): one tool call a round, and the trim at the third continuation leaves two user turns, so `turnCount` never reaches six and the seventh request goes out. `Terminates` fails on a lasso that returns to its 33rd state, and `UniqueToolCallIds` in 13 states: after the trim the turn index goes back to 2 and the next round reissues `tool_turn2_1`. In the code, a wake (`maxTurnsPerWake = 10`, 100 messages of history) never ends while every round has nine tool calls or more, and an evolution chat, whose strategy hands back to the user after each round, never reaches its 20-turn limit at four |
 | `TailFromUser = FALSE` (`ConversationLoop`) | `OpensWithUserTurn` (16 states): the fourth turn's trim cuts inside a tool round; the old strip dropped only the leading tool results and kept the assistant's tool call that followed as the first turn |
 | `AnswerPending = FALSE` (`ConversationLoop`) | `EveryCallAnswered` (8 states): the strategy throws before answering, the loop ends, and the retry sends a user turn after two unanswered calls |
+| `BudgetedRetry = FALSE` (`ConversationLoop`) | `RetryRuns` (22 states): the wake makes five requests, on turns one to five; the forced retry's own user turn is the sixth, at the limit, so it returns without a request — the wake ends without its report |
 | `Serialize = FALSE` (`ConversationLoopConcurrent`) | `NoOrphanResult` (7 states): the second send's user turn lands between the first's tool call and its result. `EveryCallAnswered` (6 states): the second send's request goes out while the first's tools still run. `UniqueToolCallIds` (7 states): both sends read the same turn and issue `tool_turn2_1` twice |
 
 `Serialize = FALSE` has no counterexample in `ConversationLoop`, whose one
@@ -2826,11 +2827,6 @@ What the model leaves out:
   Melious's adapter falls back to `tool_<index>` when its provider sends none,
   which repeats every round; that adapter is outside the loop. The model covers
   the ids the conversation loop and the Gemini adapters synthesize.
-- **The turn budget across sends.** The count is per conversation, so a retry
-  sent after the loop used every turn is refused at once: the task agent's
-  forced `update_report` retry never runs after a wake that ran out of turns.
-  The model shows it (the second send ends in `Begin`) and checks nothing about
-  it.
 - **Streamed chunk assembly.** How OpenAI-style fragments become calls is a
   pure function, checked by a Glados property in the repository suite instead.
 

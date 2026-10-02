@@ -1025,6 +1025,32 @@ void main() {
         });
       });
 
+      test('an id dropped by edits that fail before its retry is not tried '
+          'again by the retry', () {
+        fakeAsync((async) {
+          stubEntity(
+            JournalEntry(
+              meta: _meta(),
+              entryText: const EntryText(plainText: _longText),
+            ),
+          );
+          when(anyEmbed).thenAnswer((_) async => throw Exception('HTTP 500'));
+          service.start();
+
+          // Each local edit fails before the retry delay has passed; the
+          // last one reaches the attempt limit.
+          for (var i = 0; i < EmbeddingService.maxFailedAttempts; i++) {
+            sendAndProcess(async, {_entityId, textEntryNotification});
+          }
+          verify(anyEmbed).called(EmbeddingService.maxFailedAttempts);
+
+          async.elapse(EmbeddingService.retryDelay * 2);
+
+          verifyNever(anyEmbed);
+          stopInZone(async);
+        });
+      });
+
       test('outage cooldowns do not count toward the attempt limit', () {
         fakeAsync((async) {
           stubEntity(

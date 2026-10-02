@@ -8,3 +8,7 @@
   tool that failed part-way no longer leaves calls unanswered, which made the
   next message fail; tool-call ids no longer repeat; and messages sent into one
   conversation at the same time now take their turns one after the other.
+- **An agent that used all its turns still writes its report.** When a task
+  or event agent ran out of turns without publishing its report, the final
+  "write your report now" step was refused at once, so the update ended with
+  no report. That step now always gets its turn.

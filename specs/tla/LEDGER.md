@@ -112,13 +112,14 @@ auditing the code; TLC found a fifth once the cascade's deletions became hard
 deletes with stamps (a deleted model recreated by the backfill). Not included
 in the historical totals above.
 
-The `TranscriptionRun` model ([#4522](https://github.com/matthiasn/lotti/pull/4522)) adds one spec, two configurations, nine
-named properties and 114,101 distinct states. It came with fixes for skill
+The `TranscriptionRun` model ([#4522](https://github.com/matthiasn/lotti/pull/4522)) adds one spec, two configurations, eleven
+named properties and 225,823 distinct states. It came with fixes for skill
 transcription: a transcript write the database refused was reported as a
 success, and follow-ups, a second request and a concurrent edit each
-misbehaved around it. All four bugs were found by reading the code; TLC
-reproduces each through its switch, and found the residual it leaves open (a
-local edit inside the write's own window). Not included in the historical
+misbehaved around it. All four bugs were found by reading the code, and TLC
+reproduces each through its switch. Review closed the window the model first
+left open — a local edit between the re-read and the write — with a guarded
+write, and made a retried write idempotent. Not included in the historical
 totals above.
 
 The `EmbeddingFreshness` model ([#4522](https://github.com/matthiasn/lotti/pull/4522)) adds one spec, two configurations, four
@@ -131,13 +132,15 @@ code — five in the audit that prompted the model, one (a short task's
 reports) while writing it — and TLC reproduces each through its switch. Not
 included in the historical totals above.
 
-The `ConversationLoop` model ([#4522](https://github.com/matthiasn/lotti/pull/4522)) adds one spec, two configurations, six
-named properties and 57,245 distinct states. It came with a fix for an agent
+The `ConversationLoop` model ([#4522](https://github.com/matthiasn/lotti/pull/4522)) adds one spec, two configurations, seven
+named properties and 60,639 distinct states. It came with a fix for an agent
 wake that could keep calling the model without end once its tool calls filled
 the trimmed history; the six bugs were found by reading the code, and TLC
-reproduces the five the protocol covers through its four switches (the
-streamed-chunk accumulator's is pinned by a Glados property instead). Not
-included in the historical totals above.
+reproduces the five the protocol covers through its switches (the
+streamed-chunk accumulator's is pinned by a Glados property instead). Review
+then gave the forced `update_report` retry a turn budget of its own, which the
+model first recorded as a residual. Not included in the historical totals
+above.
 
 The `TaskAgentAssignment` model (#4546) adds one spec, three
 configurations, five named properties and 13,902,177 distinct states. It

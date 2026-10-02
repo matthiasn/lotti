@@ -62,7 +62,10 @@ extension _TranscriptionSaveCases on _SkillInferenceTestSetup {
         });
         var writes = 0;
         when(
-          () => mockJournalRepo.updateJournalEntity(any()),
+          () => mockJournalRepo.updateJournalEntity(
+            any(),
+            onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+          ),
         ).thenAnswer((_) async => writeLands(++writes));
         when(
           () => mockPromptBuilderHelper.getSpeechDictionaryTerms(any()),
@@ -78,7 +81,10 @@ extension _TranscriptionSaveCases on _SkillInferenceTestSetup {
       }
 
       List<JournalAudio> writes() => verify(
-        () => mockJournalRepo.updateJournalEntity(captureAny()),
+        () => mockJournalRepo.updateJournalEntity(
+          captureAny(),
+          onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+        ),
       ).captured.cast<JournalAudio>();
 
       test(
@@ -195,6 +201,157 @@ extension _TranscriptionSaveCases on _SkillInferenceTestSetup {
         },
       );
 
+      test('the write applies only to the version it was built on', () async {
+        await stubRun(first: makeAudioEntity(), writeLands: (_) => true);
+
+        await runner.runTranscription(
+          audioEntryId: 'audio-1',
+          automationResult: makeTranscriptionResult(),
+        );
+
+        verify(
+          () => mockJournalRepo.updateJournalEntity(
+            any(),
+            onlyIfUnchanged: true,
+          ),
+        ).called(1);
+      });
+
+      /// The first write that carries [landsOn]'s attempt is stored, though
+      /// every write reports false: the next re-read sees it.
+      Future<void> stubLandedButFailed(int landsOn) async {
+        final audio = makeAudioEntity();
+        JournalAudio? stored;
+        await stubRun(
+          first: audio,
+          reread: (_) => stored ?? audio,
+          writeLands: (_) => false,
+        );
+        var attempt = 0;
+        when(
+          () => mockJournalRepo.updateJournalEntity(
+            any(),
+            onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+          ),
+        ).thenAnswer((invocation) async {
+          if (++attempt == landsOn) {
+            stored = invocation.positionalArguments.first as JournalAudio;
+          }
+          return false;
+        });
+      }
+
+      test(
+        'a write that was stored but reported failure is not appended '
+        'again, and the run succeeds',
+        () async {
+          final attribution = _registerInteractionCapture();
+          await stubLandedButFailed(1);
+          final errors = <Object>[];
+
+          await runner.runTranscription(
+            audioEntryId: 'audio-1',
+            automationResult: makeTranscriptionResult(),
+            onError: errors.add,
+          );
+
+          expect(writes(), hasLength(1));
+          expect(errors, isEmpty);
+          expect(statusOf('audio-1'), InferenceStatus.idle);
+          final record =
+              verify(
+                    () => attribution.service.finalize(captureAny()),
+                  ).captured.single
+                  as AiWorkAttribution;
+          expect(record.status, AiWorkStatus.succeeded);
+        },
+      );
+
+      test(
+        'a last attempt that was stored but reported failure is not '
+        'reported as lost',
+        () async {
+          await stubLandedButFailed(3);
+          final errors = <Object>[];
+
+          await runner.runTranscription(
+            audioEntryId: 'audio-1',
+            automationResult: makeTranscriptionResult(),
+            onError: errors.add,
+          );
+
+          expect(writes(), hasLength(3));
+          expect(errors, isEmpty);
+          expect(statusOf('audio-1'), InferenceStatus.idle);
+        },
+      );
+
+      test(
+        'the request that registers first owns the run, however long its '
+        'model lookup takes',
+        () async {
+          await stubRun(first: makeAudioEntity(), writeLands: (_) => true);
+          final overrideProvider =
+              AiConfig.inferenceProvider(
+                    id: 'p-override',
+                    baseUrl: 'https://override.example.com',
+                    name: 'Override Provider',
+                    inferenceProviderType: InferenceProviderType.openAi,
+                    apiKey: 'override-key',
+                    createdAt: DateTime(2024),
+                  )
+                  as AiConfigInferenceProvider;
+          final lookup = Completer<AiConfig?>();
+          when(
+            () => mockAiConfigRepo.getConfigById('override-model-id'),
+          ).thenAnswer((_) => lookup.future);
+          when(
+            () => mockAiConfigRepo.getConfigById('p-override'),
+          ).thenAnswer((_) async => overrideProvider);
+
+          // The user picked a model for this recording; the automatic
+          // trigger, with no override, arrives while that lookup is open.
+          final picked = runner.runTranscription(
+            audioEntryId: 'audio-1',
+            automationResult: makeTranscriptionResult(),
+            overrideModelId: 'override-model-id',
+          );
+          await pumpEventQueue();
+          final automatic = runner.runTranscription(
+            audioEntryId: 'audio-1',
+            automationResult: makeTranscriptionResult(),
+          );
+          await pumpEventQueue();
+          lookup.complete(
+            AiConfig.model(
+              id: 'override-model-id',
+              name: 'Mistral Cloud',
+              providerModelId: 'mistral/voxtral-mini',
+              inferenceProviderId: 'p-override',
+              createdAt: DateTime(2024),
+              inputModalities: const [Modality.audio, Modality.text],
+              outputModalities: const [Modality.text],
+              isReasoningModel: false,
+            ),
+          );
+          await Future.wait([picked, automatic]);
+
+          verify(
+            () => mockCloudRepo.generateWithAudio(
+              any(),
+              model: 'mistral/voxtral-mini',
+              audioBase64: any(named: 'audioBase64'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: overrideProvider,
+              systemMessage: any(named: 'systemMessage'),
+              speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+            ),
+          ).called(1);
+          verifyNever(inferenceCall());
+        },
+      );
+
       test(
         'a second request while one is in flight joins it: one inference, '
         'one transcript, and both callers see the outcome',
@@ -203,7 +360,13 @@ extension _TranscriptionSaveCases on _SkillInferenceTestSetup {
           final inference =
               StreamController<CreateChatCompletionStreamResponse>();
           addTearDown(inference.close);
-          stubInference(() => inference.stream);
+          // The run reads the audio file first, which is real IO: wait for
+          // the provider call itself rather than a number of event-loop turns.
+          final inferenceStarted = Completer<void>();
+          stubInference(() {
+            if (!inferenceStarted.isCompleted) inferenceStarted.complete();
+            return inference.stream;
+          });
           final errors = <Object>[];
           var joinedDone = false;
 
@@ -220,6 +383,7 @@ extension _TranscriptionSaveCases on _SkillInferenceTestSetup {
                 onError: errors.add,
               )
               .whenComplete(() => joinedDone = true);
+          await inferenceStarted.future;
           await pumpEventQueue();
 
           verify(inferenceCall()).called(1);

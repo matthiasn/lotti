@@ -16,7 +16,8 @@
 (*   Begin     sendMessage: (wait for the conversation,) addUserMessage + *)
 (*             _trimHistoryIfNeeded, then canContinue()                    *)
 (*   Again     the caller sends again: the task agent's forced            *)
-(*             update_report retry, the next evolution chat message        *)
+(*             update_report retry (turnBudget: RetryBudget), or the next *)
+(*             evolution chat message (no budget)                          *)
 (*   Request   the top of the while loop: getMessagesForRequest and        *)
 (*             turnIndex = manager.turnCount, then the provider call       *)
 (*   Reply     the stream completes: addAssistantMessage with k tool calls*)
@@ -39,13 +40,20 @@
 (*                    each with an error result                            *)
 (*   Serialize        sendMessage calls on one conversation run one after  *)
 (*                    the other                                            *)
+(*   BudgetedRetry    the forced retry has its own turn budget, counted    *)
+(*                    from its own message; before, it shared maxTurns     *)
+(*                    with the wake, and a wake that used every turn left  *)
+(*                    it none                                              *)
 (***************************************************************************)
 EXTENDS Naturals, Sequences, FiniteSets
 
 CONSTANTS Senders, SendsEach, MaxTurns, MaxHistory, MaxCalls, ThrowBudget,
-          MonotonicTurns, TailFromUser, AnswerPending, Serialize
+          RetryBudget,
+          MonotonicTurns, TailFromUser, AnswerPending, Serialize,
+          BudgetedRetry
 
 ASSUME MaxHistory >= 3 /\ MaxTurns >= 1 /\ MaxCalls >= 1
+ASSUME RetryBudget \in 0..MaxTurns
 
 S == 1..Senders
 NoId == [t |-> 0, i |-> 0]
@@ -56,11 +64,12 @@ User == Msg("user", <<>>, NoId)
 
 Range(q) == {q[j] : j \in DOMAIN q}
 
+(* `first` is the turn each send opened on, which a budget counts from. *)
 VARIABLES hist, turns, pc, pend, turnOf, rounds, sends, holder, issued,
-          reused, bad, throws
+          reused, bad, throws, first
 
 vars == <<hist, turns, pc, pend, turnOf, rounds, sends, holder, issued,
-          reused, bad, throws>>
+          reused, bad, throws, first>>
 
 ------------------------------------------------------------------------------
 (* ConversationManager *)
@@ -142,8 +151,20 @@ Init ==
     /\ reused = FALSE
     /\ bad = {}
     /\ throws = 0
+    /\ first = [s \in S |-> 0]
 
 Release(s) == IF holder = s THEN 0 ELSE holder
+
+(* A sender's sends after its first are the forced retry, when the        *)
+(* configuration has one (RetryBudget > 0).                               *)
+IsRetry(n) == RetryBudget > 0 /\ n > 1
+
+(* Whether the send's next turn, at turn count c, fits its limit: with    *)
+(* the fix, a retry's own budget, counted from the turn it opened on      *)
+(* (o); otherwise the conversation's maxTurns.                            *)
+Fits(n, c, o) ==
+    IF BudgetedRetry /\ IsRetry(n) THEN c - o < RetryBudget
+    ELSE c < MaxTurns
 
 (* Leave the loop; after the fix, answer what the round left open. *)
 Finish(s, h) ==
@@ -162,9 +183,11 @@ Begin(s) ==
     /\ rounds' = [rounds EXCEPT ![s] = 0]
     /\ LET h == AddUser(hist)
            t == NextTurns
-           go == TurnCount(h, t) < MaxTurns
+           c == TurnCount(h, t)
+           go == Fits(sends[s] + 1, c, c)
        IN /\ turns' = t
           /\ hist' = h
+          /\ first' = [first EXCEPT ![s] = c]
           /\ pc' = [pc EXCEPT ![s] = IF go THEN "request" ELSE "done"]
           /\ holder' = IF Serialize /\ go THEN s ELSE holder
     /\ UNCHANGED <<pend, turnOf, issued, reused, bad, throws>>
@@ -172,6 +195,7 @@ Begin(s) ==
 Again(s) ==
     /\ pc[s] = "done" /\ sends[s] < SendsEach
     /\ pc' = [pc EXCEPT ![s] = "idle"]
+    /\ UNCHANGED first
     /\ UNCHANGED <<hist, turns, pend, turnOf, rounds, sends, holder, issued,
                    reused, bad, throws>>
 
@@ -183,6 +207,7 @@ Request(s) ==
     /\ turnOf' = [turnOf EXCEPT ![s] = TurnCount(hist, turns)]
     /\ rounds' = [rounds EXCEPT ![s] = IF @ > MaxTurns THEN @ ELSE @ + 1]
     /\ pc' = [pc EXCEPT ![s] = "reply"]
+    /\ UNCHANGED first
     /\ UNCHANGED <<hist, turns, pend, sends, holder, issued, reused, throws>>
 
 Reply(s) ==
@@ -199,12 +224,14 @@ Reply(s) ==
                ELSE /\ pend' = [pend EXCEPT ![s] = ids]
                     /\ pc' = [pc EXCEPT ![s] = "tools"]
                     /\ UNCHANGED holder
+    /\ UNCHANGED first
     /\ UNCHANGED <<turns, turnOf, rounds, sends, bad, throws>>
 
 Answer(s) ==
     /\ pc[s] = "tools" /\ pend[s] # <<>>
     /\ hist' = Append(hist, Msg("tool", <<>>, Head(pend[s])))
     /\ pend' = [pend EXCEPT ![s] = Tail(@)]
+    /\ UNCHANGED first
     /\ UNCHANGED <<turns, pc, turnOf, rounds, sends, holder, issued, reused,
                    bad, throws>>
 
@@ -212,6 +239,7 @@ Throw(s) ==
     /\ pc[s] = "tools" /\ pend[s] # <<>> /\ throws < ThrowBudget
     /\ throws' = throws + 1
     /\ Finish(s, hist)
+    /\ UNCHANGED first
     /\ UNCHANGED <<turns, turnOf, rounds, sends, issued, reused, bad>>
 
 (* continueConversation: addUserMessage, then canContinue(), the loop's  *)
@@ -221,13 +249,14 @@ Decide(s) ==
     /\ \/ LET h == AddUser(hist)
               t == NextTurns
           IN /\ turns' = t
-             /\ IF TurnCount(h, t) < MaxTurns
+             /\ IF Fits(sends[s], TurnCount(h, t), first[s])
                 THEN /\ hist' = h
                      /\ pc' = [pc EXCEPT ![s] = "request"]
                      /\ UNCHANGED <<pend, holder>>
                 ELSE Finish(s, h)
        \/ /\ Finish(s, hist)
           /\ UNCHANGED turns
+    /\ UNCHANGED first
     /\ UNCHANGED <<turnOf, rounds, sends, issued, reused, bad, throws>>
 
 Next == \E s \in S : Begin(s) \/ Again(s) \/ Request(s) \/ Reply(s)
@@ -252,6 +281,7 @@ TypeOK ==
     /\ reused \in BOOLEAN
     /\ bad \subseteq {"orphan", "unanswered", "opening"}
     /\ throws \in 0..ThrowBudget
+    /\ first \in [S -> Nat]
 
 (* One sendMessage makes at most maxTurns requests, however it trims.    *)
 BoundedRounds == \A s \in S : rounds[s] <= MaxTurns
@@ -264,6 +294,11 @@ UniqueToolCallIds == ~reused
 NoOrphanResult == "orphan" \notin bad
 EveryCallAnswered == "unanswered" \notin bad
 OpensWithUserTurn == "opening" \notin bad
+
+(* The forced retry makes at least one request, however many turns the   *)
+(* wake before it used.                                                   *)
+RetryRuns == \A s \in S : (IsRetry(sends[s]) /\ pc[s] = "done")
+                             => rounds[s] >= 1
 
 (* Every sendMessage returns. *)
 Terminates == \A s \in S : (pc[s] \in {"request", "reply", "tools"})
