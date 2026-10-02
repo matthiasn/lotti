@@ -387,7 +387,7 @@ void main() {
         ),
       );
 
-      final capture = _SelectPlanCapture();
+      final capture = SelectPlanCapture();
       final entries = await database.runWithInterceptor(
         database.getPendingBackfillEntries,
         interceptor: capture,
@@ -611,20 +611,4 @@ void main() {
       );
     });
   });
-}
-
-class _SelectPlanCapture extends QueryInterceptor {
-  List<Map<String, Object?>> _plan = const [];
-
-  String get formattedPlan => _plan.map((row) => row.toString()).join('\n');
-
-  @override
-  Future<List<Map<String, Object?>>> runSelect(
-    QueryExecutor executor,
-    String statement,
-    List<Object?> args,
-  ) async {
-    _plan = await executor.runSelect('EXPLAIN QUERY PLAN $statement', args);
-    return executor.runSelect(statement, args);
-  }
 }

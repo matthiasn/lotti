@@ -97,3 +97,22 @@ Future<void> clearAllSyncTables(SyncDatabase db) async {
   }
   await db.customStatement('PRAGMA foreign_keys = ON');
 }
+
+/// Records the `EXPLAIN QUERY PLAN` of each select it intercepts, then runs
+/// the select itself. Wrap a call in `runWithInterceptor` and read
+/// [formattedPlan] to assert the plan of the statement drift actually built.
+class SelectPlanCapture extends QueryInterceptor {
+  List<Map<String, Object?>> _plan = const [];
+
+  String get formattedPlan => _plan.map((row) => row.toString()).join('\n');
+
+  @override
+  Future<List<Map<String, Object?>>> runSelect(
+    QueryExecutor executor,
+    String statement,
+    List<Object?> args,
+  ) async {
+    _plan = await executor.runSelect('EXPLAIN QUERY PLAN $statement', args);
+    return executor.runSelect(statement, args);
+  }
+}

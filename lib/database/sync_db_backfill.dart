@@ -4,6 +4,16 @@ part of 'sync_db.dart';
 /// eligible `missing`/`requested` row selection (with age and per-host
 /// limits), request-count bookkeeping, the actionable-row probe, and
 /// per-host status aggregation.
+/// Status predicates as literal SQL, so the planner can prove they imply the
+/// actionable partial indices' `WHERE status IN (1, 2)`. Drift's
+/// `t.status.equals(?)` and `t.status.isIn([?, ?])` bind the values as
+/// parameters unknown at plan time; the partial-index match then fails and
+/// the query falls back to scanning the whole log. The literals mirror
+/// `SyncSequenceStatus.missing.index = 1` and `.requested.index = 2`.
+const _actionableStatus = CustomExpression<bool>('status IN (1, 2)');
+const _missingStatus = CustomExpression<bool>('status = 1');
+const _requestedStatus = CustomExpression<bool>('status = 2');
+
 mixin _SyncDbBackfill on _$SyncDatabase {
   /// Highest durable payload, deletion or authoritative burn for one origin.
   /// Receiver give-up rows and unsettled reservations are not settlement proof.
@@ -97,6 +107,12 @@ mixin _SyncDbBackfill on _$SyncDatabase {
   /// Unix seconds, so equal timestamps are common and the unique
   /// `(host_id, counter)` tie-breaker keeps LIMIT/OFFSET pagination stable
   /// across calls.
+  ///
+  /// The statuses are literal SQL ([_actionableStatus]) so the planner uses
+  /// the actionable partial index
+  /// `idx_sync_sequence_log_actionable_status_created_at`. With bound
+  /// parameters every page of a manual full backfill scanned the whole log
+  /// (4.3 s on a real desktop, 2026-10-02).
   Future<List<SyncSequenceLogItem>> getMissingEntries({
     int limit = 50,
     int maxRequestCount = 10,
@@ -113,12 +129,11 @@ mixin _SyncDbBackfill on _$SyncDatabase {
           ..where(
             (t) {
               final missingEligible =
-                  t.status.equals(SyncSequenceStatus.missing.index) &
-                  t.createdAt.isSmallerOrEqualValue(cutoff);
+                  _missingStatus & t.createdAt.isSmallerOrEqualValue(cutoff);
               final requestedEligible =
                   effectiveRequestedMinAge == Duration.zero
-                  ? t.status.equals(SyncSequenceStatus.requested.index)
-                  : t.status.equals(SyncSequenceStatus.requested.index) &
+                  ? _requestedStatus
+                  : _requestedStatus &
                         ((t.lastRequestedAt.isNotNull() &
                                 t.lastRequestedAt.isSmallerOrEqualValue(
                                   requestedCutoff,
@@ -127,7 +142,8 @@ mixin _SyncDbBackfill on _$SyncDatabase {
                                 t.updatedAt.isSmallerOrEqualValue(
                                   requestedCutoff,
                                 )));
-              return (missingEligible | requestedEligible) &
+              return _actionableStatus &
+                  (missingEligible | requestedEligible) &
                   t.requestCount.isSmallerThanValue(maxRequestCount);
             },
           )
@@ -356,26 +372,14 @@ mixin _SyncDbBackfill on _$SyncDatabase {
     // bounded result set below.
     final baseQuery = select(syncSequenceLog)
       ..where((t) {
-        // `status IN (1, 2)` is inlined as a literal SQL fragment via
-        // `CustomExpression` so the SQLite planner can prove it implies
-        // the partial index's WHERE
-        // (`idx_sync_sequence_log_actionable_status_created_at`,
-        // declared with `WHERE status IN (1, 2)`). Drift's
-        // `t.status.equals(?) | t.status.equals(?)` and
-        // `t.status.isIn([?, ?])` both bind the values as parameters
-        // unknown at plan time; the partial-index match fails and the
-        // predicate falls back to a full table scan. The 2026-05-09
-        // desktop slow_queries log captured this shape at 399 hits/day
-        // in the 200–999 ms band before the rewrite. Literal values
-        // mirror `SyncSequenceStatus.missing.index = 1` and
-        // `.requested.index = 2`, matching the migration's enum-order
-        // assumption.
+        // Literal statuses ([_actionableStatus]) keep this on the actionable
+        // partial index; the 2026-05-09 desktop slow_queries log captured
+        // the bound-parameter shape at 399 hits/day in the 200–999 ms band.
         final missingEligible =
-            const CustomExpression<bool>('status = 1') &
-            t.createdAt.isSmallerOrEqualValue(minAgeCutoff);
+            _missingStatus & t.createdAt.isSmallerOrEqualValue(minAgeCutoff);
         final requestedEligible = effectiveRequestedMinAge == Duration.zero
-            ? const CustomExpression<bool>('status = 2')
-            : const CustomExpression<bool>('status = 2') &
+            ? _requestedStatus
+            : _requestedStatus &
                   ((t.lastRequestedAt.isNotNull() &
                           t.lastRequestedAt.isSmallerOrEqualValue(
                             requestedCutoff,
@@ -383,7 +387,7 @@ mixin _SyncDbBackfill on _$SyncDatabase {
                       (t.lastRequestedAt.isNull() &
                           t.updatedAt.isSmallerOrEqualValue(requestedCutoff)));
         var predicate =
-            const CustomExpression<bool>('status IN (1, 2)') &
+            _actionableStatus &
             t.requestCount.isSmallerThanValue(maxRequestCount) &
             (missingEligible | requestedEligible);
         if (maxAge != null) {
