@@ -7,8 +7,13 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/relationships/runtime/relationship_agent_reconciliation.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -49,11 +54,17 @@ class RelationshipRepository {
     required this._journalDb,
     required this._journalRepository,
     required this._persistenceLogic,
+    required this._agentRepository,
   });
 
   final JournalDb _journalDb;
   final JournalRepository _journalRepository;
   final PersistenceLogic _persistenceLogic;
+
+  /// Read only when `important` switches on, for the decisions this device
+  /// holds about the person's agent that the mark must land past
+  /// ([markStampAfter]).
+  final AgentRepository _agentRepository;
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
 
@@ -210,13 +221,15 @@ class RelationshipRepository {
       // the person is written under, or crash recovery burns their counter.
       id: id,
     );
+    final stamped = await _stampImportantSince(
+      meta.id,
+      data,
+      stored: null,
+      now: started,
+    );
     final relationship = RelationshipEntry(
       meta: meta,
-      data: _stampImportantSince(
-        data,
-        stored: null,
-        now: started,
-      ).withClampedImageFraming,
+      data: stamped.withClampedImageFraming,
       entryText: entryText,
     );
     final success = await _persistenceLogic.createDbEntity(relationship);
@@ -624,35 +637,63 @@ class RelationshipRepository {
     final updatedMeta = await _persistenceLogic.updateMetadata(
       relationship.meta,
     );
+    final stamped = await _stampImportantSince(
+      relationship.id,
+      relationship.data,
+      stored: stored,
+      now: clock.now(),
+    );
     final updated = relationship.copyWith(
       meta: updatedMeta,
-      data: _stampImportantSince(
-        relationship.data,
-        stored: stored,
-        now: clock.now(),
-      ).withClampedImageFraming,
+      data: stamped.withClampedImageFraming,
     );
     final result = await _persistenceLogic.updateDbEntity(updated);
     return result ?? false;
   }
 
   /// [data] with `importantSince` owned by this repository (ADR 0111):
-  /// stamped [now] when `important` switches on, otherwise the stored
-  /// person's stamp (none for a new person), so no caller can move the
-  /// user's last request for the agent — not a stale form, not a contact
-  /// refresh.
-  RelationshipData _stampImportantSince(
+  /// stamped when `important` switches on, otherwise the stored person's
+  /// stamp (none for a new person), so no caller can move the user's last
+  /// request for the agent — not a stale form, not a contact refresh. The
+  /// stamp is [now], or lands past every decision this device holds about
+  /// the person's agent ([markStampAfter]): a stop a peer's clock put ahead
+  /// of this one, which the user has seen and is overruling, must not
+  /// outrank the mark. Only the switch reads the agent store.
+  Future<RelationshipData> _stampImportantSince(
+    String relationshipId,
     RelationshipData data, {
     required RelationshipEntry? stored,
     required DateTime now,
-  }) {
+  }) async {
     final wasImportant = stored?.data.important ?? false;
     final since = data.important && !wasImportant
-        ? now
+        ? await _markStamp(
+            relationshipId,
+            now,
+            previousMark: stored?.data.importantSince,
+          )
         : stored?.data.importantSince;
     return since == data.importantSince
         ? data
         : data.copyWith(importantSince: since);
+  }
+
+  /// The stamp of a mark on [relationshipId] at [now]: past the identity
+  /// this device holds for the person's agent, and past this device's
+  /// deletion of it (`deleted_agents`).
+  Future<DateTime> _markStamp(
+    String relationshipId,
+    DateTime now, {
+    required DateTime? previousMark,
+  }) async {
+    final agentId = relationshipAgentIdFor(relationshipId);
+    final identity = await _agentRepository.getEntity(agentId);
+    return markStampAfter(
+      now,
+      identity: identity is AgentIdentityEntity ? identity : null,
+      deletedAt: await _agentRepository.deletedAgentAt(agentId),
+      previousMark: previousMark,
+    );
   }
 
   // ── Delete ─────────────────────────────────────────────────────────────────
@@ -813,6 +854,7 @@ final relationshipRepositoryProvider = Provider<RelationshipRepository>(
     // registered there.
     journalRepository: JournalRepository(),
     persistenceLogic: getIt<PersistenceLogic>(),
+    agentRepository: ref.watch(agentRepositoryProvider),
   ),
   name: 'relationshipRepositoryProvider',
 );

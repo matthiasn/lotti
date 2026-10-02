@@ -3266,9 +3266,11 @@ Left out, or residual:
   `AgentReplication` cover loss and backfill; here every message arrives,
   however late.
 - **Clock skew.** Every stamp is the step order. The code keeps that order
-  within an identity under skew: a decision built on a stamp its device's
-  clock has not reached lands a microsecond past it (`decisionStampAfter`).
-  A mark and a stop on two devices are still ordered by wall clock.
+  under skew for the decisions a device holds: one built on a stamp its
+  clock has not reached lands a microsecond past it (`decisionStampAfter`
+  within an identity, `markStampAfter` for a mark over the identity and
+  the device's own delete). A mark and a stop made on two devices before
+  either received the other are still ordered by wall clock.
 - **Brief me** is not modelled. It recreates an agent this device deleted as
   a user resume (`ensureAgentForRelationship`'s `askedByUser`), which the
   model's `Resume` step already covers once the agent exists.

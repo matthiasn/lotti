@@ -63,7 +63,9 @@ failures:
     peer's clock ran ahead — takes a microsecond past it instead
     (`decisionStampAfter`). Without that, the field join would hand a
     causal successor's lifecycle, stop or resume back to the decision it
-    replaced.
+    replaced. The mark lands the same way, past every decision about the
+    agent that the marking device holds (`markStampAfter`): a stop the
+    user has seen and is overruling must not outrank the new mark.
 - **Identities merge field by field.** For two concurrent identity versions:
   - the lifecycle with the later lifecycle stamp wins;
   - the stop with the later stop stamp wins, and so does the resume;
@@ -127,10 +129,11 @@ last" in the reconcile pass rather than in the merge, removes that failure.
   That repairs every person the old reaper lost; a user who destroyed the
   agent by hand while keeping reminders on turns reminders off instead.
 - A mark (`importantSince`, on the person) and a stop (on the identity)
-  are compared by wall clock, and no write orders one after the other. A
-  mark and a stop made on two devices within their clock skew of each other
-  can be ordered the wrong way round. The stamps within one identity are
-  kept in causal order (`decisionStampAfter`).
+  are compared by wall clock. Each lands past the decisions its device
+  holds (`decisionStampAfter`, `markStampAfter`), so a mark made after the
+  stop arrived outranks it whatever the two clocks say; but a mark and a
+  stop made on two devices within their clock skew of each other, before
+  either received the other, can be ordered the wrong way round.
 - The pass writes on a device's own view. A device that holds a stale
   person can briefly write a lifecycle that a later delivery then corrects.
   The model checks that every quiescent state is correct.

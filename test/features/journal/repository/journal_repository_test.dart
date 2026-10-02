@@ -15,6 +15,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_types.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -117,7 +118,12 @@ void main() {
             ..registerSingleton<NotificationService>(mockNotificationService)
             ..registerSingleton<VectorClockService>(mockVectorClockService)
             ..registerSingleton<OutboxService>(mockOutboxService)
-            ..registerSingleton<TimeService>(mockTimeService);
+            ..registerSingleton<TimeService>(mockTimeService)
+            // The relationship repository the cascade writes a person through
+            // is built over the agent store, which it reads only when a
+            // person is marked important — never here, so a mock that
+            // refuses every call proves it.
+            ..registerSingleton<AgentDatabase>(MockAgentDatabase());
         },
       );
 

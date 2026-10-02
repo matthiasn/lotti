@@ -18,8 +18,8 @@ sources:
     last_modified: 2026-09-30
   - id: reconciliation
     resource: ../../lib/features/relationships/runtime/relationship_agent_reconciliation.dart
-    title: reconcileRelationshipAgent — where the user's latest word puts the agent
-    last_modified: 2026-09-30
+    title: reconcileRelationshipAgent and markStampAfter — where the user's latest word puts the agent, and how a mark is stamped
+    last_modified: 2026-10-02
   - id: sync-runtime
     resource: ../../lib/features/sync/matrix/sync_event_processor_agent_handlers.dart
     title: Runtime restoration after synced relationship prerequisites arrive
@@ -795,7 +795,8 @@ settles what the lifecycle should be as a rule over recorded intent, and
 `specs/tla/RelationshipAgentLifecycle.tla` checks it on two devices:
 
 - **The ask.** `RelationshipData.importantSince`, stamped by the repository
-  on the off→on switch of `important` and never by a caller; and the
+  on the off→on switch of `important` and never by a caller, past every
+  decision the device holds about the agent (`markStampAfter`); and the
   identity's `userResumedAt`, from the agent controls' resume.
 - **The stop.** The identity's `userStoppedAt` and `userStopLifecycle`, from
   the agent controls' destroy, pause or delete (`byUser: true`). A teardown
@@ -819,8 +820,9 @@ from a peer whose clock ran ahead lands a microsecond past it
 (`joinIdentityDecisions`): the lifecycle by `lifecycleUpdatedAt`, the stop
 and resume by their stamps. Every device therefore reaches the same stamps,
 computes the same target, and converges. A mark and a stop are still
-compared by wall clock: two made on different devices within their clock
-skew can be ordered the wrong way round.
+compared by wall clock: a mark made after the stop arrived lands past it,
+but two made on different devices within their clock skew, before either
+received the other, can be ordered the wrong way round.
 
 ```mermaid
 stateDiagram-v2
@@ -843,7 +845,7 @@ flowchart TD
   A --> L{agent link?}
   L -->|none| OK1[no-op]
   L --> G{"person still there?<br/>(unfiltered read)"}
-  G -->|"deleted / gone"| STOP["write NOTHING — not even the tick.<br/>maintenance reaps the orphaned identity"]
+  G -->|"tombstone / not arrived"| STOP["write NOTHING — not even the tick.<br/>maintenance reaps only over a tombstone"]
   G --> R[re-arm daily cadence wake<br/>skip if unchanged]
   R --> E{important AND active?}
   E -->|no| OK2[done — the tick keeps checking]

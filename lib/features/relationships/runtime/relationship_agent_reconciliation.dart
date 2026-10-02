@@ -1,6 +1,7 @@
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 
 /// What the maintenance pass does for one live person's agent.
 enum RelationshipAgentReconciliation {
@@ -87,6 +88,31 @@ RelationshipAgentReconciliation reconcileRelationshipAgent({
     AgentLifecycle.created => RelationshipAgentReconciliation.none,
   };
 }
+
+/// The stamp of a mark made at [now] on a device that holds [identity] as
+/// the person's agent, deleted it at [deletedAt] (`deleted_agents`) and
+/// stored [previousMark] as the person's last mark: [now], or a microsecond
+/// past the latest of those decisions when [now] is not later
+/// ([decisionStampAfter]). The identity's stamps came from other devices'
+/// clocks too. A stop a peer's clock put ahead of this one, which the user
+/// has since seen and overruled by marking the person again, must lose to
+/// that mark; stamped plainly [now], the mark would read as older than the
+/// stop, and the pass would keep the agent stopped until this clock caught
+/// up (ADR 0111).
+DateTime markStampAfter(
+  DateTime now, {
+  required AgentIdentityEntity? identity,
+  required DateTime? deletedAt,
+  DateTime? previousMark,
+}) => decisionStampAfter(now, [
+  previousMark,
+  deletedAt,
+  if (identity != null) ...[
+    identityLifecycleAt(identity),
+    identity.userStoppedAt,
+    identity.userResumedAt,
+  ],
+]);
 
 DateTime? _latest(Iterable<DateTime?> stamps) {
   DateTime? latest;

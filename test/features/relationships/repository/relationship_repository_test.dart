@@ -14,6 +14,8 @@ import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -27,6 +29,7 @@ import '../../../database/test_utils.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
+import '../../agents/test_data/entity_factories.dart';
 
 void main() {
   final testDate = DateTime(2026, 8, 13, 10, 30);
@@ -34,6 +37,7 @@ void main() {
   late MockJournalDb mockDb;
   late MockJournalRepository mockJournalRepository;
   late MockPersistenceLogic mockPersistence;
+  late MockAgentRepository mockAgentRepository;
   late RelationshipRepository repository;
 
   Metadata meta(String id, {DateTime? deletedAt, bool? private}) => Metadata(
@@ -106,12 +110,22 @@ void main() {
     mockDb = MockJournalDb();
     mockJournalRepository = MockJournalRepository();
     mockPersistence = MockPersistenceLogic();
+    mockAgentRepository = MockAgentRepository();
     getIt.registerSingleton<DomainLogger>(MockDomainLogger());
     repository = RelationshipRepository(
       journalDb: mockDb,
       journalRepository: mockJournalRepository,
       persistenceLogic: mockPersistence,
+      agentRepository: mockAgentRepository,
     );
+    // This device holds no agent, and deleted none, unless a test says so:
+    // a mark lands past the decisions it holds.
+    when(
+      () => mockAgentRepository.getEntity(any()),
+    ).thenAnswer((_) async => null);
+    when(
+      () => mockAgentRepository.deletedAgentAt(any()),
+    ).thenAnswer((_) async => null);
 
     // Private entries are hidden unless a test opts in — the main-side
     // default the private-gate tests assume.
@@ -611,6 +625,105 @@ void main() {
         expect(created!.data.importantSince, isNull);
       },
     );
+
+    group('the mark lands past every decision this device holds', () {
+      final agentId = relationshipAgentIdFor('rel-001');
+      final ahead = later.add(const Duration(minutes: 10));
+      const tick = Duration(microseconds: 1);
+
+      test(
+        "a stop a peer's clock put ahead of this one, which the user has "
+        'seen and is overruling, lands before the new mark — stamped at the '
+        'clock, the mark would read as older and the agent would stay stopped',
+        () async {
+          when(() => mockAgentRepository.getEntity(agentId)).thenAnswer(
+            (_) async => makeTestIdentity(
+              id: agentId,
+              agentId: agentId,
+              updatedAt: testDate,
+            ).copyWith(userStoppedAt: ahead),
+          );
+          final data = await updateOver(
+            stored: person(important: false),
+            update: person(important: true),
+          );
+          expect(data.importantSince, ahead.add(tick));
+        },
+      );
+
+      test("this device's deletion of the agent, too", () async {
+        when(
+          () => mockAgentRepository.deletedAgentAt(agentId),
+        ).thenAnswer((_) async => ahead);
+        final data = await updateOver(
+          stored: person(important: false),
+          update: person(important: true),
+        );
+        expect(data.importantSince, ahead.add(tick));
+      });
+
+      test(
+        'decisions the clock has passed leave the mark at the clock',
+        () async {
+          when(() => mockAgentRepository.getEntity(agentId)).thenAnswer(
+            (_) async => makeTestIdentity(
+              id: agentId,
+              agentId: agentId,
+              updatedAt: testDate,
+            ).copyWith(userStoppedAt: markedAt, userResumedAt: markedAt),
+          );
+          when(
+            () => mockAgentRepository.deletedAgentAt(agentId),
+          ).thenAnswer((_) async => markedAt);
+          final data = await updateOver(
+            stored: person(important: false),
+            update: person(important: true),
+          );
+          expect(data.importantSince, later);
+        },
+      );
+
+      test(
+        'an edit that does not switch important on reads no agent',
+        () async {
+          await updateOver(
+            stored: person(important: true, since: markedAt),
+            update: person(important: true, since: markedAt),
+          );
+          await updateOver(
+            stored: person(important: true, since: markedAt),
+            update: person(important: false),
+          );
+          verifyNever(() => mockAgentRepository.getEntity(any()));
+          verifyNever(() => mockAgentRepository.deletedAgentAt(any()));
+        },
+      );
+
+      test(
+        'a person created important under an id whose agent this device '
+        'holds stopped is stamped past that stop',
+        () async {
+          when(() => mockAgentRepository.getEntity(agentId)).thenAnswer(
+            (_) async => makeTestIdentity(
+              id: agentId,
+              agentId: agentId,
+              updatedAt: testDate,
+            ).copyWith(userStoppedAt: ahead),
+          );
+          when(
+            () => mockPersistence.createDbEntity(any()),
+          ).thenAnswer((_) async => true);
+          final created = await withClock(
+            Clock.fixed(later),
+            () => repository.createRelationship(
+              data: relationshipData().copyWith(important: true),
+              id: 'rel-001',
+            ),
+          );
+          expect(created!.data.importantSince, ahead.add(tick));
+        },
+      );
+    });
   });
 
   group('image framing is clamped on the way to storage', () {
@@ -1420,7 +1533,11 @@ void main() {
         await getIt.unregister<PersistenceLogic>();
       });
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(mockAgentRepository),
+        ],
+      );
       addTearDown(container.dispose);
 
       final wired = container.read(relationshipRepositoryProvider);
@@ -1490,6 +1607,7 @@ void main() {
         journalDb: db,
         journalRepository: mockJournalRepository,
         persistenceLogic: mockPersistence,
+        agentRepository: mockAgentRepository,
       );
 
       await db.updateJournalEntity(checkInEntry('c-1'));
