@@ -89,7 +89,7 @@ design switches each have a counterexample, and it surfaced two open design
 questions (orphaned envelopes, where a revocation cuts). Not included in the
 historical totals above.
 
-The `PullRequestSnapshot` design model adds one spec, five configurations,
+The `PullRequestSnapshot` design model (#4603) adds one spec, five configurations,
 nine named properties and 4,221,294 distinct states. It models GitHub pull
 requests linked to tasks before most of their code exists: server-stamped
 observations, racing refreshes, unlinks, replication with a concurrent-version
@@ -263,6 +263,7 @@ counterexamples found. "Severity" grades each of those bugs; see
 | [#4522](https://github.com/matthiasn/lotti/pull/4522) | pending | ai | `TranscriptionRun` | 2 | 4 (0) | P1×2 P2×2 | — | A skill transcription whose write the database refused — a synced edit landed between the re-read and the write, or the write threw — was reported as a success: status idle, attribution succeeded, the summary and the agent nudge ran, and the check-in waiter sat on its spinner until the timeout. Failed runs still summarized and woke the agent, two requests for one recording both paid for an inference, and text edited during the run was overwritten. Writes are now checked and retried, runs are single-flight per recording, and an edit made during the run wins |
 | [#4522](https://github.com/matthiasn/lotti/pull/4522) | pending | ai | `EmbeddingFreshness` | 2 | 6 (0) | P1 P2×3 P3×2 | — | Semantic search kept finding deleted and shortened entries, and pulled up their tasks; edits made while Ollama was down were never indexed. Runs of one entity are now serialised end to end, gone entries lose their vectors, failures retry after the cooldown, reports follow their task, and a crash recovery keeps the newest copy |
 | [#4522](https://github.com/matthiasn/lotti/pull/4522) | pending | ai | `ConversationLoop` | 2 | 6 (0) | P2×4 P3×2 | — | The turn limit counted the user messages left after trimming, so a wake calling nine tools a round never reached `maxTurnsPerWake` and kept calling the model, and synthesized tool-call ids repeated. A trim could also open the history on a tool call, a strategy that threw left calls unanswered for the next message, and nothing serialized sends on one conversation |
+| [#4603](https://github.com/matthiasn/lotti/pull/4603) | pending | github | `PullRequestSnapshot` | 5 | 0 | — | — | A design model written before most of the code: pull requests linked to tasks, refreshed on every task context, replicated with a concurrent-version resolver instead of a user-facing conflict. Each of its six design switches has a counterexample; it settled ordering by the server's `Date` and writing only changed snapshots, so a refresh cannot wake the agent that started it |
 ## Sync follow-up evidence, 2026-09-26
 
 This supplements the historical totals above; it does not add repeated model
