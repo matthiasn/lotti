@@ -110,13 +110,23 @@ your own hardware and grid.
 
 | Platform                 | Where to get it                                                                                                                                 |
 |--------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Linux**                | [Flathub](https://flathub.org/en/apps/com.matthiasn.lotti) (recommended) or `tar.gz` on [Releases](https://github.com/matthiasn/lotti/releases)  |
+| **Linux**                | [Flathub](https://flathub.org/en/apps/com.matthiasn.lotti) (recommended), or AppImage or `tar.gz` on [Releases](https://github.com/matthiasn/lotti/releases) |
 | **macOS**                | Signed and notarized DMG on [Releases](https://github.com/matthiasn/lotti/releases)                                                             |
 | **iOS / iPadOS / macOS** | TestFlight (limited; invitation only), with broader availability planned                                                                        |
 | **Android**              | APK on [Releases](https://github.com/matthiasn/lotti/releases), or Play Store internal testing (limited; invitation only)                        |
 | **Windows**              | Build from [source](docs/DEVELOPMENT.md) for now                                                                                                |
 
 [![Get it on Flathub](https://flathub.org/api/badge?locale=en)](https://flathub.org/en/apps/com.matthiasn.lotti)
+
+**AppImage (Linux, no app store):** download `Lotti-<version>-x86_64.AppImage`
+from [Releases](https://github.com/matthiasn/lotti/releases), mark the
+downloaded file executable (`chmod +x` on it, or your file manager's
+permissions dialog) and start it. It brings its own media, keychain and
+recording libraries and runs on distributions from 2022 on
+(glibc 2.35 or newer: Ubuntu 22.04, Debian 12, Fedora 36 and later) that have
+GTK 3 and Mesa's OpenGL ES, as any GNOME or KDE desktop does. It mounts itself
+with FUSE, which desktops ship by default; where FUSE is missing, run it with
+`--appimage-extract-and-run`. Unlike Flathub, it does not update itself.
 
 ---
 

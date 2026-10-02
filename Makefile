@@ -473,6 +473,12 @@ linux_build:
 .PHONY: linux
 linux: l10n test linux_build
 
+# Packages the release bundle as build/appimage/Lotti-<version>-<arch>.AppImage.
+# See linux/appimage/README.md for the packages it needs.
+.PHONY: linux_appimage
+linux_appimage: linux_build
+	./linux/appimage/build_appimage.sh
+
 .PHONY: windows
 windows: clean_test
 	$(FLUTTER_CMD) build windows

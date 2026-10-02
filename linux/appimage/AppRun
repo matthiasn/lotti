@@ -1,0 +1,31 @@
+#!/bin/sh
+# Entry point of the Lotti AppImage.
+#
+# The AppImage runtime mounts the image and runs this script. Bundled
+# libraries are found through RUNPATH entries that build_appimage.sh writes
+# into every binary, so LD_LIBRARY_PATH is deliberately left alone: host
+# programs that Lotti starts (browser, file manager, ...) keep using the
+# host's own libraries.
+set -eu
+
+APPDIR="${APPDIR:-$(dirname "$(readlink -f "$0")")}"
+export APPDIR
+
+# media_kit loads libmpv at runtime with dlopen() and honours this variable.
+for lib in "$APPDIR"/usr/lib/libmpv.so.*; do
+  [ -e "$lib" ] && export LIBMPV_LIBRARY_PATH="$lib"
+done
+
+# Use only the bundled GStreamer plugins. Host plugins are built against the
+# host's libgstreamer and would not load against the bundled one.
+export GST_PLUGIN_SYSTEM_PATH_1_0="$APPDIR/usr/lib/gstreamer-1.0"
+export GST_PLUGIN_SCANNER_1_0="$APPDIR/usr/lib/gstreamer-1.0/gst-plugin-scanner"
+unset GST_PLUGIN_PATH GST_PLUGIN_PATH_1_0 GST_PLUGIN_SYSTEM_PATH
+# The mount point changes on every start, so keep the plugin cache away from
+# the host's registry.
+export GST_REGISTRY_1_0="${XDG_CACHE_HOME:-$HOME/.cache}/com.matthiasn.lotti/appimage-gstreamer-registry.bin"
+
+# Audio recording runs `parecord | ffmpeg`; prefer the bundled copies.
+export PATH="$APPDIR/usr/bin:$PATH"
+
+exec "$APPDIR/usr/lib/lotti/lotti" "$@"
