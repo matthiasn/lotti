@@ -584,13 +584,31 @@ class TaskAgentService {
     // After the runtime is enabled and subscriptions are restored, so the
     // catch-up wake cannot race its own scheduling setup. Inactive agents and
     // disabled setups never reach here.
-    if (activating && wakeOnEnable) {
+    if (activating && wakeOnEnable && await _catchUpOwed(agentId)) {
       orchestrator.enqueueManualWake(
         agentId: agentId,
         reason: WakeReason.reanalysis.name,
         initiator: WakeInitiator.automation,
       );
     }
+  }
+
+  /// Whether enabling automation for [agentId] owes a catch-up wake.
+  ///
+  /// `reportFreshAt` is only written by a wake that cleared a stale mark, so
+  /// its absence does not mean the agent never reported: an agent whose report
+  /// was never marked stale has none. Reading it as "no report" spent a paid
+  /// wake on every switch-on. A catch-up is owed when there is no current
+  /// report yet, the report is stale, or project activity is still pending.
+  Future<bool> _catchUpOwed(String agentId) async {
+    final state = await repository.getAgentState(agentId);
+    if (state == null || state.isReportStale) return true;
+    if (state.slots.pendingProjectActivityAt != null) return true;
+    return await repository.getLatestReport(
+          agentId,
+          AgentReportScopes.current,
+        ) ==
+        null;
   }
 
   /// Update the base inference profile and clear any direct model override.

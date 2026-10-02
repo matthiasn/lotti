@@ -47,6 +47,21 @@ class ProjectRepository {
   final EntitiesCacheService _entitiesCacheService;
   final PersistenceLogic _persistenceLogic;
   final UpdateNotifications _updateNotifications;
+
+  /// Announces a project or link change.
+  ///
+  /// Inside an agent wake the change goes to the UI only, as every journal
+  /// write made there does (`PersistenceLogic`): on the local stream it reads
+  /// as a user edit, and a project agent watching its project would wake
+  /// again over a change an agent just made.
+  void _notifyChange(Set<String> affectedIds) {
+    if (isAgentExecution) {
+      _updateNotifications.notifyUiOnly(affectedIds);
+    } else {
+      _updateNotifications.notify(affectedIds);
+    }
+  }
+
   final VectorClockService _vectorClockService;
   final Future<bool> Function(String projectId)? projectHasActiveAgent;
 
@@ -326,7 +341,7 @@ class ProjectRepository {
       return committedProject == updated;
     });
     if (committed) {
-      _updateNotifications.notify({
+      _notifyChange({
         projectEntityUpdateNotification(updated!.id),
       });
     }
@@ -348,7 +363,7 @@ class ProjectRepository {
     final committed =
         (result ?? false) || await getProjectById(project.id) == null;
     if (committed) {
-      _updateNotifications.notify({
+      _notifyChange({
         projectEntityUpdateNotification(deleted.id),
       });
     }
@@ -431,7 +446,7 @@ class ProjectRepository {
         // direct project edits should burn LLM tokens immediately. Bare
         // tokens are kept alongside so UI providers reacting to the
         // legacy form continue to refresh.
-        _updateNotifications.notify({
+        _notifyChange({
           projectId,
           taskId,
           projectNotification,
@@ -670,7 +685,7 @@ class ProjectRepository {
         // Same propagation tagging as [linkTaskToProject]: relinking is a
         // task-link side-effect, not a direct project edit.
         final projectIds = {for (final link in retire) link.fromId, projectId};
-        _updateNotifications.notify({
+        _notifyChange({
           ...projectIds,
           taskId,
           projectNotification,
@@ -756,7 +771,7 @@ class ProjectRepository {
         // Same propagation tagging as [linkTaskToProject]: unlinking is a
         // task-link side-effect, not a direct project edit.
         final projectIds = {for (final link in retire) link.fromId};
-        _updateNotifications.notify({
+        _notifyChange({
           ...projectIds,
           taskId,
           projectNotification,

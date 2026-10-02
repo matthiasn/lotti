@@ -2880,6 +2880,21 @@ void main() {
         expectCatchUpWakes(1);
       });
 
+      // Regression: `reportFreshAt` is only written by a wake that cleared a
+      // stale mark, so a report nothing ever invalidated has none. Reading
+      // that as "never reported" bought a paid wake on every switch-on.
+      test('turning on does not wake for a current report that was never '
+          'marked stale', () async {
+        stubEnablePath(state: makeState());
+        when(
+          () => mockRepository.getLatestReport('agent-1', any()),
+        ).thenAnswer((_) async => makeTestReport(agentId: 'agent-1'));
+
+        await service.updateAutomaticUpdates(agentId: 'agent-1', enabled: true);
+
+        expectCatchUpWakes(0);
+      });
+
       test('turning on an inactive agent neither enables runtime nor '
           'wakes', () async {
         stubEnablePath(state: null, lifecycle: AgentLifecycle.dormant);

@@ -1310,6 +1310,37 @@ void main() {
       verify(() => mockOutboxService.enqueueMessage(any())).called(1);
     });
 
+    // Regression: a link an agent made inside its wake (a task agent's
+    // follow-up task) reached the local stream as if the user had made it,
+    // and the project agent woke again over it.
+    test('a link made inside an agent wake only refreshes the UI', () async {
+      when(
+        () => mockDb.getProjectLinkForTask('task-001'),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockVectorClockService.getNextVectorClock(
+          payload: any(named: 'payload'),
+        ),
+      ).thenAnswer((_) async => const VectorClock({'d': 1}));
+      when(() => mockNotifications.notifyUiOnly(any())).thenReturn(null);
+
+      final result = await runZoned(
+        () => repository.linkTaskToProject(
+          projectId: 'project-001',
+          taskId: 'task-001',
+        ),
+        zoneValues: {agentExecutionZoneKey: true},
+      );
+
+      expect(result, isTrue);
+      verifyNever(() => mockNotifications.notify(any()));
+      verify(
+        () => mockNotifications.notifyUiOnly(
+          any(that: contains(projectEntityUpdateNotification('project-001'))),
+        ),
+      ).called(1);
+    });
+
     test('rejects cross-category linking', () async {
       final crossCategoryTask = Task(
         meta: taskMeta.copyWith(categoryId: 'cat-different'),
