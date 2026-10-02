@@ -20,6 +20,14 @@ sources:
     resource: ../../docs/adr/0111-a-tracked-person-keeps-their-agent.md
     title: ADR 0111 — a tracked person keeps their agent
     last_modified: 2026-09-30
+  - id: adr-0114
+    resource: ../../docs/adr/0114-every-device-reads-a-stored-time-the-same-way.md
+    title: ADR 0114 — every device reads a stored time the same way
+    last_modified: 2026-10-02
+  - id: calendar
+    resource: ../../lib/features/relationships/model/relationship_calendar.dart
+    title: How a stored journal time is read, the same on every device
+    last_modified: 2026-10-02
   - id: reconciliation
     resource: ../../lib/features/relationships/runtime/relationship_agent_reconciliation.dart
     title: reconcileRelationshipAgent and markStampAfter — where the user's latest word puts the agent, and how a mark is stamped
@@ -872,25 +880,32 @@ Four decisions keep multi-device runs convergent (ADR 0059 Decision 2):
   register. The gated `getRelationshipById` is the UI's read, and using it
   in the runtime silently un-tracks a private person on whichever device
   hides private entries.
-- **Every derived day is a UTC calendar day.** The due day is
-  `UTC-day(referenceAt) + cadenceDays`, computed with calendar components
-  rather than a `Duration` — UTC has no DST, so the arithmetic is exact.
-  Deriving it through the device's local calendar is not cosmetic: the
-  register's `dueAt` would differ per device, so two peers would rewrite it
-  at each other on every sync, and the episode key below would mint one
-  escalation per timezone and pay for the same lapse twice. The intent is
-  one answer in every timezone; the code does not deliver it yet.
-  `referenceAt` is a check-in's `dateFrom`, stored as the writer's
-  wall-clock components without an offset, and `.toUtc()` parses them in
-  the reader's zone — so for a check-in near midnight, two devices in
-  different zones derive different due days, and the register and the
-  escalations do exactly what this paragraph warns of.
-  `specs/tla/RelationshipCadence.tla` reproduces it (`DueDayAgreed`,
-  `EscalationKeyIsTheDueDay`, `RegisterStable`), along with a touch from
-  another zone that keeps the creation `utcOffset` and so names the wrong
-  evidence instant, and a briefing whose `createdAt` is written in local
-  time and read elsewhere as another instant; the fixes are the plan's
-  R-03 and R-11g.
+- **Every stored time is read in one of two ways, the same on every
+  device** (ADR 0114, `relationship_calendar.dart`). A journal time is the
+  writer's wall-clock components without an offset, beside the entry's
+  `utcOffset`; `.toUtc()` parses the components in the reader's zone and is
+  never used on one. Its *calendar day* is the day the components name
+  (`relationshipCalendarDay`), and its *instant* is the components rebuilt
+  through the stored offset (`relationshipStoredInstant`). The due day is
+  the newest check-in's calendar day plus `cadenceDays`, counted on day
+  keys (`relationshipDueDay`) rather than by adding hours, so DST moves
+  nothing; the register's `referenceAt` and `lastCheckInAt` are stored
+  instants; the lapse is detected at UTC midnight of the due day, one
+  instant for every device. This is not cosmetic: derived through the
+  reader's zone, a check-in near midnight gave two devices two due days,
+  the register's `dueAt` differed per device so the two rewrote it at each
+  other on every sync, and the episode key below minted one escalation per
+  zone and paid for the same lapse twice.
+  `specs/tla/RelationshipCadence.tla` has the counterexamples
+  (`DueDayAgreed`, `EscalationKeyIsTheDueDay`, `RegisterStable`), and
+  `relationship_cadence_model_conformance.dart` replays it against the real
+  tick on two devices in Berlin and Tokyo. The same rule covers the other
+  stamps devices compare: `updateMetadata` writes the device's own offset
+  beside the new `updatedAt`, so a touch from another zone names the
+  instant the toucher meant; the briefing's `createdAt`, the head's
+  in-period stamp and the cadence tick's deadline are written in UTC. The
+  people list's due date and overdue count use the same day arithmetic
+  (`cadenceDueDate`, `cadenceOverdueDays`).
 - **The register is recomputed wholesale, never accumulated**, carries the
   vector clock of the row it read, and is skipped entirely when identical —
   so the uneventful daily tick is a true no-write no-op.

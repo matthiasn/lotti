@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:lotti/features/relationships/model/relationship_calendar.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -152,7 +153,14 @@ bool _isSameDay(DateTime a, DateTime b) =>
 
 /// The cadence due date: the next date by which a check-in should land,
 /// given the [lastCheckInAt] (or [trackingStartedAt] when none exists yet)
-/// and the [cadenceDays]. `null` when the person has no cadence.
+/// and the [cadenceDays], as local midnight of that calendar day. `null`
+/// when the person has no cadence.
+///
+/// The same day the agent derives (`deriveCadenceFacts`): the stamp's own
+/// calendar day plus the cadence, counted on the calendar
+/// ([relationshipDueDay]) rather than by adding twenty-four hours per day,
+/// which drifts across a DST transition and can land on the wrong date. A
+/// day with no time of day, so two people due the same day compare equal.
 DateTime? cadenceDueDate({
   required DateTime? lastCheckInAt,
   required DateTime? trackingStartedAt,
@@ -162,7 +170,8 @@ DateTime? cadenceDueDate({
   if (cadenceDays == null || cadenceDays <= 0) return null;
   final anchor = now ?? clock.now();
   final base = lastCheckInAt ?? trackingStartedAt ?? anchor;
-  return base.add(Duration(days: cadenceDays));
+  final due = relationshipDueDay(base, cadenceDays);
+  return DateTime(due.year, due.month, due.day);
 }
 
 /// Whole days between the cadence due date and [now]. Positive when the
@@ -183,16 +192,11 @@ int? cadenceOverdueDays({
   if (due == null) return null;
   final anchor = now ?? clock.now();
   // Positive when the cadence is overdue (the due date is in the past): the
-  // days from the due date up to now.
-  return _wholeDaysBetween(due, anchor);
-}
-
-/// Whole days from [from] to [to], floored (a check-in 6 hours ago is 0
-/// days ago, not "today = 1"). Never negative when [from] is before [to].
-int _wholeDaysBetween(DateTime from, DateTime to) {
-  final fromMidnight = DateTime(from.year, from.month, from.day);
-  final toMidnight = DateTime(to.year, to.month, to.day);
-  return toMidnight.difference(fromMidnight).inDays;
+  // calendar days from the due day up to today. Day keys, not a difference
+  // of local midnights: the 23-hour day of a spring-forward counts as one
+  // day, where a floored `Duration` made it zero and read "due today" for a
+  // person a day over.
+  return relationshipCalendarDaysBetween(due, anchor);
 }
 
 /// A line of prose with a date inside it, where the date — and only the date

@@ -74,6 +74,65 @@ String relationshipAdId(String agentId, String runKey) => const Uuid().v5(
   'lotti://relationship-agent/$agentId/$runKey/ad',
 );
 
+/// Whether an automatic escalation ends at €0 before inference, because the
+/// fact it was armed for no longer holds (ADR 0059 Decision 3).
+///
+/// A lapse episode stands down when the cadence is no longer due and the
+/// briefing is not stale either — a check-in landing while the escalation
+/// rode sync moves the due day; a refresh episode stands down when its
+/// evidence has since changed again ([relationshipRefreshSuperseded]): the
+/// newer change armed its own refresh, which briefs on everything. And
+/// eligibility binds automatic wakes: un-marking important or archiving
+/// silences the agent instantly. The one gate the run and the model
+/// conformance trace share, so neither can brief where the other stands
+/// down.
+bool relationshipEscalationStandsDown({
+  required RelationshipCadenceDerivation derivation,
+  required AgentReportEntity? previousReport,
+  required String? escalationKey,
+  required bool eligible,
+}) {
+  final cadenceDue = derivation.status == RelationshipCadenceStatus.due;
+  final reportStale = relationshipEvidenceNewerThan(derivation, previousReport);
+  return (!cadenceDue && !reportStale) ||
+      relationshipRefreshSuperseded(escalationKey, derivation) ||
+      !eligible;
+}
+
+/// The report head's LWW timestamp: the due day's last instant once that
+/// day is over, the wall clock otherwise.
+///
+/// UTC, deliberately — this timestamp exists to give concurrent heads from
+/// different devices a DUE-DAY-based LWW order, and a local constructor
+/// would map the same due day to different instants across timezones, so
+/// an eastern device's older due day could outrank a western device's
+/// newer one. [dueDayUtc] is already a midnight-UTC day (see
+/// `RelationshipCadenceDerivation`); the wall clock is written in UTC for
+/// the same reason the briefing's own stamp is
+/// ([relationshipBriefingCreatedAt]).
+DateTime relationshipReportHeadUpdatedAt(DateTime dueDayUtc, DateTime now) {
+  final dueDayEnd = DateTime.utc(
+    dueDayUtc.year,
+    dueDayUtc.month,
+    dueDayUtc.day,
+    23,
+    59,
+    59,
+  );
+  return dueDayEnd.isBefore(now) ? dueDayEnd : now.toUtc();
+}
+
+/// The instant a briefing written at [now] is stamped with: UTC.
+///
+/// The row syncs, and a local instant serializes without an offset, so a
+/// peer in another zone read the briefing as hours earlier or later than
+/// the evidence it was written for — behind it, east of the writer — and
+/// its next tick armed a refresh for evidence already briefed
+/// (`specs/tla/RelationshipCadence.tla`, `ReportStampUtc`; ADR 0114). The
+/// nudge beside it has always been stamped in UTC. A reader that formats
+/// the stamp calls `toLocal()`; one that measures its age need not.
+DateTime relationshipBriefingCreatedAt(DateTime now) => now.toUtc();
+
 /// The resolved inference route for a relationship agent. `profileId` is
 /// the profile that won the resolution chain, or null when the validated
 /// default model or a direct thinking-model override routes.
@@ -340,28 +399,21 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       previousReport,
     );
 
-    // Re-derive facts FIRST and return before any inference when the armed
-    // fact no longer holds (ADR 0059 Decision 3): a check-in landing while
-    // the escalation rode sync moves the due day, and this stale episode
-    // consumes itself at €0.
     final cadenceDue = derivation.status == RelationshipCadenceStatus.due;
-    if (!interactive && !reportRefresh && !cadenceDue && !reportStale) {
-      return const WakeResult(success: true);
-    }
-    // A refresh armed for evidence that has since changed again stands down:
-    // the newer change armed its own refresh, which briefs on everything.
-    if (!interactive &&
-        !reportRefresh &&
-        relationshipRefreshSuperseded(escalationDueDay, derivation)) {
-      return const WakeResult(success: true);
-    }
-    // Eligibility binds automatic wakes: un-marking important or archiving
-    // silences the agent instantly. Chat and the explicit Brief me remain
-    // answerable — the user is asking directly.
     final eligible =
         relationship.data.important &&
         relationship.data.status is RelationshipActive;
-    if (!interactive && !reportRefresh && !eligible) {
+    // Re-derive facts FIRST and return before any inference when the armed
+    // fact no longer holds (ADR 0059 Decision 3). Chat and the explicit
+    // Brief me are never stood down — the user is asking directly.
+    if (!interactive &&
+        !reportRefresh &&
+        relationshipEscalationStandsDown(
+          derivation: derivation,
+          previousReport: previousReport,
+          escalationKey: escalationDueDay,
+          eligible: eligible,
+        )) {
       return const WakeResult(success: true);
     }
 
@@ -921,7 +973,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
             id: reportId,
             agentId: agentId,
             scope: AgentReportScopes.current,
-            createdAt: now,
+            createdAt: relationshipBriefingCreatedAt(now),
             vectorClock: null,
             content: sanitizeAgentReportText(
               briefing.content,
@@ -982,7 +1034,10 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
               agentId: agentId,
               scope: AgentReportScopes.current,
               reportId: reportId,
-              updatedAt: _headTimestamp(derivation.dueDayUtc, now),
+              updatedAt: relationshipReportHeadUpdatedAt(
+                derivation.dueDayUtc,
+                now,
+              ),
               // Carry the head this write replaces (ADR 0068 addendum): a
               // second briefing for the same overdue due day stamps the same
               // instant, and built on no clock it would be resolved as
@@ -1058,27 +1113,6 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       attributionFinalized: attributionFinalized,
       reportHeadAdvanced: reportHeadAdvanced,
     );
-  }
-
-  /// The report head's LWW timestamp: the due day's last instant once that
-  /// day is over, the wall clock otherwise.
-  ///
-  /// UTC, deliberately — this timestamp exists to give concurrent heads from
-  /// different devices a DUE-DAY-based LWW order, and a local constructor
-  /// would map the same due day to different instants across timezones, so
-  /// an eastern device's older due day could outrank a western device's
-  /// newer one. [dueDayUtc] is already a midnight-UTC day (see
-  /// `RelationshipCadenceDerivation`).
-  DateTime _headTimestamp(DateTime dueDayUtc, DateTime now) {
-    final dueDayEnd = DateTime.utc(
-      dueDayUtc.year,
-      dueDayUtc.month,
-      dueDayUtc.day,
-      23,
-      59,
-      59,
-    );
-    return dueDayEnd.isBefore(now) ? dueDayEnd : now;
   }
 
   /// Near-duplicate dedupe key over the copy (the goal `briefDigest`).
