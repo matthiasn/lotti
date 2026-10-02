@@ -1249,6 +1249,58 @@ void main() {
         all.map((e) => (e.hostId, e.counter)).toList(),
       );
     });
+
+    test('plans on the actionable partial index, not a scan of the whole '
+        'log — the manual full-backfill sweep took 4.3 s per page without '
+        'it', () async {
+      final database = db!;
+      for (var i = 0; i < 200; i++) {
+        await _insertSequenceRow(
+          database,
+          hostId: 'host-bulk',
+          counter: i,
+          status: SyncSequenceStatus.received,
+          createdAt: DateTime(2024).add(Duration(minutes: i)),
+        );
+      }
+      await _insertSequenceRow(
+        database,
+        hostId: 'host-bulk',
+        counter: 9999,
+        status: SyncSequenceStatus.missing,
+        createdAt: DateTime(2024, 2),
+      );
+      await _insertSequenceRow(
+        database,
+        hostId: 'host-bulk',
+        counter: 9998,
+        status: SyncSequenceStatus.requested,
+        createdAt: DateTime(2024, 2, 2),
+      );
+
+      for (final requestedMinAge in [null, const Duration(hours: 1)]) {
+        final capture = SelectPlanCapture();
+        final entries = await database.runWithInterceptor(
+          () => database.getMissingEntries(
+            requestedMinAge: requestedMinAge,
+            now: DateTime(2024, 3),
+          ),
+          interceptor: capture,
+        );
+
+        expect(
+          capture.formattedPlan,
+          contains('idx_sync_sequence_log_actionable_status_'),
+          reason: 'requestedMinAge: $requestedMinAge',
+        );
+        expect(
+          capture.formattedPlan,
+          isNot(matches(RegExp('SCAN sync_sequence_log(?! USING)'))),
+          reason: 'requestedMinAge: $requestedMinAge',
+        );
+        expect(entries.map((e) => e.counter), [9999, 9998]);
+      }
+    });
   });
 
   group('getRequestedEntries Tests', () {
