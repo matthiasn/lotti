@@ -1,21 +1,25 @@
 ---
 type: Architecture
 title: Platform targets, CI and release
-description: Five platform targets from one codebase, the checks every branch runs, the tag that triggers seven release pipelines, and the play/ tag that promotes an Android build along Google Play's tracks.
+description: Five platform targets from one codebase, the checks every branch runs, the tag that triggers eight release pipelines, and the play/ tag that promotes an Android build along Google Play's tracks.
 resource: ../..
 tags: [architecture, ci, release, platforms, build]
 status: stable
-generated: { by: claude-code/fable-5, at: 2026-09-02T15:00:00Z }
-stale_after: 2027-02-01
+generated: { by: claude-code/fable-5.1, at: 2026-10-02T16:30:00Z }
+stale_after: 2027-03-01
 sources:
   - id: workflows
     resource: ../../.github/workflows
     title: GitHub Actions workflows
-    last_modified: 2026-09-02
+    last_modified: 2026-10-02
   - id: makefile
     resource: ../../Makefile
     title: Developer and build entry points
-    last_modified: 2026-09-02
+    last_modified: 2026-10-02
+  - id: appimage
+    resource: ../../linux/appimage
+    title: AppImage packaging scripts
+    last_modified: 2026-10-02
   - id: play-promote
     resource: ../../tool/play_promote.py
     title: Google Play track promotion driver
@@ -45,7 +49,7 @@ sources:
 | macOS | TestFlight and direct release build |
 | iOS | TestFlight |
 | Android | APK on GitHub Releases; app bundle on Google Play — internal testing on every release tag, closed testing and production by promotion |
-| Linux | Flatpak (Flathub) and tarball |
+| Linux | Flatpak (Flathub), AppImage and tarball on GitHub Releases |
 | Windows | MSIX |
 
 The Flutter SDK is **pinned in `.fvmrc`** (currently 3.47.0). *Locally*, every
@@ -123,6 +127,10 @@ Genuinely path-filtered, both on pushes *and* pull requests to `main`:
 `python-tools-ci.yml` (the Python tools) and `manual.yml` (docs-site) — the latter
 also runs on a nightly cron (`23 2 * * *`) and on manual dispatch.
 
+`flutter-linux-appimage.yml` is path-filtered on pull requests only — `linux/**`,
+`pubspec.lock` and the workflow itself — where it builds and smoke-tests the
+AppImage without publishing it. Its tag trigger is part of [Release](#release).
+
 No pull request lane runs the screenshot harnesses. They render real
 production widgets, so app code is what usually breaks them, but `manual.yml`
 does not watch `lib/` and captures only nightly and on dispatch. A harness
@@ -171,7 +179,7 @@ written is in [testing conventions](../conventions/testing.md).
 # Release
 
 Release is triggered by **pushing a git tag whose name is the `pubspec.yaml`
-version**. Seven GitHub workflows listen on `push: tags: ['**']`, minus the
+version**. Eight GitHub workflows listen on `push: tags: ['**']`, minus the
 `play/` namespace that belongs to [Google Play tracks](#google-play-tracks)
 below; Windows lives on a different provider and, since September 2026, is
 started by hand:
@@ -185,6 +193,7 @@ flowchart TD
   Tag --> C["flutter-ios-testflight.yml"]
   Tag --> D["flutter-android-release.yml"]
   Tag --> E["flutter-linux-release.yml"]
+  Tag --> I["flutter-linux-appimage.yml"]
   Tag --> F["flathub-release-pr.yml"]
   Tag --> G["python-services-release.yml"]
   Tag -. "manual start, Codemagic UI/API" .-> H["codemagic.yaml — Windows MSIX"]
@@ -205,6 +214,18 @@ in the build-notification email, never on a pull request.
 `flathub-release-pr.yml` also accepts `workflow_dispatch` with an explicit
 commit SHA and version override, for re-cutting a Flathub PR without moving the
 tag.
+
+**The AppImage is the one Linux artifact that is tested before it is
+published.** `flutter-linux-appimage.yml` builds inside an `ubuntu:22.04`
+container — the build machine's glibc is the oldest the file will run on —
+then runs `check_appimage.sh` on clean Ubuntu 22.04 and 24.04, Debian 12 and
+Fedora containers that have only a desktop's libraries, and only then uploads
+the file and its checksum to the tag's release. `flutter-linux-release.yml`
+creates that release at the start of its run and the AppImage lane at the end,
+each with `|| true`, so whichever arrives first creates it and the other adds
+its asset. Which libraries come from the host, the pinned `appimagetool` and
+runtime, and the GStreamer plugin list are in
+[`linux/appimage/README.md`](../../linux/appimage/README.md).
 
 ## Google Play tracks
 
@@ -312,4 +333,5 @@ generated-code rules live.
 | Buildkite lanes | [`.buildkite/`](../../.buildkite) |
 | Build, test, packaging targets | [`Makefile`](../../Makefile) |
 | Flatpak manifest and metainfo | [`flatpak/`](../../flatpak) |
+| AppImage packaging | [`linux/appimage/`](../../linux/appimage) |
 | Pinned SDK | [`.fvmrc`](../../.fvmrc) |

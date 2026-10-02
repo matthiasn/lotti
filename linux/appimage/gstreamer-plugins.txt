@@ -1,0 +1,72 @@
+# GStreamer plugins copied into the AppImage.
+#
+# The AppImage points GStreamer at its own plugin directory only, so every
+# element the app uses must come from a plugin listed here. One plugin per
+# line, without the "libgst" prefix and ".so" suffix. A leading "?" marks a
+# plugin as optional: if the build machine does not have it, the build warns
+# and carries on. A missing required plugin fails the build, and
+# check_appimage.sh fails on an AppImage that lacks one.
+#
+# Who uses what:
+# - linux/runner/audio_converter.cc converts M4A recordings to WAV before
+#   transcription: uridecodebin (playback, typefindfunctions, isomp4 and the
+#   AAC decoder from libav), audioconvert, audioresample, capsfilter, wavenc.
+# - camera_desktop drives the camera preview and video recording: v4l2src,
+#   autoaudiosrc over pulsesrc, videoconvert, h264parse, mp4mux or
+#   matroskamux, and the first encoder it finds: x264enc, then the hardware
+#   encoders, then openh264enc; opusenc, then avenc_aac, voaacenc and
+#   lamemp3enc. Its pipewiresrc path runs only inside the Flatpak.
+# - audio_decoder is linked but Lotti does not call it on Linux.
+#
+# Required means a code path creates the element by name, or needs it for a
+# format Lotti itself records. Optional covers alternatives that depend on
+# the hardware or the distribution, and plugins whose name changed between
+# GStreamer versions.
+
+# gstreamer core: filesink, queue, valve, tee, capsfilter
+coreelements
+
+# gst-plugins-base
+app
+audioconvert
+audioresample
+audiorate
+opus
+playback
+typefindfunctions
+volume
+?ogg
+?rawparse
+?pbtypes
+# GStreamer 1.22+ merged videoconvert and videoscale into videoconvertscale;
+# 1.20 (Ubuntu 22.04) still ships them separately. verify_gst_plugins in
+# lib.sh insists on one of the two.
+?videoconvert
+?videoscale
+?videoconvertscale
+
+# gst-plugins-good
+autodetect
+isomp4
+matroska
+pulseaudio
+video4linux2
+wavenc
+?lame
+?mpg123
+?audioparsers
+?wavparse
+?flac
+?id3demux
+
+# gst-plugins-bad: h264parse, voaacenc, VA-API H.264 encoder
+videoparsersbad
+?voaacenc
+?openh264
+?va
+
+# gst-plugins-ugly: x264enc, the software H.264 encoder recording relies on
+x264
+
+# gst-libav: avdec_aac, avenc_aac
+libav

@@ -1,0 +1,107 @@
+# Libraries the AppImage takes from the host instead of bundling.
+#
+# One shell glob per line, matched against the library's file name (soname).
+# build_appimage.sh follows DT_NEEDED from each bundled object to the next and
+# stops at a library listed here, so what only host libraries pull in stays on
+# the host too. A library that a bundled object links directly is bundled even
+# when a host library also links it, because its name can differ between
+# distributions: Ubuntu's libjpeg.so.8 is libjpeg.so.62 on Debian and Fedora.
+#
+# Based on the AppImage community excludelist:
+# https://github.com/AppImageCommunity/pkg2appimage/blob/master/excludelist
+# libjack.so.0 and libusb-1.0.so.0 are deliberately absent: libmpv and ffmpeg
+# link them, a bare desktop need not have them, and bundled copies that find
+# no JACK server or no device to open are harmless.
+
+# GTK 3 and the libraries its modules are built against. Flutter's engine and
+# every plugin link GTK, and the host's GTK loads the host's theme,
+# input-method, pixbuf and GIO modules; a bundled copy of anything those
+# modules bind to would break them. The host loads its own copies first in
+# any case, so bundled ones would only be dead weight.
+libgtk-3.so.0
+libgdk-3.so.0
+libglib-2.0.so.0
+libgobject-2.0.so.0
+libgio-2.0.so.0
+libgmodule-2.0.so.0
+libgthread-2.0.so.0
+libgdk_pixbuf-2.0.so.0
+libpango-1.0.so.0
+libpangocairo-1.0.so.0
+libpangoft2-1.0.so.0
+libcairo.so.2
+libcairo-gobject.so.2
+libatk-1.0.so.0
+libatk-bridge-2.0.so.0
+libatspi.so.0
+libepoxy.so.0
+libxkbcommon.so.0
+libpixman-1.so.0
+
+# glibc. Must come from the host; bundling it breaks every other host library.
+ld-linux.so.2
+ld-linux-x86-64.so.2
+ld-linux-aarch64.so.1
+libanl.so.1
+libBrokenLocale.so.1
+libcidn.so.1
+libc.so.6
+libdl.so.2
+libm.so.6
+libmvec.so.1
+libnss_*.so.2
+libpthread.so.0
+libresolv.so.2
+librt.so.1
+libthread_db.so.1
+libutil.so.1
+
+# C++ and compiler runtime. The bundle needs at most GLIBCXX_3.4.29 and
+# CXXABI_1.3.13, the GCC 11 runtime, which is older than the glibc 2.35 floor
+# the build machine sets, so every supported host has it. check_appimage.sh
+# fails on a host whose libstdc++ lacks a required symbol version, and a
+# bundled copy would shadow the one the host's GL drivers were built against.
+libstdc++.so.6
+libgcc_s.so.1
+
+# Graphics drivers and their loaders. These have to match the host's GPU
+# driver.
+libGL.so.1
+libEGL.so.1
+libGLdispatch.so.0
+libGLX.so.0
+libGLX_*.so.0
+libOpenGL.so.0
+libGLESv2.so.2
+libglapi.so.0
+libgbm.so.1
+libdrm.so.2
+libdrm_*.so.*
+libxcb-dri2.so.0
+libxcb-dri3.so.0
+
+# Display server, audio, input, fonts. These talk to host services or read
+# host configuration.
+libxcb.so.1
+libX11.so.6
+libX11-xcb.so.1
+libwayland-*.so.0
+libasound.so.2
+libpipewire-0.3.so.0
+libfontconfig.so.1
+libfreetype.so.6
+libharfbuzz.so.0
+libfribidi.so.0
+libICE.so.6
+libSM.so.6
+libudev.so.1
+libsystemd.so.0
+libdbus-1.so.3
+
+# Small, ABI-stable libraries every distribution ships.
+libcom_err.so.2
+libexpat.so.1
+libgpg-error.so.0
+libgmp.so.10
+libuuid.so.1
+libz.so.1

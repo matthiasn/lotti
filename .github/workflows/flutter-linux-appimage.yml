@@ -1,0 +1,166 @@
+name: Flutter Linux AppImage
+
+# Builds Lotti as an AppImage, checks that it starts on several clean
+# distributions, and attaches it to the GitHub release of the tag.
+# Packaging details: linux/appimage/README.md.
+
+on:
+  push:
+    tags:
+      - '**'
+      # play/<track>/<version> tags promote an existing build on Google
+      # Play (play-promote.yml); they are not a release of anything else.
+      - '!play/**'
+  pull_request:
+    paths:
+      - 'linux/**'
+      - '.github/workflows/flutter-linux-appimage.yml'
+      # A dependency that brings a new native library shows up here first.
+      - 'pubspec.lock'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build AppImage (x86_64)
+    runs-on: ubuntu-latest
+    # The AppImage runs on distributions whose glibc is at least as new as
+    # the build machine's. Ubuntu 22.04 (glibc 2.35) keeps 2022-era
+    # distributions supported, independent of what ubuntu-latest is.
+    container: ubuntu:22.04
+    outputs:
+      appimage: ${{ steps.package.outputs.appimage }}
+    steps:
+      - name: Install build dependencies
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            ca-certificates curl git jq unzip xz-utils zip file \
+            clang cmake make ninja-build pkg-config patchelf \
+            libgtk-3-dev liblzma-dev libstdc++-12-dev \
+            libsecret-1-dev libjsoncpp-dev libsqlite3-dev libkeybinder-3.0-dev \
+            libmpv-dev ffmpeg pulseaudio-utils \
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+            gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
+            gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly \
+            gstreamer1.0-libav gstreamer1.0-pulseaudio
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      # The container runs as root, while the workspace and the Flutter SDK
+      # belong to the runner user; git refuses such repositories otherwise.
+      - name: Trust checked-out repositories
+        run: git config --global --add safe.directory '*'
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - name: Cache Pub Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: appimage-${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+      - uses: kuhnroyal/flutter-fvm-config-action@v2
+        id: fvm-config-action
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
+          channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
+      - name: Build Linux bundle
+        run: |
+          flutter config --enable-linux-desktop --no-analytics
+          flutter build linux --release
+      - name: Package AppImage
+        id: package
+        run: |
+          linux/appimage/build_appimage.sh
+          echo "appimage=$(basename build/appimage/*.AppImage)" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lotti-appimage-x86_64
+          path: |
+            build/appimage/*.AppImage
+            build/appimage/*.AppImage.sha256
+          if-no-files-found: error
+
+  smoke-test:
+    name: Smoke test on ${{ matrix.image }}
+    needs: build
+    runs-on: ubuntu-latest
+    container: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Each image gets only what a desktop install has anyway (GTK 3,
+        # Mesa with GL, EGL and GLES, ALSA) plus a virtual X server: none of
+        # the libraries the AppImage is supposed to bring along. Flutter's
+        # engine dlopen()s libGLESv2 at startup, which no ldd pass can see.
+        image:
+          - ubuntu:22.04
+          - ubuntu:24.04
+          - debian:12
+          - fedora:latest
+    steps:
+      - name: Install desktop runtime (Debian/Ubuntu)
+        if: startsWith(matrix.image, 'ubuntu') || startsWith(matrix.image, 'debian')
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        # Ubuntu 24.04 renamed libasound2 to libasound2t64 and left two
+        # providers of the old name, which apt-get install refuses to choose
+        # between; apt-get satisfy takes alternatives.
+        run: |
+          apt-get update
+          apt-get satisfy -y --no-install-recommends \
+            xvfb xauth dbus 'libgtk-3-0 | libgtk-3-0t64' libgl1 libegl1 libgles2 \
+            libgl1-mesa-dri 'libasound2 | libasound2t64' fonts-dejavu-core
+      - name: Install desktop runtime (Fedora)
+        if: startsWith(matrix.image, 'fedora')
+        run: |
+          dnf install -y \
+            xorg-x11-server-Xvfb xorg-x11-xauth dbus-daemon gtk3 \
+            mesa-dri-drivers mesa-libEGL mesa-libGL libglvnd-gles alsa-lib \
+            dejavu-sans-fonts gawk findutils procps-ng
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: lotti-appimage-x86_64
+          path: appimage
+      - name: Check AppImage
+        run: linux/appimage/check_appimage.sh "appimage/${{ needs.build.outputs.appimage }}" --seconds 30
+
+  publish:
+    name: Upload to GitHub Release
+    # Only a pushed tag publishes. A manual run can target any ref, including
+    # a play/** tag that the push filter above never lets through.
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    needs: [build, smoke-test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: lotti-appimage-x86_64
+          path: appimage
+      # flutter-linux-release.yml creates the same release for this tag;
+      # whichever workflow gets there first creates it.
+      - name: Create GitHub Release
+        run: gh release create -p --generate-notes --target "$GITHUB_SHA" "$GITHUB_REF_NAME" || true
+        env:
+          GH_REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload AppImage
+        run: gh release upload --clobber "$GITHUB_REF_NAME" appimage/*.AppImage appimage/*.AppImage.sha256
+        env:
+          GH_REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
