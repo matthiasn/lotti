@@ -70,6 +70,7 @@ class InboundQueueEntry {
     required this.enqueuedAt,
     required this.attempts,
     required this.rawJson,
+    this.descriptorAttempts = 0,
   });
 
   /// Hydrates an entry from its database [row].
@@ -82,6 +83,7 @@ class InboundQueueEntry {
         enqueuedAt: row.enqueuedAt,
         attempts: row.attempts,
         rawJson: row.rawJson,
+        descriptorAttempts: row.descriptorAttempts,
       );
 
   final int queueId;
@@ -91,6 +93,10 @@ class InboundQueueEntry {
   final int enqueuedAt;
   final int attempts;
   final String rawJson;
+
+  /// Retries scheduled for `pendingDescriptor` only; see [attempts] for the
+  /// all-reason counter.
+  final int descriptorAttempts;
 
   /// Materialises the stored event against the given [room]. The room
   /// must belong to the same client the event was enqueued from.

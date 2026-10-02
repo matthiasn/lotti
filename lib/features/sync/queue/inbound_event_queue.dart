@@ -446,6 +446,9 @@ class InboundQueue {
     )..where((t) => t.queueId.equals(entry.queueId))).write(
       InboundEventQueueCompanion(
         attempts: Value(entry.attempts + 1),
+        descriptorAttempts: reason == RetryReason.pendingDescriptor
+            ? Value(entry.descriptorAttempts + 1)
+            : const Value.absent(),
         nextDueAt: Value(nextDueAt),
         // Drop the lease so another drain iteration can pick up the
         // entry once the backoff elapses.

@@ -18,6 +18,7 @@ InboundEventQueueItem _buildRow({
   String rawJson = r'{"event_id":"$row"}',
   int enqueuedAt = 1111,
   int attempts = 3,
+  int descriptorAttempts = 2,
   int leaseUntil = 999,
   String status = 'leased',
 }) => InboundEventQueueItem(
@@ -29,6 +30,7 @@ InboundEventQueueItem _buildRow({
   rawJson: rawJson,
   enqueuedAt: enqueuedAt,
   attempts: attempts,
+  descriptorAttempts: descriptorAttempts,
   nextDueAt: 0,
   leaseUntil: leaseUntil,
   status: status,
@@ -83,6 +85,7 @@ void main() {
       expect(entry.originTs, 4242);
       expect(entry.enqueuedAt, 1111);
       expect(entry.attempts, 3);
+      expect(entry.descriptorAttempts, 2);
       expect(entry.rawJson, r'{"event_id":"$row"}');
     });
   });

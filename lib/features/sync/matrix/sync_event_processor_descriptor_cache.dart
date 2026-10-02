@@ -128,7 +128,9 @@ extension _DescriptorCache on SyncEventProcessor {
   ///
   /// When a descriptor IS found but download/decode fails, throws
   /// [FileSystemException] to prevent falling back to potentially stale
-  /// disk data.
+  /// disk data. Media the homeserver reports as `M_NOT_FOUND` throws
+  /// [UnrecoverableSyncPayloadException] instead, so the envelope is skipped
+  /// rather than retried forever.
   Future<String?> _fetchFromDescriptor({
     required String jsonPath,
     required File targetFile,
@@ -213,6 +215,12 @@ extension _DescriptorCache on SyncEventProcessor {
         stackTrace: st,
         subDomain: 'resolve.$typeName.descriptorFetch',
       );
+      // The homeserver no longer has the descriptor's media (purged or
+      // expired). Retrying the same media cannot bring it back, so the
+      // envelope is skipped instead of parked as a pending descriptor.
+      if (e is MatrixException && e.errcode == 'M_NOT_FOUND') {
+        throw UnrecoverableSyncPayloadException(typeName);
+      }
       // Descriptor was found but download/decode failed — throw to prevent
       // falling back to potentially stale disk data. The pipeline will retry.
       throw _SyncDescriptorFetchException(

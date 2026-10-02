@@ -11,7 +11,7 @@ sources:
   - id: descriptor-recovery
     resource: ../../../lib/features/sync/matrix/sync_event_processor_descriptor_cache.dart
     title: Exact attachment discovery after a restart or missed descriptor
-    last_modified: 2026-09-26
+    last_modified: 2026-10-02
   - id: tla-spec
     resource: ../../../specs/tla/InboundQueue.tla
     title: TLA+ model of the inbound queue, its walks and its marker
@@ -31,7 +31,7 @@ sources:
   - id: queue
     resource: ../../../lib/features/sync/queue
     title: Inbound queue pipeline
-    last_modified: 2026-09-27
+    last_modified: 2026-10-02
   - id: processor
     resource: ../../../lib/features/sync/matrix/sync_event_processor.dart
     title: SyncEventProcessor
@@ -133,11 +133,21 @@ temporarily unavailable descriptors produce `PendingSyncDescriptorException`.
 `QueueApplyAdapter` maps this to `pendingDescriptor`: the worker retries every
 30 seconds without the generic attempt cap or the attachment-arrival age limit.
 Descriptor-cache download/decode failures after exact discovery use the same
-recovery state. Local cache writes preserve their original filesystem error and
+recovery state, with one exception: media the homeserver answers with
+`M_NOT_FOUND` (purged or expired) throws `UnrecoverableSyncPayloadException`,
+so prepare yields nothing and the row is skipped rather than parked. As a
+backstop, a `pendingDescriptor` row is abandoned (`pendingDescriptorTimeout`)
+only once both a day has passed since it was queued and a day's worth of
+30-second descriptor retries (2880) has run, so neither a long app shutdown nor
+an offline day alone drops it. Those retries are counted in the row's own
+`descriptor_attempts` column (sync DB v33), because `attempts` also grows with
+no-room and barrier retries; a row that waited a day for its room is not
+dropped on its first descriptor miss. Resurrection resets both counters, and
+abandoned rows stay resurrectable. Local cache writes preserve their original filesystem error and
 use bounded generic retries; a parent bundle descriptor does not turn a child
 cache-write failure into unlimited attachment recovery.
 An envelope already older than ten minutes at restart therefore stays active
-until exact-ID discovery succeeds; it does not depend on another timeline event
+until exact-ID discovery succeeds or the backstop above gives up; it does not depend on another timeline event
 or a manual retry. This requires the referenced event to remain retrievable and
 its decryption keys eventually to arrive. Neither a newer file at the same path
 nor the mutable disk cache may substitute for the named generation.
@@ -394,7 +404,10 @@ flowchart TD
     Outcome -->|retriable/missingBase| Retry["scheduleRetry with backoff"]
     Outcome -->|decryptionPending| DecryptRetry["scheduleRetry (short backoff)"]
     Outcome -->|pendingAttachment| AttachmentRetry["scheduleRetry until arrival deadline"]
-    Outcome -->|pendingDescriptor / pendingBarrier| PeriodicRetry["scheduleRetry without age or attempt cap"]
+    Outcome -->|pendingBarrier| PeriodicRetry["scheduleRetry without age or attempt cap"]
+    Outcome -->|pendingDescriptor| DescriptorRetry{"queued ≥ 24 h and<br/>≥ 2880 descriptor retries?"}
+    DescriptorRetry -->|no| PeriodicRetry
+    DescriptorRetry -->|yes| Skip
     Outcome -->|permanentSkip| Skip["markSkipped"]
     Commit --> NextEntry["next entry in batch"]
     Retry --> NextEntry

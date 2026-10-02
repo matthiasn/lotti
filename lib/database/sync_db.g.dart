@@ -1694,6 +1694,17 @@ class $InboundEventQueueTable extends InboundEventQueue
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _descriptorAttemptsMeta =
+      const VerificationMeta('descriptorAttempts');
+  @override
+  late final GeneratedColumn<int> descriptorAttempts = GeneratedColumn<int>(
+    'descriptor_attempts',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _nextDueAtMeta = const VerificationMeta(
     'nextDueAt',
   );
@@ -1794,6 +1805,7 @@ class $InboundEventQueueTable extends InboundEventQueue
     rawJson,
     enqueuedAt,
     attempts,
+    descriptorAttempts,
     nextDueAt,
     leaseUntil,
     status,
@@ -1873,6 +1885,15 @@ class $InboundEventQueueTable extends InboundEventQueue
       context.handle(
         _attemptsMeta,
         attempts.isAcceptableOrUnknown(data['attempts']!, _attemptsMeta),
+      );
+    }
+    if (data.containsKey('descriptor_attempts')) {
+      context.handle(
+        _descriptorAttemptsMeta,
+        descriptorAttempts.isAcceptableOrUnknown(
+          data['descriptor_attempts']!,
+          _descriptorAttemptsMeta,
+        ),
       );
     }
     if (data.containsKey('next_due_at')) {
@@ -1976,6 +1997,10 @@ class $InboundEventQueueTable extends InboundEventQueue
         DriftSqlType.int,
         data['${effectivePrefix}attempts'],
       )!,
+      descriptorAttempts: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}descriptor_attempts'],
+      )!,
       nextDueAt: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}next_due_at'],
@@ -2047,6 +2072,12 @@ class InboundEventQueueItem extends DataClass
   /// `InboundWorker` to avoid eternal wedges on a single bad event.
   final int attempts;
 
+  /// Retries scheduled for `pendingDescriptor` alone. [attempts] also
+  /// counts no-room and barrier retries, so it cannot tell whether a row
+  /// actually spent its time waiting on a descriptor; the worker's
+  /// descriptor backstop reads this counter instead.
+  final int descriptorAttempts;
+
   /// Earliest time (ms since epoch) at which this entry is eligible
   /// for re-peek. 0 = ready now.
   final int nextDueAt;
@@ -2108,6 +2139,7 @@ class InboundEventQueueItem extends DataClass
     required this.rawJson,
     required this.enqueuedAt,
     required this.attempts,
+    required this.descriptorAttempts,
     required this.nextDueAt,
     required this.leaseUntil,
     required this.status,
@@ -2128,6 +2160,7 @@ class InboundEventQueueItem extends DataClass
     map['raw_json'] = Variable<String>(rawJson);
     map['enqueued_at'] = Variable<int>(enqueuedAt);
     map['attempts'] = Variable<int>(attempts);
+    map['descriptor_attempts'] = Variable<int>(descriptorAttempts);
     map['next_due_at'] = Variable<int>(nextDueAt);
     map['lease_until'] = Variable<int>(leaseUntil);
     map['status'] = Variable<String>(status);
@@ -2157,6 +2190,7 @@ class InboundEventQueueItem extends DataClass
       rawJson: Value(rawJson),
       enqueuedAt: Value(enqueuedAt),
       attempts: Value(attempts),
+      descriptorAttempts: Value(descriptorAttempts),
       nextDueAt: Value(nextDueAt),
       leaseUntil: Value(leaseUntil),
       status: Value(status),
@@ -2190,6 +2224,7 @@ class InboundEventQueueItem extends DataClass
       rawJson: serializer.fromJson<String>(json['rawJson']),
       enqueuedAt: serializer.fromJson<int>(json['enqueuedAt']),
       attempts: serializer.fromJson<int>(json['attempts']),
+      descriptorAttempts: serializer.fromJson<int>(json['descriptorAttempts']),
       nextDueAt: serializer.fromJson<int>(json['nextDueAt']),
       leaseUntil: serializer.fromJson<int>(json['leaseUntil']),
       status: serializer.fromJson<String>(json['status']),
@@ -2212,6 +2247,7 @@ class InboundEventQueueItem extends DataClass
       'rawJson': serializer.toJson<String>(rawJson),
       'enqueuedAt': serializer.toJson<int>(enqueuedAt),
       'attempts': serializer.toJson<int>(attempts),
+      'descriptorAttempts': serializer.toJson<int>(descriptorAttempts),
       'nextDueAt': serializer.toJson<int>(nextDueAt),
       'leaseUntil': serializer.toJson<int>(leaseUntil),
       'status': serializer.toJson<String>(status),
@@ -2232,6 +2268,7 @@ class InboundEventQueueItem extends DataClass
     String? rawJson,
     int? enqueuedAt,
     int? attempts,
+    int? descriptorAttempts,
     int? nextDueAt,
     int? leaseUntil,
     String? status,
@@ -2249,6 +2286,7 @@ class InboundEventQueueItem extends DataClass
     rawJson: rawJson ?? this.rawJson,
     enqueuedAt: enqueuedAt ?? this.enqueuedAt,
     attempts: attempts ?? this.attempts,
+    descriptorAttempts: descriptorAttempts ?? this.descriptorAttempts,
     nextDueAt: nextDueAt ?? this.nextDueAt,
     leaseUntil: leaseUntil ?? this.leaseUntil,
     status: status ?? this.status,
@@ -2272,6 +2310,9 @@ class InboundEventQueueItem extends DataClass
           ? data.enqueuedAt.value
           : this.enqueuedAt,
       attempts: data.attempts.present ? data.attempts.value : this.attempts,
+      descriptorAttempts: data.descriptorAttempts.present
+          ? data.descriptorAttempts.value
+          : this.descriptorAttempts,
       nextDueAt: data.nextDueAt.present ? data.nextDueAt.value : this.nextDueAt,
       leaseUntil: data.leaseUntil.present
           ? data.leaseUntil.value
@@ -2304,6 +2345,7 @@ class InboundEventQueueItem extends DataClass
           ..write('rawJson: $rawJson, ')
           ..write('enqueuedAt: $enqueuedAt, ')
           ..write('attempts: $attempts, ')
+          ..write('descriptorAttempts: $descriptorAttempts, ')
           ..write('nextDueAt: $nextDueAt, ')
           ..write('leaseUntil: $leaseUntil, ')
           ..write('status: $status, ')
@@ -2326,6 +2368,7 @@ class InboundEventQueueItem extends DataClass
     rawJson,
     enqueuedAt,
     attempts,
+    descriptorAttempts,
     nextDueAt,
     leaseUntil,
     status,
@@ -2347,6 +2390,7 @@ class InboundEventQueueItem extends DataClass
           other.rawJson == this.rawJson &&
           other.enqueuedAt == this.enqueuedAt &&
           other.attempts == this.attempts &&
+          other.descriptorAttempts == this.descriptorAttempts &&
           other.nextDueAt == this.nextDueAt &&
           other.leaseUntil == this.leaseUntil &&
           other.status == this.status &&
@@ -2367,6 +2411,7 @@ class InboundEventQueueCompanion
   final Value<String> rawJson;
   final Value<int> enqueuedAt;
   final Value<int> attempts;
+  final Value<int> descriptorAttempts;
   final Value<int> nextDueAt;
   final Value<int> leaseUntil;
   final Value<String> status;
@@ -2384,6 +2429,7 @@ class InboundEventQueueCompanion
     this.rawJson = const Value.absent(),
     this.enqueuedAt = const Value.absent(),
     this.attempts = const Value.absent(),
+    this.descriptorAttempts = const Value.absent(),
     this.nextDueAt = const Value.absent(),
     this.leaseUntil = const Value.absent(),
     this.status = const Value.absent(),
@@ -2402,6 +2448,7 @@ class InboundEventQueueCompanion
     required String rawJson,
     required int enqueuedAt,
     this.attempts = const Value.absent(),
+    this.descriptorAttempts = const Value.absent(),
     this.nextDueAt = const Value.absent(),
     this.leaseUntil = const Value.absent(),
     this.status = const Value.absent(),
@@ -2425,6 +2472,7 @@ class InboundEventQueueCompanion
     Expression<String>? rawJson,
     Expression<int>? enqueuedAt,
     Expression<int>? attempts,
+    Expression<int>? descriptorAttempts,
     Expression<int>? nextDueAt,
     Expression<int>? leaseUntil,
     Expression<String>? status,
@@ -2443,6 +2491,7 @@ class InboundEventQueueCompanion
       if (rawJson != null) 'raw_json': rawJson,
       if (enqueuedAt != null) 'enqueued_at': enqueuedAt,
       if (attempts != null) 'attempts': attempts,
+      if (descriptorAttempts != null) 'descriptor_attempts': descriptorAttempts,
       if (nextDueAt != null) 'next_due_at': nextDueAt,
       if (leaseUntil != null) 'lease_until': leaseUntil,
       if (status != null) 'status': status,
@@ -2463,6 +2512,7 @@ class InboundEventQueueCompanion
     Value<String>? rawJson,
     Value<int>? enqueuedAt,
     Value<int>? attempts,
+    Value<int>? descriptorAttempts,
     Value<int>? nextDueAt,
     Value<int>? leaseUntil,
     Value<String>? status,
@@ -2481,6 +2531,7 @@ class InboundEventQueueCompanion
       rawJson: rawJson ?? this.rawJson,
       enqueuedAt: enqueuedAt ?? this.enqueuedAt,
       attempts: attempts ?? this.attempts,
+      descriptorAttempts: descriptorAttempts ?? this.descriptorAttempts,
       nextDueAt: nextDueAt ?? this.nextDueAt,
       leaseUntil: leaseUntil ?? this.leaseUntil,
       status: status ?? this.status,
@@ -2518,6 +2569,9 @@ class InboundEventQueueCompanion
     }
     if (attempts.present) {
       map['attempts'] = Variable<int>(attempts.value);
+    }
+    if (descriptorAttempts.present) {
+      map['descriptor_attempts'] = Variable<int>(descriptorAttempts.value);
     }
     if (nextDueAt.present) {
       map['next_due_at'] = Variable<int>(nextDueAt.value);
@@ -2557,6 +2611,7 @@ class InboundEventQueueCompanion
           ..write('rawJson: $rawJson, ')
           ..write('enqueuedAt: $enqueuedAt, ')
           ..write('attempts: $attempts, ')
+          ..write('descriptorAttempts: $descriptorAttempts, ')
           ..write('nextDueAt: $nextDueAt, ')
           ..write('leaseUntil: $leaseUntil, ')
           ..write('status: $status, ')
@@ -5224,6 +5279,7 @@ typedef $$InboundEventQueueTableCreateCompanionBuilder =
       required String rawJson,
       required int enqueuedAt,
       Value<int> attempts,
+      Value<int> descriptorAttempts,
       Value<int> nextDueAt,
       Value<int> leaseUntil,
       Value<String> status,
@@ -5243,6 +5299,7 @@ typedef $$InboundEventQueueTableUpdateCompanionBuilder =
       Value<String> rawJson,
       Value<int> enqueuedAt,
       Value<int> attempts,
+      Value<int> descriptorAttempts,
       Value<int> nextDueAt,
       Value<int> leaseUntil,
       Value<String> status,
@@ -5299,6 +5356,11 @@ class $$InboundEventQueueTableFilterComposer
 
   ColumnFilters<int> get attempts => $composableBuilder(
     column: $table.attempts,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get descriptorAttempts => $composableBuilder(
+    column: $table.descriptorAttempts,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5392,6 +5454,11 @@ class $$InboundEventQueueTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get descriptorAttempts => $composableBuilder(
+    column: $table.descriptorAttempts,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get nextDueAt => $composableBuilder(
     column: $table.nextDueAt,
     builder: (column) => ColumnOrderings(column),
@@ -5467,6 +5534,11 @@ class $$InboundEventQueueTableAnnotationComposer
 
   GeneratedColumn<int> get attempts =>
       $composableBuilder(column: $table.attempts, builder: (column) => column);
+
+  GeneratedColumn<int> get descriptorAttempts => $composableBuilder(
+    column: $table.descriptorAttempts,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get nextDueAt =>
       $composableBuilder(column: $table.nextDueAt, builder: (column) => column);
@@ -5551,6 +5623,7 @@ class $$InboundEventQueueTableTableManager
                 Value<String> rawJson = const Value.absent(),
                 Value<int> enqueuedAt = const Value.absent(),
                 Value<int> attempts = const Value.absent(),
+                Value<int> descriptorAttempts = const Value.absent(),
                 Value<int> nextDueAt = const Value.absent(),
                 Value<int> leaseUntil = const Value.absent(),
                 Value<String> status = const Value.absent(),
@@ -5568,6 +5641,7 @@ class $$InboundEventQueueTableTableManager
                 rawJson: rawJson,
                 enqueuedAt: enqueuedAt,
                 attempts: attempts,
+                descriptorAttempts: descriptorAttempts,
                 nextDueAt: nextDueAt,
                 leaseUntil: leaseUntil,
                 status: status,
@@ -5587,6 +5661,7 @@ class $$InboundEventQueueTableTableManager
                 required String rawJson,
                 required int enqueuedAt,
                 Value<int> attempts = const Value.absent(),
+                Value<int> descriptorAttempts = const Value.absent(),
                 Value<int> nextDueAt = const Value.absent(),
                 Value<int> leaseUntil = const Value.absent(),
                 Value<String> status = const Value.absent(),
@@ -5604,6 +5679,7 @@ class $$InboundEventQueueTableTableManager
                 rawJson: rawJson,
                 enqueuedAt: enqueuedAt,
                 attempts: attempts,
+                descriptorAttempts: descriptorAttempts,
                 nextDueAt: nextDueAt,
                 leaseUntil: leaseUntil,
                 status: status,
