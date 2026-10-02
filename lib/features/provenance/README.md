@@ -36,8 +36,13 @@ verification on ingest, the agent approval choke point, deletion tombstones and
 derivation envelopes are later phases. They are listed, with the decisions they
 depend on, in the Phase 0 mapping
 (`docs/implementation_plans/2026-09-25_record_provenance_phase0_mapping.md`).
-Already decided for them: each device keeps **one chain per store**, not one
-chain across all stores.
+Already decided for them:
+
+- each device keeps **one chain per store**, not one chain across all stores;
+- guest worlds, the demo world included, keep **no chains**;
+- agent writes that apply immediately are **pre-approved agent changes**: signed
+  as the agent, pointing at the user consent that allowed them
+  (`docs/adr/0102-pre-approved-agent-changes.md`).
 
 ## Where the code sits
 

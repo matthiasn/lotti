@@ -270,6 +270,8 @@ These are in addition to the six open decisions in the spec (§17).
   approval envelope (a standing consent) that the spec's R2 currently forbids.
   This overlaps with the product stance that agents are essential, so
   pre-approval should be the first thing looked at.
+  *Decided 2026-09-27: pre-approval, recorded as such, in
+  [ADR 0102](../adr/0102-pre-approved-agent-changes.md).*
 - **D8. Where is the raw/derived line inside an entity?** Specifically for
   transcripts, AI-set cover art and AI appends to `entryText`.
 - **D9. Which stores get chains?** The journal only, or also agent.sqlite
@@ -281,6 +283,10 @@ These are in addition to the six open decisions in the spec (§17).
   canonical projection of user-authored fields only.
 - **D11. Guest and demo worlds.** Recommendation: no chains, since they never
   sync.
+  *Decided 2026-09-27: no chains in any guest world, the demo world included.
+  Sync is structurally absent there (see
+  `knowledge/architecture/profiles-and-demo-mode.md`), so there is no peer to
+  prove anything to.*
 
 ## 8. Doc drift found while mapping
 

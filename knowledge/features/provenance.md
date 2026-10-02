@@ -5,7 +5,7 @@ description: The cryptographic core of record provenance — canonical JSON, dom
 resource: ../../lib/features/provenance
 tags: [provenance, integrity, signing, ed25519, envelope, canonical-json]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-09-26T09:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-09-27T10:00:00Z }
 stale_after: 2027-03-26
 sources:
   - id: canonical
@@ -32,6 +32,10 @@ sources:
     resource: ../../specs/tla/EnvelopeChain.tla
     title: EnvelopeChain design model
     last_modified: 2026-09-26
+  - id: adr-0102
+    resource: ../../docs/adr/0102-pre-approved-agent-changes.md
+    title: ADR 0102 Pre-approved agent changes
+    last_modified: 2026-09-27
   - id: phase0
     resource: ../../docs/implementation_plans/2026-09-25_record_provenance_phase0_mapping.md
     title: Record provenance Phase 0 mapping
@@ -122,6 +126,21 @@ journal, entry links, and any other store brought under provenance), rather than
 one chain across all of them. This answers decision D9 of the Phase 0 mapping.
 The envelope format does not change for it; which store a chain belongs to is for
 the chain phases to encode.
+
+**Decided: no chains in guest worlds.** The demo world and every other guest world
+sign nothing. Sync is structurally absent there
+([profiles and demo mode](../architecture/profiles-and-demo-mode.md)), so no peer
+would ever verify a chain. This answers D11.
+
+**Decided: agent writes that apply immediately are pre-approved, and say so.**
+Initial task title and language, the day agent's triage and task capture, and the
+AI skill runner's transcripts, responses and images stay immediate rather than
+becoming proposals. Each such write is signed as `author.type = agent` and refers
+to a signed user consent: a standing one (such as the automatic-transcription
+switch) or the button press that started it. A pre-approved change is never shown
+as an approved proposal. This answers D7 and amends the spec's R2;
+[ADR 0102](../../docs/adr/0102-pre-approved-agent-changes.md) has the rules and
+what the approval phase still has to settle.
 
 **The chain design is model-checked before it is built.**
 [`EnvelopeChain`](../../specs/tla/README.md#envelopechain--signed-provenance-chains-a-design-model)
