@@ -58,7 +58,7 @@ jobs:
             # persistence test drives through the app shell, and the tutorial
             # harness that boots that app on real databases, with the test
             # fixtures it imports.
-            database: &database
+            database:
               - *core
               - 'lib/database/**'
               - 'lib/features/*/database/**'
@@ -76,23 +76,35 @@ jobs:
               - 'test/helpers/fallbacks.dart'
               - 'test/helpers/manual_demo_world.dart'
               - 'test/mocks/mocks.dart'
-            # Sync sits on top of the database layer, so it includes all of
-            # it, plus the sync features and what the Matrix harness imports.
+            # The Matrix suites only, which are slow: the sync features, the
+            # database layer and persistence logic they write through, the
+            # shared model classes that travel as sync payloads, the
+            # dependency lockfile (the Matrix SDK and drift live there), and
+            # the Matrix harness itself. Everything else waits for the
+            # weekly scheduled run. The test/ helpers the harness executes
+            # are listed too: mocks.dart carries default behaviour the
+            # harness relies on (`withVcScope` passthrough, the empty
+            # `updateStream`), and nearly every push that edits it already
+            # touches a path above, so it costs almost nothing.
             sync:
-              - *database
+              - '.github/workflows/flutter-matrix-test.yml'
+              - 'pubspec.lock'
+              - 'lib/classes/**'
+              - 'lib/database/**'
+              - 'lib/features/*/database/**'
+              - 'lib/logic/**'
               - 'lib/features/sync/**'
               - 'lib/features/*/sync/**'
-              - 'test/features/sync/**'
-              - 'test/features/*/sync/**'
-              - 'test/vector_clock*_test.dart'
-              - 'test/test_resources/test_audio_data.dart'
-              - 'test/utils/utils.dart'
               - 'integration_test/matrix_service_test.dart'
               - 'integration_test/matrix_test_room.dart'
               - 'integration_test/sync_resilience_test.dart'
               - 'integration_test/helpers/**'
               - 'integration_test/docker/**'
               - 'integration_test/*.sh'
+              - 'test/mocks/mocks.dart'
+              - 'test/utils/utils.dart'
+              - 'test/test_resources/test_audio_data.dart'
+              - 'test/widget_test_utils.dart'
 
   test:
     name: Matrix Test on Linux

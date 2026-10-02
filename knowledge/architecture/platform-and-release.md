@@ -5,7 +5,7 @@ description: Five platform targets from one codebase, the checks every branch ru
 resource: ../..
 tags: [architecture, ci, release, platforms, build]
 status: stable
-generated: { by: claude-code/fable-5.1, at: 2026-10-02T16:30:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-02T22:40:00Z }
 stale_after: 2027-03-01
 sources:
   - id: workflows
@@ -104,13 +104,20 @@ Every push to every branch runs:
 | `okf-validate.yml` | This knowledge bundle stays conformant and its code pointers still resolve |
 
 `flutter-matrix-test.yml` also triggers on every branch push, but a
-`changes` job (`dorny/paths-filter`) gates its jobs by path. The Matrix
-homeserver sync tests run when sync code, the database or persistence layer,
-or shared core (dependencies, `lib/classes`, `lib/services`, `lib/utils`, the
-GetIt wiring, the Linux runner, the workflow itself) changed. The journal
-persistence test runs when shared core, the database, persistence or journal
-code, or the tutorial harness and fixtures it boots the app with changed. Scheduled and manual runs, and any run whose filter job
-fails, execute everything. None of these jobs is a required status check.
+`changes` job (`dorny/paths-filter`) gates its jobs by path. The two Matrix
+homeserver sync suites run only when sync code (`lib/features/sync`, any
+feature's `sync/`), the database layer (`lib/database`, any feature's
+`database/`), persistence logic (`lib/logic`), the shared model classes
+(`lib/classes`), `pubspec.lock`, the Matrix harness and the `test/` helpers it
+executes, or the workflow itself changed — not for release version bumps or
+other features. The helpers include `test/mocks/mocks.dart`, whose default
+mock behaviour (the `withVcScope` passthrough, the empty `updateStream`) the
+harness relies on. The journal persistence test runs when
+shared core (dependencies, `lib/classes`, `lib/services`, `lib/utils`, the
+GetIt wiring, the Linux runner, the workflow), the database, persistence or
+journal code, or the tutorial harness and fixtures it boots the app with
+changed. Scheduled and manual runs, and any run whose filter job fails,
+execute everything. None of these jobs is a required status check.
 
 There is no build-only macOS or Android job on pull requests: tag pushes build
 both platforms in the release workflows, and those builds are the ones that get
