@@ -1,6 +1,8 @@
 import 'dart:collection';
+import 'dart:convert';
 
 import 'package:clock/clock.dart';
+import 'package:crypto/crypto.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/services/logging_domains.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -36,6 +38,19 @@ class DomainLogger {
   static const int _sampleStateCapacity = 256;
   final LinkedHashMap<String, _LogSampleState> _sampleStates =
       LinkedHashMap<String, _LogSampleState>();
+
+  /// Bound on remembered error fingerprints; the least recently seen is
+  /// evicted beyond it, so a later repeat of that error logs its trace again.
+  static const int _errorTraceStateCapacity = 256;
+
+  /// How long a full stack trace stands in for identical repeats.
+  ///
+  /// A retry loop re-throwing the same failure every few seconds would
+  /// otherwise write the same multi-line trace each time. Repeats inside this
+  /// window keep their one-line record, minus the trace.
+  static const Duration errorTraceRepeatWindow = Duration(hours: 1);
+  final LinkedHashMap<String, _ErrorTraceState> _errorTraceStates =
+      LinkedHashMap<String, _ErrorTraceState>();
 
   /// File stem for the daily PII-safe error log.
   static const String errorSafeLogStem = 'error-safe';
@@ -135,6 +150,11 @@ class DomainLogger {
   /// If the caller sanitizes [error] before passing it here, [errorType] retains
   /// the original exception type in the safe log's classification field. It
   /// does not sanitize [error] or [message]; those remain the caller's concern.
+  ///
+  /// An identical repeat — same domain, subDomain, error text and stack — is
+  /// still recorded, but without its [stackTrace] for
+  /// [errorTraceRepeatWindow] after the last full trace, and never across a
+  /// calendar day, so each daily file keeps at least one full trace.
   void error(
     LogDomain domain,
     Object error, {
@@ -186,16 +206,26 @@ class DomainLogger {
     Type? errorType,
   }) {
     // Full, diagnostic description for the general + daily full error log.
-    final fullDescription = fullErrorDescription(
+    final described = fullErrorDescription(
       error,
       message,
       diagnostics: diagnostics,
     );
+    final repeat = stackTrace == null
+        ? null
+        : _traceRepeat(
+            domain: domain,
+            subDomain: subDomain,
+            description: described,
+            stackTrace: stackTrace,
+          );
+    final fullDescription = repeat == null ? described : '$described $repeat';
+    final loggedTrace = repeat == null ? stackTrace : null;
     _loggingService.captureException(
       fullDescription,
       domain: domain.wireName,
       subDomain: subDomain,
-      stackTrace: stackTrace,
+      stackTrace: loggedTrace,
     );
 
     // PII-safe description: never includes the raw error string. The stack
@@ -221,9 +251,48 @@ class DomainLogger {
       level: 'ERROR',
       subDomain: subDomain,
       message: fullDescription,
-      stackTrace: stackTrace,
+      stackTrace: loggedTrace,
     );
   }
+
+  /// Returns the marker for an identical repeat whose stack trace is omitted,
+  /// or null when this occurrence must log its full trace.
+  ///
+  /// The fingerprint is a digest, so the bounded state never retains error
+  /// text. The repeat number counts occurrences since the last full trace.
+  String? _traceRepeat({
+    required LogDomain domain,
+    required String? subDomain,
+    required String description,
+    required StackTrace stackTrace,
+  }) {
+    final now = clock.now();
+    final key = sha256
+        .convert(
+          utf8.encode(
+            '${domain.wireName}\u0000${subDomain ?? ''}\u0000'
+            '$description\u0000$stackTrace',
+          ),
+        )
+        .toString();
+    final state = _errorTraceStates.remove(key);
+    _errorTraceStates[key] = state ?? _ErrorTraceState(now);
+    while (_errorTraceStates.length > _errorTraceStateCapacity) {
+      _errorTraceStates.remove(_errorTraceStates.keys.first);
+    }
+    if (state == null ||
+        now.difference(state.lastTracedAt) >= errorTraceRepeatWindow ||
+        !_sameDay(now, state.lastTracedAt)) {
+      _errorTraceStates[key] = _ErrorTraceState(now);
+      return null;
+    }
+    state.repeats++;
+    return '[stack trace omitted: repeat ${state.repeats} of the trace '
+        'logged at ${state.lastTracedAt.toIso8601String()}]';
+  }
+
+  static bool _sameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 
   /// Full, diagnostic description of an error: `'<message>: <error>'`, or just
   /// `'<error>'` when no message is given. Includes the raw error string and is
@@ -317,6 +386,13 @@ class DomainLogger {
     if (id.length < 6) return '[id:$id]';
     return '[id:${id.substring(0, 6)}]';
   }
+}
+
+class _ErrorTraceState {
+  _ErrorTraceState(this.lastTracedAt);
+
+  final DateTime lastTracedAt;
+  int repeats = 0;
 }
 
 class _LogSampleState {

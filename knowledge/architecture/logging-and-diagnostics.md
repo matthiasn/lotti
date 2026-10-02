@@ -19,7 +19,7 @@ sources:
   - id: domain-logging
     resource: ../../lib/services/domain_logging.dart
     title: DomainLogger
-    last_modified: 2026-09-11
+    last_modified: 2026-10-02
   - id: framework-errors
     resource: ../../lib/main.dart
     title: Flutter framework error handler
@@ -73,7 +73,7 @@ flowchart TD
   RoutineRoute -->|yes| SyncLog["sync-YYYY-MM-DD.log"]
   RoutineRoute -->|no| General["general app log for the day"]
   RoutineRoute -->|no| DomainLog["&lt;domain&gt;-YYYY-MM-DD.log"]
-  Err["DomainLogger.error(...)"] --> General2["general app log + error-YYYY-MM-DD.log<br/>full text, force-flushed"]
+  Err["DomainLogger.error(...)"] --> General2["general app log + error-YYYY-MM-DD.log<br/>full text, force-flushed<br/>identical repeats: no stack trace"]
   Err --> Safe["error-safe-YYYY-MM-DD.log<br/>no raw error, no stack trace<br/>message kept verbatim"]
   Err --> PerDomain{"domain routes to the sync file?"}
   PerDomain -->|yes| SyncLog
@@ -115,6 +115,22 @@ device, not opening a screen.
 **Errors are always logged**, whether or not their domain is enabled. A user who
 has everything toggled off still produces a diagnosable record when something
 breaks; only the chatty success path is silenced.
+
+**Every occurrence keeps its line; only an identical repeat loses its stack
+trace.** A retry loop re-throwing the same failure every 30 seconds once wrote
+the same 35-line trace into the sync log hundreds of times a day — a third of
+the file. `DomainLogger` fingerprints each error that carries a trace by
+domain, subDomain, full error text and the trace itself. The first occurrence
+logs the trace; a repeat within `errorTraceRepeatWindow` (one hour) of that
+trace, on the same calendar day, is written as its normal line with
+`[stack trace omitted: repeat N of the trace logged at <timestamp>]` in place
+of the trace. After the window, or on a new day, the trace is logged again, so
+every daily file holds at least one full copy. A different message, subDomain or
+call stack is a different fingerprint and is never suppressed. The state holds
+SHA-256 digests only — no error text — under an LRU cap of 256; an evicted
+fingerprint simply logs its trace again on its next occurrence. Unlike the
+framework sampler below, nothing is dropped: the per-occurrence line still
+shows how often a failure recurs.
 
 The global Flutter framework hook bounds one special amplification case before
 it reaches that always-on path. A SHA-256 fingerprint covers the exception type
