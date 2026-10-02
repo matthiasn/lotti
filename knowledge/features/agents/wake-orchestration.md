@@ -5,13 +5,29 @@ description: How a local change becomes an agent wake — subscription matching,
 resource: ../../../lib/features/agents/wake
 tags: [agents, wake, scheduling, concurrency]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-02T18:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-03T12:00:00Z }
 stale_after: 2027-01-02
 sources:
   - id: wake
     resource: ../../../lib/features/agents/wake
     title: WakeOrchestrator, WakeQueue, WakeRunner, drain engine, AgentWakeCoordinator
-    last_modified: 2026-10-02
+    last_modified: 2026-10-03
+  - id: lease-gate
+    resource: ../../../lib/features/agents/wake/sync_lease_gate.dart
+    title: SyncLeaseGate — connected, with the inbox drained
+    last_modified: 2026-10-03
+  - id: scheduled-wakes
+    resource: ../../../lib/features/agents/wake/scheduled_wake_manager.dart
+    title: ScheduledWakeManager — leases, the sync gate and exclusive slot groups
+    last_modified: 2026-10-03
+  - id: governor-spec
+    resource: ../../../specs/tla/ProjectWakeGovernor.tla
+    title: TLA+ model of how much work a project agent does
+    last_modified: 2026-10-03
+  - id: adr-0113
+    resource: ../../../docs/adr/0113-project-agents-update-in-synced-slots.md
+    title: ADR 0113 — project agents update in synced slots
+    last_modified: 2026-10-03
   - id: budget
     resource: ../../../lib/features/agents/wake/wake_budget.dart
     title: Daily wake budget policy and ledger
@@ -202,49 +218,19 @@ wake instead of racing it.
 
 Subscription-driven wakes are throttled with a **120-second** window.
 
-A subscription can opt into daily-digest deferral for propagated-only matches.
-Project-agent subscriptions use that path, so linked-task churn waits for the
-scheduled project digest; task-agent subscriptions opt out, so child-entry and
-task-context updates refresh on the normal coalesced path.
+A subscription can opt into daily-digest deferral for propagated-only matches;
+task-agent subscriptions opt out, so child-entry and task-context updates
+refresh on the normal coalesced path.
 
-Project agents never carry a recurring clock wake. Their subscription job uses
-`nextWakeAt` only while queued, while `ProjectActivityMonitor` arms a one-shot
-state-level `scheduledWakeAt` whenever local project-linked work becomes
-pending. Creation uses the same one-shot field as a restart fallback for its
-immediate in-memory job, and a failed project wake re-arms it for the next local
-06:00, advancing an already-overdue deadline instead of retrying every scan.
-The shared project-agent automation policy gates local monitoring, startup and
-sync-restored subscriptions, and workflow fallback creation. With explicit
-opt-out, observation subscriptions remain registered but their matches cannot
-queue or persist automatic wakes, and a manually requested wake cannot
-synthesize a new fallback afterward. Opt-out clears every existing project
-fallback, including markerless creation rows from older state. Direct project
-edits still use the shorter
-coalescing deadline when automation is allowed, while manual requests bypass
-throttling. A successful wake with no remaining creation or project activity
-clears `scheduledWakeAt`. The scheduled-wake manager separately clears legacy
-completed rows only after at least one successful wake and only when no pending
-activity remains; it preserves never-woken creation work and rows whose pending
-marker proves that work remains, and skips enqueue while equivalent work is
-already queued or running. Retirement re-reads the state at the write boundary
-and rechecks that its schedule is still due and dormant, so an activity marker,
-deferred deadline, or replacement manual schedule written during the scan is
-never erased. A successful wake retains a future fallback when
-newer activity landed during the run. Every failure after state
-resolution—including setup failures before inference—uses the same
-create-or-advance deadline policy. Explicit cancellation persists removal of
-`pendingProjectActivityAt`, `nextWakeAt`, and `scheduledWakeAt` atomically, then
-clears queued work, so an in-flight
-failure cannot re-arm cancelled work and a storage failure cannot leave the UI
-falsely showing a completed cancellation. A post-commit outbox failure still
-clears runtime work to honor the committed cancellation before surfacing the
-sync error; an ambiguous transaction failure first re-reads the row and leaves
-runtime work intact unless those fields are confirmed absent. Retry and success paths read the
-current identity policy inside that same persistence transaction, so toggling
-automation during a long wake cannot be undone by policy captured at wake
-start. The drain also re-reads policy immediately before executor launch, after
-runner acquisition, content gating, run persistence, and the pre-wake hook, so
-an automatic job already removed from the queue cannot race a late opt-out into
+A subscription can instead be **report-stale-only** (`reportStaleOnly`): a
+match marks the agent's report stale and queues nothing. Every project-agent
+subscription is one. Project agents do automatic work only in
+[update slots](#update-slots-are-leased-and-gated); what marks their reports
+stale, how a slot is armed and what a run does with it is in
+[project agents](project-and-event-agents.md#stale-reports-and-update-slots).
+The drain re-reads policy immediately before executor launch, after runner
+acquisition, content gating, run persistence, and the pre-wake hook, so an
+automatic job already removed from the queue cannot race a late opt-out into
 paid inference.
 
 Persisted throttle set/clear operations read and write state inside the same
@@ -410,7 +396,9 @@ flowchart TD
   Identity -->|"unreadable, automatic"| Unreadable["refuse: policyUnreadable"]
   Identity -->|"allowed"| Kind{"project agent?"}
   Kind -->|"no"| Run["run"]
-  Kind -->|"yes"| Used{"used today"}
+  Kind -->|"yes"| Slot{"automatic and not an update slot?"}
+  Slot -->|"yes"| NotSlot["refuse: notAnUpdateSlot"]
+  Slot -->|"no"| Used{"used today"}
   Used -->|"automatic, used ≥ limit"| Exhausted["refuse: budgetExhausted"]
   Used -->|"any, used ≥ 2 × limit"| Ceiling["refuse: hardCeilingReached"]
   Used -->|"below"| Claim["claim: increment own host, sync"]
@@ -627,21 +615,47 @@ All three scheduling fields — `nextWakeAt`, `sleepUntil`, `scheduledWakeAt` �
 are device-local. Each device schedules its own wakes, so the sync apply path
 preserves the local row's scheduling rather than letting a peer's
 `AgentStateEntity` overwrite it (`_preserveLocalScheduling`). When a peer state
-consumes project activity, the local one-shot fallback is cleared rather than
-preserved; the receiving device also clears its throttle and removes queued
-automatic work for that batch while preserving explicit user wakes. On a
-project state's first arrival, the peer fallback is likewise
-discarded and rebuilt only when local policy and a pending marker require one,
-using the receiving device's clock. `activeProjectId` supplies the project-row
-signal when state arrives before identity. Startup and sync-arrival repairs that add or remove only that
-fallback write directly through the repository without changing `updatedAt` or
-the vector clock. This applies to both fallback repair and dormant-schedule
-retirement: local scheduling maintenance must never become a newer synced
-version of otherwise stale state. Settings opt-in/opt-out and resumed-agent
-restoration follow the same raw local transaction rule. Startup also removes
-markerless or pending fallbacks unconditionally when the project agent has
-explicitly opted out; the completed-wake guard applies only to legacy cleanup
-for agents whose automation remains allowed.
+consumes project activity, the receiving device clears its throttle and
+removes queued automatic work for that batch while preserving explicit user
+wakes. A project agent honours none of these fields any more: its schedule is
+the synced update slot, and a deadline left by an older build is retired
+wherever it is met ([legacy deadlines](project-and-event-agents.md#legacy-deadlines)).
+Retirement writes directly through the repository without changing
+`updatedAt` or the vector clock: local scheduling maintenance must never become
+a newer synced version of otherwise stale state.
+
+# Update slots are leased and gated
+
+A project update slot is a synced `ScheduledWakeEntity` (workspace
+`project_update:<UTC start>`, id derived from agent and slot) that every
+device sees, so it must fire on one of them. `ScheduledWakeManager` gives it
+the same lease as the coordinator digest — claim, settle for `leaseSettle`
+(3 minutes), confirm the surviving claimant, fire — and three rules on top,
+each one a property TLC broke without it (`specs/tla/ProjectWakeGovernor.tla`):
+
+| Rule | What it prevents | Spec switch |
+|------|------------------|-------------|
+| Claim and fire only while `SyncLeaseGate.ready()` — sync off, or connected with the inbox drained within two minutes | A claim made offline settles where no peer sees it; a device back from a long absence must apply the backlog, which may hold a peer's consume, before it decides | `InboxGate`, `ConnectedClaims` |
+| A claim made before a connection loss (an earlier `SyncLeaseGate.epoch`) is re-made, not confirmed | A claim written, then not uploaded before the drop, proves nothing about the election | `ConnectedClaims` |
+| Of an agent's pending slots, only the earliest fires, and firing consumes them all (`exclusiveGroupOf`) | Two devices that armed different slots for one change would each run one | `EarliestSlot` |
+
+```mermaid
+stateDiagram-v2
+  [*] --> Pending: armed (any device)
+  Pending --> Claimed: due, gate open, earliest of its agent
+  Claimed --> Claimed: connection lost, re-claim
+  Claimed --> Pending: another device's claim survived
+  Claimed --> Fired: settled, still the claimant, gate open
+  Fired --> Consumed: run enqueued, every pending slot of the agent consumed
+  Pending --> Consumed: consumed with an earlier slot, or automation off
+  Consumed --> [*]
+```
+
+The gate is `null` where sync is not wired; with sync disabled it is always
+open and its epoch never moves. A closed gate leaves the slot pending and
+retries after `syncGateRetry` (one minute). The dispatched wake carries
+`ProjectUpdateSlots.triggerToken`; the drain refuses any automatic project
+wake without it (`notAnUpdateSlot`), and the budget still applies.
 
 # One device per state: cross-device coordination
 

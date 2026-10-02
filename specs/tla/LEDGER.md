@@ -170,6 +170,14 @@ It fixed 34 bugs (P0, P1×21, P2×2, P3×10), 12 of them TLC counterexamples,
 and recorded new residuals in the README sections it touched. Not included in
 the historical totals above.
 
+The `ProjectWakeGovernor` model ([#PRNUM](https://github.com/matthiasn/lotti/pull/PRNUM)) adds one spec, five
+configurations, eight named properties and 8,482,680 distinct states. It
+came with the cadence that replaced device-local project fallbacks with
+synced, leased update slots; TLC found both shipped bugs through
+`SyncedSlots` and rejected three drafts of the replacement. Each of its
+seven switches and its settle assumption has a counterexample. Not
+included in the historical totals above.
+
 ## Timeline
 
 ```mermaid
@@ -264,6 +272,7 @@ counterexamples found. "Severity" grades each of those bugs; see
 | [#4522](https://github.com/matthiasn/lotti/pull/4522) | pending | ai | `EmbeddingFreshness` | 2 | 6 (0) | P1 P2×3 P3×2 | — | Semantic search kept finding deleted and shortened entries, and pulled up their tasks; edits made while Ollama was down were never indexed. Runs of one entity are now serialised end to end, gone entries lose their vectors, failures retry after the cooldown, reports follow their task, and a crash recovery keeps the newest copy |
 | [#4522](https://github.com/matthiasn/lotti/pull/4522) | pending | ai | `ConversationLoop` | 2 | 6 (0) | P2×4 P3×2 | — | The turn limit counted the user messages left after trimming, so a wake calling nine tools a round never reached `maxTurnsPerWake` and kept calling the model, and synthesized tool-call ids repeated. A trim could also open the history on a tool call, a strategy that threw left calls unanswered for the next message, and nothing serialized sends on one conversation |
 | [#4603](https://github.com/matthiasn/lotti/pull/4603) | pending | github | `PullRequestSnapshot` | 5 | 0 | — | — | A design model written before most of the code: pull requests linked to tasks, refreshed on every task context, replicated with a concurrent-version resolver instead of a user-facing conflict. Each of its seven design switches has a counterexample; it settled ordering by the server's `Date`, a context preferring its own read, and writing only changed snapshots, so a refresh cannot wake the agent that started it |
+| [#PRNUM](https://github.com/matthiasn/lotti/pull/PRNUM) | pending | agents | `ProjectWakeGovernor` | 5 | 5 (5) | P2×2 P3×3 | [0113](../../docs/adr/0113-project-agents-update-in-synced-slots.md) | A project agent's report changes, synced to three devices, armed three device-local 06:00 fallbacks, and every sync arrival of the state repaired one more: each device ran its own paid inference for one report (`SyncedSlots = FALSE` breaks `StaleDoesNotTriggerWork` in five states). A change now only marks the report stale; one synced, leased update slot per agent refreshes it on one device. TLC rejected three drafts on the way — claiming offline, confirming a claim a connection drop never uploaded, and two devices arming different slots for one change |
 ## Sync follow-up evidence, 2026-09-26
 
 This supplements the historical totals above; it does not add repeated model
@@ -590,6 +599,11 @@ The P0 and P1 bugs:
 | [#4522](https://github.com/matthiasn/lotti/pull/4522) | P2 | no | A strategy that threw mid-round left its tool calls unanswered for the next message |
 | [#4522](https://github.com/matthiasn/lotti/pull/4522) | P3 | no | Sends into one conversation could interleave |
 | [#4522](https://github.com/matthiasn/lotti/pull/4522) | P3 | no | The streamed tool-call parser merged calls with new ids, and treated an empty id as a real one |
+| [#PRNUM](https://github.com/matthiasn/lotti/pull/PRNUM) | P2 | yes | Every device a project change reached armed and ran its own 06:00 fallback, a paid inference per device for one report |
+| [#PRNUM](https://github.com/matthiasn/lotti/pull/PRNUM) | P2 | yes | Stale project state arriving by sync, a restart or an opt-in each asked for another wake |
+| [#PRNUM](https://github.com/matthiasn/lotti/pull/PRNUM) | P3 | yes | A draft claimed update slots while offline, where its claim settled unseen |
+| [#PRNUM](https://github.com/matthiasn/lotti/pull/PRNUM) | P3 | yes | A draft confirmed a claim written before a connection drop and never uploaded |
+| [#PRNUM](https://github.com/matthiasn/lotti/pull/PRNUM) | P3 | yes | A draft let two devices arm different slots for one change, and each fired its own |
 
 </details>
 

@@ -3689,3 +3689,83 @@ Left out, or residual:
 - **The model's joined clock.** The code keeps the winner's clock and joins
   the decision fields on every receive (`joinIdentityDecisions`), which has
   the same effect: no successor drops the other side's decision.
+
+## `ProjectWakeGovernor` — how much work a project agent does
+
+One project agent on two or three devices, from the change that makes its
+report stale to the run that refreshes it. Staleness is two synced
+watermarks joined by maximum; a stale replica with no slot pending arms the
+next update slot, a synced record whose id is the agent and the slot's
+start; a connected device with a drained inbox claims a due slot, settles,
+confirms and fires the earliest pending one, consuming all of them; the run
+claims the daily budget. "Update now" runs at once and counts. The design is
+[ADR 0113](../../docs/adr/0113-project-agents-update-in-synced-slots.md); the
+budget is [ADR 0112](../../docs/adr/0112-a-daily-wake-budget-bounds-every-agent-wake.md).
+
+The slot record is abstracted to a join — none < pending (ordered by claim) <
+consumed. That the real vector-clocked register converges to one surviving
+claim and keeps a consumed window consumed is `ScheduledWakeLease`'s
+`Converged` and `WindowTerminal`; this spec takes it as given.
+
+| Action | Code |
+|--------|------|
+| `Edit` | `ProjectActivityMonitor` marks the report stale and arms (`ProjectUpdateCadence.arm`) |
+| `Write`, `Deliver`, `Apply` | the outbox, the Matrix room and the inbound worker; `Apply` arms when the result is stale |
+| `Claim`, `Fire` | `ScheduledWakeManager`'s lease, gated by `SyncLeaseGate`; `Fire` consumes every pending slot, and the workflow skips a fresh report |
+| `Manual` | "Update now" |
+| `Complete`, `Fail` | the run settling; both re-arm while stale |
+| `Pause` | the identity going dormant; `WakeOrchestrator.haltAgent` |
+| `Offline`, `Online` | a device losing and regaining its sync connection (`SyncLeaseGate.epoch`) |
+
+| Property | Kind | Says |
+|----------|------|------|
+| `NoDuplicateScheduledWake` | invariant | while devices stay connected, no slot runs on two devices |
+| `NoDuplicateUnlessWriteDropped` | invariant | with partitions, only a device that fired and lost its connection before its consume left can cause a second run of a slot |
+| `WakeBudgetRespected` | invariant | each device keeps automatic runs within the budget and all runs within twice it |
+| `SharedBudget` | invariant | connected devices share one budget for automatic work |
+| `StaleDoesNotTriggerWork` | invariant | every run is a leased slot or a user's request — stale state arriving by sync starts nothing |
+| `NoWorkWhenFresh` | invariant | an automatic run never starts over a fresh report |
+| `PausedRunsNothing` | invariant | no run continues while its device knows the agent is paused |
+| `NoLostUpdate` | liveness | every change is eventually reflected in a refreshed report |
+
+| Configuration | Devices | Adds | Distinct states |
+|---------------|--------:|------|----------------:|
+| `ProjectWakeGovernor` | 2 | connected, prompt apply; checks liveness | 7,653 |
+| `ProjectWakeGovernorBacklog` | 2 | one offline spell, an apply lag longer than the settle | 189,821 |
+| `ProjectWakeGovernorBudget` | 2 | a budget of one over three slots, "Update now" and a failure | 4,577,837 |
+| `ProjectWakeGovernorPause` | 2 | a pause during a run | 1,116,559 |
+| `ProjectWakeGovernorThree` | 3 | a third device | 2,590,810 |
+
+Every switch is `TRUE` in the code. Each set to `FALSE` has a
+counterexample:
+
+| Switch | `FALSE` is | Counterexample |
+|--------|------------|----------------|
+| `SyncedSlots` | the design this replaces: a device-local 06:00 fallback that each device armed, also when stale state arrived by sync, and fired on its own | `StaleDoesNotTriggerWork`, 5 states |
+| `InboxGate` | claiming without first applying the sync backlog | `NoDuplicateUnlessWriteDropped`, backlog configuration, 15 states |
+| `ConnectedClaims` | claiming while offline, and confirming a claim the connection dropped under | `NoDuplicateUnlessWriteDropped`, backlog configuration, 14 states |
+| `EarliestSlot` | firing any due slot and consuming only it | `SharedBudget`, budget configuration, 25 states |
+| `SkipWhenFresh` | running a slot whatever the report | `NoWorkWhenFresh`, pause configuration, 13 states |
+| `BudgetCheck` | no daily budget | `WakeBudgetRespected`, budget configuration, 24 states |
+| `HaltOnPause` | a pause that stops only new work | `PausedRunsNothing`, pause configuration, 5 states |
+
+The timing assumption is checked too: `Settle = 2` with `MaxDelay = 1`
+breaks `NoDuplicateScheduledWake` in 16 states, which is why the spec
+assumes `Settle > 2 * MaxDelay` and the code waits three minutes.
+
+TLC rejected three drafts on the way, none of which shipped: claiming while
+offline (`ConnectedClaims`), confirming a claim written before a connection
+drop but never uploaded (the epoch), and two devices arming different slots
+for one change and each firing its own (`EarliestSlot`, and arming that
+skips a slot that already has a record).
+
+Left out, or residual:
+
+- **A write lost with its device.** A device that fires, then loses its
+  connection before its consume leaves, cannot tell its peers; they take the
+  slot over when its lease lapses. That is the one duplicate
+  `NoDuplicateUnlessWriteDropped` allows, and the budget bounds it.
+- **"Update now" is not deduplicated** across devices: the user asked on
+  each, and each counts.
+- **Clocks.** Slot starts are wall-clock instants on the 06:00 grid; devices
+  in different zones arm different grids. The model has one clock.

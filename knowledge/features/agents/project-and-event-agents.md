@@ -1,13 +1,33 @@
 ---
 type: Feature Module
 title: Project and event agents
-description: The digest-shaped project agent that resists waking on every linked-task edit, and the leaner event agent that writes recaps under a hard human-authorship invariant.
+description: The digest-shaped project agent whose changes only mark its report stale, refreshed in one synced update slot on one device, and the leaner event agent that writes recaps under a hard human-authorship invariant.
 resource: ../../../lib/features/agents/workflow/project_agent_workflow.dart
 tags: [agents, project-agent, event-agent, digest, notifications]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-02T18:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-03T12:00:00Z }
 stale_after: 2027-01-02
 sources:
+  - id: adr-0113
+    resource: ../../../docs/adr/0113-project-agents-update-in-synced-slots.md
+    title: ADR 0113 — project agents update in synced slots
+    last_modified: 2026-10-03
+  - id: cadence
+    resource: ../../../lib/features/agents/service/project_update_cadence.dart
+    title: ProjectUpdateCadence — arming, re-planning and consuming update slots
+    last_modified: 2026-10-03
+  - id: slots
+    resource: ../../../lib/features/agents/wake/project_update_slots.dart
+    title: The update-slot grid, intervals and record ids
+    last_modified: 2026-10-03
+  - id: governor-spec
+    resource: ../../../specs/tla/ProjectWakeGovernor.tla
+    title: TLA+ model of how much work a project agent does
+    last_modified: 2026-10-03
+  - id: activity-monitor
+    resource: ../../../lib/features/agents/service/project_activity_monitor.dart
+    title: ProjectActivityMonitor — marks reports stale and arms
+    last_modified: 2026-10-03
   - id: adr-0112
     resource: ../../../docs/adr/0112-a-daily-wake-budget-bounds-every-agent-wake.md
     title: ADR 0112 — automation defaults off; a daily budget bounds every wake
@@ -19,7 +39,7 @@ sources:
   - id: project-execution
     resource: ../../../lib/features/agents/workflow/project_agent_execute.dart
     title: Project wake persistence and recommendation replacement
-    last_modified: 2026-09-12
+    last_modified: 2026-10-03
   - id: project-next-steps
     resource: ../../../lib/features/agents/service/project_recommendation_service.dart
     title: Current next steps, legacy migration, and individual decisions
@@ -27,7 +47,7 @@ sources:
   - id: project-workflow
     resource: ../../../lib/features/agents/workflow/project_agent_workflow.dart
     title: ProjectAgentWorkflow
-    last_modified: 2026-09-10
+    last_modified: 2026-10-03
   - id: project-proposals
     resource: ../../../lib/features/agents/workflow/project_proposal_reconciler.dart
     title: The guards that stop proposals accumulating
@@ -39,7 +59,7 @@ sources:
   - id: project-service
     resource: ../../../lib/features/agents/service/project_agent_service.dart
     title: ProjectAgentService (creation, inference setup and announcement)
-    last_modified: 2026-09-29
+    last_modified: 2026-10-03
   - id: project-mutations
     resource: ../../../lib/features/agents/service/project_agent_mutation_coordinator.dart
     title: Shared project category, provisioning, and retirement exclusion
@@ -55,7 +75,7 @@ sources:
   - id: sync-runtime
     resource: ../../../lib/features/sync/matrix/sync_event_processor_agent_handlers.dart
     title: Synced project-agent runtime reconciliation
-    last_modified: 2026-08-19
+    last_modified: 2026-10-03
   - id: project-detail-record
     resource: ../../../lib/features/projects/state/project_detail_record_provider.dart
     title: Project detail report read model
@@ -95,7 +115,8 @@ expensive and useless.
    template whose category scope still applies to the requested project scope.
 4. Creates identity and state, with the inference setup described below.
 5. Sets `slots.activeProjectId` and marks the explicit creation work pending.
-6. Persists a one-shot next-06:00 fallback for the in-memory creation wake.
+6. Marks the report stale; the creation wake is durable through its wake
+   intent, so no deadline is written.
 7. Creates `agent_project` and `template_assignment` links.
 8. Rechecks the journal project and category; a sync tombstone or scope change
    compensates by deleting the just-created agent before it can be announced,
@@ -182,211 +203,152 @@ whatever token the watchers key on; `DayAgentTriageService` already passed a tas
 id through it. Task agents solve the same problem one layer up, by calling
 `notifyUiOnly` directly — see [task agents](task-agents.md).
 
-## Two different trigger paths
+## Stale reports and update slots
+
+A project agent never wakes because something changed. A change makes its
+report **stale**; the report is refreshed in the agent's next **update slot**,
+on one device, at most once per slot
+([ADR 0113](../../../docs/adr/0113-project-agents-update-in-synced-slots.md),
+model-checked in `specs/tla/ProjectWakeGovernor.tla`).
+
+Staleness is the agent state's two max-joined watermarks, `reportStaleAt` and
+`reportFreshAt`; a report is stale while `reportStaleAt >= reportFreshAt`.
+Both sync, and a join never lowers either, so staleness converges on every
+device whichever order the writes arrive in.
 
 ```mermaid
 stateDiagram-v2
-  [*] --> CreationPending: project agent created
-  CreationPending --> WakingNow: immediate creation wake
-  CreationPending --> MorningDigest: restart or creation failure
-  Dormant --> WakingNow: manual reanalysis
-  Dormant --> ShortDelay: direct project edit
-  Dormant --> MorningDigest: linked task or propagated project activity
-  ShortDelay --> WakingNow: coalescing deadline reached
-  MorningDigest --> WakingNow: next local 06:00 reached
-  WakingNow --> Dormant: no newer activity
-  WakingNow --> MorningDigest: newer activity queued during wake
-  WakingNow --> MorningDigest: wake failed with pending activity
-  LegacyDailySchedule --> Dormant: cleanup with no activity
-  LegacyDailySchedule --> WakingNow: pending activity still exists
+  [*] --> Stale: created (no report yet)
+  Fresh --> Stale: project-linked change
+  Stale --> SlotPending: arm (automation on, no slot pending)
+  SlotPending --> Running: slot fires on one device
+  Stale --> Running: Update now
+  SlotPending --> Running: Update now
+  SlotPending --> Stale: automation off (slots consumed)
+  Running --> Fresh: success, no change during the run
+  Running --> SlotPending: change during the run, or failure (re-arm)
+  Fresh --> FreshSlotPending: Update now ran ahead of a pending slot
+  FreshSlotPending --> Fresh: slot fires, no inference, consumed
 ```
 
-- **Linked-task churn** does not wake the agent immediately.
-  `ProjectActivityMonitor` listens to `localUpdateStream`, resolves affected
-  project ids, sets `slots.pendingProjectActivityAt`, and arms a one-shot
-  `scheduledWakeAt` for the next local 06:00 when automatic updates are allowed.
-  With automation explicitly disabled, it still marks the report stale but does
-  not create the fallback. Project/link notifications also use the
-  subscription's persisted `nextWakeAt` path; either path survives a restart.
-- **Direct project edits** use the same subscription but take the short
-  coalescing path, so an explicit project edit does not wait until morning.
-- **Explicit requests** (`creation` and manual `reanalysis`) bypass the
-  subscription throttle and enqueue immediately.
-- **Automation policy** is shared across local monitoring, workflow fallback
-  creation, startup restoration, and synced identity/link restoration. A
-  project agent with no stored preference has automation **off**, exactly as
-  the switch shows it: until 2026-10 the runtime read a missing value as on
-  while the switch showed off, so every untoggled project agent woke on its
-  own ([ADR 0112](../../../docs/adr/0112-a-daily-wake-budget-bounds-every-agent-wake.md)).
-  Opt-out, inactive lifecycle, and disabled inference block automatic
-  subscription and fallback wakes while observation remains wired. Whatever
-  the policy allows, every wake still passes the
+- **What marks a report stale.** `ProjectActivityMonitor` listens to the local
+  update stream — direct project edits, task links, edits to linked tasks and
+  their entries — and writes `slots.pendingProjectActivityAt` and
+  `reportStaleAt = max(stored, now)` in one transaction that re-reads the row,
+  so it cannot lower a later watermark a peer wrote meanwhile. It then asks
+  the cadence to arm. Project-agent subscriptions are `reportStaleOnly`: a
+  match marks the report stale and queues nothing. Creation writes
+  `reportStaleAt = now`; the creation wake itself is durable through its wake
+  intent.
+- **Arming** (`ProjectUpdateCadence.arm`). In one transaction: if the agent
+  is a project agent whose automation is allowed, no slot of it is pending,
+  and its report is stale, it writes a pending `ScheduledWakeEntity` for the
+  next slot. The record id is derived from the agent and the slot's start, so
+  every device that arms "the next slot" arms the same row; a slot that
+  already has a record (consumed early) is skipped, up to 48 ahead. Arming is
+  inert — it starts no work — and idempotent, so every path that might have
+  noticed staleness calls it: the monitor, the end of a run, sync arrival of
+  the identity, state or `agent_project` link, startup restoration, resume,
+  and turning automation on.
+- **The grid** (`project_update_slots.dart`). Slots are cut from the agent's
+  update interval, anchored at 06:00 local time: hourly slots start on the
+  hour, an eight-hour one at 06:00, 14:00 and 22:00, a daily one at 06:00.
+  `AgentConfig.updateIntervalMinutes` is synced on the identity; null, or a
+  value outside `ProjectUpdateSlots.choices` (1, 2, 4, 8 hours, a day), reads
+  as hourly.
+- **Firing.** The scheduled-wake manager fires a slot through its lease —
+  claim, settle, confirm — and two further rules found by TLC: it claims and
+  fires only while the [`SyncLeaseGate`](wake-orchestration.md#update-slots-are-leased-and-gated)
+  is open, and it fires only the earliest pending slot of an agent and then
+  consumes all of them. A run reads the agent as of its start, so it covers
+  every change any pending slot was armed for.
+- **The drain refuses anything else.** An automatic project wake that does
+  not carry `ProjectUpdateSlots.triggerToken` — a subscription match, a
+  restored intent, anything that queued automatic work by another route — is
+  refused as `notAnUpdateSlot`. Explicit wakes ("Update now", creation) run,
+  and every wake still passes the
   [daily wake budget](wake-orchestration.md#the-daily-wake-budget).
-  Identity, state, and project-link apply paths all reconcile the marker, so
-  every valid sync arrival order arms already-pending work once policy becomes
-  evaluable; startup restoration performs the same repair after a restart.
-  A first state import discards the sender's project fallback deadline and
-  its throttle fields (`nextWakeAt` and `sleepUntil`), then derives any
-  replacement from the receiving device's policy, clock, and pending marker
-  instead of treating another device's deadlines as local work. Before the
-  identity arrives, `activeProjectId` identifies the row as project state so
-  all peer scheduling fields are still stripped.
-  A synced or local opt-out clears every device-local automatic fallback,
-  including markerless creation rows, but retains any pending marker so
-  re-enabling can arm it again without losing evidence. A synced completion
-  does the inverse: when the incoming state consumes the pending marker, the
-  receiving device drops its retained fallback, local throttle, and queued
-  automatic job while leaving explicit user wakes alone.
-  Missing-fallback repair re-reads the current identity policy inside the same
-  local transaction as the state write; concurrent opt-in and opt-out changes
-  therefore win instead of being overwritten by a stale sync-reconciliation
-  decision. Equal or locally dominated identity and state replays still run
-  this local repair, so a transient receiver-side failure can recover on
-  redelivery; when that repair changes the fallback, it also notifies local
-  listeners so the visible countdown updates immediately. Local
-  settings, resume-time fallback repair, and startup restoration use the same
-  transaction-local policy recheck before enabling runtime; a lifecycle change
-  that wins during startup also removes the stale observation subscriptions.
-  Disabling the inference setup routes through this reconciliation too, so it
-  cannot leave a receiver-local fallback visible after making the agent
-  dormant. Startup also re-reads the current state before queue hydration and
-  restores a throttle only for still-pending activity or an unfinished initial
-  creation wake.
+- **A slot over a fresh report runs no inference.** An "Update now" or a
+  peer's run that freshened the report first read everything the slot was
+  armed for; the workflow returns success without capturing input or calling
+  the model, and the manager consumes the slot.
+- **The end of a run.** Success stamps `reportFreshAt` with the run's start
+  (when the run wrote a report) and, for a slot update, `lastDailyWakeAt`;
+  a change that landed during the run is newer, keeps the report stale and
+  re-arms. A failure counts in `consecutiveFailureCount`, leaves the report
+  stale and re-arms, so a failing agent retries once per slot, bounded by the
+  budget. Both paths call the cadence after the state write.
+- **Automation off.** Turning automation off, disabling inference, or a
+  resumed agent whose automation is off consumes every pending slot
+  (`ProjectUpdateCadence.consumeAll`); the stale mark stays for the card to
+  show. A paused agent's slot that still fires is refused by the drain
+  (`agentInactive`), and the pause itself halts running work.
+- **The automation policy** is shared by the monitor, the cadence, startup and
+  sync restoration. A project agent with no stored preference has automation
+  **off**, exactly as the switch shows it: until 2026-10 the runtime read a
+  missing value as on while the switch showed off
+  ([ADR 0112](../../../docs/adr/0112-a-daily-wake-budget-bounds-every-agent-wake.md)).
+  Startup restoration re-reads the identity after its bulk listing, so a
+  concurrent pause or opt-out controls the runtime it restores; sync
+  reconciliation re-reads it inside the transaction that reads the state.
 
-## Dormant-by-default scheduling
+The agent internals countdown shows the next pending slot
+(`projectNextUpdateProvider`); project agents have no Skip, since consuming a
+slot only to have the next change arm another skips nothing.
 
-Project agents do not own a recurring `scheduledWakeAt`. Creation or meaningful
-local activity may create a one-shot state schedule, and subscription routing
-may additionally persist `nextWakeAt` for its queued job. A successful wake
-clears the pending marker and both deadlines when no newer activity remains. A
-failed wake with pending activity re-arms the one-shot morning fallback instead
-of waiting for another edit; this includes failures during project/template/
-provider setup before inference starts. A failed first-ever legacy creation wake
-also advances its markerless scheduled row because `lastWakeAt == null` proves
-that creation work has not completed. An overdue fallback advances to the next
-morning rather than remaining due on every hourly scan. When automation is
-disabled, a manual wake may preserve an already-future explicit schedule but
-cannot synthesize a new morning fallback on success or failure. Enabling
-automation while the identity is inactive likewise leaves the fallback absent;
-resume-time restoration routes by agent kind, restores the direct-project
-subscription, and arms it after the lifecycle becomes active. Settings-driven
-opt-in and opt-out change only the local `scheduledWakeAt`; they preserve the
-synced state timestamp and vector clock so scheduling maintenance cannot
-resurrect a peer-completed activity marker. Before opt-out removes a project
-fallback, it marks an otherwise-current report stale so a later opt-in requests
-an immediate catch-up instead of waiting for the next morning. The report row
-itself is authoritative when an older first report has no freshness watermark.
-The settings-triggered catch-up uses an automation initiator, so another
-opt-out can remove it before dispatch while explicit manual wakes remain
-eligible. If an
-automation-preference or inference-setup identity transaction commits but its
-outbox flush fails, the service confirms the persisted identity, performs the
-matching runtime and fallback reconciliation, and then rethrows the sync
-failure. Pausing or
-destroying a project agent clears the same local
-fallback inside the lifecycle transaction while retaining the pending marker
-for a later resume. A pause or destroy received from sync also clears this
-device's local fallback and disables runtime because the sender cannot clear a
-receiver-owned scheduling field. Explicit
-cancellation clears `pendingProjectActivityAt`, `nextWakeAt`, and
-`scheduledWakeAt` in one persisted state write before clearing queued work; a
-transaction rollback therefore leaves the runtime work intact and surfaces an
-error in the project detail UI. If the state commits but the subsequent outbox
-flush fails, runtime work is still cleared to match storage before that sync
-error is surfaced, and the confirmed cancellation cutoff remains committed so
-an older activity batch cannot recreate the cleared marker. Because a
-transaction can also fail after its callback ran
-but before commit, the error path re-reads storage and clears runtime work only
-when the cancellation fields are actually absent. Failure persistence and cancellation share the same
-serialized sync transaction path, so a retry computed from an older snapshot
-cannot restore a marker or deadline that cancellation already removed. The
-activity monitor also captures when each local update batch was observed and
-serializes its final write with cancellation. A cancellation cutoff rejects
-older batches still resolving links, while newer post-cancel edits remain
-eligible; rolled-back cancellations remove only their own pending cutoffs, so
-even overlapping failures leave no phantom cancellation behind. The final
-write also compares the observation time with the current `lastWakeAt`, so a
-batch delayed until after a successful wake cannot re-arm already-processed
-activity. The
-workflow also re-reads the current identity policy inside its final persistence
-transaction; an automation toggle made during inference therefore controls
-whether success or failure may create another fallback. Consequently the
-Wake tab contains a project-agent row only while actual work or a retry is
-pending.
+## Legacy deadlines
 
-Older installations can still contain the former daily schedule. Startup
-restoration clears it when the agent has completed at least one wake and
-`pendingProjectActivityAt` is null. It re-reads, validates, and writes current
-state in one raw local transaction, so concurrent activity or manual scheduling
-cannot be overwritten. Both retirement and missing-fallback repair change only
-`scheduledWakeAt`, preserving the synced `updatedAt` and vector clock so local
-scheduling maintenance cannot win a later peer merge.
-`ScheduledWakeManager` applies the same dormant cleanup to overdue rows.
-That due-scan cleanup re-reads lifecycle and state in a raw local transaction,
-clears only `scheduledWakeAt`, and preserves the current `nextWakeAt`, pending
-marker, `updatedAt`, and vector clock. An obsolete due-query snapshot therefore
-cannot restore consumed scheduling data, erase newer activity, or win a peer
-merge.
-Explicitly opted-out agents are stricter: startup clears every fallback,
-including a never-woken markerless creation row left by an interrupted upgrade.
-Otherwise, never-woken agents and agents with pending activity retain the row
-as a one-shot safety net. Before retiring a row, the manager re-reads state and rechecks both
-the due deadline and pending marker, so activity or a replacement schedule that
-arrives during the scan wins. Every successful workflow run clears
-`scheduledWakeAt` when it
-consumed the newest activity.
-Before enqueueing a due fallback, the manager checks for queued or running work
-for the same agent after re-reading authoritative state at the enqueue boundary,
-leaving the fallback durable instead of stacking a second inference. That
-ordering closes the interval in which another wake can start while the state
-read is awaiting. Dormant-schedule retirement makes its fresh decision and
-whole-row write inside one transaction, so newly committed activity cannot be
-restored away by an older snapshot. If cancellation clears the deadline or
-moves it into the future while the scan is awaiting, the stale due snapshot
-cannot launch a wake.
+Builds before update slots scheduled project wakes with device-local
+deadlines: a one-shot `scheduledWakeAt` for the next 06:00, and the
+subscription throttle's `nextWakeAt`. Neither is honoured any more, and each
+is retired wherever it is met:
 
-Older-client identity rewrites may omit automation and inference-setup fields.
-Sync apply overlays those absent fields from the local identity for both task
-and project agents; explicit incoming values still win. A legacy rewrite can
-therefore rename or otherwise update a project agent without silently undoing
-its local automation opt-out or disabled inference setup.
+- `ProjectAgentService.restoreSubscriptions` clears both and the in-memory
+  throttle before arming.
+- `ScheduledWakeManager` retires a due project state schedule without firing
+  it — never-woken creation rows and rows with pending activity included —
+  re-reading the row in the write transaction, so a deadline cleared meanwhile
+  writes nothing.
+- Sync reconciliation of an identity, state or link clears them, and a first
+  state import strips a peer's scheduling fields (`scheduledWakeAt`,
+  `nextWakeAt`, `sleepUntil`); `activeProjectId` marks the row as project
+  state before its identity has arrived.
+
+Each retirement is a raw local write that keeps the synced `updatedAt` and
+vector clock, so scheduling maintenance cannot become a newer synced version
+of otherwise stale state.
+
+Older-client identity rewrites may omit automation, inference-setup, budget
+and interval fields. Sync apply overlays those absent fields from the local
+identity for both task and project agents; explicit incoming values still win.
+A legacy rewrite can therefore rename or otherwise update a project agent
+without silently undoing its local automation opt-out, disabled inference
+setup, wake budget or update interval.
 Older project-state payloads may likewise omit `pendingProjectActivityAt`.
 Sync apply detects field presence before deserialization: omission preserves
-the receiving device's pending marker and fallback, while an explicit null
-still records that the originating device consumed the work and cancels the
-receiving device's automatic wake. Outbox bundles retain each raw child
-envelope beside its deserialized message, including file-backed manifest
-children, so bundling cannot erase that omission signal.
-
-Failure persistence notifies state consumers only after the retry deadline is
-successfully written. The project detail report prefers the subscription
-deadline and falls back to the durable state schedule, so retry and creation
-fallbacks remain visible through the existing countdown and cancel control.
+the receiving device's pending marker, while an explicit null still records
+that the originating device consumed the work and cancels the receiving
+device's queued automatic wake. Outbox bundles retain each raw child envelope
+beside its deserialized message, including file-backed manifest children, so
+bundling cannot erase that omission signal.
 
 During the final state transition, `pendingProjectActivityAt` is cleared **only
-when no newer activity arrived during the wake**. If fresh activity lands
-mid-run, the newer timestamp and a future one-shot fallback are retained so the
-next digest still knows the summary is stale even if the in-memory follow-up is
-lost to suspension. Activity and report-freshness writers both re-read the
-latest state inside their write transactions, so either update preserves fields
-the other committed while it was waiting.
+when no newer activity arrived during the wake**. Activity and report-freshness
+writers both re-read the latest state inside their write transactions, so
+either update preserves fields the other committed while it was waiting.
 
 ## Wake flow
 
-`ProjectAgentWorkflow.execute()` loads state and resolves `activeProjectId`,
-retires a dormant legacy scheduled wake before inference, loads the project
-entity and prior observations, resolves template/version and inference profile,
-builds linked-task context **including task-agent reports**, reads the
-proposal ledger for the project, runs the conversation with
-`ProjectAgentStrategy`, and persists token usage, final thought, report,
-observations, staged retractions, the deduplicated deferred change set and
-updated state.
+`ProjectAgentWorkflow.execute()` loads state and resolves `activeProjectId`;
+for an update slot it re-reads the state and returns without inference when
+the report is already fresh. Otherwise it loads the project entity and prior
+observations, resolves template/version and inference profile, builds
+linked-task context **including task-agent reports**, reads the proposal
+ledger for the project, runs the conversation with `ProjectAgentStrategy`, and
+persists token usage, final thought, report, observations, staged
+retractions, the deduplicated deferred change set and updated state.
 State that lacks `activeProjectId` enters the same shared failure path as a
-missing project or provider, advancing any overdue fallback instead of leaving
-it due on every scheduler scan.
-Successful persistence clears `scheduledWakeAt` and
-`pendingProjectActivityAt` only when no newer activity arrived during the wake;
-otherwise it preserves a future fallback for the retained marker.
+missing project or provider: the failure is counted and the next slot armed.
 
 Project reports follow the same inline task-link contract as task reports: when
 linked-task context includes a task id, the report may point at `/tasks/<taskId>`

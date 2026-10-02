@@ -29,12 +29,11 @@ applied until the user confirms it.
   internals say so. Pausing an agent stops its queued and running work at once.
 - **Withdraws its own stale suggestions.** When a proposal no longer makes sense,
   the agent retracts it rather than leaving it in the list.
-- **Summarizes at other scopes too.** A project agent refreshes its digest after
-  relevant project or linked-task activity, with a one-shot persisted fallback
-  until that work succeeds. The fallback honors automation opt-out and is not
-  duplicated while equivalent work is queued or running; an event agent writes
-  a recap of a trip or gathering from its photos and notes; the Daily OS planner
-  plans a day.
+- **Summarizes at other scopes too.** A project agent's report goes out of date
+  when the project or a linked task changes, and refreshes in its next update
+  slot — hourly by default, on one device — or at once with *Update now*; an
+  event agent writes a recap of a trip or gathering from its photos and notes;
+  the Daily OS planner plans a day.
 - **Learns from feedback.** Agents periodically hold a "one-on-one" — a
   conversation where the user's accumulated feedback is reviewed and the agent's
   own instructions are revised, with every change approved by the user first.
