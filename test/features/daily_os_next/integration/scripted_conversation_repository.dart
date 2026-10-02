@@ -123,6 +123,7 @@ class ScriptedConversationRepository extends ConversationRepository {
     String? consumptionWakeRunKey,
     String? consumptionThreadId,
     bool rethrowInferenceErrors = false,
+    int? turnBudget,
   }) async {
     final manager = _managers[conversationId]!..addUserMessage(message);
     final offeredTools = tools ?? const <ChatCompletionTool>[];

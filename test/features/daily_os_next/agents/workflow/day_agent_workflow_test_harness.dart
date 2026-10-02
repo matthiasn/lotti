@@ -591,6 +591,7 @@ class ConversationHarness extends ConversationRepository {
     String? consumptionWakeRunKey,
     String? consumptionThreadId,
     bool rethrowInferenceErrors = false,
+    int? turnBudget,
   }) async {
     final thrown = errorToThrow;
     if (thrown != null) throw thrown;

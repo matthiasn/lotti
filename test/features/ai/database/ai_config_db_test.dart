@@ -65,6 +65,18 @@ void main() {
         expect(stamp, nowMs + 501);
       },
     );
+
+    test('are raised to notBefore, and never lowered by it', () async {
+      final raised = await atNow(
+        () => db.saveConfig(profile('a'), notBefore: nowMs + 300),
+      );
+      final unaffected = await atNow(
+        () => db.saveConfig(profile('b'), notBefore: nowMs),
+      );
+
+      expect([raised, unaffected], [nowMs + 300, nowMs + 301]);
+      expect(await db.versionStamp('profile-1'), nowMs + 301);
+    });
   });
 
   group('applyConfigVersion', () {

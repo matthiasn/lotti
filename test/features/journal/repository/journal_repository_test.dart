@@ -865,6 +865,43 @@ void main() {
         ).called(1);
       });
 
+      test('onlyIfUnchanged writes only while the stored row is still the '
+          'version the entity was built on', () async {
+        final entity = testJournalEntry().copyWith(
+          meta: testJournalEntry().meta.copyWith(
+            vectorClock: const VectorClock({'host': 3}),
+          ),
+        );
+        final preconditions = <Future<bool> Function()?>[];
+        when(
+          () => mockPersistenceLogic.updateJournalEntity(
+            any(),
+            any(),
+            precondition: any(named: 'precondition'),
+          ),
+        ).thenAnswer((invocation) async {
+          preconditions.add(
+            invocation.namedArguments[#precondition]
+                as Future<bool> Function()?,
+          );
+          return true;
+        });
+        // Another version was stored since the entity was read.
+        when(
+          () => mockJournalDb.isStoredVersion(
+            entity.id,
+            const VectorClock({'host': 3}),
+          ),
+        ).thenAnswer((_) async => false);
+
+        await repository.updateJournalEntity(entity, onlyIfUnchanged: true);
+        await repository.updateJournalEntity(entity);
+
+        expect(preconditions, hasLength(2));
+        expect(await preconditions.first!(), isFalse);
+        expect(preconditions.last, isNull);
+      });
+
       group('for a task', () {
         final stale = testTask.copyWith(
           data: testTask.data.copyWith(

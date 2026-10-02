@@ -1523,6 +1523,8 @@ not describe task configuration or tool activity as progress.
 
           // First call: normal wake, no forced tool choice.
           expect(calls[0].toolChoice, isNull);
+          // The retry has a turn of its own, whatever the wake used.
+          expect(mockConversationRepository.turnBudgets, [null, 1]);
 
           // Second call: forced update_report.
           final retryToolChoice = calls[1].toolChoice;

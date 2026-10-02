@@ -802,6 +802,7 @@ class EvalPromptRecorder extends ConversationRepository {
     String? consumptionWakeRunKey,
     String? consumptionThreadId,
     bool rethrowInferenceErrors = false,
+    int? turnBudget,
   }) {
     _byConversation[conversationId]
       ?..userMessages.add(message)
@@ -822,6 +823,7 @@ class EvalPromptRecorder extends ConversationRepository {
       consumptionWakeRunKey: consumptionWakeRunKey,
       consumptionThreadId: consumptionThreadId,
       rethrowInferenceErrors: rethrowInferenceErrors,
+      turnBudget: turnBudget,
     );
   }
 

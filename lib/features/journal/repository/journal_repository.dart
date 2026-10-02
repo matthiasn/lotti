@@ -249,8 +249,18 @@ class JournalRepository {
   /// between is never dropped (`specs/tla/ChecklistMembership.tla`,
   /// agTaskEdit). Its record of applied agent changes is kept the same way,
   /// joined with any `updated` adds ([TaskDataOnStored.onStored], ADR 0098).
-  /// Returns false on a logged failure.
-  Future<bool> updateJournalEntity(JournalEntity updated) async {
+  ///
+  /// [onlyIfUnchanged] applies any other entity only while the stored row is
+  /// still the version `updated` was built on — the one whose vector clock
+  /// `updated.meta` carries — so a version stored meanwhile, by sync or by a
+  /// local edit, is never overwritten; the write is refused instead, and the
+  /// caller builds it again on a fresh read.
+  ///
+  /// Returns false when the write was refused, and on a logged failure.
+  Future<bool> updateJournalEntity(
+    JournalEntity updated, {
+    bool onlyIfUnchanged = false,
+  }) async {
     try {
       final persistenceLogic = getIt<PersistenceLogic>();
       final journalDb = getIt<JournalDb>();
@@ -273,6 +283,12 @@ class JournalRepository {
       return await persistenceLogic.updateJournalEntity(
         updated,
         updated.meta,
+        precondition: onlyIfUnchanged
+            ? () => journalDb.isStoredVersion(
+                updated.id,
+                updated.meta.vectorClock,
+              )
+            : null,
       );
     } catch (exception, stackTrace) {
       getIt<DomainLogger>().error(

@@ -773,6 +773,46 @@ void main() {
       verifyNever(() => mockRepository.saveConfig(any()));
     });
 
+    test('does not recreate a model this device holds a deletion of', () async {
+      final ollamaProvider = AiConfigInferenceProvider(
+        id: 'ollama-1',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        name: 'Ollama',
+        createdAt: DateTime(2026, 3, 15),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+      // A hard delete left the first known model's stamp and no row.
+      final deletedId = generateModelId(
+        'ollama-1',
+        ollamaModels.first.providerModelId,
+      );
+      when(
+        () => mockRepository.versionStamp(deletedId),
+      ).thenAnswer((_) async => 42);
+      when(
+        () => mockRepository.getConfigsByType(
+          AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => [ollamaProvider]);
+      when(
+        () => mockRepository.getConfigsByType(
+          AiConfigType.model,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => []);
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async => {});
+
+      await service.backfillNewModels();
+
+      final created = verify(
+        () => mockRepository.saveConfig(captureAny()),
+      ).captured.cast<AiConfig>().map((config) => config.id);
+      expect(created, hasLength(ollamaModels.length - 1));
+      expect(created, isNot(contains(deletedId)));
+    });
+
     test('should backfill across multiple providers', () async {
       final ollamaProvider = AiConfigInferenceProvider(
         id: 'ollama-1',

@@ -84,6 +84,9 @@ class MockConversationRepository extends ConversationRepository {
   String? lastConsumptionWakeRunKey;
   String? lastConsumptionThreadId;
 
+  /// The turn budget of every [sendMessage] call, in order.
+  final List<int?> turnBudgets = [];
+
   @override
   void build() {
     // No-op for test mock.
@@ -122,7 +125,9 @@ class MockConversationRepository extends ConversationRepository {
     String? consumptionWakeRunKey,
     String? consumptionThreadId,
     bool rethrowInferenceErrors = false,
+    int? turnBudget,
   }) async {
+    turnBudgets.add(turnBudget);
     lastConsumptionAgentId = consumptionAgentId;
     lastConsumptionTaskId = consumptionTaskId;
     lastConsumptionCategoryId = consumptionCategoryId;

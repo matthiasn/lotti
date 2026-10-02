@@ -143,7 +143,10 @@ extension _TranscriptionCases on _SkillInferenceTestSetup {
 
       // 6. Save journal entity.
       when(
-        () => mockJournalRepo.updateJournalEntity(any()),
+        () => mockJournalRepo.updateJournalEntity(
+          any(),
+          onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+        ),
       ).thenAnswer((_) async => true);
 
       // 7. Logging.
@@ -170,7 +173,10 @@ extension _TranscriptionCases on _SkillInferenceTestSetup {
 
       // Verify journal entity was updated.
       final captured = verify(
-        () => mockJournalRepo.updateJournalEntity(captureAny()),
+        () => mockJournalRepo.updateJournalEntity(
+          captureAny(),
+          onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+        ),
       ).captured;
       expect(captured, hasLength(1));
 
@@ -224,7 +230,10 @@ extension _TranscriptionCases on _SkillInferenceTestSetup {
             ),
           ).thenAnswer((_) => Stream.value(makeStreamChunk(heard)));
           when(
-            () => mockJournalRepo.updateJournalEntity(any()),
+            () => mockJournalRepo.updateJournalEntity(
+              any(),
+              onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+            ),
           ).thenAnswer((_) async => true);
           stubLoggingEvent();
 
@@ -251,7 +260,10 @@ extension _TranscriptionCases on _SkillInferenceTestSetup {
           expect(sent, sentTerms);
           final saved =
               verify(
-                    () => mockJournalRepo.updateJournalEntity(captureAny()),
+                    () => mockJournalRepo.updateJournalEntity(
+                      captureAny(),
+                      onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+                    ),
                   ).captured.single
                   as JournalAudio;
           expect(saved.entryText?.plainText, storedText);
@@ -338,7 +350,10 @@ extension _TranscriptionCases on _SkillInferenceTestSetup {
           ),
         ).thenAnswer((_) => modelAnswer());
         when(
-          () => mockJournalRepo.updateJournalEntity(any()),
+          () => mockJournalRepo.updateJournalEntity(
+            any(),
+            onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+          ),
         ).thenAnswer((_) async => true);
         stubLoggingEvent();
         stubLoggingException();
@@ -349,7 +364,10 @@ extension _TranscriptionCases on _SkillInferenceTestSetup {
           knownTerms: knownTerms,
         );
         return verify(
-              () => mockJournalRepo.updateJournalEntity(captureAny()),
+              () => mockJournalRepo.updateJournalEntity(
+                captureAny(),
+                onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+              ),
             ).captured.single
             as JournalAudio;
       }
@@ -538,7 +556,12 @@ extension _TranscriptionCases on _SkillInferenceTestSetup {
             expect(record.errorCode, 'transcription_incomplete');
           }
           expect(reported, same(failure));
-          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+          verifyNever(
+            () => mockJournalRepo.updateJournalEntity(
+              any(),
+              onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+            ),
+          );
         },
       );
     }
@@ -591,7 +614,10 @@ extension _TranscriptionCases on _SkillInferenceTestSetup {
           ]),
         );
         when(
-          () => mockJournalRepo.updateJournalEntity(any()),
+          () => mockJournalRepo.updateJournalEntity(
+            any(),
+            onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+          ),
         ).thenAnswer((_) async => true);
         stubLoggingEvent();
 
@@ -665,7 +691,10 @@ extension _TranscriptionCases on _SkillInferenceTestSetup {
           return Stream.value(makeStreamChunk('Waddle One is ready'));
         });
         when(
-          () => mockJournalRepo.updateJournalEntity(any()),
+          () => mockJournalRepo.updateJournalEntity(
+            any(),
+            onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+          ),
         ).thenAnswer((_) async => true);
         stubLoggingEvent();
 
@@ -710,7 +739,10 @@ extension _TranscriptionCases on _SkillInferenceTestSetup {
         expect(event.dataCenter, 'DE');
         final saved =
             verify(
-                  () => mockJournalRepo.updateJournalEntity(captureAny()),
+                  () => mockJournalRepo.updateJournalEntity(
+                    captureAny(),
+                    onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+                  ),
                 ).captured.single
                 as JournalAudio;
         expect(saved.data.transcripts!.last.transcript, 'Waddle One is ready');
@@ -775,7 +807,10 @@ extension _TranscriptionCases on _SkillInferenceTestSetup {
           (_) => Stream.fromIterable([makeStreamChunk('Hello')]),
         );
         when(
-          () => mockJournalRepo.updateJournalEntity(any()),
+          () => mockJournalRepo.updateJournalEntity(
+            any(),
+            onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+          ),
         ).thenAnswer((_) async => true);
         stubLoggingEvent();
 
@@ -861,7 +896,10 @@ extension _TranscriptionCases on _SkillInferenceTestSetup {
           (_) => Stream.fromIterable([makeStreamChunk('Hello')]),
         );
         when(
-          () => mockJournalRepo.updateJournalEntity(any()),
+          () => mockJournalRepo.updateJournalEntity(
+            any(),
+            onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+          ),
         ).thenAnswer((_) async => true);
         stubLoggingEvent();
 
@@ -923,7 +961,12 @@ extension _TranscriptionCases on _SkillInferenceTestSetup {
       );
 
       // Should not save — empty response.
-      verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+      verifyNever(
+        () => mockJournalRepo.updateJournalEntity(
+          any(),
+          onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+        ),
+      );
       expect(
         container.read(
           inferenceErrorControllerProvider((

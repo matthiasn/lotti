@@ -2287,6 +2287,7 @@ class _ThrowingConversationRepository extends ConversationRepository {
     String? consumptionWakeRunKey,
     String? consumptionThreadId,
     bool rethrowInferenceErrors = false,
+    int? turnBudget,
   }) async {
     sendCount++;
     if (sendCount == throwOnCall) {

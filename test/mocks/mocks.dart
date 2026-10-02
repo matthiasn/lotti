@@ -1349,6 +1349,8 @@ class MockTaskToolDispatcher extends Mock implements TaskToolDispatcher {}
 class MockAiConfigRepository extends Mock implements AiConfigRepository {
   MockAiConfigRepository() {
     when(getDefaultProfileId).thenAnswer((_) async => null);
+    // No version held: the model backfill asks before creating each model.
+    when(() => versionStamp(any())).thenAnswer((_) async => null);
     for (final type in AiConfigType.values) {
       when(
         () => watchConfigsByType(type),

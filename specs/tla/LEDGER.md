@@ -102,6 +102,46 @@ rejected its first draft, and each of its six switches and its timing
 assumption has a counterexample. Not included in the historical totals
 above.
 
+The `AiConfigReplication` model ([#4522](https://github.com/matthiasn/lotti/pull/4522)) adds one spec, four configurations,
+five named properties and 136,070 distinct states. It came with fixes for AI
+settings on top of #4537's version stamps: a synced provider without a key
+wiped the key on peers, undoing a prompt deletion did nothing, a model a peer
+created before it heard of its provider's deletion outlived the provider, and
+a replayed row blanked its type from the repository cache. Four were found by
+auditing the code; TLC found a fifth once the cascade's deletions became hard
+deletes with stamps (a deleted model recreated by the backfill). Not included
+in the historical totals above.
+
+The `TranscriptionRun` model ([#4522](https://github.com/matthiasn/lotti/pull/4522)) adds one spec, two configurations, eleven
+named properties and 225,823 distinct states. It came with fixes for skill
+transcription: a transcript write the database refused was reported as a
+success, and follow-ups, a second request and a concurrent edit each
+misbehaved around it. All four bugs were found by reading the code, and TLC
+reproduces each through its switch. Review closed the window the model first
+left open — a local edit between the re-read and the write — with a guarded
+write, and made a retried write idempotent. Not included in the historical
+totals above.
+
+The `EmbeddingFreshness` model ([#4522](https://github.com/matthiasn/lotti/pull/4522)) adds one spec, two configurations, four
+named properties and 712,647 distinct states. It came with fixes for a vector
+index that fell behind the journal: deleted and shortened entries kept their
+vectors, failures during an Ollama outage were dropped, concurrent runs could
+store an older version, reports stayed in a task's old category, and a crash
+recovery could bring back older content. All six were found by reading the
+code — five in the audit that prompted the model, one (a short task's
+reports) while writing it — and TLC reproduces each through its switch. Not
+included in the historical totals above.
+
+The `ConversationLoop` model ([#4522](https://github.com/matthiasn/lotti/pull/4522)) adds one spec, two configurations, seven
+named properties and 60,639 distinct states. It came with a fix for an agent
+wake that could keep calling the model without end once its tool calls filled
+the trimmed history; the six bugs were found by reading the code, and TLC
+reproduces the five the protocol covers through its switches (the
+streamed-chunk accumulator's is pinned by a Glados property instead). Review
+then gave the forced `update_report` retry a turn budget of its own, which the
+model first recorded as a residual. Not included in the historical totals
+above.
+
 The `TaskAgentAssignment` model (#4546) adds one spec, three
 configurations, five named properties and 13,902,177 distinct states. It
 reproduces the duplicate task agents a follow-up confirmed on two devices
@@ -211,6 +251,10 @@ counterexamples found. "Severity" grades each of those bugs; see
 | [#4543](https://github.com/matthiasn/lotti/pull/4543) | 09-27 | agents | — | 0 | 1 (0) | P1 | [0097](../../docs/adr/0097-idempotent-effects-for-every-change-set-tool.md) | A finding #4538 merged with: an Undo reopened its item under the new key before reverting, so a confirm in between created a second task, and a failed revert stranded both. The revert now runs first, and a refused one writes nothing. `Undo` splits into three steps with a refusable revert; `RevertFirst = FALSE` breaks `NoDuplicateEffects` in six states. `ChangeSetLifecycleUndo` 22, `ChangeSetLifecycleRaceUndo` 2,351,210 states |
 | [#4558](https://github.com/matthiasn/lotti/pull/4558) | 09-27 | agents, relationships | — | 1 | 2 (0) | P2×2 | [0097](../../docs/adr/0097-idempotent-effects-for-every-change-set-tool.md) | Review findings on #4543: a revert that worked followed by a failed reopen left the item confirmed with its task gone, and the relationship agent's retry refused for good because the live read hid its own tombstone — or, after a purge, found a type-erased one. Every revert is now idempotent. New `ChangeSetLifecycleUndoRetry` (37 states) checks the liveness property `UndoFinishes`; `RevertIdempotent = FALSE` fails it in nine states |
 
+| [#4522](https://github.com/matthiasn/lotti/pull/4522) | pending | ai, sync | `AiConfigReplication` | 4 | 5 (1) | P1×2 P2×3 | — | Built on #4537's version stamps. A provider synced from a device whose keychain read came back empty wiped the key on every peer; undoing a prompt or skill deletion did nothing; a model a peer created before it heard of its provider's deletion outlived the provider; and a replayed row blanked its type from the repository cache. A receiver now keeps its key, deletes the models a deleted provider leaves behind at the deletion's stamp (and resumes that on redelivery), new models take their provider's stamp, the provider undo stamps its models past the provider, and the backfill leaves deleted ids alone — the hole TLC found once the cascade's deletions became hard deletes |
+| [#4522](https://github.com/matthiasn/lotti/pull/4522) | pending | ai | `TranscriptionRun` | 2 | 4 (0) | P1×2 P2×2 | — | A skill transcription whose write the database refused — a synced edit landed between the re-read and the write, or the write threw — was reported as a success: status idle, attribution succeeded, the summary and the agent nudge ran, and the check-in waiter sat on its spinner until the timeout. Failed runs still summarized and woke the agent, two requests for one recording both paid for an inference, and text edited during the run was overwritten. Writes are now checked and retried, runs are single-flight per recording, and an edit made during the run wins |
+| [#4522](https://github.com/matthiasn/lotti/pull/4522) | pending | ai | `EmbeddingFreshness` | 2 | 6 (0) | P1 P2×3 P3×2 | — | Semantic search kept finding deleted and shortened entries, and pulled up their tasks; edits made while Ollama was down were never indexed. Runs of one entity are now serialised end to end, gone entries lose their vectors, failures retry after the cooldown, reports follow their task, and a crash recovery keeps the newest copy |
+| [#4522](https://github.com/matthiasn/lotti/pull/4522) | pending | ai | `ConversationLoop` | 2 | 6 (0) | P2×4 P3×2 | — | The turn limit counted the user messages left after trimming, so a wake calling nine tools a round never reached `maxTurnsPerWake` and kept calling the model, and synthesized tool-call ids repeated. A trim could also open the history on a tool call, a strategy that threw left calls unanswered for the next message, and nothing serialized sends on one conversation |
 ## Sync follow-up evidence, 2026-09-26
 
 This supplements the historical totals above; it does not add repeated model
@@ -438,7 +482,7 @@ The P0 and P1 bugs:
 </details>
 
 <details>
-<summary>The 74 bugs fixed since (#4504 on), not in the historical totals</summary>
+<summary>The 95 bugs fixed since (#4504 on), not in the historical totals</summary>
 
 | PR | Level | TLC | Bug |
 |----|-------|-----|-----|
@@ -516,6 +560,27 @@ The P0 and P1 bugs:
 | [#4543](https://github.com/matthiasn/lotti/pull/4543) | P1 | no | An Undo reopened its item before reverting, so a confirm in between created a second task |
 | [#4558](https://github.com/matthiasn/lotti/pull/4558) | P2 | no | A failed reopen after a successful revert left the item confirmed and the relationship Undo refusing for good |
 | [#4558](https://github.com/matthiasn/lotti/pull/4558) | P2 | no | A purge between that failure and the retry compacted the tombstone, and the retry refused it too |
+| [#4522](https://github.com/matthiasn/lotti/pull/4522) | P1 | no | A provider synced without an API key deleted the key from every peer's keychain |
+| [#4522](https://github.com/matthiasn/lotti/pull/4522) | P1 | no | Undoing a prompt or skill deletion did nothing |
+| [#4522](https://github.com/matthiasn/lotti/pull/4522) | P2 | no | A model a peer backfilled before seeing its provider's deletion stayed live under the deleted provider |
+| [#4522](https://github.com/matthiasn/lotti/pull/4522) | P2 | yes | A device that received a model's deletion before its provider's recreated the model at the next backfill, live under the deleted provider |
+| [#4522](https://github.com/matthiasn/lotti/pull/4522) | P2 | no | A replayed AI config, or a write the database watch reported first, left its whole type unlisted in the repository cache until the next change |
+| [#4522](https://github.com/matthiasn/lotti/pull/4522) | P1 | no | A skill transcription whose write was refused or threw reported success, and the paid transcript was lost without an error |
+| [#4522](https://github.com/matthiasn/lotti/pull/4522) | P1 | no | Text edited (here or on a peer) while a recording was being transcribed was overwritten by the transcript |
+| [#4522](https://github.com/matthiasn/lotti/pull/4522) | P2 | no | A failed transcription still ran the paid audio summary over the old text and woke the subject's agent |
+| [#4522](https://github.com/matthiasn/lotti/pull/4522) | P2 | no | Two requests for one recording on a device each paid for an inference and appended a transcript and a summary; the status showed idle or error while one still ran |
+| [#4522](https://github.com/matthiasn/lotti/pull/4522) | P1 | no | A deleted or shortened entry kept its vectors, so its old text still found it and still surfaced its parent task |
+| [#4522](https://github.com/matthiasn/lotti/pull/4522) | P2 | no | Every edit made while the Ollama endpoint was in its outage cooldown was dropped after one failed attempt and never indexed |
+| [#4522](https://github.com/matthiasn/lotti/pull/4522) | P2 | no | A manual backfill running beside the background indexer could store an entry's older version after the newer one, and nothing corrected it |
+| [#4522](https://github.com/matthiasn/lotti/pull/4522) | P2 | no | A task too short to embed never took its agent reports along when it changed category |
+| [#4522](https://github.com/matthiasn/lotti/pull/4522) | P3 | no | A report embedded while its task changed category was filed under the old category |
+| [#4522](https://github.com/matthiasn/lotti/pull/4522) | P3 | no | A crash between a recategorising write's two shards restored the copy in the shard whose name sorted last, which could be the older content |
+| [#4522](https://github.com/matthiasn/lotti/pull/4522) | P2 | no | The turn limit counted user messages left after trimming, so an agent wake calling many tools a round never hit `maxTurnsPerWake` and kept paying for inference |
+| [#4522](https://github.com/matthiasn/lotti/pull/4522) | P2 | no | Gemini tool-call ids repeated after a trim, so a later call overwrote an earlier one's thought signature |
+| [#4522](https://github.com/matthiasn/lotti/pull/4522) | P2 | no | A trim could open the request on an assistant tool call with no turn before it |
+| [#4522](https://github.com/matthiasn/lotti/pull/4522) | P2 | no | A strategy that threw mid-round left its tool calls unanswered for the next message |
+| [#4522](https://github.com/matthiasn/lotti/pull/4522) | P3 | no | Sends into one conversation could interleave |
+| [#4522](https://github.com/matthiasn/lotti/pull/4522) | P3 | no | The streamed tool-call parser merged calls with new ids, and treated an empty id as a real one |
 
 </details>
 

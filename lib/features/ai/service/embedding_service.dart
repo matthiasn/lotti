@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:clock/clock.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -20,6 +21,17 @@ import 'package:lotti/utils/consts.dart';
 /// Uses content hashing (SHA-256) to skip re-embedding unchanged content.
 /// Processing is single-flight: only one embedding request runs at a time,
 /// with a set for pending entity IDs.
+///
+/// **A failed id is retried, not dropped.** An id whose processing throws is
+/// kept and queued again once [retryDelay] has passed — or, while the
+/// endpoint is in its outage cooldown, when the cooldown ends. The first
+/// cooldown failure parks every pending id, since each would fail the same
+/// way. An id is dropped after [maxFailedAttempts] failures in a row that
+/// were not the cooldown, so an entity that fails the same way
+/// every time — a store that rejects it, a response of the wrong dimension —
+/// is given up on rather than retried for as long as the app runs; its next
+/// edit starts again. The retry set lives in memory: a restart loses it, and
+/// the manual backfill is the repair.
 class EmbeddingService {
   EmbeddingService({
     required this.embeddingStore,
@@ -35,8 +47,19 @@ class EmbeddingService {
   final UpdateNotifications updateNotifications;
   final AiConfigRepository aiConfigRepository;
 
+  /// How long a failed id waits before it is retried, unless the failure
+  /// named its own retry time.
+  static const Duration retryDelay = OllamaEmbeddingRepository.outageCooldown;
+
+  /// After this many failures in a row, not counting the outage cooldown, an
+  /// id is dropped instead of retried.
+  static const int maxFailedAttempts = 3;
+
   StreamSubscription<Set<String>>? _subscription;
   final _pendingEntityIds = <String>{};
+  final _retryEntityIds = <String>{};
+  final _failedAttempts = <String, int>{};
+  Timer? _retryTimer;
   bool _isProcessing = false;
   bool _stopped = false;
   Future<void>? _inFlightProcessing;
@@ -58,7 +81,8 @@ class EmbeddingService {
     _subscription = updateNotifications.localUpdateStream.listen(_onBatch);
   }
 
-  /// Stops listening, clears pending work, and awaits any in-flight processing.
+  /// Stops listening, clears pending and retry work, and awaits any in-flight
+  /// processing.
   ///
   /// Sets the [_stopped] flag so the processing loop exits after the current
   /// entity completes. In-flight work is awaited to ensure clean shutdown.
@@ -66,6 +90,10 @@ class EmbeddingService {
     _stopped = true;
     await _subscription?.cancel();
     _subscription = null;
+    _retryTimer?.cancel();
+    _retryTimer = null;
+    _retryEntityIds.clear();
+    _failedAttempts.clear();
     _pendingEntityIds.clear();
     final inFlight = _inFlightProcessing;
     _inFlightProcessing = null;
@@ -84,6 +112,10 @@ class EmbeddingService {
     final entityIds = tokens.where(_isEntityId).toSet();
     if (entityIds.isEmpty) return;
 
+    _enqueue(entityIds);
+  }
+
+  void _enqueue(Set<String> entityIds) {
     _pendingEntityIds.addAll(entityIds);
     // Only start a new processing future if one isn't already running.
     // Overwriting _inFlightProcessing while _isProcessing is true would
@@ -92,6 +124,42 @@ class EmbeddingService {
       _inFlightProcessing = _processNext();
       unawaited(_inFlightProcessing);
     }
+  }
+
+  /// Keeps [entityId] for a later attempt and arms the retry timer.
+  ///
+  /// A cooldown failure also parks every pending id — each would fail fast
+  /// the same way — and retries when the cooldown ends. Any other failure
+  /// counts toward [maxFailedAttempts]; at it, the id is dropped.
+  void _retryLater(String entityId, Object error) {
+    if (error is! EmbeddingEndpointUnavailableException) {
+      final attempts = (_failedAttempts[entityId] ?? 0) + 1;
+      if (attempts >= maxFailedAttempts) {
+        // Also out of the retry set: an earlier failure may have parked it
+        // there, and the timer would otherwise try it once more.
+        _failedAttempts.remove(entityId);
+        _retryEntityIds.remove(entityId);
+        return;
+      }
+      _failedAttempts[entityId] = attempts;
+    }
+    _retryEntityIds.add(entityId);
+    var delay = retryDelay;
+    if (error is EmbeddingEndpointUnavailableException) {
+      _retryEntityIds.addAll(_pendingEntityIds);
+      _pendingEntityIds.clear();
+      final untilRetry = error.retryAt.difference(clock.now());
+      delay = untilRetry.isNegative ? Duration.zero : untilRetry;
+    }
+    _retryTimer ??= Timer(delay, _retryNow);
+  }
+
+  void _retryNow() {
+    _retryTimer = null;
+    if (_stopped || _retryEntityIds.isEmpty) return;
+    final ids = {..._retryEntityIds};
+    _retryEntityIds.clear();
+    _enqueue(ids);
   }
 
   Future<void> _processNext() async {
@@ -140,6 +208,7 @@ class EmbeddingService {
             baseUrl: baseUrl,
             labelNameResolver: labelResolver,
           );
+          _failedAttempts.remove(entityId);
         } catch (e, stackTrace) {
           developer.log(
             'Failed to generate embedding for $entityId: $e',
@@ -147,7 +216,8 @@ class EmbeddingService {
             stackTrace: stackTrace,
             name: 'EmbeddingService',
           );
-          // Swallow error — don't block other entities.
+          // Don't block other entities, but don't lose this one either.
+          _retryLater(entityId, e);
         }
       }
     } on Object catch (e, stackTrace) {

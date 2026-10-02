@@ -50,7 +50,10 @@ extension _TranscriptionContextAndErrorsCases on _SkillInferenceTestSetup {
           ]);
         });
         when(
-          () => mockJournalRepo.updateJournalEntity(any()),
+          () => mockJournalRepo.updateJournalEntity(
+            any(),
+            onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+          ),
         ).thenAnswer((_) async => true);
         stubLoggingEvent();
 
@@ -90,7 +93,10 @@ extension _TranscriptionContextAndErrorsCases on _SkillInferenceTestSetup {
         expect(event.energyKwh, 0.25);
         final saved =
             verify(
-                  () => mockJournalRepo.updateJournalEntity(captureAny()),
+                  () => mockJournalRepo.updateJournalEntity(
+                    captureAny(),
+                    onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+                  ),
                 ).captured.single
                 as JournalAudio;
         expect(
@@ -132,7 +138,10 @@ extension _TranscriptionContextAndErrorsCases on _SkillInferenceTestSetup {
         (_) => Stream.fromIterable([makeStreamChunk('Transcribed text')]),
       );
       when(
-        () => mockJournalRepo.updateJournalEntity(any()),
+        () => mockJournalRepo.updateJournalEntity(
+          any(),
+          onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+        ),
       ).thenAnswer((_) async => true);
       stubLoggingEvent();
 
@@ -208,7 +217,10 @@ extension _TranscriptionContextAndErrorsCases on _SkillInferenceTestSetup {
           (_) => Stream.fromIterable([makeStreamChunk('Override transcript')]),
         );
         when(
-          () => mockJournalRepo.updateJournalEntity(any()),
+          () => mockJournalRepo.updateJournalEntity(
+            any(),
+            onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+          ),
         ).thenAnswer((_) async => true);
         stubLoggingEvent();
 
@@ -237,7 +249,10 @@ extension _TranscriptionContextAndErrorsCases on _SkillInferenceTestSetup {
         // profile's — important so audit logs reflect what actually
         // ran for this entry.
         final captured = verify(
-          () => mockJournalRepo.updateJournalEntity(captureAny()),
+          () => mockJournalRepo.updateJournalEntity(
+            captureAny(),
+            onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+          ),
         ).captured;
         final updated = captured.first as JournalAudio;
         expect(
@@ -285,7 +300,10 @@ extension _TranscriptionContextAndErrorsCases on _SkillInferenceTestSetup {
           ]),
         );
         when(
-          () => mockJournalRepo.updateJournalEntity(any()),
+          () => mockJournalRepo.updateJournalEntity(
+            any(),
+            onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+          ),
         ).thenAnswer((_) async => true);
         stubLoggingEvent();
 
@@ -363,7 +381,10 @@ extension _TranscriptionContextAndErrorsCases on _SkillInferenceTestSetup {
           ]),
         );
         when(
-          () => mockJournalRepo.updateJournalEntity(any()),
+          () => mockJournalRepo.updateJournalEntity(
+            any(),
+            onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+          ),
         ).thenAnswer((_) async => true);
         stubLoggingEvent();
 
@@ -561,7 +582,10 @@ extension _TranscriptionContextAndErrorsCases on _SkillInferenceTestSetup {
         ]),
       );
       when(
-        () => mockJournalRepo.updateJournalEntity(any()),
+        () => mockJournalRepo.updateJournalEntity(
+          any(),
+          onlyIfUnchanged: any(named: 'onlyIfUnchanged'),
+        ),
       ).thenAnswer((_) async => true);
       stubLoggingEvent();
 

@@ -1,12 +1,12 @@
 ---
 type: Feature Module
 title: Seeding and config lifecycle
-description: Provider-gated profile seeds, why deletion needed a tombstone, and the migration-safe upgrade pass that never overwrites user choices.
+description: Provider-gated profile seeds, why deletion needed a tombstone, how stamped config versions converge across devices, and the migration-safe upgrade pass that never overwrites user choices.
 resource: ../../../lib/features/ai/util/profile_seeding_service.dart
-tags: [ai, seeding, migration, soft-delete, lifecycle]
+tags: [ai, seeding, migration, soft-delete, lifecycle, sync, tombstone, last-writer-wins]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-19T00:00:00Z }
-stale_after: 2026-11-10
+generated: { by: claude-code/opus-5.5, at: 2026-09-26T13:00:00Z }
+stale_after: 2026-12-26
 sources:
   - id: seeding
     resource: ../../../lib/features/ai/util/profile_seeding_service.dart
@@ -14,12 +14,16 @@ sources:
     last_modified: 2026-08-19
   - id: repo
     resource: ../../../lib/features/ai/repository/ai_config_repository.dart
-    title: AiConfigRepository — soft and hard delete
-    last_modified: 2026-07-25
+    title: AiConfigRepository — orphan cleanup, soft and hard delete
+    last_modified: 2026-10-02
   - id: model-prepopulation
     resource: ../../../lib/features/ai/util/model_prepopulation_service.dart
     title: ModelPrepopulationService — backfill and renamed-id repair
-    last_modified: 2026-08-19
+    last_modified: 2026-10-02
+  - id: tla-spec
+    resource: ../../../specs/tla/AiConfigReplication.tla
+    title: AiConfigReplication — the model TLC checks replication against
+    last_modified: 2026-10-02
   - id: skill-lookup
     resource: ../../../lib/features/ai/skills/skill_lookup.dart
     title: resolveAssignedSkill — why skills resolve from code, not the store
@@ -124,20 +128,23 @@ created or updated.
 So a hard delete was undone within the same session — **deletion had no memory,
 only presence was state.**
 
-Deleting an AI config therefore **soft-deletes** it: `deleteConfig` stamps
-`deletedAt` on the row and re-saves it.
+Deleting a model or profile therefore **soft-deletes** it: `deleteConfig`
+stamps `deletedAt` on the row and re-saves it.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Absent: never seeded
-    Absent --> Active: seedDefaults() — gate type has a usable provider
+    [*] --> Absent: never seen here
+    Absent --> Active: seedDefaults() or backfillNewModels()
     Active --> Active: upgradeExisting() heals slots, never overwrites choices
-    Active --> Tombstoned: deleteConfig() stamps deletedAt
-    Tombstoned --> Tombstoned: seedDefaults() reads it as PRESENT and skips
-    Tombstoned --> Active: restoreConfig() clears the stamp
-    Absent --> Active: hardDeleteConfig() then a later seed
-    Active --> Absent: removeOrphanedDefaultSeeds() — untouched seed, gate lost
-    Active --> Absent: provider cascade removes its model rows
+    Active --> Tombstoned: deleteConfig() of a model or profile stamps deletedAt
+    Tombstoned --> Tombstoned: seeding reads it as PRESENT and skips
+    Tombstoned --> Active: restoreConfig(), or a newer live version by sync
+    Active --> Tombstoned: a newer tombstone by sync
+    Active --> Deleted: hardDeleteConfig() — prompt or skill, provider cascade, orphaned model
+    Active --> Deleted: a newer deletion by sync
+    Deleted --> Deleted: backfill reads the stamp as PRESENT and skips
+    Deleted --> Active: a local re-save (the undo), or a newer version by sync
+    Active --> Absent: removeOrphanedDefaultSeeds() forgets row and stamp
     note right of Tombstoned
       The row IS the tombstone, so
       "deleted" is distinguishable from
@@ -145,9 +152,10 @@ stateDiagram-v2
       and replicates on the existing
       sync path.
     end note
-    note right of Absent
-      Only hard delete returns here, and
-      only where re-seeding is the intent.
+    note right of Deleted
+      Only the version stamp is left
+      (ai_config_versions), none of the
+      content.
     end note
 ```
 
@@ -161,30 +169,114 @@ Reads split by intent:
 | Caller | Behaviour |
 |--------|-----------|
 | `getConfigById` / `getConfigsByType` | Hide soft-deleted rows by default, so no picker, settings tab or resolver surfaces them |
-| Seeding passes | Call with `includeDeleted: true`, because they need a deleted row to read as **present** so they skip recreating it |
+| Seeding passes | Call with `includeDeleted: true`, because they need a deleted row to read as **present** so they skip recreating it; the model backfill also skips an id with a held version stamp |
 | `watchConfigsByType` (backs the UI) | Always filters them out |
 
-Two paths must **not** leave a stamp and use `hardDeleteConfig`:
+Three paths must **not** keep the row and use `hardDeleteConfig`:
 
 - **`removeOrphanedDefaultSeeds()`** sheds bundled profiles whose gate type has
   no usable provider and deliberately re-seeds them when that provider returns. A
   soft delete there would make the removal permanent — the opposite of what the
-  pass means.
-- **A provider cascade** removes the provider's model rows, which must come back
-  if the user re-adds that provider.
+  pass means. It sends nothing (`fromSync: true`): usability is per device.
+- **Deleting a prompt or skill** must not keep its messages, so the row goes and
+  `aiConfigDelete(hardDelete: true)` tells the peers. The delete toast's undo
+  writes the row back from the snapshot it deleted (`saveConfig`), stamped past
+  the deletion.
+- **The provider cascade** (`deleteInferenceProviderWithModels`) deletes the
+  provider and every live model of it in one transaction, which also removes
+  the provider's API key from the keychain. A re-added provider gets a new id,
+  so its models come back under new ids. The toast's undo
+  (`restoreProviderWithModels`) re-saves the provider and the models the
+  cascade took, each stamped past its deletion, and every model no earlier than
+  the restored provider (`AiConfigDb.saveConfig(notBefore:)`) — so each
+  model's restore is newer than the provider's deletion, which the receive
+  rule below relies on.
 
 Hard delete leaves no `deletedAt`, but it does leave a *version stamp*
 (`ai_config_versions`, [ADR 0094](../../../docs/adr/0094-ai-config-versions-are-stamped.md)):
 the id and the deletion's stamp, none of the content. That is what stops a
 copy of the config sent before the deletion from bringing it back when it
-lands late on a peer; the seeding passes never read it. The orphaned-seed
-prune stays on this device and sends nothing, so it also forgets the stamp
-(`forgetConfig`), and a peer's next copy of the profile applies again as
-before.
+lands late on a peer, and what the model backfill reads as present. The
+orphaned-seed prune stays on this device and sends nothing, so it also forgets
+the stamp (`forgetConfig`), and a peer's next copy of the profile applies
+again as before.
 
-`restoreConfig` clears the `deletedAt` stamp for the one case where the user
-asks for something back: re-running onboarding for a provider whose bundled
-profile they had deleted, which happens before FTUE setup seeds.
+`restoreConfig` clears the `deletedAt` stamp where the user asks for a soft-deleted
+row back: the delete toast's undo of a model or profile, and re-running
+onboarding for a provider whose bundled profile they had deleted, which happens
+before FTUE setup seeds.
+
+# Replication across devices
+
+Configs are not sequence-tracked: each change travels as the whole row
+(`SyncMessage.aiConfig`), and "Send settings" re-sends every row a device holds,
+tombstones included. So a receiver sees versions late, twice and out of order.
+`AiConfigDb` orders them by the version stamp each carries (ADR 0094); the
+repository adds the rules about providers and their models. The model TLC
+checks this against is `specs/tla/AiConfigReplication.tla`.
+
+- **One total order.** A greater stamp wins; on a tie a held deletion wins,
+  then the payload without its credential. A local write takes the next local
+  stamp, past the version it replaces, so a device whose clock is behind still
+  writes a newer version. The one exception is a model created on this device
+  (one it has never held a version of, as the known-model backfill writes): it
+  takes its provider's stamp, since it belongs to that provider version.
+- **No stale model under a deleted provider.** Whenever a provider's or a
+  model's message lands, the receiver deletes, and sends the deletion of, the
+  live models of a provider it holds a deletion of
+  (`_deleteOrphanedModels`). That catches a model another device backfilled
+  before it heard of the deletion, whatever its clock said, since the backfill
+  carries the provider's stamp. Only models **not newer than the provider's
+  deletion** are orphans: one stamped after it was written after the deletion,
+  and the provider undo's model restores are exactly that — a peer may receive
+  one while it still holds the provider's deletion. The orphan's deletion
+  carries the provider deletion's stamp, not the receiver's clock, so every
+  device derives the same version and a later restore always outranks it.
+- **The backfill skips held deletions.** A hard delete leaves no row, so
+  without that check a device that received a model's deletion before its
+  provider's would recreate the model at the next backfill, stamped past the
+  deletion, and it would outlive the provider.
+- **The residual.** A model a user edits or restores *after* the deletion, on a
+  device that has not heard of it yet, is newer than the deletion and stays
+  live under the deleted provider. The receiver cannot tell it from an undo's
+  restore, and deleting it would lose that write; the user deletes it.
+- **An interrupted cleanup resumes.** Each orphan's deletion is sent before it
+  is stored, so a send that throws leaves the model live and the message
+  unprocessed. When sync delivers the same message again, the cleanup runs
+  again, whether or not the message changes a row.
+- **A received provider without a key keeps the receiver's key.** An empty key
+  on the wire means the sender's keychain read came back empty, not that the
+  user removed it. A provider's deletion does remove it.
+
+```mermaid
+sequenceDiagram
+    participant A as Device A
+    participant B as Device B
+    A->>A: cascade: delete provider P and its models
+    B->>B: backfill: new model M under P, stamped with P's stamp
+    A-->>B: P deletion
+    B->>B: delete its live models of P (M) at P's deletion stamp, send
+    B-->>A: M live (sent before)
+    A->>A: M's provider is deleted: delete M at the same stamp, send
+    B-->>A: M deletion
+    A-->>B: M deletion
+    Note over A,B: both hold P and M as the same deletions
+```
+
+The undo, delivered out of order, survives the same rule:
+
+```mermaid
+sequenceDiagram
+    participant A as Device A
+    participant B as Device B
+    A->>A: cascade: delete P and model M
+    A-->>B: P and M deletions
+    A->>A: undo: restore P, then M, each stamped past P's deletion
+    A-->>B: M restore (arrives first)
+    B->>B: P is deleted, but M is newer than P's deletion: keep M
+    A-->>B: P restore
+    Note over A,B: both hold P and M live
+```
 
 # Upgrades never overwrite a choice
 
@@ -204,7 +296,7 @@ deliberate user choice rather than a gap to fill.
 What `upgradeExisting()` does backfill, after model rows exist:
 
 - **Heals dangling model slots on default profiles.** Deleting a provider
-  cascade-deletes its model rows, but the seeded profile kept pointing at the dead
+  hard-deletes its model rows, but the seeded profile kept pointing at the dead
   ids. Each such slot resets to the seed template's provider-native default and
   re-resolves once the rows are recreated. Catalog-known provider-native values
   are treated as *pending*, not dangling.

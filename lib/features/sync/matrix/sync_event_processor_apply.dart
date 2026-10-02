@@ -118,11 +118,10 @@ extension SyncEventProcessorApply on SyncEventProcessor {
       ):
         final stamp =
             versionStamp ?? event.originServerTs.millisecondsSinceEpoch;
-        // Current builds only send this envelope for hard deletes — an
-        // orphaned-seed prune or a provider cascade — and mark it. Applying
-        // those softly would leave a tombstone that stops the peer re-seeding
-        // a profile the sender merely pruned, and keep cascaded rows as hidden
-        // records.
+        // Current builds only send this envelope, marked, for hard deletes —
+        // a deleted prompt or skill, a provider cascade, or a model left
+        // under a deleted provider. Applying those softly would keep the
+        // deleted content as a hidden record.
         //
         // An absent flag is a *legacy* user deletion from 0.9.1068 or earlier,
         // which had no other way to express one. Hard-deleting it would let

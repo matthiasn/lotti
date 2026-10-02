@@ -335,6 +335,8 @@ class TaskAgentWorkflow with AgentErrorLogging {
         consumptionWakeRunKey: consumptionWakeRunKey,
         consumptionThreadId: consumptionThreadId,
         rethrowInferenceErrors: true,
+        // Its own turn: the wake before it may have used every one.
+        turnBudget: 1,
       );
     } catch (e, s) {
       logError(

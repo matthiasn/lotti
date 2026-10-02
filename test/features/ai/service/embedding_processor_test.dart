@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -8,6 +9,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
+import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:lotti/features/ai/service/embedding_processor.dart';
 import 'package:lotti/features/ai/service/text_chunker.dart';
@@ -402,6 +404,78 @@ void _stubEntity(MockJournalDb db, JournalEntity entity) {
   when(() => db.journalEntityById(entity.id)).thenAnswer((_) async => entity);
 }
 
+/// What the store holds for one id.
+class _StoredRow {
+  _StoredRow({
+    required this.hash,
+    required this.categoryId,
+    required this.taskId,
+  });
+
+  final String hash;
+  String categoryId;
+  final String taskId;
+}
+
+/// Backs [store] with [rows], for tests about what the store ends up holding:
+/// writes land in the map, reads come from it, and a task's reports move with
+/// it as they do in `ShardedEmbeddingStore`.
+void _backWithRows(MockEmbeddingStore store, Map<String, _StoredRow> rows) {
+  String idOf(Invocation i) => i.positionalArguments.first as String;
+  when(
+    () => store.getContentHash(any()),
+  ).thenAnswer((i) => rows[idOf(i)]?.hash);
+  when(
+    () => store.getCategoryId(any()),
+  ).thenAnswer((i) => rows[idOf(i)]?.categoryId);
+  when(() => store.deleteEntityEmbeddings(any())).thenAnswer((i) {
+    rows.remove(idOf(i));
+  });
+  when(() => store.moveEntityToShard(any(), any())).thenAnswer((i) {
+    rows[idOf(i)]?.categoryId = i.positionalArguments[1] as String;
+  });
+  when(() => store.moveRelatedReportEmbeddings(any(), any())).thenAnswer((i) {
+    for (final row in rows.values.where((r) => r.taskId == idOf(i))) {
+      row.categoryId = i.positionalArguments[1] as String;
+    }
+  });
+  when(
+    () => store.replaceEntityEmbeddings(
+      entityId: any(named: 'entityId'),
+      entityType: any(named: 'entityType'),
+      modelId: any(named: 'modelId'),
+      contentHash: any(named: 'contentHash'),
+      embeddings: any(named: 'embeddings'),
+      categoryId: any(named: 'categoryId'),
+      taskId: any(named: 'taskId'),
+      subtype: any(named: 'subtype'),
+    ),
+  ).thenAnswer((i) {
+    rows[i.namedArguments[#entityId] as String] = _StoredRow(
+      hash: i.namedArguments[#contentHash] as String,
+      categoryId: i.namedArguments[#categoryId] as String,
+      taskId: i.namedArguments[#taskId] as String,
+    );
+  });
+}
+
+/// Holds the first `embed` call open on the returned completer; every later
+/// call answers at once.
+Completer<Float32List> _pauseFirstEmbed(MockOllamaEmbeddingRepository repo) {
+  final first = Completer<Float32List>();
+  var calls = 0;
+  when(
+    () => repo.embed(
+      input: any(named: 'input'),
+      baseUrl: any(named: 'baseUrl'),
+      model: any(named: 'model'),
+    ),
+  ).thenAnswer(
+    (_) => calls++ == 0 ? first.future : Future.value(_fakeEmbedding()),
+  );
+  return first;
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -450,6 +524,37 @@ void main() {
     );
   }
 
+  /// Runs [EmbeddingProcessor.processAgentReport] with the report's task
+  /// stored in [categoryId] on the shared journal mock.
+  Future<bool> processAgentReport({
+    required String reportId,
+    required String reportContent,
+    required String taskId,
+    required String categoryId,
+    required String subtype,
+    required EmbeddingStore embeddingStore,
+    required OllamaEmbeddingRepository embeddingRepository,
+    required String baseUrl,
+  }) {
+    _stubEntity(
+      mockJournalDb,
+      Task(
+        meta: _meta(id: taskId, categoryId: categoryId),
+        data: _taskData('Task $taskId'),
+      ),
+    );
+    return EmbeddingProcessor.processAgentReport(
+      reportId: reportId,
+      reportContent: reportContent,
+      taskId: taskId,
+      subtype: subtype,
+      journalDb: mockJournalDb,
+      embeddingStore: embeddingStore,
+      embeddingRepository: embeddingRepository,
+      baseUrl: baseUrl,
+    );
+  }
+
   group('EmbeddingProcessor.processEntity', () {
     test('embeds a journal entry and returns true', () async {
       final entry = JournalEntry(
@@ -474,15 +579,24 @@ void main() {
       ).called(1);
     });
 
-    test('returns false when entity not found', () async {
-      when(
-        () => mockJournalDb.journalEntityById('missing'),
-      ).thenAnswer((_) async => null);
+    test(
+      'deletes the vectors of an entry that is gone and returns false',
+      () async {
+        // The read hides soft-deleted rows: a deleted entry reads as null.
+        final rows = {
+          'deleted': _StoredRow(hash: 'old', categoryId: 'cat-1', taskId: ''),
+        };
+        _backWithRows(mockEmbeddingStore, rows);
+        when(
+          () => mockJournalDb.journalEntityById('deleted'),
+        ).thenAnswer((_) async => null);
 
-      final result = await processEntity(entityId: 'missing');
+        final result = await processEntity(entityId: 'deleted');
 
-      expect(result, isFalse);
-    });
+        expect(result, isFalse);
+        expect(rows, isEmpty);
+      },
+    );
 
     test('returns false for unsupported entity type (JournalImage)', () async {
       final image = JournalImage(
@@ -500,16 +614,28 @@ void main() {
       expect(result, isFalse);
     });
 
-    test('returns false when text is too short', () async {
-      final entry = JournalEntry(
-        meta: _meta(),
-        entryText: const EntryText(plainText: 'Too short'),
-      );
+    test(
+      'deletes the vectors of an entry shortened below the minimum',
+      () async {
+        final rows = {
+          'entity-1': _StoredRow(
+            hash: _hashOf(_longText),
+            categoryId: '',
+            taskId: '',
+          ),
+        };
+        _backWithRows(mockEmbeddingStore, rows);
+        final entry = JournalEntry(
+          meta: _meta(),
+          entryText: const EntryText(plainText: 'Too short'),
+        );
 
-      final result = await processEntity(entity: entry);
+        final result = await processEntity(entity: entry);
 
-      expect(result, isFalse);
-    });
+        expect(result, isFalse);
+        expect(rows, isEmpty);
+      },
+    );
 
     test('returns false when content hash unchanged', () async {
       final entry = JournalEntry(
@@ -659,6 +785,9 @@ void main() {
         when(
           () => localEmbeddingStore.moveRelatedReportEmbeddings(any(), any()),
         ).thenReturn(null);
+        when(
+          () => localEmbeddingStore.deleteEntityEmbeddings(any()),
+        ).thenReturn(null);
         _stubReplaceEntityEmbeddings(localEmbeddingStore);
         _stubEmbed(localEmbeddingRepo);
 
@@ -697,10 +826,43 @@ void main() {
               subtype: any(named: 'subtype'),
             ),
           );
+          // A deleted or too-short entry loses its vectors; an entity type
+          // that is never embedded has none to lose.
+          final gone =
+              scenario.entityShape == _GeneratedEmbeddingEntityShape.missing ||
+              scenario.entityShape == _GeneratedEmbeddingEntityShape.tooShort;
+          if (gone) {
+            verify(
+              () =>
+                  localEmbeddingStore.deleteEntityEmbeddings(scenario.entityId),
+            ).called(1);
+          } else {
+            verifyNever(
+              () => localEmbeddingStore.deleteEntityEmbeddings(any()),
+            );
+          }
           return;
         }
 
         final expectedCategoryId = scenario.categoryId ?? '';
+        // A task's reports follow it into its category on every run.
+        void verifyReportsFollow() {
+          if (scenario.isTask) {
+            verify(
+              () => localEmbeddingStore.moveRelatedReportEmbeddings(
+                scenario.entityId,
+                expectedCategoryId,
+              ),
+            ).called(1);
+          } else {
+            verifyNever(
+              () =>
+                  localEmbeddingStore.moveRelatedReportEmbeddings(any(), any()),
+            );
+          }
+        }
+
+        verifyNever(() => localEmbeddingStore.deleteEntityEmbeddings(any()));
         if (scenario.hashMatches) {
           expect(result, scenario.categoryChanged, reason: '$scenario');
           verifyNever(
@@ -717,19 +879,12 @@ void main() {
                 expectedCategoryId,
               ),
             ).called(1);
-            if (scenario.isTask) {
-              verify(
-                () => localEmbeddingStore.moveRelatedReportEmbeddings(
-                  scenario.entityId,
-                  expectedCategoryId,
-                ),
-              ).called(1);
-            }
           } else {
             verifyNever(
               () => localEmbeddingStore.moveEntityToShard(any(), any()),
             );
           }
+          verifyReportsFollow();
           return;
         }
 
@@ -752,18 +907,7 @@ void main() {
             categoryId: expectedCategoryId,
           ),
         ).called(1);
-        if (scenario.categoryChanged && scenario.isTask) {
-          verify(
-            () => localEmbeddingStore.moveRelatedReportEmbeddings(
-              scenario.entityId,
-              expectedCategoryId,
-            ),
-          ).called(1);
-        } else {
-          verifyNever(
-            () => localEmbeddingStore.moveRelatedReportEmbeddings(any(), any()),
-          );
-        }
+        verifyReportsFollow();
         verifyNever(
           () => localEmbeddingStore.moveEntityToShard(any(), any()),
         );
@@ -1006,7 +1150,7 @@ void main() {
         const reportContent =
             'This attributed report has enough content for embedding.';
 
-        final result = await EmbeddingProcessor.processAgentReport(
+        final result = await processAgentReport(
           reportId: 'report-attributed',
           reportContent: reportContent,
           taskId: 'task-attributed',
@@ -1051,7 +1195,7 @@ void main() {
       ).thenThrow(StateError('offline'));
 
       await expectLater(
-        EmbeddingProcessor.processAgentReport(
+        processAgentReport(
           reportId: 'report-failed',
           reportContent:
               'This attributed report is long enough but embedding fails.',
@@ -1080,7 +1224,7 @@ void main() {
       const reportContent =
           'This agent report has enough content for embedding.';
 
-      final result = await EmbeddingProcessor.processAgentReport(
+      final result = await processAgentReport(
         reportId: 'report-1',
         reportContent: reportContent,
         taskId: 'task-1',
@@ -1107,7 +1251,7 @@ void main() {
     });
 
     test('returns false when content is too short', () async {
-      final result = await EmbeddingProcessor.processAgentReport(
+      final result = await processAgentReport(
         reportId: 'report-1',
         reportContent: 'Too short',
         taskId: 'task-1',
@@ -1130,7 +1274,7 @@ void main() {
 
     test('trims whitespace before checking length', () async {
       // Content is short when trimmed
-      final result = await EmbeddingProcessor.processAgentReport(
+      final result = await processAgentReport(
         reportId: 'report-1',
         reportContent: '   short   ',
         taskId: 'task-1',
@@ -1150,7 +1294,7 @@ void main() {
         () => mockEmbeddingStore.getContentHash('report-1'),
       ).thenReturn(_hashOf(reportContent));
 
-      final result = await EmbeddingProcessor.processAgentReport(
+      final result = await processAgentReport(
         reportId: 'report-1',
         reportContent: reportContent,
         taskId: 'task-1',
@@ -1170,7 +1314,7 @@ void main() {
         () => mockEmbeddingStore.getContentHash('report-1'),
       ).thenReturn('old-hash-that-no-longer-matches');
 
-      final result = await EmbeddingProcessor.processAgentReport(
+      final result = await processAgentReport(
         reportId: 'report-1',
         reportContent: reportContent,
         taskId: 'task-1',
@@ -1188,7 +1332,7 @@ void main() {
       const reportContent =
           'A report with enough content for embedding generation.';
 
-      await EmbeddingProcessor.processAgentReport(
+      await processAgentReport(
         reportId: 'report-1',
         reportContent: reportContent,
         taskId: 'task-1',
@@ -1275,7 +1419,7 @@ void main() {
           return _fakeEmbedding();
         });
 
-        final run = EmbeddingProcessor.processAgentReport(
+        final run = processAgentReport(
           reportId: scenario.reportId,
           reportContent: scenario.reportContent,
           taskId: scenario.taskId,
@@ -1325,6 +1469,140 @@ void main() {
         }
       },
       tags: 'glados',
+    );
+  });
+
+  // The traces of specs/tla/EmbeddingFreshness.tla: runs of the service, the
+  // backfill and the report writer interleaved around a slow network call.
+  group('concurrent runs stay in step with the journal', () {
+    const firstText = 'The first version of this entry, long enough.';
+    const secondText = 'The second version of this entry, long enough.';
+
+    JournalEntry entryWith(String text) => JournalEntry(
+      meta: _meta(),
+      entryText: EntryText(plainText: text),
+    );
+
+    test(
+      'a run that read an older version cannot land after a newer run',
+      () async {
+        final rows = <String, _StoredRow>{};
+        _backWithRows(mockEmbeddingStore, rows);
+        var current = entryWith(firstText);
+        when(
+          () => mockJournalDb.journalEntityById('entity-1'),
+        ).thenAnswer((_) async => current);
+        final firstEmbed = _pauseFirstEmbed(mockEmbeddingRepo);
+
+        // The backfill reads the first version and waits on the network…
+        final backfill = processEntity(entityId: 'entity-1');
+        await pumpEventQueue();
+        // …the user edits, and the service processes the edit.
+        current = entryWith(secondText);
+        final service = processEntity(entityId: 'entity-1');
+        await pumpEventQueue();
+        firstEmbed.complete(_fakeEmbedding());
+        await Future.wait([backfill, service]);
+
+        // Nothing else will process the entry: what is stored now stays.
+        expect(rows['entity-1']!.hash, _hashOf(secondText));
+      },
+    );
+
+    test('an undone edit is not skipped behind a run that saw it', () async {
+      final rows = {
+        'entity-1': _StoredRow(
+          hash: _hashOf(firstText),
+          categoryId: '',
+          taskId: '',
+        ),
+      };
+      _backWithRows(mockEmbeddingStore, rows);
+      var current = entryWith(secondText);
+      when(
+        () => mockJournalDb.journalEntityById('entity-1'),
+      ).thenAnswer((_) async => current);
+      final firstEmbed = _pauseFirstEmbed(mockEmbeddingRepo);
+
+      // The backfill reads the edit; the user undoes it, and the service
+      // finds the undone text equal to what is stored.
+      final backfill = processEntity(entityId: 'entity-1');
+      await pumpEventQueue();
+      current = entryWith(firstText);
+      final service = processEntity(entityId: 'entity-1');
+      await pumpEventQueue();
+      firstEmbed.complete(_fakeEmbedding());
+      await Future.wait([backfill, service]);
+
+      expect(rows['entity-1']!.hash, _hashOf(firstText));
+    });
+
+    test('a short task still takes its reports to its new category', () async {
+      final rows = {
+        'report-1': _StoredRow(
+          hash: 'report-hash',
+          categoryId: 'cat-old',
+          taskId: 'task-1',
+        ),
+      };
+      _backWithRows(mockEmbeddingStore, rows);
+      // Too short to embed, so the task has no vector of its own.
+      final task = Task(
+        meta: _meta(id: 'task-1', categoryId: 'cat-new'),
+        data: _taskData('Fix login'),
+      );
+
+      final result = await processEntity(entity: task);
+
+      expect(result, isFalse);
+      expect(rows['report-1']!.categoryId, 'cat-new');
+    });
+
+    test(
+      'a report embedded while its task moves category follows the task',
+      () async {
+        final rows = {
+          'task-1': _StoredRow(
+            hash: _hashOf('Task title\n$_longText'),
+            categoryId: 'cat-old',
+            taskId: '',
+          ),
+        };
+        _backWithRows(mockEmbeddingStore, rows);
+        var task = Task(
+          meta: _meta(id: 'task-1', categoryId: 'cat-old'),
+          data: _taskData('Task title'),
+          entryText: const EntryText(plainText: _longText),
+        );
+        when(
+          () => mockJournalDb.journalEntityById('task-1'),
+        ).thenAnswer((_) async => task);
+        final reportEmbed = _pauseFirstEmbed(mockEmbeddingRepo);
+
+        // The agent's report reads the task's category and embeds…
+        final report = EmbeddingProcessor.processAgentReport(
+          reportId: 'report-1',
+          reportContent: 'An agent report with plenty of content to embed.',
+          taskId: 'task-1',
+          subtype: 'current',
+          journalDb: mockJournalDb,
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          baseUrl: _baseUrl,
+        );
+        await pumpEventQueue();
+        // …while the user moves the task, and the service processes it.
+        task = task.copyWith(
+          meta: task.meta.copyWith(categoryId: 'cat-new'),
+        );
+        final service = processEntity(entityId: 'task-1');
+        await pumpEventQueue();
+        reportEmbed.complete(_fakeEmbedding());
+        await Future.wait([report, service]);
+
+        expect(rows['task-1']!.categoryId, 'cat-new');
+        expect(rows['report-1']!.categoryId, 'cat-new');
+      },
     );
   });
 }

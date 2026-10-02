@@ -83,14 +83,22 @@ class AiConfigDb extends _$AiConfigDb {
   /// provider credential commit together; a sync message of this version
   /// must carry the returned stamp (ADR 0094).
   ///
+  /// [notBefore] raises the stamp to at least that value, so a version can be
+  /// made to outrank another config's: the provider undo stamps each model it
+  /// restores no earlier than the provider it restores with it.
+  ///
   /// [persistApiKey] can be disabled only for callers that intentionally have
   /// no credential (for example, a metadata-only sync update).
   Future<int> saveConfig(
     AiConfig config, {
+    int? notBefore,
     bool persistApiKey = true,
     bool preserveExistingApiKeyOnEmpty = false,
   }) => transaction(() async {
-    final stamp = _nextLocalStamp(await versionStamp(config.id));
+    final stamp = _nextLocalStamp(
+      await versionStamp(config.id),
+      notBefore: notBefore,
+    );
     await _writeConfig(
       config,
       stamp: stamp,
@@ -181,9 +189,10 @@ class AiConfigDb extends _$AiConfigDb {
     )..where((row) => row.id.equals(id))).go();
   });
 
-  static int _nextLocalStamp(int? held) {
+  static int _nextLocalStamp(int? held, {int? notBefore}) {
     final now = clock.now().millisecondsSinceEpoch;
-    return held != null && now <= held ? held + 1 : now;
+    final stamp = held != null && now <= held ? held + 1 : now;
+    return notBefore != null && stamp < notBefore ? notBefore : stamp;
   }
 
   /// The content order that breaks a tie between two versions with the same
