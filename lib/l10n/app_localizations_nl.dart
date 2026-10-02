@@ -1277,6 +1277,33 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentToolGoalRevisionLabel => 'Voorstel tot doelherziening';
 
   @override
+  String get agentWakeBudgetDecrease => 'Daglimiet verlagen';
+
+  @override
+  String get agentWakeBudgetExhausted =>
+      'Limiet bereikt — automatische updates gaan morgen verder';
+
+  @override
+  String get agentWakeBudgetHelp =>
+      'Automatische updates stoppen zodra de limiet is bereikt. Nu bijwerken werkt nog steeds, tot twee keer de limiet.';
+
+  @override
+  String get agentWakeBudgetIncrease => 'Daglimiet verhogen';
+
+  @override
+  String get agentWakeBudgetLabel => 'Dagelijkse limiet voor activeringen';
+
+  @override
+  String agentWakeBudgetUsage(int used, int max) {
+    return 'Vandaag $used van $max gebruikt';
+  }
+
+  @override
+  String agentWakeBudgetValue(int count) {
+    return '$count per dag';
+  }
+
+  @override
   String get aggregationDailyAvg => 'Daggemiddelde';
 
   @override
@@ -16201,31 +16228,4 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
-
-  @override
-  String get agentWakeBudgetLabel => 'Dagelijkse limiet voor activeringen';
-
-  @override
-  String agentWakeBudgetValue(int count) {
-    return '$count per dag';
-  }
-
-  @override
-  String agentWakeBudgetUsage(int used, int max) {
-    return 'Vandaag $used van $max gebruikt';
-  }
-
-  @override
-  String get agentWakeBudgetExhausted =>
-      'Limiet bereikt — automatische updates gaan morgen verder';
-
-  @override
-  String get agentWakeBudgetHelp =>
-      'Automatische updates stoppen zodra de limiet is bereikt. Nu bijwerken werkt nog steeds, tot twee keer de limiet.';
-
-  @override
-  String get agentWakeBudgetDecrease => 'Daglimiet verlagen';
-
-  @override
-  String get agentWakeBudgetIncrease => 'Daglimiet verhogen';
 }

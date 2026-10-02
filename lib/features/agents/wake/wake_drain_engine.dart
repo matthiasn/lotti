@@ -180,7 +180,7 @@ extension WakeDrainEngine on WakeOrchestrator {
     WakeJob job, {
     required String reason,
     required bool emitUnpersistedCompletion,
-    Object? error,
+    required Object error,
   }) async {
     _forgetDrainOwnedJob(job);
     _settleIntent(job);
@@ -192,11 +192,7 @@ extension WakeDrainEngine on WakeOrchestrator {
         error: error,
       );
     } else if (emitUnpersistedCompletion) {
-      _emitRunCompletion(
-        job,
-        WakeRunStatus.aborted,
-        error: error ?? StateError(reason),
-      );
+      _emitRunCompletion(job, WakeRunStatus.aborted, error: error);
     }
   }
 
@@ -342,10 +338,12 @@ extension WakeDrainEngine on WakeOrchestrator {
                 'for ${DomainLogger.sanitizeId(job.agentId)}',
                 subDomain: 'drain',
               );
+              const reason = 'wake dropped by suppression re-check';
               await _dropDrainOwnedJob(
                 job,
-                reason: 'wake dropped by suppression re-check',
+                reason: reason,
                 emitUnpersistedCompletion: false,
+                error: StateError(reason),
               );
               _releaseDrainLease(generation, lease);
               continue;
@@ -414,10 +412,12 @@ extension WakeDrainEngine on WakeOrchestrator {
             return;
           }
           if (shouldSkipForAwaitingContent) {
+            const reason = 'wake skipped while awaiting content';
             await _dropDrainOwnedJob(
               job,
-              reason: 'wake skipped while awaiting content',
+              reason: reason,
               emitUnpersistedCompletion: false,
+              error: StateError(reason),
             );
             _releaseDrainLease(generation, lease);
             continue;
@@ -574,10 +574,12 @@ extension WakeDrainEngine on WakeOrchestrator {
     // gone: the peer's done may already have arrived since [coverage] was
     // decided, and its notification finds a hand-over only once it exists.
     if (!coverage.completed) _handedToPeer.add(job.agentId);
+    const reason = 'wake covered by a peer device';
     await _dropDrainOwnedJob(
       job,
-      reason: 'wake covered by a peer device',
+      reason: reason,
       emitUnpersistedCompletion: false,
+      error: StateError(reason),
     );
     _releaseDrainLease(generation, lease);
     if (!coverage.completed) {
@@ -814,11 +816,7 @@ extension WakeDrainEngine on WakeOrchestrator {
       errorMessage: reason,
     );
     if (emitCompletion) {
-      _emitRunCompletion(
-        job,
-        WakeRunStatus.aborted,
-        error: error ?? StateError(reason),
-      );
+      _emitRunCompletion(job, WakeRunStatus.aborted, error: error);
     }
   }
 

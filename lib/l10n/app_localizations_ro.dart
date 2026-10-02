@@ -1290,6 +1290,33 @@ class AppLocalizationsRo extends AppLocalizations {
       'Propunere de revizuire a obiectivului';
 
   @override
+  String get agentWakeBudgetDecrease => 'Scădeți limita zilnică';
+
+  @override
+  String get agentWakeBudgetExhausted =>
+      'Limită atinsă — actualizările automate se reiau mâine';
+
+  @override
+  String get agentWakeBudgetHelp =>
+      'Actualizările automate se opresc când limita este atinsă. Actualizarea manuală funcționează în continuare, până la dublul limitei.';
+
+  @override
+  String get agentWakeBudgetIncrease => 'Măriți limita zilnică';
+
+  @override
+  String get agentWakeBudgetLabel => 'Limită zilnică de treziri';
+
+  @override
+  String agentWakeBudgetUsage(int used, int max) {
+    return '$used din $max folosite azi';
+  }
+
+  @override
+  String agentWakeBudgetValue(int count) {
+    return '$count pe zi';
+  }
+
+  @override
   String get aggregationDailyAvg => 'Medie zilnică';
 
   @override
@@ -16473,31 +16500,4 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
-
-  @override
-  String get agentWakeBudgetLabel => 'Limită zilnică de treziri';
-
-  @override
-  String agentWakeBudgetValue(int count) {
-    return '$count pe zi';
-  }
-
-  @override
-  String agentWakeBudgetUsage(int used, int max) {
-    return '$used din $max folosite azi';
-  }
-
-  @override
-  String get agentWakeBudgetExhausted =>
-      'Limită atinsă — actualizările automate se reiau mâine';
-
-  @override
-  String get agentWakeBudgetHelp =>
-      'Actualizările automate se opresc când limita este atinsă. Actualizarea manuală funcționează în continuare, până la dublul limitei.';
-
-  @override
-  String get agentWakeBudgetDecrease => 'Scădeți limita zilnică';
-
-  @override
-  String get agentWakeBudgetIncrease => 'Măriți limita zilnică';
 }

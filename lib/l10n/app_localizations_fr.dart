@@ -1290,6 +1290,33 @@ class AppLocalizationsFr extends AppLocalizations {
       'Proposition de révision de l\'objectif';
 
   @override
+  String get agentWakeBudgetDecrease => 'Baisser la limite quotidienne';
+
+  @override
+  String get agentWakeBudgetExhausted =>
+      'Limite atteinte — les mises à jour automatiques reprennent demain';
+
+  @override
+  String get agentWakeBudgetHelp =>
+      'Les mises à jour automatiques s’arrêtent une fois la limite atteinte. Mettre à jour maintenant fonctionne toujours, jusqu’au double de la limite.';
+
+  @override
+  String get agentWakeBudgetIncrease => 'Augmenter la limite quotidienne';
+
+  @override
+  String get agentWakeBudgetLabel => 'Limite quotidienne de réveils';
+
+  @override
+  String agentWakeBudgetUsage(int used, int max) {
+    return '$used sur $max utilisés aujourd’hui';
+  }
+
+  @override
+  String agentWakeBudgetValue(int count) {
+    return '$count par jour';
+  }
+
+  @override
   String get aggregationDailyAvg => 'Moyenne quotidienne';
 
   @override
@@ -16429,31 +16456,4 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Ignorer';
-
-  @override
-  String get agentWakeBudgetLabel => 'Limite quotidienne de réveils';
-
-  @override
-  String agentWakeBudgetValue(int count) {
-    return '$count par jour';
-  }
-
-  @override
-  String agentWakeBudgetUsage(int used, int max) {
-    return '$used sur $max utilisés aujourd’hui';
-  }
-
-  @override
-  String get agentWakeBudgetExhausted =>
-      'Limite atteinte — les mises à jour automatiques reprennent demain';
-
-  @override
-  String get agentWakeBudgetHelp =>
-      'Les mises à jour automatiques s’arrêtent une fois la limite atteinte. Mettre à jour maintenant fonctionne toujours, jusqu’au double de la limite.';
-
-  @override
-  String get agentWakeBudgetDecrease => 'Baisser la limite quotidienne';
-
-  @override
-  String get agentWakeBudgetIncrease => 'Augmenter la limite quotidienne';
 }

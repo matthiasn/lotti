@@ -6,9 +6,11 @@ import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 
 /// Utility class for AI feature error handling.
 class AiErrorUtils {
-  /// HTTP statuses a provider answers when the credentials are refused.
+  /// HTTP statuses a provider answers when the credentials are refused, in
+  /// the forms the repositories report them: `error 403`, `status code: 401`,
+  /// `HTTP 401`, and Mistral's `API error (HTTP 401)`, which drops the body.
   static final _authStatus = RegExp(
-    r'(?:error|status(?:\s*code)?)[:=\s]+(?:401|403)\b',
+    r'(?:error|status(?:\s*code)?|http)[\s:=(]*(?:http\s*)?(?:401|403)\b',
     caseSensitive: false,
   );
 

@@ -85,6 +85,45 @@ void main() {
       );
 
       test(
+        'a ledger that cannot be read before dispatch defers the budget '
+        'decision to the claim instead of dropping the wake',
+        () async {
+          when(() => mockRepository.getEntity('project-1')).thenAnswer(
+            (_) async => makeTestIdentity(
+              id: 'project-1',
+              agentId: 'project-1',
+              kind: 'project_agent',
+              config: const AgentConfig(automaticUpdatesEnabled: true),
+            ),
+          );
+          when(
+            () => mockRepository.getAgentState('project-1'),
+          ).thenThrow(StateError('agent database busy'));
+          final ran = <String>[];
+          orchestrator.wakeExecutor = (_, runKey, _, _) async {
+            ran.add(runKey);
+            return null;
+          };
+          queue.enqueue(
+            WakeJob(
+              runKey: 'ledger-unreadable',
+              agentId: 'project-1',
+              reason: WakeReason.subscription.name,
+              initiator: WakeInitiator.automation,
+              triggerTokens: const {'project-token'},
+              createdAt: DateTime(2024, 3, 15),
+            ),
+          );
+
+          await orchestrator.processNext();
+
+          // This orchestrator has no state writer, so the claim enforces
+          // nothing and the wake runs; with one, the claim would decide.
+          expect(ran, ['ledger-unreadable']);
+        },
+      );
+
+      test(
         'user task-agent wake remains allowed when updates are off',
         () async {
           when(() => mockRepository.getEntity('agent-1')).thenAnswer(

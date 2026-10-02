@@ -1073,6 +1073,9 @@ OpenAIClientException({
         Exception(gemini(401, '{"status": "UNAUTHENTICATED"}')),
         Exception('HTTP 401 Unauthorized'),
         Exception('status code: 403'),
+        // Mistral reports the status in parentheses and drops the body.
+        Exception('MistralInferenceException: Mistral API error (HTTP 401)'),
+        Exception('MistralInferenceException: Mistral API error (HTTP 403)'),
         Exception('Incorrect API key provided: sk-…'),
       ]) {
         expect(
@@ -1089,6 +1092,7 @@ OpenAIClientException({
         Exception(gemini(500, '{"status": "INTERNAL"}')),
         Exception('SocketException: Failed host lookup'),
         Exception('request 4013 timed out'),
+        Exception('MistralInferenceException: Mistral API error (HTTP 429)'),
         null,
       ]) {
         expect(

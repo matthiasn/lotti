@@ -1279,6 +1279,33 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentToolGoalRevisionLabel => 'Förslag på måljustering';
 
   @override
+  String get agentWakeBudgetDecrease => 'Sänk den dagliga gränsen';
+
+  @override
+  String get agentWakeBudgetExhausted =>
+      'Gränsen nådd – automatiska uppdateringar fortsätter i morgon';
+
+  @override
+  String get agentWakeBudgetHelp =>
+      'Automatiska uppdateringar stoppas när gränsen är nådd. Uppdatera nu fungerar fortfarande, upp till dubbla gränsen.';
+
+  @override
+  String get agentWakeBudgetIncrease => 'Höj den dagliga gränsen';
+
+  @override
+  String get agentWakeBudgetLabel => 'Daglig gräns för väckningar';
+
+  @override
+  String agentWakeBudgetUsage(int used, int max) {
+    return '$used av $max använda i dag';
+  }
+
+  @override
+  String agentWakeBudgetValue(int count) {
+    return '$count per dag';
+  }
+
+  @override
   String get aggregationDailyAvg => 'Dagligt genomsnitt';
 
   @override
@@ -16166,31 +16193,4 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
-
-  @override
-  String get agentWakeBudgetLabel => 'Daglig gräns för väckningar';
-
-  @override
-  String agentWakeBudgetValue(int count) {
-    return '$count per dag';
-  }
-
-  @override
-  String agentWakeBudgetUsage(int used, int max) {
-    return '$used av $max använda i dag';
-  }
-
-  @override
-  String get agentWakeBudgetExhausted =>
-      'Gränsen nådd – automatiska uppdateringar fortsätter i morgon';
-
-  @override
-  String get agentWakeBudgetHelp =>
-      'Automatiska uppdateringar stoppas när gränsen är nådd. Uppdatera nu fungerar fortfarande, upp till dubbla gränsen.';
-
-  @override
-  String get agentWakeBudgetDecrease => 'Sänk den dagliga gränsen';
-
-  @override
-  String get agentWakeBudgetIncrease => 'Höj den dagliga gränsen';
 }
