@@ -187,7 +187,7 @@ void main() {
       },
     );
 
-    test('keeps a pending slot already at the grid\'s next start', () async {
+    test("keeps a pending slot already at the grid's next start", () async {
       await withClock(Clock.fixed(now), () async {
         final setup = await setUpDevice(identity(), stale);
         final armed = await setup.cadence.arm(agentId);
