@@ -440,6 +440,14 @@ void _announceProjectSlot(Ref ref, String agentId) {
   persistedStateChangedNotifier(ref.read(updateNotificationsProvider))(agentId);
 }
 
+/// Whether a connectivity report can reach the sync server: any link other
+/// than none or Bluetooth.
+bool reachesSyncServer(List<ConnectivityResult> results) => results.any(
+  (result) =>
+      result != ConnectivityResult.none &&
+      result != ConnectivityResult.bluetooth,
+);
+
 /// Whether this device may claim or fire a leased project update slot now:
 /// connected, with its sync inbox drained. Null where sync is not wired (a
 /// guest world, a test), where there are no peers to race.
@@ -452,13 +460,7 @@ final syncLeaseGateProvider = Provider<SyncLeaseGate?>(
       syncEnabled: () => journalDb.getConfigFlag(enableMatrixFlag),
       connected: matrixService.isLoggedIn,
       connectivityChanges: Connectivity().onConnectivityChanged
-          .map(
-            (results) => results.any(
-              (result) =>
-                  result != ConnectivityResult.none &&
-                  result != ConnectivityResult.bluetooth,
-            ),
-          )
+          .map(reachesSyncServer)
           .handleError((Object _) {}),
       waitForInboxDrained: (timeout) => matrixService.queueCoordinator.queue
           .waitForDrainAtMostTo(0, timeout: timeout),

@@ -1148,6 +1148,68 @@ void main() {
     );
 
     test(
+      'an older client that omits only the update interval keeps the local '
+      'one',
+      () async {
+        // A build from before update slots knows the budget but not the
+        // interval; its rewrite must not reset a user's daily interval to
+        // hourly on every device.
+        final local =
+            AgentDomainEntity.agent(
+                  id: 'project-agent-interval-rewrite',
+                  agentId: 'project-agent-interval-rewrite',
+                  kind: AgentKinds.projectAgent,
+                  displayName: 'Project Agent',
+                  lifecycle: AgentLifecycle.active,
+                  mode: AgentInteractionMode.autonomous,
+                  allowedCategoryIds: const {},
+                  currentStateId: 'state-interval-rewrite',
+                  config: const AgentConfig(
+                    automaticUpdatesEnabled: true,
+                    maxWakesPerDay: 2,
+                    updateIntervalMinutes: 1440,
+                    inferenceSetup: AgentInferenceSetup(
+                      mode: AgentInferenceSetupMode.configured,
+                      origin: AgentInferenceSetupOrigin.user,
+                      baseProfileId: 'profile-1',
+                    ),
+                  ),
+                  createdAt: DateTime(2024, 3, 15),
+                  updatedAt: DateTime(2024, 3, 15),
+                  vectorClock: null,
+                )
+                as AgentIdentityEntity;
+        final incoming = local.copyWith(
+          displayName: 'Renamed by older client',
+          config: local.config.copyWith(updateIntervalMinutes: null),
+          updatedAt: DateTime(2024, 3, 16),
+        );
+        when(
+          () => mockAgentRepo.getEntity(incoming.id),
+        ).thenAnswer((_) async => local);
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.agentEntity(
+              agentEntity: incoming,
+              status: SyncEntryStatus.update,
+            ),
+          ),
+        );
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        final applied =
+            verify(
+                  () => mockAgentRepo.upsertEntity(captureAny()),
+                ).captured.first
+                as AgentIdentityEntity;
+        expect(applied.displayName, 'Renamed by older client');
+        expect(applied.config.updateIntervalMinutes, 1440);
+        expect(applied.config.maxWakesPerDay, 2);
+      },
+    );
+
+    test(
       'older-client rewrite preserves an explicit project-agent opt-out',
       () async {
         final local =

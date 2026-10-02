@@ -111,18 +111,19 @@ void main() {
           )
           as AiConfigModel;
 
-  /// Builds a [ProjectAgentWorkflow] wired to the suite's mocks, overriding
-  /// only the collaborators a test swaps in — previously 13 copies of the
-  /// 8-parameter construction.
   /// Agents the workflow asked to arm their next update slot.
   final armedAgentIds = <String>[];
 
+  /// Builds a [ProjectAgentWorkflow] wired to the suite's mocks, overriding
+  /// only the collaborators a test swaps in — previously 13 copies of the
+  /// 8-parameter construction.
   ProjectAgentWorkflow buildWorkflow({
     ConversationRepository? conversationRepository,
     AgentInputCaptureService? inputCaptureService,
     SoulDocumentService? soulDocumentService,
     DomainLogger? domainLogger,
     void Function(String agentId)? onPersistedStateChanged,
+    Future<void> Function(String agentId)? armProjectUpdate,
   }) {
     return ProjectAgentWorkflow(
       agentRepository: mockAgentRepository,
@@ -137,7 +138,8 @@ void main() {
       soulDocumentService: soulDocumentService,
       domainLogger: domainLogger,
       onPersistedStateChanged: onPersistedStateChanged,
-      armProjectUpdate: (agentId) async => armedAgentIds.add(agentId),
+      armProjectUpdate:
+          armProjectUpdate ?? (agentId) async => armedAgentIds.add(agentId),
     );
   }
 
@@ -909,6 +911,89 @@ void main() {
         // Asked after the run; with the report fresh the cadence arms
         // nothing.
         expect(armedAgentIds, [agentId]);
+      });
+
+      // A run claims freshness as of its start, by maximum: an older stamp
+      // moves up to it, a peer's run that started later keeps its own.
+      for (final (label, freshAt, expected) in [
+        (
+          'an older',
+          DateTime(2026, 3, 20, 6),
+          DateTime(2026, 3, 20, 7),
+        ),
+        (
+          "a peer's later",
+          DateTime(2026, 3, 20, 7, 5),
+          DateTime(2026, 3, 20, 7, 5),
+        ),
+      ]) {
+        test('a written report advances $label freshness stamp by '
+            'maximum', () async {
+          final testDate = DateTime(2026, 3, 20, 7);
+          final staleState =
+              makeTestState(
+                slots: const AgentSlots(activeProjectId: projectId),
+              ).copyWith(
+                reportStaleAt: DateTime(2026, 3, 20, 7, 10),
+                reportFreshAt: freshAt,
+              );
+          when(
+            () => mockAgentRepository.getAgentState(agentId),
+          ).thenAnswer((_) async => staleState);
+          when(
+            () => mockAgentRepository.getLatestReport(agentId, 'current'),
+          ).thenAnswer((_) async => makeTestReport());
+          respondWithReport();
+
+          await withClock(Clock.fixed(testDate), () async {
+            await workflow.execute(
+              agentIdentity: testAgentIdentity,
+              runKey: runKey,
+              triggerTokens: const {ProjectUpdateSlots.triggerToken},
+              threadId: threadId,
+            );
+          });
+
+          final updatedState = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured.whereType<AgentStateEntity>().last;
+          expect(updatedState.reportFreshAt, expected);
+        });
+      }
+
+      test('a slot run that cannot arm the next slot still succeeds', () async {
+        // A missed arm delays the next update; it must not turn the run that
+        // already happened into a failure.
+        final staleState = makeTestState(
+          slots: const AgentSlots(activeProjectId: projectId),
+        ).copyWith(reportStaleAt: DateTime(2026, 3, 20, 5));
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => staleState);
+        when(
+          () => mockAgentRepository.getLatestReport(agentId, 'current'),
+        ).thenAnswer((_) async => makeTestReport());
+        respondWithReport();
+        final failingArm = buildWorkflow(
+          armProjectUpdate: (_) async => throw StateError('database locked'),
+        );
+
+        final result = await withClock(
+          Clock.fixed(DateTime(2026, 3, 20, 7)),
+          () => failingArm.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: const {ProjectUpdateSlots.triggerToken},
+            threadId: threadId,
+          ),
+        );
+
+        expect(result.success, isTrue);
+        // The run's own writes stand: the report is fresh as of its start.
+        final updatedState = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured.whereType<AgentStateEntity>().last;
+        expect(updatedState.reportFreshAt, DateTime(2026, 3, 20, 7));
       });
 
       test('a change during the run keeps the report stale and asks for the '

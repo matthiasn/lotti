@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_agent_trigger_tokens.dart';
@@ -29,6 +30,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/wake/agent_wake_coordinator.dart';
+import 'package:lotti/features/agents/wake/project_update_slots.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
 import 'package:lotti/features/agents/wake/wake_intent_store.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
@@ -2861,6 +2863,18 @@ void main() {
       );
       expect(manager.requiresLease!(recordOn(null)), isFalse);
       expect(await manager.localHostId!(), 'host-a');
+
+      // A project update slot is leased, gated on sync, and grouped by agent
+      // so one change fires one run however many slots devices armed.
+      final slot = recordOn(
+        projectUpdateWorkspaceKey(DateTime.utc(2026, 5, 20, 11)),
+      );
+      expect(manager.requiresLease!(slot), isTrue);
+      expect(manager.requiresSyncGate!(slot), isTrue);
+      expect(manager.exclusiveGroupOf!(slot), 'agent-1');
+      final digest = recordOn(coordinatorDigestWorkspaceKey);
+      expect(manager.requiresSyncGate!(digest), isFalse);
+      expect(manager.exclusiveGroupOf!(digest), isNull);
     });
 
     test('its pre-check retires finished day agents', () async {
@@ -3518,6 +3532,57 @@ void main() {
       verify(
         () => notifications.notifyUiOnly({'project-agent', agentNotification}),
       ).called(1);
+    });
+  });
+
+  group('reachesSyncServer', () {
+    test('any link but none or Bluetooth reaches the server', () {
+      expect(reachesSyncServer(const [ConnectivityResult.wifi]), isTrue);
+      expect(
+        reachesSyncServer(const [
+          ConnectivityResult.bluetooth,
+          ConnectivityResult.mobile,
+        ]),
+        isTrue,
+      );
+      expect(reachesSyncServer(const [ConnectivityResult.none]), isFalse);
+      expect(reachesSyncServer(const [ConnectivityResult.bluetooth]), isFalse);
+      expect(reachesSyncServer(const []), isFalse);
+    });
+  });
+
+  group('projectUpdateCadenceProvider', () {
+    test("reads the agent store's pending slots", () async {
+      final repository = MockAgentRepository();
+      final slot =
+          AgentDomainEntity.scheduledWake(
+                id: 'slot-1',
+                agentId: 'project-agent',
+                scheduledAt: DateTime.utc(2026, 10, 2, 11),
+                status: ScheduledWakeStatus.pending,
+                reason: WakeReason.scheduled.name,
+                updatedAt: DateTime(2026, 10, 2, 10),
+                vectorClock: null,
+                workspaceKey: projectUpdateWorkspaceKey(
+                  DateTime.utc(2026, 10, 2, 11),
+                ),
+              )
+              as ScheduledWakeEntity;
+      when(
+        repository.getPendingScheduledWakeRecords,
+      ).thenAnswer((_) async => [slot]);
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(repository),
+          agentSyncServiceProvider.overrideWithValue(MockAgentSyncService()),
+          domainLoggerProvider.overrideWithValue(MockDomainLogger()),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final cadence = container.read(projectUpdateCadenceProvider);
+
+      expect(await cadence.pendingSlots('project-agent'), [slot]);
     });
   });
 
