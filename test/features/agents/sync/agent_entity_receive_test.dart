@@ -48,6 +48,36 @@ void main() {
     });
 
     test(
+      "replaces an older build's stub of a week rollup with the received "
+      'rollup instead of failing the read',
+      () async {
+        // A build that predated week rollups stored one as its forward-compat
+        // stub: envelope fields only, discriminator kept. Before the stub
+        // check ran ahead of the legacy weekStart repair, reading that row
+        // threw a TypeError, so every received version of it was retried
+        // and then skipped.
+        const id = 'week_rollup:2026-05-18';
+        const clock = VectorClock({'host-b': 1});
+        await device.repository.upsertEntity(
+          AgentUnknownEntity.fromJson({
+            'id': id,
+            'agentId': 'daily_os_planner',
+            'createdAt': at.toIso8601String(),
+            'vectorClock': clock.toJson(),
+            'deletedAt': null,
+            'runtimeType': 'weekRollup',
+          }),
+        );
+        final incoming = makeTestWeekRollup(id: id, vectorClock: clock);
+
+        final result = await receipt(incoming);
+
+        expect(result.stored, isA<AgentUnknownEntity>());
+        expect(result.toWrite, same(incoming));
+      },
+    );
+
+    test(
       'reads a removal as the stored version, and keeps it against a late '
       'copy of the live version it removed',
       () async {
