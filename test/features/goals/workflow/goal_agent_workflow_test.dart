@@ -5460,6 +5460,46 @@ void main() {
     expect(rearmed.triggerTokens, contains('goal-escalation:2026-08-09'));
   });
 
+  // Regression: a revoked key re-armed at `now` and was retried on every
+  // scheduler pass, forever, while nothing could change until the user did.
+  test(
+    'a wake refused for its API key re-arms hours later, not at once',
+    () async {
+      stubSpec();
+      stubGlmResolution();
+      conversationRepository.sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async {
+            throw Exception(
+              'Gemini streaming error 400 for model gemini-3-flash: '
+              '{"error": {"message": "API key not valid. Please pass a valid '
+              'API key.", "status": "INVALID_ARGUMENT"}}. '
+              'If rate-limited (429), wait and retry.',
+            );
+          };
+
+      final result = await run();
+
+      expect(result.success, isFalse);
+      final rearmed = upserts.whereType<ScheduledWakeEntity>().singleWhere(
+        (w) => isGoalEscalationWorkspace(w.workspaceKey),
+      );
+      expect(
+        rearmed.scheduledAt,
+        now.add(GoalAgentWorkflow.authenticationFailureRetryDelay).toUtc(),
+      );
+    },
+  );
+
   test('offTrack with no fresh ad and no cooldown forces exactly one ad '
       'retry restricted to the ad tools', () async {
     stubSpec();

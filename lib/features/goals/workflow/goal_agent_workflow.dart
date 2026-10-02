@@ -27,6 +27,7 @@ import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
+import 'package:lotti/features/ai/util/ai_error_utils.dart';
 import 'package:lotti/features/ai/util/forced_tool_choice.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
@@ -901,7 +902,11 @@ class GoalAgentWorkflow with AgentErrorLogging {
           agentId,
           derivation.periodKey,
           triggerTokens,
-          now,
+          // A refused API key cannot succeed until the user changes it:
+          // retry a few times a day rather than on every scheduler pass.
+          AiErrorUtils.isAuthenticationFailure(error)
+              ? now.add(authenticationFailureRetryDelay)
+              : now,
         );
       }
       return WakeResult.failed(kind: 'Goal Phase B', error: error);
@@ -921,9 +926,13 @@ class GoalAgentWorkflow with AgentErrorLogging {
         entity.metadata.toolName == AgentConversationToolNames.replyToUser;
   }
 
-  /// Re-arms the period's escalation as pending, due at the current
-  /// instant — a strictly later deadline than the consumed record's, so
-  /// this is the resolver's supported reschedule-beats-consume path.
+  /// How long a Phase B wake that failed on a refused API key waits before
+  /// its escalation is retried.
+  static const authenticationFailureRetryDelay = Duration(hours: 6);
+
+  /// Re-arms the period's escalation as pending, due at [now] — a strictly
+  /// later deadline than the consumed record's, so this is the resolver's
+  /// supported reschedule-beats-consume path.
   /// Contained: a failed re-arm is logged, never masks the original
   /// failure.
   Future<void> _rearmEscalation(

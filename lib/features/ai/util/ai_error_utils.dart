@@ -6,6 +6,42 @@ import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 
 /// Utility class for AI feature error handling.
 class AiErrorUtils {
+  /// HTTP statuses a provider answers when the credentials are refused.
+  static final _authStatus = RegExp(
+    r'(?:error|status(?:\s*code)?)[:=\s]+(?:401|403)\b',
+    caseSensitive: false,
+  );
+
+  /// What providers say about a refused key in the response body. Gemini
+  /// answers a bad key with **400** `API key not valid` (`API_KEY_INVALID`),
+  /// a revoked or restricted one with 403 `PERMISSION_DENIED`.
+  static const _authPhrases = [
+    'api key not valid',
+    'api_key_invalid',
+    'permission_denied',
+    'unauthenticated',
+    'unauthorized',
+    'invalid api key',
+    'incorrect api key',
+    'invalid x-api-key',
+  ];
+
+  /// Whether [error] says the provider refused the credentials — an invalid,
+  /// revoked or restricted API key.
+  ///
+  /// Retrying such a failure cannot succeed until the user changes the key,
+  /// so callers treat it as a setup problem: they surface it and stop, or
+  /// back off, instead of retrying on a short timer. Checked before rate
+  /// limits, because a provider error can mention 429 in boilerplate (the
+  /// Gemini streaming error does) while carrying a 403.
+  static bool isAuthenticationFailure(Object? error) {
+    if (error == null) return false;
+    final text = error.toString();
+    if (_authStatus.hasMatch(text)) return true;
+    final lower = text.toLowerCase();
+    return _authPhrases.any(lower.contains);
+  }
+
   /// Extracts a detailed error message from various error object structures.
   ///
   /// Attempts to find a 'detail' field within the error, potentially decoding
@@ -193,8 +229,12 @@ class AiErrorUtils {
       }
     }
 
-    // HTTP status code errors
-    if (errorString.contains('401') || errorString.contains('Unauthorized')) {
+    // HTTP status code errors. A refused key first: Gemini's error text ends
+    // in a "(429)" hint whatever its status, so a 400/403 bad-key error used
+    // to be reported as a rate limit.
+    if (isAuthenticationFailure(error) ||
+        errorString.contains('401') ||
+        errorString.contains('Unauthorized')) {
       return InferenceError(
         message: 'Authentication failed. Please check your API key.',
         type: InferenceErrorType.authentication,

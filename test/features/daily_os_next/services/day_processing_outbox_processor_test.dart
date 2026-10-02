@@ -257,6 +257,21 @@ void main() {
         ).failureClass,
         DayProcessingFailureClass.setupRequired,
       );
+
+      // Regression: Gemini reports a refused key as plain text, which fell
+      // through to `timeout` and was retried every few minutes, forever.
+      expect(
+        classifyDayProcessingFailure(
+          AttributedTranscriptionException(
+            cause: Exception(
+              'Gemini error 400: API key not valid. Please pass a valid API '
+              'key.',
+            ),
+            evidenceState: TranscriptionEvidenceState.uncertain,
+          ),
+        ).failureClass,
+        DayProcessingFailureClass.setupRequired,
+      );
     },
   );
 
