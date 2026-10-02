@@ -334,7 +334,7 @@ extension _AgentHandlers on SyncEventProcessor {
           await _reconcileProjectAgentRuntime(identity);
         } else if (identity is AgentIdentityEntity &&
             identity.kind == AgentKinds.relationshipAgent &&
-            entityToApply.consecutiveFailureCount > 0) {
+            entityToApply.lastWakeFailed) {
           // A retry can arrive before the state that marks it as backed off.
           await _offerIdentityToRuntimeMaintenance(identity);
         }

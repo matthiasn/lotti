@@ -124,6 +124,15 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     /// watermark.
     DateTime? reportFreshAt,
 
+    /// When the most recent failed wake ended: a watermark merged by latest
+    /// instant, like the report watermarks, so devices converge on it
+    /// whatever order their writes arrive in. With `lastWakeAt` — the last
+    /// completed wake — it says whether the last outcome was a failure
+    /// ([AgentStateWakeOutcome.lastWakeFailed]). Relationship wakes write it
+    /// (ADR 0115); other kinds bump `consecutiveFailureCount` only, which is
+    /// a last-writer-wins field and must not decide a face across devices.
+    DateTime? lastWakeFailedAt,
+
     /// When true, the agent was auto-created from a category default and is
     /// waiting for the task to contain meaningful content before its first run.
     @Default(false) bool awaitingContent,
@@ -1456,6 +1465,20 @@ extension AgentStateReportFreshness on AgentStateEntity {
     if (staleAt == null) return false;
     final freshAt = reportFreshAt;
     return freshAt == null || !staleAt.isBefore(freshAt);
+  }
+}
+
+extension AgentStateWakeOutcome on AgentStateEntity {
+  /// Whether the last wake that ended failed and nothing newer completed:
+  /// `lastWakeFailedAt` is newer than `lastWakeAt`. Both are watermarks
+  /// merged by latest instant, so every device answers this the same way
+  /// once their writes have met (ADR 0115). False for a row no failed wake
+  /// has stamped, including one written before the watermark existed.
+  bool get lastWakeFailed {
+    final failedAt = lastWakeFailedAt;
+    if (failedAt == null) return false;
+    final completedAt = lastWakeAt;
+    return completedAt == null || failedAt.isAfter(completedAt);
   }
 
   /// Whether the latest report is behind the task as of [now]: either

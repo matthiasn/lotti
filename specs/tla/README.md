@@ -995,7 +995,58 @@ wake started from, as the task agent did — TLC breaks `NoLostWatermark` in
 four steps (event, wake start, event, wake end) and `FreshIsHonest` in
 three. The failure streak itself is never lost on one device, because wakes
 are single-flight; across devices it is a last-writer-wins value, which is
-what this model leaves out.
+what this model leaves out and `AgentWakeOutcome` below takes up.
+
+## `AgentWakeOutcome` — the outcome of the last wake, on every device
+
+One agent's wake outcomes on two devices, and the face the person page
+shows for them. A wake starts on a device, runs for a while, and ends in
+success — a briefing written, stamped with the wake's start — or in
+failure; either way the device records the outcome on the agent's one state
+row, which syncs as a register (`resolveAgentEntityVersions`). Other
+writers of that row — the report-stale watermark, the throttle — move its
+`updatedAt` without touching the outcome. The card
+(`relationshipAgentCardStateOf`) says *failed* when the last wake failed
+and nothing newer succeeded. Time is a logical clock every start, end and
+touch advances; a device's clock may run ahead of it (`SkewA`, `SkewB`).
+The decisions are
+[ADR 0115](../../docs/adr/0115-the-last-wake-outcome-is-two-watermarks.md);
+the runtime is described in
+[Relationships](../../knowledge/features/relationships.md).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `FailedFaceAgreed` | invariant | once every write has met, every device's failed face is whether the wake that ended last failed |
+| `FailedFaceAgreedWhenInformed` | invariant | the same, provided the device that ran the last wake had received every earlier outcome when it wrote its own |
+| `Converged` | invariant | once every write has met, every device holds the same row and briefing |
+
+| Configuration | Devices | Wakes | Touches | Clock skew | Checks | Distinct states |
+|---------------|--------:|------:|--------:|------------|--------|----------------:|
+| `AgentWakeOutcome` | 2 | 3 | 1 | none | all three | 30,022 |
+| `AgentWakeOutcomeSkew` | 2 | 3 | 1 | device 1 three ticks ahead | `FailedFaceAgreedWhenInformed`, `Converged` | 55,646 |
+
+Both run in two seconds. The design switches are the fix of plan item R-05;
+`FALSE` was the code at `1399ee934`. Each set to its code value has a
+counterexample, and each reverted in the Dart code fails the trace in
+"From the model to the code":
+
+| Switch | Code at `1399ee934` | Counterexample | Dart test |
+|--------|---------------------|----------------|-----------|
+| `StampAtEnd` | the outcome stamped with the wake's start (`_stampWakeOutcome` took the `now` the wake read when it began) | `FailedFaceAgreed`, 7 states: a success begins on one device, a failure begins and ends on the other, the success ends; stamped by their starts the failure is the newer, and once the writes meet both devices say *failed* beside the briefing the success wrote | the pinned `StampAtEnd` trace; `relationship_agent_workflow_test.dart` "the outcome is stamped when the wake ENDS" |
+| `OutcomeWatermarks` | `lastWakeAt` stamped either way and `consecutiveFailureCount` reset or bumped, both last-writer-wins with the row; the face a count above zero and `lastWakeAt` newer than the briefing | `FailedFaceAgreed`, 5 states: a failure on one device, a success on the other, then an unrelated write of the row on the device that failed — its newer `updatedAt` carries the older outcome over the success on every device | the pinned `OutcomeWatermarks` trace; `agent_concurrent_resolver_test.dart` "joins the wake outcome watermarks"; the card's "the failure count alone never decides the face" |
+| both | the code | `FailedFaceAgreed`, 5 states | |
+
+Under skew `FailedFaceAgreed` fails in 7 states: the device whose clock
+runs behind fails without having received the other's newer success, and
+its stamp, bumped past nothing, loses to it. That is the residual of wall
+clocks; a device that has received the success stamps a microsecond past
+it (`decisionStampAfter`), which `FailedFaceAgreedWhenInformed` checks.
+
+What the model leaves out: the lease (`ScheduledWakeLease`; any wake may
+run on any device, as a chat does), the vector clocks (a concurrent pair
+here is any two versions, as a concurrent pair is in the code), the failure
+count's value (last-writer-wins by design; it feeds the backoff and the
+Stats tab, never a face), loss and backfill (`AgentReplication`).
 
 ## `VersionHeads` — version rows and the head that names one
 
@@ -2285,7 +2336,7 @@ checks the other four properties. Eight pinned traces cover the
 counterexamples. Each of the five switches, reverted in the Dart code, fails
 the trace.
 
-`RelationshipCadence` is replayed by
+`RelationshipCadence` and `AgentWakeOutcome` are replayed by
 `test/features/relationships/runtime/relationship_cadence_model_conformance.dart`
 (a part of `relationship_agent_phase_a_test.dart`). Two devices, Berlin
 and Tokyo, each run the real `RelationshipAgentPhaseA` over the real agent
@@ -2301,14 +2352,21 @@ process has one zone and CI's is UTC, where a local stamp cannot disagree
 with itself; `TZDateTime` is what lets two zones exist at once. The run is
 the real derivation and the workflow's own stand-down gate and stamps
 (`relationshipEscalationStandsDown`, `relationshipBriefingCreatedAt`,
-`relationshipReportHeadUpdatedAt`) over the trace's own report row. A Glados
-run of 120 generated traces covers saves, touches, ticks, runs, deliveries
-and hours; after every step it checks `DueDayAgreed` and
+`relationshipReportHeadUpdatedAt`) over the trace's own report row; a run
+that briefs stays in flight until the trace finishes it, and a wake can
+fail on either device, each outcome stamped through the real
+`updateAgentState` with the workflow's `relationshipWakeOutcome` and
+received through the real join. A Glados run of 120 generated traces covers
+saves, touches, ticks, runs, finishes, failures, writes of the state row,
+deliveries and hours; after every step it checks `DueDayAgreed` and
 `EscalationKeyIsTheDueDay`, and once everything has arrived
 `StalenessAgreed`, `BriefedOnNewEvidence`, `RegisterStable` (ticks until a
-round writes no register) and `Converged`. Five pinned traces cover the
-counterexamples. Each of the three switches in the code, reverted, fails
-the trace; so does the cadence deadline written in local time.
+round writes no register), `FailedFaceAgreed` (the real
+`relationshipAgentCardStateOf` on every device against the wake that ended
+last) and `Converged`. Seven pinned traces cover the counterexamples. Each
+switch in the code, reverted, fails the trace — the outcome join, the face
+read from the watermarks, the cadence deadline written in local time — and
+the stamp taken from the wake's start fails the workflow suite.
 
 ## Changing a spec
 

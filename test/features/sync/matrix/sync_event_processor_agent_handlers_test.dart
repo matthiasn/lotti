@@ -3931,6 +3931,7 @@ void main() {
         'failure state': SyncMessage.agentEntity(
           agentEntity: makeTestState(
             agentId: 'relationship-agent',
+            lastWakeFailedAt: prerequisiteDate,
             consecutiveFailureCount: 1,
           ),
           status: SyncEntryStatus.update,

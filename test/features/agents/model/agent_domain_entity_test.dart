@@ -134,12 +134,17 @@ void main() {
           toolCounterByKey: {'day_agent_set_next_wake:2026-02-20': 3},
           reportStaleAt: DateTime(2026, 2, 20, 9),
           reportFreshAt: DateTime(2026, 2, 20, 8, 30),
+          lastWakeFailedAt: DateTime.utc(2026, 2, 20, 7, 45),
         );
 
         final roundtripped = roundtrip(original);
 
         expect(roundtripped, equals(original));
         expect(roundtripped, isA<AgentStateEntity>());
+        expect(
+          (roundtripped as AgentStateEntity).lastWakeFailedAt,
+          DateTime.utc(2026, 2, 20, 7, 45),
+        );
       });
 
       test('roundtrips project agent slots', () {
@@ -213,6 +218,49 @@ void main() {
         expect(state.reportStaleAt, isNull);
         expect(state.reportFreshAt, isNull);
         expect(state.isReportStale, isFalse);
+        expect(state.lastWakeFailedAt, isNull);
+        expect(state.lastWakeFailed, isFalse);
+      });
+
+      test('the last wake failed when the failed watermark is the newer of '
+          'the two outcome watermarks', () {
+        final base =
+            AgentDomainEntity.agentState(
+                  id: 'state-outcome',
+                  agentId: 'agent-001',
+                  slots: const AgentSlots(),
+                  updatedAt: updatedAt,
+                  vectorClock: null,
+                )
+                as AgentStateEntity;
+        final at = DateTime.utc(2026, 2, 20, 9);
+
+        expect(base.copyWith(lastWakeAt: at).lastWakeFailed, isFalse);
+        expect(base.copyWith(lastWakeFailedAt: at).lastWakeFailed, isTrue);
+        expect(
+          base
+              .copyWith(
+                lastWakeAt: at,
+                lastWakeFailedAt: at.add(const Duration(seconds: 1)),
+              )
+              .lastWakeFailed,
+          isTrue,
+        );
+        expect(
+          base
+              .copyWith(
+                lastWakeAt: at.add(const Duration(seconds: 1)),
+                lastWakeFailedAt: at,
+              )
+              .lastWakeFailed,
+          isFalse,
+        );
+        // A row written before the watermark existed: a count alone never
+        // decides it (it is last-writer-wins across devices).
+        expect(
+          base.copyWith(consecutiveFailureCount: 3).lastWakeFailed,
+          isFalse,
+        );
       });
 
       test(

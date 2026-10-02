@@ -11,6 +11,8 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart'
+    show decisionStampAfter;
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/util/inference_provider_resolver.dart';
@@ -97,6 +99,38 @@ bool relationshipEscalationStandsDown({
   return (!cadenceDue && !reportStale) ||
       relationshipRefreshSuperseded(escalationKey, derivation) ||
       !eligible;
+}
+
+/// The agent's state row with a wake's outcome recorded at [now], the
+/// instant the wake ended (ADR 0115).
+///
+/// Two watermarks, each merged by latest instant on every receive
+/// (`mergeAgentStateCounters`): `lastWakeAt`, when the last wake completed,
+/// and `lastWakeFailedAt`, when the last one failed. The last outcome was a
+/// failure exactly when the failed stamp is the newer
+/// ([AgentStateWakeOutcome.lastWakeFailed]), on every device alike — a
+/// field decided by last-writer-wins with the row let a later unrelated
+/// write carry an older outcome over a newer one. The stamp is UTC, as the
+/// briefing's is, and bumped a microsecond past the stamps the row already
+/// holds ([decisionStampAfter]), so an outcome written with knowledge of an
+/// earlier one outranks it even when another device's clock ran ahead. The
+/// failure streak is reset or bumped as before: it feeds the configuration
+/// backoff and the Stats tab, never a face.
+AgentStateEntity relationshipWakeOutcome(
+  AgentStateEntity state, {
+  required DateTime now,
+  required bool succeeded,
+}) {
+  final at = decisionStampAfter(now.toUtc(), [
+    state.lastWakeAt,
+    state.lastWakeFailedAt,
+  ]);
+  return state.copyWith(
+    updatedAt: at,
+    lastWakeAt: succeeded ? at : state.lastWakeAt,
+    lastWakeFailedAt: succeeded ? state.lastWakeFailedAt : at,
+    consecutiveFailureCount: succeeded ? 0 : state.consecutiveFailureCount + 1,
+  );
 }
 
 /// The report head's LWW timestamp: the due day's last instant once that
@@ -504,7 +538,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       // A wake that never reached the model still failed: stamp it, so the
       // person page's card reads *Failed* with *Choose a model* instead of
       // waiting on a briefing that cannot come.
-      await _stampWakeOutcome(agentId: agentId, now: now, succeeded: false);
+      await _stampWakeOutcome(agentId: agentId, succeeded: false);
       return const WakeResult(
         success: false,
         error: 'no inference provider resolves for the relationship agent',
@@ -732,7 +766,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
         logError: logError,
       );
 
-      await _stampWakeOutcome(agentId: agentId, now: now, succeeded: true);
+      await _stampWakeOutcome(agentId: agentId, succeeded: true);
       return WakeResult(success: true, reportUpdated: reportHeadAdvanced);
     } catch (error, stackTrace) {
       _domainLogger?.error(
@@ -742,7 +776,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
         message: 'relationship Phase B wake failed',
         stackTrace: stackTrace,
       );
-      await _stampWakeOutcome(agentId: agentId, now: now, succeeded: false);
+      await _stampWakeOutcome(agentId: agentId, succeeded: false);
       if (recordConsumption) {
         await finalizeCarrierlessAgentAttribution(
           runKey: runKey,
@@ -1136,32 +1170,29 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
     return false;
   }
 
-  /// Stamps the wake on the agent's state row: `lastWakeAt` either way, and
-  /// the failure streak reset on success or bumped on failure — the two
-  /// facts the person page's agent card reads to show *failed* with the
-  /// reason and the fix, and the internals' Stats tab reads as the last
-  /// wake. Contained: a state write that fails is logged and never changes
-  /// the wake's own verdict. No state row (the agent is mid-creation) means
-  /// nothing to stamp.
+  /// Stamps the wake's outcome on the agent's state row
+  /// ([relationshipWakeOutcome]) — what the person page's agent card reads
+  /// to show *failed* with the reason and the fix, the maintenance pass
+  /// reads as backed off, and the internals' Stats tab reads as the last
+  /// wake. Stamped with the instant the wake ENDS, read here rather than
+  /// taken from the wake's start: a short failure that began after a long
+  /// success began must not outrank it. A transform of the row as it is now
+  /// (ADR 0068). Contained: a state write that fails is logged and never
+  /// changes the wake's own verdict. No state row (the agent is
+  /// mid-creation) means nothing to stamp.
   Future<void> _stampWakeOutcome({
     required String agentId,
-    required DateTime now,
     required bool succeeded,
   }) async {
     try {
-      await _syncService.runInTransaction(() async {
-        final state = await _repository.getAgentState(agentId);
-        if (state == null) return;
-        await _syncService.upsertEntity(
-          state.copyWith(
-            lastWakeAt: now,
-            updatedAt: now,
-            consecutiveFailureCount: succeeded
-                ? 0
-                : state.consecutiveFailureCount + 1,
-          ),
-        );
-      });
+      await _syncService.updateAgentState(
+        agentId,
+        (current) => relationshipWakeOutcome(
+          current,
+          now: clock.now(),
+          succeeded: succeeded,
+        ),
+      );
     } catch (error, stackTrace) {
       logError(
         'failed to stamp the wake outcome on the agent state',

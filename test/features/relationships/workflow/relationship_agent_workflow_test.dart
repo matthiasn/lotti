@@ -2817,7 +2817,13 @@ void main() {
     });
   });
   group('the wake outcome on the state row', () {
-    AgentStateEntity stateRow({int failures = 0}) =>
+    setUp(() => stubUpdateAgentState(syncService, repository));
+
+    AgentStateEntity stateRow({
+      int failures = 0,
+      DateTime? lastWakeAt,
+      DateTime? lastWakeFailedAt,
+    }) =>
         AgentDomainEntity.agentState(
               id: '$agentId:state',
               agentId: agentId,
@@ -2825,6 +2831,8 @@ void main() {
               updatedAt: testDate,
               vectorClock: null,
               consecutiveFailureCount: failures,
+              lastWakeAt: lastWakeAt,
+              lastWakeFailedAt: lastWakeFailedAt,
             )
             as AgentStateEntity;
 
@@ -2908,11 +2916,13 @@ void main() {
     AgentStateEntity stamped() => upserts.whereType<AgentStateEntity>().single;
 
     test(
-      'a successful wake stamps lastWakeAt and clears the failure streak',
+      'a successful wake stamps lastWakeAt, in UTC, leaves the failed '
+      'watermark where it was, and clears the failure streak',
       () async {
-        when(
-          () => repository.getAgentState(agentId),
-        ).thenAnswer((_) async => stateRow(failures: 2));
+        final failedBefore = DateTime.utc(2026, 8, 15, 20);
+        when(() => repository.getAgentState(agentId)).thenAnswer(
+          (_) async => stateRow(failures: 2, lastWakeFailedAt: failedBefore),
+        );
         succeedingModel();
 
         final result = await run(
@@ -2921,15 +2931,20 @@ void main() {
 
         expect(result.success, isTrue);
         expect(stamped().consecutiveFailureCount, 0);
-        expect(stamped().lastWakeAt, now);
+        expect(stamped().lastWakeAt, now.toUtc());
+        expect(stamped().lastWakeAt!.isUtc, isTrue);
+        expect(stamped().lastWakeFailedAt, failedBefore);
+        expect(stamped().lastWakeFailed, isFalse);
       },
     );
 
-    test('a failed wake stamps lastWakeAt and bumps the failure streak — the '
-        "person page's card reads both to show failed", () async {
-      when(
-        () => repository.getAgentState(agentId),
-      ).thenAnswer((_) async => stateRow(failures: 2));
+    test('a failed wake stamps lastWakeFailedAt, in UTC, leaves lastWakeAt '
+        "where it was, and bumps the failure streak — the person page's card "
+        'reads the two watermarks to show failed', () async {
+      final completedBefore = DateTime.utc(2026, 8, 15, 20);
+      when(() => repository.getAgentState(agentId)).thenAnswer(
+        (_) async => stateRow(failures: 2, lastWakeAt: completedBefore),
+      );
       explodingModel();
 
       final result = await run(
@@ -2938,7 +2953,86 @@ void main() {
 
       expect(result.success, isFalse);
       expect(stamped().consecutiveFailureCount, 3);
-      expect(stamped().lastWakeAt, now);
+      expect(stamped().lastWakeFailedAt, now.toUtc());
+      expect(stamped().lastWakeFailedAt!.isUtc, isTrue);
+      expect(stamped().lastWakeAt, completedBefore);
+      expect(stamped().lastWakeFailed, isTrue);
+    });
+
+    test('the outcome is stamped when the wake ENDS, not when it began — a '
+        'short failure elsewhere that began after a long success began must '
+        'not outrank it', () async {
+      when(
+        () => repository.getAgentState(agentId),
+      ).thenAnswer((_) async => stateRow());
+      stubGlmResolution();
+      var current = now;
+      conversationRepository
+        ..maxDelegateCalls = 1
+        ..sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0,
+              strategy,
+            }) async {
+              // The model takes four minutes to answer.
+              current = now.add(const Duration(minutes: 4));
+              await strategy!.processToolCalls(
+                toolCalls: [
+                  toolCall(
+                    RelationshipAgentToolNames.updateRelationshipReport,
+                    briefingArgs(),
+                  ),
+                ],
+                manager: conversationManager,
+              );
+              return null;
+            };
+
+      final result = await withClock(
+        Clock(() => current),
+        () => workflow.execute(
+          agentIdentity: identity(),
+          runKey: 'run-1',
+          triggerTokens: {relationshipEscalationWorkspaceKey('2026-08-08')},
+          threadId: 'thread-1',
+        ),
+      );
+
+      expect(result.success, isTrue);
+      final report = upserts.whereType<AgentReportEntity>().single;
+      expect(report.createdAt, now.toUtc());
+      expect(stamped().lastWakeAt, now.add(const Duration(minutes: 4)).toUtc());
+    });
+
+    test('a stamp written with knowledge of a newer stamp lands a microsecond '
+        'past it — a peer whose clock ran ahead cannot outrank an outcome '
+        'that supersedes it', () {
+      final ahead = DateTime.utc(2026, 8, 16, 12, 30);
+      final state = stateRow(lastWakeFailedAt: ahead);
+      final success = relationshipWakeOutcome(
+        state,
+        now: now,
+        succeeded: true,
+      );
+      expect(success.lastWakeAt, ahead.add(const Duration(microseconds: 1)));
+      expect(success.lastWakeFailed, isFalse);
+      final failure = relationshipWakeOutcome(
+        stateRow(lastWakeAt: ahead),
+        now: now,
+        succeeded: false,
+      );
+      expect(
+        failure.lastWakeFailedAt,
+        ahead.add(const Duration(microseconds: 1)),
+      );
+      expect(failure.lastWakeFailed, isTrue);
     });
 
     test('a wake that finds no model to run on is stamped as failed too — '
@@ -2957,7 +3051,8 @@ void main() {
       expect(result.success, isFalse);
       expect(result.error, contains('no inference provider'));
       expect(stamped().consecutiveFailureCount, 3);
-      expect(stamped().lastWakeAt, now);
+      expect(stamped().lastWakeFailedAt, now.toUtc());
+      expect(stamped().lastWakeAt, isNull);
     });
 
     test('no state row means nothing to stamp', () async {

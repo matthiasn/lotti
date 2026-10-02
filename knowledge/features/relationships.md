@@ -28,6 +28,14 @@ sources:
     resource: ../../lib/features/relationships/model/relationship_calendar.dart
     title: How a stored journal time is read, the same on every device
     last_modified: 2026-10-02
+  - id: tla-wake-outcome
+    resource: ../../specs/tla/AgentWakeOutcome.tla
+    title: The outcome of the last wake, on every device, model-checked
+    last_modified: 2026-10-02
+  - id: adr-0115
+    resource: ../../docs/adr/0115-the-last-wake-outcome-is-two-watermarks.md
+    title: ADR 0115 — the last wake's outcome is two watermarks
+    last_modified: 2026-10-02
   - id: reconciliation
     resource: ../../lib/features/relationships/runtime/relationship_agent_reconciliation.dart
     title: reconcileRelationshipAgent and markStampAfter — where the user's latest word puts the agent, and how a mark is stamped
@@ -1294,7 +1302,7 @@ nothing about the one they were entering. What the agent sends belongs
 somewhere it can be explained, not in a caption that expires on tap.
 | No briefing | enrolled, no current report | `Agent watching · next look {day}` · how many check-ins *Brief now* would read, and that it never sees a channel · *Log check-in* · **Brief now** |
 | Running | `agentIsRunningProvider` | spinner · `Writing the briefing…` · the briefing being replaced, still readable (TL;DR + Read more), or no body before the first — never a duration estimate · *See activity* · no primary |
-| Failed | `consecutiveFailureCount > 0` and the last wake is newer than the report | `Last run failed · {ago}` in error ink · the provider returned an error, your check-ins are unchanged (or that no model is set up) · the briefing it failed to replace, if there is one, kept readable under that with its age · *See activity* · **Choose a model** when no route resolves, **Try again** otherwise |
+| Failed | `lastWakeFailed` — the state row's failed watermark is newer than its completed one — and newer than the report | `Last run failed · {ago}` in error ink · the provider returned an error, your check-ins are unchanged (or that no model is set up) · the briefing it failed to replace, if there is one, kept readable under that with its age · *See activity* · **Choose a model** when no route resolves, **Try again** otherwise |
 | Current | report, not stale | `{band} · as of {ago}` · TL;DR + Read more · *Log check-in* · **Update now** (secondary) · sources line once *Read more* is open |
 | Out of date | `AgentStateEntity.isReportStale` | `Out of date · new check-in {day}` in warning ink, `{n} days old` pill once a day old · body · *Log check-in* · **Update now** (primary) — no sources line, since the count would include the check-in it missed |
 | Due | the current face while the cadence is lapsed | same status · body · *Log check-in* · **Call {name}** (the first channel the platform can open, resolved like the action bar's), or **Log check-in** as the primary without one |
@@ -1321,13 +1329,23 @@ stateDiagram-v2
   OutOfDate --> NotEnrolled: important off, dormant, archived
 ```
 
-Two runtime details keep the faces honest. Every relationship wake now
-stamps its state row (`_stampWakeOutcome` in the workflow): `lastWakeAt`
-either way, and `consecutiveFailureCount` reset on success or bumped on
-failure, including a wake that found no model to run on and returned before
-inference — before this, no relationship wake ever wrote either, so the
-failed face could never appear and the internals' Stats tab never knew the
-last wake. And the card arms one timer at the next minute/hour/day boundary of the
+Two runtime details keep the faces honest. Every relationship wake stamps
+its outcome on the state row when it ends (`_stampWakeOutcome` in the
+workflow, through `relationshipWakeOutcome`): `lastWakeAt` on success,
+`lastWakeFailedAt` on failure — including a wake that found no model to run
+on and returned before inference — and the failure streak reset or bumped
+beside them. The two stamps are watermarks every device joins by latest
+instant (`mergeAgentStateCounters`), stamped in UTC and a microsecond past
+the stamps the row already holds (`decisionStampAfter`), so the failed face
+is the same on every device: a failure counts while nothing newer
+completed. It was read from `consecutiveFailureCount`, last-writer-wins
+with the row, stamped with the wake's *start*: a short failure elsewhere
+that began after a long success began outranked it, and a later unrelated
+write of the row carried one device's stale count over another's good
+briefing (`specs/tla/AgentWakeOutcome.tla`, ADR 0115). The count still
+feeds the configuration backoff and the Stats tab. A row written before the
+watermark existed shows no failure until its next wake. And the card arms
+one timer at the next minute/hour/day boundary of the
 briefing's age (`untilNextAgeBucket`, shared with the goal page), so "as of
 just now" does not stay on screen for hours. *Remind me about {name}* on the plain
 card also mints the agent through `ensureRelationshipAgentInBackground`, the

@@ -137,6 +137,8 @@ SECONDS = {
     "ChangeSetLifecycle": 2,
     "OutboxConcurrent": 3,
     "AgentStateWrites": 1,
+    "AgentWakeOutcome": 2,
+    "AgentWakeOutcomeSkew": 2,
     "ChangeSetConfirm": 1,
     "ChangeSetConfirmFaults": 1,
     "ChangeSetDependency": 1,

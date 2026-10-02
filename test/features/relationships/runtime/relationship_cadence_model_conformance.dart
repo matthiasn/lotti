@@ -1,8 +1,9 @@
 part of 'relationship_agent_phase_a_test.dart';
 
-// Model conformance with `specs/tla/RelationshipCadence.tla`: one tracked
-// person's check-in cadence on two devices in different zones, Berlin
-// (UTC+2) and Tokyo (UTC+9). Each device runs the real deterministic tick,
+// Model conformance with `specs/tla/RelationshipCadence.tla` and
+// `specs/tla/AgentWakeOutcome.tla`: one tracked person's check-in cadence,
+// and the outcomes of the wakes it runs, on two devices in different zones,
+// Berlin (UTC+2) and Tokyo (UTC+9). Each device runs the real deterministic tick,
 // `RelationshipAgentPhaseA`, over the real agent stack — an in-memory agent
 // database behind the real `AgentRepository` and `AgentSyncService`, every
 // write exchanged through the real receive decision (`ReplicaNetwork`) —
@@ -27,19 +28,43 @@ part of 'relationship_agent_phase_a_test.dart';
 //   Run(r, e)       the elected run of a due escalation record on device r:
 //                   the record consumed as the manager fires it, then the
 //                   real derivation and the real stand-down gate
-//                   (`relationshipEscalationStandsDown`), else a briefing
-//                   stamped by `relationshipBriefingCreatedAt`
+//                   (`relationshipEscalationStandsDown`); a run that briefs
+//                   stays in flight on r (AgentWakeOutcome's Start)
+//   Finish(r)       the run in flight on r ends: the briefing stamped by
+//                   `relationshipBriefingCreatedAt` with the run's start,
+//                   the head, and the outcome stamped with the finish
+//                   (`relationshipWakeOutcome` through `updateAgentState`,
+//                   AgentWakeOutcome's End(ok))
+//   Fail(r)         a wake on r — a chat, a Brief me — fails now: the
+//                   outcome stamped as a failure (End(~ok))
+//   TouchState(r)   another writer of the state row moves `updatedAt`
+//                   (AgentWakeOutcome's Touch)
 //   SyncJournal(r)  every check-in version device r is missing lands
 //   SyncAgent(r)    every agent write device r is missing lands
 //   Advance         the clock moves six hours
+//
+// Every run, finish, failure and touch moves the clock a minute first, so
+// no two stamps coincide, as the model's logical clock does.
 //
 // After every step the trace checks DueDayAgreed and
 // EscalationKeyIsTheDueDay. Once everything has arrived (the model's
 // Quiescent) it checks StalenessAgreed and BriefedOnNewEvidence, then ticks
 // every device until a round writes no register — RegisterStable — and
-// checks Converged.
+// checks FailedFaceAgreed (the card's failed face on every device is
+// whether the wake that ended last failed) and Converged.
 
-enum _CadenceOp { save, touch, tick, run, syncJournal, syncAgent, advance }
+enum _CadenceOp {
+  save,
+  touch,
+  tick,
+  run,
+  finish,
+  fail,
+  touchState,
+  syncJournal,
+  syncAgent,
+  advance,
+}
 
 class _CadenceStep {
   const _CadenceStep(this.op, this.device, [this.arg = 0]);
@@ -86,6 +111,8 @@ const _cadenceMaxCheckIns = 2;
 const _cadenceMaxTouches = 2;
 const _cadenceMaxTicks = 6;
 const _cadenceMaxRuns = 2;
+const _cadenceMaxFailures = 2;
+const _cadenceMaxStateTouches = 1;
 
 /// [stamp] as a device in [zone] reads it: a local stamp was serialized
 /// as the writer's wall-clock components without an offset, and is parsed
@@ -147,6 +174,16 @@ AgentDomainEntity _agentEntityReadIn(
     createdAt: _readIn(zone, e.createdAt),
     updatedAt: _readIn(zone, e.updatedAt),
   ),
+  final AgentStateEntity e => e.copyWith(
+    updatedAt: _readIn(zone, e.updatedAt),
+    lastWakeAt: _readInOrNull(zone, e.lastWakeAt),
+    lastWakeFailedAt: _readInOrNull(zone, e.lastWakeFailedAt),
+    reportStaleAt: _readInOrNull(zone, e.reportStaleAt),
+    reportFreshAt: _readInOrNull(zone, e.reportFreshAt),
+    nextWakeAt: _readInOrNull(zone, e.nextWakeAt),
+    sleepUntil: _readInOrNull(zone, e.sleepUntil),
+    scheduledWakeAt: _readInOrNull(zone, e.scheduledWakeAt),
+  ),
   _ => throw StateError('the cadence trace received a ${entity.runtimeType}'),
 };
 
@@ -193,6 +230,10 @@ class _CadenceDevice {
 
   /// The check-in versions this device holds, by id.
   final held = <String, int>{};
+
+  /// The run in flight on this device: the facts it derived and when it
+  /// began, until `finish` ends it.
+  ({RelationshipCadenceDerivation derivation, DateTime startedAt})? inFlight;
 
   /// The device's wall clock at the world's instant.
   DateTime get now => tz.TZDateTime.from(world.t, zone);
@@ -243,6 +284,9 @@ class _CadenceDevice {
         _cadenceAgentId,
         AgentReportScopes.current,
       );
+
+  Future<AgentStateEntity?> state() =>
+      replica.repository.getAgentState(_cadenceAgentId);
 
   Future<RelationshipHealthEntity?> register() async {
     final entity = await replica.repository.getEntity(
@@ -316,6 +360,11 @@ class _CadenceWorld {
   int touches = 0;
   int ticks = 0;
   int runs = 0;
+  int failures = 0;
+  int stateTouches = 0;
+
+  /// The outcome of the wake that ended last, or null before any did.
+  bool? lastWakeOk;
 
   AgentIdentityEntity get identity => makeTestIdentity(
     id: _cadenceAgentId,
@@ -327,11 +376,19 @@ class _CadenceWorld {
     updatedAt: DateTime.utc(2026, 8, 16, 10),
   );
 
-  /// The agent and its link exist on both devices before the clock starts.
+  /// The agent, its state row and its link exist on both devices before
+  /// the clock starts.
   Future<void> setUp() async {
     final first = devices.first;
     await first.at(() async {
       await first.replica.syncService.upsertEntity(identity);
+      await first.replica.syncService.upsertEntity(
+        makeTestState(
+          id: '$_cadenceAgentId:state',
+          agentId: _cadenceAgentId,
+          updatedAt: DateTime.utc(2026, 8, 16, 10),
+        ),
+      );
       await first.replica.syncService.upsertLink(
         AgentLink.agentRelationship(
           id: relationshipAgentLinkId(_cadenceAgentId),
@@ -386,7 +443,7 @@ class _CadenceWorld {
         ticks++;
         await _tick(device);
       case _CadenceOp.run:
-        if (runs >= _cadenceMaxRuns) return;
+        if (runs >= _cadenceMaxRuns || device.inFlight != null) return;
         final due = [
           for (final record in await device.escalations())
             if (record.status == ScheduledWakeStatus.pending &&
@@ -398,7 +455,33 @@ class _CadenceWorld {
         final record = due[step.arg % due.length];
         ran.add(record.workspaceKey!);
         runs++;
+        _minute();
         await _runEscalation(device, record);
+      case _CadenceOp.finish:
+        if (device.inFlight == null) return;
+        _minute();
+        await _finishRun(device);
+      case _CadenceOp.fail:
+        if (failures >= _cadenceMaxFailures || device.inFlight != null) {
+          return;
+        }
+        failures++;
+        _minute();
+        await _stampOutcome(device, succeeded: false);
+      case _CadenceOp.touchState:
+        if (stateTouches >= _cadenceMaxStateTouches) return;
+        stateTouches++;
+        _minute();
+        await device.at(() async {
+          final now = clock.now();
+          await device.replica.syncService.updateAgentState(
+            _cadenceAgentId,
+            (current) => current.copyWith(
+              updatedAt: now,
+              reportStaleAt: now.toUtc(),
+            ),
+          );
+        });
       case _CadenceOp.syncJournal:
         for (final id in checkInIds) {
           device.held[id] = versions[id]!.last.version;
@@ -418,6 +501,27 @@ class _CadenceWorld {
     }
   }
 
+  /// The clock moves a minute: every stamp is distinct, as in the model.
+  void _minute() => t = t.add(const Duration(minutes: 1));
+
+  /// A wake's outcome, stamped the way the workflow stamps it.
+  Future<void> _stampOutcome(
+    _CadenceDevice device, {
+    required bool succeeded,
+  }) async {
+    await device.at(
+      () => device.replica.syncService.updateAgentState(
+        _cadenceAgentId,
+        (current) => relationshipWakeOutcome(
+          current,
+          now: clock.now(),
+          succeeded: succeeded,
+        ),
+      ),
+    );
+    lastWakeOk = succeeded;
+  }
+
   Future<void> _tick(_CadenceDevice device) => device.at(
     () => device.phaseA.execute(
       agentIdentity: identity,
@@ -427,9 +531,8 @@ class _CadenceWorld {
     ),
   );
 
-  /// The elected run: the record consumed, the facts derived again, the
-  /// run stood down or the briefing written — the workflow's own gate and
-  /// stamp over the trace's own report row.
+  /// The elected run: the record consumed, the facts derived again, and
+  /// the run stood down — or left in flight, to brief when it finishes.
   Future<void> _runEscalation(
     _CadenceDevice device,
     ScheduledWakeEntity record,
@@ -458,49 +561,59 @@ class _CadenceWorld {
     )) {
       return;
     }
-    final reportId = 'briefing-${briefings.length + 1}';
-    await device.replica.syncService.upsertEntity(
-      AgentDomainEntity.agentReport(
-        id: reportId,
-        agentId: _cadenceAgentId,
-        scope: AgentReportScopes.current,
-        createdAt: relationshipBriefingCreatedAt(now),
-        vectorClock: null,
-        content: 'briefing ${briefings.length + 1}',
-        provenance: {'dueDayKey': derivation.dueDayKey},
-      ),
-    );
-    // The standing head, advanced the way the workflow advances it: never
-    // back to an older due day, stamped by the due day, carrying the head
-    // it replaces.
-    final existingHead = await device.replica.repository.getReportHead(
-      _cadenceAgentId,
-      AgentReportScopes.current,
-    );
-    final published = existingHead == null
-        ? null
-        : await device.replica.repository.getEntity(existingHead.reportId);
-    final publishedDueDay = published is AgentReportEntity
-        ? published.provenance['dueDayKey']
-        : null;
-    if (publishedDueDay is! String ||
-        derivation.dueDayKey.compareTo(publishedDueDay) >= 0) {
+    device.inFlight = (derivation: derivation, startedAt: now);
+  });
+
+  /// The run in flight ends: the briefing stamped with the run's start, the
+  /// standing head advanced the way the workflow advances it — never back
+  /// to an older due day, stamped by the due day, carrying the head it
+  /// replaces — and the outcome stamped with the finish.
+  Future<void> _finishRun(_CadenceDevice device) async {
+    final (:derivation, :startedAt) = device.inFlight!;
+    device.inFlight = null;
+    await device.at(() async {
+      final reportId = 'briefing-${briefings.length + 1}';
       await device.replica.syncService.upsertEntity(
-        AgentDomainEntity.agentReportHead(
-          id: existingHead?.id ?? 'head-$reportId',
+        AgentDomainEntity.agentReport(
+          id: reportId,
           agentId: _cadenceAgentId,
           scope: AgentReportScopes.current,
-          reportId: reportId,
-          updatedAt: relationshipReportHeadUpdatedAt(
-            derivation.dueDayUtc,
-            now,
-          ),
-          vectorClock: existingHead?.vectorClock,
+          createdAt: relationshipBriefingCreatedAt(startedAt),
+          vectorClock: null,
+          content: 'briefing ${briefings.length + 1}',
+          provenance: {'dueDayKey': derivation.dueDayKey},
         ),
       );
-    }
-    briefings.add(t);
-  });
+      final existingHead = await device.replica.repository.getReportHead(
+        _cadenceAgentId,
+        AgentReportScopes.current,
+      );
+      final published = existingHead == null
+          ? null
+          : await device.replica.repository.getEntity(existingHead.reportId);
+      final publishedDueDay = published is AgentReportEntity
+          ? published.provenance['dueDayKey']
+          : null;
+      if (publishedDueDay is! String ||
+          derivation.dueDayKey.compareTo(publishedDueDay) >= 0) {
+        await device.replica.syncService.upsertEntity(
+          AgentDomainEntity.agentReportHead(
+            id: existingHead?.id ?? 'head-$reportId',
+            agentId: _cadenceAgentId,
+            scope: AgentReportScopes.current,
+            reportId: reportId,
+            updatedAt: relationshipReportHeadUpdatedAt(
+              derivation.dueDayUtc,
+              startedAt,
+            ),
+            vectorClock: existingHead?.vectorClock,
+          ),
+        );
+      }
+      briefings.add(startedAt.toUtc());
+    });
+    await _stampOutcome(device, succeeded: true);
+  }
 
   /// Every agent entity any device has sent, in order.
   Iterable<AgentDomainEntity> get sentEntities =>
@@ -572,6 +685,10 @@ class _CadenceWorld {
   /// Everything arrives, then the quiescent properties.
   Future<void> settleAndCheck(Object trace) async {
     for (final device in devices) {
+      if (device.inFlight != null) {
+        _minute();
+        await _finishRun(device);
+      }
       for (final id in checkInIds) {
         device.held[id] = versions[id]!.last.version;
       }
@@ -622,6 +739,31 @@ class _CadenceWorld {
     final reports = [
       for (final device in devices) (await device.latestReport())?.id,
     ];
+    // FailedFaceAgreed: the card's failed face on every device is whether
+    // the wake that ended last failed.
+    if (lastWakeOk case final ok?) {
+      for (final device in devices) {
+        final face = relationshipAgentCardStateOf(
+          enrolled: true,
+          isRunning: false,
+          report: await device.latestReport(),
+          state: await device.state(),
+        );
+        expect(
+          face == RelationshipAgentCardState.failed,
+          !ok,
+          reason: 'FailedFaceAgreed on ${device.host} ($face): $trace',
+        );
+      }
+    }
+    final outcomes = [
+      for (final device in devices)
+        if (await device.state() case final row?)
+          'done ${row.lastWakeAt?.toUtc().toIso8601String()} '
+              'failed ${row.lastWakeFailedAt?.toUtc().toIso8601String()}'
+        else
+          'none',
+    ];
     String describeRecord(ScheduledWakeEntity record) =>
         '${record.workspaceKey} ${record.status.name} '
         '${record.scheduledAt.toUtc().toIso8601String()}';
@@ -644,6 +786,11 @@ class _CadenceWorld {
       reason: 'Converged (briefing): $trace',
     );
     expect(records.first, records.last, reason: 'Converged (records): $trace');
+    expect(
+      outcomes.toSet(),
+      hasLength(1),
+      reason: 'Converged (outcome): $trace',
+    );
   }
 
   Future<void> close() => network.close();
@@ -730,6 +877,36 @@ void _registerRelationshipCadenceConformance() {
         _CadenceStep(_CadenceOp.run, berlin),
         _CadenceStep(_CadenceOp.advance, berlin),
         _CadenceStep(_CadenceOp.touch, berlin),
+      ]),
+    );
+
+    test(
+      'a short failure in Tokyo that began after a long success in Berlin '
+      'began does not outrank it: the outcome is stamped when the wake ends '
+      '(FailedFaceAgreed, AgentWakeOutcome StampAtEnd)',
+      () => _playCadenceTrace(const [
+        _CadenceStep(_CadenceOp.save, berlin),
+        _CadenceStep(_CadenceOp.tick, berlin),
+        _CadenceStep(_CadenceOp.advance, berlin),
+        _CadenceStep(_CadenceOp.run, berlin),
+        _CadenceStep(_CadenceOp.fail, tokyo),
+        _CadenceStep(_CadenceOp.finish, berlin),
+      ]),
+    );
+
+    test(
+      'a later unrelated write of the state row on the device that failed '
+      "does not carry its failure over Berlin's newer success: the outcome "
+      'watermarks are joined, never last-writer-wins (FailedFaceAgreed, '
+      'AgentWakeOutcome OutcomeWatermarks)',
+      () => _playCadenceTrace(const [
+        _CadenceStep(_CadenceOp.fail, tokyo),
+        _CadenceStep(_CadenceOp.save, berlin),
+        _CadenceStep(_CadenceOp.tick, berlin),
+        _CadenceStep(_CadenceOp.advance, berlin),
+        _CadenceStep(_CadenceOp.run, berlin),
+        _CadenceStep(_CadenceOp.finish, berlin),
+        _CadenceStep(_CadenceOp.touchState, tokyo),
       ]),
     );
 

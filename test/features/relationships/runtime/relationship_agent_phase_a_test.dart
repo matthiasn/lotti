@@ -20,6 +20,8 @@ import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/relationships/model/relationship_calendar.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
+import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_card.dart'
+    show RelationshipAgentCardState, relationshipAgentCardStateOf;
 import 'package:lotti/features/relationships/workflow/relationship_agent_workflow.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:mocktail/mocktail.dart';

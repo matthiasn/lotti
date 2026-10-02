@@ -553,7 +553,9 @@ proposal was adopted is never recorded as abandoned by a peer's concurrent
 sweep (ADR 0081). The cumulative counters on
 `AgentStateEntity` — `wakeCounter`, `slots.totalSessionsCompleted`,
 `slots.weeklyReviewCount` — are merged as a CRDT join via
-`mergeAgentStateCounters`, and so are the report freshness watermarks. The
+`mergeAgentStateCounters`, and so are the report freshness watermarks and
+the wake outcome watermarks, `lastWakeAt` and `lastWakeFailedAt` (ADR 0115:
+the pair says whether the last wake failed, the same on every device). The
 join also runs when the incoming version *dominates*: a concurrent merge joins
 counters into a row without moving its clock, so a version that succeeds only
 the merge's winner need not carry the loser's increments. Unlike journal
