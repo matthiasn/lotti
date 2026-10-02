@@ -189,6 +189,66 @@ void main() {
     );
   });
 
+  test('a row written before the failed watermark existed — a count above '
+      'zero, no failed stamp (1.1.35) — is still backed off: the repair '
+      'brings its retry forward by the count, which only shortens a '
+      'deadline (ADR 0115)', () async {
+    final workspace = relationshipEscalationWorkspaceKey('2026-08-08');
+    final retry =
+        AgentDomainEntity.scheduledWake(
+              id: scheduledWakeRecordId(agentId, workspaceKey: workspace),
+              agentId: agentId,
+              scheduledAt: now.add(const Duration(hours: 8)),
+              status: ScheduledWakeStatus.pending,
+              reason: WakeReason.scheduled.name,
+              updatedAt: testDate,
+              vectorClock: null,
+              workspaceKey: workspace,
+              triggerTokens: [workspace],
+            )
+            as ScheduledWakeEntity;
+    // 1.1.35 stamped `lastWakeAt` either way and bumped the count; it never
+    // wrote `lastWakeFailedAt`.
+    when(() => repository.getAgentState(agentId)).thenAnswer(
+      (_) async => makeTestState(
+        agentId: agentId,
+        lastWakeAt: now.subtract(const Duration(hours: 1)),
+        consecutiveFailureCount: 2,
+      ),
+    );
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'scheduledWake'),
+    ).thenAnswer((_) async => [retry]);
+    when(() => repository.getEntity(retry.id)).thenAnswer((_) async => retry);
+    final subject = RelationshipRuntimeMaintenance(
+      agentService: agentService,
+      repository: repository,
+      syncService: syncService,
+      relationshipAgentService: relationshipAgentService,
+      relationshipRepository: relationshipRepository,
+      inferenceIsConfigured: (_) async => true,
+    );
+
+    await withClock(Clock.fixed(now), subject.beforeWakeScan);
+
+    final written =
+        verify(
+              () => syncService.upsertEntity(
+                captureAny(
+                  that: isA<ScheduledWakeEntity>().having(
+                    (e) => e.id,
+                    'id',
+                    retry.id,
+                  ),
+                ),
+              ),
+            ).captured.single
+            as ScheduledWakeEntity;
+    expect(written.scheduledAt, now.toUtc());
+    expect(written.status, ScheduledWakeStatus.pending);
+    expect(written.triggerTokens, retry.triggerTokens);
+  });
+
   test(
     'configured retry moves forward without losing episode tokens or lease election',
     () async {

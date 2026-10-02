@@ -263,6 +263,49 @@ void main() {
         );
       });
 
+      test('the conservative read, for a reader that only shortens a '
+          'deadline: the count decides while no failed wake has stamped the '
+          'row, and never once one has', () {
+        final base =
+            AgentDomainEntity.agentState(
+                  id: 'state-outcome',
+                  agentId: 'agent-001',
+                  slots: const AgentSlots(),
+                  updatedAt: updatedAt,
+                  vectorClock: null,
+                )
+                as AgentStateEntity;
+        final at = DateTime.utc(2026, 2, 20, 9);
+
+        expect(base.lastWakeMayHaveFailed, isFalse);
+        expect(
+          base.copyWith(consecutiveFailureCount: 3).lastWakeMayHaveFailed,
+          isTrue,
+        );
+        expect(
+          base
+              .copyWith(lastWakeAt: at, consecutiveFailureCount: 1)
+              .lastWakeMayHaveFailed,
+          isTrue,
+        );
+        expect(
+          base.copyWith(lastWakeFailedAt: at).lastWakeMayHaveFailed,
+          isTrue,
+        );
+        // Stamped since the watermark existed: the watermarks decide, the
+        // count does not — a newer completed wake clears it.
+        expect(
+          base
+              .copyWith(
+                lastWakeAt: at.add(const Duration(seconds: 1)),
+                lastWakeFailedAt: at,
+                consecutiveFailureCount: 3,
+              )
+              .lastWakeMayHaveFailed,
+          isFalse,
+        );
+      });
+
       test(
         'derives freshness from monotonic change and refresh watermarks',
         () {

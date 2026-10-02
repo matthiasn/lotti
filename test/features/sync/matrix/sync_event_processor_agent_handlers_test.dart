@@ -3936,6 +3936,16 @@ void main() {
           ),
           status: SyncEntryStatus.update,
         ),
+        // Written before the failed watermark existed (1.1.35): the count
+        // alone marks it backed off for the maintenance pass (ADR 0115).
+        'failure state without the failed watermark': SyncMessage.agentEntity(
+          agentEntity: makeTestState(
+            agentId: 'relationship-agent',
+            lastWakeAt: prerequisiteDate,
+            consecutiveFailureCount: 1,
+          ),
+          status: SyncEntryStatus.update,
+        ),
       };
       for (final prerequisite in prerequisites.entries) {
         for (final kind in [

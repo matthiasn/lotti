@@ -135,8 +135,10 @@ class RelationshipRuntimeMaintenance implements AgentRuntimeMaintenance {
   /// The sync-aware write causally supersedes the previous deadline and clears
   /// its lease; the scheduled manager still elects one device before inference.
   /// Backed off means the last wake failed, read from the outcome watermarks
-  /// every device agrees on (`lastWakeFailed`, ADR 0115), not from the
-  /// failure count, which is last-writer-wins with the row.
+  /// every device agrees on (`lastWakeMayHaveFailed`, ADR 0115) — or, for a
+  /// row no failed wake has stamped since the watermark existed, from the
+  /// failure count: a deadline shortened on a stale count is harmless, a
+  /// face shown from one is not.
   Future<void> _resumeConfiguredEscalations(
     AgentIdentityEntity identity,
     DateTime now,
@@ -144,7 +146,7 @@ class RelationshipRuntimeMaintenance implements AgentRuntimeMaintenance {
     final configured = inferenceIsConfigured;
     if (configured == null) return;
     final state = await _repository.getAgentState(identity.agentId);
-    if (state == null || !state.lastWakeFailed) return;
+    if (state == null || !state.lastWakeMayHaveFailed) return;
     final records = await _repository.getEntitiesByAgentId(
       identity.agentId,
       type: 'scheduledWake',

@@ -895,16 +895,18 @@ void _registerRelationshipCadenceConformance() {
     );
 
     test(
-      'a later unrelated write of the state row on the device that failed '
-      "does not carry its failure over Berlin's newer success: the outcome "
-      'watermarks are joined, never last-writer-wins (FailedFaceAgreed, '
-      'AgentWakeOutcome OutcomeWatermarks)',
+      "a failure in Tokyo while Berlin's run is in flight, then a later "
+      'unrelated write of the state row in Tokyo, does not carry that '
+      "failure over Berlin's newer success: the outcome watermarks are "
+      'joined, never last-writer-wins (FailedFaceAgreed, AgentWakeOutcome '
+      'OutcomeWatermarks). The failure must end after the success began: '
+      'one that ended before is already older than the briefing to the card',
       () => _playCadenceTrace(const [
-        _CadenceStep(_CadenceOp.fail, tokyo),
         _CadenceStep(_CadenceOp.save, berlin),
         _CadenceStep(_CadenceOp.tick, berlin),
         _CadenceStep(_CadenceOp.advance, berlin),
         _CadenceStep(_CadenceOp.run, berlin),
+        _CadenceStep(_CadenceOp.fail, tokyo),
         _CadenceStep(_CadenceOp.finish, berlin),
         _CadenceStep(_CadenceOp.touchState, tokyo),
       ]),

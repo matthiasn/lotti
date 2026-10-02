@@ -1466,6 +1466,15 @@ extension AgentStateReportFreshness on AgentStateEntity {
     final freshAt = reportFreshAt;
     return freshAt == null || !staleAt.isBefore(freshAt);
   }
+
+  /// Whether the latest report is behind the task as of [now]: either
+  /// [isReportStale], or a change is already queued behind a throttle
+  /// deadline ([nextWakeAt]) that has not yet fired.
+  ///
+  /// A queued change does not move [reportStaleAt] — the countdown is its
+  /// only trace — yet the report is just as out of date while it runs.
+  bool isReportBehindAt(DateTime now) =>
+      isReportStale || (nextWakeAt?.isAfter(now) ?? false);
 }
 
 extension AgentStateWakeOutcome on AgentStateEntity {
@@ -1481,12 +1490,13 @@ extension AgentStateWakeOutcome on AgentStateEntity {
     return completedAt == null || failedAt.isAfter(completedAt);
   }
 
-  /// Whether the latest report is behind the task as of [now]: either
-  /// [isReportStale], or a change is already queued behind a throttle
-  /// deadline ([nextWakeAt]) that has not yet fired.
-  ///
-  /// A queued change does not move [reportStaleAt] — the countdown is its
-  /// only trace — yet the report is just as out of date while it runs.
-  bool isReportBehindAt(DateTime now) =>
-      isReportStale || (nextWakeAt?.isAfter(now) ?? false);
+  /// [lastWakeFailed], read conservatively for a reader that only shortens
+  /// a retry's deadline, where a stale answer is harmless: a row no failed
+  /// wake has stamped since the watermark existed — written by the code
+  /// before ADR 0115 (1.1.35), or by a device still running it — counts as
+  /// failed while its failure count is above zero. Never a face: the count
+  /// is last-writer-wins with the row, and one device's stale count must
+  /// not show *failed* beside another's good briefing.
+  bool get lastWakeMayHaveFailed =>
+      lastWakeFailedAt == null ? consecutiveFailureCount > 0 : lastWakeFailed;
 }

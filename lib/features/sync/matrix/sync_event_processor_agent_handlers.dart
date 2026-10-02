@@ -334,8 +334,10 @@ extension _AgentHandlers on SyncEventProcessor {
           await _reconcileProjectAgentRuntime(identity);
         } else if (identity is AgentIdentityEntity &&
             identity.kind == AgentKinds.relationshipAgent &&
-            entityToApply.lastWakeFailed) {
+            entityToApply.lastWakeMayHaveFailed) {
           // A retry can arrive before the state that marks it as backed off.
+          // Read as the maintenance pass reads it: a row written before the
+          // failed watermark existed still counts by its failure count.
           await _offerIdentityToRuntimeMaintenance(identity);
         }
       }

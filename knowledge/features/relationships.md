@@ -1343,9 +1343,13 @@ with the row, stamped with the wake's *start*: a short failure elsewhere
 that began after a long success began outranked it, and a later unrelated
 write of the row carried one device's stale count over another's good
 briefing (`specs/tla/AgentWakeOutcome.tla`, ADR 0115). The count still
-feeds the configuration backoff and the Stats tab. A row written before the
-watermark existed shows no failure until its next wake. And the card arms
-one timer at the next minute/hour/day boundary of the
+feeds the configuration backoff and the Stats tab, and still marks a row
+no failed wake has stamped since the watermark existed as backed off for
+the maintenance pass and the sync handler's re-offer
+(`lastWakeMayHaveFailed`), which only shorten a retry's deadline. A row
+written before the watermark existed (1.1.35) therefore shows no failure
+until its next wake, but a config repair still brings its retry forward.
+And the card arms one timer at the next minute/hour/day boundary of the
 briefing's age (`untilNextAgeBucket`, shared with the goal page), so "as of
 just now" does not stay on screen for hours. *Remind me about {name}* on the plain
 card also mints the agent through `ensureRelationshipAgentInBackground`, the
