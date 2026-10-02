@@ -5,13 +5,25 @@ description: How a local change becomes an agent wake — subscription matching,
 resource: ../../../lib/features/agents/wake
 tags: [agents, wake, scheduling, concurrency]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-27T21:45:00Z }
-stale_after: 2026-12-27
+generated: { by: claude-code/opus-5.5, at: 2026-10-02T18:00:00Z }
+stale_after: 2027-01-02
 sources:
   - id: wake
     resource: ../../../lib/features/agents/wake
     title: WakeOrchestrator, WakeQueue, WakeRunner, drain engine, AgentWakeCoordinator
-    last_modified: 2026-09-27
+    last_modified: 2026-10-02
+  - id: budget
+    resource: ../../../lib/features/agents/wake/wake_budget.dart
+    title: Daily wake budget policy and ledger
+    last_modified: 2026-10-02
+  - id: audit
+    resource: ../../../lib/features/agents/wake/wake_audit.dart
+    title: Wake decision causes and the wakeAudit line
+    last_modified: 2026-10-02
+  - id: adr-0112
+    resource: ../../../docs/adr/0112-a-daily-wake-budget-bounds-every-agent-wake.md
+    title: ADR 0112 — A daily wake budget bounds every project-agent wake
+    last_modified: 2026-10-02
   - id: task-wake-inputs
     resource: ../../../lib/features/agents/workflow/task_wake_inputs.dart
     title: The rows a task agent's wake reads as input, with their vector clocks
@@ -93,6 +105,12 @@ Two further guarantees are model-checked in `specs/tla/WakeRuntime.tla`
 `SingleFlight` — one live run per agent, even across an abort — and
 `NoLostWake` — every trigger is eventually covered by a run that completes,
 across a process death.
+
+Both guard against doing too *little*. Neither bounds how much work runs, and
+in 2026-10 a project agent ran several hundred paid wakes a day. A fourth
+defence therefore sits below every trigger path: the
+[daily wake budget](#the-daily-wake-budget), enforced at the last check before
+the executor ([ADR 0112](../../../docs/adr/0112-a-daily-wake-budget-bounds-every-agent-wake.md)).
 
 # The path from change to wake
 
@@ -353,11 +371,94 @@ per-wake failure path and does not cancel other active wakes.
 A single wake may run for at most **10 minutes**. This cap accommodates slower
 local reasoning models and multi-turn workflows while still releasing a stuck
 runner eventually. Crossing it marks the wake run `aborted` and releases the
-agent lock. Dart cannot cancel the executor's underlying future, so inference
-may continue in the background; its eventual result is ignored by the drain,
-and the agent's next wake waits for it (see the per-agent limit above).
-Workflows must therefore continue to treat late writes as normal database
-mutations that can produce a later notification.
+agent lock. Dart cannot cancel the executor's underlying future, so the
+executor keeps running; its eventual result is ignored by the drain, and the
+agent's next wake waits for it (see the per-agent limit above). Workflows must
+therefore continue to treat late writes as normal database mutations that can
+produce a later notification.
+
+What an aborted executor no longer does is **pay for more model turns**. The
+drain runs it in a zone carrying `agentWakeAbortedZoneKey`, a check that turns
+true once the lease is aborted — by the timeout, the user's cancel or a pause —
+and `ConversationRepository` reads `isAgentWakeAborted` before every turn. An
+aborted wake stops at the next turn boundary instead of finishing its
+conversation in the background.
+
+# The daily wake budget
+
+Project agents answer to a per-agent daily budget
+([ADR 0112](../../../docs/adr/0112-a-daily-wake-budget-bounds-every-agent-wake.md)).
+`AgentConfig.maxWakesPerDay` is synced on the identity; null reads as **10**
+and every value is clamped to 1–24 (`effectiveMaxWakesPerDay`). The ledger is
+`AgentStateEntity.dailyWakes`, a G-counter keyed `<local day>|<host>`: each
+device increments only its own key, and the concurrent resolver joins the two
+sides element-wise, so concurrent claims on two devices add up.
+
+The drain decides twice. Before dispatch it reads the ledger only, so a
+refused wake leaves no run row. Immediately before the executor, after every
+other await, `_currentPolicyDecision(job, claimBudget: true)` reads the state,
+decides and increments in one `updateAgentState` transaction — claim, then
+execute. That point is the one every wake path reaches, so the bound holds
+whatever queued the job.
+
+```mermaid
+flowchart TD
+  Job["dequeued wake"] --> Identity{"identity policy"}
+  Identity -->|"paused / destroyed"| Inactive["refuse: agentInactive"]
+  Identity -->|"inference disabled"| Disabled["refuse: inferenceDisabled"]
+  Identity -->|"automatic, updates off"| Off["refuse: automaticUpdatesOff"]
+  Identity -->|"unreadable, automatic"| Unreadable["refuse: policyUnreadable"]
+  Identity -->|"allowed"| Kind{"project agent?"}
+  Kind -->|"no"| Run["run"]
+  Kind -->|"yes"| Used{"used today"}
+  Used -->|"automatic, used ≥ limit"| Exhausted["refuse: budgetExhausted"]
+  Used -->|"any, used ≥ 2 × limit"| Ceiling["refuse: hardCeilingReached"]
+  Used -->|"below"| Claim["claim: increment own host, sync"]
+  Claim -->|"write failed"| ClaimFailed["refuse: budgetClaimFailed"]
+  Claim --> Run
+```
+
+- **Automatic** wakes stop at the limit. **Explicit** ones (`WakeInitiator.user`
+  — "Update now", creation) run past it, and count, up to twice the limit.
+- A claimed wake counts even if it fails or is aborted: it may have spent
+  tokens. A run key claims at most once, so a superseded drain handing a run
+  back does not count it twice.
+- A refused job completes `aborted` with `WakeRefusedError(cause)`; one
+  refused after its run row was written records `wake refused: <cause>` as the
+  row's error.
+- Agent internals render the budget for project agents
+  (`AgentWakeBudgetRow`): "3 of 10 used today", "Limit reached — automatic
+  updates resume tomorrow" once it is, and a stepper over `WakeBudget.choices`
+  that writes through `AgentService.updateMaxWakesPerDay`.
+- Bound: per device, `limit` automatic and `2 × limit` total wakes a day.
+  Devices that see each other's claims share it, except one crossing claim
+  each; devices partitioned all day each spend their own.
+
+# Pause halts
+
+`WakeOrchestrator.haltAgent` is the kill-switch: it removes the agent's
+subscriptions and throttle, cancels its queued work in every workspace and
+aborts a running wake (which then stops before its next model turn). Pause,
+destroy and delete call it, and so does sync apply when another device's pause
+or destroy arrives. Before, a pause only removed subscriptions: a queued wake
+was dropped only if the drain happened to re-check policy, and a running one
+finished its conversation.
+
+# Every decision is logged once
+
+Each routing, enqueue and dispatch decision writes one line under the
+`wakeAudit` sub-domain (`formatWakeAudit`):
+
+```
+wake suppressed stage=execute agent=… cause=budgetExhausted reason=subscription initiator=automation source=… tokens=3 budget=10/10
+```
+
+`stage` is `route` (the batch router declined to queue), `enqueue` (every job
+entering the queue, whoever asked), `dispatch` (the pre-dispatch check) or
+`execute` (the final check). `cause` is a `WakeDecisionCause` name. Ids are
+sanitized and trigger tokens are counted, never printed. Grepping one agent's
+`wakeAudit` lines across devices reconstructs why each of its wakes ran or did
+not.
 
 `waitForAgentExecutors(agentId)` is the explicit settlement barrier for
 operations that cannot tolerate those late writes. It waits for tracked
