@@ -571,3 +571,25 @@ Map<String, dynamic> _$GoalEntryToJson(GoalEntry instance) => <String, dynamic>{
   'geolocation': instance.geolocation,
   'runtimeType': instance.$type,
 };
+
+PullRequestEntry _$PullRequestEntryFromJson(Map<String, dynamic> json) =>
+    PullRequestEntry(
+      meta: Metadata.fromJson(json['meta'] as Map<String, dynamic>),
+      data: PullRequestData.fromJson(json['data'] as Map<String, dynamic>),
+      entryText: json['entryText'] == null
+          ? null
+          : EntryText.fromJson(json['entryText'] as Map<String, dynamic>),
+      geolocation: json['geolocation'] == null
+          ? null
+          : Geolocation.fromJson(json['geolocation'] as Map<String, dynamic>),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$PullRequestEntryToJson(PullRequestEntry instance) =>
+    <String, dynamic>{
+      'meta': instance.meta,
+      'data': instance.data,
+      'entryText': instance.entryText,
+      'geolocation': instance.geolocation,
+      'runtimeType': instance.$type,
+    };

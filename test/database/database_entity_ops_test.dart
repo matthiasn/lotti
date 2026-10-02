@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
@@ -27,6 +28,7 @@ import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../features/github/pull_request_fixtures.dart';
 import '../mocks/mocks.dart';
 import '../test_data/test_data.dart';
 import 'test_utils.dart';
@@ -1555,6 +1557,139 @@ void main() {
           expect(aThenB?.meta.deletedAt, isNotNull);
         },
       );
+
+      // specs/tla/PullRequestSnapshot.tla, `Receive` with ResolveConcurrent.
+      group('pull request versions -', () {
+        Future<PullRequestEntry?> receive(
+          JournalEntity first,
+          JournalEntity second,
+        ) async {
+          await clearAllTables(db!);
+          await db!.updateJournalEntity(first);
+          final result = await db!.updateJournalEntity(second);
+          expect(result.applied, isTrue);
+          expect(await db!.conflictsForEntry(first.meta.id), isEmpty);
+          return await db!.journalEntityByIdIncludingDeleted(first.meta.id)
+              as PullRequestEntry?;
+        }
+
+        test(
+          'two concurrent refreshes merge to the newer observation in either '
+          'order, without a conflict for the user',
+          () async {
+            final onA = prEntry(clock: {'a': 2}, snapshot: prSnapshot());
+            final onB = prEntry(
+              clock: {'a': 1, 'b': 1},
+              snapshot: prSnapshot(
+                second: 3,
+                status: PullRequestStatus.merged,
+              ),
+            );
+
+            final aThenB = await receive(onA, onB);
+            final bThenA = await receive(onB, onA);
+
+            expect(aThenB, bThenA);
+            expect(aThenB?.data.snapshot?.status, PullRequestStatus.merged);
+            expect(
+              aThenB?.meta.vectorClock,
+              const VectorClock({'a': 2, 'b': 1}),
+            );
+          },
+        );
+
+        test(
+          'an unlink concurrent with a refresh stays unlinked in either order',
+          () async {
+            final unlinked = prEntry(
+              clock: {'a': 2},
+              snapshot: prSnapshot(),
+              deleted: true,
+            );
+            final refreshed = prEntry(
+              clock: {'a': 1, 'b': 1},
+              snapshot: prSnapshot(second: 3),
+            );
+
+            final unlinkFirst = await receive(unlinked, refreshed);
+            final refreshFirst = await receive(refreshed, unlinked);
+
+            expect(unlinkFirst, refreshFirst);
+            expect(unlinkFirst?.meta.deletedAt, isNotNull);
+            expect(await db!.journalEntityById(unlinked.meta.id), isNull);
+          },
+        );
+
+        test(
+          'two concurrent unlinks keep the newer snapshot in either order, '
+          'not the canonically greater clock',
+          () async {
+            // Node `a` decides the canonical clock order, so the older
+            // observation holds the canonically greater clock.
+            final newer = prEntry(
+              clock: {'a': 1, 'b': 2},
+              snapshot: prSnapshot(second: 3, status: PullRequestStatus.merged),
+              deleted: true,
+            );
+            final older = prEntry(
+              clock: {'a': 2, 'b': 1},
+              snapshot: prSnapshot(),
+              deleted: true,
+            );
+
+            final newerFirst = await receive(newer, older);
+            final olderFirst = await receive(older, newer);
+
+            expect(newerFirst, olderFirst);
+            expect(newerFirst?.data.snapshot?.status, PullRequestStatus.merged);
+            expect(newerFirst?.meta.deletedAt, isNotNull);
+          },
+        );
+
+        test(
+          'a live pull request and a purged unlink merge to the unlink in '
+          'either order, without a conflict',
+          () async {
+            final live = prEntry(
+              clock: {'a': 1, 'b': 1},
+              snapshot: prSnapshot(second: 3),
+            );
+            final purged = prEntry(
+              clock: {'a': 2},
+              snapshot: prSnapshot(),
+              deleted: true,
+            ).toPurgedTombstone(prFixtureEpoch);
+            const joined = VectorClock({'a': 2, 'b': 1});
+
+            for (final (first, second) in [(live, purged), (purged, live)]) {
+              await clearAllTables(db!);
+              await db!.updateJournalEntity(first);
+              final result = await db!.updateJournalEntity(second);
+
+              expect(result.applied, isTrue);
+              expect(await db!.conflictsForEntry(live.meta.id), isEmpty);
+              final stored = await db!.journalEntityByIdIncludingDeleted(
+                live.meta.id,
+              );
+              expect(stored?.meta.deletedAt, isNotNull);
+              expect(stored?.meta.vectorClock, joined);
+              expect(await db!.journalEntityById(live.meta.id), isNull);
+            }
+          },
+        );
+
+        test(
+          'an edit concurrent with another entry type is still a conflict',
+          () async {
+            await db!.updateJournalEntity(version({'a': 2}, 'mine'));
+            final other = await db!.updateJournalEntity(
+              version({'a': 1, 'b': 1}, 'theirs'),
+            );
+            expect(other.skipReason, JournalUpdateSkipReason.conflict);
+            expect(await conflictText(), 'theirs');
+          },
+        );
+      });
 
       test(
         'an applied write that does not include the open conflict leaves it '

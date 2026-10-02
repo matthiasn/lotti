@@ -337,6 +337,7 @@ received, in one transaction: it reads the stored row **with its deletion**
 | equal or older | refused — a late copy of the version a deletion replaced included |
 | concurrent | refused and stored as a `Conflict` row of the entry, **unless an open conflict already holds that version or a newer one**; it replaces the open conflicts it follows and stands beside the others |
 | concurrent, both deleted | merged, no conflict: the canonically greater deletion's fields under the join of both clocks, the same row on every device |
+| concurrent, both pull request entries | merged, no conflict: the newer observation, deleted if either side is, under the join of both clocks, the same row on every device (`mergeConcurrentPullRequestVersions`; the snapshot is fetched, not authored, so there is nothing for the user to choose — [GitHub pull requests](../github.md)) |
 | incoming without a clock | refused over a clocked row; applied over a row without one |
 | stored without a clock | incoming applied |
 

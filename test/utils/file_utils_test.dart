@@ -12,6 +12,7 @@ import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/get_it.dart';
@@ -198,6 +199,20 @@ void main() {
 
       final path = entityPath(testEntity, Directory(''));
       expect(path, '/goals/2021-11-30/test-id.goal.json');
+    });
+
+    test('JSON file name for pull request entry should be correct', () async {
+      final testEntity = JournalEntity.pullRequest(
+        meta: testMeta,
+        data: const PullRequestData(
+          owner: 'matthiasn',
+          repo: 'lotti',
+          number: 7,
+        ),
+      );
+
+      final path = entityPath(testEntity, Directory(''));
+      expect(path, '/pull_requests/2021-11-30/test-id.pull_request.json');
     });
 
     test('JSON file name for audio entry should be correct', () async {

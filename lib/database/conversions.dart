@@ -4,6 +4,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/services/dev_logger.dart';
@@ -27,6 +28,8 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
     // "this goal's version history" is an indexed type+subtype lookup and
     // "every goal" is the rows with no subtype.
     goal: (GoalEntry entry) => entry.data.snapshotOf ?? '',
+    // `owner/repo#number`, so a duplicate link is an indexed lookup.
+    pullRequest: (PullRequestEntry entry) => entry.data.key,
     orElse: () => '',
   );
 
@@ -108,6 +111,7 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
       relationship: (_) => 'Relationship',
       checkIn: (_) => 'CheckIn',
       goal: (_) => 'Goal',
+      pullRequest: (_) => 'PullRequest',
     ),
     subtype: subtype,
     serialized: json.encode(entity),

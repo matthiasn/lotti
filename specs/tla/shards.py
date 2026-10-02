@@ -168,6 +168,12 @@ SECONDS = {
     # Measured locally when added; refresh from CI.
     "EnvelopeChain": 2,
     "EnvelopeChainRevocation": 15,
+    # Local exhaustive runs with twenty workers; refresh from CI measurements.
+    "PullRequestSnapshot": 5,
+    "PullRequestSnapshotSync": 8,
+    "PullRequestSnapshotCoarse": 15,
+    "PullRequestSnapshotNoToken": 2,
+    "PullRequestSnapshotLiveness": 30,
     "AgentReplicationRemoval": 596,
     "AgentReplicationRemovalLossy": 61,
     "AgentReplicationSeed": 60,

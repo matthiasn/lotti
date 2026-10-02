@@ -13,6 +13,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/journal_update_result.dart';
+import 'package:lotti/features/github/domain/pull_request_order.dart';
 import 'package:lotti/features/habits/model/habit_completion_record.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';

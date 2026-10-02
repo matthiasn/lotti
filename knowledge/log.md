@@ -1,5 +1,12 @@
 # Knowledge Bundle Update Log
 
+## 2026-10-03
+* **Addition**: [GitHub pull requests](features/github.md) — pull requests
+  linked to tasks as journal entries: the snapshot and its server-time order,
+  the refresh and its write rules, the concurrent-version merge, the token
+  and client, and the task-context wiring, designed against the
+  `PullRequestSnapshot` TLA+ model before most of the code exists.
+
 ## 2026-09-25
 * **Addition**: [Success semantics](architecture/success-semantics.md) — the
   goal evaluator, track policy, habit rules and completion collapse written as

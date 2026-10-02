@@ -12,6 +12,7 @@ import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/goal_data.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
@@ -312,6 +313,15 @@ sealed class JournalEntity with _$JournalEntity {
     Geolocation? geolocation,
   }) = GoalEntry;
 
+  /// A GitHub pull request linked to a task, with the snapshot of it the
+  /// last successful refresh observed — see [PullRequestData].
+  const factory JournalEntity.pullRequest({
+    required Metadata meta,
+    required PullRequestData data,
+    EntryText? entryText,
+    Geolocation? geolocation,
+  }) = PullRequestEntry;
+
   factory JournalEntity.fromJson(Map<String, dynamic> json) =>
       _$JournalEntityFromJson(json);
 }
@@ -394,6 +404,9 @@ extension JournalEntityExtension on JournalEntity {
         ids
           ..addAll([?goal.data.snapshotOf])
           ..add(goalNotification);
+
+      case PullRequestEntry():
+        ids.add(pullRequestNotification);
     }
 
     return ids;

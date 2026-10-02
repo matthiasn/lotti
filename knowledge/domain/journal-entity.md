@@ -1,11 +1,11 @@
 ---
 type: Domain Model
 title: JournalEntity
-description: The nineteen-variant union every recorded journal entry is, what sits outside it, and the shared Metadata envelope that carries identity, time, ownership and sync state.
+description: The twenty-variant union every recorded journal entry is, what sits outside it, and the shared Metadata envelope that carries identity, time, ownership and sync state.
 resource: ../../lib/classes/journal_entities.dart
 tags: [domain, journal-entity, metadata, freezed]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-25T10:30:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-03T00:50:00Z }
 stale_after: 2027-07-12
 sources:
   - id: entities
@@ -18,7 +18,7 @@ sources:
     last_modified: 2026-07-22
 ---
 
-# One union, nineteen variants
+# One union, twenty variants
 
 Every entry the user *records* is a `JournalEntity` — a Freezed union whose
 variants are:
@@ -26,7 +26,7 @@ variants are:
 `journalEntry`, `journalImage`, `journalAudio`, `task`, `event`, `checklistItem`,
 `checklist`, `quantitative`, `measurement`, `aiResponse`, `workout`,
 `habitCompletion`, `survey`, `dayPlan`, `rating`, `project`, `relationship`,
-`checkIn`, `goal`.
+`checkIn`, `goal`, `pullRequest`.
 
 That breadth is why the [journal feature](../features/journal/) is the app's
 substrate rather than a note-taking screen: create, browse, search, link, focus
@@ -36,7 +36,7 @@ its own detail widget.
 ```mermaid
 classDiagram
   class JournalEntity {
-    <<Freezed union — 19 variants>>
+    <<Freezed union — 20 variants>>
     Metadata meta
   }
   class Metadata {
@@ -77,6 +77,7 @@ classDiagram
   JournalEntity <|-- RelationshipEntry
   JournalEntity <|-- CheckInEntry
   JournalEntity <|-- GoalEntry
+  JournalEntity <|-- PullRequestEntry
 
   Task o-- TaskData : payload
   JournalEvent o-- EventData : payload
@@ -168,12 +169,17 @@ each kind carries what it needs.
   which is what allows drag, drop, reorder and cross-checklist movement.
 - **A check-in's narrative is `entryText`, not a payload field.** `CheckInData`
   carries only the structured part; the same holds for a relationship's notes.
+- **A pull request's snapshot is fetched, not authored.** Two concurrent
+  versions of a `PullRequestEntry` are merged by the journal write, keeping the
+  newer observation, rather than raised as a conflict for the user — see
+  [GitHub pull requests](../features/github.md).
 
-Two variants also **denormalize an owner id into the `subtype` column** via
-`toDbEntity`, so "all children of X" is an indexed filter rather than a link
-traversal: `habitCompletion` writes `habitId`, and `checkIn` writes
-`relationshipId`. That column is the only place the pattern lives — see
-[relationships](../features/relationships.md).
+Several variants also **denormalize a lookup key into the `subtype` column**
+via `toDbEntity`, so "all children of X" is an indexed filter rather than a
+link traversal: `habitCompletion` writes `habitId`, `checkIn` writes
+`relationshipId`, a goal's spec snapshot writes the goal it belongs to, and
+`pullRequest` writes `owner/repo#number`. That column is the only place the
+pattern lives — see [relationships](../features/relationships.md).
 
 # Related
 
