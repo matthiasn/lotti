@@ -23,6 +23,7 @@ import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
+import 'package:lotti/features/relationships/model/relationship_calendar.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/workflow/relationship_agent_contract.dart';
@@ -714,6 +715,127 @@ void main() {
     },
   );
 
+  group('the stamps a run writes', () {
+    test('the briefing is stamped with the instant in UTC', () {
+      final local = DateTime(2026, 8, 16, 12);
+      final stamp = relationshipBriefingCreatedAt(local);
+      expect(stamp.isUtc, isTrue);
+      expect(stamp.isAtSameMomentAs(local), isTrue);
+      expect(stamp, local.toUtc());
+    });
+
+    test("the head's timestamp is the due day's end once it is over, else "
+        'the instant — in UTC either way', () {
+      final dueDay = DateTime.utc(2026, 8, 8);
+      final after = relationshipReportHeadUpdatedAt(
+        dueDay,
+        DateTime(2026, 8, 16, 12),
+      );
+      expect(after, DateTime.utc(2026, 8, 8, 23, 59, 59));
+      final before = relationshipReportHeadUpdatedAt(
+        dueDay,
+        DateTime(2026, 8, 8, 9),
+      );
+      expect(before, DateTime(2026, 8, 8, 9).toUtc());
+      expect(before.isUtc, isTrue);
+    });
+  });
+
+  group('the stand-down gate', () {
+    RelationshipCadenceDerivation facts({
+      RelationshipCadenceStatus status = RelationshipCadenceStatus.ok,
+      DateTime? lastEvidenceAt,
+      String? lastEvidenceKey,
+    }) => (
+      status: status,
+      previousStatus: null,
+      cadenceDays: 7,
+      referenceAt: testDate,
+      lastCheckInAt: lastEvidenceAt,
+      lastCheckInDay: lastEvidenceAt == null
+          ? null
+          : relationshipCalendarDay(lastEvidenceAt),
+      lastEvidenceAt: lastEvidenceAt,
+      lastEvidenceKey: lastEvidenceKey,
+      dueDayUtc: DateTime.utc(2026, 8, 8),
+      dueDayKey: '2026-08-08',
+    );
+    final covered =
+        AgentDomainEntity.agentReport(
+              id: 'report-0',
+              agentId: agentId,
+              scope: AgentReportScopes.current,
+              createdAt: DateTime.utc(2026, 8, 15, 20),
+              vectorClock: null,
+              content: 'covered',
+            )
+            as AgentReportEntity;
+
+    test('stands down when the cadence is not due and the briefing covers '
+        'the evidence', () {
+      expect(
+        relationshipEscalationStandsDown(
+          derivation: facts(lastEvidenceAt: DateTime.utc(2026, 8, 15, 18)),
+          previousReport: covered,
+          escalationKey: '2026-08-08',
+          eligible: true,
+        ),
+        isTrue,
+      );
+    });
+
+    test('runs for a due cadence, and for evidence the briefing does not '
+        'cover', () {
+      expect(
+        relationshipEscalationStandsDown(
+          derivation: facts(status: RelationshipCadenceStatus.due),
+          previousReport: covered,
+          escalationKey: '2026-08-08',
+          eligible: true,
+        ),
+        isFalse,
+      );
+      expect(
+        relationshipEscalationStandsDown(
+          derivation: facts(
+            lastEvidenceAt: DateTime.utc(2026, 8, 15, 21),
+            lastEvidenceKey: '20260815T210000000',
+          ),
+          previousReport: covered,
+          escalationKey: 'refresh-20260815T210000000',
+          eligible: true,
+        ),
+        isFalse,
+      );
+    });
+
+    test('a refresh overtaken by newer evidence stands down, and so does '
+        'an ineligible person', () {
+      final newer = facts(
+        lastEvidenceAt: DateTime.utc(2026, 8, 15, 22),
+        lastEvidenceKey: '20260815T220000000',
+      );
+      expect(
+        relationshipEscalationStandsDown(
+          derivation: newer,
+          previousReport: covered,
+          escalationKey: 'refresh-20260815T210000000',
+          eligible: true,
+        ),
+        isTrue,
+      );
+      expect(
+        relationshipEscalationStandsDown(
+          derivation: facts(status: RelationshipCadenceStatus.due),
+          previousReport: covered,
+          escalationKey: '2026-08-08',
+          eligible: false,
+        ),
+        isTrue,
+      );
+    });
+  });
+
   test('a due escalation produces the briefing report (with the grounded '
       'band as provenance) and mints ONE banner with the deterministic '
       'run-scoped id', () async {
@@ -759,6 +881,11 @@ void main() {
     expect(result.reportUpdated, isTrue);
     final report = upserts.whereType<AgentReportEntity>().single;
     expect(report.tldr, contains('two weeks'));
+    // Stamped in UTC: the row syncs, and a local instant serializes without
+    // an offset, which a peer in another zone read as hours behind the
+    // evidence it covers (RelationshipCadence.tla, ReportStampUtc).
+    expect(report.createdAt, now.toUtc());
+    expect(report.createdAt.isUtc, isTrue);
     expect(
       report.provenance[RelationshipReportProvenanceKeys.healthBand],
       'needsAttention',
@@ -1014,8 +1141,9 @@ void main() {
       );
     });
 
-    test('is stamped with the wall clock while the due day is still '
-        'running — an in-period head must not be back-dated', () async {
+    test('is stamped with the wall clock, in UTC, while the due day is '
+        'still running — an in-period head must not be back-dated, and a '
+        'peer in another zone must read the same instant', () async {
       // Check-in on the 15th, 7-day cadence → due day 2026-08-22, ahead of
       // `now`. A report-refresh episode still publishes a briefing.
       when(
@@ -1052,10 +1180,9 @@ void main() {
 
       await run(tokens: {relationshipReportRefreshTriggerToken});
 
-      expect(
-        upserts.whereType<AgentReportHeadEntity>().single.updatedAt,
-        now,
-      );
+      final head = upserts.whereType<AgentReportHeadEntity>().single;
+      expect(head.updatedAt, now.toUtc());
+      expect(head.updatedAt.isUtc, isTrue);
     });
 
     test('does not advance when the published briefing carries a NEWER due '
@@ -2694,7 +2821,13 @@ void main() {
     });
   });
   group('the wake outcome on the state row', () {
-    AgentStateEntity stateRow({int failures = 0}) =>
+    setUp(() => stubUpdateAgentState(syncService, repository));
+
+    AgentStateEntity stateRow({
+      int failures = 0,
+      DateTime? lastWakeAt,
+      DateTime? lastWakeFailedAt,
+    }) =>
         AgentDomainEntity.agentState(
               id: '$agentId:state',
               agentId: agentId,
@@ -2702,6 +2835,8 @@ void main() {
               updatedAt: testDate,
               vectorClock: null,
               consecutiveFailureCount: failures,
+              lastWakeAt: lastWakeAt,
+              lastWakeFailedAt: lastWakeFailedAt,
             )
             as AgentStateEntity;
 
@@ -2785,11 +2920,13 @@ void main() {
     AgentStateEntity stamped() => upserts.whereType<AgentStateEntity>().single;
 
     test(
-      'a successful wake stamps lastWakeAt and clears the failure streak',
+      'a successful wake stamps lastWakeAt, in UTC, leaves the failed '
+      'watermark where it was, and clears the failure streak',
       () async {
-        when(
-          () => repository.getAgentState(agentId),
-        ).thenAnswer((_) async => stateRow(failures: 2));
+        final failedBefore = DateTime.utc(2026, 8, 15, 20);
+        when(() => repository.getAgentState(agentId)).thenAnswer(
+          (_) async => stateRow(failures: 2, lastWakeFailedAt: failedBefore),
+        );
         succeedingModel();
 
         final result = await run(
@@ -2798,15 +2935,20 @@ void main() {
 
         expect(result.success, isTrue);
         expect(stamped().consecutiveFailureCount, 0);
-        expect(stamped().lastWakeAt, now);
+        expect(stamped().lastWakeAt, now.toUtc());
+        expect(stamped().lastWakeAt!.isUtc, isTrue);
+        expect(stamped().lastWakeFailedAt, failedBefore);
+        expect(stamped().lastWakeFailed, isFalse);
       },
     );
 
-    test('a failed wake stamps lastWakeAt and bumps the failure streak — the '
-        "person page's card reads both to show failed", () async {
-      when(
-        () => repository.getAgentState(agentId),
-      ).thenAnswer((_) async => stateRow(failures: 2));
+    test('a failed wake stamps lastWakeFailedAt, in UTC, leaves lastWakeAt '
+        "where it was, and bumps the failure streak — the person page's card "
+        'reads the two watermarks to show failed', () async {
+      final completedBefore = DateTime.utc(2026, 8, 15, 20);
+      when(() => repository.getAgentState(agentId)).thenAnswer(
+        (_) async => stateRow(failures: 2, lastWakeAt: completedBefore),
+      );
       explodingModel();
 
       final result = await run(
@@ -2815,7 +2957,110 @@ void main() {
 
       expect(result.success, isFalse);
       expect(stamped().consecutiveFailureCount, 3);
-      expect(stamped().lastWakeAt, now);
+      expect(stamped().lastWakeFailedAt, now.toUtc());
+      expect(stamped().lastWakeFailedAt!.isUtc, isTrue);
+      expect(stamped().lastWakeAt, completedBefore);
+      expect(stamped().lastWakeFailed, isTrue);
+    });
+
+    test('the outcome is stamped when the wake ENDS, not when it began — a '
+        'short failure elsewhere that began after a long success began must '
+        'not outrank it', () async {
+      when(
+        () => repository.getAgentState(agentId),
+      ).thenAnswer((_) async => stateRow());
+      stubGlmResolution();
+      var current = now;
+      conversationRepository
+        ..maxDelegateCalls = 1
+        ..sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0,
+              strategy,
+            }) async {
+              // The model takes four minutes to answer.
+              current = now.add(const Duration(minutes: 4));
+              await strategy!.processToolCalls(
+                toolCalls: [
+                  toolCall(
+                    RelationshipAgentToolNames.updateRelationshipReport,
+                    briefingArgs(),
+                  ),
+                ],
+                manager: conversationManager,
+              );
+              return null;
+            };
+
+      final result = await withClock(
+        Clock(() => current),
+        () => workflow.execute(
+          agentIdentity: identity(),
+          runKey: 'run-1',
+          triggerTokens: {relationshipEscalationWorkspaceKey('2026-08-08')},
+          threadId: 'thread-1',
+        ),
+      );
+
+      expect(result.success, isTrue);
+      final report = upserts.whereType<AgentReportEntity>().single;
+      expect(report.createdAt, now.toUtc());
+      expect(stamped().lastWakeAt, now.add(const Duration(minutes: 4)).toUtc());
+    });
+
+    test('a stamp written with knowledge of a newer stamp lands a microsecond '
+        'past it — a peer whose clock ran ahead cannot outrank an outcome '
+        'that supersedes it', () {
+      // Half an hour past this wake's end on any host, whatever its zone.
+      final ahead = now.toUtc().add(const Duration(minutes: 30));
+      final state = stateRow(lastWakeFailedAt: ahead);
+      final success = relationshipWakeOutcome(
+        state,
+        now: now,
+        succeeded: true,
+      );
+      expect(success.lastWakeAt, ahead.add(const Duration(microseconds: 1)));
+      expect(success.lastWakeFailed, isFalse);
+      // The row's own stamp stays the wall clock: it decides last-writer-wins
+      // for every field the join does not cover, and must not jump ahead on
+      // a peer's clock.
+      expect(success.updatedAt, now.toUtc());
+      final failure = relationshipWakeOutcome(
+        stateRow(lastWakeAt: ahead),
+        now: now,
+        succeeded: false,
+      );
+      expect(
+        failure.lastWakeFailedAt,
+        ahead.add(const Duration(microseconds: 1)),
+      );
+      expect(failure.lastWakeFailed, isTrue);
+      expect(failure.updatedAt, now.toUtc());
+    });
+
+    test('a bump past a peer stamp written as local wall clock (1.1.35) '
+        'still lands in UTC — the watermark never inherits the zone it '
+        'supersedes', () {
+      final aheadLocal = now.add(const Duration(minutes: 30));
+      expect(aheadLocal.isUtc, isFalse);
+      final success = relationshipWakeOutcome(
+        stateRow(lastWakeFailedAt: aheadLocal),
+        now: now,
+        succeeded: true,
+      );
+      expect(success.lastWakeAt!.isUtc, isTrue);
+      expect(
+        success.lastWakeAt,
+        aheadLocal.add(const Duration(microseconds: 1)).toUtc(),
+      );
+      expect(success.updatedAt, now.toUtc());
     });
 
     test('a wake that finds no model to run on is stamped as failed too — '
@@ -2834,7 +3079,8 @@ void main() {
       expect(result.success, isFalse);
       expect(result.error, contains('no inference provider'));
       expect(stamped().consecutiveFailureCount, 3);
-      expect(stamped().lastWakeAt, now);
+      expect(stamped().lastWakeFailedAt, now.toUtc());
+      expect(stamped().lastWakeAt, isNull);
     });
 
     test('no state row means nothing to stamp', () async {

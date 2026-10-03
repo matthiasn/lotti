@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
@@ -251,6 +252,21 @@ void main() {
         );
       });
 
+      test('reads the ambient clock, so a test or a trace can set the '
+          'instant and the zone it stamps', () async {
+        final at = DateTime(2024, 3, 15, 10, 30);
+        final metadata = await withClock(
+          Clock.fixed(at),
+          metadataService.createMetadata,
+        );
+
+        expect(metadata.createdAt, at);
+        expect(metadata.updatedAt, at);
+        expect(metadata.dateFrom, at);
+        expect(metadata.utcOffset, at.timeZoneOffset.inMinutes);
+        expect(metadata.timezone, at.timeZoneName);
+      });
+
       test(
         'creates metadata with null optional parameters by default',
         () async {
@@ -342,6 +358,33 @@ void main() {
         final updated = await metadataService.updateMetadata(originalMetadata);
 
         expect(updated.createdAt, equals(originalMetadata.createdAt));
+      });
+
+      test("stamps this device's offset and zone beside the new updatedAt, "
+          "replacing the creation's", () async {
+        // Created by a device nine hours ahead of UTC; updated here. The
+        // offset describes the stamp beside it: kept from creation, a
+        // check-in touched from another zone named an instant hours off on
+        // every device (ADR 0114).
+        final created = originalMetadata.copyWith(
+          utcOffset: 540,
+          timezone: 'Asia/Tokyo',
+        );
+        // Mid-winter, so on a host with DST the fixed clock's zone name
+        // differs from the wall clock's for half the year, and reading the
+        // zone off the wall clock would show.
+        final at = DateTime(2024, 1, 15, 12);
+
+        final updated = await withClock(
+          Clock.fixed(at),
+          () => metadataService.updateMetadata(created),
+        );
+
+        expect(updated.updatedAt, at);
+        expect(updated.utcOffset, at.timeZoneOffset.inMinutes);
+        // The zone, too, is read off the ambient clock the test holds, not
+        // off the wall clock.
+        expect(updated.timezone, at.timeZoneName);
       });
 
       test('preserves original values when not specified', () async {

@@ -162,6 +162,9 @@ AgentStateEntity _$AgentStateEntityFromJson(
   reportFreshAt: json['reportFreshAt'] == null
       ? null
       : DateTime.parse(json['reportFreshAt'] as String),
+  lastWakeFailedAt: json['lastWakeFailedAt'] == null
+      ? null
+      : DateTime.parse(json['lastWakeFailedAt'] as String),
   awaitingContent: json['awaitingContent'] as bool? ?? false,
   deletedAt: json['deletedAt'] == null
       ? null
@@ -190,6 +193,7 @@ Map<String, dynamic> _$AgentStateEntityToJson(AgentStateEntity instance) =>
       'dailyWakesByDayHost': instance.dailyWakes,
       'reportStaleAt': instance.reportStaleAt?.toIso8601String(),
       'reportFreshAt': instance.reportFreshAt?.toIso8601String(),
+      'lastWakeFailedAt': instance.lastWakeFailedAt?.toIso8601String(),
       'awaitingContent': instance.awaitingContent,
       'deletedAt': instance.deletedAt?.toIso8601String(),
       'runtimeType': instance.$type,

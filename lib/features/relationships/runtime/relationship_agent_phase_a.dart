@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
+import 'package:lotti/features/relationships/model/relationship_calendar.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart'
     show checkInTranscriptTimeout;
@@ -42,11 +43,29 @@ typedef RelationshipCadenceDerivation = ({
   RelationshipCadenceStatus? previousStatus,
   int cadenceDays,
 
-  /// UTC — see the normalization note in `deriveCadenceFacts`.
+  /// The instant the cadence counts from, in UTC: the newest check-in's
+  /// `dateFrom`, or the person's own when there is none, rebuilt from the
+  /// stored components and the entry's `utcOffset`
+  /// ([relationshipStoredInstant]) so every device derives the same instant
+  /// — see the normalization note in `deriveCadenceFacts`. The same on
+  /// every device, but not always the instant the writer meant: the offset
+  /// is the entry's latest stamp's (`updateMetadata`), so a touch from
+  /// another zone moves this by the zones' difference, once, everywhere.
+  /// The register carries it; nothing names a day from it — a day is
+  /// [lastCheckInDay], which the offset cannot move.
   DateTime referenceAt,
 
-  /// UTC — see the normalization note in `deriveCadenceFacts`.
+  /// The newest check-in's instant, in UTC, read like [referenceAt]; null
+  /// when there is no check-in.
   DateTime? lastCheckInAt,
+
+  /// The newest check-in's calendar day, as a midnight-UTC day key: the day
+  /// its stored `dateFrom` components name ([relationshipCalendarDay]), the
+  /// day the writer saw, from which [dueDayUtc] counts. Exact on every
+  /// device whatever offset sits beside the entry, so this — never
+  /// [lastCheckInAt] — is what a reader names a day from. Null when there is
+  /// no check-in.
+  DateTime? lastCheckInDay,
 
   /// When the evidence last changed, as a UTC instant: the newest
   /// `updatedAt` among the person's check-ins, reconstructed from its stored
@@ -64,9 +83,11 @@ typedef RelationshipCadenceDerivation = ({
   /// identically whatever its zone.
   String? lastEvidenceKey,
 
-  /// UTC calendar day the cadence lapses, as a midnight-UTC instant.
-  /// Zone-free by construction — it is the episode key every device must
-  /// agree on (see `deriveCadenceFacts`).
+  /// The calendar day the cadence lapses, as a midnight-UTC day key: the
+  /// newest check-in's day on the writer's own calendar
+  /// ([relationshipCalendarDay]) plus [cadenceDays]. Zone-free by
+  /// construction — it is the episode key every device must agree on (see
+  /// `deriveCadenceFacts`).
   DateTime dueDayUtc,
 
   /// The workspace-key day component (`2026-08-16`) of [dueDayUtc].
@@ -352,8 +373,9 @@ class RelationshipAgentPhaseA {
   /// display preference (not a request to be nagged) and because devices
   /// with different display settings must converge on the same register.
   ///
-  /// Every derived day is a UTC calendar day for the same convergence
-  /// reason — see the comment on the due-day arithmetic below.
+  /// Every stored time is read the way [relationshipCalendarDay] and
+  /// [relationshipStoredInstant] read it, for the same convergence reason —
+  /// see the comment on the due-day arithmetic below.
   Future<RelationshipCadenceDerivation> deriveCadenceFacts({
     required String agentId,
     required RelationshipEntry relationship,
@@ -361,13 +383,16 @@ class RelationshipAgentPhaseA {
   }) async {
     final checkIns = await _relationshipRepository
         .getAllCheckInsForRelationship(relationship.meta.id);
-    DateTime? lastCheckInAt;
+    CheckInEntry? newest;
     DateTime? lastEvidenceAt;
     String? lastEvidenceKey;
     for (final checkIn in checkIns) {
-      final at = checkIn.meta.dateFrom;
-      if (lastCheckInAt == null || at.isAfter(lastCheckInAt)) {
-        lastCheckInAt = at;
+      // The newest by `dateFrom` as stored: every check-in a device holds
+      // parses in that device's one zone, so this is the order of the
+      // stored components, the same on every device.
+      if (newest == null ||
+          checkIn.meta.dateFrom.isAfter(newest.meta.dateFrom)) {
+        newest = checkIn;
       }
       final changed = relationshipStoredInstant(
         checkIn.meta.updatedAt,
@@ -380,27 +405,31 @@ class RelationshipAgentPhaseA {
     }
     // Baseline: the newest check-in, or tracking start (ADR 0039 — the
     // first reminder fires one cadence after marking, never suppressed
-    // waiting for a first check-in).
-    final referenceAt = lastCheckInAt ?? relationship.meta.dateFrom;
+    // waiting for a first check-in). The person's own `dateFrom` stands in
+    // for the tracking start; the plan's R-10 asks whether `importantSince`
+    // should instead.
+    final reference = newest?.meta ?? relationship.meta;
     final cadenceDays = relationshipShownCadenceDays(
       relationship.data.checkInCadenceDays,
     );
 
-    // Calendar-component arithmetic in UTC — never Duration math (which
-    // would drift the lapse day across a DST transition) and never the
-    // device's local calendar. The due day IS the episode key: two devices
-    // in different timezones deriving it from their own calendars would
-    // disagree, and the disagreement is not cosmetic — `_upsertRegister`
-    // would see a changed `dueAt` on every sync and the two would rewrite
-    // the register forever, while `relationshipEscalationWake` would mint
-    // one episode per timezone and pay for the same lapse twice. UTC has no
-    // DST, so `day + cadenceDays` is exactly that many days later.
-    final referenceDayUtc = GoalWindow.dayUtc(referenceAt.toUtc());
-    final dueDayUtc = DateTime.utc(
-      referenceDayUtc.year,
-      referenceDayUtc.month,
-      referenceDayUtc.day + cadenceDays,
-    );
+    // The due day is the reference's calendar day plus the cadence — the
+    // day the writer saw on their own calendar, read off the stored
+    // components (`relationshipCalendarDay`), never through `.toUtc()`,
+    // which parses the components in THIS device's zone and so names a
+    // different day east and west of the writer for a check-in near
+    // midnight. The due day IS the episode key: two devices deriving a
+    // different one is not cosmetic — `_upsertRegister` sees a changed
+    // `dueAt` on every sync and the two rewrite the register at each other
+    // for as long as that check-in is the newest, while
+    // `relationshipEscalationWake` mints one episode per zone and pays for
+    // the same lapse twice (`specs/tla/RelationshipCadence.tla`,
+    // `DayFromWallClock`). Component arithmetic, never Duration math: day
+    // keys have no DST, so `day + cadenceDays` is exactly that many days
+    // later. The lapse is detected at UTC midnight of the due day
+    // (`GoalWindow.dayUtc(now.toUtc())`) — one instant for every device,
+    // which is what keeps the register's status convergent.
+    final dueDayUtc = relationshipDueDay(reference.dateFrom, cadenceDays);
     final status = GoalWindow.dayUtc(now.toUtc()).isBefore(dueDayUtc)
         ? RelationshipCadenceStatus.ok
         : RelationshipCadenceStatus.due;
@@ -409,17 +438,31 @@ class RelationshipAgentPhaseA {
     // UTC instants, normalized HERE rather than at the write site: the
     // register row rides sync, and a local instant serializes without an
     // offset (`toIso8601String` drops the zone), so a peer would parse a
-    // shifted instant. Normalizing in the derivation keeps `_upsertRegister`'s
-    // unchanged-check comparing like against like — a round-tripped row and a
-    // fresh derivation carry the same isUtc flag.
+    // shifted instant. The instants are the ones the writers meant,
+    // rebuilt from the stored components and each entry's own `utcOffset`
+    // (`relationshipStoredInstant`) rather than `.toUtc()`, so every device
+    // derives the same values and `_upsertRegister`'s unchanged-check
+    // compares like against like — a round-tripped row and a fresh
+    // derivation carry the same instants and the same isUtc flag.
     return (
       status: status,
       previousStatus: existing is RelationshipHealthEntity
           ? existing.status
           : null,
       cadenceDays: cadenceDays,
-      referenceAt: referenceAt.toUtc(),
-      lastCheckInAt: lastCheckInAt?.toUtc(),
+      referenceAt: relationshipStoredInstant(
+        reference.dateFrom,
+        reference.utcOffset,
+      ),
+      lastCheckInAt: newest == null
+          ? null
+          : relationshipStoredInstant(
+              newest.meta.dateFrom,
+              newest.meta.utcOffset,
+            ),
+      lastCheckInDay: newest == null
+          ? null
+          : relationshipCalendarDay(newest.meta.dateFrom),
       lastEvidenceAt: lastEvidenceAt,
       lastEvidenceKey: lastEvidenceKey,
       dueDayUtc: dueDayUtc,
@@ -498,7 +541,11 @@ class RelationshipAgentPhaseA {
   /// the refresh waits for the transcript, or for its timeout when it never
   /// comes. A transcript that does land saves the check-in again, which
   /// mints a new, earlier-due refresh; this one then finds the briefing
-  /// fresh and ends at €0.
+  /// fresh and ends at €0. The timeout counts from the recording's
+  /// `createdAt`, read through the offset of the entry's latest stamp:
+  /// exact until a wordless recording is touched from another zone, which
+  /// moves the deadline by the zones' difference — a bound on the wait,
+  /// the same on every device, not a disagreement.
   Future<DateTime?> _pendingTranscriptDeadline(
     String relationshipId, {
     required DateTime? since,
@@ -543,6 +590,18 @@ class RelationshipAgentPhaseA {
 /// The next cadence tick for [agentId] as of [now]: today at
 /// [relationshipCadenceHour] local if still ahead, else tomorrow.
 /// Deterministic id → re-arming overwrites (LWW) instead of accumulating.
+///
+/// The deadline is written in UTC. The record syncs, and a local 07:00
+/// serialized without an offset is read as 07:00 in every zone, so the one
+/// shared record named a different instant on every device and each tick
+/// rewrote it in its own zone. As an instant it is the same everywhere:
+/// concurrent re-arms are decided by the later deadline, and a causal
+/// re-arm by whichever device ran the tick replaces it with that device's
+/// own 07:00 — so the one deadline may move between zones, and a day may
+/// see a tick from each. Harmless: the tick is free, and the escalation it
+/// arms is keyed by episode, so a second tick of the same day arms nothing
+/// twice. Which hour the €0 tick runs at does not matter; that every
+/// device reads one deadline alike does.
 AgentDomainEntity relationshipCadenceWake(String agentId, DateTime now) {
   final today = DateTime(now.year, now.month, now.day, relationshipCadenceHour);
   // Calendar components, not a Duration: adding 24 elapsed hours across a
@@ -556,7 +615,7 @@ AgentDomainEntity relationshipCadenceWake(String agentId, DateTime now) {
       workspaceKey: relationshipCadenceWorkspaceKey,
     ),
     agentId: agentId,
-    scheduledAt: next,
+    scheduledAt: next.toUtc(),
     status: ScheduledWakeStatus.pending,
     reason: WakeReason.scheduled.name,
     updatedAt: now,
@@ -708,26 +767,4 @@ bool relationshipRefreshSuperseded(
   }
   final current = derivation.lastEvidenceKey;
   return current != null && escalationKey.substring(prefix.length) != current;
-}
-
-/// The instant a journal time [stored] names on every device.
-///
-/// Journal metadata times are written as local wall-clock values without an
-/// offset, so a peer in another zone parses the same components as a
-/// different instant; the entry's own [utcOffsetMinutes] (recorded when it
-/// was created) turns the components back into the instant the writer
-/// meant. A value already in UTC, or one without a recorded offset, is
-/// taken as it is.
-DateTime relationshipStoredInstant(DateTime stored, int? utcOffsetMinutes) {
-  if (stored.isUtc || utcOffsetMinutes == null) return stored.toUtc();
-  return DateTime.utc(
-    stored.year,
-    stored.month,
-    stored.day,
-    stored.hour,
-    stored.minute,
-    stored.second,
-    stored.millisecond,
-    stored.microsecond,
-  ).subtract(Duration(minutes: utcOffsetMinutes));
 }

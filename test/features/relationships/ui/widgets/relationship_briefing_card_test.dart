@@ -180,12 +180,14 @@ void main() {
 
   AgentStateEntity agentState({
     DateTime? lastWakeAt,
+    DateTime? failedAt,
     int failures = 0,
     DateTime? staleAt,
     DateTime? freshAt,
   }) => makeTestState(
     agentId: agentId,
     lastWakeAt: lastWakeAt,
+    lastWakeFailedAt: failedAt,
     consecutiveFailureCount: failures,
   ).copyWith(reportStaleAt: staleAt, reportFreshAt: freshAt);
 
@@ -321,7 +323,7 @@ void main() {
           enrolled: false,
           isRunning: true,
           report: report(),
-          state: agentState(failures: 2, lastWakeAt: at),
+          state: agentState(failures: 2, failedAt: at),
         ),
         RelationshipAgentCardState.notEnrolled,
       );
@@ -333,7 +335,7 @@ void main() {
           enrolled: true,
           isRunning: true,
           report: report(),
-          state: agentState(failures: 1, lastWakeAt: at, staleAt: at),
+          state: agentState(failures: 1, failedAt: at, staleAt: at),
         ),
         RelationshipAgentCardState.running,
       );
@@ -345,7 +347,7 @@ void main() {
           enrolled: true,
           isRunning: false,
           report: null,
-          state: agentState(failures: 1, lastWakeAt: at),
+          state: agentState(failedAt: at),
         ),
         RelationshipAgentCardState.failed,
       );
@@ -354,18 +356,51 @@ void main() {
           enrolled: true,
           isRunning: false,
           report: report(createdAt: at.subtract(const Duration(hours: 2))),
-          state: agentState(failures: 1, lastWakeAt: at),
+          state: agentState(
+            lastWakeAt: at.subtract(const Duration(hours: 2)),
+            failedAt: at,
+          ),
         ),
         RelationshipAgentCardState.failed,
       );
     });
 
-    test('a failure older than the briefing is history, not a state', () {
+    test('a failure older than the last completed wake, or than the '
+        'briefing, is history, not a state', () {
+      // The outcome watermarks decide it, on every device alike: a wake
+      // completed after the failure, so the agent is fine.
+      expect(
+        relationshipAgentCardStateOf(
+          enrolled: true,
+          isRunning: false,
+          report: report(createdAt: at.subtract(const Duration(hours: 2))),
+          state: agentState(
+            failedAt: at,
+            lastWakeAt: at.add(const Duration(minutes: 1)),
+          ),
+        ),
+        RelationshipAgentCardState.current,
+      );
+      // A success whose state write was lost still wrote its briefing.
       expect(
         relationshipAgentCardStateOf(
           enrolled: true,
           isRunning: false,
           report: report(createdAt: at.add(const Duration(hours: 1))),
+          state: agentState(failures: 3, failedAt: at),
+        ),
+        RelationshipAgentCardState.current,
+      );
+    });
+
+    test('the failure count alone never decides the face — it is '
+        "last-writer-wins with the row, and showed one device's stale count "
+        "beside another's good briefing", () {
+      expect(
+        relationshipAgentCardStateOf(
+          enrolled: true,
+          isRunning: false,
+          report: report(),
           state: agentState(failures: 3, lastWakeAt: at),
         ),
         RelationshipAgentCardState.current,
@@ -420,7 +455,10 @@ void main() {
           enrolled: enrolled,
           isRunning: running,
           report: hasReport ? report() : null,
-          state: agentState(failures: failures, lastWakeAt: now),
+          state: agentState(
+            failures: failures,
+            failedAt: failures > 0 ? now : null,
+          ),
         );
         expect(state == RelationshipAgentCardState.notEnrolled, !enrolled);
         if (enrolled) {
@@ -881,7 +919,7 @@ void main() {
         tester,
         checkIns: onTrackCheckIns,
         modelResolved: false,
-        state: agentState(failures: 1, lastWakeAt: failedAt),
+        state: agentState(failures: 1, failedAt: failedAt),
       );
 
       // A past event in the "as of" grammar: how long ago, not a clock
@@ -915,7 +953,7 @@ void main() {
         tester,
         checkIns: onTrackCheckIns,
         modelResolved: false,
-        state: agentState(failures: 1, lastWakeAt: failedAt),
+        state: agentState(failures: 1, failedAt: failedAt),
       );
 
       await tester.tap(
@@ -927,24 +965,19 @@ void main() {
       expect(find.text(context.messages.taskAgentSetupTitle), findsOneWidget);
     });
 
-    testWidgets('a failure with no wake time yet reads plainly', (
-      tester,
-    ) async {
+    testWidgets('a row that counts failures but carries no failed watermark '
+        '— written before the watermark existed — is not a failure: the '
+        'count is last-writer-wins across devices and never decides the '
+        'face', (tester) async {
       await pump(
         tester,
         checkIns: onTrackCheckIns,
         state: agentState(failures: 1),
       );
 
-      expect(
-        find.text(
-          'The provider returned an error before the briefing was written. '
-          'Your check-ins are unchanged.',
-        ),
-        findsOneWidget,
-      );
-      expect(statusText(tester), 'Last run failed');
-      expect(find.text('Try again'), findsOneWidget);
+      expect(find.textContaining('Last run failed'), findsNothing);
+      expect(find.text('Try again'), findsNothing);
+      expect(find.text('Brief now'), findsOneWidget);
     });
 
     testWidgets('a failed refresh keeps the briefing it failed to replace, '
@@ -954,7 +987,7 @@ void main() {
         tester,
         checkIns: onTrackCheckIns,
         current: report(),
-        state: agentState(failures: 1, lastWakeAt: now),
+        state: agentState(failures: 1, failedAt: now),
       );
 
       expect(statusText(tester), startsWith('Last run failed'));
@@ -985,7 +1018,7 @@ void main() {
       await pump(
         tester,
         checkIns: onTrackCheckIns,
-        state: agentState(failures: 1, lastWakeAt: failedAt),
+        state: agentState(failures: 1, failedAt: failedAt),
       );
 
       expect(
@@ -1002,7 +1035,7 @@ void main() {
       await pump(
         tester,
         checkIns: onTrackCheckIns,
-        state: agentState(failures: 1, lastWakeAt: failedAt),
+        state: agentState(failures: 1, failedAt: failedAt),
       );
 
       await tester.tap(
@@ -1018,7 +1051,7 @@ void main() {
       await pump(
         tester,
         checkIns: onTrackCheckIns,
-        state: agentState(failures: 2, lastWakeAt: failedAt),
+        state: agentState(failures: 2, failedAt: failedAt),
       );
 
       expect(
@@ -1282,7 +1315,7 @@ void main() {
             overrides: [
               agentReportProvider(agentId).overrideWith((ref) async => null),
               agentStateProvider(agentId).overrideWith(
-                (ref) async => agentState(failures: 1, lastWakeAt: failedAt),
+                (ref) async => agentState(failures: 1, failedAt: failedAt),
               ),
               agentIsRunningProvider(
                 agentId,

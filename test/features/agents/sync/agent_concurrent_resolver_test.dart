@@ -125,6 +125,9 @@ void main() {
       String? activeTaskId,
       DateTime? reportStaleAt,
       DateTime? reportFreshAt,
+      DateTime? lastWakeAt,
+      DateTime? lastWakeFailedAt,
+      int consecutiveFailureCount = 0,
     }) {
       return AgentDomainEntity.agentState(
             id: 'state-1',
@@ -140,9 +143,41 @@ void main() {
             dailyWakes: dailyWakes,
             reportStaleAt: reportStaleAt,
             reportFreshAt: reportFreshAt,
+            lastWakeAt: lastWakeAt,
+            lastWakeFailedAt: lastWakeFailedAt,
+            consecutiveFailureCount: consecutiveFailureCount,
           )
           as AgentStateEntity;
     }
+
+    test('joins the wake outcome watermarks by latest instant, whichever '
+        "side wins the row — the failure count stays the winner's", () {
+      // The loser recorded the newer outcome: a failure after the winner's
+      // last completed wake. Last-writer-wins alone would say the agent is
+      // fine (ADR 0115).
+      final completed = DateTime.utc(2026, 8, 16, 10);
+      final failed = DateTime.utc(2026, 8, 16, 11);
+      final winner = stateWith(lastWakeAt: completed, activeTaskId: 'w');
+      final loser = stateWith(
+        lastWakeAt: DateTime.utc(2026, 8, 16, 9),
+        lastWakeFailedAt: failed,
+        consecutiveFailureCount: 1,
+        activeTaskId: 'l',
+      );
+
+      for (final (local, incoming) in [(winner, loser), (loser, winner)]) {
+        final merged = mergeAgentStateCounters(
+          winner: winner,
+          local: local,
+          incoming: incoming,
+        );
+        expect(merged.lastWakeAt, completed);
+        expect(merged.lastWakeFailedAt, failed);
+        expect(merged.lastWakeFailed, isTrue);
+        expect(merged.consecutiveFailureCount, 0);
+        expect(merged.slots.activeTaskId, 'w');
+      }
+    });
 
     test('joins counters element-wise and takes non-counter fields from the '
         'winner', () {

@@ -11,6 +11,8 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart'
+    show decisionStampAfter;
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/util/inference_provider_resolver.dart';
@@ -73,6 +75,104 @@ String relationshipAdId(String agentId, String runKey) => const Uuid().v5(
   Namespace.url.value,
   'lotti://relationship-agent/$agentId/$runKey/ad',
 );
+
+/// Whether an automatic escalation ends at €0 before inference, because the
+/// fact it was armed for no longer holds (ADR 0059 Decision 3).
+///
+/// A lapse episode stands down when the cadence is no longer due and the
+/// briefing is not stale either — a check-in landing while the escalation
+/// rode sync moves the due day; a refresh episode stands down when its
+/// evidence has since changed again ([relationshipRefreshSuperseded]): the
+/// newer change armed its own refresh, which briefs on everything. And
+/// eligibility binds automatic wakes: un-marking important or archiving
+/// silences the agent instantly. The one gate the run and the model
+/// conformance trace share, so neither can brief where the other stands
+/// down.
+bool relationshipEscalationStandsDown({
+  required RelationshipCadenceDerivation derivation,
+  required AgentReportEntity? previousReport,
+  required String? escalationKey,
+  required bool eligible,
+}) {
+  final cadenceDue = derivation.status == RelationshipCadenceStatus.due;
+  final reportStale = relationshipEvidenceNewerThan(derivation, previousReport);
+  return (!cadenceDue && !reportStale) ||
+      relationshipRefreshSuperseded(escalationKey, derivation) ||
+      !eligible;
+}
+
+/// The agent's state row with a wake's outcome recorded at [now], the
+/// instant the wake ended (ADR 0115).
+///
+/// Two watermarks, each merged by latest instant on every receive
+/// (`mergeAgentStateCounters`): `lastWakeAt`, when the last wake completed,
+/// and `lastWakeFailedAt`, when the last one failed. The last outcome was a
+/// failure exactly when the failed stamp is the newer
+/// ([AgentStateWakeOutcome.lastWakeFailed]), on every device alike — a
+/// field decided by last-writer-wins with the row let a later unrelated
+/// write carry an older outcome over a newer one. The stamp is UTC, as the
+/// briefing's is, and bumped a microsecond past the stamps the row already
+/// holds ([decisionStampAfter]), so an outcome written with knowledge of an
+/// earlier one outranks it even when another device's clock ran ahead. The
+/// bump reaches the watermark only, forced back to UTC — a 1.1.35 peer's
+/// stamp is a local wall clock, and the bump would inherit its zone — and
+/// never the row's `updatedAt`, which stays the wall clock: it decides
+/// last-writer-wins for every field the join does not cover, and a row
+/// stamped hours ahead on a peer's clock would outrank every concurrent
+/// write of them for as long. The failure streak is reset or bumped as
+/// before: it feeds the configuration backoff and the Stats tab, never a
+/// face.
+AgentStateEntity relationshipWakeOutcome(
+  AgentStateEntity state, {
+  required DateTime now,
+  required bool succeeded,
+}) {
+  final endedAt = now.toUtc();
+  final at = decisionStampAfter(endedAt, [
+    state.lastWakeAt,
+    state.lastWakeFailedAt,
+  ]).toUtc();
+  return state.copyWith(
+    updatedAt: endedAt,
+    lastWakeAt: succeeded ? at : state.lastWakeAt,
+    lastWakeFailedAt: succeeded ? state.lastWakeFailedAt : at,
+    consecutiveFailureCount: succeeded ? 0 : state.consecutiveFailureCount + 1,
+  );
+}
+
+/// The report head's LWW timestamp: the due day's last instant once that
+/// day is over, the wall clock otherwise.
+///
+/// UTC, deliberately — this timestamp exists to give concurrent heads from
+/// different devices a DUE-DAY-based LWW order, and a local constructor
+/// would map the same due day to different instants across timezones, so
+/// an eastern device's older due day could outrank a western device's
+/// newer one. [dueDayUtc] is already a midnight-UTC day (see
+/// `RelationshipCadenceDerivation`); the wall clock is written in UTC for
+/// the same reason the briefing's own stamp is
+/// ([relationshipBriefingCreatedAt]).
+DateTime relationshipReportHeadUpdatedAt(DateTime dueDayUtc, DateTime now) {
+  final dueDayEnd = DateTime.utc(
+    dueDayUtc.year,
+    dueDayUtc.month,
+    dueDayUtc.day,
+    23,
+    59,
+    59,
+  );
+  return dueDayEnd.isBefore(now) ? dueDayEnd : now.toUtc();
+}
+
+/// The instant a briefing written at [now] is stamped with: UTC.
+///
+/// The row syncs, and a local instant serializes without an offset, so a
+/// peer in another zone read the briefing as hours earlier or later than
+/// the evidence it was written for — behind it, east of the writer — and
+/// its next tick armed a refresh for evidence already briefed
+/// (`specs/tla/RelationshipCadence.tla`, `ReportStampUtc`; ADR 0114). The
+/// nudge beside it has always been stamped in UTC. A reader that formats
+/// the stamp calls `toLocal()`; one that measures its age need not.
+DateTime relationshipBriefingCreatedAt(DateTime now) => now.toUtc();
 
 /// The resolved inference route for a relationship agent. `profileId` is
 /// the profile that won the resolution chain, or null when the validated
@@ -340,28 +440,21 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       previousReport,
     );
 
-    // Re-derive facts FIRST and return before any inference when the armed
-    // fact no longer holds (ADR 0059 Decision 3): a check-in landing while
-    // the escalation rode sync moves the due day, and this stale episode
-    // consumes itself at €0.
     final cadenceDue = derivation.status == RelationshipCadenceStatus.due;
-    if (!interactive && !reportRefresh && !cadenceDue && !reportStale) {
-      return const WakeResult(success: true);
-    }
-    // A refresh armed for evidence that has since changed again stands down:
-    // the newer change armed its own refresh, which briefs on everything.
-    if (!interactive &&
-        !reportRefresh &&
-        relationshipRefreshSuperseded(escalationDueDay, derivation)) {
-      return const WakeResult(success: true);
-    }
-    // Eligibility binds automatic wakes: un-marking important or archiving
-    // silences the agent instantly. Chat and the explicit Brief me remain
-    // answerable — the user is asking directly.
     final eligible =
         relationship.data.important &&
         relationship.data.status is RelationshipActive;
-    if (!interactive && !reportRefresh && !eligible) {
+    // Re-derive facts FIRST and return before any inference when the armed
+    // fact no longer holds (ADR 0059 Decision 3). Chat and the explicit
+    // Brief me are never stood down — the user is asking directly.
+    if (!interactive &&
+        !reportRefresh &&
+        relationshipEscalationStandsDown(
+          derivation: derivation,
+          previousReport: previousReport,
+          escalationKey: escalationDueDay,
+          eligible: eligible,
+        )) {
       return const WakeResult(success: true);
     }
 
@@ -452,7 +545,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       // A wake that never reached the model still failed: stamp it, so the
       // person page's card reads *Failed* with *Choose a model* instead of
       // waiting on a briefing that cannot come.
-      await _stampWakeOutcome(agentId: agentId, now: now, succeeded: false);
+      await _stampWakeOutcome(agentId: agentId, succeeded: false);
       return const WakeResult(
         success: false,
         error: 'no inference provider resolves for the relationship agent',
@@ -680,7 +773,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
         logError: logError,
       );
 
-      await _stampWakeOutcome(agentId: agentId, now: now, succeeded: true);
+      await _stampWakeOutcome(agentId: agentId, succeeded: true);
       return WakeResult(success: true, reportUpdated: reportHeadAdvanced);
     } catch (error, stackTrace) {
       _domainLogger?.error(
@@ -690,7 +783,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
         message: 'relationship Phase B wake failed',
         stackTrace: stackTrace,
       );
-      await _stampWakeOutcome(agentId: agentId, now: now, succeeded: false);
+      await _stampWakeOutcome(agentId: agentId, succeeded: false);
       if (recordConsumption) {
         await finalizeCarrierlessAgentAttribution(
           runKey: runKey,
@@ -921,7 +1014,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
             id: reportId,
             agentId: agentId,
             scope: AgentReportScopes.current,
-            createdAt: now,
+            createdAt: relationshipBriefingCreatedAt(now),
             vectorClock: null,
             content: sanitizeAgentReportText(
               briefing.content,
@@ -982,7 +1075,10 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
               agentId: agentId,
               scope: AgentReportScopes.current,
               reportId: reportId,
-              updatedAt: _headTimestamp(derivation.dueDayUtc, now),
+              updatedAt: relationshipReportHeadUpdatedAt(
+                derivation.dueDayUtc,
+                now,
+              ),
               // Carry the head this write replaces (ADR 0068 addendum): a
               // second briefing for the same overdue due day stamps the same
               // instant, and built on no clock it would be resolved as
@@ -1060,27 +1156,6 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
     );
   }
 
-  /// The report head's LWW timestamp: the due day's last instant once that
-  /// day is over, the wall clock otherwise.
-  ///
-  /// UTC, deliberately — this timestamp exists to give concurrent heads from
-  /// different devices a DUE-DAY-based LWW order, and a local constructor
-  /// would map the same due day to different instants across timezones, so
-  /// an eastern device's older due day could outrank a western device's
-  /// newer one. [dueDayUtc] is already a midnight-UTC day (see
-  /// `RelationshipCadenceDerivation`).
-  DateTime _headTimestamp(DateTime dueDayUtc, DateTime now) {
-    final dueDayEnd = DateTime.utc(
-      dueDayUtc.year,
-      dueDayUtc.month,
-      dueDayUtc.day,
-      23,
-      59,
-      59,
-    );
-    return dueDayEnd.isBefore(now) ? dueDayEnd : now;
-  }
-
   /// Near-duplicate dedupe key over the copy (the goal `briefDigest`).
   String _briefDigest(NudgeBrief brief) => const Uuid().v5(
     Namespace.url.value,
@@ -1102,32 +1177,29 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
     return false;
   }
 
-  /// Stamps the wake on the agent's state row: `lastWakeAt` either way, and
-  /// the failure streak reset on success or bumped on failure — the two
-  /// facts the person page's agent card reads to show *failed* with the
-  /// reason and the fix, and the internals' Stats tab reads as the last
-  /// wake. Contained: a state write that fails is logged and never changes
-  /// the wake's own verdict. No state row (the agent is mid-creation) means
-  /// nothing to stamp.
+  /// Stamps the wake's outcome on the agent's state row
+  /// ([relationshipWakeOutcome]) — what the person page's agent card reads
+  /// to show *failed* with the reason and the fix, the maintenance pass
+  /// reads as backed off, and the internals' Stats tab reads as the last
+  /// wake. Stamped with the instant the wake ENDS, read here rather than
+  /// taken from the wake's start: a short failure that began after a long
+  /// success began must not outrank it. A transform of the row as it is now
+  /// (ADR 0068). Contained: a state write that fails is logged and never
+  /// changes the wake's own verdict. No state row (the agent is
+  /// mid-creation) means nothing to stamp.
   Future<void> _stampWakeOutcome({
     required String agentId,
-    required DateTime now,
     required bool succeeded,
   }) async {
     try {
-      await _syncService.runInTransaction(() async {
-        final state = await _repository.getAgentState(agentId);
-        if (state == null) return;
-        await _syncService.upsertEntity(
-          state.copyWith(
-            lastWakeAt: now,
-            updatedAt: now,
-            consecutiveFailureCount: succeeded
-                ? 0
-                : state.consecutiveFailureCount + 1,
-          ),
-        );
-      });
+      await _syncService.updateAgentState(
+        agentId,
+        (current) => relationshipWakeOutcome(
+          current,
+          now: clock.now(),
+          succeeded: succeeded,
+        ),
+      );
     } catch (error, stackTrace) {
       logError(
         'failed to stamp the wake outcome on the agent state',

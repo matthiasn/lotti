@@ -119,8 +119,16 @@ enum RelationshipAgentCardState {
 
 /// The card's state from the runtime's signals. Pure, so the decision is
 /// testable as a table: running beats everything but enrolment, a failure
-/// counts only while it is newer than the briefing, and staleness needs a
-/// briefing to be stale.
+/// counts only while it is the last outcome and newer than the briefing,
+/// and staleness needs a briefing to be stale.
+///
+/// The failure is read from the state row's two outcome watermarks
+/// (`lastWakeFailed`: the last failed wake ended after the last completed
+/// one), which every device merges by latest instant, never from the
+/// failure count, which is last-writer-wins with the row and showed one
+/// device's stale count beside another's good briefing (ADR 0115). A
+/// failure older than the briefing is history: a success whose state write
+/// was lost still wrote its briefing.
 RelationshipAgentCardState relationshipAgentCardStateOf({
   required bool enrolled,
   required bool isRunning,
@@ -129,12 +137,11 @@ RelationshipAgentCardState relationshipAgentCardStateOf({
 }) {
   if (!enrolled) return RelationshipAgentCardState.notEnrolled;
   if (isRunning) return RelationshipAgentCardState.running;
-  final failures = state?.consecutiveFailureCount ?? 0;
-  final lastWake = state?.lastWakeAt;
+  final failedAt = state?.lastWakeFailedAt;
   final failedSinceReport =
-      failures > 0 &&
-      (report == null ||
-          (lastWake != null && lastWake.isAfter(report.createdAt)));
+      failedAt != null &&
+      (state?.lastWakeFailed ?? false) &&
+      (report == null || failedAt.isAfter(report.createdAt));
   if (failedSinceReport) return RelationshipAgentCardState.failed;
   if (report == null) return RelationshipAgentCardState.noBriefing;
   if (state?.isReportStale ?? false) {
@@ -401,7 +408,7 @@ class _RelationshipBriefingCardState
     // briefing's on the reading faces, the last wake's on the failed face —
     // armed from the other one, "just now" would outlive its minute.
     final aged = switch (cardState) {
-      RelationshipAgentCardState.failed => state?.lastWakeAt,
+      RelationshipAgentCardState.failed => state?.lastWakeFailedAt,
       _ => report?.createdAt,
     };
     if (aged != null) {
@@ -647,7 +654,7 @@ class _AgentCard extends StatelessWidget {
   _StatusLine _status(BuildContext context, AppLocalizations messages) {
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
-    final lastWake = agentState?.lastWakeAt;
+    final failedAt = agentState?.lastWakeFailedAt;
     final due = peopleDueDateOf(item);
     final latest = item.lastCheckIn;
     return switch (state) {
@@ -677,9 +684,9 @@ class _AgentCard extends StatelessWidget {
       RelationshipAgentCardState.failed => _StatusLine(
         icon: LottiIcons.error,
         tiers: [
-          if (lastWake != null)
+          if (failedAt != null)
             messages.relationshipAgentLastRunFailed(
-              relativeAgoLabel(messages, clock.now().difference(lastWake)),
+              relativeAgoLabel(messages, clock.now().difference(failedAt)),
             ),
           messages.relationshipAgentFailedPlain,
         ],

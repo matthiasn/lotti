@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:lotti/classes/check_in_data.dart';
+import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/classes/relationship_trigger_tokens.dart';
@@ -10,6 +11,7 @@ import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
 import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
+import 'package:lotti/features/relationships/model/relationship_calendar.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 
@@ -137,17 +139,24 @@ class RelationshipFactsRenderer {
                   'episode',
       );
     }
-    if (derivation.lastCheckInAt == null) {
+    // The check-in's own calendar day, never its instant: the instant is
+    // read through the offset of the entry's latest stamp, which a touch
+    // from another zone moves, and `toLocal()` on it would then name the
+    // wrong day for a check-in near midnight. The day key is the writer's
+    // day on every device; the days since are counted to this device's
+    // today, as the people list counts them.
+    final lastCheckInDay = derivation.lastCheckInDay;
+    if (lastCheckInDay == null) {
       buffer.writeln(
         '- lastCheckIn: none recorded yet (tracking started '
         '${_day(relationship.meta.dateFrom)})',
       );
     } else {
       buffer
-        ..writeln('- lastCheckIn: ${_day(derivation.lastCheckInAt!)}')
+        ..writeln('- lastCheckIn: ${_dayKey(lastCheckInDay)}')
         ..writeln(
           '- daysSinceLastCheckIn: '
-          '${_daysBetween(derivation.lastCheckInAt!, now)}',
+          '${relationshipCalendarDaysBetween(lastCheckInDay, now.toLocal())}',
         );
     }
 
@@ -332,15 +341,10 @@ class RelationshipFactsRenderer {
     return '${local.year}-$month-$day';
   }
 
-  int _daysBetween(DateTime from, DateTime to) {
-    final a = from.toLocal();
-    final b = to.toLocal();
-    return DateTime(
-      b.year,
-      b.month,
-      b.day,
-    ).difference(DateTime(a.year, a.month, a.day)).inDays;
-  }
+  /// A midnight-UTC day key as the model reads it (`2026-08-18`): its own
+  /// components, never through [_day], whose `toLocal()` would name the day
+  /// before on a device east of UTC.
+  String _dayKey(DateTime day) => const GoalWindow.day().periodKey(day);
 
   /// One check-in entry as the model reads it: what kind it is, when it was
   /// added, and its words — or, for a recording or photo without words yet,

@@ -486,7 +486,11 @@ freshness, the throttle, sync. Outcome writes therefore go through
 transaction and applies a field-scoped change, instead of copying the state
 a wake read when it started: a copy would put back a report-stale watermark
 or a merged counter that changed while the wake ran
-(`specs/tla/AgentStateWrites.tla`).
+(`specs/tla/AgentStateWrites.tla`). Across devices an outcome field is
+last-writer-wins with the row, so a face must not be read from one: the
+relationship agent records its outcomes as two watermarks, `lastWakeAt` and
+`lastWakeFailedAt`, joined by latest instant on every receive, stamped when
+the wake ends (`specs/tla/AgentWakeOutcome.tla`, ADR 0115).
 
 The head pointer, `recentHeadMessageId`, has one local writer —
 `_appendMessage`, plus `appendJoin` for a join — and every other state write

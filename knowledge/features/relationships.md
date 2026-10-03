@@ -12,10 +12,30 @@ sources:
     resource: ../../specs/tla/RelationshipAgentLifecycle.tla
     title: The person, their agent and every writer of its lifecycle, model-checked
     last_modified: 2026-09-30
+  - id: tla-cadence
+    resource: ../../specs/tla/RelationshipCadence.tla
+    title: The check-in cadence derived on devices in different time zones, model-checked
+    last_modified: 2026-10-02
   - id: adr-0111
     resource: ../../docs/adr/0111-a-tracked-person-keeps-their-agent.md
     title: ADR 0111 — a tracked person keeps their agent
     last_modified: 2026-09-30
+  - id: adr-0114
+    resource: ../../docs/adr/0114-every-device-reads-a-stored-time-the-same-way.md
+    title: ADR 0114 — every device reads a stored time the same way
+    last_modified: 2026-10-02
+  - id: calendar
+    resource: ../../lib/features/relationships/model/relationship_calendar.dart
+    title: How a stored journal time is read, the same on every device
+    last_modified: 2026-10-02
+  - id: tla-wake-outcome
+    resource: ../../specs/tla/AgentWakeOutcome.tla
+    title: The outcome of the last wake, on every device, model-checked
+    last_modified: 2026-10-02
+  - id: adr-0115
+    resource: ../../docs/adr/0115-the-last-wake-outcome-is-two-watermarks.md
+    title: ADR 0115 — the last wake's outcome is two watermarks
+    last_modified: 2026-10-02
   - id: reconciliation
     resource: ../../lib/features/relationships/runtime/relationship_agent_reconciliation.dart
     title: reconcileRelationshipAgent and markStampAfter — where the user's latest word puts the agent, and how a mark is stamped
@@ -868,14 +888,33 @@ Four decisions keep multi-device runs convergent (ADR 0059 Decision 2):
   register. The gated `getRelationshipById` is the UI's read, and using it
   in the runtime silently un-tracks a private person on whichever device
   hides private entries.
-- **Every derived day is a UTC calendar day.** The due day is
-  `UTC-day(referenceAt) + cadenceDays`, computed with calendar components
-  rather than a `Duration` — UTC has no DST, so the arithmetic is exact and
-  the answer is the same in every timezone. Deriving it through the device's
-  local calendar is not cosmetic: the register's `dueAt` would differ per
-  device, so two peers would rewrite it at each other on every sync, and the
-  episode key below would mint one escalation per timezone and pay for the
-  same lapse twice.
+- **Every stored time is read in one of two ways, the same on every
+  device** (ADR 0114, `relationship_calendar.dart`). A journal time is the
+  writer's wall-clock components without an offset, beside the entry's
+  `utcOffset`; `.toUtc()` parses the components in the reader's zone and is
+  never used on one. Its *calendar day* is the day the components name
+  (`relationshipCalendarDay`), and its *instant* is the components rebuilt
+  through the stored offset (`relationshipStoredInstant`). The due day is
+  the newest check-in's calendar day plus `cadenceDays`, counted on day
+  keys (`relationshipDueDay`) rather than by adding hours, so DST moves
+  nothing; the register's `referenceAt` and `lastCheckInAt` are stored
+  instants, and the facts the model reads take the check-in's day from its
+  day key (`lastCheckInDay`), never from the instant; the lapse is detected
+  at UTC midnight of the due day, one instant for every device. This is not cosmetic: derived through the
+  reader's zone, a check-in near midnight gave two devices two due days,
+  the register's `dueAt` differed per device so the two rewrote it at each
+  other on every sync, and the episode key below minted one escalation per
+  zone and paid for the same lapse twice.
+  `specs/tla/RelationshipCadence.tla` has the counterexamples
+  (`DueDayAgreed`, `EscalationKeyIsTheDueDay`, `RegisterStable`), and
+  `relationship_cadence_model_conformance.dart` replays it against the real
+  tick on two devices in Berlin and Tokyo. The same rule covers the other
+  stamps devices compare: `updateMetadata` writes the device's own offset
+  beside the new `updatedAt`, so a touch from another zone names the
+  instant the toucher meant; the briefing's `createdAt`, the head's
+  in-period stamp and the cadence tick's deadline are written in UTC. The
+  people list's due date and overdue count use the same day arithmetic
+  (`cadenceDueDate`, `cadenceOverdueDays`).
 - **The register is recomputed wholesale, never accumulated**, carries the
   vector clock of the row it read, and is skipped entirely when identical —
   so the uneventful daily tick is a true no-write no-op.
@@ -1264,7 +1303,7 @@ nothing about the one they were entering. What the agent sends belongs
 somewhere it can be explained, not in a caption that expires on tap.
 | No briefing | enrolled, no current report | `Agent watching · next look {day}` · how many check-ins *Brief now* would read, and that it never sees a channel · *Log check-in* · **Brief now** |
 | Running | `agentIsRunningProvider` | spinner · `Writing the briefing…` · the briefing being replaced, still readable (TL;DR + Read more), or no body before the first — never a duration estimate · *See activity* · no primary |
-| Failed | `consecutiveFailureCount > 0` and the last wake is newer than the report | `Last run failed · {ago}` in error ink · the provider returned an error, your check-ins are unchanged (or that no model is set up) · the briefing it failed to replace, if there is one, kept readable under that with its age · *See activity* · **Choose a model** when no route resolves, **Try again** otherwise |
+| Failed | `lastWakeFailed` — the state row's failed watermark is newer than its completed one — and newer than the report | `Last run failed · {ago}` in error ink · the provider returned an error, your check-ins are unchanged (or that no model is set up) · the briefing it failed to replace, if there is one, kept readable under that with its age · *See activity* · **Choose a model** when no route resolves, **Try again** otherwise |
 | Current | report, not stale | `{band} · as of {ago}` · TL;DR + Read more · *Log check-in* · **Update now** (secondary) · sources line once *Read more* is open |
 | Out of date | `AgentStateEntity.isReportStale` | `Out of date · new check-in {day}` in warning ink, `{n} days old` pill once a day old · body · *Log check-in* · **Update now** (primary) — no sources line, since the count would include the check-in it missed |
 | Due | the current face while the cadence is lapsed | same status · body · *Log check-in* · **Call {name}** (the first channel the platform can open, resolved like the action bar's), or **Log check-in** as the primary without one |
@@ -1291,13 +1330,28 @@ stateDiagram-v2
   OutOfDate --> NotEnrolled: important off, dormant, archived
 ```
 
-Two runtime details keep the faces honest. Every relationship wake now
-stamps its state row (`_stampWakeOutcome` in the workflow): `lastWakeAt`
-either way, and `consecutiveFailureCount` reset on success or bumped on
-failure, including a wake that found no model to run on and returned before
-inference — before this, no relationship wake ever wrote either, so the
-failed face could never appear and the internals' Stats tab never knew the
-last wake. And the card arms one timer at the next minute/hour/day boundary of the
+Two runtime details keep the faces honest. Every relationship wake stamps
+its outcome on the state row when it ends (`_stampWakeOutcome` in the
+workflow, through `relationshipWakeOutcome`): `lastWakeAt` on success,
+`lastWakeFailedAt` on failure — including a wake that found no model to run
+on and returned before inference — and the failure streak reset or bumped
+beside them. The two stamps are watermarks every device joins by latest
+instant (`mergeAgentStateCounters`), stamped in UTC and a microsecond past
+the stamps the row already holds (`decisionStampAfter`) — the row's own
+`updatedAt` stays the wall clock, since it decides last-writer-wins for the
+fields the join does not cover — so the failed face is the same on every
+device: a failure counts while nothing newer completed. It was read from `consecutiveFailureCount`, last-writer-wins
+with the row, stamped with the wake's *start*: a short failure elsewhere
+that began after a long success began outranked it, and a later unrelated
+write of the row carried one device's stale count over another's good
+briefing (`specs/tla/AgentWakeOutcome.tla`, ADR 0115). The count still
+feeds the configuration backoff and the Stats tab, and still marks a row
+no failed wake has stamped since the watermark existed as backed off for
+the maintenance pass and the sync handler's re-offer
+(`lastWakeMayHaveFailed`), which only shorten a retry's deadline. A row
+written before the watermark existed (1.1.35) therefore shows no failure
+until its next wake, but a config repair still brings its retry forward.
+And the card arms one timer at the next minute/hour/day boundary of the
 briefing's age (`untilNextAgeBucket`, shared with the goal page), so "as of
 just now" does not stay on screen for hours. *Remind me about {name}* on the plain
 card also mints the agent through `ensureRelationshipAgentInBackground`, the

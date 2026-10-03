@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_database.dart'
     show AgentDatabase;
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -37,8 +38,17 @@ class ReplicaNetwork {
 
   /// Adds a device whose store is a fresh in-memory agent database, on the
   /// test's own isolate so a trace can run under `fakeAsync`.
-  AgentReplica join(String host) {
-    final replica = AgentReplica._(host, this);
+  ///
+  /// [reads] is how this device reads an entity it receives — the
+  /// serialization boundary a trace models when its devices sit in
+  /// different zones: a stamp written as local wall-clock components is
+  /// parsed in the reader's zone, not the writer's. The entity itself by
+  /// default.
+  AgentReplica join(
+    String host, {
+    AgentDomainEntity Function(AgentDomainEntity entity)? reads,
+  }) {
+    final replica = AgentReplica._(host, this, reads ?? (entity) => entity);
     replicas.add(replica);
     return replica;
   }
@@ -75,7 +85,7 @@ class ReplicaNetwork {
 /// One device of a [ReplicaNetwork]: an [AgentTestDevice] whose accepted
 /// messages go onto the network.
 class AgentReplica {
-  AgentReplica._(this.host, this.network) {
+  AgentReplica._(this.host, this.network, this._reads) {
     device = AgentTestDevice(
       host,
       background: false,
@@ -88,6 +98,7 @@ class AgentReplica {
 
   final String host;
   final ReplicaNetwork network;
+  final AgentDomainEntity Function(AgentDomainEntity entity) _reads;
   late final AgentTestDevice device;
 
   AgentDatabase get db => device.db;
@@ -108,7 +119,7 @@ class AgentReplica {
     final entity = message.mapOrNull(agentEntity: (m) => m.agentEntity);
     final link = message.mapOrNull(agentLink: (m) => m.agentLink);
     if (entity != null) {
-      await device.receiveEntity(entity);
+      await device.receiveEntity(_reads(entity));
     } else if (link != null) {
       await device.receiveLink(link);
     }

@@ -850,6 +850,11 @@ ChangeItem _mergeChangeItem(ChangeItem local, ChangeItem incoming) {
 /// The report freshness watermarks are also merged by maximum timestamp. They
 /// represent observed events, so allowing the LWW loser to erase a newer
 /// change/refresh watermark could incorrectly present an old report as fresh.
+/// So are the wake outcome watermarks, `lastWakeAt` and `lastWakeFailedAt`
+/// (ADR 0115): each names when the last wake of its kind ended, and the pair
+/// says whether the last outcome was a failure; left to the LWW winner, a
+/// later unrelated write of the row carried an older outcome over a newer
+/// one, and the person page said *failed* beside a good briefing.
 ///
 /// The winner's vector clock is kept deliberately: a future update that causally
 /// dominates it necessarily saw — and (since every replica applies this same
@@ -871,6 +876,11 @@ AgentStateEntity mergeAgentStateCounters({
     reportFreshAt: _latestInstant(
       local.reportFreshAt,
       incoming.reportFreshAt,
+    ),
+    lastWakeAt: _latestInstant(local.lastWakeAt, incoming.lastWakeAt),
+    lastWakeFailedAt: _latestInstant(
+      local.lastWakeFailedAt,
+      incoming.lastWakeFailedAt,
     ),
     slots: winner.slots.copyWith(
       totalSessionsCompleted: local.slots.totalSessionsCompleted.merge(
