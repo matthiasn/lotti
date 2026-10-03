@@ -108,6 +108,25 @@ message, so neither the message nor a log line prints it.
   name as `accountName`, so build flavours installed side by side do not collide
   in a shared keychain.
 
+## Android device backups
+
+Android Auto Backup stays on: the journal databases and media are the user's
+data, and a phone restore should bring them back. Two things are excluded,
+from cloud backup and from device-to-device transfer alike
+(`android/app/src/main/res/xml/backup_rules.xml` for Android 11 and lower,
+`data_extraction_rules.xml` for 12 and higher):
+
+- **The Matrix store** (`app_flutter/matrix`, `matrixDatabaseDirectoryName`).
+  It holds this device's end-to-end encryption keys unencrypted at rest, and a
+  restored or transferred copy would let a second install act as this Matrix
+  device. A restored install signs in and verifies as a new device instead.
+- **The secure-storage preference files.** Their keys live in the Android
+  Keystore, which is never backed up, so a restored copy could not be
+  decrypted.
+
+`test/platform/android_backup_rules_test.dart` pins both rule files and checks
+the Matrix path against the constant the client uses.
+
 # Sync encryption
 
 Sync is end-to-end encrypted by Matrix itself, using **vodozemac** (the Rust

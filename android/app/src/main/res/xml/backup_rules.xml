@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Auto Backup rules for Android 11 and lower (android:fullBackupContent).
+  Android 12+ reads data_extraction_rules.xml; keep the two in step.
+
+  Everything else stays in the backup: the journal databases and media are the
+  user's data. Excluded:
+  - app_flutter/matrix: the Matrix SDK store (lib/features/sync/matrix/
+    client.dart, matrixDatabaseDirectoryName) holds this device's E2EE keys
+    unencrypted at rest. Restoring it elsewhere would let a second install act
+    as this Matrix device.
+  - FlutterSecureStorage*: the encrypted values' keys live in the Android
+    Keystore, which is never backed up, so a restored copy cannot be
+    decrypted (flutter_secure_storage's README asks for this exclusion).
+-->
+<full-backup-content>
+    <exclude domain="file" path="app_flutter/matrix" />
+    <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
+    <exclude domain="sharedpref" path="FlutterSecureStorageConfiguration.xml" />
+</full-backup-content>
