@@ -157,9 +157,9 @@ class TranscriptionRepository {
           );
         } on FormatException catch (e) {
           developer.log(
-            'Failed to parse response from $providerName',
+            // Not the exception itself: its toString quotes the transcript.
+            'Failed to parse response from $providerName at offset ${e.offset}',
             name: providerName,
-            error: e,
           );
           throw TranscriptionException(
             'Invalid response format from transcription service',

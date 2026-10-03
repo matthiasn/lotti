@@ -344,7 +344,7 @@ class PromptBuilderHelper {
     final dictionary = category.speechDictionary;
     if (dictionary == null || dictionary.isEmpty) {
       developer.log(
-        'Speech dictionary: category "${category.name}" has no dictionary',
+        'Speech dictionary: category ${category.id} has no dictionary',
         name: 'PromptBuilderHelper',
       );
       return [];
@@ -352,7 +352,7 @@ class PromptBuilderHelper {
 
     developer.log(
       'Speech dictionary: found ${dictionary.length} terms from '
-      '$source category "${category.name}": ${dictionary.join(", ")}',
+      '$source category ${category.id}',
       name: 'PromptBuilderHelper',
     );
 
@@ -496,7 +496,7 @@ class PromptBuilderHelper {
     final examples = category.correctionExamples;
     if (examples == null || examples.isEmpty) {
       developer.log(
-        'Correction examples: category "${category.name}" has no examples',
+        'Correction examples: category ${category.id} has no examples',
         name: 'PromptBuilderHelper',
       );
       return '';
@@ -506,7 +506,7 @@ class PromptBuilderHelper {
       'Correction examples: injecting '
       '${examples.length > kMaxCorrectionExamples ? kMaxCorrectionExamples : examples.length} '
       'examples (of ${examples.length} total) from category '
-      '"${category.name}"',
+      '${category.id}',
       name: 'PromptBuilderHelper',
     );
 

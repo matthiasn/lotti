@@ -140,7 +140,7 @@ class TaskPriorityHandler {
 
       developer.log(
         'Processing update_task_priority: raw=$rawPriority, parsed=$priority '
-        '(confidence: $confidence, reason: $reason)',
+        '(confidence: $confidence, reason ${reason?.length ?? 0} chars)',
         name: 'TaskPriorityHandler',
       );
 
