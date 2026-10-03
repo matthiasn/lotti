@@ -1,7 +1,7 @@
 import 'dart:io';
 
-/// A `uses:` reference in workflow [source] that is not pinned to a full
-/// commit SHA, with its 1-based [line].
+/// A `uses:` reference in a workflow that is not pinned to a full commit SHA,
+/// with the 1-based line it sits on.
 typedef UnpinnedAction = ({int line, String reference});
 
 final _uses = RegExp(r'^\s*(?:-\s*)?uses:\s*([^\s#]+)', multiLine: true);
