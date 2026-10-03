@@ -116,13 +116,16 @@ from cloud backup and from device-to-device transfer alike
 (`android/app/src/main/res/xml/backup_rules.xml` for Android 11 and lower,
 `data_extraction_rules.xml` for 12 and higher):
 
-- **The Matrix store** (`app_flutter/matrix`, `matrixDatabaseDirectoryName`).
-  It holds this device's end-to-end encryption keys unencrypted at rest, and a
-  restored or transferred copy would let a second install act as this Matrix
-  device. A restored install signs in and verifies as a new device instead.
-- **The secure-storage preference files.** Their keys live in the Android
-  Keystore, which is never backed up, so a restored copy could not be
-  decrypted.
+- **The Matrix store** (`app_flutter/matrix` in the `root` domain — Flutter's
+  documents directory on Android is `Context.getDir("flutter")`, not under the
+  `file` domain's `files/`; `matrixDatabaseDirectoryName`). It holds this
+  device's end-to-end encryption keys unencrypted at rest, and a restored or
+  transferred copy would let a second install act as this Matrix device. A
+  restored install signs in and verifies as a new device instead.
+- **All of flutter_secure_storage's preference files** — values, the wrapped
+  key, and its legacy and namespaced configuration. The key that unwraps them
+  lives in the Android Keystore, which is never backed up, so a restored copy
+  could not be decrypted.
 
 `test/platform/android_backup_rules_test.dart` pins both rule files and checks
 the Matrix path against the constant the client uses.

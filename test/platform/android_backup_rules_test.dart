@@ -13,9 +13,17 @@ void main() {
   const res = 'android/app/src/main/res/xml';
   const matrixPath = 'app_flutter/$matrixDatabaseDirectoryName';
   final excluded = <(String, String)>[
-    ('file', matrixPath),
+    // Flutter's Android documents directory is Context.getDir("flutter"),
+    // <dataDir>/app_flutter, so it sits in the `root` domain: the `file`
+    // domain is <dataDir>/files, where this path would match nothing.
+    ('root', matrixPath),
     ('sharedpref', 'FlutterSecureStorage.xml'),
+    ('sharedpref', 'FlutterSecureKeyStorage.xml'),
     ('sharedpref', 'FlutterSecureStorageConfiguration.xml'),
+    (
+      'sharedpref',
+      'FlutterSecureStorageConfiguration:FlutterSecureStorage.xml',
+    ),
   ];
 
   Set<(String, String)> excludesIn(String xml) => {

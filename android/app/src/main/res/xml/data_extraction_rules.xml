@@ -8,13 +8,17 @@
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <exclude domain="file" path="app_flutter/matrix" />
+        <exclude domain="root" path="app_flutter/matrix" />
         <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
+        <exclude domain="sharedpref" path="FlutterSecureKeyStorage.xml" />
         <exclude domain="sharedpref" path="FlutterSecureStorageConfiguration.xml" />
+        <exclude domain="sharedpref" path="FlutterSecureStorageConfiguration:FlutterSecureStorage.xml" />
     </cloud-backup>
     <device-transfer>
-        <exclude domain="file" path="app_flutter/matrix" />
+        <exclude domain="root" path="app_flutter/matrix" />
         <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
+        <exclude domain="sharedpref" path="FlutterSecureKeyStorage.xml" />
         <exclude domain="sharedpref" path="FlutterSecureStorageConfiguration.xml" />
+        <exclude domain="sharedpref" path="FlutterSecureStorageConfiguration:FlutterSecureStorage.xml" />
     </device-transfer>
 </data-extraction-rules>
