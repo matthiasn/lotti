@@ -158,6 +158,7 @@ class QueueBootstrapSink implements BootstrapSink {
       'filteredOutByType=${enqueue.filteredOutByType} '
       'unresolvedCiphertext=$unresolvedCount '
       'deferredPendingDecryption=${enqueue.deferredPendingDecryption} '
+      'rejectedUntrusted=${enqueue.rejectedUntrusted} '
       'totalEventsSoFar=${info.totalEventsSoFar} '
       'oldestTs=${info.oldestTimestampSoFar} '
       'serverHasMore=${info.serverHasMore} '

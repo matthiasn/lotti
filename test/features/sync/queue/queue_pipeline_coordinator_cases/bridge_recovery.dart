@@ -35,6 +35,7 @@ extension _BridgeRecoveryCases on _QueueCoordinatorTestSetup {
           ).thenAnswer((_) async => timeline);
 
           final coordinator = QueuePipelineCoordinator(
+            syncEventTrust: AdmittingSyncEventTrust(),
             syncDb: syncDb,
             settingsDb: settingsDb,
             journalDb: journalDb,
@@ -83,7 +84,11 @@ extension _BridgeRecoveryCases on _QueueCoordinatorTestSetup {
                   lastAppliedEventId: const Value(r'$ahead-anchor'),
                 ),
               );
-          final realQueue = InboundQueue(db: syncDb, logging: logging);
+          final realQueue = InboundQueue(
+            trust: AdmittingSyncEventTrust(),
+            db: syncDb,
+            logging: logging,
+          );
           addTearDown(realQueue.dispose);
           final room = MockRoom();
           when(() => room.id).thenReturn(roomId);
@@ -120,6 +125,7 @@ extension _BridgeRecoveryCases on _QueueCoordinatorTestSetup {
           });
 
           final coordinator = QueuePipelineCoordinator(
+            syncEventTrust: AdmittingSyncEventTrust(),
             syncDb: syncDb,
             settingsDb: settingsDb,
             journalDb: journalDb,
@@ -239,7 +245,11 @@ extension _BridgeRecoveryCases on _QueueCoordinatorTestSetup {
           expect(beforeRestart.resumeFloorTs, 3000);
           expect(beforeRestart.lastAppliedEventId, r'$ahead-anchor');
 
-          final secondQueue = InboundQueue(db: syncDb, logging: logging);
+          final secondQueue = InboundQueue(
+            trust: AdmittingSyncEventTrust(),
+            db: syncDb,
+            logging: logging,
+          );
           addTearDown(secondQueue.dispose);
           final room = MockRoom();
           when(() => room.id).thenReturn(roomId);
@@ -254,6 +264,7 @@ extension _BridgeRecoveryCases on _QueueCoordinatorTestSetup {
           ).thenAnswer((_) async => backwardTimeline);
 
           final secondCoordinator = QueuePipelineCoordinator(
+            syncEventTrust: AdmittingSyncEventTrust(),
             syncDb: syncDb,
             settingsDb: settingsDb,
             journalDb: journalDb,
@@ -302,7 +313,11 @@ extension _BridgeRecoveryCases on _QueueCoordinatorTestSetup {
                 ),
               );
 
-          final realQueue = InboundQueue(db: syncDb, logging: logging);
+          final realQueue = InboundQueue(
+            trust: AdmittingSyncEventTrust(),
+            db: syncDb,
+            logging: logging,
+          );
           addTearDown(realQueue.dispose);
 
           final room = MockRoom();
@@ -321,6 +336,7 @@ extension _BridgeRecoveryCases on _QueueCoordinatorTestSetup {
           when(() => client.getRoomById(roomId)).thenReturn(room);
 
           final coordinator = QueuePipelineCoordinator(
+            syncEventTrust: AdmittingSyncEventTrust(),
             syncDb: syncDb,
             settingsDb: settingsDb,
             journalDb: journalDb,
@@ -351,7 +367,11 @@ extension _BridgeRecoveryCases on _QueueCoordinatorTestSetup {
             () => settingsDb.itemByKey('LAST_READ_MATRIX_EVENT_TS'),
           ).thenAnswer((_) async => '999');
 
-          final realQueue = InboundQueue(db: syncDb, logging: logging);
+          final realQueue = InboundQueue(
+            trust: AdmittingSyncEventTrust(),
+            db: syncDb,
+            logging: logging,
+          );
           addTearDown(realQueue.dispose);
 
           final room = MockRoom();
@@ -367,6 +387,7 @@ extension _BridgeRecoveryCases on _QueueCoordinatorTestSetup {
           when(() => roomManager.currentRoom).thenReturn(room);
 
           final coordinator = QueuePipelineCoordinator(
+            syncEventTrust: AdmittingSyncEventTrust(),
             syncDb: syncDb,
             settingsDb: settingsDb,
             journalDb: journalDb,
@@ -411,7 +432,11 @@ extension _BridgeRecoveryCases on _QueueCoordinatorTestSetup {
                 ),
               );
 
-          final realQueue = InboundQueue(db: syncDb, logging: logging);
+          final realQueue = InboundQueue(
+            trust: AdmittingSyncEventTrust(),
+            db: syncDb,
+            logging: logging,
+          );
           addTearDown(realQueue.dispose);
 
           final room = MockRoom();
@@ -426,6 +451,7 @@ extension _BridgeRecoveryCases on _QueueCoordinatorTestSetup {
           when(() => roomManager.currentRoom).thenReturn(room);
 
           final coordinator = QueuePipelineCoordinator(
+            syncEventTrust: AdmittingSyncEventTrust(),
             syncDb: syncDb,
             settingsDb: settingsDb,
             journalDb: journalDb,
@@ -485,7 +511,11 @@ extension _BridgeRecoveryCases on _QueueCoordinatorTestSetup {
                 ),
               );
 
-          final realQueue = InboundQueue(db: syncDb, logging: logging);
+          final realQueue = InboundQueue(
+            trust: AdmittingSyncEventTrust(),
+            db: syncDb,
+            logging: logging,
+          );
           addTearDown(realQueue.dispose);
 
           final room = MockRoom();
@@ -508,6 +538,7 @@ extension _BridgeRecoveryCases on _QueueCoordinatorTestSetup {
           when(() => roomManager.currentRoom).thenReturn(room);
 
           final coordinator = QueuePipelineCoordinator(
+            syncEventTrust: AdmittingSyncEventTrust(),
             syncDb: syncDb,
             settingsDb: settingsDb,
             journalDb: journalDb,
@@ -557,7 +588,11 @@ extension _BridgeRecoveryCases on _QueueCoordinatorTestSetup {
             () => settingsDb.itemByKey('LAST_READ_MATRIX_EVENT_TS'),
           ).thenAnswer((_) async => '777');
 
-          final realQueue = InboundQueue(db: syncDb, logging: logging);
+          final realQueue = InboundQueue(
+            trust: AdmittingSyncEventTrust(),
+            db: syncDb,
+            logging: logging,
+          );
           addTearDown(realQueue.dispose);
 
           final room = MockRoom();
@@ -572,6 +607,7 @@ extension _BridgeRecoveryCases on _QueueCoordinatorTestSetup {
           when(() => roomManager.currentRoom).thenReturn(room);
 
           final coordinator = QueuePipelineCoordinator(
+            syncEventTrust: AdmittingSyncEventTrust(),
             syncDb: syncDb,
             settingsDb: settingsDb,
             journalDb: journalDb,
@@ -599,13 +635,18 @@ extension _BridgeRecoveryCases on _QueueCoordinatorTestSetup {
       test(
         'bridge logs noRoom when both cache and getRoomById return null',
         () async {
-          final realQueue = InboundQueue(db: syncDb, logging: logging);
+          final realQueue = InboundQueue(
+            trust: AdmittingSyncEventTrust(),
+            db: syncDb,
+            logging: logging,
+          );
           addTearDown(realQueue.dispose);
 
           when(() => roomManager.currentRoom).thenReturn(null);
           when(() => client.getRoomById(any())).thenReturn(null);
 
           final coordinator = QueuePipelineCoordinator(
+            syncEventTrust: AdmittingSyncEventTrust(),
             syncDb: syncDb,
             settingsDb: settingsDb,
             journalDb: journalDb,
@@ -637,7 +678,11 @@ extension _BridgeRecoveryCases on _QueueCoordinatorTestSetup {
         'the cached room and the current room id are null — the _resolveRoom '
         'guard short-circuits before the gateway lookup',
         () async {
-          final realQueue = InboundQueue(db: syncDb, logging: logging);
+          final realQueue = InboundQueue(
+            trust: AdmittingSyncEventTrust(),
+            db: syncDb,
+            logging: logging,
+          );
           addTearDown(realQueue.dispose);
 
           // Distinct from the test above: there is no current room id at
@@ -647,6 +692,7 @@ extension _BridgeRecoveryCases on _QueueCoordinatorTestSetup {
           when(() => roomManager.currentRoomId).thenReturn(null);
 
           final coordinator = QueuePipelineCoordinator(
+            syncEventTrust: AdmittingSyncEventTrust(),
             syncDb: syncDb,
             settingsDb: settingsDb,
             journalDb: journalDb,

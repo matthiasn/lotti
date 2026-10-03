@@ -18,6 +18,7 @@ extension _ResurrectionCases on _QueueCoordinatorTestSetup {
           ).thenAnswer((_) async => 1);
 
           final coordinator = QueuePipelineCoordinator(
+            syncEventTrust: AdmittingSyncEventTrust(),
             syncDb: syncDb,
             settingsDb: settingsDb,
             journalDb: journalDb,
@@ -72,6 +73,7 @@ extension _ResurrectionCases on _QueueCoordinatorTestSetup {
           ).thenAnswer((_) async => 3);
 
           final coordinator = QueuePipelineCoordinator(
+            syncEventTrust: AdmittingSyncEventTrust(),
             syncDb: syncDb,
             settingsDb: settingsDb,
             journalDb: journalDb,
@@ -148,6 +150,7 @@ extension _ResurrectionCases on _QueueCoordinatorTestSetup {
           ).thenAnswer((_) => flushCompleter.future);
 
           final coordinator = QueuePipelineCoordinator(
+            syncEventTrust: AdmittingSyncEventTrust(),
             syncDb: syncDb,
             settingsDb: settingsDb,
             journalDb: journalDb,
@@ -213,6 +216,7 @@ extension _ResurrectionCases on _QueueCoordinatorTestSetup {
             ).thenAnswer((_) async => 1);
 
             final coordinator = QueuePipelineCoordinator(
+              syncEventTrust: AdmittingSyncEventTrust(),
               syncDb: syncDb,
               settingsDb: settingsDb,
               journalDb: journalDb,
@@ -262,6 +266,7 @@ extension _ResurrectionCases on _QueueCoordinatorTestSetup {
           ).thenThrow(StateError('queue gone'));
 
           final coordinator = QueuePipelineCoordinator(
+            syncEventTrust: AdmittingSyncEventTrust(),
             syncDb: syncDb,
             settingsDb: settingsDb,
             journalDb: journalDb,
@@ -318,6 +323,7 @@ extension _ResurrectionCases on _QueueCoordinatorTestSetup {
             ).thenThrow(StateError('queue gone'));
 
             final coordinator = QueuePipelineCoordinator(
+              syncEventTrust: AdmittingSyncEventTrust(),
               syncDb: syncDb,
               settingsDb: settingsDb,
               journalDb: journalDb,
@@ -368,6 +374,7 @@ extension _ResurrectionCases on _QueueCoordinatorTestSetup {
           addTearDown(attachmentIndex.dispose);
 
           final coordinator = QueuePipelineCoordinator(
+            syncEventTrust: AdmittingSyncEventTrust(),
             syncDb: syncDb,
             settingsDb: settingsDb,
             journalDb: journalDb,
@@ -416,6 +423,7 @@ extension _ResurrectionCases on _QueueCoordinatorTestSetup {
           addTearDown(updateNotifications.dispose);
 
           final coordinator = QueuePipelineCoordinator(
+            syncEventTrust: AdmittingSyncEventTrust(),
             syncDb: syncDb,
             settingsDb: settingsDb,
             journalDb: journalDb,

@@ -180,6 +180,7 @@ import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_engine.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
+import 'package:lotti/features/sync/matrix/sync_event_trust.dart';
 import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/media/media_request_handler.dart';
@@ -236,6 +237,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/encryption/cross_signing.dart';
 import 'package:matrix/encryption/key_verification_manager.dart';
+import 'package:matrix/encryption/utils/session_key.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:media_kit/media_kit.dart';
@@ -514,6 +516,8 @@ class MockEncryption extends Mock implements Encryption {}
 class MockCrossSigning extends Mock implements CrossSigning {}
 
 class MockKeyManager extends Mock implements KeyManager {}
+
+class MockSessionKey extends Mock implements SessionKey {}
 
 class MockKeyVerificationManager extends Mock
     implements KeyVerificationManager {}
@@ -1583,6 +1587,21 @@ class MockSyncSequenceLogService extends Mock
     implements SyncSequenceLogService {}
 
 class MockInboundQueue extends Mock implements InboundQueue {}
+
+class MockSyncEventTrust extends Mock implements SyncEventTrust {}
+
+/// Trusts every inbound event. For suites that exercise queue, coordinator
+/// or processor behaviour downstream of the trust gate; the gate itself is
+/// covered by `sync_event_trust_test.dart` and the rejection paths by
+/// [MockSyncEventTrust].
+class AdmittingSyncEventTrust extends Fake implements SyncEventTrust {
+  @override
+  Future<SyncEventTrustVerdict> evaluate(Event event) async =>
+      SyncEventTrustVerdict.trusted;
+
+  @override
+  Future<bool> admits(Event event, {required String subDomain}) async => true;
+}
 
 class MockInboundWorker extends Mock implements InboundWorker {}
 

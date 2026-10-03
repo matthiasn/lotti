@@ -5,8 +5,8 @@ description: The Drift-backed inbound queue, the anchored catch-up bridge, per-r
 resource: ../../../lib/features/sync/queue
 tags: [sync, inbound-queue, catch-up, matrix]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-02T21:10:00Z }
-stale_after: 2027-01-02
+generated: { by: claude-code/opus-5.5, at: 2026-10-03T12:00:00Z }
+stale_after: 2027-01-03
 sources:
   - id: descriptor-recovery
     resource: ../../../lib/features/sync/matrix/sync_event_processor_descriptor_cache.dart
@@ -31,7 +31,15 @@ sources:
   - id: queue
     resource: ../../../lib/features/sync/queue
     title: Inbound queue pipeline
-    last_modified: 2026-10-02
+    last_modified: 2026-10-03
+  - id: event-trust
+    resource: ../../../lib/features/sync/matrix/sync_event_trust.dart
+    title: SyncEventTrust — which senders inbound sync accepts
+    last_modified: 2026-10-03
+  - id: adr-0113
+    resource: ../../../docs/adr/0113-inbound-sync-trusts-only-key-sharing-peers.md
+    title: ADR 0113 — inbound sync trusts only key-sharing peers
+    last_modified: 2026-10-03
   - id: processor
     resource: ../../../lib/features/sync/matrix/sync_event_processor.dart
     title: SyncEventProcessor
@@ -170,6 +178,59 @@ back to `enqueued` only while the UPDATE still finds it eligible — abandoned,
 under the hard cap, and matching the pass's path or reason: its SELECT runs
 outside the UPDATE's transaction, and a row another pass re-armed and the
 worker applied or abandoned again in between must stay as it is.
+
+# Inbound trust
+
+Every door into the pipeline asks `SyncEventTrust` first
+([ADR 0113](../../../docs/adr/0113-inbound-sync-trusts-only-key-sharing-peers.md)).
+The Matrix SDK decrypts any Megolm event whose key reached this device, never
+checks the sending device, and passes plaintext through unchanged, so without
+this check anyone able to post into the room — the account holder or the
+homeserver's operator — could inject payloads. Inbound acceptance mirrors
+outbound key sharing: an event is trusted only when a device this one would
+encrypt to (`DeviceKeys.encryptToDevice` under `shareKeysWith`) created the
+session that decrypted it.
+
+```mermaid
+flowchart TD
+    Event["Decrypted event"] --> Src{"originalSource is ciphertext,<br/>Megolm, and decrypted?"}
+    Src -->|no| NotEnc["notEncrypted"]
+    Src -->|yes| Session{"KeyManager has a valid session<br/>for this room?"}
+    Session -->|no| Unknown["unknownSession"]
+    Session -->|yes| Fwd{"forwarding chain empty?"}
+    Fwd -->|no| Forwarded["forwardedSession"]
+    Fwd -->|yes| Own{"sender key is this device's?"}
+    Own -->|yes, own user| Trusted["trusted"]
+    Own -->|yes, other user| Mismatch["senderMismatch"]
+    Own -->|no| Listed{"sender's listed device<br/>with that Curve25519 key?"}
+    Listed -->|"claimed ed25519 differs"| Mismatch
+    Listed -->|"listed, encryptToDevice"| Remember["remember in trusted_sync_senders"] --> Trusted
+    Listed -->|"listed, not encryptToDevice"| Forget["forget from trusted_sync_senders"] --> Untrusted["untrustedDevice"]
+    Listed -->|not listed| Ledger{"remembered as trusted?"}
+    Ledger -->|yes| Trusted
+    Ledger -->|no| UnknownDevice["unknownDevice"]
+```
+
+- **The sender is the session's key, never the event's claim.** The device is
+  found by the Curve25519 key the Megolm session was received under
+  (`SessionKey.senderKey`), looked up among the *event sender's* devices only.
+  The event's own `sender_key` and `device_id` fields are plaintext.
+- **Forwarded sessions are refused.** A forwarded key records the forwarder,
+  not the creator. Lotti never requests or forwards room keys.
+- **Doors.** Payloads: `InboundQueue.enqueueBatch` drops them as
+  `rejectedUntrusted` (rule F8), after the ciphertext (F3) and type (F4)
+  checks, so every producer is covered. Descriptors: the coordinator's
+  attachment hook neither indexes nor downloads an untrusted one, and exact-id
+  recovery checks a fetched descriptor before indexing it — without a policy
+  the processor skips the lookup entirely.
+- **Dropped, not retried.** A rejected payload never enters the queue, so the
+  marker may pass it like a non-payload event; no legitimate peer produces one.
+- **Trust outlives a logout.** The SDK forgets a logged-out device's keys.
+  `trusted_sync_senders` (sync DB v34, device-local, never written by sync)
+  keeps senders found trusted, and is consulted only for a sender the SDK no
+  longer lists, so history from a device that logged out while this one was
+  offline still applies. A listed device is judged by its current state, and
+  one found untrusted is removed from the record.
 
 # Live ingestion
 

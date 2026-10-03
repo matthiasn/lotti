@@ -378,7 +378,11 @@ void main() {
   setUp(() {
     db = SyncDatabase(inMemoryDatabase: true);
     logging = MockDomainLogger();
-    queue = InboundQueue(db: db, logging: logging);
+    queue = InboundQueue(
+      trust: AdmittingSyncEventTrust(),
+      db: db,
+      logging: logging,
+    );
     client = MockMatrixClient();
     syncCtl = CachedStreamController<SyncUpdate>();
     when(() => client.onSync).thenReturn(syncCtl);

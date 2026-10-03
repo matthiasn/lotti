@@ -28,6 +28,7 @@ import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
+import 'package:lotti/features/sync/matrix/sync_event_trust.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/media/media_repair_service.dart';
 import 'package:lotti/features/sync/media/media_request_handler.dart';
@@ -305,6 +306,12 @@ Future<MatrixService> _createMatrixService({
     vectorClockService: vectorClockService,
     loggingService: loggingService,
   );
+  // The real policy: these suites run SAS verification, so sync between
+  // the verified devices exercises the inbound trust gate end to end.
+  final syncEventTrust = SyncEventTrust(
+    syncDb: syncDb,
+    logging: loggingService,
+  );
   final eventProcessor = SyncEventProcessor(
     loggingService: loggingService,
     domainLogger: loggingService,
@@ -325,6 +332,7 @@ Future<MatrixService> _createMatrixService({
     sequenceLogService: sequenceLogService,
     journalDb: journalDb,
     vectorClockService: vectorClockService,
+    syncEventTrust: syncEventTrust,
   );
   final roomManager = SyncRoomManager(
     gateway: gateway,
@@ -349,6 +357,7 @@ Future<MatrixService> _createMatrixService({
     sequenceLogService: sequenceLogService,
     activityGate: activityGate,
     logging: loggingService,
+    syncEventTrust: syncEventTrust,
     attachmentIndex: sharedAttachmentIndex,
     updateNotifications: updateNotifications,
     attachmentIngestor: queueAttachmentIngestor,

@@ -28,6 +28,7 @@ void main() {
       db = SyncDatabase(inMemoryDatabase: true);
       logging = MockDomainLogger();
       queue = InboundQueue(
+        trust: AdmittingSyncEventTrust(),
         db: db,
         logging: logging,
         leaseDuration: const Duration(seconds: 1),

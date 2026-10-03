@@ -6601,6 +6601,7 @@ void main() {
             settingsDb: settingsDb,
             journalEntityLoader: journalEntityLoader,
             attachmentIndex: attachmentIndex,
+            syncEventTrust: AdmittingSyncEventTrust(),
           );
           processorWithIndex.agentRepository = mockAgentRepo;
 

@@ -74,7 +74,11 @@ void main() {
             background: false,
           );
           addTearDown(syncDb.close);
-          final queue = InboundQueue(db: syncDb, logging: logging);
+          final queue = InboundQueue(
+            trust: AdmittingSyncEventTrust(),
+            db: syncDb,
+            logging: logging,
+          );
           addTearDown(queue.dispose);
           final index = AttachmentIndex();
           addTearDown(index.dispose);
@@ -102,6 +106,7 @@ void main() {
             journalEntityLoader: processor_harness.journalEntityLoader,
             documentsDirectory: directory,
             attachmentIndex: index,
+            syncEventTrust: AdmittingSyncEventTrust(),
           );
           final link = EntryLink.basic(
             id: 'recovered-bundle-link',

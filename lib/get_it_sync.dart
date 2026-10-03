@@ -52,6 +52,13 @@ Future<String? Function()> _registerMatrixSyncStack({
     verboseLogging: false,
   );
 
+  // One trust policy guards every inbound door: queue admission, descriptor
+  // indexing and exact-id descriptor recovery.
+  final syncEventTrust = SyncEventTrust(
+    syncDb: syncDatabase,
+    logging: domainLogger,
+  );
+
   // SyncEventProcessor is constructed first; its `backfillResponseHandler`
   // (a `late final`) is assigned below once BackfillResponseHandler exists.
   // The chain BackfillResponseHandler → OutboxService → MatrixService →
@@ -84,6 +91,7 @@ Future<String? Function()> _registerMatrixSyncStack({
               ),
           syncNodeProfileRepository: syncNodeProfileRepository,
           fts5Db: getIt<Fts5Db>(),
+          syncEventTrust: syncEventTrust,
         )
         ..consumptionRepository = consumptionRepository
         ..onJournalEntityApplied = ChecklistRepository.settlerForReceived();
@@ -130,6 +138,7 @@ Future<String? Function()> _registerMatrixSyncStack({
     sequenceLogService: syncSequenceLogService,
     activityGate: userActivityGate,
     logging: domainLogger,
+    syncEventTrust: syncEventTrust,
     attachmentIndex: attachmentIndex,
     updateNotifications: getIt<UpdateNotifications>(),
     attachmentIngestor: queueAttachmentIngestor,

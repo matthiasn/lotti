@@ -165,7 +165,11 @@ void main() {
   setUp(() {
     db = SyncDatabase(inMemoryDatabase: true);
     logging = MockDomainLogger();
-    queue = InboundQueue(db: db, logging: logging);
+    queue = InboundQueue(
+      trust: AdmittingSyncEventTrust(),
+      db: db,
+      logging: logging,
+    );
     sequenceLog = _SpySequenceLog(
       syncDatabase: db,
       vectorClockService: MockVectorClockService(),
@@ -661,7 +665,11 @@ void main() {
     (scenario) async {
       final localDb = SyncDatabase(inMemoryDatabase: true);
       final localLogging = MockDomainLogger();
-      final localQueue = InboundQueue(db: localDb, logging: localLogging);
+      final localQueue = InboundQueue(
+        trust: AdmittingSyncEventTrust(),
+        db: localDb,
+        logging: localLogging,
+      );
       final localSequenceLog = _SpySequenceLog(
         syncDatabase: localDb,
         vectorClockService: MockVectorClockService(),

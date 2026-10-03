@@ -100,7 +100,12 @@ class _QueueBench {
   _QueueBench(this.db, this.logging) : queue = _open(db, logging);
 
   static InboundQueue _open(SyncDatabase db, DomainLogger logging) =>
-      InboundQueue(db: db, logging: logging, leaseDuration: Duration.zero);
+      InboundQueue(
+        trust: AdmittingSyncEventTrust(),
+        db: db,
+        logging: logging,
+        leaseDuration: Duration.zero,
+      );
 
   final SyncDatabase db;
   final DomainLogger logging;

@@ -5,7 +5,7 @@ description: The eleven Drift/SQLite databases, attachment storage, how connecti
 resource: ../../lib/database
 tags: [architecture, persistence, drift, sqlite, migrations]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-26T10:14:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-03T12:00:00Z }
 stale_after: 2026-12-25
 sources:
   - id: adr-0079
@@ -19,7 +19,7 @@ sources:
   - id: sync-db
     resource: ../../lib/database/sync_db.dart
     title: SyncDatabase
-    last_modified: 2026-09-05
+    last_modified: 2026-10-03
   - id: agent-db
     resource: ../../lib/features/agents/database/agent_database.dart
     title: AgentDatabase
@@ -101,9 +101,9 @@ migration work has to cover both, and embeddings are a third store again (below)
 
 | Database | File | Schema | Owns |
 |----------|------|--------|------|
-| `JournalDb` | `db.sqlite` | 49 | Journal entities, tasks, links, tags, config flags — the primary store |
-| `SyncDatabase` | `sync.sqlite` | 29 | Outbox, sequence log, host activity, inbound event queue, queue markers |
-| `AgentDatabase` | `agent.sqlite` | 19 | Agent state, reports, observations, change proposals, wake history |
+| `JournalDb` | `db.sqlite` | 51 | Journal entities, tasks, links, tags, config flags — the primary store |
+| `SyncDatabase` | `sync.sqlite` | 34 | Outbox, sequence log, host activity, inbound event queue, queue markers, onboarding rounds, deep-backfill requests, trusted sync senders |
+| `AgentDatabase` | `agent.sqlite` | 23 | Agent state, reports, observations, change proposals, wake history |
 | `EditorDb` | `editor_drafts_db.sqlite` | 2 | Unsaved rich-text editor drafts |
 | `ConsumptionDatabase` | `ai_consumption.sqlite` | 4 | AI token usage and the interaction ledger |
 | `SettingsDb` | `settings.sqlite` | 1 | Key/value app settings, sync watermarks, saved filters |

@@ -42,10 +42,15 @@ extension _HistoryCollectionCases on _QueueCoordinatorTestSetup {
       test(
         'forwards progress info and appends pages to the real queue',
         () async {
-          final realQueue = InboundQueue(db: syncDb, logging: logging);
+          final realQueue = InboundQueue(
+            trust: AdmittingSyncEventTrust(),
+            db: syncDb,
+            logging: logging,
+          );
           addTearDown(realQueue.dispose);
 
           final coordinator = QueuePipelineCoordinator(
+            syncEventTrust: AdmittingSyncEventTrust(),
             syncDb: syncDb,
             settingsDb: settingsDb,
             journalDb: journalDb,
@@ -105,11 +110,16 @@ extension _HistoryCollectionCases on _QueueCoordinatorTestSetup {
       test(
         'encrypted history uses the production SDK decryptor before enqueue',
         () async {
-          final realQueue = InboundQueue(db: syncDb, logging: logging);
+          final realQueue = InboundQueue(
+            trust: AdmittingSyncEventTrust(),
+            db: syncDb,
+            logging: logging,
+          );
           addTearDown(realQueue.dispose);
           final encryption = MockEncryption();
           when(() => client.encryption).thenReturn(encryption);
           final coordinator = QueuePipelineCoordinator(
+            syncEventTrust: AdmittingSyncEventTrust(),
             syncDb: syncDb,
             settingsDb: settingsDb,
             journalDb: journalDb,
@@ -170,10 +180,15 @@ extension _HistoryCollectionCases on _QueueCoordinatorTestSetup {
       test(
         'onProgress exception does not abort the bootstrap',
         () async {
-          final realQueue = InboundQueue(db: syncDb, logging: logging);
+          final realQueue = InboundQueue(
+            trust: AdmittingSyncEventTrust(),
+            db: syncDb,
+            logging: logging,
+          );
           addTearDown(realQueue.dispose);
 
           final coordinator = QueuePipelineCoordinator(
+            syncEventTrust: AdmittingSyncEventTrust(),
             syncDb: syncDb,
             settingsDb: settingsDb,
             journalDb: journalDb,

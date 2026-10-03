@@ -584,3 +584,26 @@ class QueueMarkers extends Table {
   @override
   Set<Column> get primaryKey => {roomId};
 }
+
+/// Matrix devices this device has seen trusted for sync, keyed by the
+/// Curve25519 identity key their Megolm sessions are bound to.
+///
+/// Inbound sync applies an event only when its session's sender device is one
+/// this device shares its own keys with. The Matrix SDK forgets a device's keys
+/// once the device logs out, so without this record a device that was offline
+/// while a peer sent and then logged out would reject that peer's history as
+/// coming from an unknown device. The record is consulted only for a sender
+/// the SDK no longer lists; a listed device is always judged by its current
+/// verification state, and one found untrusted is removed from here.
+///
+/// Written only by local trust decisions, never by sync.
+@DataClassName('TrustedSyncSenderItem')
+class TrustedSyncSenders extends Table {
+  TextColumn get userId => text().named('user_id')();
+  TextColumn get curve25519Key => text().named('curve25519_key')();
+  TextColumn get deviceId => text().named('device_id')();
+  DateTimeColumn get trustedAt => dateTime().named('trusted_at')();
+
+  @override
+  Set<Column> get primaryKey => {userId, curve25519Key};
+}

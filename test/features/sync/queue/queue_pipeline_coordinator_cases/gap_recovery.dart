@@ -51,9 +51,14 @@ extension _GapRecoveryCases on _QueueCoordinatorTestSetup {
       }
 
       QueuePipelineCoordinator buildWithRealQueue() {
-        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        final realQueue = InboundQueue(
+          trust: AdmittingSyncEventTrust(),
+          db: syncDb,
+          logging: logging,
+        );
         addTearDown(realQueue.dispose);
         return QueuePipelineCoordinator(
+          syncEventTrust: AdmittingSyncEventTrust(),
           syncDb: syncDb,
           settingsDb: settingsDb,
           journalDb: journalDb,
