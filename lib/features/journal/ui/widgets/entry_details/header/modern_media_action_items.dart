@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/action_modal/ds_action_row.dart';
@@ -7,6 +9,8 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/audio_utils.dart';
+import 'package:lotti/utils/document_path_guard.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/media_file_actions.dart';
 import 'package:lotti/utils/platform.dart';
@@ -83,6 +87,14 @@ class ModernShowInFileManagerItem extends ConsumerWidget {
           final filePath = entry is JournalImage
               ? getFullImagePath(entry)
               : await AudioUtils.getFullAudioPath(entry as JournalAudio);
+          // The directory and file name arrive by sync: a path a peer pointed
+          // outside the documents directory is refused, never revealed.
+          if (!isInsideDocuments(getDocumentsDirectory().path, filePath)) {
+            throw FileSystemException(
+              'media path resolves outside the documents directory',
+              filePath,
+            );
+          }
           final callback = onShowInFileManager;
           if (callback != null) {
             await callback(filePath);

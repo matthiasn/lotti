@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
-import 'package:lotti/utils/audio_utils.dart';
 
 /// Rebuilds missing device-local **transcription** processing intents from
 /// synced/persisted JournalAudio provenance after a crash or receipt
@@ -56,7 +55,8 @@ class DayProcessingOutboxRepair {
           activityEntryId: context.activityEntryId,
           recordingSessionId: context.recordingSessionId,
           audioId: audio.meta.id,
-          audioPath: AudioUtils.getAudioPath(audio, assetRoot),
+          audioPath:
+              '${assetRoot.path}${audio.data.audioDirectory}${audio.data.audioFile}',
           capturedAt: context.capturedAt,
           completedTranscript: receipt?.transcript,
         );

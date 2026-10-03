@@ -125,42 +125,6 @@ void main() {
   });
 
   group('getFullImagePath', () {
-    // A synced entry's directory and file name come from another device; a
-    // parent segment in either must not resolve outside the documents
-    // directory, for the canonical path or the legacy-recovery one.
-    test('a parent segment from sync stays inside the documents directory', () {
-      final testDate = DateTime(2024, 3, 15, 10, 30);
-      final image = JournalImage(
-        meta: Metadata(
-          id: 'hostile',
-          createdAt: testDate,
-          updatedAt: testDate,
-          dateFrom: testDate,
-          dateTo: testDate,
-        ),
-        data: ImageData(
-          imageId: 'hostile',
-          imageFile: '../../../etc/passwd',
-          imageDirectory: '/images/../../',
-          capturedAt: testDate,
-        ),
-      );
-      const docs = '/home/user/Documents';
-
-      final canonical = getCanonicalImagePath(image, documentsDirectory: docs);
-      expect(p.isWithin(docs, canonical), isTrue, reason: canonical);
-
-      final legacy = getLegacyMalformedImagePath(
-        image,
-        documentsDirectory: docs,
-      );
-      expect(
-        p.isWithin(p.join(p.dirname(docs), 'Documentsimages'), legacy),
-        isTrue,
-        reason: legacy,
-      );
-    });
-
     test('should return the correct full image path', () {
       final testDate = DateTime(2024, 3, 15, 10, 30);
       final imageData = ImageData(

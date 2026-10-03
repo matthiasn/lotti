@@ -464,6 +464,38 @@ void main() {
       expect(revealedPath, '${documentsDirectory.path}/images/test.jpg');
     });
 
+    testWidgets('refuses a synced path that leaves the documents directory', (
+      tester,
+    ) async {
+      final hostile = buildImageEntry().copyWith(
+        data: buildImageEntry().data.copyWith(
+          imageDirectory: '/images/../../../',
+          imageFile: 'etc/passwd',
+        ),
+      );
+      String? revealedPath;
+
+      await tester.pumpWidget(
+        _buildWithRoute(
+          overrides: [createEntryControllerOverride(hostile)],
+          child: ModernShowInFileManagerItem(
+            entryId: 'image-1',
+            platform: MediaFilePlatform.macos,
+            onShowInFileManager: (filePath) async {
+              revealedPath = filePath;
+            },
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.tap(find.byType(DsActionRow));
+      await tester.pump();
+
+      expect(revealedPath, isNull);
+    });
+
     testWidgets('reveals audio file path on tap', (tester) async {
       final entry = buildAudioEntry();
       String? revealedPath;
