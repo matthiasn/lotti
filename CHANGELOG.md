@@ -4,6 +4,76 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.38]
+
+### Added
+
+- **Link GitHub pull requests to tasks and follow them there.** Turn on
+  *GitHub pull requests* under Settings → Advanced Settings → Config Flags,
+  then add your own personal access token under Settings → Advanced
+  Settings → GitHub. A task gains a Pull requests card beside its linked
+  tasks: paste a pull request's link and it shows whether it is open, merged
+  or closed, whether its checks pass, whether it has merge conflicts, how its
+  reviews stand, and how long ago GitHub said so. Opening the task refreshes
+  anything older than a few minutes, and each pull request has its own
+  refresh. Private repositories work, because Lotti reads them through
+  GitHub's API with your token — which stays on the device, is never synced,
+  and is sent only to api.github.com.
+- **Pick a task's pull request from the open ones in its repository.** Give
+  a category its GitHub repository on the category's page, and the "+" on a
+  task's Pull requests card lists that repository's open pull requests — the
+  ones no other task has yet — with their author, draft state and last
+  change. Tap one to link it, or still paste a link. A pull request belongs
+  to one task: one already linked elsewhere is refused with a note, and if
+  two of your devices linked the same pull request to different tasks before
+  syncing, its card says "Also linked to another task" until you unlink one.
+- **Coding prompts and task agents now see a task's pull requests.** With
+  GitHub pull requests turned on, generating a coding prompt or waking the
+  task agent first refreshes every pull request linked to the task. The
+  coding prompt then knows what is already done — its state, checks, merge
+  conflicts, reviews and description — asks only for what remains, and says
+  at the top where the pull requests and the checklist disagree. The task
+  agent can propose ticking off checklist items a pull request has done,
+  naming that pull request; you confirm each one. A pull request that could
+  not be refreshed is never taken as evidence.
+- **Choose how often a project summary updates.** Agent internals offers every
+  hour, every 2, 4 or 8 hours, or once a day.
+- **Find out-of-date project summaries.** The projects list marks projects
+  whose summary is out of date, and the filter can show only those.
+
+### Changed
+
+- **Project summaries update on a schedule, not on every change.** A change
+  to a project now marks its summary out of date; with automatic updates on,
+  the summary refreshes in the next update slot — every hour by default — on
+  just one of your devices, instead of once per change on every device. The
+  card says *Out of date* and counts down to the next update beside *Update
+  now*, which still refreshes it at once.
+
+### Fixed
+
+- **Goal check-ins no longer keep their conversations in memory.** Each goal
+  agent wake now discards its conversation when it finishes, as the other
+  agents already did, so memory no longer grows with every goal check-in
+  while the app stays open.
+- **A day plan wake no longer fails over its usage record.** If saving the
+  token-usage record fails, the day agent's wake still succeeds, as every other
+  agent's does, instead of failing and running again.
+- **Goal and relationship replies are read the same way with every provider.**
+  When a model's last turn only called tools, its reply is taken from what it
+  last said, whichever provider ran the conversation.
+
+### Security
+
+- **Sync now applies changes only from your own verified devices.** Before,
+  anything posted into your sync room was accepted as long as it looked like a
+  sync message — whether or not it was encrypted, and whoever sent it. Someone
+  with your account password, or the operator of your Matrix server, could
+  have slipped in changes, such as pointing an AI provider at their own
+  server. Every incoming change and attachment must now be encrypted by a
+  device you verified, matching the rule Lotti already used for what it sends.
+  History from a device you have since logged out still syncs.
+
 ## [1.1.37]
 
 ### Added
