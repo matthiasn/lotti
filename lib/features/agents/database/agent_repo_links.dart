@@ -579,6 +579,37 @@ class AgentRepoLinks {
     return rows.first;
   }
 
+  /// The wake-run entry for [runKey], or `null`.
+  Future<WakeRunLogData?> getWakeRunByRunKey(String runKey) =>
+      _db.getWakeRunByRunKey(runKey).getSingleOrNull();
+
+  /// The input fingerprint recorded by [agentId]'s newest completed wake on
+  /// this device, or `null` when there is none or that wake recorded none.
+  Future<String?> getLatestCompletedWakeInputFingerprint(
+    String agentId,
+  ) async {
+    final rows = await _db
+        .getLatestCompletedWakeInputFingerprint(agentId)
+        .get();
+    return rows.isEmpty ? null : rows.first;
+  }
+
+  /// Records the input fingerprint of the wake run identified by [runKey].
+  ///
+  /// Writes zero rows for a missing [runKey], like [updateWakeRunStatus]: a
+  /// fingerprint is bookkeeping, and losing one only costs a later wake the
+  /// chance to skip.
+  Future<void> updateWakeRunInputFingerprint(
+    String runKey,
+    String fingerprint,
+  ) async {
+    await (_db.update(
+      _db.wakeRunLog,
+    )..where((t) => t.runKey.equals(runKey))).write(
+      WakeRunLogCompanion(inputFingerprint: Value(fingerprint)),
+    );
+  }
+
   /// Fetch token usage records for [agentId], ordered most-recent first.
   ///
   /// Returns deserialized `WakeTokenUsageEntity` records from the

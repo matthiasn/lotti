@@ -55,41 +55,48 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       logSummarizer: logSummarizer,
       domainLogger: domainLogger,
     );
-    var captureSucceeded = false;
-    if (inputCaptureService != null) {
+    // Rendered once: input capture logs these sources, and the
+    // unchanged-input gate below fingerprints them. Null when rendering
+    // failed, which skips both rather than aborting the wake.
+    List<RenderedSource>? sources;
+    var linkedEntityIds = const <String>{};
+    try {
+      final linked = await journalDb.getLinkedEntities(taskId);
+      // Image AI analyses (summary, OCR, …) are linked from their image,
+      // not from the task, so they need their own bulk lookup. A failure
+      // here degrades to rendering without analyses rather than skipping
+      // the sources altogether.
+      var imageAiResponses = const <String, List<AiResponseEntry>>{};
       try {
-        final linked = await journalDb.getLinkedEntities(taskId);
-        // Image AI analyses (summary, OCR, …) are linked from their image,
-        // not from the task, so they need their own bulk lookup. A failure
-        // here degrades to capturing without analyses rather than skipping
-        // the whole capture.
-        var imageAiResponses = const <String, List<AiResponseEntry>>{};
-        try {
-          imageAiResponses = await fetchAiResponsesForImages(
-            db: journalDb,
-            linkedEntities: linked,
-          );
-        } catch (e) {
-          logError('failed to fetch image AI responses for capture', error: e);
-        }
-        captureSucceeded = await memory.capture(
-          agentId: agentId,
-          sources: renderTaskSources(
-            linked,
-            // A running timer's duration is still ticking; capturing it would
-            // mint a new content version every wake (see renderTaskSources).
-            runningEntryId: getIt<TimeService>().getCurrent()?.meta.id,
-            aiResponsesByEntryId: imageAiResponses,
-          ),
-          at: now,
-          threadId: threadId,
-          runKey: runKey,
+        imageAiResponses = await fetchAiResponsesForImages(
+          db: journalDb,
+          linkedEntities: linked,
         );
       } catch (e) {
-        // Source rendering failed (the capture call itself absorbs its own
-        // errors inside [AgentWakeMemory.capture]).
-        logError('failed to capture wake inputs', error: e);
+        logError('failed to fetch image AI responses for capture', error: e);
       }
+      sources = renderTaskSources(
+        linked,
+        // A running timer's duration is still ticking; capturing it would
+        // mint a new content version every wake (see renderTaskSources).
+        runningEntryId: getIt<TimeService>().getCurrent()?.meta.id,
+        aiResponsesByEntryId: imageAiResponses,
+      );
+      linkedEntityIds = {for (final entity in linked) entity.meta.id};
+    } catch (e) {
+      logError('failed to render wake sources', error: e);
+    }
+
+    var captureSucceeded = false;
+    final renderedSources = sources;
+    if (inputCaptureService != null && renderedSources != null) {
+      captureSucceeded = await memory.capture(
+        agentId: agentId,
+        sources: renderedSources,
+        at: now,
+        threadId: threadId,
+        runKey: runKey,
+      );
     }
 
     // 2. Resolve the agent's template and active version. (Resolved before
@@ -149,6 +156,23 @@ extension TaskAgentExecute on TaskAgentWorkflow {
     }
     final modelId = resolvedProfile.thinkingModelId;
     final provider = resolvedProfile.thinkingProvider;
+
+    // 3a. Unchanged-input gate: an automatic wake whose inputs match the last
+    // completed wake's would show the model the same task again, so it ends
+    // here, before compaction, prompt assembly and inference. The completed
+    // run keeps the report fresh and carries the fingerprint forward.
+    if (renderedSources != null) {
+      final skipped = await _recordInputFingerprint(
+        agentId: agentId,
+        taskId: taskId,
+        runKey: runKey,
+        sources: renderedSources,
+        linkedEntityIds: linkedEntityIds,
+        templateCtx: templateCtx,
+        modelId: modelId,
+      );
+      if (skipped) return const WakeResult(success: true);
+    }
     final runSnapshot = InferenceRunSnapshot(
       runKey: runKey,
       threadId: threadId,
@@ -1044,5 +1068,65 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       hasOpenProposals: ledger.open.isNotEmpty,
       hasActiveAttentionClaims: attentionClaims.isNotEmpty,
     );
+  }
+
+  /// Fingerprints this wake's inputs (see [taskWakeInputFingerprint]) and
+  /// records the fingerprint on the run, returning whether the wake should
+  /// be skipped as unchanged. [linkedEntityIds] are the task's outgoing
+  /// links; the incoming ones are looked up here.
+  ///
+  /// Only automatic subscription wakes are skipped. Manual, creation,
+  /// scheduled and transcript wakes always run — someone or something asked
+  /// for them — but still record their fingerprint, so a no-op edit right
+  /// after an "Update now" is recognised. Any failure means "changed": the
+  /// gate never costs a wake that should have run.
+  Future<bool> _recordInputFingerprint({
+    required String agentId,
+    required String taskId,
+    required String runKey,
+    required List<RenderedSource> sources,
+    required Set<String> linkedEntityIds,
+    required AgentTemplateContext templateCtx,
+    required String modelId,
+  }) async {
+    try {
+      final taskState = await this.aiInputRepository.buildTaskStateMarkdown(
+        taskId,
+        includeTimeSpent: false,
+      );
+      if (taskState == null) return false;
+      final fingerprint = taskWakeInputFingerprint(
+        taskState: taskState,
+        sources: sources,
+        linkedEntityIds: {
+          ...linkedEntityIds,
+          for (final entity in await journalDb.getLinkedToEntities(taskId))
+            entity.id,
+        },
+        categoryKnowledge: await this.aiInputRepository.buildCategoryKnowledge(
+          taskId,
+        ),
+        templateVersionId: templateCtx.version.id,
+        soulVersionId: templateCtx.soulVersion?.id,
+        modelId: modelId,
+      );
+      final run = await agentRepository.getWakeRunByRunKey(runKey);
+      final previous = await agentRepository
+          .getLatestCompletedWakeInputFingerprint(agentId);
+      await agentRepository.updateWakeRunInputFingerprint(runKey, fingerprint);
+      final skip =
+          run?.reason == WakeReason.subscription.name &&
+          previous == fingerprint;
+      if (skip) {
+        logInfo(
+          'inputs unchanged since the last completed wake — skipping',
+          subDomain: 'execute',
+        );
+      }
+      return skip;
+    } catch (e) {
+      logError('failed to fingerprint wake inputs', error: e);
+      return false;
+    }
   }
 }

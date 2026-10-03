@@ -2069,5 +2069,133 @@ void main() {
         },
       );
     });
+    group('unchanged-input gate', () {
+      String? previousFingerprint;
+      late List<String> recordedFingerprints;
+      late String wakeReason;
+      late List<JournalEntity> linkedEntries;
+      late String taskState;
+
+      setUp(() {
+        stubFullExecutePath(
+          mockAgentRepository: mockAgentRepository,
+          mockAiInputRepository: mockAiInputRepository,
+          mockAiConfigRepository: mockAiConfigRepository,
+          mockConversationManager: mockConversationManager,
+          testAgentState: testAgentState,
+          geminiModel: geminiModel,
+          geminiProvider: geminiProvider,
+          agentId: agentId,
+          taskId: taskId,
+        );
+        previousFingerprint = null;
+        recordedFingerprints = [];
+        wakeReason = WakeReason.subscription.name;
+        linkedEntries = [];
+        taskState = '- Title: Test Task';
+
+        when(
+          () => mockJournalDb.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => linkedEntries);
+        when(
+          () => mockJournalDb.getLinkedToEntities(taskId),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockAiInputRepository.buildTaskStateMarkdown(
+            taskId,
+            includeTimeSpent: false,
+          ),
+        ).thenAnswer((_) async => taskState);
+        when(() => mockAgentRepository.getWakeRunByRunKey(any())).thenAnswer(
+          (invocation) async => makeTestWakeRun(
+            runKey: invocation.positionalArguments.single as String,
+            reason: wakeReason,
+            status: 'running',
+          ),
+        );
+        when(
+          () => mockAgentRepository.getLatestCompletedWakeInputFingerprint(
+            agentId,
+          ),
+        ).thenAnswer((_) async => previousFingerprint);
+        when(
+          () => mockAgentRepository.updateWakeRunInputFingerprint(any(), any()),
+        ).thenAnswer((invocation) async {
+          recordedFingerprints.add(invocation.positionalArguments[1] as String);
+        });
+      });
+
+      Future<int> wakeAndCountInferenceCalls() async {
+        final before = mockConversationRepository.turnBudgets.length;
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {taskId},
+          threadId: threadId,
+        );
+        expect(result.success, isTrue);
+        return mockConversationRepository.turnBudgets.length - before;
+      }
+
+      /// Runs a first wake and makes its fingerprint the "last completed" one.
+      Future<String> completeFirstWake() async {
+        expect(await wakeAndCountInferenceCalls(), greaterThan(0));
+        return previousFingerprint = recordedFingerprints.single;
+      }
+
+      test(
+        'skips an automatic wake whose inputs match the last completed wake, '
+        'before any inference, and carries the fingerprint forward',
+        () async {
+          final fingerprint = await completeFirstWake();
+
+          expect(await wakeAndCountInferenceCalls(), 0);
+          expect(recordedFingerprints, [fingerprint, fingerprint]);
+        },
+      );
+
+      test('runs when the task state changed', () async {
+        final fingerprint = await completeFirstWake();
+        taskState = '- Title: Renamed task';
+
+        expect(await wakeAndCountInferenceCalls(), greaterThan(0));
+        expect(recordedFingerprints.last, isNot(fingerprint));
+      });
+
+      test('runs when a new entry was linked to the task', () async {
+        await completeFirstWake();
+        linkedEntries = [
+          makeLinkedTimeEntry(
+            id: 'entry-new',
+            dateFrom: testDate,
+            dateTo: testDate.add(const Duration(minutes: 5)),
+            text: 'Found the cause',
+          ),
+        ];
+
+        expect(await wakeAndCountInferenceCalls(), greaterThan(0));
+      });
+
+      test('a manual wake runs even when nothing changed', () async {
+        final fingerprint = await completeFirstWake();
+        wakeReason = WakeReason.reanalysis.name;
+
+        expect(await wakeAndCountInferenceCalls(), greaterThan(0));
+        expect(recordedFingerprints.last, fingerprint);
+      });
+
+      test('fails open: an unreadable task state never skips', () async {
+        await completeFirstWake();
+        when(
+          () => mockAiInputRepository.buildTaskStateMarkdown(
+            taskId,
+            includeTimeSpent: false,
+          ),
+        ).thenThrow(StateError('db closed'));
+
+        expect(await wakeAndCountInferenceCalls(), greaterThan(0));
+        expect(recordedFingerprints, hasLength(1));
+      });
+    });
   });
 }

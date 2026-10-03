@@ -95,6 +95,30 @@ void _seedAgentV1(String dbFile) {
   rawDb.close();
 }
 
+/// `wake_run_log` as schema v23 shipped it, before `input_fingerprint`.
+const _wakeRunLogV23Sql = '''
+  CREATE TABLE wake_run_log (
+    run_key TEXT NOT NULL PRIMARY KEY,
+    agent_id TEXT NOT NULL,
+    reason TEXT NOT NULL,
+    reason_id TEXT,
+    thread_id TEXT NOT NULL,
+    status TEXT NOT NULL,
+    logical_change_key TEXT,
+    created_at DATETIME NOT NULL,
+    started_at DATETIME,
+    completed_at DATETIME,
+    error_message TEXT,
+    template_id TEXT,
+    template_version_id TEXT,
+    resolved_model_id TEXT,
+    soul_id TEXT,
+    soul_version_id TEXT,
+    user_rating REAL,
+    rated_at DATETIME
+  )
+''';
+
 void main() {
   late Directory testDirectory;
 
@@ -1386,6 +1410,7 @@ void main() {
             'ON agent_entities(type, created_at DESC) '
             'WHERE deleted_at IS NULL',
           )
+          ..execute(_wakeRunLogV23Sql)
           ..execute('PRAGMA user_version = 9');
         rawDb.close();
 
@@ -2121,6 +2146,7 @@ void main() {
             )
           ''')
           ..execute(_agentLinksV21Sql)
+          ..execute(_wakeRunLogV23Sql)
           ..execute('PRAGMA user_version = 15');
         rawDb.close();
 
@@ -2269,6 +2295,7 @@ void main() {
             ],
           )
           ..execute(_agentLinksV21Sql)
+          ..execute(_wakeRunLogV23Sql)
           ..execute('PRAGMA user_version = 17')
           ..close();
 
@@ -2414,12 +2441,44 @@ void main() {
       );
     });
     test(
+      'v23 to v24 adds input_fingerprint and keeps existing runs, which carry '
+      'none',
+      () async {
+        final dbFile = path.join(testDirectory.path, agentDbFileName);
+        sqlite3.open(dbFile)
+          ..execute(_wakeRunLogV23Sql)
+          ..execute(
+            'INSERT INTO wake_run_log (run_key, agent_id, reason, thread_id, '
+            "status, created_at) VALUES ('run-1', 'agent-1', 'subscription', "
+            "'thread-1', 'completed', 1)",
+          )
+          ..execute('PRAGMA user_version = 23')
+          ..close();
+
+        final db = AgentDatabase(
+          background: false,
+          documentsDirectoryProvider: () async => testDirectory,
+          tempDirectoryProvider: () async => testDirectory,
+        );
+        addTearDown(db.close);
+
+        final run = await db.getWakeRunByRunKey('run-1').getSingle();
+        expect(run.agentId, 'agent-1');
+        expect(run.inputFingerprint, isNull);
+        expect(
+          await db.getLatestCompletedWakeInputFingerprint('agent-1').get(),
+          [null],
+        );
+      },
+    );
+    test(
       'v22 to v23 adds deleted_agents, which remembers a deleted agent '
       '(ADR 0108)',
       () async {
         final dbFile = path.join(testDirectory.path, agentDbFileName);
         sqlite3.open(dbFile)
           ..execute(_agentLinksV21Sql)
+          ..execute(_wakeRunLogV23Sql)
           ..execute('PRAGMA user_version = 22')
           ..close();
 
@@ -2433,7 +2492,7 @@ void main() {
         final version = await db
             .customSelect('PRAGMA user_version')
             .getSingle();
-        expect(version.read<int>('user_version'), 23);
+        expect(version.read<int>('user_version'), db.schemaVersion);
         await db.recordDeletedAgent('agent-1', DateTime(2026, 9, 27));
         await db.recordDeletedAgent('agent-1', DateTime(2026, 9, 28));
         expect(
@@ -2462,6 +2521,7 @@ void main() {
             "INSERT INTO agent_links VALUES ('ta-1', 'tpl', 'agent', "
             "'template_assignment', 1, 1, NULL, '{}', 1)",
           )
+          ..execute(_wakeRunLogV23Sql)
           ..execute('PRAGMA user_version = 21')
           ..close();
 

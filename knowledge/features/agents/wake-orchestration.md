@@ -68,6 +68,10 @@ sources:
     resource: ../../../docs/adr/0022-long-lived-daily-os-planner.md
     title: ADR 0022 — Long-lived Daily OS planner
     last_modified: 2026-06-09
+  - id: input-fingerprint
+    resource: ../../../lib/features/agents/workflow/task_wake_input_fingerprint.dart
+    title: Unchanged-input gate fingerprint
+    last_modified: 2026-10-03
   - id: tla-spec
     resource: ../../../specs/tla/WakeRuntime.tla
     title: TLA+ model of the wake runtime
@@ -286,6 +290,57 @@ of its linked entries has meaningful text, then clears the flag and lets the wak
 proceed. Event agents use the same shared gate with their own checker.
 
 Without it, auto-provisioning would burn an inference run on a bare title.
+
+# The unchanged-input gate
+
+The content gate guards a task's *first* run; this one guards every later
+automatic run. Many writes that match a task subscription change nothing the
+agent reads: saving a running timer's note unedited stamps a new `dateTo`, a
+geolocation backfill re-notifies a fresh entry, a task is re-saved as it was.
+Each used to cost a full inference run.
+
+The task workflow (`TaskAgentExecute`, in
+`lib/features/agents/workflow/task_agent_execute.dart`) fingerprints the
+user-owned inputs right after resolving the template and model, before the
+ledger, compaction and prompt assembly. The fingerprint
+(`taskWakeInputFingerprint`, in
+`lib/features/agents/workflow/task_wake_input_fingerprint.dart`) covers the
+task state rendered **without time spent**, the rendered log sources, the
+ids linked to and from the task, the category brief, and the template version,
+soul version and model. Time spent is left out because a running timer moves
+it; finished entries still contribute their own durations through their
+sources, so stopping a timer is a change.
+
+```mermaid
+flowchart TD
+  Start["Task wake: template and model resolved"] --> FP["Fingerprint user-owned inputs"]
+  FP -->|"failed"| Run["Run the wake"]
+  FP --> Record["Record fingerprint on this wake_run_log row"]
+  Record --> Auto{"reason == subscription?"}
+  Auto -->|no| Run
+  Auto -->|yes| Same{"Equals newest completed run's fingerprint?"}
+  Same -->|no| Run
+  Same -->|yes| Skip["Return success with no mutations"]
+  Skip --> Done["Drain engine: completed, report marked fresh"]
+  Run --> Done
+```
+
+- **Only subscription wakes skip.** Manual, creation, scheduled and transcript
+  wakes always run, but record their fingerprint too, so a no-op edit right
+  after "Update now" is recognised.
+- **The comparison is per device.** The fingerprint lives in the device-local
+  `wake_run_log.input_fingerprint` column, and the reference is the agent's
+  newest *completed* run on this device. A null there — older runs, a run whose
+  fingerprint failed — never counts as unchanged.
+- **It fails open.** Any error while fingerprinting lets the wake run.
+- **A skip is a completed run.** It returns an empty mutation map, so the drain
+  engine marks the report fresh: the report already reflects these inputs.
+- **Deliberately not covered:** other agents' reports shown as project and
+  linked-task context, and pull request state. They change out of band and do
+  not wake this agent on their own, so they cannot be the reason a wake fired.
+- **Known cost:** a tool that applies a change directly during a run, rather
+  than proposing it, changes the next fingerprint, so the first automatic wake
+  after such a run always goes ahead.
 
 # Concurrency
 

@@ -4425,6 +4425,110 @@ void main() {
       tags: 'glados',
     );
 
+    group('wake input fingerprints', () {
+      Future<void> insertRun(
+        String runKey, {
+        required String status,
+        required int minute,
+        String? fingerprint,
+        String agentId = testAgentId,
+      }) => repo.insertWakeRun(
+        entry: makeTestWakeRun(
+          runKey: runKey,
+          agentId: agentId,
+          status: status,
+          createdAt: testDate.add(Duration(minutes: minute)),
+          inputFingerprint: fingerprint,
+        ),
+      );
+
+      test('getWakeRunByRunKey returns the run, or null', () async {
+        await insertRun('run-a', status: 'running', minute: 0);
+
+        expect((await repo.getWakeRunByRunKey('run-a'))?.status, 'running');
+        expect(await repo.getWakeRunByRunKey('no-such-run'), isNull);
+      });
+
+      test(
+        'updateWakeRunInputFingerprint records the fingerprint and ignores an '
+        'unknown run',
+        () async {
+          await insertRun('run-a', status: 'running', minute: 0);
+
+          await repo.updateWakeRunInputFingerprint('run-a', 'fp-1');
+          await repo.updateWakeRunInputFingerprint('no-such-run', 'fp-2');
+
+          expect((await getWakeRun(db, 'run-a'))?.inputFingerprint, 'fp-1');
+        },
+      );
+
+      test(
+        'the latest completed fingerprint comes from the newest completed run '
+        "of that agent, ignoring running, failed and other agents' runs",
+        () async {
+          await insertRun(
+            'old',
+            status: 'completed',
+            minute: 0,
+            fingerprint: 'a',
+          );
+          await insertRun(
+            'new',
+            status: 'completed',
+            minute: 1,
+            fingerprint: 'b',
+          );
+          await insertRun(
+            'failed',
+            status: 'failed',
+            minute: 2,
+            fingerprint: 'c',
+          );
+          await insertRun(
+            'live',
+            status: 'running',
+            minute: 3,
+            fingerprint: 'd',
+          );
+          await insertRun(
+            'other',
+            status: 'completed',
+            minute: 4,
+            fingerprint: 'e',
+            agentId: 'other-agent',
+          );
+
+          expect(
+            await repo.getLatestCompletedWakeInputFingerprint(testAgentId),
+            'b',
+          );
+        },
+      );
+
+      test(
+        'the latest completed fingerprint is null when that run recorded none, '
+        'even if an older one did',
+        () async {
+          await insertRun(
+            'old',
+            status: 'completed',
+            minute: 0,
+            fingerprint: 'a',
+          );
+          await insertRun('new', status: 'completed', minute: 1);
+
+          expect(
+            await repo.getLatestCompletedWakeInputFingerprint(testAgentId),
+            isNull,
+          );
+          expect(
+            await repo.getLatestCompletedWakeInputFingerprint('no-runs'),
+            isNull,
+          );
+        },
+      );
+    });
+
     group('updateWakeRunTemplate', () {
       test('sets template columns on wake run', () async {
         await repo.insertWakeRun(entry: makeWakeRun(runKey: 'run-tpl'));

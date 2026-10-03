@@ -2954,6 +2954,17 @@ class WakeRunLog extends Table with TableInfo<WakeRunLog, WakeRunLogData> {
     requiredDuringInsert: false,
     $customConstraints: '',
   );
+  static const VerificationMeta _inputFingerprintMeta = const VerificationMeta(
+    'inputFingerprint',
+  );
+  late final GeneratedColumn<String> inputFingerprint = GeneratedColumn<String>(
+    'input_fingerprint',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
   @override
   List<GeneratedColumn> get $columns => [
     runKey,
@@ -2974,6 +2985,7 @@ class WakeRunLog extends Table with TableInfo<WakeRunLog, WakeRunLogData> {
     soulVersionId,
     userRating,
     ratedAt,
+    inputFingerprint,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3125,6 +3137,15 @@ class WakeRunLog extends Table with TableInfo<WakeRunLog, WakeRunLogData> {
         ratedAt.isAcceptableOrUnknown(data['rated_at']!, _ratedAtMeta),
       );
     }
+    if (data.containsKey('input_fingerprint')) {
+      context.handle(
+        _inputFingerprintMeta,
+        inputFingerprint.isAcceptableOrUnknown(
+          data['input_fingerprint']!,
+          _inputFingerprintMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -3206,6 +3227,10 @@ class WakeRunLog extends Table with TableInfo<WakeRunLog, WakeRunLogData> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}rated_at'],
       ),
+      inputFingerprint: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}input_fingerprint'],
+      ),
     );
   }
 
@@ -3237,6 +3262,10 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
   final String? soulVersionId;
   final double? userRating;
   final DateTime? ratedAt;
+
+  /// Digest of the user-owned inputs a task-agent wake read (see
+  /// `taskWakeInputFingerprint`). Device-local, like the rest of this table.
+  final String? inputFingerprint;
   const WakeRunLogData({
     required this.runKey,
     required this.agentId,
@@ -3256,6 +3285,7 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
     this.soulVersionId,
     this.userRating,
     this.ratedAt,
+    this.inputFingerprint,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3301,6 +3331,9 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
     }
     if (!nullToAbsent || ratedAt != null) {
       map['rated_at'] = Variable<DateTime>(ratedAt);
+    }
+    if (!nullToAbsent || inputFingerprint != null) {
+      map['input_fingerprint'] = Variable<String>(inputFingerprint);
     }
     return map;
   }
@@ -3349,6 +3382,9 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
       ratedAt: ratedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(ratedAt),
+      inputFingerprint: inputFingerprint == null && nullToAbsent
+          ? const Value.absent()
+          : Value(inputFingerprint),
     );
   }
 
@@ -3380,6 +3416,7 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
       soulVersionId: serializer.fromJson<String?>(json['soul_version_id']),
       userRating: serializer.fromJson<double?>(json['user_rating']),
       ratedAt: serializer.fromJson<DateTime?>(json['rated_at']),
+      inputFingerprint: serializer.fromJson<String?>(json['input_fingerprint']),
     );
   }
   @override
@@ -3404,6 +3441,7 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
       'soul_version_id': serializer.toJson<String?>(soulVersionId),
       'user_rating': serializer.toJson<double?>(userRating),
       'rated_at': serializer.toJson<DateTime?>(ratedAt),
+      'input_fingerprint': serializer.toJson<String?>(inputFingerprint),
     };
   }
 
@@ -3426,6 +3464,7 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
     Value<String?> soulVersionId = const Value.absent(),
     Value<double?> userRating = const Value.absent(),
     Value<DateTime?> ratedAt = const Value.absent(),
+    Value<String?> inputFingerprint = const Value.absent(),
   }) => WakeRunLogData(
     runKey: runKey ?? this.runKey,
     agentId: agentId ?? this.agentId,
@@ -3453,6 +3492,9 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
         : this.soulVersionId,
     userRating: userRating.present ? userRating.value : this.userRating,
     ratedAt: ratedAt.present ? ratedAt.value : this.ratedAt,
+    inputFingerprint: inputFingerprint.present
+        ? inputFingerprint.value
+        : this.inputFingerprint,
   );
   WakeRunLogData copyWithCompanion(WakeRunLogCompanion data) {
     return WakeRunLogData(
@@ -3490,6 +3532,9 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
           ? data.userRating.value
           : this.userRating,
       ratedAt: data.ratedAt.present ? data.ratedAt.value : this.ratedAt,
+      inputFingerprint: data.inputFingerprint.present
+          ? data.inputFingerprint.value
+          : this.inputFingerprint,
     );
   }
 
@@ -3513,7 +3558,8 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
           ..write('soulId: $soulId, ')
           ..write('soulVersionId: $soulVersionId, ')
           ..write('userRating: $userRating, ')
-          ..write('ratedAt: $ratedAt')
+          ..write('ratedAt: $ratedAt, ')
+          ..write('inputFingerprint: $inputFingerprint')
           ..write(')'))
         .toString();
   }
@@ -3538,6 +3584,7 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
     soulVersionId,
     userRating,
     ratedAt,
+    inputFingerprint,
   );
   @override
   bool operator ==(Object other) =>
@@ -3560,7 +3607,8 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
           other.soulId == this.soulId &&
           other.soulVersionId == this.soulVersionId &&
           other.userRating == this.userRating &&
-          other.ratedAt == this.ratedAt);
+          other.ratedAt == this.ratedAt &&
+          other.inputFingerprint == this.inputFingerprint);
 }
 
 class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
@@ -3582,6 +3630,7 @@ class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
   final Value<String?> soulVersionId;
   final Value<double?> userRating;
   final Value<DateTime?> ratedAt;
+  final Value<String?> inputFingerprint;
   final Value<int> rowid;
   const WakeRunLogCompanion({
     this.runKey = const Value.absent(),
@@ -3602,6 +3651,7 @@ class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
     this.soulVersionId = const Value.absent(),
     this.userRating = const Value.absent(),
     this.ratedAt = const Value.absent(),
+    this.inputFingerprint = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   WakeRunLogCompanion.insert({
@@ -3623,6 +3673,7 @@ class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
     this.soulVersionId = const Value.absent(),
     this.userRating = const Value.absent(),
     this.ratedAt = const Value.absent(),
+    this.inputFingerprint = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : runKey = Value(runKey),
        agentId = Value(agentId),
@@ -3649,6 +3700,7 @@ class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
     Expression<String>? soulVersionId,
     Expression<double>? userRating,
     Expression<DateTime>? ratedAt,
+    Expression<String>? inputFingerprint,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -3670,6 +3722,7 @@ class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
       if (soulVersionId != null) 'soul_version_id': soulVersionId,
       if (userRating != null) 'user_rating': userRating,
       if (ratedAt != null) 'rated_at': ratedAt,
+      if (inputFingerprint != null) 'input_fingerprint': inputFingerprint,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -3693,6 +3746,7 @@ class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
     Value<String?>? soulVersionId,
     Value<double?>? userRating,
     Value<DateTime?>? ratedAt,
+    Value<String?>? inputFingerprint,
     Value<int>? rowid,
   }) {
     return WakeRunLogCompanion(
@@ -3714,6 +3768,7 @@ class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
       soulVersionId: soulVersionId ?? this.soulVersionId,
       userRating: userRating ?? this.userRating,
       ratedAt: ratedAt ?? this.ratedAt,
+      inputFingerprint: inputFingerprint ?? this.inputFingerprint,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -3775,6 +3830,9 @@ class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
     if (ratedAt.present) {
       map['rated_at'] = Variable<DateTime>(ratedAt.value);
     }
+    if (inputFingerprint.present) {
+      map['input_fingerprint'] = Variable<String>(inputFingerprint.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -3802,6 +3860,7 @@ class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
           ..write('soulVersionId: $soulVersionId, ')
           ..write('userRating: $userRating, ')
           ..write('ratedAt: $ratedAt, ')
+          ..write('inputFingerprint: $inputFingerprint, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4858,6 +4917,22 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
       variables: [Variable<String>(agentId), Variable<String>(threadId)],
       readsFrom: {wakeRunLog},
     ).asyncMap(wakeRunLog.mapFromRow);
+  }
+
+  Selectable<WakeRunLogData> getWakeRunByRunKey(String runKey) {
+    return customSelect(
+      'SELECT * FROM wake_run_log WHERE run_key = ?1',
+      variables: [Variable<String>(runKey)],
+      readsFrom: {wakeRunLog},
+    ).asyncMap(wakeRunLog.mapFromRow);
+  }
+
+  Selectable<String?> getLatestCompletedWakeInputFingerprint(String agentId) {
+    return customSelect(
+      'SELECT input_fingerprint FROM wake_run_log WHERE agent_id = ?1 AND status = \'completed\' ORDER BY created_at DESC LIMIT 1',
+      variables: [Variable<String>(agentId)],
+      readsFrom: {wakeRunLog},
+    ).map((QueryRow row) => row.readNullable<String>('input_fingerprint'));
   }
 
   Selectable<AgentEntity> getAllAgentIdentities() {
@@ -6651,6 +6726,7 @@ typedef $WakeRunLogCreateCompanionBuilder =
       Value<String?> soulVersionId,
       Value<double?> userRating,
       Value<DateTime?> ratedAt,
+      Value<String?> inputFingerprint,
       Value<int> rowid,
     });
 typedef $WakeRunLogUpdateCompanionBuilder =
@@ -6673,6 +6749,7 @@ typedef $WakeRunLogUpdateCompanionBuilder =
       Value<String?> soulVersionId,
       Value<double?> userRating,
       Value<DateTime?> ratedAt,
+      Value<String?> inputFingerprint,
       Value<int> rowid,
     });
 
@@ -6771,6 +6848,11 @@ class $WakeRunLogFilterComposer extends Composer<_$AgentDatabase, WakeRunLog> {
 
   ColumnFilters<DateTime> get ratedAt => $composableBuilder(
     column: $table.ratedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get inputFingerprint => $composableBuilder(
+    column: $table.inputFingerprint,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -6873,6 +6955,11 @@ class $WakeRunLogOrderingComposer
     column: $table.ratedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get inputFingerprint => $composableBuilder(
+    column: $table.inputFingerprint,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $WakeRunLogAnnotationComposer
@@ -6953,6 +7040,11 @@ class $WakeRunLogAnnotationComposer
 
   GeneratedColumn<DateTime> get ratedAt =>
       $composableBuilder(column: $table.ratedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get inputFingerprint => $composableBuilder(
+    column: $table.inputFingerprint,
+    builder: (column) => column,
+  );
 }
 
 class $WakeRunLogTableManager
@@ -7004,6 +7096,7 @@ class $WakeRunLogTableManager
                 Value<String?> soulVersionId = const Value.absent(),
                 Value<double?> userRating = const Value.absent(),
                 Value<DateTime?> ratedAt = const Value.absent(),
+                Value<String?> inputFingerprint = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => WakeRunLogCompanion(
                 runKey: runKey,
@@ -7024,6 +7117,7 @@ class $WakeRunLogTableManager
                 soulVersionId: soulVersionId,
                 userRating: userRating,
                 ratedAt: ratedAt,
+                inputFingerprint: inputFingerprint,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -7046,6 +7140,7 @@ class $WakeRunLogTableManager
                 Value<String?> soulVersionId = const Value.absent(),
                 Value<double?> userRating = const Value.absent(),
                 Value<DateTime?> ratedAt = const Value.absent(),
+                Value<String?> inputFingerprint = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => WakeRunLogCompanion.insert(
                 runKey: runKey,
@@ -7066,6 +7161,7 @@ class $WakeRunLogTableManager
                 soulVersionId: soulVersionId,
                 userRating: userRating,
                 ratedAt: ratedAt,
+                inputFingerprint: inputFingerprint,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
