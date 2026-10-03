@@ -8,14 +8,16 @@ class OpenPullRequest {
   const OpenPullRequest({
     required this.ref,
     required this.title,
-    required this.updatedAt,
+    required this.createdAt,
     this.authorLogin,
     this.draft = false,
   });
 
   final PullRequestRef ref;
   final String title;
-  final DateTime updatedAt;
+
+  /// When the pull request was opened, in UTC: the picker's order and age.
+  final DateTime createdAt;
   final String? authorLogin;
   final bool draft;
 }
@@ -28,11 +30,11 @@ OpenPullRequest openPullRequestFrom(
 ) {
   final number = json['number'];
   final title = json['title'];
-  final updatedAtText = json['updated_at'];
-  final updatedAt = updatedAtText is String
-      ? DateTime.tryParse(updatedAtText)
+  final createdAtText = json['created_at'];
+  final createdAt = createdAtText is String
+      ? DateTime.tryParse(createdAtText)
       : null;
-  if (number is! int || title is! String || updatedAt == null) {
+  if (number is! int || title is! String || createdAt == null) {
     throw const FormatException('not an open pull request');
   }
   final user = json['user'];
@@ -44,7 +46,7 @@ OpenPullRequest openPullRequestFrom(
       number: number,
     ),
     title: title,
-    updatedAt: updatedAt.toUtc(),
+    createdAt: createdAt.toUtc(),
     authorLogin: login is String ? login : null,
     draft: json['draft'] == true,
   );

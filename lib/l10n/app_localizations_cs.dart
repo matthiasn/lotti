@@ -6707,9 +6707,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get githubMergeBehind => 'Za základní větví';
 
   @override
-  String get githubMergeBlocked => 'Blokováno pravidly větve';
-
-  @override
   String get githubMergeConflicts => 'Konflikty při slučování';
 
   @override

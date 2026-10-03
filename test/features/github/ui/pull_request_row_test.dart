@@ -1,5 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/features/github/api/github_client.dart';
@@ -113,42 +115,103 @@ void main() {
       },
     );
 
-    test('a draft, with checks running, blocked, awaiting review', () {
-      final snapshot = prSnapshot().copyWith(
-        draft: true,
-        mergeability: PullRequestMergeability.blocked,
-        reviews: const PullRequestReviews(
-          decision: PullRequestReviewDecision.pending,
-        ),
-      );
-      expect(words(snapshot), [
-        'Draft',
-        '3 min ago',
-        'Checks running',
-        'Blocked by branch rules',
-        'Review requested',
-      ]);
-    });
+    test(
+      'a draft, with checks running and a review requested: "blocked" is '
+      'not shown, since it only repeats the missing review or check',
+      () {
+        final snapshot = prSnapshot().copyWith(
+          draft: true,
+          mergeability: PullRequestMergeability.blocked,
+          reviews: const PullRequestReviews(
+            decision: PullRequestReviewDecision.pending,
+          ),
+        );
+        expect(words(snapshot), [
+          'Draft',
+          '3 min ago',
+          'Checks running',
+          'Review requested',
+        ]);
+      },
+    );
 
-    test('merged and closed pull requests show only their state and age', () {
-      final merged = prSnapshot(
-        status: PullRequestStatus.merged,
-        checks: PullRequestCheckRollup.failing,
-      ).copyWith(mergeability: PullRequestMergeability.conflicting);
-      expect(words(merged), ['Merged', '3 min ago']);
-      expect(
-        words(prSnapshot(status: PullRequestStatus.closed)),
-        ['Closed', '3 min ago'],
-      );
-    });
+    test(
+      'two pull requests read at the same moment show when each was opened, '
+      'not when they were linked or read',
+      () {
+        final yesterday = prSnapshot(
+          createdAt: now.subtract(const Duration(days: 1, hours: 2)),
+        );
+        final thisMorning = prSnapshot(
+          createdAt: now.subtract(const Duration(hours: 5)),
+        );
+        expect(yesterday.observedAt, thisMorning.observedAt);
 
-    test('a failed refresh says so, and still shows how old the data is', () {
+        expect(words(yesterday).take(2), ['Open', '1 day ago']);
+        expect(words(thisMorning).take(2), ['Open', '5 h ago']);
+      },
+    );
+
+    test(
+      'a pull request opened over a week ago names the weekday and date '
+      'instead',
+      () async {
+        await initializeDateFormatting('en');
+        final opened = now.subtract(const Duration(days: 30));
+        expect(
+          words(prSnapshot(createdAt: opened))[1],
+          DateFormat.MMMEd('en').format(opened.toLocal()),
+        );
+      },
+    );
+
+    test(
+      'merged and closed pull requests show only their state and when they '
+      'entered it',
+      () {
+        final merged =
+            prSnapshot(
+              status: PullRequestStatus.merged,
+              checks: PullRequestCheckRollup.failing,
+            ).copyWith(
+              mergeability: PullRequestMergeability.conflicting,
+              mergedAt: now.subtract(const Duration(hours: 2)),
+            );
+        expect(words(merged), ['Merged', '2 h ago']);
+        expect(
+          words(
+            prSnapshot(status: PullRequestStatus.closed).copyWith(
+              closedAt: now.subtract(const Duration(days: 2)),
+            ),
+          ),
+          ['Closed', '2 days ago'],
+        );
+      },
+    );
+
+    test(
+      'a snapshot stored before it carried the opening shows no age until '
+      'its next refresh',
+      () {
+        expect(words(prSnapshot().copyWith(createdAt: null)), [
+          'Open',
+          'Checks running',
+        ]);
+        expect(words(prSnapshot(status: PullRequestStatus.merged)), [
+          'Merged',
+        ]);
+      },
+    );
+
+    test('a failed refresh says so, after the age', () {
       expect(
         words(
-          prSnapshot(status: PullRequestStatus.closed),
+          prSnapshot(status: PullRequestStatus.closed).copyWith(
+            closedAt: now.subtract(const Duration(minutes: 3)),
+          ),
           failure: const PullRequestRefreshFailed(GitHubFailureKind.offline),
         ),
-        ['Closed', 'Could not refresh', '3 min ago'],
+        ['Closed', '3 min ago', 'Could not refresh'],
       );
     });
 
@@ -236,6 +299,32 @@ void main() {
     );
 
     testWidgets(
+      'the age moves on by itself, with nothing refreshed or re-linked',
+      (tester) async {
+        final opened = clock.now().subtract(const Duration(seconds: 50));
+        final entry = prEntry(
+          clock: {'a': 1},
+          snapshot: prSnapshot(
+            createdAt: opened,
+          ).copyWith(observedAt: clock.now()),
+        );
+        await pump(tester, entry);
+        expect(
+          find.textContaining('just now', findRichText: true),
+          findsOneWidget,
+        );
+
+        await tester.pump(const Duration(seconds: 15));
+
+        expect(
+          find.textContaining('1 min ago', findRichText: true),
+          findsOneWidget,
+        );
+        verifyNever(() => service.refresh(any()));
+      },
+    );
+
+    testWidgets(
       'opening a stale pull request refreshes it, and shows what GitHub '
       'reported even when nothing had to be written',
       (tester) async {
@@ -246,6 +335,8 @@ void main() {
             prSnapshot(
               second: 3600 + 170,
               status: PullRequestStatus.merged,
+            ).copyWith(
+              mergedAt: prFixtureEpoch.add(const Duration(seconds: 3600 + 160)),
             ),
           ),
         );

@@ -29,7 +29,7 @@ void main() {
   OpenPullRequest openPr(int number, {bool draft = false}) => OpenPullRequest(
     ref: PullRequestRef(owner: 'penguin', repo: 'colony', number: number),
     title: 'Waddle $number',
-    updatedAt: DateTime.utc(2024, 3, 15),
+    createdAt: DateTime.utc(2024, 3, 15),
     authorLogin: 'pingu',
     draft: draft,
   );

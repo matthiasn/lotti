@@ -50,6 +50,16 @@ abstract class PullRequestSnapshot with _$PullRequestSnapshot {
     required String headRef,
     required String baseRef,
 
+    /// When the pull request was opened on GitHub (`created_at`), in UTC:
+    /// what an open one's age reads from, and what orders pull requests
+    /// newest first. Null in a snapshot stored before it was read, until
+    /// the next refresh.
+    /// Left out of the JSON when null, and out of the observation digest
+    /// always — it never changes for a pull request, so it says nothing
+    /// about which observation is later, and a version that does not know
+    /// the field computes the same digest.
+    @JsonKey(includeIfNull: false) DateTime? createdAt,
+
     /// The description, Markdown; null when the pull request has none.
     String? body,
     @Default(false) bool draft,

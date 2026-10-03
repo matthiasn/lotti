@@ -6660,9 +6660,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get githubMergeBehind => 'Achter op de basisbranch';
 
   @override
-  String get githubMergeBlocked => 'Geblokkeerd door branchregels';
-
-  @override
   String get githubMergeConflicts => 'Mergeconflicten';
 
   @override

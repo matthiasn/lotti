@@ -26,7 +26,7 @@ class PullRequestRepository {
   final JournalRepository _journal;
 
   /// The live pull requests linked from [taskId], one per pull request
-  /// ([distinctPullRequests]), by number.
+  /// ([distinctPullRequests]), newest first.
   Future<List<PullRequestEntry>> forTask(String taskId) async =>
       distinctPullRequests(await _linked(taskId));
 

@@ -2774,7 +2774,6 @@
   "githubLinkUrlHint": "https://github.com/proprietaire/depot/pull/123",
   "githubLinkUrlLabel": "URL de la pull request",
   "githubMergeBehind": "En retard sur la branche de base",
-  "githubMergeBlocked": "Bloquée par les règles de branche",
   "githubMergeConflicts": "Conflits de fusion",
   "githubNotRefreshed": "Actualisation impossible",
   "githubNotRefreshedYet": "Pas encore actualisée",

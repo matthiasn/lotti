@@ -190,10 +190,10 @@ void main() {
 
   group('openPullRequests', () {
     const repository_ = GitHubRepository(owner: 'matthiasn', repo: 'lotti');
-    OpenPullRequest open(int number) => OpenPullRequest(
+    OpenPullRequest open(int number, {int day = 15}) => OpenPullRequest(
       ref: PullRequestRef(owner: 'matthiasn', repo: 'lotti', number: number),
       title: 'PR $number',
-      updatedAt: DateTime.utc(2024, 3, 15),
+      createdAt: DateTime.utc(2024, 3, day),
     );
 
     test('lists the open pull requests no task holds', () async {
@@ -210,9 +210,37 @@ void main() {
 
       expect(
         (result as OpenPullRequestsListed).available.map((pr) => pr.ref.number),
-        [1, 3],
+        [3, 1],
       );
     });
+
+    test(
+      'lists the newest first, as GitHub does, whatever order the pages '
+      'came in; the same opening second goes by number',
+      () async {
+        when(
+          () => client.listOpenPullRequests(repository_, token: token),
+        ).thenAnswer(
+          (_) async => [
+            open(4, day: 3),
+            open(9, day: 12),
+            open(2, day: 1),
+            open(7, day: 12),
+            open(5, day: 8),
+          ],
+        );
+        when(() => repository.holdersOf(any())).thenAnswer((_) async => {});
+
+        final result = await service.openPullRequests(repository_);
+
+        expect(
+          (result as OpenPullRequestsListed).available.map(
+            (pr) => pr.ref.number,
+          ),
+          [9, 7, 5, 4, 2],
+        );
+      },
+    );
 
     test('says why GitHub could not list them', () async {
       when(

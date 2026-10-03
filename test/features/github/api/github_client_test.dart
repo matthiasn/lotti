@@ -454,13 +454,14 @@ void main() {
     Map<String, dynamic> openJson(int number, {bool draft = false}) => {
       'number': number,
       'title': 'PR $number',
-      'updated_at': '2024-03-15T11:00:00Z',
+      'created_at': '2024-03-15T11:00:00Z',
       'user': {'login': 'pingu'},
       'draft': draft,
     };
 
     test(
-      'lists open pull requests, most recently updated first, every page',
+      'lists open pull requests, asking GitHub for the newest first, every '
+      'page',
       () async {
         final client = clientWith(
           (request) => switch (request.url.queryParameters['page']) {
@@ -480,13 +481,13 @@ void main() {
         expect(open.first.ref.toString(), 'penguin/colony#1');
         expect(open.first.title, 'PR 1');
         expect(open.first.authorLogin, 'pingu');
-        expect(open.first.updatedAt, DateTime.utc(2024, 3, 15, 11));
+        expect(open.first.createdAt, DateTime.utc(2024, 3, 15, 11));
         expect(open.last.draft, isTrue);
         final first = requests.first.url;
         expect(first.path, '/repos/penguin/colony/pulls');
         expect(first.queryParameters, {
           'state': 'open',
-          'sort': 'updated',
+          'sort': 'created',
           'direction': 'desc',
           'per_page': '${GitHubClient.pageSize}',
           'page': '1',

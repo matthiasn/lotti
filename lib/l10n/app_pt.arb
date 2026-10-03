@@ -3030,7 +3030,6 @@
   "githubLinkUrlHint": "https://github.com/dono/repo/pull/123",
   "githubLinkUrlLabel": "URL da pull request",
   "githubMergeBehind": "Atrás do branch base",
-  "githubMergeBlocked": "Bloqueada pelas regras do branch",
   "githubMergeConflicts": "Conflitos de mesclagem",
   "githubNotRefreshed": "Não foi possível atualizar",
   "githubNotRefreshedYet": "Ainda não atualizada",

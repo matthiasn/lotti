@@ -6719,9 +6719,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get githubMergeBehind => 'Por detrás de la rama base';
 
   @override
-  String get githubMergeBlocked => 'Bloqueada por reglas de rama';
-
-  @override
   String get githubMergeConflicts => 'Conflictos de fusión';
 
   @override

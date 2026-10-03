@@ -86,6 +86,37 @@ void main() {
       },
     );
 
+    test('leads the date with the weekday when asked to', () {
+      expect(
+        relativeAgeOrDateLabel(
+          messages,
+          at: DateTime(2026, 9, 13),
+          now: now,
+          withWeekday: true,
+        ),
+        'Sun, Sep 13',
+      );
+      expect(
+        relativeAgeOrDateLabel(
+          messages,
+          at: DateTime(2025, 12, 30),
+          now: now,
+          withWeekday: true,
+        ),
+        'Tue, Dec 30, 2025',
+      );
+      // Within the week it stays relative either way.
+      expect(
+        relativeAgeOrDateLabel(
+          messages,
+          at: now.subtract(const Duration(days: 2)),
+          now: now,
+          withWeekday: true,
+        ),
+        '2 days ago',
+      );
+    });
+
     test("names the day on the reader's calendar, not UTC's", () {
       // A `createdAt` parsed from a `Z`-suffixed string stays UTC; the label
       // must be the one its local reading gives.

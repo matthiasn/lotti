@@ -2781,7 +2781,6 @@
   "githubLinkUrlHint": "https://github.com/vlastnik/repo/pull/123",
   "githubLinkUrlLabel": "URL pull requestu",
   "githubMergeBehind": "Za základní větví",
-  "githubMergeBlocked": "Blokováno pravidly větve",
   "githubMergeConflicts": "Konflikty při slučování",
   "githubNotRefreshed": "Aktualizace se nezdařila",
   "githubNotRefreshedYet": "Zatím neaktualizováno",

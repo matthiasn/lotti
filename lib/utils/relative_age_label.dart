@@ -31,7 +31,9 @@ Duration untilNextAgeBucket(Duration age) {
 const relativeAgeDateThreshold = Duration(days: 7);
 
 /// [relativeAgoLabel] for [at] up to [relativeAgeDateThreshold] before [now],
-/// and the date beyond it — "Sep 13", with the year once it is not [now]'s.
+/// and the date beyond it — "Sep 13", with the year once it is not [now]'s,
+/// and led by the weekday ("Sun, Sep 13") with [withWeekday], where a row
+/// has the room.
 ///
 /// The date is the viewer's: both instants are read in local time, so a
 /// timestamp parsed from a `Z`-suffixed string names the day it was on the
@@ -40,12 +42,14 @@ String relativeAgeOrDateLabel(
   AppLocalizations messages, {
   required DateTime at,
   required DateTime now,
+  bool withWeekday = false,
 }) {
   final age = now.difference(at);
   if (age < relativeAgeDateThreshold) return relativeAgoLabel(messages, age);
   final localAt = at.toLocal();
+  final locale = messages.localeName;
   final format = localAt.year == now.toLocal().year
-      ? DateFormat.MMMd(messages.localeName)
-      : DateFormat.yMMMd(messages.localeName);
+      ? (withWeekday ? DateFormat.MMMEd(locale) : DateFormat.MMMd(locale))
+      : (withWeekday ? DateFormat.yMMMEd(locale) : DateFormat.yMMMd(locale));
   return format.format(localAt);
 }

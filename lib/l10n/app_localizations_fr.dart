@@ -6741,9 +6741,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get githubMergeBehind => 'En retard sur la branche de base';
 
   @override
-  String get githubMergeBlocked => 'Bloquée par les règles de branche';
-
-  @override
   String get githubMergeConflicts => 'Conflits de fusion';
 
   @override

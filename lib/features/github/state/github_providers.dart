@@ -71,7 +71,7 @@ final pullRequestContextServiceProvider = Provider<PullRequestContextService>((
 }, name: 'pullRequestContextServiceProvider');
 
 /// The live pull requests linked from a task, one per pull request
-/// ([distinctPullRequests]), by number. Follows the task's links and every
+/// ([distinctPullRequests]), newest first. Follows the task's links and every
 /// entry, so a refresh, a sync or an unlink shows at once.
 final ProviderFamily<List<PullRequestEntry>, String> taskPullRequestsProvider =
     Provider.autoDispose.family<List<PullRequestEntry>, String>(

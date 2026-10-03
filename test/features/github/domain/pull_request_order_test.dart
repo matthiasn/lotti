@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
@@ -15,6 +17,44 @@ void main() {
         pullRequestSnapshotDigest(prSnapshot(second: 90)),
       );
     });
+
+    test(
+      'ignores when the pull request was opened, so a version that does not '
+      'know the field orders observations the same way',
+      () {
+        final legacy = prSnapshot().copyWith(createdAt: null);
+        expect(
+          pullRequestSnapshotDigest(prSnapshot()),
+          pullRequestSnapshotDigest(legacy),
+        );
+        expect(
+          pullRequestSnapshotDigest(
+            prSnapshot(createdAt: DateTime.utc(2020)),
+          ),
+          pullRequestSnapshotDigest(legacy),
+        );
+      },
+    );
+
+    test(
+      'a snapshot stored before it carried the opening reads it as unknown, '
+      'and writes no field for it',
+      () {
+        // As the entry is stored: JSON text, nested objects and all.
+        Map<String, dynamic> stored(PullRequestSnapshot s) =>
+            jsonDecode(jsonEncode(s)) as Map<String, dynamic>;
+        final legacy = stored(prSnapshot().copyWith(createdAt: null));
+        expect(legacy.containsKey('createdAt'), isFalse);
+
+        final read = PullRequestSnapshot.fromJson(legacy);
+        expect(read.createdAt, isNull);
+        expect(read.title, 'Track pull requests');
+        expect(
+          PullRequestSnapshot.fromJson(stored(prSnapshot())).createdAt,
+          prFixtureEpoch,
+        );
+      },
+    );
 
     test('changes with any part of the state, nested ones included', () {
       final base = pullRequestSnapshotDigest(prSnapshot());

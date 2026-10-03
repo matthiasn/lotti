@@ -293,7 +293,12 @@ class _OpenPullRequestRow extends StatelessWidget {
     final details = [
       if (pr.authorLogin != null) '@${pr.authorLogin}',
       if (pr.draft) messages.githubStatusDraft,
-      relativeAgoLabel(messages, clock.now().difference(pr.updatedAt)),
+      relativeAgeOrDateLabel(
+        messages,
+        at: pr.createdAt,
+        now: clock.now(),
+        withWeekday: true,
+      ),
     ].join(' · ');
     return DesignSystemListItem(
       key: LinkPullRequestKeys.openPullRequest(pr.ref.number),

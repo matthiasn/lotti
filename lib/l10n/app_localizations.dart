@@ -11303,12 +11303,6 @@ abstract class AppLocalizations {
   /// **'Behind base branch'**
   String get githubMergeBehind;
 
-  /// No description provided for @githubMergeBlocked.
-  ///
-  /// In en, this message translates to:
-  /// **'Blocked by branch rules'**
-  String get githubMergeBlocked;
-
   /// No description provided for @githubMergeConflicts.
   ///
   /// In en, this message translates to:

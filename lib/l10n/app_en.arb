@@ -3689,7 +3689,6 @@
   "githubLinkUrlHint": "https://github.com/owner/repo/pull/123",
   "githubLinkUrlLabel": "Pull request URL",
   "githubMergeBehind": "Behind base branch",
-  "githubMergeBlocked": "Blocked by branch rules",
   "githubMergeConflicts": "Merge conflicts",
   "githubNotRefreshed": "Could not refresh",
   "githubNotRefreshedYet": "Not refreshed yet",

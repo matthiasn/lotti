@@ -24,8 +24,15 @@ import 'package:material_ui/material_ui.dart';
 enum PullRequestTone { neutral, good, attention, bad }
 
 /// The words of a pull request's status line, in reading order: its state,
-/// how old that is — next to it, so a narrow row that runs out of room
-/// never cuts the age off — then its checks, mergeability and reviews.
+/// how long it has been in it — next to it, so a narrow row that runs out of
+/// room never cuts the age off — then its checks, what keeps it from merging
+/// and its reviews.
+///
+/// The age is GitHub's, not Lotti's: since it was opened, merged or closed
+/// ([pullRequestStateTime]), never since it was linked or last read. Only
+/// what someone can act on is shown: merge conflicts and a branch behind its
+/// base, not "blocked", which says only that a required review or check
+/// (already on the line) is missing.
 ///
 /// [snapshot] is null before the first successful refresh. [failure] is the
 /// last refresh's failure on this device, if it failed. [alsoElsewhere] says
@@ -68,8 +75,12 @@ List<(String, PullRequestTone)> pullRequestStatusParts(
       ),
       PullRequestStatus.closed => (messages.githubStatusClosed, neutral),
     },
+    if (pullRequestStateTime(snapshot) case final at?)
+      (
+        relativeAgeOrDateLabel(messages, at: at, now: now, withWeekday: true),
+        neutral,
+      ),
     if (failure != null) (messages.githubNotRefreshed, PullRequestTone.bad),
-    (relativeAgoLabel(messages, now.difference(snapshot.observedAt)), neutral),
     if (open)
       ...switch (checks.rollup) {
         PullRequestCheckRollup.passing => [
@@ -93,9 +104,7 @@ List<(String, PullRequestTone)> pullRequestStatusParts(
         PullRequestMergeability.behind => [
           (messages.githubMergeBehind, PullRequestTone.attention),
         ],
-        PullRequestMergeability.blocked => [
-          (messages.githubMergeBlocked, PullRequestTone.attention),
-        ],
+        PullRequestMergeability.blocked ||
         PullRequestMergeability.clean ||
         PullRequestMergeability.unknown => const <(String, PullRequestTone)>[],
       },
@@ -115,12 +124,22 @@ List<(String, PullRequestTone)> pullRequestStatusParts(
   ];
 }
 
+/// When [snapshot]'s pull request entered its state: opened, merged or
+/// closed. Null when the snapshot does not say — one stored before it
+/// carried the opening reads none until its next refresh.
+DateTime? pullRequestStateTime(PullRequestSnapshot snapshot) =>
+    switch (snapshot.status) {
+      PullRequestStatus.open => snapshot.createdAt,
+      PullRequestStatus.merged => snapshot.mergedAt,
+      PullRequestStatus.closed => snapshot.closedAt,
+    };
+
 /// One linked pull request: its number and title, its status line, and the
 /// actions to refresh it, open it on GitHub or unlink it.
 ///
 /// Opening a task refreshes a pull request whose snapshot is stale; the age
-/// on its status line ticks on its own, so a snapshot never reads younger
-/// than it is.
+/// on its status line ticks on its own, so it never reads younger than the
+/// pull request's state is.
 class PullRequestRow extends ConsumerStatefulWidget {
   const PullRequestRow({required this.taskId, required this.entry, super.key});
 
@@ -158,13 +177,13 @@ class _PullRequestRowState extends ConsumerState<PullRequestRow> {
     super.dispose();
   }
 
-  /// Re-renders when the age label next changes, once per observation.
-  void _armAgeTick(DateTime observedAt) {
-    if (_ageTick != null && _ageTickFor == observedAt) return;
+  /// Re-renders when the age label next changes, once per state time.
+  void _armAgeTick(DateTime at) {
+    if (_ageTick != null && _ageTickFor == at) return;
     _ageTick?.cancel();
-    _ageTickFor = observedAt;
+    _ageTickFor = at;
     _ageTick = Timer(
-      untilNextAgeBucket(clock.now().difference(observedAt)),
+      untilNextAgeBucket(clock.now().difference(at)),
       () {
         _ageTick = null;
         _ageTickFor = null;
@@ -209,7 +228,8 @@ class _PullRequestRowState extends ConsumerState<PullRequestRow> {
     final entry = widget.entry;
     final refresh = ref.watch(pullRequestRefreshControllerProvider(entry.id));
     final snapshot = refresh.latest(entry.data.snapshot);
-    if (snapshot != null) _armAgeTick(snapshot.observedAt);
+    final stateTime = snapshot == null ? null : pullRequestStateTime(snapshot);
+    if (stateTime != null) _armAgeTick(stateTime);
 
     Color colorOf(PullRequestTone tone) => switch (tone) {
       PullRequestTone.neutral => tokens.colors.text.mediumEmphasis,

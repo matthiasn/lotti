@@ -3031,7 +3031,6 @@
   "githubLinkUrlHint": "https://github.com/proprietario/repo/pull/123",
   "githubLinkUrlLabel": "URL della pull request",
   "githubMergeBehind": "Indietro rispetto al branch base",
-  "githubMergeBlocked": "Bloccata dalle regole del branch",
   "githubMergeConflicts": "Conflitti di merge",
   "githubNotRefreshed": "Aggiornamento non riuscito",
   "githubNotRefreshedYet": "Non ancora aggiornata",
