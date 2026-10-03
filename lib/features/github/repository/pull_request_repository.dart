@@ -33,6 +33,12 @@ class PullRequestRepository {
   Future<Iterable<PullRequestEntry>> _linked(String taskId) async =>
       (await _db.getLinkedEntities(taskId)).whereType<PullRequestEntry>();
 
+  /// Entry [entryId] as stored now, or null once it is unlinked.
+  Future<PullRequestEntry?> liveEntry(String entryId) async {
+    final entry = await _db.journalEntityById(entryId);
+    return entry is PullRequestEntry ? entry : null;
+  }
+
   /// Whether [ref] is already linked to [taskId].
   Future<bool> isLinked({
     required String taskId,
