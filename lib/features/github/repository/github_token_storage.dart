@@ -108,6 +108,10 @@ class GitHubTokenStorage {
     return record != null && record.connected ? record.token : null;
   }
 
+  /// Whether a token is held. Says nothing about whether GitHub still
+  /// accepts it: that is learned from the calls made with it.
+  Future<bool> hasToken() async => (await readToken())?.isNotEmpty ?? false;
+
   /// The login the stored token was checked against.
   Future<String?> readLogin() async {
     final record = await read();

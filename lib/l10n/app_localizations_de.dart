@@ -3761,14 +3761,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Auseinandergelaufene Agenten-Verläufe aus der Nutzung mehrerer Geräte beim nächsten Aufwachen zusammenführen.';
 
   @override
-  String get configFlagEnableGitHubPullRequests =>
-      'GitHub-Pull-Requests aktivieren';
-
-  @override
-  String get configFlagEnableGitHubPullRequestsDescription =>
-      'Verknüpfe GitHub-Pull-Requests mit Aufgaben und verfolge ihre Checks, Reviews und ihren Status.';
-
-  @override
   String get configFlagEnableHabitsPage => 'Seite Gewohnheiten aktivieren';
 
   @override
@@ -6896,6 +6888,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get githubTokenShow => 'Token anzeigen';
+
+  @override
+  String get githubTrackPullRequests => 'Pull-Request-Tracking';
+
+  @override
+  String get githubTrackPullRequestsHint =>
+      'Fügt einen Abschnitt für die Pull-Requests hinzu, die diese Aufgabe umsetzen.';
 
   @override
   String get githubUnlinkPullRequest => 'Pull-Request lösen';

@@ -13,7 +13,6 @@ List<SettingsNode> _tree({
   bool enableMatrix = true,
   bool enableWhatsNew = true,
   bool enableSpeechTts = false,
-  bool enableGitHub = false,
   bool enableHealthImport = false,
   bool syncFeatureAvailable = true,
 }) => buildSettingsTree(
@@ -23,7 +22,6 @@ List<SettingsNode> _tree({
   enableMatrix: enableMatrix,
   enableWhatsNew: enableWhatsNew,
   enableSpeechTts: enableSpeechTts,
-  enableGitHub: enableGitHub,
   enableHealthImport: enableHealthImport,
   syncFeatureAvailable: syncFeatureAvailable,
 );
@@ -78,14 +76,12 @@ void main() {
     });
   });
 
-  group('buildSettingsTree — enableGitHub', () {
+  group('buildSettingsTree — GitHub', () {
     test(
-      'adds the GitHub leaf under Advanced, after Config Flags, only when '
-      'GitHub pull requests are enabled',
+      'always lists the GitHub leaf under Advanced, after Config Flags: '
+      'adding a token there is what makes pull requests trackable',
       () {
-        expect(_ids(_tree()), isNot(contains('advanced/github')));
-
-        final tree = _tree(enableGitHub: true);
+        final tree = _tree();
         final advanced = tree.firstWhere((n) => n.id == 'advanced');
         final ids = advanced.children!.map((n) => n.id).toList();
         expect(
@@ -508,6 +504,7 @@ void main() {
       final advanced = _tree().firstWhere((n) => n.id == 'advanced');
       expect(advanced.children!.map((n) => n.id).toList(), [
         'advanced/flags',
+        'advanced/github',
         'advanced/manual-language',
         'advanced/logging',
         'advanced/system-health',
@@ -576,7 +573,8 @@ void main() {
     });
 
     test(
-      'Advanced has flags / manual language / logging / maintenance / about in order',
+      'Advanced has flags / GitHub / manual language / logging / maintenance / '
+      'about in order',
       () {
         // Conflicts moved out of Advanced and into Sync, animations out
         // and into Preferences; flags moved in from the root list. The
@@ -584,6 +582,7 @@ void main() {
         final advanced = _tree().firstWhere((n) => n.id == 'advanced');
         expect(advanced.children!.map((n) => n.id).toList(), [
           'advanced/flags',
+          'advanced/github',
           'advanced/manual-language',
           'advanced/logging',
           'advanced/system-health',

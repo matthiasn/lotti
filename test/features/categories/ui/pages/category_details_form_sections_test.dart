@@ -12,6 +12,7 @@ import 'package:lotti/features/categories/repository/categories_repository.dart'
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
@@ -23,6 +24,7 @@ import 'package:uuid/uuid.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../../agents/test_utils.dart';
+import '../../../github/github_token_status.dart';
 import '../../test_utils.dart';
 
 /// Tests for the event-agent default-template picker built by
@@ -577,7 +579,10 @@ void main() {
       beamToNamedOverride = null;
     });
 
-    Future<void> pumpPage(WidgetTester tester, {required bool enabled}) async {
+    Future<void> pumpPage(
+      WidgetTester tester, {
+      required GitHubTokenStatus token,
+    }) async {
       tester.view.physicalSize = const Size(1024, 4200);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
@@ -588,9 +593,7 @@ void main() {
         RiverpodWidgetTestBench(
           overrides: [
             categoryRepositoryProvider.overrideWithValue(mockRepository),
-            configFlagProvider(
-              enableGitHubPullRequestsFlag,
-            ).overrideWith((ref) => Stream.value(enabled)),
+            gitHubTokenStatusOverride(token),
             agentTemplatesProvider.overrideWith((ref) async => const []),
           ],
           child: CategoryDetailsPage(categoryId: testCategoryId),
@@ -602,17 +605,20 @@ void main() {
 
     final field = find.byKey(const Key('github_repository_field'));
 
-    testWidgets('is not offered while GitHub pull requests are disabled', (
-      tester,
-    ) async {
-      await pumpPage(tester, enabled: false);
+    testWidgets('is not offered without a GitHub token', (tester) async {
+      await pumpPage(tester, token: GitHubTokenStatus.none);
       expect(field, findsNothing);
     });
 
-    testWidgets('is offered while GitHub pull requests are enabled', (
+    testWidgets('is not offered while GitHub rejects the token', (
       tester,
     ) async {
-      await pumpPage(tester, enabled: true);
+      await pumpPage(tester, token: GitHubTokenStatus.rejected);
+      expect(field, findsNothing);
+    });
+
+    testWidgets('is offered with a token GitHub accepts', (tester) async {
+      await pumpPage(tester, token: GitHubTokenStatus.valid);
       expect(field, findsOneWidget);
     });
 
@@ -620,7 +626,7 @@ void main() {
       'a repository typed as a URL is a change to save; nonsense is not, '
       'even after a valid one',
       (tester) async {
-        await pumpPage(tester, enabled: true);
+        await pumpPage(tester, token: GitHubTokenStatus.valid);
 
         await tester.enterText(field, 'not a repository');
         await tester.pump();

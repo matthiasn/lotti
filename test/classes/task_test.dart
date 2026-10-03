@@ -153,6 +153,37 @@ void main() {
         expect(data().onStored(data()).appliedChangeEffects, isNull);
       });
 
+      test(
+        'keeps pull request tracking the stored task turned on, whatever '
+        'copy the caller wrote over it',
+        () {
+          final written = data(title: 'Renamed').onStored(
+            data().copyWith(tracksPullRequests: true),
+          );
+
+          expect(written.title, 'Renamed');
+          expect(written.tracksPullRequests, isTrue);
+        },
+      );
+
+      test('turns tracking on when the caller does', () {
+        expect(
+          data()
+              .copyWith(tracksPullRequests: true)
+              .onStored(data())
+              .tracksPullRequests,
+          isTrue,
+        );
+        expect(data().onStored(data()).tracksPullRequests, isFalse);
+      });
+
+      test('reads a task stored before tracking existed as not tracking', () {
+        final json = jsonDecode(jsonEncode(data())) as Map<String, dynamic>
+          ..remove('tracksPullRequests');
+
+        expect(TaskData.fromJson(json).tracksPullRequests, isFalse);
+      });
+
       test('survives the JSON round trip that sync and storage take', () {
         final original = data(effects: {'set-1:0', 'set-1:1'});
 
@@ -541,6 +572,46 @@ void main() {
         expect(ab.withHistoryOf(b), same(ab));
         expect(ab.withHistoryOf(a), same(ab));
         expect(ab.withHistoryOf(ab), same(ab));
+      },
+      tags: 'glados',
+    );
+  });
+
+  group('TaskData.withTrackingOf properties (glados)', () {
+    TaskData side({required bool tracks}) => TaskData(
+      status: TaskStatus.open(
+        id: 'open',
+        createdAt: DateTime.utc(2024, 3, 15),
+        utcOffset: 0,
+      ),
+      dateFrom: DateTime(2024, 3, 15),
+      dateTo: DateTime(2024, 3, 15),
+      statusHistory: const [],
+      title: 'side',
+      tracksPullRequests: tracks,
+    );
+
+    final generator = any.combine2(
+      any.bool,
+      any.bool,
+      (bool a, bool b) => (side(tracks: a), side(tracks: b)),
+    );
+
+    Glados(generator, ExploreConfig(numRuns: 50)).test(
+      'tracks when either side does: commutative, idempotent, and never '
+      'turns tracking off',
+      (sides) {
+        final (a, b) = sides;
+        final ab = a.withTrackingOf(b);
+
+        expect(
+          ab.tracksPullRequests,
+          a.tracksPullRequests || b.tracksPullRequests,
+        );
+        expect(ab.tracksPullRequests, b.withTrackingOf(a).tracksPullRequests);
+        expect(ab.withTrackingOf(b), same(ab));
+        expect(ab.withTrackingOf(ab), same(ab));
+        if (a.tracksPullRequests) expect(ab, same(a));
       },
       tags: 'glados',
     );

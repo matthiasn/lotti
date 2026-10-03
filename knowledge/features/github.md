@@ -5,7 +5,7 @@ description: Pull requests linked to tasks as journal entries carrying a server-
 resource: ../../lib/features/github
 tags: [github, pull-requests, tasks, sync, agents, tla]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-10-03T13:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-03T18:00:00Z }
 stale_after: 2027-03-26
 sources:
   - id: spec
@@ -50,6 +50,15 @@ sources:
   - id: section
     resource: ../../lib/features/github/ui/task_pull_requests_section.dart
     title: TaskPullRequestsSection — the task's pull request card
+  - id: providers
+    resource: ../../lib/features/github/state/github_providers.dart
+    title: The token status, whether tracking is available, and whether a task shows its section
+  - id: track-item
+    resource: ../../lib/features/github/ui/track_pull_requests_item.dart
+    title: TrackPullRequestsItem — the "Pull request tracking" row of a task's Add sheet
+  - id: task-data
+    resource: ../../lib/classes/task.dart
+    title: TaskData.tracksPullRequests and the joins that keep it on
 ---
 
 A task can link the GitHub pull requests that implement it. Lotti fetches
@@ -66,8 +75,10 @@ that implements each action. Built: the entry and its merge, the token and
 the client, linking by URL or from the picker, a pull request serving a
 second task only once the user confirms it, a
 category's repository, the refresh, the task's card, and the pull requests in
-coding prompts and task-agent wakes, all behind the
-`enable_github_pull_requests` config flag. Still design: a project's
+coding prompts and task-agent wakes. Nothing is behind a config flag: a
+task shows the feature once the user turns pull request tracking on for it,
+which is offered while this device holds a token GitHub accepts. Still
+design: a project's
 repository overriding its category's, and recording which checklist items a
 coding prompt targeted.
 
@@ -266,7 +277,8 @@ A category names the repository its tasks work in,
 section of the category's page — as `owner/repo` or as the repository's URL;
 what does not read as a repository is flagged and never stored, and the
 page cannot be saved while the field shows it (the pending value would still
-be the last valid one). The section shows only while the flag is on. A task's
+be the last valid one). The section shows while pull requests can be tracked
+— a token GitHub has not rejected (below). A task's
 repository is its category's (`taskGitHubRepositoryProvider`), read from the
 database again whenever the task or a category changes — not from the
 categories cache, whose reload after the same notification it could race — so
@@ -332,10 +344,98 @@ for its own task's checklist only, from a refreshed read, and the user
 confirms every suggestion, so that is each task being told about its own
 work, not a duplicate.
 
+# Whether pull requests can be tracked
+
+There is no config flag. `gitHubTokenStatusProvider` says what the device
+knows about its token, without asking GitHub for it:
+
+```mermaid
+stateDiagram-v2
+    [*] --> none: no token held
+    [*] --> valid: token held, accepted by the account
+    [*] --> rejected: token received, the account's check failed
+    none --> valid: connect (GET /user accepts it)
+    none --> valid: received, the account's check accepts it
+    none --> rejected: received, the account's check fails
+    valid --> rejected: a call with it answers 401
+    rejected --> valid: a later call succeeds
+    rejected --> valid: connect again, or a newer token received and accepted
+    valid --> none: disconnect, here or on another device
+    rejected --> none: disconnect, here or on another device
+```
+
+The token syncs between the user's devices. A held token is `valid` once
+the account (`gitHubAccountControllerProvider`) has accepted it: one entered
+here was checked by `GET /user` before it was stored, and one received from
+another device is checked the same way before it is shown as connected —
+until that check succeeds it is `rejected`, and not offered. From then on it
+is `valid` until GitHub says otherwise: `PullRequestService` reports each call
+made with the stored token — a success accepts it, a 401 rejects it, and
+offline, rate limited, forbidden or not found say nothing about it. Opening
+a task costs no extra request: refreshing its stale pull requests is the
+check. A verdict waits for the stored token to be read, so a 401 on the
+first call — often made before anything watched the status — still rejects
+it. A verdict on a token that is no longer the stored one — replaced while
+its call was in flight — is ignored. Connecting, disconnecting and a token
+received from another device all announce `gitHubAccountNotification`, and
+the status reads again on it — not on the account's value, which
+reconnecting the same account with a fresh token leaves unchanged. A 401
+lives in memory: after a restart the token is taken as valid until the next
+call.
+
+`gitHubTrackingAvailableProvider` is true only while the status is `valid`.
+It gates what *starts* tracking — the task's "Pull request tracking" action
+and a category's repository — and nothing already linked: a task's pull
+requests stay on its card with their last known state and the refresh
+failure that explains it, whatever becomes of the token. A device without a
+token at all still shows what synced in from one that has it.
+
+# A task that tracks pull requests
+
+A task does not show the Pull requests section by default. The "+" of the
+task's action bar opens the Add sheet, which offers **Pull request tracking**
+while tracking is available and the task shows no section yet
+(`TrackPullRequestsItem`). It sets `TaskData.tracksPullRequests`
+(`PullRequestRepository.track`, written on the task as stored, and not
+written at all when it is set already), then asks the page to scroll to the
+section (`TaskFocusTarget.pullRequests`), which retries until the section
+has mounted. Once the section is there the row stands down: the section's
+own "Link a pull request" is the way in.
+
+`taskShowsPullRequestsProvider` shows the section when the task tracks pull
+requests **or** has one linked. The second clause is how tasks linked to a
+pull request before tracking was a choice keep their section with no
+migration.
+
+Tracking only turns on, so it is a grow-only flag, and every path that
+writes a task joins it with an `or` (`TaskDataOnStored.withTrackingOf`):
+
+| Path | What it would lose without the join |
+|------|-------------------------------------|
+| `JournalDb.updateJournalEntity`, for every version this device writes (`fromThisDevice`) | a date or label change, or any other direct write, built from a copy read before tracking was turned on — joined inside the write's transaction |
+| `onStored`, every write built on the stored task | the same, before the write: a change that only drops tracking is then no change, and not written at all |
+| `PersistenceUpdates.updateJournalEntity` | a star or flag toggled from such a copy |
+| conflict resolution (`conflict_merge.dart`) | the side the user did not keep |
+
+A version received from another device is stored as it came, so every device
+holds the same row under one clock; sync sends the stored row, so what this
+device joined is what its peers receive.
+
+The conflict view counts `data.tracksPullRequests` among the paths the
+resolution joins, so a conflict differing only there is not shown as an
+unmodelled difference. Two devices turning tracking on at once agree, and
+one turning it on while another edits the task keeps both — the join is
+commutative and idempotent, so no further model is needed. A device on a
+version from before the field drops it when it rewrites the task; the
+section then shows only while a pull request is linked, until tracking is
+turned on again.
+
 # In the task
 
 `TaskPullRequestsSection` shows the task's pull requests in their own card,
-directly after its linked tasks, while the flag is on. Each row carries the
+directly after its linked tasks, once the task tracks pull requests or while
+one is linked (`taskShowsPullRequestsProvider`, next section). Each row
+carries the
 number and title, then a status line in a fixed order: the state, **how long
 it has been in that state** — second, so a narrow row that wraps or runs out
 of room never cuts the age off — then checks, what keeps it from merging, and
@@ -417,7 +517,10 @@ ordering key is not enough: within one second the digest says nothing about
 time, and the stored one may have been read before the request
 (`PreferOwnRead`). `renderPullRequestContext` writes the section for its
 audience; each section opens with how to use what follows. Nothing is asked
-of GitHub while the flag is off.
+of GitHub, and the section is left out, while this device holds no token. A
+token GitHub has rejected is still tried: each pull request then appears as
+not refreshed, with its last known state and the reason, rather than
+vanishing from the context.
 
 - **Coding prompt** (`SkillInferenceRunner.runPromptGeneration`, the
   coding-prompt skill only — the design and research prompts share its skill

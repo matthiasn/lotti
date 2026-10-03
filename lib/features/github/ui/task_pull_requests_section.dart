@@ -12,8 +12,8 @@ import 'package:material_ui/material_ui.dart';
 
 /// The task's pull requests, in their own card beside its linked tasks.
 ///
-/// `TaskForm` includes it only while GitHub pull requests are enabled. With
-/// none linked, the card is a worded action to link one; otherwise each pull
+/// `TaskForm` includes it once the task tracks pull requests, or while one
+/// is linked (`taskShowsPullRequestsProvider`). With none linked, the card is a worded action to link one; otherwise each pull
 /// request is a [PullRequestRow] and the header carries the action to link
 /// another.
 class TaskPullRequestsSection extends ConsumerWidget {

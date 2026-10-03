@@ -43,13 +43,6 @@ Future<void> initConfigFlags(
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
-      name: enableGitHubPullRequestsFlag,
-      description: 'Link GitHub pull requests to tasks?',
-      status: false,
-    ),
-  );
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
       name: enableAiSummaryTtsFlag,
       description: 'Enable local AI summary playback?',
       status: false,

@@ -116,6 +116,56 @@ void main() {
     });
   });
 
+  group('a task tracks pull requests when either side turned it on', () {
+    // Turned on on one device while the other edited the title: whichever
+    // side the user keeps, the Pull requests section must not vanish.
+    final local = taskOf(title: 'local', vectorClock: localClock);
+    final remote = taskOf(
+      title: 'remote',
+      vectorClock: remoteClock,
+      tracksPullRequests: true,
+    );
+
+    for (final side in ConflictSide.values) {
+      test('keeping the ${side.name} side', () {
+        final result =
+            resolveToSide(local: local, remote: remote, side: side) as Task;
+
+        expect(
+          result.data.title,
+          side == ConflictSide.local ? 'local' : 'remote',
+        );
+        expect(result.data.tracksPullRequests, isTrue);
+      });
+    }
+
+    test('combining the two', () {
+      final result =
+          buildMergedEntity(
+                local: remote,
+                remote: local,
+                baseSide: ConflictSide.remote,
+                choices: const {EntryField.title: ConflictSide.remote},
+              )
+              as Task;
+
+      expect(result.data.title, 'local');
+      expect(result.data.tracksPullRequests, isTrue);
+    });
+
+    test('neither side tracking stays not tracking', () {
+      final result =
+          resolveToSide(
+                local: local,
+                remote: taskOf(title: 'remote', vectorClock: remoteClock),
+                side: ConflictSide.remote,
+              )
+              as Task;
+
+      expect(result.data.tracksPullRequests, isFalse);
+    });
+  });
+
   group('a task keeps every status either side was set to '
       '(TaskFieldWrites.tla, HistoryComplete)', () {
     final opened = TaskStatus.open(

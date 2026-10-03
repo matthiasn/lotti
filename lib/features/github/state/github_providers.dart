@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -14,6 +16,7 @@ import 'package:lotti/features/github/repository/github_token_storage.dart';
 import 'package:lotti/features/github/repository/pull_request_repository.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
@@ -24,7 +27,6 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/notification_stream.dart';
-import 'package:lotti/utils/consts.dart';
 
 /// One client for the process: its ETag cache and its rate-limit block are
 /// per device, not per screen.
@@ -57,6 +59,11 @@ final pullRequestServiceProvider = Provider<PullRequestService>(
     client: ref.watch(gitHubClientProvider),
     tokenStorage: ref.watch(gitHubTokenStorageProvider),
     repository: ref.watch(pullRequestRepositoryProvider),
+    onTokenVerdict: (token, {required accepted}) => unawaited(
+      ref
+          .read(gitHubTokenStatusProvider.notifier)
+          .observe(token, accepted: accepted),
+    ),
   ),
   name: 'pullRequestServiceProvider',
 );
@@ -65,13 +72,111 @@ final pullRequestServiceProvider = Provider<PullRequestService>(
 final pullRequestContextServiceProvider = Provider<PullRequestContextService>((
   ref,
 ) {
-  final db = ref.watch(journalDbProvider);
+  final tokens = ref.watch(gitHubTokenStorageProvider);
   return PullRequestContextService(
     repository: ref.watch(pullRequestRepositoryProvider),
     service: ref.watch(pullRequestServiceProvider),
-    isEnabled: () => db.getConfigFlag(enableGitHubPullRequestsFlag),
+    hasToken: tokens.hasToken,
   );
 }, name: 'pullRequestContextServiceProvider');
+
+/// What this device knows about its GitHub token.
+enum GitHubTokenStatus {
+  /// No token is stored.
+  none,
+
+  /// A token is stored, and GitHub has not rejected it since: it was checked
+  /// when it was saved, and every call since either succeeded or said
+  /// nothing about it.
+  valid,
+
+  /// GitHub answered a call with the stored token with 401 — it expired, or
+  /// was revoked — or a token received from another device has not passed
+  /// its check here. Until a call succeeds again or a token is connected or
+  /// received anew.
+  rejected,
+}
+
+/// The status of the stored GitHub token, without asking GitHub for it.
+///
+/// A held token is [GitHubTokenStatus.valid] once the account has accepted
+/// it — `GET /user` when it was entered here, or the account's check of one
+/// received from another device — until a call with it comes back 401
+/// ([PullRequestService] reports each verdict). Opening a task costs no
+/// extra request: the refresh of its stale pull requests is the check. A
+/// 401 is kept in memory only, so after a restart the token is taken as
+/// valid again until GitHub next says otherwise.
+final gitHubTokenStatusProvider =
+    AsyncNotifierProvider<GitHubTokenStatusController, GitHubTokenStatus>(
+      GitHubTokenStatusController.new,
+      name: 'gitHubTokenStatusProvider',
+    );
+
+class GitHubTokenStatusController extends AsyncNotifier<GitHubTokenStatus> {
+  /// The token the status is about; a verdict on any other — one replaced
+  /// while its call was in flight — is ignored.
+  String? _token;
+
+  /// Built again when a token is connected, disconnected or received from
+  /// another device: all three announce `gitHubAccountNotification`. Not by
+  /// following the account's value, which reconnecting the same account with
+  /// a fresh token leaves as it was — that would keep a rejection of the old
+  /// token.
+  ///
+  /// A held token is valid once the account accepts it: a token entered
+  /// here was checked before it was stored, and one received from another
+  /// device is checked by the account (`GET /user`) before it is shown as
+  /// connected. Until that check succeeds — GitHub rejected it, or could not
+  /// be asked — it is not offered for tracking.
+  @override
+  Future<GitHubTokenStatus> build() async {
+    final changes = getIt<UpdateNotifications>().updateStream
+        .where((ids) => ids.contains(gitHubAccountNotification))
+        .listen((_) => ref.invalidateSelf());
+    ref.onDispose(changes.cancel);
+
+    final token = await ref.watch(gitHubTokenStorageProvider).readToken();
+    _token = token;
+    if (token == null || token.isEmpty) return GitHubTokenStatus.none;
+    try {
+      await ref.watch(gitHubAccountControllerProvider.future);
+      return GitHubTokenStatus.valid;
+    } on Object {
+      return GitHubTokenStatus.rejected;
+    }
+  }
+
+  /// Records what a call with [token] said: GitHub [accepted] it, or
+  /// rejected it with a 401.
+  ///
+  /// Waits for the stored token to be read first. The first call is often
+  /// made before anything watched the status — reading this notifier is
+  /// what starts the read — and a verdict judged before the read finished
+  /// would be dropped, leaving a revoked token offered as valid.
+  Future<void> observe(String token, {required bool accepted}) async {
+    try {
+      await future;
+    } on Object {
+      return;
+    }
+    if (!ref.mounted || token != _token) return;
+    final next = accepted
+        ? GitHubTokenStatus.valid
+        : GitHubTokenStatus.rejected;
+    if (state.value != next) state = AsyncData(next);
+  }
+}
+
+/// Whether this device may start tracking pull requests: it holds a GitHub
+/// token that GitHub has not rejected. Gates what starts tracking — a
+/// task's "Pull request tracking" action and a category's repository — and
+/// never what is already linked: a task's pull requests stay on its card,
+/// with their last known state, whatever becomes of the token.
+final gitHubTrackingAvailableProvider = Provider<bool>(
+  (ref) =>
+      ref.watch(gitHubTokenStatusProvider).value == GitHubTokenStatus.valid,
+  name: 'gitHubTrackingAvailableProvider',
+);
 
 /// The live pull requests linked from a task, one per pull request
 /// ([distinctPullRequests]), newest first. Follows the task's links and every
@@ -85,6 +190,18 @@ final ProviderFamily<List<PullRequestEntry>, String> taskPullRequestsProvider =
       ),
       name: 'taskPullRequestsProvider',
     );
+
+/// Whether task `taskId` shows its Pull requests section: once the user
+/// turned pull request tracking on for it (`TaskData.tracksPullRequests`),
+/// or while it has a pull request linked — so a task linked to one before
+/// the opt-in existed shows it without a migration.
+final ProviderFamily<bool, String> taskShowsPullRequestsProvider = Provider
+    .autoDispose
+    .family<bool, String>((ref, taskId) {
+      final entry = ref.watch(entryControllerProvider(taskId)).value?.entry;
+      final optedIn = entry is Task && entry.data.tracksPullRequests;
+      return optedIn || ref.watch(taskPullRequestsProvider(taskId)).isNotEmpty;
+    }, name: 'taskShowsPullRequestsProvider');
 
 /// The GitHub repository a task works in: its category's, or null.
 ///
@@ -252,6 +369,7 @@ class GitHubAccountController extends AsyncNotifier<String?> {
           .read(gitHubTokenStorageProvider)
           .save(token: trimmed, login: login);
       state = AsyncData(login);
+      _announce();
       await ref.read(gitHubAccountSyncProvider).flushOwed();
       return null;
     } on GitHubException catch (e) {
@@ -263,8 +381,14 @@ class GitHubAccountController extends AsyncNotifier<String?> {
   Future<void> disconnect() async {
     await ref.read(gitHubTokenStorageProvider).clear();
     state = const AsyncData(null);
+    _announce();
     await ref.read(gitHubAccountSyncProvider).flushOwed();
   }
+
+  /// Tells whoever follows the account — the token status — that the token
+  /// changed here, as sync does for one received from another device.
+  void _announce() =>
+      getIt<UpdateNotifications>().notify({gitHubAccountNotification});
 
   /// Sends the token held here to the user's other devices again — one
   /// connected before tokens synced, or that a device joining later missed.

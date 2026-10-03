@@ -86,19 +86,46 @@ final class OpenPullRequestsFailed extends OpenPullRequestsResult {
   final DateTime? retryAt;
 }
 
+/// What a call made with the stored token says about it: GitHub [accepted]
+/// it — the call succeeded — or rejected it with a 401.
+typedef GitHubTokenVerdict =
+    void Function(String token, {required bool accepted});
+
 /// Links pull requests to tasks and refreshes them from GitHub.
 class PullRequestService {
   PullRequestService({
     required GitHubClient client,
     required GitHubTokenStorage tokenStorage,
     required PullRequestRepository repository,
+    GitHubTokenVerdict? onTokenVerdict,
   }) : _github = client,
        _tokens = tokenStorage,
-       _entries = repository;
+       _entries = repository,
+       _verdict = onTokenVerdict;
 
   final GitHubClient _github;
   final GitHubTokenStorage _tokens;
   final PullRequestRepository _entries;
+
+  /// Told what each call with the stored token says about it. Only a
+  /// success and a 401 do: offline, rate limited, forbidden or not found
+  /// say nothing about whether GitHub still accepts the token.
+  final GitHubTokenVerdict? _verdict;
+
+  /// Calls [read] with the stored token, telling [_verdict] what GitHub
+  /// answered.
+  Future<T> _withToken<T>(String token, Future<T> Function() read) async {
+    try {
+      final result = await read();
+      _verdict?.call(token, accepted: true);
+      return result;
+    } on GitHubException catch (e) {
+      if (e.kind == GitHubFailureKind.unauthorized) {
+        _verdict?.call(token, accepted: false);
+      }
+      rethrow;
+    }
+  }
 
   /// Links what the user pasted to [taskId]. The pull request is read first,
   /// so a typo, or a repository the token cannot see, links nothing.
@@ -169,7 +196,10 @@ class PullRequestService {
     }
     final List<OpenPullRequest> open;
     try {
-      open = await _github.listOpenPullRequests(repository, token: token);
+      open = await _withToken(
+        token,
+        () => _github.listOpenPullRequests(repository, token: token),
+      );
     } on GitHubException catch (e) {
       return OpenPullRequestsFailed(e.kind, retryAt: e.retryAt);
     }
@@ -204,7 +234,10 @@ class PullRequestService {
     }
     try {
       return PullRequestRefreshed(
-        await _github.fetchPullRequest(ref, token: token),
+        await _withToken(
+          token,
+          () => _github.fetchPullRequest(ref, token: token),
+        ),
       );
     } on GitHubException catch (e) {
       return PullRequestRefreshFailed(e.kind, retryAt: e.retryAt);

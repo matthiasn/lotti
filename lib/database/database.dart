@@ -10,6 +10,7 @@ import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/journal_update_result.dart';

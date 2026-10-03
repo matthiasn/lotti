@@ -17,7 +17,7 @@ void main() {
   const taskId = 'task-1';
   late MockPullRequestRepository repository;
   late MockPullRequestService service;
-  late bool enabled;
+  late bool hasToken;
 
   final stored = prEntry(clock: {'a': 1}, snapshot: prSnapshot());
 
@@ -26,7 +26,7 @@ void main() {
   setUp(() {
     repository = MockPullRequestRepository();
     service = MockPullRequestService();
-    enabled = true;
+    hasToken = true;
     when(() => repository.forTask(taskId)).thenAnswer((_) async => [stored]);
     when(() => repository.liveEntry(stored.id)).thenAnswer((_) async => stored);
   });
@@ -34,14 +34,14 @@ void main() {
   PullRequestContextService subject() => PullRequestContextService(
     repository: repository,
     service: service,
-    isEnabled: () async => enabled,
+    hasToken: () async => hasToken,
   );
 
   void refreshes(PullRequestRefresh result) =>
       when(() => service.refresh(stored)).thenAnswer((_) async => result);
 
-  test('asks nothing of GitHub while the feature is disabled', () async {
-    enabled = false;
+  test('asks nothing of GitHub while this device holds no token', () async {
+    hasToken = false;
 
     expect(await subject().forTask(taskId), isEmpty);
     verifyZeroInteractions(service);

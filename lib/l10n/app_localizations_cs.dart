@@ -3777,14 +3777,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Sloučí rozvětvené historie agenta z více zařízení při příštím probuzení.';
 
   @override
-  String get configFlagEnableGitHubPullRequests =>
-      'Zapnout pull requesty z GitHubu';
-
-  @override
-  String get configFlagEnableGitHubPullRequestsDescription =>
-      'Propoj pull requesty z GitHubu s úkoly a sleduj jejich kontroly, revize a stav.';
-
-  @override
   String get configFlagEnableHabitsPage => 'Povolit stránku Návyků';
 
   @override
@@ -6924,6 +6916,13 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get githubTokenShow => 'Zobrazit token';
+
+  @override
+  String get githubTrackPullRequests => 'Sledování pull requestů';
+
+  @override
+  String get githubTrackPullRequestsHint =>
+      'Přidá sekci pro pull requesty, které tento úkol realizují.';
 
   @override
   String get githubUnlinkPullRequest => 'Odpojit pull request';

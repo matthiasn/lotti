@@ -23,6 +23,10 @@ void main() {
   late MockPullRequestRepository repository;
   late PullRequestService service;
 
+  /// What the service told the token status about the stored token, in
+  /// order: true for accepted, false for rejected.
+  late List<(String, bool)> verdicts;
+
   setUpAll(() {
     registerFallbackValue(ref);
     registerFallbackValue(<PullRequestRef>[]);
@@ -33,10 +37,13 @@ void main() {
     client = MockGitHubClient();
     tokens = MockGitHubTokenStorage();
     repository = MockPullRequestRepository();
+    verdicts = [];
     service = PullRequestService(
       client: client,
       tokenStorage: tokens,
       repository: repository,
+      onTokenVerdict: (token, {required accepted}) =>
+          verdicts.add((token, accepted)),
     );
     when(tokens.readToken).thenAnswer((_) async => token);
     // No task holds anything unless a case says so.
@@ -367,6 +374,73 @@ void main() {
         GitHubFailureKind.noToken,
       );
       verifyZeroInteractions(client);
+    });
+  });
+
+  group('token verdicts', () {
+    final entry = prEntry(clock: {'a': 1}, snapshot: prSnapshot());
+    const repository_ = GitHubRepository(owner: 'matthiasn', repo: 'lotti');
+
+    test(
+      'a refresh GitHub answers says the stored token is accepted',
+      () async {
+        answers(prSnapshot(second: 30));
+        when(
+          () => repository.persistObservation(any(), any()),
+        ).thenAnswer((_) async => false);
+
+        await service.refresh(entry);
+
+        expect(verdicts, [(token, true)]);
+      },
+    );
+
+    test('a 401 says the stored token is rejected', () async {
+      fails(const GitHubException(GitHubFailureKind.unauthorized));
+
+      await service.refresh(entry);
+
+      expect(verdicts, [(token, false)]);
+    });
+
+    test(
+      'a failure that says nothing about the token gives no verdict',
+      () async {
+        for (final kind in [
+          GitHubFailureKind.offline,
+          GitHubFailureKind.forbidden,
+          GitHubFailureKind.notFound,
+          GitHubFailureKind.rateLimited,
+          GitHubFailureKind.server,
+        ]) {
+          fails(GitHubException(kind));
+          await service.refresh(entry);
+        }
+
+        expect(verdicts, isEmpty);
+      },
+    );
+
+    test('the picker reports a verdict too', () async {
+      when(
+        () => client.listOpenPullRequests(repository_, token: token),
+      ).thenThrow(const GitHubException(GitHubFailureKind.unauthorized));
+      await service.openPullRequests(repository_);
+
+      when(
+        () => client.listOpenPullRequests(repository_, token: token),
+      ).thenAnswer((_) async => []);
+      await service.openPullRequests(repository_);
+
+      expect(verdicts, [(token, false), (token, true)]);
+    });
+
+    test('without a token there is nothing to judge', () async {
+      when(tokens.readToken).thenAnswer((_) async => null);
+
+      await service.refresh(entry);
+
+      expect(verdicts, isEmpty);
     });
   });
 }

@@ -61,7 +61,7 @@ gestures and prompt assembly where an async round trip would be visible.
 - Category-scoped AI and speech context: `speechDictionary`,
   `correctionExamples`, `knowledgeBrief`.
 - The GitHub repository its tasks work in, `githubRepository` (`owner/repo`),
-  edited while GitHub pull requests are enabled — see
+  offered while this device holds a GitHub token GitHub accepts — see
   [GitHub pull requests](github.md#repositories).
 
 # The knowledge brief

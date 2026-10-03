@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/misc.dart';
 enum TaskFocusTarget {
   entry,
   suggestions,
+
+  /// The task's Pull requests section.
+  pullRequests,
 }
 
 /// Intent to focus a specific surface within a task.
@@ -18,6 +21,12 @@ class TaskFocusIntent {
     required this.taskId,
     this.alignment = 0.1,
   }) : target = TaskFocusTarget.suggestions,
+       entryId = null;
+
+  TaskFocusIntent.pullRequests({
+    required this.taskId,
+    this.alignment = 0.1,
+  }) : target = TaskFocusTarget.pullRequests,
        entryId = null;
 
   /// The task ID containing the entry
@@ -39,6 +48,8 @@ class TaskFocusIntent {
         'TaskFocusIntent(taskId: $taskId, entryId: $entryId, alignment: $alignment)',
       TaskFocusTarget.suggestions =>
         'TaskFocusIntent.suggestions(taskId: $taskId, alignment: $alignment)',
+      TaskFocusTarget.pullRequests =>
+        'TaskFocusIntent.pullRequests(taskId: $taskId, alignment: $alignment)',
     };
   }
 }
@@ -76,6 +87,14 @@ class TaskFocusController extends Notifier<TaskFocusIntent?> {
   /// Publish a focus intent for the task-agent suggestions section.
   void publishSuggestionFocus({double alignment = 0.1}) {
     state = TaskFocusIntent.suggestions(
+      taskId: id,
+      alignment: alignment,
+    );
+  }
+
+  /// Publish a focus intent for the task's Pull requests section.
+  void publishPullRequestsFocus({double alignment = 0.1}) {
+    state = TaskFocusIntent.pullRequests(
       taskId: id,
       alignment: alignment,
     );

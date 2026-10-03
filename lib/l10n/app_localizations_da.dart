@@ -3728,14 +3728,6 @@ class AppLocalizationsDa extends AppLocalizations {
       'Helbred divergerende agenthistorier fra brug af flere enheder ved at sammenflette dem ved næste våge.';
 
   @override
-  String get configFlagEnableGitHubPullRequests =>
-      'Aktivér pull requests fra GitHub';
-
-  @override
-  String get configFlagEnableGitHubPullRequestsDescription =>
-      'Knyt pull requests fra GitHub til opgaver, og følg deres tjek, reviews og status.';
-
-  @override
   String get configFlagEnableHabitsPage => 'Aktivér Vaner-siden';
 
   @override
@@ -6847,6 +6839,13 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get githubTokenShow => 'Vis token';
+
+  @override
+  String get githubTrackPullRequests => 'Sporing af pull requests';
+
+  @override
+  String get githubTrackPullRequestsHint =>
+      'Tilføjer en sektion til de pull requests, der løser denne opgave.';
 
   @override
   String get githubUnlinkPullRequest => 'Fjern pull request';

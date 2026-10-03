@@ -39,22 +39,26 @@ class PullRequestContextService {
   PullRequestContextService({
     required PullRequestRepository repository,
     required PullRequestService service,
-    required Future<bool> Function() isEnabled,
+    required Future<bool> Function() hasToken,
     this.refreshTimeout = const Duration(seconds: 8),
   }) : _entries = repository,
        _refresher = service,
-       _enabled = isEnabled;
+       _tokenStored = hasToken;
 
   final PullRequestRepository _entries;
   final PullRequestService _refresher;
-  final Future<bool> Function() _enabled;
+
+  /// Whether this device holds a GitHub token. A token GitHub has since
+  /// rejected still counts: the pull requests linked meanwhile keep their
+  /// place in the context, as not refreshed and labelled with why.
+  final Future<bool> Function() _tokenStored;
 
   /// How long one refresh may hold up the context; it finishes, and is
   /// stored, after the context has stopped waiting for it.
   final Duration refreshTimeout;
 
   /// The task's pull requests, refreshed now, rendered for [audience]; empty
-  /// when the task has none or the feature is disabled.
+  /// when the task has none or this device holds no GitHub token.
   Future<String> contextFor(
     String taskId, {
     required PullRequestContextAudience audience,
@@ -62,9 +66,9 @@ class PullRequestContextService {
       renderPullRequestContext(await forTask(taskId), audience: audience);
 
   /// The task's pull requests, each refreshed now, in parallel. Empty while
-  /// GitHub pull requests are disabled: then nothing is asked of GitHub.
+  /// this device holds no GitHub token: then nothing is asked of GitHub.
   Future<List<PullRequestContextItem>> forTask(String taskId) async {
-    if (!await _enabled()) return const [];
+    if (!await _tokenStored()) return const [];
     final entries = await _entries.forTask(taskId);
     final items = await Future.wait(entries.map(_itemFor));
     return items.nonNulls.toList();

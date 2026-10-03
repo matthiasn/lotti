@@ -3777,14 +3777,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Fusiona historiales de agente divergentes por el uso en varios dispositivos en la próxima activación.';
 
   @override
-  String get configFlagEnableGitHubPullRequests =>
-      'Activar pull requests de GitHub';
-
-  @override
-  String get configFlagEnableGitHubPullRequestsDescription =>
-      'Vincula pull requests de GitHub a tus tareas y sigue sus comprobaciones, revisiones y estado.';
-
-  @override
   String get configFlagEnableHabitsPage => 'Habilitar página Hábitos';
 
   @override
@@ -6933,6 +6925,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get githubTokenShow => 'Mostrar token';
+
+  @override
+  String get githubTrackPullRequests => 'Seguimiento de pull requests';
+
+  @override
+  String get githubTrackPullRequestsHint =>
+      'Añade una sección para las pull requests que implementan esta tarea.';
 
   @override
   String get githubUnlinkPullRequest => 'Desvincular pull request';

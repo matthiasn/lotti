@@ -23,6 +23,7 @@ import 'package:lotti/features/agents/ui/query/query_ask_button.dart';
 import 'package:lotti/features/agents/ui/query/query_chat_pane.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/github/ui/task_pull_requests_section.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
@@ -893,6 +894,69 @@ void main() {
       },
     );
 
+    testWidgets(
+      'pull requests focus intent scrolls the Pull requests section into '
+      'view',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 400);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        when(
+          () => mockJournalDb.journalEntityById(testTask.meta.id),
+        ).thenAnswer(
+          (_) async => testTask.copyWith(
+            data: testTask.data.copyWith(tracksPullRequests: true),
+          ),
+        );
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            TaskDetailsPage(taskId: testTask.id),
+            overrides: hTaskDetailsPageOverrides(),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final section = find.byType(
+          TaskPullRequestsSection,
+          skipOffstage: false,
+        );
+        expect(section, findsOneWidget);
+        // The page's own scroller: the one the section sits in.
+        final position = Scrollable.of(tester.element(section)).position;
+        expect(position.pixels, 0);
+        final before = tester.getTopLeft(section).dy;
+        final viewportBottom = tester.view.physicalSize.height;
+        expect(before, greaterThan(0.1 * viewportBottom));
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(TaskDetailsPage)),
+        );
+        container
+            .read(taskFocusControllerProvider(testTask.id).notifier)
+            .publishPullRequestsFocus();
+        for (
+          var i = 0;
+          i < 10 &&
+              container.read(taskFocusControllerProvider(testTask.id)) != null;
+          i++
+        ) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        await tester.pumpAndSettle();
+
+        expect(
+          container.read(taskFocusControllerProvider(testTask.id)),
+          isNull,
+        );
+        // Brought up towards the top, by exactly the distance scrolled.
+        expect(position.pixels, greaterThan(0));
+        final top = tester.getTopLeft(section).dy;
+        expect(top, closeTo(before - position.pixels, 0.5));
+        expect(top, greaterThanOrEqualTo(0));
+        expect(top, lessThan(viewportBottom));
+      },
+    );
+
     testWidgets('suggestions focus intent scrolls to proposals section', (
       tester,
     ) async {
@@ -1380,7 +1444,7 @@ void main() {
         '${scenario.tool}: resolving with the card above the viewport keeps '
         'the below-card entries fixed',
         (tester) async {
-          tester.view.physicalSize = const Size(800, 500);
+          tester.view.physicalSize = const Size(800, 400);
           tester.view.devicePixelRatio = 1;
           addTearDown(tester.view.reset);
 
@@ -1453,7 +1517,7 @@ void main() {
       'a new proposal arriving while the card is above the viewport keeps the '
       'below-card entries fixed',
       (tester) async {
-        tester.view.physicalSize = const Size(800, 500);
+        tester.view.physicalSize = const Size(800, 400);
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.reset);
 
@@ -1498,7 +1562,7 @@ void main() {
     testWidgets('a user scroll during the resolve window releases the hold', (
       tester,
     ) async {
-      tester.view.physicalSize = const Size(800, 500);
+      tester.view.physicalSize = const Size(800, 400);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
 
@@ -1546,7 +1610,7 @@ void main() {
         // visible reflow underneath them, so the armed hold must ignore the
         // delta — the proposals stay put because nothing above them moved,
         // not because the offset was corrected.
-        tester.view.physicalSize = const Size(800, 500);
+        tester.view.physicalSize = const Size(800, 400);
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.reset);
 
@@ -1620,7 +1684,7 @@ void main() {
         // own section headers) while the count stays identical. The band sits
         // below the proposals, so that resize must reflow underneath them
         // with no offset correction.
-        tester.view.physicalSize = const Size(800, 500);
+        tester.view.physicalSize = const Size(800, 400);
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.reset);
 
@@ -1691,7 +1755,7 @@ void main() {
         // the value already there. Without seeding the baseline from the
         // listener's own previous value, the first real change would only
         // establish the baseline and arm nothing.
-        tester.view.physicalSize = const Size(800, 500);
+        tester.view.physicalSize = const Size(800, 400);
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.reset);
 

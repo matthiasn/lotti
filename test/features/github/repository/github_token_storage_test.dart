@@ -350,6 +350,16 @@ void main() {
     },
   );
 
+  test('hasToken says whether a token is held', () async {
+    expect(await storage.hasToken(), isFalse);
+
+    await storage.save(token: 'ghp_secret', login: 'pingu');
+    expect(await storage.hasToken(), isTrue);
+
+    await storage.clear();
+    expect(await storage.hasToken(), isFalse);
+  });
+
   test('nothing held reads as nothing', () async {
     expect(await storage.read(), isNull);
     expect(await storage.readToken(), isNull);

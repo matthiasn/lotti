@@ -69,6 +69,9 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   final GlobalKey<State<StatefulWidget>> _suggestionsKey = GlobalKey(
     debugLabel: 'task_suggestions',
   );
+  final GlobalKey _pullRequestsKey = GlobalKey(
+    debugLabel: 'task_pull_requests',
+  );
 
   /// Anchors the seam just below the AI card (the linked-entries sliver). When
   /// the card grows while scrolled fully above the viewport, pinning this seam
@@ -88,7 +91,9 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   final GlobalKey _linkedTasksRegionKey = GlobalKey(
     debugLabel: 'task_linked_tasks_region',
   );
-  Timer? _suggestionsRetryTimer;
+
+  /// Retries a scroll to a section ([_scrollToSection]) until it mounts.
+  Timer? _sectionRetryTimer;
 
   /// Pins the AI card's bottom edge while a proposal resolves with the card
   /// in view. Every resolved row collapses *inside* the card, so holding this
@@ -175,7 +180,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   @override
   void dispose() {
     disposeHighlight();
-    _suggestionsRetryTimer?.cancel();
+    _sectionRetryTimer?.cancel();
     _cardBottomAnchor.dispose();
     _belowCardAnchor.dispose();
     _scrollController
@@ -480,7 +485,18 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
             isInitialLoad: isInitialLoad,
           );
         case TaskFocusTarget.suggestions:
-          _scrollToSuggestions(
+          _scrollToSection(
+            _suggestionsKey,
+            intent.alignment,
+            onScrolled: () => ref.read(focusProvider.notifier).clearIntent(),
+            isInitialLoad: isInitialLoad,
+          );
+        case TaskFocusTarget.pullRequests:
+          // Published as the section is turned on: it mounts a frame or two
+          // later, once the task's new version is read back, and the retry
+          // waits for it.
+          _scrollToSection(
+            _pullRequestsKey,
             intent.alignment,
             onScrolled: () => ref.read(focusProvider.notifier).clearIntent(),
             isInitialLoad: isInitialLoad,
@@ -627,6 +643,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
                       child: TaskForm(
                         taskId: widget.taskId,
                         suggestionsFocusKey: _suggestionsKey,
+                        pullRequestsFocusKey: _pullRequestsKey,
                         cardRegionKey: _cardRegionKey,
                         linkedTasksRegionKey: _linkedTasksRegionKey,
                         onSuggestionResolveStart: _holdSuggestionsStable,
@@ -711,7 +728,10 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     );
   }
 
-  void _scrollToSuggestions(
+  /// Scrolls the section marked by [key] into view, retrying until it has
+  /// mounted.
+  void _scrollToSection(
+    GlobalKey key,
     double alignment, {
     required VoidCallback onScrolled,
     required bool isInitialLoad,
@@ -720,9 +740,10 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
         ? initialScrollDelay
         : const Duration(milliseconds: 100);
 
-    _suggestionsRetryTimer?.cancel();
-    _suggestionsRetryTimer = Timer(delay, () {
-      _scrollToSuggestionsWithRetry(
+    _sectionRetryTimer?.cancel();
+    _sectionRetryTimer = Timer(delay, () {
+      _scrollToSectionWithRetry(
+        key,
         alignment,
         attempt: 0,
         onScrolled: onScrolled,
@@ -730,7 +751,8 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     });
   }
 
-  void _scrollToSuggestionsWithRetry(
+  void _scrollToSectionWithRetry(
+    GlobalKey key,
     double alignment, {
     required int attempt,
     required VoidCallback onScrolled,
@@ -738,7 +760,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
 
-      final context = _suggestionsKey.currentContext;
+      final context = key.currentContext;
       if (context != null) {
         try {
           await Scrollable.ensureVisible(
@@ -748,12 +770,17 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
             curve: Curves.easeInOut,
           );
         } catch (error) {
+          // A guard only: the key marks a band of this page that is mounted
+          // and laid out by the time its context is found, and no test can
+          // make ensureVisible fail on one.
+          // coverage:ignore-start
           DevLogger.warning(
             name: 'TaskDetailsPage',
-            message: 'Failed to scroll to task suggestions: $error',
+            message: 'Failed to scroll to $key: $error',
           );
+          // coverage:ignore-end
         } finally {
-          _suggestionsRetryTimer?.cancel();
+          _sectionRetryTimer?.cancel();
           if (mounted) {
             onScrolled();
           }
@@ -762,9 +789,10 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
       }
 
       if (attempt < maxScrollRetries - 1) {
-        _suggestionsRetryTimer?.cancel();
-        _suggestionsRetryTimer = Timer(scrollRetryDelay, () {
-          _scrollToSuggestionsWithRetry(
+        _sectionRetryTimer?.cancel();
+        _sectionRetryTimer = Timer(scrollRetryDelay, () {
+          _scrollToSectionWithRetry(
+            key,
             alignment,
             attempt: attempt + 1,
             onScrolled: onScrolled,
@@ -775,10 +803,9 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
 
       DevLogger.warning(
         name: 'TaskDetailsPage',
-        message:
-            'Failed to scroll to task suggestions after $maxScrollRetries attempts',
+        message: 'Failed to scroll to $key after $maxScrollRetries attempts',
       );
-      _suggestionsRetryTimer?.cancel();
+      _sectionRetryTimer?.cancel();
       if (mounted) {
         onScrolled();
       }

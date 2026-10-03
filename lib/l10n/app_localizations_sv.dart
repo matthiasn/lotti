@@ -3738,14 +3738,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Läka divergerande agenthistorier från användning med flera enheter genom att slå ihop dem vid nästa vak.';
 
   @override
-  String get configFlagEnableGitHubPullRequests =>
-      'Aktivera pull requests från GitHub';
-
-  @override
-  String get configFlagEnableGitHubPullRequestsDescription =>
-      'Koppla pull requests från GitHub till uppgifter och följ deras kontroller, granskningar och status.';
-
-  @override
   String get configFlagEnableHabitsPage => 'Aktivera Habits-sidan';
 
   @override
@@ -6856,6 +6848,13 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get githubTokenShow => 'Visa token';
+
+  @override
+  String get githubTrackPullRequests => 'Spårning av pull requests';
+
+  @override
+  String get githubTrackPullRequestsHint =>
+      'Lägger till ett avsnitt för de pull requests som genomför den här uppgiften.';
 
   @override
   String get githubUnlinkPullRequest => 'Koppla bort pull request';

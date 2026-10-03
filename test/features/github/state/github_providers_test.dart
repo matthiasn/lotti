@@ -3,10 +3,12 @@ import 'dart:io';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/github/api/github_client.dart';
+import 'package:lotti/features/github/context/pull_request_context_service.dart';
 import 'package:lotti/features/github/domain/github_repository.dart';
 import 'package:lotti/features/github/domain/pull_request_ref.dart';
 import 'package:lotti/features/github/repository/github_account_sync.dart';
@@ -26,8 +28,11 @@ import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fake_entry_controller.dart';
+import '../../../helpers/test_get_it.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
@@ -41,6 +46,10 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(prEntry(clock: {'a': 1}));
+    registerFallbackValue(prSnapshot());
+    registerFallbackValue(
+      const PullRequestRef(owner: 'matthiasn', repo: 'lotti', number: 42),
+    );
   });
 
   setUp(() {
@@ -71,6 +80,7 @@ void main() {
     late int rescans;
     late bool outboxRefuses;
     late StreamController<Set<String>> updates;
+    late MockUpdateNotifications notifications;
 
     setUp(() async {
       outboxRefuses = false;
@@ -83,7 +93,7 @@ void main() {
       rescans = 0;
       updates = StreamController<Set<String>>.broadcast();
       addTearDown(updates.close);
-      final notifications = MockUpdateNotifications();
+      notifications = MockUpdateNotifications();
       when(() => notifications.updateStream).thenAnswer((_) => updates.stream);
       await setUpTestGetIt(
         additionalSetup: () {
@@ -173,6 +183,29 @@ void main() {
       expect(await storage.read(), isNull);
       expect(sent, isEmpty);
     });
+
+    test(
+      'connecting and disconnecting announce the change to whoever follows '
+      'the account, as a token received from another device does',
+      () async {
+        when(
+          () => client.fetchViewerLogin('ghp_secret'),
+        ).thenAnswer((_) async => 'pingu');
+        final c = account();
+        await c.read(gitHubAccountControllerProvider.future);
+        final notifier = c.read(gitHubAccountControllerProvider.notifier);
+
+        await notifier.connect('ghp_secret');
+        verify(
+          () => notifications.notify({gitHubAccountNotification}),
+        ).called(1);
+
+        await notifier.disconnect();
+        verify(
+          () => notifications.notify({gitHubAccountNotification}),
+        ).called(1);
+      },
+    );
 
     test(
       'disconnect forgets the token here and on the other devices',
@@ -474,6 +507,364 @@ void main() {
             ProfileType.guest,
           ).read(gitHubAccountSyncProvider).canCheckOtherDevices,
           isFalse,
+        );
+      },
+    );
+  });
+
+  group('GitHubTokenStatusController', () {
+    late Map<String, String> keychain;
+    late GitHubTokenStorage storage;
+    late StreamController<Set<String>> updates;
+
+    setUp(() async {
+      keychain = {};
+      storage = GitHubTokenStorage(
+        inMemoryKeychain(keychain),
+        namespace: 'real',
+      );
+      updates = StreamController<Set<String>>.broadcast();
+      addTearDown(updates.close);
+      final notifications = MockUpdateNotifications();
+      when(() => notifications.updateStream).thenAnswer((_) => updates.stream);
+      // What the account announces reaches its followers, as in the app.
+      when(
+        () => notifications.notify(any(), fromSync: any(named: 'fromSync')),
+      ).thenAnswer(
+        (invocation) =>
+            updates.add(invocation.positionalArguments.first as Set<String>),
+      );
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..unregister<UpdateNotifications>()
+            ..registerSingleton<UpdateNotifications>(notifications);
+        },
+      );
+      addTearDown(tearDownTestGetIt);
+    });
+
+    ProviderContainer status({List<Override> overrides = const []}) {
+      final c = ProviderContainer(
+        overrides: [
+          gitHubClientProvider.overrideWithValue(client),
+          gitHubTokenStorageProvider.overrideWithValue(storage),
+          gitHubAccountSyncProvider.overrideWithValue(
+            GitHubAccountSync(
+              storage: storage,
+              enqueueOrThrow: (_) async {},
+            ),
+          ),
+          ...overrides,
+        ],
+      );
+      addTearDown(c.dispose);
+      return c;
+    }
+
+    GitHubTokenStatusController statusIn(ProviderContainer c) =>
+        c.read(gitHubTokenStatusProvider.notifier);
+
+    Future<GitHubTokenStatus> settled(ProviderContainer c) =>
+        c.read(gitHubTokenStatusProvider.future);
+
+    // A token another device sent, not checked here yet.
+    Future<void> received(String token) => storage.applyIfNewer(
+      GitHubAccountRecord(token: token, login: 'pingu', updatedAt: 1),
+    );
+
+    test('is none without a token, and offers no tracking', () async {
+      final c = status();
+
+      expect(await settled(c), GitHubTokenStatus.none);
+      expect(c.read(gitHubTrackingAvailableProvider), isFalse);
+    });
+
+    test(
+      'takes a token entered here as valid without asking GitHub again, and '
+      'offers tracking',
+      () async {
+        await storage.save(token: 'ghp_secret', login: 'pingu');
+        final c = status();
+
+        expect(await settled(c), GitHubTokenStatus.valid);
+        expect(c.read(gitHubTrackingAvailableProvider), isTrue);
+        verifyZeroInteractions(client);
+      },
+    );
+
+    test(
+      'a token from another device is offered once GitHub accepts it here',
+      () async {
+        await received('ghp_synced');
+        when(
+          () => client.fetchViewerLogin('ghp_synced'),
+        ).thenAnswer((_) async => 'pingu');
+        final c = status();
+
+        expect(await settled(c), GitHubTokenStatus.valid);
+        expect(c.read(gitHubTrackingAvailableProvider), isTrue);
+      },
+    );
+
+    test(
+      'a token from another device that GitHub rejects here is not offered',
+      () async {
+        await received('ghp_revoked');
+        when(
+          () => client.fetchViewerLogin('ghp_revoked'),
+        ).thenThrow(const GitHubException(GitHubFailureKind.unauthorized));
+        final c = status();
+
+        expect(await settled(c), GitHubTokenStatus.rejected);
+        expect(c.read(gitHubTrackingAvailableProvider), isFalse);
+      },
+    );
+
+    test(
+      'a token that arrives from another device later is read again',
+      () async {
+        when(
+          () => client.fetchViewerLogin('ghp_synced'),
+        ).thenAnswer((_) async => 'pingu');
+        final c = status()..listen(gitHubTokenStatusProvider, (_, _) {});
+        expect(await settled(c), GitHubTokenStatus.none);
+
+        await received('ghp_synced');
+        updates.add({gitHubAccountNotification});
+        await pumpEventQueue();
+
+        expect(await settled(c), GitHubTokenStatus.valid);
+        expect(c.read(gitHubTrackingAvailableProvider), isTrue);
+      },
+    );
+
+    test(
+      'a 401 on the held token withdraws tracking, and a later success '
+      'restores it',
+      () async {
+        await storage.save(token: 'ghp_secret', login: 'pingu');
+        final c = status();
+        await settled(c);
+
+        await statusIn(c).observe('ghp_secret', accepted: false);
+        expect(
+          c.read(gitHubTokenStatusProvider).value,
+          GitHubTokenStatus.rejected,
+        );
+        expect(c.read(gitHubTrackingAvailableProvider), isFalse);
+
+        await statusIn(c).observe('ghp_secret', accepted: true);
+        expect(
+          c.read(gitHubTokenStatusProvider).value,
+          GitHubTokenStatus.valid,
+        );
+        expect(c.read(gitHubTrackingAvailableProvider), isTrue);
+      },
+    );
+
+    test(
+      'a 401 that arrives before the held token was read still rejects it',
+      () async {
+        await storage.save(token: 'ghp_secret', login: 'pingu');
+        final c = status();
+
+        // Nothing has read the status yet: this starts its read, and the
+        // verdict must wait for it rather than be judged against no token.
+        await statusIn(c).observe('ghp_secret', accepted: false);
+
+        expect(
+          c.read(gitHubTokenStatusProvider).value,
+          GitHubTokenStatus.rejected,
+        );
+        expect(c.read(gitHubTrackingAvailableProvider), isFalse);
+      },
+    );
+
+    test('a verdict on a token no longer held changes nothing', () async {
+      await storage.save(token: 'ghp_new', login: 'pingu');
+      final c = status();
+      await settled(c);
+
+      // A call made with the replaced token, answered after the swap.
+      await statusIn(c).observe('ghp_old', accepted: false);
+
+      expect(c.read(gitHubTokenStatusProvider).value, GitHubTokenStatus.valid);
+    });
+
+    test('connecting a token again clears a rejection', () async {
+      await storage.save(token: 'ghp_secret', login: 'pingu');
+      when(
+        () => client.fetchViewerLogin('ghp_fresh'),
+      ).thenAnswer((_) async => 'pingu');
+      final c = status();
+      await settled(c);
+      await c.read(gitHubAccountControllerProvider.future);
+      await statusIn(c).observe('ghp_secret', accepted: false);
+
+      // Same account, fresh token: the login does not change.
+      await c
+          .read(gitHubAccountControllerProvider.notifier)
+          .connect('ghp_fresh');
+      await pumpEventQueue();
+
+      expect(await settled(c), GitHubTokenStatus.valid);
+      expect(c.read(gitHubTrackingAvailableProvider), isTrue);
+    });
+
+    test('disconnecting withdraws tracking', () async {
+      await storage.save(token: 'ghp_secret', login: 'pingu');
+      final c = status();
+      await settled(c);
+      await c.read(gitHubAccountControllerProvider.future);
+
+      await c.read(gitHubAccountControllerProvider.notifier).disconnect();
+      await pumpEventQueue();
+
+      expect(await settled(c), GitHubTokenStatus.none);
+      expect(c.read(gitHubTrackingAvailableProvider), isFalse);
+    });
+
+    test(
+      'the pull request service reports what GitHub said of the token: a '
+      '401 on a refresh rejects it, the next success accepts it again',
+      () async {
+        await storage.save(token: 'ghp_secret', login: 'pingu');
+        final repository = MockPullRequestRepository();
+        final entry = prEntry(clock: {'a': 1});
+        when(
+          () => repository.persistObservation(any(), any()),
+        ).thenAnswer((_) async => true);
+        // The real service, wired by its provider.
+        final c = status(
+          overrides: [
+            pullRequestRepositoryProvider.overrideWithValue(repository),
+          ],
+        );
+        await settled(c);
+
+        when(
+          () => client.fetchPullRequest(any(), token: 'ghp_secret'),
+        ).thenThrow(const GitHubException(GitHubFailureKind.unauthorized));
+        await c.read(pullRequestServiceProvider).refresh(entry);
+        await pumpEventQueue();
+        expect(
+          c.read(gitHubTokenStatusProvider).value,
+          GitHubTokenStatus.rejected,
+        );
+
+        when(
+          () => client.fetchPullRequest(any(), token: 'ghp_secret'),
+        ).thenAnswer((_) async => prSnapshot());
+        await c.read(pullRequestServiceProvider).refresh(entry);
+        await pumpEventQueue();
+        expect(
+          c.read(gitHubTokenStatusProvider).value,
+          GitHubTokenStatus.valid,
+        );
+      },
+    );
+  });
+
+  group('pullRequestContextServiceProvider', () {
+    late MockPullRequestRepository repository;
+
+    PullRequestContextService serviceIn() {
+      final c = ProviderContainer(
+        overrides: [
+          gitHubTokenStorageProvider.overrideWithValue(tokens),
+          pullRequestRepositoryProvider.overrideWithValue(repository),
+          pullRequestServiceProvider.overrideWithValue(service),
+        ],
+      );
+      addTearDown(c.dispose);
+      return c.read(pullRequestContextServiceProvider);
+    }
+
+    setUp(() {
+      repository = MockPullRequestRepository();
+      when(() => repository.forTask(any())).thenAnswer((_) async => []);
+    });
+
+    test(
+      'is gated on the stored token: without one the task context asks '
+      'for nothing',
+      () async {
+        when(tokens.hasToken).thenAnswer((_) async => false);
+
+        expect(await serviceIn().forTask('task'), isEmpty);
+        verifyNever(() => repository.forTask(any()));
+        verifyZeroInteractions(service);
+      },
+    );
+
+    test("with a stored token it reads the task's pull requests", () async {
+      when(tokens.hasToken).thenAnswer((_) async => true);
+
+      expect(await serviceIn().forTask('task'), isEmpty);
+      verify(() => repository.forTask('task')).called(1);
+    });
+  });
+
+  group('taskShowsPullRequestsProvider', () {
+    setUp(() async {
+      // The task's entry controller needs its editor service.
+      await setUpTestGetIt(
+        additionalSetup: () => getIt.registerSingleton<EditorStateService>(
+          MockEditorStateService(),
+        ),
+      );
+    });
+    tearDown(tearDownTestGetIt);
+
+    Future<bool> shows(
+      Task task, {
+      List<JournalEntity> linked = const [],
+    }) async {
+      final c = ProviderContainer(
+        overrides: [
+          entryControllerProvider(
+            task.meta.id,
+          ).overrideWith(() => FakeEntryController(task)),
+          resolvedOutgoingLinkedEntriesProvider.overrideWith(
+            (ref, taskId) => linked,
+          ),
+        ],
+      );
+      addTearDown(c.dispose);
+      c.listen(taskShowsPullRequestsProvider(task.meta.id), (_, _) {});
+      await c.read(entryControllerProvider(task.meta.id).future);
+      return c.read(taskShowsPullRequestsProvider(task.meta.id));
+    }
+
+    test(
+      'a task that never turned tracking on, with nothing linked, does not '
+      'show the section',
+      () async {
+        expect(await shows(testTask), isFalse);
+      },
+    );
+
+    test('a task that turned tracking on shows it with none linked', () async {
+      final tracking = testTask.copyWith(
+        data: testTask.data.copyWith(tracksPullRequests: true),
+      );
+      expect(await shows(tracking), isTrue);
+    });
+
+    test(
+      'a task linked to a pull request before tracking was a choice shows '
+      'it without being migrated',
+      () async {
+        expect(testTask.data.tracksPullRequests, isFalse);
+        expect(
+          await shows(
+            testTask,
+            linked: [
+              prEntry(clock: {'a': 1}),
+            ],
+          ),
+          isTrue,
         );
       },
     );

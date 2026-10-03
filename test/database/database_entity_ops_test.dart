@@ -590,6 +590,55 @@ void main() {
       });
     });
 
+    group('pull request tracking on a task -', () {
+      Task version(Map<String, int> clock, {required bool tracks}) =>
+          testTask.copyWith(
+            meta: testTask.meta.copyWith(
+              id: 'tracking-task',
+              vectorClock: VectorClock(clock),
+            ),
+            data: testTask.data.copyWith(tracksPullRequests: tracks),
+          );
+
+      Future<bool> storedTracks() async =>
+          ((await db!.journalEntityById('tracking-task'))! as Task)
+              .data
+              .tracksPullRequests;
+
+      test('a newer version this device built from a copy read before '
+          'tracking was on keeps it', () async {
+        await db!.updateJournalEntity(version({'a': 2}, tracks: true));
+
+        final result = await db!.updateJournalEntity(
+          version({'a': 3}, tracks: false),
+          fromThisDevice: true,
+        );
+
+        expect(result.applied, isTrue);
+        expect(await storedTracks(), isTrue);
+      });
+
+      test('a received version is stored as it came, so every device holds '
+          'the same row under its clock', () async {
+        await db!.updateJournalEntity(version({'a': 2}, tracks: true));
+
+        await db!.updateJournalEntity(version({'a': 2, 'b': 1}, tracks: false));
+
+        expect(await storedTracks(), isFalse);
+      });
+
+      test('a local version turning tracking on is stored with it', () async {
+        await db!.updateJournalEntity(version({'a': 1}, tracks: false));
+
+        await db!.updateJournalEntity(
+          version({'a': 2}, tracks: true),
+          fromThisDevice: true,
+        );
+
+        expect(await storedTracks(), isTrue);
+      });
+    });
+
     group('purge keeps a tombstone (ADR 0095) -', () {
       final purgedAt = DateTime(2024, 3, 1, 12);
       final deletedAt = DateTime(2024, 2, 1, 9);

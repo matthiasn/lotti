@@ -60,6 +60,18 @@ void main() {
         'TaskFocusIntent.suggestions(taskId: test-task-id, alignment: 0.1)',
       );
     });
+
+    test('a pull requests intent names its target and carries no entry', () {
+      final intent = TaskFocusIntent.pullRequests(taskId: testTaskId);
+
+      expect(intent.target, TaskFocusTarget.pullRequests);
+      expect(intent.entryId, isNull);
+      expect(intent.alignment, 0.1);
+      expect(
+        intent.toString(),
+        'TaskFocusIntent.pullRequests(taskId: test-task-id, alignment: 0.1)',
+      );
+    });
   });
 
   group('TaskFocusController', () {
@@ -98,6 +110,17 @@ void main() {
       expect(state.target, TaskFocusTarget.suggestions);
       expect(state.entryId, isNull);
       expect(state.alignment, equals(0.1));
+    });
+
+    test('publishPullRequestsFocus sets a pull requests intent', () {
+      final provider = taskFocusControllerProvider(testTaskId);
+
+      container.read(provider.notifier).publishPullRequestsFocus();
+
+      final state = container.read(provider);
+      expect(state?.taskId, testTaskId);
+      expect(state?.target, TaskFocusTarget.pullRequests);
+      expect(state?.entryId, isNull);
     });
 
     test('publishTaskFocus with custom alignment', () {

@@ -342,6 +342,17 @@ void main() {
       expect(diff.fields, isEmpty);
     });
 
+    test('a difference only in pull request tracking, which the resolution '
+        'joins, is not reported', () {
+      final diff = computeEntryDiff(
+        taskOf(tracksPullRequests: true),
+        taskOf(),
+      );
+
+      expect(diff.shape, ConflictShape.identical);
+      expect(diff.fields, isEmpty);
+    });
+
     test('a difference only in the checklist list, which the resolution '
         'joins, is not reported', () {
       final diff = computeEntryDiff(

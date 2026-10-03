@@ -3799,14 +3799,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Îmbină istoricurile divergente ale agentului rezultate din utilizarea pe mai multe dispozitive la următoarea activare.';
 
   @override
-  String get configFlagEnableGitHubPullRequests =>
-      'Activați pull request-urile GitHub';
-
-  @override
-  String get configFlagEnableGitHubPullRequestsDescription =>
-      'Legați pull request-uri GitHub de sarcini și urmăriți verificările, revizuirile și starea lor.';
-
-  @override
   String get configFlagEnableHabitsPage => 'Activați pagina Obiceiuri';
 
   @override
@@ -6968,6 +6960,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get githubTokenShow => 'Afișați tokenul';
+
+  @override
+  String get githubTrackPullRequests => 'Urmărirea pull request-urilor';
+
+  @override
+  String get githubTrackPullRequestsHint =>
+      'Adaugă o secțiune pentru pull request-urile care implementează această sarcină.';
 
   @override
   String get githubUnlinkPullRequest => 'Dezlegați pull request-ul';

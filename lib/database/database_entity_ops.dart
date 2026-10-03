@@ -280,6 +280,18 @@ mixin _JournalDbEntityOps
     return written;
   }
 
+  /// [written] keeping the pull request tracking of [stored] when both are
+  /// tasks; any other pair as it is.
+  static JournalEntity _keepingTracking(
+    JournalEntity stored,
+    JournalEntity written,
+  ) => switch ((stored, written)) {
+    (final Task s, final Task w) => w.copyWith(
+      data: w.data.withTrackingOf(s.data),
+    ),
+    _ => written,
+  };
+
   /// Applies [updated] to the journal after a vector-clock comparison with
   /// the stored row.
   ///
@@ -309,11 +321,20 @@ mixin _JournalDbEntityOps
   /// entry's conflict resolved only when it includes the conflict's version
   /// (ADR 0083).
   ///
+  /// A version this device wrote ([fromThisDevice]) over a stored task
+  /// keeps the task's pull request tracking when the stored row has it
+  /// ([TaskDataOnStored.withTrackingOf]): the caller built it from a copy
+  /// it may have read before tracking was turned on, and tracking only
+  /// turns on. Joined here, inside the transaction, it covers every local
+  /// task write, however the caller built its copy. A received version is
+  /// stored as it came, so every device holds the same row under one clock.
+  ///
   /// The row is the only stored copy of the entity. Sync reads its payload
   /// from here; nothing writes the entity to a file.
   Future<JournalUpdateResult> updateJournalEntity(
     JournalEntity updated, {
     bool overwrite = true,
+    bool fromThisDevice = false,
     Future<bool> Function()? precondition,
   }) async {
     var written = updated;
@@ -357,6 +378,7 @@ mixin _JournalDbEntityOps
 
         if (status == VclockStatus.b_gt_a || merged) {
           written = _overStored(existing, written);
+          if (fromThisDevice) written = _keepingTracking(existing, written);
           rowsWritten = await upsertJournalDbEntity(_toRow(written));
           applied = true;
           await _settleConflictCoveredBy(written);
