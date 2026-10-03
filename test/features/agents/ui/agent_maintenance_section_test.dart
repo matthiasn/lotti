@@ -49,7 +49,13 @@ void main() {
 
   /// Agents whose pending update slot the band asked to re-plan.
   final replannedAgentIds = <String>[];
-  setUp(replannedAgentIds.clear);
+
+  /// The categories whose inherited wake cadence the band looked up.
+  final inheritedFor = <String?>[];
+  setUp(() {
+    replannedAgentIds.clear();
+    inheritedFor.clear();
+  });
 
   Widget build({
     AgentStateEntity? state,
@@ -65,12 +71,14 @@ void main() {
     int? updateIntervalMinutes,
     DateTime? nextProjectUpdate,
     AgentWakeCadence? wakeCadence,
+    Set<String> allowedCategoryIds = const {},
   }) {
     return RiverpodWidgetTestBench(
       mediaQueryData: const MediaQueryData(size: Size(900, 800)),
       overrides: [
         agentIdentityProvider.overrideWith(
           (ref, id) async => makeTestIdentity(
+            allowedCategoryIds: allowedCategoryIds,
             config: AgentConfig(
               automaticUpdatesEnabled: automaticUpdates,
               maxWakesPerDay: maxWakesPerDay,
@@ -81,9 +89,10 @@ void main() {
         ),
         // What the task's category resolves to, pinned so the picker's
         // "Category: …" entry reads the same in every test.
-        inheritedTaskWakeCadenceProvider.overrideWith(
-          (ref, categoryId) => AgentWakeCadence.hourly,
-        ),
+        inheritedTaskWakeCadenceProvider.overrideWith((ref, categoryId) {
+          inheritedFor.add(categoryId);
+          return AgentWakeCadence.hourly;
+        }),
         agentStateProvider.overrideWith((ref, id) async => state),
         projectNextUpdateProvider.overrideWith(
           (ref, id) async => nextProjectUpdate,
@@ -139,6 +148,26 @@ void main() {
         expect(field.inheritedCadence, AgentWakeCadence.hourly);
         expect(find.text('Category: At most hourly'), findsOneWidget);
       });
+
+      for (final (label, categories, expected) in [
+        ("the task's own category", const {'cat-1'}, 'cat-1'),
+        (
+          'no category when the agent spans several',
+          const {'cat-1', 'cat-2'},
+          null,
+        ),
+      ]) {
+        testWidgets('the inherited cadence is looked up for $label', (
+          tester,
+        ) async {
+          await tester.pumpWidget(
+            build(automaticUpdates: true, allowedCategoryIds: categories),
+          );
+          await tester.pumpAndSettle();
+
+          expect(inheritedFor.toSet(), {expected});
+        });
+      }
 
       testWidgets('a cadence of its own is shown as chosen', (tester) async {
         await tester.pumpWidget(
