@@ -28,7 +28,6 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
-import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
@@ -44,6 +43,7 @@ import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../screenshot_harness.dart';
+import '../../test_doubles/mock_day_agent.dart';
 
 final DateTime _now = DateTime(2026, 6, 7, 9, 41);
 String _t(String en, String de) => manualScreenshotText(en: en, de: de);

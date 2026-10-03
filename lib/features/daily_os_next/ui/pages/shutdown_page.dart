@@ -1,10 +1,13 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/shutdown_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/shutdown_cards.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/category_chip.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/knowledge_panel.dart';
+import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -88,7 +91,7 @@ class _ShutdownBody extends ConsumerWidget {
         // the things the planner remembers about how you want to be planned.
         const KnowledgePanel(),
         SizedBox(height: tokens.spacing.step5),
-        TomorrowNoteCard(note: data.tomorrowNote),
+        TomorrowNoteCard(forDate: forDate),
       ],
     );
 
@@ -116,7 +119,7 @@ class _ShutdownBody extends ConsumerWidget {
                   ),
           ),
         ),
-        const ShutdownFooter(),
+        ShutdownFooter(forDate: forDate),
       ],
     );
   }
@@ -185,6 +188,8 @@ class _CompletedSection extends StatelessWidget {
           count: items.length,
         ),
         SizedBox(height: tokens.spacing.step4),
+        if (items.isEmpty)
+          _EmptyLine(context.messages.dailyOsNextShutdownCompletedEmpty),
         for (final item in items) ...[
           _CompletedRow(item: item),
           SizedBox(height: tokens.spacing.step3),
@@ -203,7 +208,12 @@ class _CompletedRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final color = categoryColorFromHex(item.category.colorHex);
-    final success = tokens.colors.alert.success.defaultColor;
+    final messages = context.messages;
+    final details = [
+      if (item.sessionCount > 0)
+        messages.dailyOsNextShutdownCompletedSessions(item.sessionCount),
+      if (item.doneToday) messages.dailyOsNextShutdownCompletedDoneToday,
+    ].join(' · ');
     return Container(
       padding: EdgeInsets.all(tokens.spacing.step4),
       decoration: BoxDecoration(
@@ -214,7 +224,13 @@ class _CompletedRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(LottiIcons.confirm, size: 16, color: success),
+          Icon(
+            item.doneToday ? LottiIcons.confirm : LottiIcons.forward,
+            size: 16,
+            color: item.doneToday
+                ? tokens.colors.alert.success.defaultColor
+                : tokens.colors.text.lowEmphasis,
+          ),
           SizedBox(width: tokens.spacing.step3),
           Expanded(
             child: Column(
@@ -227,10 +243,10 @@ class _CompletedRow extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                if (item.note != null) ...[
+                if (details.isNotEmpty) ...[
                   SizedBox(height: tokens.spacing.step1),
                   Text(
-                    item.note!,
+                    details,
                     style: tokens.typography.styles.body.bodySmall.copyWith(
                       color: tokens.colors.text.mediumEmphasis,
                     ),
@@ -239,11 +255,13 @@ class _CompletedRow extends StatelessWidget {
               ],
             ),
           ),
-          SizedBox(width: tokens.spacing.step3),
-          Text(
-            '${item.durationMinutes}m',
-            style: monoMetaStyle(tokens, tokens.colors),
-          ),
+          if (item.durationMinutes > 0) ...[
+            SizedBox(width: tokens.spacing.step3),
+            Text(
+              '${item.durationMinutes}m',
+              style: monoMetaStyle(tokens, tokens.colors),
+            ),
+          ],
         ],
       ),
     );
@@ -271,19 +289,78 @@ class _CarryoverSection extends ConsumerWidget {
           count: data.carryover.length,
         ),
         SizedBox(height: tokens.spacing.step4),
+        if (data.carryover.isEmpty)
+          _EmptyLine(context.messages.dailyOsNextShutdownCarryoverEmpty),
         for (final item in data.carryover) ...[
           _CarryoverRow(
             item: item,
             decision: data.decisions[item.taskId],
-            onAction: (action) async {
-              await ref
-                  .read(shutdownControllerProvider(forDate).notifier)
-                  .applyCarryover(taskId: item.taskId, action: action);
-            },
+            onAction: (action) => _decide(context, ref, forDate, item, action),
           ),
           SizedBox(height: tokens.spacing.step3),
         ],
       ],
+    );
+  }
+}
+
+/// Applies [action] to [item]; a picked date comes from the date picker,
+/// starting on the suggested day. A failed write leaves the row undecided and
+/// says so.
+Future<void> _decide(
+  BuildContext context,
+  WidgetRef ref,
+  DateTime forDate,
+  CarryoverItem item,
+  CarryoverAction action,
+) async {
+  DateTime? when;
+  if (action == CarryoverAction.pickDate) {
+    final suggested = item.suggestedDate;
+    final picked = await showDesignSystemDatePicker(
+      context: context,
+      title: context.messages.dailyOsNextShutdownCarryoverPickDate,
+      initialDate: suggested,
+      firstDate: suggested,
+      lastDate: DateTime(suggested.year + 1, suggested.month, suggested.day),
+    );
+    when = picked?.date;
+    if (when == null) return;
+  }
+  try {
+    await ref
+        .read(shutdownControllerProvider(forDate).notifier)
+        .applyCarryover(taskId: item.taskId, action: action, when: when);
+  } on Object {
+    if (context.mounted) showShutdownActionFailed(context);
+  }
+}
+
+/// "Tomorrow" when [date] is the day after today, otherwise the date itself.
+String _dayLabel(BuildContext context, DateTime date) {
+  final now = clock.now();
+  final tomorrow = DateTime(now.year, now.month, now.day + 1);
+  if (DateUtils.isSameDay(date, tomorrow)) {
+    return context.messages.dailyOsNextShutdownCarryoverTomorrow;
+  }
+  return DateFormat.MMMEd(
+    Localizations.localeOf(context).toString(),
+  ).format(date);
+}
+
+class _EmptyLine extends StatelessWidget {
+  const _EmptyLine(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Text(
+      text,
+      style: tokens.typography.styles.body.bodySmall.copyWith(
+        color: tokens.colors.text.mediumEmphasis,
+      ),
     );
   }
 }
@@ -296,7 +373,7 @@ class _CarryoverRow extends StatelessWidget {
   });
 
   final CarryoverItem item;
-  final CarryoverAction? decision;
+  final CarryoverDecision? decision;
   final ValueChanged<CarryoverAction> onAction;
 
   @override
@@ -333,14 +410,18 @@ class _CarryoverRow extends StatelessWidget {
             ),
             SizedBox(height: tokens.spacing.step2),
             Text(
-              item.reason,
+              item.loggedMinutes > 0
+                  ? context.messages.dailyOsNextShutdownCarryoverStarted(
+                      item.loggedMinutes,
+                    )
+                  : context.messages.dailyOsNextShutdownCarryoverNotStarted,
               style: tokens.typography.styles.body.bodySmall.copyWith(
                 color: tokens.colors.text.mediumEmphasis,
               ),
             ),
             SizedBox(height: tokens.spacing.step3),
             if (decided)
-              _DecisionPill(action: decision!, target: item.suggestedTarget)
+              _DecisionPill(decision: decision!)
             else
               _CarryoverActions(item: item, onAction: onAction),
           ],
@@ -367,7 +448,7 @@ class _CarryoverActions extends StatelessWidget {
       children: [
         FilledButton.icon(
           icon: const Icon(LottiIcons.forward, size: 14),
-          label: Text(item.suggestedTarget),
+          label: Text(_dayLabel(context, item.suggestedDate)),
           style: FilledButton.styleFrom(
             backgroundColor: teal,
             foregroundColor: tokens.colors.text.onInteractiveAlert,
@@ -411,22 +492,18 @@ class _CarryoverActions extends StatelessWidget {
 }
 
 class _DecisionPill extends StatelessWidget {
-  const _DecisionPill({required this.action, required this.target});
+  const _DecisionPill({required this.decision});
 
-  final CarryoverAction action;
-  final String target;
+  final CarryoverDecision decision;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final teal = tokens.colors.interactive.enabled;
-    final label = switch (action) {
-      CarryoverAction.tomorrow => target,
-      CarryoverAction.pickDate =>
-        context.messages.dailyOsNextShutdownCarryoverScheduled,
-      CarryoverAction.drop =>
-        context.messages.dailyOsNextShutdownCarryoverDropped,
-    };
+    final movedTo = decision.movedTo;
+    final label = movedTo == null
+        ? context.messages.dailyOsNextShutdownCarryoverDropped
+        : _dayLabel(context, movedTo);
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: tokens.spacing.step3,

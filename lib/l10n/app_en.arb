@@ -2972,11 +2972,33 @@
   "dailyOsNextReviewWhyTitle": "Why these made it in",
   "dailyOsNextShutdownCarryoverDrop": "Drop",
   "dailyOsNextShutdownCarryoverDropped": "Dropped",
+  "dailyOsNextShutdownCarryoverEmpty": "Nothing carries forward.",
+  "dailyOsNextShutdownCarryoverNotStarted": "Not started",
   "dailyOsNextShutdownCarryoverOverline": "CARRIES FORWARD",
   "dailyOsNextShutdownCarryoverPickDate": "Pick a date",
-  "dailyOsNextShutdownCarryoverScheduled": "Scheduled",
+  "dailyOsNextShutdownCarryoverStarted": "Started — {minutes} min logged",
+  "@dailyOsNextShutdownCarryoverStarted": {
+    "placeholders": {
+      "minutes": {
+        "type": "int",
+        "example": "40"
+      }
+    }
+  },
+  "dailyOsNextShutdownCarryoverTomorrow": "Tomorrow",
   "dailyOsNextShutdownCloseDay": "Close the day",
+  "dailyOsNextShutdownCompletedDoneToday": "Done today",
+  "dailyOsNextShutdownCompletedEmpty": "Nothing recorded for this day yet.",
   "dailyOsNextShutdownCompletedOverline": "WHAT YOU DID",
+  "dailyOsNextShutdownCompletedSessions": "{count, plural, =1{1 session} other{{count} sessions}}",
+  "@dailyOsNextShutdownCompletedSessions": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
   "dailyOsNextShutdownMetricEnergy": "ENERGY",
   "dailyOsNextShutdownMetricEnergyDelta": "{delta} vs. week",
   "@dailyOsNextShutdownMetricEnergyDelta": {
@@ -2987,6 +3009,7 @@
       }
     }
   },
+  "dailyOsNextShutdownMetricEnergyNoRatings": "Rate sessions to see it",
   "dailyOsNextShutdownMetricFlow": "FLOW SESSIONS",
   "dailyOsNextShutdownMetricFocus": "FOCUS TIME",
   "dailyOsNextShutdownMetricSwitches": "CONTEXT SWITCHES",
@@ -3002,11 +3025,13 @@
   "dailyOsNextShutdownReflectionOverline": "💬 ONE-LINE REFLECTION",
   "dailyOsNextShutdownReflectionPlaceholder": "e.g., morning was sharp, afternoon dragged after coffee with Sarah ran long.",
   "dailyOsNextShutdownReflectionPrompt": "How did today land? (This feeds tomorrow's draft.)",
+  "dailyOsNextShutdownReflectionSave": "Save",
   "dailyOsNextShutdownReflectionSpeak": "Speak it",
-  "dailyOsNextShutdownReflectionSubmit": "Skip",
-  "dailyOsNextShutdownReflectionThanks": "Got it — feeding tomorrow.",
+  "dailyOsNextShutdownReflectionThanks": "Saved — it goes into tomorrow's note.",
   "dailyOsNextShutdownSaveAndClose": "Save & close",
   "dailyOsNextShutdownTitle": "Close out the day",
+  "dailyOsNextShutdownTomorrowError": "The note for tomorrow couldn't be written.",
+  "dailyOsNextShutdownTomorrowNoProvider": "Set up an AI provider to get a note for tomorrow.",
   "dailyOsNextShutdownTomorrowOverline": "✦ FOR TOMORROW",
   "dailyOsNextStateDueOnDate": "Due {date}",
   "@dailyOsNextStateDueOnDate": {

@@ -8417,6 +8417,18 @@ abstract class AppLocalizations {
   /// **'Dropped'**
   String get dailyOsNextShutdownCarryoverDropped;
 
+  /// No description provided for @dailyOsNextShutdownCarryoverEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing carries forward.'**
+  String get dailyOsNextShutdownCarryoverEmpty;
+
+  /// No description provided for @dailyOsNextShutdownCarryoverNotStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Not started'**
+  String get dailyOsNextShutdownCarryoverNotStarted;
+
   /// No description provided for @dailyOsNextShutdownCarryoverOverline.
   ///
   /// In en, this message translates to:
@@ -8429,11 +8441,17 @@ abstract class AppLocalizations {
   /// **'Pick a date'**
   String get dailyOsNextShutdownCarryoverPickDate;
 
-  /// No description provided for @dailyOsNextShutdownCarryoverScheduled.
+  /// No description provided for @dailyOsNextShutdownCarryoverStarted.
   ///
   /// In en, this message translates to:
-  /// **'Scheduled'**
-  String get dailyOsNextShutdownCarryoverScheduled;
+  /// **'Started — {minutes} min logged'**
+  String dailyOsNextShutdownCarryoverStarted(int minutes);
+
+  /// No description provided for @dailyOsNextShutdownCarryoverTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Tomorrow'**
+  String get dailyOsNextShutdownCarryoverTomorrow;
 
   /// No description provided for @dailyOsNextShutdownCloseDay.
   ///
@@ -8441,11 +8459,29 @@ abstract class AppLocalizations {
   /// **'Close the day'**
   String get dailyOsNextShutdownCloseDay;
 
+  /// No description provided for @dailyOsNextShutdownCompletedDoneToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Done today'**
+  String get dailyOsNextShutdownCompletedDoneToday;
+
+  /// No description provided for @dailyOsNextShutdownCompletedEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing recorded for this day yet.'**
+  String get dailyOsNextShutdownCompletedEmpty;
+
   /// No description provided for @dailyOsNextShutdownCompletedOverline.
   ///
   /// In en, this message translates to:
   /// **'WHAT YOU DID'**
   String get dailyOsNextShutdownCompletedOverline;
+
+  /// No description provided for @dailyOsNextShutdownCompletedSessions.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 session} other{{count} sessions}}'**
+  String dailyOsNextShutdownCompletedSessions(int count);
 
   /// No description provided for @dailyOsNextShutdownMetricEnergy.
   ///
@@ -8458,6 +8494,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{delta} vs. week'**
   String dailyOsNextShutdownMetricEnergyDelta(String delta);
+
+  /// No description provided for @dailyOsNextShutdownMetricEnergyNoRatings.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate sessions to see it'**
+  String get dailyOsNextShutdownMetricEnergyNoRatings;
 
   /// No description provided for @dailyOsNextShutdownMetricFlow.
   ///
@@ -8501,22 +8543,22 @@ abstract class AppLocalizations {
   /// **'How did today land? (This feeds tomorrow\'s draft.)'**
   String get dailyOsNextShutdownReflectionPrompt;
 
+  /// No description provided for @dailyOsNextShutdownReflectionSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get dailyOsNextShutdownReflectionSave;
+
   /// No description provided for @dailyOsNextShutdownReflectionSpeak.
   ///
   /// In en, this message translates to:
   /// **'Speak it'**
   String get dailyOsNextShutdownReflectionSpeak;
 
-  /// No description provided for @dailyOsNextShutdownReflectionSubmit.
-  ///
-  /// In en, this message translates to:
-  /// **'Skip'**
-  String get dailyOsNextShutdownReflectionSubmit;
-
   /// No description provided for @dailyOsNextShutdownReflectionThanks.
   ///
   /// In en, this message translates to:
-  /// **'Got it — feeding tomorrow.'**
+  /// **'Saved — it goes into tomorrow\'s note.'**
   String get dailyOsNextShutdownReflectionThanks;
 
   /// No description provided for @dailyOsNextShutdownSaveAndClose.
@@ -8530,6 +8572,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close out the day'**
   String get dailyOsNextShutdownTitle;
+
+  /// No description provided for @dailyOsNextShutdownTomorrowError.
+  ///
+  /// In en, this message translates to:
+  /// **'The note for tomorrow couldn\'t be written.'**
+  String get dailyOsNextShutdownTomorrowError;
+
+  /// No description provided for @dailyOsNextShutdownTomorrowNoProvider.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up an AI provider to get a note for tomorrow.'**
+  String get dailyOsNextShutdownTomorrowNoProvider;
 
   /// No description provided for @dailyOsNextShutdownTomorrowOverline.
   ///

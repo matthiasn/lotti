@@ -651,6 +651,38 @@ Map<String, dynamic> _$DaySummaryEntityToJson(DaySummaryEntity instance) =>
       'runtimeType': instance.$type,
     };
 
+TomorrowNoteEntity _$TomorrowNoteEntityFromJson(Map<String, dynamic> json) =>
+    TomorrowNoteEntity(
+      id: json['id'] as String,
+      agentId: json['agentId'] as String,
+      dayId: json['dayId'] as String,
+      text: json['text'] as String,
+      inputFingerprint: json['inputFingerprint'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      vectorClock: json['vectorClock'] == null
+          ? null
+          : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+      deletedAt: json['deletedAt'] == null
+          ? null
+          : DateTime.parse(json['deletedAt'] as String),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$TomorrowNoteEntityToJson(TomorrowNoteEntity instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'agentId': instance.agentId,
+      'dayId': instance.dayId,
+      'text': instance.text,
+      'inputFingerprint': instance.inputFingerprint,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'updatedAt': instance.updatedAt.toIso8601String(),
+      'vectorClock': instance.vectorClock,
+      'deletedAt': instance.deletedAt?.toIso8601String(),
+      'runtimeType': instance.$type,
+    };
+
 DayDirectiveEntity _$DayDirectiveEntityFromJson(Map<String, dynamic> json) =>
     DayDirectiveEntity(
       id: json['id'] as String,

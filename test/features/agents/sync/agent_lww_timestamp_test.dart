@@ -165,6 +165,11 @@ final _cases = <({String label, AgentDomainEntity entity, DateTime expected})>[
     expected: _updated,
   ),
   (
+    label: 'tomorrowNote',
+    entity: makeTestTomorrowNote(createdAt: _created, updatedAt: _updated),
+    expected: _updated,
+  ),
+  (
     label: 'dayDirective',
     entity: makeTestDayDirective(createdAt: _created, updatedAt: _updated),
     expected: _updated,
@@ -454,7 +459,7 @@ void main() {
       // Guards the data table above: if a variant is added (and classified in
       // the exhaustive `map`), this count must be bumped with a new case.
       // Query events also cover the deletion timestamp independently.
-      expect(_cases.length, 42);
+      expect(_cases.length, 43);
     });
   });
 

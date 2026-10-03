@@ -129,7 +129,8 @@ class ReconcileController extends AsyncNotifier<ReconcileData> {
   }
 
   /// Apply a triage action against either a pending item or a parsed
-  /// NEW card (both flow through the same `apply_triage` tool).
+  /// NEW card (both flow through the same `apply_triage` tool). A defer
+  /// without [deferTo] moves the task to the next day.
   Future<void> triage({
     required String taskId,
     required TriageAction action,
@@ -137,10 +138,17 @@ class ReconcileController extends AsyncNotifier<ReconcileData> {
   }) async {
     final current = state.value;
     if (current == null) return;
+    final day = params.dayDate;
     final result = await _agent.applyTriage(
       taskId: taskId,
       action: action,
-      deferTo: deferTo,
+      // The Defer button carries no date: it means the day after the one
+      // being reconciled. The agent layer rejects a defer without one.
+      deferTo:
+          deferTo ??
+          (action == TriageAction.defer
+              ? DateTime(day.year, day.month, day.day + 1)
+              : null),
     );
     state = AsyncData(
       current.copyWith(

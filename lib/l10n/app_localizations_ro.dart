@@ -5073,19 +5073,49 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextShutdownCarryoverDropped => 'Renunțat';
 
   @override
+  String get dailyOsNextShutdownCarryoverEmpty => 'Nimic de reportat.';
+
+  @override
+  String get dailyOsNextShutdownCarryoverNotStarted => 'Neînceput';
+
+  @override
   String get dailyOsNextShutdownCarryoverOverline => 'SE REPORTEAZĂ';
 
   @override
   String get dailyOsNextShutdownCarryoverPickDate => 'Alegeți data';
 
   @override
-  String get dailyOsNextShutdownCarryoverScheduled => 'Programat';
+  String dailyOsNextShutdownCarryoverStarted(int minutes) {
+    return 'Început — $minutes min înregistrate';
+  }
+
+  @override
+  String get dailyOsNextShutdownCarryoverTomorrow => 'Mâine';
 
   @override
   String get dailyOsNextShutdownCloseDay => 'Închideți ziua';
 
   @override
+  String get dailyOsNextShutdownCompletedDoneToday => 'Finalizat azi';
+
+  @override
+  String get dailyOsNextShutdownCompletedEmpty =>
+      'Nimic înregistrat pentru această zi deocamdată.';
+
+  @override
   String get dailyOsNextShutdownCompletedOverline => 'CE AȚI FĂCUT';
+
+  @override
+  String dailyOsNextShutdownCompletedSessions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de sesiuni',
+      few: '$count sesiuni',
+      one: '1 sesiune',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get dailyOsNextShutdownMetricEnergy => 'ENERGIE';
@@ -5094,6 +5124,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String dailyOsNextShutdownMetricEnergyDelta(String delta) {
     return '$delta vs. săptămână';
   }
+
+  @override
+  String get dailyOsNextShutdownMetricEnergyNoRatings =>
+      'Evaluați sesiunile pentru a o vedea';
 
   @override
   String get dailyOsNextShutdownMetricFlow => 'SESIUNI DE FLOW';
@@ -5121,20 +5155,28 @@ class AppLocalizationsRo extends AppLocalizations {
       'Cum a fost ziua? (Asta alimentează schița de mâine.)';
 
   @override
+  String get dailyOsNextShutdownReflectionSave => 'Salvați';
+
+  @override
   String get dailyOsNextShutdownReflectionSpeak => 'Spuneți';
 
   @override
-  String get dailyOsNextShutdownReflectionSubmit => 'Săriți peste';
-
-  @override
   String get dailyOsNextShutdownReflectionThanks =>
-      'Notat — alimentează ziua de mâine.';
+      'Salvat — va fi inclus în nota pentru mâine.';
 
   @override
   String get dailyOsNextShutdownSaveAndClose => 'Salvați și închideți';
 
   @override
   String get dailyOsNextShutdownTitle => 'Închideți ziua';
+
+  @override
+  String get dailyOsNextShutdownTomorrowError =>
+      'Nota pentru mâine nu a putut fi scrisă.';
+
+  @override
+  String get dailyOsNextShutdownTomorrowNoProvider =>
+      'Configurați un furnizor de AI pentru a primi o notă pentru mâine.';
 
   @override
   String get dailyOsNextShutdownTomorrowOverline => '✦ PENTRU MÂINE';

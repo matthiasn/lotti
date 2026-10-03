@@ -11,6 +11,7 @@ processing outbox, and the voice-first Capture → Reconcile → Draft → Refin
 * [Coordinator and day-agent protocol](coordination-protocol.md) - directives, status events, the digest wake, week rollups.
 * [Dependency-aware planning](dependency-aware-planning.md) - how typed `blocks` links reach the planner.
 * [UI surfaces](ui-surfaces.md) - the Day page, voice template, timeline editing, capacity ring, onboarding walkthrough.
+* [Shutdown](shutdown.md) - closing a day: measured facts, carryover decisions, the reflection entry, the tomorrow note.
 * [Evaluation and benchmarks](evaluation.md) - measuring what the model plans, and that storage does not degrade.
 
 # Related

@@ -1,163 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
-import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/shutdown_controller.dart';
 
-void main() {
-  group('ShutdownController', () {
-    final forDate = DateTime(2026, 5, 25);
+import '../test_doubles/mock_day_agent.dart';
 
-    MockDayAgent freshAgent() => MockDayAgent(
-      parseLatency: Duration.zero,
-      pendingLatency: Duration.zero,
-      triageLatency: Duration.zero,
-      summarizeLatency: Duration.zero,
-    );
+final _forDate = DateTime(2026, 5, 25);
+final _nextDay = DateTime(2026, 5, 26);
 
-    ProviderContainer makeContainer(DayAgentInterface agent) {
-      final container = ProviderContainer(
-        overrides: [dayAgentProvider.overrideWithValue(agent)],
-      )..listen(shutdownControllerProvider(forDate), (_, _) {});
-      addTearDown(container.dispose);
-      return container;
-    }
-
-    test(
-      'build merges surfaceShutdownData and generateTomorrowNote into one '
-      'snapshot',
-      () async {
-        final container = makeContainer(freshAgent());
-
-        final data = await container.read(
-          shutdownControllerProvider(forDate).future,
-        );
-
-        expect(data.completed, hasLength(2));
-        expect(data.completed.first.title, contains('Deck review'));
-        expect(data.carryover, hasLength(2));
-        expect(data.carryover.first.taskId, 't_onboarding_doc');
-        expect(data.metrics.focusMinutes, 215);
-        expect(data.metrics.flowSessions, 3);
-        expect(data.tomorrowNote.body, contains('Onboarding doc'));
-        expect(data.decisions, isEmpty);
-      },
-    );
-
-    test(
-      'applyCarryover records the decision and merges it into state without '
-      'touching unrelated decisions',
-      () async {
-        final agent = _RecordingAgent();
-        final container = makeContainer(agent);
-        await container.read(shutdownControllerProvider(forDate).future);
-
-        await container
-            .read(shutdownControllerProvider(forDate).notifier)
-            .applyCarryover(
-              taskId: 't_onboarding_doc',
-              action: CarryoverAction.tomorrow,
-            );
-
-        expect(agent.carryoverCalls, hasLength(1));
-        expect(agent.carryoverCalls.single.$1, 't_onboarding_doc');
-        expect(agent.carryoverCalls.single.$2, CarryoverAction.tomorrow);
-
-        var data = container.read(shutdownControllerProvider(forDate)).value!;
-        expect(
-          data.decisions,
-          {'t_onboarding_doc': CarryoverAction.tomorrow},
-        );
-
-        await container
-            .read(shutdownControllerProvider(forDate).notifier)
-            .applyCarryover(
-              taskId: 't_invoices',
-              action: CarryoverAction.drop,
-            );
-
-        data = container.read(shutdownControllerProvider(forDate)).value!;
-        expect(data.decisions, {
-          't_onboarding_doc': CarryoverAction.tomorrow,
-          't_invoices': CarryoverAction.drop,
-        });
-      },
-    );
-
-    test(
-      'copyWith replaces only the named field and keeps recorded decisions',
-      () async {
-        final container = makeContainer(_RecordingAgent());
-        await container.read(shutdownControllerProvider(forDate).future);
-        await container
-            .read(shutdownControllerProvider(forDate).notifier)
-            .applyCarryover(
-              taskId: 't_invoices',
-              action: CarryoverAction.drop,
-            );
-        final data = container.read(shutdownControllerProvider(forDate)).value!;
-
-        final updated = data.copyWith(
-          tomorrowNote: const TomorrowNote(body: 'Restock the herring shed.'),
-        );
-
-        expect(updated.tomorrowNote.body, 'Restock the herring shed.');
-        expect(updated.decisions, {'t_invoices': CarryoverAction.drop});
-        expect(updated.completed, same(data.completed));
-        expect(updated.carryover, same(data.carryover));
-        expect(updated.metrics, same(data.metrics));
-      },
-    );
-
-    test(
-      'submitReflection forwards forDate, text, and source to the agent',
-      () async {
-        final agent = _RecordingAgent();
-        final container = makeContainer(agent);
-        await container.read(shutdownControllerProvider(forDate).future);
-
-        await container
-            .read(shutdownControllerProvider(forDate).notifier)
-            .submitReflection(
-              text: 'Felt steady today.',
-              source: ReflectionSource.voice,
-            );
-
-        expect(agent.reflectionCalls, hasLength(1));
-        final call = agent.reflectionCalls.single;
-        expect(call.$1, forDate);
-        expect(call.$2, 'Felt steady today.');
-        expect(call.$3, ReflectionSource.voice);
-      },
-    );
-
-    test(
-      'applyCarryover is a no-op when build has not produced a snapshot yet',
-      () async {
-        // Construct the notifier directly so `state.value` is the initial
-        // AsyncLoading rather than an AsyncData.
-        final agent = _RecordingAgent();
-        final container = ProviderContainer(
-          overrides: [dayAgentProvider.overrideWithValue(agent)],
-        );
-        addTearDown(container.dispose);
-
-        // No listen() + no awaiting future = stays loading.
-        await container
-            .read(shutdownControllerProvider(forDate).notifier)
-            .applyCarryover(
-              taskId: 't_onboarding_doc',
-              action: CarryoverAction.tomorrow,
-            );
-
-        expect(agent.carryoverCalls, isEmpty);
-      },
-    );
-  });
-}
-
+/// Scripted agent that records every Shutdown write it receives.
 class _RecordingAgent extends MockDayAgent {
   _RecordingAgent()
     : super(
@@ -167,20 +19,31 @@ class _RecordingAgent extends MockDayAgent {
         summarizeLatency: Duration.zero,
       );
 
-  final List<(String, CarryoverAction)> carryoverCalls = [];
-  final List<(DateTime, String, ReflectionSource)> reflectionCalls = [];
+  final carryoverCalls =
+      <
+        ({
+          DateTime forDate,
+          String taskId,
+          CarryoverAction action,
+          DateTime? when,
+        })
+      >[];
+  final reflections = <(DateTime, String)>[];
+  Error? failCarryoverWith;
+  TomorrowNote note = const TomorrowNote(body: 'Invoices first.');
+  Error? failNoteWith;
 
   @override
   Future<void> recordCarryoverDecision({
+    required DateTime forDate,
     required String taskId,
     required CarryoverAction action,
     DateTime? when,
   }) async {
-    carryoverCalls.add((taskId, action));
-    await super.recordCarryoverDecision(
-      taskId: taskId,
-      action: action,
-      when: when,
+    final failure = failCarryoverWith;
+    if (failure != null) throw failure;
+    carryoverCalls.add(
+      (forDate: forDate, taskId: taskId, action: action, when: when),
     );
   }
 
@@ -188,13 +51,160 @@ class _RecordingAgent extends MockDayAgent {
   Future<void> recordReflection({
     required DateTime forDate,
     required String text,
-    required ReflectionSource source,
-  }) async {
-    reflectionCalls.add((forDate, text, source));
-    await super.recordReflection(
-      forDate: forDate,
-      text: text,
-      source: source,
-    );
+  }) async => reflections.add((forDate, text));
+
+  @override
+  Future<TomorrowNote> generateTomorrowNote({required DateTime forDate}) async {
+    final failure = failNoteWith;
+    if (failure != null) throw failure;
+    return note;
   }
+}
+
+void main() {
+  late _RecordingAgent agent;
+  late ProviderContainer container;
+
+  setUp(() {
+    agent = _RecordingAgent();
+    container = ProviderContainer(
+      overrides: [dayAgentProvider.overrideWithValue(agent)],
+    )..listen(shutdownControllerProvider(_forDate), (_, _) {});
+  });
+
+  tearDown(() => container.dispose());
+
+  ShutdownController notifier() =>
+      container.read(shutdownControllerProvider(_forDate).notifier);
+
+  Future<ShutdownData> load() =>
+      container.read(shutdownControllerProvider(_forDate).future);
+
+  test('build loads the day facts with no decisions yet', () async {
+    final data = await load();
+
+    expect(data.completed.map((item) => item.title).first, contains('Deck'));
+    expect(data.carryover.map((item) => item.taskId), [
+      't_onboarding_doc',
+      't_invoices',
+    ]);
+    expect(data.carryover.first.suggestedDate, _nextDay);
+    expect(data.metrics.focusMinutes, 215);
+    expect(data.decisions, isEmpty);
+  });
+
+  group('applyCarryover', () {
+    test('tomorrow re-places on the suggested day and records it', () async {
+      await load();
+      await notifier().applyCarryover(
+        taskId: 't_onboarding_doc',
+        action: CarryoverAction.tomorrow,
+      );
+
+      expect(agent.carryoverCalls.single, (
+        forDate: _forDate,
+        taskId: 't_onboarding_doc',
+        action: CarryoverAction.tomorrow,
+        when: null,
+      ));
+      expect(
+        container.read(shutdownControllerProvider(_forDate)).value!.decisions,
+        {
+          't_onboarding_doc': (
+            action: CarryoverAction.tomorrow,
+            movedTo: _nextDay,
+          ),
+        },
+      );
+    });
+
+    test('a picked date is forwarded and becomes the moved-to day', () async {
+      final picked = DateTime(2026, 6, 2);
+      await load();
+      await notifier().applyCarryover(
+        taskId: 't_invoices',
+        action: CarryoverAction.pickDate,
+        when: picked,
+      );
+
+      expect(agent.carryoverCalls.single.when, picked);
+      expect(
+        container.read(shutdownControllerProvider(_forDate)).value!.decisions,
+        {'t_invoices': (action: CarryoverAction.pickDate, movedTo: picked)},
+      );
+    });
+
+    test('a drop has no moved-to day and keeps earlier decisions', () async {
+      await load();
+      await notifier().applyCarryover(
+        taskId: 't_onboarding_doc',
+        action: CarryoverAction.tomorrow,
+      );
+      await notifier().applyCarryover(
+        taskId: 't_invoices',
+        action: CarryoverAction.drop,
+      );
+
+      expect(
+        container.read(shutdownControllerProvider(_forDate)).value!.decisions,
+        {
+          't_onboarding_doc': (
+            action: CarryoverAction.tomorrow,
+            movedTo: _nextDay,
+          ),
+          't_invoices': (action: CarryoverAction.drop, movedTo: null),
+        },
+      );
+    });
+
+    test('a failed write throws and leaves the row undecided', () async {
+      await load();
+      agent.failCarryoverWith = StateError('offline');
+
+      await expectLater(
+        notifier().applyCarryover(
+          taskId: 't_invoices',
+          action: CarryoverAction.drop,
+        ),
+        throwsStateError,
+      );
+      expect(
+        container.read(shutdownControllerProvider(_forDate)).value!.decisions,
+        isEmpty,
+      );
+    });
+  });
+
+  test('submitReflection forwards the text for the day', () async {
+    await load();
+    await notifier().submitReflection('Afternoon dragged.');
+    expect(agent.reflections, [(_forDate, 'Afternoon dragged.')]);
+  });
+
+  test('ensureReflectionEntry returns the day entry id', () async {
+    await load();
+    expect(await notifier().ensureReflectionEntry(), 'reflection-2026-5-25');
+  });
+
+  group('shutdownTomorrowNoteProvider', () {
+    test('loads the note for the day', () async {
+      expect(
+        (await container.read(
+          shutdownTomorrowNoteProvider(_forDate).future,
+        )).body,
+        'Invoices first.',
+      );
+    });
+
+    test('surfaces a failure without touching the Shutdown data', () async {
+      agent.failNoteWith = StateError('no provider');
+      container.listen(shutdownTomorrowNoteProvider(_forDate), (_, _) {});
+
+      await expectLater(
+        container.read(shutdownTomorrowNoteProvider(_forDate).future),
+        throwsStateError,
+      );
+      expect((await load()).carryover, hasLength(2));
+    });
+  });
 }

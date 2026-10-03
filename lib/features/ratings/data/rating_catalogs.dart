@@ -7,13 +7,20 @@ typedef CatalogFactory =
       AppLocalizations messages,
     );
 
+/// The `catalogId` of session ratings — the end-of-session rating of a time
+/// recording.
+const sessionRatingCatalogId = 'session';
+
+/// The session rating's energy dimension (0 drained … 1 fully energized).
+const sessionEnergyDimensionKey = 'energy';
+
 /// Registry mapping catalog IDs to their factory functions.
 ///
 /// To add a new rating catalog (e.g. for day or task ratings), define a
 /// factory function and register it here. The `catalogId` must match the
 /// value stored in `RatingData.catalogId`.
 final Map<String, CatalogFactory> ratingCatalogRegistry = {
-  'session': sessionRatingCatalog,
+  sessionRatingCatalogId: sessionRatingCatalog,
 };
 
 /// Session-end rating catalog: 4 dimensions matching the original
@@ -28,7 +35,7 @@ List<RatingQuestion> sessionRatingCatalog(AppLocalizations messages) => [
         '1.0 = peak productivity.',
   ),
   RatingQuestion(
-    key: 'energy',
+    key: sessionEnergyDimensionKey,
     question: messages.sessionRatingEnergyQuestion,
     description:
         'Measures energy level during the work session. '

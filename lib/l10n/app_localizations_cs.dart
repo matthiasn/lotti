@@ -5043,19 +5043,49 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextShutdownCarryoverDropped => 'Zahozeno';
 
   @override
+  String get dailyOsNextShutdownCarryoverEmpty => 'Nic se nepřesouvá.';
+
+  @override
+  String get dailyOsNextShutdownCarryoverNotStarted => 'Nezahájeno';
+
+  @override
   String get dailyOsNextShutdownCarryoverOverline => 'PŘEVÁDÍ SE';
 
   @override
   String get dailyOsNextShutdownCarryoverPickDate => 'Vyber datum';
 
   @override
-  String get dailyOsNextShutdownCarryoverScheduled => 'Naplánováno';
+  String dailyOsNextShutdownCarryoverStarted(int minutes) {
+    return 'Rozpracováno — zaznamenáno $minutes min';
+  }
+
+  @override
+  String get dailyOsNextShutdownCarryoverTomorrow => 'Zítra';
 
   @override
   String get dailyOsNextShutdownCloseDay => 'Uzavřít den';
 
   @override
+  String get dailyOsNextShutdownCompletedDoneToday => 'Hotovo dnes';
+
+  @override
+  String get dailyOsNextShutdownCompletedEmpty =>
+      'Pro tento den zatím nic nezaznamenáno.';
+
+  @override
   String get dailyOsNextShutdownCompletedOverline => 'CO JSI UDĚLAL';
+
+  @override
+  String dailyOsNextShutdownCompletedSessions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bloků',
+      few: '$count bloky',
+      one: '1 blok',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get dailyOsNextShutdownMetricEnergy => 'ENERGIE';
@@ -5064,6 +5094,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String dailyOsNextShutdownMetricEnergyDelta(String delta) {
     return '$delta vs. týden';
   }
+
+  @override
+  String get dailyOsNextShutdownMetricEnergyNoRatings =>
+      'Ohodnoť bloky, abys ji viděl';
 
   @override
   String get dailyOsNextShutdownMetricFlow => 'FLOW RELACE';
@@ -5091,19 +5125,28 @@ class AppLocalizationsCs extends AppLocalizations {
       'Jak dnešek dopadl? (Naplní zítřejší návrh.)';
 
   @override
+  String get dailyOsNextShutdownReflectionSave => 'Uložit';
+
+  @override
   String get dailyOsNextShutdownReflectionSpeak => 'Řekni to';
 
   @override
-  String get dailyOsNextShutdownReflectionSubmit => 'Přeskočit';
-
-  @override
-  String get dailyOsNextShutdownReflectionThanks => 'Mám to — krmí zítřek.';
+  String get dailyOsNextShutdownReflectionThanks =>
+      'Uloženo — promítne se do poznámky na zítřek.';
 
   @override
   String get dailyOsNextShutdownSaveAndClose => 'Uložit a zavřít';
 
   @override
   String get dailyOsNextShutdownTitle => 'Uzavřít den';
+
+  @override
+  String get dailyOsNextShutdownTomorrowError =>
+      'Poznámku na zítřek se nepodařilo napsat.';
+
+  @override
+  String get dailyOsNextShutdownTomorrowNoProvider =>
+      'Nastav poskytovatele AI, abys dostal poznámku na zítřek.';
 
   @override
   String get dailyOsNextShutdownTomorrowOverline => '✦ NA ZÍTŘEK';

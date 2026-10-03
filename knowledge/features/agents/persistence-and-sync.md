@@ -176,8 +176,9 @@ sync refuses late writes about them (see
   recency-wins projection over the entries, with no separate Head entity.
   Carries optional immutable author-time `tags`, set once at origin.
 - Daily OS capture-pipeline and planning variants: `CaptureEntity`,
-  `ParsedItemEntity`, `DayPlanEntity`, `DaySummaryEntity`, `DayDirectiveEntity`,
-  `DayStatusEventEntity`, `WeekRollupEntity`.
+  `ParsedItemEntity`, `DayPlanEntity`, `DaySummaryEntity`,
+  `TomorrowNoteEntity` (the Shutdown note, one per day, newest `updatedAt`
+  wins), `DayDirectiveEntity`, `DayStatusEventEntity`, `WeekRollupEntity`.
 - Goal-agent variants (ADRs 0053–0058): `GoalSpecVersionEntity`,
   `GoalSpecHeadEntity`, `GoalProgressEntity`, `GoalNudgeEntity`. The spec
   version carries the immutable criteria tree; the head points at the active

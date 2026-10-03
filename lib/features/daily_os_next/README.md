@@ -41,6 +41,12 @@ via the rail's calendar button and resized by its edge; both survive restarts.
   recategorized or deleted, and a recording's text can be corrected in the normal
   editor — corrected text is respected and never overwritten by a late machine
   transcript.
+- **Closes the day honestly.** Shutdown shows what the recorded time went to,
+  which planned or due tasks are still open — re-placed tomorrow, on a picked
+  date or dropped with one tap — focus, flow sessions, context switches and
+  rated energy, a reflection saved to the journal (typed or spoken), and a short
+  note for tomorrow that tomorrow's plan reads. Anything not measured shows a
+  dash, not a guess.
 - **Remembers across days.** The planner keeps durable notes about how the user
   works, reviews the past week each morning, and carries commitments forward.
 

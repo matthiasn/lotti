@@ -6,13 +6,13 @@ import 'package:lotti/classes/day_agent_identity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
-import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/reconcile_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../test_doubles/mock_day_agent.dart';
 
 void main() {
   group('ReconcileController', () {
@@ -129,6 +129,35 @@ void main() {
       expect(data.triageDecisions, hasLength(1));
       expect(data.triageDecisions['t_dentist']!.action, TriageAction.defer);
     });
+
+    test(
+      'a dateless defer moves the task to the day after the reconciled one',
+      () async {
+        const id = CaptureId('cap_defer');
+        final params = paramsFor(id, dayDate: DateTime(2026, 5, 31));
+        final recording = _TriageRecordingAgent();
+        final container = makeContainer(override: recording, aliveFor: params);
+        final notifier = container.read(
+          reconcileControllerProvider(params).notifier,
+        );
+        await container.read(reconcileControllerProvider(params).future);
+
+        await notifier.triage(taskId: 't_dentist', action: TriageAction.defer);
+        await notifier.triage(
+          taskId: 't_invoices',
+          action: TriageAction.defer,
+          deferTo: DateTime(2026, 6, 9),
+        );
+        await notifier.triage(taskId: 't_deck', action: TriageAction.today);
+
+        expect(recording.deferTos, [
+          // The real agent layer rejects a defer without a date.
+          DateTime(2026, 6),
+          DateTime(2026, 6, 9),
+          null,
+        ]);
+      },
+    );
 
     test(
       're-reads parsed items when the capture emits an update',
@@ -417,6 +446,20 @@ class _ZeroLatencyAgent extends MockDayAgent {
         pendingLatency: Duration.zero,
         triageLatency: Duration.zero,
       );
+}
+
+class _TriageRecordingAgent extends _ZeroLatencyAgent {
+  final deferTos = <DateTime?>[];
+
+  @override
+  Future<TriageResult> applyTriage({
+    required String taskId,
+    required TriageAction action,
+    DateTime? deferTo,
+  }) async {
+    deferTos.add(deferTo);
+    return TriageResult(action: action);
+  }
 }
 
 class _DateRecordingDayAgent extends _ZeroLatencyAgent {

@@ -5004,19 +5004,48 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dailyOsNextShutdownCarryoverDropped => 'Gedropt';
 
   @override
+  String get dailyOsNextShutdownCarryoverEmpty => 'Niets om door te schuiven.';
+
+  @override
+  String get dailyOsNextShutdownCarryoverNotStarted => 'Niet begonnen';
+
+  @override
   String get dailyOsNextShutdownCarryoverOverline => 'RIJDEN VOORUIT';
 
   @override
   String get dailyOsNextShutdownCarryoverPickDate => 'Kies een datum';
 
   @override
-  String get dailyOsNextShutdownCarryoverScheduled => 'Gepland';
+  String dailyOsNextShutdownCarryoverStarted(int minutes) {
+    return 'Begonnen — $minutes min vastgelegd';
+  }
+
+  @override
+  String get dailyOsNextShutdownCarryoverTomorrow => 'Morgen';
 
   @override
   String get dailyOsNextShutdownCloseDay => 'Sluit de dag';
 
   @override
+  String get dailyOsNextShutdownCompletedDoneToday => 'Vandaag afgerond';
+
+  @override
+  String get dailyOsNextShutdownCompletedEmpty =>
+      'Nog niets vastgelegd voor deze dag.';
+
+  @override
   String get dailyOsNextShutdownCompletedOverline => 'Wat je deed.';
+
+  @override
+  String dailyOsNextShutdownCompletedSessions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sessies',
+      one: '1 sessie',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get dailyOsNextShutdownMetricEnergy => 'ENERGIE';
@@ -5025,6 +5054,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String dailyOsNextShutdownMetricEnergyDelta(String delta) {
     return '$delta vs. week';
   }
+
+  @override
+  String get dailyOsNextShutdownMetricEnergyNoRatings =>
+      'Beoordeel sessies om dit te zien';
 
   @override
   String get dailyOsNextShutdownMetricFlow => 'ZESTIES VAN DE BLOEM';
@@ -5052,19 +5085,28 @@ class AppLocalizationsNl extends AppLocalizations {
       'Hoe is vandaag geland? (Dit voedt de tocht van morgen.)';
 
   @override
+  String get dailyOsNextShutdownReflectionSave => 'Opslaan';
+
+  @override
   String get dailyOsNextShutdownReflectionSpeak => 'Zeg het.';
 
   @override
-  String get dailyOsNextShutdownReflectionSubmit => 'Overslaan';
-
-  @override
-  String get dailyOsNextShutdownReflectionThanks => 'Ik heb het morgen.';
+  String get dailyOsNextShutdownReflectionThanks =>
+      'Opgeslagen — gaat mee in de notitie voor morgen.';
 
   @override
   String get dailyOsNextShutdownSaveAndClose => '& Sluiten opslaan';
 
   @override
   String get dailyOsNextShutdownTitle => 'Sluit de dag af';
+
+  @override
+  String get dailyOsNextShutdownTomorrowError =>
+      'De notitie voor morgen kon niet worden geschreven.';
+
+  @override
+  String get dailyOsNextShutdownTomorrowNoProvider =>
+      'Stel een AI-provider in om een notitie voor morgen te krijgen.';
 
   @override
   String get dailyOsNextShutdownTomorrowOverline => '✦ FOR TOMORROW';

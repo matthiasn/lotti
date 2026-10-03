@@ -5,13 +5,9 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 /// One-to-one with the §E tool inventory in
 /// `docs/implementation_plans/2026-05-25_day_agent_layer.md`. The capture,
 /// reconcile, plan draft/refine, knowledge, and week-context tools are backed
-/// by the real `DayAgentWorkflow` (`RealDayAgent`); the Shutdown surface is
-/// still served by the scripted `MockDayAgent` fallback until its tools ship.
-///
-/// Implementations are kept side-effect-free where possible. The
-/// canonical "mock" implementation (`MockDayAgent`) returns scripted
-/// data so the UI can be developed end-to-end without the real
-/// backing agent layer.
+/// by the real `DayAgentWorkflow` (`RealDayAgent`); the Shutdown surface by
+/// `DayAgentShutdownService`. Tests use a scripted implementation that lives
+/// under `test/`.
 abstract class DayAgentInterface {
   /// Tool: `submit_capture`. Persist the spoken/typed check-in.
   /// Returns the capture id used by subsequent reconciliation calls.
@@ -166,9 +162,8 @@ abstract class DayAgentInterface {
   });
 
   /// Tool: `surface_shutdown_data`. Returns the three lists the
-  /// Shutdown screen needs: what completed today, what carries
-  /// forward, and the metrics card payload. Bundled because they
-  /// share the same lookback window.
+  /// Shutdown screen needs: what the day's recorded time went to, the tasks
+  /// meant for it that are still open, and the metrics card payload.
   Future<
     ({
       List<CompletedItem> completed,
@@ -178,33 +173,29 @@ abstract class DayAgentInterface {
   >
   surfaceShutdownData({required DateTime forDate});
 
-  /// Tool: `record_reflection`. Persists the user's one-line
-  /// end-of-day reflection. Appended to the Logbook journal entry
-  /// for [forDate] in the real agent layer; here it's a no-op that
-  /// echoes back so the UI can render confirmation.
+  /// Tool: `record_reflection`. Appends the user's typed end-of-day
+  /// reflection to [forDate]'s reflection entry in the journal.
   Future<void> recordReflection({
     required DateTime forDate,
     required String text,
-    required ReflectionSource source,
   });
 
-  /// Tool: `record_carryover_decision`. Records what the user chose
-  /// for a carryover item — re-place tomorrow, pick a date, or drop.
+  /// The id of [forDate]'s reflection entry, created empty if the day has
+  /// none yet — the parent a spoken reflection's recording is linked to.
+  Future<String> ensureReflectionEntry({required DateTime forDate});
+
+  /// Tool: `record_carryover_decision`. Applies what the user chose for a
+  /// task left over from [forDate]: re-place it on the next day, on [when],
+  /// or drop it.
   Future<void> recordCarryoverDecision({
+    required DateTime forDate,
     required String taskId,
     required CarryoverAction action,
     DateTime? when,
   });
 
-  /// Tool: `generate_tomorrow_note`. Returns the "For tomorrow"
-  /// paragraph the Shutdown screen shows at the bottom right.
+  /// Tool: `generate_tomorrow_note`. Returns the "For tomorrow" paragraph
+  /// for [forDate], written from the day's facts and reused while they do
+  /// not change.
   Future<TomorrowNote> generateTomorrowNote({required DateTime forDate});
-
-  /// Tool: `surface_task_corpus`. Browse the user's task corpus.
-  /// Pure read; no agent involvement per the design.
-  Future<List<TaskCorpusItem>> surfaceTaskCorpus({
-    TaskCorpusState stateFilter = TaskCorpusState.all,
-    String? categoryId,
-    String? query,
-  });
 }

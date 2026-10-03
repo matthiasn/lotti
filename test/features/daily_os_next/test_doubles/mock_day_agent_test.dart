@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
-import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
+
+import 'mock_day_agent.dart';
 
 void main() {
   setUpAll(tz_data.initializeTimeZones);
@@ -715,10 +715,9 @@ void main() {
         expect(result.carryover, isNotEmpty);
         expect(result.metrics.focusMinutes, greaterThan(0));
         expect(result.metrics.flowSessions, greaterThan(0));
-        // Every carryover row carries a suggestedTarget label so the
-        // primary teal chip always has something to render.
+        // Every carryover row is re-placed on the next day by default.
         for (final item in result.carryover) {
-          expect(item.suggestedTarget, isNotEmpty);
+          expect(item.suggestedDate, DateTime(2026, 5, 26));
         }
       },
     );
@@ -739,67 +738,18 @@ void main() {
         await agent.recordReflection(
           forDate: DateTime(2026, 5, 25),
           text: 'morning was sharp',
-          source: ReflectionSource.typed,
+        );
+        expect(
+          await agent.ensureReflectionEntry(forDate: DateTime(2026, 5, 25)),
+          'reflection-2026-5-25',
         );
         await agent.recordCarryoverDecision(
+          forDate: DateTime(2026, 5, 25),
           taskId: 't_onboarding_doc',
           action: CarryoverAction.tomorrow,
         );
       },
     );
-
-    group('surfaceTaskCorpus', () {
-      test('default filter returns the full corpus', () async {
-        final all = await agent.surfaceTaskCorpus();
-        expect(all, isNotEmpty);
-        // The corpus must include every TaskCorpusState the filter
-        // chip row knows about, except `all` (which is a meta state).
-        final present = all.map((i) => i.state).toSet();
-        expect(present, contains(TaskCorpusState.inProgress));
-        expect(present, contains(TaskCorpusState.overdue));
-      });
-
-      test('state filter narrows to matching items', () async {
-        final overdue = await agent.surfaceTaskCorpus(
-          stateFilter: TaskCorpusState.overdue,
-        );
-        expect(overdue, isNotEmpty);
-        expect(
-          overdue.every((i) => i.state == TaskCorpusState.overdue),
-          isTrue,
-        );
-      });
-
-      test('query filters by title substring (case-insensitive)', () async {
-        final hits = await agent.surfaceTaskCorpus(query: 'deck');
-        expect(hits, isNotEmpty);
-        expect(
-          hits.every((i) => i.title.toLowerCase().contains('deck')),
-          isTrue,
-        );
-
-        final noMatch = await agent.surfaceTaskCorpus(query: 'zzzz');
-        expect(noMatch, isEmpty);
-      });
-
-      test('categoryId filter narrows to matching items only', () async {
-        final health = await agent.surfaceTaskCorpus(categoryId: 'cat_health');
-        expect(health, isNotEmpty);
-        expect(
-          health.every((i) => i.category.id == 'cat_health'),
-          isTrue,
-        );
-        // Items in other categories are filtered out — the corpus has
-        // work/study/meals rows that must not leak through.
-        expect(
-          health.any((i) => i.category.id != 'cat_health'),
-          isFalse,
-        );
-
-        final none = await agent.surfaceTaskCorpus(categoryId: 'cat_nope');
-        expect(none, isEmpty);
-      });
-    });
 
     group('proposePlanDiff', () {
       test(
@@ -1038,53 +988,5 @@ void main() {
       );
       expect(await agent.currentPlanForDate(DateTime(2026, 5, 25)), isNull);
     });
-  });
-  group('surfaceTaskCorpus — properties', () {
-    const categories = [null, 'cat_work', 'cat_health', 'cat_nope'];
-    const queries = [null, '', '  ', 'deck', 'DECK', 'zzz'];
-
-    glados.Glados3(
-      glados.any.intInRange(0, TaskCorpusState.values.length),
-      glados.any.intInRange(0, categories.length),
-      glados.any.intInRange(0, queries.length),
-      glados.ExploreConfig(numRuns: 120),
-    ).test(
-      'returns exactly the corpus rows selected by every filter combination',
-      (stateIndex, categoryIndex, queryIndex) async {
-        final agent = MockDayAgent(pendingLatency: Duration.zero);
-        final state =
-            TaskCorpusState.values[stateIndex % TaskCorpusState.values.length];
-        final categoryId = categories[categoryIndex % categories.length];
-        final query = queries[queryIndex % queries.length];
-
-        final corpus = await agent.surfaceTaskCorpus();
-        final actual = await agent.surfaceTaskCorpus(
-          stateFilter: state,
-          categoryId: categoryId,
-          query: query,
-        );
-        final normalizedQuery = query?.trim().toLowerCase();
-        final expected = corpus
-            .where((item) {
-              if (state != TaskCorpusState.all && item.state != state) {
-                return false;
-              }
-              if (categoryId != null && item.category.id != categoryId) {
-                return false;
-              }
-              return normalizedQuery == null ||
-                  normalizedQuery.isEmpty ||
-                  item.title.toLowerCase().contains(normalizedQuery);
-            })
-            .map((item) => item.title);
-
-        expect(
-          actual.map((item) => item.title),
-          expected,
-          reason: 'state=$state cat=$categoryId q="$query"',
-        );
-      },
-      tags: 'glados',
-    );
   });
 }

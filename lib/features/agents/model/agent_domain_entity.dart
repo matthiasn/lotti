@@ -391,6 +391,27 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     DateTime? deletedAt,
   }) = DaySummaryEntity;
 
+  /// The Shutdown screen's "For tomorrow" note for one day: a short paragraph
+  /// the planner's model writes from the day's facts when the user closes
+  /// it, and tomorrow's drafting reads back.
+  ///
+  /// One register per day, id `day_agent_tomorrow_note:<dayId>`. Regenerated
+  /// only when [inputFingerprint] — a digest of the facts the note was written
+  /// from — no longer matches, so reopening Shutdown spends no tokens.
+  /// Concurrent versions resolve newest `updatedAt` wins: a later note was
+  /// written from later facts.
+  const factory AgentDomainEntity.tomorrowNote({
+    required String id,
+    required String agentId,
+    required String dayId,
+    required String text,
+    required String inputFingerprint,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    DateTime? deletedAt,
+  }) = TomorrowNoteEntity;
+
   /// Coordinator-issued directive for one day (ADR 0032 §2, phase 3).
   ///
   /// Keyed `day_directive:<dayId>` — a deterministic per-day register the

@@ -40,6 +40,7 @@ extension AgentDomainEntityLwwTimestamp on AgentDomainEntity {
     parsedItem: (e) => e.createdAt,
     dayPlan: (e) => e.updatedAt,
     daySummary: (e) => e.updatedAt,
+    tomorrowNote: (e) => e.updatedAt,
     dayDirective: (e) => e.updatedAt,
     dayStatusEvent: (e) => e.createdAt,
     weekRollup: (e) => e.updatedAt,
@@ -108,6 +109,8 @@ extension AgentDomainEntityLwwTimestamp on AgentDomainEntity {
     dayPlan: (e) =>
         (t) => e.copyWith(updatedAt: t),
     daySummary: (e) =>
+        (t) => e.copyWith(updatedAt: t),
+    tomorrowNote: (e) =>
         (t) => e.copyWith(updatedAt: t),
     dayDirective: (e) =>
         (t) => e.copyWith(updatedAt: t),

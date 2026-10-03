@@ -4993,19 +4993,48 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dailyOsNextShutdownCarryoverDropped => 'Borttagen';
 
   @override
+  String get dailyOsNextShutdownCarryoverEmpty => 'Inget att flytta fram.';
+
+  @override
+  String get dailyOsNextShutdownCarryoverNotStarted => 'Inte påbörjad';
+
+  @override
   String get dailyOsNextShutdownCarryoverOverline => 'LÖPNINGAR FRAMÅT';
 
   @override
   String get dailyOsNextShutdownCarryoverPickDate => 'Välj ett datum';
 
   @override
-  String get dailyOsNextShutdownCarryoverScheduled => 'Planerade';
+  String dailyOsNextShutdownCarryoverStarted(int minutes) {
+    return 'Påbörjad — $minutes min registrerade';
+  }
+
+  @override
+  String get dailyOsNextShutdownCarryoverTomorrow => 'I morgon';
 
   @override
   String get dailyOsNextShutdownCloseDay => 'Avsluta dagen';
 
   @override
+  String get dailyOsNextShutdownCompletedDoneToday => 'Klart i dag';
+
+  @override
+  String get dailyOsNextShutdownCompletedEmpty =>
+      'Inget registrerat för den här dagen ännu.';
+
+  @override
   String get dailyOsNextShutdownCompletedOverline => 'VAD DU GJORDE';
+
+  @override
+  String dailyOsNextShutdownCompletedSessions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pass',
+      one: '1 pass',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get dailyOsNextShutdownMetricEnergy => 'ENERGI';
@@ -5014,6 +5043,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String dailyOsNextShutdownMetricEnergyDelta(String delta) {
     return '$delta vs. vecka';
   }
+
+  @override
+  String get dailyOsNextShutdownMetricEnergyNoRatings =>
+      'Betygsätt pass för att se den';
 
   @override
   String get dailyOsNextShutdownMetricFlow => 'FLÖDESSESSIONER';
@@ -5041,19 +5074,28 @@ class AppLocalizationsSv extends AppLocalizations {
       'Hur hamnade dagen? (Detta matar morgondagens utkast.)';
 
   @override
+  String get dailyOsNextShutdownReflectionSave => 'Spara';
+
+  @override
   String get dailyOsNextShutdownReflectionSpeak => 'Säg det';
 
   @override
-  String get dailyOsNextShutdownReflectionSubmit => 'Hoppa över';
-
-  @override
-  String get dailyOsNextShutdownReflectionThanks => 'Fattar — matar imorgon.';
+  String get dailyOsNextShutdownReflectionThanks =>
+      'Sparat — kommer med i anteckningen inför i morgon.';
 
   @override
   String get dailyOsNextShutdownSaveAndClose => 'Spara och stäng';
 
   @override
   String get dailyOsNextShutdownTitle => 'Avsluta dagen';
+
+  @override
+  String get dailyOsNextShutdownTomorrowError =>
+      'Anteckningen inför i morgon kunde inte skrivas.';
+
+  @override
+  String get dailyOsNextShutdownTomorrowNoProvider =>
+      'Konfigurera en AI-leverantör för att få en anteckning inför i morgon.';
 
   @override
   String get dailyOsNextShutdownTomorrowOverline => '✦ FÖR MORGONDAGEN';

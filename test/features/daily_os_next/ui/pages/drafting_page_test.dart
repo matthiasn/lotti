@@ -198,9 +198,6 @@ class _FakeAgent implements DayAgentInterface {
       focusMinutes: 0,
       flowSessions: 0,
       contextSwitches: 0,
-      contextSwitchesWeekAvg: 0,
-      energyScore: 0,
-      energyDeltaVsWeek: 0,
     ),
   );
 
@@ -208,11 +205,15 @@ class _FakeAgent implements DayAgentInterface {
   Future<void> recordReflection({
     required DateTime forDate,
     required String text,
-    required ReflectionSource source,
   }) async {}
 
   @override
+  Future<String> ensureReflectionEntry({required DateTime forDate}) async =>
+      'reflection';
+
+  @override
   Future<void> recordCarryoverDecision({
+    required DateTime forDate,
     required String taskId,
     required CarryoverAction action,
     DateTime? when,
@@ -222,13 +223,6 @@ class _FakeAgent implements DayAgentInterface {
   Future<TomorrowNote> generateTomorrowNote({
     required DateTime forDate,
   }) async => const TomorrowNote(body: '');
-
-  @override
-  Future<List<TaskCorpusItem>> surfaceTaskCorpus({
-    TaskCorpusState stateFilter = TaskCorpusState.all,
-    String? categoryId,
-    String? query,
-  }) async => const [];
 }
 
 class _ThrowingDraftAgent extends _FakeAgent {
