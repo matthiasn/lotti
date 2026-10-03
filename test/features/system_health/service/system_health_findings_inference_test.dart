@@ -102,7 +102,9 @@ void main() {
     expect(named[#maxCompletionTokens], 2048);
     expect(named[#provider], provider);
     expect(named[#geminiThinkingMode], model.geminiThinkingMode);
-    expect(named[#impactCollector], isNotNull);
+    // Without a capture there is no one to report impact to, and a collector
+    // would switch a Melious call to non-streaming for nothing.
+    expect(named[#impactCollector], isNull);
   });
 
   test('routes through AiInteractionCapture when one is registered', () async {

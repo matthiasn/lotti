@@ -7,14 +7,12 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
-import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/one_shot_text_generation.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
-import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/goals/model/goal_checkin_summary.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -327,66 +325,32 @@ class GoalCheckInCompactor {
         'Goal: $goalStatement\n\n'
         'Check-in, verbatim:\n$transcript';
 
-    final captureRegistered = getIt.isRegistered<AiInteractionCapture>();
-    final impactCollector = InferenceImpactCollector();
-    Stream<CreateChatCompletionStreamResponse> invoke() => _inference.generate(
-      prompt,
-      model: model,
-      temperature: _temperature,
-      baseUrl: provider.baseUrl,
-      apiKey: provider.apiKey,
+    // Attributed like every other inference call, so compaction shows up in
+    // the goal's lifetime cost pills rather than being invisible spend.
+    final text = await _inference.generateText(
+      prompt: prompt,
       systemMessage: _systemMessage,
+      model: model,
+      provider: provider,
+      temperature: _temperature,
       maxCompletionTokens: maxSummaryTokens,
       geminiThinkingMode: GeminiThinkingMode.minimal,
       reasoningEffort: ReasoningEffort.minimal,
-      provider: provider,
-      impactCollector: captureRegistered ? impactCollector : null,
+      attribution: OneShotGenerationAttribution(
+        workType: AiWorkType.internalInference,
+        triggerType: AiTriggerType.automatic,
+        automationId: 'automation:goal-check-in-compaction',
+        automationDisplayName: 'Goal check-in compaction',
+        // Without the agent id the row lands with a null agent and the
+        // goal's lifetime cost pills — which total by agent — never show
+        // what compaction actually spent.
+        interactionContext: AiCapturedContext(
+          agentId: agentId,
+          entryId: entryId,
+        ),
+      ),
     );
-
-    // Attributed like every other inference call, so compaction shows up in
-    // the goal's lifetime cost pills rather than being invisible spend.
-    final stream = captureRegistered
-        ? getIt<AiInteractionCapture>().captureStream(
-            workType: AiWorkType.internalInference,
-            interactionKind: AiInteractionKind.textGeneration,
-            responseType: AiConsumptionResponseType.textGeneration,
-            providerType: provider.inferenceProviderType,
-            modelId: model,
-            requestText: prompt,
-            invoke: invoke,
-            responseText: (chunk) =>
-                chunk.choices?.firstOrNull?.delta?.content ?? '',
-            usageForChunk: (chunk) {
-              final usage = chunk.usage;
-              if (usage == null) return null;
-              return AiCapturedUsage(
-                inputTokens: usage.promptTokens,
-                outputTokens: usage.completionTokens,
-                cachedInputTokens: usage.promptTokensDetails?.cachedTokens,
-                thoughtsTokens: usage.completionTokensDetails?.reasoningTokens,
-                totalTokens: usage.totalTokens,
-              );
-            },
-            impact: () => impactCollector.impact,
-            triggerType: AiTriggerType.automatic,
-            automationId: 'automation:goal-check-in-compaction',
-            automationDisplayName: 'Goal check-in compaction',
-            // Without the agent id the row lands with a null agent and the
-            // goal's lifetime cost pills — which total by agent — never show
-            // what compaction actually spent.
-            interactionContext: AiCapturedContext(
-              agentId: agentId,
-              entryId: entryId,
-            ),
-          )
-        : invoke();
-
-    final buffer = StringBuffer();
-    await for (final response in stream) {
-      final content = response.choices?.firstOrNull?.delta?.content;
-      if (content != null) buffer.write(content);
-    }
-    return _decode(buffer.toString());
+    return _decode(text);
   }
 
   /// Parses the model's JSON, tolerating the fenced block some providers wrap

@@ -16,6 +16,8 @@ class OneShotGenerationAttribution {
     this.automationId,
     this.automationDisplayName,
     this.interactionContext,
+    this.categoryId,
+    this.taskId,
   });
 
   final AiWorkType workType;
@@ -25,6 +27,11 @@ class OneShotGenerationAttribution {
   final String? automationId;
   final String? automationDisplayName;
   final AiCapturedContext? interactionContext;
+
+  /// The category and task the call works for, so the ledger can attribute
+  /// its cost to them.
+  final String? categoryId;
+  final String? taskId;
 }
 
 /// One prompt in, one block of text out — the shape every non-conversational
@@ -35,14 +42,15 @@ class OneShotGenerationAttribution {
 /// attribution.
 extension OneShotTextGeneration on CloudInferenceRepository {
   /// Streams one completion of [prompt] and returns its trimmed text, which
-  /// may be empty — callers decide whether an empty answer is an error.
+  /// may be empty — callers decide whether an empty answer is an error. A
+  /// null [maxCompletionTokens] leaves the limit to the provider.
   Future<String> generateText({
     required String prompt,
     required String systemMessage,
     required String model,
     required AiConfigInferenceProvider provider,
     required double temperature,
-    required int maxCompletionTokens,
+    required int? maxCompletionTokens,
     required OneShotGenerationAttribution attribution,
     GeminiThinkingMode? geminiThinkingMode,
     ReasoningEffort? reasoningEffort,
@@ -82,6 +90,8 @@ extension OneShotTextGeneration on CloudInferenceRepository {
             automationId: attribution.automationId,
             automationDisplayName: attribution.automationDisplayName,
             interactionContext: attribution.interactionContext,
+            categoryId: attribution.categoryId,
+            taskId: attribution.taskId,
           );
 
     final buffer = StringBuffer();
