@@ -101,7 +101,7 @@ class AiToolCallProcessor {
         for (final jsonStr in jsonObjects) {
           try {
             developer.log(
-              'Parsing individual JSON: $jsonStr',
+              'Parsing individual JSON (${jsonStr.length} chars)',
               name: 'UnifiedAiInferenceRepository',
             );
 
@@ -122,9 +122,9 @@ class AiToolCallProcessor {
             );
           } catch (e) {
             developer.log(
-              'Error parsing individual checklist completion JSON: $e',
+              'Error parsing individual checklist completion JSON: ${e.runtimeType}',
               name: 'UnifiedAiInferenceRepository',
-              error: e,
+              error: e.runtimeType,
             );
           }
         }
@@ -163,7 +163,7 @@ class AiToolCallProcessor {
           // Process each item
           for (final item in sanitized) {
             developer.log(
-              'Adding checklist item: ${item.title} (isChecked=${item.isChecked})',
+              'Adding checklist item (isChecked=${item.isChecked})',
               name: 'UnifiedAiInferenceRepository',
             );
 
@@ -253,9 +253,9 @@ class AiToolCallProcessor {
           ref.invalidate(checklistItemControllerProvider);
         } catch (e) {
           developer.log(
-            'Error processing add checklist item(s): $e',
+            'Error processing add checklist item(s): ${e.runtimeType}',
             name: 'UnifiedAiInferenceRepository',
-            error: e,
+            error: e.runtimeType,
           );
         }
       } else if (toolCall.function.name ==
@@ -290,9 +290,9 @@ class AiToolCallProcessor {
           ref.invalidate(checklistItemControllerProvider);
         } catch (e, stackTrace) {
           developer.log(
-            'Error processing update_checklist_items: $e',
+            'Error processing update_checklist_items: ${e.runtimeType}',
             name: 'UnifiedAiInferenceRepository',
-            error: e,
+            error: e.runtimeType,
             stackTrace: stackTrace,
           );
         }
@@ -304,10 +304,9 @@ class AiToolCallProcessor {
           );
           final languageCode = result.languageCode;
           final confidence = result.confidence.name;
-          final reason = result.reason;
 
           developer.log(
-            'Setting task language to: $languageCode (confidence: $confidence, reason: $reason)',
+            'Setting task language to: $languageCode (confidence: $confidence)',
             name: 'UnifiedAiInferenceRepository',
           );
 
@@ -358,9 +357,9 @@ class AiToolCallProcessor {
           }
         } catch (e) {
           developer.log(
-            'Error processing set task language: $e',
+            'Error processing set task language: ${e.runtimeType}',
             name: 'UnifiedAiInferenceRepository',
-            error: e,
+            error: e.runtimeType,
           );
         }
       } else if (toolCall.function.name == LabelFunctions.assignTaskLabels) {
@@ -374,8 +373,8 @@ class AiToolCallProcessor {
           // Defensive check: warn if AI called without valid labels
           if (requested.isEmpty) {
             developer.log(
-              'assign_task_labels called without valid labels or labelIds - '
-              'raw args: ${toolCall.function.arguments}',
+              'assign_task_labels called without valid labels or labelIds '
+              '(${toolCall.function.arguments.length} chars of arguments)',
               name: 'UnifiedAiInferenceRepository',
             );
             continue;
@@ -435,9 +434,9 @@ class AiToolCallProcessor {
           }
         } catch (e) {
           developer.log(
-            'Error processing assign_task_labels: $e',
+            'Error processing assign_task_labels: ${e.runtimeType}',
             name: 'UnifiedAiInferenceRepository',
-            error: e,
+            error: e.runtimeType,
           );
         }
       } else {
@@ -456,7 +455,7 @@ class AiToolCallProcessor {
 
       for (final suggestion in suggestions) {
         developer.log(
-          '  - Item ${suggestion.checklistItemId}: ${suggestion.reason} (${suggestion.confidence.name})',
+          '  - Item ${suggestion.checklistItemId} (${suggestion.confidence.name})',
           name: 'UnifiedAiInferenceRepository',
         );
       }
@@ -523,9 +522,9 @@ class AiToolCallProcessor {
             }
           } catch (e) {
             developer.log(
-              'Error auto-checking item ${suggestion.checklistItemId}: $e',
+              'Error auto-checking item ${suggestion.checklistItemId}: ${e.runtimeType}',
               name: 'UnifiedAiInferenceRepository',
-              error: e,
+              error: e.runtimeType,
             );
           }
         }

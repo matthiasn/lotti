@@ -629,7 +629,8 @@ class MistralInferenceRepository {
       if (streamedResponse.statusCode != 200) {
         final body = await streamedResponse.stream.bytesToString();
         developer.log(
-          'Mistral API error: HTTP ${streamedResponse.statusCode} - $body',
+          'Mistral API error: HTTP ${streamedResponse.statusCode} '
+          '(body: ${body.length} chars, not logged — it can echo the prompt)',
           name: 'MistralInferenceRepository',
         );
         throw MistralInferenceException(
@@ -687,7 +688,7 @@ class MistralInferenceRepository {
                 'Failed to parse SSE chunk ($parseErrorCount/$maxParseErrors, '
                 '${data.length} chars; content not logged)',
                 name: 'MistralInferenceRepository',
-                error: e,
+                error: e.runtimeType,
               );
               if (parseErrorCount >= maxParseErrors) {
                 _logException(
@@ -709,7 +710,7 @@ class MistralInferenceRepository {
       developer.log(
         'Unexpected error during Mistral inference',
         name: 'MistralInferenceRepository',
-        error: e,
+        error: e.runtimeType,
       );
       _logException(e, subDomain: 'unexpected', stackTrace: stackTrace);
       throw MistralInferenceException(
