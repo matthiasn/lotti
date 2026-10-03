@@ -227,9 +227,10 @@ flowchart TD
   marker may pass it like a non-payload event; no legitimate peer produces one.
 - **Rows from before the gate are fetched again.** The gate checks at enqueue,
   so rows already queued when an install upgrades past sync DB v34 were never
-  checked. That migration drops them after lowering each room's
-  `resume_floor_ts` to its oldest dropped row; the next resume walk fetches
-  those events again, and they enter through the gate.
+  checked. That migration drops the ones never applied after lowering each
+  room's `resume_floor_ts` to the oldest of them; the next resume walk fetches
+  those events again, and they enter through the gate. Applied rows stay: they
+  are the dedup ledger that keeps the walk from replaying history.
 - **One worker-isolate inflation at a time.** A gzip attachment may inflate to
   at most `SyncTuning.maxDecodedAttachmentBytes`, and decodes on the worker
   isolate run one after another, so that limit also bounds the inflated output

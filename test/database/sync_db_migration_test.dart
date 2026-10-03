@@ -1805,10 +1805,14 @@ void main() {
         final seeded = SyncDatabase(overriddenFilename: file);
         await seeded.customStatement(
           'INSERT INTO inbound_event_queue '
-          '(event_id, room_id, origin_ts, producer, raw_json, enqueued_at) '
-          r"VALUES ('$a1', '!a', 300, 'live', '{}', 1), "
-          r"('$a2', '!a', 200, 'live', '{}', 1), "
-          r"('$b1', '!b', 500, 'live', '{}', 1)",
+          '(event_id, room_id, origin_ts, producer, raw_json, enqueued_at, '
+          'status) '
+          r"VALUES ('$a1', '!a', 300, 'live', '{}', 1, 'enqueued'), "
+          r"('$a2', '!a', 200, 'live', '{}', 1, 'abandoned'), "
+          r"('$b1', '!b', 500, 'live', '{}', 1, 'retrying'), "
+          // Applied rows are the dedup ledger: they stay, and an old one
+          // must not drag the floor back to replay history.
+          r"('$old', '!a', 50, 'live', '{}', 1, 'applied')",
         );
         // Room !a already has a later floor, room !b an earlier one.
         await seeded.customStatement(
@@ -1823,7 +1827,10 @@ void main() {
 
         final db = SyncDatabase(overriddenFilename: file);
 
-        expect(await db.select(db.inboundEventQueue).get(), isEmpty);
+        expect(
+          (await db.select(db.inboundEventQueue).get()).map((r) => r.eventId),
+          [r'$old'],
+        );
         final floors = {
           for (final m in await db.select(db.queueMarkers).get())
             m.roomId: m.resumeFloorTs,

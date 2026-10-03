@@ -694,18 +694,23 @@ class SyncDatabase extends _$SyncDatabase
     );
   }
 
-  /// Drops inbound rows queued before the trust gate (schema v34), after
-  /// lowering each room's resume floor to its oldest dropped row, so the next
-  /// resume walk fetches those events again through the gate.
+  /// Drops inbound rows queued before the trust gate (schema v34) that were
+  /// never applied, after lowering each room's resume floor to the oldest of
+  /// them, so the next resume walk fetches those events again through the
+  /// gate. Applied rows stay: they are the dedup ledger that keeps the walk
+  /// from replaying history.
   Future<void> _requeuePreTrustRows() async {
     await customStatement('''
       INSERT INTO queue_markers (room_id, resume_floor_ts)
       SELECT room_id, MIN(origin_ts) FROM inbound_event_queue
+      WHERE status != 'applied'
       GROUP BY room_id
       ON CONFLICT(room_id) DO UPDATE SET resume_floor_ts =
         MIN(COALESCE(queue_markers.resume_floor_ts, excluded.resume_floor_ts),
             excluded.resume_floor_ts)
     ''');
-    await customStatement('DELETE FROM inbound_event_queue');
+    await customStatement(
+      "DELETE FROM inbound_event_queue WHERE status != 'applied'",
+    );
   }
 }

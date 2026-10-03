@@ -30,22 +30,46 @@ void main() {
       ('in the file name', '/images/', '../../../etc/passwd'),
       ('with Windows separators', r'\..\..\', r'..\secrets.txt'),
       ('behind a dot segment', '/./../', 'x'),
+      // Win32 trims trailing dots and spaces, so these act as `..`.
+      ('spelled with a trailing space', '/images/.. /.. /', 'x'),
+      ('spelled with extra dots', '/.../..../', 'x'),
+      ('as a file name with a trailing dot', '/images/', '...'),
     ]) {
       test('a parent segment $label stays under the root', () {
         final path = confinedDocumentPath(_root, directory, file);
         expect(p.isWithin(_root, path), isTrue, reason: path);
+        // On Linux `.. ` is an ordinary name, so being within the root proves
+        // nothing for the Windows spellings: no segment may be one Win32
+        // would trim to `.` or `..`.
+        expect(
+          p.split(p.relative(path, from: _root)),
+          everyElement(isNot(matches(r'^[. ]*$'))),
+          reason: path,
+        );
       });
     }
 
     glados.Glados2(
-      glados.any.choose(const ['..', '.', '', 'images', 'a', r'..\..', '/']),
-      glados.any.choose(const ['..', 'x.jpg', '../../x', r'..\y', '.', 'z']),
+      glados.any.choose(
+        const ['..', '.', '', 'images', 'a', r'..\..', '/', '.. ', '...'],
+      ),
+      glados.any.choose(
+        const ['..', 'x.jpg', '../../x', r'..\y', '.', 'z', '. .', '.. /x'],
+      ),
       glados.ExploreConfig(numRuns: 200),
     ).test(
       'never resolves outside the root, whatever the segments',
       (directory, file) {
         final path = confinedDocumentPath(_root, '/$directory/', file);
         expect(path == _root || p.isWithin(_root, path), isTrue, reason: path);
+        // No remaining segment is one Windows would read as a parent.
+        if (path != _root) {
+          expect(
+            p.split(p.relative(path, from: _root)),
+            everyElement(isNot(matches(r'^[. ]*$'))),
+            reason: path,
+          );
+        }
       },
       tags: 'glados',
     );

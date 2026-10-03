@@ -747,7 +747,8 @@ inside the documents directory.
 
 Image and audio directories and file names arrive by sync, so physical paths
 are built by `confinedDocumentPath` (`lib/utils/confined_path.dart`). It drops
-empty, `.` and `..` segments and accepts either separator, so a well-formed
+every segment made only of dots and spaces (`..`, and the `...` or `.. ` that
+Win32 trims back to it) and accepts either separator, so a well-formed
 entry resolves as before and a hostile one cannot reach outside the documents
 directory, for readers, writers or the reveal-in-file-manager action.
 
