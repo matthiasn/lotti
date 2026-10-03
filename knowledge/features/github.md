@@ -5,7 +5,7 @@ description: Pull requests linked to tasks as journal entries carrying a server-
 resource: ../../lib/features/github
 tags: [github, pull-requests, tasks, sync, agents, tla]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-10-03T00:40:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-03T02:10:00Z }
 stale_after: 2027-03-26
 sources:
   - id: spec
@@ -32,6 +32,18 @@ sources:
   - id: agent-context
     resource: ../../lib/features/agents/workflow/task_agent_context_builder.dart
     title: TaskAgentContextBuilder — the task-agent wake context
+  - id: client
+    resource: ../../lib/features/github/api/github_client.dart
+    title: GitHubClient — REST reads, server stamps, typed failures, rate-limit block, ETags
+  - id: repository
+    resource: ../../lib/features/github/repository/pull_request_repository.dart
+    title: PullRequestRepository — link, unlink, and persistObservation through writeOnStored
+  - id: write-rule
+    resource: ../../lib/features/github/domain/pull_request_write_rule.dart
+    title: shouldWritePullRequestObservation — Persist's write rule
+  - id: section
+    resource: ../../lib/features/github/ui/task_pull_requests_section.dart
+    title: TaskPullRequestsSection — the task's pull request card
 ---
 
 A task can link the GitHub pull requests that implement it. Lotti fetches
@@ -41,9 +53,13 @@ builds: the coding prompt, and the task agent's wake, whose checklist
 proposals the user confirms. That closes the loop that used to run through
 screenshots of the pull request page.
 
-**Status: design, written before the code.** The model is
+**Status: partly built.** The model is
 [`PullRequestSnapshot`](../../specs/tla/README.md) in `specs/tla/`; the code
 conforms to it, and its header names the class that implements each action.
+Built: the entry and its merge, the token and the client, linking by URL, the
+refresh, and the task's card, all behind the `enable_github_pull_requests`
+config flag. Still design: repository assignment and the picker, and
+everything under *In the task context*.
 
 # The entry
 
@@ -77,6 +93,14 @@ The database row's type is `PullRequest`, and its subtype is
 with an indexed lookup. One entry per task and pull request: linking the same
 pull request to two tasks makes two entries, which share nothing.
 
+Two devices that link the same pull request to a task before they sync each
+create an entry, and sync keeps both. `distinctPullRequests` decides which
+one every device shows and refreshes — the lowest id, the same everywhere —
+and unlinking deletes every live entry of that pull request on the task, so
+the hidden one cannot reappear. A deterministic id would merge the two
+instead, but would make a re-link revive an unlinked entry, which the model's
+`UnlinkIsFinal` rules out.
+
 # Ordering observations
 
 Two observations of one pull request are ordered by a key, highest first:
@@ -99,7 +123,7 @@ hold: nothing relies on it to find the newer state.
 ```mermaid
 sequenceDiagram
     participant C as Caller (context build or refresh button)
-    participant S as PullRequestRefreshService
+    participant S as PullRequestService
     participant G as GitHubClient
     participant R as PullRequestRepository
     participant DB as JournalDb
@@ -153,9 +177,11 @@ the refresh is the app's, the unlink is the user's.
 # The token and the client
 
 - The token is a fine-grained or classic personal access token with read
-  access to pull requests, checks and contents metadata. It lives in
-  `SecureStorage` under a key namespaced like the AI provider keys, so the
-  demo world never sees the real one. It is never synced, logged or exported.
+  access to pull requests, commit statuses and checks. It lives in
+  `SecureStorage` under `github_token:<profile id>`, so a demo or guest world
+  never reads the real one, next to the login it was checked against. It is
+  never synced, logged or exported. Settings → Advanced Settings → GitHub
+  saves a token only after `GET /user` accepts it.
 - `GitHubClient` sends it as `Authorization: Bearer` to
   `https://api.github.com` and nowhere else: the base URL is a constant and
   redirects are not followed, so a redirect cannot carry the token to another
@@ -168,6 +194,11 @@ the refresh is the app's, the unlink is the user's.
 - A rate-limited device stops calling until the reset time; a context build
   never waits for it. Reads send `If-None-Match` with the last `ETag`, kept on
   the device: a 304 costs no rate limit and means the snapshot is unchanged.
+- Check runs, commit statuses and reviews are read page by page until a
+  page comes back short, up to ten pages of a hundred. Reviews come oldest
+  first, so stopping at the first page would drop the latest decisions.
+- A review requested only from a team counts as pending, like one requested
+  from a person: in an organisation that is often the only request.
 
 # Repositories
 
@@ -178,10 +209,26 @@ needs no repository assignment, only a token that can read it.
 
 # In the task
 
-The task shows its pull requests in their own section beside its linked
-tasks: number, title, status, checks, mergeability and review state, and how
-long ago that was observed. Linking is by pasting a URL, or with "+", which
-opens the picker.
+`TaskPullRequestsSection` shows the task's pull requests in their own card,
+directly after its linked tasks, while the flag is on. Each row carries the
+number and title, then a status line in a fixed order: the state, **how long
+ago it was observed** — second, so a narrow row that wraps or runs out of
+room never cuts the age off — then checks, mergeability and reviews. Every
+part is a word; colour only backs it up. The age ticks on its own timer, so a
+row left open never reads younger than its snapshot.
+
+With nothing linked the card is one worded action; otherwise its header
+carries "+". Both open a modal that takes a pasted URL, reads the pull
+request from GitHub, and links it only if that read succeeded — a typo, a
+repository the token cannot see, or a pull request already on the task stays
+in the modal with the reason. (The picker of a repository's open pull
+requests comes with repository assignment.)
+
+Opening a task refreshes every pull request whose snapshot is older than five
+minutes, once; each row also has its own refresh button, whose failure is
+told in a toast. A refresh that GitHub answers but that need not be written
+still updates the age the row shows. The task's linked-entries history leaves
+pull request entries out: they have their own card.
 
 ```mermaid
 stateDiagram-v2

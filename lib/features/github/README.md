@@ -42,13 +42,23 @@ logged or exported. Pull request web pages are never fetched.
 ## Where the code sits
 
 ```text
-lib/classes/pull_request_data.dart      PullRequestData, PullRequestSnapshot
+lib/classes/pull_request_data.dart        PullRequestData, PullRequestSnapshot
 lib/features/github/
-  domain/pull_request_order.dart        observation order, digest, concurrent merge
+  api/github_client.dart                  REST reads, stamps, failures, rate limit, ETags
+  api/pull_request_mapper.dart            responses to a PullRequestSnapshot
+  domain/pull_request_ref.dart            parsing a pasted pull request
+  domain/pull_request_order.dart          observation order, digest, concurrent merge
+  domain/pull_request_write_rule.dart     when an observation is written
+  repository/github_token_storage.dart    the token in the keystore
+  repository/pull_request_repository.dart link, unlink, persist an observation
+  service/pull_request_service.dart       link a pasted pull request, refresh one
+  state/github_providers.dart             providers, account and refresh controllers
+  ui/                                     settings page, task card, row, link modal
 ```
 
-The client, the token storage, the refresh service, the picker and the task
-section land in the following phases; the concept below describes all of it.
+Everything is behind the `enable_github_pull_requests` config flag. The
+repository assignment and picker, and the task-context wiring, are still
+design; the concept below describes all of it.
 
 ## Further reading
 

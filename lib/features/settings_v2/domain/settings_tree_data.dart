@@ -29,6 +29,7 @@ List<SettingsNode> buildSettingsTree({
   required bool enableMatrix,
   required bool enableWhatsNew,
   bool enableSpeechTts = false,
+  bool enableGitHub = false,
   bool enableHealthImport = false,
   bool syncFeatureAvailable = true,
 }) {
@@ -320,6 +321,8 @@ List<SettingsNode> buildSettingsTree({
         // first-class settings. Power users still reach it through
         // Advanced. URL stays `/settings/flags` for deep-link compat.
         leaf('advanced/flags', LottiIcons.flag, panel: 'flags'),
+        if (enableGitHub)
+          leaf('advanced/github', LottiIcons.merge, panel: 'advanced-github'),
         leaf(
           'advanced/manual-language',
           LottiIcons.language,

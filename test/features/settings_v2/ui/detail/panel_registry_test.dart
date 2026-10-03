@@ -97,6 +97,7 @@ void main() {
       'advanced-system-health',
       'preferences-animations',
       'advanced-manual-language',
+      'advanced-github',
       'advanced-onboarding-metrics',
       'sync-provisioned',
       'sync-node-profile',

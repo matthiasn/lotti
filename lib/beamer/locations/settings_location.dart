@@ -15,6 +15,7 @@ import 'package:lotti/features/categories/ui/pages/categories_list_page.dart'
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart'
     as new_category_details;
 import 'package:lotti/features/daily_os_next/ui/pages/daily_os_settings_page.dart';
+import 'package:lotti/features/github/ui/github_settings_page.dart';
 import 'package:lotti/features/habits/ui/pages/habit_editor_page.dart';
 import 'package:lotti/features/keyboard/ui/keyboard_shortcuts_page.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
@@ -140,6 +141,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
     '/settings/preferences',
     '/settings/advanced',
     '/settings/advanced/animations',
+    '/settings/advanced/github',
     '/settings/advanced/manual-language',
     '/settings/advanced/logging_domains',
     '/settings/advanced/system_health',
@@ -711,6 +713,12 @@ class SettingsLocation extends BeamLocation<BeamState> {
           key: const ValueKey('settings-animations'),
           popToNamed: branchHub,
           child: const CelebrationSettingsPage(),
+        ),
+
+      if (pathContains('advanced/github'))
+        const BeamPage(
+          key: ValueKey('settings-github'),
+          child: GitHubSettingsPage(),
         ),
 
       if (pathContains('advanced/manual-language'))

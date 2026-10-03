@@ -1599,6 +1599,8 @@
   "configFlagEnableEventsDescription": "Zobrazit funkci Události pro vytváření, sledování a správu událostí ve vašem deníku.",
   "configFlagEnableForkHealing": "Slučování větví agenta",
   "configFlagEnableForkHealingDescription": "Sloučí rozvětvené historie agenta z více zařízení při příštím probuzení.",
+  "configFlagEnableGitHubPullRequests": "Zapnout pull requesty z GitHubu",
+  "configFlagEnableGitHubPullRequestsDescription": "Propoj pull requesty z GitHubu s úkoly a sleduj jejich kontroly, revize a stav.",
   "configFlagEnableHabitsPage": "Povolit stránku Návyků",
   "configFlagEnableHabitsPageDescription": "Zobrazit stránku Návyky v hlavní navigaci. Zde sledujte a spravujte své denní návyky.",
   "configFlagEnableLogging": "Povolit protokolování",
@@ -2714,6 +2716,80 @@
   "geminiThinkingModeMinimalLabel": "Minimální",
   "generateCoverArt": "Vytvořit obálku",
   "generateCoverArtSubtitle": "Vytvořit obrázek z hlasového popisu",
+  "githubChecksFailing": "{count, plural, =1{1 kontrola selhala} few{{count} kontroly selhaly} other{{count} kontrol selhalo}}",
+  "@githubChecksFailing": {
+    "description": "Status line part: how many CI checks of a pull request fail.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "githubChecksPassing": "Kontroly prošly",
+  "githubChecksPending": "Kontroly běží",
+  "githubConnectButton": "Připojit",
+  "githubConnectedAs": "Připojeno jako @{login}",
+  "@githubConnectedAs": {
+    "description": "Shown in the GitHub settings when a token is stored.",
+    "placeholders": {
+      "login": {
+        "type": "String",
+        "example": "octocat"
+      }
+    }
+  },
+  "githubDisconnectButton": "Odpojit",
+  "githubFailureForbidden": "Token nemá oprávnění tohle číst. Zkontroluj jeho oprávnění.",
+  "githubFailureInvalidResponse": "GitHub poslal odpověď, kterou Lotti nedokázal přečíst.",
+  "githubFailureNotFound": "Nenalezeno, nebo tvůj token tento repozitář nevidí.",
+  "githubFailureNoToken": "Nejdřív přidej svůj token GitHubu v Nastavení → Pokročilá nastavení → GitHub.",
+  "githubFailureOffline": "GitHub není dostupný. Zkontroluj připojení.",
+  "githubFailureRateLimited": "Byl dosažen limit požadavků GitHubu. Lotti se znovu zeptá po {time}.",
+  "@githubFailureRateLimited": {
+    "description": "A GitHub call hit the rate limit; time is when calls resume.",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "14:30"
+      }
+    }
+  },
+  "githubFailureRateLimitedLater": "Byl dosažen limit požadavků GitHubu. Zkus to později.",
+  "githubFailureServer": "GitHub měl problém. Zkus to později.",
+  "githubFailureUnauthorized": "GitHub token odmítl. Možná vypršel nebo byl zrušen.",
+  "githubLinkAlreadyLinked": "Tento pull request už je s tímto úkolem propojený.",
+  "githubLinkButton": "Propojit",
+  "githubLinkNotAPullRequest": "To není pull request.",
+  "githubLinkNotGitHub": "To není odkaz na github.com.",
+  "githubLinkPullRequestHint": "Sleduj tady jeho kontroly, revize a stav.",
+  "githubLinkPullRequestTitle": "Propojit pull request",
+  "githubLinkUrlHelper": "Nebo napiš vlastnik/repo#123.",
+  "githubLinkUrlHint": "https://github.com/vlastnik/repo/pull/123",
+  "githubLinkUrlLabel": "URL pull requestu",
+  "githubMergeBehind": "Za základní větví",
+  "githubMergeBlocked": "Blokováno pravidly větve",
+  "githubMergeConflicts": "Konflikty při slučování",
+  "githubNotRefreshed": "Aktualizace se nezdařila",
+  "githubNotRefreshedYet": "Zatím neaktualizováno",
+  "githubOpenOnGitHub": "Otevřít na GitHubu",
+  "githubPullRequestActions": "Akce pull requestu",
+  "githubPullRequestsTitle": "Pull requesty",
+  "githubRefreshingPullRequest": "Pull request se aktualizuje",
+  "githubRefreshPullRequest": "Aktualizovat pull request",
+  "githubReviewApproved": "Schváleno",
+  "githubReviewChangesRequested": "Vyžádány změny",
+  "githubReviewPending": "Vyžádána revize",
+  "githubStatusClosed": "Uzavřený",
+  "githubStatusDraft": "Koncept",
+  "githubStatusMerged": "Sloučený",
+  "githubStatusOpen": "Otevřený",
+  "githubTokenHide": "Skrýt token",
+  "githubTokenIntro": "Lotti čte pull requesty, které propojíš s úkoly, pomocí tvého vlastního osobního přístupového tokenu. Dej mu přístup ke čtení pull requestů, stavů commitů a kontrol v repozitářích, ve kterých pracuješ.",
+  "githubTokenKeptOnDevice": "Token zůstává v tomto zařízení: nikdy se nesynchronizuje a posílá se jen na api.github.com.",
+  "githubTokenLabel": "Osobní přístupový token",
+  "githubTokenShow": "Zobrazit token",
+  "githubUnlinkPullRequest": "Odpojit pull request",
   "goalAssessmentHistoryTitle": "Denní úvahy",
   "goalAssessmentImproving": "Zlepšuje se",
   "goalAssessmentMeasuredReadOnly": "Měřeno Lotti – tuto část nelze upravovat.",
@@ -5100,6 +5176,8 @@
   "settingsFlagsSearchHint": "Hledat příznaky",
   "settingsFlagsSubtitle": "Konfigurace příznaků a možností",
   "settingsFlagsTitle": "Konfigurační příznaky",
+  "settingsGitHubSubtitle": "Tvůj token pro propojení pull requestů s úkoly",
+  "settingsGitHubTitle": "GitHub",
   "settingsHabitsCreateTitle": "Vytvořit návyk",
   "settingsHabitsDeleteTooltip": "Smazat návyk",
   "settingsHabitsDescriptionLabel": "Popis (volitelné)",

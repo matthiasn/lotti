@@ -13,6 +13,7 @@ List<SettingsNode> _tree({
   bool enableMatrix = true,
   bool enableWhatsNew = true,
   bool enableSpeechTts = false,
+  bool enableGitHub = false,
   bool enableHealthImport = false,
   bool syncFeatureAvailable = true,
 }) => buildSettingsTree(
@@ -22,6 +23,7 @@ List<SettingsNode> _tree({
   enableMatrix: enableMatrix,
   enableWhatsNew: enableWhatsNew,
   enableSpeechTts: enableSpeechTts,
+  enableGitHub: enableGitHub,
   enableHealthImport: enableHealthImport,
   syncFeatureAvailable: syncFeatureAvailable,
 );
@@ -74,6 +76,25 @@ void main() {
         contains('preferences/speech'),
       );
     });
+  });
+
+  group('buildSettingsTree — enableGitHub', () {
+    test(
+      'adds the GitHub leaf under Advanced, after Config Flags, only when '
+      'GitHub pull requests are enabled',
+      () {
+        expect(_ids(_tree()), isNot(contains('advanced/github')));
+
+        final tree = _tree(enableGitHub: true);
+        final advanced = tree.firstWhere((n) => n.id == 'advanced');
+        final ids = advanced.children!.map((n) => n.id).toList();
+        expect(
+          ids.indexOf('advanced/github'),
+          ids.indexOf('advanced/flags') + 1,
+        );
+        expect(_find(tree, 'advanced/github')?.panel, 'advanced-github');
+      },
+    );
   });
 
   group('buildSettingsTree — onboarding', () {

@@ -981,6 +981,19 @@
       "status": "verified"
     },
     {
+      "id": "settings-github",
+      "title": "GitHub",
+      "kind": "settings-page",
+      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "sourcePattern": "'advanced/github'",
+      "locator": "/settings/advanced/github",
+      "routes": [
+        "/settings/advanced/github"
+      ],
+      "page": "tasks/github-pull-requests",
+      "status": "planned"
+    },
+    {
       "id": "settings-logging",
       "title": "Logging domains",
       "kind": "settings-page",

@@ -120,6 +120,10 @@ import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repo
 import 'package:lotti/features/daily_os_next/services/day_processing_runtime.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
+import 'package:lotti/features/github/api/github_client.dart';
+import 'package:lotti/features/github/repository/github_token_storage.dart';
+import 'package:lotti/features/github/repository/pull_request_repository.dart';
+import 'package:lotti/features/github/service/pull_request_service.dart';
 import 'package:lotti/features/goals/repository/goal_repository.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
@@ -1929,3 +1933,11 @@ class MockClipboardDataReader extends Mock implements ClipboardDataReader {}
 class MockDataReaderFile extends Mock implements DataReaderFile {}
 
 class MockReadProgress extends Mock implements ReadProgress {}
+
+class MockGitHubClient extends Mock implements GitHubClient {}
+
+class MockGitHubTokenStorage extends Mock implements GitHubTokenStorage {}
+
+class MockPullRequestRepository extends Mock implements PullRequestRepository {}
+
+class MockPullRequestService extends Mock implements PullRequestService {}

@@ -1592,6 +1592,8 @@
   "configFlagEnableEventsDescription": "Afișează funcția Evenimente pentru a crea, urmări și gestiona evenimente în jurnalul dvs.",
   "configFlagEnableForkHealing": "Repararea bifurcațiilor agentului",
   "configFlagEnableForkHealingDescription": "Îmbină istoricurile divergente ale agentului rezultate din utilizarea pe mai multe dispozitive la următoarea activare.",
+  "configFlagEnableGitHubPullRequests": "Activați pull request-urile GitHub",
+  "configFlagEnableGitHubPullRequestsDescription": "Legați pull request-uri GitHub de sarcini și urmăriți verificările, revizuirile și starea lor.",
   "configFlagEnableHabitsPage": "Activați pagina Obiceiuri",
   "configFlagEnableHabitsPageDescription": "Afișează pagina Obiceiuri în navigarea principală. Urmăriți și gestionați-vă obiceiurile zilnice aici.",
   "configFlagEnableLogging": "Activați jurnalizarea",
@@ -2707,6 +2709,80 @@
   "geminiThinkingModeMinimalLabel": "Minim",
   "generateCoverArt": "Generează copertă",
   "generateCoverArtSubtitle": "Creează imagine din descrierea vocală",
+  "githubChecksFailing": "{count, plural, =1{1 verificare eșuată} few{{count} verificări eșuate} other{{count} de verificări eșuate}}",
+  "@githubChecksFailing": {
+    "description": "Status line part: how many CI checks of a pull request fail.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "githubChecksPassing": "Verificări reușite",
+  "githubChecksPending": "Verificări în curs",
+  "githubConnectButton": "Conectați",
+  "githubConnectedAs": "Conectat ca @{login}",
+  "@githubConnectedAs": {
+    "description": "Shown in the GitHub settings when a token is stored.",
+    "placeholders": {
+      "login": {
+        "type": "String",
+        "example": "octocat"
+      }
+    }
+  },
+  "githubDisconnectButton": "Deconectați",
+  "githubFailureForbidden": "Tokenul nu are voie să citească acest lucru. Verificați-i permisiunile.",
+  "githubFailureInvalidResponse": "GitHub a trimis un răspuns pe care Lotti nu l-a putut citi.",
+  "githubFailureNotFound": "Nu a fost găsit sau tokenul dvs. nu vede acest depozit.",
+  "githubFailureNoToken": "Adăugați mai întâi tokenul dvs. GitHub în Setări → Setări avansate → GitHub.",
+  "githubFailureOffline": "GitHub nu poate fi accesat. Verificați conexiunea.",
+  "githubFailureRateLimited": "Limita de solicitări GitHub a fost atinsă. Lotti va încerca din nou după {time}.",
+  "@githubFailureRateLimited": {
+    "description": "A GitHub call hit the rate limit; time is when calls resume.",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "14:30"
+      }
+    }
+  },
+  "githubFailureRateLimitedLater": "Limita de solicitări GitHub a fost atinsă. Încercați din nou mai târziu.",
+  "githubFailureServer": "GitHub a avut o problemă. Încercați din nou mai târziu.",
+  "githubFailureUnauthorized": "GitHub a respins tokenul. Este posibil să fi expirat sau să fi fost revocat.",
+  "githubLinkAlreadyLinked": "Acest pull request este deja legat de această sarcină.",
+  "githubLinkButton": "Legați",
+  "githubLinkNotAPullRequest": "Acesta nu este un pull request.",
+  "githubLinkNotGitHub": "Acesta nu este un link către github.com.",
+  "githubLinkPullRequestHint": "Urmăriți aici verificările, revizuirile și starea acestuia.",
+  "githubLinkPullRequestTitle": "Legați un pull request",
+  "githubLinkUrlHelper": "Sau scrieți proprietar/repo#123.",
+  "githubLinkUrlHint": "https://github.com/proprietar/repo/pull/123",
+  "githubLinkUrlLabel": "URL-ul pull request-ului",
+  "githubMergeBehind": "În urma ramurii de bază",
+  "githubMergeBlocked": "Blocat de regulile ramurii",
+  "githubMergeConflicts": "Conflicte de îmbinare",
+  "githubNotRefreshed": "Actualizarea a eșuat",
+  "githubNotRefreshedYet": "Neactualizat încă",
+  "githubOpenOnGitHub": "Deschideți pe GitHub",
+  "githubPullRequestActions": "Acțiuni pentru pull request",
+  "githubPullRequestsTitle": "Pull request-uri",
+  "githubRefreshingPullRequest": "Se actualizează pull request-ul",
+  "githubRefreshPullRequest": "Actualizați pull request-ul",
+  "githubReviewApproved": "Aprobat",
+  "githubReviewChangesRequested": "Modificări solicitate",
+  "githubReviewPending": "Revizuire solicitată",
+  "githubStatusClosed": "Închis",
+  "githubStatusDraft": "Ciornă",
+  "githubStatusMerged": "Îmbinat",
+  "githubStatusOpen": "Deschis",
+  "githubTokenHide": "Ascundeți tokenul",
+  "githubTokenIntro": "Lotti citește pull request-urile pe care le legați de sarcini cu propriul dvs. token de acces personal. Acordați-i acces de citire la pull request-uri, stări de commit și verificări în depozitele în care lucrați.",
+  "githubTokenKeptOnDevice": "Tokenul rămâne pe acest dispozitiv: nu este sincronizat niciodată și este trimis doar către api.github.com.",
+  "githubTokenLabel": "Token de acces personal",
+  "githubTokenShow": "Afișați tokenul",
+  "githubUnlinkPullRequest": "Dezlegați pull request-ul",
   "goalAssessmentHistoryTitle": "Reflecții zilnice",
   "goalAssessmentImproving": "Se îmbunătățește",
   "goalAssessmentMeasuredReadOnly": "Măsurat de Lotti - această parte nu este editabilă.",
@@ -5093,6 +5169,8 @@
   "settingsFlagsSearchHint": "Căutați marcaje",
   "settingsFlagsSubtitle": "Configurați indicatoarele și opțiunile",
   "settingsFlagsTitle": "Marcaje",
+  "settingsGitHubSubtitle": "Tokenul dvs. pentru legarea pull request-urilor de sarcini",
+  "settingsGitHubTitle": "GitHub",
   "settingsHabitsCreateTitle": "Creare obicei",
   "settingsHabitsDeleteTooltip": "Ștergeți obiceiul",
   "settingsHabitsDescriptionLabel": "Descriere (opțional)",

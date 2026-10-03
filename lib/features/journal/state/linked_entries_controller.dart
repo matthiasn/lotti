@@ -328,7 +328,9 @@ List<JournalEntity> resolvedOutgoingLinkedEntries(
   return entities;
 }
 
-/// Provider that checks if there are any non-Task entries in the linked entries.
+/// Provider that checks whether the linked entries hold any entry the
+/// linked-entries list shows on a task: anything but a task or a pull
+/// request, which have their own sections.
 ///
 /// Used by LinkedEntriesWidget to determine whether to show the "Linked Entries"
 /// section when hideTaskEntries is true.
@@ -343,5 +345,7 @@ bool hasNonTaskLinkedEntries(
   String id,
 ) {
   final entities = ref.watch(resolvedOutgoingLinkedEntriesProvider(id));
-  return entities.any((entity) => entity is! Task);
+  return entities.any(
+    (entity) => entity is! Task && entity is! PullRequestEntry,
+  );
 }

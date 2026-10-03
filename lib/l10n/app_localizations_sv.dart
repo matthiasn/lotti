@@ -3683,6 +3683,14 @@ class AppLocalizationsSv extends AppLocalizations {
       'Läka divergerande agenthistorier från användning med flera enheter genom att slå ihop dem vid nästa vak.';
 
   @override
+  String get configFlagEnableGitHubPullRequests =>
+      'Aktivera pull requests från GitHub';
+
+  @override
+  String get configFlagEnableGitHubPullRequestsDescription =>
+      'Koppla pull requests från GitHub till uppgifter och följ deras kontroller, granskningar och status.';
+
+  @override
   String get configFlagEnableHabitsPage => 'Aktivera Habits-sidan';
 
   @override
@@ -6478,6 +6486,171 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get generateCoverArtSubtitle => 'Skapa bild från röstbeskrivning';
+
+  @override
+  String githubChecksFailing(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count kontroller misslyckades',
+      one: '1 kontroll misslyckades',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get githubChecksPassing => 'Kontroller godkända';
+
+  @override
+  String get githubChecksPending => 'Kontroller körs';
+
+  @override
+  String get githubConnectButton => 'Anslut';
+
+  @override
+  String githubConnectedAs(String login) {
+    return 'Ansluten som @$login';
+  }
+
+  @override
+  String get githubDisconnectButton => 'Koppla från';
+
+  @override
+  String get githubFailureForbidden =>
+      'Din token får inte läsa det här. Kontrollera dess behörigheter.';
+
+  @override
+  String get githubFailureInvalidResponse =>
+      'GitHub skickade ett svar som Lotti inte kunde läsa.';
+
+  @override
+  String get githubFailureNotFound =>
+      'Hittades inte, eller så kan din token inte se det här repot.';
+
+  @override
+  String get githubFailureNoToken =>
+      'Lägg först till din GitHub-token under Inställningar → Avancerade inställningar → GitHub.';
+
+  @override
+  String get githubFailureOffline =>
+      'Det gick inte att nå GitHub. Kontrollera din anslutning.';
+
+  @override
+  String githubFailureRateLimited(String time) {
+    return 'GitHubs gräns för förfrågningar är nådd. Lotti frågar igen efter $time.';
+  }
+
+  @override
+  String get githubFailureRateLimitedLater =>
+      'GitHubs gräns för förfrågningar är nådd. Försök igen senare.';
+
+  @override
+  String get githubFailureServer =>
+      'GitHub hade ett problem. Försök igen senare.';
+
+  @override
+  String get githubFailureUnauthorized =>
+      'GitHub avvisade din token. Den kan ha gått ut eller återkallats.';
+
+  @override
+  String get githubLinkAlreadyLinked =>
+      'Den här pull requesten är redan kopplad till den här uppgiften.';
+
+  @override
+  String get githubLinkButton => 'Koppla';
+
+  @override
+  String get githubLinkNotAPullRequest => 'Det är inte en pull request.';
+
+  @override
+  String get githubLinkNotGitHub => 'Det är inte en länk till github.com.';
+
+  @override
+  String get githubLinkPullRequestHint =>
+      'Följ dess kontroller, granskningar och status här.';
+
+  @override
+  String get githubLinkPullRequestTitle => 'Koppla en pull request';
+
+  @override
+  String get githubLinkUrlHelper => 'Eller skriv agare/repo#123.';
+
+  @override
+  String get githubLinkUrlHint => 'https://github.com/agare/repo/pull/123';
+
+  @override
+  String get githubLinkUrlLabel => 'URL till pull request';
+
+  @override
+  String get githubMergeBehind => 'Efter basgrenen';
+
+  @override
+  String get githubMergeBlocked => 'Blockerad av grenregler';
+
+  @override
+  String get githubMergeConflicts => 'Sammanfogningskonflikter';
+
+  @override
+  String get githubNotRefreshed => 'Kunde inte uppdatera';
+
+  @override
+  String get githubNotRefreshedYet => 'Inte uppdaterad än';
+
+  @override
+  String get githubOpenOnGitHub => 'Öppna på GitHub';
+
+  @override
+  String get githubPullRequestActions => 'Åtgärder för pull request';
+
+  @override
+  String get githubPullRequestsTitle => 'Pull requests';
+
+  @override
+  String get githubRefreshingPullRequest => 'Uppdaterar pull request';
+
+  @override
+  String get githubRefreshPullRequest => 'Uppdatera pull request';
+
+  @override
+  String get githubReviewApproved => 'Godkänd';
+
+  @override
+  String get githubReviewChangesRequested => 'Ändringar begärda';
+
+  @override
+  String get githubReviewPending => 'Granskning begärd';
+
+  @override
+  String get githubStatusClosed => 'Stängd';
+
+  @override
+  String get githubStatusDraft => 'Utkast';
+
+  @override
+  String get githubStatusMerged => 'Sammanfogad';
+
+  @override
+  String get githubStatusOpen => 'Öppen';
+
+  @override
+  String get githubTokenHide => 'Dölj token';
+
+  @override
+  String get githubTokenIntro =>
+      'Lotti läser de pull requests du kopplar till uppgifter med din egen personliga åtkomsttoken. Ge den läsåtkomst till pull requests, commitstatus och kontroller i de repon du arbetar i.';
+
+  @override
+  String get githubTokenKeptOnDevice =>
+      'Token stannar på den här enheten: den synkas aldrig och skickas bara till api.github.com.';
+
+  @override
+  String get githubTokenLabel => 'Personlig åtkomsttoken';
+
+  @override
+  String get githubTokenShow => 'Visa token';
+
+  @override
+  String get githubUnlinkPullRequest => 'Koppla bort pull request';
 
   @override
   String get goalAssessmentHistoryTitle => 'Dagliga reflektioner';
@@ -13283,6 +13456,13 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get settingsFlagsTitle => 'Konfigurationsflaggor';
+
+  @override
+  String get settingsGitHubSubtitle =>
+      'Din token för att koppla pull requests till uppgifter';
+
+  @override
+  String get settingsGitHubTitle => 'GitHub';
 
   @override
   String get settingsHabitsCreateTitle => 'Skapa vana';
