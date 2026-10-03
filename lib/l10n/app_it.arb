@@ -928,9 +928,15 @@
   },
   "aiOllamaInstallButton": "Installa",
   "aiOllamaInstallCommandHint": "Per installarlo, esegui questo comando nel terminale:",
+  "aiOllamaInstallDiskFull": "Il disco è pieno. Libera spazio e riprova.",
   "aiOllamaInstallFailed": "Installazione non riuscita: {error}",
+  "aiOllamaInstallGeneric": "Qualcosa è andato storto. Controlla l’installazione di Ollama e riprova.",
   "aiOllamaInstalling": "Installazione del modello…",
+  "aiOllamaInstallModelNotFound": "Il modello non è stato trovato nella libreria Ollama.",
   "aiOllamaInstallQuestion": "Installarlo ora da Lotti?",
+  "aiOllamaInstallServerUnreachable": "Il server Ollama non è raggiungibile. È in esecuzione?",
+  "aiOllamaInstallStartFailed": "Ollama non è riuscito ad avviare il download (HTTP {status}).",
+  "aiOllamaInstallTimedOut": "Il download ha richiesto troppo tempo. Controlla la connessione e riprova.",
   "aiOllamaModelInstalledSuccessfully": "Modello \"{modelName}\" installato con successo!",
   "@aiOllamaModelInstalledSuccessfully": {
     "placeholders": {

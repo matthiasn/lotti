@@ -1892,15 +1892,40 @@ class AppLocalizationsNl extends AppLocalizations {
       'Voer deze opdracht uit in je terminal om het te installeren:';
 
   @override
+  String get aiOllamaInstallDiskFull =>
+      'De schijf is vol. Maak ruimte vrij en probeer het opnieuw.';
+
+  @override
   String aiOllamaInstallFailed(String error) {
     return 'Installatie mislukt: $error';
   }
 
   @override
+  String get aiOllamaInstallGeneric =>
+      'Er ging iets mis. Controleer je Ollama-installatie en probeer het opnieuw.';
+
+  @override
   String get aiOllamaInstalling => 'Model wordt geïnstalleerd…';
 
   @override
+  String get aiOllamaInstallModelNotFound =>
+      'Het model is niet gevonden in de Ollama-bibliotheek.';
+
+  @override
   String get aiOllamaInstallQuestion => 'Nu installeren vanuit Lotti?';
+
+  @override
+  String get aiOllamaInstallServerUnreachable =>
+      'De Ollama-server is niet bereikbaar. Draait hij?';
+
+  @override
+  String aiOllamaInstallStartFailed(int status) {
+    return 'Ollama kon het downloaden niet starten (HTTP $status).';
+  }
+
+  @override
+  String get aiOllamaInstallTimedOut =>
+      'Het downloaden duurde te lang. Controleer je verbinding en probeer het opnieuw.';
 
   @override
   String aiOllamaModelInstalledSuccessfully(String modelName) {

@@ -1912,15 +1912,40 @@ class AppLocalizationsRo extends AppLocalizations {
       'Pentru a-l instala, rulați această comandă în terminal:';
 
   @override
+  String get aiOllamaInstallDiskFull =>
+      'Discul este plin. Eliberați spațiu și încercați din nou.';
+
+  @override
   String aiOllamaInstallFailed(String error) {
     return 'Instalarea a eșuat: $error';
   }
 
   @override
+  String get aiOllamaInstallGeneric =>
+      'Ceva nu a funcționat. Verificați instalarea Ollama și încercați din nou.';
+
+  @override
   String get aiOllamaInstalling => 'Se instalează modelul…';
 
   @override
+  String get aiOllamaInstallModelNotFound =>
+      'Modelul nu a fost găsit în biblioteca Ollama.';
+
+  @override
   String get aiOllamaInstallQuestion => 'Îl instalați acum din Lotti?';
+
+  @override
+  String get aiOllamaInstallServerUnreachable =>
+      'Serverul Ollama nu poate fi accesat. Rulează?';
+
+  @override
+  String aiOllamaInstallStartFailed(int status) {
+    return 'Ollama nu a putut porni descărcarea (HTTP $status).';
+  }
+
+  @override
+  String get aiOllamaInstallTimedOut =>
+      'Descărcarea a durat prea mult. Verificați conexiunea și încercați din nou.';
 
   @override
   String aiOllamaModelInstalledSuccessfully(String modelName) {

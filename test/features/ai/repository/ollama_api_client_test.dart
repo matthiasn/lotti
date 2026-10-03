@@ -72,4 +72,35 @@ void main() {
       });
     }
   });
+
+  group('OllamaInstallException', () {
+    test('names its failure and status, and nothing else', () {
+      // What reaches a log: the kind and the HTTP status, never a sentence
+      // or anything from the server's response.
+      expect(
+        const OllamaInstallException(OllamaInstallFailure.diskFull).toString(),
+        'OllamaInstallException(diskFull)',
+      );
+      expect(
+        const OllamaInstallException(
+          OllamaInstallFailure.startFailed,
+          statusCode: 503,
+        ).toString(),
+        'OllamaInstallException(startFailed, HTTP 503)',
+      );
+    });
+  });
+
+  group('OllamaTransportException', () {
+    test('prints exactly what the plain Exception it replaced printed', () {
+      const message = 'Network error during model installation.';
+      expect(
+        const OllamaTransportException(
+          timedOut: false,
+          message: message,
+        ).toString(),
+        Exception(message).toString(),
+      );
+    });
+  });
 }

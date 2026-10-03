@@ -760,9 +760,15 @@
   "aiModelPickerProviderModelCount": "{count, plural, =1{1 model} few{{count} modely} other{{count} modelů}}",
   "aiOllamaInstallButton": "Nainstalovat",
   "aiOllamaInstallCommandHint": "Pro instalaci spusť v terminálu tento příkaz:",
+  "aiOllamaInstallDiskFull": "Disk je plný. Uvolni místo a zkus to znovu.",
   "aiOllamaInstallFailed": "Instalace selhala: {error}",
+  "aiOllamaInstallGeneric": "Něco se pokazilo. Zkontroluj instalaci Ollamy a zkus to znovu.",
   "aiOllamaInstalling": "Model se instaluje…",
+  "aiOllamaInstallModelNotFound": "Model se v knihovně Ollama nenašel.",
   "aiOllamaInstallQuestion": "Nainstalovat ho teď z Lotti?",
+  "aiOllamaInstallServerUnreachable": "Server Ollama není dostupný. Běží?",
+  "aiOllamaInstallStartFailed": "Ollama nemohla spustit stahování (HTTP {status}).",
+  "aiOllamaInstallTimedOut": "Stahování trvalo příliš dlouho. Zkontroluj připojení a zkus to znovu.",
   "aiOllamaModelInstalledSuccessfully": "Model „{modelName}“ byl úspěšně nainstalován",
   "@aiOllamaModelInstalledSuccessfully": {
     "placeholders": {

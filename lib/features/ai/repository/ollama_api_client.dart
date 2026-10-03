@@ -402,11 +402,12 @@ class OllamaApiClient {
       } on Exception catch (e) {
         if (e is TimeoutException || e is SocketException) {
           if (attempt >= maxRetries) {
-            if (e is TimeoutException) {
-              throw Exception(timeoutErrorMessage);
-            } else {
-              throw Exception(networkErrorMessage);
-            }
+            throw OllamaTransportException(
+              timedOut: e is TimeoutException,
+              message: e is TimeoutException
+                  ? timeoutErrorMessage
+                  : networkErrorMessage,
+            );
           }
           final reason = e is TimeoutException ? 'Timeout' : 'Network error';
           developer.log(
@@ -540,76 +541,99 @@ class OllamaApiClient {
     request.body = jsonEncode({'name': modelName});
 
     // Use a timeout for the entire send operation
-    final streamedResponse = await _retryWithExponentialBackoff(
-      operation: () async {
-        return _httpClient.send(request).timeout(installTimeout);
-      },
-      maxRetries: 3,
-      baseDelay: retryBaseDelay,
-      context: 'model installation',
-      timeoutErrorMessage:
-          'Model installation timed out after ${installTimeout.inMinutes} minutes. This may be due to a slow connection or a large model. Please check your internet connection and try again.',
-      networkErrorMessage:
-          'Network error during model installation. Please check your connection and that the Ollama server is running.',
-    );
+    final http.StreamedResponse streamedResponse;
+    try {
+      streamedResponse = await _retryWithExponentialBackoff(
+        operation: () async {
+          return _httpClient.send(request).timeout(installTimeout);
+        },
+        maxRetries: 3,
+        baseDelay: retryBaseDelay,
+        context: 'model installation',
+        timeoutErrorMessage:
+            'Model installation timed out after ${installTimeout.inMinutes} minutes. This may be due to a slow connection or a large model. Please check your internet connection and try again.',
+        networkErrorMessage:
+            'Network error during model installation. Please check your connection and that the Ollama server is running.',
+      );
+    } on OllamaTransportException catch (e) {
+      throw OllamaInstallException(
+        e.timedOut
+            ? OllamaInstallFailure.timedOut
+            : OllamaInstallFailure.serverUnreachable,
+      );
+    }
 
     if (streamedResponse.statusCode != httpStatusOk) {
       developer.log(
         'Model installation failed: HTTP ${streamedResponse.statusCode}',
         name: 'OllamaApiClient',
       );
-      throw Exception(
-        'Failed to start model installation. (HTTP ${streamedResponse.statusCode}) Please check your Ollama installation and try again.',
+      throw OllamaInstallException(
+        OllamaInstallFailure.startFailed,
+        statusCode: streamedResponse.statusCode,
       );
     }
 
-    await for (final chunk in streamedResponse.stream.transform(utf8.decoder)) {
-      final lines = chunk.split('\n').where((line) => line.trim().isNotEmpty);
+    // The body streams in for as long as the download runs, so the connection
+    // can drop or stall here too, not only while the request is sent.
+    try {
+      await for (final chunk in streamedResponse.stream.transform(
+        utf8.decoder,
+      )) {
+        final lines = chunk.split('\n').where((line) => line.trim().isNotEmpty);
 
-      for (final line in lines) {
-        Map<String, dynamic> data;
-        try {
-          data = jsonDecode(line) as Map<String, dynamic>;
-        } catch (e) {
-          // Skip malformed JSON lines
-          continue;
-        }
+        for (final line in lines) {
+          Map<String, dynamic> data;
+          try {
+            data = jsonDecode(line) as Map<String, dynamic>;
+          } catch (e) {
+            // Skip malformed JSON lines
+            continue;
+          }
 
-        if (data.containsKey('error')) {
-          final errorMessage = data['error'] as String;
-          developer.log(
-            'Model installation error: $errorMessage',
-            name: 'OllamaApiClient',
-          );
-          // Provide more specific error messages
-          if (errorMessage.contains('not found')) {
-            throw Exception('Model installation failed: Model not found.');
-          } else if (errorMessage.contains('disk full')) {
-            throw Exception(
-              'Model installation failed: Disk is full. Please free up space and try again.',
+          if (data.containsKey('error')) {
+            final errorMessage = data['error'] as String;
+            developer.log(
+              'Model installation error: $errorMessage',
+              name: 'OllamaApiClient',
             );
-          } else if (errorMessage.contains('connection refused')) {
-            throw Exception(
-              'Model installation failed: Connection refused. Is the Ollama server running?',
-            );
-          } else {
-            throw Exception(
-              'Model installation failed. Please check your Ollama installation and try again.',
+            // The kind of failure, not a sentence: the caller words it in the
+            // user's language.
+            throw OllamaInstallException(
+              errorMessage.contains('not found')
+                  ? OllamaInstallFailure.modelNotFound
+                  : errorMessage.contains('disk full')
+                  ? OllamaInstallFailure.diskFull
+                  : errorMessage.contains('connection refused')
+                  ? OllamaInstallFailure.serverUnreachable
+                  : OllamaInstallFailure.failed,
             );
           }
+
+          final status = data['status'] is String
+              ? data['status'] as String
+              : '';
+          final total = data['total'] is int ? data['total'] as int : 0;
+          final completed = data['completed'] is int
+              ? data['completed'] as int
+              : 0;
+
+          yield OllamaPullProgress(
+            status: status,
+            progress: total > 0 ? (completed / total) : 0.0,
+          );
         }
-
-        final status = data['status'] is String ? data['status'] as String : '';
-        final total = data['total'] is int ? data['total'] as int : 0;
-        final completed = data['completed'] is int
-            ? data['completed'] as int
-            : 0;
-
-        yield OllamaPullProgress(
-          status: status,
-          progress: total > 0 ? (completed / total) : 0.0,
-        );
       }
+    } on SocketException {
+      throw const OllamaInstallException(
+        OllamaInstallFailure.serverUnreachable,
+      );
+    } on http.ClientException {
+      throw const OllamaInstallException(
+        OllamaInstallFailure.serverUnreachable,
+      );
+    } on TimeoutException {
+      throw const OllamaInstallException(OllamaInstallFailure.timedOut);
     }
   }
 
@@ -681,6 +705,52 @@ CreateChatCompletionStreamResponse _contentChunk(String content) {
 }
 
 /// Exception thrown when a model is not installed
+/// A request that kept timing out or failing to connect after its retries.
+///
+/// Its text is exactly what the plain `Exception` it replaces printed, so
+/// callers that show or log it see no change; [timedOut] is what lets a caller
+/// tell the two apart without parsing that text.
+class OllamaTransportException implements Exception {
+  const OllamaTransportException({
+    required this.timedOut,
+    required this.message,
+  });
+
+  final bool timedOut;
+  final String message;
+
+  @override
+  String toString() => 'Exception: $message';
+}
+
+/// Why installing an Ollama model failed.
+enum OllamaInstallFailure {
+  /// Ollama refused to start the download; see
+  /// [OllamaInstallException.statusCode].
+  startFailed,
+  modelNotFound,
+  diskFull,
+  serverUnreachable,
+  timedOut,
+  failed,
+}
+
+/// A model install that failed for a known [failure] — words for it are the
+/// UI's job, in the user's language.
+class OllamaInstallException implements Exception {
+  const OllamaInstallException(this.failure, {this.statusCode});
+
+  final OllamaInstallFailure failure;
+
+  /// The HTTP status Ollama answered with, for [OllamaInstallFailure.startFailed].
+  final int? statusCode;
+
+  @override
+  String toString() =>
+      'OllamaInstallException(${failure.name}'
+      '${statusCode == null ? '' : ', HTTP $statusCode'})';
+}
+
 class ModelNotInstalledException implements Exception {
   const ModelNotInstalledException(this.modelName);
 

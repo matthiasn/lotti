@@ -3264,11 +3264,23 @@ abstract class AppLocalizations {
   /// **'To install it, run this command in your terminal:'**
   String get aiOllamaInstallCommandHint;
 
+  /// Install failure: no disk space left for the download.
+  ///
+  /// In en, this message translates to:
+  /// **'The disk is full. Free up some space and try again.'**
+  String get aiOllamaInstallDiskFull;
+
   /// Shown when the install fails; error is the provider’s message.
   ///
   /// In en, this message translates to:
   /// **'Installation failed: {error}'**
   String aiOllamaInstallFailed(String error);
+
+  /// Install failure with no more specific cause.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Check your Ollama installation and try again.'**
+  String get aiOllamaInstallGeneric;
 
   /// Shown above the progress bar while the model downloads.
   ///
@@ -3276,11 +3288,35 @@ abstract class AppLocalizations {
   /// **'Installing model…'**
   String get aiOllamaInstalling;
 
+  /// Install failure: the model name does not exist in the Ollama library.
+  ///
+  /// In en, this message translates to:
+  /// **'The model wasn’t found in the Ollama library.'**
+  String get aiOllamaInstallModelNotFound;
+
   /// Offers to install the model from inside the app.
   ///
   /// In en, this message translates to:
   /// **'Install it now from Lotti?'**
   String get aiOllamaInstallQuestion;
+
+  /// Install failure: the local Ollama server did not answer.
+  ///
+  /// In en, this message translates to:
+  /// **'The Ollama server can’t be reached. Is it running?'**
+  String get aiOllamaInstallServerUnreachable;
+
+  /// Install failure: Ollama refused to start the download; status is the HTTP status code.
+  ///
+  /// In en, this message translates to:
+  /// **'Ollama couldn’t start the download (HTTP {status}).'**
+  String aiOllamaInstallStartFailed(int status);
+
+  /// Install failure: the download timed out.
+  ///
+  /// In en, this message translates to:
+  /// **'The download took too long. Check your connection and try again.'**
+  String get aiOllamaInstallTimedOut;
 
   /// No description provided for @aiOllamaModelInstalledSuccessfully.
   ///
