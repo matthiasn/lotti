@@ -47,6 +47,7 @@ import 'package:lotti/features/speech/helpers/transcript_term_corrector.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/audio_utils.dart';
@@ -2166,7 +2167,7 @@ SkillInferenceRunner skillInferenceRunner(Ref ref) {
     cloudRepository: ref.watch(cloudInferenceRepositoryProvider),
     aiInputRepository: ref.watch(aiInputRepositoryProvider),
     journalRepository: ref.watch(journalRepositoryProvider),
-    loggingService: getIt<DomainLogger>(),
+    loggingService: ref.watch(domainLoggerProvider),
     taskSummaryResolver: taskSummaryResolver,
     promptBuilderHelper: PromptBuilderHelper(
       aiInputRepository: ref.watch(aiInputRepositoryProvider),

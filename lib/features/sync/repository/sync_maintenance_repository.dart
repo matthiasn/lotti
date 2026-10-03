@@ -636,7 +636,7 @@ final syncMaintenanceRepositoryProvider = Provider<SyncMaintenanceRepository>((
   return SyncMaintenanceRepository(
     journalDb: ref.watch(journalDbProvider),
     outboxService: ref.watch(outboxServiceProvider),
-    loggingService: getIt<DomainLogger>(),
+    loggingService: ref.watch(domainLoggerProvider),
     aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
     savedTaskFiltersRepository: ref.watch(savedTaskFiltersRepositoryProvider),
     agentRepository: ref.watch(agentRepositoryProvider),

@@ -5,7 +5,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/speech/model/audio_player_state.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
@@ -166,14 +166,7 @@ class AudioPlayerController extends Notifier<AudioPlayerState> {
   }
 
   void _initLogging() {
-    try {
-      _loggingService = getIt<DomainLogger>();
-    } catch (_) {
-      // No DomainLogger registered — nothing we can log this miss to.
-      // Production startup always registers it, so this catch is purely
-      // defensive against test/dev edge cases where the controller is
-      // constructed before service wiring.
-    }
+    _loggingService = ref.watch(domainLoggerProvider);
   }
 
   /// Lazily constructs the underlying media_kit [Player] and wires its event

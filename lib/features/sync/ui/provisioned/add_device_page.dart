@@ -344,6 +344,8 @@ class AddDeviceView extends ConsumerStatefulWidget {
 }
 
 class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
+  late final DomainLogger _logger;
+
   String? _handover;
   String? _checkCode;
   String? _localUserId;
@@ -376,6 +378,7 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
   @override
   void initState() {
     super.initState();
+    _logger = ref.read(domainLoggerProvider);
     widget.signal?.onRetry = _retryPolling;
     unawaited(_generate());
   }
@@ -418,7 +421,7 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
       // the zone — and the finally branch would meanwhile render "set up sync
       // on this device first", a misdiagnosis on a device that is set up.
       failed = true;
-      getIt<DomainLogger>().error(
+      _logger.error(
         LogDomain.sync,
         e,
         stackTrace: stackTrace,
@@ -472,7 +475,7 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
     if (deviceId == null || deviceId.isEmpty) {
       if (!_missingTargetIdentityLogged) {
         _missingTargetIdentityLogged = true;
-        getIt<DomainLogger>().error(
+        _logger.error(
           LogDomain.sync,
           StateError('Verified onboarding target has no Matrix device ID'),
           subDomain: 'addDeviceTarget',

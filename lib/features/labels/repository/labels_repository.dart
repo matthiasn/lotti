@@ -9,6 +9,7 @@ import 'package:lotti/features/labels/utils/labels_normalization.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/write_on_stored.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -20,7 +21,7 @@ final labelsRepositoryProvider = Provider<LabelsRepository>((ref) {
     getIt<PersistenceLogic>(),
     getIt<JournalDb>(),
     getIt<EntitiesCacheService>(),
-    getIt<DomainLogger>(),
+    ref.watch(domainLoggerProvider),
     getIt<UpdateNotifications>(),
   );
 });

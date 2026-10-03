@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/projects/ui/model/project_task_list_options.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// SettingsDb key prefix for a project's task-list grouping and ordering;
@@ -30,8 +31,11 @@ class ProjectTaskListOptionsController
   final String projectId;
   bool _edited = false;
 
+  late DomainLogger _logger;
+
   @override
   ProjectTaskListOptions build() {
+    _logger = ref.watch(domainLoggerProvider);
     unawaited(_load());
     return ProjectTaskListOptions.defaults;
   }
@@ -83,8 +87,7 @@ class ProjectTaskListOptionsController
   /// Both database paths run fire-and-forget, so a thrown error would surface
   /// as an unhandled asynchronous error; it is logged instead.
   void _report(String operation, Object error, StackTrace stackTrace) {
-    if (!getIt.isRegistered<DomainLogger>()) return;
-    getIt<DomainLogger>().error(
+    _logger.error(
       LogDomain.settings,
       error,
       stackTrace: stackTrace,

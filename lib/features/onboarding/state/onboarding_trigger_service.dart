@@ -113,7 +113,7 @@ final FutureProvider<void> onboardingRolloutBackfillProvider =
             'true',
           ),
           settingsDb: settingsDb,
-          logger: getIt<DomainLogger>(),
+          logger: ref.watch(domainLoggerProvider),
         );
       },
       name: 'onboardingRolloutBackfillProvider',
@@ -189,11 +189,15 @@ onboardingWelcomeCadenceProvider =
     );
 
 /// Persists the onboarding welcome's auto-show bookkeeping in [SettingsDb].
-/// Holds no meaningful state of its own ([build] is a no-op) -- the read
-/// side lives entirely in [shouldAutoShowOnboarding].
+/// Holds no meaningful state of its own ([build] only captures the logger)
+/// -- the read side lives entirely in [shouldAutoShowOnboarding].
 class OnboardingWelcomeCadence extends AsyncNotifier<void> {
+  late DomainLogger _logger;
+
   @override
-  FutureOr<void> build() {}
+  FutureOr<void> build() {
+    _logger = ref.watch(domainLoggerProvider);
+  }
 
   /// Records that the welcome auto-showed once more: bumps
   /// [onboardingWelcomeShownCountKey] and, only on the very first show,
@@ -228,7 +232,7 @@ class OnboardingWelcomeCadence extends AsyncNotifier<void> {
         );
       }
     } catch (error, stackTrace) {
-      getIt<DomainLogger>().error(
+      _logger.error(
         LogDomain.onboarding,
         error,
         stackTrace: stackTrace,

@@ -216,11 +216,16 @@ dailyOsOnboardingCadenceProvider =
     );
 
 /// Persists the Daily OS onboarding walkthrough's auto-show bookkeeping in
-/// [SettingsDb]. Holds no meaningful state of its own ([build] is a no-op) --
-/// the read side lives entirely in [shouldAutoShowDailyOsOnboarding].
+/// [SettingsDb]. Holds no meaningful state of its own ([build] only captures
+/// the logger) -- the read side lives entirely in
+/// [shouldAutoShowDailyOsOnboarding].
 class DailyOsOnboardingCadence extends AsyncNotifier<void> {
+  late DomainLogger _logger;
+
   @override
-  FutureOr<void> build() {}
+  FutureOr<void> build() {
+    _logger = ref.watch(domainLoggerProvider);
+  }
 
   /// Records that the walkthrough auto-showed once more: bumps
   /// [dailyOsOnboardingShownCountKey] and, only on the very first show, stamps
@@ -249,7 +254,7 @@ class DailyOsOnboardingCadence extends AsyncNotifier<void> {
         );
       }
     } catch (error, stackTrace) {
-      getIt<DomainLogger>().error(
+      _logger.error(
         LogDomain.onboarding,
         error,
         stackTrace: stackTrace,

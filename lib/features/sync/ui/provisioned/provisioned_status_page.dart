@@ -9,7 +9,6 @@ import 'package:lotti/features/sync/ui/widgets/matrix/auto_verification_launcher
 import 'package:lotti/features/sync/ui/widgets/matrix/diagnostic_info_button.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_devices_list.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_sticky_bar.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -85,6 +84,7 @@ class ProvisionedStatusWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final matrixService = ref.watch(matrixServiceProvider);
+    final logger = ref.watch(domainLoggerProvider);
     final messages = context.messages;
     final tokens = context.designTokens;
 
@@ -157,7 +157,7 @@ class ProvisionedStatusWidget extends ConsumerWidget {
                         // Silent failure left the pane showing a "configured"
                         // view of a config that had not been torn down, with
                         // nothing said and nothing logged.
-                        getIt<DomainLogger>().error(
+                        logger.error(
                           LogDomain.sync,
                           e,
                           stackTrace: stackTrace,

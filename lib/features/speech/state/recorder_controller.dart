@@ -9,7 +9,7 @@ import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/state/vu_meter.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/portals/portal_service.dart';
 import 'package:record/record.dart' show Amplitude;
@@ -63,7 +63,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   @override
   AudioRecorderState build() {
     _recorderRepository = ref.watch(audioRecorderRepositoryProvider);
-    _loggingService = getIt<DomainLogger>();
+    _loggingService = ref.watch(domainLoggerProvider);
 
     // Don't initialize AudioPlayerCubit here - it depends on MediaKit which might fail
     // We'll get it lazily when needed

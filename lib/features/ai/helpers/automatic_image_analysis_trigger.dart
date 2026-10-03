@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// Helper class to handle automatic image analysis after image import.
@@ -95,6 +95,6 @@ final automaticImageAnalysisTriggerProvider =
 AutomaticImageAnalysisTrigger automaticImageAnalysisTrigger(Ref ref) {
   return AutomaticImageAnalysisTrigger(
     ref: ref,
-    loggingService: getIt<DomainLogger>(),
+    loggingService: ref.watch(domainLoggerProvider),
   );
 }

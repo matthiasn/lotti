@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
 import 'package:lotti/features/whats_new/model/whats_new_release.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
@@ -12,7 +11,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../helpers/package_info.dart';
 import '../../../mocks/mocks.dart';
-import '../../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +20,7 @@ void main() {
   });
 
   late MockWhatsNewService mockService;
+  late MockDomainLogger logger;
   late ProviderContainer container;
 
   final testRelease1 = WhatsNewRelease(
@@ -58,11 +57,13 @@ void main() {
     // A high version keeps all test releases in range.
     mockPackageInfo(packageName: 'app.lotti', version: '99.99.99');
     mockService = MockWhatsNewService();
+    logger = MockDomainLogger();
     SharedPreferences.setMockInitialValues({});
 
     container = ProviderContainer(
       overrides: [
         whatsNewServiceProvider.overrideWithValue(mockService),
+        domainLoggerProvider.overrideWithValue(logger),
       ],
     );
   });
@@ -79,7 +80,10 @@ void main() {
     container.dispose();
     mockService = MockWhatsNewService();
     container = ProviderContainer(
-      overrides: [whatsNewServiceProvider.overrideWithValue(mockService)],
+      overrides: [
+        whatsNewServiceProvider.overrideWithValue(mockService),
+        domainLoggerProvider.overrideWithValue(logger),
+      ],
     );
   }
 
@@ -94,13 +98,6 @@ void main() {
     });
 
     test('a failed fetch is logged and degrades to an empty state', () async {
-      final logger = MockDomainLogger();
-      await setUpTestGetIt(
-        additionalSetup: () => getIt
-          ..unregister<DomainLogger>()
-          ..registerSingleton<DomainLogger>(logger),
-      );
-      addTearDown(tearDownTestGetIt);
       final error = Exception('index unreachable');
       when(() => mockService.fetchIndex()).thenAnswer((_) async => throw error);
 
@@ -305,6 +302,7 @@ void main() {
         overrides: [
           whatsNewServiceProvider.overrideWithValue(mockService),
           journalDbProvider.overrideWithValue(mockDb),
+          domainLoggerProvider.overrideWithValue(logger),
         ],
       );
     }

@@ -9,6 +9,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:material_ui/material_ui.dart';
@@ -71,8 +72,11 @@ class HabitSettingsController extends Notifier<HabitSettingsState> {
   final String _habitId;
   ProviderSubscription<AsyncValue<HabitDefinition?>>? _habitSubscription;
 
+  late DomainLogger _logger;
+
   @override
   HabitSettingsState build() {
+    _logger = ref.watch(domainLoggerProvider);
     ref.onDispose(() {
       _habitSubscription?.close();
     });
@@ -259,7 +263,7 @@ class HabitSettingsController extends Notifier<HabitSettingsState> {
     try {
       await getIt<NotificationService>().scheduleHabitNotification(dataType);
     } catch (exception, stackTrace) {
-      getIt<DomainLogger>().error(
+      _logger.error(
         LogDomain.habits,
         exception,
         stackTrace: stackTrace,

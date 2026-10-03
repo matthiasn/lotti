@@ -14,7 +14,7 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart'
-    show journalDbProvider, outboxServiceProvider;
+    show domainLoggerProvider, journalDbProvider, outboxServiceProvider;
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -762,7 +762,7 @@ final historicalSyncServiceProvider = Provider<HistoricalSyncService>(
     agentRepository: ref.watch(agentRepositoryProvider),
     outboxService: ref.watch(outboxServiceProvider),
     vectorClockService: getIt<VectorClockService>(),
-    logger: getIt<DomainLogger>(),
+    logger: ref.watch(domainLoggerProvider),
   ),
   name: 'historicalSyncServiceProvider',
 );

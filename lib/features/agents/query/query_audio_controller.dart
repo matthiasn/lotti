@@ -23,7 +23,7 @@ import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/features/tts/state/tts_settings_controller.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
@@ -97,7 +97,7 @@ class QueryAudioController extends Notifier<QueryAudioState> {
 
   @override
   QueryAudioState build() {
-    _logger = getIt<DomainLogger>();
+    _logger = ref.watch(domainLoggerProvider);
     _tts = ref.read(ttsPlaybackControllerProvider.notifier);
     ref
       ..listen(configFlagProvider('private'), (previous, next) {

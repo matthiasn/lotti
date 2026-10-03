@@ -11,8 +11,8 @@ import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_detail_section_card.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/app_prefs_service.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/share_service.dart';
@@ -55,6 +55,8 @@ class ChecklistCardWrapper extends ConsumerWidget {
     WidgetRef ref,
     Checklist checklist,
   ) {
+    // Captured now: the futures below may settle after this widget is gone.
+    final logger = ref.read(domainLoggerProvider);
     return Future.wait(
       checklist.data.linkedChecklistItems.map<Future<ChecklistItem?>>(
         (id) => ref
@@ -62,14 +64,12 @@ class ChecklistCardWrapper extends ConsumerWidget {
               checklistItemControllerProvider((id: id, taskId: taskId)).future,
             )
             .catchError((Object error, StackTrace stackTrace) {
-              if (getIt.isRegistered<DomainLogger>()) {
-                getIt<DomainLogger>().error(
-                  LogDomain.tasks,
-                  'Failed to resolve checklist item $id: $error',
-                  stackTrace: stackTrace,
-                  subDomain: '_resolveItems',
-                );
-              }
+              logger.error(
+                LogDomain.tasks,
+                'Failed to resolve checklist item $id: $error',
+                stackTrace: stackTrace,
+                subDomain: '_resolveItems',
+              );
               return null;
             }),
       ),
@@ -80,6 +80,7 @@ class ChecklistCardWrapper extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final provider = checklistControllerProvider((id: entryId, taskId: taskId));
     final notifier = ref.read(provider.notifier);
+    final logger = ref.watch(domainLoggerProvider);
     final checklist = ref.watch(provider).value;
 
     final completionRate = ref
@@ -206,14 +207,12 @@ class ChecklistCardWrapper extends ConsumerWidget {
                 subject: checklist.data.title,
               );
             } catch (error, stackTrace) {
-              if (getIt.isRegistered<DomainLogger>()) {
-                getIt<DomainLogger>().error(
-                  LogDomain.tasks,
-                  'Failed to share checklist: $error',
-                  stackTrace: stackTrace,
-                  subDomain: 'onShareMarkdown',
-                );
-              }
+              logger.error(
+                LogDomain.tasks,
+                'Failed to share checklist: $error',
+                stackTrace: stackTrace,
+                subDomain: 'onShareMarkdown',
+              );
             }
           },
         ),

@@ -11,8 +11,8 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_ui/material_ui.dart';
@@ -33,6 +33,14 @@ class AiSetupSection extends ConsumerStatefulWidget {
 }
 
 class _AiSetupSectionState extends ConsumerState<AiSetupSection> {
+  late final DomainLogger _logger;
+
+  @override
+  void initState() {
+    super.initState();
+    _logger = ref.read(domainLoggerProvider);
+  }
+
   bool _isRunning = false;
 
   /// Resolves the user-facing provider name through `aiProviderDisplayName`
@@ -89,7 +97,7 @@ class _AiSetupSectionState extends ConsumerState<AiSetupSection> {
       // forward the failure to the logging service and surface a toast instead
       // of letting repository/workflow exceptions escape the button callback.
       try {
-        getIt<DomainLogger>().error(
+        _logger.error(
           LogDomain.ai,
           error,
           stackTrace: stackTrace,

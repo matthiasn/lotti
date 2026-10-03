@@ -17,6 +17,7 @@ import 'package:lotti/features/sync/services/historical_sync_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/device_datetime.dart';
@@ -52,6 +53,8 @@ class ReSyncModalContent extends ConsumerStatefulWidget {
 }
 
 class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
+  late final DomainLogger _logger;
+
   late DateTime _dateFrom;
   late DateTime _dateTo;
   ReSyncRangePreset _rangePreset = ReSyncRangePreset.everything;
@@ -67,6 +70,7 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
   @override
   void initState() {
     super.initState();
+    _logger = ref.read(domainLoggerProvider);
     final today = clock.now().dateOnly;
     _dateFrom = today.subtract(const Duration(days: 30));
     _dateTo = today;
@@ -190,7 +194,7 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
         await _onboardingService.abortOutbound(onboardingRound);
         _setActiveOnboardingRound(null);
       } catch (abortError, abortStackTrace) {
-        getIt<DomainLogger>().error(
+        _logger.error(
           LogDomain.sync,
           abortError,
           stackTrace: abortStackTrace,
@@ -198,7 +202,7 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
         );
       }
     }
-    getIt<DomainLogger>().error(
+    _logger.error(
       LogDomain.sync,
       error,
       stackTrace: stackTrace,

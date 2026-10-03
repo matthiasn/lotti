@@ -4,6 +4,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// Analyses a photo added to a check-in the way a photo dropped on a task is
@@ -85,7 +86,7 @@ final checkInPhotoAnalysisTriggerProvider =
     Provider<CheckInPhotoAnalysisTrigger>(
       (ref) => CheckInPhotoAnalysisTrigger(
         ref: ref,
-        loggingService: getIt<DomainLogger>(),
+        loggingService: ref.watch(domainLoggerProvider),
         relationships: ref.watch(relationshipRepositoryProvider),
         journalDb: getIt<JournalDb>(),
       ),

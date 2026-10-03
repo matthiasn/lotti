@@ -11,6 +11,7 @@ import 'package:lotti/features/daily_os_next/state/daily_os_preferences_keys.dar
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 
@@ -80,6 +81,8 @@ class DailyOsPreferences {
 /// reaches other devices without a re-edit. The excluded-category set and
 /// coachmark flags remain device-local.
 class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
+  late DomainLogger _logger;
+
   bool _userNameEdited = false;
   bool _categoriesEdited = false;
 
@@ -89,6 +92,7 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
 
   @override
   DailyOsPreferences build() {
+    _logger = ref.watch(domainLoggerProvider);
     ref.onDispose(() {
       unawaited(_settingsNotificationSub?.cancel());
       EasyDebounce.cancel(_syncDebounceKey);
@@ -216,14 +220,12 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
         saved.updatedAt,
       );
     } catch (error, stackTrace) {
-      if (getIt.isRegistered<DomainLogger>()) {
-        getIt<DomainLogger>().error(
-          LogDomain.dailyOs,
-          error,
-          stackTrace: stackTrace,
-          subDomain: 'persist',
-        );
-      }
+      _logger.error(
+        LogDomain.dailyOs,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'persist',
+      );
     }
   }
 
@@ -248,14 +250,12 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
           // Record what we published so this name is not bootstrapped again.
           _save(dailyOsUserNameSyncedAtSettingsKey, updatedAt.toString());
         } catch (e, st) {
-          if (getIt.isRegistered<DomainLogger>()) {
-            getIt<DomainLogger>().error(
-              LogDomain.dailyOs,
-              e,
-              stackTrace: st,
-              subDomain: 'enqueue',
-            );
-          }
+          _logger.error(
+            LogDomain.dailyOs,
+            e,
+            stackTrace: st,
+            subDomain: 'enqueue',
+          );
         }
       },
     );
@@ -275,14 +275,12 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
         try {
           await _reloadUserNameFromSettings();
         } catch (e, st) {
-          if (getIt.isRegistered<DomainLogger>()) {
-            getIt<DomainLogger>().error(
-              LogDomain.dailyOs,
-              e,
-              stackTrace: st,
-              subDomain: 'reload',
-            );
-          }
+          _logger.error(
+            LogDomain.dailyOs,
+            e,
+            stackTrace: st,
+            subDomain: 'reload',
+          );
         }
       },
     );

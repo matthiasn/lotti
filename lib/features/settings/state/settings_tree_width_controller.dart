@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// Persisted settings key — intentionally distinct from the shared
@@ -31,6 +32,8 @@ const settingsTreeNavWidthPersistDebounce = Duration(milliseconds: 300);
 /// a compound value: the tree nav has exactly one variable dimension,
 /// and keeping the notifier scalar keeps its test surface minimal.
 class SettingsTreeNavWidth extends Notifier<double> {
+  late DomainLogger _logger;
+
   Timer? _debounce;
 
   /// Set once the user (or a programmatic reset) has committed an
@@ -55,6 +58,7 @@ class SettingsTreeNavWidth extends Notifier<double> {
 
   @override
   double build() {
+    _logger = ref.watch(domainLoggerProvider);
     ref.onDispose(() {
       _disposed = true;
       _debounce?.cancel();
@@ -85,7 +89,7 @@ class SettingsTreeNavWidth extends Notifier<double> {
       );
     } catch (error, stackTrace) {
       if (_disposed) return;
-      getIt<DomainLogger>().error(
+      _logger.error(
         LogDomain.settings,
         error,
         stackTrace: stackTrace,
@@ -157,7 +161,7 @@ class SettingsTreeNavWidth extends Notifier<double> {
       );
     } catch (error, stackTrace) {
       if (_disposed) return;
-      getIt<DomainLogger>().error(
+      _logger.error(
         LogDomain.settings,
         error,
         stackTrace: stackTrace,

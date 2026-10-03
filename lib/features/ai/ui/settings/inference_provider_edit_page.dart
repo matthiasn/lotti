@@ -32,8 +32,8 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_ui/material_ui.dart';
@@ -218,6 +218,14 @@ class InferenceProviderEditPage extends ConsumerStatefulWidget {
 
 class _InferenceProviderEditPageState
     extends ConsumerState<InferenceProviderEditPage> {
+  late final DomainLogger _logger;
+
+  @override
+  void initState() {
+    super.initState();
+    _logger = ref.read(domainLoggerProvider);
+  }
+
   bool _showApiKey = false;
   bool _isSaving = false;
   final FocusNode _apiKeyFocusNode = FocusNode();
@@ -397,7 +405,7 @@ class _InferenceProviderEditPageState
         // try/catch so a missing LoggingService registration in tests
         // does not mask the user-facing toast below.
         try {
-          getIt<DomainLogger>().error(
+          _logger.error(
             LogDomain.ai,
             error,
             stackTrace: stackTrace,
@@ -460,7 +468,7 @@ class _InferenceProviderEditPageState
         }
       } catch (error, stackTrace) {
         try {
-          getIt<DomainLogger>().error(
+          _logger.error(
             LogDomain.ai,
             error,
             stackTrace: stackTrace,
