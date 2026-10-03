@@ -1894,6 +1894,7 @@ data: [DONE]
             any<Object>(),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
             subDomain: any<String?>(named: 'subDomain'),
+            errorType: any<Type?>(named: 'errorType'),
           ),
         ).thenReturn(null);
 
@@ -1939,9 +1940,11 @@ data: not valid json 5
         verify(
           () => mockDomainLogger.error(
             LogDomain.ai,
-            any<Object>(that: isA<FormatException>()),
+            // Only the type: a FormatException's text quotes the response.
+            'FormatException',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
             subDomain: 'parse_threshold_exceeded',
+            errorType: FormatException,
           ),
         ).called(1);
       });
@@ -2530,6 +2533,7 @@ data: not valid json 5
             any<Object>(),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
             subDomain: any<String?>(named: 'subDomain'),
+            errorType: any<Type?>(named: 'errorType'),
           ),
         ).thenReturn(null);
 
@@ -2559,9 +2563,10 @@ data: not valid json 5
         verify(
           () => mockDomainLogger.error(
             LogDomain.ai,
-            any<Object>(that: isA<StateError>()),
+            'StateError',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
             subDomain: 'unexpected',
+            errorType: StateError,
           ),
         ).called(1);
       });
