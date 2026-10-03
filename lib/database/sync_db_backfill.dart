@@ -35,6 +35,13 @@ mixin _SyncDbBackfill on _$SyncDatabase {
   /// rows previously retired by age or retry limits. An active origin can
   /// make those counters repairable again. Oldest attempts go first so a
   /// permanently unavailable counter cannot starve later ones.
+  ///
+  /// Seeks `(host_id, status)`, so the cost follows the host's unresolved
+  /// rows. Left to itself the planner prefers the primary key's counter
+  /// range — even with fresh `ANALYZE` stats — and the tracker passes
+  /// `afterCounter = 0`, so every page walked the host's whole history to
+  /// find a handful of gaps (up to 791 ms on a real desktop, 2026-10-03, on
+  /// the single connection that vector-clock reservations wait on).
   Future<List<SyncSequenceLogItem>> getAnnouncedHeadRepairEntries({
     required String hostId,
     required int head,
@@ -43,29 +50,35 @@ mixin _SyncDbBackfill on _$SyncDatabase {
     int offset = 0,
     int afterCounter = 0,
     DateTime? now,
-  }) {
+  }) async {
     final cutoff = (now ?? clock.now()).subtract(retryCooldown);
-    return (select(syncSequenceLog)
-          ..where(
-            (t) =>
-                t.hostId.equals(hostId) &
-                t.counter.isBiggerOrEqualValue(1) &
-                t.counter.isBiggerThanValue(afterCounter) &
-                t.counter.isSmallerOrEqualValue(head) &
-                t.status.isIn([
-                  SyncSequenceStatus.missing.index,
-                  SyncSequenceStatus.requested.index,
-                  SyncSequenceStatus.unresolvable.index,
-                ]) &
-                (t.lastRequestedAt.isNull() |
-                    t.lastRequestedAt.isSmallerOrEqualValue(cutoff)),
-          )
-          ..orderBy([
-            (t) => OrderingTerm(expression: t.lastRequestedAt),
-            (t) => OrderingTerm(expression: t.counter),
-          ])
-          ..limit(limit, offset: offset))
-        .get();
+    final rows = await customSelect(
+      '''
+      SELECT * FROM sync_sequence_log
+        INDEXED BY idx_sync_sequence_log_host_status
+      WHERE host_id = ?
+        AND status IN (?, ?, ?)
+        AND counter >= 1
+        AND counter > ?
+        AND counter <= ?
+        AND (last_requested_at IS NULL OR last_requested_at <= ?)
+      ORDER BY last_requested_at, counter
+      LIMIT ? OFFSET ?
+      ''',
+      variables: [
+        Variable.withString(hostId),
+        Variable.withInt(SyncSequenceStatus.missing.index),
+        Variable.withInt(SyncSequenceStatus.requested.index),
+        Variable.withInt(SyncSequenceStatus.unresolvable.index),
+        Variable.withInt(afterCounter),
+        Variable.withInt(head),
+        Variable.withDateTime(cutoff),
+        Variable.withInt(limit),
+        Variable.withInt(offset),
+      ],
+      readsFrom: {syncSequenceLog},
+    ).get();
+    return [for (final row in rows) syncSequenceLog.map(row.data)];
   }
 
   /// Watch the number of sequence-log rows that are still genuinely missing.

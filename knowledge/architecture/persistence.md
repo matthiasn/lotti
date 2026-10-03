@@ -401,6 +401,15 @@ existing `idx_sync_sequence_log_host_status` index and sorting that sparse
 subset. This deliberately avoids SQLite choosing a host/counter history scan
 merely to satisfy ordering. The query has no new index or migration cost.
 
+The announced-head repair sweep (`getAnnouncedHeadRepairEntries` in
+`lib/database/sync_db_backfill.dart`) is pinned to the same index with
+`INDEXED BY`. Left to itself, SQLite prefers the primary key's counter range
+even with fresh `ANALYZE` stats. The head tracker starts that range at 0, so
+every page walked the host's whole history to find a few unresolved rows. It did
+this on `sync.sqlite`'s single connection, the one that vector-clock
+reservations inside agent and journal transactions wait on. Seeking
+`(host_id, status)` makes the cost follow the host's unresolved rows instead.
+
 # Conditional journal writes
 
 `PersistenceLogic.updateDbEntity` forwards an optional read-only `precondition`

@@ -290,6 +290,51 @@ void main() {
     },
   );
 
+  test(
+    'announced heads seek the host status index and honour the counter window',
+    () async {
+      final database = SyncDatabase(inMemoryDatabase: true);
+      addTearDown(database.close);
+      final at = DateTime.utc(2026, 10, 3);
+      for (var counter = 1; counter <= 300; counter++) {
+        await _insertSequenceRow(
+          database,
+          hostId: 'origin',
+          counter: counter,
+          status: switch (counter) {
+            50 || 150 || 250 => SyncSequenceStatus.missing,
+            200 => SyncSequenceStatus.unresolvable,
+            _ => SyncSequenceStatus.received,
+          },
+          createdAt: at,
+        );
+      }
+      // Planner stats as a long-lived database has them: without them SQLite
+      // guesses, and the guess is what this test must not depend on.
+      await database.customStatement('ANALYZE');
+
+      final capture = SelectPlanCapture();
+      final entries = await database.runWithInterceptor(
+        () => database.getAnnouncedHeadRepairEntries(
+          hostId: 'origin',
+          head: 249,
+          limit: 10,
+          afterCounter: 50,
+          retryCooldown: Duration.zero,
+          now: at,
+        ),
+        interceptor: capture,
+      );
+
+      expect(entries.map((e) => e.counter), [150, 200]);
+      expect(
+        capture.formattedPlan,
+        contains('idx_sync_sequence_log_host_status'),
+      );
+      expect(capture.formattedPlan, isNot(contains('sqlite_autoindex')));
+    },
+  );
+
   group('getBackfillStats Tests', () {
     setUpAll(() async {
       db = SyncDatabase(inMemoryDatabase: true);
