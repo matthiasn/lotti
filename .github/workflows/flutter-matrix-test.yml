@@ -30,11 +30,11 @@ jobs:
       database: ${{ steps.filter.outputs.database }}
       sync: ${{ steps.filter.outputs.sync }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         if: github.event_name == 'push'
       # On a feature branch the diff runs against the merge-base with the
       # default branch, i.e. the whole branch rather than only the last push.
-      - uses: dorny/paths-filter@v4
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4
         id: filter
         if: github.event_name == 'push'
         with:
@@ -117,9 +117,9 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       - name: Cache Pub Packages
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.pub-cache
           key: ${{ runner.os }}-pub-v1-${{ hashFiles('pubspec.lock') }}
@@ -128,11 +128,11 @@ jobs:
       - name: Install libraries
         run: sudo apt-get install -y --no-install-recommends libgtk-3-dev cmake libolm3 cmake-doc ninja-build libsecret-1-dev libjsoncpp-dev libsecret-1-0 sqlite3 libsqlite3-dev keybinder-3.0 network-manager mpv libmpv-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-good gstreamer1.0-plugins-bad
       - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
         with:
           toolchain: stable
       - name: Cache Cargo dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: |
             ~/.cargo/registry
@@ -140,9 +140,9 @@ jobs:
           key: ${{ runner.os }}-matrix-cargo-${{ hashFiles('pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-matrix-cargo-
-      - uses: kuhnroyal/flutter-fvm-config-action@v2
+      - uses: kuhnroyal/flutter-fvm-config-action@4155f8ca4c30a4f2f50df69caa0e4259f6cd1142 # v2
         id: fvm-config-action
-      - uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
           channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
@@ -150,11 +150,11 @@ jobs:
           pub-cache: false
       - name: Get Flutter dependencies
         run: flutter pub get --offline --enforce-lockfile || flutter pub get --enforce-lockfile
-      - uses: hoverkraft-tech/compose-action@v2.0.0
+      - uses: hoverkraft-tech/compose-action@802a148945af6399a338c7906c267331b39a71af # v2.0.0
         with:
           cwd: "integration_test/docker"
       - name: Run Matrix integration tests
-        uses: GabrielBB/xvfb-action@v1.6
+        uses: GabrielBB/xvfb-action@86d97bde4a65fe9b290c0b3fb92c2c4ed0e5302d # v1.6
         env:
           SLOW_NETWORK: false
         with:
@@ -175,9 +175,9 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       - name: Cache Pub Packages
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.pub-cache
           key: ${{ runner.os }}-pub-v1-${{ hashFiles('pubspec.lock') }}
@@ -186,11 +186,11 @@ jobs:
       - name: Install libraries
         run: sudo apt-get install -y --no-install-recommends libgtk-3-dev cmake libolm3 cmake-doc ninja-build libsecret-1-dev libjsoncpp-dev libsecret-1-0 sqlite3 libsqlite3-dev keybinder-3.0 network-manager mpv libmpv-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-good gstreamer1.0-plugins-bad
       - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
         with:
           toolchain: stable
       - name: Cache Cargo dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: |
             ~/.cargo/registry
@@ -198,9 +198,9 @@ jobs:
           key: ${{ runner.os }}-matrix-cargo-${{ hashFiles('pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-matrix-cargo-
-      - uses: kuhnroyal/flutter-fvm-config-action@v2
+      - uses: kuhnroyal/flutter-fvm-config-action@4155f8ca4c30a4f2f50df69caa0e4259f6cd1142 # v2
         id: fvm-config-action
-      - uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
           channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
@@ -208,11 +208,11 @@ jobs:
           pub-cache: false
       - name: Get Flutter dependencies
         run: flutter pub get --offline --enforce-lockfile || flutter pub get --enforce-lockfile
-      - uses: hoverkraft-tech/compose-action@v2.0.0
+      - uses: hoverkraft-tech/compose-action@802a148945af6399a338c7906c267331b39a71af # v2.0.0
         with:
           cwd: "integration_test/docker"
       - name: Run Matrix integration tests (degraded)
-        uses: GabrielBB/xvfb-action@v1.6
+        uses: GabrielBB/xvfb-action@86d97bde4a65fe9b290c0b3fb92c2c4ed0e5302d # v1.6
         env:
           SLOW_NETWORK: true
         with:
@@ -229,9 +229,9 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       - name: Cache Pub Packages
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.pub-cache
           key: ${{ runner.os }}-pub-v1-${{ hashFiles('pubspec.lock') }}
@@ -240,11 +240,11 @@ jobs:
       - name: Install libraries
         run: sudo apt-get install -y --no-install-recommends libgtk-3-dev cmake libolm3 cmake-doc ninja-build libsecret-1-dev libjsoncpp-dev libsecret-1-0 sqlite3 libsqlite3-dev keybinder-3.0 network-manager mpv libmpv-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-good gstreamer1.0-plugins-bad
       - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
         with:
           toolchain: stable
       - name: Cache Cargo dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: |
             ~/.cargo/registry
@@ -252,9 +252,9 @@ jobs:
           key: ${{ runner.os }}-matrix-cargo-${{ hashFiles('pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-matrix-cargo-
-      - uses: kuhnroyal/flutter-fvm-config-action@v2
+      - uses: kuhnroyal/flutter-fvm-config-action@4155f8ca4c30a4f2f50df69caa0e4259f6cd1142 # v2
         id: fvm-config-action
-      - uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
           channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
@@ -262,11 +262,11 @@ jobs:
           pub-cache: false
       - name: Get Flutter dependencies
         run: flutter pub get --offline --enforce-lockfile || flutter pub get --enforce-lockfile
-      - uses: hoverkraft-tech/compose-action@v2.0.0
+      - uses: hoverkraft-tech/compose-action@802a148945af6399a338c7906c267331b39a71af # v2.0.0
         with:
           cwd: "integration_test/docker"
       - name: Run sync resilience tests
-        uses: GabrielBB/xvfb-action@v1.6
+        uses: GabrielBB/xvfb-action@86d97bde4a65fe9b290c0b3fb92c2c4ed0e5302d # v1.6
         env:
           SLOW_NETWORK: false
         with:
@@ -277,7 +277,7 @@ jobs:
             ./setup_toxiproxy_docker.sh
             ./run_resilience_tests.sh --no-pub --file-reporter=json:reports/resilience.json
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: resilience-results
@@ -295,9 +295,9 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       - name: Cache Pub Packages
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.pub-cache
           key: ${{ runner.os }}-pub-v1-${{ hashFiles('pubspec.lock') }}
@@ -306,11 +306,11 @@ jobs:
       - name: Install libraries
         run: sudo apt-get install -y --no-install-recommends libgtk-3-dev cmake libolm3 cmake-doc ninja-build libsecret-1-dev libjsoncpp-dev libsecret-1-0 sqlite3 libsqlite3-dev keybinder-3.0 network-manager mpv libmpv-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-good gstreamer1.0-plugins-bad
       - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
         with:
           toolchain: stable
       - name: Cache Cargo dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: |
             ~/.cargo/registry
@@ -318,9 +318,9 @@ jobs:
           key: ${{ runner.os }}-matrix-cargo-${{ hashFiles('pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-matrix-cargo-
-      - uses: kuhnroyal/flutter-fvm-config-action@v2
+      - uses: kuhnroyal/flutter-fvm-config-action@4155f8ca4c30a4f2f50df69caa0e4259f6cd1142 # v2
         id: fvm-config-action
-      - uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
           channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
@@ -331,13 +331,13 @@ jobs:
       - name: Prepare reports directory
         run: mkdir -p reports
       - name: Run note persistence integration test
-        uses: GabrielBB/xvfb-action@v1.6
+        uses: GabrielBB/xvfb-action@86d97bde4a65fe9b290c0b3fb92c2c4ed0e5302d # v1.6
         with:
           run: flutter test integration_test/home_integration_test.dart --no-pub --file-reporter=json:reports/home.json
       - name: Summarize integration results
         if: always()
         run: dart run test/tool/analyze_test_timings.dart reports/home.json | tee -a "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: home-integration-results

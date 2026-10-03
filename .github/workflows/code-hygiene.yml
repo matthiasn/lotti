@@ -32,13 +32,13 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           fetch-depth: 0
           persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.13"
 
@@ -67,7 +67,7 @@ jobs:
           test -s "$REPORT_DIR/render.png"
 
       - name: Upload report for workflow review
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: code-hygiene-${{ github.sha }}
           path: |
@@ -93,7 +93,7 @@ jobs:
 
     steps:
       - name: Download analyzed report
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
           name: code-hygiene-${{ github.sha }}
           path: ${{ env.REPORT_DIR }}

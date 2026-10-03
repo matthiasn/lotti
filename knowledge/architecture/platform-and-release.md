@@ -99,7 +99,7 @@ Every push to every branch runs:
 
 | Workflow | What it enforces |
 |----------|------------------|
-| `flutter-analyze.yml` | `flutter analyze` — the zero-warning policy |
+| `flutter-analyze.yml` | `flutter analyze` — the zero-warning policy — plus the convention checks: design-system icons, release-note fragments, property-test tags, and every GitHub Action pinned to a full commit SHA |
 | `flutter-test-linux-faster.yml` | The fast unit/widget test lane on Linux |
 | `okf-validate.yml` | This knowledge bundle stays conformant and its code pointers still resolve |
 
@@ -118,6 +118,17 @@ GetIt wiring, the Linux runner, the workflow), the database, persistence or
 journal code, or the tutorial harness and fixtures it boots the app with
 changed. Scheduled and manual runs, and any run whose filter job fails,
 execute everything. None of these jobs is a required status check.
+
+**Actions are pinned to commits, not tags.** A tag can be moved to different
+code after review, and the release workflows hold signing keys and store
+credentials, so every `uses:` names a full commit SHA with the human-readable
+tag kept as a trailing comment (`actions/checkout@<sha> # v5`).
+`tool/ci/check_action_pins.dart` fails the analyze job on any tag or branch
+reference in the workflows GitHub executes — the top level of
+`.github/workflows/` and composite actions under `.github/actions/`; the inert
+`workflows/archive/` is not checked. Dependabot is disabled for this
+repository, so bumping an action means resolving the new tag's commit and
+updating the pin and its comment together.
 
 There is no build-only macOS or Android job on pull requests: tag pushes build
 both platforms in the release workflows, and those builds are the ones that get
