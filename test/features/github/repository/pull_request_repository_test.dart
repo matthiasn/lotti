@@ -166,17 +166,63 @@ void main() {
     });
 
     test(
-      'a pull request another task holds is not linked again: it belongs to '
-      'one task',
+      'a pull request another task holds is linked to a second task only '
+      'once the user confirmed it',
       () async {
         await linked();
         final other = await anotherTask();
 
-        final attempt = await repository.link(taskId: other, ref: ref);
-
-        expect(attempt.linked, isNull);
-        expect(attempt.heldBy, {taskId});
+        final unasked = await repository.link(taskId: other, ref: ref);
+        expect(unasked.linked, isNull);
+        expect(unasked.heldBy, {taskId});
         expect(await repository.forTask(other), isEmpty);
+
+        final confirmed = await repository.link(
+          taskId: other,
+          ref: ref,
+          alsoElsewhere: true,
+        );
+        expect(confirmed.linked, isNotNull);
+        expect(await repository.forTask(other), hasLength(1));
+        expect(await repository.holdersOf([ref]), {
+          ref.key: {taskId, other},
+        });
+      },
+    );
+
+    test(
+      'a confirmed link still refuses a pull request this task holds '
+      '(RecheckAtConfirm)',
+      () async {
+        await linked();
+
+        final again = await repository.link(
+          taskId: taskId,
+          ref: ref,
+          alsoElsewhere: true,
+        );
+
+        expect(again.linked, isNull);
+        expect(again.heldBy, {taskId});
+        expect(await repository.forTask(taskId), hasLength(1));
+      },
+    );
+
+    test(
+      "unlinking from one task leaves another task's link to the same pull "
+      'request',
+      () async {
+        await linked();
+        final other = await anotherTask();
+        await repository.link(taskId: other, ref: ref, alsoElsewhere: true);
+
+        await repository.unlink(taskId: taskId, ref: ref);
+
+        expect(await repository.forTask(taskId), isEmpty);
+        expect(await repository.forTask(other), hasLength(1));
+        expect(await repository.holdersOf([ref]), {
+          ref.key: {other},
+        });
       },
     );
 

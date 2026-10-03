@@ -6587,7 +6587,20 @@ class AppLocalizationsPt extends AppLocalizations {
       'Criar imagem a partir da descrição de voz';
 
   @override
-  String get githubAlsoLinkedElsewhere => 'Também vinculada a outra tarefa';
+  String githubAlsoLinkedElsewhere(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Também vinculada a outras $count tarefas',
+      one: 'Também vinculada a outra tarefa',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String githubAlsoLinkedTo(String title) {
+    return 'Também vinculada a “$title”';
+  }
 
   @override
   String githubChecksFailing(int count) {
@@ -6666,8 +6679,28 @@ class AppLocalizationsPt extends AppLocalizations {
   String get githubLinkButton => 'Vincular';
 
   @override
-  String get githubLinkedElsewhere =>
-      'Esta pull request já está vinculada a outra tarefa.';
+  String githubLinkedElsewhere(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Esta pull request já está vinculada a outras $count tarefas. Vincular também a esta tarefa?',
+      one:
+          'Esta pull request já está vinculada a outra tarefa. Vincular também a esta tarefa?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String githubLinkedElsewhereNamed(String title) {
+    return 'Esta pull request já está vinculada a “$title”. Vincular também a esta tarefa?';
+  }
+
+  @override
+  String get githubLinkElsewhereDecline => 'Não vincular';
+
+  @override
+  String get githubLinkHereToo => 'Vincular aqui também';
 
   @override
   String get githubLinkNotAPullRequest => 'Isso não é uma pull request.';

@@ -3633,7 +3633,26 @@
   "geminiThinkingModeMinimalLabel": "Minimal",
   "generateCoverArt": "Generate Cover Art",
   "generateCoverArtSubtitle": "Create image from voice description",
-  "githubAlsoLinkedElsewhere": "Also linked to another task",
+  "githubAlsoLinkedElsewhere": "{count, plural, =1{Also linked to another task} other{Also linked to {count} other tasks}}",
+  "@githubAlsoLinkedElsewhere": {
+    "description": "Status line part: how many other tasks also hold this pull request, when none of them can be named.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "1"
+      }
+    }
+  },
+  "githubAlsoLinkedTo": "Also linked to “{title}”",
+  "@githubAlsoLinkedTo": {
+    "description": "Status line part: the one other task that also holds this pull request, by title.",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Teach the chicks to dive"
+      }
+    }
+  },
   "githubChecksFailing": "{count, plural, =1{1 check failing} other{{count} checks failing}}",
   "@githubChecksFailing": {
     "description": "Status line part: how many CI checks of a pull request fail.",
@@ -3679,7 +3698,28 @@
   "githubFailureUnauthorized": "GitHub rejected the token. It may have expired or been revoked.",
   "githubLinkAlreadyLinked": "This pull request is already linked to this task.",
   "githubLinkButton": "Link",
-  "githubLinkedElsewhere": "This pull request is already linked to another task.",
+  "githubLinkedElsewhere": "{count, plural, =1{This pull request is already linked to another task. Link it to this task as well?} other{This pull request is already linked to {count} other tasks. Link it to this task as well?}}",
+  "@githubLinkedElsewhere": {
+    "description": "Question in the link modal: other tasks already hold this pull request; link it here as well?",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "1"
+      }
+    }
+  },
+  "githubLinkedElsewhereNamed": "This pull request is already linked to “{title}”. Link it to this task as well?",
+  "@githubLinkedElsewhereNamed": {
+    "description": "Question in the link modal: the named task already holds this pull request; link it here as well?",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Teach the chicks to dive"
+      }
+    }
+  },
+  "githubLinkElsewhereDecline": "Don't link",
+  "githubLinkHereToo": "Link here too",
   "githubLinkNotAPullRequest": "That is not a pull request.",
   "githubLinkNotGitHub": "That is not a link to github.com.",
   "githubLinkNotStored": "The link could not be saved. Try again.",

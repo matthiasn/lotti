@@ -6522,7 +6522,20 @@ class AppLocalizationsDa extends AppLocalizations {
       'Opret billede ud fra stemmebeskrivelse';
 
   @override
-  String get githubAlsoLinkedElsewhere => 'Også knyttet til en anden opgave';
+  String githubAlsoLinkedElsewhere(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Også knyttet til $count andre opgaver',
+      one: 'Også knyttet til en anden opgave',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String githubAlsoLinkedTo(String title) {
+    return 'Også knyttet til “$title”';
+  }
 
   @override
   String githubChecksFailing(int count) {
@@ -6601,8 +6614,28 @@ class AppLocalizationsDa extends AppLocalizations {
   String get githubLinkButton => 'Knyt';
 
   @override
-  String get githubLinkedElsewhere =>
-      'Denne pull request er allerede knyttet til en anden opgave.';
+  String githubLinkedElsewhere(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Denne pull request er allerede knyttet til $count andre opgaver. Vil du også knytte den til denne opgave?',
+      one:
+          'Denne pull request er allerede knyttet til en anden opgave. Vil du også knytte den til denne opgave?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String githubLinkedElsewhereNamed(String title) {
+    return 'Denne pull request er allerede knyttet til “$title”. Vil du også knytte den til denne opgave?';
+  }
+
+  @override
+  String get githubLinkElsewhereDecline => 'Knyt ikke';
+
+  @override
+  String get githubLinkHereToo => 'Knyt også her';
 
   @override
   String get githubLinkNotAPullRequest => 'Det er ikke en pull request.';

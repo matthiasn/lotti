@@ -6548,7 +6548,20 @@ class AppLocalizationsNl extends AppLocalizations {
       'Afbeelding aanmaken van spraakbeschrijving';
 
   @override
-  String get githubAlsoLinkedElsewhere => 'Ook aan een andere taak gekoppeld';
+  String githubAlsoLinkedElsewhere(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Ook aan $count andere taken gekoppeld',
+      one: 'Ook aan een andere taak gekoppeld',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String githubAlsoLinkedTo(String title) {
+    return 'Ook aan ‘$title’ gekoppeld';
+  }
 
   @override
   String githubChecksFailing(int count) {
@@ -6627,8 +6640,28 @@ class AppLocalizationsNl extends AppLocalizations {
   String get githubLinkButton => 'Koppelen';
 
   @override
-  String get githubLinkedElsewhere =>
-      'Deze pull request is al aan een andere taak gekoppeld.';
+  String githubLinkedElsewhere(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Deze pull request is al aan $count andere taken gekoppeld. Ook aan deze taak koppelen?',
+      one:
+          'Deze pull request is al aan een andere taak gekoppeld. Ook aan deze taak koppelen?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String githubLinkedElsewhereNamed(String title) {
+    return 'Deze pull request is al aan ‘$title’ gekoppeld. Ook aan deze taak koppelen?';
+  }
+
+  @override
+  String get githubLinkElsewhereDecline => 'Niet koppelen';
+
+  @override
+  String get githubLinkHereToo => 'Ook hier koppelen';
 
   @override
   String get githubLinkNotAPullRequest => 'Dat is geen pull request.';

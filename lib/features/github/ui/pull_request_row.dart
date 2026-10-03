@@ -13,6 +13,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/github/ui/github_failure_message.dart';
+import 'package:lotti/features/github/ui/linked_elsewhere.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/markdown_link_utils.dart';
@@ -38,20 +39,28 @@ enum PullRequestTone { neutral, good, attention, bad }
 /// is the only sign of it.
 ///
 /// [snapshot] is null before the first successful refresh. [failure] is the
-/// last refresh's failure on this device, if it failed. [alsoElsewhere] says
-/// another task holds the pull request too — two devices linked it before
-/// they synced — and comes first, since only the user can settle it.
+/// last refresh's failure on this device, if it failed. [alsoLinkedTo] are
+/// the other tasks that hold the pull request too, by title — null for one
+/// the viewer may not see. They come first: a pull request serving two tasks
+/// is often meant, after the user confirmed it, but two devices that linked
+/// it before they synced did it by accident, and only the user can tell.
 List<(String, PullRequestTone)> pullRequestStatusParts(
   AppLocalizations messages, {
   required PullRequestSnapshot? snapshot,
   required PullRequestRefreshFailed? failure,
   required DateTime now,
-  bool alsoElsewhere = false,
+  List<String?> alsoLinkedTo = const [],
 }) {
   const neutral = PullRequestTone.neutral;
+  final title = soleLinkedElsewhereTitle(alsoLinkedTo);
   final elsewhere = [
-    if (alsoElsewhere)
-      (messages.githubAlsoLinkedElsewhere, PullRequestTone.bad),
+    if (alsoLinkedTo.isNotEmpty)
+      (
+        title != null
+            ? messages.githubAlsoLinkedTo(title)
+            : messages.githubAlsoLinkedElsewhere(alsoLinkedTo.length),
+        PullRequestTone.attention,
+      ),
   ];
   if (snapshot == null) {
     return [
@@ -265,7 +274,10 @@ class _PullRequestRowState extends ConsumerState<PullRequestRow> {
       snapshot: snapshot,
       failure: refresh.failure,
       now: clock.now(),
-      alsoElsewhere: holders.any((task) => task != widget.taskId),
+      alsoLinkedTo: watchLinkedElsewhereTitles(
+        ref,
+        holders.where((task) => task != widget.taskId),
+      ),
     );
     // The list item's own subtitle style, recoloured per part: the spans keep
     // its type and change only the ink.

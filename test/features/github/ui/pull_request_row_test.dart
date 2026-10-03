@@ -278,23 +278,45 @@ void main() {
       );
     });
 
-    test('a double assignment leads the line, observed or not', () {
-      List<String> flagged(PullRequestSnapshot? snapshot) => [
-        for (final (word, _) in pullRequestStatusParts(
+    test(
+      'other tasks holding the pull request lead the line, observed or not, '
+      'as something to look at rather than an error',
+      () {
+        List<(String, PullRequestTone)> flagged(
+          PullRequestSnapshot? snapshot,
+          List<String?> alsoLinkedTo,
+        ) => pullRequestStatusParts(
           messages,
           snapshot: snapshot,
           failure: null,
           now: now,
-          alsoElsewhere: true,
-        ))
-          word,
-      ];
-      expect(flagged(prSnapshot()).first, 'Also linked to another task');
-      expect(flagged(null), [
-        'Also linked to another task',
-        'Not refreshed yet',
-      ]);
-    });
+          alsoLinkedTo: alsoLinkedTo,
+        );
+
+        expect(
+          flagged(prSnapshot(), ['Teach the chicks']).first,
+          ('Also linked to “Teach the chicks”', PullRequestTone.attention),
+        );
+        // A task private mode hides is counted, never named.
+        expect(
+          flagged(prSnapshot(), [null]).first,
+          ('Also linked to another task', PullRequestTone.attention),
+        );
+        expect(
+          flagged(prSnapshot(), ['Teach the chicks', null]).first.$1,
+          'Also linked to 2 other tasks',
+        );
+        expect(
+          [
+            for (final (word, _) in flagged(null, [null])) word,
+          ],
+          [
+            'Also linked to another task',
+            'Not refreshed yet',
+          ],
+        );
+      },
+    );
 
     test('before any observation there is nothing to claim', () {
       expect(words(null), ['Not refreshed yet']);
@@ -325,6 +347,7 @@ void main() {
       WidgetTester tester,
       PullRequestEntry entry, {
       Set<String> holders = const {'task-1'},
+      Map<String, String> titles = const {},
     }) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -334,6 +357,9 @@ void main() {
             pullRequestRepositoryProvider.overrideWithValue(repository),
             pullRequestHoldersProvider.overrideWith(
               (ref, pr) => Stream.value(holders),
+            ),
+            pullRequestHolderTitleProvider.overrideWith(
+              (ref, id) => Stream.value(titles[id]),
             ),
           ],
         ),
@@ -467,6 +493,32 @@ void main() {
           findRichText: true,
         );
         expect(flagged, findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'the other task is named when the viewer may see it, whether the user '
+      'linked it there on purpose or another device did',
+      (tester) async {
+        final entry = prEntry(clock: {'a': 1}, snapshot: prSnapshot());
+
+        await withClock(
+          Clock.fixed(now),
+          () => pump(
+            tester,
+            entry,
+            holders: {'task-1', 'task-2'},
+            titles: {'task-2': 'Teach the chicks'},
+          ),
+        );
+
+        expect(
+          find.textContaining(
+            'Also linked to “Teach the chicks” · Open',
+            findRichText: true,
+          ),
+          findsOneWidget,
+        );
       },
     );
 

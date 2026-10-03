@@ -46,10 +46,15 @@ final class PullRequestLinkRejected extends PullRequestLinkResult {
   final PullRequestRefRejection reason;
 }
 
-/// Another task holds the pull request: it belongs to one task.
+/// Other tasks hold the pull request, so nothing was linked yet: a pull
+/// request may serve more than one task, but only on purpose. Linking [ref]
+/// again with `alsoElsewhere` is the user's confirmation.
 final class PullRequestLinkedElsewhere extends PullRequestLinkResult {
-  const PullRequestLinkedElsewhere(this.taskIds);
+  const PullRequestLinkedElsewhere(this.taskIds, this.ref);
+
+  /// The other tasks that hold it, never the one being linked.
   final Set<String> taskIds;
+  final PullRequestRef ref;
 }
 
 /// The entry could not be stored: nothing was linked.
@@ -111,16 +116,23 @@ class PullRequestService {
     return link(taskId: taskId, ref: ref);
   }
 
-  /// Links [ref] to [taskId], picked or pasted. A pull request a task holds
-  /// already is refused before GitHub is asked; then it is read, so a pull
-  /// request the token cannot see links nothing; then the repository links
-  /// it, checking again (`specs/tla/PullRequestAssignment.tla`).
+  /// Links [ref] to [taskId], picked or pasted.
+  ///
+  /// A pull request this task holds is refused, and one another task holds
+  /// is asked about ([PullRequestLinkedElsewhere]) — both before GitHub is
+  /// asked — unless [alsoElsewhere] says the user confirmed linking it here
+  /// as well. Then it is read, so a pull request the token cannot see links
+  /// nothing, and the repository links it, checking again
+  /// (`specs/tla/PullRequestAssignment.tla`).
   Future<PullRequestLinkResult> link({
     required String taskId,
     required PullRequestRef ref,
+    bool alsoElsewhere = false,
   }) async {
     final holders = (await _entries.holdersOf([ref]))[ref.key];
-    if (holders != null) return _held(taskId, holders);
+    if (holders != null && (!alsoElsewhere || holders.contains(taskId))) {
+      return _held(taskId, holders, ref);
+    }
     final observed = await _observe(ref);
     if (observed case PullRequestRefreshFailed(:final kind, :final retryAt)) {
       return PullRequestLinkFailed(kind, retryAt: retryAt);
@@ -129,17 +141,21 @@ class PullRequestService {
       taskId: taskId,
       ref: ref,
       snapshot: (observed as PullRequestRefreshed).observation,
+      alsoElsewhere: alsoElsewhere,
     );
     final linked = attempt.linked;
     if (linked != null) return PullRequestLinked(linked);
-    if (attempt.heldBy.isNotEmpty) return _held(taskId, attempt.heldBy);
+    if (attempt.heldBy.isNotEmpty) return _held(taskId, attempt.heldBy, ref);
     return const PullRequestLinkNotStored();
   }
 
-  static PullRequestLinkResult _held(String taskId, Set<String> holders) =>
-      holders.contains(taskId)
+  static PullRequestLinkResult _held(
+    String taskId,
+    Set<String> holders,
+    PullRequestRef ref,
+  ) => holders.contains(taskId)
       ? const PullRequestAlreadyLinked()
-      : PullRequestLinkedElsewhere(holders);
+      : PullRequestLinkedElsewhere(holders, ref);
 
   /// The open pull requests of [repository] that no task holds, for the
   /// picker, newest first as GitHub lists them. What it shows can be stale

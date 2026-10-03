@@ -101,7 +101,8 @@ void main() {
     });
 
     test(
-      'a pull request another task holds is refused before GitHub is asked',
+      'a pull request another task holds is asked about before GitHub is '
+      'asked, carrying what to link if the user confirms',
       () async {
         when(() => repository.holdersOf(any())).thenAnswer(
           (_) async => {
@@ -111,7 +112,64 @@ void main() {
 
         final result = await service.link(taskId: taskId, ref: ref);
 
-        expect((result as PullRequestLinkedElsewhere).taskIds, {'other-task'});
+        final asked = result as PullRequestLinkedElsewhere;
+        expect(asked.taskIds, {'other-task'});
+        expect(asked.ref, ref);
+        verifyZeroInteractions(client);
+      },
+    );
+
+    test(
+      'confirmed, a pull request another task holds is read and linked here '
+      'too',
+      () async {
+        final entry = prEntry(clock: {'a': 1}, snapshot: prSnapshot());
+        when(() => repository.holdersOf(any())).thenAnswer(
+          (_) async => {
+            ref.key: {'other-task'},
+          },
+        );
+        answers(prSnapshot());
+        when(
+          () => repository.link(
+            taskId: taskId,
+            ref: ref,
+            snapshot: prSnapshot(),
+            alsoElsewhere: true,
+          ),
+        ).thenAnswer((_) async => PullRequestLinkAttempt(linked: entry));
+
+        final result = await service.link(
+          taskId: taskId,
+          ref: ref,
+          alsoElsewhere: true,
+        );
+
+        expect((result as PullRequestLinked).entry, entry);
+        verify(() => client.fetchPullRequest(ref, token: token)).called(1);
+      },
+    );
+
+    test(
+      'confirmed or not, a pull request this task holds is refused, even '
+      'when another task holds it too',
+      () async {
+        when(() => repository.holdersOf(any())).thenAnswer(
+          (_) async => {
+            ref.key: {taskId, 'other-task'},
+          },
+        );
+
+        for (final alsoElsewhere in [false, true]) {
+          expect(
+            await service.link(
+              taskId: taskId,
+              ref: ref,
+              alsoElsewhere: alsoElsewhere,
+            ),
+            isA<PullRequestAlreadyLinked>(),
+          );
+        }
         verifyZeroInteractions(client);
       },
     );
@@ -135,10 +193,9 @@ void main() {
         );
 
         heldBy({'other-task'});
-        expect(
-          await service.link(taskId: taskId, ref: ref),
-          isA<PullRequestLinkedElsewhere>(),
-        );
+        final asked = await service.link(taskId: taskId, ref: ref);
+        expect((asked as PullRequestLinkedElsewhere).taskIds, {'other-task'});
+        expect(asked.ref, ref);
       },
     );
 

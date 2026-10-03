@@ -38,6 +38,7 @@ void main() {
     WidgetTester tester, {
     GitHubRepository? repo,
     Future<OpenPullRequestsResult> Function()? listing,
+    Map<String, String> visibleTitles = const {},
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -56,6 +57,9 @@ void main() {
             (ref) =>
                 listing?.call() ??
                 Future.value(const OpenPullRequestsListed([])),
+          ),
+          pullRequestHolderTitleProvider.overrideWith(
+            (ref, id) => Stream.value(visibleTitles[id]),
           ),
         ],
       ),
@@ -202,13 +206,16 @@ void main() {
     );
 
     testWidgets(
-      'a picked pull request another task took meanwhile stays, with why',
+      'a picked pull request another task took meanwhile is asked about, '
+      'and linking it here too closes the modal',
       (tester) async {
+        final pr = openPr(12).ref;
         when(
-          () => service.link(taskId: taskId, ref: openPr(12).ref),
-        ).thenAnswer(
-          (_) async => const PullRequestLinkedElsewhere({'other-task'}),
-        );
+          () => service.link(taskId: taskId, ref: pr),
+        ).thenAnswer((_) async => PullRequestLinkedElsewhere({'other'}, pr));
+        when(
+          () => service.link(taskId: taskId, ref: pr, alsoElsewhere: true),
+        ).thenAnswer((_) async => PullRequestLinked(prEntry(clock: {'a': 1})));
         await open(
           tester,
           repo: repository,
@@ -219,11 +226,96 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(seconds: 1));
 
+        // The other task is private and hidden: it is counted, not named.
         expect(
-          find.text('This pull request is already linked to another task.'),
+          find.text(
+            'This pull request is already linked to another task. Link it '
+            'to this task as well?',
+          ),
           findsOneWidget,
         );
         expect(find.byKey(LinkPullRequestKeys.urlField), findsOneWidget);
+
+        await tester.tap(find.byKey(LinkPullRequestKeys.linkHereToo));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+
+        verify(
+          () => service.link(taskId: taskId, ref: pr, alsoElsewhere: true),
+        ).called(1);
+        expect(find.byKey(LinkPullRequestKeys.urlField), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'a pasted pull request a visible task holds names it; cancelling '
+      'links nothing and leaves the modal open',
+      (tester) async {
+        const pr = PullRequestRef(
+          owner: 'matthiasn',
+          repo: 'lotti',
+          number: 42,
+        );
+        when(
+          () => service.linkPasted(taskId: taskId, input: url),
+        ).thenAnswer(
+          (_) async => const PullRequestLinkedElsewhere({'chicks'}, pr),
+        );
+        await open(tester, visibleTitles: {'chicks': 'Teach the chicks'});
+
+        await submit(tester, url);
+
+        expect(
+          find.text(
+            'This pull request is already linked to “Teach the chicks”. '
+            'Link it to this task as well?',
+          ),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.byKey(LinkPullRequestKeys.keepElsewhere));
+        await tester.pump();
+
+        expect(find.byKey(LinkPullRequestKeys.linkHereToo), findsNothing);
+        expect(find.byKey(LinkPullRequestKeys.urlField), findsOneWidget);
+        verifyNever(
+          () => service.link(taskId: taskId, ref: pr, alsoElsewhere: true),
+        );
+      },
+    );
+
+    testWidgets(
+      'held by two other tasks, the question counts them; editing the link '
+      'withdraws it',
+      (tester) async {
+        const pr = PullRequestRef(
+          owner: 'matthiasn',
+          repo: 'lotti',
+          number: 42,
+        );
+        when(
+          () => service.linkPasted(taskId: taskId, input: url),
+        ).thenAnswer(
+          (_) async => const PullRequestLinkedElsewhere({'a', 'b'}, pr),
+        );
+        await open(tester, visibleTitles: {'a': 'Waddle', 'b': 'Swim'});
+
+        await submit(tester, url);
+        expect(
+          find.text(
+            'This pull request is already linked to 2 other tasks. Link it '
+            'to this task as well?',
+          ),
+          findsOneWidget,
+        );
+
+        await tester.enterText(
+          find.byKey(LinkPullRequestKeys.urlField),
+          '$url/',
+        );
+        await tester.pump();
+
+        expect(find.byKey(LinkPullRequestKeys.linkHereToo), findsNothing);
       },
     );
 
