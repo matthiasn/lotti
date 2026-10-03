@@ -12,9 +12,10 @@ void main() {
     List<Map<String, dynamic>> runs = const [],
     List<Map<String, dynamic>> statuses = const [],
     List<Map<String, dynamic>> reviews = const [],
+    bool runsHidden = false,
   }) => pullRequestSnapshotFrom(
     pull: pull ?? githubPullJson(),
-    checkRuns: githubCheckRunsJson(runs),
+    checkRuns: runsHidden ? null : githubCheckRunsJson(runs),
     combinedStatus: githubCombinedStatusJson(statuses),
     reviews: reviews,
     observedAt: observedAt,
@@ -163,6 +164,52 @@ void main() {
       expect(checks.failingNames, hasLength(PullRequestChecks.maxFailingNames));
       expect(checks.failingNames.first, 'shard 0');
     });
+
+    group('with the check runs hidden from the token', () {
+      test(
+        'passing commit statuses are not passing CI: a hidden run may fail',
+        () {
+          final checks = map(
+            runsHidden: true,
+            statuses: [githubStatusJson('ci/legacy', 'success')],
+          ).checks;
+          expect(checks.checkRunsHidden, isTrue);
+          expect(checks.rollup, PullRequestCheckRollup.none);
+          expect((checks.total, checks.passed), (1, 1));
+        },
+      );
+
+      test('a failing or running status still says so', () {
+        expect(
+          map(
+            runsHidden: true,
+            statuses: [githubStatusJson('ci/legacy', 'failure')],
+          ).checks.rollup,
+          PullRequestCheckRollup.failing,
+        );
+        expect(
+          map(
+            runsHidden: true,
+            statuses: [githubStatusJson('ci/legacy', 'pending')],
+          ).checks.rollup,
+          PullRequestCheckRollup.pending,
+        );
+      });
+    });
+
+    test(
+      'read check runs leave the field out of the JSON, so the digest of an '
+      'observation is what devices without the field compute',
+      () {
+        final read = map().checks;
+        expect(read.checkRunsHidden, isNull);
+        expect(read.toJson().containsKey('checkRunsHidden'), isFalse);
+        expect(
+          map(runsHidden: true).checks.toJson()['checkRunsHidden'],
+          isTrue,
+        );
+      },
+    );
   });
 
   group('reviews', () {

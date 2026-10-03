@@ -6567,6 +6567,10 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get githubChecksHidden =>
+      'CI může být neúplné: token nemůže číst kontroly';
+
+  @override
   String get githubChecksPassing => 'Kontroly prošly';
 
   @override
@@ -6753,7 +6757,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get githubTokenIntro =>
-      'Lotti čte pull requesty, které propojíš s úkoly, pomocí tvého vlastního osobního přístupového tokenu. Dej mu přístup ke čtení pull requestů, stavů commitů a kontrol v repozitářích, ve kterých pracuješ.';
+      'Lotti čte pull requesty, které propojíš s úkoly, pomocí tvého vlastního osobního přístupového tokenu. Vytvoř fine-grained token pro repozitáře, ve kterých pracuješ, s přístupem jen ke čtení k \"Pull requests\" a \"Commit statuses\". GitHub takovému tokenu nedovolí číst check runs v soukromém repozitáři, takže tam může být CI neúplné; klasický token se scope \"repo\" je přečte.';
 
   @override
   String get githubTokenKeptOnDevice =>
@@ -14527,15 +14531,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsTreeCategoryEmptyBody => 'Vyber pod-nastavení vlevo.';
 
   @override
-  String get settingsTreeRootCrumb => 'Nastavení';
-
-  @override
   String get settingsTreeEmptyStateBody =>
       'Vyber sekci vlevo, abys mohl začít.';
 
   @override
   String get settingsTreeResizeHandleLabel =>
       'Změnit velikost stromu nastavení';
+
+  @override
+  String get settingsTreeRootCrumb => 'Nastavení';
 
   @override
   String get settingsWhatsNewSubtitle =>

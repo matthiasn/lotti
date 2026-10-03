@@ -244,7 +244,7 @@ void main() {
 
     test('a failing sub-read fails the whole refresh, as itself', () async {
       final client = clientWith(
-        (request) => request.url.path.endsWith('/check-runs')
+        (request) => request.url.path.endsWith('/reviews')
             ? json({'message': 'Resource not accessible'}, status: 403)
             : github(request),
       );
@@ -252,6 +252,60 @@ void main() {
       expect(
         await failureOf(client.fetchPullRequest(ref, token: token)),
         GitHubFailureKind.forbidden,
+      );
+    });
+
+    test(
+      'check runs refused to the token (a fine-grained token on a private '
+      'repository) leave the rest of the pull request read, and CI counted '
+      'from the commit statuses alone',
+      () async {
+        final client = clientWith((request) {
+          final path = request.url.path;
+          if (path.endsWith('/check-runs')) {
+            return json({
+              'message': 'Resource not accessible by personal access token',
+            }, status: 403);
+          }
+          if (path.endsWith('/status')) {
+            return json(
+              githubCombinedStatusJson([
+                githubStatusJson('ci/legacy', 'failure'),
+              ]),
+            );
+          }
+          return github(request);
+        });
+
+        final snapshot = await client.fetchPullRequest(ref, token: token);
+
+        expect(snapshot.title, 'Waddle faster');
+        expect(snapshot.reviews.decision, PullRequestReviewDecision.approved);
+        expect(snapshot.checks.checkRunsHidden, isTrue);
+        expect(snapshot.checks.rollup, PullRequestCheckRollup.failing);
+        expect(snapshot.checks.failingNames, ['ci/legacy']);
+      },
+    );
+
+    test('an exhausted rate limit on the check runs still fails', () async {
+      final reset = now.add(const Duration(minutes: 10));
+      final client = clientWith(
+        (request) => request.url.path.endsWith('/check-runs')
+            ? json(
+                {'message': 'API rate limit exceeded'},
+                status: 403,
+                headers: {
+                  'x-ratelimit-remaining': '0',
+                  'x-ratelimit-reset':
+                      '${reset.millisecondsSinceEpoch ~/ 1000}',
+                },
+              )
+            : github(request),
+      );
+
+      expect(
+        await failureOf(client.fetchPullRequest(ref, token: token)),
+        GitHubFailureKind.rateLimited,
       );
     });
 

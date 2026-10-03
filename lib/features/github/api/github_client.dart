@@ -106,11 +106,7 @@ class GitHubClient {
     // The first failure fails the refresh as it is, unwrapped.
     final [checkRuns, status, reviews] = await Future.wait(
       [
-        _getAll(
-          '$repo/commits/$sha/check-runs',
-          token: token,
-          listKey: 'check_runs',
-        ),
+        _checkRunsOrHidden('$repo/commits/$sha/check-runs', token: token),
         _getAll('$repo/commits/$sha/status', token: token, listKey: 'statuses'),
         _getAll('$repo/pulls/${ref.number}/reviews', token: token),
       ],
@@ -119,7 +115,7 @@ class GitHubClient {
     try {
       return pullRequestSnapshotFrom(
         pull: pullJson,
-        checkRuns: _object(checkRuns),
+        checkRuns: checkRuns == null ? null : _object(checkRuns),
         combinedStatus: _object(status),
         reviews: switch (reviews) {
           final List<dynamic> list => list,
@@ -160,6 +156,22 @@ class GitHubClient {
   }
 
   void close() => _http.close();
+
+  /// The check runs at [path], or null when GitHub refuses them to the
+  /// token: it offers fine-grained tokens no permission for check runs, so
+  /// on a private repository they are forbidden while the rest of the pull
+  /// request reads fine. Any other failure fails the refresh as before.
+  Future<Object?> _checkRunsOrHidden(
+    String path, {
+    required String token,
+  }) async {
+    try {
+      return await _getAll(path, token: token, listKey: 'check_runs');
+    } on GitHubException catch (e) {
+      if (e.kind == GitHubFailureKind.forbidden) return null;
+      rethrow;
+    }
+  }
 
   /// Every page of a paginated list, as one response of the first page's
   /// shape: the list itself, or the object holding it under [listKey].

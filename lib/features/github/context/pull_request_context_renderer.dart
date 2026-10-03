@@ -121,7 +121,14 @@ String _state(PullRequestSnapshot s) => switch (s.status) {
         : 'closed without merging at ${_iso(s.closedAt!)}',
 };
 
-String _checks(PullRequestChecks c) => switch (c.rollup) {
+String _checks(PullRequestChecks c) =>
+    c.checkRunsHidden ?? false ? '${_rollup(c)}; $_hidden' : _rollup(c);
+
+const _hidden =
+    'the token cannot read check runs, so only commit statuses are '
+    'counted and CI may be failing unseen';
+
+String _rollup(PullRequestChecks c) => switch (c.rollup) {
   PullRequestCheckRollup.none => 'none reported',
   PullRequestCheckRollup.passing => 'passing (${c.passed} of ${c.total})',
   PullRequestCheckRollup.pending =>

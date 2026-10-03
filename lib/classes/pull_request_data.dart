@@ -97,7 +97,9 @@ enum PullRequestMergeability {
   unknown,
 }
 
-/// The rollup of every check run and commit status on the head commit.
+/// The rollup of every check run and commit status on the head commit —
+/// or of the commit statuses alone when the token cannot read check runs, and
+/// then never [passing], since a hidden check run may be failing.
 @JsonEnum()
 enum PullRequestCheckRollup { passing, failing, pending, none }
 
@@ -114,6 +116,12 @@ abstract class PullRequestChecks with _$PullRequestChecks {
 
     /// Names of the failing checks, at most [maxFailingNames] of them.
     @Default(<String>[]) List<String> failingNames,
+
+    /// True when GitHub refused the check runs to the token — a fine-grained
+    /// token on a private repository cannot read them — so only the commit
+    /// statuses were counted. Absent otherwise, which keeps the JSON, and so
+    /// the digest that orders observations, as it was before this field.
+    @JsonKey(includeIfNull: false) bool? checkRunsHidden,
   }) = _PullRequestChecks;
 
   factory PullRequestChecks.fromJson(Map<String, dynamic> json) =>

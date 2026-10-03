@@ -2976,6 +2976,7 @@
       }
     }
   },
+  "githubChecksHidden": "CI is mogelijk onvolledig: het token kan geen checks lezen",
   "githubChecksPassing": "Checks geslaagd",
   "githubChecksPending": "Checks lopen",
   "githubConnectButton": "Verbinden",
@@ -3066,7 +3067,7 @@
   "githubStatusMerged": "Samengevoegd",
   "githubStatusOpen": "Open",
   "githubTokenHide": "Token verbergen",
-  "githubTokenIntro": "Lotti leest de pull requests die je aan taken koppelt met je eigen persoonlijke toegangstoken. Geef het leestoegang tot pull requests, commitstatussen en checks in de repository's waarin je werkt.",
+  "githubTokenIntro": "Lotti leest de pull requests die je aan taken koppelt met je eigen persoonlijke toegangstoken. Maak een fine-grained token voor de repository's waarin je werkt, met alleen-lezen toegang tot \"Pull requests\" en \"Commit statuses\". GitHub laat zo'n token geen check runs lezen in een privérepository, dus daar kan CI onvolledig zijn; een klassiek token met de scope \"repo\" kan ze wel lezen.",
   "githubTokenKeptOnDevice": "Het token blijft op dit apparaat: het wordt nooit gesynchroniseerd en alleen naar api.github.com verstuurd.",
   "githubTokenLabel": "Persoonlijk toegangstoken",
   "githubTokenShow": "Token tonen",

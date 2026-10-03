@@ -6600,6 +6600,10 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get githubChecksHidden =>
+      'CI peut-être incomplète : le jeton ne peut pas lire les vérifications';
+
+  @override
   String get githubChecksPassing => 'Vérifications réussies';
 
   @override
@@ -6788,7 +6792,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get githubTokenIntro =>
-      'Lotti lit les pull requests que tu lies à tes tâches avec ton propre jeton d\'accès personnel. Donne-lui un accès en lecture aux pull requests, aux statuts de commit et aux vérifications des dépôts sur lesquels tu travailles.';
+      'Lotti lit les pull requests que tu lies à tes tâches avec ton propre jeton d\'accès personnel. Crée un jeton fine-grained pour les dépôts sur lesquels tu travailles, avec un accès en lecture seule à « Pull requests » et « Commit statuses ». GitHub ne laisse pas un tel jeton lire les check runs d\'un dépôt privé, la CI peut donc y être incomplète ; un jeton classique avec le scope « repo » peut les lire.';
 
   @override
   String get githubTokenKeptOnDevice =>
@@ -14590,15 +14594,15 @@ class AppLocalizationsFr extends AppLocalizations {
       'Choisis un sous-réglage à gauche.';
 
   @override
-  String get settingsTreeRootCrumb => 'Paramètres';
-
-  @override
   String get settingsTreeEmptyStateBody =>
       'Choisis une rubrique à gauche pour commencer.';
 
   @override
   String get settingsTreeResizeHandleLabel =>
       'Redimensionner l\'arborescence des paramètres';
+
+  @override
+  String get settingsTreeRootCrumb => 'Paramètres';
 
   @override
   String get settingsWhatsNewSubtitle =>

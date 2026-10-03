@@ -2720,6 +2720,7 @@
       }
     }
   },
+  "githubChecksHidden": "CI poate fi incompletă: tokenul nu poate citi verificările",
   "githubChecksPassing": "Verificări reușite",
   "githubChecksPending": "Verificări în curs",
   "githubConnectButton": "Conectați",
@@ -2810,7 +2811,7 @@
   "githubStatusMerged": "Îmbinat",
   "githubStatusOpen": "Deschis",
   "githubTokenHide": "Ascundeți tokenul",
-  "githubTokenIntro": "Lotti citește pull request-urile pe care le legați de sarcini cu propriul dvs. token de acces personal. Acordați-i acces de citire la pull request-uri, stări de commit și verificări în depozitele în care lucrați.",
+  "githubTokenIntro": "Lotti citește pull request-urile pe care le legați de sarcini cu propriul dvs. token de acces personal. Creați un token fine-grained pentru depozitele în care lucrați, cu acces doar de citire la „Pull requests” și „Commit statuses”. GitHub nu permite unui astfel de token să citească check run-urile dintr-un depozit privat, așa că acolo CI poate fi incompletă; un token clasic cu scope-ul „repo” le poate citi.",
   "githubTokenKeptOnDevice": "Tokenul rămâne pe acest dispozitiv: nu este sincronizat niciodată și este trimis doar către api.github.com.",
   "githubTokenLabel": "Token de acces personal",
   "githubTokenShow": "Afișați tokenul",

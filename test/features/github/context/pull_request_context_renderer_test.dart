@@ -36,6 +36,34 @@ void main() {
     PullRequestContextAudience audience = PullRequestContextAudience.taskAgent,
   }) => renderPullRequestContext([item], audience: audience);
 
+  test(
+    'check runs the token cannot read are named, so the agent does not take '
+    'the commit statuses for all of CI',
+    () {
+      final text = render(
+        PullRequestContextItem(
+          ref: ref,
+          snapshot: open.copyWith(
+            checks: const PullRequestChecks(
+              total: 1,
+              passed: 1,
+              checkRunsHidden: true,
+            ),
+          ),
+          current: true,
+        ),
+      );
+
+      expect(
+        text,
+        contains(
+          '- Checks: none reported; the token cannot read check runs, so '
+          'only commit statuses are counted and CI may be failing unseen',
+        ),
+      );
+    },
+  );
+
   test('nothing to render without pull requests', () {
     for (final audience in PullRequestContextAudience.values) {
       expect(renderPullRequestContext(const [], audience: audience), isEmpty);

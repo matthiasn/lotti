@@ -681,7 +681,11 @@ $PullRequestReviewsCopyWith<$Res> get reviews {
 mixin _$PullRequestChecks {
 
 @JsonKey(unknownEnumValue: PullRequestCheckRollup.none) PullRequestCheckRollup get rollup; int get total; int get passed; int get failed; int get pending;/// Names of the failing checks, at most [maxFailingNames] of them.
- List<String> get failingNames;
+ List<String> get failingNames;/// True when GitHub refused the check runs to the token — a fine-grained
+/// token on a private repository cannot read them — so only the commit
+/// statuses were counted. Absent otherwise, which keeps the JSON, and so
+/// the digest that orders observations, as it was before this field.
+@JsonKey(includeIfNull: false) bool? get checkRunsHidden;
 /// Create a copy of PullRequestChecks
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -694,16 +698,16 @@ $PullRequestChecksCopyWith<PullRequestChecks> get copyWith => _$PullRequestCheck
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PullRequestChecks&&(identical(other.rollup, rollup) || other.rollup == rollup)&&(identical(other.total, total) || other.total == total)&&(identical(other.passed, passed) || other.passed == passed)&&(identical(other.failed, failed) || other.failed == failed)&&(identical(other.pending, pending) || other.pending == pending)&&const DeepCollectionEquality().equals(other.failingNames, failingNames));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PullRequestChecks&&(identical(other.rollup, rollup) || other.rollup == rollup)&&(identical(other.total, total) || other.total == total)&&(identical(other.passed, passed) || other.passed == passed)&&(identical(other.failed, failed) || other.failed == failed)&&(identical(other.pending, pending) || other.pending == pending)&&const DeepCollectionEquality().equals(other.failingNames, failingNames)&&(identical(other.checkRunsHidden, checkRunsHidden) || other.checkRunsHidden == checkRunsHidden));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,rollup,total,passed,failed,pending,const DeepCollectionEquality().hash(failingNames));
+int get hashCode => Object.hash(runtimeType,rollup,total,passed,failed,pending,const DeepCollectionEquality().hash(failingNames),checkRunsHidden);
 
 @override
 String toString() {
-  return 'PullRequestChecks(rollup: $rollup, total: $total, passed: $passed, failed: $failed, pending: $pending, failingNames: $failingNames)';
+  return 'PullRequestChecks(rollup: $rollup, total: $total, passed: $passed, failed: $failed, pending: $pending, failingNames: $failingNames, checkRunsHidden: $checkRunsHidden)';
 }
 
 
@@ -714,7 +718,7 @@ abstract mixin class $PullRequestChecksCopyWith<$Res>  {
   factory $PullRequestChecksCopyWith(PullRequestChecks value, $Res Function(PullRequestChecks) _then) = _$PullRequestChecksCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(unknownEnumValue: PullRequestCheckRollup.none) PullRequestCheckRollup rollup, int total, int passed, int failed, int pending, List<String> failingNames
+@JsonKey(unknownEnumValue: PullRequestCheckRollup.none) PullRequestCheckRollup rollup, int total, int passed, int failed, int pending, List<String> failingNames,@JsonKey(includeIfNull: false) bool? checkRunsHidden
 });
 
 
@@ -731,7 +735,7 @@ class _$PullRequestChecksCopyWithImpl<$Res>
 
 /// Create a copy of PullRequestChecks
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? rollup = null,Object? total = null,Object? passed = null,Object? failed = null,Object? pending = null,Object? failingNames = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? rollup = null,Object? total = null,Object? passed = null,Object? failed = null,Object? pending = null,Object? failingNames = null,Object? checkRunsHidden = freezed,}) {
   return _then(_self.copyWith(
 rollup: null == rollup ? _self.rollup : rollup // ignore: cast_nullable_to_non_nullable
 as PullRequestCheckRollup,total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
@@ -739,7 +743,8 @@ as int,passed: null == passed ? _self.passed : passed // ignore: cast_nullable_t
 as int,failed: null == failed ? _self.failed : failed // ignore: cast_nullable_to_non_nullable
 as int,pending: null == pending ? _self.pending : pending // ignore: cast_nullable_to_non_nullable
 as int,failingNames: null == failingNames ? _self.failingNames : failingNames // ignore: cast_nullable_to_non_nullable
-as List<String>,
+as List<String>,checkRunsHidden: freezed == checkRunsHidden ? _self.checkRunsHidden : checkRunsHidden // ignore: cast_nullable_to_non_nullable
+as bool?,
   ));
 }
 
@@ -824,10 +829,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(unknownEnumValue: PullRequestCheckRollup.none)  PullRequestCheckRollup rollup,  int total,  int passed,  int failed,  int pending,  List<String> failingNames)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(unknownEnumValue: PullRequestCheckRollup.none)  PullRequestCheckRollup rollup,  int total,  int passed,  int failed,  int pending,  List<String> failingNames, @JsonKey(includeIfNull: false)  bool? checkRunsHidden)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PullRequestChecks() when $default != null:
-return $default(_that.rollup,_that.total,_that.passed,_that.failed,_that.pending,_that.failingNames);case _:
+return $default(_that.rollup,_that.total,_that.passed,_that.failed,_that.pending,_that.failingNames,_that.checkRunsHidden);case _:
   return orElse();
 
 }
@@ -845,10 +850,10 @@ return $default(_that.rollup,_that.total,_that.passed,_that.failed,_that.pending
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(unknownEnumValue: PullRequestCheckRollup.none)  PullRequestCheckRollup rollup,  int total,  int passed,  int failed,  int pending,  List<String> failingNames)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(unknownEnumValue: PullRequestCheckRollup.none)  PullRequestCheckRollup rollup,  int total,  int passed,  int failed,  int pending,  List<String> failingNames, @JsonKey(includeIfNull: false)  bool? checkRunsHidden)  $default,) {final _that = this;
 switch (_that) {
 case _PullRequestChecks():
-return $default(_that.rollup,_that.total,_that.passed,_that.failed,_that.pending,_that.failingNames);case _:
+return $default(_that.rollup,_that.total,_that.passed,_that.failed,_that.pending,_that.failingNames,_that.checkRunsHidden);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -865,10 +870,10 @@ return $default(_that.rollup,_that.total,_that.passed,_that.failed,_that.pending
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(unknownEnumValue: PullRequestCheckRollup.none)  PullRequestCheckRollup rollup,  int total,  int passed,  int failed,  int pending,  List<String> failingNames)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(unknownEnumValue: PullRequestCheckRollup.none)  PullRequestCheckRollup rollup,  int total,  int passed,  int failed,  int pending,  List<String> failingNames, @JsonKey(includeIfNull: false)  bool? checkRunsHidden)?  $default,) {final _that = this;
 switch (_that) {
 case _PullRequestChecks() when $default != null:
-return $default(_that.rollup,_that.total,_that.passed,_that.failed,_that.pending,_that.failingNames);case _:
+return $default(_that.rollup,_that.total,_that.passed,_that.failed,_that.pending,_that.failingNames,_that.checkRunsHidden);case _:
   return null;
 
 }
@@ -880,7 +885,7 @@ return $default(_that.rollup,_that.total,_that.passed,_that.failed,_that.pending
 @JsonSerializable()
 
 class _PullRequestChecks implements PullRequestChecks {
-  const _PullRequestChecks({@JsonKey(unknownEnumValue: PullRequestCheckRollup.none) this.rollup = PullRequestCheckRollup.none, this.total = 0, this.passed = 0, this.failed = 0, this.pending = 0, final  List<String> failingNames = const <String>[]}): _failingNames = failingNames;
+  const _PullRequestChecks({@JsonKey(unknownEnumValue: PullRequestCheckRollup.none) this.rollup = PullRequestCheckRollup.none, this.total = 0, this.passed = 0, this.failed = 0, this.pending = 0, final  List<String> failingNames = const <String>[], @JsonKey(includeIfNull: false) this.checkRunsHidden}): _failingNames = failingNames;
   factory _PullRequestChecks.fromJson(Map<String, dynamic> json) => _$PullRequestChecksFromJson(json);
 
 @override@JsonKey(unknownEnumValue: PullRequestCheckRollup.none) final  PullRequestCheckRollup rollup;
@@ -897,6 +902,11 @@ class _PullRequestChecks implements PullRequestChecks {
   return EqualUnmodifiableListView(_failingNames);
 }
 
+/// True when GitHub refused the check runs to the token — a fine-grained
+/// token on a private repository cannot read them — so only the commit
+/// statuses were counted. Absent otherwise, which keeps the JSON, and so
+/// the digest that orders observations, as it was before this field.
+@override@JsonKey(includeIfNull: false) final  bool? checkRunsHidden;
 
 /// Create a copy of PullRequestChecks
 /// with the given fields replaced by the non-null parameter values.
@@ -911,16 +921,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PullRequestChecks&&(identical(other.rollup, rollup) || other.rollup == rollup)&&(identical(other.total, total) || other.total == total)&&(identical(other.passed, passed) || other.passed == passed)&&(identical(other.failed, failed) || other.failed == failed)&&(identical(other.pending, pending) || other.pending == pending)&&const DeepCollectionEquality().equals(other._failingNames, _failingNames));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PullRequestChecks&&(identical(other.rollup, rollup) || other.rollup == rollup)&&(identical(other.total, total) || other.total == total)&&(identical(other.passed, passed) || other.passed == passed)&&(identical(other.failed, failed) || other.failed == failed)&&(identical(other.pending, pending) || other.pending == pending)&&const DeepCollectionEquality().equals(other._failingNames, _failingNames)&&(identical(other.checkRunsHidden, checkRunsHidden) || other.checkRunsHidden == checkRunsHidden));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,rollup,total,passed,failed,pending,const DeepCollectionEquality().hash(_failingNames));
+int get hashCode => Object.hash(runtimeType,rollup,total,passed,failed,pending,const DeepCollectionEquality().hash(_failingNames),checkRunsHidden);
 
 @override
 String toString() {
-  return 'PullRequestChecks(rollup: $rollup, total: $total, passed: $passed, failed: $failed, pending: $pending, failingNames: $failingNames)';
+  return 'PullRequestChecks(rollup: $rollup, total: $total, passed: $passed, failed: $failed, pending: $pending, failingNames: $failingNames, checkRunsHidden: $checkRunsHidden)';
 }
 
 
@@ -931,7 +941,7 @@ abstract mixin class _$PullRequestChecksCopyWith<$Res> implements $PullRequestCh
   factory _$PullRequestChecksCopyWith(_PullRequestChecks value, $Res Function(_PullRequestChecks) _then) = __$PullRequestChecksCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(unknownEnumValue: PullRequestCheckRollup.none) PullRequestCheckRollup rollup, int total, int passed, int failed, int pending, List<String> failingNames
+@JsonKey(unknownEnumValue: PullRequestCheckRollup.none) PullRequestCheckRollup rollup, int total, int passed, int failed, int pending, List<String> failingNames,@JsonKey(includeIfNull: false) bool? checkRunsHidden
 });
 
 
@@ -948,7 +958,7 @@ class __$PullRequestChecksCopyWithImpl<$Res>
 
 /// Create a copy of PullRequestChecks
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? rollup = null,Object? total = null,Object? passed = null,Object? failed = null,Object? pending = null,Object? failingNames = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? rollup = null,Object? total = null,Object? passed = null,Object? failed = null,Object? pending = null,Object? failingNames = null,Object? checkRunsHidden = freezed,}) {
   return _then(_PullRequestChecks(
 rollup: null == rollup ? _self.rollup : rollup // ignore: cast_nullable_to_non_nullable
 as PullRequestCheckRollup,total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
@@ -956,7 +966,8 @@ as int,passed: null == passed ? _self.passed : passed // ignore: cast_nullable_t
 as int,failed: null == failed ? _self.failed : failed // ignore: cast_nullable_to_non_nullable
 as int,pending: null == pending ? _self.pending : pending // ignore: cast_nullable_to_non_nullable
 as int,failingNames: null == failingNames ? _self._failingNames : failingNames // ignore: cast_nullable_to_non_nullable
-as List<String>,
+as List<String>,checkRunsHidden: freezed == checkRunsHidden ? _self.checkRunsHidden : checkRunsHidden // ignore: cast_nullable_to_non_nullable
+as bool?,
   ));
 }
 

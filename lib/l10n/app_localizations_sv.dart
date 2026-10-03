@@ -6502,6 +6502,10 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get githubChecksHidden =>
+      'CI kan vara ofullständig: token kan inte läsa kontroller';
+
+  @override
   String get githubChecksPassing => 'Kontroller godkända';
 
   @override
@@ -6689,7 +6693,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get githubTokenIntro =>
-      'Lotti läser de pull requests du kopplar till uppgifter med din egen personliga åtkomsttoken. Ge den läsåtkomst till pull requests, commitstatus och kontroller i de repon du arbetar i.';
+      'Lotti läser de pull requests du kopplar till uppgifter med din egen personliga åtkomsttoken. Skapa en fine-grained token för de repon du arbetar i, med läsbehörighet till \"Pull requests\" och \"Commit statuses\". GitHub låter inte en sådan token läsa check runs i ett privat repo, så där kan CI vara ofullständig; en klassisk token med scopet \"repo\" kan läsa dem.';
 
   @override
   String get githubTokenKeptOnDevice =>
@@ -14354,14 +14358,14 @@ class AppLocalizationsSv extends AppLocalizations {
       'Välj en underinställning till vänster.';
 
   @override
-  String get settingsTreeRootCrumb => 'Inställningar';
-
-  @override
   String get settingsTreeEmptyStateBody =>
       'Välj en sektion till vänster för att börja.';
 
   @override
   String get settingsTreeResizeHandleLabel => 'Ändra storleksinställningsträd';
+
+  @override
+  String get settingsTreeRootCrumb => 'Inställningar';
 
   @override
   String get settingsWhatsNewSubtitle =>

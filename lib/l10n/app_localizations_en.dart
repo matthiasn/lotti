@@ -6468,6 +6468,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get githubChecksHidden =>
+      'CI may be incomplete: the token cannot read checks';
+
+  @override
   String get githubChecksPassing => 'Checks passing';
 
   @override
@@ -6653,7 +6657,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get githubTokenIntro =>
-      'Lotti reads the pull requests you link to tasks with your own personal access token. Give it read access to pull requests, commit statuses and checks in the repositories you work in.';
+      'Lotti reads the pull requests you link to tasks with your own personal access token. Create a fine-grained token for the repositories you work in, with read-only access to \"Pull requests\" and \"Commit statuses\". GitHub does not let such a token read check runs in a private repository, so CI may be incomplete there; a classic token with the \"repo\" scope can read them.';
 
   @override
   String get githubTokenKeptOnDevice =>
@@ -14261,14 +14265,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsTreeCategoryEmptyBody => 'Pick a sub-setting on the left.';
 
   @override
-  String get settingsTreeRootCrumb => 'Settings';
-
-  @override
   String get settingsTreeEmptyStateBody =>
       'Pick a section on the left to begin.';
 
   @override
   String get settingsTreeResizeHandleLabel => 'Resize settings tree';
+
+  @override
+  String get settingsTreeRootCrumb => 'Settings';
 
   @override
   String get settingsWhatsNewSubtitle => 'See the latest updates and features';
