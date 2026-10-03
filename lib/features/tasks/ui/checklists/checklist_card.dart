@@ -294,7 +294,9 @@ class _ChecklistCardState extends ConsumerState<ChecklistCard> {
                       await SystemChannels.textInput.invokeMethod(
                         'TextInput.show',
                       );
-                    } catch (_) {}
+                    } catch (_) {
+                      // Best effort: a platform without TextInput.show keeps its keyboard as is.
+                    }
                   });
                 },
               ),

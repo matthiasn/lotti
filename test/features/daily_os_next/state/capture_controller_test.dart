@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/audio_note.dart';
@@ -856,6 +857,86 @@ void main() {
 
         final state = container.read(captureControllerProvider);
         expect(state.error, CaptureError.recordingSavedPendingTranscription);
+        verify(
+          () => outbox.markFailure(
+            jobId: job.id,
+            claimToken: 'token-1',
+            failureClass: DayProcessingFailureClass.local,
+            error: any(named: 'error'),
+            retryDelay: any(named: 'retryDelay'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'a job whose failure cannot be recorded is reported, not swallowed',
+      () async {
+        final outbox = MockDayProcessingOutboxRepository();
+        final job = DayProcessingJob(
+          id: DayProcessingOutboxRepository.transcriptionJobId(_sessionId),
+          status: DayProcessingJobStatus.running,
+          dayId: 'dayplan-2026-07-20',
+          payload: TranscribeAudioPayload(
+            activityEntryId: audioActivityEntryIdForSession(_sessionId),
+            recordingSessionId: _sessionId,
+            audioId: 'audio_001',
+            audioPath: '/tmp/capture.m4a',
+          ),
+          createdAt: _now,
+          updatedAt: _now,
+          requestedAt: _now,
+          nextAttemptAt: _now,
+          attempts: 0,
+          generation: 1,
+        );
+        when(
+          () => outbox.enqueueAndClaimTranscription(
+            dayId: any(named: 'dayId'),
+            activityEntryId: any(named: 'activityEntryId'),
+            recordingSessionId: any(named: 'recordingSessionId'),
+            audioId: any(named: 'audioId'),
+            audioPath: any(named: 'audioPath'),
+            capturedAt: any(named: 'capturedAt'),
+          ),
+        ).thenAnswer(
+          (_) async => DayProcessingClaim(job: job, token: 'token-1'),
+        );
+        when(
+          () => outbox.markTranscriptReady(
+            jobId: any(named: 'jobId'),
+            claimToken: any(named: 'claimToken'),
+            transcript: any(named: 'transcript'),
+          ),
+        ).thenThrow(StateError('outbox storage failed'));
+        when(
+          () => outbox.markFailure(
+            jobId: any(named: 'jobId'),
+            claimToken: any(named: 'claimToken'),
+            failureClass: any(named: 'failureClass'),
+            error: any(named: 'error'),
+            retryDelay: any(named: 'retryDelay'),
+          ),
+        ).thenThrow(StateError('outbox gone too'));
+        bench.stubTranscript('good words');
+        final reported = <FlutterErrorDetails>[];
+        final previousOnError = FlutterError.onError;
+        FlutterError.onError = reported.add;
+        addTearDown(() => FlutterError.onError = previousOnError);
+        final container = bench.aliveContainer(outbox: outbox);
+        addTearDown(container.dispose);
+        final controller = container.read(captureControllerProvider.notifier);
+
+        await controller.toggle();
+        await controller.toggle();
+
+        final state = container.read(captureControllerProvider);
+        expect(state.error, CaptureError.recordingSavedPendingTranscription);
+        // The job may stay claimed; the failure to record that is reported.
+        expect(
+          reported.map((d) => d.context?.toDescription()),
+          contains('while recording a failed job'),
+        );
         verify(
           () => outbox.markFailure(
             jobId: job.id,

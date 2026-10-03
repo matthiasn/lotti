@@ -113,22 +113,30 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
 
     try {
       await ampSub?.cancel();
-    } catch (_) {}
+    } catch (_) {
+      // Teardown: each step runs whether or not the previous one did.
+    }
     try {
       await recorder?.dispose();
-    } catch (_) {}
+    } catch (_) {
+      // Teardown: each step runs whether or not the previous one did.
+    }
     try {
       if (filePath != null) {
         await File(filePath).delete();
       }
-    } catch (_) {}
+    } catch (_) {
+      // Teardown: each step runs whether or not the previous one did.
+    }
     await _deleteDirectoryQuietly(tempDir);
   }
 
   Future<void> _deleteDirectoryQuietly(Directory? directory) async {
     try {
       await directory?.delete(recursive: true);
-    } catch (_) {}
+    } catch (_) {
+      // Teardown: a leftover temp directory is cleared with the OS temp.
+    }
   }
 
   /// Begins a batch recording: checks mic permission, records to a temp `.m4a`
@@ -264,11 +272,15 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         if (nativeStartAttempted) {
           try {
             await recorder.stop();
-          } catch (_) {}
+          } catch (_) {
+            // Teardown: each step runs whether or not the previous one did.
+          }
         }
         try {
           await recorder.dispose();
-        } catch (_) {}
+        } catch (_) {
+          // Teardown: each step runs whether or not the previous one did.
+        }
         await _deleteDirectoryQuietly(tempDir);
       }
       if (startError != null && ref.mounted && currentOpId == _operationId) {

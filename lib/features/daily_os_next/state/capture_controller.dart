@@ -449,7 +449,9 @@ class CaptureController extends Notifier<CaptureState> {
             error: error.toString(),
             retryAfter: failure.retryAfter,
           );
-        } catch (_) {}
+        } catch (markError, markStack) {
+          _reportError(markError, markStack, 'while recording a failed job');
+        }
       }
       _clearSession();
       state = CaptureState(
@@ -538,7 +540,9 @@ class CaptureController extends Notifier<CaptureState> {
           error: error.toString(),
           retryDelay: const Duration(seconds: 1),
         );
-      } catch (_) {}
+      } catch (markError, markStack) {
+        _reportError(markError, markStack, 'while recording a failed job');
+      }
       return false;
     }
   }

@@ -108,7 +108,9 @@ class _TitleTextFieldState extends State<TitleTextField> {
           widget.focusNode!.requestFocus();
           try {
             await SystemChannels.textInput.invokeMethod('TextInput.show');
-          } catch (_) {}
+          } catch (_) {
+            // Best effort: a platform without TextInput.show keeps its keyboard as is.
+          }
           // Force caret + keyboard by pinging the inner EditableText
           final editable = FocusManager.instance.primaryFocus?.context
               ?.findAncestorStateOfType<EditableTextState>();

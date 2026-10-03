@@ -268,7 +268,9 @@ class _VoiceRecorderDrivenPreviewState
         await _deleteTempRecording(path ?? _tempRecordingPath);
       }
       await _recorder.dispose();
-    } catch (_) {}
+    } catch (_) {
+      // Widgetbook preview teardown; nothing to report.
+    }
   }
 
   Future<void> _deleteTempRecording(String? path) async {
@@ -276,7 +278,9 @@ class _VoiceRecorderDrivenPreviewState
     if (path == null || path.isEmpty) return;
     try {
       await File(path).delete();
-    } catch (_) {}
+    } catch (_) {
+      // Widgetbook preview teardown; nothing to report.
+    }
   }
 
   void _startAmplitudePolling() {

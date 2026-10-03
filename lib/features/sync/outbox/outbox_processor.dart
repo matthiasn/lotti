@@ -303,7 +303,9 @@ class OutboxProcessor {
                     'status=error → skip/head-advance',
           subDomain: 'retry.cap',
         );
-      } catch (_) {}
+      } catch (_) {
+        // Logging must never change the outcome of a send attempt.
+      }
       return OutboxProcessingResult.schedule(Duration.zero);
     }
     return OutboxProcessingResult.schedule(delay);
@@ -411,7 +413,9 @@ class OutboxProcessor {
             'sendFailed subject=${head.subject} attempts=$nextAttempts repeats=$_lastFailedRepeats backoffMs=${retryDelay.inMilliseconds} timedOut=$timedOut',
             subDomain: 'retry',
           );
-        } catch (_) {}
+        } catch (_) {
+          // Logging must never change the outcome of a send attempt.
+        }
         return _retryResult(rows, delay: retryDelay, subject: head.subject);
       }
 
@@ -459,7 +463,9 @@ class OutboxProcessor {
           'sendException subject=${head.subject} attempts=$nextAttempts repeats=$_lastFailedRepeats backoffMs=${errorDelay.inMilliseconds}',
           subDomain: 'retry',
         );
-      } catch (_) {}
+      } catch (_) {
+        // Logging must never change the outcome of a send attempt.
+      }
       return _retryResult(rows, delay: errorDelay, subject: head.subject);
     }
   }
@@ -512,7 +518,9 @@ class OutboxProcessor {
             'backoffMs=${retryDelay.inMilliseconds} timedOut=$timedOut',
             subDomain: 'retry',
           );
-        } catch (_) {}
+        } catch (_) {
+          // Logging must never change the outcome of a send attempt.
+        }
         return _retryResult(
           rows,
           delay: retryDelay,
@@ -567,7 +575,9 @@ class OutboxProcessor {
           'backoffMs=${errorDelay.inMilliseconds}',
           subDomain: 'retry',
         );
-      } catch (_) {}
+      } catch (_) {
+        // Logging must never change the outcome of a send attempt.
+      }
       return _retryResult(
         rows,
         delay: errorDelay,
