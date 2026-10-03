@@ -1535,7 +1535,7 @@
   "categoryActiveSwitchDescription": "Selecteerbaar voor nieuwe items",
   "categoryAiDefaultsDescription": "Standaard AI-profiel en agent-sjabloon instellen voor nieuwe taken in deze categorie",
   "categoryAiDefaultsTitle": "AI standaard",
-  "categoryAutomaticAgentWakesDescription": "Laat de assistent in deze categorie zichzelf bijwerken als een taak verandert. Geldt voor nieuwe taken; bestaande houden hun eigen instelling.",
+  "categoryAutomaticAgentWakesDescription": "Wanneer een taak verandert, wordt de assistent in deze categorie automatisch geactiveerd. Geldt voor nieuwe taken; bestaande houden hun eigen instelling.",
   "categoryAutomaticAgentWakesLabel": "De assistent automatisch activeren",
   "categoryAutomaticInferenceDescription": "Nieuwe audio automatisch transcriberen en nieuwe afbeeldingen in deze categorie analyseren",
   "categoryAutomaticInferenceLabel": "Automatische inferentie",

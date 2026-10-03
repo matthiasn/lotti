@@ -3025,7 +3025,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get categoryAutomaticAgentWakesDescription =>
-      'Låt assistenten i den här kategorin uppdatera sig själv när en uppgift ändras. Gäller nya uppgifter; befintliga behåller sin egen inställning.';
+      'Assistenten i den här kategorin startar automatiskt när en uppgift ändras. Gäller nya uppgifter; befintliga behåller sin egen inställning.';
 
   @override
   String get categoryAutomaticAgentWakesLabel => 'Väck assistenten automatiskt';

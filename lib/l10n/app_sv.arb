@@ -1536,7 +1536,7 @@
   "categoryActiveSwitchDescription": "Valbar för nya bidrag",
   "categoryAiDefaultsDescription": "Sätt standard-AI-profil och agentmall för nya uppgifter i denna kategori",
   "categoryAiDefaultsTitle": "AI-standardinställningar",
-  "categoryAutomaticAgentWakesDescription": "Låt assistenten i den här kategorin uppdatera sig själv när en uppgift ändras. Gäller nya uppgifter; befintliga behåller sin egen inställning.",
+  "categoryAutomaticAgentWakesDescription": "Assistenten i den här kategorin startar automatiskt när en uppgift ändras. Gäller nya uppgifter; befintliga behåller sin egen inställning.",
   "categoryAutomaticAgentWakesLabel": "Väck assistenten automatiskt",
   "categoryAutomaticInferenceDescription": "Transkribera nytt ljud och analysera nya bilder i den här kategorin automatiskt",
   "categoryAutomaticInferenceLabel": "Automatisk inferens",

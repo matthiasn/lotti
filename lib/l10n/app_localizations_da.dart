@@ -3016,7 +3016,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get categoryAutomaticAgentWakesDescription =>
-      'Lad assistenten i denne kategori opdatere sig selv, når en opgave ændres. Gælder for nye opgaver; eksisterende beholder deres egen indstilling.';
+      'Assistenten i denne kategori starter automatisk, når en opgave ændres. Gælder for nye opgaver; eksisterende beholder deres egen indstilling.';
 
   @override
   String get categoryAutomaticAgentWakesLabel => 'Væk assistenten automatisk';
@@ -4855,7 +4855,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get dailyOsNextPlanChangesReadyNotificationTitle =>
-      'Dine planændringer er klar';
+      'Dine planændringer er klare';
 
   @override
   String get dailyOsNextPlanFailedNotificationBody =>

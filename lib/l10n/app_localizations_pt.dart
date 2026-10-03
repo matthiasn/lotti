@@ -3047,7 +3047,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get categoryAutomaticAgentWakesDescription =>
-      'Deixa o assistente desta categoria atualizar-se sozinho quando uma tarefa muda. Aplica-se a tarefas novas; as existentes mantêm a sua própria definição.';
+      'Permite que o assistente desta categoria seja executado automaticamente quando uma tarefa muda. Aplica-se a tarefas novas; as existentes mantêm a sua própria definição.';
 
   @override
   String get categoryAutomaticAgentWakesLabel =>

@@ -1536,7 +1536,7 @@
   "categoryActiveSwitchDescription": "Selezionabile per nuove voci",
   "categoryAiDefaultsDescription": "Impostare il profilo AI predefinito e il modello di agente per le nuove attività in questa categoria",
   "categoryAiDefaultsTitle": "Predefinizioni dell'IA",
-  "categoryAutomaticAgentWakesDescription": "Lascia che l'assistente di questa categoria si aggiorni da solo quando un'attività cambia. Vale per le nuove attività; quelle esistenti mantengono la propria impostazione.",
+  "categoryAutomaticAgentWakesDescription": "L'assistente di questa categoria si avvia automaticamente quando un'attività cambia. Vale per le nuove attività; quelle esistenti mantengono la propria impostazione.",
   "categoryAutomaticAgentWakesLabel": "Attiva l'assistente automaticamente",
   "categoryAutomaticInferenceDescription": "Trascrivi i nuovi audio e analizza le nuove immagini di questa categoria automaticamente",
   "categoryAutomaticInferenceLabel": "Inferenza automatica",

@@ -3028,7 +3028,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get categoryAutomaticAgentWakesDescription =>
-      'Laat de assistent in deze categorie zichzelf bijwerken als een taak verandert. Geldt voor nieuwe taken; bestaande houden hun eigen instelling.';
+      'Wanneer een taak verandert, wordt de assistent in deze categorie automatisch geactiveerd. Geldt voor nieuwe taken; bestaande houden hun eigen instelling.';
 
   @override
   String get categoryAutomaticAgentWakesLabel =>

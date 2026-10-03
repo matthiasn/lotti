@@ -3056,7 +3056,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get categoryAutomaticAgentWakesDescription =>
-      'Lascia che l\'assistente di questa categoria si aggiorni da solo quando un\'attività cambia. Vale per le nuove attività; quelle esistenti mantengono la propria impostazione.';
+      'L\'assistente di questa categoria si avvia automaticamente quando un\'attività cambia. Vale per le nuove attività; quelle esistenti mantengono la propria impostazione.';
 
   @override
   String get categoryAutomaticAgentWakesLabel =>

@@ -1535,7 +1535,7 @@
   "categoryActiveSwitchDescription": "Selecionável para novas entradas",
   "categoryAiDefaultsDescription": "Defina o perfil de IA padrão e o modelo de agente para novas tarefas nesta categoria",
   "categoryAiDefaultsTitle": "Padrões de IA",
-  "categoryAutomaticAgentWakesDescription": "Deixa o assistente desta categoria atualizar-se sozinho quando uma tarefa muda. Aplica-se a tarefas novas; as existentes mantêm a sua própria definição.",
+  "categoryAutomaticAgentWakesDescription": "Permite que o assistente desta categoria seja executado automaticamente quando uma tarefa muda. Aplica-se a tarefas novas; as existentes mantêm a sua própria definição.",
   "categoryAutomaticAgentWakesLabel": "Ativar o assistente automaticamente",
   "categoryAutomaticInferenceDescription": "Transcrever novo áudio e analisar novas imagens nesta categoria automaticamente",
   "categoryAutomaticInferenceLabel": "Inferência automática",
