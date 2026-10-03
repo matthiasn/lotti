@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:gpt_markdown/gpt_markdown.dart';
+import 'package:lotti/features/design_system/theme/icon_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/markdown_link_utils.dart';
@@ -241,7 +242,7 @@ void main() {
 
       expect(find.byType(Image), findsNothing);
       expect(find.text('Image from attacker.example not loaded'), findsOne);
-      expect(find.byIcon(Icons.image_not_supported_outlined), findsOne);
+      expect(find.byIcon(LottiIcons.imageBroken), findsOne);
       // Inline in the paragraph, so its label merges into the paragraph's
       // semantics node rather than standing alone.
       expect(

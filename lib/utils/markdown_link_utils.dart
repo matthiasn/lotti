@@ -91,7 +91,7 @@ Widget buildBlockedMarkdownImage(
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
-          Icons.image_not_supported_outlined,
+          LottiIcons.imageBroken,
           size: tokens.spacing.step5,
           color: color,
         ),
