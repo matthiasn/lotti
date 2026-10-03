@@ -99,6 +99,12 @@ class DayAgentShutdownService {
   /// closing note still reports a due-only task after its due date moved.
   final Map<String, Set<String>> _decidedTaskIds = {};
 
+  /// The subset of [_decidedTaskIds] the user dropped. A drop is stamped when
+  /// it is made, so closing an earlier day stamps it after that day; this is
+  /// what still reports it as dropped there — and only the user's own drop,
+  /// never a rejection someone else made.
+  final Map<String, Set<String>> _droppedTaskIds = {};
+
   /// Completion cap for the note: one short paragraph.
   static const tomorrowNoteMaxTokens = 300;
 
@@ -190,6 +196,7 @@ class DayAgentShutdownService {
     // even without recorded time, a plan block or a due date on it.
     final closedSince = await _journalDb.getTasksClosedSince(day);
     final decidedIds = _decidedTaskIds[dayAgentIdForDate(day)] ?? const {};
+    final droppedIds = _droppedTaskIds[dayAgentIdForDate(day)] ?? const {};
     final candidateIds = <String>{
       for (final block in dayBlocks) ?block.taskId,
       ...plannedTaskIds,
@@ -242,7 +249,7 @@ class DayAgentShutdownService {
       if (task == null) continue;
       final due = task.data.due;
       if (task.data.status is TaskRejected &&
-          inDay(task.data.status.createdAt)) {
+          (inDay(task.data.status.createdAt) || droppedIds.contains(id))) {
         dropped.add(_shutdownTask(task));
       } else if (isClosedTask(task) || doneIds.contains(id)) {
         // Closed now, or done when the day ended and only reopened after it:
@@ -347,7 +354,15 @@ class DayAgentShutdownService {
     // Remembered only once triage returned, which is when the change is
     // written: a refused triage leaves the task undecided, and remembering
     // it anyway would let a later Shutdown list it as carrying forward.
-    _decidedTaskIds.putIfAbsent(dayAgentIdForDate(day), () => {}).add(taskId);
+    final dayId = dayAgentIdForDate(day);
+    _decidedTaskIds.putIfAbsent(dayId, () => {}).add(taskId);
+    final dropped = _droppedTaskIds.putIfAbsent(dayId, () => {});
+    if (action == CarryoverAction.drop) {
+      dropped.add(taskId);
+    } else {
+      // Re-placed after an earlier drop in the same session.
+      dropped.remove(taskId);
+    }
   }
 
   // ─────────────────────────── Reflection ──

@@ -711,6 +711,69 @@ void main() {
       },
     );
 
+    // Closing an earlier day: the drop is stamped when it is made, two days
+    // after the day it was decided for.
+    Task rejectedLater(String id, String title) {
+      final status = TaskStatus.rejected(
+        id: '$id-rejected',
+        createdAt: DateTime(2026, 10, 5, 9),
+        utcOffset: 0,
+      );
+      return _task(id, title, due: _day, status: status, history: [status]);
+    }
+
+    void stubTriageReturns(Task task) => when(
+      () => captureService.applyTriage(
+        agentId: any(named: 'agentId'),
+        taskId: task.meta.id,
+        action: any(named: 'action'),
+        deferTo: any(named: 'deferTo'),
+      ),
+    ).thenAnswer((_) async => task);
+
+    test('a drop made while closing an earlier day still reads as dropped '
+        'there', () async {
+      final dropped = rejectedLater('call', 'Call the bank');
+      stubTriageReturns(dropped);
+      stubDay(withPlan: false);
+      entities['call'] = dropped;
+
+      await service.recordCarryoverDecision(
+        forDate: _day,
+        taskId: 'call',
+        action: CarryoverAction.drop,
+      );
+      final day = await service.shutdownDay(_day);
+      await service.tomorrowNote(_day);
+
+      expect(day.carryover, isEmpty);
+      expect(prompts.single, contains('Dropped by the user:\n- Call the bank'));
+    });
+
+    test('a task the user re-placed but someone else rejected later is not '
+        'their drop', () async {
+      final rejected = rejectedLater('call', 'Call the bank');
+      stubTriageReturns(rejected);
+      stubDay(withPlan: false);
+      entities['call'] = rejected;
+
+      // Dropped first, then re-placed in the same session: the drop is
+      // withdrawn, so the later rejection is not reported as the user's.
+      await service.recordCarryoverDecision(
+        forDate: _day,
+        taskId: 'call',
+        action: CarryoverAction.drop,
+      );
+      await service.recordCarryoverDecision(
+        forDate: _day,
+        taskId: 'call',
+        action: CarryoverAction.tomorrow,
+      );
+      await service.tomorrowNote(_day);
+
+      expect(prompts.single, isNot(contains('Dropped by the user')));
+    });
+
     test('a refused triage leaves the task undecided', () async {
       // An open task with no plan, due date or recorded time is not meant for
       // the day. Triage refuses to write it (here: it left the planner's

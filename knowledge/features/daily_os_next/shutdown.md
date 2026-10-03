@@ -97,7 +97,11 @@ neither day, here as there.
   re-placed on the next day by default. Tasks decided in this session stay meant
   for the day even when only their due date put them there, so the note still
   reports them as moved or dropped; a task dropped that day without being
-  planned or due counts as dropped too.
+  planned or due counts as dropped too. A drop is stamped when it is made, so
+  one made while closing an earlier day falls after that day; the session's
+  own drops are tracked apart from its other decisions so they still read as
+  dropped there, and a task re-placed after a drop no longer does. A decision
+  is remembered only once triage has written it.
 - **Metrics** (constants beside the functions):
   - *Focus* — recorded work minutes; calendar events are time spent, not focus.
   - *Flow sessions* — runs of work on one thing of at least `flowSessionMinimum`
