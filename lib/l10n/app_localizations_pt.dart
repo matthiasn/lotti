@@ -6546,6 +6546,9 @@ class AppLocalizationsPt extends AppLocalizations {
       'Criar imagem a partir da descrição de voz';
 
   @override
+  String get githubAlsoLinkedElsewhere => 'Também vinculada a outra tarefa';
+
+  @override
   String githubChecksFailing(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6618,10 +6621,18 @@ class AppLocalizationsPt extends AppLocalizations {
   String get githubLinkButton => 'Vincular';
 
   @override
+  String get githubLinkedElsewhere =>
+      'Esta pull request já está vinculada a outra tarefa.';
+
+  @override
   String get githubLinkNotAPullRequest => 'Isso não é uma pull request.';
 
   @override
   String get githubLinkNotGitHub => 'Isso não é um link para github.com.';
+
+  @override
+  String get githubLinkNotStored =>
+      'Não foi possível salvar o vínculo. Tente de novo.';
 
   @override
   String get githubLinkPullRequestHint =>
@@ -6658,6 +6669,26 @@ class AppLocalizationsPt extends AppLocalizations {
   String get githubOpenOnGitHub => 'Abrir no GitHub';
 
   @override
+  String githubPickerEmpty(String repository) {
+    return 'Nenhuma pull request aberta em $repository resta para vincular.';
+  }
+
+  @override
+  String get githubPickerLinking => 'Vinculando pull request';
+
+  @override
+  String get githubPickerLoading => 'Carregando pull requests abertas';
+
+  @override
+  String get githubPickerNoRepository =>
+      'Atribua um repositório do GitHub à categoria desta tarefa para escolher entre as pull requests abertas dele.';
+
+  @override
+  String githubPickerOpenIn(String repository) {
+    return 'Pull requests abertas em $repository';
+  }
+
+  @override
   String get githubPullRequestActions => 'Ações da pull request';
 
   @override
@@ -6668,6 +6699,27 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get githubRefreshPullRequest => 'Atualizar pull request';
+
+  @override
+  String get githubRepositoryHelper =>
+      'dono/repo, ou o link do repositório no github.com';
+
+  @override
+  String get githubRepositoryHint => 'dono/repo';
+
+  @override
+  String get githubRepositoryInvalid =>
+      'Não é um repositório do GitHub. Escreva dono/repo.';
+
+  @override
+  String get githubRepositoryLabel => 'Repositório';
+
+  @override
+  String get githubRepositorySectionDescription =>
+      'O repositório em que as tarefas desta categoria trabalham. Ao vincular uma pull request a uma delas, você pode escolher entre as pull requests abertas deste repositório.';
+
+  @override
+  String get githubRepositorySectionTitle => 'GitHub';
 
   @override
   String get githubReviewApproved => 'Aprovada';

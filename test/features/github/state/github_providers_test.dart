@@ -3,15 +3,22 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/github/api/github_client.dart';
+import 'package:lotti/features/github/domain/github_repository.dart';
+import 'package:lotti/features/github/domain/pull_request_ref.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
+import '../../../widget_test_utils.dart';
 import '../pull_request_fixtures.dart';
 
 void main() {
@@ -241,6 +248,156 @@ void main() {
     expect(
       c.read(taskPullRequestsProvider('task')).map((e) => e.data.number),
       [3, 9],
+    );
+  });
+
+  group('picker providers', () {
+    const repository = GitHubRepository(owner: 'penguin', repo: 'colony');
+    const pr = PullRequestRef(owner: 'penguin', repo: 'colony', number: 12);
+    late MockJournalDb db;
+    late MockPullRequestRepository entries;
+    late StreamController<Set<String>> updates;
+
+    setUp(() async {
+      db = MockJournalDb();
+      entries = MockPullRequestRepository();
+      updates = StreamController<Set<String>>.broadcast();
+      addTearDown(updates.close);
+      final notifications = MockUpdateNotifications();
+      when(() => notifications.updateStream).thenAnswer((_) => updates.stream);
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..unregister<UpdateNotifications>()
+            ..registerSingleton<UpdateNotifications>(notifications);
+        },
+      );
+      addTearDown(tearDownTestGetIt);
+    });
+
+    ProviderContainer pickerContainer() {
+      final c = ProviderContainer(
+        overrides: [
+          journalDbProvider.overrideWithValue(db),
+          pullRequestRepositoryProvider.overrideWithValue(entries),
+          pullRequestServiceProvider.overrideWithValue(service),
+        ],
+      );
+      addTearDown(c.dispose);
+      return c;
+    }
+
+    final categorized = testTask.copyWith(
+      meta: testTask.meta.copyWith(categoryId: 'cat'),
+    );
+
+    CategoryDefinition category(String? repo) => CategoryDefinition(
+      id: 'cat',
+      createdAt: DateTime(2024),
+      updatedAt: DateTime(2024),
+      name: 'Colony',
+      vectorClock: null,
+      private: false,
+      active: true,
+      githubRepository: repo,
+    );
+
+    test(
+      "a task's repository is its category's, read again when the task or a "
+      'category changes and not otherwise',
+      () async {
+        JournalEntity? task = categorized;
+        when(
+          () => db.journalEntityById(testTask.meta.id),
+        ).thenAnswer((_) async => task);
+        var repo = 'https://github.com/penguin/colony';
+        when(
+          () => db.getCategoryById('cat'),
+        ).thenAnswer((_) async => category(repo));
+        final c = pickerContainer();
+        final seen = <GitHubRepository?>[];
+        c.listen(
+          taskGitHubRepositoryProvider(testTask.meta.id),
+          (_, next) => next.whenData(seen.add),
+          fireImmediately: true,
+        );
+        await pumpEventQueue();
+
+        repo = 'penguin/igloo';
+        updates.add({'unrelated'});
+        await pumpEventQueue();
+        updates.add({categoriesNotification});
+        await pumpEventQueue();
+
+        task = testTask;
+        updates.add({testTask.meta.id});
+        await pumpEventQueue();
+
+        expect(seen, [
+          repository,
+          const GitHubRepository(owner: 'penguin', repo: 'igloo'),
+          null,
+        ]);
+      },
+    );
+
+    test('a category without a repository gives none', () async {
+      when(
+        () => db.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => categorized);
+      when(
+        () => db.getCategoryById('cat'),
+      ).thenAnswer((_) async => category(null));
+
+      final c = pickerContainer();
+      final provider = taskGitHubRepositoryProvider(testTask.meta.id);
+      c.listen(provider, (_, _) {});
+
+      expect(await c.read(provider.future), isNull);
+    });
+
+    test('the picker lists what the service offers', () async {
+      const listed = OpenPullRequestsListed([]);
+      when(
+        () => service.openPullRequests(repository),
+      ).thenAnswer((_) async => listed);
+
+      expect(
+        await pickerContainer().read(
+          openPullRequestsProvider(repository).future,
+        ),
+        same(listed),
+      );
+    });
+
+    test(
+      'holders are read again when a link or a pull request entry changes, '
+      'so a double assignment synced in shows up',
+      () async {
+        var holders = <String>{'task-1'};
+        when(
+          () => entries.holdersOf([pr]),
+        ).thenAnswer((_) async => {pr.key: holders});
+        final c = pickerContainer();
+        final seen = <Set<String>>[];
+        c.listen(
+          pullRequestHoldersProvider(pr),
+          (_, next) => next.whenData(seen.add),
+          fireImmediately: true,
+        );
+        await pumpEventQueue();
+
+        holders = {'task-1', 'task-2'};
+        updates.add({'unrelated'});
+        await pumpEventQueue();
+        updates.add({linkNotification});
+        await pumpEventQueue();
+
+        expect(seen, [
+          {'task-1'},
+          {'task-1', 'task-2'},
+        ]);
+      },
     );
   });
 }

@@ -2716,6 +2716,7 @@
   "geminiThinkingModeMinimalLabel": "Minimální",
   "generateCoverArt": "Vytvořit obálku",
   "generateCoverArtSubtitle": "Vytvořit obrázek z hlasového popisu",
+  "githubAlsoLinkedElsewhere": "Propojeno i s jiným úkolem",
   "githubChecksFailing": "{count, plural, =1{1 kontrola selhala} few{{count} kontroly selhaly} other{{count} kontrol selhalo}}",
   "@githubChecksFailing": {
     "description": "Status line part: how many CI checks of a pull request fail.",
@@ -2760,8 +2761,10 @@
   "githubFailureUnauthorized": "GitHub token odmítl. Možná vypršel nebo byl zrušen.",
   "githubLinkAlreadyLinked": "Tento pull request už je s tímto úkolem propojený.",
   "githubLinkButton": "Propojit",
+  "githubLinkedElsewhere": "Tento pull request už je propojený s jiným úkolem.",
   "githubLinkNotAPullRequest": "To není pull request.",
   "githubLinkNotGitHub": "To není odkaz na github.com.",
+  "githubLinkNotStored": "Propojení se nepodařilo uložit. Zkus to znovu.",
   "githubLinkPullRequestHint": "Sleduj tady jeho kontroly, revize a stav.",
   "githubLinkPullRequestTitle": "Propojit pull request",
   "githubLinkUrlHelper": "Nebo napiš vlastnik/repo#123.",
@@ -2773,10 +2776,39 @@
   "githubNotRefreshed": "Aktualizace se nezdařila",
   "githubNotRefreshedYet": "Zatím neaktualizováno",
   "githubOpenOnGitHub": "Otevřít na GitHubu",
+  "githubPickerEmpty": "V {repository} už nezbývá žádný otevřený pull request k propojení.",
+  "@githubPickerEmpty": {
+    "description": "The picker found no open pull request left to link.",
+    "placeholders": {
+      "repository": {
+        "type": "String",
+        "example": "penguin/colony"
+      }
+    }
+  },
+  "githubPickerLinking": "Propojuje se pull request",
+  "githubPickerLoading": "Načítají se otevřené pull requesty",
+  "githubPickerNoRepository": "Přiřaď kategorii tohoto úkolu repozitář GitHubu a vybírej z jeho otevřených pull requestů.",
+  "githubPickerOpenIn": "Otevřené pull requesty v {repository}",
+  "@githubPickerOpenIn": {
+    "description": "Heading over the open pull requests of a repository.",
+    "placeholders": {
+      "repository": {
+        "type": "String",
+        "example": "penguin/colony"
+      }
+    }
+  },
   "githubPullRequestActions": "Akce pull requestu",
   "githubPullRequestsTitle": "Pull requesty",
   "githubRefreshingPullRequest": "Pull request se aktualizuje",
   "githubRefreshPullRequest": "Aktualizovat pull request",
+  "githubRepositoryHelper": "vlastnik/repo, nebo odkaz repozitáře na github.com",
+  "githubRepositoryHint": "vlastnik/repo",
+  "githubRepositoryInvalid": "Není to repozitář GitHubu. Napiš vlastnik/repo.",
+  "githubRepositoryLabel": "Repozitář",
+  "githubRepositorySectionDescription": "Repozitář, ve kterém pracují úkoly této kategorie. Když k některému z nich propojuješ pull request, můžeš vybírat z otevřených pull requestů tohoto repozitáře.",
+  "githubRepositorySectionTitle": "GitHub",
   "githubReviewApproved": "Schváleno",
   "githubReviewChangesRequested": "Vyžádány změny",
   "githubReviewPending": "Vyžádána revize",

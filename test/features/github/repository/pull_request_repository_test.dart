@@ -110,7 +110,20 @@ void main() {
   });
 
   Future<PullRequestEntry> linked({PullRequestSnapshot? snapshot}) async =>
-      (await repository.link(taskId: taskId, ref: ref, snapshot: snapshot))!;
+      (await repository.link(
+        taskId: taskId,
+        ref: ref,
+        snapshot: snapshot,
+      )).linked!;
+
+  /// Another task, stored like the first one.
+  Future<String> anotherTask() async {
+    final other = testTask.copyWith(
+      meta: testTask.meta.copyWith(id: 'another-task'),
+    );
+    await getIt<PersistenceLogic>().createDbEntity(other);
+    return other.meta.id;
+  }
 
   Future<PullRequestEntry?> stored(String id) async =>
       await journalDb.journalEntityByIdIncludingDeleted(id)
@@ -130,7 +143,9 @@ void main() {
         expect(row?.data.snapshot, prSnapshot());
         expect(row?.meta.categoryId, testTask.meta.categoryId);
         expect(row?.geolocation, isNull);
-        expect(await repository.isLinked(taskId: taskId, ref: ref), isTrue);
+        expect(await repository.holdersOf([ref]), {
+          ref.key: {taskId},
+        });
       },
     );
 
@@ -145,9 +160,66 @@ void main() {
           number: 42,
         ),
       );
-      expect(again, isNull);
+      expect(again.linked, isNull);
+      expect(again.heldBy, {taskId});
       expect(await repository.forTask(taskId), hasLength(1));
     });
+
+    test(
+      'a pull request another task holds is not linked again: it belongs to '
+      'one task',
+      () async {
+        await linked();
+        final other = await anotherTask();
+
+        final attempt = await repository.link(taskId: other, ref: ref);
+
+        expect(attempt.linked, isNull);
+        expect(attempt.heldBy, {taskId});
+        expect(await repository.forTask(other), isEmpty);
+      },
+    );
+
+    test(
+      'two links started at once on this device, for two tasks, link once '
+      '(AtomicLink)',
+      () async {
+        final other = await anotherTask();
+
+        final attempts = await Future.wait([
+          repository.link(taskId: taskId, ref: ref),
+          repository.link(taskId: other, ref: ref),
+        ]);
+
+        expect(attempts.where((a) => a.linked != null), hasLength(1));
+        expect(
+          (await repository.holdersOf([ref]))[ref.key],
+          hasLength(1),
+        );
+      },
+    );
+
+    test('a pull request unlinked from its task is free again', () async {
+      await linked();
+      await repository.unlink(taskId: taskId, ref: ref);
+      final other = await anotherTask();
+
+      expect(await repository.holdersOf([ref]), isEmpty);
+      expect(
+        (await repository.link(taskId: other, ref: ref)).linked,
+        isNotNull,
+      );
+    });
+  });
+
+  test('holdersOf is empty for no pull requests, or none held', () async {
+    expect(await repository.holdersOf(const []), isEmpty);
+    expect(
+      await repository.holdersOf(const [
+        PullRequestRef(owner: 'o', repo: 'r', number: 1),
+      ]),
+      isEmpty,
+    );
   });
 
   test('forTask lists live pull requests by number', () async {

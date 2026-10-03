@@ -6,6 +6,8 @@ import 'package:clock/clock.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/features/github/api/pull_request_mapper.dart';
+import 'package:lotti/features/github/domain/github_repository.dart';
+import 'package:lotti/features/github/domain/open_pull_request.dart';
 import 'package:lotti/features/github/domain/pull_request_ref.dart';
 
 /// Why a GitHub call failed.
@@ -130,6 +132,33 @@ class GitHubClient {
     }
   }
 
+  /// The open pull requests of [repository], most recently updated first,
+  /// every page of them.
+  Future<List<OpenPullRequest>> listOpenPullRequests(
+    GitHubRepository repository, {
+    required String token,
+  }) async {
+    final json = await _getAll(
+      '/repos/${repository.owner}/${repository.repo}/pulls',
+      token: token,
+      query: const {'state': 'open', 'sort': 'updated', 'direction': 'desc'},
+    );
+    try {
+      return [
+        for (final item in json! as List<dynamic>)
+          switch (item) {
+            final Map<String, dynamic> map => openPullRequestFrom(
+              map,
+              repository,
+            ),
+            _ => throw const FormatException('not an object'),
+          },
+      ];
+    } on FormatException {
+      throw const GitHubException(GitHubFailureKind.invalidResponse);
+    }
+  }
+
   void close() => _http.close();
 
   /// Every page of a paginated list, as one response of the first page's
@@ -142,6 +171,7 @@ class GitHubClient {
     String path, {
     required String token,
     String? listKey,
+    Map<String, String> query = const {},
   }) async {
     List<dynamic> itemsOf(Object? json) => switch ((json, listKey)) {
       (final List<dynamic> list, null) => list,
@@ -154,7 +184,7 @@ class GitHubClient {
     Future<Object?> page(int number) async => (await _get(
       path,
       token: token,
-      query: {'per_page': '$pageSize', 'page': '$number'},
+      query: {...query, 'per_page': '$pageSize', 'page': '$number'},
     )).json;
 
     final first = await page(1);

@@ -241,6 +241,11 @@ sealed class EntityDefinition with _$EntityDefinition {
     /// means the prompts carry nothing.
     String? knowledgeBrief,
 
+    /// The GitHub repository (`owner/repo`) the category's tasks work in:
+    /// the "+" picker on a task lists its open pull requests. Null when the
+    /// category has none.
+    String? githubRepository,
+
     /// Default inference profile ID for new tasks in this category.
     /// Enables speech-to-text and image analysis immediately on task creation.
     String? defaultProfileId,

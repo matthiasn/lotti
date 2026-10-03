@@ -562,4 +562,88 @@ void main() {
       expect(saved.automaticInferenceEnabled, isNull);
     });
   });
+
+  group('GitHub repository', () {
+    late MockCategoryRepository mockRepository;
+    late String testCategoryId;
+
+    setUp(() {
+      mockRepository = MockCategoryRepository();
+      testCategoryId = const Uuid().v4();
+      beamToNamedOverride = (_) {};
+    });
+
+    tearDown(() {
+      beamToNamedOverride = null;
+    });
+
+    Future<void> pumpPage(WidgetTester tester, {required bool enabled}) async {
+      tester.view.physicalSize = const Size(1024, 4200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+        (_) => Stream.value(CategoryTestUtils.createTestCategory()),
+      );
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            categoryRepositoryProvider.overrideWithValue(mockRepository),
+            configFlagProvider(
+              enableGitHubPullRequestsFlag,
+            ).overrideWith((ref) => Stream.value(enabled)),
+            agentTemplatesProvider.overrideWith((ref) async => const []),
+          ],
+          child: CategoryDetailsPage(categoryId: testCategoryId),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+    }
+
+    final field = find.byKey(const Key('github_repository_field'));
+
+    testWidgets('is not offered while GitHub pull requests are disabled', (
+      tester,
+    ) async {
+      await pumpPage(tester, enabled: false);
+      expect(field, findsNothing);
+    });
+
+    testWidgets('is offered while GitHub pull requests are enabled', (
+      tester,
+    ) async {
+      await pumpPage(tester, enabled: true);
+      expect(field, findsOneWidget);
+    });
+
+    testWidgets(
+      'a repository typed as a URL is a change to save; nonsense is not, '
+      'even after a valid one',
+      (tester) async {
+        await pumpPage(tester, enabled: true);
+
+        await tester.enterText(field, 'not a repository');
+        await tester.pump();
+        expect(
+          find.text('Not a GitHub repository. Write owner/repo.'),
+          findsOneWidget,
+        );
+        expect(isPillEnabled(tester, 'Save'), isFalse);
+
+        await tester.enterText(field, 'https://github.com/penguin/colony');
+        await tester.pump();
+        expect(isPillEnabled(tester, 'Save'), isTrue);
+
+        // The pending value is still penguin/colony, which must not be saved
+        // while the field shows something else.
+        await tester.enterText(field, 'https://github.com/penguin');
+        await tester.pump();
+        expect(isPillEnabled(tester, 'Save'), isFalse);
+
+        await tester.enterText(field, 'penguin/igloo');
+        await tester.pump();
+        expect(isPillEnabled(tester, 'Save'), isTrue);
+      },
+    );
+  });
 }

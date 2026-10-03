@@ -2709,6 +2709,7 @@
   "geminiThinkingModeMinimalLabel": "Minim",
   "generateCoverArt": "Generează copertă",
   "generateCoverArtSubtitle": "Creează imagine din descrierea vocală",
+  "githubAlsoLinkedElsewhere": "Legat și de o altă sarcină",
   "githubChecksFailing": "{count, plural, =1{1 verificare eșuată} few{{count} verificări eșuate} other{{count} de verificări eșuate}}",
   "@githubChecksFailing": {
     "description": "Status line part: how many CI checks of a pull request fail.",
@@ -2753,8 +2754,10 @@
   "githubFailureUnauthorized": "GitHub a respins tokenul. Este posibil să fi expirat sau să fi fost revocat.",
   "githubLinkAlreadyLinked": "Acest pull request este deja legat de această sarcină.",
   "githubLinkButton": "Legați",
+  "githubLinkedElsewhere": "Acest pull request este deja legat de o altă sarcină.",
   "githubLinkNotAPullRequest": "Acesta nu este un pull request.",
   "githubLinkNotGitHub": "Acesta nu este un link către github.com.",
+  "githubLinkNotStored": "Legătura nu a putut fi salvată. Încercați din nou.",
   "githubLinkPullRequestHint": "Urmăriți aici verificările, revizuirile și starea acestuia.",
   "githubLinkPullRequestTitle": "Legați un pull request",
   "githubLinkUrlHelper": "Sau scrieți proprietar/repo#123.",
@@ -2766,10 +2769,39 @@
   "githubNotRefreshed": "Actualizarea a eșuat",
   "githubNotRefreshedYet": "Neactualizat încă",
   "githubOpenOnGitHub": "Deschideți pe GitHub",
+  "githubPickerEmpty": "Nu mai rămâne niciun pull request deschis în {repository} de legat.",
+  "@githubPickerEmpty": {
+    "description": "The picker found no open pull request left to link.",
+    "placeholders": {
+      "repository": {
+        "type": "String",
+        "example": "penguin/colony"
+      }
+    }
+  },
+  "githubPickerLinking": "Se leagă pull request-ul",
+  "githubPickerLoading": "Se încarcă pull request-urile deschise",
+  "githubPickerNoRepository": "Atribuiți un depozit GitHub categoriei acestei sarcini pentru a alege dintre pull request-urile sale deschise.",
+  "githubPickerOpenIn": "Pull request-uri deschise în {repository}",
+  "@githubPickerOpenIn": {
+    "description": "Heading over the open pull requests of a repository.",
+    "placeholders": {
+      "repository": {
+        "type": "String",
+        "example": "penguin/colony"
+      }
+    }
+  },
   "githubPullRequestActions": "Acțiuni pentru pull request",
   "githubPullRequestsTitle": "Pull request-uri",
   "githubRefreshingPullRequest": "Se actualizează pull request-ul",
   "githubRefreshPullRequest": "Actualizați pull request-ul",
+  "githubRepositoryHelper": "proprietar/repo sau linkul depozitului pe github.com",
+  "githubRepositoryHint": "proprietar/repo",
+  "githubRepositoryInvalid": "Nu este un depozit GitHub. Scrieți proprietar/repo.",
+  "githubRepositoryLabel": "Depozit",
+  "githubRepositorySectionDescription": "Depozitul în care lucrează sarcinile acestei categorii. Când legați un pull request de una dintre ele, puteți alege dintre pull request-urile deschise ale acestui depozit.",
+  "githubRepositorySectionTitle": "GitHub",
   "githubReviewApproved": "Aprobat",
   "githubReviewChangesRequested": "Modificări solicitate",
   "githubReviewPending": "Revizuire solicitată",

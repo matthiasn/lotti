@@ -2966,6 +2966,7 @@
   "geminiThinkingModeMinimalLabel": "Minimal",
   "generateCoverArt": "Generera omslagskonst",
   "generateCoverArtSubtitle": "Skapa bild från röstbeskrivning",
+  "githubAlsoLinkedElsewhere": "Kopplad även till en annan uppgift",
   "githubChecksFailing": "{count, plural, =1{1 kontroll misslyckades} other{{count} kontroller misslyckades}}",
   "@githubChecksFailing": {
     "description": "Status line part: how many CI checks of a pull request fail.",
@@ -3010,8 +3011,10 @@
   "githubFailureUnauthorized": "GitHub avvisade din token. Den kan ha gått ut eller återkallats.",
   "githubLinkAlreadyLinked": "Den här pull requesten är redan kopplad till den här uppgiften.",
   "githubLinkButton": "Koppla",
+  "githubLinkedElsewhere": "Den här pull requesten är redan kopplad till en annan uppgift.",
   "githubLinkNotAPullRequest": "Det är inte en pull request.",
   "githubLinkNotGitHub": "Det är inte en länk till github.com.",
+  "githubLinkNotStored": "Kopplingen kunde inte sparas. Försök igen.",
   "githubLinkPullRequestHint": "Följ dess kontroller, granskningar och status här.",
   "githubLinkPullRequestTitle": "Koppla en pull request",
   "githubLinkUrlHelper": "Eller skriv agare/repo#123.",
@@ -3023,10 +3026,39 @@
   "githubNotRefreshed": "Kunde inte uppdatera",
   "githubNotRefreshedYet": "Inte uppdaterad än",
   "githubOpenOnGitHub": "Öppna på GitHub",
+  "githubPickerEmpty": "Ingen öppen pull request i {repository} finns kvar att koppla.",
+  "@githubPickerEmpty": {
+    "description": "The picker found no open pull request left to link.",
+    "placeholders": {
+      "repository": {
+        "type": "String",
+        "example": "penguin/colony"
+      }
+    }
+  },
+  "githubPickerLinking": "Kopplar pull request",
+  "githubPickerLoading": "Läser in öppna pull requests",
+  "githubPickerNoRepository": "Tilldela kategorin för den här uppgiften ett GitHub-repo för att välja bland dess öppna pull requests.",
+  "githubPickerOpenIn": "Öppna pull requests i {repository}",
+  "@githubPickerOpenIn": {
+    "description": "Heading over the open pull requests of a repository.",
+    "placeholders": {
+      "repository": {
+        "type": "String",
+        "example": "penguin/colony"
+      }
+    }
+  },
   "githubPullRequestActions": "Åtgärder för pull request",
   "githubPullRequestsTitle": "Pull requests",
   "githubRefreshingPullRequest": "Uppdaterar pull request",
   "githubRefreshPullRequest": "Uppdatera pull request",
+  "githubRepositoryHelper": "agare/repo, eller repots länk på github.com",
+  "githubRepositoryHint": "agare/repo",
+  "githubRepositoryInvalid": "Inte ett GitHub-repo. Skriv agare/repo.",
+  "githubRepositoryLabel": "Repo",
+  "githubRepositorySectionDescription": "Repot som den här kategorins uppgifter arbetar i. När du kopplar en pull request till en av dem kan du välja bland repots öppna pull requests.",
+  "githubRepositorySectionTitle": "GitHub",
   "githubReviewApproved": "Godkänd",
   "githubReviewChangesRequested": "Ändringar begärda",
   "githubReviewPending": "Granskning begärd",

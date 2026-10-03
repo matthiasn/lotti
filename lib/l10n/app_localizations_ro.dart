@@ -6594,6 +6594,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Creează imagine din descrierea vocală';
 
   @override
+  String get githubAlsoLinkedElsewhere => 'Legat și de o altă sarcină';
+
+  @override
   String githubChecksFailing(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6667,10 +6670,18 @@ class AppLocalizationsRo extends AppLocalizations {
   String get githubLinkButton => 'Legați';
 
   @override
+  String get githubLinkedElsewhere =>
+      'Acest pull request este deja legat de o altă sarcină.';
+
+  @override
   String get githubLinkNotAPullRequest => 'Acesta nu este un pull request.';
 
   @override
   String get githubLinkNotGitHub => 'Acesta nu este un link către github.com.';
+
+  @override
+  String get githubLinkNotStored =>
+      'Legătura nu a putut fi salvată. Încercați din nou.';
 
   @override
   String get githubLinkPullRequestHint =>
@@ -6707,6 +6718,26 @@ class AppLocalizationsRo extends AppLocalizations {
   String get githubOpenOnGitHub => 'Deschideți pe GitHub';
 
   @override
+  String githubPickerEmpty(String repository) {
+    return 'Nu mai rămâne niciun pull request deschis în $repository de legat.';
+  }
+
+  @override
+  String get githubPickerLinking => 'Se leagă pull request-ul';
+
+  @override
+  String get githubPickerLoading => 'Se încarcă pull request-urile deschise';
+
+  @override
+  String get githubPickerNoRepository =>
+      'Atribuiți un depozit GitHub categoriei acestei sarcini pentru a alege dintre pull request-urile sale deschise.';
+
+  @override
+  String githubPickerOpenIn(String repository) {
+    return 'Pull request-uri deschise în $repository';
+  }
+
+  @override
   String get githubPullRequestActions => 'Acțiuni pentru pull request';
 
   @override
@@ -6717,6 +6748,27 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get githubRefreshPullRequest => 'Actualizați pull request-ul';
+
+  @override
+  String get githubRepositoryHelper =>
+      'proprietar/repo sau linkul depozitului pe github.com';
+
+  @override
+  String get githubRepositoryHint => 'proprietar/repo';
+
+  @override
+  String get githubRepositoryInvalid =>
+      'Nu este un depozit GitHub. Scrieți proprietar/repo.';
+
+  @override
+  String get githubRepositoryLabel => 'Depozit';
+
+  @override
+  String get githubRepositorySectionDescription =>
+      'Depozitul în care lucrează sarcinile acestei categorii. Când legați un pull request de una dintre ele, puteți alege dintre pull request-urile deschise ale acestui depozit.';
+
+  @override
+  String get githubRepositorySectionTitle => 'GitHub';
 
   @override
   String get githubReviewApproved => 'Aprobat';

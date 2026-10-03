@@ -6488,6 +6488,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get generateCoverArtSubtitle => 'Skapa bild från röstbeskrivning';
 
   @override
+  String get githubAlsoLinkedElsewhere => 'Kopplad även till en annan uppgift';
+
+  @override
   String githubChecksFailing(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6560,10 +6563,18 @@ class AppLocalizationsSv extends AppLocalizations {
   String get githubLinkButton => 'Koppla';
 
   @override
+  String get githubLinkedElsewhere =>
+      'Den här pull requesten är redan kopplad till en annan uppgift.';
+
+  @override
   String get githubLinkNotAPullRequest => 'Det är inte en pull request.';
 
   @override
   String get githubLinkNotGitHub => 'Det är inte en länk till github.com.';
+
+  @override
+  String get githubLinkNotStored =>
+      'Kopplingen kunde inte sparas. Försök igen.';
 
   @override
   String get githubLinkPullRequestHint =>
@@ -6600,6 +6611,26 @@ class AppLocalizationsSv extends AppLocalizations {
   String get githubOpenOnGitHub => 'Öppna på GitHub';
 
   @override
+  String githubPickerEmpty(String repository) {
+    return 'Ingen öppen pull request i $repository finns kvar att koppla.';
+  }
+
+  @override
+  String get githubPickerLinking => 'Kopplar pull request';
+
+  @override
+  String get githubPickerLoading => 'Läser in öppna pull requests';
+
+  @override
+  String get githubPickerNoRepository =>
+      'Tilldela kategorin för den här uppgiften ett GitHub-repo för att välja bland dess öppna pull requests.';
+
+  @override
+  String githubPickerOpenIn(String repository) {
+    return 'Öppna pull requests i $repository';
+  }
+
+  @override
   String get githubPullRequestActions => 'Åtgärder för pull request';
 
   @override
@@ -6610,6 +6641,27 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get githubRefreshPullRequest => 'Uppdatera pull request';
+
+  @override
+  String get githubRepositoryHelper =>
+      'agare/repo, eller repots länk på github.com';
+
+  @override
+  String get githubRepositoryHint => 'agare/repo';
+
+  @override
+  String get githubRepositoryInvalid =>
+      'Inte ett GitHub-repo. Skriv agare/repo.';
+
+  @override
+  String get githubRepositoryLabel => 'Repo';
+
+  @override
+  String get githubRepositorySectionDescription =>
+      'Repot som den här kategorins uppgifter arbetar i. När du kopplar en pull request till en av dem kan du välja bland repots öppna pull requests.';
+
+  @override
+  String get githubRepositorySectionTitle => 'GitHub';
 
   @override
   String get githubReviewApproved => 'Godkänd';

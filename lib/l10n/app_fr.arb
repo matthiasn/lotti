@@ -2709,6 +2709,7 @@
   "geminiThinkingModeMinimalLabel": "Minimal",
   "generateCoverArt": "Générer une couverture",
   "generateCoverArtSubtitle": "Créer une image à partir de la description vocale",
+  "githubAlsoLinkedElsewhere": "Liée aussi à une autre tâche",
   "githubChecksFailing": "{count, plural, =1{1 vérification en échec} other{{count} vérifications en échec}}",
   "@githubChecksFailing": {
     "description": "Status line part: how many CI checks of a pull request fail.",
@@ -2753,8 +2754,10 @@
   "githubFailureUnauthorized": "GitHub a refusé le jeton. Il a peut-être expiré ou été révoqué.",
   "githubLinkAlreadyLinked": "Cette pull request est déjà liée à cette tâche.",
   "githubLinkButton": "Lier",
+  "githubLinkedElsewhere": "Cette pull request est déjà liée à une autre tâche.",
   "githubLinkNotAPullRequest": "Ce n'est pas une pull request.",
   "githubLinkNotGitHub": "Ce n'est pas un lien vers github.com.",
+  "githubLinkNotStored": "Le lien n'a pas pu être enregistré. Réessaie.",
   "githubLinkPullRequestHint": "Suis ici ses vérifications, ses revues et son état.",
   "githubLinkPullRequestTitle": "Lier une pull request",
   "githubLinkUrlHelper": "Ou écris proprietaire/depot#123.",
@@ -2766,10 +2769,39 @@
   "githubNotRefreshed": "Actualisation impossible",
   "githubNotRefreshedYet": "Pas encore actualisée",
   "githubOpenOnGitHub": "Ouvrir sur GitHub",
+  "githubPickerEmpty": "Aucune pull request ouverte de {repository} ne reste à lier.",
+  "@githubPickerEmpty": {
+    "description": "The picker found no open pull request left to link.",
+    "placeholders": {
+      "repository": {
+        "type": "String",
+        "example": "penguin/colony"
+      }
+    }
+  },
+  "githubPickerLinking": "Liaison de la pull request",
+  "githubPickerLoading": "Chargement des pull requests ouvertes",
+  "githubPickerNoRepository": "Attribue un dépôt GitHub à la catégorie de cette tâche pour choisir parmi ses pull requests ouvertes.",
+  "githubPickerOpenIn": "Pull requests ouvertes dans {repository}",
+  "@githubPickerOpenIn": {
+    "description": "Heading over the open pull requests of a repository.",
+    "placeholders": {
+      "repository": {
+        "type": "String",
+        "example": "penguin/colony"
+      }
+    }
+  },
   "githubPullRequestActions": "Actions de la pull request",
   "githubPullRequestsTitle": "Pull requests",
   "githubRefreshingPullRequest": "Actualisation de la pull request",
   "githubRefreshPullRequest": "Actualiser la pull request",
+  "githubRepositoryHelper": "proprietaire/depot, ou le lien du dépôt sur github.com",
+  "githubRepositoryHint": "proprietaire/depot",
+  "githubRepositoryInvalid": "Ce n'est pas un dépôt GitHub. Écris proprietaire/depot.",
+  "githubRepositoryLabel": "Dépôt",
+  "githubRepositorySectionDescription": "Le dépôt utilisé par les tâches de cette catégorie. Lorsque tu lies une pull request à l'une d'elles, tu peux choisir parmi les pull requests ouvertes de ce dépôt.",
+  "githubRepositorySectionTitle": "GitHub",
   "githubReviewApproved": "Approuvée",
   "githubReviewChangesRequested": "Modifications demandées",
   "githubReviewPending": "Revue demandée",

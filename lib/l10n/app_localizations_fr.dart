@@ -6586,6 +6586,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Créer une image à partir de la description vocale';
 
   @override
+  String get githubAlsoLinkedElsewhere => 'Liée aussi à une autre tâche';
+
+  @override
   String githubChecksFailing(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6658,10 +6661,18 @@ class AppLocalizationsFr extends AppLocalizations {
   String get githubLinkButton => 'Lier';
 
   @override
+  String get githubLinkedElsewhere =>
+      'Cette pull request est déjà liée à une autre tâche.';
+
+  @override
   String get githubLinkNotAPullRequest => 'Ce n\'est pas une pull request.';
 
   @override
   String get githubLinkNotGitHub => 'Ce n\'est pas un lien vers github.com.';
+
+  @override
+  String get githubLinkNotStored =>
+      'Le lien n\'a pas pu être enregistré. Réessaie.';
 
   @override
   String get githubLinkPullRequestHint =>
@@ -6699,6 +6710,26 @@ class AppLocalizationsFr extends AppLocalizations {
   String get githubOpenOnGitHub => 'Ouvrir sur GitHub';
 
   @override
+  String githubPickerEmpty(String repository) {
+    return 'Aucune pull request ouverte de $repository ne reste à lier.';
+  }
+
+  @override
+  String get githubPickerLinking => 'Liaison de la pull request';
+
+  @override
+  String get githubPickerLoading => 'Chargement des pull requests ouvertes';
+
+  @override
+  String get githubPickerNoRepository =>
+      'Attribue un dépôt GitHub à la catégorie de cette tâche pour choisir parmi ses pull requests ouvertes.';
+
+  @override
+  String githubPickerOpenIn(String repository) {
+    return 'Pull requests ouvertes dans $repository';
+  }
+
+  @override
   String get githubPullRequestActions => 'Actions de la pull request';
 
   @override
@@ -6709,6 +6740,27 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get githubRefreshPullRequest => 'Actualiser la pull request';
+
+  @override
+  String get githubRepositoryHelper =>
+      'proprietaire/depot, ou le lien du dépôt sur github.com';
+
+  @override
+  String get githubRepositoryHint => 'proprietaire/depot';
+
+  @override
+  String get githubRepositoryInvalid =>
+      'Ce n\'est pas un dépôt GitHub. Écris proprietaire/depot.';
+
+  @override
+  String get githubRepositoryLabel => 'Dépôt';
+
+  @override
+  String get githubRepositorySectionDescription =>
+      'Le dépôt utilisé par les tâches de cette catégorie. Lorsque tu lies une pull request à l\'une d\'elles, tu peux choisir parmi les pull requests ouvertes de ce dépôt.';
+
+  @override
+  String get githubRepositorySectionTitle => 'GitHub';
 
   @override
   String get githubReviewApproved => 'Approuvée';

@@ -6506,6 +6506,9 @@ class AppLocalizationsNl extends AppLocalizations {
       'Afbeelding aanmaken van spraakbeschrijving';
 
   @override
+  String get githubAlsoLinkedElsewhere => 'Ook aan een andere taak gekoppeld';
+
+  @override
   String githubChecksFailing(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6578,10 +6581,18 @@ class AppLocalizationsNl extends AppLocalizations {
   String get githubLinkButton => 'Koppelen';
 
   @override
+  String get githubLinkedElsewhere =>
+      'Deze pull request is al aan een andere taak gekoppeld.';
+
+  @override
   String get githubLinkNotAPullRequest => 'Dat is geen pull request.';
 
   @override
   String get githubLinkNotGitHub => 'Dat is geen link naar github.com.';
+
+  @override
+  String get githubLinkNotStored =>
+      'De koppeling kon niet worden opgeslagen. Probeer het opnieuw.';
 
   @override
   String get githubLinkPullRequestHint =>
@@ -6618,6 +6629,26 @@ class AppLocalizationsNl extends AppLocalizations {
   String get githubOpenOnGitHub => 'Openen op GitHub';
 
   @override
+  String githubPickerEmpty(String repository) {
+    return 'Er is geen open pull request in $repository meer om te koppelen.';
+  }
+
+  @override
+  String get githubPickerLinking => 'Pull request wordt gekoppeld';
+
+  @override
+  String get githubPickerLoading => 'Open pull requests worden geladen';
+
+  @override
+  String get githubPickerNoRepository =>
+      'Wijs de categorie van deze taak een GitHub-repository toe om uit de open pull requests te kiezen.';
+
+  @override
+  String githubPickerOpenIn(String repository) {
+    return 'Open pull requests in $repository';
+  }
+
+  @override
   String get githubPullRequestActions => 'Acties voor de pull request';
 
   @override
@@ -6628,6 +6659,27 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get githubRefreshPullRequest => 'Pull request vernieuwen';
+
+  @override
+  String get githubRepositoryHelper =>
+      'eigenaar/repo, of de link van de repository op github.com';
+
+  @override
+  String get githubRepositoryHint => 'eigenaar/repo';
+
+  @override
+  String get githubRepositoryInvalid =>
+      'Geen GitHub-repository. Schrijf eigenaar/repo.';
+
+  @override
+  String get githubRepositoryLabel => 'Repository';
+
+  @override
+  String get githubRepositorySectionDescription =>
+      'De repository waarin de taken van deze categorie werken. Als je een pull request aan een ervan koppelt, kun je kiezen uit de open pull requests van deze repository.';
+
+  @override
+  String get githubRepositorySectionTitle => 'GitHub';
 
   @override
   String get githubReviewApproved => 'Goedgekeurd';

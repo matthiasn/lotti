@@ -13,7 +13,9 @@ part 'category_details_controller.freezed.dart';
 /// View state for the category details/edit form.
 ///
 /// [hasChanges] gates the Save button and reflects whether the in-flight edits
-/// differ from the loaded category. [isLoading] is true until the first value
+/// differ from the loaded category. [hasInvalidInput] also blocks Save: a field
+/// shows text that cannot be stored, so saving would persist something other
+/// than what the form shows. [isLoading] is true until the first value
 /// arrives from the watch stream; [isSaving] guards a write in flight.
 /// [errorMessage] holds a load/save/validation failure for the UI to surface.
 @freezed
@@ -23,6 +25,7 @@ abstract class CategoryDetailsState with _$CategoryDetailsState {
     required bool isLoading,
     required bool isSaving,
     required bool hasChanges,
+    @Default(false) bool hasInvalidInput,
     String? errorMessage,
   }) = _CategoryDetailsState;
 
@@ -134,6 +137,8 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
         _pendingCategory!.defaultEventTemplateId !=
             _originalCategory!.defaultEventTemplateId ||
         _pendingCategory!.knowledgeBrief != _originalCategory!.knowledgeBrief ||
+        _pendingCategory!.githubRepository !=
+            _originalCategory!.githubRepository ||
         _hasListChanges(
           _pendingCategory!.speechDictionary,
           _originalCategory!.speechDictionary,
@@ -275,7 +280,11 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
   /// success the baseline (`_originalCategory`) is advanced and `hasChanges`
   /// clears; on failure an `errorMessage` is set and the edits remain pending.
   Future<void> saveChanges() async {
-    if (_pendingCategory == null || !state.hasChanges) return;
+    if (_pendingCategory == null ||
+        !state.hasChanges ||
+        state.hasInvalidInput) {
+      return;
+    }
 
     // Validate name
     if (_pendingCategory!.name.trim().isEmpty) {
@@ -334,6 +343,21 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
     _updatePendingCategory(
       (c) => c.copyWith(knowledgeBrief: brief.trim().isEmpty ? null : brief),
     );
+  }
+
+  /// Replaces the pending GitHub repository (`owner/repo`, or null for
+  /// none). Not persisted until [saveChanges].
+  void updateGitHubRepository(String? repository) {
+    _updatePendingCategory((c) => c.copyWith(githubRepository: repository));
+  }
+
+  /// Records whether the repository field's text reads as a repository; while
+  /// it does not, [saveChanges] is blocked, since the pending value is still
+  /// the last valid one and not what the field shows.
+  void setGitHubRepositoryValid({required bool valid}) {
+    // The field reports after a frame, by which time the page may be gone.
+    if (!ref.mounted || state.hasInvalidInput == !valid) return;
+    state = state.copyWith(hasInvalidInput: !valid);
   }
 
   /// Replaces the pending speech-dictionary terms (empty list stored as

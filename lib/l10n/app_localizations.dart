@@ -11075,6 +11075,12 @@ abstract class AppLocalizations {
   /// **'Create image from voice description'**
   String get generateCoverArtSubtitle;
 
+  /// No description provided for @githubAlsoLinkedElsewhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Also linked to another task'**
+  String get githubAlsoLinkedElsewhere;
+
   /// Status line part: how many CI checks of a pull request fail.
   ///
   /// In en, this message translates to:
@@ -11177,6 +11183,12 @@ abstract class AppLocalizations {
   /// **'Link'**
   String get githubLinkButton;
 
+  /// No description provided for @githubLinkedElsewhere.
+  ///
+  /// In en, this message translates to:
+  /// **'This pull request is already linked to another task.'**
+  String get githubLinkedElsewhere;
+
   /// No description provided for @githubLinkNotAPullRequest.
   ///
   /// In en, this message translates to:
@@ -11188,6 +11200,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'That is not a link to github.com.'**
   String get githubLinkNotGitHub;
+
+  /// No description provided for @githubLinkNotStored.
+  ///
+  /// In en, this message translates to:
+  /// **'The link could not be saved. Try again.'**
+  String get githubLinkNotStored;
 
   /// No description provided for @githubLinkPullRequestHint.
   ///
@@ -11255,6 +11273,36 @@ abstract class AppLocalizations {
   /// **'Open on GitHub'**
   String get githubOpenOnGitHub;
 
+  /// The picker found no open pull request left to link.
+  ///
+  /// In en, this message translates to:
+  /// **'No open pull request in {repository} is left to link.'**
+  String githubPickerEmpty(String repository);
+
+  /// No description provided for @githubPickerLinking.
+  ///
+  /// In en, this message translates to:
+  /// **'Linking pull request'**
+  String get githubPickerLinking;
+
+  /// No description provided for @githubPickerLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading open pull requests'**
+  String get githubPickerLoading;
+
+  /// No description provided for @githubPickerNoRepository.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign a GitHub repository to this task\'s category to pick from its open pull requests.'**
+  String get githubPickerNoRepository;
+
+  /// Heading over the open pull requests of a repository.
+  ///
+  /// In en, this message translates to:
+  /// **'Open pull requests in {repository}'**
+  String githubPickerOpenIn(String repository);
+
   /// No description provided for @githubPullRequestActions.
   ///
   /// In en, this message translates to:
@@ -11278,6 +11326,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Refresh pull request'**
   String get githubRefreshPullRequest;
+
+  /// No description provided for @githubRepositoryHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'owner/repo, or the repository\'s link on github.com'**
+  String get githubRepositoryHelper;
+
+  /// No description provided for @githubRepositoryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'owner/repo'**
+  String get githubRepositoryHint;
+
+  /// No description provided for @githubRepositoryInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Not a GitHub repository. Write owner/repo.'**
+  String get githubRepositoryInvalid;
+
+  /// No description provided for @githubRepositoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Repository'**
+  String get githubRepositoryLabel;
+
+  /// No description provided for @githubRepositorySectionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'The repository this category\'s tasks work in. When you link a pull request to one of them, you can pick from this repository\'s open pull requests.'**
+  String get githubRepositorySectionDescription;
+
+  /// No description provided for @githubRepositorySectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub'**
+  String get githubRepositorySectionTitle;
 
   /// No description provided for @githubReviewApproved.
   ///

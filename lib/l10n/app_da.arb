@@ -2966,6 +2966,7 @@
   "geminiThinkingModeMinimalLabel": "Minimal",
   "generateCoverArt": "Generer coverkunst",
   "generateCoverArtSubtitle": "Opret billede ud fra stemmebeskrivelse",
+  "githubAlsoLinkedElsewhere": "Også knyttet til en anden opgave",
   "githubChecksFailing": "{count, plural, =1{1 tjek fejlede} other{{count} tjek fejlede}}",
   "@githubChecksFailing": {
     "description": "Status line part: how many CI checks of a pull request fail.",
@@ -3010,8 +3011,10 @@
   "githubFailureUnauthorized": "GitHub afviste tokenet. Det er måske udløbet eller tilbagekaldt.",
   "githubLinkAlreadyLinked": "Denne pull request er allerede knyttet til denne opgave.",
   "githubLinkButton": "Knyt",
+  "githubLinkedElsewhere": "Denne pull request er allerede knyttet til en anden opgave.",
   "githubLinkNotAPullRequest": "Det er ikke en pull request.",
   "githubLinkNotGitHub": "Det er ikke et link til github.com.",
+  "githubLinkNotStored": "Linket kunne ikke gemmes. Prøv igen.",
   "githubLinkPullRequestHint": "Følg dens tjek, reviews og status her.",
   "githubLinkPullRequestTitle": "Knyt en pull request",
   "githubLinkUrlHelper": "Eller skriv ejer/repo#123.",
@@ -3023,10 +3026,39 @@
   "githubNotRefreshed": "Kunne ikke opdatere",
   "githubNotRefreshedYet": "Ikke opdateret endnu",
   "githubOpenOnGitHub": "Åbn på GitHub",
+  "githubPickerEmpty": "Der er ingen åbne pull requests tilbage i {repository}, som kan knyttes.",
+  "@githubPickerEmpty": {
+    "description": "The picker found no open pull request left to link.",
+    "placeholders": {
+      "repository": {
+        "type": "String",
+        "example": "penguin/colony"
+      }
+    }
+  },
+  "githubPickerLinking": "Knytter pull request",
+  "githubPickerLoading": "Indlæser åbne pull requests",
+  "githubPickerNoRepository": "Tildel kategorien for denne opgave et GitHub-repository for at vælge blandt dets åbne pull requests.",
+  "githubPickerOpenIn": "Åbne pull requests i {repository}",
+  "@githubPickerOpenIn": {
+    "description": "Heading over the open pull requests of a repository.",
+    "placeholders": {
+      "repository": {
+        "type": "String",
+        "example": "penguin/colony"
+      }
+    }
+  },
   "githubPullRequestActions": "Handlinger for pull request",
   "githubPullRequestsTitle": "Pull requests",
   "githubRefreshingPullRequest": "Opdaterer pull request",
   "githubRefreshPullRequest": "Opdater pull request",
+  "githubRepositoryHelper": "ejer/repo, eller repositoryets link på github.com",
+  "githubRepositoryHint": "ejer/repo",
+  "githubRepositoryInvalid": "Ikke et GitHub-repository. Skriv ejer/repo.",
+  "githubRepositoryLabel": "Repository",
+  "githubRepositorySectionDescription": "Det repository, som kategoriens opgaver arbejder i. Når du knytter en pull request til en af dem, kan du vælge blandt dette repositorys åbne pull requests.",
+  "githubRepositorySectionTitle": "GitHub",
   "githubReviewApproved": "Godkendt",
   "githubReviewChangesRequested": "Ændringer anmodet",
   "githubReviewPending": "Review anmodet",

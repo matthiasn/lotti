@@ -466,6 +466,89 @@ void main() {
       },
     );
 
+    test('sets and clears the GitHub repository', () async {
+      final category = CategoryTestUtils.createTestCategory().copyWith(
+        githubRepository: 'penguin/colony',
+      );
+      when(
+        () => mockRepository.watchCategory(testCategoryId),
+      ).thenAnswer((_) => Stream.value(category));
+
+      final container = makeContainer();
+      final controller = await loadCategory(container);
+      CategoryDetailsState state() =>
+          container.read(categoryDetailsControllerProvider(testCategoryId));
+
+      controller.updateGitHubRepository('penguin/igloo');
+      expect(state().category?.githubRepository, 'penguin/igloo');
+      expect(state().hasChanges, isTrue);
+
+      controller.updateGitHubRepository('penguin/colony');
+      expect(state().hasChanges, isFalse);
+
+      controller.updateGitHubRepository(null);
+      expect(state().category?.githubRepository, isNull);
+      expect(state().hasChanges, isTrue);
+    });
+
+    test(
+      'invalid repository text blocks saving the last valid value until the '
+      'field reads as a repository again',
+      () async {
+        when(
+          () => mockRepository.watchCategory(testCategoryId),
+        ).thenAnswer(
+          (_) => Stream.value(CategoryTestUtils.createTestCategory()),
+        );
+        when(
+          () => mockRepository.getCategoryById(testCategoryId),
+        ).thenAnswer((_) async => CategoryTestUtils.createTestCategory());
+        when(
+          () => mockRepository.updateCategory(any()),
+        ).thenAnswer(
+          (i) async => i.positionalArguments.first as CategoryDefinition,
+        );
+
+        final container = makeContainer();
+        final controller = await loadCategory(container);
+        CategoryDetailsState state() =>
+            container.read(categoryDetailsControllerProvider(testCategoryId));
+
+        controller
+          ..updateGitHubRepository('penguin/igloo')
+          ..setGitHubRepositoryValid(valid: false);
+        expect(state().hasChanges, isTrue);
+        expect(state().hasInvalidInput, isTrue);
+
+        await controller.saveChanges();
+        verifyNever(() => mockRepository.updateCategory(any()));
+
+        controller.setGitHubRepositoryValid(valid: true);
+        expect(state().hasInvalidInput, isFalse);
+        await controller.saveChanges();
+        verify(() => mockRepository.updateCategory(any())).called(1);
+      },
+    );
+
+    test(
+      'a validity report arriving after the page is gone is ignored',
+      () async {
+        when(
+          () => mockRepository.watchCategory(testCategoryId),
+        ).thenAnswer(
+          (_) => Stream.value(CategoryTestUtils.createTestCategory()),
+        );
+        final container = makeContainer();
+        final controller = await loadCategory(container);
+        container.dispose();
+
+        expect(
+          () => controller.setGitHubRepositoryValid(valid: true),
+          returnsNormally,
+        );
+      },
+    );
+
     test('no changes when setting same speech dictionary', () async {
       final category = CategoryTestUtils.createTestCategory(
         speechDictionary: ['term1', 'term2'],

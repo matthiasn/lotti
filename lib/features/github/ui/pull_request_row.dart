@@ -28,16 +28,24 @@ enum PullRequestTone { neutral, good, attention, bad }
 /// never cuts the age off — then its checks, mergeability and reviews.
 ///
 /// [snapshot] is null before the first successful refresh. [failure] is the
-/// last refresh's failure on this device, if it failed.
+/// last refresh's failure on this device, if it failed. [alsoElsewhere] says
+/// another task holds the pull request too — two devices linked it before
+/// they synced — and comes first, since only the user can settle it.
 List<(String, PullRequestTone)> pullRequestStatusParts(
   AppLocalizations messages, {
   required PullRequestSnapshot? snapshot,
   required PullRequestRefreshFailed? failure,
   required DateTime now,
+  bool alsoElsewhere = false,
 }) {
   const neutral = PullRequestTone.neutral;
+  final elsewhere = [
+    if (alsoElsewhere)
+      (messages.githubAlsoLinkedElsewhere, PullRequestTone.bad),
+  ];
   if (snapshot == null) {
     return [
+      ...elsewhere,
       if (failure != null)
         (messages.githubNotRefreshed, PullRequestTone.bad)
       else
@@ -47,6 +55,7 @@ List<(String, PullRequestTone)> pullRequestStatusParts(
   final open = snapshot.status == PullRequestStatus.open;
   final checks = snapshot.checks;
   return [
+    ...elsewhere,
     switch (snapshot.status) {
       PullRequestStatus.open when snapshot.draft => (
         messages.githubStatusDraft,
@@ -206,11 +215,15 @@ class _PullRequestRowState extends ConsumerState<PullRequestRow> {
       PullRequestTone.attention => tokens.colors.alert.warning.ink,
       PullRequestTone.bad => tokens.colors.alert.error.ink,
     };
+    final holders =
+        ref.watch(pullRequestHoldersProvider(entry.data.ref)).value ??
+        const <String>{};
     final parts = pullRequestStatusParts(
       messages,
       snapshot: snapshot,
       failure: refresh.failure,
       now: clock.now(),
+      alsoElsewhere: holders.any((task) => task != widget.taskId),
     );
     // The list item's own subtitle style, recoloured per part: the spans keep
     // its type and change only the ink.

@@ -351,6 +351,7 @@ CategoryDefinition _$CategoryDefinitionFromJson(Map<String, dynamic> json) =>
           )
           .toList(),
       knowledgeBrief: json['knowledgeBrief'] as String?,
+      githubRepository: json['githubRepository'] as String?,
       defaultProfileId: json['defaultProfileId'] as String?,
       automaticInferenceEnabled: json['automaticInferenceEnabled'] as bool?,
       defaultTemplateId: json['defaultTemplateId'] as String?,
@@ -378,6 +379,7 @@ Map<String, dynamic> _$CategoryDefinitionToJson(CategoryDefinition instance) =>
       'speechDictionary': instance.speechDictionary,
       'correctionExamples': instance.correctionExamples,
       'knowledgeBrief': instance.knowledgeBrief,
+      'githubRepository': instance.githubRepository,
       'defaultProfileId': instance.defaultProfileId,
       'automaticInferenceEnabled': instance.automaticInferenceEnabled,
       'defaultTemplateId': instance.defaultTemplateId,

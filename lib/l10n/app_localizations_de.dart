@@ -6529,6 +6529,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Bild aus einer Beschreibung erstellen';
 
   @override
+  String get githubAlsoLinkedElsewhere =>
+      'Auch mit einer anderen Aufgabe verknüpft';
+
+  @override
   String githubChecksFailing(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6601,10 +6605,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String get githubLinkButton => 'Verknüpfen';
 
   @override
+  String get githubLinkedElsewhere =>
+      'Dieser Pull-Request ist schon mit einer anderen Aufgabe verknüpft.';
+
+  @override
   String get githubLinkNotAPullRequest => 'Das ist kein Pull-Request.';
 
   @override
   String get githubLinkNotGitHub => 'Das ist kein Link zu github.com.';
+
+  @override
+  String get githubLinkNotStored =>
+      'Die Verknüpfung konnte nicht gespeichert werden. Versuch es noch einmal.';
 
   @override
   String get githubLinkPullRequestHint =>
@@ -6641,6 +6653,26 @@ class AppLocalizationsDe extends AppLocalizations {
   String get githubOpenOnGitHub => 'Auf GitHub öffnen';
 
   @override
+  String githubPickerEmpty(String repository) {
+    return 'In $repository ist kein offener Pull-Request mehr zum Verknüpfen übrig.';
+  }
+
+  @override
+  String get githubPickerLinking => 'Pull-Request wird verknüpft';
+
+  @override
+  String get githubPickerLoading => 'Offene Pull-Requests werden geladen';
+
+  @override
+  String get githubPickerNoRepository =>
+      'Weise der Kategorie dieser Aufgabe ein GitHub-Repository zu, um aus seinen offenen Pull-Requests zu wählen.';
+
+  @override
+  String githubPickerOpenIn(String repository) {
+    return 'Offene Pull-Requests in $repository';
+  }
+
+  @override
   String get githubPullRequestActions => 'Aktionen für den Pull-Request';
 
   @override
@@ -6651,6 +6683,27 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get githubRefreshPullRequest => 'Pull-Request aktualisieren';
+
+  @override
+  String get githubRepositoryHelper =>
+      'besitzer/repo oder der Link des Repositorys auf github.com';
+
+  @override
+  String get githubRepositoryHint => 'besitzer/repo';
+
+  @override
+  String get githubRepositoryInvalid =>
+      'Kein GitHub-Repository. Schreib besitzer/repo.';
+
+  @override
+  String get githubRepositoryLabel => 'Repository';
+
+  @override
+  String get githubRepositorySectionDescription =>
+      'Das Repository, in dem die Aufgaben dieser Kategorie bearbeitet werden. Wenn du einen Pull-Request mit einer davon verknüpfst, kannst du aus den offenen Pull-Requests dieses Repositorys wählen.';
+
+  @override
+  String get githubRepositorySectionTitle => 'GitHub';
 
   @override
   String get githubReviewApproved => 'Freigegeben';

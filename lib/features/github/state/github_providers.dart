@@ -6,7 +6,9 @@ import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/features/github/api/github_client.dart';
 import 'package:lotti/features/github/context/pull_request_context_service.dart';
 import 'package:lotti/features/github/domain/distinct_pull_requests.dart';
+import 'package:lotti/features/github/domain/github_repository.dart';
 import 'package:lotti/features/github/domain/pull_request_order.dart';
+import 'package:lotti/features/github/domain/pull_request_ref.dart';
 import 'package:lotti/features/github/repository/github_token_storage.dart';
 import 'package:lotti/features/github/repository/pull_request_repository.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';
@@ -17,6 +19,8 @@ import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/notification_stream.dart';
 import 'package:lotti/utils/consts.dart';
 
 /// One client for the process: its ETag cache and its rate-limit block are
@@ -78,6 +82,63 @@ final ProviderFamily<List<PullRequestEntry>, String> taskPullRequestsProvider =
       ),
       name: 'taskPullRequestsProvider',
     );
+
+/// The GitHub repository a task works in: its category's, or null.
+///
+/// Read again from the database when the task changes (its category may have)
+/// or any category does, saved here or synced in, so an open picker follows.
+/// Not from the categories cache: it reloads after the same notification, and
+/// a read racing that reload would see the old repository.
+final StreamProviderFamily<GitHubRepository?, String>
+taskGitHubRepositoryProvider = StreamProvider.autoDispose
+    .family<GitHubRepository?, String>((ref, taskId) {
+      final db = ref.watch(journalDbProvider);
+      return notificationDrivenItemStream<GitHubRepository>(
+        notifications: getIt<UpdateNotifications>(),
+        notificationKeys: {
+          taskId,
+          categoriesNotification,
+          privateToggleNotification,
+        },
+        fetcher: () async {
+          final task = await db.journalEntityById(taskId);
+          final categoryId = task?.meta.categoryId;
+          if (categoryId == null) return null;
+          final repository = (await db.getCategoryById(
+            categoryId,
+          ))?.githubRepository;
+          return repository == null ? null : parseGitHubRepository(repository);
+        },
+      );
+    }, name: 'taskGitHubRepositoryProvider');
+
+/// What the picker offers from [GitHubRepository]: its open pull requests
+/// that no task holds.
+final FutureProviderFamily<OpenPullRequestsResult, GitHubRepository>
+openPullRequestsProvider = FutureProvider.autoDispose
+    .family<OpenPullRequestsResult, GitHubRepository>(
+      (ref, repository) =>
+          ref.watch(pullRequestServiceProvider).openPullRequests(repository),
+      name: 'openPullRequestsProvider',
+    );
+
+/// The tasks that hold pull request [PullRequestRef.key], kept current as
+/// pull request entries and links change — including those sync brings in,
+/// which is how a double assignment from two devices comes to light.
+final StreamProviderFamily<Set<String>, PullRequestRef>
+pullRequestHoldersProvider = StreamProvider.autoDispose
+    .family<Set<String>, PullRequestRef>((ref, pr) async* {
+      final repository = ref.watch(pullRequestRepositoryProvider);
+      Future<Set<String>> read() async =>
+          (await repository.holdersOf([pr]))[pr.key] ?? const <String>{};
+      yield await read();
+      await for (final ids in getIt<UpdateNotifications>().updateStream) {
+        if (ids.contains(pullRequestNotification) ||
+            ids.contains(linkNotification)) {
+          yield await read();
+        }
+      }
+    }, name: 'pullRequestHoldersProvider');
 
 /// The GitHub login whose token this device holds, or null.
 final gitHubAccountControllerProvider =

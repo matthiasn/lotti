@@ -117,6 +117,24 @@ void main() {
       );
     });
 
+    test('a double assignment leads the line, observed or not', () {
+      List<String> flagged(PullRequestSnapshot? snapshot) => [
+        for (final (word, _) in pullRequestStatusParts(
+          messages,
+          snapshot: snapshot,
+          failure: null,
+          now: now,
+          alsoElsewhere: true,
+        ))
+          word,
+      ];
+      expect(flagged(prSnapshot()).first, 'Also linked to another task');
+      expect(flagged(null), [
+        'Also linked to another task',
+        'Not refreshed yet',
+      ]);
+    });
+
     test('before any observation there is nothing to claim', () {
       expect(words(null), ['Not refreshed yet']);
       expect(
@@ -142,13 +160,20 @@ void main() {
       repository = MockPullRequestRepository();
     });
 
-    Future<void> pump(WidgetTester tester, PullRequestEntry entry) async {
+    Future<void> pump(
+      WidgetTester tester,
+      PullRequestEntry entry, {
+      Set<String> holders = const {'task-1'},
+    }) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           PullRequestRow(taskId: 'task-1', entry: entry),
           overrides: [
             pullRequestServiceProvider.overrideWithValue(service),
             pullRequestRepositoryProvider.overrideWithValue(repository),
+            pullRequestHoldersProvider.overrideWith(
+              (ref, pr) => Stream.value(holders),
+            ),
           ],
         ),
       );
@@ -237,6 +262,37 @@ void main() {
         await tester.pump(const Duration(seconds: 10));
       },
     );
+
+    testWidgets(
+      'a pull request another task holds too is flagged, first in the line',
+      (tester) async {
+        final entry = prEntry(clock: {'a': 1}, snapshot: prSnapshot());
+
+        await withClock(
+          Clock.fixed(now),
+          () => pump(tester, entry, holders: {'task-1', 'task-2'}),
+        );
+
+        final flagged = find.textContaining(
+          'Also linked to another task · Open',
+          findRichText: true,
+        );
+        expect(flagged, findsOneWidget);
+      },
+    );
+
+    testWidgets('a pull request only this task holds is not flagged', (
+      tester,
+    ) async {
+      final entry = prEntry(clock: {'a': 1}, snapshot: prSnapshot());
+
+      await withClock(Clock.fixed(now), () => pump(tester, entry));
+
+      expect(
+        find.textContaining('Also linked to another task', findRichText: true),
+        findsNothing,
+      );
+    });
 
     testWidgets('unlink from the menu unlinks the entry', (tester) async {
       final entry = prEntry(clock: {'a': 1}, snapshot: prSnapshot());

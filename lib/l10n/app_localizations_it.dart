@@ -6558,6 +6558,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Crea immagine dalla descrizione vocale';
 
   @override
+  String get githubAlsoLinkedElsewhere =>
+      'Collegata anche a un\'altra attività';
+
+  @override
   String githubChecksFailing(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6630,10 +6634,18 @@ class AppLocalizationsIt extends AppLocalizations {
   String get githubLinkButton => 'Collega';
 
   @override
+  String get githubLinkedElsewhere =>
+      'Questa pull request è già collegata a un\'altra attività.';
+
+  @override
   String get githubLinkNotAPullRequest => 'Non è una pull request.';
 
   @override
   String get githubLinkNotGitHub => 'Non è un link a github.com.';
+
+  @override
+  String get githubLinkNotStored =>
+      'Impossibile salvare il collegamento. Riprova.';
 
   @override
   String get githubLinkPullRequestHint =>
@@ -6671,6 +6683,26 @@ class AppLocalizationsIt extends AppLocalizations {
   String get githubOpenOnGitHub => 'Apri su GitHub';
 
   @override
+  String githubPickerEmpty(String repository) {
+    return 'Non resta nessuna pull request aperta in $repository da collegare.';
+  }
+
+  @override
+  String get githubPickerLinking => 'Collegamento della pull request';
+
+  @override
+  String get githubPickerLoading => 'Caricamento delle pull request aperte';
+
+  @override
+  String get githubPickerNoRepository =>
+      'Assegna un repository GitHub alla categoria di questa attività per scegliere tra le sue pull request aperte.';
+
+  @override
+  String githubPickerOpenIn(String repository) {
+    return 'Pull request aperte in $repository';
+  }
+
+  @override
   String get githubPullRequestActions => 'Azioni della pull request';
 
   @override
@@ -6681,6 +6713,27 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get githubRefreshPullRequest => 'Aggiorna pull request';
+
+  @override
+  String get githubRepositoryHelper =>
+      'proprietario/repo, oppure il link del repository su github.com';
+
+  @override
+  String get githubRepositoryHint => 'proprietario/repo';
+
+  @override
+  String get githubRepositoryInvalid =>
+      'Non è un repository GitHub. Scrivi proprietario/repo.';
+
+  @override
+  String get githubRepositoryLabel => 'Repository';
+
+  @override
+  String get githubRepositorySectionDescription =>
+      'Il repository in cui lavorano le attività di questa categoria. Quando colleghi una pull request a una di esse, puoi scegliere tra le pull request aperte di questo repository.';
+
+  @override
+  String get githubRepositorySectionTitle => 'GitHub';
 
   @override
   String get githubReviewApproved => 'Approvata';

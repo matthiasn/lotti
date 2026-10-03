@@ -7603,6 +7603,25 @@ abstract class _$JournalDb extends GeneratedDatabase {
     ).asyncMap(linkedEntries.mapFromRow);
   }
 
+  Selectable<PullRequestAssignmentsResult> pullRequestAssignments(
+    List<String?> keys,
+  ) {
+    var $arrayStartIndex = 1;
+    final expandedkeys = $expandVar($arrayStartIndex, keys.length);
+    $arrayStartIndex += keys.length;
+    return customSelect(
+      'SELECT pr.subtype AS pr_key, pr.id AS entry_id, task.id AS task_id FROM journal AS pr INNER JOIN linked_entries ON linked_entries.to_id = pr.id INNER JOIN journal AS task ON task.id = linked_entries.from_id WHERE pr.type = \'PullRequest\' AND pr.subtype IN ($expandedkeys) AND pr.deleted = FALSE AND json_extract(linked_entries.serialized, \'\$.deletedAt\') IS NULL AND task.deleted = FALSE AND task.type = \'Task\' AND task.task = TRUE',
+      variables: [for (var $ in keys) Variable<String>($)],
+      readsFrom: {journal, linkedEntries},
+    ).map(
+      (QueryRow row) => PullRequestAssignmentsResult(
+        prKey: row.readNullable<String>('pr_key'),
+        entryId: row.read<String>('entry_id'),
+        taskId: row.read<String>('task_id'),
+      ),
+    );
+  }
+
   Selectable<JournalDbEntity> linkedToJournalEntities(String toId) {
     return customSelect(
       'SELECT journal.* FROM linked_entries INNER JOIN journal ON journal.id = linked_entries.from_id WHERE linked_entries.to_id = ?1 AND json_extract(linked_entries.serialized, \'\$.deletedAt\') IS NULL AND journal.deleted = FALSE ORDER BY journal.date_from DESC',
@@ -10784,5 +10803,16 @@ class CountTasksGroupedByCategoryResult {
   CountTasksGroupedByCategoryResult({
     required this.category,
     required this.taskCount,
+  });
+}
+
+class PullRequestAssignmentsResult {
+  final String? prKey;
+  final String entryId;
+  final String taskId;
+  PullRequestAssignmentsResult({
+    this.prKey,
+    required this.entryId,
+    required this.taskId,
   });
 }
