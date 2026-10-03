@@ -350,13 +350,16 @@ Future<void> registerSingletons({
 
   // Send a GitHub account change a previous run still owed: the outbox
   // refused its row, or the app stopped before it was taken. A failure stays
-  // owed for the next start or the next change.
-  unawaited(
-    GitHubAccountSync(
-      storage: gitHubTokenStorageForProfile(secureStorage, profile),
-      enqueueOrThrow: outboxService.enqueueMessageOrThrow,
-    ).flushOwed(),
-  );
+  // owed for the next start or the next change. Only where sync runs: a guest
+  // world has nothing to send, and never reads the keychain at boot.
+  if (profile.capabilities.syncEnabled) {
+    unawaited(
+      GitHubAccountSync(
+        storage: gitHubTokenStorageForProfile(secureStorage, profile),
+        enqueueOrThrow: outboxService.enqueueMessageOrThrow,
+      ).flushOwed(),
+    );
+  }
 
   // Sync-aware consumption and attribution services, now that OutboxService
   // is available. In guest worlds these bind to the inert outbox and a null

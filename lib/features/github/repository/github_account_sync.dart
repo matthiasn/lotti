@@ -26,17 +26,18 @@ class GitHubAccountSync {
   final Future<void> Function()? _rescan;
 
   /// Sends the held version if a change made here still owes it; returns
-  /// whether nothing is owed any more. A failure leaves it owed.
+  /// whether nothing is owed any more. Never throws — it runs unawaited at
+  /// startup: a failure, the keychain's or the outbox's, leaves it owed.
   Future<bool> flushOwed() async {
-    final record = await _storage.read();
-    if (record == null || !record.owed) return true;
     try {
+      final record = await _storage.read();
+      if (record == null || !record.owed) return true;
       await _enqueueOrThrow(_message(record));
+      await _storage.markSent(record);
+      return true;
     } on Exception {
       return false;
     }
-    await _storage.markSent(record);
-    return true;
   }
 
   /// Sends the held token again with its own stamp, so sending the same

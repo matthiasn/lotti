@@ -3,7 +3,9 @@ import 'package:lotti/features/github/repository/github_account_sync.dart';
 import 'package:lotti/features/github/repository/github_token_storage.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_secret.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
 import '../in_memory_keychain.dart';
 
 void main() {
@@ -79,6 +81,24 @@ void main() {
         expect(await sync().flushOwed(), isTrue);
         expect(sent, hasLength(1));
         expect((await storage.read())!.owed, isFalse);
+      },
+    );
+
+    test(
+      'a keychain that cannot be read leaves the change owed instead of '
+      'throwing, since startup does not await it',
+      () async {
+        final broken = MockSecureStorage();
+        when(
+          () => broken.read(key: any(named: 'key')),
+        ).thenThrow(Exception('no keychain plugin'));
+        final s = GitHubAccountSync(
+          storage: GitHubTokenStorage(broken, namespace: 'real'),
+          enqueueOrThrow: (message) async => sent.add(message),
+        );
+
+        expect(await s.flushOwed(), isFalse);
+        expect(sent, isEmpty);
       },
     );
 
