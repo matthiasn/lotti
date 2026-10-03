@@ -271,6 +271,48 @@ void main() {
       );
     });
 
+    test('a failed token-usage write does not fail the wake', () async {
+      // Usage rows are bookkeeping: losing one must not fail — and so re-run —
+      // a wake whose plan work already happened.
+      conversationRepository.usage = const InferenceUsage(
+        inputTokens: 5,
+        outputTokens: 2,
+      );
+      var threwForUsage = false;
+      when(() => syncService.upsertEntity(any())).thenAnswer((
+        invocation,
+      ) async {
+        final entity =
+            invocation.positionalArguments.single as AgentDomainEntity;
+        if (entity is WakeTokenUsageEntity) {
+          threwForUsage = true;
+          throw StateError('usage write failed');
+        }
+        upsertedEntities.add(entity);
+        if (entity is AgentStateEntity) {
+          currentState = entity;
+        }
+      });
+
+      final result = await execute(workflow());
+
+      expect(result.success, isTrue);
+      expect(threwForUsage, isTrue);
+      verify(
+        () => domainLogger.error(
+          any(),
+          any(),
+          message: 'failed to persist wake token usage',
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).called(1);
+      expect(
+        upsertedEntities.whereType<AgentStateEntity>().last.lastWakeAt,
+        now,
+      );
+    });
+
     for (final scenario in const [
       ToolValidationScenario(
         name: 'rejects missing at',

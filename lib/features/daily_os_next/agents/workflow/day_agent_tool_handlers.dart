@@ -421,22 +421,4 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
     }
     return DayAgentToolResult(success: true, output: buf.toString());
   }
-
-  Future<TemplateContext?> _resolveTemplate(String agentId) async {
-    final template = await templateService.getTemplateForAgent(agentId);
-    if (template == null) return null;
-
-    final version = await templateService.getActiveVersion(template.id);
-    if (version == null) return null;
-
-    final soulVersion = await soulDocumentService?.resolveActiveSoulForTemplate(
-      template.id,
-    );
-
-    return TemplateContext(
-      template: template,
-      version: version,
-      soulVersion: soulVersion,
-    );
-  }
 }

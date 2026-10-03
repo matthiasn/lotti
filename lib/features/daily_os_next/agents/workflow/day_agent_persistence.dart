@@ -104,38 +104,6 @@ extension DayAgentPersistence on DayAgentWorkflow {
     );
   }
 
-  Future<void> _persistTokenUsage({
-    required InferenceUsage? usage,
-    required String agentId,
-    required String runKey,
-    required String threadId,
-    required String modelId,
-    required TemplateContext? templateCtx,
-    required DateTime now,
-  }) async {
-    if (usage == null || !usage.hasData) return;
-
-    await syncService.upsertEntity(
-      AgentDomainEntity.wakeTokenUsage(
-        id: workflowUuid.v4(),
-        agentId: agentId,
-        runKey: runKey,
-        threadId: threadId,
-        modelId: modelId,
-        templateId: templateCtx?.template.id,
-        templateVersionId: templateCtx?.version.id,
-        soulDocumentId: templateCtx?.soulVersion?.agentId,
-        soulDocumentVersionId: templateCtx?.soulVersion?.id,
-        createdAt: now,
-        vectorClock: null,
-        inputTokens: usage.inputTokens,
-        outputTokens: usage.outputTokens,
-        thoughtsTokens: usage.thoughtsTokens,
-        cachedInputTokens: usage.cachedInputTokens,
-      ),
-    );
-  }
-
   /// Lazily resolves a deferred capture event's inline content (its transcript)
   /// by capture id — invoked by the compactor only for the post-cutoff tail it
   /// renders, so folded captures never reload their transcript. Returns null

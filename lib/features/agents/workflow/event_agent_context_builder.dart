@@ -3,16 +3,11 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
+import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/agent_system_prompt.dart';
-import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:openai_dart/openai_dart.dart';
-
-/// Callback used by the event context builder to surface non-fatal errors
-/// through the owning workflow's structured logger.
-typedef EventLogErrorCallback =
-    void Function(String message, {Object? error, StackTrace? stackTrace});
 
 /// Prompt/context assembly and payload-resolution collaborator of the Event
 /// Agent wake cycle.
@@ -35,7 +30,7 @@ class EventAgentContextBuilder {
 
   final AgentRepository agentRepository;
   final JournalRepository journalRepository;
-  final EventLogErrorCallback logError;
+  final LogErrorCallback logError;
 
   String buildSystemPrompt({
     required AgentTemplateVersionEntity? version,
@@ -157,29 +152,7 @@ persist across recaps but are not shown to the user.''';
   }
 
   List<ChatCompletionTool> buildToolDefinitions() {
-    return eventAgentTools.map((tool) {
-      return ChatCompletionTool(
-        type: ChatCompletionToolType.function,
-        function: FunctionObject(
-          name: tool.name,
-          description: tool.description,
-          parameters: tool.parameters,
-        ),
-      );
-    }).toList();
-  }
-
-  String? extractFinalAssistantContent(ConversationManager? manager) {
-    if (manager == null) return null;
-    final messages = manager.messages;
-    for (var i = messages.length - 1; i >= 0; i--) {
-      final msg = messages[i];
-      final content = msg.mapOrNull(assistant: (a) => a.content);
-      if (content != null && content.isNotEmpty) {
-        return content;
-      }
-    }
-    return null;
+    return eventAgentTools.map((tool) => tool.toChatCompletionTool()).toList();
   }
 
   // ── Linked-entries context ────────────────────────────────────────────────

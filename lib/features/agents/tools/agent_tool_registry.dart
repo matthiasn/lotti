@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:lotti/features/agents/tools/evolution_tool_definitions.dart';
 import 'package:lotti/features/agents/tools/task_agent_tool_definitions.dart';
+import 'package:openai_dart/openai_dart.dart';
 
 export 'package:lotti/features/agents/tools/evolution_tool_definitions.dart';
 export 'package:lotti/features/agents/tools/task_agent_tool_definitions.dart';
@@ -36,6 +37,16 @@ class AgentToolDefinition {
 
   /// Whether this tool should be exposed to the LLM right now.
   final bool enabled;
+
+  /// This tool as an OpenAI-compatible function tool, exactly as declared.
+  ChatCompletionTool toChatCompletionTool() => ChatCompletionTool(
+    type: ChatCompletionToolType.function,
+    function: FunctionObject(
+      name: name,
+      description: description,
+      parameters: parameters,
+    ),
+  );
 }
 
 /// Tool names models reach for that differ only in their verb prefix.

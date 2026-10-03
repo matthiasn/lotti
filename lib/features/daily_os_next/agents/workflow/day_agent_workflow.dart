@@ -17,9 +17,11 @@ import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/sync/agent_log_compactor.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
+import 'package:lotti/features/agents/workflow/agent_template_context.dart';
 import 'package:lotti/features/agents/workflow/agent_wake_memory.dart';
 import 'package:lotti/features/agents/workflow/prompt_record.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
+import 'package:lotti/features/agents/workflow/wake_token_usage.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -378,7 +380,11 @@ class DayAgentWorkflow {
       limit: _observationFetchLimit,
     );
     final recentObs = recentObservations(observations);
-    final templateCtx = await _resolveTemplate(agentId);
+    final templateCtx = await resolveAgentTemplateContext(
+      templateService: templateService,
+      soulDocumentService: soulDocumentService,
+      agentId: agentId,
+    );
 
     final profileResolver = ProfileResolver(
       aiConfigRepository: aiConfigRepository,
@@ -739,7 +745,8 @@ class DayAgentWorkflow {
         }
       }
 
-      await _persistTokenUsage(
+      await persistWakeTokenUsage(
+        syncService: syncService,
         usage: usage,
         agentId: agentId,
         runKey: runKey,
@@ -747,10 +754,11 @@ class DayAgentWorkflow {
         modelId: modelId,
         templateCtx: templateCtx,
         now: now,
+        logError: _logError,
       );
 
       final manager = conversationRepository.getConversation(conversationId);
-      strategy.recordFinalResponse(_extractFinalAssistantContent(manager));
+      strategy.recordFinalResponse(manager?.finalAssistantContent);
 
       await syncService.runInTransaction(() async {
         final latestState =

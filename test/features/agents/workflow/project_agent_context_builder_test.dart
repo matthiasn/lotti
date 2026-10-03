@@ -570,10 +570,4 @@ void main() {
       },
     );
   });
-
-  group('extractFinalAssistantContent', () {
-    test('returns null when manager is null', () {
-      expect(builder.extractFinalAssistantContent(null), isNull);
-    });
-  });
 }

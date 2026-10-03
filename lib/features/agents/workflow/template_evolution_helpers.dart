@@ -200,16 +200,9 @@ extension TemplateEvolutionHelpers on TemplateEvolutionWorkflow {
   /// Converts [AgentToolRegistry.evolutionAgentTools] to OpenAI-compatible
   /// [ChatCompletionTool] objects, including the GenUI render_surface tool.
   List<ChatCompletionTool> _buildToolDefinitions({GenUiBridge? bridge}) {
-    final tools = AgentToolRegistry.evolutionAgentTools.map((def) {
-      return ChatCompletionTool(
-        type: ChatCompletionToolType.function,
-        function: FunctionObject(
-          name: def.name,
-          description: def.description,
-          parameters: def.parameters,
-        ),
-      );
-    }).toList();
+    final tools = AgentToolRegistry.evolutionAgentTools
+        .map((tool) => tool.toChatCompletionTool())
+        .toList();
 
     if (bridge != null) {
       tools.add(bridge.toolDefinition);
@@ -220,16 +213,9 @@ extension TemplateEvolutionHelpers on TemplateEvolutionWorkflow {
 
   /// Soul session tool definitions — excludes `propose_directives`.
   List<ChatCompletionTool> _buildSoulToolDefinitions({GenUiBridge? bridge}) {
-    final tools = AgentToolRegistry.soulEvolutionAgentTools.map((def) {
-      return ChatCompletionTool(
-        type: ChatCompletionToolType.function,
-        function: FunctionObject(
-          name: def.name,
-          description: def.description,
-          parameters: def.parameters,
-        ),
-      );
-    }).toList();
+    final tools = AgentToolRegistry.soulEvolutionAgentTools
+        .map((tool) => tool.toChatCompletionTool())
+        .toList();
 
     if (bridge != null) {
       tools.add(bridge.toolDefinition);

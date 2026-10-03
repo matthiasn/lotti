@@ -486,21 +486,6 @@ class MissingCaptureParseException implements Exception {
   }
 }
 
-/// The resolved agent template for a wake: its definition, the pinned version
-/// whose prompt/tooling will run, and the optional Soul personality document
-/// version layered on top.
-class TemplateContext {
-  const TemplateContext({
-    required this.template,
-    required this.version,
-    required this.soulVersion,
-  });
-
-  final AgentTemplateEntity template;
-  final AgentTemplateVersionEntity version;
-  final SoulDocumentVersionEntity? soulVersion;
-}
-
 /// Inputs for a capture wake: the raw [CaptureEntity] (transcript + audio ref)
 /// and the task corpus the model can match against. [toJson] renders the
 /// JSON block injected into the prompt.

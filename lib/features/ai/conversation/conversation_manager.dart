@@ -260,3 +260,22 @@ enum ConversationAction {
   complete, // Mark as complete
   wait, // Wait for user input
 }
+
+/// Reads over a conversation's [ConversationManager.messages], kept off the
+/// class so they work identically on any manager, mocked ones included.
+extension ConversationManagerContent on ConversationManager {
+  /// The text of the latest assistant message that has any — what the model
+  /// last *said*, as opposed to a tool-call-only turn.
+  ///
+  /// Providers encode a tool-call-only turn's content as either null or an
+  /// empty string; both are skipped alike, so the result does not depend on
+  /// which provider ran the conversation. Null when no assistant message
+  /// carries text.
+  String? get finalAssistantContent {
+    for (final message in messages.reversed) {
+      final content = message.mapOrNull(assistant: (a) => a.content);
+      if (content != null && content.isNotEmpty) return content;
+    }
+    return null;
+  }
+}

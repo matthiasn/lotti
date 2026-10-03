@@ -833,6 +833,11 @@ void main() {
     expect(result.success, isFalse);
     expect(result.error, 'Goal Phase B workflow failed (StateError)');
     expect(conversationRepository.sendMessageDelegateCallCount, 2);
+    expect(
+      conversationRepository.deletedConversationIds,
+      ['test-conv-id'],
+      reason: 'a failed wake cleans up its conversation too',
+    );
   });
 
   test('a rerun answered with a stale cooldown refusal is replaced by a '
@@ -2094,6 +2099,10 @@ void main() {
     final usage = upserts.whereType<WakeTokenUsageEntity>().single;
     expect(usage.modelId, 'glm-5.2');
     expect(usage.inputTokens, 900);
+    // The repository's conversation map lives as long as the app: a wake that
+    // left its conversation behind would keep every FACTS block and
+    // transcript of the session in memory.
+    expect(conversationRepository.deletedConversationIds, ['test-conv-id']);
   });
 
   test(
@@ -5497,6 +5506,9 @@ void main() {
         rearmed.scheduledAt,
         now.add(GoalAgentWorkflow.authenticationFailureRetryDelay).toUtc(),
       );
+      // Deferring the retry must not stamp the record as edited in the
+      // future: updatedAt is when the re-arm happened.
+      expect(rearmed.updatedAt, now);
     },
   );
 

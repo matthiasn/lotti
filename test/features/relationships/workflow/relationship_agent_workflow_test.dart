@@ -1812,17 +1812,14 @@ void main() {
         relationshipAgentReplyMessageId(agentId, 'run-1'),
       ),
     ).thenAnswer(
-      (_) async =>
-          AgentDomainEntity.agentMessage(
-                id: relationshipAgentReplyMessageId(agentId, 'run-1'),
-                agentId: agentId,
-                threadId: 'thread-1',
-                kind: AgentMessageKind.action,
-                createdAt: now,
-                vectorClock: null,
-                metadata: const AgentMessageMetadata(runKey: 'run-1'),
-              )
-              as AgentMessageEntity,
+      // Reads back the carrier this wake actually wrote, so the check is held
+      // to the shape production persists — not a hand-built approximation.
+      (_) async => upserts
+          .whereType<AgentMessageEntity>()
+          .where(
+            (m) => m.id == relationshipAgentReplyMessageId(agentId, 'run-1'),
+          )
+          .firstOrNull,
     );
     conversationRepository.sendMessageDelegate =
         ({

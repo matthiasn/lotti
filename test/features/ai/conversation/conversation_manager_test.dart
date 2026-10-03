@@ -1109,4 +1109,55 @@ void main() {
       );
     });
   });
+
+  group('finalAssistantContent', () {
+    test('is null for an empty conversation', () {
+      expect(ConversationManager().finalAssistantContent, isNull);
+    });
+
+    test('is null when the model never said anything', () {
+      final manager = ConversationManager()
+        ..initialize(systemMessage: 'system')
+        ..addUserMessage('plan my day')
+        ..addAssistantMessage(toolCalls: [_generatedToolCall('tc1')])
+        ..addToolResponse(toolCallId: 'tc1', response: 'ok');
+
+      expect(manager.finalAssistantContent, isNull);
+    });
+
+    test('is the latest assistant text, not an earlier one', () {
+      final manager = ConversationManager()
+        ..addUserMessage('plan my day')
+        ..addAssistantMessage(content: 'first')
+        ..addUserMessage('and tomorrow?')
+        ..addAssistantMessage(content: 'final answer');
+
+      expect(manager.finalAssistantContent, 'final answer');
+    });
+
+    test('ignores user and tool messages after the last assistant text', () {
+      final manager = ConversationManager()
+        ..addAssistantMessage(content: 'final answer')
+        ..addUserMessage('thanks');
+
+      expect(manager.finalAssistantContent, 'final answer');
+    });
+
+    test('skips a closing tool-call-only turn however the provider encodes '
+        'its content', () {
+      // One provider sends null for a tool-call-only turn, another sends '':
+      // both mean "said nothing", so both fall through to the real text.
+      for (final empty in [null, '']) {
+        final manager = ConversationManager()
+          ..addAssistantMessage(content: 'real content')
+          ..addAssistantMessage(
+            content: empty,
+            toolCalls: [_generatedToolCall('tc1')],
+          )
+          ..addToolResponse(toolCallId: 'tc1', response: 'ok');
+
+        expect(manager.finalAssistantContent, 'real content', reason: '$empty');
+      }
+    });
+  });
 }

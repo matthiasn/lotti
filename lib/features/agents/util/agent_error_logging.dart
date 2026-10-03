@@ -2,6 +2,11 @@ import 'dart:developer' as developer;
 
 import 'package:lotti/services/domain_logging.dart';
 
+/// A sink for content-free workflow errors, shaped like
+/// [AgentErrorLogging.logError] so collaborators can take either.
+typedef LogErrorCallback =
+    void Function(String message, {Object? error, StackTrace? stackTrace});
+
 /// Structured-with-fallback error logging for the agent runtime and workflow
 /// classes.
 ///
@@ -35,6 +40,13 @@ mixin AgentErrorLogging {
   /// nothing in this repository's build configuration passes `--obfuscate`.
   /// Override it if a class ever needs a name that is not its own.
   String get errorLogName => '$runtimeType';
+
+  /// Reports a progress [message] to the structured logger under
+  /// [errorLogDomain]; dropped when no logger was injected — progress lines are
+  /// diagnostics, never worth a console fallback.
+  void logInfo(String message, {String? subDomain}) {
+    domainLogger?.log(errorLogDomain, message, subDomain: subDomain);
+  }
 
   /// Reports [message], optionally caused by [error], to the structured logger —
   /// or to `developer.log` when no logger was injected.

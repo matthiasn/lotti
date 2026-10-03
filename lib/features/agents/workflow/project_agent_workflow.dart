@@ -20,6 +20,7 @@ import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/util/text_utils.dart';
 import 'package:lotti/features/agents/wake/project_update_slots.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
+import 'package:lotti/features/agents/workflow/agent_template_context.dart';
 import 'package:lotti/features/agents/workflow/agent_wake_memory.dart';
 import 'package:lotti/features/agents/workflow/carrierless_attribution.dart';
 import 'package:lotti/features/agents/workflow/deferred_change_items.dart';
@@ -29,9 +30,9 @@ import 'package:lotti/features/agents/workflow/project_proposal_reconciler.dart'
 import 'package:lotti/features/agents/workflow/prompt_record.dart';
 import 'package:lotti/features/agents/workflow/task_source_renderer.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
+import 'package:lotti/features/agents/workflow/wake_token_usage.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
-import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
@@ -114,14 +115,6 @@ class ProjectAgentWorkflow with AgentErrorLogging {
         journalRepository: journalRepository,
         logError: logError,
       );
-
-  void _log(String message, {String? subDomain}) {
-    domainLogger?.log(
-      LogDomain.agentWorkflow,
-      message,
-      subDomain: subDomain,
-    );
-  }
 
   /// Execute a full wake cycle for the given project agent.
   Future<WakeResult> execute({
@@ -218,68 +211,11 @@ class ProjectAgentWorkflow with AgentErrorLogging {
     return WakeResult.failed(kind: 'Project agent', error: error);
   }
 
-  Future<void> _persistTokenUsage({
-    required InferenceUsage? usage,
-    required String agentId,
-    required String runKey,
-    required String threadId,
-    required String modelId,
-    required _TemplateContext? templateCtx,
-    required DateTime now,
-  }) async {
-    if (usage == null || !usage.hasData) return;
-
-    try {
-      await syncService.upsertEntity(
-        AgentDomainEntity.wakeTokenUsage(
-          id: _uuid.v4(),
-          agentId: agentId,
-          runKey: runKey,
-          threadId: threadId,
-          modelId: modelId,
-          templateId: templateCtx?.template.id,
-          templateVersionId: templateCtx?.version.id,
-          soulDocumentId: templateCtx?.soulVersion?.agentId,
-          soulDocumentVersionId: templateCtx?.soulVersion?.id,
-          createdAt: now,
-          vectorClock: null,
-          inputTokens: usage.inputTokens,
-          outputTokens: usage.outputTokens,
-          thoughtsTokens: usage.thoughtsTokens,
-          cachedInputTokens: usage.cachedInputTokens,
-        ),
-      );
-    } catch (e, s) {
-      logError('failed to persist token usage', error: e, stackTrace: s);
-    }
-  }
-
-  Future<_TemplateContext?> _resolveTemplate(String agentId) async {
-    final template = await templateService.getTemplateForAgent(agentId);
-    if (template == null) return null;
-
-    final version = await templateService.getActiveVersion(template.id);
-    if (version == null) return null;
-
-    // Resolve the soul document assigned to this template, if any.
-    // Returns null when no soul is assigned — that's the legitimate fallback.
-    // Exceptions propagate: a broken soul chain is a real error.
-    final soulVersion = await soulDocumentService?.resolveActiveSoulForTemplate(
-      template.id,
-    );
-
-    return _TemplateContext(
-      template: template,
-      version: version,
-      soulVersion: soulVersion,
-    );
-  }
-
   // ── Prompt/context delegators ─────────────────────────────────────────────
   // These forward to [_contextBuilder]; the execute part keeps calling the
   // private helpers it always has.
 
-  String _buildSystemPrompt(_TemplateContext? ctx) =>
+  String _buildSystemPrompt(AgentTemplateContext? ctx) =>
       _contextBuilder.buildSystemPrompt(
         version: ctx?.version,
         soulVersion: ctx?.soulVersion,
@@ -332,9 +268,6 @@ class ProjectAgentWorkflow with AgentErrorLogging {
     }
   }
 
-  String? _extractFinalAssistantContent(ConversationManager? manager) =>
-      _contextBuilder.extractFinalAssistantContent(manager);
-
   Future<String> _buildLinkedTasksContext(String projectId) =>
       _contextBuilder.buildLinkedTasksContext(projectId);
 
@@ -354,18 +287,4 @@ class ProjectAgentWorkflow with AgentErrorLogging {
         return 'Deferred: $toolName';
     }
   }
-}
-
-class _TemplateContext {
-  const _TemplateContext({
-    required this.template,
-    required this.version,
-    this.soulVersion,
-  });
-
-  final AgentTemplateEntity template;
-  final AgentTemplateVersionEntity version;
-
-  /// Active soul version for this template, if a soul is assigned.
-  final SoulDocumentVersionEntity? soulVersion;
 }

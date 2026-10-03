@@ -86,7 +86,7 @@ const dayAgentDraftTerminalRule = '''
 /// size; all members are library-private.
 extension DayAgentPromptBuilder on DayAgentWorkflow {
   String _buildSystemPrompt(
-    TemplateContext? ctx, {
+    AgentTemplateContext? ctx, {
     required String agentId,
     required DailyOsPlannerWakeContext wakeContext,
     required CaptureContext? captureContext,
@@ -588,29 +588,8 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''' : ''}'''
             captureContext: captureContext,
           ),
         )
-        .map((tool) {
-          return ChatCompletionTool(
-            type: ChatCompletionToolType.function,
-            function: FunctionObject(
-              name: tool.name,
-              description: tool.description,
-              parameters: tool.parameters,
-            ),
-          );
-        })
+        .map((tool) => tool.toChatCompletionTool())
         .toList();
-  }
-
-  String? _extractFinalAssistantContent(ConversationManager? manager) {
-    if (manager == null) return null;
-    final messages = manager.messages;
-    for (var i = messages.length - 1; i >= 0; i--) {
-      final content = messages[i].mapOrNull(assistant: (a) => a.content);
-      if (content != null && content.isNotEmpty) {
-        return content;
-      }
-    }
-    return null;
   }
 
   /// Resolves the day workspace from a capture-submitted wake's captures.
