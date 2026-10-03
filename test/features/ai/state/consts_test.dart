@@ -23,7 +23,7 @@ AiResponseType _expectedResponseTypeForSkill(SkillType skillType) {
 void main() {
   group('AiResponseType', () {
     test('should have all expected enum values', () {
-      expect(AiResponseType.values.length, equals(8));
+      expect(AiResponseType.values.length, equals(9));
       // ignore: deprecated_member_use_from_same_package
       expect(AiResponseType.values, contains(AiResponseType.taskSummary));
       expect(AiResponseType.values, contains(AiResponseType.imageAnalysis));
@@ -40,6 +40,10 @@ void main() {
       );
       expect(AiResponseType.values, contains(AiResponseType.imageGeneration));
       expect(AiResponseType.values, contains(AiResponseType.audioSummary));
+      expect(
+        AiResponseType.values,
+        contains(AiResponseType.pullRequestSummary),
+      );
     });
 
     const expectedIcons = <AiResponseType, IconData>{
@@ -53,6 +57,7 @@ void main() {
       AiResponseType.imagePromptGeneration: LottiIcons.palette,
       AiResponseType.imageGeneration: LottiIcons.aiSpark,
       AiResponseType.audioSummary: LottiIcons.summarize,
+      AiResponseType.pullRequestSummary: LottiIcons.summarize,
     };
 
     test('expectation table covers every enum value', () {
@@ -94,6 +99,7 @@ void main() {
       expect(AiResponseType.audioTranscription.isLegacyType, false);
       expect(AiResponseType.promptGeneration.isLegacyType, false);
       expect(AiResponseType.imagePromptGeneration.isLegacyType, false);
+      expect(AiResponseType.pullRequestSummary.isLegacyType, false);
     });
   });
 

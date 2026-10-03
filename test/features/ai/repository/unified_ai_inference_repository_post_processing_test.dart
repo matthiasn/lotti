@@ -932,67 +932,75 @@ Take into account the following task context:
     );
   });
 
-  group('_handlePostProcessing – audioSummary case', () {
-    test(
-      'an audioSummary response is a no-op on the legacy prompt path — '
-      'summaries only exist on the skill path, which persists its own '
-      'response, and no prompt config carries this response type',
-      () async {
-        final taskEntity = Task(
-          meta: createMetadata(),
-          data: TaskData(
-            status: TaskStatus.inProgress(
-              id: 'status-1',
-              createdAt: DateTime(2024, 3, 15, 10, 30),
-              utcOffset: 0,
+  group('_handlePostProcessing – summary cases', () {
+    for (final type in [
+      AiResponseType.audioSummary,
+      AiResponseType.pullRequestSummary,
+    ]) {
+      test(
+        'a ${type.name} response is a no-op on the legacy prompt path — '
+        'each summary is persisted by the feature that writes it, and no '
+        'prompt config carries this response type',
+        () async {
+          final taskEntity = Task(
+            meta: createMetadata(),
+            data: TaskData(
+              status: TaskStatus.inProgress(
+                id: 'status-1',
+                createdAt: DateTime(2024, 3, 15, 10, 30),
+                utcOffset: 0,
+              ),
+              title: 'Test Task',
+              statusHistory: const [],
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
             ),
-            title: 'Test Task',
-            statusHistory: const [],
-            dateFrom: DateTime(2024, 3, 15, 10, 30),
-            dateTo: DateTime(2024, 3, 15, 10, 30),
-          ),
-        );
+          );
 
-        final promptConfig = createPrompt(
-          id: 'audio-summary-legacy',
-          name: 'Audio Summary',
-          requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.audioSummary,
-        );
+          final promptConfig = createPrompt(
+            id: 'audio-summary-legacy',
+            name: 'Audio Summary',
+            requiredInputData: [InputDataType.task],
+            aiResponseType: type,
+          );
 
-        final statusChanges = <InferenceStatus>[];
+          final statusChanges = <InferenceStatus>[];
 
-        stubInferenceContext(
-          mockAiInputRepo: mockAiInputRepo,
-          mockAiConfigRepo: mockAiConfigRepo,
-          entity: taskEntity,
-          model: createModel(
-            id: 'model-1',
-            inferenceProviderId: 'provider-1',
-            providerModelId: 'gpt-4',
-          ),
-          provider: createProvider(
-            id: 'provider-1',
-            inferenceProviderType: InferenceProviderType.genericOpenAi,
-          ),
-        );
-        stubGenerate(
-          mockCloudInferenceRepo,
-          stream: createMockTextStream(['One-liner. TLDR. Body.']),
-        );
-        stubCreateAiResponseEntry(mockAiInputRepo);
+          stubInferenceContext(
+            mockAiInputRepo: mockAiInputRepo,
+            mockAiConfigRepo: mockAiConfigRepo,
+            entity: taskEntity,
+            model: createModel(
+              id: 'model-1',
+              inferenceProviderId: 'provider-1',
+              providerModelId: 'gpt-4',
+            ),
+            provider: createProvider(
+              id: 'provider-1',
+              inferenceProviderType: InferenceProviderType.genericOpenAi,
+            ),
+          );
+          stubGenerate(
+            mockCloudInferenceRepo,
+            stream: createMockTextStream(['One-liner. TLDR. Body.']),
+          );
+          stubCreateAiResponseEntry(mockAiInputRepo);
 
-        await repository.runInference(
-          entityId: taskEntity.id,
-          promptConfig: promptConfig,
-          onProgress: (_) {},
-          onStatusChange: statusChanges.add,
-        );
+          await repository.runInference(
+            entityId: taskEntity.id,
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: statusChanges.add,
+          );
 
-        expect(statusChanges, [InferenceStatus.running, InferenceStatus.idle]);
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
-      },
-    );
+          expect(statusChanges, [
+            InferenceStatus.running,
+            InferenceStatus.idle,
+          ]);
+          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        },
+      );
+    }
   });
 
   group(

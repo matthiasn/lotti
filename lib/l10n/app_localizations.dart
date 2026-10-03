@@ -11267,6 +11267,12 @@ abstract class AppLocalizations {
   /// **'Connected as @{login}'**
   String githubConnectedAs(String login);
 
+  /// Heading over a pull request's own description.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get githubDescriptionHeading;
+
   /// No description provided for @githubDisconnectButton.
   ///
   /// In en, this message translates to:
@@ -11429,6 +11435,18 @@ abstract class AppLocalizations {
   /// **'Merge conflicts'**
   String get githubMergeConflicts;
 
+  /// Shown in the pull request details when it has no description.
+  ///
+  /// In en, this message translates to:
+  /// **'This pull request has no description.'**
+  String get githubNoDescription;
+
+  /// Shown in the pull request details while no summary has been written.
+  ///
+  /// In en, this message translates to:
+  /// **'Not summarized yet.'**
+  String get githubNoSummaryYet;
+
   /// No description provided for @githubNoTokenFromOtherDevices.
   ///
   /// In en, this message translates to:
@@ -11488,6 +11506,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pull request actions'**
   String get githubPullRequestActions;
+
+  /// Accessibility label for a pull request size shown as +additions −deletions.
+  ///
+  /// In en, this message translates to:
+  /// **'{additions} lines added, {deletions} removed'**
+  String githubPullRequestSize(int additions, int deletions);
 
   /// No description provided for @githubPullRequestsTitle.
   ///
@@ -11602,6 +11626,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open'**
   String get githubStatusOpen;
+
+  /// Button in the pull request details that asks the task agent's model for a summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Summarize'**
+  String get githubSummarize;
+
+  /// Button in the pull request details that asks for a new summary when one exists.
+  ///
+  /// In en, this message translates to:
+  /// **'Summarize again'**
+  String get githubSummarizeAgain;
+
+  /// Accessibility label of the spinner while a pull request summary is written.
+  ///
+  /// In en, this message translates to:
+  /// **'Writing the summary'**
+  String get githubSummarizing;
+
+  /// Toast when a summary is asked for while one is being written.
+  ///
+  /// In en, this message translates to:
+  /// **'A summary is already being written.'**
+  String get githubSummaryBusy;
+
+  /// Toast when writing a pull request summary failed.
+  ///
+  /// In en, this message translates to:
+  /// **'The summary couldn\'t be written. Try again.'**
+  String get githubSummaryFailed;
+
+  /// Heading over the short paragraph summarising a pull request.
+  ///
+  /// In en, this message translates to:
+  /// **'TL;DR'**
+  String get githubSummaryHeading;
+
+  /// Toast when a summary is asked for but no model resolves for the task agent.
+  ///
+  /// In en, this message translates to:
+  /// **'There\'s no model set up for this task\'s agent, so nothing can write the summary.'**
+  String get githubSummaryNoModel;
 
   /// No description provided for @githubTokenHide.
   ///

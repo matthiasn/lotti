@@ -6710,6 +6710,9 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get githubDescriptionHeading => 'Descrizione';
+
+  @override
   String get githubDisconnectButton => 'Disconnetti';
 
   @override
@@ -6817,6 +6820,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get githubMergeConflicts => 'Conflitti di merge';
 
   @override
+  String get githubNoDescription =>
+      'Questa pull request non ha una descrizione.';
+
+  @override
+  String get githubNoSummaryYet => 'Non ancora riassunta.';
+
+  @override
   String get githubNoTokenFromOtherDevices =>
       'Non è ancora arrivato nessun token dagli altri tuoi dispositivi. Su un dispositivo che ne ha uno, usa «Invia ai miei altri dispositivi».';
 
@@ -6851,6 +6861,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get githubPullRequestActions => 'Azioni della pull request';
+
+  @override
+  String githubPullRequestSize(int additions, int deletions) {
+    return '$additions righe aggiunte, $deletions rimosse';
+  }
 
   @override
   String get githubPullRequestsTitle => 'Pull request';
@@ -6913,6 +6928,29 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get githubStatusOpen => 'Aperta';
+
+  @override
+  String get githubSummarize => 'Riassumi';
+
+  @override
+  String get githubSummarizeAgain => 'Riassumi di nuovo';
+
+  @override
+  String get githubSummarizing => 'Sto scrivendo il riassunto';
+
+  @override
+  String get githubSummaryBusy => 'Un riassunto è già in fase di scrittura.';
+
+  @override
+  String get githubSummaryFailed =>
+      'Non è stato possibile scrivere il riassunto. Riprova.';
+
+  @override
+  String get githubSummaryHeading => 'In breve';
+
+  @override
+  String get githubSummaryNoModel =>
+      'Non c\'è nessun modello configurato per l\'agente di questa attività, quindi niente può scrivere il riassunto.';
 
   @override
   String get githubTokenHide => 'Nascondi token';

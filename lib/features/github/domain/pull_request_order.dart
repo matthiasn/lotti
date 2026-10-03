@@ -6,11 +6,12 @@ import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/features/provenance/crypto/canonical_json.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
-/// SHA-256 over the canonical JSON of [snapshot] without its `observedAt`
-/// and `createdAt`: equal for two observations of the same state, whenever
-/// they were made. `createdAt` never differs between two observations of
-/// one pull request, and leaving it out keeps the digest a version without
-/// the field computes.
+/// SHA-256 over the canonical JSON of [snapshot] without its `observedAt`,
+/// `createdAt` and comment counts: equal for two observations of the same
+/// state, whenever they were made. `createdAt` never differs between two
+/// observations of one pull request; the counts are what a summary reads,
+/// not what a task acts on. Leaving the fields out keeps the digest a
+/// version without them computes.
 ///
 /// It carries no recency. It only makes the observation order total, so
 /// every device picks the same winner between two same-second observations.
@@ -18,7 +19,9 @@ String pullRequestSnapshotDigest(PullRequestSnapshot snapshot) {
   final plain =
       jsonDecode(jsonEncode(snapshot.toJson())) as Map<String, dynamic>
         ..remove('observedAt')
-        ..remove('createdAt');
+        ..remove('createdAt')
+        ..remove('comments')
+        ..remove('reviewComments');
   return sha256.convert(canonicalJsonBytes(plain)).toString();
 }
 

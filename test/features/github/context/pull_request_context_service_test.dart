@@ -7,6 +7,7 @@ import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/features/github/api/github_client.dart';
 import 'package:lotti/features/github/context/pull_request_context_renderer.dart';
 import 'package:lotti/features/github/context/pull_request_context_service.dart';
+import 'package:lotti/features/github/domain/pull_request_summary.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -29,6 +30,9 @@ void main() {
     hasToken = true;
     when(() => repository.forTask(taskId)).thenAnswer((_) async => [stored]);
     when(() => repository.liveEntry(stored.id)).thenAnswer((_) async => stored);
+    when(
+      () => repository.summaryOf(any(), any()),
+    ).thenAnswer((_) async => null);
   });
 
   PullRequestContextService subject() => PullRequestContextService(
@@ -170,5 +174,87 @@ void main() {
       ),
       isEmpty,
     );
+  });
+
+  group('summaries', () {
+    const tracks = PullRequestSummary(
+      oneLiner: 'Tracks pull requests.',
+      tldr: 'Tracks pull requests on tasks.',
+    );
+    final merged = prSnapshot(
+      second: 60,
+      status: PullRequestStatus.merged,
+    ).copyWith(body: 'Adds tracking.');
+
+    test(
+      'a merged pull request carries the summary of exactly what it read',
+      () async {
+        refreshes(PullRequestRefreshed(merged));
+        when(
+          () => repository.summaryOf(
+            stored.id,
+            pullRequestSummaryInput(stored.data.ref, merged),
+          ),
+        ).thenAnswer((_) async => tracks);
+
+        final [item] = await subject().forTask(taskId);
+
+        expect(item.summary, tracks);
+      },
+    );
+
+    test('an open pull request carries its summary too', () async {
+      final open = prSnapshot(second: 60);
+      refreshes(PullRequestRefreshed(open));
+      when(
+        () => repository.summaryOf(
+          stored.id,
+          pullRequestSummaryInput(stored.data.ref, open),
+        ),
+      ).thenAnswer((_) async => tracks);
+
+      final [item] = await subject().forTask(taskId);
+
+      expect(item.summary, tracks);
+    });
+
+    test(
+      'one that failed to refresh carries the summary of what is stored',
+      () async {
+        final storedMerged = stored.copyWith(
+          data: stored.data.copyWith(snapshot: merged),
+        );
+        when(
+          () => repository.liveEntry(stored.id),
+        ).thenAnswer((_) async => storedMerged);
+        refreshes(const PullRequestRefreshFailed(GitHubFailureKind.offline));
+        when(
+          () => repository.summaryOf(
+            stored.id,
+            pullRequestSummaryInput(stored.data.ref, merged),
+          ),
+        ).thenAnswer((_) async => tracks);
+
+        final [item] = await subject().forTask(taskId);
+
+        expect(item.current, isFalse);
+        expect(item.summary, tracks);
+      },
+    );
+
+    test('contextFor renders a merged pull request as its TL;DR', () async {
+      refreshes(PullRequestRefreshed(merged));
+      when(
+        () => repository.summaryOf(any(), any()),
+      ).thenAnswer((_) async => tracks);
+
+      final text = await subject().contextFor(
+        taskId,
+        audience: PullRequestContextAudience.taskAgent,
+      );
+
+      expect(text, contains('- TL;DR: Tracks pull requests on tasks.'));
+      expect(text, isNot(contains('Adds tracking.')));
+    });
   });
 }

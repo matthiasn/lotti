@@ -6700,6 +6700,9 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get githubDescriptionHeading => 'Popis';
+
+  @override
   String get githubDisconnectButton => 'Odpojit';
 
   @override
@@ -6807,6 +6810,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get githubMergeConflicts => 'Konflikty při slučování';
 
   @override
+  String get githubNoDescription => 'Tento pull request nemá popis.';
+
+  @override
+  String get githubNoSummaryYet => 'Zatím bez shrnutí.';
+
+  @override
   String get githubNoTokenFromOtherDevices =>
       'Z tvých dalších zařízení zatím žádný token nedorazil. Na zařízení, které ho má, použij „Poslat na má další zařízení“.';
 
@@ -6841,6 +6850,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get githubPullRequestActions => 'Akce pull requestu';
+
+  @override
+  String githubPullRequestSize(int additions, int deletions) {
+    return 'Přidáno řádků: $additions, odebráno: $deletions';
+  }
 
   @override
   String get githubPullRequestsTitle => 'Pull requesty';
@@ -6903,6 +6917,29 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get githubStatusOpen => 'Otevřený';
+
+  @override
+  String get githubSummarize => 'Shrnout';
+
+  @override
+  String get githubSummarizeAgain => 'Shrnout znovu';
+
+  @override
+  String get githubSummarizing => 'Píšu shrnutí';
+
+  @override
+  String get githubSummaryBusy => 'Shrnutí se už píše.';
+
+  @override
+  String get githubSummaryFailed =>
+      'Shrnutí se nepodařilo napsat. Zkus to znovu.';
+
+  @override
+  String get githubSummaryHeading => 'Ve zkratce';
+
+  @override
+  String get githubSummaryNoModel =>
+      'Agent tohoto úkolu nemá nastavený model, takže shrnutí nemá kdo napsat.';
 
   @override
   String get githubTokenHide => 'Skrýt token';

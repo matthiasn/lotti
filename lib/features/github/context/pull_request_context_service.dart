@@ -6,6 +6,7 @@ import 'package:lotti/features/github/api/github_client.dart';
 import 'package:lotti/features/github/context/pull_request_context_renderer.dart';
 import 'package:lotti/features/github/domain/pull_request_order.dart';
 import 'package:lotti/features/github/domain/pull_request_ref.dart';
+import 'package:lotti/features/github/domain/pull_request_summary.dart';
 import 'package:lotti/features/github/repository/pull_request_repository.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';
 
@@ -16,6 +17,7 @@ class PullRequestContextItem {
     required this.snapshot,
     required this.current,
     this.failure,
+    this.summary,
   });
 
   final PullRequestRef ref;
@@ -30,6 +32,10 @@ class PullRequestContextItem {
 
   /// Why the refresh failed, when it did.
   final GitHubFailureKind? failure;
+
+  /// The summary of exactly [snapshot]'s content; null while none is
+  /// written.
+  final PullRequestSummary? summary;
 }
 
 /// Refreshes a task's pull requests for a task context: the coding prompt
@@ -99,6 +105,7 @@ class PullRequestContextService {
           ref: entry.data.ref,
           snapshot: use,
           current: true,
+          summary: await _summaryOf(entry, use),
         );
     }
   }
@@ -109,11 +116,23 @@ class PullRequestContextService {
   ) async {
     final stored = await _entries.liveEntry(entry.id);
     if (stored == null) return null;
+    final snapshot = stored.data.snapshot;
     return PullRequestContextItem(
       ref: entry.data.ref,
-      snapshot: stored.data.snapshot,
+      snapshot: snapshot,
       current: false,
       failure: kind,
+      summary: snapshot == null ? null : await _summaryOf(entry, snapshot),
     );
   }
+
+  /// The summary of [snapshot]'s content, if one was written: a context
+  /// never waits for one.
+  Future<PullRequestSummary?> _summaryOf(
+    PullRequestEntry entry,
+    PullRequestSnapshot snapshot,
+  ) => _entries.summaryOf(
+    entry.id,
+    pullRequestSummaryInput(entry.data.ref, snapshot),
+  );
 }

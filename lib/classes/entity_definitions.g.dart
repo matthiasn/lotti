@@ -613,6 +613,7 @@ const _$AiResponseTypeEnumMap = {
   AiResponseType.imagePromptGeneration: 'ImagePromptGeneration',
   AiResponseType.imageGeneration: 'ImageGeneration',
   AiResponseType.audioSummary: 'AudioSummary',
+  AiResponseType.pullRequestSummary: 'PullRequestSummary',
 };
 
 _WorkoutData _$WorkoutDataFromJson(Map<String, dynamic> json) => _WorkoutData(

@@ -18,6 +18,8 @@ void main() {
         AiConsumptionResponseType.promptGeneration,
     AiResponseType.imageGeneration: AiConsumptionResponseType.imageGeneration,
     AiResponseType.audioSummary: AiConsumptionResponseType.audioSummary,
+    // A pull request's TL;DR is a one-shot text completion.
+    AiResponseType.pullRequestSummary: AiConsumptionResponseType.textGeneration,
     // Legacy pre-agent types map onto plain text generation.
     AiResponseType.taskSummary: AiConsumptionResponseType.textGeneration,
     AiResponseType.checklistUpdates: AiConsumptionResponseType.textGeneration,

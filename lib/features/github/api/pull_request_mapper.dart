@@ -43,6 +43,8 @@ PullRequestSnapshot pullRequestSnapshotFrom({
     deletions: pull['deletions'] as int?,
     changedFiles: pull['changed_files'] as int?,
     commits: pull['commits'] as int?,
+    comments: pull['comments'] as int?,
+    reviewComments: pull['review_comments'] as int?,
   );
 }
 

@@ -1,16 +1,20 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/github/domain/pull_request_ref.dart';
+import 'package:lotti/features/github/domain/pull_request_summary.dart';
 import 'package:lotti/features/github/domain/pull_request_write_rule.dart';
 import 'package:lotti/features/github/repository/pull_request_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -451,5 +455,131 @@ void main() {
         isFalse,
       );
     });
+  });
+
+  group('summaries', () {
+    AiResponseData summary(String input, {String text = 'Did the thing.'}) =>
+        AiResponseData(
+          model: 'model',
+          systemMessage: 'system',
+          prompt: input,
+          thoughts: '',
+          response: text,
+          type: AiResponseType.pullRequestSummary,
+          oneLiner: 'One line.',
+          tldr: text,
+        );
+
+    test(
+      'a summary is an AI response linked from the pull request entry, in '
+      'its category, sent to the other devices, and read back for the '
+      'content it was written from',
+      () async {
+        final entry = await linked(snapshot: prSnapshot());
+
+        expect(
+          await repository.addSummary(
+            entry,
+            summary('input'),
+            start: prFixtureEpoch,
+          ),
+          isTrue,
+        );
+
+        final responses = (await journalDb.getLinkedEntities(
+          entry.id,
+        )).whereType<AiResponseEntry>().toList();
+        expect(responses, hasLength(1));
+        expect(responses.single.meta.categoryId, testTask.meta.categoryId);
+        final sent = verify(
+          () => mockOutboxService.enqueueMessage(captureAny()),
+        ).captured.whereType<SyncJournalEntity>().map((m) => m.id);
+        expect(sent, contains(responses.single.meta.id));
+        expect(
+          await repository.summaryOf(entry.id, 'input'),
+          const PullRequestSummary(
+            oneLiner: 'One line.',
+            tldr: 'Did the thing.',
+          ),
+        );
+        expect(await repository.summaryOf(entry.id, 'other input'), isNull);
+      },
+    );
+
+    test(
+      'storing a summary notifies the pull request entry, never the task, '
+      'so it cannot wake the task agent',
+      () async {
+        final entry = await linked(snapshot: prSnapshot());
+        clearInteractions(mockUpdateNotifications);
+
+        await repository.addSummary(
+          entry,
+          summary('input'),
+          start: prFixtureEpoch,
+        );
+
+        final notified = verify(
+          () => mockUpdateNotifications.notify(captureAny()),
+        ).captured.cast<Set<String>>().expand((ids) => ids).toSet();
+        expect(notified, contains(entry.id));
+        expect(notified, isNot(contains(taskId)));
+      },
+    );
+
+    test(
+      'only a non-blank pull request summary counts, and the newest of two '
+      'wins',
+      () async {
+        final entry = await linked(snapshot: prSnapshot());
+        await repository.addSummary(
+          entry,
+          summary('input').copyWith(type: AiResponseType.audioSummary),
+          start: prFixtureEpoch,
+        );
+        await repository.addSummary(
+          entry,
+          summary('input', text: '  '),
+          start: prFixtureEpoch.add(const Duration(minutes: 3)),
+        );
+        expect(await repository.summaryOf(entry.id, 'input'), isNull);
+
+        await repository.addSummary(
+          entry,
+          summary('input', text: 'Older.'),
+          start: prFixtureEpoch,
+        );
+        await repository.addSummary(
+          entry,
+          summary('input', text: 'Newer.'),
+          start: prFixtureEpoch.add(const Duration(minutes: 1)),
+        );
+        expect(
+          (await repository.summaryOf(entry.id, 'input'))?.tldr,
+          'Newer.',
+        );
+      },
+    );
+
+    test(
+      'a summary without a TL;DR is read from its response, and a blank '
+      'one-liner as none',
+      () async {
+        final entry = await linked(snapshot: prSnapshot());
+        await repository.addSummary(
+          entry,
+          summary('input').copyWith(
+            tldr: null,
+            oneLiner: ' ',
+            response: 'From the body.',
+          ),
+          start: prFixtureEpoch,
+        );
+        expect(
+          await repository.summaryOf(entry.id, 'input'),
+          const PullRequestSummary(oneLiner: null, tldr: 'From the body.'),
+        );
+      },
+    );
   });
 }

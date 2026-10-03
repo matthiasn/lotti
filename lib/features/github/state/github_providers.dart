@@ -3,18 +3,28 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/one_shot_text_generation.dart';
+import 'package:lotti/features/ai/state/profile_automation_providers.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/github/api/github_client.dart';
 import 'package:lotti/features/github/context/pull_request_context_service.dart';
 import 'package:lotti/features/github/domain/distinct_pull_requests.dart';
 import 'package:lotti/features/github/domain/github_repository.dart';
 import 'package:lotti/features/github/domain/pull_request_order.dart';
 import 'package:lotti/features/github/domain/pull_request_ref.dart';
+import 'package:lotti/features/github/domain/pull_request_summary.dart';
 import 'package:lotti/features/github/repository/github_account_sync.dart';
 import 'package:lotti/features/github/repository/github_token_storage.dart';
 import 'package:lotti/features/github/repository/pull_request_repository.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';
+import 'package:lotti/features/github/service/pull_request_summarizer.dart';
+import 'package:lotti/features/github/service/pull_request_summary_tool.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
@@ -27,6 +37,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/notification_stream.dart';
+import 'package:openai_dart/openai_dart.dart' show ReasoningEffort;
 
 /// One client for the process: its ETag cache and its rate-limit block are
 /// per device, not per screen.
@@ -54,6 +65,77 @@ final pullRequestRepositoryProvider = Provider<PullRequestRepository>(
   name: 'pullRequestRepositoryProvider',
 );
 
+/// How many tokens one pull request summary may take: its two tiers, with
+/// room for a little reasoning.
+const pullRequestSummaryMaxTokens = 800;
+
+/// Summarises pull requests with the task agent's model — automatically
+/// where the task's category has automatic inference switched on, and
+/// whenever the user asks.
+final pullRequestSummarizerProvider = Provider<PullRequestSummarizer>((ref) {
+  return PullRequestSummarizer(
+    repository: ref.watch(pullRequestRepositoryProvider),
+    categoryOf: (taskId) async {
+      final db = ref.read(journalDbProvider);
+      final categoryId = (await db.journalEntityById(taskId))?.meta.categoryId;
+      if (categoryId == null) return null;
+      final category = await db.getCategoryById(categoryId);
+      return (
+        id: categoryId,
+        automaticInference:
+            category?.automaticInferenceEnabledEffective ?? false,
+      );
+    },
+    modelFor: (taskId) async {
+      final profile = await ref
+          .read(profileAutomationResolverProvider)
+          .resolveForSubject(taskId);
+      return profile == null
+          ? null
+          : (
+              modelId: profile.thinkingModelId,
+              provider: profile.thinkingProvider,
+            );
+    },
+    generate:
+        ({
+          required prompt,
+          required systemMessage,
+          required model,
+          required taskId,
+          required categoryId,
+          required manual,
+        }) async {
+          final answer = await ref
+              .read(cloudInferenceRepositoryProvider)
+              .generateToolCalls(
+                prompt: prompt,
+                systemMessage: systemMessage,
+                model: model.modelId,
+                provider: model.provider,
+                temperature: 0.2,
+                // Two tiers; a model that runs past them is cut, not billed
+                // for pages. Reasoning stays minimal, so they fit.
+                maxCompletionTokens: pullRequestSummaryMaxTokens,
+                geminiThinkingMode: GeminiThinkingMode.minimal,
+                reasoningEffort: ReasoningEffort.minimal,
+                tools: const [pullRequestSummaryTool],
+                toolChoice: pullRequestSummaryToolChoiceFor(model.modelId),
+                attribution: OneShotGenerationAttribution(
+                  workType: AiWorkType.textGeneration,
+                  triggerType: manual
+                      ? AiTriggerType.manual
+                      : AiTriggerType.automatic,
+                  categoryId: categoryId,
+                  taskId: taskId,
+                ),
+              );
+          return answer.toolCalls;
+        },
+    logger: ref.watch(domainLoggerProvider),
+  );
+}, name: 'pullRequestSummarizerProvider');
+
 final pullRequestServiceProvider = Provider<PullRequestService>(
   (ref) => PullRequestService(
     client: ref.watch(gitHubClientProvider),
@@ -64,6 +146,7 @@ final pullRequestServiceProvider = Provider<PullRequestService>(
           .read(gitHubTokenStatusProvider.notifier)
           .observe(token, accepted: accepted),
     ),
+    summarizer: ref.watch(pullRequestSummarizerProvider),
   ),
   name: 'pullRequestServiceProvider',
 );
@@ -241,6 +324,29 @@ openPullRequestsProvider = FutureProvider.autoDispose
           ref.watch(pullRequestServiceProvider).openPullRequests(repository),
       name: 'openPullRequestsProvider',
     );
+
+/// The summary of pull request entry `entryId`'s current content, or null
+/// while none is written — kept current as the entry changes and as a
+/// summary of it is stored, here or on another device.
+final StreamProviderFamily<PullRequestSummary?, String>
+pullRequestSummaryProvider = StreamProvider.autoDispose
+    .family<PullRequestSummary?, String>((ref, entryId) async* {
+      final repository = ref.watch(pullRequestRepositoryProvider);
+      Future<PullRequestSummary?> read() async {
+        final entry = await repository.liveEntry(entryId);
+        final snapshot = entry?.data.snapshot;
+        if (entry == null || snapshot == null) return null;
+        return repository.summaryOf(
+          entryId,
+          pullRequestSummaryInput(entry.data.ref, snapshot),
+        );
+      }
+
+      yield await read();
+      await for (final ids in getIt<UpdateNotifications>().updateStream) {
+        if (ids.contains(entryId)) yield await read();
+      }
+    }, name: 'pullRequestSummaryProvider');
 
 /// The tasks that hold pull request [PullRequestRef.key], kept current as
 /// pull request entries and links change — including those sync brings in,

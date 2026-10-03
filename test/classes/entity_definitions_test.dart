@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'entity_definitions_test_helpers.dart';
 
@@ -636,6 +637,41 @@ void main() {
       expect(converter.toJson(null), isNull);
       expect(converter.fromJson(null), isNull);
       expect(converter.fromJson('not-an-icon'), isNull);
+    });
+  });
+
+  group('AiResponseData', () {
+    test(
+      'a pull request summary syncs under a fixed wire name and reads back',
+      () {
+        const data = AiResponseData(
+          model: 'model',
+          systemMessage: 'system',
+          prompt: 'Pull request: penguin/colony#7',
+          thoughts: '',
+          response: 'Waddles faster.',
+          type: AiResponseType.pullRequestSummary,
+          tldr: 'Waddles faster.',
+        );
+
+        final json = jsonDecode(jsonEncode(data.toJson()));
+
+        expect((json as Map<String, dynamic>)['type'], 'PullRequestSummary');
+        expect(AiResponseData.fromJson(json), data);
+      },
+    );
+
+    test('a response stored without a type or tiers still reads', () {
+      final data = AiResponseData.fromJson(const {
+        'model': 'model',
+        'systemMessage': 'system',
+        'prompt': 'prompt',
+        'thoughts': '',
+        'response': 'response',
+      });
+
+      expect(data.type, isNull);
+      expect(data.tldr, isNull);
     });
   });
 }

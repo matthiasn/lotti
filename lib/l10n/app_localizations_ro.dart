@@ -6742,6 +6742,9 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get githubDescriptionHeading => 'Descriere';
+
+  @override
   String get githubDisconnectButton => 'Deconectați';
 
   @override
@@ -6850,6 +6853,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get githubMergeConflicts => 'Conflicte de îmbinare';
 
   @override
+  String get githubNoDescription => 'Acest pull request nu are descriere.';
+
+  @override
+  String get githubNoSummaryYet => 'Încă nu a fost rezumat.';
+
+  @override
   String get githubNoTokenFromOtherDevices =>
       'Încă nu a sosit niciun token de pe celelalte dispozitive ale dvs. Pe un dispozitiv care are unul, folosiți „Trimiteți pe celelalte dispozitive ale mele”.';
 
@@ -6884,6 +6893,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get githubPullRequestActions => 'Acțiuni pentru pull request';
+
+  @override
+  String githubPullRequestSize(int additions, int deletions) {
+    return '$additions linii adăugate, $deletions eliminate';
+  }
 
   @override
   String get githubPullRequestsTitle => 'Pull request-uri';
@@ -6947,6 +6961,29 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get githubStatusOpen => 'Deschis';
+
+  @override
+  String get githubSummarize => 'Rezumați';
+
+  @override
+  String get githubSummarizeAgain => 'Rezumați din nou';
+
+  @override
+  String get githubSummarizing => 'Se scrie rezumatul';
+
+  @override
+  String get githubSummaryBusy => 'Un rezumat este deja în curs de scriere.';
+
+  @override
+  String get githubSummaryFailed =>
+      'Rezumatul nu a putut fi scris. Încercați din nou.';
+
+  @override
+  String get githubSummaryHeading => 'Pe scurt';
+
+  @override
+  String get githubSummaryNoModel =>
+      'Nu există niciun model configurat pentru agentul acestei sarcini, deci rezumatul nu poate fi scris.';
 
   @override
   String get githubTokenHide => 'Ascundeți tokenul';

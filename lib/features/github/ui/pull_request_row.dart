@@ -14,6 +14,7 @@ import 'package:lotti/features/github/service/pull_request_service.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/github/ui/github_failure_message.dart';
 import 'package:lotti/features/github/ui/linked_elsewhere.dart';
+import 'package:lotti/features/github/ui/pull_request_details_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/markdown_link_utils.dart';
@@ -21,13 +22,14 @@ import 'package:lotti/utils/relative_age_label.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// How a part of the status line reads: its colour backs up a word, never
-/// replaces one.
-enum PullRequestTone { neutral, good, attention, bad }
+/// replaces one. [added] and [removed] are the two halves of the size,
+/// `+444 −221`, which read as one part.
+enum PullRequestTone { neutral, good, attention, bad, added, removed }
 
 /// The words of a pull request's status line, in reading order: its state,
 /// how long it has been in it — next to it, so a narrow row that runs out of
-/// room never cuts the age off — then its checks, what keeps it from merging
-/// and its reviews.
+/// room never cuts the age off — its size, then its checks, what keeps it
+/// from merging and its reviews.
 ///
 /// The age is GitHub's, not Lotti's: since it was opened, merged or closed
 /// ([pullRequestStateTime]), never since it was linked or last read. Merge
@@ -93,6 +95,13 @@ List<(String, PullRequestTone)> pullRequestStatusParts(
         neutral,
       ),
     if (failure != null) (messages.githubNotRefreshed, PullRequestTone.bad),
+    if ((snapshot.additions, snapshot.deletions) case (
+      final added?,
+      final removed?,
+    )) ...[
+      ('+$added', PullRequestTone.added),
+      ('−$removed', PullRequestTone.removed),
+    ],
     if (open)
       ...switch (checks.rollup) {
         PullRequestCheckRollup.passing => [
@@ -153,6 +162,53 @@ bool _blockExplained(PullRequestSnapshot snapshot) =>
       PullRequestReviewDecision.none => false,
     };
 
+/// [parts] as the spans of one line in the caption style, each in the ink of
+/// its tone, separated by a dot — except the two halves of the size, which
+/// read as one: `+444 −221`. The size carries a spoken label, so a screen
+/// reader says what the signs mean.
+List<TextSpan> pullRequestStatusSpans(
+  BuildContext context,
+  List<(String, PullRequestTone)> parts,
+) {
+  final tokens = context.designTokens;
+  final caption = tokens.typography.styles.others.caption;
+  Color colorOf(PullRequestTone tone) => switch (tone) {
+    PullRequestTone.neutral => tokens.colors.text.mediumEmphasis,
+    PullRequestTone.good ||
+    PullRequestTone.added => tokens.colors.alert.success.ink,
+    PullRequestTone.attention => tokens.colors.alert.warning.ink,
+    PullRequestTone.bad ||
+    PullRequestTone.removed => tokens.colors.alert.error.ink,
+  };
+  final separator = TextSpan(
+    text: ' · ',
+    style: caption.copyWith(color: tokens.colors.text.lowEmphasis),
+  );
+  return [
+    for (var i = 0; i < parts.length; i++) ...[
+      if (i > 0 &&
+          parts[i].$2 == PullRequestTone.removed &&
+          parts[i - 1].$2 == PullRequestTone.added)
+        const TextSpan(text: ' ')
+      else if (i > 0)
+        separator,
+      TextSpan(
+        text: parts[i].$1,
+        style: caption.copyWith(color: colorOf(parts[i].$2)),
+        semanticsLabel: switch (parts[i].$2) {
+          PullRequestTone.added when i + 1 < parts.length =>
+            context.messages.githubPullRequestSize(
+              int.parse(parts[i].$1.substring(1)),
+              int.parse(parts[i + 1].$1.substring(1)),
+            ),
+          PullRequestTone.removed => '',
+          _ => null,
+        },
+      ),
+    ],
+  ];
+}
+
 /// When [snapshot]'s pull request entered its state: opened, merged or
 /// closed. Null when the snapshot does not say — one stored before it
 /// carried the opening reads none until its next refresh.
@@ -163,8 +219,9 @@ DateTime? pullRequestStateTime(PullRequestSnapshot snapshot) =>
       PullRequestStatus.closed => snapshot.closedAt,
     };
 
-/// One linked pull request: its number and title, its status line, and the
-/// actions to refresh it, open it on GitHub or unlink it.
+/// One linked pull request: its number and title, the one-liner of its
+/// summary once one is written, its status line, and the actions to refresh
+/// it, open it on GitHub or unlink it. Tapping it opens its details.
 ///
 /// Opening a task refreshes a pull request whose snapshot is stale; the age
 /// on its status line ticks on its own, so it never reads younger than the
@@ -245,11 +302,6 @@ class _PullRequestRowState extends ConsumerState<PullRequestRow> {
     }
   }
 
-  String _webUrl(PullRequestSnapshot? snapshot) =>
-      snapshot?.htmlUrl ??
-      'https://github.com/${widget.entry.data.owner}/'
-          '${widget.entry.data.repo}/pull/${widget.entry.data.number}';
-
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -260,12 +312,10 @@ class _PullRequestRowState extends ConsumerState<PullRequestRow> {
     final stateTime = snapshot == null ? null : pullRequestStateTime(snapshot);
     if (stateTime != null) _armAgeTick(stateTime);
 
-    Color colorOf(PullRequestTone tone) => switch (tone) {
-      PullRequestTone.neutral => tokens.colors.text.mediumEmphasis,
-      PullRequestTone.good => tokens.colors.alert.success.ink,
-      PullRequestTone.attention => tokens.colors.alert.warning.ink,
-      PullRequestTone.bad => tokens.colors.alert.error.ink,
-    };
+    final oneLiner = ref
+        .watch(pullRequestSummaryProvider(entry.id))
+        .value
+        ?.oneLiner;
     final holders =
         ref.watch(pullRequestHoldersProvider(entry.data.ref)).value ??
         const <String>{};
@@ -279,32 +329,33 @@ class _PullRequestRowState extends ConsumerState<PullRequestRow> {
         holders.where((task) => task != widget.taskId),
       ),
     );
-    // The list item's own subtitle style, recoloured per part: the spans keep
-    // its type and change only the ink.
     final caption = tokens.typography.styles.others.caption;
-    final separator = TextSpan(
-      text: ' · ',
-      style: caption.copyWith(color: tokens.colors.text.lowEmphasis),
-    );
     final title = snapshot == null
         ? entry.data.ref.toString()
         : '#${entry.data.number} ${snapshot.title}';
 
     return DesignSystemListItem(
       key: ValueKey('pull-request-row-${entry.id}'),
-      onTap: () => handleMarkdownLinkTap(_webUrl(snapshot), title),
+      onTap: () => unawaited(
+        showPullRequestDetailsModal(
+          context,
+          taskId: widget.taskId,
+          entry: entry,
+        ),
+      ),
       title: title,
       titleMaxLines: 2,
+      // The list item's own subtitle style, recoloured per part: the spans
+      // keep its type and change only the ink.
       subtitleSpans: [
-        for (var i = 0; i < parts.length; i++) ...[
-          if (i > 0) separator,
+        if (oneLiner != null)
           TextSpan(
-            text: parts[i].$1,
-            style: caption.copyWith(color: colorOf(parts[i].$2)),
+            text: '$oneLiner\n',
+            style: caption.copyWith(color: tokens.colors.text.highEmphasis),
           ),
-        ],
+        ...pullRequestStatusSpans(context, parts),
       ],
-      subtitleMaxLines: 3,
+      subtitleMaxLines: oneLiner == null ? 3 : 5,
       size: DesignSystemListItemSize.small,
       leading: Icon(
         LottiIcons.merge,
@@ -339,7 +390,8 @@ class _PullRequestRowState extends ConsumerState<PullRequestRow> {
             ),
           _PullRequestMenu(
             entryId: entry.id,
-            onOpen: () => handleMarkdownLinkTap(_webUrl(snapshot), title),
+            onOpen: () =>
+                handleMarkdownLinkTap(pullRequestWebUrl(entry), title),
             onUnlink: () => ref
                 .read(pullRequestRepositoryProvider)
                 .unlink(taskId: widget.taskId, ref: entry.data.ref),

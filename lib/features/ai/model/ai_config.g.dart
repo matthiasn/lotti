@@ -213,6 +213,7 @@ const _$AiResponseTypeEnumMap = {
   AiResponseType.imagePromptGeneration: 'ImagePromptGeneration',
   AiResponseType.imageGeneration: 'ImageGeneration',
   AiResponseType.audioSummary: 'AudioSummary',
+  AiResponseType.pullRequestSummary: 'PullRequestSummary',
 };
 
 AiConfigInferenceProfile _$AiConfigInferenceProfileFromJson(

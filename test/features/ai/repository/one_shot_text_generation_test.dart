@@ -109,6 +109,83 @@ void main() {
     },
   );
 
+  test(
+    'a tool call comes back assembled from its chunks, with the text beside '
+    'it, offered only the given tools under the given pin',
+    () async {
+      const tool = ChatCompletionTool(
+        type: ChatCompletionToolType.function,
+        function: FunctionObject(name: 'publish'),
+      );
+      const pin = ChatCompletionToolChoiceOption.mode(
+        ChatCompletionToolChoiceMode.required,
+      );
+      ChatCompletionStreamResponseDelta call(String? name, String arguments) =>
+          ChatCompletionStreamResponseDelta(
+            toolCalls: [
+              ChatCompletionStreamMessageToolCallChunk(
+                index: 0,
+                id: name == null ? null : 'call-1',
+                type: name == null
+                    ? null
+                    : ChatCompletionStreamMessageToolCallChunkType.function,
+                function: ChatCompletionStreamMessageFunctionCall(
+                  name: name,
+                  arguments: arguments,
+                ),
+              ),
+            ],
+          );
+      CreateChatCompletionStreamResponse chunk(
+        ChatCompletionStreamResponseDelta delta,
+      ) => CreateChatCompletionStreamResponse(
+        id: 'chunk',
+        object: 'chat.completion.chunk',
+        created: 0,
+        choices: [ChatCompletionStreamResponseChoice(index: 0, delta: delta)],
+      );
+      when(
+        () => inference.generate(
+          any(),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          systemMessage: any(named: 'systemMessage'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          provider: any(named: 'provider'),
+          tools: [tool],
+          toolChoice: pin,
+          geminiThinkingMode: any(named: 'geminiThinkingMode'),
+          reasoningEffort: any(named: 'reasoningEffort'),
+          impactCollector: any(named: 'impactCollector'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          _chunk(' Calling. '),
+          chunk(call('publish', '{"a":')),
+          chunk(call(null, ' 1}')),
+        ]),
+      );
+
+      final answer = await inference.generateToolCalls(
+        prompt: 'facts',
+        systemMessage: 'be brief',
+        model: 'model-a',
+        provider: provider,
+        temperature: 0.2,
+        maxCompletionTokens: 64,
+        attribution: automation,
+        tools: const [tool],
+        toolChoice: pin,
+      );
+
+      expect(answer.content, 'Calling.');
+      expect(answer.toolCalls.single.function.name, 'publish');
+      expect(answer.toolCalls.single.function.arguments, '{"a": 1}');
+    },
+  );
+
   test('forwards the thinking controls to the provider call', () async {
     stubGenerate().thenAnswer((_) => Stream.value(_chunk('ok')));
 

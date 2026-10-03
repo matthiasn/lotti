@@ -38,6 +38,7 @@ void main() {
       (10, 2, 3),
     );
     expect(snapshot.commits, 4);
+    expect((snapshot.comments, snapshot.reviewComments), (7, 23));
   });
 
   group('status', () {

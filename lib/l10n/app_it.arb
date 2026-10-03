@@ -3104,6 +3104,7 @@
       }
     }
   },
+  "githubDescriptionHeading": "Descrizione",
   "githubDisconnectButton": "Disconnetti",
   "githubFailureForbidden": "Il token non può leggere questo contenuto. Controlla i suoi permessi.",
   "githubFailureInvalidResponse": "GitHub ha inviato una risposta che Lotti non è riuscito a leggere.",
@@ -3140,6 +3141,8 @@
   "githubMergeBehind": "Indietro rispetto al branch base",
   "githubMergeBlocked": "Bloccata dalle regole del branch",
   "githubMergeConflicts": "Conflitti di merge",
+  "githubNoDescription": "Questa pull request non ha una descrizione.",
+  "githubNoSummaryYet": "Non ancora riassunta.",
   "githubNoTokenFromOtherDevices": "Non è ancora arrivato nessun token dagli altri tuoi dispositivi. Su un dispositivo che ne ha uno, usa «Invia ai miei altri dispositivi».",
   "githubNotRefreshed": "Aggiornamento non riuscito",
   "githubNotRefreshedYet": "Non ancora aggiornata",
@@ -3168,6 +3171,7 @@
     }
   },
   "githubPullRequestActions": "Azioni della pull request",
+  "githubPullRequestSize": "{additions} righe aggiunte, {deletions} rimosse",
   "githubPullRequestsTitle": "Pull request",
   "githubRefreshingPullRequest": "Aggiornamento della pull request",
   "githubRefreshPullRequest": "Aggiorna pull request",
@@ -3187,6 +3191,13 @@
   "githubStatusDraft": "Bozza",
   "githubStatusMerged": "Unita",
   "githubStatusOpen": "Aperta",
+  "githubSummarize": "Riassumi",
+  "githubSummarizeAgain": "Riassumi di nuovo",
+  "githubSummarizing": "Sto scrivendo il riassunto",
+  "githubSummaryBusy": "Un riassunto è già in fase di scrittura.",
+  "githubSummaryFailed": "Non è stato possibile scrivere il riassunto. Riprova.",
+  "githubSummaryHeading": "In breve",
+  "githubSummaryNoModel": "Non c'è nessun modello configurato per l'agente di questa attività, quindi niente può scrivere il riassunto.",
   "githubTokenHide": "Nascondi token",
   "githubTokenIntro": "Lotti legge le pull request che colleghi alle attività con il tuo token di accesso personale. Crea un token fine-grained per i repository in cui lavori, con accesso in sola lettura a \"Pull requests\" e \"Commit statuses\". GitHub non permette a un token del genere di leggere i check run di un repository privato, quindi lì la CI può essere incompleta; un token classico con lo scope \"repo\" può leggerli.",
   "githubTokenLabel": "Token di accesso personale",

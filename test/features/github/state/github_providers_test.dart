@@ -7,13 +7,22 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/pull_request_data.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/resolved_profile.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/github/api/github_client.dart';
 import 'package:lotti/features/github/context/pull_request_context_service.dart';
 import 'package:lotti/features/github/domain/github_repository.dart';
 import 'package:lotti/features/github/domain/pull_request_ref.dart';
+import 'package:lotti/features/github/domain/pull_request_summary.dart';
 import 'package:lotti/features/github/repository/github_account_sync.dart';
 import 'package:lotti/features/github/repository/github_token_storage.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';
+import 'package:lotti/features/github/service/pull_request_summarizer.dart';
+import 'package:lotti/features/github/service/pull_request_summary_tool.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
@@ -30,12 +39,16 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
+import '../../../helpers/fallbacks.dart';
 import '../../../helpers/test_get_it.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
+import '../../agents/test_data/ai_config_factories.dart';
+import '../../categories/test_utils.dart';
 import '../in_memory_keychain.dart';
 import '../pull_request_fixtures.dart';
 
@@ -735,6 +748,8 @@ void main() {
         when(
           () => repository.persistObservation(any(), any()),
         ).thenAnswer((_) async => true);
+        // The summarizer each answered refresh asks finds nothing settled.
+        when(() => repository.liveEntry(any())).thenAnswer((_) async => entry);
         // The real service, wired by its provider.
         final c = status(
           overrides: [
@@ -868,6 +883,340 @@ void main() {
         );
       },
     );
+  });
+
+  group('the default pull request summarizer', () {
+    const taskId = 'task-with-pull-requests';
+
+    final ref = prEntry(clock: {'a': 1}).data.ref;
+    final merged = prEntry(
+      clock: {'a': 1},
+      snapshot: prSnapshot(status: PullRequestStatus.merged),
+    );
+
+    late MockJournalDb db;
+    late MockPullRequestRepository entries;
+    late MockProfileAutomationResolver resolver;
+    late MockCloudInferenceRepository inference;
+    late bool? automaticInference;
+
+    // Any request to the model, by any arguments.
+    Stream<CreateChatCompletionStreamResponse> generateCall() =>
+        inference.generate(
+          any(),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          systemMessage: any(named: 'systemMessage'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          provider: any(named: 'provider'),
+          tools: any(named: 'tools'),
+          toolChoice: any(named: 'toolChoice'),
+          geminiThinkingMode: any(named: 'geminiThinkingMode'),
+          reasoningEffort: any(named: 'reasoningEffort'),
+          impactCollector: any(named: 'impactCollector'),
+        );
+
+    setUpAll(() {
+      registerAllFallbackValues();
+      registerFallbackValue(ref);
+      registerFallbackValue(prSnapshot());
+      registerFallbackValue(
+        const AiResponseData(
+          model: '',
+          systemMessage: '',
+          prompt: '',
+          thoughts: '',
+          response: '',
+        ),
+      );
+    });
+
+    setUp(() {
+      db = MockJournalDb();
+      entries = MockPullRequestRepository();
+      resolver = MockProfileAutomationResolver();
+      inference = MockCloudInferenceRepository();
+      automaticInference = true;
+
+      when(() => db.journalEntityById(taskId)).thenAnswer(
+        (_) async => testTask.copyWith(
+          meta: testTask.meta.copyWith(id: taskId, categoryId: 'colony'),
+        ),
+      );
+      when(() => db.getCategoryById('colony')).thenAnswer(
+        (_) async => CategoryTestUtils.createTestCategory(
+          id: 'colony',
+          name: 'Colony',
+          automaticInferenceEnabled: automaticInference,
+        ),
+      );
+      when(
+        () => entries.liveEntry(merged.id),
+      ).thenAnswer((_) async => merged);
+      when(
+        () => entries.summaryOf(any(), any()),
+      ).thenAnswer((_) async => null);
+      when(() => entries.holdersOf(any())).thenAnswer(
+        (_) async => {
+          ref.key: {taskId},
+        },
+      );
+      when(
+        () => entries.addSummary(any(), any(), start: any(named: 'start')),
+      ).thenAnswer((_) async => true);
+      when(() => resolver.resolveForSubject(taskId)).thenAnswer(
+        (_) async => ResolvedProfile(
+          thinkingModelId: 'thinking-model',
+          thinkingProvider: testInferenceProvider(apiKey: 'k-1'),
+        ),
+      );
+      when(generateCall).thenAnswer(
+        (_) => Stream.value(
+          CreateChatCompletionStreamResponse(
+            id: 'chunk',
+            object: 'chat.completion.chunk',
+            created: 0,
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  toolCalls: [
+                    ChatCompletionStreamMessageToolCallChunk(
+                      index: 0,
+                      id: 'call-1',
+                      type:
+                          ChatCompletionStreamMessageToolCallChunkType.function,
+                      function: ChatCompletionStreamMessageFunctionCall(
+                        name: pullRequestSummaryToolName,
+                        arguments: summaryToolCall().function.arguments,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
+
+    ProviderContainer world() {
+      final c = ProviderContainer(
+        overrides: [
+          gitHubClientProvider.overrideWithValue(client),
+          gitHubTokenStorageProvider.overrideWithValue(tokens),
+          journalDbProvider.overrideWithValue(db),
+          pullRequestRepositoryProvider.overrideWithValue(entries),
+          profileAutomationResolverProvider.overrideWithValue(resolver),
+          cloudInferenceRepositoryProvider.overrideWithValue(inference),
+          domainLoggerProvider.overrideWithValue(MockDomainLogger()),
+        ],
+      );
+      addTearDown(c.dispose);
+      return c;
+    }
+
+    PullRequestSummarizer summarizer() =>
+        world().read(pullRequestSummarizerProvider);
+
+    test(
+      'the default service hands a refresh GitHub answered to this '
+      'summarizer',
+      () async {
+        when(tokens.readToken).thenAnswer((_) async => 'ghp_secret');
+        when(
+          () => client.fetchPullRequest(ref, token: 'ghp_secret'),
+        ).thenAnswer((_) async => merged.data.snapshot!);
+        when(
+          () => entries.persistObservation(any(), any()),
+        ).thenAnswer((_) async => false);
+        final stored = Completer<void>();
+        when(
+          () => entries.addSummary(any(), any(), start: any(named: 'start')),
+        ).thenAnswer((_) async {
+          stored.complete();
+          return true;
+        });
+
+        await world().read(pullRequestServiceProvider).refresh(merged);
+
+        await stored.future;
+        verify(
+          () => entries.addSummary(merged, any(), start: any(named: 'start')),
+        ).called(1);
+      },
+    );
+
+    test(
+      "summarises with the thinking model of the task's agent, offered only "
+      'the summary tool, capped, where the category allows automatic '
+      'inference',
+      () async {
+        expect(
+          await summarizer().summarize(merged.id),
+          PullRequestSummaryOutcome.stored,
+        );
+
+        verify(
+          () => inference.generate(
+            pullRequestSummaryInput(ref, merged.data.snapshot!),
+            model: 'thinking-model',
+            temperature: 0.2,
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: 'k-1',
+            systemMessage: pullRequestSummarySystemMessage,
+            maxCompletionTokens: pullRequestSummaryMaxTokens,
+            provider: any(named: 'provider'),
+            tools: [pullRequestSummaryTool],
+            toolChoice: pullRequestSummaryToolChoiceFor('thinking-model'),
+            geminiThinkingMode: GeminiThinkingMode.minimal,
+            reasoningEffort: ReasoningEffort.minimal,
+            impactCollector: any(named: 'impactCollector'),
+          ),
+        ).called(1);
+        final data =
+            verify(
+                  () => entries.addSummary(
+                    merged,
+                    captureAny(),
+                    start: any(named: 'start'),
+                  ),
+                ).captured.single
+                as AiResponseData;
+        expect(data.model, 'thinking-model');
+        expect(data.oneLiner, 'Tracks pull requests on tasks.');
+      },
+    );
+
+    test(
+      'asks nothing automatically where the category leaves automatic '
+      'inference off or the task has no category, nor where no profile '
+      'resolves',
+      () async {
+        automaticInference = false;
+        expect(
+          await summarizer().summarize(merged.id),
+          PullRequestSummaryOutcome.notAllowed,
+        );
+
+        when(() => db.journalEntityById(taskId)).thenAnswer(
+          (_) async => testTask.copyWith(
+            meta: testTask.meta.copyWith(id: taskId, categoryId: null),
+          ),
+        );
+        expect(
+          await summarizer().summarize(merged.id),
+          PullRequestSummaryOutcome.notAllowed,
+        );
+
+        when(
+          () => resolver.resolveForSubject(taskId),
+        ).thenAnswer((_) async => null);
+        expect(
+          await summarizer().summarize(merged.id, manual: true),
+          PullRequestSummaryOutcome.noModel,
+        );
+        verifyNever(generateCall);
+      },
+    );
+
+    test('the user may ask where the category leaves it off', () async {
+      automaticInference = false;
+      expect(
+        await summarizer().summarize(merged.id, manual: true),
+        PullRequestSummaryOutcome.stored,
+      );
+      verify(generateCall).called(1);
+    });
+  });
+
+  group('pullRequestSummaryProvider', () {
+    late StreamController<Set<String>> updates;
+    late MockPullRequestRepository entries;
+    final entry = prEntry(
+      clock: {'a': 1},
+      snapshot: prSnapshot(status: PullRequestStatus.merged),
+    );
+    final input = pullRequestSummaryInput(
+      entry.data.ref,
+      entry.data.snapshot!,
+    );
+    const first = PullRequestSummary(oneLiner: 'First.', tldr: 'First one.');
+    const second = PullRequestSummary(oneLiner: 'Second.', tldr: 'Again.');
+
+    setUp(() async {
+      updates = StreamController<Set<String>>.broadcast();
+      addTearDown(updates.close);
+      final notifications = MockUpdateNotifications();
+      when(() => notifications.updateStream).thenAnswer((_) => updates.stream);
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..unregister<UpdateNotifications>()
+            ..registerSingleton<UpdateNotifications>(notifications);
+        },
+      );
+      addTearDown(tearDownTestGetIt);
+      entries = MockPullRequestRepository();
+      when(() => entries.liveEntry(entry.id)).thenAnswer((_) async => entry);
+    });
+
+    test(
+      "reads the summary of the entry's current content, and again when the "
+      'entry or a summary of it is announced — only then',
+      () async {
+        var reads = 0;
+        when(() => entries.summaryOf(entry.id, input)).thenAnswer(
+          (_) async => reads++ == 0 ? first : second,
+        );
+        final c = ProviderContainer(
+          overrides: [pullRequestRepositoryProvider.overrideWithValue(entries)],
+        );
+        addTearDown(c.dispose);
+        final seen = <PullRequestSummary?>[];
+        c.listen(
+          pullRequestSummaryProvider(entry.id),
+          (_, next) => next.whenData(seen.add),
+          fireImmediately: true,
+        );
+        await pumpEventQueue();
+        expect(seen, [first]);
+
+        updates.add({'another-entry'});
+        await pumpEventQueue();
+        expect(seen, [first]);
+
+        updates.add({entry.id});
+        await pumpEventQueue();
+        expect(seen, [first, second]);
+      },
+    );
+
+    test('an entry unlinked, or never read, has no summary', () async {
+      for (final stored in [
+        null,
+        prEntry(clock: {'a': 1}),
+      ]) {
+        when(
+          () => entries.liveEntry(entry.id),
+        ).thenAnswer((_) async => stored);
+        final c = ProviderContainer(
+          overrides: [pullRequestRepositoryProvider.overrideWithValue(entries)],
+        );
+        addTearDown(c.dispose);
+        // Watched, as a row watches it: an auto-disposed provider read only
+        // for its future is gone before it answers.
+        c.listen(pullRequestSummaryProvider(entry.id), (_, _) {});
+
+        expect(
+          await c.read(pullRequestSummaryProvider(entry.id).future),
+          isNull,
+        );
+      }
+      verifyNever(() => entries.summaryOf(any(), any()));
+    });
   });
 
   group('PullRequestRefreshController', () {

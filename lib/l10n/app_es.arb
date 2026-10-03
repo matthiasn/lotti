@@ -2759,6 +2759,7 @@
       }
     }
   },
+  "githubDescriptionHeading": "Descripción",
   "githubDisconnectButton": "Desconectar",
   "githubFailureForbidden": "El token no tiene permiso para leer esto. Revisa sus permisos.",
   "githubFailureInvalidResponse": "GitHub envió una respuesta que Lotti no pudo leer.",
@@ -2795,6 +2796,8 @@
   "githubMergeBehind": "Por detrás de la rama base",
   "githubMergeBlocked": "Bloqueada por reglas de rama",
   "githubMergeConflicts": "Conflictos de fusión",
+  "githubNoDescription": "Esta pull request no tiene descripción.",
+  "githubNoSummaryYet": "Aún sin resumir.",
   "githubNoTokenFromOtherDevices": "Todavía no ha llegado ningún token de tus otros dispositivos. En un dispositivo que tenga uno, usa «Enviar a mis otros dispositivos».",
   "githubNotRefreshed": "No se pudo actualizar",
   "githubNotRefreshedYet": "Aún no actualizada",
@@ -2823,6 +2826,7 @@
     }
   },
   "githubPullRequestActions": "Acciones de la pull request",
+  "githubPullRequestSize": "{additions} líneas añadidas, {deletions} eliminadas",
   "githubPullRequestsTitle": "Pull requests",
   "githubRefreshingPullRequest": "Actualizando pull request",
   "githubRefreshPullRequest": "Actualizar pull request",
@@ -2842,6 +2846,13 @@
   "githubStatusDraft": "Borrador",
   "githubStatusMerged": "Fusionada",
   "githubStatusOpen": "Abierta",
+  "githubSummarize": "Resumir",
+  "githubSummarizeAgain": "Volver a resumir",
+  "githubSummarizing": "Escribiendo el resumen",
+  "githubSummaryBusy": "Ya se está escribiendo un resumen.",
+  "githubSummaryFailed": "No se pudo escribir el resumen. Inténtalo de nuevo.",
+  "githubSummaryHeading": "En resumen",
+  "githubSummaryNoModel": "No hay ningún modelo configurado para el agente de esta tarea, así que nada puede escribir el resumen.",
   "githubTokenHide": "Ocultar token",
   "githubTokenIntro": "Lotti lee las pull requests que vinculas a tus tareas con tu propio token de acceso personal. Crea un token fine-grained para los repositorios en los que trabajas, con acceso de solo lectura a \"Pull requests\" y \"Commit statuses\". GitHub no deja que ese token lea los check runs de un repositorio privado, así que allí la CI puede estar incompleta; un token clásico con el scope \"repo\" sí puede leerlos.",
   "githubTokenLabel": "Token de acceso personal",

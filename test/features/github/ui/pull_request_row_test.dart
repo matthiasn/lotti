@@ -5,12 +5,15 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/features/github/api/github_client.dart';
+import 'package:lotti/features/github/domain/pull_request_summary.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
+import 'package:lotti/features/github/ui/pull_request_details_modal.dart';
 import 'package:lotti/features/github/ui/pull_request_row.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
@@ -266,6 +269,32 @@ void main() {
       },
     );
 
+    test(
+      'the size follows the age, its two halves added and removed, on '
+      'every state; none before GitHub reported it',
+      () {
+        for (final status in PullRequestStatus.values) {
+          final parts = pullRequestStatusParts(
+            messages,
+            snapshot: prSnapshot(status: status).copyWith(
+              additions: 444,
+              deletions: 221,
+              mergedAt: prFixtureEpoch,
+              closedAt: prFixtureEpoch,
+            ),
+            failure: null,
+            now: now,
+          );
+          expect(parts.sublist(1, 4), [
+            ('3 min ago', PullRequestTone.neutral),
+            ('+444', PullRequestTone.added),
+            ('−221', PullRequestTone.removed),
+          ], reason: status.name);
+        }
+        expect(words(prSnapshot()), isNot(contains(startsWith('+'))));
+      },
+    );
+
     test('a failed refresh says so, after the age', () {
       expect(
         words(
@@ -348,6 +377,7 @@ void main() {
       PullRequestEntry entry, {
       Set<String> holders = const {'task-1'},
       Map<String, String> titles = const {},
+      PullRequestSummary? summary,
     }) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -360,6 +390,9 @@ void main() {
             ),
             pullRequestHolderTitleProvider.overrideWith(
               (ref, id) => Stream.value(titles[id]),
+            ),
+            pullRequestSummaryProvider.overrideWith(
+              (ref, id) => Stream.value(summary),
             ),
           ],
         ),
@@ -557,6 +590,95 @@ void main() {
       verify(
         () => repository.unlink(taskId: 'task-1', ref: entry.data.ref),
       ).called(1);
+    });
+
+    testWidgets(
+      'the one-liner of its summary is the subtitle, above the status line '
+      'with its size, which reads as one',
+      (tester) async {
+        final entry = prEntry(
+          clock: {'a': 1},
+          snapshot: prSnapshot().copyWith(additions: 444, deletions: 221),
+        );
+        await withClock(
+          Clock.fixed(now),
+          () => pump(
+            tester,
+            entry,
+            summary: const PullRequestSummary(
+              oneLiner: 'Tracks pull requests on tasks.',
+              tldr: 'More.',
+            ),
+          ),
+        );
+
+        final line = tester
+            .widgetList<RichText>(find.byType(RichText))
+            .map((r) => r.text.toPlainText(includeSemanticsLabels: false))
+            .firstWhere((text) => text.contains('Open'));
+        expect(
+          line,
+          'Tracks pull requests on tasks.\n'
+          'Open · 3 min ago · +444 −221 · Checks running',
+        );
+        expect(
+          find.textContaining(
+            '444 lines added, 221 removed',
+            findRichText: true,
+          ),
+          findsOneWidget,
+          reason: 'a screen reader says what the signs mean',
+        );
+      },
+    );
+
+    testWidgets('no subtitle before a summary is written', (tester) async {
+      final entry = prEntry(clock: {'a': 1}, snapshot: prSnapshot());
+      await withClock(Clock.fixed(now), () => pump(tester, entry));
+
+      final line = tester
+          .widgetList<RichText>(find.byType(RichText))
+          .map((r) => r.text.toPlainText(includeSemanticsLabels: false))
+          .firstWhere((text) => text.contains('Open'));
+      expect(line, 'Open · 3 min ago · Checks running');
+    });
+
+    testWidgets('the menu opens the pull request on GitHub', (tester) async {
+      final launcher = MockUrlLauncher();
+      final original = UrlLauncherPlatform.instance;
+      UrlLauncherPlatform.instance = launcher;
+      addTearDown(() => UrlLauncherPlatform.instance = original);
+      registerFallbackValue(FakeLaunchOptions());
+      when(
+        () => launcher.launchUrl(any(), any()),
+      ).thenAnswer((_) async => true);
+      final entry = prEntry(clock: {'a': 1}, snapshot: prSnapshot());
+      await withClock(Clock.fixed(now), () async {
+        await pump(tester, entry);
+        await tester.tap(find.byKey(ValueKey('pull-request-menu-${entry.id}')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Open on GitHub'));
+        await tester.pumpAndSettle();
+      });
+
+      verify(
+        () => launcher.launchUrl(
+          'https://github.com/matthiasn/lotti/pull/42',
+          any(),
+        ),
+      ).called(1);
+    });
+
+    testWidgets('tapping the row opens its details', (tester) async {
+      final entry = prEntry(clock: {'a': 1}, snapshot: prSnapshot());
+      await withClock(Clock.fixed(now), () async {
+        await pump(tester, entry);
+        await tester.tap(find.text('#42 Track pull requests'));
+        await tester.pumpAndSettle();
+      });
+
+      expect(find.byType(PullRequestDetails), findsOneWidget);
+      expect(find.text('matthiasn/lotti#42'), findsOneWidget);
     });
 
     testWidgets(

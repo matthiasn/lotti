@@ -6635,6 +6635,9 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get githubDescriptionHeading => 'Beskrivning';
+
+  @override
   String get githubDisconnectButton => 'Koppla från';
 
   @override
@@ -6741,6 +6744,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get githubMergeConflicts => 'Sammanfogningskonflikter';
 
   @override
+  String get githubNoDescription =>
+      'Den här pull requesten har ingen beskrivning.';
+
+  @override
+  String get githubNoSummaryYet => 'Inte sammanfattad än.';
+
+  @override
   String get githubNoTokenFromOtherDevices =>
       'Ingen token har kommit från dina andra enheter än. Använd ”Skicka till mina andra enheter” på en enhet som har en.';
 
@@ -6775,6 +6785,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get githubPullRequestActions => 'Åtgärder för pull request';
+
+  @override
+  String githubPullRequestSize(int additions, int deletions) {
+    return '$additions rader tillagda, $deletions borttagna';
+  }
 
   @override
   String get githubPullRequestsTitle => 'Pull requests';
@@ -6837,6 +6852,29 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get githubStatusOpen => 'Öppen';
+
+  @override
+  String get githubSummarize => 'Sammanfatta';
+
+  @override
+  String get githubSummarizeAgain => 'Sammanfatta igen';
+
+  @override
+  String get githubSummarizing => 'Skriver sammanfattningen';
+
+  @override
+  String get githubSummaryBusy => 'En sammanfattning skrivs redan.';
+
+  @override
+  String get githubSummaryFailed =>
+      'Sammanfattningen kunde inte skrivas. Försök igen.';
+
+  @override
+  String get githubSummaryHeading => 'Kort sagt';
+
+  @override
+  String get githubSummaryNoModel =>
+      'Det finns ingen modell inställd för den här uppgiftens agent, så inget kan skriva sammanfattningen.';
 
   @override
   String get githubTokenHide => 'Dölj token';
