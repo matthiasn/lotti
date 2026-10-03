@@ -4,6 +4,136 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.40]
+
+### Added
+
+- **Pull requests in a task are summarised.** Each linked pull request gets a
+  one-line summary under its title and a short TL;DR: what it changes, where
+  it stands, and how it got there, including rounds of requested changes and
+  long discussions. The task agent's model writes them in the task's
+  language, whatever language the pull request itself is in, automatically
+  where the task's category allows automatic inference, and whenever you tap
+  Summarize. They sync to your other devices and belong to their pull
+  request: its details in the task show them, not the journal feed. An
+  outdated summary is removed once a new one is written, and a pull
+  request's summaries go when it is unlinked. A pull request without a
+  summary says why: automatic summaries are off for the task's category, no
+  model is set up for its agent, the last attempt failed, or one is written
+  at the next refresh. After a failure, automatic summaries wait an hour;
+  Summarize still works right away.
+- **Pull request size and details.** Each row shows the size as +444 −221 in
+  green and red. Tapping a pull request opens its details: status, size,
+  summary, its own description, and a button to open it on GitHub.
+
+### Changed
+
+- **An entry's page now ends in the same sticky action bar a task's page
+  has.** The teal link button floated awkwardly high above the menu button
+  on a phone, and the menu button sat under it. Both are gone from an
+  entry's page: a glass bar along the bottom edge now holds *Add a task*,
+  which creates a task linked to the entry and opens it, the record button
+  for a voice note, and a plus that opens the same *Add* sheet the floating
+  button did. Go back to reach the logbook and its menu, as on a task.
+- **GitHub pull requests no longer need a config flag, and a task shows them
+  only when you ask.** The *GitHub pull requests* config flag is gone: adding
+  your token under Settings → Advanced Settings → GitHub is all it takes.
+  Tasks no longer carry an empty Pull requests card. On a task that should
+  follow pull requests, choose *Pull request tracking* from the "+" menu of
+  the bar at the bottom of the task: the Pull requests section appears and
+  the page scrolls to it, and it stays — on every device, even with nothing
+  linked yet. Tasks that already have pull requests linked keep their section
+  without doing anything. A category's GitHub repository is offered while
+  your token works. If GitHub rejects the token later — it expired or was
+  revoked — the action is withdrawn until it works again, while the pull
+  requests already linked keep showing what GitHub last said and why they
+  could not be refreshed.
+- **Your GitHub token now syncs to your other devices.** Enter it once and
+  every device you sync with can follow your pull requests, end-to-end
+  encrypted like your AI providers' keys; disconnecting removes it everywhere.
+  A device checks a token it receives with GitHub before it shows it as
+  connected. On the GitHub settings page, "Send to my other devices" hands on
+  a token you entered before this version, and "Check my other devices" picks
+  one up on a device that has none.
+- **Merged and closed pull requests take a few lines in a task's context.**
+  Coding prompts and the task agent see a finished pull request's outcome,
+  size and TL;DR instead of its whole description, branch, checks and
+  reviews; open pull requests keep every detail and gain their TL;DR. For a
+  task with many merged pull requests, every agent wake and coding prompt is
+  much smaller.
+- **Task agents no longer spend a run when nothing they read has changed.**
+  Saving a running timer's note without editing it, re-saving a task, or any
+  other write that leaves the task's content as it was used to start a full
+  agent run two minutes later. An automatic update now first checks the task,
+  its linked entries and links, the category brief and the agent's setup
+  against the last completed run, and stops there when all of them match —
+  before any model is called. "Update now" always runs.
+
+### Fixed
+
+- **A person's check-in reminders and briefings could come a day early or
+  late, or twice, when you use Lotti in more than one time zone.** A
+  check-in logged near midnight counted as a different day on a device in
+  another zone, so the two devices kept overwriting each other's view of
+  when the person was next due and each paid for its own briefing. Every
+  device now counts from the day on the calendar where the check-in was
+  logged, and the reminder, the people list and the briefing agree on that
+  day.
+- **Adding a comment, recording or photo to a check-in from a device in
+  another time zone left the briefing out of date for good.** The change
+  was read as older than the briefing it should have refreshed. It now
+  refreshes the briefing wherever it was made.
+- **A briefing written on one device could be refreshed again, needlessly,
+  by a device in another time zone.** Briefings are now stamped so every
+  device reads the same moment.
+- **In the people list, someone a day over their cadence read as due today
+  on the morning the clocks sprang forward.** Days over are counted on the
+  calendar, so the short night no longer costs a day.
+- **A person's agent card could say "Last run failed" on one device beside a
+  briefing that had just been written on another, or stay quiet about a
+  failure.** When you use Lotti on more than one device, a quick failure on
+  one could outrank a longer success on the other, and an unrelated change
+  on the device that failed could bring its stale failure back over the
+  success. Every device now records when the last briefing was written and
+  when the last run failed, and all of them agree on which came last. A
+  failure that happened before the latest briefing no longer counts as the
+  current state.
+- **A label you removed from a task could come back.** If the task could not
+  be read at the moment an AI label suggestion was applied, the suggestion
+  went ahead as if you had never removed anything. Now the suggestion waits
+  and nothing is added.
+- **Saving agent work could stall while sync looked for missing entries.**
+  Each check for entries another device had announced but not yet delivered
+  read that device's whole sync history, taking up to most of a second on a
+  long-used desktop while other writes waited. It now reads only the entries
+  still waiting to arrive.
+- **The Ollama model-install dialog is readable and translated.** The
+  terminal command it suggests rendered as blank blocks because it asked for
+  a font the app does not ship; it now shows in the app's monospace font. The
+  dialog's text, including the message when no Ollama provider is set up, now
+  follows the app language, and its buttons match the rest of the app.
+- **Ollama install errors are explained in your language.** When installing
+  a model fails, the dialog now says why in the app language — the model
+  wasn't found, the disk is full, the server can't be reached, the download
+  timed out or Ollama refused to start it — instead of showing English or
+  technical error text. Anything unexpected gets a plain "something went
+  wrong" message.
+- **Danish, Italian, Dutch, Portuguese and Swedish showed recent screens
+  partly in English.** The AI attribution panel, the Daily OS activity log,
+  its plan notifications, task links and blockers, and the empty logbook
+  had never been translated into these five languages. All of it is now.
+- **A few labels read wrong in some languages:** an overdue item said
+  "Overdue" in Danish and Portuguese, the agenda's overdue state said
+  "Suggestion" in Italian, and two Danish and Swedish due-date lines began
+  with a stray space.
+
+### Security
+
+- **Sync rejects attachments that would unpack to an absurd size.** A
+  compressed sync attachment is now unpacked only up to a generous limit, far
+  above anything Lotti itself sends. One crafted to expand to gigabytes is
+  refused, instead of exhausting the device's memory.
+
 ## [1.1.39]
 
 ### Changed
