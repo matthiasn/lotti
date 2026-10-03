@@ -40,7 +40,7 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
-    <release version="1.1.40" date="2026-10-04">
+    <release version="1.1.41" date="2026-10-04">
       <description>
         <p>Added: pull requests in a task are summarised. Each linked pull request gets a one-line summary under its title and a short TL;DR: what it changes, where it stands, and how it got there, including rounds of requested changes and long discussions. The task agent's model writes them in the task's language, whatever language the pull request itself is in, automatically where the task's category allows automatic inference, and whenever you tap Summarize. They sync to your other devices and belong to their pull request: its details in the task show them, not the journal feed. An outdated summary is removed once a new one is written, and a pull request's summaries go when it is unlinked. A pull request without a summary says why: automatic summaries are off for the task's category, no model is set up for its agent, the last attempt failed, or one is written at the next refresh. After a failure, automatic summaries wait an hour; Summarize still works right away.</p>
         <p>Added: pull request size and details. Each row shows the size as +444 −221 in green and red. Tapping a pull request opens its details: status, size, summary, its own description, and a button to open it on GitHub.</p>
