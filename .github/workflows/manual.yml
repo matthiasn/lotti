@@ -115,7 +115,7 @@ jobs:
           fi
 
       - name: Checkout Lotti
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           ref: ${{ steps.version.outputs.ref }}
 
@@ -172,14 +172,14 @@ jobs:
       # For a release this is the tag's commit, not the commit that triggered
       # the dispatch — the snapshot marker records what was actually built.
       - name: Checkout Lotti
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           path: lotti
           fetch-depth: 0
           ref: ${{ needs.metadata.outputs.commit }}
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
           cache: npm
@@ -203,7 +203,7 @@ jobs:
         run: npm run check
 
       - name: Upload static manual
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: lotti-manual-${{ needs.metadata.outputs.version }}
           path: lotti/docs-site/build
@@ -267,7 +267,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Download built manual
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
           name: lotti-manual-${{ needs.metadata.outputs.version }}
           path: site-build
@@ -365,27 +365,27 @@ jobs:
       # A release captures from its resolved app tag, so the immutable media
       # prefix shows the UI that release actually shipped — not current main.
       - name: Checkout Lotti
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           path: lotti
           ref: ${{ needs.metadata.outputs.commit }}
           fetch-depth: 0
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
           cache: npm
           cache-dependency-path: lotti/docs-site/package-lock.json
 
       - name: Read the pinned Flutter version
-        uses: kuhnroyal/flutter-fvm-config-action@v2
+        uses: kuhnroyal/flutter-fvm-config-action@4155f8ca4c30a4f2f50df69caa0e4259f6cd1142 # v2
         id: flutter-version
         with:
           path: lotti/.fvmrc
 
       - name: Set up Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           flutter-version: ${{ steps.flutter-version.outputs.FLUTTER_VERSION }}
           channel: ${{ steps.flutter-version.outputs.FLUTTER_CHANNEL }}
@@ -412,7 +412,7 @@ jobs:
           MANUAL_CAPTURE_DIR="${{ runner.temp }}/lotti-manual-capture/${{ needs.metadata.outputs.version }}"
 
       - name: Upload the ${{ matrix.locale }} media slice
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: lotti-manual-media-${{ needs.metadata.outputs.version }}-${{ matrix.locale }}
           path: ${{ runner.temp }}/lotti-manual-media/${{ needs.metadata.outputs.version }}
@@ -434,14 +434,14 @@ jobs:
     timeout-minutes: 45
     steps:
       - name: Checkout Lotti
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           path: lotti
           ref: ${{ needs.metadata.outputs.commit }}
           fetch-depth: 0
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
           cache: npm
@@ -455,7 +455,7 @@ jobs:
       # under its own directory — so merging them cannot lose or clobber a
       # file. `--delete` on the publish below then retires anything stale.
       - name: Download every locale's media slice
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
           pattern: lotti-manual-media-${{ needs.metadata.outputs.version }}-*
           merge-multiple: true
@@ -473,7 +473,7 @@ jobs:
           MANUAL_MEDIA_DIR="${{ runner.temp }}/lotti-manual-media"
 
       - name: Upload generated media for review
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: lotti-manual-media-${{ needs.metadata.outputs.version }}
           path: ${{ runner.temp }}/lotti-manual-media/${{ needs.metadata.outputs.version }}
@@ -558,13 +558,13 @@ jobs:
       # script is pinned to the default branch (a dispatch can target another
       # ref), so snapshots are always composed with current publishing logic.
       - name: Checkout Lotti
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           path: lotti
           ref: ${{ github.event.repository.default_branch }}
 
       - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
 
       - name: Mirror site snapshots from R2
         id: mirror
@@ -601,14 +601,14 @@ jobs:
 
       - name: Upload GitHub Pages artifact
         if: steps.mirror.outputs.ready == 'true'
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
         with:
           path: ${{ runner.temp }}/lotti-manual-pages
 
       - name: Deploy artifact to GitHub Pages
         if: steps.mirror.outputs.ready == 'true'
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
 
   deploy_release:
     name: Publish GitHub Pages (release)
@@ -632,13 +632,13 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout Lotti
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           path: lotti
           ref: ${{ github.event.repository.default_branch }}
 
       - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
 
       - name: Mirror site snapshots from R2
         id: mirror
@@ -675,11 +675,11 @@ jobs:
 
       - name: Upload GitHub Pages artifact
         if: steps.mirror.outputs.ready == 'true'
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
         with:
           path: ${{ runner.temp }}/lotti-manual-pages
 
       - name: Deploy artifact to GitHub Pages
         if: steps.mirror.outputs.ready == 'true'
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

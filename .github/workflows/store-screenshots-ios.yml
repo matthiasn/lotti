@@ -42,7 +42,7 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
 
       - name: Show Xcode + simulators
         run: |
@@ -53,15 +53,15 @@ jobs:
         # flutter_vodozemac builds its Rust bindings via cargokit during `pod
         # install`; a simulator build needs the simulator targets in place so
         # cargokit's `rustup target add` is a no-op (see the TestFlight lane).
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
         with:
           toolchain: stable
           targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios
 
-      - uses: kuhnroyal/flutter-fvm-config-action@v2
+      - uses: kuhnroyal/flutter-fvm-config-action@4155f8ca4c30a4f2f50df69caa0e4259f6cd1142 # v2
         id: fvm-config-action
 
-      - uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
           channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
@@ -93,7 +93,7 @@ jobs:
 
       - name: Upload screenshots
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: store-screenshots-ios-${{ inputs.locale || 'en' }}
           path: build/store_screenshots/ios/**/*.png

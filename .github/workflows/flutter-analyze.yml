@@ -15,15 +15,15 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       - name: Cache Pub Packages
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.pub-cache
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
-      - uses: kuhnroyal/flutter-fvm-config-action@v2
+      - uses: kuhnroyal/flutter-fvm-config-action@4155f8ca4c30a4f2f50df69caa0e4259f6cd1142 # v2
         id: fvm-config-action
-      - uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
           channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
@@ -45,3 +45,7 @@ jobs:
         run: dart run tool/changelog/validate.dart
       - name: Check property-test tags
         run: dart run tool/ci/check_test_tags.dart
+      # A tag can be moved to different code after review; the release jobs
+      # hold signing and store secrets, so every action names its commit.
+      - name: Check GitHub Actions are pinned to commits
+        run: dart run tool/ci/check_action_pins.dart
