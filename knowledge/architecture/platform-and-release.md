@@ -5,13 +5,13 @@ description: Five platform targets from one codebase, the checks every branch ru
 resource: ../..
 tags: [architecture, ci, release, platforms, build]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-02T22:40:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-03T12:00:00Z }
 stale_after: 2027-03-01
 sources:
   - id: workflows
     resource: ../../.github/workflows
     title: GitHub Actions workflows
-    last_modified: 2026-10-02
+    last_modified: 2026-10-03
   - id: makefile
     resource: ../../Makefile
     title: Developer and build entry points
@@ -145,9 +145,10 @@ Genuinely path-filtered, both on pushes *and* pull requests to `main`:
 `python-tools-ci.yml` (the Python tools) and `manual.yml` (docs-site) — the latter
 also runs on a nightly cron (`23 2 * * *`) and on manual dispatch.
 
-`flutter-linux-appimage.yml` is path-filtered on pull requests only — `linux/**`,
-`pubspec.lock` and the workflow itself — where it builds and smoke-tests the
-AppImage without publishing it. Its tag trigger is part of [Release](#release).
+`flutter-linux-appimage.yml` does **not** run on pull requests or branch
+pushes. It builds on a tag (see [Release](#release)) and on manual dispatch,
+which builds and smoke-tests the AppImage for any ref without publishing it —
+the way to check a packaging change before it ships.
 
 No pull request lane runs the screenshot harnesses. They render real
 production widgets, so app code is what usually breaks them, but `manual.yml`

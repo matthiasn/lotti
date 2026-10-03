@@ -128,13 +128,14 @@ is meant for clean machines.
 ## CI
 
 `.github/workflows/flutter-linux-appimage.yml` runs on every tag (except
-`play/**`), on pull requests that touch `linux/**`, `pubspec.lock` (where a
-dependency with a new native library first shows up) or the workflow, and on
-manual dispatch:
+`play/**`) and on manual dispatch. It does not run on pull requests: to check
+a change to `linux/**` or a dependency that brings a new native library,
+dispatch the workflow on the branch (`gh workflow run
+flutter-linux-appimage.yml --ref <branch>`).
 
 1. **build** runs in an `ubuntu:22.04` container, builds the release
    bundle and the AppImage, and uploads both as the `lotti-appimage-x86_64`
-   workflow artifact. Pull requests can test that artifact before anything is
+   workflow artifact, which a manual run lets you test before anything is
    released.
 2. **smoke-test** runs `check_appimage.sh` in clean `ubuntu:22.04`,
    `ubuntu:24.04`, `debian:12` and `fedora:latest` containers. These have only

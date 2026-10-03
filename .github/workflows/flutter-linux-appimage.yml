@@ -11,12 +11,9 @@ on:
       # play/<track>/<version> tags promote an existing build on Google
       # Play (play-promote.yml); they are not a release of anything else.
       - '!play/**'
-  pull_request:
-    paths:
-      - 'linux/**'
-      - '.github/workflows/flutter-linux-appimage.yml'
-      # A dependency that brings a new native library shows up here first.
-      - 'pubspec.lock'
+  # Not on pull requests: a full build plus four smoke-test containers is
+  # too much to spend per push. Test a packaging change by dispatching this
+  # workflow on its branch; a manual run never publishes.
   workflow_dispatch:
 
 concurrency:
