@@ -286,8 +286,10 @@ than an error: "Also linked to “Teach the chicks”" when there is one other
 task and the viewer may see it, "Also linked to another task" or "… to 2
 other tasks" otherwise. The title comes from `pullRequestHolderTitleProvider`,
 which reads the task through the private-filtered read the linked tasks use,
-again when the task or private mode changes, so a private task's title never
-shows while private mode hides it. `pullRequestHoldersProvider` reads the
+again when the task or private mode changes — withdrawing the title at once,
+before that read answers — so a private task's title never shows while
+private mode hides it, not even while a read is pending.
+`pullRequestHoldersProvider` reads the
 holders again whenever a pull request entry or a link changes, so a link that
 syncs in shows at once. Sync does not deliver a device's entries in order, so
 a pull request moved from one task to another can show the flag for a moment

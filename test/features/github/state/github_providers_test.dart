@@ -395,7 +395,44 @@ void main() {
         updates.add({privateToggleNotification});
         await pumpEventQueue();
 
-        expect(seen, ['Waddle', 'Swim', null]);
+        expect(seen, ['Waddle', null, 'Swim', null]);
+      },
+    );
+
+    test(
+      'a private-mode change withdraws the title at once, before a read that '
+      'may take its time',
+      () async {
+        final journal = MockJournalRepository();
+        final pending = Completer<List<JournalEntity>>();
+        var calls = 0;
+        when(
+          () => journal.getJournalEntitiesByIds({'other-task'}),
+        ).thenAnswer((_) async {
+          if (calls++ == 0) {
+            return [
+              testTask.copyWith(data: testTask.data.copyWith(title: 'Waddle')),
+            ];
+          }
+          return pending.future;
+        });
+        final c = ProviderContainer(
+          overrides: [journalRepositoryProvider.overrideWithValue(journal)],
+        );
+        addTearDown(c.dispose);
+        final provider = pullRequestHolderTitleProvider('other-task');
+        c.listen(provider, (_, _) {});
+        await pumpEventQueue();
+        expect(c.read(provider).value, 'Waddle');
+
+        updates.add({privateToggleNotification});
+        await pumpEventQueue();
+
+        // The read has not answered, and the title is already gone.
+        expect(c.read(provider).value, isNull);
+        pending.complete(const []);
+        await pumpEventQueue();
+        expect(c.read(provider).value, isNull);
       },
     );
 
