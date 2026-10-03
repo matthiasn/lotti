@@ -44,8 +44,7 @@ language, maintenance, about, health import and recording style. System health
 lives in its own feature and is only routed to from here.
 
 It does **not** own the AI, agents, categories, labels, projects or sync settings
-pages — those live in their features and Settings only routes into them. The menu
-structure itself lives in [settings_v2](../settings_v2/README.md).
+pages — those live in their features and Settings only routes into them.
 
 ## Where the code lives
 

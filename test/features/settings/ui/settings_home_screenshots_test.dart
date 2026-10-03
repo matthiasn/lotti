@@ -3,7 +3,7 @@
 /// sizes:
 ///
 /// - Desktop (1440x900) → `SettingsRootPage` forks (width >= 960) to the
-///   tree-nav master/detail `SettingsV2Page` (the "good" desktop UI).
+///   tree-nav master/detail `SettingsDesktopPage` (the "good" desktop UI).
 /// - Mobile/narrow (375x812) → the legacy single-page `SettingsPage` with
 ///   the collapsing `SliverBoxAdapterPage` header (the UI we want to
 ///   replace).
@@ -25,10 +25,10 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/settings/state/settings_tree_controller.dart';
+import 'package:lotti/features/settings/ui/mobile/settings_mobile_branch_page.dart';
+import 'package:lotti/features/settings/ui/pages/settings_desktop_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
-import 'package:lotti/features/settings_v2/state/settings_tree_controller.dart';
-import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_branch_page.dart';
-import 'package:lotti/features/settings_v2/ui/pages/settings_v2_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -109,7 +109,7 @@ Future<void> _pumpScreen(
 }
 
 Future<void> _openDesktopDefinitions(WidgetTester tester) async {
-  final element = tester.element(find.byType(SettingsV2Page));
+  final element = tester.element(find.byType(SettingsDesktopPage));
   ProviderScope.containerOf(element, listen: false)
       .read(settingsTreePathProvider.notifier)
       .syncFromUrl('/settings/definitions');
@@ -181,7 +181,7 @@ void main() {
   ];
 
   // -------------------------------------------------------------------------
-  // Desktop (1440x900) → SettingsV2Page tree-nav master/detail.
+  // Desktop (1440x900) → SettingsDesktopPage tree-nav master/detail.
   // -------------------------------------------------------------------------
 
   testWidgets('desktop settings root (tree) — dark', (tester) async {
@@ -287,7 +287,7 @@ void main() {
         device: desktopDevice,
         brightness: brightness,
         overrides: baseOverrides(),
-        home: const SettingsV2Page(beamToReplacementNamed: _ignoreBeam),
+        home: const SettingsDesktopPage(beamToReplacementNamed: _ignoreBeam),
       );
       await _openDesktopDefinitions(tester);
 

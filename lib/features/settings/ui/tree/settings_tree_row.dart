@@ -1,0 +1,216 @@
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/settings/domain/settings_node.dart';
+import 'package:lotti/features/settings/ui/settings_tree_constants.dart';
+import 'package:material_ui/material_ui.dart';
+
+/// Renders one tree row per spec §3 "Row anatomy": left active rail,
+/// icon tile, title + description column, optional live indicator, chevron.
+///
+/// Stateless on purpose — visibility of the rail + chevron rotation
+/// + selected styling are all derived from the props so parents can
+/// drive them off the single `List<String> path` source of truth
+/// without this widget owning any state.
+class SettingsTreeRow extends StatelessWidget {
+  const SettingsTreeRow({
+    required this.node,
+    required this.onActivePath,
+    required this.isExpanded,
+    required this.onTap,
+    this.trailing,
+    this.focusNode,
+    this.showLeafChevron = false,
+    this.descMaxLines = 1,
+    this.showActiveRail = true,
+    this.accentIcon = false,
+    super.key,
+  });
+
+  final SettingsNode node;
+
+  /// When `true`, the leading icon tile is always painted in the teal
+  /// accent (teal glyph on a teal-tinted tile) regardless of selection,
+  /// restoring the legacy `SettingsIcon` look the mobile Sync list used.
+  /// Defaults to `false`, so every other surface keeps the grey-tile /
+  /// teal-when-active treatment.
+  final bool accentIcon;
+
+  /// Optional live trailing widget (e.g. the `sync/outbox` pending count),
+  /// rendered before the chevron. Supplied by
+  /// the build sites via `settingsNodeIndicatorFor(node.id)` so the row
+  /// stays presentational and the indicator owns its own (reactive) state.
+  final Widget? trailing;
+  final FocusNode? focusNode;
+
+  /// When `true`, leaf rows (no children) also render a static trailing
+  /// chevron. Branches always show their (rotating) chevron regardless.
+  /// Used by the mobile drill-down surface, where tapping a leaf pushes
+  /// a panel page and the chevron signals that affordance the way native
+  /// settings lists do. Desktop leaves leave this `false` — they select
+  /// in place, so a chevron would imply navigation that does not happen.
+  final bool showLeafChevron;
+
+  /// True when this row's id appears anywhere in the current tree
+  /// path — drives the active rail, tile fill, and dim/selection
+  /// styling.
+  final bool onActivePath;
+
+  /// True when this row is a branch and is the currently-open one at
+  /// its depth — drives the chevron rotation.
+  final bool isExpanded;
+
+  final VoidCallback onTap;
+
+  /// Maximum lines for the description. Desktop keeps the single-line
+  /// truncation (1); the mobile drill-down passes 2 so longer summaries
+  /// wrap instead of clipping mid-word — the row grows to fit because
+  /// its height is a *minimum*, not a fixed value (see [build]).
+  final int descMaxLines;
+
+  /// Whether to reserve the leading active-path rail. Desktop keeps it so
+  /// the row content doesn't shift horizontally when a row becomes
+  /// selected. The mobile drill-down has no persistent selection
+  /// ([onActivePath] is always false there), so it passes `false` to drop
+  /// the permanently-invisible spacer and its margin — otherwise the rail
+  /// adds dead inset on the left.
+  final bool showActiveRail;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final textHi = tokens.colors.text.highEmphasis;
+    final textMid = tokens.colors.text.mediumEmphasis;
+    final textLo = tokens.colors.text.lowEmphasis;
+    final accent = tokens.colors.interactive.enabled;
+    final rowFill = onActivePath
+        ? accent.withValues(alpha: SettingsTreeConstants.activeRowFillAlpha)
+        : Colors.transparent;
+    final tileBg = accentIcon
+        ? accent.withValues(alpha: SettingsTreeConstants.accentTileFillAlpha)
+        : onActivePath
+        ? accent.withValues(alpha: SettingsTreeConstants.activeTileFillAlpha)
+        : tokens.colors.background.level02;
+    final tileGlyph = accentIcon || onActivePath ? accent : textMid;
+
+    // MergeSemantics collapses the InkWell's auto-emitted button node
+    // into the outer selected+expanded+label wrapper so screen readers
+    // see one row rather than a nested button-inside-button.
+    return MergeSemantics(
+      child: Semantics(
+        button: true,
+        selected: onActivePath,
+        expanded: node.hasChildren ? isExpanded : null,
+        label: node.title,
+        child: InkWell(
+          focusNode: focusNode,
+          onTap: onTap,
+          focusColor: tokens.colors.surface.focusPressed,
+          hoverColor: tokens.colors.surface.hover,
+          borderRadius: BorderRadius.circular(tokens.radii.m),
+          child: AnimatedContainer(
+            duration: SettingsTreeConstants.rowFillTransition,
+            // Minimum (not fixed) height + vertical padding so the row
+            // grows for a wrapped 2-line description or large text scale
+            // instead of clipping its content — the a11y failure mode of
+            // the old fixed 62 dp row.
+            constraints: const BoxConstraints(
+              minHeight: SettingsTreeConstants.rowHeight,
+            ),
+            decoration: BoxDecoration(
+              color: rowFill,
+              borderRadius: BorderRadius.circular(tokens.radii.m),
+            ),
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.step4,
+              vertical: tokens.spacing.step3,
+            ),
+            child: Row(
+              children: [
+                // Teal rail on the left when on path; transparent
+                // placeholder otherwise so the row content doesn't
+                // shift horizontally between states. Omitted entirely on
+                // surfaces with no persistent selection (mobile).
+                if (showActiveRail)
+                  AnimatedContainer(
+                    duration: SettingsTreeConstants.railTransition,
+                    width: SettingsTreeConstants.activeRailWidth,
+                    height: SettingsTreeConstants.activeRailHeight,
+                    margin: EdgeInsets.only(right: tokens.spacing.step3),
+                    decoration: BoxDecoration(
+                      color: onActivePath ? accent : Colors.transparent,
+                      borderRadius: BorderRadius.circular(
+                        SettingsTreeConstants.activeRailCornerRadius,
+                      ),
+                    ),
+                  ),
+                // Icon tile
+                Container(
+                  width: SettingsTreeConstants.iconTileSize,
+                  height: SettingsTreeConstants.iconTileSize,
+                  decoration: BoxDecoration(
+                    color: tileBg,
+                    borderRadius: BorderRadius.circular(tokens.radii.s),
+                  ),
+                  child: Icon(
+                    node.icon,
+                    size: SettingsTreeConstants.iconTileGlyphSize,
+                    color: tileGlyph,
+                  ),
+                ),
+                SizedBox(width: tokens.spacing.step4),
+                // Title + description (min-width 0 so they truncate)
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        node.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: tokens.typography.styles.subtitle.subtitle2
+                            .copyWith(
+                              color: textHi,
+                            ),
+                      ),
+                      if (node.desc.isNotEmpty)
+                        Text(
+                          node.desc,
+                          maxLines: descMaxLines,
+                          overflow: TextOverflow.ellipsis,
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(
+                                color: textMid,
+                              ),
+                        ),
+                    ],
+                  ),
+                ),
+                // Optional live indicator (e.g. outbox pending count).
+                if (trailing case final trailing?) ...[
+                  SizedBox(width: tokens.spacing.step3),
+                  trailing,
+                ],
+                // Chevron — rotates for branches; static right-pointing
+                // for leaves when [showLeafChevron] is set (mobile
+                // drill-down), absent for desktop leaves.
+                if (node.hasChildren || showLeafChevron) ...[
+                  SizedBox(width: tokens.spacing.step3),
+                  AnimatedRotation(
+                    duration: SettingsTreeConstants.chevronRotation,
+                    curve: Curves.easeOutCubic,
+                    turns: isExpanded ? 0.25 : 0,
+                    child: Icon(
+                      LottiIcons.chevronRight,
+                      size: SettingsTreeConstants.chevronSize,
+                      color: textLo,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

@@ -13,7 +13,7 @@ sources:
     title: Settings feature source
     last_modified: 2026-08-28
   - id: tree
-    resource: ../../lib/features/settings_v2/domain/settings_tree_data.dart
+    resource: ../../lib/features/settings/domain/settings_tree_data.dart
     title: buildSettingsTree — the single source of truth
     last_modified: 2026-07-21
   - id: location

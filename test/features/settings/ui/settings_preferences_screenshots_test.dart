@@ -28,12 +28,12 @@ import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/keyboard/ui/command_palette.dart';
 import 'package:lotti/features/keyboard/ui/keyboard_shortcuts_page.dart';
 import 'package:lotti/features/onboarding/state/recording_style.dart';
-import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
+import 'package:lotti/features/onboarding/ui/recording_style_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/celebration_playground_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/celebration_settings_page.dart';
-import 'package:lotti/features/settings/ui/pages/recording_style_settings_page.dart';
-import 'package:lotti/features/settings/ui/pages/theming_page.dart';
-import 'package:lotti/features/settings_v2/ui/pages/settings_v2_page.dart';
+import 'package:lotti/features/settings/ui/pages/settings_desktop_page.dart';
+import 'package:lotti/features/theming/constants/theming_settings_keys.dart';
+import 'package:lotti/features/theming/ui/theming_page.dart';
 import 'package:lotti/features/tts/model/tts_settings.dart';
 import 'package:lotti/features/tts/ui/speech_settings_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -156,7 +156,7 @@ Future<void> _pumpSurface(
   applyScreenshotDevice(tester, device);
   await tester.pumpWidget(
     _app(
-      home: device.isPhone ? _mobilePage(surface) : const SettingsV2Page(),
+      home: device.isPhone ? _mobilePage(surface) : const SettingsDesktopPage(),
       brightness: brightness,
       size: device.size,
       overrides: overrides,

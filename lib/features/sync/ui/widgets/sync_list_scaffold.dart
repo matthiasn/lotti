@@ -435,7 +435,7 @@ class _SyncListScaffoldState<T, F extends Enum>
 
         final onRefresh = widget.onRefresh;
         return Scaffold(
-          // Match the rest of the settings chrome — the SettingsV2Page, its
+          // Match the rest of the settings chrome — the SettingsDesktopPage, its
           // tree column and detail pane all sit on background.level01 — instead
           // of falling through to the near-black ambient scaffold. The list
           // cards step up to level02 above this.

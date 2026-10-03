@@ -40,8 +40,8 @@ import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
-import 'package:lotti/features/settings_v2/state/settings_tree_controller.dart';
-import 'package:lotti/features/settings_v2/ui/pages/settings_v2_page.dart';
+import 'package:lotti/features/settings/state/settings_tree_controller.dart';
+import 'package:lotti/features/settings/ui/pages/settings_desktop_page.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -237,7 +237,7 @@ Future<void> _selectDesktopSurface(
   required ValueNotifier<DesktopSettingsRoute?> route,
 }) async {
   final container = ProviderScope.containerOf(
-    tester.element(find.byType(SettingsV2Page)),
+    tester.element(find.byType(SettingsDesktopPage)),
     listen: false,
   );
   final tree = container.read(settingsTreePathProvider.notifier)
@@ -420,7 +420,7 @@ void main() {
       _app(
         home: device.isPhone || directLegacy
             ? _mobilePage(surface)
-            : SettingsV2Page(beamToReplacementNamed: (_, _) {}),
+            : SettingsDesktopPage(beamToReplacementNamed: (_, _) {}),
         brightness: brightness,
         device: device,
         overrides: overrides(world),

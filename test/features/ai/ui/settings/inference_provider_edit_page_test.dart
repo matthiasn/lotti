@@ -38,7 +38,7 @@ import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
-import 'package:lotti/features/settings_v2/domain/settings_tree_index.dart';
+import 'package:lotti/features/settings/domain/settings_tree_index.dart';
 import 'package:lotti/features/whats_new/model/whats_new_state.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';

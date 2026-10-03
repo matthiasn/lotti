@@ -269,7 +269,7 @@
       "id": "settings-sections",
       "title": "Sections",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'sections'",
       "locator": "/settings/sections",
       "routes": [
@@ -282,7 +282,7 @@
       "id": "settings-whats-new",
       "title": "What's New",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'whats-new'",
       "locator": "settings:whats-new",
       "page": "reference/whats-new",
@@ -292,7 +292,7 @@
       "id": "settings-onboarding",
       "title": "Onboarding settings",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'onboarding'",
       "locator": "/settings/onboarding",
       "routes": [
@@ -305,7 +305,7 @@
       "id": "settings-ai-providers",
       "title": "AI providers",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'ai/providers'",
       "locator": "settings:ai/providers",
       "routes": [
@@ -318,7 +318,7 @@
       "id": "settings-ai-models",
       "title": "AI models",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'ai/models'",
       "locator": "settings:ai/models",
       "page": "ai-and-automation/models-and-profiles",
@@ -328,7 +328,7 @@
       "id": "settings-ai-profiles",
       "title": "AI profiles",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'ai/profiles'",
       "locator": "settings:ai/profiles",
       "page": "ai-and-automation/models-and-profiles",
@@ -338,7 +338,7 @@
       "id": "settings-ai-usage",
       "title": "AI usage",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'ai/usage'",
       "locator": "settings:ai/usage",
       "page": "ai-and-automation/usage",
@@ -410,7 +410,7 @@
       "id": "settings-agent-templates",
       "title": "Agent templates",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'agents/templates'",
       "locator": "/settings/agents/templates",
       "routes": [
@@ -424,7 +424,7 @@
       "id": "settings-agent-instances",
       "title": "Agent instances",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'agents/instances'",
       "locator": "/settings/agents/instances",
       "routes": [
@@ -437,7 +437,7 @@
       "id": "settings-agent-souls",
       "title": "Agent souls",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'agents/souls'",
       "locator": "/settings/agents/souls",
       "routes": [
@@ -450,7 +450,7 @@
       "id": "settings-agent-pending-wakes",
       "title": "Agent pending wakes",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'agents/pending-wakes'",
       "locator": "/settings/agents/pending-wakes",
       "routes": [
@@ -530,7 +530,7 @@
       "id": "settings-daily-os",
       "title": "Daily OS settings",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'daily-os'",
       "locator": "/settings/daily-os",
       "routes": [
@@ -543,7 +543,7 @@
       "id": "settings-sync-unavailable",
       "title": "Sync unavailable (demo world)",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'sync-unavailable'",
       "locator": "settings:sync-unavailable",
       "page": "sync-and-data/sync",
@@ -553,7 +553,7 @@
       "id": "settings-sync-hub",
       "title": "Sync settings hub",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'sync'",
       "locator": "/settings/sync",
       "routes": [
@@ -566,7 +566,7 @@
       "id": "settings-sync-provisioned",
       "title": "Devices",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'sync/provisioned'",
       "locator": "/settings/sync/provisioned",
       "routes": [
@@ -579,7 +579,7 @@
       "id": "settings-sync-node-profile",
       "title": "This device",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'sync/node-profile'",
       "locator": "/settings/sync/node-profile",
       "routes": [
@@ -592,7 +592,7 @@
       "id": "settings-sync-backfill",
       "title": "Sync backfill",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'sync/backfill'",
       "locator": "/settings/sync/backfill",
       "routes": [
@@ -605,7 +605,7 @@
       "id": "settings-sync-stats",
       "title": "Matrix Stats",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'sync/stats'",
       "locator": "/settings/sync/stats",
       "routes": [
@@ -618,7 +618,7 @@
       "id": "settings-sync-outbox",
       "title": "Sync outbox",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'sync/outbox'",
       "locator": "/settings/sync/outbox",
       "routes": [
@@ -631,7 +631,7 @@
       "id": "settings-sync-conflicts",
       "title": "Sync conflicts",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'sync/conflicts'",
       "locator": "/settings/advanced/conflicts",
       "routes": [
@@ -667,7 +667,7 @@
       "id": "settings-sync-matrix-maintenance",
       "title": "Matrix sync maintenance",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'sync/matrix-maintenance'",
       "locator": "/settings/sync/matrix/maintenance",
       "routes": [
@@ -680,7 +680,7 @@
       "id": "settings-definitions-hub",
       "title": "Definitions hub",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'definitions'",
       "locator": "/settings/definitions",
       "routes": [
@@ -693,7 +693,7 @@
       "id": "settings-categories-list",
       "title": "Category definitions",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'definitions/categories'",
       "locator": "/settings/categories",
       "routes": [
@@ -720,7 +720,7 @@
       "id": "settings-labels-list",
       "title": "Label definitions",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'definitions/labels'",
       "locator": "/settings/labels",
       "routes": [
@@ -747,7 +747,7 @@
       "id": "settings-habits-list",
       "title": "Habit definitions",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'definitions/habits'",
       "locator": "/settings/habits",
       "routes": [
@@ -777,7 +777,7 @@
       "id": "settings-dashboards-list",
       "title": "Dashboard definitions",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'definitions/dashboards'",
       "locator": "/settings/dashboards",
       "routes": [
@@ -804,7 +804,7 @@
       "id": "settings-measurables-list",
       "title": "Measurable definitions",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'definitions/measurables'",
       "locator": "/settings/measurables",
       "routes": [
@@ -844,7 +844,7 @@
       "id": "settings-preferences-hub",
       "title": "Preferences hub",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'preferences'",
       "locator": "/settings/preferences",
       "routes": [
@@ -857,7 +857,7 @@
       "id": "settings-theming",
       "title": "Theming",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'preferences/theming'",
       "locator": "/settings/theming",
       "routes": [
@@ -870,7 +870,7 @@
       "id": "settings-animations",
       "title": "Completion animations",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'preferences/animations'",
       "locator": "/settings/advanced/animations",
       "routes": [
@@ -893,7 +893,7 @@
       "id": "settings-recording-style",
       "title": "Recording Style",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'preferences/recording-style'",
       "locator": "/settings/recording-style",
       "routes": [
@@ -906,7 +906,7 @@
       "id": "settings-notifications",
       "title": "Notifications",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'preferences/notifications'",
       "locator": "/settings/notifications",
       "routes": [
@@ -919,7 +919,7 @@
       "id": "settings-speech",
       "title": "Speech and text-to-speech",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'preferences/speech'",
       "locator": "/settings/speech",
       "routes": [
@@ -932,7 +932,7 @@
       "id": "settings-keyboard-shortcuts",
       "title": "Keyboard shortcuts",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'preferences/keyboard-shortcuts'",
       "locator": "/settings/keyboard-shortcuts",
       "routes": [
@@ -945,7 +945,7 @@
       "id": "settings-advanced-hub",
       "title": "Advanced Settings hub",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'advanced'",
       "locator": "/settings/advanced",
       "routes": [
@@ -958,7 +958,7 @@
       "id": "settings-flags",
       "title": "Configuration flags",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'advanced/flags'",
       "locator": "/settings/flags",
       "routes": [
@@ -971,7 +971,7 @@
       "id": "settings-manual-language",
       "title": "Language",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'advanced/manual-language'",
       "locator": "/settings/advanced/manual-language",
       "routes": [
@@ -997,7 +997,7 @@
       "id": "settings-logging",
       "title": "Logging domains",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'advanced/logging'",
       "locator": "/settings/advanced/logging_domains",
       "routes": [
@@ -1010,7 +1010,7 @@
       "id": "settings-system-health",
       "title": "System health",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'advanced/system-health'",
       "locator": "/settings/advanced/system_health",
       "routes": [
@@ -1023,7 +1023,7 @@
       "id": "settings-health-import",
       "title": "Health import",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'advanced/health-import'",
       "locator": "/settings/health_import",
       "routes": [
@@ -1036,7 +1036,7 @@
       "id": "settings-maintenance",
       "title": "Maintenance",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'advanced/maintenance'",
       "locator": "/settings/advanced/maintenance",
       "routes": [
@@ -1050,7 +1050,7 @@
       "id": "settings-onboarding-metrics",
       "title": "Onboarding metrics",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'advanced/onboarding-metrics'",
       "locator": "/settings/advanced/onboarding_metrics",
       "routes": [
@@ -1063,7 +1063,7 @@
       "id": "settings-about",
       "title": "About Lotti",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'advanced/about'",
       "locator": "/settings/advanced/about",
       "page": "reference/advanced-settings",
@@ -1073,7 +1073,7 @@
       "id": "settings-manual",
       "title": "Open the Manual",
       "kind": "settings-page",
-      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
       "sourcePattern": "'manual'",
       "locator": "Settings → Manual or macOS Help → Manual",
       "page": "reference/settings",
@@ -1303,7 +1303,7 @@
       "id": "workflow-dashboard-charts",
       "title": "Compose dashboard charts",
       "kind": "workflow",
-      "source": "lib/features/settings/ui/pages/dashboards/dashboard_definition_page.dart",
+      "source": "lib/features/dashboards/ui/settings/dashboard_definition_page.dart",
       "sourcePattern": "class DashboardDefinitionPage",
       "locator": "Dashboard editor → Charts",
       "page": "organize-and-reflect/dashboards",

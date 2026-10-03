@@ -1,0 +1,641 @@
+import 'dart:convert';
+
+import 'package:flutter/services.dart';
+import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
+import 'package:lotti/features/dashboards/config/dashboard_workout_config.dart';
+import 'package:lotti/features/dashboards/state/survey_data.dart';
+import 'package:lotti/features/dashboards/ui/settings/chart_multi_select.dart';
+import 'package:lotti/features/dashboards/ui/settings/dashboard_category.dart';
+import 'package:lotti/features/dashboards/ui/settings/dashboard_item_card.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/settings/ui/widgets/form/form_switch.dart';
+import 'package:lotti/features/settings/ui/widgets/form/settings_form_text_field.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/services/notification_stream.dart';
+import 'package:lotti/widgets/modal/modal_action_sheet.dart';
+import 'package:lotti/widgets/modal/modal_sheet_action.dart';
+import 'package:lotti/widgets/settings/settings_detail_scaffold.dart';
+import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
+import 'package:lotti/widgets/settings/settings_form_section.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:multi_select_flutter/multi_select_flutter.dart';
+
+export 'package:lotti/features/dashboards/ui/settings/edit_dashboard_page.dart';
+
+/// Full dashboard create/edit form on the shared settings-detail kit.
+///
+/// Wraps a `FormBuilder` (name, description, category, private/active
+/// switches) plus a reorderable, dismissible list of chart items. The
+/// `ChartMultiSelect` rows below the list add measurement / habit / health /
+/// survey / workout charts. The local `dirty` flag gates the save action;
+/// saving validates, `copyWith`s the values onto [dashboard], and upserts
+/// via `PersistenceLogic`. "Copy" serializes the dashboard plus its
+/// referenced measurable types to the clipboard as JSON.
+///
+/// Reused by both `CreateDashboardPage` ([isCreateMode]) and
+/// `EditDashboardPage`. See [popOnClose] for the route-pop vs. beam-to-list
+/// navigation split.
+class DashboardDefinitionPage extends StatefulWidget {
+  const DashboardDefinitionPage({
+    required this.dashboard,
+    super.key,
+    this.formKey,
+    this.isCreateMode = false,
+    this.popOnClose = false,
+  });
+
+  final DashboardDefinition dashboard;
+  final GlobalKey<FormBuilderState>? formKey;
+
+  /// Renders the create-flavored chrome: create title, a "Create" primary
+  /// action, and no destructive delete action.
+  final bool isCreateMode;
+
+  /// When true the page was entered as a pushed route (e.g. from the dashboard
+  /// header's edit link), so back/save pop the route to return to where the
+  /// user came from instead of beaming to the settings dashboards list.
+  final bool popOnClose;
+
+  @override
+  State<DashboardDefinitionPage> createState() =>
+      _DashboardDefinitionPageState();
+}
+
+class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
+  final JournalDb _db = getIt<JournalDb>();
+  final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
+  final _formKey = GlobalKey<FormBuilderState>();
+
+  bool dirty = false;
+
+  late List<DashboardItem> dashboardItems;
+  String? categoryId;
+
+  @override
+  void initState() {
+    super.initState();
+    dashboardItems = [...widget.dashboard.items];
+    categoryId = widget.dashboard.categoryId;
+  }
+
+  void onConfirmAddMeasurement(List<DashboardMeasurementItem> selection) {
+    if (selection.isEmpty) return;
+
+    setState(() {
+      dashboardItems.addAll(selection);
+      dirty = true;
+    });
+  }
+
+  void onConfirmAddHabit(List<HabitDefinition?> selection) {
+    for (final selected in selection) {
+      if (selected != null) {
+        setState(() {
+          dashboardItems.add(
+            DashboardItem.habitChart(habitId: selected.id),
+          );
+          dirty = true;
+        });
+      }
+    }
+  }
+
+  void onConfirmAddHealthType(List<HealthTypeConfig?> selection) {
+    for (final selected in selection) {
+      if (selected != null) {
+        setState(() {
+          dashboardItems.add(
+            DashboardItem.healthChart(
+              color: 'color',
+              healthType: selected.healthType,
+            ),
+          );
+          dirty = true;
+        });
+      }
+    }
+  }
+
+  void onConfirmAddSurveyType(List<DashboardSurveyItem?> selection) {
+    for (final selected in selection) {
+      if (selected != null) {
+        setState(() {
+          dashboardItems.add(selected);
+          dirty = true;
+        });
+      }
+    }
+  }
+
+  void onConfirmAddWorkoutType(List<DashboardWorkoutItem?> selection) {
+    for (final selected in selection) {
+      if (selected != null) {
+        setState(() {
+          dashboardItems.add(selected);
+          dirty = true;
+        });
+      }
+    }
+  }
+
+  void updateItem(DashboardItem item, int index) {
+    if (dashboardItems[index] == item) return;
+
+    setState(() {
+      dashboardItems[index] = item;
+      dirty = true;
+    });
+  }
+
+  void dismissItem(int index) {
+    setState(() {
+      dashboardItems.removeAt(index);
+      dirty = true;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // When pushed as a route (from the dashboard header's edit link) pop back
+    // to where the user came from. Otherwise beam to the dashboards list: the
+    // page is rendered inline in V2's desktop detail surface (no Navigator
+    // route to pop), and on mobile the URL change pops the detail page off the
+    // Beamer stack.
+    void backToList() {
+      if (widget.popOnClose) {
+        Navigator.of(context).pop();
+      } else {
+        beamToNamed('/settings/dashboards');
+      }
+    }
+
+    final formKey = widget.formKey ?? _formKey;
+
+    return StreamBuilder<List<HabitDefinition>>(
+      stream: notificationDrivenStream(
+        notifications: getIt<UpdateNotifications>(),
+        notificationKeys: {habitsNotification, privateToggleNotification},
+        fetcher: getIt<JournalDb>().getAllHabitDefinitions,
+      ),
+      builder:
+          (
+            BuildContext context,
+            AsyncSnapshot<List<HabitDefinition>> snapshot,
+          ) {
+            final habitSelectItems = [
+              ...?snapshot.data?.map(
+                (item) => MultiSelectItem<HabitDefinition>(
+                  item,
+                  item.name,
+                ),
+              ),
+            ];
+
+            return StreamBuilder<List<MeasurableDataType>>(
+              stream: notificationDrivenStream(
+                notifications: getIt<UpdateNotifications>(),
+                notificationKeys: {
+                  measurablesNotification,
+                  privateToggleNotification,
+                },
+                fetcher: _db.getAllMeasurableDataTypes,
+              ),
+              builder:
+                  (
+                    BuildContext context,
+                    AsyncSnapshot<List<MeasurableDataType>> snapshot,
+                  ) {
+                    final measurableDataTypes = snapshot.data ?? [];
+
+                    final healthSelectItems = healthTypes.keys.map((
+                      String typeName,
+                    ) {
+                      final item = healthTypes[typeName];
+                      return MultiSelectItem<HealthTypeConfig>(
+                        item!,
+                        item.displayName,
+                      );
+                    }).toList();
+
+                    final surveySelectItems = surveyTypes.keys.map((
+                      String typeName,
+                    ) {
+                      final item = surveyTypes[typeName];
+                      return MultiSelectItem<DashboardSurveyItem>(
+                        item!,
+                        item.surveyName,
+                      );
+                    }).toList();
+
+                    final workoutSelectItems = workoutTypes.keys.map((
+                      String typeName,
+                    ) {
+                      final item = workoutTypes[typeName];
+                      return MultiSelectItem<DashboardWorkoutItem>(
+                        item!,
+                        item.displayName,
+                      );
+                    }).toList();
+
+                    void setCategory(String? newCategoryId) {
+                      DevLogger.log(
+                        name: 'DashboardDefinitionPage',
+                        message: 'setCategory $newCategoryId',
+                      );
+                      categoryId = newCategoryId;
+                      setState(() {
+                        dirty = true;
+                      });
+                    }
+
+                    /// Persists the form when it validates; returns null
+                    /// (without persisting) when validation fails.
+                    Future<DashboardDefinition?> saveDashboard() async {
+                      formKey.currentState!.save();
+                      if (formKey.currentState!.validate()) {
+                        final formData = formKey.currentState?.value;
+
+                        final private = formData?['private'] as bool? ?? false;
+                        final active = formData?['active'] as bool? ?? false;
+
+                        final dashboard = widget.dashboard.copyWith(
+                          name: '${formData!['name']}'.trim(),
+                          description: '${formData['description']}'.trim(),
+                          private: private,
+                          active: active,
+                          // `reviewAt` is deliberately not touched here: the
+                          // form has no `review_at` field, so reading one back
+                          // out only ever yielded null and silently cleared
+                          // the stored value on every save.
+                          categoryId: categoryId,
+                          updatedAt: DateTime.now(),
+                          items: dashboardItems,
+                        );
+
+                        await persistenceLogic.upsertDashboardDefinition(
+                          dashboard,
+                        );
+                        return dashboard;
+                      }
+                      return null;
+                    }
+
+                    Future<void> saveDashboardPress() async {
+                      final saved = await saveDashboard();
+                      if (saved == null || !mounted) return;
+                      setState(() {
+                        dirty = false;
+                      });
+                      backToList();
+                    }
+
+                    Future<void> copyDashboard() async {
+                      final dashboard = await saveDashboard();
+                      if (dashboard == null) return;
+                      if (!mounted) return;
+                      setState(() {
+                        dirty = false;
+                      });
+
+                      final entityDefinitions = <EntityDefinition>[dashboard];
+
+                      for (final item in dashboard.items) {
+                        switch (item) {
+                          case DashboardMeasurementItem(:final id):
+                            final dataType = await _db
+                                .getMeasurableDataTypeById(id);
+                            if (dataType != null) {
+                              entityDefinitions.add(dataType);
+                            }
+                          case DashboardHealthItem():
+                          case DashboardWorkoutItem():
+                          case DashboardSurveyItem():
+                          case DashboardHabitItem():
+                            break;
+                        }
+                      }
+                      await Clipboard.setData(
+                        ClipboardData(
+                          text: json.encode(
+                            entityDefinitions,
+                          ),
+                        ),
+                      );
+                    }
+
+                    Future<void> deleteDashboard() async {
+                      const deleteKey = 'deleteKey';
+                      final result = await showModalActionSheet<String>(
+                        context: context,
+                        title: context.messages.dashboardDeleteQuestion,
+                        actions: [
+                          ModalSheetAction(
+                            icon: LottiIcons.warning,
+                            label: context.messages.dashboardDeleteConfirm,
+                            key: deleteKey,
+                            isDestructiveAction: true,
+                          ),
+                        ],
+                      );
+
+                      if (result == deleteKey) {
+                        await persistenceLogic.deleteDashboardDefinition(
+                          widget.dashboard,
+                        );
+                        backToList();
+                      }
+                    }
+
+                    final messages = context.messages;
+
+                    return SettingsDetailScaffold(
+                      title: widget.isCreateMode
+                          ? messages.settingsDashboardsCreateTitle
+                          : messages.settingsDashboardDetailsLabel,
+                      onBack: backToList,
+                      onSaveShortcut: () {
+                        if (dirty) saveDashboardPress();
+                      },
+                      saveShortcutEnabled: () => dirty,
+                      actionBar: SettingsFormActionBar(
+                        primaryLabel: widget.isCreateMode
+                            ? messages.createButton
+                            : messages.saveButton,
+                        onPrimary: saveDashboardPress,
+                        primaryEnabled: dirty,
+                        secondaryLabel: messages.cancelButton,
+                        onSecondary: backToList,
+                      ),
+                      deleteLabel: widget.isCreateMode
+                          ? null
+                          : messages.deleteButton,
+                      onDelete: widget.isCreateMode ? null : deleteDashboard,
+                      children: [
+                        FormBuilder(
+                          key: formKey,
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          onChanged: () {
+                            formKey.currentState?.save();
+                            setState(() {
+                              dirty = true;
+                            });
+                          },
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              SettingsFormSection(
+                                title: messages.basicSettings,
+                                children: [
+                                  SettingsFormTextField(
+                                    key: const Key('dashboard_name_field'),
+                                    initialValue: widget.dashboard.name,
+                                    labelText: messages.dashboardNameLabel,
+                                    name: 'name',
+                                    semanticsLabel: messages.dashboardNameLabel,
+                                  ),
+                                  SettingsFormTextField(
+                                    key: const Key(
+                                      'dashboard_description_field',
+                                    ),
+                                    initialValue: widget.dashboard.description,
+                                    labelText:
+                                        messages.dashboardDescriptionLabel,
+                                    name: 'description',
+                                    semanticsLabel:
+                                        'Dashboard - description field',
+                                    fieldRequired: false,
+                                    multiline: true,
+                                  ),
+                                  SelectDashboardCategoryWidget(
+                                    setCategory: setCategory,
+                                    categoryId: categoryId,
+                                  ),
+                                ],
+                              ),
+                              SettingsFormSection(
+                                title: messages.settingsOptionsTitle,
+                                children: [
+                                  FormSwitch(
+                                    name: 'private',
+                                    initialValue: widget.dashboard.private,
+                                    title: messages.privateLabel,
+                                    subtitle: messages.privateSwitchDescription,
+                                    icon: LottiIcons.lock,
+                                  ),
+                                  FormSwitch(
+                                    name: 'active',
+                                    initialValue: widget.dashboard.active,
+                                    title: messages.activeLabel,
+                                    subtitle: messages
+                                        .dashboardActiveSwitchDescription,
+                                    icon: LottiIcons.visible,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        SettingsFormSection(
+                          title: messages.dashboardCurrentChartsTitle,
+                          description:
+                              messages.dashboardCurrentChartsDescription,
+                          children: [
+                            if (dashboardItems.isEmpty)
+                              _DashboardEditorHintRow(
+                                icon: LottiIcons.insights,
+                                text: messages.dashboardNoChartsAdded,
+                              )
+                            else
+                              ReorderableListView(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                buildDefaultDragHandles: false,
+                                onReorderItem: (int oldIndex, int newIndex) {
+                                  final insertionIndex = newIndex;
+                                  if (insertionIndex == oldIndex) return;
+
+                                  setState(() {
+                                    final movedItem = dashboardItems.removeAt(
+                                      oldIndex,
+                                    );
+                                    dashboardItems.insert(
+                                      insertionIndex,
+                                      movedItem,
+                                    );
+                                    dirty = true;
+                                  });
+                                },
+                                children: List.generate(
+                                  dashboardItems.length,
+                                  (int index) {
+                                    final items = dashboardItems;
+                                    final item = items.elementAt(index);
+
+                                    return Dismissible(
+                                      onDismissed: (_) {
+                                        dismissItem(index);
+                                      },
+                                      key: Key(
+                                        'dashboard-item-${item.hashCode}-$index',
+                                      ),
+                                      child: DashboardItemCard(
+                                        item: item,
+                                        index: index,
+                                        updateItemFn: updateItem,
+                                        removeItemFn: () => dismissItem(index),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                          ],
+                        ),
+                        SettingsFormSection(
+                          title: messages.dashboardAvailableChartsTitle,
+                          description:
+                              messages.dashboardAvailableChartsDescription,
+                          children: [
+                            if (habitSelectItems.isEmpty)
+                              _DashboardEditorHintRow(
+                                icon: LottiIcons.bolt,
+                                text: messages.dashboardNoHabitsForCharts,
+                              )
+                            else
+                              ChartMultiSelect<HabitDefinition>(
+                                multiSelectItems: habitSelectItems,
+                                onConfirm: onConfirmAddHabit,
+                                title: messages.dashboardAddHabitTitle,
+                                buttonText: messages.dashboardAddHabitButton,
+                                semanticsLabel:
+                                    messages.dashboardAddHabitButton,
+                                iconData: LottiIcons.insights,
+                              ),
+                            if (measurableDataTypes.isEmpty)
+                              _DashboardEditorHintRow(
+                                icon: LottiIcons.insights,
+                                text: messages.dashboardNoMeasurablesForCharts,
+                              )
+                            else
+                              MeasurementChartMultiSelect(
+                                items: measurableDataTypes,
+                                onConfirm: onConfirmAddMeasurement,
+                                title: messages.dashboardAddMeasurementTitle,
+                                buttonText:
+                                    messages.dashboardAddMeasurementButton,
+                                semanticsLabel:
+                                    messages.dashboardAddMeasurementButton,
+                                iconData: LottiIcons.insights,
+                              ),
+                            ChartMultiSelect<HealthTypeConfig>(
+                              multiSelectItems: healthSelectItems,
+                              onConfirm: onConfirmAddHealthType,
+                              title: messages.dashboardAddHealthTitle,
+                              buttonText: messages.dashboardAddHealthButton,
+                              semanticsLabel: messages.dashboardAddHealthButton,
+                              iconData: LottiIcons.stethoscope,
+                            ),
+                            ChartMultiSelect<DashboardSurveyItem>(
+                              multiSelectItems: surveySelectItems,
+                              onConfirm: onConfirmAddSurveyType,
+                              title: messages.dashboardAddSurveyTitle,
+                              buttonText: messages.dashboardAddSurveyButton,
+                              semanticsLabel: messages.dashboardAddSurveyButton,
+                              iconData: LottiIcons.clipboard,
+                            ),
+                            ChartMultiSelect<DashboardWorkoutItem>(
+                              multiSelectItems: workoutSelectItems,
+                              onConfirm: onConfirmAddWorkoutType,
+                              title: messages.dashboardAddWorkoutTitle,
+                              buttonText: messages.dashboardAddWorkoutButton,
+                              semanticsLabel:
+                                  messages.dashboardAddWorkoutButton,
+                              iconData: LottiIcons.fitness,
+                            ),
+                          ],
+                        ),
+                        SettingsFormSection(
+                          title: messages.dashboardConfigurationTitle,
+                          description:
+                              messages.dashboardConfigurationDescription,
+                          children: [
+                            // Labeled in-form secondary action — an unlabeled
+                            // icon in the primary action bar broke the shared
+                            // bar contract.
+                            Align(
+                              alignment: AlignmentDirectional.centerStart,
+                              child: DesignSystemButton(
+                                key: const Key('dashboard_copy'),
+                                label: messages.dashboardCopyLabel,
+                                leadingIcon: LottiIcons.copy,
+                                variant: DesignSystemButtonVariant.secondary,
+                                onPressed: copyDashboard,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
+            );
+          },
+    );
+  }
+}
+
+class _DashboardEditorHintRow extends StatelessWidget {
+  const _DashboardEditorHintRow({
+    required this.icon,
+    required this.text,
+  });
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final spacing = tokens.spacing;
+    final radius = BorderRadius.circular(tokens.radii.s);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: tokens.colors.background.level01,
+        borderRadius: radius,
+        border: Border.all(color: tokens.colors.decorative.level02),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: spacing.step4,
+          vertical: spacing.step3,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: tokens.colors.text.mediumEmphasis,
+              size: spacing.step6,
+            ),
+            SizedBox(width: spacing.step3),
+            Expanded(
+              child: Text(
+                text,
+                style: tokens.typography.styles.body.bodyMedium.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

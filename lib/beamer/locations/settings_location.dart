@@ -15,36 +15,35 @@ import 'package:lotti/features/categories/ui/pages/categories_list_page.dart'
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart'
     as new_category_details;
 import 'package:lotti/features/daily_os_next/ui/pages/daily_os_settings_page.dart';
+import 'package:lotti/features/dashboards/ui/settings/create_dashboard_page.dart';
+import 'package:lotti/features/dashboards/ui/settings/dashboard_definition_page.dart';
+import 'package:lotti/features/dashboards/ui/settings/dashboard_settings_page.dart';
 import 'package:lotti/features/github/ui/github_settings_page.dart';
 import 'package:lotti/features/habits/ui/pages/habit_editor_page.dart';
+import 'package:lotti/features/habits/ui/pages/habit_settings_page.dart';
 import 'package:lotti/features/keyboard/ui/keyboard_shortcuts_page.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
+import 'package:lotti/features/notifications/ui/notification_settings_page.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_metrics_page.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_settings_panel.dart';
+import 'package:lotti/features/onboarding/ui/recording_style_settings_page.dart';
 import 'package:lotti/features/projects/ui/pages/project_detail_page.dart';
+import 'package:lotti/features/settings/domain/settings_tree_index.dart';
+import 'package:lotti/features/settings/ui/mobile/settings_mobile_branch_page.dart';
+import 'package:lotti/features/settings/ui/mobile/settings_mobile_root_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/celebration_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/manual_language_settings_page.dart';
-import 'package:lotti/features/settings/ui/pages/dashboards/create_dashboard_page.dart';
-import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
-import 'package:lotti/features/settings/ui/pages/dashboards/dashboards_page.dart';
 import 'package:lotti/features/settings/ui/pages/flags_page.dart';
-import 'package:lotti/features/settings/ui/pages/habits/habits_page.dart';
 import 'package:lotti/features/settings/ui/pages/health_import_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_create_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
-import 'package:lotti/features/settings/ui/pages/notification_settings_page.dart';
-import 'package:lotti/features/settings/ui/pages/recording_style_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/sections_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
-import 'package:lotti/features/settings/ui/pages/theming_page.dart';
-import 'package:lotti/features/settings_v2/domain/settings_tree_index.dart';
-import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_branch_page.dart';
-import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_root_page.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
 import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_route.dart';
@@ -55,6 +54,7 @@ import 'package:lotti/features/sync/ui/provisioned_sync_page.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_feature_gate.dart';
 import 'package:lotti/features/system_health/ui/system_health_page.dart';
+import 'package:lotti/features/theming/ui/theming_page.dart';
 import 'package:lotti/features/tts/ui/speech_settings_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -523,7 +523,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
         BeamPage(
           key: const ValueKey('settings-habits'),
           popToNamed: branchHub,
-          child: const HabitsPage(),
+          child: const HabitSettingsPage(),
         ),
 
       // The habits sub-routes are two segments deep (`by_id/<id>`,
@@ -538,7 +538,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
             'settings-habits-search-${state.pathParameters['searchTerm']}',
           ),
           popToNamed: '/settings/habits',
-          child: HabitsPage(
+          child: HabitSettingsPage(
             initialSearchTerm: state.pathParameters['searchTerm'],
           ),
         ),

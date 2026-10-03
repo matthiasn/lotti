@@ -1,0 +1,98 @@
+import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/profiles/state/profile_providers.dart';
+import 'package:lotti/features/settings/domain/settings_node.dart';
+import 'package:lotti/features/settings/domain/settings_tree_data.dart';
+import 'package:lotti/features/settings/domain/settings_tree_index.dart';
+import 'package:lotti/features/settings/ui/labels/settings_tree_labels.dart';
+import 'package:lotti/utils/consts.dart';
+
+/// Shared tree + index for Settings V2.
+///
+/// `SettingsDesktopPage` hosts a [SettingsTreeScopeHost] that watches the
+/// gating feature flags once, calls [buildSettingsTree] with the
+/// locale-aware label resolver, and publishes the resulting tree and
+/// [SettingsTreeIndex] through this inherited widget. Descendant
+/// consumers (`SettingsTreeView`, `SettingsDetailPane`) read both
+/// values via [SettingsTreeScope.maybeOf] instead of rebuilding their
+/// own copy. Tests that pump the tree view in isolation can fall back
+/// to building the tree locally when [SettingsTreeScope.maybeOf]
+/// returns `null`.
+@immutable
+class SettingsTreeScope extends InheritedWidget {
+  const SettingsTreeScope({
+    required this.tree,
+    required this.index,
+    required super.child,
+    super.key,
+  });
+
+  /// The flag-gated root nodes published to descendants. Consumed by
+  /// the tree view; identity is stable until a flag or label change
+  /// forces a rebuild.
+  final List<SettingsNode> tree;
+
+  /// `O(1)` lookup index over [tree], shared so the detail pane and
+  /// crumbs resolve ids against the exact same snapshot the tree view
+  /// renders.
+  final SettingsTreeIndex index;
+
+  /// The nearest enclosing scope, or `null` when none is mounted —
+  /// the signal that lets consumers fall back to a local tree build in
+  /// isolation tests.
+  static SettingsTreeScope? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<SettingsTreeScope>();
+
+  @override
+  bool updateShouldNotify(SettingsTreeScope oldWidget) =>
+      !identical(tree, oldWidget.tree) || !identical(index, oldWidget.index);
+}
+
+/// Riverpod-aware host that subscribes to the gating flags once and
+/// exposes the resulting tree + index through [SettingsTreeScope].
+///
+/// Rebuilds [child] whenever a flag toggles or the localized label
+/// map changes — both descendants observe the same snapshot, so the
+/// tree view and detail pane can never disagree about what the tree
+/// looks like.
+class SettingsTreeScopeHost extends ConsumerWidget {
+  const SettingsTreeScopeHost({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final enableHabits =
+        ref.watch(configFlagProvider(enableHabitsPageFlag)).value ?? false;
+    final enableDashboards =
+        ref.watch(configFlagProvider(enableDashboardsPageFlag)).value ?? false;
+    final enableMatrix =
+        ref.watch(configFlagProvider(enableMatrixFlag)).value ?? false;
+    final enableWhatsNew =
+        ref.watch(configFlagProvider(enableWhatsNewFlag)).value ?? false;
+    final enableSpeechTts =
+        ref.watch(configFlagProvider(enableAiSummaryTtsFlag)).value ?? false;
+    final enableGitHub =
+        ref.watch(configFlagProvider(enableGitHubPullRequestsFlag)).value ??
+        false;
+
+    final tree = buildSettingsTree(
+      labels: settingsTreeLabelsFor(context),
+      enableHabits: enableHabits,
+      enableDashboards: enableDashboards,
+      enableMatrix: enableMatrix,
+      enableWhatsNew: enableWhatsNew,
+      enableSpeechTts: enableSpeechTts,
+      enableGitHub: enableGitHub,
+      syncFeatureAvailable: ref.watch(syncFeatureAvailableProvider),
+    );
+    final index = SettingsTreeIndex.build(tree);
+
+    return SettingsTreeScope(
+      tree: tree,
+      index: index,
+      child: child,
+    );
+  }
+}

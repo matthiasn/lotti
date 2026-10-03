@@ -19,7 +19,6 @@ import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show AiConfigRepository, aiConfigRepositoryProvider;
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
-import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
@@ -27,6 +26,7 @@ import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
+import 'package:lotti/features/theming/constants/theming_settings_keys.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';

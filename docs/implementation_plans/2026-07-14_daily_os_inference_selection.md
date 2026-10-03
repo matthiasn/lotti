@@ -582,9 +582,9 @@ Each new source file gets one mirrored test file.
 ### Existing files likely touched
 
 ```text
-lib/features/settings_v2/domain/settings_tree_data.dart
-lib/features/settings_v2/ui/detail/panel_registry.dart
-lib/features/settings_v2/ui/labels/settings_tree_labels.dart
+lib/features/settings/domain/settings_tree_data.dart
+lib/features/settings/ui/detail/panel_registry.dart
+lib/features/settings/ui/labels/settings_tree_labels.dart
 lib/features/settings/settings_location.dart (or the current route mapping)
 lib/features/settings/ui/pages/advanced/about_page.dart
 lib/features/daily_os_next/state/daily_os_preferences_controller.dart

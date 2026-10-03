@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:lotti/features/settings_v2/domain/settings_tree_index.dart';
+import 'package:lotti/features/settings/domain/settings_tree_index.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
 

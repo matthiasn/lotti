@@ -210,7 +210,7 @@ for (const [route, surfaceId] of inventoriedRoutes) {
 }
 
 const settingsTreeRelativePath =
-  'lib/features/settings_v2/domain/settings_tree_data.dart';
+  'lib/features/settings/domain/settings_tree_data.dart';
 const settingsTreeSource = await readFile(
   resolve(repositoryDirectory, settingsTreeRelativePath),
   'utf8',

@@ -382,8 +382,8 @@ flowchart TD
 - `lib/features/onboarding/model/onboarding_event.dart`
 - `lib/features/onboarding/repository/onboarding_metrics_repository.dart`
 - `lib/features/onboarding/ui/onboarding_settings_panel.dart`
-- `lib/features/settings_v2/domain/settings_tree_data.dart`
-- `lib/features/settings_v2/ui/settings_tree_scope.dart`
+- `lib/features/settings/domain/settings_tree_data.dart`
+- `lib/features/settings/ui/settings_tree_scope.dart`
 - `lib/database/journal_db/config_flags.dart`
 - `lib/features/settings/ui/pages/flags_page.dart`
 - `lib/features/daily_os_next/README.md`

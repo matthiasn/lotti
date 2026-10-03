@@ -440,7 +440,7 @@ written out, by
 the same predicates that decide whether a hub is *in* the stack decide where
 its leaves pop to, so the two cannot disagree. The hub URLs themselves sit
 beside `aiSettingsParentRoute` in
-[`settings_tree_index.dart`](../../lib/features/settings_v2/domain/settings_tree_index.dart)
+[`settings_tree_index.dart`](../../lib/features/settings/domain/settings_tree_index.dart)
 and are read out of `settingsNodeUrls`, for the reason that constant documents:
 the tree tap, the hub page and the leaf's `popToNamed` all have to name one
 string, and the tree is where a settings URL is decided.
