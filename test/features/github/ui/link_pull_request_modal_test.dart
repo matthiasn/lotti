@@ -96,6 +96,21 @@ void main() {
     );
   });
 
+  testWidgets('submitting from the keyboard links the pasted text', (
+    tester,
+  ) async {
+    answers(PullRequestLinked(prEntry(clock: {'a': 1})));
+    await open(tester);
+
+    await tester.enterText(find.byKey(LinkPullRequestKeys.urlField), url);
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    verify(() => service.linkPasted(taskId: taskId, input: url)).called(1);
+    expect(find.byKey(LinkPullRequestKeys.urlField), findsNothing);
+  });
+
   testWidgets('a linked pull request closes the modal', (tester) async {
     answers(PullRequestLinked(prEntry(clock: {'a': 1})));
     await open(tester);
@@ -231,6 +246,22 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+      'a listing that throws reads as a response Lotti could not read',
+      (tester) async {
+        await open(
+          tester,
+          repo: repository,
+          listing: () => Future.error(StateError('boom')),
+        );
+
+        expect(
+          find.text('GitHub sent a response Lotti could not read.'),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets('shows progress while listing', (tester) async {
       final pending = Completer<OpenPullRequestsResult>();
