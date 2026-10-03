@@ -302,6 +302,22 @@ class _TestEventsLocation extends EventsLocation {
   }
 }
 
+/// A real [JournalLocation] — its path patterns decide whether a route is an
+/// entry's page — that renders an empty page instead of the logbook.
+class _TestJournalLocation extends JournalLocation {
+  _TestJournalLocation(super.routeInformation);
+
+  @override
+  List<BeamPage> buildPages(BuildContext context, BeamState state) {
+    return [
+      BeamPage(
+        key: ValueKey('test-journal-${state.uri.path}'),
+        child: const SizedBox.shrink(),
+      ),
+    ];
+  }
+}
+
 Future<BeamerDelegate> _createEmptyDelegate(String initialPath) async {
   final delegate = BeamerDelegate(
     setBrowserTabTitle: false,
@@ -352,6 +368,7 @@ Future<void> _stubNavService(
   BeamerDelegate? habitsDelegate,
   BeamerDelegate? relationshipsDelegate,
   BeamerDelegate? eventsDelegate,
+  BeamerDelegate? journalDelegate,
 }) async {
   final taskStack = ValueNotifier<List<String>>([]);
   when(() => navService.desktopTaskDetailStack).thenReturn(taskStack);
@@ -363,7 +380,7 @@ Future<void> _stubNavService(
   final calendarDelegate = await _createEmptyDelegate('/calendar');
   habitsDelegate ??= await _createEmptyDelegate('/habits');
   final dashboardsDelegate = await _createEmptyDelegate('/dashboards');
-  final journalDelegate = await _createEmptyDelegate('/journal');
+  journalDelegate ??= await _createEmptyDelegate('/journal');
   eventsDelegate ??= await _createEmptyDelegate('/events');
   // AppScreen listens to the goals delegate too, so the bottom bar can
   // slide away on the unified Goals tab's hosted goal pages.
@@ -1018,6 +1035,127 @@ void main() {
       eventsDelegate.beamToNamed('/events');
       await tester.pumpAndSettle();
       expect(docked()?.label, newEvent);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  Future<BeamerDelegate> journalDelegateAt(String path) async {
+    final delegate = BeamerDelegate(
+      setBrowserTabTitle: false,
+      initialPath: '/journal',
+      locationBuilder: (routeInformation, _) =>
+          _TestJournalLocation(routeInformation),
+    );
+    await delegate.setNewRoutePath(RouteInformation(uri: Uri.parse(path)));
+    return delegate;
+  }
+
+  // Destination order with every tab enabled: Tasks, Daily OS, Projects,
+  // Goals, Habits, Dashboards, People, Logbook, Events, Settings.
+  const logbookDestination = 7;
+
+  Future<MockNavService> stubEveryTab(
+    Stream<int> indexStream, {
+    required BeamerDelegate journalDelegate,
+  }) async {
+    final nav = MockNavService()..relationshipsPageEnabled = true;
+    await _stubNavService(
+      nav,
+      indexStream: indexStream,
+      isProjectsEnabled: () => true,
+      isDailyOsEnabled: () => true,
+      isHabitsEnabled: () => true,
+      isDashboardsEnabled: () => true,
+      isUnifiedGoalsEnabled: true,
+      isEventsEnabled: () => true,
+      journalDelegate: journalDelegate,
+    );
+    return nav;
+  }
+
+  testWidgets(
+    "the launcher leaves on an entry's page, where the page docks its own "
+    'action bar, and comes back on the logbook',
+    (tester) async {
+      final indexController = StreamController<int>.broadcast();
+      addTearDown(indexController.close);
+      final journalDelegate = await journalDelegateAt('/journal');
+      addTearDown(journalDelegate.dispose);
+      final nav = await stubEveryTab(
+        indexController.stream,
+        journalDelegate: journalDelegate,
+      );
+      when(() => nav.index).thenReturn(logbookDestination);
+      await _registerAppScreenGetIt(nav);
+      addTearDown(tearDownTestGetIt);
+      await _pumpAppScreen(tester, navService: nav);
+      indexController.add(logbookDestination);
+      await tester.pumpAndSettle();
+
+      final launcher = find.byType(MobileNavigationLauncher);
+      final createEntry = tester.element(launcher).messages.createEntryLabel;
+      expect(launcher, findsOneWidget);
+      expect(_menuButton, findsOneWidget);
+      expect(
+        tester.widget<MobileNavigationLauncher>(launcher).pageAction?.label,
+        createEntry,
+      );
+
+      // Only the journal delegate moves — no tab switch — so the shell has
+      // to hear about it from the route listener. Unmounted outright, like
+      // a task's page: the EntryActionBar takes the bottom edge.
+      journalDelegate.beamToNamed('/journal/${const Uuid().v4()}');
+      await tester.pumpAndSettle();
+      expect(launcher, findsNothing);
+      expect(_menuButton, findsNothing);
+      expect(find.byType(MobileActivityIsland), findsNothing);
+
+      journalDelegate.beamToNamed('/journal');
+      await tester.pumpAndSettle();
+      expect(launcher, findsOneWidget);
+      expect(_menuButton, findsOneWidget);
+      expect(
+        tester.widget<MobileNavigationLauncher>(launcher).pageAction?.label,
+        createEntry,
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    "an entry's page left open on the journal tab does not hide the "
+    'launcher while another tab is active',
+    (tester) async {
+      final indexController = StreamController<int>.broadcast();
+      addTearDown(indexController.close);
+      final journalDelegate = await journalDelegateAt('/journal');
+      addTearDown(journalDelegate.dispose);
+      final nav = await stubEveryTab(
+        indexController.stream,
+        journalDelegate: journalDelegate,
+      );
+      when(() => nav.index).thenReturn(0);
+      await _registerAppScreenGetIt(nav);
+      addTearDown(tearDownTestGetIt);
+      await _pumpAppScreen(tester, navService: nav);
+      indexController.add(0);
+      await tester.pumpAndSettle();
+
+      // The journal tab's delegate sits on an entry's page while Tasks is
+      // the active tab — the state a user leaves behind by opening an entry
+      // and then switching tabs.
+      journalDelegate.beamToNamed('/journal/${const Uuid().v4()}');
+      await tester.pumpAndSettle();
+
+      expect(
+        isLogbookEntryDetailRoute(journalDelegate.currentBeamLocation),
+        isTrue,
+      );
+      // Tasks is up: its own launcher, with the Add a task chip, stays.
+      expect(find.byType(MobileNavigationLauncher), findsOneWidget);
+      expect(_menuButton, findsOneWidget);
 
       await tester.pumpWidget(const SizedBox.shrink());
     },

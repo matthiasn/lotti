@@ -6313,6 +6313,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get enterCategoryName => 'Enter category name';
 
   @override
+  String get entryActionBarAddLinkedTask => 'Add a task linked to this entry';
+
+  @override
   String get entryActions => 'Actions';
 
   @override

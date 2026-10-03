@@ -5,13 +5,13 @@ description: The shared entry substrate — two controller centers, the split-pa
 resource: ../../../lib/features/journal
 tags: [journal, entries, routing, split-pane]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T01:30:00Z }
-stale_after: 2027-02-01
+generated: { by: claude-code/fable-5.1, at: 2026-10-02T21:30:00Z }
+stale_after: 2027-04-02
 sources:
   - id: src
     resource: ../../../lib/features/journal
     title: Journal feature source
-    last_modified: 2026-08-05
+    last_modified: 2026-10-02
   - id: repo
     resource: ../../../lib/features/journal/repository/journal_repository.dart
     title: JournalRepository facade
@@ -54,6 +54,8 @@ flowchart LR
 
   Browse["InfiniteJournalPage"] --> PageCtl
   Browse --> Create["CreateEntryModal / FAB flows"]
+  Detail --> Bar["EntryActionBar"]
+  Bar --> Create
 ```
 
 - **`EntryController`** for one entry detail surface.
@@ -112,8 +114,10 @@ the newest non-task/non-event entry post-frame — so the desktop split opens on
 open in their own tabs; their rows carry a small trailing `open_in_new` glyph with
 a destination tooltip to signal that.
 
-In the split, the detail page is embedded with `showBackButton: false` and
-`showFloatingActionButton: false` — the list pane provides both.
+In the split, the detail page is embedded with `showBackButton: false` — the
+list stays beside it, so there is nothing to go back to — but keeps its own
+`EntryActionBar`: the list pane's create button makes a standalone entry, and
+only the bar makes one linked to the open entry.
 
 ## Empty states share one grammar
 
@@ -166,10 +170,31 @@ ones.
 # Create, import and paste
 
 The feature owns the generic creation surfaces above domain-specific creation
-logic — `CreateEntryModal`, `FloatingAddActionButton`, `create_entry_items.dart`
-and `ImagePasteController` — covering text entries, tasks, events, audio
-recordings, timer entries inside a parent, image import, screenshots, clipboard
-paste, and drag-and-drop onto the detail page.
+logic — `CreateEntryModal`, `FloatingAddActionButton`, `EntryActionBar`,
+`create_entry_items.dart` and `ImagePasteController` — covering text entries,
+tasks, events, audio recordings, timer entries inside a parent, image import,
+screenshots, clipboard paste, and drag-and-drop onto the detail page.
+
+Where a create starts decides what it is linked to. The logbook list creates a
+*standalone* entry: `FloatingAddActionButton` on desktop, the launcher's docked
+glyph on a phone. An entry's own page creates entries *linked to it* from
+`EntryActionBar`, the sticky glass strip in its `Scaffold.bottomNavigationBar`
+slot — the same strip, chips and rhythm as the task page's `TaskActionBar`
+([task detail composition](../tasks/detail-composition.md)). Left to right: the
+filled **Add a task** pill, which creates a task linked to the entry and in its
+category, hands it the category's default agent and opens it — the Add sheet's
+"Link a new task" row promoted, both going through
+`EntryCreationService.createTaskAndOpen` so the journey has one definition;
+the shared `GlassRecordButton` ([recording UI](../speech/recording-ui.md)),
+which wears the alert fill while a recording linked to *this* entry runs; and
+the plus, which opens the same Add sheet the floating button used to. The page uses `extendBody` so
+the strip's blur samples the scrolling body, hosts the AI running strip in the
+bar's activity slot, scopes its toasts to a nested `ScaffoldMessenger` so they
+float above the bar, and consumes the bar's height with a trailing
+`SliverPadding` so the last card scrolls clear of it. The mobile shell unmounts
+its launcher on `/journal/<uuid>`, as on `/tasks/<uuid>`, so the bar docks
+flush with the home indicator
+([navigation](../../architecture/navigation.md#chrome-rules-are-pure-functions-of-router-state)).
 
 Clipboard images are read in one place,
 [`clipboard_images.dart`](../../../lib/features/journal/repository/clipboard_images.dart):

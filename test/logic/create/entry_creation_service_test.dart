@@ -10,6 +10,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/design_system/components/action_modal/ds_action_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
@@ -27,6 +28,7 @@ import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
@@ -38,9 +40,11 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart' show Amplitude;
 
+import '../../features/agents/test_utils.dart';
 import '../../helpers/fallbacks.dart';
 import '../../helpers/path_provider.dart';
 import '../../mocks/mocks.dart';
+import '../../test_data/test_data.dart';
 import '../../widget_test_utils.dart';
 
 void main() {
@@ -51,6 +55,8 @@ void main() {
     late SettingsDb settingsDb;
     late MockTimeService mockTimeService;
     late MockNavService mockNavService;
+    late MockEntitiesCacheService mockEntitiesCacheService;
+    late MockTaskAgentService mockTaskAgentService;
     late EntryCreationService service;
 
     setUpAll(() async {
@@ -58,6 +64,9 @@ void main() {
       setFakeDocumentsPath();
       registerFallbackValue(fallbackJournalEntity);
       registerFallbackValue(fallbackSyncMessage);
+      // The failing-persistence case stubs createTaskEntry with `any` for
+      // its TaskData and EntryText arguments.
+      registerAllFallbackValues();
 
       final mockNotificationService = MockNotificationService();
       final mockUpdateNotifications = MockUpdateNotifications();
@@ -86,6 +95,13 @@ void main() {
       ).thenAnswer((_) async {});
       when(() => mockTimeService.start(any(), any())).thenAnswer((_) async {});
       when(() => mockNavService.beamToNamed(any())).thenReturn(null);
+      // createTaskAndOpen looks the category up for its default profile and
+      // agent template; tests that need one stub the lookup themselves.
+      mockEntitiesCacheService = MockEntitiesCacheService();
+      when(
+        () => mockEntitiesCacheService.getCategoryById(any()),
+      ).thenReturn(null);
+      mockTaskAgentService = MockTaskAgentService();
 
       getIt
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
@@ -104,11 +120,16 @@ void main() {
           ),
         )
         ..registerSingleton<GeolocationService>(mockGeolocationService)
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<TimeService>(mockTimeService)
         ..registerSingleton<NavService>(mockNavService)
         ..registerSingleton<PersistenceLogic>(PersistenceLogic());
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(
+        overrides: [
+          taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
+        ],
+      );
       service = container.read(entryCreationServiceProvider);
     });
 
@@ -194,6 +215,144 @@ void main() {
         expect(timer, isNotNull);
       },
     );
+
+    group('createTaskAndOpen', () {
+      setUp(() {
+        reset(mockNavService);
+        when(() => mockNavService.beamToNamed(any())).thenReturn(null);
+        reset(mockTaskAgentService);
+        // The mocks live for the whole file; clear earlier tests' lookups
+        // so verifyNever sees only this test's.
+        reset(mockEntitiesCacheService);
+        when(
+          () => mockEntitiesCacheService.getCategoryById(any()),
+        ).thenReturn(null);
+      });
+
+      test('stores a task linked to the given entry and opens it', () async {
+        final parent = await service.createTextEntry();
+        expect(parent, isNotNull);
+        reset(mockNavService);
+        when(() => mockNavService.beamToNamed(any())).thenReturn(null);
+
+        final task = await service.createTaskAndOpen(
+          linkedId: parent!.meta.id,
+        );
+
+        expect(task, isA<Task>());
+        final stored = await journalDb.journalEntityById(task!.meta.id);
+        expect(stored, isA<Task>());
+        final linked = await journalDb.getLinkedEntities(parent.meta.id);
+        expect(linked.map((entity) => entity.meta.id), [task.meta.id]);
+        verify(
+          () => mockNavService.beamToNamed('/tasks/${task.meta.id}'),
+        ).called(1);
+      });
+
+      test('stores the given category on the task', () async {
+        const testCategoryId = 'task-category-123';
+
+        final task = await service.createTaskAndOpen(
+          categoryId: testCategoryId,
+        );
+
+        expect(task?.meta.categoryId, testCategoryId);
+      });
+
+      test("hands the task its category's default agent", () async {
+        final category = categoryMindfulness.copyWith(
+          defaultTemplateId: 'template-id',
+        );
+        when(
+          () => mockEntitiesCacheService.getCategoryById(category.id),
+        ).thenReturn(category);
+        when(
+          () => mockTaskAgentService.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
+            profileId: any(named: 'profileId'),
+            setupOrigin: any(named: 'setupOrigin'),
+            setupOriginEntityId: any(named: 'setupOriginEntityId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            awaitContent: any(named: 'awaitContent'),
+            automaticUpdatesEnabled: any(named: 'automaticUpdatesEnabled'),
+          ),
+        ).thenAnswer((_) async => makeTestIdentity(id: 'agent-1'));
+
+        final task = await service.createTaskAndOpen(categoryId: category.id);
+        // The assignment is fire-and-forget; let it land.
+        await Future<void>.delayed(Duration.zero);
+
+        verify(
+          () => mockTaskAgentService.createTaskAgent(
+            taskId: task!.meta.id,
+            templateId: 'template-id',
+            profileId: any(named: 'profileId'),
+            setupOrigin: any(named: 'setupOrigin'),
+            setupOriginEntityId: category.id,
+            allowedCategoryIds: {category.id},
+            awaitContent: any(named: 'awaitContent'),
+            automaticUpdatesEnabled: any(named: 'automaticUpdatesEnabled'),
+          ),
+        ).called(1);
+      });
+
+      test('a category without a default template assigns no agent', () async {
+        when(
+          () => mockEntitiesCacheService.getCategoryById(
+            categoryMindfulness.id,
+          ),
+        ).thenReturn(categoryMindfulness);
+
+        final task = await service.createTaskAndOpen(
+          categoryId: categoryMindfulness.id,
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(task, isNotNull);
+        verifyNever(
+          () => mockTaskAgentService.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
+            profileId: any(named: 'profileId'),
+            setupOrigin: any(named: 'setupOrigin'),
+            setupOriginEntityId: any(named: 'setupOriginEntityId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            awaitContent: any(named: 'awaitContent'),
+            automaticUpdatesEnabled: any(named: 'automaticUpdatesEnabled'),
+          ),
+        );
+      });
+
+      test('a failed creation opens nothing and assigns no agent', () async {
+        // Swap the real persistence for one that refuses the task; the
+        // service reads it through GetIt at call time.
+        final failing = MockPersistenceLogic();
+        when(
+          () => failing.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => null);
+        final real = getIt<PersistenceLogic>();
+        getIt
+          ..unregister<PersistenceLogic>()
+          ..registerSingleton<PersistenceLogic>(failing);
+        addTearDown(() {
+          getIt
+            ..unregister<PersistenceLogic>()
+            ..registerSingleton<PersistenceLogic>(real);
+        });
+
+        final task = await service.createTaskAndOpen();
+
+        expect(task, isNull);
+        verifyNever(() => mockNavService.beamToNamed(any()));
+        verifyNever(() => mockEntitiesCacheService.getCategoryById(any()));
+      });
+    });
 
     test('createTextEntry with categoryId stores category', () async {
       const testCategoryId = 'test-category-123';

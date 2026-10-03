@@ -74,7 +74,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addHabitDateLabel => 'Concluído em';
 
   @override
-  String get addLinkedEntryLabel => 'Add linked entry';
+  String get addLinkedEntryLabel => 'Adicionar entrada vinculada';
 
   @override
   String get addMeasurementCommentLabel => 'Comentário';
@@ -6399,6 +6399,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get enterCategoryName => 'Insira o nome da categoria';
+
+  @override
+  String get entryActionBarAddLinkedTask =>
+      'Adicionar uma tarefa vinculada a esta entrada';
 
   @override
   String get entryActions => 'Ações';

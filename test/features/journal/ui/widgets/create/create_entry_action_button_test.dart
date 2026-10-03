@@ -20,7 +20,7 @@ import '../../../../../widget_test_utils.dart';
 void main() {
   testWidgets(
     'FloatingAddActionButton renders the design-system FAB '
-    '(rounded-24, no Material default circle)',
+    '(rounded-24, no Material default circle) named for a new entry',
     (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -33,6 +33,7 @@ void main() {
       expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
       expect(find.byType(FloatingActionButton), findsNothing);
       expect(find.byIcon(LottiIcons.add), findsOneWidget);
+      expect(find.bySemanticsLabel('Create new entry'), findsOneWidget);
 
       final size = tester.getSize(
         find.byType(DesignSystemFloatingActionButton),
@@ -42,7 +43,8 @@ void main() {
   );
 
   testWidgets(
-    'tapping the FAB opens CreateEntryModal with the wired ids',
+    'tapping the FAB opens CreateEntryModal for a standalone entry in the '
+    'wired category',
     (tester) async {
       final mockDb = MockJournalDb();
       when(mockDb.watchConfigFlags).thenAnswer(
@@ -67,10 +69,7 @@ void main() {
           overrides: [journalDbProvider.overrideWithValue(mockDb)],
           child: makeTestableWidget2(
             const Scaffold(
-              body: FloatingAddActionButton(
-                linkedFromId: 'fab-linked-id',
-                categoryId: 'fab-category',
-              ),
+              body: FloatingAddActionButton(categoryId: 'fab-category'),
             ),
           ),
         ),
@@ -81,18 +80,24 @@ void main() {
       // Bottom-sheet route transition — settle until mounted.
       await tester.pumpAndSettle();
 
-      // The modal body renders its menu items; the Timer item proves the
-      // linkedFromId made it through (it only shows with a linked id).
       expect(find.byType(DsActionRow), findsWidgets);
-      // Descendant, not a bare icon anywhere on screen: the timer glyph also
-      // rides the action bar, so a loose finder would pass even if the row
-      // never rendered.
+      // The sheet opens without a host: the task row wears its unlinked
+      // title, and the Timer row — which only renders under a linked id —
+      // is absent. An entry's own page links from its action bar instead.
+      expect(
+        find.descendant(
+          of: find.byType(DsActionRow),
+          matching: find.text('Add a task'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Link a new task'), findsNothing);
       expect(
         find.descendant(
           of: find.byType(DsActionRow),
           matching: find.byIcon(LottiIcons.timer),
         ),
-        findsOneWidget,
+        findsNothing,
       );
     },
   );

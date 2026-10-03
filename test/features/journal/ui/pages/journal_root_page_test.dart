@@ -12,6 +12,7 @@ import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
 import 'package:lotti/features/journal/ui/pages/journal_root_page.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -20,6 +21,7 @@ import 'package:lotti/services/time_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/stub_audio_recorder_controller.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../test_utils/fake_journal_page_controller.dart';
@@ -103,6 +105,9 @@ void main() {
         const JournalRootPage(),
         mediaQueryData: size != null ? MediaQueryData(size: size) : null,
         overrides: [
+          audioRecorderControllerProvider.overrideWith(
+            StubAudioRecorderController.new,
+          ),
           journalPageScopeProvider.overrideWithValue(false),
           journalPageControllerProvider(
             false,
@@ -282,6 +287,9 @@ void main() {
           const JournalRootPage(),
           mediaQueryData: const MediaQueryData(size: desktop),
           overrides: [
+            audioRecorderControllerProvider.overrideWith(
+              StubAudioRecorderController.new,
+            ),
             journalPageScopeProvider.overrideWithValue(false),
             journalPageControllerProvider(
               false,

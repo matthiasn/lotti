@@ -10787,6 +10787,12 @@ abstract class AppLocalizations {
   /// **'Enter category name'**
   String get enterCategoryName;
 
+  /// No description provided for @entryActionBarAddLinkedTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a task linked to this entry'**
+  String get entryActionBarAddLinkedTask;
+
   /// No description provided for @entryActions.
   ///
   /// In en, this message translates to:

@@ -73,7 +73,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get addHabitDateLabel => 'Färdigställd i';
 
   @override
-  String get addLinkedEntryLabel => 'Add linked entry';
+  String get addLinkedEntryLabel => 'Lägg till länkad post';
 
   @override
   String get addMeasurementCommentLabel => 'Kommentar';
@@ -6344,6 +6344,10 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get enterCategoryName => 'Ange kategorinamn';
+
+  @override
+  String get entryActionBarAddLinkedTask =>
+      'Lägg till en uppgift länkad till den här posten';
 
   @override
   String get entryActions => 'Åtgärder';

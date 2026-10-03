@@ -6444,6 +6444,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get enterCategoryName => 'Saisir le nom de la catégorie';
 
   @override
+  String get entryActionBarAddLinkedTask =>
+      'Ajouter une tâche liée à cette entrée';
+
+  @override
   String get entryActions => 'Actions';
 
   @override

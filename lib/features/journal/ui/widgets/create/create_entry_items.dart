@@ -66,7 +66,8 @@ class CreateEventItem extends ConsumerWidget {
 }
 
 /// Create-menu item that creates a task linked to `linkedFromId`, kicks off
-/// auto-assignment of a category agent, and navigates to the new task.
+/// auto-assignment of a category agent, and navigates to the new task — all
+/// through `EntryCreationService.createTaskAndOpen`.
 class CreateTaskItem extends ConsumerWidget {
   const CreateTaskItem(
     this.linkedFromId, {
@@ -102,18 +103,18 @@ class CreateTaskItem extends ConsumerWidget {
       // chevron-class — the "+" claimed create-in-place for a teleport.
       trailing: DsActionRowTrailing.chevron,
       onTap: () async {
-        final task = await createTask(
-          linkedId: linkedFromId,
-          categoryId: categoryId,
-        );
-        if (!context.mounted) {
-          return;
+        // Create, assign the category's default agent, open — the same
+        // journey the entry action bar's Add a task takes, so the two never
+        // drift. The sheet closes behind the task page.
+        await ref
+            .read(entryCreationServiceProvider)
+            .createTaskAndOpen(
+              linkedId: linkedFromId,
+              categoryId: categoryId,
+            );
+        if (context.mounted) {
+          Navigator.of(context).pop();
         }
-        if (task != null) {
-          unawaited(autoAssignCategoryAgent(ref, task));
-          beamToNamed('/tasks/${task.meta.id}');
-        }
-        Navigator.of(context).pop();
       },
     );
   }

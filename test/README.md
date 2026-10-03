@@ -228,6 +228,20 @@ image, link, category and geolocation request using the real journal database.
 production code, and timers created inside the zone still run on the test's
 fake clock (`test/widgets/media/file_watcher_mixin_test.dart`).
 
+## Pages that dock an action bar boot the audio recorder
+
+`TaskActionBar` and `EntryActionBar` watch `audioRecorderControllerProvider`
+so their mic can show a recording in progress. The real controller subscribes
+to the `record` plugin's amplitude stream, which starts a periodic timer and
+calls a platform channel no widget test hosts — the failure reads as pending
+timers or a `MissingPluginException` from `_AmplitudeMixin`, after the test
+body passed. Every host that renders `TaskDetailsPage` or `EntryDetailsPage`,
+directly or through a pane that embeds it (the journal split, the query chat
+pane, the screenshot harnesses), therefore overrides the provider with
+`StubAudioRecorderController` from `test/helpers/stub_audio_recorder_controller.dart`
+on every pump — through the pump helper's `overrides`, or on the
+`ProviderContainer` when the page is hosted under an `UncontrolledProviderScope`.
+
 ## Platform-channel calls in widgets (e.g. HapticFeedback)
 
 A widget action that `await`s a `SystemChannels.platform` call — `HapticFeedback.lightImpact()`, clipboard, etc. — never resolves under the test binding unless a mock handler is installed, so any follow-up work after the await (a DB write, a `setState`, a navigation) silently never runs and the test fails in a confusing way. Install a handler in `setUp` **and reset it in `tearDown`**, or it leaks into every later test in the same isolate under the optimized runner:

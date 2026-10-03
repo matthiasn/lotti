@@ -12,19 +12,19 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/journal/state/journal_focus_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
-import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_button.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_action_bar.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/correction_undo_snackbar.dart';
 import 'package:lotti/features/tasks/ui/checklists/linked_from_checklist_widget.dart';
@@ -39,7 +39,6 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/widgets/media/media_drop_target.dart';
-import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
@@ -49,6 +48,7 @@ import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../helpers/fake_linked_entries_controller.dart';
 import '../../../../helpers/fallbacks.dart';
 import '../../../../helpers/path_provider.dart';
+import '../../../../helpers/stub_audio_recorder_controller.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
@@ -189,6 +189,12 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EntryDetailsPage(itemId: testTextEntry.meta.id),
+
+          overrides: [
+            audioRecorderControllerProvider.overrideWith(
+              StubAudioRecorderController.new,
+            ),
+          ],
         ),
       );
 
@@ -247,6 +253,9 @@ void main() {
             linkedFromId: parent.meta.id,
           ),
           overrides: [
+            audioRecorderControllerProvider.overrideWith(
+              StubAudioRecorderController.new,
+            ),
             entryControllerProvider(
               child.meta.id,
             ).overrideWith(() => FakeEntryController(child)),
@@ -287,6 +296,12 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EntryDetailsPage(itemId: testTextEntry.meta.id),
+
+          overrides: [
+            audioRecorderControllerProvider.overrideWith(
+              StubAudioRecorderController.new,
+            ),
+          ],
         ),
       );
       await tester.pump();
@@ -337,6 +352,12 @@ void main() {
             platform: TargetPlatform.windows,
             child: EntryDetailsPage(itemId: testTextEntry.meta.id),
           ),
+
+          overrides: [
+            audioRecorderControllerProvider.overrideWith(
+              StubAudioRecorderController.new,
+            ),
+          ],
         ),
       );
       await tester.pump();
@@ -388,6 +409,12 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EntryDetailsPage(itemId: testWeightEntry.meta.id),
+
+          overrides: [
+            audioRecorderControllerProvider.overrideWith(
+              StubAudioRecorderController.new,
+            ),
+          ],
         ),
       );
 
@@ -438,6 +465,12 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             EntryDetailsPage(itemId: checklistItem.meta.id),
+
+            overrides: [
+              audioRecorderControllerProvider.overrideWith(
+                StubAudioRecorderController.new,
+              ),
+            ],
           ),
         );
 
@@ -481,6 +514,12 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             EntryDetailsPage(itemId: checklist.meta.id),
+
+            overrides: [
+              audioRecorderControllerProvider.overrideWith(
+                StubAudioRecorderController.new,
+              ),
+            ],
           ),
         );
 
@@ -506,6 +545,12 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             EntryDetailsPage(itemId: testTextEntry.meta.id),
+
+            overrides: [
+              audioRecorderControllerProvider.overrideWith(
+                StubAudioRecorderController.new,
+              ),
+            ],
           ),
         );
 
@@ -579,6 +624,12 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             EntryDetailsPage(itemId: testTextEntry.meta.id),
+
+            overrides: [
+              audioRecorderControllerProvider.overrideWith(
+                StubAudioRecorderController.new,
+              ),
+            ],
           ),
         );
 
@@ -728,7 +779,13 @@ void main() {
       ).thenAnswer((_) async => testTextEntry);
 
       // Create a container with pre-existing focus intent
-      final container = ProviderContainer();
+      final container = ProviderContainer(
+        overrides: [
+          audioRecorderControllerProvider.overrideWith(
+            StubAudioRecorderController.new,
+          ),
+        ],
+      );
       final focusProvider = journalFocusControllerProvider(
         testTextEntry.meta.id,
       );
@@ -796,6 +853,12 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EntryDetailsPage(itemId: testTextEntry.meta.id),
+
+          overrides: [
+            audioRecorderControllerProvider.overrideWith(
+              StubAudioRecorderController.new,
+            ),
+          ],
         ),
       );
 
@@ -812,7 +875,13 @@ void main() {
       when(
         () => mockJournalDbSat.journalEntityById(testTextEntry.meta.id),
       ).thenAnswer((_) async => testTextEntry);
-      final container = ProviderContainer();
+      final container = ProviderContainer(
+        overrides: [
+          audioRecorderControllerProvider.overrideWith(
+            StubAudioRecorderController.new,
+          ),
+        ],
+      );
       // Covers a failure before the explicit disposal below; disposing twice
       // is a no-op.
       addTearDown(container.dispose);
@@ -873,6 +942,12 @@ void main() {
           container: container,
           child: makeTestableWidgetWithScaffold(
             EntryDetailsPage(itemId: testTextEntry.meta.id),
+
+            overrides: [
+              audioRecorderControllerProvider.overrideWith(
+                StubAudioRecorderController.new,
+              ),
+            ],
           ),
         ),
       );
@@ -997,6 +1072,12 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EntryDetailsPage(itemId: testTextEntry.meta.id),
+
+          overrides: [
+            audioRecorderControllerProvider.overrideWith(
+              StubAudioRecorderController.new,
+            ),
+          ],
         ),
       );
 
@@ -1034,6 +1115,12 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EntryDetailsPage(itemId: testTextEntry.meta.id),
+
+          overrides: [
+            audioRecorderControllerProvider.overrideWith(
+              StubAudioRecorderController.new,
+            ),
+          ],
         ),
       );
 
@@ -1052,6 +1139,12 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EntryDetailsPage(itemId: testTextEntry.meta.id),
+
+          overrides: [
+            audioRecorderControllerProvider.overrideWith(
+              StubAudioRecorderController.new,
+            ),
+          ],
         ),
       );
 
@@ -1086,6 +1179,12 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EntryDetailsPage(itemId: testTextEntry.meta.id),
+
+          overrides: [
+            audioRecorderControllerProvider.overrideWith(
+              StubAudioRecorderController.new,
+            ),
+          ],
         ),
       );
 
@@ -1099,31 +1198,59 @@ void main() {
       // This is tested implicitly by the widget rendering without errors
     });
 
-    testWidgets('FloatingAddActionButton is present', (tester) async {
-      when(
-        () => mockJournalDbEdge.journalEntityById(testTextEntry.meta.id),
-      ).thenAnswer((_) async => testTextEntry);
+    testWidgets(
+      'docks the entry action bar in the bottom slot, behind an extended '
+      'body, with no floating button',
+      (tester) async {
+        when(
+          () => mockJournalDbEdge.journalEntityById(testTextEntry.meta.id),
+        ).thenAnswer((_) async => testTextEntry);
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          EntryDetailsPage(itemId: testTextEntry.meta.id),
-        ),
-      );
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            EntryDetailsPage(itemId: testTextEntry.meta.id),
 
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+            overrides: [
+              audioRecorderControllerProvider.overrideWith(
+                StubAudioRecorderController.new,
+              ),
+            ],
+          ),
+        );
 
-      // Verify the design-system FAB is present (rounded-24 teal button
-      // matching the Figma spec; swapped from Flutter's default FAB).
-      expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
-      expect(
-        find.byType(DesignSystemBottomNavigationFabPadding),
-        findsOneWidget,
-      );
-    });
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final scaffold = tester.widget<Scaffold>(
+          find
+              .descendant(
+                of: find.byType(EntryDetailsPage),
+                matching: find.byType(Scaffold),
+              )
+              .first,
+        );
+        // The bar's glass blur samples the body painting behind it.
+        expect(scaffold.extendBody, isTrue);
+        expect(scaffold.bottomNavigationBar, isA<EntryActionBar>());
+        expect(scaffold.floatingActionButton, isNull);
+        expect(find.byType(FloatingActionButton), findsNothing);
+
+        final bar = tester.widget<EntryActionBar>(
+          find.byType(EntryActionBar),
+        );
+        expect(bar.entry.meta.id, testTextEntry.meta.id);
+        // Flush with the page's bottom edge, spanning its width.
+        final pageRect = tester.getRect(find.byType(EntryDetailsPage));
+        final barRect = tester.getRect(find.byType(EntryActionBar));
+        expect(barRect.bottom, pageRect.bottom);
+        expect(barRect.left, pageRect.left);
+        expect(barRect.right, pageRect.right);
+      },
+    );
 
     testWidgets(
-      'split-pane embedding (showBackButton false) keeps the linked-entry FAB',
+      'split-pane embedding (showBackButton false) keeps the linked-entry '
+      'action bar',
       (tester) async {
         when(
           () => mockJournalDbEdge.journalEntityById(testTextEntry.meta.id),
@@ -1135,19 +1262,101 @@ void main() {
               itemId: testTextEntry.meta.id,
               showBackButton: false,
             ),
+
+            overrides: [
+              audioRecorderControllerProvider.overrideWith(
+                StubAudioRecorderController.new,
+              ),
+            ],
           ),
         );
 
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // The list pane's FAB creates a standalone entry; only this one
-        // creates an entry linked to the open one. Dropping it as a
-        // "duplicate" left desktop with no way to create a linked entry.
-        final fab = tester.widget<FloatingAddActionButton>(
-          find.byType(FloatingAddActionButton),
+        // The list pane's button creates a standalone entry; only this bar
+        // creates entries linked to the open one, so desktop keeps it.
+        final bar = tester.widget<EntryActionBar>(
+          find.byType(EntryActionBar),
         );
-        expect(fab.linkedFromId, testTextEntry.meta.id);
+        expect(bar.entry.meta.id, testTextEntry.meta.id);
+      },
+    );
+
+    testWidgets(
+      "rides the AI decoder bars in the action bar's activity slot",
+      (tester) async {
+        when(
+          () => mockJournalDbEdge.journalEntityById(testTextEntry.meta.id),
+        ).thenAnswer((_) async => testTextEntry);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            EntryDetailsPage(itemId: testTextEntry.meta.id),
+
+            overrides: [
+              audioRecorderControllerProvider.overrideWith(
+                StubAudioRecorderController.new,
+              ),
+            ],
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final bar = tester.widget<EntryActionBar>(
+          find.byType(EntryActionBar),
+        );
+        expect(bar.topSlot, isA<AiRunningDecoderBars>());
+        expect(
+          find.descendant(
+            of: find.byType(EntryActionBar),
+            matching: find.byType(AiRunningDecoderBars),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      "reserves the bar's height below the content so the last card can "
+      'scroll clear of it',
+      (tester) async {
+        when(
+          () => mockJournalDbEdge.journalEntityById(testTextEntry.meta.id),
+        ).thenAnswer((_) async => testTextEntry);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            EntryDetailsPage(itemId: testTextEntry.meta.id),
+
+            overrides: [
+              audioRecorderControllerProvider.overrideWith(
+                StubAudioRecorderController.new,
+              ),
+            ],
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final barHeight = tester.getSize(find.byType(EntryActionBar)).height;
+        expect(barHeight, greaterThan(0));
+
+        final scrollView = tester.widget<CustomScrollView>(
+          find.descendant(
+            of: find.byType(EntryDetailsPage),
+            matching: find.byType(CustomScrollView),
+          ),
+        );
+        final trailing = scrollView.slivers.last;
+        expect(trailing, isA<SliverPadding>());
+        // With extendBody the Scaffold publishes the bar's height as the
+        // body's bottom inset, and the trailing sliver consumes exactly it.
+        final padding = (trailing as SliverPadding).padding as EdgeInsets;
+        expect(padding.bottom, barHeight);
       },
     );
 
@@ -1162,6 +1371,12 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             EntryDetailsPage(itemId: testTextEntry.meta.id),
+
+            overrides: [
+              audioRecorderControllerProvider.overrideWith(
+                StubAudioRecorderController.new,
+              ),
+            ],
           ),
         );
 
@@ -1219,6 +1434,9 @@ void main() {
           makeTestableWidgetWithScaffold(
             EntryDetailsPage(itemId: testTextEntry.meta.id),
             overrides: [
+              audioRecorderControllerProvider.overrideWith(
+                StubAudioRecorderController.new,
+              ),
               sortedLinkedEntriesProvider.overrideWith(
                 (ref, id) =>
                     id == testTextEntry.meta.id ? [link] : const <EntryLink>[],
@@ -1263,6 +1481,12 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EntryDetailsPage(itemId: testTextEntry.meta.id),
+
+          overrides: [
+            audioRecorderControllerProvider.overrideWith(
+              StubAudioRecorderController.new,
+            ),
+          ],
         ),
       );
 
@@ -1293,6 +1517,12 @@ void main() {
           container: container,
           child: makeTestableWidgetWithScaffold(
             EntryDetailsPage(itemId: testTextEntry.meta.id),
+
+            overrides: [
+              audioRecorderControllerProvider.overrideWith(
+                StubAudioRecorderController.new,
+              ),
+            ],
           ),
         ),
       );
@@ -1316,6 +1546,12 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EntryDetailsPage(itemId: testTextEntry.meta.id),
+
+          overrides: [
+            audioRecorderControllerProvider.overrideWith(
+              StubAudioRecorderController.new,
+            ),
+          ],
         ),
       );
 

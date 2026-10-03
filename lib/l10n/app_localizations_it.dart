@@ -73,7 +73,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get addHabitDateLabel => 'Completo a';
 
   @override
-  String get addLinkedEntryLabel => 'Add linked entry';
+  String get addLinkedEntryLabel => 'Aggiungi voce collegata';
 
   @override
   String get addMeasurementCommentLabel => 'Commento';
@@ -6413,6 +6413,10 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get enterCategoryName => 'Inserisci il nome della categoria';
+
+  @override
+  String get entryActionBarAddLinkedTask =>
+      'Aggiungi un\'attività collegata a questa voce';
 
   @override
   String get entryActions => 'Azioni';

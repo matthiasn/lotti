@@ -15,7 +15,7 @@ sources:
   - id: beamer-app
     resource: ../../lib/beamer/beamer_app.dart
     title: MyBeamerApp and AppScreen
-    last_modified: 2026-09-29
+    last_modified: 2026-10-02
   - id: activity-island
     resource: ../../lib/widgets/nav_bar/mobile_activity_island.dart
     title: The activity island floating above the mobile navigation
@@ -451,6 +451,7 @@ state decide what the bottom edge belongs to, following one product rule:
 | Predicate | Routes | Effect |
 | --- | --- | --- |
 | `isTaskDetailRoute` | `/tasks/<uuid>` | Bar **unmounted** — `TaskActionBar` replaces it outright |
+| `isLogbookEntryDetailRoute` | `/journal/<uuid>`, journal tab active | Bar **unmounted** — `EntryActionBar` replaces it outright |
 | `settingsRouteHidesBottomNav` | AI and Agents sections, settings leaves (except Sections), entity editors | Bar **slides away** |
 | `projectsRouteHidesBottomNav` | `/projects/<id>` | Bar **slides away** |
 | `goalsRouteHidesBottomNav` | `/goals/create`, `/goals/details/<id>[/chat\|/edit]` | Bar **slides away** |
@@ -546,9 +547,10 @@ font carries it — at `chipHeight` diameter, so the row keeps one baseline and
 one height. It wears the accent (`colors.interactive.enabled`) twice: as a thin
 ring (`outlineColor`) and as the glyph's ink (`iconColor`), over the
 translucent, blurred glass fill — the row floats over scrolling content. That
-is the treatment of the task action bar's idle record button
-([`task_action_bar.dart`](../../lib/features/tasks/ui/widgets/task_action_bar.dart)),
-so the app's round lead-action buttons read as one family. It is keyed
+is the treatment of the idle record button the task and entry action bars
+share — one widget,
+[`glass_record_button.dart`](../../lib/features/speech/ui/widgets/recording/glass_record_button.dart)
+— so the app's round lead-action buttons read as one family. It is keyed
 `MobileNavigationLauncherKeys.menuButton` and announces `navSidebarOpenLabel`.
 
 The gutters are asymmetric: `leadingGutter` (`spacing.step5`) before the menu
@@ -728,8 +730,8 @@ Three contracts hold it together:
 - **Outside the slide-away subtree.** The island is positioned by the shell,
   not by the launcher: on routes that slide the launcher away it animates down to
   its gap above the bottom safe-area edge in the same motion, so a running
-  timer stays visible inside settings editors; on task details the whole
-  bottom stack, island included, yields to the page's own action bar.
+  timer stays visible inside settings editors; on task and entry details the
+  whole bottom stack, island included, yields to the page's own action bar.
 - **A broken recorder never takes it down.** If the recorder controller fails
   to build (MediaKit on some hosts), the island degrades to its timer half.
 - **Prose degrades before payloads**, as on the launcher beside it.
@@ -746,8 +748,8 @@ Three contracts hold it together:
 The launcher is not a bar. It is a transparent strip holding a row of
 chips built from the shared glass primitives in
 [`glass_action_bar.dart`](../../lib/features/design_system/components/glass_action_bar.dart)
-— the same `DsGlassPill` / `DsGlassRoundButton` vocabulary the task action bar
-uses, so every floating glass row in the app has one silhouette, one fill
+— the same `DsGlassPill` / `DsGlassRoundButton` vocabulary the task and entry
+action bars use, so every floating glass row in the app has one silhouette, one fill
 alpha, one hairline and one `spacing.step4` gap. The menu button is translucent and
 self-blurring: the `BackdropFilter` lives inside each chip's `ClipRRect` rather
 than around the row, because a filter spanning the row would also blur the
@@ -811,18 +813,18 @@ Two deliberate divergences from what the floating button did:
   query, and a chip arriving one beat late would pop into the row under the
   user's thumb; on its own layer in the corner the same delay cost nothing.
 
-Route sensitivity is needed in two places only. Projects, Goals, Habits and
+Route sensitivity is needed in one place only. Projects, Goals, Habits and
 People slide the whole launcher away on their detail routes (`slideNavAway`), so a
-stale action there is off screen anyway. The journal tab keeps the bar on an
-entry's page — and that page owns a *different* action, an `add linked entry`
-button with its own glyph — so `isLogbookEntryDetailRoute` drops the logbook's
-action from the rail there and lets the detail page keep floating its own. The
-events tab keeps the bar on an event's page too, where a new-event plus would
-read as adding to that event, so `isEventDetailRoute` drops its action there.
-Opening an entry or an event moves only that tab's delegate, not the tab index,
-which is why `navService.journalDelegate` and `navService.eventsDelegate` both
-join `_routeChangeListenable` — without them the launcher would not rebuild and
-would keep the list's action beside the detail page.
+stale action there is off screen anyway, and the journal tab unmounts it on an
+entry's page (`isLogbookEntryDetailRoute`), where the page docks its own
+`EntryActionBar` — add a linked task, record, and the Add sheet the floating
+button used to open — exactly as a task's page does. The events tab keeps the
+bar on an event's page, where a new-event plus would read as adding to that
+event, so `isEventDetailRoute` drops its action there. Opening an entry or an
+event moves only that tab's delegate, not the tab index, which is why
+`navService.journalDelegate` and `navService.eventsDelegate` both join
+`_routeChangeListenable` — without them the launcher would neither leave an
+entry's page nor drop the list's action beside an event's.
 
 The row's states are [the menu button's](#the-menu-button) diagram.
 

@@ -6410,6 +6410,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get enterCategoryName => 'Zadejte název kategorie';
 
   @override
+  String get entryActionBarAddLinkedTask =>
+      'Přidat úkol propojený s tímto záznamem';
+
+  @override
   String get entryActions => 'Akce';
 
   @override

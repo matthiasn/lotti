@@ -49,3 +49,17 @@ abstract class AudioRecorderState with _$AudioRecorderState {
     bool? enableSpeechRecognition,
   }) = _AudioRecorderState;
 }
+
+/// Session-scoped reads on [AudioRecorderState] that more than one surface
+/// asks, kept here so "an active session linked to X" has one definition.
+extension AudioRecorderSession on AudioRecorderState {
+  /// True while a recording session is in flight — recording or paused — for
+  /// the task or entry [linkedId]. A stopped session, or one linked to
+  /// another entry or to nothing, is not this one's.
+  bool isActiveSessionFor(String linkedId) {
+    final isActive =
+        status == AudioRecorderStatus.recording ||
+        status == AudioRecorderStatus.paused;
+    return isActive && this.linkedId == linkedId;
+  }
+}

@@ -8,8 +8,7 @@ import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
-import 'package:lotti/features/speech/state/recorder_controller.dart';
-import 'package:lotti/features/speech/state/recorder_state.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/glass_record_button.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar_buttons.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -257,17 +256,6 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
     return '$minutes:$seconds';
   }
 
-  /// True when an audio recording session is currently active (recording
-  /// or paused) and is linked to *this* task — same task-scoping rule as
-  /// the timer pill.
-  bool _isRecordingAudioForThisTask(AudioRecorderState recorderState) {
-    final status = recorderState.status;
-    final isActive =
-        status == AudioRecorderStatus.recording ||
-        status == AudioRecorderStatus.paused;
-    return isActive && recorderState.linkedId == widget.task.meta.id;
-  }
-
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -280,10 +268,6 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
             _running!.meta.dateTo.difference(_running!.meta.dateFrom),
           )
         : messages.taskActionBarTrackTime;
-
-    final isRecordingAudio = _isRecordingAudioForThisTask(
-      ref.watch(audioRecorderControllerProvider),
-    );
 
     // Edge-to-edge glass strip (hairline + blur + gradient). The host
     // page must use `Scaffold.extendBody: true` so body content paints
@@ -346,32 +330,16 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
                     onNavigateToRunningEntry: _onNavigateToRunningEntry,
                     onStop: _onStopTimer,
                   ),
-                  ...[
-                    DsGlassRoundButton(
-                      key: TaskActionBar.audioKey,
-                      icon: LottiIcons.mic,
-                      semanticLabel: isRecordingAudio
-                          ? messages.taskActionBarAudioRecordingActive
-                          : messages.taskFirstRunRecordAudio,
-                      onPressed: _onAudioPressed,
-                      backgroundColor: isRecordingAudio
-                          ? tokens.colors.alert.error.defaultColor
-                          : null,
-                      // Idle, the mic wears the accent as a ring and an
-                      // accent glyph — a peer of Track time rather than one
-                      // of the quiet utilities beside it. Tracked time and
-                      // captured thoughts are equally load-bearing for a
-                      // task, so the bar carries two lead actions; the mic
-                      // stays outlined rather than filled so the strip still
-                      // holds only one filled shape.
-                      outlineColor: isRecordingAudio
-                          ? null
-                          : tokens.colors.interactive.enabled,
-                      iconColor: isRecordingAudio
-                          ? Colors.white
-                          : tokens.colors.interactive.enabled,
-                    ),
-                  ],
+                  // The shared lead-action mic: accent ring and glyph idle
+                  // — a peer of Track time rather than one of the quiet
+                  // utilities beside it, since tracked time and captured
+                  // thoughts are equally load-bearing for a task — and the
+                  // alert fill while a recording linked to this task runs.
+                  GlassRecordButton(
+                    key: TaskActionBar.audioKey,
+                    linkedId: widget.task.meta.id,
+                    onPressed: _onAudioPressed,
+                  ),
                   if (showChecklist) ...[
                     DsGlassRoundButton(
                       key: TaskActionBar.checklistKey,
