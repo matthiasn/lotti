@@ -1211,6 +1211,16 @@ class MockAgentSyncService extends Mock implements AgentSyncService {
   Future<String> localHost() async => 'test-host';
 }
 
+/// A [MockAgentSyncService.transactionDelegate] whose transaction commits —
+/// its action runs to completion — and then fails, the way a deferred outbox
+/// flush fails after the database commit. Tests of "committed, then failed"
+/// recovery read back writes that genuinely happened, rather than writes a
+/// real transaction would have rolled back.
+Future<T> commitThenThrowTransaction<T>(Future<T> Function() action) async {
+  await action();
+  throw StateError('outbox flush failed');
+}
+
 /// Stubs [MockAgentSyncService.appendMilestone] to a no-op so workflow/service
 /// tests that don't assert on milestone emission don't trip over the unstubbed
 /// mock (the watermark markers from PR 4, B2 are fire-and-forget here). Calls

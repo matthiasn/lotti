@@ -570,7 +570,8 @@ void main() {
     'an owner edit reconciles a revision committed before sync failed',
     () async {
       stubSpec();
-      final failing = _CommitThenThrowSyncService();
+      final failing = (MockAgentSyncService()
+        ..transactionDelegate = commitThenThrowTransaction);
       when(() => failing.upsertEntity(any())).thenAnswer((invocation) async {
         upserts.add(invocation.positionalArguments.first as AgentDomainEntity);
       });
@@ -988,7 +989,8 @@ void main() {
       'to the minted version, so the approval is reported as committed — '
       'a retry must not mint twice', () async {
     stubSpec();
-    final failing = _CommitThenThrowSyncService();
+    final failing = (MockAgentSyncService()
+      ..transactionDelegate = commitThenThrowTransaction);
     when(() => failing.upsertEntity(any())).thenAnswer((invocation) async {
       upserts.add(invocation.positionalArguments.first as AgentDomainEntity);
     });
@@ -1053,10 +1055,3 @@ class _OrderRecordingSyncService extends MockAgentSyncService {
 
 /// Runs the transaction body (writes land) and THEN throws — the durable
 /// commit + failed outbox flush shape.
-class _CommitThenThrowSyncService extends MockAgentSyncService {
-  @override
-  Future<T> runInTransaction<T>(Future<T> Function() action) async {
-    await action();
-    throw StateError('outbox flush failed');
-  }
-}

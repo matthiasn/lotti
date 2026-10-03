@@ -61,14 +61,6 @@ class _FakeReader extends GoalSignalReader {
   }) async => window;
 }
 
-class _CommitThenThrowSyncService extends MockAgentSyncService {
-  @override
-  Future<T> runInTransaction<T>(Future<T> Function() action) async {
-    await action();
-    throw StateError('deferred outbox flush failed');
-  }
-}
-
 GoalAgentWorkflow _offTrackWorkflow(
   MockAgentRepository repository,
   MockAgentSyncService syncService,
@@ -6090,7 +6082,8 @@ void main() {
       'without retrying inference', () async {
     stubSpec();
     stubGlmResolution();
-    syncService = _CommitThenThrowSyncService();
+    syncService = (MockAgentSyncService()
+      ..transactionDelegate = commitThenThrowTransaction);
     when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
       upserts.add(invocation.positionalArguments.first as AgentDomainEntity);
     });

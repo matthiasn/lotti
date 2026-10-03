@@ -164,7 +164,8 @@ void main() {
     test('a durable snooze survives a failed sync enqueue without asking the '
         'user to retry', () async {
       var persisted = nudge();
-      final throwing = _CommitThenThrowSyncService();
+      final throwing = (MockAgentSyncService()
+        ..transactionDelegate = commitThenThrowTransaction);
       when(() => throwing.upsertEntity(any())).thenAnswer((invocation) async {
         persisted = invocation.positionalArguments.first as GoalNudgeEntity;
       });
@@ -228,7 +229,8 @@ void main() {
     test('a durable day dismissal survives a failed sync enqueue without '
         'asking the user to retry', () async {
       var persisted = nudge();
-      final throwing = _CommitThenThrowSyncService();
+      final throwing = (MockAgentSyncService()
+        ..transactionDelegate = commitThenThrowTransaction);
       when(() => throwing.upsertEntity(any())).thenAnswer((invocation) async {
         persisted = invocation.positionalArguments.first as GoalNudgeEntity;
       });
@@ -293,7 +295,8 @@ void main() {
     test('a rating whose commit was durable but whose sync enqueue threw '
         'is reported as SUCCESS — no misleading retry notice', () async {
       var persisted = nudge();
-      final throwing = _CommitThenThrowSyncService();
+      final throwing = (MockAgentSyncService()
+        ..transactionDelegate = commitThenThrowTransaction);
       when(() => throwing.upsertEntity(any())).thenAnswer((invocation) async {
         persisted = invocation.positionalArguments.first as GoalNudgeEntity;
       });
@@ -499,10 +502,3 @@ void main() {
 
 /// Runs the transaction body (writes land) and THEN throws — the durable
 /// commit + failed outbox flush shape.
-class _CommitThenThrowSyncService extends MockAgentSyncService {
-  @override
-  Future<T> runInTransaction<T>(Future<T> Function() action) async {
-    await action();
-    throw StateError('outbox flush failed');
-  }
-}

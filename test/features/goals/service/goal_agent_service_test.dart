@@ -745,7 +745,8 @@ void main() {
   test('a post-commit sync failure is reconciled: the goal is durable, so '
       'the creation reports success instead of inviting a duplicate '
       'retry', () async {
-    final failing = _CommitThenThrowSyncService();
+    final failing = (MockAgentSyncService()
+      ..transactionDelegate = commitThenThrowTransaction);
     final failUpserts = <AgentDomainEntity>[];
     when(() => failing.upsertEntity(any())).thenAnswer((invocation) async {
       failUpserts.add(
@@ -884,10 +885,3 @@ class _OrderRecordingSyncService extends MockAgentSyncService {
 
 /// Runs the transaction body (writes land) and THEN throws — the durable
 /// commit + failed outbox flush shape.
-class _CommitThenThrowSyncService extends MockAgentSyncService {
-  @override
-  Future<T> runInTransaction<T>(Future<T> Function() action) async {
-    await action();
-    throw StateError('outbox flush failed');
-  }
-}
