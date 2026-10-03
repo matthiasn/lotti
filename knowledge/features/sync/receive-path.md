@@ -36,9 +36,9 @@ sources:
     resource: ../../../lib/features/sync/matrix/sync_event_trust.dart
     title: SyncEventTrust — which senders inbound sync accepts
     last_modified: 2026-10-03
-  - id: adr-0113
-    resource: ../../../docs/adr/0113-inbound-sync-trusts-only-key-sharing-peers.md
-    title: ADR 0113 — inbound sync trusts only key-sharing peers
+  - id: adr-0116
+    resource: ../../../docs/adr/0116-inbound-sync-trusts-only-key-sharing-peers.md
+    title: ADR 0116 — inbound sync trusts only key-sharing peers
     last_modified: 2026-10-03
   - id: processor
     resource: ../../../lib/features/sync/matrix/sync_event_processor.dart
@@ -182,7 +182,7 @@ worker applied or abandoned again in between must stay as it is.
 # Inbound trust
 
 Every door into the pipeline asks `SyncEventTrust` first
-([ADR 0113](../../../docs/adr/0113-inbound-sync-trusts-only-key-sharing-peers.md)).
+([ADR 0116](../../../docs/adr/0116-inbound-sync-trusts-only-key-sharing-peers.md)).
 The Matrix SDK decrypts any Megolm event whose key reached this device, never
 checks the sending device, and passes plaintext through unchanged, so without
 this check anyone able to post into the room — the account holder or the

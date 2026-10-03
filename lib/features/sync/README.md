@@ -34,7 +34,7 @@ merge of two users' work.
   verified device keeps syncing. Nothing ever halts.
 - **Accepts changes only from verified devices.** The inbound side mirrors the
   rule above: a change or attachment is applied only when a device this
-  session shares its keys with encrypted it (ADR 0113). Plaintext posted into
+  session shares its keys with encrypted it (ADR 0116). Plaintext posted into
   the room, and anything from an unverified or blocked device, is dropped —
   so neither the homeserver's operator nor someone holding the password can
   inject changes.

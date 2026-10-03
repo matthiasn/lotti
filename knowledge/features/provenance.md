@@ -45,7 +45,10 @@ sources:
 # What this is
 
 Phase 1 of record provenance: the primitives every later phase builds on. It is
-a pure library — nothing in the app calls it yet. The choices behind it are
+a pure library: no entry is signed or chained yet. The one caller outside the
+feature is GitHub pull request tracking, which reuses `canonicalJsonBytes` to
+fingerprint a pull request snapshot (`lib/features/github/domain/pull_request_order.dart`).
+The choices behind it are
 [ADR 0088](../../docs/adr/0088-provenance-crypto-primitives.md); what the later
 phases need from the rest of the codebase is the
 [Phase 0 mapping](../../docs/implementation_plans/2026-09-25_record_provenance_phase0_mapping.md).

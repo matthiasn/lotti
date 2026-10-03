@@ -32,9 +32,9 @@ sources:
     resource: ../../../lib/features/ai/repository/one_shot_text_generation.dart
     title: One-shot text generation with cost attribution
     last_modified: 2026-10-03
-  - id: adr-0114
-    resource: ../../../docs/adr/0114-shutdown-reports-only-what-was-measured.md
-    title: ADR 0114 — Shutdown reports only what was measured
+  - id: adr-0118
+    resource: ../../../docs/adr/0118-shutdown-reports-only-what-was-measured.md
+    title: ADR 0118 — Shutdown reports only what was measured
     last_modified: 2026-10-03
 ---
 

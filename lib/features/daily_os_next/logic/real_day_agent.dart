@@ -223,8 +223,6 @@ class RealDayAgent implements DayAgentInterface {
     throw DayAgentInteractionException(_jobFailureMessage(terminal));
   }
 
-  // ───────────────────────────── Mocked methods ──
-
   @override
   Future<List<LearningCard>> summarizeRecentPatterns({
     required DateTime asOf,

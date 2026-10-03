@@ -1,4 +1,4 @@
-# ADR 0113: Inbound Sync Trusts Only the Devices It Shares Keys With
+# ADR 0116: Inbound Sync Trusts Only the Devices It Shares Keys With
 
 - Status: Accepted — implemented
 - Date: 2026-10-03

@@ -87,7 +87,7 @@ to be sent holds it like any other payload.
 **The GitHub token works the same way.** `GitHubTokenStorage` keeps one record
 per profile in `SecureStorage` — the token, its login and the stamp of the
 change — and the `gitHubAccount` sync message carries it to the user's other
-devices end-to-end encrypted (ADR 0115). The token is a `SyncSecret` in the
+devices end-to-end encrypted (ADR 0117). The token is a `SyncSecret` in the
 message, so neither the message nor a log line prints it.
 
 `SecureStorage` itself is backed by:
@@ -133,7 +133,7 @@ devices ([ADR 0045](../../docs/adr/0045-exclude-unverified-devices-from-key-shar
 Inbound, `SyncEventTrust` applies an event only when a device this one shares
 its keys with created the Megolm session that decrypted it; plaintext, forwarded
 sessions and unverified or blocked devices are dropped
-([ADR 0113](../../docs/adr/0113-inbound-sync-trusts-only-key-sharing-peers.md)).
+([ADR 0116](../../docs/adr/0116-inbound-sync-trusts-only-key-sharing-peers.md)).
 Without the inbound half, whoever can post into the room — the account holder
 or the homeserver's operator — could inject sync payloads, because the Matrix
 SDK checks neither. Events that arrive before their session key lower a durable

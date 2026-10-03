@@ -1,4 +1,4 @@
-# ADR 0115: The GitHub Token Syncs Like an Inference Key
+# ADR 0117: The GitHub Token Syncs Like an Inference Key
 
 - Status: Accepted — implemented
 - Date: 2026-10-03

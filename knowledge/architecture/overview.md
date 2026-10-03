@@ -46,7 +46,7 @@ Four properties shape nearly every design decision in the tree:
 ```mermaid
 flowchart TD
   subgraph UI["UI"]
-    Shell["App shell — IndexedStack over 8 Beamer stacks"]
+    Shell["App shell — IndexedStack over up to 10 Beamer stacks<br/>(tasks, logbook, settings always; seven behind feature flags)"]
     Widgets["Shared widgets + design-system components"]
   end
   subgraph Features["Feature modules — lib/features/*"]

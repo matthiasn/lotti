@@ -1,4 +1,4 @@
-# ADR 0114: Shutdown Reports Only What Was Measured
+# ADR 0118: Shutdown Reports Only What Was Measured
 
 - Status: Accepted — implemented
 - Date: 2026-10-03
