@@ -59,3 +59,8 @@ jobs:
       # it fires once both are in one tree (a rebased branch, or main).
       - name: Check ADR numbers are unique
         run: dart run tool/ci/check_adr_numbers.dart
+      # getIt belongs to the composition root. Outside it, a lookup is a hidden
+      # dependency no ProviderScope override can reach. Ratcheted — a file's
+      # count may fall, never rise, and a new file starts at zero.
+      - name: Check getIt stays in the composition root
+        run: dart run tool/di/validate.dart

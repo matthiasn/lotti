@@ -70,6 +70,14 @@ analyze:
 icon_check:
 	$(DART_CMD) run tool/icons/validate.dart
 
+# Checks that getIt lookups and isRegistered checks outside the composition root
+# (lib/get_it*.dart, lib/app_bootstrap.dart, lib/main.dart) only ever shrink.
+# After migrating a file to providers or constructor arguments, tighten the
+# baseline with `dart run tool/di/validate.dart --update-baseline`.
+.PHONY: getit_check
+getit_check:
+	$(DART_CMD) run tool/di/validate.dart
+
 # Checks the unreleased release notes in changelog.d/ — one new file per pull
 # request instead of an edit to the top of CHANGELOG.md, which is what used to
 # leave every open PR conflicted the moment one of them merged. Also fails when

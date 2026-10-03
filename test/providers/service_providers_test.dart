@@ -10,7 +10,6 @@ void main() {
     'journalDbProvider': journalDbProvider,
     'loggingServiceProvider': loggingServiceProvider,
     'outboxServiceProvider': outboxServiceProvider,
-    'aiConfigRepositoryProvider': aiConfigRepositoryProvider,
     'syncDatabaseProvider': syncDatabaseProvider,
   };
 

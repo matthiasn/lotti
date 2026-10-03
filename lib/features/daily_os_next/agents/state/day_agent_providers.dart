@@ -23,8 +23,7 @@ import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provid
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/providers/service_providers.dart'
-    hide aiConfigRepositoryProvider;
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
 
 /// The Daily OS day-agent service.

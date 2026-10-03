@@ -21,6 +21,9 @@ class CascadeDeletionResult {
   final List<AiConfigModel> deletedModels;
 }
 
+/// The shared [AiConfigRepository]. The app overrides it per service
+/// generation in `buildProviderOverrides`; the getIt fallback below only
+/// serves scopes built without those overrides.
 final aiConfigRepositoryProvider = Provider<AiConfigRepository>(
   aiConfigRepository,
   name: 'aiConfigRepositoryProvider',

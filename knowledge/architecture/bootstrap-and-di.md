@@ -24,6 +24,10 @@ sources:
     resource: ../../lib/get_it_helpers.dart
     title: Late and optional service registration
     last_modified: 2026-06-13
+  - id: getit-guard
+    resource: ../../tool/di/getit_guard.dart
+    title: Ratchet keeping getIt in the composition root
+    last_modified: 2026-10-03
   - id: window-service
     resource: ../../lib/services/window_service.dart
     title: Ordered desktop shutdown
@@ -78,6 +82,34 @@ ProviderScope(
   child: const MyBeamerApp(),
 );
 ```
+
+# Where getIt may be read
+
+GetIt is the composition root's tool: `lib/get_it.dart` with its parts
+(`lib/get_it_helpers.dart`, `lib/get_it_maintenance.dart`, `lib/get_it_sync.dart`),
+`lib/app_bootstrap.dart` and `lib/main.dart` build a
+generation and hand it to Riverpod. Anywhere else a `getIt<T>()` lookup is a
+dependency that does not show in the constructor and that no `ProviderScope`
+override can reach. Widgets and controllers watch a provider; plain services take
+what they need as constructor arguments.
+
+The codebase does not meet that yet. Roughly nine hundred lookups and 170
+`getIt.isRegistered` checks sit outside the composition root, most of the latter
+being test seams ("use the logger if one is wired"). `tool/di/validate.dart`
+ratchets both counts per file against `tool/di/baseline.json`. It counts on the
+Dart token stream, so a lookup mentioned in a comment or a string literal never
+counts. CI runs it in the
+analyze workflow, and `make getit_check` runs it locally. A file's count may fall
+or vanish but never rise, and a file absent from the baseline may not introduce
+any lookup. After migrating a file, `dart run tool/di/validate.dart
+--update-baseline` tightens the baseline. It refuses while any file is above its
+count, so the baseline cannot absorb growth.
+
+Each service has **one** provider. `aiConfigRepositoryProvider` used to be
+declared twice, once in `lib/providers/service_providers.dart` and once in
+`lib/features/ai/repository/ai_config_repository.dart`. Which one a widget read
+then depended on its imports, so a test override could silently miss. When you
+bridge a service, check first that no provider for it already exists.
 
 # Startup sequence
 
