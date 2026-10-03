@@ -9,10 +9,51 @@ import 'package:glados/glados.dart'
         Generator,
         Glados,
         any;
+import 'package:lotti/features/agents/ui/agent_settings_page.dart';
+import 'package:lotti/features/ai/ui/inference_profile_page.dart';
+import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
+import 'package:lotti/features/ai_consumption/ui/impact_analysis_body.dart';
+import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/daily_os_settings_page.dart';
+import 'package:lotti/features/dashboards/ui/settings/dashboard_settings_page.dart';
+import 'package:lotti/features/github/ui/github_settings_page.dart';
+import 'package:lotti/features/habits/ui/pages/habit_settings_page.dart';
+import 'package:lotti/features/keyboard/ui/keyboard_shortcuts_page.dart';
+import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
+import 'package:lotti/features/notifications/ui/notification_settings_page.dart';
+import 'package:lotti/features/onboarding/ui/onboarding_metrics_page.dart';
+import 'package:lotti/features/onboarding/ui/onboarding_settings_panel.dart';
+import 'package:lotti/features/onboarding/ui/recording_style_settings_page.dart';
 import 'package:lotti/features/settings/domain/settings_node.dart';
 import 'package:lotti/features/settings/domain/settings_tree_data.dart';
 import 'package:lotti/features/settings/domain/settings_urls.dart';
 import 'package:lotti/features/settings/routing/settings_routes.dart';
+import 'package:lotti/features/settings/ui/mobile/settings_mobile_branch_page.dart';
+import 'package:lotti/features/settings/ui/mobile/settings_mobile_root_page.dart';
+import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
+import 'package:lotti/features/settings/ui/pages/advanced/celebration_settings_page.dart';
+import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
+import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
+import 'package:lotti/features/settings/ui/pages/advanced/manual_language_settings_page.dart';
+import 'package:lotti/features/settings/ui/pages/flags_page.dart';
+import 'package:lotti/features/settings/ui/pages/health_import_page.dart';
+import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
+import 'package:lotti/features/settings/ui/pages/sections_page.dart';
+import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
+import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
+import 'package:lotti/features/sync/ui/pages/conflicts/conflicts_page.dart';
+import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
+import 'package:lotti/features/sync/ui/pages/sync_node_profile_page.dart';
+import 'package:lotti/features/sync/ui/provisioned_sync_page.dart';
+import 'package:lotti/features/sync/ui/sync_stats_page.dart';
+import 'package:lotti/features/sync/ui/widgets/sync_feature_gate.dart';
+import 'package:lotti/features/system_health/ui/system_health_page.dart';
+import 'package:lotti/features/theming/ui/theming_page.dart';
+import 'package:lotti/features/tts/ui/speech_settings_body.dart';
+import 'package:lotti/features/tts/ui/speech_settings_page.dart';
+import 'package:material_ui/material_ui.dart';
+
+import '../../../widget_test_utils.dart';
 
 enum _GeneratedSettingsUrlSuffix {
   none,
@@ -126,6 +167,151 @@ List<String> _everyConcreteUrl() => [
 ];
 
 void main() {
+  group('what every settings URL shows', () {
+    // node id → (mobile page, desktop panel). The contract a reader of the
+    // registry relies on, pinned in one table: a page wired to the wrong
+    // widget, or a panel that silently went missing, fails here by name.
+    const expected = <String, (Type?, Type?)>{
+      'onboarding': (OnboardingSettingsPage, OnboardingSettingsBody),
+      'sections': (SectionsPage, SectionsBody),
+      'ai': (AiSettingsPage, AiSettingsBody),
+      'ai/providers': (null, AiSettingsBody),
+      'ai/models': (null, AiSettingsBody),
+      'ai/profiles': (InferenceProfilePage, AiSettingsBody),
+      'ai/usage': (null, ImpactAnalysisBody),
+      'agents': (AgentSettingsPage, AgentSettingsBody),
+      'agents/templates': (null, AgentSettingsBody),
+      'agents/instances': (null, AgentSettingsBody),
+      'agents/souls': (null, AgentSettingsBody),
+      'agents/pending-wakes': (null, AgentSettingsBody),
+      'daily-os': (DailyOsSettingsPage, DailyOsSettingsBody),
+      'sync-unavailable': (null, null),
+      'sync': (SyncFeatureGate, null),
+      'sync/provisioned': (ProvisionedSyncPage, ProvisionedSyncBody),
+      'sync/node-profile': (SyncFeatureGate, SyncNodeProfileBody),
+      'sync/backfill': (BackfillSettingsPage, Padding),
+      'sync/stats': (SyncStatsPage, SyncStatsBody),
+      'sync/outbox': (SyncFeatureGate, OutboxMonitorBody),
+      'sync/conflicts': (ConflictsPage, ConflictsBody),
+      'sync/matrix-maintenance': (
+        MatrixSyncMaintenancePage,
+        MatrixSyncMaintenanceBody,
+      ),
+      'definitions': (SettingsMobileBranchPage, null),
+      'definitions/categories': (CategoriesListPage, CategoriesListBody),
+      'definitions/labels': (LabelsListPage, LabelsListBody),
+      'definitions/habits': (HabitSettingsPage, HabitSettingsBody),
+      'definitions/dashboards': (DashboardSettingsPage, DashboardSettingsBody),
+      'definitions/measurables': (MeasurablesPage, MeasurablesBody),
+      'preferences': (SettingsMobileBranchPage, null),
+      'preferences/theming': (ThemingPage, ThemingBody),
+      'preferences/animations': (
+        CelebrationSettingsPage,
+        CelebrationSettingsBody,
+      ),
+      'preferences/notifications': (
+        NotificationSettingsPage,
+        NotificationSettingsBody,
+      ),
+      'preferences/recording-style': (
+        RecordingStyleSettingsPage,
+        RecordingStyleSettingsBody,
+      ),
+      'preferences/speech': (SpeechSettingsPage, SpeechSettingsBody),
+      'preferences/keyboard-shortcuts': (
+        KeyboardShortcutsPage,
+        KeyboardShortcutsBody,
+      ),
+      'advanced': (SettingsMobileBranchPage, null),
+      'advanced/flags': (FlagsPage, FlagsBody),
+      'advanced/github': (GitHubSettingsPage, GitHubSettingsBody),
+      'advanced/manual-language': (
+        ManualLanguageSettingsPage,
+        ManualLanguageSettingsBody,
+      ),
+      'advanced/logging': (LoggingSettingsPage, LoggingSettingsBody),
+      'advanced/system-health': (SystemHealthPage, SystemHealthBody),
+      'advanced/health-import': (HealthImportPage, null),
+      'advanced/maintenance': (MaintenancePage, MaintenanceBody),
+      'advanced/onboarding-metrics': (
+        OnboardingMetricsPage,
+        OnboardingMetricsBody,
+      ),
+      'advanced/about': (AboutPage, AboutBody),
+    };
+
+    test('the table names every route entry', () {
+      expect(expected.keys.toSet(), settingsRoutes.routes.keys.toSet());
+    });
+
+    // Builders are called with a real context (the backfill panel reads
+    // design tokens from it) but their widgets are never mounted: the
+    // contract here is which widget a URL shows, not how it renders.
+    testWidgets('each node builds the page and panel the table names', (
+      tester,
+    ) async {
+      final actual = <String, (Type?, Type?)>{};
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Builder(
+            builder: (context) {
+              for (final MapEntry(:key, :value)
+                  in settingsRoutes.routes.entries) {
+                final match = settingsRoutes.resolve(
+                  Uri.parse(value.url ?? '/settings'),
+                );
+                actual[key] = (
+                  value.page?.call(context, match).runtimeType,
+                  value.panel?.call(context, match).runtimeType,
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      expect(actual, expected);
+    });
+
+    testWidgets('the root page is the mobile landing', (tester) async {
+      Type? rootPage;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Builder(
+            builder: (context) {
+              final match = settingsRoutes.resolve(Uri.parse('/settings'));
+              rootPage = match.stack.single.build(context, match).runtimeType;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      expect(rootPage, SettingsMobileRootPage);
+    });
+
+    testWidgets('habit search shows the headerless filtered list on desktop', (
+      tester,
+    ) async {
+      Widget? panel;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Builder(
+            builder: (context) {
+              final match = settingsRoutes.resolve(
+                Uri.parse('/settings/habits/search/floss'),
+              );
+              panel = match.subRoute!.panel!(context, match);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      expect(panel, isA<HabitSettingsBody>());
+      expect((panel! as HabitSettingsBody).initialSearchTerm, 'floss');
+    });
+  });
+
   group('pathToBeamUrl', () {
     test('empty path returns /settings', () {
       expect(pathToBeamUrl(const []), '/settings');
