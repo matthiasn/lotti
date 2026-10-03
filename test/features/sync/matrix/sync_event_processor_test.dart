@@ -147,6 +147,24 @@ extension _AnyGeneratedJson on glados.Any {
           .map((entries) => _GeneratedJsonScenario(entries: entries));
 }
 
+/// A fresh temp directory registered as the app's documents directory, which
+/// a [SmartJournalEntityLoader] reads through `getIt`. Everything is undone on
+/// tear-down: CI runs a shard's files in one isolate, so a `Directory` left
+/// registered here breaks the setUp of whichever file runs next — and a test
+/// that silently leaned on an earlier one's leftover would pass only in order.
+Future<Directory> _registerTempDocumentsDirectory(String prefix) async {
+  final directory = await Directory.systemTemp.createTemp(prefix);
+  addTearDown(() => directory.delete(recursive: true));
+  await getIt.reset();
+  getIt.allowReassignment = true;
+  getIt.registerSingleton<Directory>(directory);
+  addTearDown(() async {
+    await getIt.reset();
+    getIt.allowReassignment = false;
+  });
+  return directory;
+}
+
 void main() {
   setUpAll(registerSyncProcessorFallbacks);
   setUp(setUpProcessorMocks);
@@ -1240,13 +1258,9 @@ void main() {
       'missingMediaListener forwards a missing-media miss from the smart '
       'loader — the signal media self-healing is built on',
       () async {
-        final tempDir = await Directory.systemTemp.createTemp(
+        final tempDir = await _registerTempDocumentsDirectory(
           'descriptor_listener_test',
         );
-        addTearDown(() => tempDir.delete(recursive: true));
-        await getIt.reset();
-        getIt.allowReassignment = true;
-        getIt.registerSingleton<Directory>(tempDir);
 
         final fixedDate = DateTime(2024, 3, 15);
         final image = JournalImage(
@@ -3028,6 +3042,8 @@ void main() {
     'cachePurgeListener forwards to a SmartJournalEntityLoader so a real '
     'stale-descriptor purge invokes the processor-supplied callback',
     () async {
+      // The loader caches what it downloads in the documents directory.
+      await _registerTempDocumentsDirectory('cache_purge_listener_test');
       const relJson = '/text_entries/2024-01-01/purge.text.json';
       final index = AttachmentIndex(logging: loggingService);
       final ev = MockEvent();
