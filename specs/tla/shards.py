@@ -180,6 +180,8 @@ SECONDS = {
     "PullRequestSnapshotCoarse": 15,
     "PullRequestSnapshotNoToken": 2,
     "PullRequestSnapshotLiveness": 30,
+    "PullRequestAssignment": 2,
+    "PullRequestAssignmentSync": 3,
     "AgentReplicationRemoval": 596,
     "AgentReplicationRemovalLossy": 61,
     "AgentReplicationSeed": 60,

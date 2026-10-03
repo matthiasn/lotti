@@ -2996,6 +2996,56 @@ and back-off, which only decide when a refresh fails; several pull requests,
 which share nothing; and a re-link after an unlink, which creates a new
 entry.
 
+## `PullRequestAssignment` — which task a pull request belongs to (a design model)
+
+**Written before the code.** A pull request belongs to one task. The "+"
+picker on a task lists the repository's open pull requests minus those this
+device already holds linked to a task; pasting a URL lists nothing and links
+what was pasted. The concept is
+[GitHub pull requests](../../knowledge/features/github.md).
+
+The list a picker shows can be stale by the time the user picks — another
+session on the device, or sync, may have linked the pull request since — so
+the link decides for itself: it re-checks what the device holds and creates
+the entry in one step. Two devices that link the same pull request to
+different tasks before they sync cannot see each other; nothing local
+prevents that. Sync keeps both entries, so every device flags the same
+double assignment and leaves the pull request out of its pickers until the
+user unlinks one.
+
+| Property | Kind | Says |
+|----------|------|------|
+| `NoLocalDoubleAssignment` | invariant | no device links a pull request it already holds |
+| `DoubleAssignmentOnlyAcrossDevices` | invariant | once sync has settled, a pull request held by two tasks was linked to them by two different devices |
+| `Converged` | invariant | with nothing in flight, every device holds the same entries |
+
+| Configuration | Devices | Sessions per device | Pull requests | Distinct states |
+|---------------|--------:|--------------------:|--------------:|----------------:|
+| `PullRequestAssignment` | 1 | 2 | 2 | 4,257 |
+| `PullRequestAssignmentSync` | 2 | 1 | 1 | 71,169 |
+
+Each switch is the proposed design; set to `FALSE` (in a copy outside this
+directory) it has a counterexample, except `PickerFilters`:
+
+| Switch | Alternative | Counterexample |
+|--------|-------------|----------------|
+| `RecheckAtLink` | trust the list the picker showed | `NoLocalDoubleAssignment`, six states: two sessions list the pull request as free, one links it, and the other links it again from its stale list — a paste, which lists nothing, does the same |
+| `AtomicLink` | check, then create in a later step | `NoLocalDoubleAssignment`, seven states: both sessions pass the check before either creates |
+| `KeepIncomingConflict` | refuse an entry that conflicts with one held, enforcing one task at sync | `Converged` in the sync configuration, eight states: each device refuses the other's concurrent link and keeps its own, for good |
+| `PickerFilters` | list every open pull request | none: the filter spares the user a refusal, but the link's own re-check is what keeps a pull request to one task |
+
+**Settled, not always.** `DoubleAssignmentOnlyAcrossDevices` holds once
+nothing is in flight. Sync does not deliver a device's entries in order, so a
+pull request moved from one task to another can arrive before the unlink that
+preceded it and be held twice until that unlink arrives; the first
+counterexample TLC found for the property was exactly this. The UI may flag
+such a conflict for a moment.
+
+Left out, deliberately: several pull requests per task, which share nothing;
+the GitHub list itself — a pull request closed between listing and picking
+still links, as a pasted URL would; and the snapshot each entry carries,
+which `PullRequestSnapshot` models.
+
 ## `ChecklistMembership` — which checklists a task shows, and which items
 
 A task's checklists and a checklist's items are stored as whole id lists on
