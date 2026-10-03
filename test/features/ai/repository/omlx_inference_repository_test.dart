@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai/repository/omlx_inference_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 
@@ -98,7 +99,7 @@ void main() {
       await expectLater(
         repository.listModels(baseUrl: baseUrl),
         throwsA(
-          isA<OmlxInferenceException>().having(
+          isA<InferenceHttpException>().having(
             (e) => e.message,
             'message',
             contains('JSON object with data[]'),
@@ -123,7 +124,7 @@ void main() {
       await expectLater(
         repository.listModels(baseUrl: baseUrl),
         throwsA(
-          isA<OmlxInferenceException>()
+          isA<InferenceHttpException>()
               .having((e) => e.statusCode, 'statusCode', 503)
               .having((e) => e.message, 'message', 'oMLX server unavailable'),
         ),
@@ -139,7 +140,7 @@ void main() {
       await expectLater(
         repository.listModels(baseUrl: baseUrl, timeout: Duration.zero),
         throwsA(
-          isA<OmlxInferenceException>().having(
+          isA<InferenceHttpException>().having(
             (e) => e.message,
             'message',
             'oMLX model list request timed out',
@@ -174,7 +175,7 @@ void main() {
       await expectLater(
         repository.listModels(baseUrl: 'http://[oops]'),
         throwsA(
-          isA<OmlxInferenceException>()
+          isA<InferenceHttpException>()
               .having(
                 (e) => e.message,
                 'message',
@@ -200,7 +201,7 @@ void main() {
       await expectLater(
         repository.listModels(baseUrl: baseUrl),
         throwsA(
-          isA<OmlxInferenceException>().having(
+          isA<InferenceHttpException>().having(
             (e) => e.message,
             'message',
             'oMLX model list response was not valid JSON',
@@ -220,7 +221,7 @@ void main() {
       await expectLater(
         repository.listModels(baseUrl: baseUrl),
         throwsA(
-          isA<OmlxInferenceException>().having(
+          isA<InferenceHttpException>().having(
             (e) => e.message,
             'message',
             contains('Failed to fetch oMLX models'),
@@ -318,7 +319,7 @@ void main() {
       await expectLater(
         repository.listModels(baseUrl: baseUrl),
         throwsA(
-          isA<OmlxInferenceException>().having(
+          isA<InferenceHttpException>().having(
             (e) => e.message,
             'message',
             'plain error text',
@@ -341,7 +342,7 @@ void main() {
       await expectLater(
         repository.listModels(baseUrl: baseUrl),
         throwsA(
-          isA<OmlxInferenceException>().having(
+          isA<InferenceHttpException>().having(
             (e) => e.message,
             'message',
             'top level failure',
@@ -359,7 +360,7 @@ void main() {
       await expectLater(
         repository.listModels(baseUrl: baseUrl),
         throwsA(
-          isA<OmlxInferenceException>().having(
+          isA<InferenceHttpException>().having(
             (e) => e.message,
             'message',
             allOf(startsWith('E' * 160), endsWith('…')),
@@ -379,7 +380,7 @@ void main() {
         await expectLater(
           repository.listModels(baseUrl: baseUrl),
           throwsA(
-            isA<OmlxInferenceException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               '["a","b"]',
@@ -388,20 +389,5 @@ void main() {
         );
       },
     );
-
-    test('OmlxInferenceException renders status and cause in toString', () {
-      expect(
-        const OmlxInferenceException(
-          'boom',
-          statusCode: 503,
-          originalError: 'socket closed',
-        ).toString(),
-        'OmlxInferenceException (HTTP 503): boom: socket closed',
-      );
-      expect(
-        const OmlxInferenceException('boom').toString(),
-        'OmlxInferenceException: boom',
-      );
-    });
   });
 }

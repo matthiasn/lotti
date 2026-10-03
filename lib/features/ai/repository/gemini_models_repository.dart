@@ -5,9 +5,13 @@ import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/gemini_utils.dart';
+import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai/repository/model_catalog_mapping.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:meta/meta.dart';
+
+/// How this repository names itself in an [InferenceHttpException].
+const _exceptionProvider = 'Gemini';
 
 /// Fetches Google Gemini's live model catalog for the settings UI.
 ///
@@ -64,10 +68,16 @@ class GeminiModelsRepository {
     final normalizedBaseUrl = baseUrl.trim();
     final normalizedApiKey = apiKey.trim();
     if (normalizedBaseUrl.isEmpty) {
-      throw const GeminiModelsException('Base URL cannot be empty');
+      throw const InferenceHttpException(
+        provider: _exceptionProvider,
+        'Base URL cannot be empty',
+      );
     }
     if (normalizedApiKey.isEmpty) {
-      throw const GeminiModelsException('API key cannot be empty');
+      throw const InferenceHttpException(
+        provider: _exceptionProvider,
+        'API key cannot be empty',
+      );
     }
 
     final models = <KnownModel>[];
@@ -87,7 +97,7 @@ class GeminiModelsRepository {
         final KnownModel? known;
         try {
           known = _knownModelFromPayload(row);
-        } on GeminiModelsException catch (e) {
+        } on InferenceHttpException catch (e) {
           developer.log(
             'Skipping malformed Gemini model row on page ${page + 1} #$index',
             name: _providerName,
@@ -127,13 +137,20 @@ class GeminiModelsRepository {
       // `Uri.parse` throws on malformed input (e.g. unbalanced IPv6 brackets).
       // Never echo the raw base URL — a FormatException's message embeds a
       // slice of the offending source.
-      throw GeminiModelsException('Invalid Gemini base URL', originalError: e);
+      throw InferenceHttpException(
+        provider: _exceptionProvider,
+        'Invalid Gemini base URL',
+        originalError: e,
+      );
     }
     // A scheme-less/host-less base URL yields an empty host; reject it before
     // requesting so the low-level HTTP client can't throw an ArgumentError that
     // echoes the request URI. Never echo the raw base URL either.
     if (uri.host.isEmpty) {
-      throw const GeminiModelsException('Invalid Gemini base URL');
+      throw const InferenceHttpException(
+        provider: _exceptionProvider,
+        'Invalid Gemini base URL',
+      );
     }
     developer.log(
       'Fetching Gemini model catalog from '
@@ -153,7 +170,8 @@ class GeminiModelsRepository {
           .timeout(timeout);
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw GeminiModelsException(
+        throw InferenceHttpException(
+          provider: _exceptionProvider,
           ModelCatalogMapping.extractErrorMessage(
             response.body,
             response.statusCode,
@@ -165,7 +183,8 @@ class GeminiModelsRepository {
 
       final decoded = jsonDecode(response.body);
       if (decoded is! Map<String, dynamic>) {
-        throw const GeminiModelsException(
+        throw const InferenceHttpException(
+          provider: _exceptionProvider,
           'Gemini model list response must be a JSON object',
         );
       }
@@ -180,7 +199,8 @@ class GeminiModelsRepository {
         );
       }
       if (rawModels is! List) {
-        throw const GeminiModelsException(
+        throw const InferenceHttpException(
+          provider: _exceptionProvider,
           'Gemini model list "models" field must be an array',
         );
       }
@@ -191,20 +211,23 @@ class GeminiModelsRepository {
         ),
         nextPageToken: nextToken is String ? nextToken : null,
       );
-    } on GeminiModelsException {
+    } on InferenceHttpException {
       rethrow;
     } on TimeoutException catch (e) {
-      throw GeminiModelsException(
+      throw InferenceHttpException(
+        provider: _exceptionProvider,
         'Gemini model list request timed out',
         originalError: e,
       );
     } on FormatException catch (e) {
-      throw GeminiModelsException(
+      throw InferenceHttpException(
+        provider: _exceptionProvider,
         'Gemini model list response was not valid JSON',
         originalError: e,
       );
     } on Exception catch (e) {
-      throw GeminiModelsException(
+      throw InferenceHttpException(
+        provider: _exceptionProvider,
         'Failed to fetch Gemini models: $e',
         originalError: e,
       );
@@ -217,7 +240,8 @@ class GeminiModelsRepository {
   KnownModel? _knownModelFromPayload(Map<String, dynamic> model) {
     final rawName = model['name'];
     if (rawName is! String || rawName.trim().isEmpty) {
-      throw const GeminiModelsException(
+      throw const InferenceHttpException(
+        provider: _exceptionProvider,
         'Gemini model entry is missing a string name',
       );
     }
@@ -395,23 +419,3 @@ class _GeminiClassification {
 final Map<String, KnownModel> _curatedGeminiModels = {
   for (final model in geminiModels) model.providerModelId: model,
 };
-
-/// Exception thrown when the Gemini model catalog fetch fails.
-class GeminiModelsException implements Exception {
-  const GeminiModelsException(
-    this.message, {
-    this.statusCode,
-    this.originalError,
-  });
-
-  final String message;
-  final int? statusCode;
-  final Object? originalError;
-
-  @override
-  String toString() {
-    final status = statusCode == null ? '' : ' (HTTP $statusCode)';
-    final cause = originalError == null ? '' : ': $originalError';
-    return 'GeminiModelsException$status: $message$cause';
-  }
-}

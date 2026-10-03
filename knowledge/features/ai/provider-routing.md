@@ -112,7 +112,14 @@ through
   (240 for Melious and the temporary-MP3 transcription path)
 
 The Mistral OCR repository and the connection verifier use the same error
-extractor. What stays per provider is deliberate policy: the `_looksLike*`
+extractor. Those five repositories (oMLX, Melious, OpenAI, Gemini, Mistral OCR)
+also report failures as one type,
+[`InferenceHttpException`](../../../lib/features/ai/repository/inference_http_exception.dart),
+carrying the provider's display name, the HTTP status and the cause; its
+`(HTTP n)` text is what `AiErrorUtils` classifies by, and the provider
+settings page shows its message and status for every one of them. Mistral
+chat and Voxtral keep their own message-only exceptions, the Ollama install
+path its typed failure kinds. What stays per provider is deliberate policy: the `_looksLike*`
 id heuristics, the payload-to-`KnownModel` mapping, and how each wraps a
 malformed base URL.
 

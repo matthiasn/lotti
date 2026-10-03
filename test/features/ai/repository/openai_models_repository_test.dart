@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai/repository/openai_models_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 
@@ -54,7 +55,7 @@ void main() {
             apiKey: apiKey,
           ),
           throwsA(
-            isA<OpenAiModelsException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               'Base URL cannot be empty',
@@ -70,7 +71,7 @@ void main() {
             apiKey: '  ',
           ),
           throwsA(
-            isA<OpenAiModelsException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               'API key cannot be empty',
@@ -86,7 +87,7 @@ void main() {
             apiKey: apiKey,
           ),
           throwsA(
-            isA<OpenAiModelsException>()
+            isA<InferenceHttpException>()
                 .having((e) => e.message, 'message', 'Invalid OpenAI base URL')
                 .having((e) => e.message, 'no url leak', isNot(contains('['))),
           ),
@@ -100,7 +101,7 @@ void main() {
             apiKey: apiKey,
           ),
           throwsA(
-            isA<OpenAiModelsException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               'Invalid OpenAI base URL',
@@ -287,7 +288,7 @@ void main() {
         expect(
           repoReturning(42).listModels(baseUrl: baseUrl, apiKey: apiKey),
           throwsA(
-            isA<OpenAiModelsException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               contains('must be a JSON object with data[]'),
@@ -303,7 +304,7 @@ void main() {
             apiKey: apiKey,
           ),
           throwsA(
-            isA<OpenAiModelsException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               'OpenAI model list response was not valid JSON',
@@ -323,7 +324,7 @@ void main() {
             status: 401,
           ).listModels(baseUrl: baseUrl, apiKey: apiKey),
           throwsA(
-            isA<OpenAiModelsException>()
+            isA<InferenceHttpException>()
                 .having((e) => e.message, 'message', 'Invalid API key')
                 .having((e) => e.statusCode, 'statusCode', 401),
           ),
@@ -337,7 +338,7 @@ void main() {
             apiKey: apiKey,
           ),
           throwsA(
-            isA<OpenAiModelsException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               'boom',
@@ -353,7 +354,7 @@ void main() {
         expect(
           repo.listModels(baseUrl: baseUrl, apiKey: apiKey),
           throwsA(
-            isA<OpenAiModelsException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               'OpenAI model list request timed out',
@@ -367,32 +368,13 @@ void main() {
         expect(
           repo.listModels(baseUrl: baseUrl, apiKey: apiKey),
           throwsA(
-            isA<OpenAiModelsException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               contains('Failed to fetch OpenAI models'),
             ),
           ),
         );
-      });
-    });
-
-    group('OpenAiModelsException.toString', () {
-      test('includes status code and cause when present', () {
-        const exception = OpenAiModelsException(
-          'nope',
-          statusCode: 503,
-          originalError: 'root cause',
-        );
-        expect(
-          exception.toString(),
-          'OpenAiModelsException (HTTP 503): nope: root cause',
-        );
-      });
-
-      test('omits status and cause when absent', () {
-        const exception = OpenAiModelsException('nope');
-        expect(exception.toString(), 'OpenAiModelsException: nope');
       });
     });
   });

@@ -13,7 +13,7 @@ import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_summary_reader.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
+import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -557,7 +557,11 @@ void main() {
 
   for (final error in [
     const FormatException('Private source text must not reach logs'),
-    const MeliousInferenceException('Secret response body', statusCode: 401),
+    const InferenceHttpException(
+      provider: 'Melious',
+      'Secret response body',
+      statusCode: 401,
+    ),
   ]) {
     test(
       'setup failure logs safe diagnostics for ${error.runtimeType}',
@@ -578,7 +582,7 @@ void main() {
           (await bench.store.load('agent')).chats.single.questions,
           isEmpty,
         );
-        final status = error is MeliousInferenceException
+        final status = error is InferenceHttpException
             ? ' (httpStatus=401)'
             : '';
         verify(

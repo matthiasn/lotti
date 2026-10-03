@@ -12,6 +12,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_request_helpers.dart';
 import 'package:lotti/features/ai/repository/completion_usage_parser.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_payloads.dart';
+import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai/repository/model_catalog_mapping.dart';
 import 'package:lotti/features/ai/repository/temporary_mp3_chat_audio_transcriber.dart';
 import 'package:lotti/features/ai/repository/transcription_repository.dart';
@@ -21,6 +22,9 @@ import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/temporary_mp3_encoder.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
+
+/// How this repository names itself in an [InferenceHttpException].
+const _exceptionProvider = 'Melious';
 
 typedef MeliousChatCompletionStreamFactory =
     Stream<CreateChatCompletionStreamResponse> Function({
@@ -215,7 +219,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         includeMeta: true,
         timeout: timeout,
       );
-    } on MeliousInferenceException catch (includeMetaError) {
+    } on InferenceHttpException catch (includeMetaError) {
       if (!_shouldRetryPlainModels(includeMetaError)) rethrow;
       developer.log(
         'Melious metadata catalog failed; retrying plain /models as degraded '
@@ -230,8 +234,9 @@ class MeliousInferenceRepository extends TranscriptionRepository {
           includeMeta: false,
           timeout: timeout,
         );
-      } on MeliousInferenceException catch (plainError) {
-        throw MeliousInferenceException(
+      } on InferenceHttpException catch (plainError) {
+        throw InferenceHttpException(
+          provider: _exceptionProvider,
           'include_meta failed: ${includeMetaError.message}; '
           'plain /models failed: ${plainError.message}',
           statusCode: plainError.statusCode ?? includeMetaError.statusCode,
@@ -241,7 +246,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     }
   }
 
-  static bool _shouldRetryPlainModels(MeliousInferenceException error) {
+  static bool _shouldRetryPlainModels(InferenceHttpException error) {
     final statusCode = error.statusCode;
     if (statusCode == null) return false;
     return statusCode != 401 && statusCode != 403;
@@ -282,7 +287,8 @@ class MeliousInferenceRepository extends TranscriptionRepository {
       );
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw MeliousInferenceException(
+        throw InferenceHttpException(
+          provider: _exceptionProvider,
           ModelCatalogMapping.extractErrorMessage(
             response.body,
             response.statusCode,
@@ -298,7 +304,8 @@ class MeliousInferenceRepository extends TranscriptionRepository {
       final data = switch (decoded) {
         {'data': final List<dynamic> data} => data,
         final List<dynamic> data => data,
-        _ => throw const MeliousInferenceException(
+        _ => throw const InferenceHttpException(
+          provider: _exceptionProvider,
           'Melious model list response must be a JSON object with data[] '
           'or a JSON array',
         ),
@@ -326,20 +333,23 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         name: _providerName,
       );
       return models;
-    } on MeliousInferenceException {
+    } on InferenceHttpException {
       rethrow;
     } on TimeoutException catch (e) {
-      throw MeliousInferenceException(
+      throw InferenceHttpException(
+        provider: _exceptionProvider,
         'Melious model list request timed out',
         originalError: e,
       );
     } on FormatException catch (e) {
-      throw MeliousInferenceException(
+      throw InferenceHttpException(
+        provider: _exceptionProvider,
         'Melious model list response was not valid JSON',
         originalError: e,
       );
     } on Exception catch (e) {
-      throw MeliousInferenceException(
+      throw InferenceHttpException(
+        provider: _exceptionProvider,
         'Failed to fetch Melious models: $e',
         originalError: e,
       );
@@ -354,7 +364,8 @@ class MeliousInferenceRepository extends TranscriptionRepository {
       return _knownModelFromPayload(item);
     }
 
-    throw const MeliousInferenceException(
+    throw const InferenceHttpException(
+      provider: _exceptionProvider,
       'Melious model entry must be a JSON object or string id',
     );
   }
@@ -751,7 +762,8 @@ class MeliousInferenceRepository extends TranscriptionRepository {
           .timeout(timeout);
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw MeliousInferenceException(
+        throw InferenceHttpException(
+          provider: _exceptionProvider,
           ModelCatalogMapping.extractErrorMessage(
             response.body,
             response.statusCode,
@@ -765,7 +777,8 @@ class MeliousInferenceRepository extends TranscriptionRepository {
 
       final decoded = jsonDecode(response.body);
       if (decoded is! Map<String, dynamic>) {
-        throw const MeliousInferenceException(
+        throw const InferenceHttpException(
+          provider: _exceptionProvider,
           'Melious chat completion response must be a JSON object',
         );
       }
@@ -792,20 +805,23 @@ class MeliousInferenceRepository extends TranscriptionRepository {
           ),
         ),
       );
-    } on MeliousInferenceException {
+    } on InferenceHttpException {
       rethrow;
     } on TimeoutException catch (e) {
-      throw MeliousInferenceException(
+      throw InferenceHttpException(
+        provider: _exceptionProvider,
         'Melious chat completion request timed out',
         originalError: e,
       );
     } on FormatException catch (e) {
-      throw MeliousInferenceException(
+      throw InferenceHttpException(
+        provider: _exceptionProvider,
         'Melious chat completion response was not valid JSON',
         originalError: e,
       );
     } on Exception catch (e) {
-      throw MeliousInferenceException(
+      throw InferenceHttpException(
+        provider: _exceptionProvider,
         'Failed to complete Melious chat: $e',
         originalError: e,
       );
@@ -1249,7 +1265,8 @@ class MeliousInferenceRepository extends TranscriptionRepository {
           .timeout(timeout);
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw MeliousInferenceException(
+        throw InferenceHttpException(
+          provider: _exceptionProvider,
           ModelCatalogMapping.extractErrorMessage(
             response.body,
             response.statusCode,
@@ -1263,25 +1280,29 @@ class MeliousInferenceRepository extends TranscriptionRepository {
 
       final decoded = jsonDecode(response.body);
       if (decoded is! Map<String, dynamic>) {
-        throw const MeliousInferenceException(
+        throw const InferenceHttpException(
+          provider: _exceptionProvider,
           'Melious image generation response must be a JSON object',
         );
       }
       final data = decoded['data'];
       if (data is! List || data.isEmpty) {
-        throw const MeliousInferenceException(
+        throw const InferenceHttpException(
+          provider: _exceptionProvider,
           'Melious image generation response is missing image data',
         );
       }
       final first = data.first;
       if (first is! Map<String, dynamic>) {
-        throw const MeliousInferenceException(
+        throw const InferenceHttpException(
+          provider: _exceptionProvider,
           'Melious image generation entry must be a JSON object',
         );
       }
       final encodedImage = first['b64_json'];
       if (encodedImage is! String || encodedImage.isEmpty) {
-        throw const MeliousInferenceException(
+        throw const InferenceHttpException(
+          provider: _exceptionProvider,
           'Melious image generation response is missing b64_json',
         );
       }
@@ -1297,20 +1318,23 @@ class MeliousInferenceRepository extends TranscriptionRepository {
       }
 
       return _decodeGeneratedImage(encodedImage);
-    } on MeliousInferenceException {
+    } on InferenceHttpException {
       rethrow;
     } on TimeoutException catch (e) {
-      throw MeliousInferenceException(
+      throw InferenceHttpException(
+        provider: _exceptionProvider,
         'Melious image generation request timed out',
         originalError: e,
       );
     } on FormatException catch (e) {
-      throw MeliousInferenceException(
+      throw InferenceHttpException(
+        provider: _exceptionProvider,
         'Melious image generation response was not valid JSON',
         originalError: e,
       );
     } on Exception catch (e) {
-      throw MeliousInferenceException(
+      throw InferenceHttpException(
+        provider: _exceptionProvider,
         'Failed to generate Melious image: $e',
         originalError: e,
       );
@@ -1337,7 +1361,8 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   KnownModel _knownModelFromPayload(Map<String, dynamic> model) {
     final providerModelId = model['id'];
     if (providerModelId is! String || providerModelId.trim().isEmpty) {
-      throw const MeliousInferenceException(
+      throw const InferenceHttpException(
+        provider: _exceptionProvider,
         'Melious model entry is missing a string id',
       );
     }
@@ -1678,24 +1703,5 @@ enum _MeliousModelType {
       'rerank' || 'reranker' => _MeliousModelType.rerank,
       _ => _MeliousModelType.unknown,
     };
-  }
-}
-
-class MeliousInferenceException implements Exception {
-  const MeliousInferenceException(
-    this.message, {
-    this.statusCode,
-    this.originalError,
-  });
-
-  final String message;
-  final int? statusCode;
-  final Object? originalError;
-
-  @override
-  String toString() {
-    final status = statusCode == null ? '' : ' (HTTP $statusCode)';
-    final cause = originalError == null ? '' : ': $originalError';
-    return 'MeliousInferenceException$status: $message$cause';
   }
 }

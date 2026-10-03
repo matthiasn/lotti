@@ -4,10 +4,14 @@ import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai/repository/model_catalog_mapping.dart';
 import 'package:lotti/features/ai/repository/openai_transcription_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:meta/meta.dart';
+
+/// How this repository names itself in an [InferenceHttpException].
+const _exceptionProvider = 'OpenAI';
 
 /// Fetches OpenAI's live model catalog for the settings UI.
 ///
@@ -45,10 +49,16 @@ class OpenAiModelsRepository {
     final normalizedBaseUrl = baseUrl.trim();
     final normalizedApiKey = apiKey.trim();
     if (normalizedBaseUrl.isEmpty) {
-      throw const OpenAiModelsException('Base URL cannot be empty');
+      throw const InferenceHttpException(
+        provider: _exceptionProvider,
+        'Base URL cannot be empty',
+      );
     }
     if (normalizedApiKey.isEmpty) {
-      throw const OpenAiModelsException('API key cannot be empty');
+      throw const InferenceHttpException(
+        provider: _exceptionProvider,
+        'API key cannot be empty',
+      );
     }
 
     final uri = _buildEndpointUri(normalizedBaseUrl, 'models');
@@ -56,7 +66,10 @@ class OpenAiModelsRepository {
     // requesting so the low-level HTTP client can't throw an ArgumentError that
     // echoes the request URI. Never echo the raw base URL either.
     if (uri.host.isEmpty) {
-      throw const OpenAiModelsException('Invalid OpenAI base URL');
+      throw const InferenceHttpException(
+        provider: _exceptionProvider,
+        'Invalid OpenAI base URL',
+      );
     }
     developer.log(
       'Fetching OpenAI model catalog from '
@@ -76,7 +89,8 @@ class OpenAiModelsRepository {
           .timeout(timeout);
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw OpenAiModelsException(
+        throw InferenceHttpException(
+          provider: _exceptionProvider,
           ModelCatalogMapping.extractErrorMessage(
             response.body,
             response.statusCode,
@@ -90,7 +104,8 @@ class OpenAiModelsRepository {
       final data = switch (decoded) {
         {'data': final List<dynamic> data} => data,
         final List<dynamic> data => data,
-        _ => throw const OpenAiModelsException(
+        _ => throw const InferenceHttpException(
+          provider: _exceptionProvider,
           'OpenAI model list response must be a JSON object with data[] '
           'or a JSON array',
         ),
@@ -101,7 +116,7 @@ class OpenAiModelsRepository {
         final KnownModel? known;
         try {
           known = _knownModelFromPayload(item);
-        } on OpenAiModelsException catch (e) {
+        } on InferenceHttpException catch (e) {
           developer.log(
             'Skipping malformed OpenAI model row #$index',
             name: _providerName,
@@ -112,20 +127,23 @@ class OpenAiModelsRepository {
         if (known != null) models.add(known);
       }
       return models;
-    } on OpenAiModelsException {
+    } on InferenceHttpException {
       rethrow;
     } on TimeoutException catch (e) {
-      throw OpenAiModelsException(
+      throw InferenceHttpException(
+        provider: _exceptionProvider,
         'OpenAI model list request timed out',
         originalError: e,
       );
     } on FormatException catch (e) {
-      throw OpenAiModelsException(
+      throw InferenceHttpException(
+        provider: _exceptionProvider,
         'OpenAI model list response was not valid JSON',
         originalError: e,
       );
     } on Exception catch (e) {
-      throw OpenAiModelsException(
+      throw InferenceHttpException(
+        provider: _exceptionProvider,
         'Failed to fetch OpenAI models: $e',
         originalError: e,
       );
@@ -142,14 +160,16 @@ class OpenAiModelsRepository {
     } else if (item is Map<String, dynamic>) {
       model = item;
     } else {
-      throw const OpenAiModelsException(
+      throw const InferenceHttpException(
+        provider: _exceptionProvider,
         'OpenAI model entry must be a JSON object or string id',
       );
     }
 
     final providerModelId = model['id'];
     if (providerModelId is! String || providerModelId.trim().isEmpty) {
-      throw const OpenAiModelsException(
+      throw const InferenceHttpException(
+        provider: _exceptionProvider,
         'OpenAI model entry is missing a string id',
       );
     }
@@ -283,7 +303,8 @@ class OpenAiModelsRepository {
       return baseUri.replace(path: '$basePath/$normalizedEndpoint');
     } on FormatException catch (e) {
       // Never echo the raw base URL — it may carry userinfo/query secrets.
-      throw OpenAiModelsException(
+      throw InferenceHttpException(
+        provider: _exceptionProvider,
         'Invalid OpenAI base URL',
         originalError: e,
       );
@@ -313,23 +334,3 @@ class _OpenAiClassification {
 final Map<String, KnownModel> _curatedOpenAiModels = {
   for (final model in openaiModels) model.providerModelId: model,
 };
-
-/// Exception thrown when the OpenAI model catalog fetch fails.
-class OpenAiModelsException implements Exception {
-  const OpenAiModelsException(
-    this.message, {
-    this.statusCode,
-    this.originalError,
-  });
-
-  final String message;
-  final int? statusCode;
-  final Object? originalError;
-
-  @override
-  String toString() {
-    final status = statusCode == null ? '' : ' (HTTP $statusCode)';
-    final cause = originalError == null ? '' : ': $originalError';
-    return 'OpenAiModelsException$status: $message$cause';
-  }
-}

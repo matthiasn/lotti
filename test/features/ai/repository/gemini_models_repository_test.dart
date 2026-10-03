@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/gemini_models_repository.dart';
+import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 
 void main() {
@@ -54,7 +55,7 @@ void main() {
             apiKey: apiKey,
           ),
           throwsA(
-            isA<GeminiModelsException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               'Base URL cannot be empty',
@@ -70,7 +71,7 @@ void main() {
             apiKey: '  ',
           ),
           throwsA(
-            isA<GeminiModelsException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               'API key cannot be empty',
@@ -116,7 +117,7 @@ void main() {
             apiKey: apiKey,
           ),
           throwsA(
-            isA<GeminiModelsException>()
+            isA<InferenceHttpException>()
                 .having((e) => e.message, 'message', 'Invalid Gemini base URL')
                 .having(
                   (e) => e.toString(),
@@ -136,7 +137,7 @@ void main() {
             apiKey: apiKey,
           ),
           throwsA(
-            isA<GeminiModelsException>()
+            isA<InferenceHttpException>()
                 .having((e) => e.message, 'message', 'Invalid Gemini base URL')
                 .having((e) => e.message, 'no url leak', isNot(contains('['))),
           ),
@@ -362,7 +363,7 @@ void main() {
             apiKey: apiKey,
           ),
           throwsA(
-            isA<GeminiModelsException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               'Gemini model list response must be a JSON object',
@@ -378,7 +379,7 @@ void main() {
             apiKey: apiKey,
           ),
           throwsA(
-            isA<GeminiModelsException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               'Gemini model list "models" field must be an array',
@@ -419,7 +420,7 @@ void main() {
             apiKey: apiKey,
           ),
           throwsA(
-            isA<GeminiModelsException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               'Gemini model list response was not valid JSON',
@@ -439,7 +440,7 @@ void main() {
             status: 400,
           ).listModels(baseUrl: baseUrl, apiKey: apiKey),
           throwsA(
-            isA<GeminiModelsException>()
+            isA<InferenceHttpException>()
                 .having((e) => e.message, 'message', 'API key not valid')
                 .having((e) => e.statusCode, 'statusCode', 400),
           ),
@@ -453,7 +454,7 @@ void main() {
             apiKey: apiKey,
           ),
           throwsA(
-            isA<GeminiModelsException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               'Gemini API error (HTTP 500)',
@@ -469,7 +470,7 @@ void main() {
         expect(
           repo.listModels(baseUrl: baseUrl, apiKey: apiKey),
           throwsA(
-            isA<GeminiModelsException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               'Gemini model list request timed out',
@@ -483,32 +484,13 @@ void main() {
         expect(
           repo.listModels(baseUrl: baseUrl, apiKey: apiKey),
           throwsA(
-            isA<GeminiModelsException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               contains('Failed to fetch Gemini models'),
             ),
           ),
         );
-      });
-    });
-
-    group('GeminiModelsException.toString', () {
-      test('includes status code and cause when present', () {
-        const exception = GeminiModelsException(
-          'nope',
-          statusCode: 503,
-          originalError: 'root cause',
-        );
-        expect(
-          exception.toString(),
-          'GeminiModelsException (HTTP 503): nope: root cause',
-        );
-      });
-
-      test('omits status and cause when absent', () {
-        const exception = GeminiModelsException('nope');
-        expect(exception.toString(), 'GeminiModelsException: nope');
       });
     });
   });

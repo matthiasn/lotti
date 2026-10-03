@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai/repository/mistral_ocr_repository.dart';
 
 /// A non-timeout, non-format transport error to exercise the generic
@@ -366,7 +367,7 @@ void main() {
             ),
           ),
           throwsA(
-            isA<MistralOcrException>()
+            isA<InferenceHttpException>()
                 .having(
                   (e) => e.message,
                   'message',
@@ -381,7 +382,7 @@ void main() {
         await expectLater(
           textFrom(repoReturning(const {'error': 'nope'}, status: 500)),
           throwsA(
-            isA<MistralOcrException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               'nope',
@@ -396,7 +397,7 @@ void main() {
             repoReturning(const {'message': 'bad request'}, status: 400),
           ),
           throwsA(
-            isA<MistralOcrException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               'bad request',
@@ -409,7 +410,7 @@ void main() {
         await expectLater(
           textFrom(repoReturning('', status: 503)),
           throwsA(
-            isA<MistralOcrException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               'Mistral OCR API error (HTTP 503)',
@@ -422,7 +423,7 @@ void main() {
         await expectLater(
           textFrom(repoReturning('x' * 200, status: 500)),
           throwsA(
-            isA<MistralOcrException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               allOf(endsWith('…'), hasLength(161)),
@@ -435,7 +436,7 @@ void main() {
         await expectLater(
           textFrom(repoReturning('"nope"')),
           throwsA(
-            isA<MistralOcrException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               contains('must be a JSON object'),
@@ -448,7 +449,7 @@ void main() {
         await expectLater(
           textFrom(repoReturning(const {'model': 'mistral-ocr-2512'})),
           throwsA(
-            isA<MistralOcrException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               contains('missing a pages[] array'),
@@ -461,7 +462,7 @@ void main() {
         await expectLater(
           textFrom(repoReturning('not json {')),
           throwsA(
-            isA<MistralOcrException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               contains('was not valid JSON'),
@@ -477,7 +478,7 @@ void main() {
         await expectLater(
           textFrom(repo),
           throwsA(
-            isA<MistralOcrException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               contains('timed out'),
@@ -493,7 +494,7 @@ void main() {
         await expectLater(
           textFrom(repo),
           throwsA(
-            isA<MistralOcrException>().having(
+            isA<InferenceHttpException>().having(
               (e) => e.message,
               'message',
               contains('Failed to run Mistral OCR'),
@@ -501,19 +502,6 @@ void main() {
           ),
         );
       });
-    });
-
-    test('MistralOcrException.toString includes status and cause', () {
-      const e = MistralOcrException(
-        'boom',
-        statusCode: 400,
-        originalError: 'root',
-      );
-      expect(e.toString(), 'MistralOcrException (HTTP 400): boom: root');
-      expect(
-        const MistralOcrException('plain').toString(),
-        'MistralOcrException: plain',
-      );
     });
   });
 }
