@@ -390,6 +390,29 @@ Task _taskForGeneratedProcessorScenario(_GeneratedProcessorScenario scenario) {
   );
 }
 
+/// A task with no category and nothing suppressed — what the processor's
+/// fresh read returns when no test cares about scope or suppression.
+Task _plainTask([String id = 't1']) => Task(
+  meta: Metadata(
+    id: id,
+    createdAt: _testDate,
+    updatedAt: _testDate,
+    dateFrom: _testDate,
+    dateTo: _testDate,
+  ),
+  data: TaskData(
+    status: TaskStatus.open(
+      id: 'status-plain',
+      createdAt: _testDate,
+      utcOffset: 0,
+    ),
+    dateFrom: _testDate,
+    dateTo: _testDate,
+    statusHistory: const [],
+    title: 'Plain task',
+  ),
+);
+
 void main() {
   // ---------------------------------------------------------------------------
   // Canonical tests (originally in label_assignment_processor_test.dart)
@@ -405,8 +428,10 @@ void main() {
       mockDb = MockJournalDb();
       mockRepo = MockLabelsRepository();
       mockLogging = MockDomainLogger();
-      // The task read: not found, so no category and nothing suppressed.
-      when(() => mockDb.journalEntityById(any())).thenAnswer((_) async => null);
+      // The task read: a task with no category and nothing suppressed.
+      when(
+        () => mockDb.journalEntityById(any()),
+      ).thenAnswer((_) async => _plainTask());
       when(
         () => mockRepo.addLabels(
           journalEntityId: any(named: 'journalEntityId'),
@@ -524,10 +549,10 @@ void main() {
       mockDbEdge = MockJournalDb();
       mockRepoEdge = MockLabelsRepository();
       mockLoggingEdge = MockDomainLogger();
-      // The task read: not found, so no category and nothing suppressed.
+      // The task read: a task with no category and nothing suppressed.
       when(
         () => mockDbEdge.journalEntityById(any()),
-      ).thenAnswer((_) async => null);
+      ).thenAnswer((_) async => _plainTask());
       processorEdge = LabelAssignmentProcessor(
         db: mockDbEdge,
         repository: mockRepoEdge,
@@ -825,67 +850,88 @@ void main() {
       getIt.allowReassignment = true;
     });
 
-    // A failed task read leaves the suppressed set unknown. Treating it as
-    // empty would re-apply a label the user removed (ADR 0097), so the
-    // processor assigns nothing — whether or not the caller supplied the
-    // category, because the suppressed set only comes from the task.
-    for (final categoryId in [null, 'cat']) {
-      test(
-        'a failed task read assigns nothing (categoryId: $categoryId)',
-        () async {
-          final db = MockJournalDb();
-          final repo = MockLabelsRepository();
-          final log = MockDomainLogger();
+    // A task read that fails, or yields no task, leaves the suppressed set
+    // unknown. Treating it as empty would re-apply a label the user removed
+    // (ADR 0097), so the processor assigns nothing — whether or not the caller
+    // supplied the category, because the suppressed set only comes from the
+    // task.
+    final readOutcomes = <String, void Function(MockJournalDb)>{
+      'throws': (db) =>
+          when(() => db.journalEntityById(any())).thenThrow(Exception('db')),
+      'not found': (db) =>
+          when(() => db.journalEntityById(any())).thenAnswer((_) async => null),
+      'not a task': (db) => when(() => db.journalEntityById(any())).thenAnswer(
+        (_) async => JournalEntity.journalEntry(
+          meta: Metadata(
+            id: 't',
+            createdAt: _testDate,
+            updatedAt: _testDate,
+            dateFrom: _testDate,
+            dateTo: _testDate,
+          ),
+        ),
+      ),
+    };
+    for (final MapEntry(key: outcome, value: stubRead)
+        in readOutcomes.entries) {
+      for (final categoryId in [null, 'cat']) {
+        test(
+          'a task read that $outcome assigns nothing (categoryId: $categoryId)',
+          () async {
+            final db = MockJournalDb();
+            final repo = MockLabelsRepository();
+            final log = MockDomainLogger();
 
-          // 'S' is a valid global label: it would be assigned if the
-          // suppressed set were (wrongly) taken to be empty.
-          when(() => db.getLabelDefinitionById('S')).thenAnswer(
-            (_) async => LabelDefinition(
-              id: 'S',
-              name: 'S',
-              color: '#000',
-              createdAt: DateTime(2024, 3, 15, 10, 30),
-              updatedAt: DateTime(2024, 3, 15, 10, 30),
-              vectorClock: null,
-              private: false,
-            ),
-          );
-          when(() => db.journalEntityById(any())).thenThrow(Exception('db'));
+            // 'S' is a valid global label: it would be assigned if the
+            // suppressed set were (wrongly) taken to be empty.
+            when(() => db.getLabelDefinitionById('S')).thenAnswer(
+              (_) async => LabelDefinition(
+                id: 'S',
+                name: 'S',
+                color: '#000',
+                createdAt: DateTime(2024, 3, 15, 10, 30),
+                updatedAt: DateTime(2024, 3, 15, 10, 30),
+                vectorClock: null,
+                private: false,
+              ),
+            );
+            stubRead(db);
 
-          final dbErrorProcessor = LabelAssignmentProcessor(
-            db: db,
-            repository: repo,
-            logging: log,
-            validator: LabelValidator(db: db),
-          );
+            final dbErrorProcessor = LabelAssignmentProcessor(
+              db: db,
+              repository: repo,
+              logging: log,
+              validator: LabelValidator(db: db),
+            );
 
-          final res = await dbErrorProcessor.processAssignment(
-            taskId: 't',
-            proposedIds: const ['S'],
-            existingIds: const [],
-            categoryId: categoryId,
-          );
+            final res = await dbErrorProcessor.processAssignment(
+              taskId: 't',
+              proposedIds: const ['S'],
+              existingIds: const [],
+              categoryId: categoryId,
+            );
 
-          expect(res.assigned, isEmpty);
-          expect(res.skipped, [
-            {'id': 'S', 'reason': 'suppression_unknown'},
-          ]);
-          verifyNever(
-            () => repo.addLabels(
-              journalEntityId: any<String>(named: 'journalEntityId'),
-              addedLabelIds: any<List<String>>(named: 'addedLabelIds'),
-            ),
-          );
-          verify(
-            () => log.error(
-              LogDomain.labels,
-              any(that: startsWith('label_assignment.task_lookup_failed')),
-              stackTrace: any(named: 'stackTrace'),
-              subDomain: 'processor',
-            ),
-          ).called(1);
-        },
-      );
+            expect(res.assigned, isEmpty);
+            expect(res.skipped, [
+              {'id': 'S', 'reason': 'suppression_unknown'},
+            ]);
+            verifyNever(
+              () => repo.addLabels(
+                journalEntityId: any<String>(named: 'journalEntityId'),
+                addedLabelIds: any<List<String>>(named: 'addedLabelIds'),
+              ),
+            );
+            verify(
+              () => log.error(
+                LogDomain.labels,
+                any(that: startsWith('label_assignment.task_lookup_failed')),
+                stackTrace: any(named: 'stackTrace'),
+                subDomain: 'processor',
+              ),
+            ).called(1);
+          },
+        );
+      }
     }
   });
 
@@ -909,10 +955,10 @@ void main() {
       mockDbTelemetry = MockJournalDb();
       mockRepoTelemetry = MockLabelsRepository();
       mockLoggingTelemetry = MockDomainLogger();
-      // The task read: not found, so no category and nothing suppressed.
+      // The task read: a task with no category and nothing suppressed.
       when(
         () => mockDbTelemetry.journalEntityById(any()),
-      ).thenAnswer((_) async => null);
+      ).thenAnswer((_) async => _plainTask());
 
       when(
         () => mockRepoTelemetry.addLabels(
@@ -1028,7 +1074,7 @@ void main() {
     test('assigns suggestions even when task already has >=3 labels', () async {
       when(
         () => mockDbPhase2.journalEntityById('t1'),
-      ).thenAnswer((_) async => null);
+      ).thenAnswer((_) async => _plainTask());
       when(
         () => mockDbPhase2.getLabelDefinitionById('global_a'),
       ).thenAnswer((_) async => _labelDefinitionsById['global_a']);

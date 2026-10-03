@@ -16,7 +16,7 @@ import 'package:lotti/services/domain_logging.dart';
 /// [invalid] (unknown or soft-deleted definitions), and [skipped] — each a
 /// `{id, reason}` map where reason is one of `out_of_scope`, `suppressed`,
 /// `already_assigned`, `over_cap`, `duplicate`, or `suppression_unknown` (the
-/// task could not be read, so nothing was assigned). [toStructuredJson]
+/// task could not be read as a task, so nothing was assigned). [toStructuredJson]
 /// renders this for return to the model.
 class LabelAssignmentResult {
   LabelAssignmentResult({
@@ -150,15 +150,13 @@ class LabelAssignmentProcessor {
     // and its suppressed set. Callers filter on an earlier read, but this one
     // is load-bearing: a label the user removed is suppressed, and a confirmed
     // proposal applied late — the same item confirmed on another device before
-    // they synced — must not bring it back (ADR 0097). If the task cannot be
-    // read, which labels the user removed is unknown, so nothing is assigned.
-    final JournalEntity? entity;
-    try {
-      entity = await (_db ?? getIt<JournalDb>()).journalEntityById(taskId);
-    } catch (e, st) {
+    // they synced — must not bring it back (ADR 0097). If the read fails, or
+    // does not yield a task (deleted since the caller read it), which labels
+    // the user removed is unknown, so nothing is assigned.
+    LabelAssignmentResult suppressionUnknown(String reason, [StackTrace? st]) {
       _logging.error(
         LogDomain.labels,
-        'label_assignment.task_lookup_failed: $e',
+        'label_assignment.task_lookup_failed: $reason',
         stackTrace: st,
         subDomain: 'processor',
       );
@@ -171,10 +169,20 @@ class LabelAssignmentProcessor {
         ],
       );
     }
-    final effectiveCategoryId = categoryId ?? entity?.meta.categoryId;
-    final suppressedSet = entity is Task
-        ? entity.data.aiSuppressedLabelIds ?? const <String>{}
-        : const <String>{};
+
+    final JournalEntity? entity;
+    try {
+      entity = await (_db ?? getIt<JournalDb>()).journalEntityById(taskId);
+    } catch (e, st) {
+      return suppressionUnknown('$e', st);
+    }
+    if (entity is! Task) {
+      return suppressionUnknown(
+        entity == null ? 'task not found' : 'not a task: ${entity.runtimeType}',
+      );
+    }
+    final effectiveCategoryId = categoryId ?? entity.meta.categoryId;
+    final suppressedSet = entity.data.aiSuppressedLabelIds ?? const <String>{};
 
     final validation = await _validator.validateForTask(
       requested,
