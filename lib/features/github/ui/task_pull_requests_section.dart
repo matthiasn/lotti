@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
@@ -9,14 +8,14 @@ import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/github/ui/link_pull_request_modal.dart';
 import 'package:lotti/features/github/ui/pull_request_row.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The task's pull requests, in their own card beside its linked tasks.
 ///
-/// Shown only while GitHub pull requests are enabled. With none linked, the
-/// card is a worded action to link one; otherwise each pull request is a
-/// [PullRequestRow] and the header carries the action to link another.
+/// `TaskForm` includes it only while GitHub pull requests are enabled. With
+/// none linked, the card is a worded action to link one; otherwise each pull
+/// request is a [PullRequestRow] and the header carries the action to link
+/// another.
 class TaskPullRequestsSection extends ConsumerWidget {
   const TaskPullRequestsSection({required this.taskId, super.key});
 
@@ -24,11 +23,6 @@ class TaskPullRequestsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final enabled =
-        ref.watch(configFlagProvider(enableGitHubPullRequestsFlag)).value ??
-        false;
-    if (!enabled) return const SizedBox.shrink();
-
     final entries = ref.watch(taskPullRequestsProvider(taskId));
     final tokens = context.designTokens;
     final messages = context.messages;

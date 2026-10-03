@@ -1,13 +1,11 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/github/ui/link_pull_request_modal.dart';
 import 'package:lotti/features/github/ui/pull_request_row.dart';
 import 'package:lotti/features/github/ui/task_pull_requests_section.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -36,16 +34,12 @@ void main() {
 
   Future<void> pump(
     WidgetTester tester, {
-    required bool enabled,
     List<PullRequestEntry> entries = const [],
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         const TaskPullRequestsSection(taskId: taskId),
         overrides: [
-          configFlagProvider(
-            enableGitHubPullRequestsFlag,
-          ).overrideWith((ref) => Stream.value(enabled)),
           taskPullRequestsProvider(taskId).overrideWithValue(entries),
           pullRequestServiceProvider.overrideWithValue(service),
         ],
@@ -55,23 +49,11 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('nothing at all while GitHub pull requests are disabled', (
-    tester,
-  ) async {
-    await pump(tester, enabled: false);
-
-    expect(
-      find.byKey(const ValueKey('pull-requests-card-title')),
-      findsNothing,
-    );
-    expect(tester.getSize(find.byType(TaskPullRequestsSection)).height, 0);
-  });
-
   testWidgets(
     'with none linked, the card is one worded action that opens the link '
     'modal',
     (tester) async {
-      await pump(tester, enabled: true);
+      await pump(tester);
 
       expect(find.text('Pull requests'), findsOneWidget);
       expect(
@@ -107,7 +89,6 @@ void main() {
         Clock.fixed(prFixtureEpoch),
         () => pump(
           tester,
-          enabled: true,
           entries: [pr('a', 3, 'First'), pr('b', 9, 'Second')],
         ),
       );

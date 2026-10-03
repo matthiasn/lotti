@@ -35,7 +35,6 @@ import '../pull_request_fixtures.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
-  setFakeDocumentsPath();
 
   final mockNotificationService = MockNotificationService();
   final mockUpdateNotifications = MockUpdateNotifications();
@@ -51,6 +50,9 @@ void main() {
   final taskId = testTask.meta.id;
 
   setUp(() async {
+    // Per test: the global teardown resets platform channel mocks, so a fake
+    // set once for the file is gone by the time a bundled run reaches it.
+    setFakeDocumentsPath();
     settingsDb = SettingsDb(inMemoryDatabase: true);
     journalDb = JournalDb(inMemoryDatabase: true);
     await initConfigFlags(journalDb, inMemoryDatabase: true);

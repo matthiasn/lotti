@@ -3,6 +3,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
@@ -23,6 +24,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -101,6 +103,7 @@ void main() {
     GlobalKey? cardRegionKey,
     List<EntryLink>? linkedEntries,
     List<JournalEntity> linkedTargets = const [],
+    bool gitHubEnabled = false,
   }) {
     return RiverpodWidgetTestBench(
       overrides: [
@@ -135,6 +138,9 @@ void main() {
         agentStateProvider.overrideWith(
           (ref, agentId) async => null,
         ),
+        configFlagProvider(
+          enableGitHubPullRequestsFlag,
+        ).overrideWith((ref) => Stream.value(gitHubEnabled)),
       ],
       child: SingleChildScrollView(
         child: TaskForm(taskId: task.meta.id, cardRegionKey: cardRegionKey),
@@ -361,7 +367,6 @@ void main() {
         for (final band in [
           find.byType(ChecklistsWidget),
           find.byType(LinkedTasksWidget),
-          find.byType(TaskPullRequestsSection),
         ]) {
           expect(reporterFor(tester, band).offscreenOnly, isTrue);
         }
@@ -393,10 +398,10 @@ void main() {
               .map((reporter) => reporter.key)
               .toList();
 
-          // Header, AI card, checklist, linked tasks, pull requests — the AI
-          // card leads the page right below the identity header so a reader
-          // lands on "what is this task about" before the work sections.
-          expect(keys, hasLength(5));
+          // Header, AI card, checklist, linked tasks — the AI card leads the
+          // page right below the identity header so a reader lands on "what
+          // is this task about" before the work sections.
+          expect(keys, hasLength(4));
           expect(keys.toSet(), hasLength(keys.length));
           expect(
             keys.map((key) => (key! as ValueKey<String>).value).toList(),
@@ -405,10 +410,40 @@ void main() {
               'ai-card-size-reporter-${task.meta.id}',
               'checklist-size-reporter-${task.meta.id}',
               'linked-tasks-size-reporter-${task.meta.id}',
-              'pull-requests-size-reporter-${task.meta.id}',
             ],
           );
         }
+      },
+    );
+
+    testWidgets(
+      'adds the pull requests band, after linked tasks and with its own key, '
+      'only while GitHub pull requests are enabled',
+      (tester) async {
+        // The band's absence while disabled is the four-band test above.
+        await tester.pumpWidget(
+          buildSubject(task: testTask, gitHubEnabled: true),
+        );
+        await tester.pumpAndSettle();
+
+        final keys = tester
+            .widgetList<ViewportStableSizeReporter>(
+              find.byType(ViewportStableSizeReporter),
+            )
+            .map((reporter) => (reporter.key! as ValueKey<String>).value)
+            .toList();
+        expect(keys.last, 'pull-requests-size-reporter-${testTask.meta.id}');
+        expect(
+          keys[keys.length - 2],
+          'linked-tasks-size-reporter-${testTask.meta.id}',
+        );
+        expect(
+          reporterFor(
+            tester,
+            find.byType(TaskPullRequestsSection),
+          ).offscreenOnly,
+          isTrue,
+        );
       },
     );
 

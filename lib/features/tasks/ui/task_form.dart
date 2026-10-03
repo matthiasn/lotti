@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
 import 'package:lotti/features/design_system/components/motion/staggered_entrance.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -11,6 +12,7 @@ import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dar
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_first_run_actions.dart';
 import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Composes the task detail form for the task identified by [taskId].
@@ -99,6 +101,12 @@ class TaskForm extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
+    // A band, not an empty child, only while the feature is on: the entrance
+    // staggers by position, so a band that renders nothing still delays it.
+    final showPullRequests =
+        ref.watch(configFlagProvider(enableGitHubPullRequestsFlag)).value ??
+        false;
+
     // only show editor for legacy entries where there is text already
     final plainText = entryState?.entry?.entryText?.plainText.trim() ?? '';
     final hasBody =
@@ -186,11 +194,12 @@ class TaskForm extends ConsumerWidget {
             child: LinkedTasksWidget(taskId: taskId),
           ),
         ),
-        ViewportStableSizeReporter(
-          key: ValueKey('pull-requests-size-reporter-$taskId'),
-          offscreenOnly: true,
-          child: TaskPullRequestsSection(taskId: taskId),
-        ),
+        if (showPullRequests)
+          ViewportStableSizeReporter(
+            key: ValueKey('pull-requests-size-reporter-$taskId'),
+            offscreenOnly: true,
+            child: TaskPullRequestsSection(taskId: taskId),
+          ),
         if (isFirstRun)
           Padding(
             // A full sectionGap: the block is a different register from the
