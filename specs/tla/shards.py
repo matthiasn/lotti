@@ -182,6 +182,7 @@ SECONDS = {
     "PullRequestSnapshotLiveness": 30,
     "PullRequestAssignment": 2,
     "PullRequestAssignmentSync": 6,
+    "GitHubAccountSync": 8,
     "AgentReplicationRemoval": 596,
     "AgentReplicationRemovalLossy": 61,
     "AgentReplicationSeed": 60,
