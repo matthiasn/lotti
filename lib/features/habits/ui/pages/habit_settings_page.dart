@@ -18,9 +18,9 @@ final StreamProvider<List<HabitDefinition>> habitDefinitionsStreamProvider =
       (ref) => ref.watch(habitsRepositoryProvider).watchHabitDefinitions(),
     );
 
-/// Embeddable body alias for the Settings V2 detail pane (plan
-/// step 8). See `CategoriesListBody` for the polish note about the
-/// duplicate header.
+/// The habit list as a desktop settings panel: no header of its own — the
+/// detail pane's breadcrumb names it — and the create button beside the
+/// search.
 class HabitSettingsBody extends StatelessWidget {
   const HabitSettingsBody({this.initialSearchTerm, super.key});
 
@@ -28,8 +28,10 @@ class HabitSettingsBody extends StatelessWidget {
   final String? initialSearchTerm;
 
   @override
-  Widget build(BuildContext context) =>
-      HabitSettingsPage(initialSearchTerm: initialSearchTerm);
+  Widget build(BuildContext context) => HabitSettingsPage(
+    initialSearchTerm: initialSearchTerm,
+    showHeader: false,
+  );
 }
 
 /// Settings list of all habit definitions.
@@ -39,14 +41,22 @@ class HabitSettingsBody extends StatelessWidget {
 /// create button to `/settings/habits/create`. [initialSearchTerm] seeds
 /// the filter from deep links like `/settings/habits/search/<term>`.
 class HabitSettingsPage extends ConsumerWidget {
-  const HabitSettingsPage({this.initialSearchTerm, super.key});
+  const HabitSettingsPage({
+    this.initialSearchTerm,
+    this.showHeader = true,
+    super.key,
+  });
 
   final String? initialSearchTerm;
+
+  /// See [DefinitionsListPage.showHeader].
+  final bool showHeader;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final messages = context.messages;
     return DefinitionsListPage<HabitDefinition>(
+      showHeader: showHeader,
       itemsAsync: ref.watch(habitDefinitionsStreamProvider),
       title: messages.settingsHabitsTitle,
       searchHint: messages.settingsHabitsSearchHint,

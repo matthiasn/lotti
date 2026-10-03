@@ -15,6 +15,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -375,8 +376,8 @@ void main() {
       });
     });
 
-    group('DashboardSettingsBody embedded alias', () {
-      testWidgets('renders a DashboardSettingsPage with its content', (
+    group('DashboardSettingsBody', () {
+      testWidgets('renders the list headerless for the detail pane', (
         tester,
       ) async {
         await pumpDashboardsPage(
@@ -387,6 +388,15 @@ void main() {
 
         expect(find.byType(DashboardSettingsPage), findsOneWidget);
         expect(find.text(testDashboardConfig.name), findsOneWidget);
+        // Embedded in the desktop detail pane: no header of its own — the
+        // pane's breadcrumb names the list.
+        expect(
+          tester
+              .widget<DashboardSettingsPage>(find.byType(DashboardSettingsPage))
+              .showHeader,
+          isFalse,
+        );
+        expect(find.byType(SettingsPageHeader), findsNothing);
       });
     });
 

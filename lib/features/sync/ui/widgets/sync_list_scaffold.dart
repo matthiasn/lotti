@@ -62,6 +62,7 @@ class SyncListScaffold<T, F extends Enum> extends StatefulWidget {
     this.headerSliver,
     this.listKey,
     this.backButton = true,
+    this.showTitle = true,
     super.key,
   }) : assert(
          stream == null || items == null,
@@ -134,6 +135,11 @@ class SyncListScaffold<T, F extends Enum> extends StatefulWidget {
 
   /// Whether to display the back button in the page header.
   final bool backButton;
+
+  /// Whether the page header shows its title bar. The desktop settings
+  /// detail pane turns it off — its breadcrumb names the page — and keeps
+  /// the pinned filter row.
+  final bool showTitle;
 
   @override
   State<SyncListScaffold<T, F>> createState() => _SyncListScaffoldState<T, F>();
@@ -352,6 +358,7 @@ class _SyncListScaffoldState<T, F extends Enum>
               title: widget.title,
               subtitle: widget.subtitle,
               showBackButton: widget.backButton,
+              showTitleBar: widget.showTitle,
               bottom: headerBottom,
             ),
             if (widget.headerSliver != null)

@@ -7,6 +7,7 @@ import 'package:lotti/features/design_system/components/search/design_system_sea
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../../test_data/test_data.dart';
@@ -343,8 +344,8 @@ void main() {
       });
     });
 
-    group('MeasurablesBody embedded alias', () {
-      testWidgets('renders a MeasurablesPage with its content', (
+    group('MeasurablesBody', () {
+      testWidgets('renders the list headerless for the detail pane', (
         tester,
       ) async {
         await pumpMeasurablesPage(
@@ -355,6 +356,15 @@ void main() {
 
         expect(find.byType(MeasurablesPage), findsOneWidget);
         expect(find.text(measurableWater.displayName), findsOneWidget);
+        // Embedded in the desktop detail pane: no header of its own — the
+        // pane's breadcrumb names the list.
+        expect(
+          tester
+              .widget<MeasurablesPage>(find.byType(MeasurablesPage))
+              .showHeader,
+          isFalse,
+        );
+        expect(find.byType(SettingsPageHeader), findsNothing);
       });
     });
 

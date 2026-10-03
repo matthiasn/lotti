@@ -11,16 +11,14 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Embeddable body alias for the Settings V2 detail pane (plan
-/// step 8). The V1 page's internal `SettingsPageHeader` overlaps the
-/// leaf-panel title for now; a headerless embedded mode comes in
-/// step 10 polish. Until then the page renders with a minor visual
-/// duplicate header that is functionally fine.
+/// The list as a desktop settings panel: no header of its own — the detail
+/// pane's breadcrumb names it — and the create button beside the search.
 class CategoriesListBody extends StatelessWidget {
   const CategoriesListBody({super.key});
 
   @override
-  Widget build(BuildContext context) => const CategoriesListPage();
+  Widget build(BuildContext context) =>
+      const CategoriesListPage(showHeader: false);
 }
 
 /// Categories list on the shared [DefinitionsListPage] shell.
@@ -32,12 +30,16 @@ class CategoriesListBody extends StatelessWidget {
 /// list → full-page flow as every other definition type (the V2 desktop
 /// pane dispatches `/settings/categories/create` inline).
 class CategoriesListPage extends ConsumerWidget {
-  const CategoriesListPage({super.key});
+  const CategoriesListPage({this.showHeader = true, super.key});
+
+  /// See [DefinitionsListPage.showHeader].
+  final bool showHeader;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final messages = context.messages;
     return DefinitionsListPage<CategoryDefinition>(
+      showHeader: showHeader,
       itemsAsync: ref.watch(categoriesStreamProvider),
       title: messages.settingsCategoriesTitle,
       searchHint: messages.settingsCategoriesSearchHint,

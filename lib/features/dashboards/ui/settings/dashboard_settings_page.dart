@@ -25,14 +25,14 @@ final StreamProvider<List<DashboardDefinition>> allDashboardsStreamProvider =
       ),
     );
 
-/// Embeddable body alias for the Settings V2 detail pane (plan
-/// step 8). See `CategoriesListBody` for the polish note about the
-/// duplicate header.
+/// The list as a desktop settings panel: no header of its own — the detail
+/// pane's breadcrumb names it — and the create button beside the search.
 class DashboardSettingsBody extends StatelessWidget {
   const DashboardSettingsBody({super.key});
 
   @override
-  Widget build(BuildContext context) => const DashboardSettingsPage();
+  Widget build(BuildContext context) =>
+      const DashboardSettingsPage(showHeader: false);
 }
 
 /// Settings list of all dashboard definitions.
@@ -42,12 +42,16 @@ class DashboardSettingsBody extends StatelessWidget {
 /// description. Rows beam to the per-dashboard editor and the create button
 /// to `/settings/dashboards/create`.
 class DashboardSettingsPage extends ConsumerWidget {
-  const DashboardSettingsPage({super.key});
+  const DashboardSettingsPage({this.showHeader = true, super.key});
+
+  /// See [DefinitionsListPage.showHeader].
+  final bool showHeader;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final messages = context.messages;
     return DefinitionsListPage<DashboardDefinition>(
+      showHeader: showHeader,
       itemsAsync: ref.watch(allDashboardsStreamProvider),
       title: messages.settingsDashboardsTitle,
       searchHint: messages.settingsDashboardsSearchHint,

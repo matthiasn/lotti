@@ -12,6 +12,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -402,8 +403,8 @@ void main() {
       });
     });
 
-    group('HabitSettingsBody embedded alias', () {
-      testWidgets('renders a HabitSettingsPage with its content', (
+    group('HabitSettingsBody', () {
+      testWidgets('renders the list headerless for the detail pane', (
         tester,
       ) async {
         await pumpHabitsPage(
@@ -414,6 +415,15 @@ void main() {
 
         expect(find.byType(HabitSettingsPage), findsOneWidget);
         expect(find.text(habitFlossing.name), findsOneWidget);
+        // Embedded in the desktop detail pane: no header of its own — the
+        // pane's breadcrumb names the list.
+        expect(
+          tester
+              .widget<HabitSettingsPage>(find.byType(HabitSettingsPage))
+              .showHeader,
+          isFalse,
+        );
+        expect(find.byType(SettingsPageHeader), findsNothing);
       });
     });
 

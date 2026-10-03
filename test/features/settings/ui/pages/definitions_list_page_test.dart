@@ -24,6 +24,7 @@ Future<void> _pumpPage(
   String? initialSearchTerm,
   ValueChanged<String>? searchCallback,
   VoidCallback? onCreate,
+  bool showHeader = true,
 }) async {
   await tester.pumpWidget(
     makeTestableWidgetNoScroll(
@@ -48,6 +49,7 @@ Future<void> _pumpPage(
         noMatchActionBuilder: noMatchActionBuilder,
         initialSearchTerm: initialSearchTerm,
         searchCallback: searchCallback,
+        showHeader: showHeader,
       ),
     ),
   );
@@ -655,6 +657,93 @@ void main() {
       // divider for the mixin's index to colour.
       await hoverListRow(tester, find.text('Alpha'));
       expect(listRowDividerColors(tester), isEmpty);
+    });
+  });
+
+  group('embedded in the desktop detail pane (showHeader: false)', () {
+    Finder toolbarCreate() => find.widgetWithText(
+      DesignSystemButton,
+      'Create item',
+    );
+
+    testWidgets('draws no header — the pane breadcrumb names the list', (
+      tester,
+    ) async {
+      await _pumpPage(
+        tester,
+        itemsAsync: const AsyncValue.data(['Alpha', 'Beta']),
+        showHeader: false,
+      );
+
+      expect(find.byType(SettingsPageHeader), findsNothing);
+      expect(find.text('Test Items'), findsNothing);
+      expect(_rowTitles(tester), ['Alpha', 'Beta']);
+    });
+
+    testWidgets('puts search and create side by side, create on the right, '
+        'and shows no floating button', (tester) async {
+      var created = 0;
+      await _pumpPage(
+        tester,
+        itemsAsync: const AsyncValue.data(['Alpha']),
+        showHeader: false,
+        onCreate: () => created++,
+      );
+
+      expect(find.byType(DesignSystemSearch), findsOneWidget);
+      expect(toolbarCreate(), findsOneWidget);
+      expect(find.byType(DesignSystemFloatingActionButton), findsNothing);
+      expect(
+        tester.getCenter(toolbarCreate()).dy,
+        moreOrLessEquals(
+          tester.getCenter(find.byType(DesignSystemSearch)).dy,
+          epsilon: 1,
+        ),
+      );
+      expect(
+        tester.getTopLeft(toolbarCreate()).dx,
+        greaterThan(tester.getTopRight(find.byType(DesignSystemSearch)).dx),
+      );
+
+      await tester.tap(toolbarCreate());
+      expect(created, 1);
+    });
+
+    testWidgets('the toolbar search still filters the rows', (tester) async {
+      await _pumpPage(
+        tester,
+        itemsAsync: const AsyncValue.data(['Alpha', 'Beta']),
+        showHeader: false,
+      );
+
+      await _enterQuery(tester, 'bet');
+      expect(_rowTitles(tester), ['Beta']);
+    });
+
+    testWidgets('an empty list keeps one create button — the toolbar one — '
+        'and no search over nothing', (tester) async {
+      await _pumpPage(
+        tester,
+        itemsAsync: const AsyncValue.data([]),
+        showHeader: false,
+      );
+
+      expect(find.text('Nothing here yet'), findsOneWidget);
+      expect(find.byType(DesignSystemSearch), findsNothing);
+      expect(toolbarCreate(), findsOneWidget);
+    });
+
+    testWidgets('create stays reachable while the list fails to load', (
+      tester,
+    ) async {
+      await _pumpPage(
+        tester,
+        itemsAsync: AsyncValue.error(Exception('boom'), StackTrace.empty),
+        showHeader: false,
+      );
+
+      expect(find.text('Failed to load items'), findsOneWidget);
+      expect(toolbarCreate(), findsOneWidget);
     });
   });
 }

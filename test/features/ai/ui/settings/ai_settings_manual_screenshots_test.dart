@@ -750,7 +750,12 @@ void main() {
               world: world,
             );
             final messages = _messages(tester);
-            expect(find.text(messages.aiImpactTitle), findsOneWidget);
+            // The phone page draws its own title; on desktop the detail
+            // pane's breadcrumb names the panel instead.
+            expect(
+              find.text(messages.aiImpactTitle),
+              device.isPhone ? findsOneWidget : findsNothing,
+            );
             expect(find.text(formatCredits(1.2)), findsOneWidget);
             expect(
               find.text(messages.aiImpactBreakdownCategory),

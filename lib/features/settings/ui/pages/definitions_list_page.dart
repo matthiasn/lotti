@@ -25,6 +25,11 @@ const double _stateIconSize = 64;
 /// button. All content rides the shared settings grid
 /// ([SettingsContentSliver]) so it aligns with the header title at every
 /// pane width.
+///
+/// Embedded in the desktop settings detail pane ([showHeader] off), the
+/// header goes — the pane's breadcrumb already names the list — and the
+/// create button moves into a toolbar beside the search field, next to the
+/// list it acts on.
 class DefinitionsListPage<T> extends StatefulWidget {
   const DefinitionsListPage({
     required this.title,
@@ -43,11 +48,16 @@ class DefinitionsListPage<T> extends StatefulWidget {
     this.noMatchActionBuilder,
     this.initialSearchTerm,
     this.searchCallback,
+    this.showHeader = true,
     super.key,
   });
 
   /// Header title.
   final String title;
+
+  /// Whether the page draws its own header. Off when embedded in the
+  /// desktop settings detail pane.
+  final bool showHeader;
 
   /// The definitions to render. Pages watch their Riverpod provider and
   /// hand the [AsyncValue] through so loading/error handling stays here.
@@ -153,19 +163,14 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>>
       backgroundColor: context.designTokens.colors.background.level01,
       body: CustomScrollView(
         slivers: [
-          SettingsPageHeader(
-            title: widget.title,
-            showBackButton: !desktop,
-            actions: desktop
-                ? [
-                    DesignSystemButton(
-                      label: widget.createLabel,
-                      leadingIcon: LottiIcons.add,
-                      onPressed: widget.onCreate,
-                    ),
-                  ]
-                : null,
-          ),
+          if (widget.showHeader)
+            SettingsPageHeader(
+              title: widget.title,
+              showBackButton: !desktop,
+              actions: desktop ? [_createButton()] : null,
+            )
+          else
+            _buildToolbarSliver(context),
           ...widget.itemsAsync.when(
             // Keep an already-populated list visible during background
             // reloads (sync, db notifications) instead of flashing the
@@ -194,7 +199,9 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>>
       // The empty state renders its own inline create button — showing
       // the corner FAB at the same time would be the same action twice.
       floatingActionButton:
-          desktop || (widget.itemsAsync.value?.isEmpty ?? false)
+          desktop ||
+              !widget.showHeader ||
+              (widget.itemsAsync.value?.isEmpty ?? false)
           ? null
           : DesignSystemBottomNavigationFabPadding(
               child: DesignSystemFloatingActionButton(
@@ -235,19 +242,13 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>>
 
     return [
       // Search over zero items is dead UI — the empty state owns that
-      // screen entirely.
-      if (items.isNotEmpty)
+      // screen entirely. Embedded, the search sits in the toolbar instead.
+      if (widget.showHeader && items.isNotEmpty)
         SettingsContentSliver(
           sliver: SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
-              child: DesignSystemSearch(
-                hintText: widget.searchHint,
-                initialText: widget.initialSearchTerm,
-                // DS search fires `onChanged('')` from its clear button,
-                // so one callback covers typing and clearing.
-                onChanged: _onQueryChanged,
-              ),
+              child: _search(),
             ),
           ),
         ),
@@ -277,6 +278,42 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>>
     ];
   }
 
+  Widget _search() => DesignSystemSearch(
+    hintText: widget.searchHint,
+    initialText: widget.initialSearchTerm,
+    // DS search fires `onChanged('')` from its clear button, so one callback
+    // covers typing and clearing.
+    onChanged: _onQueryChanged,
+  );
+
+  Widget _createButton() => DesignSystemButton(
+    label: widget.createLabel,
+    leadingIcon: LottiIcons.add,
+    onPressed: widget.onCreate,
+  );
+
+  /// The embedded toolbar: the search field, when there is anything to
+  /// search, and the create button. Present in every load state, so
+  /// creating stays one click away even while the list loads or fails.
+  Widget _buildToolbarSliver(BuildContext context) {
+    final tokens = context.designTokens;
+    final hasItems = widget.itemsAsync.value?.isNotEmpty ?? false;
+    return SettingsContentSliver(
+      sliver: SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
+          child: Row(
+            children: [
+              Expanded(child: hasItems ? _search() : const SizedBox.shrink()),
+              SizedBox(width: tokens.spacing.step4),
+              _createButton(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildEmptySliver(BuildContext context, {required bool noItemsAtAll}) {
     final query = _queryRaw.trim();
     if (!noItemsAtAll && query.isNotEmpty) {
@@ -295,15 +332,11 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>>
         body: widget.emptyHint,
         // Mobile: close the loop right where the instruction sits
         // (the corner FAB is hidden on an empty list). Desktop already
-        // shows the create button in the header, so a second one here
-        // would be redundant.
-        action: isDesktopLayout(context)
+        // shows the create button in the header or the toolbar, so a
+        // second one here would be redundant.
+        action: isDesktopLayout(context) || !widget.showHeader
             ? null
-            : DesignSystemButton(
-                label: widget.createLabel,
-                leadingIcon: LottiIcons.add,
-                onPressed: widget.onCreate,
-              ),
+            : _createButton(),
       ),
     );
   }

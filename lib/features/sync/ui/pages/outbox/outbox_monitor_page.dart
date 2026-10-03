@@ -18,23 +18,28 @@ import 'package:material_ui/material_ui.dart';
 
 enum _OutboxListFilter { waiting, failed, sent }
 
-/// Full-page outbox monitor — used by the V1 beamer route and kept as the
-/// entry-point class so existing callers and tests continue to work.
+/// The outbox monitor: what this device has queued, failed or sent.
+///
+/// A full page with its own header on a phone; [OutboxMonitorBody] embeds it
+/// in the desktop settings detail pane without the title bar.
 class OutboxMonitorPage extends StatefulWidget {
-  const OutboxMonitorPage({super.key});
+  const OutboxMonitorPage({this.showTitle = true, super.key});
+
+  /// See [SyncListScaffold.showTitle].
+  final bool showTitle;
 
   @override
   State<OutboxMonitorPage> createState() => _OutboxMonitorPageState();
 }
 
-/// Content body for the Settings V2 detail pane. Re-uses the page verbatim;
-/// the minor title duplication inside the V2 leaf panel is a known cosmetic
-/// issue tracked for polish.
+/// The outbox monitor as a desktop settings panel: the pane's breadcrumb
+/// names it, so it drops its title bar and keeps the pinned filters.
 class OutboxMonitorBody extends StatelessWidget {
   const OutboxMonitorBody({super.key});
 
   @override
-  Widget build(BuildContext context) => const OutboxMonitorPage();
+  Widget build(BuildContext context) =>
+      const OutboxMonitorPage(showTitle: false);
 }
 
 class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
@@ -229,6 +234,7 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
     return SyncListScaffold<OutboxItem, _OutboxListFilter>(
       title: context.messages.settingsSyncOutboxTitle,
       subtitle: context.messages.settingsAdvancedOutboxSubtitle,
+      showTitle: widget.showTitle,
       items: _items,
       isLoading: _items == null,
       onRefresh: _fetch,

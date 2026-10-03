@@ -523,8 +523,8 @@ void main() {
       expect(find.text('Requires immediate attention'), findsNothing);
     });
 
-    testWidgets('LabelsListBody embeds the same label list for the settings '
-        'detail pane', (tester) async {
+    testWidgets('LabelsListBody embeds the label list headerless for the '
+        'settings detail pane', (tester) async {
       await tester.pumpWidget(
         _buildPage(
           labels: [testLabelDefinition1, testLabelDefinition2],
@@ -543,6 +543,11 @@ void main() {
       );
       expect(find.text('Urgent'), findsWidgets);
       expect(find.text('3 tasks'), findsOneWidget);
+      expect(
+        tester.widget<LabelsListPage>(find.byType(LabelsListPage)).showHeader,
+        isFalse,
+      );
+      expect(find.byType(SettingsPageHeader), findsNothing);
     });
 
     testWidgets('filters list based on search query', (tester) async {

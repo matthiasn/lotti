@@ -12,14 +12,13 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Embeddable body alias for the Settings V2 detail pane (plan
-/// step 8). See `CategoriesListBody` for the polish note about the
-/// duplicate header.
+/// The list as a desktop settings panel: no header of its own — the detail
+/// pane's breadcrumb names it — and the create button beside the search.
 class LabelsListBody extends StatelessWidget {
   const LabelsListBody({super.key});
 
   @override
-  Widget build(BuildContext context) => const LabelsListPage();
+  Widget build(BuildContext context) => const LabelsListPage(showHeader: false);
 }
 
 /// Labels list on the shared [DefinitionsListPage] shell.
@@ -30,7 +29,10 @@ class LabelsListBody extends StatelessWidget {
 /// descriptions, and a query with no match offers creating a label with
 /// that name.
 class LabelsListPage extends ConsumerWidget {
-  const LabelsListPage({super.key});
+  const LabelsListPage({this.showHeader = true, super.key});
+
+  /// See [DefinitionsListPage.showHeader].
+  final bool showHeader;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -43,6 +45,7 @@ class LabelsListPage extends ConsumerWidget {
         );
 
     return DefinitionsListPage<LabelDefinition>(
+      showHeader: showHeader,
       itemsAsync: ref.watch(labelsStreamProvider),
       title: messages.settingsLabelsTitle,
       searchHint: messages.settingsLabelsSearchHint,

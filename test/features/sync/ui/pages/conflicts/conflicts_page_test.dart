@@ -6,6 +6,7 @@ import 'package:lotti/features/sync/ui/pages/conflicts/conflicts_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/app_bar/settings_header_bar.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -77,9 +78,10 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // ConflictsBody just wraps ConflictsPage — the title confirms the
-        // full subtree rendered.
-        expect(find.text('Sync Conflicts'), findsOneWidget);
+        // The detail pane's breadcrumb names the page, so the body drops
+        // the title bar and keeps the filter row with its counts.
+        expect(find.byType(SettingsHeaderBar), findsNothing);
+        expect(find.text('Sync Conflicts'), findsNothing);
         expect(find.text('Unresolved · 1 item'), findsOneWidget);
       },
     );

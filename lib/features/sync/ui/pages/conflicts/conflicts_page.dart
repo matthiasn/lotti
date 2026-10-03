@@ -14,18 +14,20 @@ enum _ConflictListFilter {
   resolved,
 }
 
-/// Embeddable body alias for the Settings V2 detail pane (plan
-/// step 8). See `CategoriesListBody` for the polish note about the
-/// duplicate header.
+/// The conflicts list as a desktop settings panel: the pane's breadcrumb
+/// names it, so it drops its title bar and keeps the pinned filters.
 class ConflictsBody extends StatelessWidget {
   const ConflictsBody({super.key});
 
   @override
-  Widget build(BuildContext context) => const ConflictsPage();
+  Widget build(BuildContext context) => const ConflictsPage(showTitle: false);
 }
 
 class ConflictsPage extends StatefulWidget {
-  const ConflictsPage({super.key});
+  const ConflictsPage({this.showTitle = true, super.key});
+
+  /// See [SyncListScaffold.showTitle].
+  final bool showTitle;
 
   @override
   State<ConflictsPage> createState() => _ConflictsPageState();
@@ -140,6 +142,7 @@ class _ConflictsPageState extends State<ConflictsPage> {
     return SyncListScaffold<Conflict, _ConflictListFilter>(
       title: context.messages.settingsConflictsTitle,
       subtitle: context.messages.settingsSyncConflictsSubtitle,
+      showTitle: widget.showTitle,
       stream: _stream,
       filters: filters,
       initialFilter: _ConflictListFilter.unresolved,
