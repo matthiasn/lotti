@@ -140,6 +140,22 @@ pullRequestHoldersProvider = StreamProvider.autoDispose
       }
     }, name: 'pullRequestHoldersProvider');
 
+/// The title of task `taskId` as the viewer may see it, for naming the
+/// other task that holds a pull request — null while private mode hides it,
+/// or once it is gone. Read like the task's linked tasks are, through the
+/// private-filtered read, and again when the task or private mode changes.
+final StreamProviderFamily<String?, String> pullRequestHolderTitleProvider =
+    StreamProvider.autoDispose.family<String?, String>((ref, taskId) {
+      final journal = ref.watch(journalRepositoryProvider);
+      return notificationDrivenItemStream<String>(
+        notifications: getIt<UpdateNotifications>(),
+        notificationKeys: {taskId, privateToggleNotification},
+        fetcher: () async => (await journal.getJournalEntitiesByIds({
+          taskId,
+        })).whereType<Task>().firstOrNull?.data.title,
+      );
+    }, name: 'pullRequestHolderTitleProvider');
+
 /// The GitHub login whose token this device holds, or null.
 final gitHubAccountControllerProvider =
     AsyncNotifierProvider<GitHubAccountController, String?>(

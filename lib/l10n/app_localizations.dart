@@ -11129,11 +11129,17 @@ abstract class AppLocalizations {
   /// **'Create image from voice description'**
   String get generateCoverArtSubtitle;
 
-  /// No description provided for @githubAlsoLinkedElsewhere.
+  /// Status line part: how many other tasks also hold this pull request, when none of them can be named.
   ///
   /// In en, this message translates to:
-  /// **'Also linked to another task'**
-  String get githubAlsoLinkedElsewhere;
+  /// **'{count, plural, =1{Also linked to another task} other{Also linked to {count} other tasks}}'**
+  String githubAlsoLinkedElsewhere(int count);
+
+  /// Status line part: the one other task that also holds this pull request, by title.
+  ///
+  /// In en, this message translates to:
+  /// **'Also linked to “{title}”'**
+  String githubAlsoLinkedTo(String title);
 
   /// Status line part: how many CI checks of a pull request fail.
   ///
@@ -11243,11 +11249,29 @@ abstract class AppLocalizations {
   /// **'Link'**
   String get githubLinkButton;
 
-  /// No description provided for @githubLinkedElsewhere.
+  /// Question in the link modal: other tasks already hold this pull request; link it here as well?
   ///
   /// In en, this message translates to:
-  /// **'This pull request is already linked to another task.'**
-  String get githubLinkedElsewhere;
+  /// **'{count, plural, =1{This pull request is already linked to another task. Link it to this task as well?} other{This pull request is already linked to {count} other tasks. Link it to this task as well?}}'**
+  String githubLinkedElsewhere(int count);
+
+  /// Question in the link modal: the named task already holds this pull request; link it here as well?
+  ///
+  /// In en, this message translates to:
+  /// **'This pull request is already linked to “{title}”. Link it to this task as well?'**
+  String githubLinkedElsewhereNamed(String title);
+
+  /// No description provided for @githubLinkElsewhereDecline.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t link'**
+  String get githubLinkElsewhereDecline;
+
+  /// No description provided for @githubLinkHereToo.
+  ///
+  /// In en, this message translates to:
+  /// **'Link here too'**
+  String get githubLinkHereToo;
 
   /// No description provided for @githubLinkNotAPullRequest.
   ///

@@ -61,7 +61,8 @@ lib/features/github/
 
 Everything is behind the `enable_github_pull_requests` config flag. A
 category names its repository; the "+" picker lists that repository's open
-pull requests no task holds, and a pull request belongs to one task. Coding
+pull requests no task holds; a pasted pull request another task holds is
+linked here too only once the user confirms it. Coding
 prompts and task-agent wakes carry the task's pull requests, refreshed for
 them. The concept below describes all of it.
 

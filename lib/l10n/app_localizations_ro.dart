@@ -6636,7 +6636,21 @@ class AppLocalizationsRo extends AppLocalizations {
       'Creează imagine din descrierea vocală';
 
   @override
-  String get githubAlsoLinkedElsewhere => 'Legat și de o altă sarcină';
+  String githubAlsoLinkedElsewhere(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Legat și de alte $count de sarcini',
+      few: 'Legat și de alte $count sarcini',
+      one: 'Legat și de o altă sarcină',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String githubAlsoLinkedTo(String title) {
+    return 'Legat și de „$title”';
+  }
 
   @override
   String githubChecksFailing(int count) {
@@ -6716,8 +6730,30 @@ class AppLocalizationsRo extends AppLocalizations {
   String get githubLinkButton => 'Legați';
 
   @override
-  String get githubLinkedElsewhere =>
-      'Acest pull request este deja legat de o altă sarcină.';
+  String githubLinkedElsewhere(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Acest pull request este deja legat de alte $count de sarcini. Doriți să-l legați și de aceasta?',
+      few:
+          'Acest pull request este deja legat de alte $count sarcini. Doriți să-l legați și de aceasta?',
+      one:
+          'Acest pull request este deja legat de o altă sarcină. Doriți să-l legați și de aceasta?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String githubLinkedElsewhereNamed(String title) {
+    return 'Acest pull request este deja legat de „$title”. Doriți să-l legați și de această sarcină?';
+  }
+
+  @override
+  String get githubLinkElsewhereDecline => 'Nu legați';
+
+  @override
+  String get githubLinkHereToo => 'Legați și aici';
 
   @override
   String get githubLinkNotAPullRequest => 'Acesta nu este un pull request.';

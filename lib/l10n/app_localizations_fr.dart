@@ -6628,7 +6628,20 @@ class AppLocalizationsFr extends AppLocalizations {
       'Créer une image à partir de la description vocale';
 
   @override
-  String get githubAlsoLinkedElsewhere => 'Liée aussi à une autre tâche';
+  String githubAlsoLinkedElsewhere(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Liée aussi à $count autres tâches',
+      one: 'Liée aussi à une autre tâche',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String githubAlsoLinkedTo(String title) {
+    return 'Liée aussi à « $title »';
+  }
 
   @override
   String githubChecksFailing(int count) {
@@ -6707,8 +6720,28 @@ class AppLocalizationsFr extends AppLocalizations {
   String get githubLinkButton => 'Lier';
 
   @override
-  String get githubLinkedElsewhere =>
-      'Cette pull request est déjà liée à une autre tâche.';
+  String githubLinkedElsewhere(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Cette pull request est déjà liée à $count autres tâches. La lier aussi à cette tâche ?',
+      one:
+          'Cette pull request est déjà liée à une autre tâche. La lier aussi à cette tâche ?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String githubLinkedElsewhereNamed(String title) {
+    return 'Cette pull request est déjà liée à « $title ». La lier aussi à cette tâche ?';
+  }
+
+  @override
+  String get githubLinkElsewhereDecline => 'Ne pas lier';
+
+  @override
+  String get githubLinkHereToo => 'Lier ici aussi';
 
   @override
   String get githubLinkNotAPullRequest => 'Ce n\'est pas une pull request.';

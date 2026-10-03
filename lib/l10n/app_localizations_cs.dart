@@ -6595,7 +6595,21 @@ class AppLocalizationsCs extends AppLocalizations {
   String get generateCoverArtSubtitle => 'Vytvořit obrázek z hlasového popisu';
 
   @override
-  String get githubAlsoLinkedElsewhere => 'Propojeno i s jiným úkolem';
+  String githubAlsoLinkedElsewhere(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Propojeno i s $count dalšími úkoly',
+      few: 'Propojeno i s $count dalšími úkoly',
+      one: 'Propojeno i s jiným úkolem',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String githubAlsoLinkedTo(String title) {
+    return 'Propojeno i s „$title“';
+  }
 
   @override
   String githubChecksFailing(int count) {
@@ -6674,8 +6688,30 @@ class AppLocalizationsCs extends AppLocalizations {
   String get githubLinkButton => 'Propojit';
 
   @override
-  String get githubLinkedElsewhere =>
-      'Tento pull request už je propojený s jiným úkolem.';
+  String githubLinkedElsewhere(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Tento pull request už je propojený s $count dalšími úkoly. Propojit ho i s tímto úkolem?',
+      few:
+          'Tento pull request už je propojený s $count dalšími úkoly. Propojit ho i s tímto úkolem?',
+      one:
+          'Tento pull request už je propojený s jiným úkolem. Propojit ho i s tímto úkolem?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String githubLinkedElsewhereNamed(String title) {
+    return 'Tento pull request už je propojený s „$title“. Propojit ho i s tímto úkolem?';
+  }
+
+  @override
+  String get githubLinkElsewhereDecline => 'Nepropojovat';
+
+  @override
+  String get githubLinkHereToo => 'Propojit i sem';
 
   @override
   String get githubLinkNotAPullRequest => 'To není pull request.';

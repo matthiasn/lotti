@@ -6530,7 +6530,20 @@ class AppLocalizationsSv extends AppLocalizations {
   String get generateCoverArtSubtitle => 'Skapa bild från röstbeskrivning';
 
   @override
-  String get githubAlsoLinkedElsewhere => 'Kopplad även till en annan uppgift';
+  String githubAlsoLinkedElsewhere(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Kopplad även till $count andra uppgifter',
+      one: 'Kopplad även till en annan uppgift',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String githubAlsoLinkedTo(String title) {
+    return 'Kopplad även till ”$title”';
+  }
 
   @override
   String githubChecksFailing(int count) {
@@ -6609,8 +6622,28 @@ class AppLocalizationsSv extends AppLocalizations {
   String get githubLinkButton => 'Koppla';
 
   @override
-  String get githubLinkedElsewhere =>
-      'Den här pull requesten är redan kopplad till en annan uppgift.';
+  String githubLinkedElsewhere(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Den här pull requesten är redan kopplad till $count andra uppgifter. Vill du koppla den till den här uppgiften också?',
+      one:
+          'Den här pull requesten är redan kopplad till en annan uppgift. Vill du koppla den till den här uppgiften också?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String githubLinkedElsewhereNamed(String title) {
+    return 'Den här pull requesten är redan kopplad till ”$title”. Vill du koppla den till den här uppgiften också?';
+  }
+
+  @override
+  String get githubLinkElsewhereDecline => 'Koppla inte';
+
+  @override
+  String get githubLinkHereToo => 'Koppla även här';
 
   @override
   String get githubLinkNotAPullRequest => 'Det är inte en pull request.';

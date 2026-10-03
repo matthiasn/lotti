@@ -14,6 +14,7 @@ import 'package:lotti/features/github/domain/pull_request_ref.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/github/ui/github_failure_message.dart';
+import 'package:lotti/features/github/ui/linked_elsewhere.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/relative_age_label.dart';
@@ -25,6 +26,8 @@ abstract final class LinkPullRequestKeys {
   static const urlField = Key('link_pull_request_url');
   static const linkButton = Key('link_pull_request_submit');
   static const cancelButton = Key('link_pull_request_cancel');
+  static const linkHereToo = Key('link_pull_request_here_too');
+  static const keepElsewhere = Key('link_pull_request_keep_elsewhere');
   static Key openPullRequest(int number) => Key('open_pull_request_$number');
 }
 
@@ -34,7 +37,8 @@ abstract final class LinkPullRequestKeys {
 /// The pull request is read from GitHub, and checked again against the
 /// tasks that hold it, before anything is linked
 /// (`specs/tla/PullRequestAssignment.tla`), so the modal stays open with the
-/// reason when it cannot be.
+/// reason when it cannot be. One another task holds is asked about: the user
+/// links it here too, or keeps it where it is.
 Future<void> showLinkPullRequestModal(
   BuildContext context, {
   required String taskId,
@@ -60,6 +64,9 @@ class _LinkPullRequestFormState extends ConsumerState<_LinkPullRequestForm> {
   /// What is being linked: the pasted text, or a picked pull request.
   Object? _linking;
   String? _error;
+
+  /// The open question: other tasks hold the pull request the user chose.
+  PullRequestLinkedElsewhere? _elsewhere;
 
   @override
   void dispose() {
@@ -87,6 +94,18 @@ class _LinkPullRequestFormState extends ConsumerState<_LinkPullRequestForm> {
     );
   }
 
+  /// The user's answer to [_elsewhere]: link it to this task as well.
+  Future<void> _linkHereToo() async {
+    final ref_ = _elsewhere?.ref;
+    if (_linking != null || ref_ == null) return;
+    await _run(
+      ref_,
+      () => ref
+          .read(pullRequestServiceProvider)
+          .link(taskId: widget.taskId, ref: ref_, alsoElsewhere: true),
+    );
+  }
+
   Future<void> _run(
     Object what,
     Future<PullRequestLinkResult> Function() link,
@@ -94,6 +113,7 @@ class _LinkPullRequestFormState extends ConsumerState<_LinkPullRequestForm> {
     setState(() {
       _linking = what;
       _error = null;
+      _elsewhere = null;
     });
     PullRequestLinkResult result;
     try {
@@ -110,7 +130,11 @@ class _LinkPullRequestFormState extends ConsumerState<_LinkPullRequestForm> {
     }
     setState(() {
       _linking = null;
-      _error = _messageFor(context.messages, result);
+      if (result is PullRequestLinkedElsewhere) {
+        _elsewhere = result;
+      } else {
+        _error = _messageFor(context.messages, result);
+      }
     });
   }
 
@@ -120,7 +144,8 @@ class _LinkPullRequestFormState extends ConsumerState<_LinkPullRequestForm> {
   ) => switch (result) {
     PullRequestLinked() => null,
     PullRequestAlreadyLinked() => messages.githubLinkAlreadyLinked,
-    PullRequestLinkedElsewhere() => messages.githubLinkedElsewhere,
+    // Asked about instead, in [_ElsewhereQuestion].
+    PullRequestLinkedElsewhere() => null,
     PullRequestLinkNotStored() => messages.githubLinkNotStored,
     PullRequestLinkRejected(:final reason) => switch (reason) {
       PullRequestRefRejection.empty => null,
@@ -154,9 +179,21 @@ class _LinkPullRequestFormState extends ConsumerState<_LinkPullRequestForm> {
           helperText: _error == null ? messages.githubLinkUrlHelper : null,
           errorText: _error,
           keyboardType: TextInputType.url,
-          onChanged: (_) => setState(() => _error = null),
+          onChanged: (_) => setState(() {
+            _error = null;
+            _elsewhere = null;
+          }),
           onSubmitted: (_) => _linkPasted(),
         ),
+        if (_elsewhere case final elsewhere?) ...[
+          SizedBox(height: tokens.spacing.step4),
+          _ElsewhereQuestion(
+            taskIds: elsewhere.taskIds,
+            linking: _linking != null,
+            onLinkHereToo: _linkHereToo,
+            onKeep: () => setState(() => _elsewhere = null),
+          ),
+        ],
         SizedBox(height: tokens.spacing.step5),
         if (repository == null)
           _Note(text: messages.githubPickerNoRepository)
@@ -318,6 +355,63 @@ class _OpenPullRequestRow extends StatelessWidget {
               semanticsLabel: messages.githubPickerLinking,
             )
           : null,
+    );
+  }
+}
+
+/// Other tasks hold the pull request the user chose: link it here too, or
+/// leave it where it is. Names the other task when there is one and the
+/// viewer may see it.
+class _ElsewhereQuestion extends ConsumerWidget {
+  const _ElsewhereQuestion({
+    required this.taskIds,
+    required this.linking,
+    required this.onLinkHereToo,
+    required this.onKeep,
+  });
+
+  final Set<String> taskIds;
+  final bool linking;
+  final VoidCallback onLinkHereToo;
+  final VoidCallback onKeep;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final titles = watchLinkedElsewhereTitles(ref, taskIds);
+    final title = soleLinkedElsewhereTitle(titles);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          title != null
+              ? messages.githubLinkedElsewhereNamed(title)
+              : messages.githubLinkedElsewhere(titles.length),
+          style: tokens.typography.styles.body.bodySmall.copyWith(
+            color: tokens.colors.text.highEmphasis,
+          ),
+        ),
+        SizedBox(height: tokens.spacing.step3),
+        Wrap(
+          spacing: tokens.spacing.step3,
+          runSpacing: tokens.spacing.step3,
+          children: [
+            DesignSystemButton(
+              key: LinkPullRequestKeys.linkHereToo,
+              label: messages.githubLinkHereToo,
+              leadingIcon: LottiIcons.link,
+              onPressed: linking ? null : onLinkHereToo,
+            ),
+            DesignSystemButton(
+              key: LinkPullRequestKeys.keepElsewhere,
+              label: messages.githubLinkElsewhereDecline,
+              variant: DesignSystemButtonVariant.secondary,
+              onPressed: linking ? null : onKeep,
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

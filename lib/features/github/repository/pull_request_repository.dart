@@ -40,8 +40,9 @@ class PullRequestRepository {
   }
 
   /// The tasks that hold each of [refs], by [PullRequestRef.key]; a pull
-  /// request no task holds is absent. A pull request belongs to one task, so
-  /// more than one holder means two devices linked it before they synced.
+  /// request no task holds is absent. More than one holder means the user
+  /// confirmed linking it to another task too, or two devices linked it
+  /// before they synced.
   Future<Map<String, Set<String>>> holdersOf(
     Iterable<PullRequestRef> refs,
   ) async {
@@ -57,21 +58,27 @@ class PullRequestRepository {
   }
 
   /// Links [ref] to [taskId] with what the link's first read observed —
-  /// unless a task holds it already, this one or another.
+  /// unless this task holds it already, or another task does and
+  /// [alsoElsewhere] does not say the user confirmed linking it here too.
   ///
-  /// The check and the creation run as one step on this device (`Choose`
-  /// in `specs/tla/PullRequestAssignment.tla`): the picker's list can be
-  /// stale by the time the user picks, a paste lists nothing at all, and two
-  /// pickers open at once must not both link. Another device can still link
-  /// it to another task before the two sync; then both entries stay, and
-  /// every device shows the double assignment.
+  /// The check and the creation run as one step on this device (`Choose`,
+  /// and `Confirm` with [alsoElsewhere], in
+  /// `specs/tla/PullRequestAssignment.tla`): the picker's list can be stale
+  /// by the time the user picks, a paste lists nothing at all, two pickers
+  /// open at once must not both link, and this task may have got the pull
+  /// request while the user was asked. Another device can still link it to
+  /// another task before the two sync; then both entries stay, and every
+  /// device shows the double assignment.
   Future<PullRequestLinkAttempt> link({
     required String taskId,
     required PullRequestRef ref,
     PullRequestSnapshot? snapshot,
+    bool alsoElsewhere = false,
   }) => _serially(() async {
     final holders = (await holdersOf([ref]))[ref.key] ?? const <String>{};
-    if (holders.isNotEmpty) return PullRequestLinkAttempt(heldBy: holders);
+    if (holders.contains(taskId) || (!alsoElsewhere && holders.isNotEmpty)) {
+      return PullRequestLinkAttempt(heldBy: holders);
+    }
 
     final now = clock.now();
     final entry = PullRequestEntry(

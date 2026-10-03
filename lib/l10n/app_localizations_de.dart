@@ -6570,8 +6570,20 @@ class AppLocalizationsDe extends AppLocalizations {
       'Bild aus einer Beschreibung erstellen';
 
   @override
-  String get githubAlsoLinkedElsewhere =>
-      'Auch mit einer anderen Aufgabe verknüpft';
+  String githubAlsoLinkedElsewhere(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Auch mit $count anderen Aufgaben verknüpft',
+      one: 'Auch mit einer anderen Aufgabe verknüpft',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String githubAlsoLinkedTo(String title) {
+    return 'Auch mit „$title“ verknüpft';
+  }
 
   @override
   String githubChecksFailing(int count) {
@@ -6650,8 +6662,28 @@ class AppLocalizationsDe extends AppLocalizations {
   String get githubLinkButton => 'Verknüpfen';
 
   @override
-  String get githubLinkedElsewhere =>
-      'Dieser Pull-Request ist schon mit einer anderen Aufgabe verknüpft.';
+  String githubLinkedElsewhere(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Dieser Pull-Request ist schon mit $count anderen Aufgaben verknüpft. Auch mit dieser Aufgabe verknüpfen?',
+      one:
+          'Dieser Pull-Request ist schon mit einer anderen Aufgabe verknüpft. Auch mit dieser Aufgabe verknüpfen?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String githubLinkedElsewhereNamed(String title) {
+    return 'Dieser Pull-Request ist schon mit „$title“ verknüpft. Auch mit dieser Aufgabe verknüpfen?';
+  }
+
+  @override
+  String get githubLinkElsewhereDecline => 'Nicht verknüpfen';
+
+  @override
+  String get githubLinkHereToo => 'Auch hier verknüpfen';
 
   @override
   String get githubLinkNotAPullRequest => 'Das ist kein Pull-Request.';

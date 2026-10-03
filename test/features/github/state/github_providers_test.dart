@@ -10,6 +10,7 @@ import 'package:lotti/features/github/domain/github_repository.dart';
 import 'package:lotti/features/github/domain/pull_request_ref.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -358,6 +359,45 @@ void main() {
 
       expect(await c.read(provider.future), isNull);
     });
+
+    test(
+      "another holder's title is named only while the viewer may see it, "
+      'and read again when the task or private mode changes',
+      () async {
+        final journal = MockJournalRepository();
+        var visible = <JournalEntity>[
+          testTask.copyWith(data: testTask.data.copyWith(title: 'Waddle')),
+        ];
+        when(
+          () => journal.getJournalEntitiesByIds({'other-task'}),
+        ).thenAnswer((_) async => visible);
+        final c = ProviderContainer(
+          overrides: [journalRepositoryProvider.overrideWithValue(journal)],
+        );
+        addTearDown(c.dispose);
+        final seen = <String?>[];
+        c.listen(
+          pullRequestHolderTitleProvider('other-task'),
+          (_, next) => next.whenData(seen.add),
+          fireImmediately: true,
+        );
+        await pumpEventQueue();
+
+        visible = [
+          testTask.copyWith(data: testTask.data.copyWith(title: 'Swim')),
+        ];
+        updates.add({'unrelated'});
+        await pumpEventQueue();
+        updates.add({'other-task'});
+        await pumpEventQueue();
+        // Private mode turned off, and the task is private: hidden.
+        visible = [];
+        updates.add({privateToggleNotification});
+        await pumpEventQueue();
+
+        expect(seen, ['Waddle', 'Swim', null]);
+      },
+    );
 
     test('the picker lists what the service offers', () async {
       const listed = OpenPullRequestsListed([]);
