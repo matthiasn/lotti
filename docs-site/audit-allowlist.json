@@ -1,4 +1,15 @@
 {
   "$comment": "Advisories the docs site cannot currently resolve by any dependency change. Each entry must state why no fix is reachable and expire, so it fails the build rather than quietly becoming permanent. Re-check upstream before extending an expiry.",
-  "allow": []
+  "allow": [
+    {
+      "id": "GHSA-vfj7-8cjw-p6xm",
+      "reason": "Stack-exhaustion denial of service in braces through deeply nested brace patterns. The vulnerable range is <= 3.0.3, which is every published version, and npm reports fixAvailable: false, so no dependency change reaches a fix. Reached only through micromatch and chokidar, which Docusaurus uses at build time and in the dev server to match this repository's own source globs; the patterns are written by us, never supplied by a user, and the deployed artifact is a static site that runs none of it. Drop this entry once braces publishes a patched release.",
+      "expires": "2026-11-03"
+    },
+    {
+      "id": "GHSA-ch52-4w7c-c8xp",
+      "reason": "max-stale handling in http-cache-semantics can serve one user's cached response to another. The vulnerable range is <= 4.2.0, which is every published version, and npm reports fixAvailable: false. Reached only through got and package-json in update-notifier, which @docusaurus/core uses to check npm for a newer Docusaurus when the CLI starts: a single-user build-time request with no shared cache, so there is no second user to disclose to, and the deployed static site contains none of this code. Drop this entry once http-cache-semantics publishes a patched release.",
+      "expires": "2026-11-03"
+    }
+  ]
 }
