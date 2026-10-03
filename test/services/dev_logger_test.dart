@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/utils/platform.dart' as platform_utils;
 
 void main() {
   setUp(() {
@@ -13,6 +14,20 @@ void main() {
   });
 
   group('DevLogger', () {
+    test(
+      'keeps nothing outside flutter test, so production cannot grow it',
+      () {
+        platform_utils.isTestEnv = false;
+        addTearDown(() => platform_utils.isTestEnv = true);
+
+        for (var i = 0; i < 100; i++) {
+          DevLogger.log(name: 'Busy', message: 'message $i');
+        }
+
+        expect(DevLogger.capturedLogs, isEmpty);
+      },
+    );
+
     test('log captures the bracketed name and message', () {
       DevLogger.log(name: 'MyClass', message: 'something happened');
 

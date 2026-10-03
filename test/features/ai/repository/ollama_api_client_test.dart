@@ -10,6 +10,40 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
+  group('ollamaErrorDetail', () {
+    test("keeps the server's own error message", () {
+      expect(
+        ollamaErrorDetail('{"error":"model requires more memory"}'),
+        'model requires more memory',
+      );
+    });
+
+    test('caps a long message', () {
+      final detail = ollamaErrorDetail(
+        jsonEncode({'error': 'x' * 500}),
+        maxLength: 20,
+      );
+
+      expect(detail, '${'x' * 20}…');
+    });
+
+    test('never repeats the rest of the body, which can echo the request', () {
+      const body = '{"messages":[{"role":"user","content":"my private note"}]}';
+
+      final detail = ollamaErrorDetail(body);
+
+      expect(detail, isNot(contains('private')));
+      expect(detail, 'no error message (body ${body.length} chars)');
+    });
+
+    test('a body that is not JSON contributes only its size', () {
+      expect(
+        ollamaErrorDetail('<html>proxy error: my private note</html>'),
+        'no error message (body 41 chars)',
+      );
+    });
+  });
+
   group('OllamaApiClient.warmUpModel', () {
     late MockHttpClient httpClient;
     late OllamaApiClient client;

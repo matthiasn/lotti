@@ -60,9 +60,12 @@ Future<GeneratedImage> generateGeminiImage({
       .timeout(const Duration(seconds: 120));
 
   if (response.statusCode < 200 || response.statusCode >= 300) {
+    // The body's size, not the body: the message is logged in full, and an
+    // error body can echo the request. The provider's own reason, parsed out
+    // of the body, still reaches the user through providerReason.
     throw ImageGenerationException(
       'Gemini image generation error ${response.statusCode} for model '
-      '"$model": ${response.body}',
+      '"$model" (body ${response.body.length} chars)',
       providerReason: _httpErrorReason(response.statusCode, response.body),
     );
   }

@@ -166,6 +166,23 @@ Riverpod code reads the logger through `domainLoggerProvider`
 with the generation's instance. The provider only hands the logger out; it
 does no flag wiring of its own.
 
+## `dart:developer` is not a second channel
+
+`developer.log` reaches only a debugger or DevTools, but it bypasses every rule
+`DomainLogger` enforces, and it is where prompts, tool arguments and model
+output kept turning up. Outside `lib/services/`, where logging itself is
+implemented, `tool/logging/validate.dart` ratchets those calls per file
+against `tool/logging/baseline.json`: a file's count may fall, never rise, and
+a new file may not introduce one. CI runs it in the analyze workflow, and so
+does `make developer_log_check`. It counts on the token stream, and resolves a
+`part` file through its library's import.
+
+Two smaller leaks are closed with it. Provider error bodies stay out of
+exception messages, which `DomainLogger.error` writes in full: Gemini image
+errors carry the body's length, and Ollama errors carry only the server's own
+`error` string, capped. `DevLogger.capturedLogs` fills only under
+`flutter test`, so a long-running app keeps nothing.
+
 # File writing is batched
 
 `LoggingService` owns the shared file sink for general, sync, per-domain and

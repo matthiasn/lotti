@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -151,7 +152,8 @@ class OllamaApiClient {
           name: 'OllamaApiClient',
         );
         throw Exception(
-          'Ollama chat API request failed with status ${request.statusCode}: $responseBody',
+          'Ollama chat API request failed with status ${request.statusCode}: '
+          '${ollamaErrorDetail(responseBody)}',
         );
       }
 
@@ -771,4 +773,26 @@ class OllamaPullProgress {
 
   final String status; // e.g., "pulling manifest", "downloading", "success"
   final double progress; // Progress as a fraction (0.0 to 1.0)
+}
+
+/// What an Ollama error body may contribute to an exception message: the
+/// server's own `error` string, capped at [maxLength] characters.
+///
+/// The message is shown to the user and logged in full, and a raw body can
+/// echo the conversation the request carried. Anything that is not an
+/// `{"error": "..."}` object contributes only its size.
+@visibleForTesting
+String ollamaErrorDetail(String body, {int maxLength = 200}) {
+  Object? decoded;
+  try {
+    decoded = jsonDecode(body);
+  } on FormatException {
+    decoded = null;
+  }
+  final error = decoded is Map<String, dynamic> ? decoded['error'] : null;
+  if (error is String && error.trim().isNotEmpty) {
+    final text = error.trim();
+    return text.length <= maxLength ? text : '${text.substring(0, maxLength)}…';
+  }
+  return 'no error message (body ${body.length} chars)';
 }
