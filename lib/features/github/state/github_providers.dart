@@ -73,7 +73,7 @@ const pullRequestSummaryMaxTokens = 800;
 /// where the task's category has automatic inference switched on, and
 /// whenever the user asks.
 final pullRequestSummarizerProvider = Provider<PullRequestSummarizer>((ref) {
-  return PullRequestSummarizer(
+  final summarizer = PullRequestSummarizer(
     repository: ref.watch(pullRequestRepositoryProvider),
     taskOf: (taskId) async {
       final db = ref.read(journalDbProvider);
@@ -137,6 +137,8 @@ final pullRequestSummarizerProvider = Provider<PullRequestSummarizer>((ref) {
         },
     logger: ref.watch(domainLoggerProvider),
   );
+  ref.onDispose(summarizer.dispose);
+  return summarizer;
 }, name: 'pullRequestSummarizerProvider');
 
 final pullRequestServiceProvider = Provider<PullRequestService>(
@@ -355,13 +357,50 @@ pullRequestSummaryProvider = StreamProvider.autoDispose
 /// now — no category consent, no model, or a recent failure — or null when
 /// its next refresh would ask for a summary. For telling the user why one
 /// is missing; asks no model.
-final FutureProviderFamily<PullRequestSummaryOutcome?, String>
-pullRequestAutomaticSummaryBlockerProvider = FutureProvider.autoDispose
-    .family<PullRequestSummaryOutcome?, String>(
-      (ref, entryId) =>
-          ref.watch(pullRequestSummarizerProvider).automaticBlocker(entryId),
-      name: 'pullRequestAutomaticSummaryBlockerProvider',
-    );
+///
+/// Kept current while watched: asked again when an attempt for the entry
+/// ends, when the entry, a category or an agent changes, and when a
+/// cool-down runs out. A change to the inference providers or models is
+/// seen the next time the details open.
+final StreamProviderFamily<PullRequestSummaryOutcome?, String>
+pullRequestAutomaticSummaryBlockerProvider = StreamProvider.autoDispose
+    .family<PullRequestSummaryOutcome?, String>((ref, entryId) {
+      final summarizer = ref.watch(pullRequestSummarizerProvider);
+      final blockers = StreamController<PullRequestSummaryOutcome?>();
+      Timer? coolDownEnds;
+
+      Future<void> read() async {
+        final blocker = await summarizer.automaticBlocker(entryId);
+        if (blockers.isClosed) return;
+        blockers.add(blocker);
+        coolDownEnds?.cancel();
+        final ends = summarizer.coolDownEnds(entryId);
+        if (ends != null) {
+          coolDownEnds = Timer(ends.difference(clock.now()), read);
+        }
+      }
+
+      final subscriptions = [
+        summarizer.attempts.where((id) => id == entryId).listen((_) => read()),
+        getIt<UpdateNotifications>().updateStream
+            .where(
+              (ids) =>
+                  ids.contains(entryId) ||
+                  ids.contains(categoriesNotification) ||
+                  ids.contains(agentNotification),
+            )
+            .listen((_) => read()),
+      ];
+      ref.onDispose(() {
+        coolDownEnds?.cancel();
+        for (final subscription in subscriptions) {
+          unawaited(subscription.cancel());
+        }
+        unawaited(blockers.close());
+      });
+      unawaited(read());
+      return blockers.stream;
+    }, name: 'pullRequestAutomaticSummaryBlockerProvider');
 
 /// The tasks that hold pull request [PullRequestRef.key], kept current as
 /// pull request entries and links change — including those sync brings in,

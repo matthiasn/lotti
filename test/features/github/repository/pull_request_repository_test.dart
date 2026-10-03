@@ -569,6 +569,29 @@ void main() {
     ];
 
     test(
+      'a new summary keeps one of other content written after it: it may '
+      'describe a newer snapshot that has not synced here yet',
+      () async {
+        final entry = await linked(snapshot: prSnapshot());
+        await repository.addSummary(
+          entry,
+          summary('newer content', text: 'Of newer content.'),
+          start: prFixtureEpoch.add(const Duration(minutes: 5)),
+        );
+        await repository.addSummary(
+          entry,
+          summary('stored content', text: 'Of the stored content.'),
+          start: prFixtureEpoch.add(const Duration(minutes: 3)),
+        );
+
+        expect(await liveSummaries(entry.id), [
+          'Of newer content.',
+          'Of the stored content.',
+        ]);
+      },
+    );
+
+    test(
       'a new summary deletes the ones it supersedes — other content, or '
       'the same content written earlier — and keeps a later copy',
       () async {

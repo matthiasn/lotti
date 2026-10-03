@@ -499,6 +499,40 @@ void main() {
       },
     );
 
+    test(
+      'a failure the user asked for starts no cool-down: the next refresh '
+      'may still ask',
+      () async {
+        await withClock(Clock.fixed(start), () async {
+          answers = [() async => [], () async => []];
+          expect(
+            await summarizer.summarize(entryId, manual: true),
+            PullRequestSummaryOutcome.failed,
+          );
+          expect(summarizer.coolDownEnds(entryId), isNull);
+          expect(
+            await summarizer.summarize(entryId),
+            PullRequestSummaryOutcome.stored,
+          );
+        });
+      },
+    );
+
+    test('tells when the cool-down ends, and none once it has', () async {
+      await withClock(Clock.fixed(start), () async {
+        answers = [() async => [], () async => []];
+        await summarizer.summarize(entryId);
+        expect(
+          summarizer.coolDownEnds(entryId),
+          start.add(summarizer.retryAfter),
+        );
+      });
+      await withClock(
+        Clock.fixed(start.add(summarizer.retryAfter)),
+        () async => expect(summarizer.coolDownEnds(entryId), isNull),
+      );
+    });
+
     test('the cool-down passes after an hour', () async {
       await withClock(Clock.fixed(start), () async {
         answers = [() async => throw Exception('provider down')];
@@ -579,4 +613,26 @@ void main() {
       );
     });
   });
+
+  test(
+    'announces every attempt that ends, stored or not, and stops when '
+    'disposed',
+    () async {
+      final ended = <String>[];
+      final subscription = summarizer.attempts.listen(ended.add);
+      addTearDown(subscription.cancel);
+
+      await summarizer.summarize(entryId);
+      when(() => repository.liveEntry(entryId)).thenAnswer((_) async => null);
+      await summarizer.summarize(entryId);
+      await pumpEventQueue();
+      expect(ended, [entryId, entryId]);
+
+      await summarizer.dispose();
+      expect(
+        await summarizer.summarize(entryId),
+        PullRequestSummaryOutcome.missing,
+      );
+    },
+  );
 }

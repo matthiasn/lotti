@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -142,12 +144,31 @@ class PullRequestSummarizer {
   /// for again, by entry. On this device only, and only until it restarts.
   final Map<String, ({String input, DateTime until})> _failed = {};
 
+  final StreamController<String> _attempts = StreamController.broadcast();
+
+  /// The entries whose summary attempt just ended, stored or not: what can
+  /// change why one would not be summarised automatically.
+  Stream<String> get attempts => _attempts.stream;
+
+  /// Stops announcing [attempts].
+  Future<void> dispose() => _attempts.close();
+
+  /// When the cool-down after entry [entryId]'s failed automatic summary
+  /// ends; null when none runs.
+  DateTime? coolDownEnds(String entryId) {
+    final until = _failed[entryId]?.until;
+    return until != null && clock.now().isBefore(until) ? until : null;
+  }
+
   /// Summarises entry [entryId]'s pull request.
   ///
   /// Automatically — after a refresh, which does not wait for it — only when
   /// no summary matches its content yet, and not while a failure for that
   /// content cools down. [manual] is the user asking: it summarises again
   /// even then, needs no category consent, and ignores the cool-down.
+  ///
+  /// A failure of an automatic request starts the cool-down; one the user
+  /// asked for does not.
   ///
   /// Never throws, not even an [Error]: a refresh does not wait for it, so
   /// anything thrown would escape unhandled. A request while one for the
@@ -170,6 +191,7 @@ class PullRequestSummarizer {
       return PullRequestSummaryOutcome.failed;
     } finally {
       _running.remove(entryId);
+      if (!_attempts.isClosed) _attempts.add(entryId);
     }
   }
 
@@ -228,11 +250,11 @@ class PullRequestSummarizer {
         manual: manual,
       );
     } on Object {
-      _coolDown(entryId, input);
+      if (!manual) _coolDown(entryId, input);
       rethrow;
     }
     if (summary == null) {
-      _coolDown(entryId, input);
+      if (!manual) _coolDown(entryId, input);
       return PullRequestSummaryOutcome.failed;
     }
     _failed.remove(entryId);

@@ -642,10 +642,12 @@ So a summary is never stale on screen: a retitled, re-described, reviewed or
 merged pull request has a different input, and shows without one until a new
 one is written.
 
-Storing a summary deletes the ones it supersedes (`addSummary`): those
-written from other content, and older ones of the same content. One of the
-same content written later, on another device, stays; readers take the
-newest, and the next summary deletes whichever is older. Unlinking a pull
+Storing a summary deletes the ones it supersedes (`addSummary`): every one
+written before it, whatever content it was written from. One written later
+stays, even of other content: it may come from a device that read a newer
+snapshot this one has not synced yet, and would otherwise have to be asked
+for again. Readers show only a summary of the content they show, and the
+next summary deletes what this one leaves. Unlinking a pull
 request deletes its summaries with its entry. The deletions sync like any
 other, and notify the pull request entry, never the task.
 
@@ -681,14 +683,16 @@ automatic inference needs
 ([execution paths](ai/execution-paths.md#the-category-consent-gate)) — and
 whose agent's profile resolves (`resolveForSubject`) is the one it asks for.
 An automatic request that failed — the model gave nothing usable twice, or
-the call threw — is not repeated for the same content for an hour
+the call threw — is not repeated automatically for the same content for an
+hour
 (`retryAfter`), on that device and until it restarts: a provider that is
 down is not asked on every refresh. New content, or a success, ends the
 wait.
 
 The details' **Summarise** action asks as the user (`manual`): it needs no
 category consent — the tap is the consent — summarises again even when a
-summary matches, and does not wait out a failure. Its outcome is told in a
+summary matches, and neither waits out a failed automatic request nor
+starts a cool-down of its own. Its outcome is told in a
 toast when nothing was stored: no model for the task's agent, a failure, or
 one already being written. While there is no summary, the details say why
 (`automaticBlocker`, which asks no model): automatic summaries are off for
@@ -728,8 +732,9 @@ is read rather than kept in step with it: whatever order refreshes, syncs and
 summaries interleave in, a context shows a summary only of exactly the
 content it shows, and two devices writing one each leaves two equivalent
 entries, of which readers take the newest. Deleting superseded ones only
-removes what no reader shows — another content's, or an older copy — and a
-summary deleted by mistake is written again at the next refresh. It never writes the pull request
+removes what was written before the summary being stored, which never
+describes newer content than it, and a summary deleted by mistake is written
+again at the next refresh. It never writes the pull request
 entry, so `PullRequestSnapshot`'s write rule, ordering and merge are
 untouched; the snapshot gains only the two comment counts, omitted when
 unset and outside the digest, as `createdAt` is. What

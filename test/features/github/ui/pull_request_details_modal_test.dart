@@ -59,7 +59,7 @@ void main() {
             ),
             pullRequestSummarizerProvider.overrideWithValue(summarizer),
             pullRequestAutomaticSummaryBlockerProvider.overrideWith(
-              (ref, id) async => blocker,
+              (ref, id) => Stream.value(blocker),
             ),
             pullRequestHoldersProvider.overrideWith(
               (ref, pr) => Stream.value(const {taskId}),

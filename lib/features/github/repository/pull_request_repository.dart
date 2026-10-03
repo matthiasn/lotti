@@ -184,12 +184,14 @@ class PullRequestRepository {
   /// its category, so it syncs like any journal entry; returns whether it
   /// was stored.
   ///
-  /// The summaries it supersedes are deleted, so they sync away too: those
-  /// written from other content — [data]'s prompt is the content now — and
-  /// older ones of the same content. One of the same content written later,
-  /// on another device, stays; readers take the newest, and the next summary
-  /// deletes whichever is older. Deleting one notifies the pull request
-  /// entry, never the task, so it cannot wake the task agent.
+  /// The summaries it supersedes are deleted, so they sync away too: every
+  /// one written before it, whatever content it was written from. One
+  /// written later stays, even of other content: it may come from another
+  /// device that read a newer snapshot this one has not synced yet, and
+  /// would have to be asked for again. Readers show only a summary of the
+  /// content they show, and the next summary deletes what this one leaves.
+  /// Deleting one notifies the pull request entry, never the task, so it
+  /// cannot wake the task agent.
   Future<bool> addSummary(
     PullRequestEntry entry,
     AiResponseData data, {
@@ -203,10 +205,8 @@ class PullRequestRepository {
     );
     if (stored == null) return false;
     for (final summary in await _summariesOf(entry.id)) {
-      final superseded =
-          summary.data.prompt != data.prompt ||
-          summary.meta.dateFrom.isBefore(stored.meta.dateFrom);
-      if (summary.id != stored.id && superseded) {
+      if (summary.id != stored.id &&
+          summary.meta.dateFrom.isBefore(stored.meta.dateFrom)) {
         await _journal.deleteJournalEntity(summary.id);
       }
     }
