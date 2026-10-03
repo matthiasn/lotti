@@ -28,6 +28,7 @@ import 'package:lotti/features/agents/tools/task_agent_staged_tool_exposure.dart
 import 'package:lotti/features/agents/tools/task_agent_tool_gate.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
+import 'package:lotti/features/agents/workflow/agent_template_context.dart';
 import 'package:lotti/features/agents/workflow/agent_wake_memory.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
@@ -42,6 +43,7 @@ import 'package:lotti/features/agents/workflow/task_source_renderer.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/features/agents/workflow/wake_output_writer.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
+import 'package:lotti/features/agents/workflow/wake_token_usage.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
@@ -238,14 +240,6 @@ class TaskAgentWorkflow with AgentErrorLogging {
     logError: logError,
   );
 
-  void _log(String message, {String? subDomain}) {
-    domainLogger?.log(
-      LogDomain.agentWorkflow,
-      message,
-      subDomain: subDomain,
-    );
-  }
-
   /// Execute a full wake cycle for the given agent.
   ///
   /// [agentIdentity] is the agent's identity entity.
@@ -308,7 +302,7 @@ class TaskAgentWorkflow with AgentErrorLogging {
     String? consumptionWakeRunKey,
     String? consumptionThreadId,
   }) async {
-    _log(
+    logInfo(
       'no report published — retrying with forced update_report',
       subDomain: 'execute',
     );
@@ -355,43 +349,6 @@ class TaskAgentWorkflow with AgentErrorLogging {
     }
   }
 
-  /// Resolves the template and its active version for the given [agentId].
-  ///
-  /// Returns `null` if no template is assigned or if the active version
-  /// cannot be resolved.
-  Future<_TemplateContext?> _resolveTemplate(String agentId) async {
-    final template = await templateService.getTemplateForAgent(agentId);
-    if (template == null) {
-      _log('no template assigned', subDomain: 'resolve');
-      return null;
-    }
-
-    final version = await templateService.getActiveVersion(template.id);
-    if (version == null) {
-      _log('no active version for template', subDomain: 'resolve');
-      return null;
-    }
-
-    // Resolve the soul document assigned to this template, if any.
-    // Returns null when no soul is assigned — that's the legitimate fallback.
-    // Exceptions propagate: a broken soul chain is a real error.
-    final soulVersion = await soulDocumentService?.resolveActiveSoulForTemplate(
-      template.id,
-    );
-    if (soulVersion != null) {
-      _log(
-        'resolved soul v${soulVersion.version} for template',
-        subDomain: 'resolve',
-      );
-    }
-
-    return _TemplateContext(
-      template: template,
-      version: version,
-      soulVersion: soulVersion,
-    );
-  }
-
   // ── Prompt/context delegators ─────────────────────────────────────────────
   // These forward to [_contextBuilder] (or the pure [TaskAgentPromptBuilder]);
   // the execute part keeps calling the private helpers it always has.
@@ -433,12 +390,14 @@ class TaskAgentWorkflow with AgentErrorLogging {
     task: task,
   );
 
-  String _buildSystemPrompt(_TemplateContext ctx, {required String modelId}) =>
-      TaskAgentPromptBuilder.buildSystemPrompt(
-        version: ctx.version,
-        soulVersion: ctx.soulVersion,
-        modelId: modelId,
-      );
+  String _buildSystemPrompt(
+    AgentTemplateContext ctx, {
+    required String modelId,
+  }) => TaskAgentPromptBuilder.buildSystemPrompt(
+    version: ctx.version,
+    soulVersion: ctx.soulVersion,
+    modelId: modelId,
+  );
 
   Future<({String text, int? logStart, int? logEnd})> _buildUserMessage({
     required String agentId,
@@ -475,22 +434,4 @@ class TaskAgentWorkflow with AgentErrorLogging {
     pullRequestsContext: pullRequestsContext,
     statusTransition: statusTransition,
   );
-
-  String? _extractFinalAssistantContent(ConversationManager? manager) =>
-      _contextBuilder.extractFinalAssistantContent(manager);
-}
-
-/// Resolved template and version pair for prompt composition.
-class _TemplateContext {
-  _TemplateContext({
-    required this.template,
-    required this.version,
-    this.soulVersion,
-  });
-
-  final AgentTemplateEntity template;
-  final AgentTemplateVersionEntity version;
-
-  /// Active soul version for this template, if a soul is assigned.
-  final SoulDocumentVersionEntity? soulVersion;
 }

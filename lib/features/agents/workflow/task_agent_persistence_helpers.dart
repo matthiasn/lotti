@@ -1,46 +1,10 @@
 part of 'task_agent_workflow.dart';
 
-/// Persistence helpers of [TaskAgentWorkflow]: token usage and report
-/// embeddings.
+/// Persistence helpers of [TaskAgentWorkflow]: report embeddings.
 extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
   /// Persist token usage from a wake cycle as a synced entity.
   ///
   /// Non-fatal: failures are logged but do not abort the wake.
-  Future<void> _persistTokenUsage({
-    required InferenceUsage? usage,
-    required String agentId,
-    required String runKey,
-    required String threadId,
-    required String modelId,
-    required _TemplateContext templateCtx,
-    required DateTime now,
-  }) async {
-    if (usage == null || !usage.hasData) return;
-
-    try {
-      await syncService.upsertEntity(
-        AgentDomainEntity.wakeTokenUsage(
-          id: TaskAgentWorkflow._uuid.v4(),
-          agentId: agentId,
-          runKey: runKey,
-          threadId: threadId,
-          modelId: modelId,
-          templateId: templateCtx.template.id,
-          templateVersionId: templateCtx.version.id,
-          soulDocumentId: templateCtx.soulVersion?.agentId,
-          soulDocumentVersionId: templateCtx.soulVersion?.id,
-          createdAt: now,
-          vectorClock: null,
-          inputTokens: usage.inputTokens,
-          outputTokens: usage.outputTokens,
-          thoughtsTokens: usage.thoughtsTokens,
-          cachedInputTokens: usage.cachedInputTokens,
-        ),
-      );
-    } catch (e, s) {
-      logError('failed to persist token usage', error: e, stackTrace: s);
-    }
-  }
 
   /// Embeds an agent report for vector search, in its task's category, and
   /// supersedes the previous report's embedding if one exists.

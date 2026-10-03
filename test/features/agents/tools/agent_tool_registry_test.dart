@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:openai_dart/openai_dart.dart';
 
 // Per-tool schema assertions live alongside the source part files they cover:
 //   * task_field_tool_definitions_test.dart
@@ -30,6 +31,27 @@ void main() {
         equals({'type': 'string'}),
       );
       expect(def.parameters['required'], equals(['arg1']));
+    });
+
+    test('converts to the function tool the model is offered, as declared', () {
+      const parameters = {
+        'type': 'object',
+        'properties': {
+          'arg1': {'type': 'string'},
+        },
+      };
+      const def = AgentToolDefinition(
+        name: 'my_tool',
+        description: 'Does something useful.',
+        parameters: parameters,
+      );
+
+      final tool = def.toChatCompletionTool();
+
+      expect(tool.type, ChatCompletionToolType.function);
+      expect(tool.function.name, 'my_tool');
+      expect(tool.function.description, 'Does something useful.');
+      expect(tool.function.parameters, parameters);
     });
   });
 

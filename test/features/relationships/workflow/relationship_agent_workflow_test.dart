@@ -1800,29 +1800,22 @@ void main() {
       'committed is not reported as a failed turn — that would duplicate '
       'the visible reply on retry', () async {
     stubGlmResolution();
-    when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
-      final entity = invocation.positionalArguments.first as AgentDomainEntity;
-      if (entity is AgentReportHeadEntity) {
-        throw StateError('deferred outbox flush failed');
-      }
-      upserts.add(entity);
-    });
+    // The output transaction commits and only then fails, like a deferred
+    // outbox flush: every write in it really happened.
+    syncService.transactionDelegate = commitThenThrowTransaction;
     when(
       () => repository.getEntity(
         relationshipAgentReplyMessageId(agentId, 'run-1'),
       ),
     ).thenAnswer(
-      (_) async =>
-          AgentDomainEntity.agentMessage(
-                id: relationshipAgentReplyMessageId(agentId, 'run-1'),
-                agentId: agentId,
-                threadId: 'thread-1',
-                kind: AgentMessageKind.action,
-                createdAt: now,
-                vectorClock: null,
-                metadata: const AgentMessageMetadata(runKey: 'run-1'),
-              )
-              as AgentMessageEntity,
+      // Reads back the carrier this wake committed, so the check is held to
+      // the shape production persists — not a hand-built approximation.
+      (_) async => upserts
+          .whereType<AgentMessageEntity>()
+          .where(
+            (m) => m.id == relationshipAgentReplyMessageId(agentId, 'run-1'),
+          )
+          .firstOrNull,
     );
     conversationRepository.sendMessageDelegate =
         ({
@@ -1854,6 +1847,11 @@ void main() {
 
     final result = await run(pendingUserMessage: 'How is Anna?');
     expect(result.success, isTrue);
+    expect(
+      upserts.whereType<AgentReportHeadEntity>(),
+      hasLength(1),
+      reason: 'the whole output batch committed before the flush failed',
+    );
   });
 
   test('a persistence failure with NO committed reply rethrows and '

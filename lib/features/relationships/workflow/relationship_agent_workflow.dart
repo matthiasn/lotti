@@ -17,9 +17,12 @@ import 'package:lotti/features/agents/util/inference_provider_resolver.dart';
 import 'package:lotti/features/agents/util/text_utils.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/agent_system_prompt.dart';
+import 'package:lotti/features/agents/workflow/agent_wake_recovery.dart';
 import 'package:lotti/features/agents/workflow/carrierless_attribution.dart';
 import 'package:lotti/features/agents/workflow/deferred_change_items.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
+import 'package:lotti/features/agents/workflow/wake_token_usage.dart';
+import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -474,15 +477,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       )?.bands,
     );
     final tools = [
-      for (final tool in relationshipAgentTools)
-        ChatCompletionTool(
-          type: ChatCompletionToolType.function,
-          function: FunctionObject(
-            name: tool.name,
-            description: tool.description,
-            parameters: tool.parameters,
-          ),
-        ),
+      for (final tool in relationshipAgentTools) tool.toChatCompletionTool(),
     ];
     final inferenceRepo = CloudInferenceWrapper(
       cloudRepository: _cloudInferenceRepository,
@@ -585,12 +580,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       }
 
       final manager = _conversationRepository.getConversation(conversationId);
-      strategy.recordFinalResponse(
-        manager?.messages.reversed
-            .map((m) => m.mapOrNull(assistant: (a) => a.content))
-            .whereType<String>()
-            .firstOrNull,
-      );
+      strategy.recordFinalResponse(manager?.finalAssistantContent);
       if (interactive) {
         final candidate = strategy.replyToUser ?? strategy.finalResponse;
         if (candidate == null || candidate.trim().isEmpty) {
@@ -650,7 +640,13 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
         outputsCommitted = true;
       } catch (error, stackTrace) {
         final replyCommitted =
-            interactive && await _interactiveReplyCommitted(agentId, runKey);
+            interactive &&
+            await isInteractiveReplyCommitted(
+              repository: _repository,
+              replyMessageId: relationshipAgentReplyMessageId(agentId, runKey),
+              agentId: agentId,
+              runKey: runKey,
+            );
         if (!replyCommitted) rethrow;
         // runInTransaction commits the whole batch before its deferred
         // outbox flush: the durable reply is the transaction marker — do
@@ -673,31 +669,16 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
         );
       }
 
-      if (usage != null && usage.hasData) {
-        try {
-          await _syncService.upsertEntity(
-            AgentDomainEntity.wakeTokenUsage(
-              id: _uuid.v4(),
-              agentId: agentId,
-              runKey: runKey,
-              threadId: threadId,
-              modelId: resolved.modelId,
-              createdAt: now,
-              vectorClock: null,
-              inputTokens: usage.inputTokens,
-              outputTokens: usage.outputTokens,
-              thoughtsTokens: usage.thoughtsTokens,
-              cachedInputTokens: usage.cachedInputTokens,
-            ),
-          );
-        } catch (error, stackTrace) {
-          logError(
-            'failed to persist wake token usage',
-            error: error,
-            stackTrace: stackTrace,
-          );
-        }
-      }
+      await persistWakeTokenUsage(
+        syncService: _syncService,
+        usage: usage,
+        agentId: agentId,
+        runKey: runKey,
+        threadId: threadId,
+        modelId: resolved.modelId,
+        now: now,
+        logError: logError,
+      );
 
       await _stampWakeOutcome(agentId: agentId, now: now, succeeded: true);
       return WakeResult(success: true, reportUpdated: reportHeadAdvanced);
@@ -1121,13 +1102,6 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
     return false;
   }
 
-  Future<bool> _interactiveReplyCommitted(String agentId, String runKey) async {
-    final persisted = await _repository.getEntity(
-      relationshipAgentReplyMessageId(agentId, runKey),
-    );
-    return persisted is AgentMessageEntity && persisted.agentId == agentId;
-  }
-
   /// Stamps the wake on the agent's state row: `lastWakeAt` either way, and
   /// the failure streak reset on success or bumped on failure — the two
   /// facts the person page's agent card reads to show *failed* with the
@@ -1176,7 +1150,8 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
   /// after Phase A's register write can no longer reconstruct.
   /// Configuration failures back off from one hour to at most one day.
   /// Maintenance can bring the pending retry forward once routing is fixed.
-  /// Contained: a failed re-arm is logged, never masks the original error.
+  /// Contained: neither a failed retry-count read nor a failed re-arm masks
+  /// the original error.
   Future<void> _rearmEscalation(
     String agentId,
     String escalationWorkspaceKey,
@@ -1184,51 +1159,36 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
     DateTime now, {
     bool configurationFailure = false,
   }) async {
-    try {
-      var failures = 0;
-      if (configurationFailure) {
-        try {
-          failures =
-              (await _repository.getAgentState(
-                agentId,
-              ))?.consecutiveFailureCount ??
-              0;
-        } catch (error, stackTrace) {
-          // A broken counter read must not discard the durable episode.
-          // Preserve the retry using the base delay when its streak is unknown.
-          logError(
-            'failed to read relationship retry count',
-            error: error,
-            stackTrace: stackTrace,
-          );
-        }
+    var failures = 0;
+    if (configurationFailure) {
+      try {
+        failures =
+            (await _repository.getAgentState(
+              agentId,
+            ))?.consecutiveFailureCount ??
+            0;
+      } catch (error, stackTrace) {
+        // A broken counter read must not discard the durable episode.
+        // Preserve the retry using the base delay when its streak is unknown.
+        logError(
+          'failed to read relationship retry count',
+          error: error,
+          stackTrace: stackTrace,
+        );
       }
-      final delay = configurationFailure
-          ? Duration(hours: (1 << failures.clamp(0, 5)).clamp(1, 24))
-          : Duration.zero;
-      await _syncService.upsertEntity(
-        AgentDomainEntity.scheduledWake(
-          id: scheduledWakeRecordId(
-            agentId,
-            workspaceKey: escalationWorkspaceKey,
-          ),
-          agentId: agentId,
-          scheduledAt: now.toUtc().add(delay),
-          status: ScheduledWakeStatus.pending,
-          reason: WakeReason.scheduled.name,
-          updatedAt: now,
-          vectorClock: null,
-          workspaceKey: escalationWorkspaceKey,
-          triggerTokens: [...triggerTokens],
-        ),
-      );
-    } catch (error, stackTrace) {
-      logError(
-        'failed to re-arm relationship escalation',
-        error: error,
-        stackTrace: stackTrace,
-      );
     }
+    final delay = configurationFailure
+        ? Duration(hours: (1 << failures.clamp(0, 5)).clamp(1, 24))
+        : Duration.zero;
+    await rearmConsumedEscalation(
+      syncService: _syncService,
+      agentId: agentId,
+      workspaceKey: escalationWorkspaceKey,
+      triggerTokens: triggerTokens,
+      scheduledAt: now.add(delay),
+      updatedAt: now,
+      logError: logError,
+    );
   }
 
   InferenceUsage? _merge(InferenceUsage? a, InferenceUsage? b) =>

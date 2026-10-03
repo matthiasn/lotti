@@ -18,9 +18,12 @@ import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/util/text_utils.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/agent_system_prompt.dart';
+import 'package:lotti/features/agents/workflow/agent_wake_recovery.dart';
 import 'package:lotti/features/agents/workflow/carrierless_attribution.dart';
 import 'package:lotti/features/agents/workflow/deferred_change_items.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
+import 'package:lotti/features/agents/workflow/wake_token_usage.dart';
+import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
@@ -440,11 +443,14 @@ class GoalAgentWorkflow with AgentErrorLogging {
       // not orphan the period. The retry costs €0 until resolution works
       // (this guard aborts before any inference).
       if (escalationPeriod != null) {
-        await _rearmEscalation(
-          agentId,
-          derivation.periodKey,
-          triggerTokens,
-          now,
+        await rearmConsumedEscalation(
+          syncService: _syncService,
+          agentId: agentId,
+          workspaceKey: goalEscalationWorkspaceKey(derivation.periodKey),
+          triggerTokens: triggerTokens,
+          scheduledAt: now,
+          updatedAt: now,
+          logError: logError,
         );
       }
       return const WakeResult(
@@ -530,15 +536,6 @@ class GoalAgentWorkflow with AgentErrorLogging {
           'do not claim that cooldown is system-wide or immutable.';
     }
 
-    final conversationId = _conversationRepository.createConversation(
-      systemMessage: composeAgentSystemPrompt(
-        scaffold: goalAgentSystemPrompt,
-        version: null,
-        soulVersion: null,
-      ),
-      maxTurns: agentIdentity.config.maxTurnsPerWake,
-    );
-
     if (pendingUserMessage == null) {
       await _persistUserMessage(
         agentId: agentId,
@@ -582,15 +579,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     );
 
     final allTools = [
-      for (final tool in goalAgentTools)
-        ChatCompletionTool(
-          type: ChatCompletionToolType.function,
-          function: FunctionObject(
-            name: tool.name,
-            description: tool.description,
-            parameters: tool.parameters,
-          ),
-        ),
+      for (final tool in goalAgentTools) tool.toChatCompletionTool(),
     ];
 
     // A tool that is not on the wire cannot be called. The deterministic tier
@@ -637,6 +626,16 @@ class GoalAgentWorkflow with AgentErrorLogging {
     );
     final recordConsumption = canRecordAgentConsumption;
     var outputsCommitted = false;
+    // Created immediately before the guarded region so `finally` can always
+    // delete it — the repository's conversation map lives as long as the app.
+    final conversationId = _conversationRepository.createConversation(
+      systemMessage: composeAgentSystemPrompt(
+        scaffold: goalAgentSystemPrompt,
+        version: null,
+        soulVersion: null,
+      ),
+      maxTurns: agentIdentity.config.maxTurnsPerWake,
+    );
 
     try {
       var usage = await _conversationRepository.sendMessage(
@@ -750,14 +749,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
       }
 
       final manager = _conversationRepository.getConversation(conversationId);
-      strategy.recordFinalResponse(
-        manager?.messages.reversed
-            .map(
-              (m) => m.mapOrNull(assistant: (a) => a.content),
-            )
-            .whereType<String>()
-            .firstOrNull,
-      );
+      strategy.recordFinalResponse(manager?.finalAssistantContent);
       if (pendingUserMessage != null) {
         final candidate = strategy.replyToUser ?? strategy.finalResponse;
         final staleAdRefusal =
@@ -817,7 +809,12 @@ class GoalAgentWorkflow with AgentErrorLogging {
       } catch (error, stackTrace) {
         final replyCommitted =
             pendingUserMessage != null &&
-            await _interactiveReplyCommitted(agentId, runKey);
+            await isInteractiveReplyCommitted(
+              repository: _repository,
+              replyMessageId: goalAgentReplyMessageId(agentId, runKey),
+              agentId: agentId,
+              runKey: runKey,
+            );
         if (!replyCommitted) rethrow;
         // runInTransaction commits the whole output batch before its deferred
         // outbox flush. The durable reply is therefore a transaction marker:
@@ -844,31 +841,16 @@ class GoalAgentWorkflow with AgentErrorLogging {
 
       // Bookkeeping, contained: a failed usage row must not fail (or
       // re-run!) a wake whose outputs already committed.
-      if (usage != null && usage.hasData) {
-        try {
-          await _syncService.upsertEntity(
-            AgentDomainEntity.wakeTokenUsage(
-              id: _uuid.v4(),
-              agentId: agentId,
-              runKey: runKey,
-              threadId: threadId,
-              modelId: resolved.modelId,
-              createdAt: now,
-              vectorClock: null,
-              inputTokens: usage.inputTokens,
-              outputTokens: usage.outputTokens,
-              thoughtsTokens: usage.thoughtsTokens,
-              cachedInputTokens: usage.cachedInputTokens,
-            ),
-          );
-        } catch (error, stackTrace) {
-          logError(
-            'failed to persist wake token usage',
-            error: error,
-            stackTrace: stackTrace,
-          );
-        }
-      }
+      await persistWakeTokenUsage(
+        syncService: _syncService,
+        usage: usage,
+        agentId: agentId,
+        runKey: runKey,
+        threadId: threadId,
+        modelId: resolved.modelId,
+        now: now,
+        logError: logError,
+      );
 
       return WakeResult(
         success: true,
@@ -898,74 +880,30 @@ class GoalAgentWorkflow with AgentErrorLogging {
       // failure re-armed would re-bill the wake and duplicate its
       // UUID-keyed outputs.
       if (!outputsCommitted && escalationPeriod != null) {
-        await _rearmEscalation(
-          agentId,
-          derivation.periodKey,
-          triggerTokens,
+        await rearmConsumedEscalation(
+          syncService: _syncService,
+          agentId: agentId,
+          workspaceKey: goalEscalationWorkspaceKey(derivation.periodKey),
+          triggerTokens: triggerTokens,
           // A refused API key cannot succeed until the user changes it:
           // retry a few times a day rather than on every scheduler pass.
-          AiErrorUtils.isAuthenticationFailure(error)
+          scheduledAt: AiErrorUtils.isAuthenticationFailure(error)
               ? now.add(authenticationFailureRetryDelay)
               : now,
+          updatedAt: now,
+          logError: logError,
         );
       }
       return WakeResult.failed(kind: 'Goal Phase B', error: error);
+    } finally {
+      // A wake's transcript and FACTS block must not outlive it.
+      _conversationRepository.deleteConversation(conversationId);
     }
-  }
-
-  Future<bool> _interactiveReplyCommitted(
-    String agentId,
-    String runKey,
-  ) async {
-    final entity = await _repository.getEntity(
-      goalAgentReplyMessageId(agentId, runKey),
-    );
-    return entity is AgentMessageEntity &&
-        entity.agentId == agentId &&
-        entity.metadata.runKey == runKey &&
-        entity.metadata.toolName == AgentConversationToolNames.replyToUser;
   }
 
   /// How long a Phase B wake that failed on a refused API key waits before
   /// its escalation is retried.
   static const authenticationFailureRetryDelay = Duration(hours: 6);
-
-  /// Re-arms the period's escalation as pending, due at [now] — a strictly
-  /// later deadline than the consumed record's, so this is the resolver's
-  /// supported reschedule-beats-consume path.
-  /// Contained: a failed re-arm is logged, never masks the original
-  /// failure.
-  Future<void> _rearmEscalation(
-    String agentId,
-    String periodKey,
-    Set<String> triggerTokens,
-    DateTime now,
-  ) async {
-    try {
-      await _syncService.upsertEntity(
-        AgentDomainEntity.scheduledWake(
-          id: scheduledWakeRecordId(
-            agentId,
-            workspaceKey: goalEscalationWorkspaceKey(periodKey),
-          ),
-          agentId: agentId,
-          scheduledAt: now.toUtc(),
-          status: ScheduledWakeStatus.pending,
-          reason: WakeReason.scheduled.name,
-          updatedAt: now,
-          vectorClock: null,
-          workspaceKey: goalEscalationWorkspaceKey(periodKey),
-          triggerTokens: [for (final token in triggerTokens) token],
-        ),
-      );
-    } catch (error, stackTrace) {
-      logError(
-        'failed to re-arm escalation after wake failure',
-        error: error,
-        stackTrace: stackTrace,
-      );
-    }
-  }
 
   /// Whether a nudge row belongs in THIS wake's view: rows from another
   /// spec version are invisible (they neither count as fresh actives nor

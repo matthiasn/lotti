@@ -486,22 +486,6 @@ void main() {
     });
   });
 
-  group('extractFinalAssistantContent', () {
-    test('returns null when manager is null', () {
-      expect(builder.extractFinalAssistantContent(null), isNull);
-    });
-
-    test('returns the last assistant message with text content', () {
-      final manager = MockConversationManager();
-      when(() => manager.messages).thenReturn([
-        const ChatCompletionMessage.assistant(content: 'first'),
-        const ChatCompletionMessage.assistant(content: 'final answer'),
-      ]);
-
-      expect(builder.extractFinalAssistantContent(manager), 'final answer');
-    });
-  });
-
   group('buildUserMessage', () {
     Future<({String text, int? logStart, int? logEnd})> build({
       bool hasReport = true,

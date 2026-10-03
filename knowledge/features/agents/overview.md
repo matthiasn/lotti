@@ -120,6 +120,35 @@ rendering — the task agent's critical self-review section and chronological
 journal, the day agent's fetch-40/keep-20 chronological replay, the goal
 agent's FACTS list.
 
+**The wake plumbing around the conversation is shared too**, so a fix lands in
+every kind at once:
+
+- [`resolveAgentTemplateContext`](../../../lib/features/agents/workflow/agent_template_context.dart)
+  resolves the agent's template, its active version and the template's soul.
+  It is null when there is no template or no active version, and it throws on
+  a broken soul chain.
+- [`persistWakeTokenUsage`](../../../lib/features/agents/workflow/wake_token_usage.dart)
+  writes one usage row per inference pass, attributed to the template when
+  there is one. It is contained in every kind: a lost usage row never fails,
+  or re-runs, a wake.
+- `ConversationManager.finalAssistantContent` (in
+  [`conversation_manager.dart`](../../../lib/features/ai/conversation/conversation_manager.dart))
+  is what the model last *said*. It skips tool-call-only turns whether the
+  provider encodes their content as null or as an empty string.
+- `AgentToolDefinition.toChatCompletionTool()` puts a declared tool on the wire
+  unchanged. The task agent's tool surface is the one that rewrites
+  descriptions and schemas first.
+- The goal and relationship agents' failure paths share
+  [`agent_wake_recovery.dart`](../../../lib/features/agents/workflow/agent_wake_recovery.dart).
+  `isInteractiveReplyCommitted` checks for this run's `reply_to_user` carrier,
+  so a turn already answered is not answered again on retry.
+  `rearmConsumedEscalation` re-arms a consumed escalation pending at a later
+  instant, with `updatedAt` kept at the moment of the rewrite even when the
+  retry is deferred.
+- Progress lines go through `AgentErrorLogging.logInfo`, beside `logError`.
+- Every workflow deletes its in-memory conversation in a `finally`, because
+  the repository's conversation map lives as long as the app.
+
 **There is no persisted `meta_improver` kind.** A meta-improver is a
 `template_improver` whose `recursionDepth > 0`. `recursionDepth` and the ritual
 cadence `feedbackWindowDays` live on `AgentConfig` — configuration set at

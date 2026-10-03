@@ -165,4 +165,51 @@ void main() {
       expect(_Renamed(logger).errorLogName, 'CustomName');
     });
   });
+
+  group('logInfo', () {
+    setUp(() {
+      when(
+        () => logger.log(
+          any<LogDomain>(),
+          any<String>(),
+          subDomain: any<String?>(named: 'subDomain'),
+        ),
+      ).thenAnswer((_) {});
+    });
+
+    test('logs to the domain the adopting class declares', () {
+      _Workflow(logger).logInfo('resolved template', subDomain: 'resolve');
+      _Runtime(logger).logInfo('wake queued');
+
+      verify(
+        () => logger.log(
+          LogDomain.agentWorkflow,
+          'resolved template',
+          subDomain: 'resolve',
+        ),
+      ).called(1);
+      verify(
+        () =>
+            logger.log(LogDomain.agentRuntime, 'wake queued', subDomain: null),
+      ).called(1);
+      verifyNever(
+        () => logger.error(
+          any<LogDomain>(),
+          any<Object>(),
+          message: any<String?>(named: 'message'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      );
+    });
+
+    test('is dropped without a structured logger', () {
+      // Progress lines are diagnostics: unlike errors they have no console
+      // fallback, so a logger-less adopter stays silent.
+      expect(
+        () => _Workflow(null).logInfo('resolved template'),
+        returnsNormally,
+      );
+      verifyZeroInteractions(logger);
+    });
+  });
 }

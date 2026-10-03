@@ -17,7 +17,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
     final conversationTimer = Stopwatch();
     final persistenceTimer = Stopwatch();
 
-    _log(
+    logInfo(
       'wake start: agent=${DomainLogger.sanitizeId(agentId)}, '
       'triggers=${triggerTokens.length}',
       subDomain: 'execute',
@@ -28,17 +28,17 @@ extension TaskAgentExecute on TaskAgentWorkflow {
     // self-heals before the agent decides anything.
     final state = await syncService.reconciledAgentState(agentId);
     if (state == null) {
-      _log('no agent state found — aborting wake', subDomain: 'execute');
+      logInfo('no agent state found — aborting wake', subDomain: 'execute');
       return const WakeResult(success: false, error: 'No agent state found');
     }
 
     final taskId = state.slots.activeTaskId;
     if (taskId == null) {
-      _log('no active task ID — aborting wake', subDomain: 'execute');
+      logInfo('no active task ID — aborting wake', subDomain: 'execute');
       return const WakeResult(success: false, error: 'No active task ID');
     }
 
-    _log(
+    logInfo(
       'state resolved, taskId=${DomainLogger.sanitizeId(taskId)}',
       subDomain: 'execute',
     );
@@ -94,16 +94,21 @@ extension TaskAgentExecute on TaskAgentWorkflow {
 
     // 2. Resolve the agent's template and active version. (Resolved before
     // compaction so the summarizer can use the wake's own model.)
-    final templateCtx = await _resolveTemplate(agentId);
+    final templateCtx = await resolveAgentTemplateContext(
+      templateService: templateService,
+      soulDocumentService: soulDocumentService,
+      agentId: agentId,
+      onTrace: (message) => logInfo(message, subDomain: 'resolve'),
+    );
     if (templateCtx == null) {
-      _log('no template assigned — aborting wake', subDomain: 'execute');
+      logInfo('no template assigned — aborting wake', subDomain: 'execute');
       return const WakeResult(
         success: false,
         error: 'No template assigned to agent',
       );
     }
 
-    _log(
+    logInfo(
       'template=${DomainLogger.sanitizeId(templateCtx.template.id)}, '
       'version=${DomainLogger.sanitizeId(templateCtx.version.id)}, '
       'model=${templateCtx.version.modelId ?? templateCtx.template.modelId}',
@@ -122,7 +127,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
     final resolvedProfile = resolvedSetup.profile;
     if (resolvedProfile == null) {
       if (agentIdentity.config.inferenceSetup != null) {
-        _log(
+        logInfo(
           'typed inference setup is ${resolvedSetup.status.name} — aborting wake',
           subDomain: 'execute',
         );
@@ -133,7 +138,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       }
       final modelId =
           templateCtx.version.modelId ?? templateCtx.template.modelId;
-      _log(
+      logInfo(
         'no provider configured for model $modelId — aborting wake',
         subDomain: 'execute',
       );
@@ -167,7 +172,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       // No silent caps: beyond the window, the oldest UNFOLDED verdicts
       // would leave the event substrate before being summarized (folded
       // verdicts stay provably covered via the checkpoint's coveredSources).
-      _log(
+      logInfo(
         'resolved-decision window saturated '
         '(${ledger.resolved.length} >= $TaskAgentWorkflow.resolvedDecisionWindow): oldest '
         'unfolded verdicts may drop from the event tail',
@@ -236,7 +241,10 @@ extension TaskAgentExecute on TaskAgentWorkflow {
     ).wait;
 
     if (taskDetails == null) {
-      _log('task not found in journal — aborting wake', subDomain: 'execute');
+      logInfo(
+        'task not found in journal — aborting wake',
+        subDomain: 'execute',
+      );
       return const WakeResult(success: false, error: 'Task not found');
     }
     final taskAttentionContext = await _maintainAndLoadAttentionClaims(
@@ -256,7 +264,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       reportCreatedAt: lastReport?.createdAt,
     );
     if (statusTransition != null) {
-      _log(
+      logInfo(
         'status changed since last report: '
         '${statusTransition.from} → ${statusTransition.to}',
         subDomain: 'execute',
@@ -720,7 +728,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       if (directQwenIssues.isNotEmpty) {
         final issueCodes = directQwenIssues.map((issue) => issue.name).toList()
           ..sort();
-        _log(
+        logInfo(
           'report defect detector matched: ${issueCodes.join(',')}; '
           'executorModelId=$modelId',
           subDomain: 'reportEditor',
@@ -729,7 +737,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       final shouldRunReportEditor =
           mistralReportEditorEligible || directQwenIssues.isNotEmpty;
       if (!reportEditorRouteEligible && isReportEditorCandidate) {
-        _log(
+        logInfo(
           'report editor route not eligible: '
           'providerType=${provider.inferenceProviderType.name};'
           'executorModelId=$modelId',
@@ -794,7 +802,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
                   ? '${TaskAgentReportEditor.auditToolPrefix}_direct_qwen_repaired'
                   : '${TaskAgentReportEditor.auditToolPrefix}_accepted',
             );
-            _log(
+            logInfo(
               'accepted report editor revision after '
               '${editResult.attempts} attempt(s)',
               subDomain: 'reportEditor',
@@ -807,7 +815,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
                   .map((issue) => issue.name)
                   .join(','),
             );
-            _log(
+            logInfo(
               'rejected report editor revision after '
               '${editResult.attempts} attempt(s): '
               '${editResult.validationIssues.map((issue) => issue.name).join(',')}; '
@@ -832,7 +840,8 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       persistenceTimer.start();
 
       // Persist token usage as a synced entity (non-fatal on failure).
-      await _persistTokenUsage(
+      await persistWakeTokenUsage(
+        syncService: syncService,
         usage: usage,
         agentId: agentId,
         runKey: runKey,
@@ -840,8 +849,10 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         modelId: modelId,
         templateCtx: templateCtx,
         now: now,
+        logError: logError,
       );
-      await _persistTokenUsage(
+      await persistWakeTokenUsage(
+        syncService: syncService,
         usage: reportEditorUsage,
         agentId: agentId,
         runKey: runKey,
@@ -849,11 +860,12 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         modelId: meliousQwen35122BA10BModelId,
         templateCtx: templateCtx,
         now: now,
+        logError: logError,
       );
 
       // Capture the final assistant response from the conversation manager.
       final manager = conversationRepository.getConversation(conversationId);
-      final finalContent = _extractFinalAssistantContent(manager);
+      final finalContent = manager?.finalAssistantContent;
       strategy.recordFinalResponse(finalContent);
 
       // 7–11. Persist all wake outputs atomically. Wrapping in a transaction
@@ -872,7 +884,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         // Initial wakes and material mutations require a current report.
         // An empty report is valid only when an existing projection remains
         // authoritative because the wake applied no material change.
-        _log(
+        logInfo(
           'no required report published despite forced retry',
           subDomain: 'execute',
         );
@@ -985,7 +997,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       preparationTimer.stop();
       conversationTimer.stop();
       persistenceTimer.stop();
-      _log(
+      logInfo(
         'wake stages: agent=${DomainLogger.sanitizeId(agentId)} '
         'run=${DomainLogger.sanitizeId(runKey)} '
         'preparationMs=${preparationTimer.elapsedMilliseconds} '

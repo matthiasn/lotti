@@ -17,7 +17,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
     final conversationTimer = Stopwatch();
     final persistenceTimer = Stopwatch();
 
-    _log(
+    logInfo(
       'wake start: agent=${DomainLogger.sanitizeId(agentId)}, '
       'triggers=${triggerTokens.length}',
       subDomain: 'execute',
@@ -26,14 +26,14 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
     // 1. Load current state, reconciled against the log (PR 4 B6).
     final loadedState = await syncService.reconciledAgentState(agentId);
     if (loadedState == null) {
-      _log('no agent state found — aborting wake', subDomain: 'execute');
+      logInfo('no agent state found — aborting wake', subDomain: 'execute');
       return const WakeResult(success: false, error: 'No agent state found');
     }
     var state = loadedState;
 
     final projectId = state.slots.activeProjectId;
     if (projectId == null) {
-      _log('no active project ID — aborting wake', subDomain: 'execute');
+      logInfo('no active project ID — aborting wake', subDomain: 'execute');
       throw StateError('No active project ID');
     }
 
@@ -51,7 +51,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
     if (slotUpdate && lastReport != null) {
       final latestState = await agentRepository.getAgentState(agentId) ?? state;
       if (!latestState.isReportStale) {
-        _log(
+        logInfo(
           'update slot fired over a fresh report — no inference',
           subDomain: 'execute',
         );
@@ -95,7 +95,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
       projectId,
     );
     if (projectEntity == null) {
-      _log(
+      logInfo(
         'project not found in journal — aborting wake',
         subDomain: 'execute',
       );
@@ -110,7 +110,11 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
     );
 
     // 5. Resolve template and active version.
-    final templateCtx = await _resolveTemplate(agentId);
+    final templateCtx = await resolveAgentTemplateContext(
+      templateService: templateService,
+      soulDocumentService: soulDocumentService,
+      agentId: agentId,
+    );
 
     // 6. Resolve inference profile → provider.
     final profileResolver = ProfileResolver(
@@ -124,7 +128,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
           )
         : null;
     if (resolvedProfile == null) {
-      _log(
+      logInfo(
         'no provider configured — aborting wake',
         subDomain: 'execute',
       );
@@ -292,7 +296,8 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
       persistenceTimer.start();
 
       // Persist token usage.
-      await _persistTokenUsage(
+      await persistWakeTokenUsage(
+        syncService: syncService,
         usage: usage,
         agentId: agentId,
         runKey: runKey,
@@ -300,11 +305,12 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
         modelId: modelId,
         templateCtx: templateCtx,
         now: now,
+        logError: logError,
       );
 
       // Capture final assistant response.
       final manager = conversationRepository.getConversation(conversationId);
-      final finalContent = _extractFinalAssistantContent(manager);
+      final finalContent = manager?.finalAssistantContent;
       strategy.recordFinalResponse(finalContent);
 
       // 9. Persist all wake outputs. Strip any internal entity ids the model
@@ -487,7 +493,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
           );
         }
         if (changeItems.length < proposedItems.length) {
-          _log(
+          logInfo(
             'dropped ${proposedItems.length - changeItems.length} duplicate '
             'proposal(s) already open or rejected',
             subDomain: 'execute',
@@ -570,7 +576,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
       // slot covers it; nothing re-runs now.
       await _armNextUpdate(agentId);
 
-      _log(
+      logInfo(
         'wake completed: ${observations.length} observations, '
         '${deferredItems.length} deferred items',
         subDomain: 'execute',
@@ -588,7 +594,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
       preparationTimer.stop();
       conversationTimer.stop();
       persistenceTimer.stop();
-      _log(
+      logInfo(
         'wake stages: agent=${DomainLogger.sanitizeId(agentId)} '
         'run=${DomainLogger.sanitizeId(runKey)} '
         'preparationMs=${preparationTimer.elapsedMilliseconds} '

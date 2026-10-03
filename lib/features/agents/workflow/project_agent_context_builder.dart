@@ -9,16 +9,11 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
+import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/agent_system_prompt.dart';
-import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:openai_dart/openai_dart.dart';
-
-/// Callback used by the agent context builders to surface non-fatal errors
-/// through the owning workflow's structured logger.
-typedef LogErrorCallback =
-    void Function(String message, {Object? error, StackTrace? stackTrace});
 
 /// Prompt/context assembly and payload-resolution collaborator of the
 /// Project Agent wake cycle.
@@ -311,31 +306,9 @@ is listed under `## Open Proposal Guard` with its fingerprint.
   List<ChatCompletionTool> buildToolDefinitions({
     bool hasOpenProposals = false,
   }) {
-    return projectAgentToolsFor(hasOpenProposals: hasOpenProposals).map((
-      tool,
-    ) {
-      return ChatCompletionTool(
-        type: ChatCompletionToolType.function,
-        function: FunctionObject(
-          name: tool.name,
-          description: tool.description,
-          parameters: tool.parameters,
-        ),
-      );
-    }).toList();
-  }
-
-  String? extractFinalAssistantContent(ConversationManager? manager) {
-    if (manager == null) return null;
-    final messages = manager.messages;
-    for (var i = messages.length - 1; i >= 0; i--) {
-      final msg = messages[i];
-      final content = msg.mapOrNull(assistant: (a) => a.content);
-      if (content != null && content.isNotEmpty) {
-        return content;
-      }
-    }
-    return null;
+    return projectAgentToolsFor(
+      hasOpenProposals: hasOpenProposals,
+    ).map((tool) => tool.toChatCompletionTool()).toList();
   }
 
   // ── Linked-task context ───────────────────────────────────────────────────

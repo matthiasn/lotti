@@ -11,11 +11,14 @@ import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/util/text_utils.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
+import 'package:lotti/features/agents/workflow/agent_template_context.dart';
 import 'package:lotti/features/agents/workflow/carrierless_attribution.dart';
 import 'package:lotti/features/agents/workflow/deferred_change_items.dart';
 import 'package:lotti/features/agents/workflow/event_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/event_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
+import 'package:lotti/features/agents/workflow/wake_token_usage.dart';
+import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
@@ -79,10 +82,6 @@ class EventAgentWorkflow with AgentErrorLogging {
         logError: logError,
       );
 
-  void _log(String message, {String? subDomain}) {
-    domainLogger?.log(LogDomain.agentWorkflow, message, subDomain: subDomain);
-  }
-
   /// Execute a full wake cycle for the given event agent.
   Future<WakeResult> execute({
     required AgentIdentityEntity agentIdentity,
@@ -92,7 +91,7 @@ class EventAgentWorkflow with AgentErrorLogging {
   }) async {
     final agentId = agentIdentity.id;
 
-    _log(
+    logInfo(
       'wake start: agent=${DomainLogger.sanitizeId(agentId)}, '
       'triggers=${triggerTokens.length}',
       subDomain: 'execute',
@@ -101,13 +100,13 @@ class EventAgentWorkflow with AgentErrorLogging {
     // 1. Load current state, reconciled against the log.
     final state = await syncService.reconciledAgentState(agentId);
     if (state == null) {
-      _log('no agent state found — aborting wake', subDomain: 'execute');
+      logInfo('no agent state found — aborting wake', subDomain: 'execute');
       return const WakeResult(success: false, error: 'No agent state found');
     }
 
     final eventId = state.slots.activeEventId;
     if (eventId == null) {
-      _log('no active event ID — aborting wake', subDomain: 'execute');
+      logInfo('no active event ID — aborting wake', subDomain: 'execute');
       return const WakeResult(success: false, error: 'No active event ID');
     }
 
@@ -121,7 +120,10 @@ class EventAgentWorkflow with AgentErrorLogging {
 
     final eventEntity = await journalRepository.getJournalEntityById(eventId);
     if (eventEntity == null) {
-      _log('event not found in journal — aborting wake', subDomain: 'execute');
+      logInfo(
+        'event not found in journal — aborting wake',
+        subDomain: 'execute',
+      );
       return const WakeResult(success: false, error: 'Event not found');
     }
 
@@ -132,7 +134,11 @@ class EventAgentWorkflow with AgentErrorLogging {
       limit: eventObservationLookback,
     );
 
-    final templateCtx = await _resolveTemplate(agentId);
+    final templateCtx = await resolveAgentTemplateContext(
+      templateService: templateService,
+      soulDocumentService: soulDocumentService,
+      agentId: agentId,
+    );
 
     final profileResolver = ProfileResolver(
       aiConfigRepository: aiConfigRepository,
@@ -145,7 +151,7 @@ class EventAgentWorkflow with AgentErrorLogging {
           )
         : null;
     if (resolvedProfile == null) {
-      _log('no provider configured — aborting wake', subDomain: 'execute');
+      logInfo('no provider configured — aborting wake', subDomain: 'execute');
       return const WakeResult(
         success: false,
         error: 'No inference provider configured',
@@ -291,7 +297,8 @@ class EventAgentWorkflow with AgentErrorLogging {
         }
       }
 
-      await _persistTokenUsage(
+      await persistWakeTokenUsage(
+        syncService: syncService,
         usage: usage,
         agentId: agentId,
         runKey: runKey,
@@ -299,12 +306,11 @@ class EventAgentWorkflow with AgentErrorLogging {
         modelId: modelId,
         templateCtx: templateCtx,
         now: now,
+        logError: logError,
       );
 
       final manager = conversationRepository.getConversation(conversationId);
-      final finalContent = _contextBuilder.extractFinalAssistantContent(
-        manager,
-      );
+      final finalContent = manager?.finalAssistantContent;
       strategy.recordFinalResponse(finalContent);
 
       // 7. Persist all wake outputs. Strip any internal entity ids the model
@@ -485,7 +491,7 @@ class EventAgentWorkflow with AgentErrorLogging {
       }
       onPersistedStateChanged?.call(agentId);
 
-      _log(
+      logInfo(
         'wake completed: ${extractedObservations.length} observations',
         subDomain: 'execute',
       );
@@ -535,42 +541,6 @@ class EventAgentWorkflow with AgentErrorLogging {
     }
   }
 
-  Future<void> _persistTokenUsage({
-    required InferenceUsage? usage,
-    required String agentId,
-    required String runKey,
-    required String threadId,
-    required String modelId,
-    required _TemplateContext? templateCtx,
-    required DateTime now,
-  }) async {
-    if (usage == null || !usage.hasData) return;
-
-    try {
-      await syncService.upsertEntity(
-        AgentDomainEntity.wakeTokenUsage(
-          id: _uuid.v4(),
-          agentId: agentId,
-          runKey: runKey,
-          threadId: threadId,
-          modelId: modelId,
-          templateId: templateCtx?.template.id,
-          templateVersionId: templateCtx?.version.id,
-          soulDocumentId: templateCtx?.soulVersion?.agentId,
-          soulDocumentVersionId: templateCtx?.soulVersion?.id,
-          createdAt: now,
-          vectorClock: null,
-          inputTokens: usage.inputTokens,
-          outputTokens: usage.outputTokens,
-          thoughtsTokens: usage.thoughtsTokens,
-          cachedInputTokens: usage.cachedInputTokens,
-        ),
-      );
-    } catch (e, s) {
-      logError('failed to persist token usage', error: e, stackTrace: s);
-    }
-  }
-
   /// Issues a second, forced inference pass to recover a missing recap.
   ///
   /// When the model stops without calling `update_report`, this sends one more
@@ -590,7 +560,7 @@ class EventAgentWorkflow with AgentErrorLogging {
     String? consumptionWakeRunKey,
     String? consumptionThreadId,
   }) async {
-    _log(
+    logInfo(
       'no recap published — retrying with forced update_report',
       subDomain: 'execute',
     );
@@ -649,34 +619,4 @@ class EventAgentWorkflow with AgentErrorLogging {
         return 'Deferred: $toolName';
     }
   }
-
-  Future<_TemplateContext?> _resolveTemplate(String agentId) async {
-    final template = await templateService.getTemplateForAgent(agentId);
-    if (template == null) return null;
-
-    final version = await templateService.getActiveVersion(template.id);
-    if (version == null) return null;
-
-    final soulVersion = await soulDocumentService?.resolveActiveSoulForTemplate(
-      template.id,
-    );
-
-    return _TemplateContext(
-      template: template,
-      version: version,
-      soulVersion: soulVersion,
-    );
-  }
-}
-
-class _TemplateContext {
-  const _TemplateContext({
-    required this.template,
-    required this.version,
-    this.soulVersion,
-  });
-
-  final AgentTemplateEntity template;
-  final AgentTemplateVersionEntity version;
-  final SoulDocumentVersionEntity? soulVersion;
 }

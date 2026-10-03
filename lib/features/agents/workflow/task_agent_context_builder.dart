@@ -17,12 +17,10 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/correction_examples_builder.dart';
 import 'package:lotti/features/agents/tools/task_agent_tool_gate.dart';
 import 'package:lotti/features/agents/tools/task_label_handler.dart';
+import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
-import 'package:lotti/features/agents/workflow/project_agent_context_builder.dart'
-    show LogErrorCallback;
 import 'package:lotti/features/agents/workflow/task_agent_evidence_synthesis.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
-import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/tasks/model/directed_relation.dart';
 import 'package:lotti/services/time_service.dart';
@@ -493,27 +491,6 @@ class TaskAgentContextBuilder {
           );
         })
         .toList();
-  }
-
-  /// Extracts the final assistant text content from the conversation manager.
-  String? extractFinalAssistantContent(ConversationManager? manager) {
-    if (manager == null) return null;
-
-    // Walk backwards through messages to find the last assistant message
-    // with text content (not a tool-call-only message).
-    for (final message in manager.messages.reversed) {
-      if (message case ChatCompletionMessage(
-        role: ChatCompletionMessageRole.assistant,
-      )) {
-        final content = message.mapOrNull(
-          assistant: (m) => m.content,
-        );
-        if (content != null && content.isNotEmpty) {
-          return content;
-        }
-      }
-    }
-    return null;
   }
 
   /// Builds the user message for a wake cycle. [taskDetails] is the compact
