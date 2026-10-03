@@ -2,8 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/ui/agent_wake_cadence_field.dart';
 import 'package:lotti/features/agents/ui/profile_selector.dart';
 import 'package:lotti/features/agents/ui/template_selector.dart';
+import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
@@ -306,6 +308,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
               _buildAutomaticInferenceSwitch(category),
               _buildDefaultTemplatePicker(category),
               _buildAutomaticAgentWakesSwitch(category),
+              _buildAgentWakeCadencePicker(category),
               if (ref.watch(configFlagProvider(enableEventsFlag)).value ??
                   false)
                 _buildDefaultEventTemplatePicker(category),

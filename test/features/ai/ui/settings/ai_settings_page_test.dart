@@ -3,12 +3,14 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agent_wake_cadence.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_runtime_settings.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show CascadeDeletionResult, aiConfigRepositoryProvider;
 import 'package:lotti/features/ai/speech/sherpa_installed_models_provider.dart';
+import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/ai/state/profile_usage_provider.dart';
 import 'package:lotti/features/ai/ui/inference_profile_form.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
@@ -248,6 +250,10 @@ void main() {
   testWidgets(
     'sherpa cards follow installed files rather than synced model rows',
     (tester) async {
+      // Tall enough for the header (search, concurrency, default cadence)
+      // and the first cards; the width keeps the layout breakpoint.
+      await tester.binding.setSurfaceSize(const Size(800, 1400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       var installed = <String>{};
       await pumpWith(
         tester: tester,
@@ -301,6 +307,10 @@ void main() {
   testWidgets('Models tab lists only sherpa models verified on this device', (
     tester,
   ) async {
+    // Tall enough for the header (search, concurrency, default cadence)
+    // and the first cards; the width keeps the layout breakpoint.
+    await tester.binding.setSurfaceSize(const Size(800, 1400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     var installed = <String>{};
     await pumpWith(
       tester: tester,
@@ -582,6 +592,10 @@ void main() {
     testWidgets(
       'profile provider lookup includes a chat-only provider reference',
       (tester) async {
+        // Tall enough for the header (search, concurrency, default cadence)
+        // and the first cards; the width keeps the layout breakpoint.
+        await tester.binding.setSurfaceSize(const Size(800, 1400));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
         await pumpWith(
           tester: tester,
           providers: [
@@ -1473,6 +1487,39 @@ void main() {
     );
 
     testWidgets(
+      'the header shows the device default wake cadence and stores a new one',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await pumpSeeded(
+          tester: tester,
+          initialTab: AiSettingsTab.providers,
+          providers: [
+            buildProvider(id: 'p1', type: InferenceProviderType.gemini),
+          ],
+          models: const <AiConfig>[],
+          profiles: const <AiConfig>[],
+        );
+        AiSettingsHeaderBar header() => tester.widget<AiSettingsHeaderBar>(
+          find.byType(AiSettingsHeaderBar),
+        );
+        expect(header().defaultWakeCadence, AgentWakeCadence.hourly);
+
+        header().onDefaultWakeCadenceChanged(AgentWakeCadence.live);
+        await tester.pump();
+
+        expect(header().defaultWakeCadence, AgentWakeCadence.live);
+        expect(
+          ProviderScope.containerOf(
+            tester.element(find.byType(AiSettingsHeaderBar)),
+          ).read(aiRuntimeSettingsControllerProvider).defaultWakeCadence,
+          AgentWakeCadence.live,
+        );
+      },
+    );
+
+    testWidgets(
       'hideHeader=false keeps the in-pane `SettingsPageHeader` mounted — '
       'the mobile / standalone surface still needs the title strip + back '
       'button because there is no breadcrumb above it',
@@ -2031,6 +2078,10 @@ void main() {
     'a first providers load that fails shows the error state, and RETRY '
     're-subscribes and recovers',
     (tester) async {
+      // Tall enough for the header (search, concurrency, default cadence)
+      // and the first cards; the width keeps the layout breakpoint.
+      await tester.binding.setSurfaceSize(const Size(800, 1400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       var subscriptions = 0;
       when(
         () => mockRepository.watchConfigsByType(AiConfigType.inferenceProvider),

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/agent_wake_cadence.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/sync/g_counter.dart';
@@ -211,6 +212,30 @@ void main() {
 
       expect(setup.mode, AgentInferenceSetupMode.disabled);
       expect(setup.origin, AgentInferenceSetupOrigin.unknown);
+    });
+
+    for (final cadence in <AgentWakeCadence?>[
+      null,
+      ...AgentWakeCadence.values,
+    ]) {
+      test('wake cadence $cadence round-trips by name', () {
+        final json = jsonDecode(
+          jsonEncode(AgentConfig(wakeCadence: cadence).toJson()),
+        );
+
+        expect((json as Map<String, dynamic>)['wakeCadence'], cadence?.name);
+        expect(AgentConfig.fromJson(json).wakeCadence, cadence);
+      });
+    }
+
+    test("a newer build's cadence reads as unset, so the category applies", () {
+      final config = AgentConfig.fromJson(const <String, dynamic>{
+        'wakeCadence': 'everyFortnight',
+        'automaticUpdatesEnabled': true,
+      });
+
+      expect(config.wakeCadence, isNull);
+      expect(config.automaticUpdatesEnabled, isTrue);
     });
 
     for (final preference in <bool?>[null, true, false]) {

@@ -865,6 +865,7 @@ class SkillInferenceRunner {
             sourceEntryId: imageEntryId,
             linkedTaskId: linkedTaskId,
             subDomain: 'runImageAnalysis',
+            imageAnalysis: true,
           );
         } else {
           final originalText = currentImage.entryText?.markdown ?? '';
@@ -1801,8 +1802,10 @@ class SkillInferenceRunner {
   /// `updateDbEntity` produces when the source entry itself is edited, for
   /// EVERY parent task rather than just the resolved [linkedTaskId]: one
   /// recording or image can be linked from several tasks, and each parent's
-  /// agent needs its normal subscription wake (120 s coalescing,
+  /// agent needs its normal subscription wake (its cadence's coalescing,
   /// automatic-updates opt-in / stale-marking) to pick the new content up.
+  /// With [imageAnalysis] set the batch also carries
+  /// `imageAnalysisNotification`, which brings that wake to within a minute.
   ///
   /// Non-task parents are skipped — only task contexts render nested AI
   /// responses, so waking their agents would burn inference on content the
@@ -1817,6 +1820,7 @@ class SkillInferenceRunner {
     required String sourceEntryId,
     required String subDomain,
     String? linkedTaskId,
+    bool imageAnalysis = false,
   }) async {
     final staleIds = <String>{?linkedTaskId};
     try {
@@ -1835,7 +1839,13 @@ class SkillInferenceRunner {
     }
     if (staleIds.isNotEmpty) {
       getIt<UpdateNotifications>().notify({
-        for (final id in staleIds) ...{id, propagatedNotification(id)},
+        for (final id in staleIds) ...{
+          id,
+          propagatedNotification(id),
+          // Lets the task agent run within a minute instead of at its
+          // cadence (see `AgentWakeCadence.respondsToImageAnalysis`).
+          if (imageAnalysis) imageAnalysisNotification(id),
+        },
       });
     }
   }

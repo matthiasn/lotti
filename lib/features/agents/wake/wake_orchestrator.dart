@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/agent_wake_cadence.dart';
 import 'package:lotti/classes/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
@@ -116,6 +117,14 @@ typedef SyncAgentStateUpdater =
 /// proceeds (healing is an optimization, never a correctness mechanism).
 typedef WakeStartHook =
     Future<void> Function(String agentId, String runKey, String threadId);
+
+/// Resolves a task agent's wake cadence from its own `override` and its
+/// `categoryId`.
+typedef TaskWakeCadenceResolver =
+    AgentWakeCadence Function({
+      required AgentWakeCadence? override,
+      required String? categoryId,
+    });
 
 /// Signature for the callback that executes a wake cycle.
 ///
@@ -268,6 +277,7 @@ class WakeOrchestrator with AgentErrorLogging {
     this.localHostId,
     this.maxConcurrentWakes = _defaultMaxConcurrentWakes,
     this.intentStore,
+    this.taskWakeCadenceResolver,
   }) {
     queue
       ..onEnqueued = (job) {
@@ -277,7 +287,7 @@ class WakeOrchestrator with AgentErrorLogging {
       ..onMerged = (job, _) => _recordIntent(job);
     _throttle = WakeThrottleCoordinator(
       repository: repository,
-      throttleWindow: throttleWindow,
+      throttleWindowFor: _coalescingWindowFor,
       onPersistedStateChanged: onPersistedStateChanged,
       onDrainRequested: processNext,
       domainLogger: domainLogger,
@@ -296,6 +306,13 @@ class WakeOrchestrator with AgentErrorLogging {
   /// capacity. This makes a persisted settings change effective without
   /// rebuilding the orchestrator or restarting the app.
   final MaxConcurrentWakes maxConcurrentWakes;
+
+  /// Resolves a task agent's wake cadence from its own choice and its
+  /// category, falling back to the app default (see
+  /// [resolveAgentWakeCadence]). Consulted on every match, so a changed
+  /// category or default applies without re-registering anything. Without a
+  /// resolver every agent keeps the standard two-minute window.
+  final TaskWakeCadenceResolver? taskWakeCadenceResolver;
 
   /// Optional domain logger for structured, PII-safe logging.
   @override
@@ -735,6 +752,12 @@ class WakeOrchestrator with AgentErrorLogging {
   final _agentsAwaitingContent = <String>{};
   final _automaticUpdatesDisabledAgents = <String>{};
 
+  /// What [taskWakeCadenceResolver] needs per task agent: the task's own
+  /// cadence and its category. Agents absent here (every non-task agent) have
+  /// no cadence.
+  final _taskWakeCadenceInputs =
+      <String, ({AgentWakeCadence? override, String? categoryId})>{};
+
   /// Latest unpersisted stale signal per agent. Writes are serialized per
   /// agent so bursts coalesce without allowing an older async write to land
   /// after a newer one.
@@ -770,7 +793,7 @@ class WakeOrchestrator with AgentErrorLogging {
   /// Also used as the initial deferral window: the first subscription
   /// notification does not dispatch immediately but schedules a deferred
   /// drain after this duration, allowing bursty edits to coalesce.
-  static const throttleWindow = Duration(seconds: 120);
+  static const Duration throttleWindow = liveCoalescingWindow;
 
   /// Hard upper bound for a single wake cycle. If the executor has not
   /// returned within this window the run is signalled to abort, the
@@ -950,8 +973,56 @@ class WakeOrchestrator with AgentErrorLogging {
     _suppression.clearAgent(agentId);
     _wakeCounters.remove(agentId);
     _agentsAwaitingContent.remove(agentId);
+    _taskWakeCadenceInputs.remove(agentId);
     clearThrottle(agentId);
   }
+
+  /// Records what resolves [agentId]'s wake cadence: the task's own choice
+  /// ([override], null to follow the category) and the task's category.
+  void setTaskWakeCadenceRuntime(
+    String agentId, {
+    required AgentWakeCadence? override,
+    required String? categoryId,
+  }) {
+    _taskWakeCadenceInputs[agentId] = (
+      override: override,
+      categoryId: categoryId,
+    );
+  }
+
+  /// Mirrors what resolves [identity]'s wake cadence — its own choice and its
+  /// task's category — into the runtime. Other agent kinds have no cadence
+  /// and are left alone.
+  ///
+  /// The category is the identity's single allowed category, which task
+  /// agents are created with; an agent scoped to none or several follows the
+  /// app default.
+  void mirrorTaskWakeCadence(AgentIdentityEntity identity) {
+    if (identity.kind != AgentKinds.taskAgent) return;
+    final categories = identity.allowedCategoryIds;
+    setTaskWakeCadenceRuntime(
+      identity.agentId,
+      override: identity.config.wakeCadence,
+      categoryId: categories.length == 1 ? categories.single : null,
+    );
+  }
+
+  /// The wake cadence that applies to [agentId] now, or `null` for an agent
+  /// without one — any non-task agent, or every agent when no resolver is
+  /// wired.
+  AgentWakeCadence? wakeCadenceFor(String agentId) {
+    final resolver = taskWakeCadenceResolver;
+    final inputs = _taskWakeCadenceInputs[agentId];
+    if (resolver == null || inputs == null) return null;
+    return resolver(override: inputs.override, categoryId: inputs.categoryId);
+  }
+
+  /// How long a change to [agentId]'s inputs waits before it runs: its
+  /// cadence's window, or [throttleWindow] for an agent without a cadence. A
+  /// cadence that never wakes on changes alone never arms a window, so its
+  /// value here is only a fallback.
+  Duration _coalescingWindowFor(String agentId) =>
+      wakeCadenceFor(agentId)?.coalescingWindow ?? throttleWindow;
 
   /// Stops every wake of [agentId] on this device, now: subscriptions and
   /// throttle go, queued work in every workspace is cancelled, and a running

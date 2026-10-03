@@ -370,12 +370,46 @@ void main() {
       repository: repository,
       onDrainRequested: onDrainRequested,
       onPersistedStateChanged: onPersistedStateChanged,
-      throttleWindow: _generatedThrottleWindow,
+      throttleWindowFor: (_) => _generatedThrottleWindow,
       domainLogger: domainLogger,
     );
   }
 
   group('WakeThrottleCoordinator', () {
+    test('a default deadline uses the window of the agent it is for', () {
+      fakeAsync((async) {
+        final drains = <DateTime>[];
+        final coordinator = WakeThrottleCoordinator(
+          repository: repository,
+          onDrainRequested: () async => drains.add(clock.now()),
+          throttleWindowFor: (agentId) => agentId == 'hourly'
+              ? const Duration(hours: 1)
+              : const Duration(minutes: 2),
+        );
+        addTearDown(coordinator.dispose);
+        final start = clock.now();
+
+        unawaited(coordinator.setDeadline('hourly'));
+        unawaited(coordinator.setDeadline('live'));
+        async.flushMicrotasks();
+
+        expect(
+          coordinator.deadlineFor('hourly'),
+          start.add(const Duration(hours: 1)),
+        );
+        expect(
+          coordinator.deadlineFor('live'),
+          start.add(const Duration(minutes: 2)),
+        );
+
+        async.elapse(const Duration(minutes: 2));
+        expect(drains, hasLength(1));
+        expect(coordinator.isThrottled('hourly'), isTrue);
+        async.elapse(const Duration(minutes: 58));
+        expect(drains, hasLength(2));
+      });
+    });
+
     test('a failed deadline persist is contained and reported as runtime', () {
       // Throttling is an in-memory decision; the persisted `nextWakeAt` only
       // survives a restart. A write failure must therefore not propagate into
@@ -500,7 +534,7 @@ void main() {
           repository: transactionRepository,
           onDrainRequested: () async {},
           onPersistedStateChanged: changed.add,
-          throttleWindow: _generatedThrottleWindow,
+          throttleWindowFor: (_) => _generatedThrottleWindow,
         );
         addTearDown(coordinator.dispose);
 
@@ -557,7 +591,7 @@ void main() {
             changed.add(id);
             if (id == 'agent-1') throw failure;
           },
-          throttleWindow: _generatedThrottleWindow,
+          throttleWindowFor: (_) => _generatedThrottleWindow,
           domainLogger: logger,
         );
         addTearDown(coordinator.dispose);
@@ -830,7 +864,7 @@ void main() {
         final coordinator = WakeThrottleCoordinator(
           repository: transactionRepository,
           onDrainRequested: () async {},
-          throttleWindow: _generatedThrottleWindow,
+          throttleWindowFor: (_) => _generatedThrottleWindow,
         );
         addTearDown(coordinator.dispose);
 

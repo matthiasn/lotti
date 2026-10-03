@@ -831,6 +831,8 @@ extension _AudioSummaryCases on _SkillInferenceTestSetup {
             linkedTaskId: 'task-1',
           );
 
+          // Exactly the child-changed pairs: an audio summary is not an
+          // image analysis, so it carries no image marker.
           final notifications =
               getIt<UpdateNotifications>() as MockUpdateNotifications;
           verify(

@@ -4504,6 +4504,12 @@ void main() {
         await processor.process(event: event, journalDb: journalDb);
 
         verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+        // A cadence chosen on the other device reaches this one's runtime.
+        verify(
+          () => mockOrchestrator.mirrorTaskWakeCadence(
+            entity as AgentIdentityEntity,
+          ),
+        ).called(1);
         verify(
           () => mockOrchestrator.enableAutomaticUpdatesRuntime('agent-active'),
         ).called(1);
@@ -5439,6 +5445,11 @@ void main() {
 
           await processor.process(event: event, journalDb: journalDb);
 
+          verify(
+            () => mockOrchestrator.mirrorTaskWakeCadence(
+              optedIn as AgentIdentityEntity,
+            ),
+          ).called(1);
           verify(
             () => mockOrchestrator.enableAutomaticUpdatesRuntime('agent-1'),
           ).called(1);

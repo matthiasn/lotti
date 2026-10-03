@@ -1,6 +1,7 @@
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/agent_wake_cadence.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_automation_policy.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -265,6 +266,7 @@ class TaskAgentService {
         AgentInferenceSetupMode.disabled;
     if (inferenceEnabled) {
       _registerTaskSubscription(identity.agentId, taskId);
+      orchestrator.mirrorTaskWakeCadence(identity);
       // Mirror the persisted preference into the runtime. Unconditionally
       // disabling was correct while this was hardcoded off; now it would park
       // a seeded-on agent in the disabled set, where only an explicit per-task
@@ -440,6 +442,34 @@ class TaskAgentService {
       'to ${setup.mode.name}',
       subDomain: 'lifecycle',
     );
+  }
+
+  /// Sets task agent [agentId]'s own wake cadence, or makes it follow its
+  /// category again when [cadence] is null. Returns `false` when the agent
+  /// does not exist.
+  ///
+  /// The choice syncs with the identity. It applies from the next change: a
+  /// countdown already running keeps its deadline, so switching to a slower
+  /// cadence never strands work that was about to run.
+  Future<bool> updateWakeCadence({
+    required String agentId,
+    required AgentWakeCadence? cadence,
+  }) async {
+    final updated = await syncService.runInTransaction(() async {
+      final identity = await agentService.getAgent(agentId);
+      if (identity == null || identity.config.wakeCadence == cadence) {
+        return identity;
+      }
+      final next = identity.copyWith(
+        config: identity.config.copyWith(wakeCadence: cadence),
+        updatedAt: clock.now(),
+      );
+      await syncService.upsertEntity(next);
+      return next;
+    });
+    if (updated == null) return false;
+    orchestrator.mirrorTaskWakeCadence(updated);
+    return true;
   }
 
   /// Enable or disable subscription-triggered automatic task updates.
@@ -789,6 +819,7 @@ class TaskAgentService {
     for (final link in links) {
       _registerTaskSubscription(agentId, link.toId);
     }
+    if (identity != null) orchestrator.mirrorTaskWakeCadence(identity);
     if (restoreCountdown) {
       await _hydrateThrottleDeadline(agentId);
     }
@@ -896,6 +927,7 @@ class TaskAgentService {
           _registerTaskSubscription(agent.agentId, link.toId);
           count++;
         }
+        orchestrator.mirrorTaskWakeCadence(agent);
 
         // Restore persisted deferred wake work so due deadlines survive app
         // restarts and backgrounding.

@@ -24,7 +24,7 @@ extension WakeBatchRouter on WakeOrchestrator {
     // the outcome independent of subscription registration order.
     var immediateDrainRequested = false;
     final immediateDrainAgents = <String>{};
-    final deadlineRequests = <String, DateTime?>{};
+    final deadlineRequests = <String, DateTime>{};
     for (final sub in _subscriptions) {
       // 1. Check whether any token matches the subscription's entity IDs.
       //    A "direct" match means the agent's own entity was edited
@@ -43,7 +43,18 @@ extension WakeBatchRouter on WakeOrchestrator {
       // emission was just bookkeeping for legacy listeners — treat the
       // match as propagated for the agent's deferral decision.
       final trueDirect = matched.difference(propagatedMatched);
-      final allMatched = matched.union(propagatedMatched);
+      // Markers name the entity they concern, so a marker arriving in a
+      // later batch than its write still reaches the agent watching it.
+      final flushMatched = sub.matchEntityIds
+          .where((id) => tokens.contains(wakeFlushNotification(id)))
+          .toSet();
+      final imageMatched = sub.matchEntityIds
+          .where((id) => tokens.contains(imageAnalysisNotification(id)))
+          .toSet();
+      final allMatched = matched
+          .union(propagatedMatched)
+          .union(flushMatched)
+          .union(imageMatched);
       if (allMatched.isEmpty) continue;
 
       _log(
@@ -116,12 +127,42 @@ extension WakeBatchRouter on WakeOrchestrator {
         continue;
       }
 
+      // A task agent's cadence decides how soon a change runs. Agents
+      // without one (every non-task agent) keep the standard window and
+      // ignore the markers, which only task-side actions emit.
+      final cadence = wakeCadenceFor(sub.agentId);
+      if (cadence != null && cadence.coalescingWindow == null) {
+        // "Only after recordings": a change alone never starts a run. The
+        // transcript path wakes the agent directly (requestContentWake).
+        _auditRouted(sub, allMatched, WakeDecisionCause.markedStaleOnly);
+        _scheduleReportStale(sub.agentId, clock.now());
+        _log(
+          'marked report stale for ${DomainLogger.sanitizeId(sub.agentId)}: '
+          'its cadence waits for a recording',
+          subDomain: 'cadence',
+        );
+        continue;
+      }
+      // Finished work (a stopped timer, a task marked done) takes every
+      // pending change with it now, instead of waiting out the cadence.
+      final drainNow =
+          sub.drainImmediately ||
+          (flushMatched.isNotEmpty &&
+              (cadence?.flushesOnFinishedWork ?? false));
+      // An image analysis brings the next run to within a minute, so a few
+      // images taken in a row share one run soon after the last of them.
+      final pullsForwardForImage =
+          imageMatched.isNotEmpty &&
+          (cadence?.respondsToImageAnalysis ?? false);
+
       // The fast-drain bit drives both the queued job's [hasDirectMatch] flag
       // and the throttle-gate escalation below. Task-agent subscriptions
       // deliberately treat propagated child updates as fast-drain updates so
       // task titles/summaries do not wait until the next daily digest slot.
       final usesFastThrottle =
-          trueDirect.isNotEmpty || !sub.deferPropagatedMatches;
+          trueDirect.isNotEmpty ||
+          flushMatched.isNotEmpty ||
+          !sub.deferPropagatedMatches;
 
       // 4. During-execution gate: when the agent is actively executing,
       //    silently queue the notification for the drain re-check instead
@@ -137,7 +178,7 @@ extension WakeBatchRouter on WakeOrchestrator {
           sub.agentId,
           allMatched,
           isDirect: usesFastThrottle,
-          markImmediate: sub.drainImmediately,
+          markImmediate: drainNow,
         );
         if (!merged) {
           final counter = _wakeCounters[sub.agentId] ?? 0;
@@ -157,7 +198,7 @@ extension WakeBatchRouter on WakeOrchestrator {
               reasonId: sub.id,
               createdAt: clock.now(),
               hasDirectMatch: usesFastThrottle,
-              drainImmediately: sub.drainImmediately,
+              drainImmediately: drainNow,
             ),
           );
         }
@@ -178,7 +219,7 @@ extension WakeBatchRouter on WakeOrchestrator {
       //    honouring it would defer exactly the wake this policy exists to
       //    dispatch (the drain re-check also skips throttled agents, so a
       //    stale deadline would strand the job).
-      if (sub.drainImmediately && _isThrottled(sub.agentId)) {
+      if (drainNow && _isThrottled(sub.agentId)) {
         clearThrottle(sub.agentId);
       } else if (_isThrottled(sub.agentId)) {
         final deadline = _throttle.deadlineFor(sub.agentId);
@@ -190,17 +231,25 @@ extension WakeBatchRouter on WakeOrchestrator {
         // Escalate the deadline when a direct match arrives on top of a
         // morning-deferred slot — leaving the user's edit waiting until
         // 06:00 because earlier propagation already armed a long timer
-        // would defeat the entire policy.
+        // would defeat the entire policy. The same pull applies to an image
+        // analysis inside an hour-long window. A deadline only ever moves
+        // earlier: an image never extends a countdown already running.
         if (usesFastThrottle && deadline != null) {
-          final immediate = clock.now().add(WakeOrchestrator.throttleWindow);
-          if (immediate.isBefore(deadline)) {
+          final pulled = _requestedDeadline(
+            sub.agentId,
+            clock.now(),
+            pullsForwardForImage: pullsForwardForImage,
+          );
+          if (pulled.isBefore(deadline)) {
             _log(
               'escalating ${DomainLogger.sanitizeId(sub.agentId)} '
-              'deadline from $deadline to $immediate '
-              '(fast-throttle match arrived during propagated deferral)',
+              'deadline from $deadline to $pulled '
+              '(${pullsForwardForImage ? 'image analysis' : 'fast-throttle match during propagated deferral'})',
               subDomain: 'throttle',
             );
-            unawaited(_setThrottleDeadline(sub.agentId));
+            unawaited(
+              _setThrottleDeadline(sub.agentId, customDeadline: pulled),
+            );
           }
         }
         _log(
@@ -233,7 +282,7 @@ extension WakeBatchRouter on WakeOrchestrator {
         reasonId: sub.id,
         createdAt: clock.now(),
         hasDirectMatch: usesFastThrottle,
-        drainImmediately: sub.drainImmediately,
+        drainImmediately: drainNow,
       );
 
       // Attempt to merge tokens into an existing queued job for this agent
@@ -242,15 +291,15 @@ extension WakeBatchRouter on WakeOrchestrator {
         sub.agentId,
         allMatched,
         isDirect: usesFastThrottle,
-        markImmediate: sub.drainImmediately,
+        markImmediate: drainNow,
       )) {
         queue.enqueue(job);
       }
 
-      // Immediate-drain subscriptions dispatch after the batch finishes
-      // routing: no deadline, no countdown. The evidence is atomic and the
-      // wake is cheap — see [AgentSubscription.drainImmediately].
-      if (sub.drainImmediately) {
+      // Immediate-drain subscriptions — and finished work — dispatch after
+      // the batch finishes routing: no deadline, no countdown. See
+      // [AgentSubscription.drainImmediately].
+      if (drainNow) {
         _log(
           'immediate drain for ${DomainLogger.sanitizeId(sub.agentId)}: '
           'dispatching without throttle deadline, '
@@ -280,32 +329,33 @@ extension WakeBatchRouter on WakeOrchestrator {
 
       // Defer-first: instead of dispatching immediately, set a throttle
       // deadline and schedule a deferred drain. Fast-throttle matches use the
-      // standard 120 s coalescing window; pure-propagated matches from
+      // agent's coalescing window (two minutes, or its cadence's); an image
+      // analysis caps that at a minute; pure-propagated matches from
       // subscriptions that opted into digest deferral use the next 06:00 so
       // project agents do not burn LLM tokens on every incidental fan-out.
-      final DateTime? morningDeadline;
-      if (!usesFastThrottle) {
-        morningDeadline = nextOccurrenceOf(
-          now,
-          hour: AgentSchedules.projectDailyDigestHour,
-        );
-      } else {
-        morningDeadline = null;
-      }
+      final requested = usesFastThrottle
+          ? _requestedDeadline(
+              sub.agentId,
+              now,
+              pullsForwardForImage: pullsForwardForImage,
+            )
+          : nextOccurrenceOf(
+              now,
+              hour: AgentSchedules.projectDailyDigestHour,
+            );
       // Recorded, not armed — the decision happens after the loop. The
       // fastest request wins when several subscriptions defer the same
-      // agent (null = the standard short window beats any morning slot).
+      // agent.
       deadlineRequests.update(
         sub.agentId,
-        (existing) => existing == null || morningDeadline == null
-            ? null
-            : (morningDeadline.isBefore(existing) ? morningDeadline : existing),
-        ifAbsent: () => morningDeadline,
+        (existing) => requested.isBefore(existing) ? requested : existing,
+        ifAbsent: () => requested,
       );
 
       _log(
         'deferred wake for ${DomainLogger.sanitizeId(sub.agentId)}: '
-        '${morningDeadline == null ? 'drain requested in ${WakeOrchestrator.throttleWindow.inSeconds}s' : 'drain requested at $morningDeadline (morning)'}, '
+        'drain requested at $requested'
+        '${usesFastThrottle ? '' : ' (morning)'}, '
         'reason=subscription, '
         'sub=${DomainLogger.sanitizeId(sub.id)}, '
         'triggers=${allMatched.map(DomainLogger.sanitizeId).join(',')}',
@@ -328,6 +378,22 @@ extension WakeBatchRouter on WakeOrchestrator {
       unawaited(_setThrottleDeadline(agentId, customDeadline: customDeadline));
     });
     if (immediateDrainRequested) unawaited(processNext());
+  }
+
+  /// When a fast match for [agentId] at [now] asks to run: after the agent's
+  /// coalescing window, or — for an image analysis — after at most
+  /// [imageAnalysisWindow].
+  DateTime _requestedDeadline(
+    String agentId,
+    DateTime now, {
+    required bool pullsForwardForImage,
+  }) {
+    final window = _coalescingWindowFor(agentId);
+    return now.add(
+      pullsForwardForImage && imageAnalysisWindow < window
+          ? imageAnalysisWindow
+          : window,
+    );
   }
 
   /// Returns `true` when all [matchedTokens] are covered by the agent's

@@ -198,9 +198,10 @@ void main() {
         expect(getIt<OutboxService>(), isA<InertOutboxService>());
 
         // The provider bridge omits matrixServiceProvider in guest mode:
-        // 13 overrides instead of the real profile's 14. Which providers those
-        // are is asserted in the 'agent runtime registrations' group below.
-        expect(buildProviderOverrides(context), hasLength(13));
+        // 14 overrides instead of the real profile's 15 (the entities cache is
+        // registered in both). Which providers those are is asserted in the
+        // 'agent runtime registrations' group below.
+        expect(buildProviderOverrides(context), hasLength(14));
         // The bridged logger is this generation's, the one whose domain
         // flags the bootstrap wired.
         final bridged = ProviderContainer(
@@ -273,7 +274,7 @@ void main() {
         isTrue,
       );
       // ...and the bridge carries the Matrix override too.
-      expect(buildProviderOverrides(context), hasLength(14));
+      expect(buildProviderOverrides(context), hasLength(15));
 
       // The startup node-profile broadcast reaches the outbox: real sync
       // wiring, end to end, without any network.

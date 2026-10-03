@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-
 import 'dart:ui' as ui;
 
 import 'package:flutter_animate/flutter_animate.dart';
@@ -35,6 +34,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/main.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -263,6 +263,10 @@ List<Override> buildProviderOverrides(ProfileContext context) {
     domainLoggerProvider.overrideWithValue(getIt<DomainLogger>()),
     outboxServiceProvider.overrideWithValue(getIt<OutboxService>()),
     aiConfigRepositoryProvider.overrideWithValue(getIt<AiConfigRepository>()),
+    if (getIt.isRegistered<EntitiesCacheService>())
+      entitiesCacheServiceProvider.overrideWithValue(
+        getIt<EntitiesCacheService>(),
+      ),
     // Daily OS and Goals plug their agent kinds into the shared runtime.
     // These are MERGES, not replacements: a kind missing from the map
     // silently falls back to the task-agent workflow.

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agent_wake_cadence.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
@@ -321,6 +322,36 @@ void main() {
         );
         expect(reverted.hasChanges, isTrue);
         expect(reverted.category?.automaticAgentWakesEnabled, isFalse);
+      },
+    );
+
+    test(
+      'setAgentWakeCadence flips hasChanges, and returning to the original '
+      'cadence clears it',
+      () async {
+        final category = CategoryTestUtils.createTestCategory(
+          agentWakeCadence: AgentWakeCadence.hourly,
+        );
+        when(
+          () => mockRepository.watchCategory(testCategoryId),
+        ).thenAnswer((_) => Stream.value(category));
+
+        final container = makeContainer();
+        final controller = await loadCategory(container);
+        CategoryDetailsState read() =>
+            container.read(categoryDetailsControllerProvider(testCategoryId));
+
+        controller.setAgentWakeCadence(AgentWakeCadence.live);
+        expect(read().hasChanges, isTrue);
+        expect(read().category?.agentWakeCadence, AgentWakeCadence.live);
+
+        // Following the app default again is a change of its own.
+        controller.setAgentWakeCadence(null);
+        expect(read().hasChanges, isTrue);
+        expect(read().category?.agentWakeCadence, isNull);
+
+        controller.setAgentWakeCadence(AgentWakeCadence.hourly);
+        expect(read().hasChanges, isFalse);
       },
     );
 

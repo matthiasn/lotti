@@ -2317,6 +2317,42 @@ abstract class AppLocalizations {
   /// **'{count} per day'**
   String agentWakeBudgetValue(int count);
 
+  /// Task-level wake cadence option that follows the category; the placeholder is the inherited cadence label
+  ///
+  /// In en, this message translates to:
+  /// **'Category: {cadence}'**
+  String agentWakeCadenceFollowCategory(String cadence);
+
+  /// Category-level wake cadence option that follows the app default; the placeholder is the inherited cadence label
+  ///
+  /// In en, this message translates to:
+  /// **'App default: {cadence}'**
+  String agentWakeCadenceFollowDefault(String cadence);
+
+  /// Wake cadence option: the assistant updates at most once an hour
+  ///
+  /// In en, this message translates to:
+  /// **'At most hourly'**
+  String get agentWakeCadenceHourly;
+
+  /// Label of the dropdown choosing how often a task assistant updates on its own (app default, category and task)
+  ///
+  /// In en, this message translates to:
+  /// **'Update cadence'**
+  String get agentWakeCadenceLabel;
+
+  /// Wake cadence option: the assistant updates about two minutes after a change
+  ///
+  /// In en, this message translates to:
+  /// **'2 minutes after a change'**
+  String get agentWakeCadenceLive;
+
+  /// Wake cadence option: the assistant only updates after an audio recording (or when asked)
+  ///
+  /// In en, this message translates to:
+  /// **'Only after recordings'**
+  String get agentWakeCadenceRecordingsOnly;
+
   /// No description provided for @aggregationDailyAvg.
   ///
   /// In en, this message translates to:
@@ -4020,6 +4056,12 @@ abstract class AppLocalizations {
   /// **'Fallback for agents without a configured inference route on this device.'**
   String get aiSettingsDefaultProfileDescription;
 
+  /// Helper text under the app-wide default wake cadence in AI settings
+  ///
+  /// In en, this message translates to:
+  /// **'How often task assistants update on their own when neither the task nor its category sets it. “At most hourly” still updates right away after a recording, a stopped timer or a task marked done, and within a minute of an image.'**
+  String get aiSettingsDefaultWakeCadenceDescription;
+
   /// No description provided for @aiSettingsEmptyDescription.
   ///
   /// In en, this message translates to:
@@ -5069,6 +5111,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Selectable for new entries'**
   String get categoryActiveSwitchDescription;
+
+  /// Helper text under the wake cadence dropdown on the category page
+  ///
+  /// In en, this message translates to:
+  /// **'Used by every task in this category that has no cadence of its own, including existing tasks.'**
+  String get categoryAgentWakeCadenceDescription;
 
   /// No description provided for @categoryAiDefaultsDescription.
   ///

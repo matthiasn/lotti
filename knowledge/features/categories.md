@@ -55,7 +55,7 @@ gestures and prompt assembly where an async round trip would be visible.
 - Reusable pickers: `CategoryPickerSheet`, `CategoryCreateModal`.
 - Presentation metadata (`name`, `color`, `icon`) and flags (`private`, `active`,
   `favorite`, `isAvailableForDayPlan`, `automaticInferenceEnabled`,
-  `automaticAgentWakesEnabled`).
+  `automaticAgentWakesEnabled`) and the live `agentWakeCadence`.
 - Stored defaults: `defaultLanguageCode`, `defaultProfileId`, `defaultTemplateId`,
   `defaultEventTemplateId`.
 - Category-scoped AI and speech context: `speechDictionary`,
@@ -146,9 +146,15 @@ chain, and [entity definitions](../domain/entity-definitions.md) for the model.
 task agents this category auto-creates — whether each one wakes on task changes or
 only when asked.
 
-**It is a seed, not a gate.** The per-task switch on the AI summary card owns the
-preference afterwards, so turning this on later does **not** reach back into tasks
-that already exist. The service mirrors the value into the wake orchestrator as
+**It is a seed, not a gate.** The per-task switch in the agent's internals panel
+owns the preference afterwards, so turning this on later does **not** reach back
+into tasks that already exist.
+
+`agentWakeCadence`, the picker under that switch, is the opposite: **live**. It
+decides how often enabled task agents in the category wake on their own — every
+task that has not chosen its own cadence follows it, existing ones included, and
+an unset category follows the device default. See
+[task-agent wake cadence](agents/wake-orchestration.md#task-agent-wake-cadence). The service mirrors the value into the wake orchestrator as
 well as persisting it, so a seeded-on agent wakes in the session it was created in
 rather than after the next restart.
 

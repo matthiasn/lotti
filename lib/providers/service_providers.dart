@@ -6,6 +6,7 @@ import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
 
 /// Provides the configured [MatrixService]. Must be overridden in [ProviderScope].
@@ -61,6 +62,16 @@ final domainLoggerProvider = Provider<DomainLogger>(
       ? getIt<DomainLogger>()
       : DomainLogger(loggingService: LoggingService()),
   name: 'domainLoggerProvider',
+);
+
+/// The shared [EntitiesCacheService], or `null` in a world without one.
+///
+/// `buildProviderOverrides` supplies the registered instance. Readers treat
+/// `null` as "no cached definitions" — a category then has no settings of its
+/// own — so a test wires one only when it needs categories.
+final entitiesCacheServiceProvider = Provider<EntitiesCacheService?>(
+  (ref) => null,
+  name: 'entitiesCacheServiceProvider',
 );
 
 /// Provides the shared [OutboxService]. Must be overridden in [ProviderScope].

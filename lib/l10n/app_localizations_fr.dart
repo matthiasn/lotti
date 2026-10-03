@@ -1348,6 +1348,29 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String agentWakeCadenceFollowCategory(String cadence) {
+    return 'Catégorie : $cadence';
+  }
+
+  @override
+  String agentWakeCadenceFollowDefault(String cadence) {
+    return 'Par défaut : $cadence';
+  }
+
+  @override
+  String get agentWakeCadenceHourly => 'Au plus toutes les heures';
+
+  @override
+  String get agentWakeCadenceLabel => 'Rythme de mise à jour';
+
+  @override
+  String get agentWakeCadenceLive => '2 minutes après un changement';
+
+  @override
+  String get agentWakeCadenceRecordingsOnly =>
+      'Seulement après les enregistrements';
+
+  @override
   String get aggregationDailyAvg => 'Moyenne quotidienne';
 
   @override
@@ -2383,6 +2406,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Profil de secours pour les agents sans modèle configuré sur cet appareil.';
 
   @override
+  String get aiSettingsDefaultWakeCadenceDescription =>
+      'À quelle fréquence les assistants de tâches se mettent à jour d’eux-mêmes quand ni la tâche ni sa catégorie ne le précisent. « Au plus toutes les heures » se met quand même à jour tout de suite après un enregistrement, un minuteur arrêté ou une tâche marquée terminée, et dans la minute qui suit une image.';
+
+  @override
   String get aiSettingsEmptyDescription =>
       'Ajoute-en un pour activer la transcription, la reconnaissance d\'images, la génération d\'images et la recherche sémantique.';
 
@@ -3050,6 +3077,10 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get categoryActiveSwitchDescription =>
       'Sélectionnable pour les nouvelles entrées';
+
+  @override
+  String get categoryAgentWakeCadenceDescription =>
+      'S’applique à chaque tâche de cette catégorie sans rythme propre, y compris les tâches existantes.';
 
   @override
   String get categoryAiDefaultsDescription =>

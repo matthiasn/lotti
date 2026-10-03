@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agent_wake_cadence.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/ui/agent_wake_cadence_field.dart';
 import 'package:lotti/features/agents/ui/template_selector.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
@@ -563,6 +565,62 @@ void main() {
       expect(saved.automaticAgentWakesEnabled, isTrue);
       expect(saved.automaticInferenceEnabled, isNull);
     });
+
+    Finder cadenceField() => find.byType(AgentWakeCadenceField);
+
+    testWidgets('the cadence picker is hidden without a default template', (
+      tester,
+    ) async {
+      await pumpPage(
+        tester,
+        category: CategoryTestUtils.createTestCategory(),
+      );
+
+      expect(cadenceField(), findsNothing);
+    });
+
+    testWidgets(
+      'an unset category shows the app default it follows, and a chosen '
+      'cadence is saved with the category',
+      (tester) async {
+        final category = CategoryTestUtils.createTestCategory(
+          defaultTemplateId: 'template-1',
+        );
+        when(
+          () => mockRepository.getCategoryById(testCategoryId),
+        ).thenAnswer((_) async => category);
+        when(
+          () => mockRepository.updateCategory(any()),
+        ).thenAnswer((_) async => category);
+
+        await pumpPage(tester, category: category);
+
+        final field = tester.widget<AgentWakeCadenceField>(cadenceField());
+        expect(field.value, isNull);
+        expect(field.inheritance, AgentWakeCadenceInheritance.appDefault);
+        expect(field.inheritedCadence, AgentWakeCadence.hourly);
+        expect(
+          find.text('App default: At most hourly'),
+          findsOneWidget,
+        );
+
+        field.onChanged(AgentWakeCadence.live);
+        await tester.pump();
+        expect(isPillEnabled(tester, 'Save'), isTrue);
+        await tester.tap(pillFinder('Save'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+
+        final saved =
+            verify(
+                  () => mockRepository.updateCategory(captureAny()),
+                ).captured.single
+                as CategoryDefinition;
+        expect(saved.agentWakeCadence, AgentWakeCadence.live);
+        // The wake switch is a separate, seed-only choice.
+        expect(saved.automaticAgentWakesEnabled, isNull);
+      },
+    );
   });
 
   group('GitHub repository', () {

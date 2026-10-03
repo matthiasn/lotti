@@ -1343,6 +1343,28 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String agentWakeCadenceFollowCategory(String cadence) {
+    return 'Kategorie: $cadence';
+  }
+
+  @override
+  String agentWakeCadenceFollowDefault(String cadence) {
+    return 'App-Standard: $cadence';
+  }
+
+  @override
+  String get agentWakeCadenceHourly => 'Höchstens stündlich';
+
+  @override
+  String get agentWakeCadenceLabel => 'Aktualisierungsrhythmus';
+
+  @override
+  String get agentWakeCadenceLive => '2 Minuten nach einer Änderung';
+
+  @override
+  String get agentWakeCadenceRecordingsOnly => 'Nur nach Aufnahmen';
+
+  @override
   String get aggregationDailyAvg => 'Tagesdurchschnitt';
 
   @override
@@ -2370,6 +2392,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Ersatzprofil für Agenten ohne konfigurierte Inferenz auf diesem Gerät.';
 
   @override
+  String get aiSettingsDefaultWakeCadenceDescription =>
+      'Wie oft sich Aufgaben-Assistenten von selbst aktualisieren, wenn weder die Aufgabe noch ihre Kategorie es festlegt. „Höchstens stündlich“ aktualisiert trotzdem sofort nach einer Aufnahme, einem gestoppten Timer oder einer erledigten Aufgabe und innerhalb einer Minute nach einem Bild.';
+
+  @override
   String get aiSettingsEmptyDescription =>
       'Füge einen hinzu, um Transkription, Bilderkennung, Bildgenerierung und semantische Suche freizuschalten.';
 
@@ -3032,6 +3058,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get categoryActiveSwitchDescription => 'Für neue Einträge wählbar';
+
+  @override
+  String get categoryAgentWakeCadenceDescription =>
+      'Gilt für jede Aufgabe dieser Kategorie ohne eigenen Rhythmus, auch für bestehende Aufgaben.';
 
   @override
   String get categoryAiDefaultsDescription =>

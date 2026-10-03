@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agent_wake_cadence.dart';
 import 'package:lotti/classes/day_agent_trigger_tokens.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
@@ -63,6 +64,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart'
     show
         domainLoggerProvider,
+        entitiesCacheServiceProvider,
         journalDbProvider,
         loggingServiceProvider,
         outboxServiceProvider;
@@ -78,6 +80,7 @@ import '../../../helpers/entity_factories.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../../categories/test_utils.dart';
 import '../../projects/test_utils.dart';
 import '../sync/fork_test_support.dart';
 import '../test_utils.dart';
@@ -2052,6 +2055,51 @@ void main() {
         orchestrator.intentStore,
         isNull,
         reason: 'no settings database, no durable wake intents',
+      );
+      // Without a category cache the device default applies, unless the task
+      // chose its own cadence.
+      final resolve = orchestrator.taskWakeCadenceResolver!;
+      expect(
+        resolve(override: null, categoryId: 'cat-1'),
+        AgentWakeCadence.hourly,
+      );
+      expect(
+        resolve(override: AgentWakeCadence.live, categoryId: 'cat-1'),
+        AgentWakeCadence.live,
+      );
+    });
+
+    test("the cadence resolver reads the task's category from the cache", () {
+      final runner = WakeRunner();
+      addTearDown(runner.dispose);
+      final cache = MockEntitiesCacheService();
+      when(() => cache.getCategoryById('cat-1')).thenReturn(
+        CategoryTestUtils.createTestCategory(
+          id: 'cat-1',
+          agentWakeCadence: AgentWakeCadence.recordingsOnly,
+        ),
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          entitiesCacheServiceProvider.overrideWithValue(cache),
+          loggingServiceProvider.overrideWithValue(LoggingService()),
+          agentRepositoryProvider.overrideWithValue(MockAgentRepository()),
+          wakeQueueProvider.overrideWithValue(WakeQueue()),
+          wakeRunnerProvider.overrideWithValue(runner),
+          domainLoggerProvider.overrideWithValue(
+            DomainLogger(loggingService: LoggingService()),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final resolve = container
+          .read(wakeOrchestratorProvider)
+          .taskWakeCadenceResolver!;
+      expect(
+        resolve(override: null, categoryId: 'cat-1'),
+        AgentWakeCadence.recordingsOnly,
       );
     });
 

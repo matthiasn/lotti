@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/classes/agent_wake_cadence.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 
@@ -33,6 +34,14 @@ abstract class AgentConfig with _$AgentConfig {
     /// null as off; legacy goal agents preserve their shipped on behavior in
     /// the goal service.
     bool? automaticUpdatesEnabled,
+
+    /// This task agent's own wake cadence, overriding its category's and the
+    /// app default. Null follows the category — see
+    /// [resolveAgentWakeCadence]. Only consulted while
+    /// [automaticUpdatesEnabled] is on; an unknown name from a newer build
+    /// reads as null.
+    @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)
+    AgentWakeCadence? wakeCadence,
 
     /// How many wakes this agent may run per calendar day, across all devices.
     ///

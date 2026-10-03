@@ -1,3 +1,4 @@
+import 'package:lotti/classes/agent_wake_cadence.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -21,6 +22,7 @@ class CategoryTestUtils {
     String? defaultTemplateId,
     bool? automaticInferenceEnabled,
     bool? automaticAgentWakesEnabled,
+    AgentWakeCadence? agentWakeCadence,
     List<String>? speechDictionary,
     List<ChecklistCorrectionExample>? correctionExamples,
     String? knowledgeBrief,
@@ -48,6 +50,7 @@ class CategoryTestUtils {
       defaultTemplateId: defaultTemplateId,
       automaticInferenceEnabled: automaticInferenceEnabled,
       automaticAgentWakesEnabled: automaticAgentWakesEnabled,
+      agentWakeCadence: agentWakeCadence,
       speechDictionary: speechDictionary,
       correctionExamples: correctionExamples,
       knowledgeBrief: knowledgeBrief,

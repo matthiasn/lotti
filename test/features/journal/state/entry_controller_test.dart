@@ -2320,6 +2320,67 @@ void main() {
         expect(savedState?.shouldShowEditorToolBar, isFalse);
       });
 
+      for (final fromTask in [true, false]) {
+        test(
+          'stopping a running timer ${fromTask ? 'flushes its task agent' : 'without a task flushes nothing'}',
+          () async {
+            final container = makeProviderContainer(
+              overrides: [
+                journalRepositoryProvider.overrideWithValue(
+                  MockJournalRepository(),
+                ),
+              ],
+            );
+            final notifier = container.read(
+              entryControllerProvider(entryId).notifier,
+            );
+            await container.read(entryControllerProvider(entryId).future);
+            notifier.setDirty(value: true);
+            when(
+              () => mockPersistenceLogic.updateJournalEntityText(
+                entryId,
+                any(),
+                any(),
+              ),
+            ).thenAnswer((_) async => true);
+            when(mockTimeService.stop).thenAnswer((_) async {});
+            when(mockTimeService.getCurrent).thenReturn(testTextEntry);
+            when(
+              () => mockTimeService.linkedFrom,
+            ).thenReturn(fromTask ? testTask : null);
+            final notified = <Set<String>>[];
+            when(() => mockUpdateNotifications.notify(any())).thenAnswer((
+              invocation,
+            ) {
+              notified.add(
+                invocation.positionalArguments.single as Set<String>,
+              );
+            });
+            addTearDown(() {
+              when(mockTimeService.getCurrent).thenReturn(null);
+              when(() => mockTimeService.linkedFrom).thenReturn(null);
+            });
+
+            await notifier.save(stopRecording: true);
+            await container.pump();
+
+            final flushes = notified.where(
+              (tokens) => tokens.any(
+                (t) => t.startsWith(wakeFlushNotificationPrefix),
+              ),
+            );
+            expect(
+              flushes,
+              fromTask
+                  ? [
+                      {wakeFlushNotification(testTask.meta.id)},
+                    ]
+                  : isEmpty,
+            );
+          },
+        );
+      }
+
       test('save propagates exception from updateJournalEntityText', () async {
         final localMockJournalRepository = MockJournalRepository();
         final exception = Exception('Persistence error');

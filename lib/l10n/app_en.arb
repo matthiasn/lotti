@@ -961,6 +961,42 @@
       }
     }
   },
+  "agentWakeCadenceFollowCategory": "Category: {cadence}",
+  "@agentWakeCadenceFollowCategory": {
+    "description": "Task-level wake cadence option that follows the category; the placeholder is the inherited cadence label",
+    "placeholders": {
+      "cadence": {
+        "type": "String",
+        "example": "At most hourly"
+      }
+    }
+  },
+  "agentWakeCadenceFollowDefault": "App default: {cadence}",
+  "@agentWakeCadenceFollowDefault": {
+    "description": "Category-level wake cadence option that follows the app default; the placeholder is the inherited cadence label",
+    "placeholders": {
+      "cadence": {
+        "type": "String",
+        "example": "At most hourly"
+      }
+    }
+  },
+  "agentWakeCadenceHourly": "At most hourly",
+  "@agentWakeCadenceHourly": {
+    "description": "Wake cadence option: the assistant updates at most once an hour"
+  },
+  "agentWakeCadenceLabel": "Update cadence",
+  "@agentWakeCadenceLabel": {
+    "description": "Label of the dropdown choosing how often a task assistant updates on its own (app default, category and task)"
+  },
+  "agentWakeCadenceLive": "2 minutes after a change",
+  "@agentWakeCadenceLive": {
+    "description": "Wake cadence option: the assistant updates about two minutes after a change"
+  },
+  "agentWakeCadenceRecordingsOnly": "Only after recordings",
+  "@agentWakeCadenceRecordingsOnly": {
+    "description": "Wake cadence option: the assistant only updates after an audio recording (or when asked)"
+  },
   "aggregationDailyAvg": "Daily average",
   "aggregationDailyMax": "Daily maximum",
   "aggregationDailySum": "Daily sum",
@@ -1585,6 +1621,10 @@
   "aiSettingsCounterProfiles": "Profiles",
   "aiSettingsCounterProviders": "Providers",
   "aiSettingsDefaultProfileDescription": "Fallback for agents without a configured inference route on this device.",
+  "aiSettingsDefaultWakeCadenceDescription": "How often task assistants update on their own when neither the task nor its category sets it. “At most hourly” still updates right away after a recording, a stopped timer or a task marked done, and within a minute of an image.",
+  "@aiSettingsDefaultWakeCadenceDescription": {
+    "description": "Helper text under the app-wide default wake cadence in AI settings"
+  },
   "aiSettingsEmptyDescription": "Add one to unlock transcription, image recognition, image generation, and semantic search.",
   "aiSettingsEmptyTitle": "No providers yet",
   "aiSettingsFilterByCapabilityTooltip": "Filter by {capability} capability",
@@ -1961,6 +2001,10 @@
   "cancelButton": "Cancel",
   "categoryActiveDescription": "Inactive categories won't appear in selection lists",
   "categoryActiveSwitchDescription": "Selectable for new entries",
+  "categoryAgentWakeCadenceDescription": "Used by every task in this category that has no cadence of its own, including existing tasks.",
+  "@categoryAgentWakeCadenceDescription": {
+    "description": "Helper text under the wake cadence dropdown on the category page"
+  },
   "categoryAiDefaultsDescription": "Set default AI profile and agent template for new tasks in this category",
   "categoryAiDefaultsTitle": "AI defaults",
   "categoryAutomaticAgentWakesDescription": "Let the assistant in this category update itself when a task changes. Applies to new tasks; existing ones keep their own setting.",

@@ -288,6 +288,24 @@ Future<void> _withDevicePlatform(
   body,
 );
 
+/// The settings header (search, wake concurrency, default wake cadence) can
+/// push a tab's later rows beyond the lazy list's built range on a phone.
+/// Scrolls [target] into reach to prove it renders, then returns to the top,
+/// where the capture is taken.
+Future<void> _expectReachableThenTop(WidgetTester tester, Finder target) async {
+  final scrollable = find
+      .descendant(
+        of: find.byType(AiSettingsPage),
+        matching: find.byType(Scrollable),
+      )
+      .first;
+  await tester.scrollUntilVisible(target, 200, scrollable: scrollable);
+  await settleFrames(tester, 4);
+  expect(target.hitTestable(), findsOneWidget);
+  tester.state<ScrollableState>(scrollable).position.jumpTo(0);
+  await settleFrames(tester, 4);
+}
+
 void main() {
   if (!screenshotCaptureEnabled) {
     test(
@@ -465,9 +483,9 @@ void main() {
             find.text(_t('Orbital Vision', 'Orbitaler Blick')),
             findsOneWidget,
           );
-          expect(
+          await _expectReachableThenTop(
+            tester,
             find.text(_t('Penguin Audio Bay', 'Pinguin-Audiobucht')),
-            findsOneWidget,
           );
           await captureScreenshot(
             tester,
@@ -498,23 +516,7 @@ void main() {
           final coverArtist = find.text(
             _t('Project Waddle Cover Artist', 'Project-Waddle-Titelkünstler'),
           );
-          final settingsScrollable = find
-              .descendant(
-                of: find.byType(AiSettingsPage),
-                matching: find.byType(Scrollable),
-              )
-              .first;
-          // The settings header can push later models beyond the lazy list's
-          // built rows. Verify that they are reachable, then capture the top.
-          await tester.scrollUntilVisible(
-            coverArtist,
-            200,
-            scrollable: settingsScrollable,
-          );
-          await settleFrames(tester, 4);
-          expect(coverArtist.hitTestable(), findsOneWidget);
-          tester.state<ScrollableState>(settingsScrollable).position.jumpTo(0);
-          await settleFrames(tester, 4);
+          await _expectReachableThenTop(tester, coverArtist);
           expect(
             find
                 .text(_t('Waddle Command 70B', 'Watschelkommando 70B'))
@@ -564,9 +566,9 @@ void main() {
             find.text(_t('Habitat Local-First', 'Habitat zuerst lokal')),
             findsOneWidget,
           );
-          expect(
+          await _expectReachableThenTop(
+            tester,
             find.text(_t('Fish Diplomacy', 'Fischdiplomatie')),
-            findsOneWidget,
           );
           await captureScreenshot(
             tester,

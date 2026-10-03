@@ -1342,6 +1342,28 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String agentWakeCadenceFollowCategory(String cadence) {
+    return 'Categoría: $cadence';
+  }
+
+  @override
+  String agentWakeCadenceFollowDefault(String cadence) {
+    return 'Predeterminado: $cadence';
+  }
+
+  @override
+  String get agentWakeCadenceHourly => 'Como mucho cada hora';
+
+  @override
+  String get agentWakeCadenceLabel => 'Frecuencia de actualización';
+
+  @override
+  String get agentWakeCadenceLive => '2 minutos tras un cambio';
+
+  @override
+  String get agentWakeCadenceRecordingsOnly => 'Solo después de grabaciones';
+
+  @override
   String get aggregationDailyAvg => 'Promedio diario';
 
   @override
@@ -2374,6 +2396,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Perfil alternativo para agentes sin un modelo configurado en este dispositivo.';
 
   @override
+  String get aiSettingsDefaultWakeCadenceDescription =>
+      'Con qué frecuencia se actualizan por sí solos los asistentes de tareas cuando ni la tarea ni su categoría lo fijan. «Como mucho cada hora» se actualiza igualmente al momento tras una grabación, un temporizador detenido o una tarea marcada como hecha, y en menos de un minuto tras una imagen.';
+
+  @override
   String get aiSettingsEmptyDescription =>
       'Añade uno para habilitar la transcripción, el reconocimiento de imágenes, la generación de imágenes y la búsqueda semántica.';
 
@@ -3037,6 +3063,10 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get categoryActiveSwitchDescription =>
       'Seleccionable para nuevas entradas';
+
+  @override
+  String get categoryAgentWakeCadenceDescription =>
+      'Se aplica a cada tarea de esta categoría que no tenga su propia frecuencia, también a las tareas existentes.';
 
   @override
   String get categoryAiDefaultsDescription =>

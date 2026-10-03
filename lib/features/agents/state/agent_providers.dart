@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:clock/clock.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/agent_wake_cadence.dart';
 import 'package:lotti/classes/day_agent_trigger_tokens.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -48,12 +49,7 @@ import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/providers/service_providers.dart'
-    show
-        domainLoggerProvider,
-        journalDbProvider,
-        outboxServiceProvider,
-        syncDatabaseProvider;
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -255,6 +251,19 @@ WakeOrchestrator wakeOrchestrator(Ref ref) {
     domainLogger: ref.watch(domainLoggerProvider),
     maxConcurrentWakes: () =>
         ref.read(aiRuntimeSettingsControllerProvider).agentWakeConcurrency,
+    // Read on every match: a category or app-default change applies to the
+    // next change without re-registering any agent.
+    taskWakeCadenceResolver: ({required override, required categoryId}) =>
+        resolveAgentWakeCadence(
+          task: override,
+          category: ref
+              .read(entitiesCacheServiceProvider)
+              ?.getCategoryById(categoryId)
+              ?.agentWakeCadence,
+          global: ref
+              .read(aiRuntimeSettingsControllerProvider)
+              .defaultWakeCadence,
+        ),
     onPersistedStateChanged: onPersistedStateChanged,
     syncEntityWriter: (entity) =>
         ref.read(agentSyncServiceProvider).upsertEntity(entity),

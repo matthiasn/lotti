@@ -211,7 +211,12 @@ adds two settings rows under the switch: the daily wake limit
 and the update frequency (`AgentUpdateIntervalRow`, a stepper over
 `ProjectUpdateSlots.choices` that writes `AgentService.updateUpdateIntervalMinutes`
 and then re-plans a pending slot onto the new grid, see
-[update slots](project-and-event-agents.md#stale-reports-and-update-slots)). It does not take callbacks from
+[update slots](project-and-event-agents.md#stale-reports-and-update-slots)). A
+task band with automatic updates on adds the wake cadence instead
+(`AgentWakeCadenceField`, writing `TaskAgentService.updateWakeCadence`): its
+"Category: …" entry names the cadence the task follows until it chooses, via
+`inheritedTaskWakeCadenceProvider`, see
+[task-agent wake cadence](wake-orchestration.md#task-agent-wake-cadence). It does not take callbacks from
 whoever opened it: it renders inside a pushed route, and the surface underneath
 is free to rebuild or go away. The automatic-updates switch is the exception
 that is *not* dispatched — it writes `AgentConfig`, the same record whoever owns

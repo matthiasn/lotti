@@ -16,6 +16,11 @@ _AgentConfig _$AgentConfigFromJson(Map<String, dynamic> json) => _AgentConfig(
           json['inferenceSetup'] as Map<String, dynamic>,
         ),
   automaticUpdatesEnabled: json['automaticUpdatesEnabled'] as bool?,
+  wakeCadence: $enumDecodeNullable(
+    _$AgentWakeCadenceEnumMap,
+    json['wakeCadence'],
+    unknownValue: JsonKey.nullForUndefinedEnumValue,
+  ),
   maxWakesPerDay: (json['maxWakesPerDay'] as num?)?.toInt(),
   updateIntervalMinutes: (json['updateIntervalMinutes'] as num?)?.toInt(),
   feedbackWindowDays: (json['feedbackWindowDays'] as num?)?.toInt(),
@@ -29,11 +34,18 @@ Map<String, dynamic> _$AgentConfigToJson(_AgentConfig instance) =>
       'profileId': instance.profileId,
       'inferenceSetup': instance.inferenceSetup,
       'automaticUpdatesEnabled': instance.automaticUpdatesEnabled,
+      'wakeCadence': _$AgentWakeCadenceEnumMap[instance.wakeCadence],
       'maxWakesPerDay': instance.maxWakesPerDay,
       'updateIntervalMinutes': instance.updateIntervalMinutes,
       'feedbackWindowDays': instance.feedbackWindowDays,
       'recursionDepth': instance.recursionDepth,
     };
+
+const _$AgentWakeCadenceEnumMap = {
+  AgentWakeCadence.live: 'live',
+  AgentWakeCadence.hourly: 'hourly',
+  AgentWakeCadence.recordingsOnly: 'recordingsOnly',
+};
 
 _AgentInferenceSetup _$AgentInferenceSetupFromJson(Map<String, dynamic> json) =>
     _AgentInferenceSetup(
