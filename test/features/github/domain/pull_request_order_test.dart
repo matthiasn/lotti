@@ -98,6 +98,46 @@ void main() {
     });
   });
 
+  group('isProvablyLaterObservation -', () {
+    test('a later second of the server clock is later', () {
+      expect(
+        isProvablyLaterObservation(
+          prSnapshot(second: 2),
+          prSnapshot(second: 1),
+        ),
+        isTrue,
+      );
+      expect(
+        isProvablyLaterObservation(
+          prSnapshot(second: 1),
+          prSnapshot(second: 2),
+        ),
+        isFalse,
+      );
+    });
+
+    test(
+      'within one second only a merge proves order, never the digest',
+      () {
+        final open = prSnapshot(checks: PullRequestCheckRollup.failing);
+        final otherOpen = prSnapshot(checks: PullRequestCheckRollup.passing);
+        final merged = prSnapshot(status: PullRequestStatus.merged);
+        expect(isProvablyLaterObservation(merged, open), isTrue);
+        expect(isProvablyLaterObservation(open, merged), isFalse);
+        expect(isProvablyLaterObservation(otherOpen, open), isFalse);
+        expect(isProvablyLaterObservation(open, otherOpen), isFalse);
+      },
+    );
+
+    test('milliseconds within one second do not count', () {
+      final early = prSnapshot();
+      final late = early.copyWith(
+        observedAt: early.observedAt.add(const Duration(milliseconds: 900)),
+      );
+      expect(isProvablyLaterObservation(late, early), isFalse);
+    });
+  });
+
   group('mergeConcurrentPullRequestVersions -', () {
     test('keeps the newer observation under the join of both clocks', () {
       final older = prEntry(clock: {'a': 2}, snapshot: prSnapshot());

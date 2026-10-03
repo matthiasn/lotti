@@ -37,6 +37,7 @@ class SkillPromptBuilder {
     String? correctionExamples,
     bool requestTieredSummary = false,
     String? categoryKnowledge,
+    String? pullRequests,
   }) {
     final systemMessage = _buildSystemMessage(
       skill: skill,
@@ -55,6 +56,7 @@ class SkillPromptBuilder {
       correctionExamples: correctionExamples,
       requestTieredSummary: requestTieredSummary,
       categoryKnowledge: categoryKnowledge,
+      pullRequests: pullRequests,
     );
 
     return SkillPromptResult(
@@ -103,6 +105,7 @@ class SkillPromptBuilder {
     String? correctionExamples,
     bool requestTieredSummary = false,
     String? categoryKnowledge,
+    String? pullRequests,
   }) {
     final buffer = StringBuffer();
     final compactCoverArtPrompt = _usesCompactCoverArtPrompt(skill);
@@ -158,6 +161,7 @@ class SkillPromptBuilder {
         linkedTasks: linkedTasks,
         currentTaskSummary: currentTaskSummary,
         categoryKnowledge: categoryKnowledge,
+        pullRequests: pullRequests,
       );
     }
 
@@ -287,6 +291,7 @@ class SkillPromptBuilder {
     String? linkedTasks,
     String? currentTaskSummary,
     String? categoryKnowledge,
+    String? pullRequests,
   }) {
     // For transcription with task context, inject as terminology reference.
     if (skill.skillType == SkillType.transcription) {
@@ -344,6 +349,15 @@ class SkillPromptBuilder {
         ..writeln('```json')
         ..writeln(linkedTasks)
         ..writeln('```');
+    }
+
+    // The task's pull requests, refreshed for this prompt: what is already
+    // done, so the prompt asks for what remains and names any mismatch.
+    if (pullRequests != null && pullRequests.isNotEmpty) {
+      buffer
+        ..writeln()
+        ..writeln('**Pull Requests:**')
+        ..writeln(pullRequests);
     }
 
     // For image generation, inject current task summary.

@@ -38,6 +38,28 @@ int comparePullRequestObservations(
   return pullRequestSnapshotDigest(a).compareTo(pullRequestSnapshotDigest(b));
 }
 
+/// Whether [stored] was certainly read after [own] (`LaterThan` in
+/// `specs/tla/PullRequestSnapshot.tla`).
+///
+/// A task context uses its own refresh's observation, unless what is stored
+/// is provably later: a later second of the server's `Date`, or the same
+/// second and merged where [own] is not — a merge is final, so the merged
+/// read came second. Within one second the digest that breaks ties in
+/// [comparePullRequestObservations] says nothing about time, so the newest
+/// by that order can be a read made before the context asked.
+bool isProvablyLaterObservation(
+  PullRequestSnapshot stored,
+  PullRequestSnapshot own,
+) {
+  final storedSecond = _second(stored.observedAt);
+  final ownSecond = _second(own.observedAt);
+  if (storedSecond != ownSecond) return storedSecond > ownSecond;
+  return stored.status == PullRequestStatus.merged &&
+      own.status != PullRequestStatus.merged;
+}
+
+int _second(DateTime t) => t.toUtc().millisecondsSinceEpoch ~/ 1000;
+
 int _mergedRank(PullRequestSnapshot s) =>
     s.status == PullRequestStatus.merged ? 1 : 0;
 

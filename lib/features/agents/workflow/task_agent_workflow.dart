@@ -58,6 +58,8 @@ import 'package:lotti/features/ai/util/image_ai_responses.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
+import 'package:lotti/features/github/context/pull_request_context_renderer.dart';
+import 'package:lotti/features/github/context/pull_request_context_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
@@ -116,6 +118,7 @@ class TaskAgentWorkflow with AgentErrorLogging {
     this.embeddingRepository,
     this.taskAgentService,
     this.projectRepository,
+    this.pullRequestContextService,
     this.changeSetNotificationService,
     this.inputCaptureService,
     this.logSummarizer,
@@ -172,6 +175,10 @@ class TaskAgentWorkflow with AgentErrorLogging {
 
   /// Optional project repository for inheriting projects on follow-up tasks.
   final ProjectRepository? projectRepository;
+
+  /// Refreshes the task's linked pull requests for the wake's context; null
+  /// leaves the `## Pull Requests` section out.
+  final PullRequestContextService? pullRequestContextService;
 
   /// Optional bridge that keeps task-suggestion notifications aligned with
   /// agent change-set resolution.
@@ -392,6 +399,29 @@ class TaskAgentWorkflow with AgentErrorLogging {
   Future<String> _buildLinkedTasksContextJson(String taskId) =>
       _contextBuilder.buildLinkedTasksContextJson(taskId);
 
+  /// The task's pull requests, refreshed for this wake and rendered for the
+  /// agent; empty when there are none, or when reading them failed — a wake
+  /// never fails for want of them. The refresh runs inside the wake's agent
+  /// execution zone, so a changed snapshot it stores notifies the UI only
+  /// and cannot wake this agent again.
+  Future<String> _buildPullRequestsContext(String taskId) async {
+    final service = pullRequestContextService;
+    if (service == null) return '';
+    try {
+      return await service.contextFor(
+        taskId,
+        audience: PullRequestContextAudience.taskAgent,
+      );
+    } catch (error, stackTrace) {
+      logError(
+        'pull request context failed',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return '';
+    }
+  }
+
   Future<({List<AttentionRequestEntity> claims, Task? task})>
   _maintainAndLoadAttentionClaims({
     required String agentId,
@@ -425,6 +455,7 @@ class TaskAgentWorkflow with AgentErrorLogging {
     TimeService? timeService,
     String? compactedTaskLog,
     String? categoryKnowledge,
+    String? pullRequestsContext,
     TaskStatusTransition? statusTransition,
   }) => _contextBuilder.buildUserMessage(
     agentId: agentId,
@@ -441,6 +472,7 @@ class TaskAgentWorkflow with AgentErrorLogging {
     timeService: timeService,
     compactedTaskLog: compactedTaskLog,
     categoryKnowledge: categoryKnowledge,
+    pullRequestsContext: pullRequestsContext,
     statusTransition: statusTransition,
   );
 

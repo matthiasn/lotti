@@ -50,6 +50,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maintenance.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
+import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
@@ -627,9 +628,11 @@ void main() {
     late MockAgentTemplateService mockAgentTemplateService;
     late MockUpdateNotifications mockNotifications;
     late DomainLogger domainLogger;
+    late MockPullRequestContextService mockPullRequestContextService;
 
     setUp(() async {
       await getIt.reset();
+      mockPullRequestContextService = MockPullRequestContextService();
       mockAiInputRepository = MockAiInputRepository();
       mockAiConfigRepository = MockAiConfigRepository();
       mockJournalDb = MockJournalDb();
@@ -675,11 +678,25 @@ void main() {
           projectRepositoryProvider.overrideWithValue(
             MockProjectRepository(),
           ),
+          pullRequestContextServiceProvider.overrideWithValue(
+            mockPullRequestContextService,
+          ),
         ],
       );
       addTearDown(container.dispose);
       return container;
     }
+
+    test('wires the pull request context service into the wake', () {
+      final workflow = createTaskWorkflowContainer().read(
+        taskAgentWorkflowProvider,
+      );
+
+      expect(
+        workflow.pullRequestContextService,
+        same(mockPullRequestContextService),
+      );
+    });
 
     test('leaves embedding dependencies null when they are unregistered', () {
       final container = createTaskWorkflowContainer();

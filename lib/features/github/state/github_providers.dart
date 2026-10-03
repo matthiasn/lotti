@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/features/github/api/github_client.dart';
+import 'package:lotti/features/github/context/pull_request_context_service.dart';
 import 'package:lotti/features/github/domain/distinct_pull_requests.dart';
 import 'package:lotti/features/github/domain/pull_request_order.dart';
 import 'package:lotti/features/github/repository/github_token_storage.dart';
@@ -16,6 +17,7 @@ import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/utils/consts.dart';
 
 /// One client for the process: its ETag cache and its rate-limit block are
 /// per device, not per screen.
@@ -51,6 +53,18 @@ final pullRequestServiceProvider = Provider<PullRequestService>(
   ),
   name: 'pullRequestServiceProvider',
 );
+
+/// Refreshes and renders a task's pull requests for a task context.
+final pullRequestContextServiceProvider = Provider<PullRequestContextService>((
+  ref,
+) {
+  final db = ref.watch(journalDbProvider);
+  return PullRequestContextService(
+    repository: ref.watch(pullRequestRepositoryProvider),
+    service: ref.watch(pullRequestServiceProvider),
+    isEnabled: () => db.getConfigFlag(enableGitHubPullRequestsFlag),
+  );
+}, name: 'pullRequestContextServiceProvider');
 
 /// The live pull requests linked from a task, one per pull request
 /// ([distinctPullRequests]), by number. Follows the task's links and every

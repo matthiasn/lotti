@@ -292,6 +292,144 @@ extension _PromptGenerationInputCases on _SkillInferenceTestSetup {
     });
   }
 
+  void registerPromptGenerationPullRequests() {
+    group('pull requests -', () {
+      Future<String> capturedUserMessage() async {
+        final captured = verify(
+          () => mockCloudRepo.generate(
+            captureAny(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
+          ),
+        ).captured;
+        return captured.first as String;
+      }
+
+      void stubLinkedPrompt() {
+        when(() => mockAiInputRepo.getEntity('text-pr')).thenAnswer(
+          (_) async => makeTextEntry(
+            id: 'text-pr',
+            markdown: 'Finish the waddle.',
+            plainText: 'Finish the waddle.',
+          ),
+        );
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: 'task-pr'),
+        ).thenAnswer((_) async => '{"id":"task-pr"}');
+        when(
+          () => mockAiInputRepo.buildLinkedTasksJson('task-pr'),
+        ).thenAnswer((_) async => '{"linked": []}');
+        when(
+          () => mockCloudRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
+          ),
+        ).thenAnswer(
+          (_) => Stream.fromIterable([
+            makeStreamChunk('## Summary\nWaddle\n\n## Prompt\nDo the work'),
+          ]),
+        );
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => null);
+        stubLoggingEvent();
+      }
+
+      test(
+        "carries the task's pull requests, refreshed for this prompt, after "
+        'the related tasks',
+        () async {
+          stubLinkedPrompt();
+          when(
+            () => mockPullRequestContext.contextFor(
+              'task-pr',
+              audience: PullRequestContextAudience.codingPrompt,
+            ),
+          ).thenAnswer(
+            (_) async => '### penguin/colony#12 — Waddle faster\n- State: open',
+          );
+
+          await runner.runPromptGeneration(
+            entryId: 'text-pr',
+            automationResult: makePromptGenerationResult(),
+            linkedTaskId: 'task-pr',
+          );
+
+          final userMessage = await capturedUserMessage();
+          expect(
+            userMessage,
+            contains(
+              '**Pull Requests:**\n### penguin/colony#12 — Waddle faster\n'
+              '- State: open',
+            ),
+          );
+          expect(
+            userMessage.indexOf('**Pull Requests:**'),
+            greaterThan(userMessage.indexOf('**Related Tasks:**')),
+          );
+        },
+      );
+
+      test(
+        'a pull request context that fails is logged, and the prompt goes '
+        'out without it',
+        () async {
+          stubLinkedPrompt();
+          final failure = StateError('GitHub exploded');
+          when(
+            () => mockPullRequestContext.contextFor(
+              'task-pr',
+              audience: PullRequestContextAudience.codingPrompt,
+            ),
+          ).thenThrow(failure);
+
+          await runner.runPromptGeneration(
+            entryId: 'text-pr',
+            automationResult: makePromptGenerationResult(),
+            linkedTaskId: 'task-pr',
+          );
+
+          expect(await capturedUserMessage(), isNot(contains('Pull Requests')));
+          verify(
+            () => mockLoggingService.error(
+              LogDomain.ai,
+              failure,
+              stackTrace: any(named: 'stackTrace'),
+              subDomain: 'runPromptGeneration.pullRequests',
+            ),
+          ).called(1);
+        },
+      );
+
+      test('an unlinked prompt asks for no pull requests', () async {
+        stubLinkedPrompt();
+
+        await runner.runPromptGeneration(
+          entryId: 'text-pr',
+          automationResult: makePromptGenerationResult(),
+        );
+
+        verifyZeroInteractions(mockPullRequestContext);
+      });
+    });
+  }
+
   void registerPromptGenerationNoteInputs() {
     test(
       'falls back to plainText when JournalEntry has no markdown',

@@ -5,7 +5,7 @@ description: Pull requests linked to tasks as journal entries carrying a server-
 resource: ../../lib/features/github
 tags: [github, pull-requests, tasks, sync, agents, tla]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-10-03T02:10:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-03T03:30:00Z }
 stale_after: 2027-03-26
 sources:
   - id: spec
@@ -57,9 +57,10 @@ screenshots of the pull request page.
 [`PullRequestSnapshot`](../../specs/tla/README.md) in `specs/tla/`; the code
 conforms to it, and its header names the class that implements each action.
 Built: the entry and its merge, the token and the client, linking by URL, the
-refresh, and the task's card, all behind the `enable_github_pull_requests`
-config flag. Still design: repository assignment and the picker, and
-everything under *In the task context*.
+refresh, the task's card, and the pull requests in coding prompts and
+task-agent wakes, all behind the `enable_github_pull_requests` config flag.
+Still design: repository assignment and the picker, and recording which
+checklist items a coding prompt targeted.
 
 # The entry
 
@@ -256,29 +257,45 @@ entry stores, which is why the diagram has no transition into them.
 
 # In the task context
 
-Whenever a task context is built, every linked pull request is refreshed first,
-in parallel and with a short timeout. The context uses what its own refresh
-read, unless the stored observation is provably later — a later `Date`
-second, or the same second and merged. The newest by the ordering key is not
-enough: within one second the digest says nothing about time, and the stored
-one may have been read before the request (`PreferOwnRead`).
+`PullRequestContextService` serves both contexts. Whenever one is built it
+refreshes every linked pull request, in parallel, waiting at most eight
+seconds for each — a slower refresh finishes and is stored afterwards, but the
+context goes without it. The context uses what its own refresh read, unless
+the stored observation is provably later (`isProvablyLaterObservation`): a
+later `Date` second, or the same second and merged. The newest by the
+ordering key is not enough: within one second the digest says nothing about
+time, and the stored one may have been read before the request
+(`PreferOwnRead`). `renderPullRequestContext` writes the section for its
+audience; each section opens with how to use what follows. Nothing is asked
+of GitHub while the flag is off.
 
-- **Coding prompt** (`SkillPromptBuilder`): a `Pull Requests` section with
-  each pull request's status, checks, mergeability, review state and
-  description, labelled current or "could not refresh, as of …".
-- **Task-agent wake** (`TaskAgentContextBuilder`): a `## Pull Requests`
-  section in the volatile tail, never the cached prefix. A pull request whose
-  refresh failed appears with its identity and "not refreshed" only. With no
-  status in front of it the agent cannot derive a suggestion from stale data
+- **Coding prompt** (`SkillInferenceRunner.runPromptGeneration`, coding
+  skills only): a `**Pull Requests:**` block after `**Related Tasks:**` with
+  each pull request's state, branch, checks (failing ones by name),
+  mergeability, reviews, size and description (cut at 4000 characters). A
+  pull request that could not be refreshed shows its last known state,
+  labelled with when it was observed and as possibly out of date. The block
+  tells the model to ask only for what remains, and to list each mismatch —
+  a checklist item checked that no pull request covers, a pull request doing
+  work no item describes, entry notes asking for what a pull request already
+  contains — at the top of the prompt.
+- **Task-agent wake** (`TaskAgentWorkflow`): a `## Pull Requests` section in
+  the volatile tail, after `## Linked Tasks`, never the cached prefix. A pull
+  request whose refresh failed appears by name only, its state unknown, so
+  the agent cannot derive a suggestion from stale data
   (`SuggestRequiresRefresh`).
-- **Checklist suggestions** need no new tool: the agent proposes them through
-  the deferred `update_checklist_items`, citing the pull request in the
-  item's reason, and the user confirms each one as a change set.
-- **The next prompt and alignment.** A coding prompt records which checklist
-  items it targeted. The next one compares them with what is now checked and
-  with the refreshed pull request, and reports by name the items it targeted
-  that are not done and the items done that it did not target, before
-  writing the prompt for the items that remain.
+- **Checklist suggestions** need no new tool: the section tells the agent to
+  propose checking an item through the deferred `update_checklist_items` when
+  a current pull request shows it done, naming the pull request in the
+  reason; the user confirms each one as a change set.
+- **The next prompt and alignment.** Each coding prompt is built from the
+  refreshed pull requests and the checklist as they stand, so it covers what
+  remains and names mismatches. Recording which items a prompt targeted, to
+  compare them with what was done by the next one, is still design.
 
-Writes made while building a context use the agent-execution notification
-path, so a refresh inside a wake cannot schedule another wake.
+A refresh during a wake runs inside the wake's agent-execution zone, and
+`updateDbEntity` routes the notification of a write made there through
+`notifyUiOnly`: a changed snapshot updates the task's card but cannot wake the
+agent again. Without that, a daily restamp of an unchanged snapshot would
+schedule the next wake, every day. Either context leaves the section out, and
+logs, when building it fails.
