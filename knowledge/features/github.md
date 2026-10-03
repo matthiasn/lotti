@@ -351,28 +351,37 @@ knows about its token, without asking GitHub for it:
 
 ```mermaid
 stateDiagram-v2
-    [*] --> none: no token stored
-    [*] --> valid: token stored
+    [*] --> none: no token held
+    [*] --> valid: token held, accepted by the account
+    [*] --> rejected: token received, the account's check failed
     none --> valid: connect (GET /user accepts it)
+    none --> valid: received, the account's check accepts it
+    none --> rejected: received, the account's check fails
     valid --> rejected: a call with it answers 401
     rejected --> valid: a later call succeeds
-    rejected --> valid: connect again
-    valid --> none: disconnect
-    rejected --> none: disconnect
+    rejected --> valid: connect again, or a newer token received and accepted
+    valid --> none: disconnect, here or on another device
+    rejected --> none: disconnect, here or on another device
 ```
 
-A stored token was accepted by `GET /user` when it was saved, so it is
-`valid` until GitHub says otherwise: `PullRequestService` reports each call
+The token syncs between the user's devices. A held token is `valid` once
+the account (`gitHubAccountControllerProvider`) has accepted it: one entered
+here was checked by `GET /user` before it was stored, and one received from
+another device is checked the same way before it is shown as connected —
+until that check succeeds it is `rejected`, and not offered. From then on it
+is `valid` until GitHub says otherwise: `PullRequestService` reports each call
 made with the stored token — a success accepts it, a 401 rejects it, and
 offline, rate limited, forbidden or not found say nothing about it. Opening
 a task costs no extra request: refreshing its stale pull requests is the
 check. A verdict waits for the stored token to be read, so a 401 on the
 first call — often made before anything watched the status — still rejects
 it. A verdict on a token that is no longer the stored one — replaced while
-its call was in flight — is ignored, and connecting or disconnecting
-invalidates the status, since reconnecting the same account leaves the
-login, and so the account state, unchanged. The rejection lives in memory:
-after a restart the token is taken as valid until the next call.
+its call was in flight — is ignored. Connecting, disconnecting and a token
+received from another device all announce `gitHubAccountNotification`, and
+the status reads again on it — not on the account's value, which
+reconnecting the same account with a fresh token leaves unchanged. A 401
+lives in memory: after a restart the token is taken as valid until the next
+call.
 
 `gitHubTrackingAvailableProvider` is true only while the status is `valid`.
 It gates what *starts* tracking — the task's "Pull request tracking" action

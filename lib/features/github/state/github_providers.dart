@@ -90,19 +90,22 @@ enum GitHubTokenStatus {
   /// nothing about it.
   valid,
 
-  /// GitHub answered a call with the stored token with 401: it expired, or
-  /// was revoked. Until a call succeeds again or a token is connected anew.
+  /// GitHub answered a call with the stored token with 401 — it expired, or
+  /// was revoked — or a token received from another device has not passed
+  /// its check here. Until a call succeeds again or a token is connected or
+  /// received anew.
   rejected,
 }
 
 /// The status of the stored GitHub token, without asking GitHub for it.
 ///
-/// A stored token was accepted by `GET /user` when it was saved, so it is
-/// [GitHubTokenStatus.valid] until a call with it comes back 401
+/// A held token is [GitHubTokenStatus.valid] once the account has accepted
+/// it — `GET /user` when it was entered here, or the account's check of one
+/// received from another device — until a call with it comes back 401
 /// ([PullRequestService] reports each verdict). Opening a task costs no
-/// extra request: the refresh of its stale pull requests is the check. The
-/// rejection is kept in memory only, so after a restart the token is taken
-/// as valid again until GitHub next says otherwise.
+/// extra request: the refresh of its stale pull requests is the check. A
+/// 401 is kept in memory only, so after a restart the token is taken as
+/// valid again until GitHub next says otherwise.
 final gitHubTokenStatusProvider =
     AsyncNotifierProvider<GitHubTokenStatusController, GitHubTokenStatus>(
       GitHubTokenStatusController.new,
@@ -114,17 +117,33 @@ class GitHubTokenStatusController extends AsyncNotifier<GitHubTokenStatus> {
   /// while its call was in flight — is ignored.
   String? _token;
 
-  /// Built again when a token is connected or disconnected
-  /// ([GitHubAccountController] invalidates it): reconnecting the same
-  /// account with a fresh token leaves the login as it was, so watching the
-  /// account would keep a rejection of the old token.
+  /// Built again when a token is connected, disconnected or received from
+  /// another device: all three announce `gitHubAccountNotification`. Not by
+  /// following the account's value, which reconnecting the same account with
+  /// a fresh token leaves as it was — that would keep a rejection of the old
+  /// token.
+  ///
+  /// A held token is valid once the account accepts it: a token entered
+  /// here was checked before it was stored, and one received from another
+  /// device is checked by the account (`GET /user`) before it is shown as
+  /// connected. Until that check succeeds — GitHub rejected it, or could not
+  /// be asked — it is not offered for tracking.
   @override
   Future<GitHubTokenStatus> build() async {
+    final changes = getIt<UpdateNotifications>().updateStream
+        .where((ids) => ids.contains(gitHubAccountNotification))
+        .listen((_) => ref.invalidateSelf());
+    ref.onDispose(changes.cancel);
+
     final token = await ref.watch(gitHubTokenStorageProvider).readToken();
     _token = token;
-    return token == null || token.isEmpty
-        ? GitHubTokenStatus.none
-        : GitHubTokenStatus.valid;
+    if (token == null || token.isEmpty) return GitHubTokenStatus.none;
+    try {
+      await ref.watch(gitHubAccountControllerProvider.future);
+      return GitHubTokenStatus.valid;
+    } on Object {
+      return GitHubTokenStatus.rejected;
+    }
   }
 
   /// Records what a call with [token] said: GitHub [accepted] it, or
@@ -349,8 +368,8 @@ class GitHubAccountController extends AsyncNotifier<String?> {
       await ref
           .read(gitHubTokenStorageProvider)
           .save(token: trimmed, login: login);
-      ref.invalidate(gitHubTokenStatusProvider);
       state = AsyncData(login);
+      _announce();
       await ref.read(gitHubAccountSyncProvider).flushOwed();
       return null;
     } on GitHubException catch (e) {
@@ -361,10 +380,15 @@ class GitHubAccountController extends AsyncNotifier<String?> {
   /// Forgets the token here and on the user's other devices.
   Future<void> disconnect() async {
     await ref.read(gitHubTokenStorageProvider).clear();
-    ref.invalidate(gitHubTokenStatusProvider);
     state = const AsyncData(null);
+    _announce();
     await ref.read(gitHubAccountSyncProvider).flushOwed();
   }
+
+  /// Tells whoever follows the account — the token status — that the token
+  /// changed here, as sync does for one received from another device.
+  void _announce() =>
+      getIt<UpdateNotifications>().notify({gitHubAccountNotification});
 
   /// Sends the token held here to the user's other devices again — one
   /// connected before tokens synced, or that a device joining later missed.
