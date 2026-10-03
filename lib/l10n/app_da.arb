@@ -926,6 +926,11 @@
       }
     }
   },
+  "aiOllamaInstallButton": "Installer",
+  "aiOllamaInstallCommandHint": "Kør denne kommando i din terminal for at installere den:",
+  "aiOllamaInstallFailed": "Installationen mislykkedes: {error}",
+  "aiOllamaInstalling": "Installerer model…",
+  "aiOllamaInstallQuestion": "Installere den nu fra Lotti?",
   "aiOllamaModelInstalledSuccessfully": "Model \"{modelName}\" installeret med succes!",
   "@aiOllamaModelInstalledSuccessfully": {
     "placeholders": {
@@ -934,6 +939,9 @@
       }
     }
   },
+  "aiOllamaModelNotInstalledMessage": "Modellen \"{model}\" er ikke installeret.",
+  "aiOllamaModelNotInstalledTitle": "Modellen er ikke installeret",
+  "aiOllamaProviderMissing": "Der er ingen Ollama-udbyder sat op. Tilføj en i indstillingerne.",
   "aiPickProviderBadgeDesktopOnly": "KUN SKRIVEBORD",
   "aiPickProviderBadgeNew": "NYT",
   "aiPickProviderBadgeRecommended": "ANBEFALET",
@@ -3330,12 +3338,6 @@
   "goalReportSectionCoverage": "Datadækning",
   "goalReportSectionStanding": "Sådan står det",
   "goalReportSectionWindow": "Det bredere vindue",
-  "goalStatusAchieved": "Opnået",
-  "goalStatusAtRisk": "I fare",
-  "goalStatusInsufficientData": "Ingen data",
-  "goalStatusOffTrack": "Ude af kurs",
-  "goalStatusOnTrack": "På sporet",
-  "goalStatusRecovering": "På vej tilbage",
   "goalWatchingMetric": "Opdateringer fra dens linkede kilde · {windowLabel}",
   "goalWindowCalendarMonth": "kalendermåned",
   "goalWindowCalendarWeek": "kalenderuge",
@@ -4683,7 +4685,6 @@
       }
     }
   },
-  "projectLinkedTasks": "Sammenkoblede opgaver",
   "projectManageTooltip": "Styr projekter",
   "projectNextStepAdded": "Tilføjet",
   "projectNextStepCreateFailed": "Opgaven kunne ikke oprettes. Opdater nu for at hente den aktuelle liste, eller prøv igen.",
@@ -4774,7 +4775,6 @@
       }
     }
   },
-  "projectNoLinkedTasks": "Ingen opgaver er linket endnu",
   "projectNoProjects": "Ingen projekter endnu",
   "projectNotFound": "Projekt ikke fundet",
   "projectPickerLabel": "Projekt",

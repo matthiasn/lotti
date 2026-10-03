@@ -751,6 +751,11 @@
   "aiModelPickerByProviderLabel": "Choisis un fournisseur",
   "aiModelPickerCurrentDefaultLabel": "Modèle par défaut actuel",
   "aiModelPickerProviderModelCount": "{count, plural, =1{1 modèle} other{{count} modèles}}",
+  "aiOllamaInstallButton": "Installer",
+  "aiOllamaInstallCommandHint": "Pour l’installer, exécute cette commande dans ton terminal :",
+  "aiOllamaInstallFailed": "Échec de l’installation : {error}",
+  "aiOllamaInstalling": "Installation du modèle…",
+  "aiOllamaInstallQuestion": "L’installer maintenant depuis Lotti ?",
   "aiOllamaModelInstalledSuccessfully": "Modèle « {modelName} » installé avec succès !",
   "@aiOllamaModelInstalledSuccessfully": {
     "placeholders": {
@@ -759,6 +764,9 @@
       }
     }
   },
+  "aiOllamaModelNotInstalledMessage": "Le modèle « {model} » n’est pas installé.",
+  "aiOllamaModelNotInstalledTitle": "Modèle non installé",
+  "aiOllamaProviderMissing": "Aucun fournisseur Ollama n’est configuré. Ajoutes-en un dans les réglages.",
   "aiPickProviderBadgeDesktopOnly": "BUREAU UNIQUEMENT",
   "aiPickProviderBadgeNew": "NOUVEAU",
   "aiPickProviderBadgeRecommended": "RECOMMANDÉ",
@@ -3073,12 +3081,6 @@
   "goalReportSectionCoverage": "Couverture des données",
   "goalReportSectionStanding": "Où tu en es",
   "goalReportSectionWindow": "La fenêtre plus large",
-  "goalStatusAchieved": "Atteint",
-  "goalStatusAtRisk": "À risque",
-  "goalStatusInsufficientData": "Pas de données",
-  "goalStatusOffTrack": "Hors piste",
-  "goalStatusOnTrack": "Sur la bonne voie",
-  "goalStatusRecovering": "En reprise",
   "goalWatchingMetric": "Mises à jour de sa source liée · {windowLabel}",
   "goalWindowCalendarMonth": "mois civil",
   "goalWindowCalendarWeek": "semaine civile",
@@ -4216,7 +4218,6 @@
       }
     }
   },
-  "projectLinkedTasks": "Tâches liées",
   "projectManageTooltip": "Gérer les projets",
   "projectNextStepAdded": "Ajoutée",
   "projectNextStepCreateFailed": "Impossible de créer la tâche. Mets à jour maintenant pour charger la liste actuelle, ou réessaie.",
@@ -4307,7 +4308,6 @@
       }
     }
   },
-  "projectNoLinkedTasks": "Aucune tâche liée pour le moment",
   "projectNoProjects": "Pas encore de projets",
   "projectNotFound": "Projet introuvable",
   "projectPickerLabel": "Projet",

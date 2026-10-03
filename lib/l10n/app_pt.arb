@@ -925,6 +925,11 @@
       }
     }
   },
+  "aiOllamaInstallButton": "Instalar",
+  "aiOllamaInstallCommandHint": "Para o instalar, executa este comando no terminal:",
+  "aiOllamaInstallFailed": "A instalação falhou: {error}",
+  "aiOllamaInstalling": "A instalar o modelo…",
+  "aiOllamaInstallQuestion": "Instalar agora a partir do Lotti?",
   "aiOllamaModelInstalledSuccessfully": "Modelo \"{modelName}\" instalado com sucesso!",
   "@aiOllamaModelInstalledSuccessfully": {
     "placeholders": {
@@ -933,6 +938,9 @@
       }
     }
   },
+  "aiOllamaModelNotInstalledMessage": "O modelo \"{model}\" não está instalado.",
+  "aiOllamaModelNotInstalledTitle": "Modelo não instalado",
+  "aiOllamaProviderMissing": "Não há nenhum fornecedor Ollama configurado. Adiciona um nas definições.",
   "aiPickProviderBadgeDesktopOnly": "SOMENTE PARA COMPUTADOR",
   "aiPickProviderBadgeNew": "NOVO",
   "aiPickProviderBadgeRecommended": "RECOMENDADO",
@@ -3329,12 +3337,6 @@
   "goalReportSectionCoverage": "Cobertura de dados",
   "goalReportSectionStanding": "Como estás",
   "goalReportSectionWindow": "A janela mais ampla",
-  "goalStatusAchieved": "Alcançado",
-  "goalStatusAtRisk": "Em risco",
-  "goalStatusInsufficientData": "Sem dados",
-  "goalStatusOffTrack": "Fora do caminho",
-  "goalStatusOnTrack": "No bom caminho",
-  "goalStatusRecovering": "A recuperar",
   "goalWatchingMetric": "Atualizações de sua fonte vinculada · {windowLabel}",
   "goalWindowCalendarMonth": "mês de calendário",
   "goalWindowCalendarWeek": "semana de calendário",
@@ -4682,7 +4684,6 @@
       }
     }
   },
-  "projectLinkedTasks": "Tarefas Vinculadas",
   "projectManageTooltip": "Gerenciar projetos",
   "projectNextStepAdded": "Adicionado",
   "projectNextStepCreateFailed": "Não foi possível criar a tarefa. Atualiza agora para carregar a lista atual ou tenta de novo.",
@@ -4773,7 +4774,6 @@
       }
     }
   },
-  "projectNoLinkedTasks": "Nenhuma tarefa vinculada ainda",
   "projectNoProjects": "Ainda não há projetos",
   "projectNotFound": "Projeto não encontrado",
   "projectPickerLabel": "Projeto",

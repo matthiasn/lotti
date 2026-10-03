@@ -36,7 +36,7 @@ flowchart TD
   DB --> Notify
 
   RepoStreams --> List["CategoriesListPage / CategoryDetailsController"]
-  Cache --> Pickers["CategoryPickerSheet / CategoryField"]
+  Cache --> Pickers["CategoryPickerSheet"]
   Cache --> Create["createTask() / autoAssignCategoryAgent()"]
   Cache --> ProjectTools["ProjectToolDispatcher / FollowUpTaskHandler"]
   Cache --> Prompts["PromptBuilderHelper"]
@@ -52,7 +52,7 @@ gestures and prompt assembly where an async round trip would be visible.
 
 - `CategoryRepository` — create, update, soft delete, stream reads, task counts.
 - Settings surfaces: `CategoriesListPage`, `CategoryDetailsPage`, create mode.
-- Reusable pickers: `CategoryField`, `CategoryPickerSheet`, `CategoryCreateModal`.
+- Reusable pickers: `CategoryPickerSheet`, `CategoryCreateModal`.
 - Presentation metadata (`name`, `color`, `icon`) and flags (`private`, `active`,
   `favorite`, `isAvailableForDayPlan`, `automaticInferenceEnabled`,
   `automaticAgentWakesEnabled`).

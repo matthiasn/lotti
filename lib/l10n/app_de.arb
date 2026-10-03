@@ -751,6 +751,11 @@
   "aiModelPickerByProviderLabel": "Anbieter wählen",
   "aiModelPickerCurrentDefaultLabel": "Aktueller Standard",
   "aiModelPickerProviderModelCount": "{count, plural, =1{1 Modell} other{{count} Modelle}}",
+  "aiOllamaInstallButton": "Installieren",
+  "aiOllamaInstallCommandHint": "Führe zum Installieren diesen Befehl im Terminal aus:",
+  "aiOllamaInstallFailed": "Installation fehlgeschlagen: {error}",
+  "aiOllamaInstalling": "Modell wird installiert…",
+  "aiOllamaInstallQuestion": "Jetzt aus Lotti installieren?",
   "aiOllamaModelInstalledSuccessfully": "Modell \"{modelName}\" erfolgreich installiert!",
   "@aiOllamaModelInstalledSuccessfully": {
     "placeholders": {
@@ -759,6 +764,9 @@
       }
     }
   },
+  "aiOllamaModelNotInstalledMessage": "Das Modell „{model}“ ist nicht installiert.",
+  "aiOllamaModelNotInstalledTitle": "Modell nicht installiert",
+  "aiOllamaProviderMissing": "Kein Ollama-Anbieter eingerichtet. Füge einen in den Einstellungen hinzu.",
   "aiPickProviderBadgeDesktopOnly": "NUR DESKTOP",
   "aiPickProviderBadgeNew": "NEU",
   "aiPickProviderBadgeRecommended": "EMPFOHLEN",
@@ -3073,12 +3081,6 @@
   "goalReportSectionCoverage": "Datenabdeckung",
   "goalReportSectionStanding": "Wie es steht",
   "goalReportSectionWindow": "Das größere Fenster",
-  "goalStatusAchieved": "Erreicht",
-  "goalStatusAtRisk": "Gefährdet",
-  "goalStatusInsufficientData": "Keine Daten",
-  "goalStatusOffTrack": "Vom Kurs ab",
-  "goalStatusOnTrack": "Auf Kurs",
-  "goalStatusRecovering": "Auf dem Weg zurück",
   "goalWatchingMetric": "Updates von der verlinkten Quelle · {windowLabel}",
   "goalWindowCalendarMonth": "Kalendermonat",
   "goalWindowCalendarWeek": "Kalenderwoche",
@@ -4216,7 +4218,6 @@
       }
     }
   },
-  "projectLinkedTasks": "Verknüpfte Aufgaben",
   "projectManageTooltip": "Projekte verwalten",
   "projectNextStepAdded": "Hinzugefügt",
   "projectNextStepCreateFailed": "Die Aufgabe konnte nicht erstellt werden. Aktualisiere jetzt, um die aktuelle Liste zu laden, oder versuche es erneut.",
@@ -4307,7 +4308,6 @@
       }
     }
   },
-  "projectNoLinkedTasks": "Noch keine Aufgaben verknüpft",
   "projectNoProjects": "Noch keine Projekte",
   "projectNotFound": "Projekt nicht gefunden",
   "projectPickerLabel": "Projekt",

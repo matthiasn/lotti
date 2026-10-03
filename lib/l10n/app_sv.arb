@@ -926,6 +926,11 @@
       }
     }
   },
+  "aiOllamaInstallButton": "Installera",
+  "aiOllamaInstallCommandHint": "Kör det här kommandot i terminalen för att installera den:",
+  "aiOllamaInstallFailed": "Installationen misslyckades: {error}",
+  "aiOllamaInstalling": "Installerar modellen…",
+  "aiOllamaInstallQuestion": "Installera den nu från Lotti?",
   "aiOllamaModelInstalledSuccessfully": "Modell \"{modelName}\" installerades framgångsrikt!",
   "@aiOllamaModelInstalledSuccessfully": {
     "placeholders": {
@@ -934,6 +939,9 @@
       }
     }
   },
+  "aiOllamaModelNotInstalledMessage": "Modellen \"{model}\" är inte installerad.",
+  "aiOllamaModelNotInstalledTitle": "Modellen är inte installerad",
+  "aiOllamaProviderMissing": "Ingen Ollama-leverantör är konfigurerad. Lägg till en i inställningarna.",
   "aiPickProviderBadgeDesktopOnly": "ENDAST SKRIVBORD",
   "aiPickProviderBadgeNew": "NYTT",
   "aiPickProviderBadgeRecommended": "REKOMMENDERAT",
@@ -3330,12 +3338,6 @@
   "goalReportSectionCoverage": "Datatäckning",
   "goalReportSectionStanding": "Hur det ligger till",
   "goalReportSectionWindow": "Det bredare fönstret",
-  "goalStatusAchieved": "Uppnått",
-  "goalStatusAtRisk": "I riskzonen",
-  "goalStatusInsufficientData": "Inga data",
-  "goalStatusOffTrack": "Ur kurs",
-  "goalStatusOnTrack": "På rätt spår",
-  "goalStatusRecovering": "På väg tillbaka",
   "goalWatchingMetric": "Uppdateringar från dess länkade källa · {windowLabel}",
   "goalWindowCalendarMonth": "kalendermånad",
   "goalWindowCalendarWeek": "kalendervecka",
@@ -4683,7 +4685,6 @@
       }
     }
   },
-  "projectLinkedTasks": "Länkade uppgifter",
   "projectManageTooltip": "Hantera projekt",
   "projectNextStepAdded": "Tillagt",
   "projectNextStepCreateFailed": "Uppgiften kunde inte skapas. Uppdatera nu för att läsa in den aktuella listan, eller försök igen.",
@@ -4774,7 +4775,6 @@
       }
     }
   },
-  "projectNoLinkedTasks": "Inga uppgifter är länkade än",
   "projectNoProjects": "Inga projekt än",
   "projectNotFound": "Projekt ej hittat",
   "projectPickerLabel": "Projekt",

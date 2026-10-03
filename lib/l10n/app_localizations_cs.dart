@@ -1890,9 +1890,39 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get aiOllamaInstallButton => 'Nainstalovat';
+
+  @override
+  String get aiOllamaInstallCommandHint =>
+      'Pro instalaci spusť v terminálu tento příkaz:';
+
+  @override
+  String aiOllamaInstallFailed(String error) {
+    return 'Instalace selhala: $error';
+  }
+
+  @override
+  String get aiOllamaInstalling => 'Model se instaluje…';
+
+  @override
+  String get aiOllamaInstallQuestion => 'Nainstalovat ho teď z Lotti?';
+
+  @override
   String aiOllamaModelInstalledSuccessfully(String modelName) {
     return 'Model „$modelName“ byl úspěšně nainstalován';
   }
+
+  @override
+  String aiOllamaModelNotInstalledMessage(String model) {
+    return 'Model „$model“ není nainstalovaný.';
+  }
+
+  @override
+  String get aiOllamaModelNotInstalledTitle => 'Model není nainstalovaný';
+
+  @override
+  String get aiOllamaProviderMissing =>
+      'Není nastavený žádný poskytovatel Ollama. Přidej ho v nastavení.';
 
   @override
   String get aiPickProviderBadgeDesktopOnly => 'POUZE DESKTOP';
@@ -7830,24 +7860,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalReportSectionWindow => 'Širší okno';
 
   @override
-  String get goalStatusAchieved => 'Splněno';
-
-  @override
-  String get goalStatusAtRisk => 'Ohroženo';
-
-  @override
-  String get goalStatusInsufficientData => 'Bez dat';
-
-  @override
-  String get goalStatusOffTrack => 'Mimo kurz';
-
-  @override
-  String get goalStatusOnTrack => 'Na dobré cestě';
-
-  @override
-  String get goalStatusRecovering => 'Zotavuje se';
-
-  @override
   String goalWatchingMetric(String windowLabel) {
     return 'Aktualizace z propojeného zdroje · $windowLabel';
   }
@@ -11246,9 +11258,6 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get projectLinkedTasks => 'Propojené úkoly';
-
-  @override
   String get projectManageTooltip => 'Správa projektů';
 
   @override
@@ -11388,9 +11397,6 @@ class AppLocalizationsCs extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get projectNoLinkedTasks => 'Zatím žádné propojené úkoly';
 
   @override
   String get projectNoProjects => 'Zatím žádné projekty';

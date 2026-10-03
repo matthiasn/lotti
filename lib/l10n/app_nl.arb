@@ -925,6 +925,11 @@
       }
     }
   },
+  "aiOllamaInstallButton": "Installeren",
+  "aiOllamaInstallCommandHint": "Voer deze opdracht uit in je terminal om het te installeren:",
+  "aiOllamaInstallFailed": "Installatie mislukt: {error}",
+  "aiOllamaInstalling": "Model wordt geïnstalleerd…",
+  "aiOllamaInstallQuestion": "Nu installeren vanuit Lotti?",
   "aiOllamaModelInstalledSuccessfully": "Model \"{modelName}\" met succes geïnstalleerd!",
   "@aiOllamaModelInstalledSuccessfully": {
     "placeholders": {
@@ -933,6 +938,9 @@
       }
     }
   },
+  "aiOllamaModelNotInstalledMessage": "Het model \"{model}\" is niet geïnstalleerd.",
+  "aiOllamaModelNotInstalledTitle": "Model niet geïnstalleerd",
+  "aiOllamaProviderMissing": "Er is geen Ollama-provider ingesteld. Voeg er een toe in de instellingen.",
   "aiPickProviderBadgeDesktopOnly": "ALLEEN DESKTOP",
   "aiPickProviderBadgeNew": "NIEUW",
   "aiPickProviderBadgeRecommended": "AANGEVALDE",
@@ -3329,12 +3337,6 @@
   "goalReportSectionCoverage": "Datadekking",
   "goalReportSectionStanding": "Hoe het ervoor staat",
   "goalReportSectionWindow": "Het bredere venster",
-  "goalStatusAchieved": "Behaald",
-  "goalStatusAtRisk": "Risico",
-  "goalStatusInsufficientData": "Geen gegevens",
-  "goalStatusOffTrack": "Uit koers",
-  "goalStatusOnTrack": "Op koers",
-  "goalStatusRecovering": "Herstellend",
   "goalWatchingMetric": "Updates van de gekoppelde bron · {windowLabel}",
   "goalWindowCalendarMonth": "kalendermaand",
   "goalWindowCalendarWeek": "kalenderweek",
@@ -4682,7 +4684,6 @@
       }
     }
   },
-  "projectLinkedTasks": "Gekoppelde taken",
   "projectManageTooltip": "Projecten beheren",
   "projectNextStepAdded": "Toegevoegd",
   "projectNextStepCreateFailed": "De taak kon niet worden aangemaakt. Werk nu bij om de actuele lijst te laden, of probeer het opnieuw.",
@@ -4773,7 +4774,6 @@
       }
     }
   },
-  "projectNoLinkedTasks": "Nog geen taken verbonden",
   "projectNoProjects": "Nog geen projecten",
   "projectNotFound": "Project niet gevonden",
   "projectPickerLabel": "Project",

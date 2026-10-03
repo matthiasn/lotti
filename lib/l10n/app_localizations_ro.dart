@@ -1905,9 +1905,39 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get aiOllamaInstallButton => 'Instalați';
+
+  @override
+  String get aiOllamaInstallCommandHint =>
+      'Pentru a-l instala, rulați această comandă în terminal:';
+
+  @override
+  String aiOllamaInstallFailed(String error) {
+    return 'Instalarea a eșuat: $error';
+  }
+
+  @override
+  String get aiOllamaInstalling => 'Se instalează modelul…';
+
+  @override
+  String get aiOllamaInstallQuestion => 'Îl instalați acum din Lotti?';
+
+  @override
   String aiOllamaModelInstalledSuccessfully(String modelName) {
     return 'Modelul „$modelName” a fost instalat cu succes!';
   }
+
+  @override
+  String aiOllamaModelNotInstalledMessage(String model) {
+    return 'Modelul „$model” nu este instalat.';
+  }
+
+  @override
+  String get aiOllamaModelNotInstalledTitle => 'Modelul nu este instalat';
+
+  @override
+  String get aiOllamaProviderMissing =>
+      'Nu este configurat niciun furnizor Ollama. Adăugați unul în setări.';
 
   @override
   String get aiPickProviderBadgeDesktopOnly => 'DOAR DESKTOP';
@@ -7887,24 +7917,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalReportSectionWindow => 'Fereastra mai largă';
 
   @override
-  String get goalStatusAchieved => 'Atins';
-
-  @override
-  String get goalStatusAtRisk => 'În pericol';
-
-  @override
-  String get goalStatusInsufficientData => 'Fără date';
-
-  @override
-  String get goalStatusOffTrack => 'Deviat de la obiectiv';
-
-  @override
-  String get goalStatusOnTrack => 'Pe drumul cel bun';
-
-  @override
-  String get goalStatusRecovering => 'În revenire';
-
-  @override
   String goalWatchingMetric(String windowLabel) {
     return 'Actualizări din sursa conectată · $windowLabel';
   }
@@ -11324,9 +11336,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get projectLinkedTasks => 'Sarcini asociate';
-
-  @override
   String get projectManageTooltip => 'Gestionați proiectele';
 
   @override
@@ -11456,9 +11465,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String projectNextStepsShowMore(int count) {
     return 'Afișați încă $count';
   }
-
-  @override
-  String get projectNoLinkedTasks => 'Nicio sarcină asociată încă';
 
   @override
   String get projectNoProjects => 'Niciun proiect încă';

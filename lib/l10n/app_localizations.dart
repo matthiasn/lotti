@@ -3252,11 +3252,59 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 model} other{{count} models}}'**
   String aiModelPickerProviderModelCount(int count);
 
+  /// Button that starts installing the model.
+  ///
+  /// In en, this message translates to:
+  /// **'Install'**
+  String get aiOllamaInstallButton;
+
+  /// Introduces the terminal command that installs the model.
+  ///
+  /// In en, this message translates to:
+  /// **'To install it, run this command in your terminal:'**
+  String get aiOllamaInstallCommandHint;
+
+  /// Shown when the install fails; error is the provider’s message.
+  ///
+  /// In en, this message translates to:
+  /// **'Installation failed: {error}'**
+  String aiOllamaInstallFailed(String error);
+
+  /// Shown above the progress bar while the model downloads.
+  ///
+  /// In en, this message translates to:
+  /// **'Installing model…'**
+  String get aiOllamaInstalling;
+
+  /// Offers to install the model from inside the app.
+  ///
+  /// In en, this message translates to:
+  /// **'Install it now from Lotti?'**
+  String get aiOllamaInstallQuestion;
+
   /// No description provided for @aiOllamaModelInstalledSuccessfully.
   ///
   /// In en, this message translates to:
   /// **'Model \"{modelName}\" installed successfully!'**
   String aiOllamaModelInstalledSuccessfully(String modelName);
+
+  /// First line of the dialog; model is the Ollama model name.
+  ///
+  /// In en, this message translates to:
+  /// **'The model \"{model}\" isn’t installed.'**
+  String aiOllamaModelNotInstalledMessage(String model);
+
+  /// Title of the dialog offering to install a missing Ollama model.
+  ///
+  /// In en, this message translates to:
+  /// **'Model not installed'**
+  String get aiOllamaModelNotInstalledTitle;
+
+  /// Shown when no Ollama provider is configured to install into.
+  ///
+  /// In en, this message translates to:
+  /// **'No Ollama provider is set up. Add one in settings.'**
+  String get aiOllamaProviderMissing;
 
   /// No description provided for @aiPickProviderBadgeDesktopOnly.
   ///
@@ -12984,42 +13032,6 @@ abstract class AppLocalizations {
   /// **'The wider window'**
   String get goalReportSectionWindow;
 
-  /// Goal track status chip: target date passed with criteria met.
-  ///
-  /// In en, this message translates to:
-  /// **'Achieved'**
-  String get goalStatusAchieved;
-
-  /// Goal track status chip: behind but within grace.
-  ///
-  /// In en, this message translates to:
-  /// **'At risk'**
-  String get goalStatusAtRisk;
-
-  /// Goal track status chip: tracker gap, no verdict.
-  ///
-  /// In en, this message translates to:
-  /// **'No data'**
-  String get goalStatusInsufficientData;
-
-  /// Goal track status chip: decisively behind.
-  ///
-  /// In en, this message translates to:
-  /// **'Off track'**
-  String get goalStatusOffTrack;
-
-  /// Goal track status chip: criteria currently met.
-  ///
-  /// In en, this message translates to:
-  /// **'On track'**
-  String get goalStatusOnTrack;
-
-  /// Goal track status chip: climbing back after being behind.
-  ///
-  /// In en, this message translates to:
-  /// **'Recovering'**
-  String get goalStatusRecovering;
-
   /// No description provided for @goalWatchingMetric.
   ///
   /// In en, this message translates to:
@@ -18673,12 +18685,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, one{{count} linked task} other{{count} linked tasks}}'**
   String projectLinkedTaskCount(int count);
 
-  /// No description provided for @projectLinkedTasks.
-  ///
-  /// In en, this message translates to:
-  /// **'Linked Tasks'**
-  String get projectLinkedTasks;
-
   /// No description provided for @projectManageTooltip.
   ///
   /// In en, this message translates to:
@@ -18822,12 +18828,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show {count} more'**
   String projectNextStepsShowMore(int count);
-
-  /// No description provided for @projectNoLinkedTasks.
-  ///
-  /// In en, this message translates to:
-  /// **'No tasks linked yet'**
-  String get projectNoLinkedTasks;
 
   /// No description provided for @projectNoProjects.
   ///

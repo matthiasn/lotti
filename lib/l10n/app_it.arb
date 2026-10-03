@@ -926,6 +926,11 @@
       }
     }
   },
+  "aiOllamaInstallButton": "Installa",
+  "aiOllamaInstallCommandHint": "Per installarlo, esegui questo comando nel terminale:",
+  "aiOllamaInstallFailed": "Installazione non riuscita: {error}",
+  "aiOllamaInstalling": "Installazione del modello…",
+  "aiOllamaInstallQuestion": "Installarlo ora da Lotti?",
   "aiOllamaModelInstalledSuccessfully": "Modello \"{modelName}\" installato con successo!",
   "@aiOllamaModelInstalledSuccessfully": {
     "placeholders": {
@@ -934,6 +939,9 @@
       }
     }
   },
+  "aiOllamaModelNotInstalledMessage": "Il modello \"{model}\" non è installato.",
+  "aiOllamaModelNotInstalledTitle": "Modello non installato",
+  "aiOllamaProviderMissing": "Nessun provider Ollama configurato. Aggiungine uno nelle impostazioni.",
   "aiPickProviderBadgeDesktopOnly": "DESKTOP SOLO",
   "aiPickProviderBadgeNew": "NUOVO",
   "aiPickProviderBadgeRecommended": "RACCOMANDATO",
@@ -3330,12 +3338,6 @@
   "goalReportSectionCoverage": "Copertura dei dati",
   "goalReportSectionStanding": "A che punto sei",
   "goalReportSectionWindow": "La finestra più ampia",
-  "goalStatusAchieved": "Raggiunto",
-  "goalStatusAtRisk": "A rischio",
-  "goalStatusInsufficientData": "Nessun dato",
-  "goalStatusOffTrack": "Fuori rotta",
-  "goalStatusOnTrack": "In linea",
-  "goalStatusRecovering": "In ripresa",
   "goalWatchingMetric": "Aggiornamenti dalla fonte collegata · {windowLabel}",
   "goalWindowCalendarMonth": "mese di calendario",
   "goalWindowCalendarWeek": "settimana di calendario",
@@ -4683,7 +4685,6 @@
       }
     }
   },
-  "projectLinkedTasks": "Compiti collegati",
   "projectManageTooltip": "Gestione dei progetti",
   "projectNextStepAdded": "Aggiunto",
   "projectNextStepCreateFailed": "Impossibile creare l'attività. Aggiorna ora per caricare l'elenco attuale oppure riprova.",
@@ -4774,7 +4775,6 @@
       }
     }
   },
-  "projectNoLinkedTasks": "Nessun compito ancora collegato",
   "projectNoProjects": "Nessun progetto ancora",
   "projectNotFound": "Progetto non trovato",
   "projectPickerLabel": "Progetto",

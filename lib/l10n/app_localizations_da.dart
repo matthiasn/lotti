@@ -1876,9 +1876,39 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get aiOllamaInstallButton => 'Installer';
+
+  @override
+  String get aiOllamaInstallCommandHint =>
+      'Kør denne kommando i din terminal for at installere den:';
+
+  @override
+  String aiOllamaInstallFailed(String error) {
+    return 'Installationen mislykkedes: $error';
+  }
+
+  @override
+  String get aiOllamaInstalling => 'Installerer model…';
+
+  @override
+  String get aiOllamaInstallQuestion => 'Installere den nu fra Lotti?';
+
+  @override
   String aiOllamaModelInstalledSuccessfully(String modelName) {
     return 'Model \"$modelName\" installeret med succes!';
   }
+
+  @override
+  String aiOllamaModelNotInstalledMessage(String model) {
+    return 'Modellen \"$model\" er ikke installeret.';
+  }
+
+  @override
+  String get aiOllamaModelNotInstalledTitle => 'Modellen er ikke installeret';
+
+  @override
+  String get aiOllamaProviderMissing =>
+      'Der er ingen Ollama-udbyder sat op. Tilføj en i indstillingerne.';
 
   @override
   String get aiPickProviderBadgeDesktopOnly => 'KUN SKRIVEBORD';
@@ -7740,24 +7770,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalReportSectionWindow => 'Det bredere vindue';
 
   @override
-  String get goalStatusAchieved => 'Opnået';
-
-  @override
-  String get goalStatusAtRisk => 'I fare';
-
-  @override
-  String get goalStatusInsufficientData => 'Ingen data';
-
-  @override
-  String get goalStatusOffTrack => 'Ude af kurs';
-
-  @override
-  String get goalStatusOnTrack => 'På sporet';
-
-  @override
-  String get goalStatusRecovering => 'På vej tilbage';
-
-  @override
   String goalWatchingMetric(String windowLabel) {
     return 'Opdateringer fra dens linkede kilde · $windowLabel';
   }
@@ -11102,9 +11114,6 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String get projectLinkedTasks => 'Sammenkoblede opgaver';
-
-  @override
   String get projectManageTooltip => 'Styr projekter';
 
   @override
@@ -11230,9 +11239,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String projectNextStepsShowMore(int count) {
     return 'Vis $count mere';
   }
-
-  @override
-  String get projectNoLinkedTasks => 'Ingen opgaver er linket endnu';
 
   @override
   String get projectNoProjects => 'Ingen projekter endnu';
