@@ -128,6 +128,15 @@ class SkillInferenceRunner {
   final PromptBuilderHelper _promptBuilderHelper;
   final TaskSummaryResolver _taskSummaryResolver;
 
+  /// Whether [skill] gets the task's pull requests: only the coding prompt.
+  ///
+  /// The design and research prompts share its skill type, but they are not
+  /// about code, and the pull request block's guidance — treat that work as
+  /// done, list checklist mismatches — would distort them. Every prompt skill
+  /// is built in, so the coding prompt's id identifies it completely.
+  static bool _carriesPullRequests(AiConfigSkill skill) =>
+      skill.id == skillPromptGenId;
+
   /// The task's pull requests for a coding prompt, refreshed now, or null
   /// when there are none. A failure here never fails the prompt: it is
   /// logged, and the prompt goes out without the section.
@@ -1311,7 +1320,7 @@ class SkillInferenceRunner {
                 _aiInputRepository.buildTaskDetailsJson(id: linkedTaskId),
                 _aiInputRepository.buildLinkedTasksJson(linkedTaskId),
                 _aiInputRepository.buildCategoryKnowledge(linkedTaskId),
-                skill.skillType == SkillType.promptGeneration
+                _carriesPullRequests(skill)
                     ? _pullRequestContext(linkedTaskId)
                     : Future<String?>.value(),
               ).wait
