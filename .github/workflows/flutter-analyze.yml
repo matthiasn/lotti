@@ -55,6 +55,7 @@ jobs:
       - name: Check ARB catalogs hold every key
         run: dart run tool/ci/check_arb_parity.dart
       # An ADR's number is its identity — code and concepts cite "ADR 0115" —
-      # and concurrent pull requests both take the next free one.
+      # and concurrent pull requests both take the next free one. Push-only, so
+      # it fires once both are in one tree (a rebased branch, or main).
       - name: Check ADR numbers are unique
         run: dart run tool/ci/check_adr_numbers.dart

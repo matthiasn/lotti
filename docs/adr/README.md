@@ -35,7 +35,10 @@ pull requests conflict over lines they do not share (the same reason release
 notes go in `changelog.d/`). Because the number is an ADR's identity, CI fails
 when two ADRs share one (`tool/ci/check_adr_numbers.dart`): if your pull request
 and another both took the next free number, renumber yours and update its
-citations. The clusters below group ADRs that belong
+citations. The workflow runs on push, not on the pull request's merge with
+`main`, so the check fires once both ADRs are in one tree: on your branch after
+it is rebased, or on `main` if both already merged — in which case the
+renumbering is a follow-up. The clusters below group ADRs that belong
 together; add to them only when a decision joins one.
 
 ### Task graph decision cluster

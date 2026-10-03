@@ -9,7 +9,9 @@ final _adrFile = RegExp(r'^(\d{4})-.+\.md$');
 /// ADR's identity: code comments and concepts cite "ADR 0115", and two files
 /// sharing it make every such citation ambiguous. Concurrent pull requests
 /// both take the next free number, and nothing else notices — three pairs
-/// collided on a single day before this check existed.
+/// collided on a single day before this check existed. The analyze workflow
+/// runs on push, so a collision shows once both ADRs share a tree: a branch
+/// rebased onto the other, or `main` after both merged.
 Map<String, List<String>> duplicateAdrNumbers(Iterable<String> fileNames) {
   final byNumber = <String, List<String>>{};
   for (final name in fileNames) {
