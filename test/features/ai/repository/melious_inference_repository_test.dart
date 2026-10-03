@@ -1112,6 +1112,11 @@ void main() {
                         'reasoning': 'true',
                         'structured_output': true,
                         'json_schema': true,
+                        'diarization': 'TRUE',
+                        'code_generation': 2,
+                        'computer_use': true,
+                        'lora': 0,
+                        'streaming': 'false',
                       },
                     },
                   },
@@ -1139,8 +1144,15 @@ void main() {
         expect(model.isReasoningModel, isTrue);
         expect(model.supportsFunctionCalling, isTrue);
         expect(model.description, contains('Context: 4096 tokens'));
-        expect(model.description, contains('structured output'));
-        expect(model.description, contains('JSON schema'));
+        // Truthy flags are labelled in the catalog's fixed order; falsy ones
+        // (0, "false") are left out.
+        expect(
+          model.description,
+          contains(
+            'Features: audio input, diarization, reasoning, tools, '
+            'structured output, JSON schema, code generation, computer use.',
+          ),
+        );
       },
     );
 

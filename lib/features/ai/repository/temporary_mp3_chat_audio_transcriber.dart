@@ -8,6 +8,7 @@ import 'package:clock/clock.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/repository/completion_usage_parser.dart';
+import 'package:lotti/features/ai/repository/model_catalog_mapping.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/temporary_mp3_encoder.dart';
@@ -250,7 +251,7 @@ Future<CreateChatCompletionStreamResponse> _transcribeTemporaryMp3ChatAudio({
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw TranscriptionException(
         'HTTP ${response.statusCode}: '
-        '${_extractErrorMessage(response.body, response.statusCode, provider)} '
+        '${ModelCatalogMapping.extractErrorMessage(response.body, response.statusCode, providerLabel: provider.displayName, maxLength: 240, ellipsis: '...')} '
         '(request $requestId)',
         provider: provider.repositoryName,
         statusCode: response.statusCode,
@@ -393,31 +394,6 @@ Uri _buildEndpointUri(String baseUrl, String endpointPath) {
   final basePath = baseUri.path.replaceAll(RegExp(r'/+$'), '');
   final normalizedEndpoint = endpointPath.replaceAll(RegExp('^/+'), '');
   return baseUri.replace(path: '$basePath/$normalizedEndpoint');
-}
-
-String _extractErrorMessage(
-  String body,
-  int statusCode,
-  TemporaryMp3ChatAudioProvider provider,
-) {
-  final fallback = '${provider.displayName} API error (HTTP $statusCode)';
-  if (body.isEmpty) return fallback;
-  try {
-    final decoded = jsonDecode(body);
-    if (decoded is Map<String, dynamic>) {
-      final error = decoded['error'];
-      if (error is Map<String, dynamic>) {
-        final message = error['message'];
-        if (message is String && message.isNotEmpty) return message;
-      }
-      if (error is String && error.isNotEmpty) return error;
-      final message = decoded['message'];
-      if (message is String && message.isNotEmpty) return message;
-    }
-  } catch (_) {
-    // Fall through to a clipped raw body.
-  }
-  return body.length > 240 ? '${body.substring(0, 240)}...' : body;
 }
 
 Future<Uint8List> _readTemporaryFile(File file) => file.readAsBytes();

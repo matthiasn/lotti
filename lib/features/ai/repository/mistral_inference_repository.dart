@@ -5,6 +5,7 @@ import 'dart:developer' as developer;
 import 'package:clock/clock.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/model_catalog_mapping.dart';
 import 'package:lotti/features/ai/repository/temporary_mp3_chat_audio_transcriber.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/temporary_mp3_encoder.dart';
@@ -34,6 +35,9 @@ class MistralInferenceRepository {
        _temporaryFileDeleter =
            temporaryFileDeleter ?? ((file) => file.deleteSync()),
        _clock = clockSource ?? clock;
+
+  /// Segments the model-name humanizer keeps upper-case for this provider.
+  static const _modelNameAcronyms = {'AI', 'API', 'FIM', 'OCR', 'VL'};
 
   final http.Client _httpClient;
   final AudioToTemporaryMp3Encoder _audioToTemporaryMp3Encoder;
@@ -108,7 +112,7 @@ class MistralInferenceRepository {
     // Log only host + path — never the full URI, which (from a user-configured
     // base URL) can carry credentials in userinfo or tokens in the query.
     developer.log(
-      'Fetching Mistral model catalog from ${_redactedEndpoint(uri)}',
+      'Fetching Mistral model catalog from ${ModelCatalogMapping.redactedEndpoint(uri)}',
       name: 'MistralInferenceRepository',
     );
 
@@ -125,7 +129,11 @@ class MistralInferenceRepository {
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw MistralInferenceException(
-          _extractErrorMessage(response.body, response.statusCode),
+          ModelCatalogMapping.extractErrorMessage(
+            response.body,
+            response.statusCode,
+            providerLabel: 'Mistral',
+          ),
         );
       }
 
@@ -182,7 +190,8 @@ class MistralInferenceRepository {
 
     final knownModel = _knownMistralModels[providerModelId];
     final capabilities =
-        _asMap(model['capabilities']) ?? const <String, dynamic>{};
+        ModelCatalogMapping.asMap(model['capabilities']) ??
+        const <String, dynamic>{};
 
     // A curated entry with no live capability metadata to refine is returned
     // verbatim so hand-tuned names and descriptions survive.
@@ -202,10 +211,10 @@ class MistralInferenceRepository {
 
     final supportsFunctionCalling =
         knownModel?.supportsFunctionCalling == true ||
-        _truthy(capabilities['function_calling']);
+        ModelCatalogMapping.truthy(capabilities['function_calling']);
     final isReasoningModel =
         knownModel?.isReasoningModel == true ||
-        _truthy(capabilities['reasoning']) ||
+        ModelCatalogMapping.truthy(capabilities['reasoning']) ||
         _looksLikeReasoningModel(providerModelId);
 
     // Preserve curated display metadata (and the curated completion-token
@@ -215,7 +224,12 @@ class MistralInferenceRepository {
     // derived description.
     return KnownModel(
       providerModelId: providerModelId,
-      name: knownModel?.name ?? _displayNameForModel(providerModelId),
+      name:
+          knownModel?.name ??
+          ModelCatalogMapping.humanizeModelId(
+            providerModelId,
+            acronyms: _modelNameAcronyms,
+          ),
       inputModalities: inputModalities,
       outputModalities: outputModalities,
       isReasoningModel: isReasoningModel,
@@ -234,11 +248,11 @@ class MistralInferenceRepository {
   /// installable. Curated rows and rows that don't declare the flag are kept.
   static bool _isInstallableRow(Map<String, dynamic> model, KnownModel known) {
     if (_knownMistralModels.containsKey(known.providerModelId)) return true;
-    final capabilities = _asMap(model['capabilities']);
+    final capabilities = ModelCatalogMapping.asMap(model['capabilities']);
     final chatExplicitlyDisabled =
         capabilities != null &&
         capabilities.containsKey('completion_chat') &&
-        !_truthy(capabilities['completion_chat']);
+        !ModelCatalogMapping.truthy(capabilities['completion_chat']);
     if (!chatExplicitlyDisabled) return true;
     return known.inputModalities.contains(Modality.image) ||
         known.inputModalities.contains(Modality.audio) ||
@@ -254,35 +268,24 @@ class MistralInferenceRepository {
     // Voxtral / transcription models take audio in and emit text; they never
     // behave like chat or vision models.
     if (_looksLikeTranscriptionModel(providerModelId) ||
-        _truthy(capabilities['audio']) ||
-        _truthy(capabilities['audio_transcription'])) {
-      _addUnique(inputModalities, Modality.audio);
-      _addUnique(outputModalities, Modality.text);
+        ModelCatalogMapping.truthy(capabilities['audio']) ||
+        ModelCatalogMapping.truthy(capabilities['audio_transcription'])) {
+      ModelCatalogMapping.addUniqueModality(inputModalities, Modality.audio);
+      ModelCatalogMapping.addUniqueModality(outputModalities, Modality.text);
       return;
     }
 
     // Everything else is a text chat surface by default.
-    _addUnique(inputModalities, Modality.text);
-    _addUnique(outputModalities, Modality.text);
+    ModelCatalogMapping.addUniqueModality(inputModalities, Modality.text);
+    ModelCatalogMapping.addUniqueModality(outputModalities, Modality.text);
 
     // Vision and OCR models additionally accept image input.
-    if (_truthy(capabilities['vision']) ||
-        _truthy(capabilities['ocr']) ||
-        _truthy(capabilities['document_ocr']) ||
+    if (ModelCatalogMapping.truthy(capabilities['vision']) ||
+        ModelCatalogMapping.truthy(capabilities['ocr']) ||
+        ModelCatalogMapping.truthy(capabilities['document_ocr']) ||
         _looksLikeOcrModel(providerModelId)) {
-      _addUnique(inputModalities, Modality.image);
+      ModelCatalogMapping.addUniqueModality(inputModalities, Modality.image);
     }
-  }
-
-  static void _addUnique(List<Modality> modalities, Modality modality) {
-    if (!modalities.contains(modality)) {
-      modalities.add(modality);
-    }
-  }
-
-  static Map<String, dynamic>? _asMap(Object? value) {
-    if (value is Map<String, dynamic>) return value;
-    return null;
   }
 
   String _descriptionFor({
@@ -291,7 +294,9 @@ class MistralInferenceRepository {
   }) {
     final parts = <String>[];
 
-    final contextLength = _integerValue(model['max_context_length']);
+    final contextLength = ModelCatalogMapping.integerValue(
+      model['max_context_length'],
+    );
     if (contextLength != null) {
       parts.add('Context: $contextLength tokens.');
     }
@@ -301,32 +306,22 @@ class MistralInferenceRepository {
     // generation) are intentionally omitted so a row never describes the same
     // capability twice. Only chip-less extras are listed here.
     final featureLabels = <String>[
-      if (_truthy(capabilities['ocr']) || _truthy(capabilities['document_ocr']))
+      if (ModelCatalogMapping.truthy(capabilities['ocr']) ||
+          ModelCatalogMapping.truthy(capabilities['document_ocr']))
         'OCR',
-      if (_truthy(capabilities['function_calling'])) 'tools',
-      if (_truthy(capabilities['completion_fim'])) 'fill-in-the-middle',
-      if (_truthy(capabilities['classification'])) 'classification',
-      if (_truthy(capabilities['fine_tuning'])) 'fine-tuning',
+      if (ModelCatalogMapping.truthy(capabilities['function_calling'])) 'tools',
+      if (ModelCatalogMapping.truthy(capabilities['completion_fim']))
+        'fill-in-the-middle',
+      if (ModelCatalogMapping.truthy(capabilities['classification']))
+        'classification',
+      if (ModelCatalogMapping.truthy(capabilities['fine_tuning']))
+        'fine-tuning',
     ];
     if (featureLabels.isNotEmpty) {
       parts.add('Features: ${featureLabels.join(', ')}.');
     }
 
     return parts.join(' ');
-  }
-
-  static int? _integerValue(Object? value) {
-    if (value is int) return value;
-    if (value is num) return value.toInt();
-    if (value is String) return int.tryParse(value);
-    return null;
-  }
-
-  static bool _truthy(Object? value) {
-    if (value is bool) return value;
-    if (value is num) return value != 0;
-    if (value is String) return value.toLowerCase() == 'true';
-    return false;
   }
 
   static bool _looksLikeReasoningModel(String modelId) {
@@ -348,40 +343,6 @@ class MistralInferenceRepository {
     return modelId.toLowerCase().contains('ocr');
   }
 
-  static String _displayNameForModel(String modelId) {
-    final leaf = modelId.split('/').last;
-    final words = leaf
-        .replaceAll(RegExp('[_-]+'), ' ')
-        .split(RegExp(r'\s+'))
-        .where((part) => part.isNotEmpty)
-        .map(_titleCaseModelWord);
-    final displayName = words.join(' ');
-    return displayName.isEmpty ? modelId : displayName;
-  }
-
-  static String _titleCaseModelWord(String word) {
-    final upper = word.toUpperCase();
-    const acronyms = {
-      'AI',
-      'API',
-      'FIM',
-      'OCR',
-      'VL',
-    };
-    if (acronyms.contains(upper)) return upper;
-    if (RegExp(r'^[a-z]?\d+[a-z]?$', caseSensitive: false).hasMatch(word)) {
-      return upper;
-    }
-    return '${word[0].toUpperCase()}${word.substring(1)}';
-  }
-
-  /// A safe-to-log representation of [uri]: host + path only, with any
-  /// userinfo (credentials) and query string (tokens) stripped.
-  static String _redactedEndpoint(Uri uri) {
-    final host = uri.host.isEmpty ? '<local>' : uri.host;
-    return '$host${uri.path}';
-  }
-
   static Uri _buildEndpointUri(String baseUrl, String endpointPath) {
     try {
       final baseUri = Uri.parse(baseUrl.trim());
@@ -395,27 +356,6 @@ class MistralInferenceRepository {
         'Invalid Mistral base URL',
       );
     }
-  }
-
-  static String _extractErrorMessage(String body, int statusCode) {
-    final fallback = 'Mistral API error (HTTP $statusCode)';
-    if (body.isEmpty) return fallback;
-    try {
-      final decoded = jsonDecode(body);
-      if (decoded is Map<String, dynamic>) {
-        final error = decoded['error'];
-        if (error is Map<String, dynamic>) {
-          final message = error['message'];
-          if (message is String && message.isNotEmpty) return message;
-        }
-        if (error is String && error.isNotEmpty) return error;
-        final message = decoded['message'];
-        if (message is String && message.isNotEmpty) return message;
-      }
-    } catch (_) {
-      // Fall through to a clipped raw body.
-    }
-    return body.length > 160 ? '${body.substring(0, 160)}…' : body;
   }
 
   /// Transcribes with an instruction-following Voxtral model through Mistral's

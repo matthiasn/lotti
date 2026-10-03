@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/repository/model_catalog_mapping.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
@@ -179,7 +180,11 @@ class MistralOcrRepository {
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw MistralOcrException(
-          _extractErrorMessage(response.body, response.statusCode),
+          ModelCatalogMapping.extractErrorMessage(
+            response.body,
+            response.statusCode,
+            providerLabel: 'Mistral OCR',
+          ),
           statusCode: response.statusCode,
         );
       }
@@ -256,27 +261,6 @@ class MistralOcrRepository {
   /// Host + path only — never the full URI, which from a user-configured base
   /// URL could carry credentials/tokens.
   static String _redactedEndpoint(Uri uri) => '${uri.host}${uri.path}';
-
-  static String _extractErrorMessage(String body, int statusCode) {
-    final fallback = 'Mistral OCR error (HTTP $statusCode)';
-    if (body.isEmpty) return fallback;
-    try {
-      final decoded = jsonDecode(body);
-      if (decoded is Map<String, dynamic>) {
-        final error = decoded['error'];
-        if (error is Map<String, dynamic>) {
-          final message = error['message'];
-          if (message is String && message.isNotEmpty) return message;
-        }
-        if (error is String && error.isNotEmpty) return error;
-        final message = decoded['message'];
-        if (message is String && message.isNotEmpty) return message;
-      }
-    } catch (_) {
-      // Fall through to a clipped raw body.
-    }
-    return body.length > 160 ? '${body.substring(0, 160)}…' : body;
-  }
 }
 
 class MistralOcrException implements Exception {

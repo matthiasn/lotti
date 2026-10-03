@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/model_catalog_mapping.dart';
 
 /// Sealed result of a single connection probe. The connect form's
 /// status strip dispatches on this to render the loading / verified /
@@ -362,7 +363,15 @@ Future<ConnectionCheckState> _runProbe({
     }
     return ConnectionCheckFailedHttp(
       status: response.statusCode,
-      message: _extractErrorMessage(response.body),
+      // An empty body says nothing beyond the status the state already
+      // carries, so the message stays empty rather than restating it.
+      message: response.body.isEmpty
+          ? ''
+          : ModelCatalogMapping.extractErrorMessage(
+              response.body,
+              response.statusCode,
+              providerLabel: '',
+            ),
     );
   } on TimeoutException {
     return const ConnectionCheckFailedNetwork(
@@ -374,30 +383,6 @@ Future<ConnectionCheckState> _runProbe({
     // — surface the message but don't swallow programmer errors.
     return ConnectionCheckFailedNetwork(message: e.toString());
   }
-}
-
-/// Best-effort extraction of the provider's error message from a
-/// non-2xx body. Falls back to a snippet of the raw body when the
-/// payload isn't JSON or doesn't carry a recognised error field.
-String _extractErrorMessage(String body) {
-  if (body.isEmpty) return '';
-  try {
-    final decoded = jsonDecode(body);
-    if (decoded is Map<String, dynamic>) {
-      final err = decoded['error'];
-      if (err is Map<String, dynamic>) {
-        final msg = err['message'];
-        if (msg is String && msg.isNotEmpty) return msg;
-      } else if (err is String && err.isNotEmpty) {
-        return err;
-      }
-      final msg = decoded['message'];
-      if (msg is String && msg.isNotEmpty) return msg;
-    }
-  } catch (_) {
-    // Not JSON; fall through to raw snippet.
-  }
-  return body.length > 160 ? '${body.substring(0, 160)}…' : body;
 }
 
 class _OpenAiCompatibleProbe implements ConnectionProbe {

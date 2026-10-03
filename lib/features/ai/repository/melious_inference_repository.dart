@@ -12,6 +12,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_request_helpers.dart';
 import 'package:lotti/features/ai/repository/completion_usage_parser.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_payloads.dart';
+import 'package:lotti/features/ai/repository/model_catalog_mapping.dart';
 import 'package:lotti/features/ai/repository/temporary_mp3_chat_audio_transcriber.dart';
 import 'package:lotti/features/ai/repository/transcription_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -57,6 +58,24 @@ class MeliousInferenceRepository extends TranscriptionRepository {
        _temporaryFileDeleter =
            temporaryFileDeleter ?? ((file) => file.deleteSync()),
        _clock = clockSource ?? clock;
+
+  /// Segments the model-name humanizer keeps upper-case for this provider.
+  static const _modelNameAcronyms = {
+    'AI',
+    'API',
+    'ASR',
+    'BGE',
+    'CO2',
+    'GPT',
+    'GLM',
+    'JSON',
+    'LLAMA',
+    'MLX',
+    'QWEN',
+    'STT',
+    'TTS',
+    'VL',
+  };
 
   /// Melious models that reject a chat completion outright unless
   /// `reasoning_effort` is present in the body.
@@ -264,7 +283,13 @@ class MeliousInferenceRepository extends TranscriptionRepository {
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw MeliousInferenceException(
-          _extractErrorMessage(response.body, response.statusCode),
+          ModelCatalogMapping.extractErrorMessage(
+            response.body,
+            response.statusCode,
+            providerLabel: 'Melious',
+            maxLength: 240,
+            ellipsis: '...',
+          ),
           statusCode: response.statusCode,
         );
       }
@@ -727,7 +752,13 @@ class MeliousInferenceRepository extends TranscriptionRepository {
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw MeliousInferenceException(
-          _extractErrorMessage(response.body, response.statusCode),
+          ModelCatalogMapping.extractErrorMessage(
+            response.body,
+            response.statusCode,
+            providerLabel: 'Melious',
+            maxLength: 240,
+            ellipsis: '...',
+          ),
           statusCode: response.statusCode,
         );
       }
@@ -1219,7 +1250,13 @@ class MeliousInferenceRepository extends TranscriptionRepository {
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw MeliousInferenceException(
-          _extractErrorMessage(response.body, response.statusCode),
+          ModelCatalogMapping.extractErrorMessage(
+            response.body,
+            response.statusCode,
+            providerLabel: 'Melious',
+            maxLength: 240,
+            ellipsis: '...',
+          ),
           statusCode: response.statusCode,
         );
       }
@@ -1306,8 +1343,8 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     }
 
     final metaMap =
-        _asMap(model['_meta']) ??
-        _asMap(model['metadata']) ??
+        ModelCatalogMapping.asMap(model['_meta']) ??
+        ModelCatalogMapping.asMap(model['metadata']) ??
         const <String, dynamic>{};
     final knownModel = _knownMeliousModels[providerModelId];
     if (knownModel != null && metaMap.isEmpty) {
@@ -1315,8 +1352,8 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     }
 
     final capabilityMap =
-        _asMap(metaMap['capabilities']) ??
-        _asMap(model['capabilities']) ??
+        ModelCatalogMapping.asMap(metaMap['capabilities']) ??
+        ModelCatalogMapping.asMap(model['capabilities']) ??
         const <String, dynamic>{};
     final type = _MeliousModelType.from(metaMap['type'] ?? model['type']);
 
@@ -1338,16 +1375,21 @@ class MeliousInferenceRepository extends TranscriptionRepository {
 
     final supportsFunctionCalling =
         knownModel?.supportsFunctionCalling == true ||
-        _truthy(capabilityMap['function_calling']);
+        ModelCatalogMapping.truthy(capabilityMap['function_calling']);
     final isReasoningModel =
         knownModel?.isReasoningModel == true ||
-        _truthy(capabilityMap['reasoning']) ||
-        _truthy(capabilityMap['thinking']) ||
+        ModelCatalogMapping.truthy(capabilityMap['reasoning']) ||
+        ModelCatalogMapping.truthy(capabilityMap['thinking']) ||
         _looksLikeReasoningModel(providerModelId);
 
     return KnownModel(
       providerModelId: providerModelId,
-      name: knownModel?.name ?? _displayNameForModel(providerModelId),
+      name:
+          knownModel?.name ??
+          ModelCatalogMapping.humanizeModelId(
+            providerModelId,
+            acronyms: _modelNameAcronyms,
+          ),
       inputModalities: inputModalities,
       outputModalities: outputModalities,
       isReasoningModel: isReasoningModel,
@@ -1369,38 +1411,38 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     switch (type) {
       case _MeliousModelType.chat:
       case _MeliousModelType.unknown:
-        _addUnique(inputModalities, Modality.text);
-        _addUnique(outputModalities, Modality.text);
+        ModelCatalogMapping.addUniqueModality(inputModalities, Modality.text);
+        ModelCatalogMapping.addUniqueModality(outputModalities, Modality.text);
       case _MeliousModelType.audio:
-        _addUnique(inputModalities, Modality.audio);
-        _addUnique(outputModalities, Modality.text);
+        ModelCatalogMapping.addUniqueModality(inputModalities, Modality.audio);
+        ModelCatalogMapping.addUniqueModality(outputModalities, Modality.text);
       case _MeliousModelType.image:
-        _addUnique(inputModalities, Modality.text);
-        _addUnique(outputModalities, Modality.image);
+        ModelCatalogMapping.addUniqueModality(inputModalities, Modality.text);
+        ModelCatalogMapping.addUniqueModality(outputModalities, Modality.image);
       case _MeliousModelType.embeddings:
       case _MeliousModelType.rerank:
-        _addUnique(inputModalities, Modality.text);
-        _addUnique(outputModalities, Modality.text);
+        ModelCatalogMapping.addUniqueModality(inputModalities, Modality.text);
+        ModelCatalogMapping.addUniqueModality(outputModalities, Modality.text);
     }
 
-    if (_truthy(capabilities['vision'])) {
-      _addUnique(inputModalities, Modality.image);
+    if (ModelCatalogMapping.truthy(capabilities['vision'])) {
+      ModelCatalogMapping.addUniqueModality(inputModalities, Modality.image);
     }
-    if (_truthy(capabilities['audio_input']) ||
-        _truthy(capabilities['supports_audio']) ||
-        _truthy(capabilities['transcription']) ||
-        _truthy(capabilities['translation']) ||
-        _truthy(capabilities['diarization'])) {
-      _addUnique(inputModalities, Modality.audio);
-      _addUnique(outputModalities, Modality.text);
+    if (ModelCatalogMapping.truthy(capabilities['audio_input']) ||
+        ModelCatalogMapping.truthy(capabilities['supports_audio']) ||
+        ModelCatalogMapping.truthy(capabilities['transcription']) ||
+        ModelCatalogMapping.truthy(capabilities['translation']) ||
+        ModelCatalogMapping.truthy(capabilities['diarization'])) {
+      ModelCatalogMapping.addUniqueModality(inputModalities, Modality.audio);
+      ModelCatalogMapping.addUniqueModality(outputModalities, Modality.text);
     }
-    if (_truthy(capabilities['text_to_image'])) {
-      _addUnique(inputModalities, Modality.text);
-      _addUnique(outputModalities, Modality.image);
+    if (ModelCatalogMapping.truthy(capabilities['text_to_image'])) {
+      ModelCatalogMapping.addUniqueModality(inputModalities, Modality.text);
+      ModelCatalogMapping.addUniqueModality(outputModalities, Modality.image);
     }
-    if (_truthy(capabilities['image_to_image'])) {
-      _addUnique(inputModalities, Modality.image);
-      _addUnique(outputModalities, Modality.image);
+    if (ModelCatalogMapping.truthy(capabilities['image_to_image'])) {
+      ModelCatalogMapping.addUniqueModality(inputModalities, Modality.image);
+      ModelCatalogMapping.addUniqueModality(outputModalities, Modality.image);
     }
   }
 
@@ -1410,42 +1452,12 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   ) {
     final out = <Modality>[];
     for (final modality in knownModalities ?? const <Modality>[]) {
-      _addUnique(out, modality);
+      ModelCatalogMapping.addUniqueModality(out, modality);
     }
-    for (final modality in _modalitiesFrom(rawModalities)) {
-      _addUnique(out, modality);
-    }
-    return out;
-  }
-
-  static List<Modality> _modalitiesFrom(Object? raw) {
-    if (raw is! List) return <Modality>[];
-    final out = <Modality>[];
-    for (final value in raw) {
-      final normalized = '$value'.toLowerCase().trim();
-      switch (normalized) {
-        case 'text':
-          _addUnique(out, Modality.text);
-        case 'audio':
-        case 'speech':
-          _addUnique(out, Modality.audio);
-        case 'image':
-        case 'vision':
-          _addUnique(out, Modality.image);
-      }
+    for (final modality in ModelCatalogMapping.modalitiesFrom(rawModalities)) {
+      ModelCatalogMapping.addUniqueModality(out, modality);
     }
     return out;
-  }
-
-  static void _addUnique(List<Modality> modalities, Modality modality) {
-    if (!modalities.contains(modality)) {
-      modalities.add(modality);
-    }
-  }
-
-  static Map<String, dynamic>? _asMap(Object? value) {
-    if (value is Map<String, dynamic>) return value;
-    return null;
   }
 
   String _descriptionFor({
@@ -1461,10 +1473,10 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     }
 
     final metaMap =
-        _asMap(model['_meta']) ??
-        _asMap(model['metadata']) ??
+        ModelCatalogMapping.asMap(model['_meta']) ??
+        ModelCatalogMapping.asMap(model['metadata']) ??
         const <String, dynamic>{};
-    final contextLength = _integerValue(
+    final contextLength = ModelCatalogMapping.integerValue(
       metaMap['context_length'],
     );
     if (contextLength != null) {
@@ -1472,24 +1484,33 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     }
 
     final featureLabels = <String>[
-      if (_truthy(capabilities['vision'])) 'vision',
-      if (_truthy(capabilities['audio_input']) ||
-          _truthy(capabilities['supports_audio']))
+      if (ModelCatalogMapping.truthy(capabilities['vision'])) 'vision',
+      if (ModelCatalogMapping.truthy(capabilities['audio_input']) ||
+          ModelCatalogMapping.truthy(capabilities['supports_audio']))
         'audio input',
-      if (_truthy(capabilities['transcription'])) 'transcription',
-      if (_truthy(capabilities['translation'])) 'translation',
-      if (_truthy(capabilities['diarization'])) 'diarization',
-      if (_truthy(capabilities['text_to_image'])) 'text to image',
-      if (_truthy(capabilities['image_to_image'])) 'image to image',
-      if (_truthy(capabilities['reasoning'])) 'reasoning',
-      if (_truthy(capabilities['thinking'])) 'thinking',
-      if (_truthy(capabilities['function_calling'])) 'tools',
-      if (_truthy(capabilities['structured_output'])) 'structured output',
-      if (_truthy(capabilities['json_schema'])) 'JSON schema',
-      if (_truthy(capabilities['code_generation'])) 'code generation',
-      if (_truthy(capabilities['computer_use'])) 'computer use',
-      if (_truthy(capabilities['lora'])) 'LoRA',
-      if (_truthy(capabilities['streaming'])) 'streaming',
+      if (ModelCatalogMapping.truthy(capabilities['transcription']))
+        'transcription',
+      if (ModelCatalogMapping.truthy(capabilities['translation']))
+        'translation',
+      if (ModelCatalogMapping.truthy(capabilities['diarization']))
+        'diarization',
+      if (ModelCatalogMapping.truthy(capabilities['text_to_image']))
+        'text to image',
+      if (ModelCatalogMapping.truthy(capabilities['image_to_image']))
+        'image to image',
+      if (ModelCatalogMapping.truthy(capabilities['reasoning'])) 'reasoning',
+      if (ModelCatalogMapping.truthy(capabilities['thinking'])) 'thinking',
+      if (ModelCatalogMapping.truthy(capabilities['function_calling'])) 'tools',
+      if (ModelCatalogMapping.truthy(capabilities['structured_output']))
+        'structured output',
+      if (ModelCatalogMapping.truthy(capabilities['json_schema']))
+        'JSON schema',
+      if (ModelCatalogMapping.truthy(capabilities['code_generation']))
+        'code generation',
+      if (ModelCatalogMapping.truthy(capabilities['computer_use']))
+        'computer use',
+      if (ModelCatalogMapping.truthy(capabilities['lora'])) 'LoRA',
+      if (ModelCatalogMapping.truthy(capabilities['streaming'])) 'streaming',
     ];
     if (featureLabels.isNotEmpty) {
       parts.add('Features: ${featureLabels.join(', ')}.');
@@ -1498,60 +1519,10 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     return parts.join(' ');
   }
 
-  static int? _integerValue(Object? value) {
-    if (value is int) return value;
-    if (value is num) return value.toInt();
-    if (value is String) return int.tryParse(value);
-    return null;
-  }
-
-  static bool _truthy(Object? value) {
-    if (value is bool) return value;
-    if (value is num) return value != 0;
-    if (value is String) return value.toLowerCase() == 'true';
-    return false;
-  }
-
   static bool _looksLikeReasoningModel(String modelId) {
     final normalized = modelId.toLowerCase();
     return normalized.contains('thinking') ||
         normalized.contains('deepseek-r1');
-  }
-
-  static String _displayNameForModel(String modelId) {
-    final leaf = modelId.split('/').last;
-    final words = leaf
-        .replaceAll(RegExp('[_-]+'), ' ')
-        .split(RegExp(r'\s+'))
-        .where((part) => part.isNotEmpty)
-        .map(_titleCaseModelWord);
-    final displayName = words.join(' ');
-    return displayName.isEmpty ? modelId : displayName;
-  }
-
-  static String _titleCaseModelWord(String word) {
-    final upper = word.toUpperCase();
-    const acronyms = {
-      'AI',
-      'API',
-      'ASR',
-      'BGE',
-      'CO2',
-      'GPT',
-      'GLM',
-      'JSON',
-      'LLAMA',
-      'MLX',
-      'QWEN',
-      'STT',
-      'TTS',
-      'VL',
-    };
-    if (acronyms.contains(upper)) return upper;
-    if (RegExp(r'^[a-z]?\d+[a-z]?$', caseSensitive: false).hasMatch(word)) {
-      return upper;
-    }
-    return '${word[0].toUpperCase()}${word.substring(1)}';
   }
 
   static GeneratedImage _decodeGeneratedImage(String encodedImage) {
@@ -1637,9 +1608,12 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     if (item is String) return item;
     if (item is Map<String, dynamic>) {
       final id = item['id'] ?? item['name'];
-      final meta = _asMap(item['_meta']) ?? _asMap(item['metadata']);
+      final meta =
+          ModelCatalogMapping.asMap(item['_meta']) ??
+          ModelCatalogMapping.asMap(item['metadata']);
       final capabilities =
-          _asMap(meta?['capabilities']) ?? _asMap(item['capabilities']);
+          ModelCatalogMapping.asMap(meta?['capabilities']) ??
+          ModelCatalogMapping.asMap(item['capabilities']);
       return [
         if (id is String) 'id=$id' else 'id=<missing>',
         'keys=${item.keys.join(',')}',
@@ -1657,28 +1631,6 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     return value.length > maxLength
         ? '${value.substring(0, maxLength)}...'
         : value;
-  }
-
-  static String _extractErrorMessage(String body, int statusCode) {
-    final fallback = 'Melious API error (HTTP $statusCode)';
-    if (body.isEmpty) return fallback;
-    try {
-      final decoded = jsonDecode(body);
-      if (decoded is Map<String, dynamic>) {
-        final error = decoded['error'];
-        if (error is Map<String, dynamic>) {
-          final message = error['message'];
-          if (message is String && message.isNotEmpty) return message;
-        }
-        if (error is String && error.isNotEmpty) return error;
-        final message = decoded['message'];
-        if (message is String && message.isNotEmpty) return message;
-      }
-    } catch (_) {
-      // Fall through to a clipped raw body.
-    }
-
-    return body.length > 240 ? '${body.substring(0, 240)}...' : body;
   }
 }
 
