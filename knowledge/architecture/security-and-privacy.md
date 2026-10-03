@@ -76,16 +76,19 @@ Worth stating precisely because the two are easy to conflate: the keystore holds
 what is needed to *log in*, the SDK database holds what is needed to *stay
 logged in*. An attacker with file access does not need the password.
 
-**AI-provider API keys do not.** `AiConfigDb.saveConfig()` persists a provider as
-`jsonEncode(config.toJson())`, and that serialized map includes its `apiKey`. So
-provider keys live in `ai_config.sqlite` — **one of the databases that is not
-encrypted at rest** (see the caveat above). Their on-disk protection is OS-level
-full-disk encryption, exactly like journal content.
+**AI-provider API keys live there too.** `AiConfigDb` strips a provider's
+`apiKey` from the row it writes to `ai_config.sqlite` and keeps the key in
+`SecureStorage` through `AiApiKeyStorage`, under
+`ai_provider_api_key:<namespace>:<config id>`; reading a provider puts the key
+back. The key does travel in the `aiConfig` sync message, so it is protected in
+transit by the sync channel's end-to-end encryption, and an outbox row waiting
+to be sent holds it like any other payload.
 
-That asymmetry is worth stating plainly rather than glossing: a threat model
-derived from "keys are in the keychain" would be wrong for AI providers. Moving
-them into `SecureStorage` is a real hardening opportunity, not a documentation
-fix.
+**The GitHub token works the same way.** `GitHubTokenStorage` keeps one record
+per profile in `SecureStorage` — the token, its login and the stamp of the
+change — and the `gitHubAccount` sync message carries it to the user's other
+devices end-to-end encrypted (ADR 0115). The token is a `SyncSecret` in the
+message, so neither the message nor a log line prints it.
 
 `SecureStorage` itself is backed by:
 

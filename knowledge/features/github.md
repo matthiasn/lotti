@@ -195,10 +195,31 @@ the refresh is the app's, the unlink is the user's.
   offers fine-grained tokens no permission for check runs, so on a private
   repository it cannot read them (on a public one anyone can). A classic one
   needs the `repo` scope for private repositories. It lives in
-  `SecureStorage` under `github_token:<profile id>`, so a demo or guest world
-  never reads the real one, next to the login it was checked against. It is
-  never synced, logged or exported. Settings → Advanced Settings → GitHub
-  saves a token only after `GET /user` accepts it.
+  `SecureStorage` as one record under `github_account:<profile id>` — the
+  token, the login it was checked against, the stamp of the change, and
+  whether this device checked it — so a demo or guest world never reads the
+  real one (a token stored before the record existed, under
+  `github_token:`/`github_login:`, is moved into it once). It is never logged
+  or exported. Settings → Advanced Settings → GitHub saves a token only after
+  `GET /user` accepts it.
+- The token **syncs to the user's other devices** (ADR 0115), the way an
+  inference provider's API key does: a `gitHubAccount` sync message, end-to-end
+  encrypted, applied into the receiver's keychain, the later stamp winning
+  (`specs/tla/GitHubAccountSync.tla`). Connecting sends it; disconnecting sends
+  a disconnection, so the token is forgotten everywhere. A change is stamped
+  past the version it was made over even when this device's clock is behind
+  (`BumpStamp`), and an equal stamp is decided by content, so every device
+  keeps the same one. A token that arrives from another device is checked here
+  with `GET /user` before the page says "Connected as"; GitHub rejecting it
+  shows the rejection and the field instead, and the account provider never
+  retries on its own. Guest and demo worlds have no sync stack, so nothing
+  reaches them.
+- Syncing is not tied to opening the page. The page has one small action: "Send
+  to my other devices" when it holds a token — for one connected before tokens
+  synced, or a device that joined later — and "Check my other devices" when it
+  does not, which asks sync to catch up (`MatrixService.forceRescan`); a token
+  that arrives is announced (`gitHubAccountNotification`) and the page shows
+  it at once. Neither appears in a world without sync.
 - `GitHubClient` sends it as `Authorization: Bearer` to
   `https://api.github.com` and nowhere else: the base URL is a constant and
   redirects are not followed, so a redirect cannot carry the token to another
