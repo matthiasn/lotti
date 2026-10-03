@@ -3038,7 +3038,7 @@
   "githubPickerLinking": "Vinculando pull request",
   "githubPickerLoading": "Carregando pull requests abertas",
   "githubPickerNoRepository": "Atribua um repositório do GitHub à categoria desta tarefa para escolher entre as pull requests abertas dele.",
-  "githubPickerOpenIn": "Abertas em {repository}",
+  "githubPickerOpenIn": "Pull requests abertas em {repository}",
   "@githubPickerOpenIn": {
     "description": "Heading over the open pull requests of a repository.",
     "placeholders": {
@@ -3056,7 +3056,7 @@
   "githubRepositoryHint": "dono/repo",
   "githubRepositoryInvalid": "Não é um repositório do GitHub. Escreva dono/repo.",
   "githubRepositoryLabel": "Repositório",
-  "githubRepositorySectionDescription": "O repositório em que as tarefas desta categoria trabalham. Ao vincular uma pull request a uma delas, as pull requests abertas dele são oferecidas.",
+  "githubRepositorySectionDescription": "O repositório em que as tarefas desta categoria trabalham. Ao vincular uma pull request a uma delas, você pode escolher entre as pull requests abertas deste repositório.",
   "githubRepositorySectionTitle": "GitHub",
   "githubReviewApproved": "Aprovada",
   "githubReviewChangesRequested": "Alterações solicitadas",

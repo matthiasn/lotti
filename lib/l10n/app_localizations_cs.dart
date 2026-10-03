@@ -6691,7 +6691,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String githubPickerOpenIn(String repository) {
-    return 'Otevřené v $repository';
+    return 'Otevřené pull requesty v $repository';
   }
 
   @override
@@ -6722,7 +6722,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get githubRepositorySectionDescription =>
-      'Repozitář, ve kterém pracují úkoly této kategorie. Při propojování pull requestu s některým z nich se nabídnou jeho otevřené pull requesty.';
+      'Repozitář, ve kterém pracují úkoly této kategorie. Když k některému z nich propojuješ pull request, můžeš vybírat z otevřených pull requestů tohoto repozitáře.';
 
   @override
   String get githubRepositorySectionTitle => 'GitHub';

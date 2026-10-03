@@ -3038,7 +3038,7 @@
   "githubPickerLinking": "Pull request wordt gekoppeld",
   "githubPickerLoading": "Open pull requests worden geladen",
   "githubPickerNoRepository": "Wijs de categorie van deze taak een GitHub-repository toe om uit de open pull requests te kiezen.",
-  "githubPickerOpenIn": "Open in {repository}",
+  "githubPickerOpenIn": "Open pull requests in {repository}",
   "@githubPickerOpenIn": {
     "description": "Heading over the open pull requests of a repository.",
     "placeholders": {
@@ -3056,7 +3056,7 @@
   "githubRepositoryHint": "eigenaar/repo",
   "githubRepositoryInvalid": "Geen GitHub-repository. Schrijf eigenaar/repo.",
   "githubRepositoryLabel": "Repository",
-  "githubRepositorySectionDescription": "De repository waarin de taken van deze categorie werken. Als je een pull request aan een ervan koppelt, worden de open pull requests aangeboden.",
+  "githubRepositorySectionDescription": "De repository waarin de taken van deze categorie werken. Als je een pull request aan een ervan koppelt, kun je kiezen uit de open pull requests van deze repository.",
   "githubRepositorySectionTitle": "GitHub",
   "githubReviewApproved": "Goedgekeurd",
   "githubReviewChangesRequested": "Wijzigingen gevraagd",

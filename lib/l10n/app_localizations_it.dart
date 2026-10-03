@@ -6699,7 +6699,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String githubPickerOpenIn(String repository) {
-    return 'Aperte in $repository';
+    return 'Pull request aperte in $repository';
   }
 
   @override
@@ -6730,7 +6730,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get githubRepositorySectionDescription =>
-      'Il repository in cui lavorano le attività di questa categoria. Collegando una pull request a una di esse, vengono proposte le sue pull request aperte.';
+      'Il repository in cui lavorano le attività di questa categoria. Quando colleghi una pull request a una di esse, puoi scegliere tra le pull request aperte di questo repository.';
 
   @override
   String get githubRepositorySectionTitle => 'GitHub';

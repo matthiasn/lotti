@@ -3681,7 +3681,7 @@
   "githubPickerLinking": "Linking pull request",
   "githubPickerLoading": "Loading open pull requests",
   "githubPickerNoRepository": "Assign a GitHub repository to this task's category to pick from its open pull requests.",
-  "githubPickerOpenIn": "Open in {repository}",
+  "githubPickerOpenIn": "Open pull requests in {repository}",
   "@githubPickerOpenIn": {
     "description": "Heading over the open pull requests of a repository.",
     "placeholders": {
@@ -3699,7 +3699,7 @@
   "githubRepositoryHint": "owner/repo",
   "githubRepositoryInvalid": "Not a GitHub repository. Write owner/repo.",
   "githubRepositoryLabel": "Repository",
-  "githubRepositorySectionDescription": "The repository this category's tasks work in. Linking a pull request to one of them offers its open pull requests.",
+  "githubRepositorySectionDescription": "The repository this category's tasks work in. When you link a pull request to one of them, you can pick from this repository's open pull requests.",
   "githubRepositorySectionTitle": "GitHub",
   "githubReviewApproved": "Approved",
   "githubReviewChangesRequested": "Changes requested",

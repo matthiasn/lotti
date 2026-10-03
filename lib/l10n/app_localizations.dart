@@ -11300,7 +11300,7 @@ abstract class AppLocalizations {
   /// Heading over the open pull requests of a repository.
   ///
   /// In en, this message translates to:
-  /// **'Open in {repository}'**
+  /// **'Open pull requests in {repository}'**
   String githubPickerOpenIn(String repository);
 
   /// No description provided for @githubPullRequestActions.
@@ -11354,7 +11354,7 @@ abstract class AppLocalizations {
   /// No description provided for @githubRepositorySectionDescription.
   ///
   /// In en, this message translates to:
-  /// **'The repository this category\'s tasks work in. Linking a pull request to one of them offers its open pull requests.'**
+  /// **'The repository this category\'s tasks work in. When you link a pull request to one of them, you can pick from this repository\'s open pull requests.'**
   String get githubRepositorySectionDescription;
 
   /// No description provided for @githubRepositorySectionTitle.

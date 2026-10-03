@@ -6604,7 +6604,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String githubPickerEmpty(String repository) {
-    return 'Der er ingen åben pull request i $repository tilbage at knytte.';
+    return 'Der er ingen åbne pull requests tilbage i $repository, som kan knyttes.';
   }
 
   @override
@@ -6619,7 +6619,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String githubPickerOpenIn(String repository) {
-    return 'Åbne i $repository';
+    return 'Åbne pull requests i $repository';
   }
 
   @override
@@ -6650,7 +6650,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get githubRepositorySectionDescription =>
-      'Det repository, som kategoriens opgaver arbejder i. Når du knytter en pull request til en af dem, tilbydes dets åbne pull requests.';
+      'Det repository, som kategoriens opgaver arbejder i. Når du knytter en pull request til en af dem, kan du vælge blandt dette repositorys åbne pull requests.';
 
   @override
   String get githubRepositorySectionTitle => 'GitHub';

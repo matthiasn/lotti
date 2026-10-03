@@ -3039,7 +3039,7 @@
   "githubPickerLinking": "Collegamento della pull request",
   "githubPickerLoading": "Caricamento delle pull request aperte",
   "githubPickerNoRepository": "Assegna un repository GitHub alla categoria di questa attività per scegliere tra le sue pull request aperte.",
-  "githubPickerOpenIn": "Aperte in {repository}",
+  "githubPickerOpenIn": "Pull request aperte in {repository}",
   "@githubPickerOpenIn": {
     "description": "Heading over the open pull requests of a repository.",
     "placeholders": {
@@ -3057,7 +3057,7 @@
   "githubRepositoryHint": "proprietario/repo",
   "githubRepositoryInvalid": "Non è un repository GitHub. Scrivi proprietario/repo.",
   "githubRepositoryLabel": "Repository",
-  "githubRepositorySectionDescription": "Il repository in cui lavorano le attività di questa categoria. Collegando una pull request a una di esse, vengono proposte le sue pull request aperte.",
+  "githubRepositorySectionDescription": "Il repository in cui lavorano le attività di questa categoria. Quando colleghi una pull request a una di esse, puoi scegliere tra le pull request aperte di questo repository.",
   "githubRepositorySectionTitle": "GitHub",
   "githubReviewApproved": "Approvata",
   "githubReviewChangesRequested": "Modifiche richieste",

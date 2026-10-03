@@ -2782,7 +2782,7 @@
   "githubPickerLinking": "Pull-Request wird verknüpft",
   "githubPickerLoading": "Offene Pull-Requests werden geladen",
   "githubPickerNoRepository": "Weise der Kategorie dieser Aufgabe ein GitHub-Repository zu, um aus seinen offenen Pull-Requests zu wählen.",
-  "githubPickerOpenIn": "Offen in {repository}",
+  "githubPickerOpenIn": "Offene Pull-Requests in {repository}",
   "@githubPickerOpenIn": {
     "description": "Heading over the open pull requests of a repository.",
     "placeholders": {
@@ -2800,7 +2800,7 @@
   "githubRepositoryHint": "besitzer/repo",
   "githubRepositoryInvalid": "Kein GitHub-Repository. Schreib besitzer/repo.",
   "githubRepositoryLabel": "Repository",
-  "githubRepositorySectionDescription": "Das Repository, in dem die Aufgaben dieser Kategorie entstehen. Beim Verknüpfen eines Pull-Requests werden seine offenen Pull-Requests angeboten.",
+  "githubRepositorySectionDescription": "Das Repository, in dem die Aufgaben dieser Kategorie bearbeitet werden. Wenn du einen Pull-Request mit einer davon verknüpfst, kannst du aus den offenen Pull-Requests dieses Repositorys wählen.",
   "githubRepositorySectionTitle": "GitHub",
   "githubReviewApproved": "Freigegeben",
   "githubReviewChangesRequested": "Änderungen angefordert",

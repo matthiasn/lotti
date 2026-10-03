@@ -2789,7 +2789,7 @@
   "githubPickerLinking": "Propojuje se pull request",
   "githubPickerLoading": "Načítají se otevřené pull requesty",
   "githubPickerNoRepository": "Přiřaď kategorii tohoto úkolu repozitář GitHubu a vybírej z jeho otevřených pull requestů.",
-  "githubPickerOpenIn": "Otevřené v {repository}",
+  "githubPickerOpenIn": "Otevřené pull requesty v {repository}",
   "@githubPickerOpenIn": {
     "description": "Heading over the open pull requests of a repository.",
     "placeholders": {
@@ -2807,7 +2807,7 @@
   "githubRepositoryHint": "vlastnik/repo",
   "githubRepositoryInvalid": "Není to repozitář GitHubu. Napiš vlastnik/repo.",
   "githubRepositoryLabel": "Repozitář",
-  "githubRepositorySectionDescription": "Repozitář, ve kterém pracují úkoly této kategorie. Při propojování pull requestu s některým z nich se nabídnou jeho otevřené pull requesty.",
+  "githubRepositorySectionDescription": "Repozitář, ve kterém pracují úkoly této kategorie. Když k některému z nich propojuješ pull request, můžeš vybírat z otevřených pull requestů tohoto repozitáře.",
   "githubRepositorySectionTitle": "GitHub",
   "githubReviewApproved": "Schváleno",
   "githubReviewChangesRequested": "Vyžádány změny",

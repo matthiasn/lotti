@@ -3039,7 +3039,7 @@
   "githubPickerLinking": "Kopplar pull request",
   "githubPickerLoading": "Läser in öppna pull requests",
   "githubPickerNoRepository": "Tilldela kategorin för den här uppgiften ett GitHub-repo för att välja bland dess öppna pull requests.",
-  "githubPickerOpenIn": "Öppna i {repository}",
+  "githubPickerOpenIn": "Öppna pull requests i {repository}",
   "@githubPickerOpenIn": {
     "description": "Heading over the open pull requests of a repository.",
     "placeholders": {
@@ -3057,7 +3057,7 @@
   "githubRepositoryHint": "agare/repo",
   "githubRepositoryInvalid": "Inte ett GitHub-repo. Skriv agare/repo.",
   "githubRepositoryLabel": "Repo",
-  "githubRepositorySectionDescription": "Repot som den här kategorins uppgifter arbetar i. När du kopplar en pull request till en av dem erbjuds dess öppna pull requests.",
+  "githubRepositorySectionDescription": "Repot som den här kategorins uppgifter arbetar i. När du kopplar en pull request till en av dem kan du välja bland repots öppna pull requests.",
   "githubRepositorySectionTitle": "GitHub",
   "githubReviewApproved": "Godkänd",
   "githubReviewChangesRequested": "Ändringar begärda",
