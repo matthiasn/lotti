@@ -33,7 +33,8 @@ void main() {
 
   group('pullRequestStatusParts', () {
     test(
-      'an open pull request: status, checks, mergeability, reviews, age',
+      'an open pull request: status and its age first, so a narrow row '
+      'never cuts the age off, then checks, mergeability and reviews',
       () {
         final snapshot = prSnapshot(checks: PullRequestCheckRollup.failing)
             .copyWith(
@@ -48,10 +49,10 @@ void main() {
             );
         expect(words(snapshot), [
           'Open',
+          '3 min ago',
           '2 checks failing',
           'Merge conflicts',
           'Changes requested',
-          '3 min ago',
         ]);
       },
     );
@@ -70,10 +71,10 @@ void main() {
       );
       expect(parts, [
         ('Open', PullRequestTone.neutral),
+        ('3 min ago', PullRequestTone.neutral),
         ('Checks passing', PullRequestTone.good),
         ('Behind base branch', PullRequestTone.attention),
         ('Approved', PullRequestTone.good),
-        ('3 min ago', PullRequestTone.neutral),
       ]);
     });
 
@@ -87,10 +88,10 @@ void main() {
       );
       expect(words(snapshot), [
         'Draft',
+        '3 min ago',
         'Checks running',
         'Blocked by branch rules',
         'Review requested',
-        '3 min ago',
       ]);
     });
 

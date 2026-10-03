@@ -24,7 +24,8 @@ import 'package:material_ui/material_ui.dart';
 enum PullRequestTone { neutral, good, attention, bad }
 
 /// The words of a pull request's status line, in reading order: its state,
-/// its checks, its mergeability, its reviews, and how old all that is.
+/// how old that is — next to it, so a narrow row that runs out of room
+/// never cuts the age off — then its checks, mergeability and reviews.
 ///
 /// [snapshot] is null before the first successful refresh. [failure] is the
 /// last refresh's failure on this device, if it failed.
@@ -58,6 +59,8 @@ List<(String, PullRequestTone)> pullRequestStatusParts(
       ),
       PullRequestStatus.closed => (messages.githubStatusClosed, neutral),
     },
+    if (failure != null) (messages.githubNotRefreshed, PullRequestTone.bad),
+    (relativeAgoLabel(messages, now.difference(snapshot.observedAt)), neutral),
     if (open)
       ...switch (checks.rollup) {
         PullRequestCheckRollup.passing => [
@@ -98,8 +101,6 @@ List<(String, PullRequestTone)> pullRequestStatusParts(
         ],
         PullRequestReviewDecision.none => const <(String, PullRequestTone)>[],
       },
-    if (failure != null) (messages.githubNotRefreshed, PullRequestTone.bad),
-    (relativeAgoLabel(messages, now.difference(snapshot.observedAt)), neutral),
   ];
 }
 
@@ -230,7 +231,7 @@ class _PullRequestRowState extends ConsumerState<PullRequestRow> {
           ),
         ],
       ],
-      subtitleMaxLines: 2,
+      subtitleMaxLines: 3,
       size: DesignSystemListItemSize.small,
       leading: Icon(
         LottiIcons.merge,
