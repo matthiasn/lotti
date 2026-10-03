@@ -367,7 +367,7 @@ class VoxtralInferenceRepository {
               }
             } on FormatException catch (e) {
               developer.log(
-                'Failed to parse SSE chunk: $data',
+                'Failed to parse SSE chunk (${data.length} chars)',
                 name: 'VoxtralInferenceRepository',
                 error: e,
               );

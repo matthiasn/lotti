@@ -170,7 +170,7 @@ class TaskEstimateHandler {
 
       developer.log(
         'Processing update_task_estimate: raw=$rawMinutes, parsed=$minutes min '
-        '(confidence: $confidence, reason: $reason)',
+        '(confidence: $confidence, reason ${reason?.length ?? 0} chars)',
         name: 'TaskEstimateHandler',
       );
 

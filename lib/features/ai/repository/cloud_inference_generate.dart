@@ -62,7 +62,7 @@ class CloudInferenceGenerate {
       '  model: $model\n'
       '  provider: ${provider?.inferenceProviderType}\n'
       '  tools: ${tools?.length ?? 0} - ${tools?.map((t) => t.function.name).join(', ') ?? 'none'}\n'
-      '  systemMessage: ${systemMessage != null && systemMessage.length > 100 ? '${systemMessage.substring(0, 100)}...' : systemMessage}',
+      '  systemMessage: ${systemMessage?.length ?? 0} chars',
       name: 'CloudInferenceRepository',
     );
 

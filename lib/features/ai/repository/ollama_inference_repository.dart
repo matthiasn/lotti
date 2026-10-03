@@ -141,7 +141,8 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
     for (var i = 0; i < ollamaMessages.length; i++) {
       final msg = ollamaMessages[i];
       developer.log(
-        'Message $i: role=${msg['role']}, content=${(msg['content'] as String).length > 100 ? '${(msg['content'] as String).substring(0, 100)}...' : msg['content']}',
+        'Message $i: role=${msg['role']}, '
+        'content ${(msg['content'] as String).length} chars',
         name: 'OllamaInferenceRepository',
       );
     }

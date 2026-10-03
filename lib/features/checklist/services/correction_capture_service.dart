@@ -213,8 +213,8 @@ class CorrectionCaptureService {
     );
 
     developer.log(
-      'Correction capture: pending "$normalizedBefore" -> "$normalizedAfter" '
-      'for category "${category.name}" (will save in ${kCorrectionSaveDelay.inSeconds}s)',
+      'Correction capture: pending for category ${category.id} '
+      '(will save in ${kCorrectionSaveDelay.inSeconds}s)',
       name: 'CorrectionCaptureService',
     );
 
@@ -274,8 +274,7 @@ class CorrectionCaptureService {
       );
 
       developer.log(
-        'Correction capture: saved "$normalizedBefore" -> "$normalizedAfter" '
-        'to category "${category.name}"',
+        'Correction capture: saved to category ${category.id}',
         name: 'CorrectionCaptureService',
       );
     } on Exception catch (e) {

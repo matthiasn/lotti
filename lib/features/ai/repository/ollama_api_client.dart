@@ -143,12 +143,11 @@ class OllamaApiClient {
             responseBody.contains('model')) {
           throw ModelNotInstalledException(model ?? 'unknown');
         }
+        // The status and size only: the request carries the conversation, and
+        // the error body is surfaced to the user through the exception below.
         developer.log(
-          'Ollama chat API error: Status ${request.statusCode}, Body: $responseBody',
-          name: 'OllamaApiClient',
-        );
-        developer.log(
-          'Request body was: ${jsonEncode(requestBody)}',
+          'Ollama chat API error: Status ${request.statusCode}, '
+          'body ${responseBody.length} chars',
           name: 'OllamaApiClient',
         );
         throw Exception(
@@ -332,7 +331,8 @@ class OllamaApiClient {
           }
           if (json['done'] == true) {
             developer.log(
-              'Ollama done response: $chunk',
+              'Ollama done response: prompt_eval_count='
+              '${json['prompt_eval_count']}, eval_count=${json['eval_count']}',
               name: 'OllamaApiClient',
             );
             // Ollama reports token counts in the final response:
@@ -359,7 +359,8 @@ class OllamaApiClient {
           }
         } catch (e) {
           developer.log(
-            'Error parsing Ollama chat response chunk: $chunk',
+            'Error parsing Ollama chat response chunk '
+            '(${chunk.length} chars)',
             error: e,
             name: 'OllamaApiClient',
           );

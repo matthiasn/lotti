@@ -442,8 +442,8 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
 
         // Log override reason for audit
         developer.log(
-          'Overriding user-set item $id (set at $checkedAtStr). '
-          'Reason: $trimmedReason',
+          'Overriding user-set item $id (set at $checkedAtStr), '
+          'reason ${trimmedReason.length} chars',
           name: 'LottiChecklistUpdateHandler',
         );
       }

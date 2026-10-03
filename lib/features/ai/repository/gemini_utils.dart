@@ -388,7 +388,8 @@ abstract final class GeminiUtils {
             } on FormatException catch (e) {
               developer.log(
                 'Failed to parse tool call arguments as JSON: ${e.message}. '
-                'Using empty object. Raw: ${toolCall.function.arguments}',
+                'Using empty object (raw ${toolCall.function.arguments.length} '
+                'chars).',
                 name: 'GeminiUtils',
               );
               args = <String, dynamic>{};

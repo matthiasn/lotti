@@ -170,7 +170,7 @@ class TaskDueDateHandler {
 
       developer.log(
         'Processing update_task_due_date: $dueDateStr '
-        '(confidence: $confidence, reason: $reason)',
+        '(confidence: $confidence, reason ${reason?.length ?? 0} chars)',
         name: 'TaskDueDateHandler',
       );
 
