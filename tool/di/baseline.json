@@ -1,6 +1,6 @@
 {
   "_comment": "getIt lookups and isRegistered checks outside the composition root, still to be migrated to providers or constructor arguments. Regenerate with: dart run tool/di/validate.dart --update-baseline. These numbers only ever go down.",
-  "_total": {"lookups": 905, "isRegistered": 174},
+  "_total": {"lookups": 904, "isRegistered": 174},
   "files": {
     "lib/app_root.dart": {"lookups": 1},
     "lib/beamer/beamer_app.dart": {"lookups": 12, "isRegistered": 1},
@@ -169,7 +169,7 @@
     "lib/features/knowledge_graph/state/task_graph_provider.dart": {"lookups": 3},
     "lib/features/knowledge_graph/ui/task_knowledge_graph_page.dart": {"lookups": 3},
     "lib/features/labels/repository/labels_repository.dart": {"lookups": 5},
-    "lib/features/labels/services/label_assignment_processor.dart": {"lookups": 5},
+    "lib/features/labels/services/label_assignment_processor.dart": {"lookups": 4},
     "lib/features/labels/services/label_validator.dart": {"lookups": 1},
     "lib/features/labels/state/labels_list_controller.dart": {"lookups": 4},
     "lib/features/labels/ui/pages/label_details_page.dart": {"lookups": 1},
