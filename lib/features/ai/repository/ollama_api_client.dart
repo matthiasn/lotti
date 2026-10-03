@@ -574,48 +574,66 @@ class OllamaApiClient {
       );
     }
 
-    await for (final chunk in streamedResponse.stream.transform(utf8.decoder)) {
-      final lines = chunk.split('\n').where((line) => line.trim().isNotEmpty);
+    // The body streams in for as long as the download runs, so the connection
+    // can drop or stall here too, not only while the request is sent.
+    try {
+      await for (final chunk in streamedResponse.stream.transform(
+        utf8.decoder,
+      )) {
+        final lines = chunk.split('\n').where((line) => line.trim().isNotEmpty);
 
-      for (final line in lines) {
-        Map<String, dynamic> data;
-        try {
-          data = jsonDecode(line) as Map<String, dynamic>;
-        } catch (e) {
-          // Skip malformed JSON lines
-          continue;
-        }
+        for (final line in lines) {
+          Map<String, dynamic> data;
+          try {
+            data = jsonDecode(line) as Map<String, dynamic>;
+          } catch (e) {
+            // Skip malformed JSON lines
+            continue;
+          }
 
-        if (data.containsKey('error')) {
-          final errorMessage = data['error'] as String;
-          developer.log(
-            'Model installation error: $errorMessage',
-            name: 'OllamaApiClient',
+          if (data.containsKey('error')) {
+            final errorMessage = data['error'] as String;
+            developer.log(
+              'Model installation error: $errorMessage',
+              name: 'OllamaApiClient',
+            );
+            // The kind of failure, not a sentence: the caller words it in the
+            // user's language.
+            throw OllamaInstallException(
+              errorMessage.contains('not found')
+                  ? OllamaInstallFailure.modelNotFound
+                  : errorMessage.contains('disk full')
+                  ? OllamaInstallFailure.diskFull
+                  : errorMessage.contains('connection refused')
+                  ? OllamaInstallFailure.serverUnreachable
+                  : OllamaInstallFailure.failed,
+            );
+          }
+
+          final status = data['status'] is String
+              ? data['status'] as String
+              : '';
+          final total = data['total'] is int ? data['total'] as int : 0;
+          final completed = data['completed'] is int
+              ? data['completed'] as int
+              : 0;
+
+          yield OllamaPullProgress(
+            status: status,
+            progress: total > 0 ? (completed / total) : 0.0,
           );
-          // The kind of failure, not a sentence: the caller words it in the
-          // user's language.
-          throw OllamaInstallException(
-            errorMessage.contains('not found')
-                ? OllamaInstallFailure.modelNotFound
-                : errorMessage.contains('disk full')
-                ? OllamaInstallFailure.diskFull
-                : errorMessage.contains('connection refused')
-                ? OllamaInstallFailure.serverUnreachable
-                : OllamaInstallFailure.failed,
-          );
         }
-
-        final status = data['status'] is String ? data['status'] as String : '';
-        final total = data['total'] is int ? data['total'] as int : 0;
-        final completed = data['completed'] is int
-            ? data['completed'] as int
-            : 0;
-
-        yield OllamaPullProgress(
-          status: status,
-          progress: total > 0 ? (completed / total) : 0.0,
-        );
       }
+    } on SocketException {
+      throw const OllamaInstallException(
+        OllamaInstallFailure.serverUnreachable,
+      );
+    } on http.ClientException {
+      throw const OllamaInstallException(
+        OllamaInstallFailure.serverUnreachable,
+      );
+    } on TimeoutException {
+      throw const OllamaInstallException(OllamaInstallFailure.timedOut);
     }
   }
 

@@ -2998,6 +2998,43 @@ void main() {
       );
     });
 
+    // Ollama accepted the pull and progress is streaming in when the
+    // connection fails: that is still the server becoming unreachable, or the
+    // download stalling, not an unknown error.
+    for (final (error, failure) in [
+      (
+        const SocketException('Connection reset by peer'),
+        OllamaInstallFailure.serverUnreachable,
+      ),
+      (
+        http.ClientException('Connection closed while receiving data'),
+        OllamaInstallFailure.serverUnreachable,
+      ),
+      (TimeoutException('stalled'), OllamaInstallFailure.timedOut),
+    ]) {
+      test('${error.runtimeType} mid-download is ${failure.name}', () async {
+        final resp = MockStreamedResponse();
+        when(() => resp.statusCode).thenReturn(200);
+        when(() => resp.stream).thenAnswer(
+          (_) => http.ByteStream(() async* {
+            yield utf8.encode(
+              '{"status":"pulling","total":10,"completed":2}\n',
+            );
+            throw error;
+          }()),
+        );
+        when(() => mockClient.send(any())).thenAnswer((_) async => resp);
+
+        final progress = <OllamaPullProgress>[];
+        await expectLater(
+          repo.installModel('llama2', baseUrl).forEach(progress.add),
+          failsWith(failure),
+        );
+        // The progress before the failure still reached the caller.
+        expect(progress.single.progress, 0.2);
+      });
+    }
+
     test('a download that keeps timing out is timedOut', () async {
       when(
         () => mockClient.send(any()),
