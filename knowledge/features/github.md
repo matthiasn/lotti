@@ -5,7 +5,7 @@ description: Pull requests linked to tasks as journal entries carrying a server-
 resource: ../../lib/features/github
 tags: [github, pull-requests, tasks, sync, agents, tla]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-10-03T04:30:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-03T06:00:00Z }
 stale_after: 2027-03-26
 sources:
   - id: spec
@@ -214,10 +214,15 @@ the refresh is the app's, the unlink is the user's.
 A category names the repository its tasks work in,
 `CategoryDefinition.githubRepository` (`owner/repo`), typed in the GitHub
 section of the category's page — as `owner/repo` or as the repository's URL;
-what does not read as a repository is flagged and never stored. The section
-shows only while the flag is on. A task's repository is its category's
-(`taskGitHubRepositoryProvider`); a project's overriding it is still design.
-A pasted URL needs no repository, only a token that can read it.
+what does not read as a repository is flagged and never stored, and the
+page cannot be saved while the field shows it (the pending value would still
+be the last valid one). The section shows only while the flag is on. A task's
+repository is its category's (`taskGitHubRepositoryProvider`), read from the
+database again whenever the task or a category changes — not from the
+categories cache, whose reload after the same notification it could race — so
+an open picker follows a repository saved or synced meanwhile. A project's
+overriding it is still design. A pasted URL needs no repository, only a token
+that can read it.
 
 # One task per pull request
 

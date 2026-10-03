@@ -20,7 +20,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/notification_stream.dart';
 import 'package:lotti/utils/consts.dart';
 
 /// One client for the process: its ETag cache and its rate-limit block are
@@ -84,15 +84,32 @@ final ProviderFamily<List<PullRequestEntry>, String> taskPullRequestsProvider =
     );
 
 /// The GitHub repository a task works in: its category's, or null.
-final FutureProviderFamily<GitHubRepository?, String>
-taskGitHubRepositoryProvider = FutureProvider.autoDispose
-    .family<GitHubRepository?, String>((ref, taskId) async {
-      final task = await ref.watch(journalDbProvider).journalEntityById(taskId);
-      final category = getIt<EntitiesCacheService>().getCategoryById(
-        task?.meta.categoryId,
+///
+/// Read again from the database when the task changes (its category may have)
+/// or any category does, saved here or synced in, so an open picker follows.
+/// Not from the categories cache: it reloads after the same notification, and
+/// a read racing that reload would see the old repository.
+final StreamProviderFamily<GitHubRepository?, String>
+taskGitHubRepositoryProvider = StreamProvider.autoDispose
+    .family<GitHubRepository?, String>((ref, taskId) {
+      final db = ref.watch(journalDbProvider);
+      return notificationDrivenItemStream<GitHubRepository>(
+        notifications: getIt<UpdateNotifications>(),
+        notificationKeys: {
+          taskId,
+          categoriesNotification,
+          privateToggleNotification,
+        },
+        fetcher: () async {
+          final task = await db.journalEntityById(taskId);
+          final categoryId = task?.meta.categoryId;
+          if (categoryId == null) return null;
+          final repository = (await db.getCategoryById(
+            categoryId,
+          ))?.githubRepository;
+          return repository == null ? null : parseGitHubRepository(repository);
+        },
       );
-      final repository = category?.githubRepository;
-      return repository == null ? null : parseGitHubRepository(repository);
     }, name: 'taskGitHubRepositoryProvider');
 
 /// What the picker offers from [GitHubRepository]: its open pull requests

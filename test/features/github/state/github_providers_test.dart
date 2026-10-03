@@ -14,7 +14,6 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -256,13 +255,11 @@ void main() {
     const repository = GitHubRepository(owner: 'penguin', repo: 'colony');
     const pr = PullRequestRef(owner: 'penguin', repo: 'colony', number: 12);
     late MockJournalDb db;
-    late MockEntitiesCacheService categories;
     late MockPullRequestRepository entries;
     late StreamController<Set<String>> updates;
 
     setUp(() async {
       db = MockJournalDb();
-      categories = MockEntitiesCacheService();
       entries = MockPullRequestRepository();
       updates = StreamController<Set<String>>.broadcast();
       addTearDown(updates.close);
@@ -272,8 +269,7 @@ void main() {
         additionalSetup: () {
           getIt
             ..unregister<UpdateNotifications>()
-            ..registerSingleton<UpdateNotifications>(notifications)
-            ..registerSingleton<EntitiesCacheService>(categories);
+            ..registerSingleton<UpdateNotifications>(notifications);
         },
       );
       addTearDown(tearDownTestGetIt);
@@ -291,44 +287,74 @@ void main() {
       return c;
     }
 
+    final categorized = testTask.copyWith(
+      meta: testTask.meta.copyWith(categoryId: 'cat'),
+    );
+
+    CategoryDefinition category(String? repo) => CategoryDefinition(
+      id: 'cat',
+      createdAt: DateTime(2024),
+      updatedAt: DateTime(2024),
+      name: 'Colony',
+      vectorClock: null,
+      private: false,
+      active: true,
+      githubRepository: repo,
+    );
+
     test(
-      "a task's repository is its category's, and none without one",
+      "a task's repository is its category's, read again when the task or a "
+      'category changes and not otherwise',
       () async {
+        JournalEntity? task = categorized;
         when(
           () => db.journalEntityById(testTask.meta.id),
-        ).thenAnswer((_) async => testTask);
-        CategoryDefinition category(String? repo) => CategoryDefinition(
-          id: 'cat',
-          createdAt: DateTime(2024),
-          updatedAt: DateTime(2024),
-          name: 'Colony',
-          vectorClock: null,
-          private: false,
-          active: true,
-          githubRepository: repo,
-        );
-
+        ).thenAnswer((_) async => task);
+        var repo = 'https://github.com/penguin/colony';
         when(
-          () => categories.getCategoryById(testTask.meta.categoryId),
-        ).thenReturn(category('https://github.com/penguin/colony'));
-        expect(
-          await pickerContainer().read(
-            taskGitHubRepositoryProvider(testTask.meta.id).future,
-          ),
+          () => db.getCategoryById('cat'),
+        ).thenAnswer((_) async => category(repo));
+        final c = pickerContainer();
+        final seen = <GitHubRepository?>[];
+        c.listen(
+          taskGitHubRepositoryProvider(testTask.meta.id),
+          (_, next) => next.whenData(seen.add),
+          fireImmediately: true,
+        );
+        await pumpEventQueue();
+
+        repo = 'penguin/igloo';
+        updates.add({'unrelated'});
+        await pumpEventQueue();
+        updates.add({categoriesNotification});
+        await pumpEventQueue();
+
+        task = testTask;
+        updates.add({testTask.meta.id});
+        await pumpEventQueue();
+
+        expect(seen, [
           repository,
-        );
-
-        when(
-          () => categories.getCategoryById(testTask.meta.categoryId),
-        ).thenReturn(category(null));
-        expect(
-          await pickerContainer().read(
-            taskGitHubRepositoryProvider(testTask.meta.id).future,
-          ),
-          isNull,
-        );
+          const GitHubRepository(owner: 'penguin', repo: 'igloo'),
+          null,
+        ]);
       },
     );
+
+    test('a category without a repository gives none', () async {
+      when(
+        () => db.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => categorized);
+      when(
+        () => db.getCategoryById('cat'),
+      ).thenAnswer((_) async => category(null));
+
+      final c = pickerContainer();
+      final provider = taskGitHubRepositoryProvider(testTask.meta.id);
+      c.listen(provider, (_, _) {});
+
+      expect(await c.read(provider.future), isNull);
+    });
 
     test('the picker lists what the service offers', () async {
       const listed = OpenPullRequestsListed([]);

@@ -51,7 +51,7 @@ void main() {
           pullRequestServiceProvider.overrideWithValue(service),
           taskGitHubRepositoryProvider(
             taskId,
-          ).overrideWith((ref) async => repo),
+          ).overrideWith((ref) => Stream.value(repo)),
           openPullRequestsProvider(repository).overrideWith(
             (ref) =>
                 listing?.call() ??
