@@ -71,8 +71,8 @@ class PullRequestSummarizer {
 
   /// Summarises entry [entryId]'s pull request if a task context shows it as
   /// a summary and no summary matches its content yet; returns whether one
-  /// was stored. Never throws: it runs after a refresh, which does not wait
-  /// for it.
+  /// was stored. Never throws, not even an [Error]: it runs after a refresh,
+  /// which does not wait for it, so anything thrown would escape unhandled.
   ///
   /// A request while one for the same entry runs is dropped: that one reads
   /// the entry again before storing, and the next refresh asks again.
@@ -80,7 +80,7 @@ class PullRequestSummarizer {
     if (!_running.add(entryId)) return false;
     try {
       return await _summarize(entryId);
-    } on Exception catch (error, stackTrace) {
+    } on Object catch (error, stackTrace) {
       _logger?.error(
         LogDomain.ai,
         error,

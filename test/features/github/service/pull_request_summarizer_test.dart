@@ -274,6 +274,26 @@ void main() {
   );
 
   test(
+    'an error, not only an exception, is logged rather than escaping the '
+    'refresh that did not wait for it',
+    () async {
+      when(
+        () => repository.holdersOf(any()),
+      ).thenThrow(TypeError());
+
+      expect(await summarizer.summarize(entryId), isFalse);
+      verify(
+        () => logger.error(
+          any(),
+          any(that: isA<TypeError>()),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'pullRequestSummary',
+        ),
+      ).called(1);
+    },
+  );
+
+  test(
     'a second request while one runs for the same pull request is dropped',
     () async {
       final gate = Completer<String>();
