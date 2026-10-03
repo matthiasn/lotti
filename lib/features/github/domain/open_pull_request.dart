@@ -28,11 +28,15 @@ OpenPullRequest openPullRequestFrom(
 ) {
   final number = json['number'];
   final title = json['title'];
-  final updatedAt = json['updated_at'];
-  if (number is! int || title is! String || updatedAt is! String) {
+  final updatedAtText = json['updated_at'];
+  final updatedAt = updatedAtText is String
+      ? DateTime.tryParse(updatedAtText)
+      : null;
+  if (number is! int || title is! String || updatedAt == null) {
     throw const FormatException('not an open pull request');
   }
   final user = json['user'];
+  final login = user is Map<String, dynamic> ? user['login'] : null;
   return OpenPullRequest(
     ref: PullRequestRef(
       owner: repository.owner,
@@ -40,8 +44,8 @@ OpenPullRequest openPullRequestFrom(
       number: number,
     ),
     title: title,
-    updatedAt: DateTime.parse(updatedAt).toUtc(),
-    authorLogin: user is Map<String, dynamic> ? user['login'] as String? : null,
+    updatedAt: updatedAt.toUtc(),
+    authorLogin: login is String ? login : null,
     draft: json['draft'] == true,
   );
 }

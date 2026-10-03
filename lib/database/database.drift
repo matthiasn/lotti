@@ -1202,6 +1202,7 @@ SELECT pr.subtype AS pr_key, pr.id AS entry_id, task.id AS task_id
   AND pr.deleted = false
   AND json_extract(linked_entries.serialized, '$.deletedAt') IS NULL
   AND task.deleted = false
+  AND task.type = 'Task'
   AND task.task = true;
 
 linkedToJournalEntities:

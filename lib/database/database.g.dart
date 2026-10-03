@@ -7610,7 +7610,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedkeys = $expandVar($arrayStartIndex, keys.length);
     $arrayStartIndex += keys.length;
     return customSelect(
-      'SELECT pr.subtype AS pr_key, pr.id AS entry_id, task.id AS task_id FROM journal AS pr INNER JOIN linked_entries ON linked_entries.to_id = pr.id INNER JOIN journal AS task ON task.id = linked_entries.from_id WHERE pr.type = \'PullRequest\' AND pr.subtype IN ($expandedkeys) AND pr.deleted = FALSE AND json_extract(linked_entries.serialized, \'\$.deletedAt\') IS NULL AND task.deleted = FALSE AND task.task = TRUE',
+      'SELECT pr.subtype AS pr_key, pr.id AS entry_id, task.id AS task_id FROM journal AS pr INNER JOIN linked_entries ON linked_entries.to_id = pr.id INNER JOIN journal AS task ON task.id = linked_entries.from_id WHERE pr.type = \'PullRequest\' AND pr.subtype IN ($expandedkeys) AND pr.deleted = FALSE AND json_extract(linked_entries.serialized, \'\$.deletedAt\') IS NULL AND task.deleted = FALSE AND task.type = \'Task\' AND task.task = TRUE',
       variables: [for (var $ in keys) Variable<String>($)],
       readsFrom: {journal, linkedEntries},
     ).map(
