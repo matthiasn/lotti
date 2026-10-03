@@ -85,6 +85,19 @@ void main() {
       (value: 'example.com/path', error: ProviderFormError.invalidUrl),
       // Unparseable (space) -> caught and treated as invalid.
       (value: 'not a url', error: ProviderFormError.invalidUrl),
+      // A scheme that merely starts with "http".
+      (value: 'httpx://example.com', error: ProviderFormError.invalidUrl),
+      // Absolute but without a host.
+      (value: 'http:foo', error: ProviderFormError.invalidUrl),
+      // Credentials would be stored and synced with the URL.
+      (
+        value: 'https://user:hunter2@api.example.com',
+        error: ProviderFormError.invalidUrl,
+      ),
+      // Scheme and host case do not matter.
+      (value: 'HTTPS://API.EXAMPLE.COM/v1', error: null),
+      // A LAN name over plain http stays allowed for self-hosted servers.
+      (value: 'http://ollama.lan:11434', error: null),
     ]) {
       test('"${testCase.value}" -> ${testCase.error}', () {
         expect(BaseUrl.dirty(testCase.value).error, testCase.error);

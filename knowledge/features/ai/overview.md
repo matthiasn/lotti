@@ -74,8 +74,12 @@ value is written to secure storage first, then removed from the row. Migration
 is retry-safe when secure storage is unavailable. Keys are scoped by world and
 removed when a provider is deleted, whose tombstone carries no key. A live
 provider that arrives by sync without a key keeps the key this device holds,
-since an empty key on the wire only means the sender could not read its own;
-how config revisions converge is in
+since an empty key on the wire only means the sender could not read its own —
+unless the revision moves the base URL or changes the provider kind. Then the
+key stays behind, so a peer cannot point a stored key at a host of its
+choosing, and the user enters it again. A base URL must be exactly `http` or
+`https` with a host and no embedded credentials (`isWellFormedInferenceBaseUrl`).
+How config revisions converge is in
 [seeding and lifecycle](seeding-and-lifecycle.md#replication-across-devices).
 
 | Object | Stored as | Used for |
