@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
 import 'package:lotti/features/design_system/components/motion/staggered_entrance.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/github/ui/task_pull_requests_section.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
@@ -12,7 +12,6 @@ import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dar
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_first_run_actions.dart';
 import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Composes the task detail form for the task identified by [taskId].
@@ -22,7 +21,9 @@ import 'package:material_ui/material_ui.dart';
 /// an [EditorWidget] for legacy entries that already contain rich text, the
 /// [AiSummaryCard] (whose proposals can be scrolled into view via
 /// [suggestionsFocusKey]), the [ChecklistsWidget], the [LinkedTasksWidget],
-/// and — on a task with no content at all — [TaskFirstRunActions].
+/// the [TaskPullRequestsSection] once the task tracks pull requests (scrolled
+/// into view via [pullRequestsFocusKey]), and — on a task with no content at
+/// all — [TaskFirstRunActions].
 ///
 /// Every band a confirmed agent proposal can resize reports its geometry to
 /// the task page's pre-paint scroll stabilizer, because an unreported change
@@ -66,6 +67,7 @@ class TaskForm extends ConsumerWidget {
   const TaskForm({
     required this.taskId,
     this.suggestionsFocusKey,
+    this.pullRequestsFocusKey,
     this.cardRegionKey,
     this.linkedTasksRegionKey,
     this.onSuggestionResolveStart,
@@ -74,6 +76,10 @@ class TaskForm extends ConsumerWidget {
 
   final String taskId;
   final GlobalKey? suggestionsFocusKey;
+
+  /// Marks the Pull requests band, so turning tracking on can scroll it into
+  /// view.
+  final GlobalKey? pullRequestsFocusKey;
 
   /// Marks the AI card band so the page can measure where it sits relative to
   /// the viewport. Deliberately the reporter's own child, so the page's
@@ -101,11 +107,10 @@ class TaskForm extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    // A band, not an empty child, only while the feature is on: the entrance
-    // staggers by position, so a band that renders nothing still delays it.
-    final showPullRequests =
-        ref.watch(configFlagProvider(enableGitHubPullRequestsFlag)).value ??
-        false;
+    // A band, not an empty child, only once the task tracks pull requests:
+    // the entrance staggers by position, so a band that renders nothing
+    // still delays it.
+    final showPullRequests = ref.watch(taskShowsPullRequestsProvider(taskId));
 
     // only show editor for legacy entries where there is text already
     final plainText = entryState?.entry?.entryText?.plainText.trim() ?? '';
@@ -198,7 +203,10 @@ class TaskForm extends ConsumerWidget {
           ViewportStableSizeReporter(
             key: ValueKey('pull-requests-size-reporter-$taskId'),
             offscreenOnly: true,
-            child: TaskPullRequestsSection(taskId: taskId),
+            child: KeyedSubtree(
+              key: pullRequestsFocusKey,
+              child: TaskPullRequestsSection(taskId: taskId),
+            ),
           ),
         if (isFirstRun)
           Padding(

@@ -3713,14 +3713,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Heal divergent agent histories from multi-device use by merging them at the next wake.';
 
   @override
-  String get configFlagEnableGitHubPullRequests =>
-      'Enable GitHub pull requests';
-
-  @override
-  String get configFlagEnableGitHubPullRequestsDescription =>
-      'Link GitHub pull requests to tasks and follow their checks, reviews and status.';
-
-  @override
   String get configFlagEnableHabitsPage => 'Enable Habits page';
 
   @override
@@ -6819,6 +6811,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get githubTokenShow => 'Show token';
+
+  @override
+  String get githubTrackPullRequests => 'Pull request tracking';
+
+  @override
+  String get githubTrackPullRequestsHint =>
+      'Adds a section for the pull requests that implement this task.';
 
   @override
   String get githubUnlinkPullRequest => 'Unlink pull request';

@@ -6276,18 +6276,6 @@ abstract class AppLocalizations {
   /// **'Heal divergent agent histories from multi-device use by merging them at the next wake.'**
   String get configFlagEnableForkHealingDescription;
 
-  /// No description provided for @configFlagEnableGitHubPullRequests.
-  ///
-  /// In en, this message translates to:
-  /// **'Enable GitHub pull requests'**
-  String get configFlagEnableGitHubPullRequests;
-
-  /// No description provided for @configFlagEnableGitHubPullRequestsDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Link GitHub pull requests to tasks and follow their checks, reviews and status.'**
-  String get configFlagEnableGitHubPullRequestsDescription;
-
   /// No description provided for @configFlagEnableHabitsPage.
   ///
   /// In en, this message translates to:
@@ -11638,6 +11626,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show token'**
   String get githubTokenShow;
+
+  /// No description provided for @githubTrackPullRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull request tracking'**
+  String get githubTrackPullRequests;
+
+  /// No description provided for @githubTrackPullRequestsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Adds a section for the pull requests that implement this task.'**
+  String get githubTrackPullRequestsHint;
 
   /// No description provided for @githubUnlinkPullRequest.
   ///

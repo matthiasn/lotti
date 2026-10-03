@@ -26,8 +26,11 @@ import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fake_entry_controller.dart';
+import '../../../helpers/test_get_it.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
@@ -41,6 +44,10 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(prEntry(clock: {'a': 1}));
+    registerFallbackValue(prSnapshot());
+    registerFallbackValue(
+      const PullRequestRef(owner: 'matthiasn', repo: 'lotti', number: 42),
+    );
   });
 
   setUp(() {
@@ -474,6 +481,215 @@ void main() {
             ProfileType.guest,
           ).read(gitHubAccountSyncProvider).canCheckOtherDevices,
           isFalse,
+        );
+      },
+    );
+  });
+
+  group('GitHubTokenStatusController', () {
+    GitHubTokenStatusController statusIn(ProviderContainer c) =>
+        c.read(gitHubTokenStatusProvider.notifier);
+
+    Future<GitHubTokenStatus> settled(ProviderContainer c) =>
+        c.read(gitHubTokenStatusProvider.future);
+
+    test('is none without a stored token, and offers no tracking', () async {
+      when(tokens.readToken).thenAnswer((_) async => null);
+      final c = container();
+
+      expect(await settled(c), GitHubTokenStatus.none);
+      expect(c.read(gitHubTrackingAvailableProvider), isFalse);
+    });
+
+    test(
+      'takes a stored token as valid without asking GitHub, and offers '
+      'tracking',
+      () async {
+        when(tokens.readToken).thenAnswer((_) async => 'ghp_secret');
+        when(tokens.readLogin).thenAnswer((_) async => 'pingu');
+        final c = container();
+
+        expect(await settled(c), GitHubTokenStatus.valid);
+        expect(c.read(gitHubTrackingAvailableProvider), isTrue);
+        verifyZeroInteractions(client);
+      },
+    );
+
+    test(
+      'a 401 on the stored token withdraws tracking, and a later success '
+      'restores it',
+      () async {
+        when(tokens.readToken).thenAnswer((_) async => 'ghp_secret');
+        when(tokens.readLogin).thenAnswer((_) async => 'pingu');
+        final c = container();
+        await settled(c);
+
+        statusIn(c).observe('ghp_secret', accepted: false);
+        expect(
+          c.read(gitHubTokenStatusProvider).value,
+          GitHubTokenStatus.rejected,
+        );
+        expect(c.read(gitHubTrackingAvailableProvider), isFalse);
+
+        statusIn(c).observe('ghp_secret', accepted: true);
+        expect(
+          c.read(gitHubTokenStatusProvider).value,
+          GitHubTokenStatus.valid,
+        );
+        expect(c.read(gitHubTrackingAvailableProvider), isTrue);
+      },
+    );
+
+    test('a verdict on a token no longer stored changes nothing', () async {
+      when(tokens.readToken).thenAnswer((_) async => 'ghp_new');
+      when(tokens.readLogin).thenAnswer((_) async => 'pingu');
+      final c = container();
+      await settled(c);
+
+      // A call made with the replaced token, answered after the swap.
+      statusIn(c).observe('ghp_old', accepted: false);
+
+      expect(c.read(gitHubTokenStatusProvider).value, GitHubTokenStatus.valid);
+    });
+
+    test('connecting a token again clears a rejection', () async {
+      when(tokens.readToken).thenAnswer((_) async => 'ghp_secret');
+      when(tokens.readLogin).thenAnswer((_) async => 'pingu');
+      when(
+        () => client.fetchViewerLogin('ghp_fresh'),
+      ).thenAnswer((_) async => 'pingu');
+      when(
+        () => tokens.save(token: 'ghp_fresh', login: 'pingu'),
+      ).thenAnswer((_) async {});
+      final c = container();
+      await settled(c);
+      statusIn(c).observe('ghp_secret', accepted: false);
+
+      when(tokens.readToken).thenAnswer((_) async => 'ghp_fresh');
+      await c
+          .read(gitHubAccountControllerProvider.notifier)
+          .connect('ghp_fresh');
+
+      expect(await settled(c), GitHubTokenStatus.valid);
+      expect(c.read(gitHubTrackingAvailableProvider), isTrue);
+    });
+
+    test('disconnecting withdraws tracking', () async {
+      when(tokens.readToken).thenAnswer((_) async => 'ghp_secret');
+      when(tokens.readLogin).thenAnswer((_) async => 'pingu');
+      when(tokens.clear).thenAnswer((_) async {});
+      final c = container();
+      await settled(c);
+
+      when(tokens.readToken).thenAnswer((_) async => null);
+      await c.read(gitHubAccountControllerProvider.notifier).disconnect();
+
+      expect(await settled(c), GitHubTokenStatus.none);
+      expect(c.read(gitHubTrackingAvailableProvider), isFalse);
+    });
+
+    test(
+      'the pull request service reports what GitHub said of the token: a '
+      '401 on a refresh rejects it, the next success accepts it again',
+      () async {
+        final repository = MockPullRequestRepository();
+        final entry = prEntry(clock: {'a': 1});
+        when(tokens.readToken).thenAnswer((_) async => 'ghp_secret');
+        when(tokens.readLogin).thenAnswer((_) async => 'pingu');
+        when(
+          () => repository.persistObservation(any(), any()),
+        ).thenAnswer((_) async => true);
+        // The real service, wired by its provider.
+        final c = ProviderContainer(
+          overrides: [
+            gitHubClientProvider.overrideWithValue(client),
+            gitHubTokenStorageProvider.overrideWithValue(tokens),
+            pullRequestRepositoryProvider.overrideWithValue(repository),
+          ],
+        );
+        addTearDown(c.dispose);
+        await settled(c);
+
+        when(
+          () => client.fetchPullRequest(any(), token: 'ghp_secret'),
+        ).thenThrow(const GitHubException(GitHubFailureKind.unauthorized));
+        await c.read(pullRequestServiceProvider).refresh(entry);
+        expect(
+          c.read(gitHubTokenStatusProvider).value,
+          GitHubTokenStatus.rejected,
+        );
+
+        when(
+          () => client.fetchPullRequest(any(), token: 'ghp_secret'),
+        ).thenAnswer((_) async => prSnapshot());
+        await c.read(pullRequestServiceProvider).refresh(entry);
+        expect(
+          c.read(gitHubTokenStatusProvider).value,
+          GitHubTokenStatus.valid,
+        );
+      },
+    );
+  });
+
+  group('taskShowsPullRequestsProvider', () {
+    setUp(() async {
+      // The task's entry controller needs its editor service.
+      await setUpTestGetIt(
+        additionalSetup: () => getIt.registerSingleton<EditorStateService>(
+          MockEditorStateService(),
+        ),
+      );
+    });
+    tearDown(tearDownTestGetIt);
+
+    Future<bool> shows(
+      Task task, {
+      List<JournalEntity> linked = const [],
+    }) async {
+      final c = ProviderContainer(
+        overrides: [
+          entryControllerProvider(
+            task.meta.id,
+          ).overrideWith(() => FakeEntryController(task)),
+          resolvedOutgoingLinkedEntriesProvider.overrideWith(
+            (ref, taskId) => linked,
+          ),
+        ],
+      );
+      addTearDown(c.dispose);
+      c.listen(taskShowsPullRequestsProvider(task.meta.id), (_, _) {});
+      await c.read(entryControllerProvider(task.meta.id).future);
+      return c.read(taskShowsPullRequestsProvider(task.meta.id));
+    }
+
+    test(
+      'a task that never turned tracking on, with nothing linked, does not '
+      'show the section',
+      () async {
+        expect(await shows(testTask), isFalse);
+      },
+    );
+
+    test('a task that turned tracking on shows it with none linked', () async {
+      final tracking = testTask.copyWith(
+        data: testTask.data.copyWith(tracksPullRequests: true),
+      );
+      expect(await shows(tracking), isTrue);
+    });
+
+    test(
+      'a task linked to a pull request before tracking was a choice shows '
+      'it without being migrated',
+      () async {
+        expect(testTask.data.tracksPullRequests, isFalse);
+        expect(
+          await shows(
+            testTask,
+            linked: [
+              prEntry(clock: {'a': 1}),
+            ],
+          ),
+          isTrue,
         );
       },
     );

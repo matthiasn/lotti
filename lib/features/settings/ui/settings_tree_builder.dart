@@ -32,9 +32,6 @@ List<SettingsNode> watchSettingsTree(BuildContext context, WidgetRef ref) {
     // leaf exactly when desktop does.
     enableSpeechTts:
         ref.watch(configFlagProvider(enableAiSummaryTtsFlag)).value ?? false,
-    enableGitHub:
-        ref.watch(configFlagProvider(enableGitHubPullRequestsFlag)).value ??
-        false,
     // Health import is an iOS/Android-only utility; it surfaces under the
     // mobile Advanced hub and is absent on desktop platforms (matching the
     // pre-unification behaviour, where the entry was `if (isMobile)`).

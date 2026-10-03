@@ -21,6 +21,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/github/ui/github_repository_field.dart';
 import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -318,10 +319,9 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
               _buildKnowledgeBrief(category),
             ],
           ),
-          if (ref
-                  .watch(configFlagProvider(enableGitHubPullRequestsFlag))
-                  .value ??
-              false)
+          // Only where pull requests can be tracked: the repository is what
+          // a task's picker lists, and it needs a token GitHub accepts.
+          if (ref.watch(gitHubTrackingAvailableProvider))
             SettingsFormSection(
               title: context.messages.githubRepositorySectionTitle,
               description: context.messages.githubRepositorySectionDescription,

@@ -3767,14 +3767,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Cure históricos de agentes divergentes do uso de vários dispositivos, mesclando-os no próximo despertar.';
 
   @override
-  String get configFlagEnableGitHubPullRequests =>
-      'Ativar pull requests do GitHub';
-
-  @override
-  String get configFlagEnableGitHubPullRequestsDescription =>
-      'Vincule pull requests do GitHub às tarefas e acompanhe as verificações, revisões e o status.';
-
-  @override
   String get configFlagEnableHabitsPage => 'Habilitar página de hábitos';
 
   @override
@@ -6913,6 +6905,13 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get githubTokenShow => 'Mostrar token';
+
+  @override
+  String get githubTrackPullRequests => 'Acompanhamento de pull requests';
+
+  @override
+  String get githubTrackPullRequestsHint =>
+      'Adiciona uma seção para os pull requests que implementam esta tarefa.';
 
   @override
   String get githubUnlinkPullRequest => 'Desvincular pull request';

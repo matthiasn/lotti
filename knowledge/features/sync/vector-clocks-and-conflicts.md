@@ -435,8 +435,9 @@ labels, a deleted one's included — and the write decision marks the row
 resolved, because the written clock covers the conflict's.
 
 Whichever side is kept, some fields are the union of both. A task keeps every
-applied change either side records (`appliedChangeEffects`, ADR 0098) and
-every checklist either side lists, and a checklist every item either side
+applied change either side records (`appliedChangeEffects`, ADR 0098),
+pull request tracking when either side turned it on (`tracksPullRequests`),
+and every checklist either side lists, and a checklist every item either side
 lists (`joinMembers`, ADR 0105): keeping one side's list would drop what the
 other device added. A resolved checklist is written through
 `ChecklistRepository.resolveConflict`, which lists a kept checklist on its

@@ -178,6 +178,13 @@ abstract class TaskData with _$TaskData {
     /// against. Only grows: every write over a stored task keeps the stored
     /// keys ([TaskDataOnStored.onStored]).
     Set<String>? appliedChangeEffects,
+
+    /// Whether the user turned pull request tracking on for this task, which
+    /// gives it its Pull requests section even with none linked. Only ever
+    /// turns on: every write over a stored task keeps it
+    /// ([TaskDataOnStored.onStored]), and resolving a conflict keeps it when
+    /// either side has it ([TaskDataOnStored.withTrackingOf]).
+    @Default(false) bool tracksPullRequests,
   }) = _TaskData;
 
   factory TaskData.fromJson(Map<String, dynamic> json) =>
@@ -188,9 +195,20 @@ abstract class TaskData with _$TaskData {
 extension TaskDataOnStored on TaskData {
   /// This data as written over [stored]: the checklist list stays the stored
   /// one — `ChecklistRepository.updateTaskChecklistIds` owns it — and the
-  /// applied change effects are joined ([withEffectsOf]).
-  TaskData onStored(TaskData stored) =>
-      withEffectsOf(stored).copyWith(checklistIds: stored.checklistIds);
+  /// applied change effects and pull request tracking are joined
+  /// ([withEffectsOf], [withTrackingOf]).
+  TaskData onStored(TaskData stored) => withEffectsOf(
+    stored,
+  ).withTrackingOf(stored).copyWith(checklistIds: stored.checklistIds);
+
+  /// This data tracking pull requests when it or [other] does. Tracking only
+  /// turns on, so joining is an `or`: a screen's copy read before tracking
+  /// was turned on, or the side of a conflict the user kept, cannot turn it
+  /// off again, and two devices turning it on at once agree.
+  TaskData withTrackingOf(TaskData other) =>
+      tracksPullRequests || !other.tracksPullRequests
+      ? this
+      : copyWith(tracksPullRequests: true);
 
   /// This data recording every change [other] records as applied, too. The
   /// record only grows ([TaskData.appliedChangeEffects]): whatever a write

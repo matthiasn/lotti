@@ -196,6 +196,46 @@ void main() {
     },
   );
 
+  test(
+    "updateJournalEntity keeps the stored task's pull request tracking — a "
+    'star toggled from a copy read before tracking was turned on must not '
+    'take the Pull requests section away',
+    () async {
+      final stored = testTask.copyWith(
+        data: testTask.data.copyWith(tracksPullRequests: true),
+      );
+      when(
+        () => mocks.journalDb.journalEntityByIdIncludingDeleted(testTask.id),
+      ).thenAnswer((_) async => stored);
+      when(() => logic.updateMetadata(any())).thenAnswer(
+        (invocation) async => invocation.positionalArguments.first as Metadata,
+      );
+      when(
+        () => logic.updateDbEntity(
+          any(),
+          beforeNotify: any(named: 'beforeNotify'),
+        ),
+      ).thenAnswer((_) async => true);
+      when(() => mocks.journalDb.addLabeled(any())).thenAnswer((_) async => 1);
+
+      final toggled = testTask.copyWith(
+        meta: testTask.meta.copyWith(starred: true),
+      );
+      await updates.updateJournalEntity(toggled, toggled.meta);
+
+      final written =
+          verify(
+                () => logic.updateDbEntity(
+                  captureAny(),
+                  beforeNotify: any(named: 'beforeNotify'),
+                ),
+              ).captured.single
+              as Task;
+      expect(written.meta.starred, isTrue);
+      expect(written.data.tracksPullRequests, isTrue);
+    },
+  );
+
   // ADR 0083: a conflict resolution that keeps an edit over a deletion made
   // here writes over the soft-deleted row, and must keep the entry's labels.
   test(

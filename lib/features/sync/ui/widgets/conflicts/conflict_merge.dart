@@ -122,9 +122,10 @@ JournalEntity buildMergedEntity({
 /// a task, every applied change either side records — whichever side's
 /// fields the user kept, a change that landed on either must not apply again
 /// (`TaskData.appliedChangeEffects`, ADR 0098), every status either side's
-/// history records (`TaskDataOnStored.withHistoryOf`), and every checklist
-/// either side lists; for a checklist, every item either side lists (ADR
-/// 0105). Keeping one side's list would drop what the other device added: a
+/// history records (`TaskDataOnStored.withHistoryOf`), pull request tracking
+/// when either side turned it on (`TaskDataOnStored.withTrackingOf`), and
+/// every checklist either side lists; for a checklist, every item either
+/// side lists (ADR 0105). Keeping one side's list would drop what the other device added: a
 /// checklist nobody sees any more, or an item listed nowhere.
 JournalEntity _resolved(
   JournalEntity entity,
@@ -138,6 +139,8 @@ JournalEntity _resolved(
           .withEffectsOf(r.data)
           .withHistoryOf(l.data)
           .withHistoryOf(r.data)
+          .withTrackingOf(l.data)
+          .withTrackingOf(r.data)
           .copyWith(
             checklistIds: _joined(
               e.data.checklistIds,

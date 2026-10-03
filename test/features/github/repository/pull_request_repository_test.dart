@@ -129,6 +129,47 @@ void main() {
       await journalDb.journalEntityByIdIncludingDeleted(id)
           as PullRequestEntry?;
 
+  group('track', () {
+    Future<Task> storedTask() async =>
+        (await journalDb.journalEntityById(taskId))! as Task;
+
+    test(
+      'turns tracking on, on the task as stored, and keeps it across a '
+      'later write from a copy read before',
+      () async {
+        expect(testTask.data.tracksPullRequests, isFalse);
+        final before = await storedTask();
+
+        expect(await repository.track(taskId), isTrue);
+        final after = await storedTask();
+        expect(after.data.tracksPullRequests, isTrue);
+        expect(after.data.title, before.data.title);
+
+        // A screen that read the task before tracking was on saves a rename.
+        await JournalRepository().updateJournalEntity(
+          before.copyWith(data: before.data.copyWith(title: 'Renamed')),
+        );
+        final renamed = await storedTask();
+        expect(renamed.data.title, 'Renamed');
+        expect(renamed.data.tracksPullRequests, isTrue);
+      },
+    );
+
+    test('a task that tracks already is not written again', () async {
+      await repository.track(taskId);
+      final clock = (await storedTask()).meta.vectorClock;
+
+      expect(await repository.track(taskId), isTrue);
+      expect((await storedTask()).meta.vectorClock, clock);
+    });
+
+    test('an entry that is not a task is not tracked', () async {
+      final entry = await linked();
+      expect(await repository.track(entry.id), isFalse);
+      expect(await repository.track('missing'), isFalse);
+    });
+  });
+
   group('link', () {
     test(
       'creates a pull request entry linked from the task, with its first '

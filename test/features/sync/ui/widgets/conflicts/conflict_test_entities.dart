@@ -70,6 +70,7 @@ JournalEntity taskOf({
   TaskPriority priority = TaskPriority.p2Medium,
   DateTime? due,
   String? languageCode,
+  bool tracksPullRequests = false,
 }) => Task(
   meta: metaOf(id: 'task-1', starred: true, vectorClock: vectorClock),
   data: TaskData(
@@ -92,6 +93,7 @@ JournalEntity taskOf({
     priority: priority,
     due: due,
     languageCode: languageCode,
+    tracksPullRequests: tracksPullRequests,
   ),
   entryText: EntryText(plainText: text),
 );

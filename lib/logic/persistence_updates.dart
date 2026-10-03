@@ -106,10 +106,13 @@ class PersistenceUpdates extends PersistenceCollaboratorBase {
           final updatedMeta = await logic.updateMetadata(metadata);
           final preservedLabelIds = current?.meta.labelIds;
           // A task keeps the agent changes its stored row records as
-          // applied, whatever copy the caller read (ADR 0098).
+          // applied (ADR 0098), and its pull request tracking, whatever copy
+          // the caller read.
           final written = switch ((journalEntity, current)) {
             (final Task task, final Task stored) => task.copyWith(
-              data: task.data.withEffectsOf(stored.data),
+              data: task.data
+                  .withEffectsOf(stored.data)
+                  .withTrackingOf(stored.data),
             ),
             _ => journalEntity,
           };

@@ -56,18 +56,23 @@ lib/features/github/
   domain/pull_request_order.dart          observation order, digest, concurrent merge
   domain/pull_request_write_rule.dart     when an observation is written
   repository/github_token_storage.dart    the token in the keystore
-  repository/pull_request_repository.dart link, unlink, persist an observation
+  repository/pull_request_repository.dart link, unlink, track, persist an observation
   service/pull_request_service.dart       link a pasted pull request, refresh one
-  state/github_providers.dart             providers, account and refresh controllers
-  ui/                                     settings page, task card, row, link modal
+  state/github_providers.dart             providers, account, token status, refresh
+  ui/                                     settings page, task card, row, link modal,
+                                          the Add sheet's tracking row
 ```
 
-Everything is behind the `enable_github_pull_requests` config flag. A
-category names its repository; the "+" picker lists that repository's open
-pull requests no task holds; a pasted pull request another task holds is
-linked here too only once the user confirms it. Coding
-prompts and task-agent wakes carry the task's pull requests, refreshed for
-them. The concept below describes all of it.
+There is no config flag. A token GitHub accepts, added under Settings →
+Advanced Settings → GitHub, makes pull requests trackable. A task shows its
+Pull requests section once the user picks "Pull request tracking" from the
+"+" of its action bar — a choice stored on the task, so it holds on every
+device — or while a pull request is linked to it. A category names its
+repository; the "+" picker lists that repository's open pull requests no
+task holds; a pasted pull request another task holds is linked here too only
+once the user confirms it. Coding prompts and task-agent wakes carry the
+task's pull requests, refreshed for them. The concept below describes all of
+it.
 
 ## Further reading
 

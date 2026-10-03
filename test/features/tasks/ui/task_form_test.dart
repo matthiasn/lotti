@@ -3,7 +3,6 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
@@ -24,7 +23,6 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -103,7 +101,7 @@ void main() {
     GlobalKey? cardRegionKey,
     List<EntryLink>? linkedEntries,
     List<JournalEntity> linkedTargets = const [],
-    bool gitHubEnabled = false,
+    GlobalKey? pullRequestsFocusKey,
   }) {
     return RiverpodWidgetTestBench(
       overrides: [
@@ -138,12 +136,13 @@ void main() {
         agentStateProvider.overrideWith(
           (ref, agentId) async => null,
         ),
-        configFlagProvider(
-          enableGitHubPullRequestsFlag,
-        ).overrideWith((ref) => Stream.value(gitHubEnabled)),
       ],
       child: SingleChildScrollView(
-        child: TaskForm(taskId: task.meta.id, cardRegionKey: cardRegionKey),
+        child: TaskForm(
+          taskId: task.meta.id,
+          cardRegionKey: cardRegionKey,
+          pullRequestsFocusKey: pullRequestsFocusKey,
+        ),
       ),
     );
   }
@@ -417,12 +416,17 @@ void main() {
     );
 
     testWidgets(
-      'adds the pull requests band, after linked tasks and with its own key, '
-      'only while GitHub pull requests are enabled',
+      'adds the pull requests band, after linked tasks, with its own key and '
+      'marked by pullRequestsFocusKey, once the task tracks pull requests',
       (tester) async {
-        // The band's absence while disabled is the four-band test above.
+        // The band's absence on a task that does not is the four-band test
+        // above: the token alone never adds it.
+        final tracking = testTask.copyWith(
+          data: testTask.data.copyWith(tracksPullRequests: true),
+        );
+        final focusKey = GlobalKey(debugLabel: 'pull-requests');
         await tester.pumpWidget(
-          buildSubject(task: testTask, gitHubEnabled: true),
+          buildSubject(task: tracking, pullRequestsFocusKey: focusKey),
         );
         await tester.pumpAndSettle();
 
@@ -443,6 +447,14 @@ void main() {
             find.byType(TaskPullRequestsSection),
           ).offscreenOnly,
           isTrue,
+        );
+        // The page scrolls to this key when tracking is turned on.
+        expect(
+          find.descendant(
+            of: find.byKey(focusKey),
+            matching: find.byType(TaskPullRequestsSection),
+          ),
+          findsOneWidget,
         );
       },
     );

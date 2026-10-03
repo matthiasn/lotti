@@ -433,7 +433,8 @@ These context details are load-bearing:
   through `update_checklist_items`, naming the pull request in the reason. The
   refresh runs inside the wake's agent-execution zone, so a changed snapshot it
   stores notifies the UI only and cannot wake the agent again. No section
-  without the flag or without linked pull requests; a failure is logged and
+  on a device without a GitHub token or without linked pull requests; a
+  failure is logged and
   leaves it out. See [GitHub pull requests](../github.md).
 - **Report existence is explicit on every wake.** A missing report requires an
   initial publication. With an existing report, the context asks for a new or

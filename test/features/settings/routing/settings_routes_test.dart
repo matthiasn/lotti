@@ -142,7 +142,6 @@ List<SettingsNode> _allNodes() {
     enableMatrix: true,
     enableWhatsNew: true,
     enableSpeechTts: true,
-    enableGitHub: true,
     enableHealthImport: true,
     syncFeatureAvailable: syncAvailable,
   );

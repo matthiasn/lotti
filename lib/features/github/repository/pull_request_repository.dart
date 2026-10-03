@@ -33,6 +33,19 @@ class PullRequestRepository {
   Future<Iterable<PullRequestEntry>> _linked(String taskId) async =>
       (await _db.getLinkedEntities(taskId)).whereType<PullRequestEntry>();
 
+  /// Turns pull request tracking on for task [taskId], which gives it its
+  /// Pull requests section (`TaskData.tracksPullRequests`). Set on the task
+  /// as stored, so a field set meanwhile is kept, and not written at all
+  /// when the task tracks pull requests already. Returns whether the task
+  /// tracks them afterwards: false when it does not exist or the write
+  /// failed.
+  Future<bool> track(String taskId) async =>
+      (await _journal.updateTask(
+        taskId,
+        (stored) => stored.copyWith(tracksPullRequests: true),
+      ))?.data.tracksPullRequests ??
+      false;
+
   /// Entry [entryId] as stored now, or null once it is unlinked.
   Future<PullRequestEntry?> liveEntry(String entryId) async {
     final entry = await _db.journalEntityById(entryId);

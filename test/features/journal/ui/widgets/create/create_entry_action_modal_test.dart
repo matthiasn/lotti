@@ -9,9 +9,11 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/action_modal/ds_action_row.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/image_paste_controller.dart';
+import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -26,6 +28,8 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
+import '../../../../github/github_token_status.dart';
+import '../../../../github/pull_request_fixtures.dart';
 
 /// Resolves the host id to a Task so the sheet's task-host rows render.
 class _TaskEntryController extends EntryController {
@@ -240,6 +244,133 @@ void main() {
         expect(find.byIcon(LottiIcons.timer), findsNothing);
       },
     );
+
+    group('pull request tracking row', () {
+      final now = DateTime(2026, 8, 4);
+      Task hostTask({bool tracks = false}) => Task(
+        meta: Metadata(
+          id: 'host-task',
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: TaskData(
+          title: 'Host',
+          status: TaskStatus.open(id: 's', createdAt: now, utcOffset: 0),
+          dateFrom: now,
+          dateTo: now,
+          statusHistory: const [],
+          tracksPullRequests: tracks,
+        ),
+      );
+
+      setUp(() {
+        // The overridden controller still runs EntryController's field
+        // initializers, which resolve these from getIt.
+        getIt.registerSingleton<EditorStateService>(MockEditorStateService());
+        final updates = MockUpdateNotifications();
+        when(
+          () => updates.updateStream,
+        ).thenAnswer((_) => const Stream<Set<String>>.empty());
+        getIt.registerSingleton<UpdateNotifications>(updates);
+      });
+
+      Future<bool> offered(
+        WidgetTester tester, {
+        required GitHubTokenStatus token,
+        Task? host,
+        List<JournalEntity> linked = const [],
+      }) async {
+        final task = host ?? hostTask();
+        await pumpAndOpenModal(
+          tester,
+          linkedFromId: task.meta.id,
+          extraOverrides: [
+            entryControllerProvider(
+              task.meta.id,
+            ).overrideWith(() => _TaskEntryController(task)),
+            resolvedOutgoingLinkedEntriesProvider.overrideWith(
+              (ref, taskId) => linked,
+            ),
+            gitHubTokenStatusOverride(token),
+          ],
+        );
+        final messages = AppLocalizations.of(
+          tester.element(find.byType(DsActionRow).first),
+        )!;
+        return find
+            .text(messages.githubTrackPullRequests)
+            .evaluate()
+            .isNotEmpty;
+      }
+
+      testWidgets(
+        'is offered on a task without the section while the token is valid',
+        (tester) async {
+          expect(await offered(tester, token: GitHubTokenStatus.valid), isTrue);
+          expect(find.byIcon(LottiIcons.merge), findsOneWidget);
+        },
+      );
+
+      testWidgets('is not offered without a token', (tester) async {
+        expect(await offered(tester, token: GitHubTokenStatus.none), isFalse);
+      });
+
+      testWidgets('is not offered while GitHub rejects the token', (
+        tester,
+      ) async {
+        expect(
+          await offered(tester, token: GitHubTokenStatus.rejected),
+          isFalse,
+        );
+      });
+
+      testWidgets(
+        'stands down once the task tracks pull requests — the section is '
+        'the way in',
+        (tester) async {
+          expect(
+            await offered(
+              tester,
+              token: GitHubTokenStatus.valid,
+              host: hostTask(tracks: true),
+            ),
+            isFalse,
+          );
+        },
+      );
+
+      testWidgets(
+        'stands down on a task that shows the section for a pull request '
+        'linked before tracking was a choice',
+        (tester) async {
+          expect(
+            await offered(
+              tester,
+              token: GitHubTokenStatus.valid,
+              linked: [
+                prEntry(clock: {'a': 1}),
+              ],
+            ),
+            isFalse,
+          );
+        },
+      );
+
+      testWidgets('is not offered when the host is not a task', (
+        tester,
+      ) async {
+        await pumpAndOpenModal(
+          tester,
+          extraOverrides: [gitHubTokenStatusOverride(GitHubTokenStatus.valid)],
+        );
+        final messages = AppLocalizations.of(
+          tester.element(find.byType(DsActionRow).first),
+        )!;
+        expect(find.text(messages.githubTrackPullRequests), findsNothing);
+      });
+    });
 
     testWidgets('hides Timer item when linkedFromId is null', (tester) async {
       await pumpAndOpenModal(tester, linkedFromId: null);

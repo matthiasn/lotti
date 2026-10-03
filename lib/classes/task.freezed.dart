@@ -973,7 +973,12 @@ mixin _$TaskData {
 /// since put the field back to the value the change was proposed
 /// against. Only grows: every write over a stored task keeps the stored
 /// keys ([TaskDataOnStored.onStored]).
- Set<String>? get appliedChangeEffects;
+ Set<String>? get appliedChangeEffects;/// Whether the user turned pull request tracking on for this task, which
+/// gives it its Pull requests section even with none linked. Only ever
+/// turns on: every write over a stored task keeps it
+/// ([TaskDataOnStored.onStored]), and resolving a conflict keeps it when
+/// either side has it ([TaskDataOnStored.withTrackingOf]).
+ bool get tracksPullRequests;
 /// Create a copy of TaskData
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -986,16 +991,16 @@ $TaskDataCopyWith<TaskData> get copyWith => _$TaskDataCopyWithImpl<TaskData>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskData&&(identical(other.status, status) || other.status == status)&&(identical(other.dateFrom, dateFrom) || other.dateFrom == dateFrom)&&(identical(other.dateTo, dateTo) || other.dateTo == dateTo)&&const DeepCollectionEquality().equals(other.statusHistory, statusHistory)&&(identical(other.title, title) || other.title == title)&&(identical(other.due, due) || other.due == due)&&(identical(other.estimate, estimate) || other.estimate == estimate)&&const DeepCollectionEquality().equals(other.checklistIds, checklistIds)&&(identical(other.languageCode, languageCode) || other.languageCode == languageCode)&&(identical(other.languageSource, languageSource) || other.languageSource == languageSource)&&const DeepCollectionEquality().equals(other.aiSuppressedLabelIds, aiSuppressedLabelIds)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.coverArtId, coverArtId) || other.coverArtId == coverArtId)&&(identical(other.coverArtCropX, coverArtCropX) || other.coverArtCropX == coverArtCropX)&&(identical(other.profileId, profileId) || other.profileId == profileId)&&const DeepCollectionEquality().equals(other.appliedChangeEffects, appliedChangeEffects));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskData&&(identical(other.status, status) || other.status == status)&&(identical(other.dateFrom, dateFrom) || other.dateFrom == dateFrom)&&(identical(other.dateTo, dateTo) || other.dateTo == dateTo)&&const DeepCollectionEquality().equals(other.statusHistory, statusHistory)&&(identical(other.title, title) || other.title == title)&&(identical(other.due, due) || other.due == due)&&(identical(other.estimate, estimate) || other.estimate == estimate)&&const DeepCollectionEquality().equals(other.checklistIds, checklistIds)&&(identical(other.languageCode, languageCode) || other.languageCode == languageCode)&&(identical(other.languageSource, languageSource) || other.languageSource == languageSource)&&const DeepCollectionEquality().equals(other.aiSuppressedLabelIds, aiSuppressedLabelIds)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.coverArtId, coverArtId) || other.coverArtId == coverArtId)&&(identical(other.coverArtCropX, coverArtCropX) || other.coverArtCropX == coverArtCropX)&&(identical(other.profileId, profileId) || other.profileId == profileId)&&const DeepCollectionEquality().equals(other.appliedChangeEffects, appliedChangeEffects)&&(identical(other.tracksPullRequests, tracksPullRequests) || other.tracksPullRequests == tracksPullRequests));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,status,dateFrom,dateTo,const DeepCollectionEquality().hash(statusHistory),title,due,estimate,const DeepCollectionEquality().hash(checklistIds),languageCode,languageSource,const DeepCollectionEquality().hash(aiSuppressedLabelIds),priority,coverArtId,coverArtCropX,profileId,const DeepCollectionEquality().hash(appliedChangeEffects));
+int get hashCode => Object.hash(runtimeType,status,dateFrom,dateTo,const DeepCollectionEquality().hash(statusHistory),title,due,estimate,const DeepCollectionEquality().hash(checklistIds),languageCode,languageSource,const DeepCollectionEquality().hash(aiSuppressedLabelIds),priority,coverArtId,coverArtCropX,profileId,const DeepCollectionEquality().hash(appliedChangeEffects),tracksPullRequests);
 
 @override
 String toString() {
-  return 'TaskData(status: $status, dateFrom: $dateFrom, dateTo: $dateTo, statusHistory: $statusHistory, title: $title, due: $due, estimate: $estimate, checklistIds: $checklistIds, languageCode: $languageCode, languageSource: $languageSource, aiSuppressedLabelIds: $aiSuppressedLabelIds, priority: $priority, coverArtId: $coverArtId, coverArtCropX: $coverArtCropX, profileId: $profileId, appliedChangeEffects: $appliedChangeEffects)';
+  return 'TaskData(status: $status, dateFrom: $dateFrom, dateTo: $dateTo, statusHistory: $statusHistory, title: $title, due: $due, estimate: $estimate, checklistIds: $checklistIds, languageCode: $languageCode, languageSource: $languageSource, aiSuppressedLabelIds: $aiSuppressedLabelIds, priority: $priority, coverArtId: $coverArtId, coverArtCropX: $coverArtCropX, profileId: $profileId, appliedChangeEffects: $appliedChangeEffects, tracksPullRequests: $tracksPullRequests)';
 }
 
 
@@ -1006,7 +1011,7 @@ abstract mixin class $TaskDataCopyWith<$Res>  {
   factory $TaskDataCopyWith(TaskData value, $Res Function(TaskData) _then) = _$TaskDataCopyWithImpl;
 @useResult
 $Res call({
- TaskStatus status, DateTime dateFrom, DateTime dateTo, List<TaskStatus> statusHistory, String title, DateTime? due, Duration? estimate, List<String>? checklistIds, String? languageCode,@JsonKey(unknownEnumValue: ChangeSource.user) ChangeSource languageSource, Set<String>? aiSuppressedLabelIds, TaskPriority priority, String? coverArtId, double coverArtCropX, String? profileId, Set<String>? appliedChangeEffects
+ TaskStatus status, DateTime dateFrom, DateTime dateTo, List<TaskStatus> statusHistory, String title, DateTime? due, Duration? estimate, List<String>? checklistIds, String? languageCode,@JsonKey(unknownEnumValue: ChangeSource.user) ChangeSource languageSource, Set<String>? aiSuppressedLabelIds, TaskPriority priority, String? coverArtId, double coverArtCropX, String? profileId, Set<String>? appliedChangeEffects, bool tracksPullRequests
 });
 
 
@@ -1023,7 +1028,7 @@ class _$TaskDataCopyWithImpl<$Res>
 
 /// Create a copy of TaskData
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? status = null,Object? dateFrom = null,Object? dateTo = null,Object? statusHistory = null,Object? title = null,Object? due = freezed,Object? estimate = freezed,Object? checklistIds = freezed,Object? languageCode = freezed,Object? languageSource = null,Object? aiSuppressedLabelIds = freezed,Object? priority = null,Object? coverArtId = freezed,Object? coverArtCropX = null,Object? profileId = freezed,Object? appliedChangeEffects = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? status = null,Object? dateFrom = null,Object? dateTo = null,Object? statusHistory = null,Object? title = null,Object? due = freezed,Object? estimate = freezed,Object? checklistIds = freezed,Object? languageCode = freezed,Object? languageSource = null,Object? aiSuppressedLabelIds = freezed,Object? priority = null,Object? coverArtId = freezed,Object? coverArtCropX = null,Object? profileId = freezed,Object? appliedChangeEffects = freezed,Object? tracksPullRequests = null,}) {
   return _then(_self.copyWith(
 status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as TaskStatus,dateFrom: null == dateFrom ? _self.dateFrom : dateFrom // ignore: cast_nullable_to_non_nullable
@@ -1041,7 +1046,8 @@ as TaskPriority,coverArtId: freezed == coverArtId ? _self.coverArtId : coverArtI
 as String?,coverArtCropX: null == coverArtCropX ? _self.coverArtCropX : coverArtCropX // ignore: cast_nullable_to_non_nullable
 as double,profileId: freezed == profileId ? _self.profileId : profileId // ignore: cast_nullable_to_non_nullable
 as String?,appliedChangeEffects: freezed == appliedChangeEffects ? _self.appliedChangeEffects : appliedChangeEffects // ignore: cast_nullable_to_non_nullable
-as Set<String>?,
+as Set<String>?,tracksPullRequests: null == tracksPullRequests ? _self.tracksPullRequests : tracksPullRequests // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 /// Create a copy of TaskData
@@ -1135,10 +1141,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( TaskStatus status,  DateTime dateFrom,  DateTime dateTo,  List<TaskStatus> statusHistory,  String title,  DateTime? due,  Duration? estimate,  List<String>? checklistIds,  String? languageCode, @JsonKey(unknownEnumValue: ChangeSource.user)  ChangeSource languageSource,  Set<String>? aiSuppressedLabelIds,  TaskPriority priority,  String? coverArtId,  double coverArtCropX,  String? profileId,  Set<String>? appliedChangeEffects)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( TaskStatus status,  DateTime dateFrom,  DateTime dateTo,  List<TaskStatus> statusHistory,  String title,  DateTime? due,  Duration? estimate,  List<String>? checklistIds,  String? languageCode, @JsonKey(unknownEnumValue: ChangeSource.user)  ChangeSource languageSource,  Set<String>? aiSuppressedLabelIds,  TaskPriority priority,  String? coverArtId,  double coverArtCropX,  String? profileId,  Set<String>? appliedChangeEffects,  bool tracksPullRequests)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TaskData() when $default != null:
-return $default(_that.status,_that.dateFrom,_that.dateTo,_that.statusHistory,_that.title,_that.due,_that.estimate,_that.checklistIds,_that.languageCode,_that.languageSource,_that.aiSuppressedLabelIds,_that.priority,_that.coverArtId,_that.coverArtCropX,_that.profileId,_that.appliedChangeEffects);case _:
+return $default(_that.status,_that.dateFrom,_that.dateTo,_that.statusHistory,_that.title,_that.due,_that.estimate,_that.checklistIds,_that.languageCode,_that.languageSource,_that.aiSuppressedLabelIds,_that.priority,_that.coverArtId,_that.coverArtCropX,_that.profileId,_that.appliedChangeEffects,_that.tracksPullRequests);case _:
   return orElse();
 
 }
@@ -1156,10 +1162,10 @@ return $default(_that.status,_that.dateFrom,_that.dateTo,_that.statusHistory,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( TaskStatus status,  DateTime dateFrom,  DateTime dateTo,  List<TaskStatus> statusHistory,  String title,  DateTime? due,  Duration? estimate,  List<String>? checklistIds,  String? languageCode, @JsonKey(unknownEnumValue: ChangeSource.user)  ChangeSource languageSource,  Set<String>? aiSuppressedLabelIds,  TaskPriority priority,  String? coverArtId,  double coverArtCropX,  String? profileId,  Set<String>? appliedChangeEffects)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( TaskStatus status,  DateTime dateFrom,  DateTime dateTo,  List<TaskStatus> statusHistory,  String title,  DateTime? due,  Duration? estimate,  List<String>? checklistIds,  String? languageCode, @JsonKey(unknownEnumValue: ChangeSource.user)  ChangeSource languageSource,  Set<String>? aiSuppressedLabelIds,  TaskPriority priority,  String? coverArtId,  double coverArtCropX,  String? profileId,  Set<String>? appliedChangeEffects,  bool tracksPullRequests)  $default,) {final _that = this;
 switch (_that) {
 case _TaskData():
-return $default(_that.status,_that.dateFrom,_that.dateTo,_that.statusHistory,_that.title,_that.due,_that.estimate,_that.checklistIds,_that.languageCode,_that.languageSource,_that.aiSuppressedLabelIds,_that.priority,_that.coverArtId,_that.coverArtCropX,_that.profileId,_that.appliedChangeEffects);case _:
+return $default(_that.status,_that.dateFrom,_that.dateTo,_that.statusHistory,_that.title,_that.due,_that.estimate,_that.checklistIds,_that.languageCode,_that.languageSource,_that.aiSuppressedLabelIds,_that.priority,_that.coverArtId,_that.coverArtCropX,_that.profileId,_that.appliedChangeEffects,_that.tracksPullRequests);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1176,10 +1182,10 @@ return $default(_that.status,_that.dateFrom,_that.dateTo,_that.statusHistory,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( TaskStatus status,  DateTime dateFrom,  DateTime dateTo,  List<TaskStatus> statusHistory,  String title,  DateTime? due,  Duration? estimate,  List<String>? checklistIds,  String? languageCode, @JsonKey(unknownEnumValue: ChangeSource.user)  ChangeSource languageSource,  Set<String>? aiSuppressedLabelIds,  TaskPriority priority,  String? coverArtId,  double coverArtCropX,  String? profileId,  Set<String>? appliedChangeEffects)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( TaskStatus status,  DateTime dateFrom,  DateTime dateTo,  List<TaskStatus> statusHistory,  String title,  DateTime? due,  Duration? estimate,  List<String>? checklistIds,  String? languageCode, @JsonKey(unknownEnumValue: ChangeSource.user)  ChangeSource languageSource,  Set<String>? aiSuppressedLabelIds,  TaskPriority priority,  String? coverArtId,  double coverArtCropX,  String? profileId,  Set<String>? appliedChangeEffects,  bool tracksPullRequests)?  $default,) {final _that = this;
 switch (_that) {
 case _TaskData() when $default != null:
-return $default(_that.status,_that.dateFrom,_that.dateTo,_that.statusHistory,_that.title,_that.due,_that.estimate,_that.checklistIds,_that.languageCode,_that.languageSource,_that.aiSuppressedLabelIds,_that.priority,_that.coverArtId,_that.coverArtCropX,_that.profileId,_that.appliedChangeEffects);case _:
+return $default(_that.status,_that.dateFrom,_that.dateTo,_that.statusHistory,_that.title,_that.due,_that.estimate,_that.checklistIds,_that.languageCode,_that.languageSource,_that.aiSuppressedLabelIds,_that.priority,_that.coverArtId,_that.coverArtCropX,_that.profileId,_that.appliedChangeEffects,_that.tracksPullRequests);case _:
   return null;
 
 }
@@ -1191,7 +1197,7 @@ return $default(_that.status,_that.dateFrom,_that.dateTo,_that.statusHistory,_th
 @JsonSerializable()
 
 class _TaskData implements TaskData {
-  const _TaskData({required this.status, required this.dateFrom, required this.dateTo, required final  List<TaskStatus> statusHistory, required this.title, this.due, this.estimate, final  List<String>? checklistIds, this.languageCode, @JsonKey(unknownEnumValue: ChangeSource.user) this.languageSource = ChangeSource.user, final  Set<String>? aiSuppressedLabelIds, this.priority = TaskPriority.p2Medium, this.coverArtId, this.coverArtCropX = 0.5, this.profileId, final  Set<String>? appliedChangeEffects}): _statusHistory = statusHistory,_checklistIds = checklistIds,_aiSuppressedLabelIds = aiSuppressedLabelIds,_appliedChangeEffects = appliedChangeEffects;
+  const _TaskData({required this.status, required this.dateFrom, required this.dateTo, required final  List<TaskStatus> statusHistory, required this.title, this.due, this.estimate, final  List<String>? checklistIds, this.languageCode, @JsonKey(unknownEnumValue: ChangeSource.user) this.languageSource = ChangeSource.user, final  Set<String>? aiSuppressedLabelIds, this.priority = TaskPriority.p2Medium, this.coverArtId, this.coverArtCropX = 0.5, this.profileId, final  Set<String>? appliedChangeEffects, this.tracksPullRequests = false}): _statusHistory = statusHistory,_checklistIds = checklistIds,_aiSuppressedLabelIds = aiSuppressedLabelIds,_appliedChangeEffects = appliedChangeEffects;
   factory _TaskData.fromJson(Map<String, dynamic> json) => _$TaskDataFromJson(json);
 
 @override final  TaskStatus status;
@@ -1270,6 +1276,12 @@ class _TaskData implements TaskData {
   return EqualUnmodifiableSetView(value);
 }
 
+/// Whether the user turned pull request tracking on for this task, which
+/// gives it its Pull requests section even with none linked. Only ever
+/// turns on: every write over a stored task keeps it
+/// ([TaskDataOnStored.onStored]), and resolving a conflict keeps it when
+/// either side has it ([TaskDataOnStored.withTrackingOf]).
+@override@JsonKey() final  bool tracksPullRequests;
 
 /// Create a copy of TaskData
 /// with the given fields replaced by the non-null parameter values.
@@ -1284,16 +1296,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TaskData&&(identical(other.status, status) || other.status == status)&&(identical(other.dateFrom, dateFrom) || other.dateFrom == dateFrom)&&(identical(other.dateTo, dateTo) || other.dateTo == dateTo)&&const DeepCollectionEquality().equals(other._statusHistory, _statusHistory)&&(identical(other.title, title) || other.title == title)&&(identical(other.due, due) || other.due == due)&&(identical(other.estimate, estimate) || other.estimate == estimate)&&const DeepCollectionEquality().equals(other._checklistIds, _checklistIds)&&(identical(other.languageCode, languageCode) || other.languageCode == languageCode)&&(identical(other.languageSource, languageSource) || other.languageSource == languageSource)&&const DeepCollectionEquality().equals(other._aiSuppressedLabelIds, _aiSuppressedLabelIds)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.coverArtId, coverArtId) || other.coverArtId == coverArtId)&&(identical(other.coverArtCropX, coverArtCropX) || other.coverArtCropX == coverArtCropX)&&(identical(other.profileId, profileId) || other.profileId == profileId)&&const DeepCollectionEquality().equals(other._appliedChangeEffects, _appliedChangeEffects));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TaskData&&(identical(other.status, status) || other.status == status)&&(identical(other.dateFrom, dateFrom) || other.dateFrom == dateFrom)&&(identical(other.dateTo, dateTo) || other.dateTo == dateTo)&&const DeepCollectionEquality().equals(other._statusHistory, _statusHistory)&&(identical(other.title, title) || other.title == title)&&(identical(other.due, due) || other.due == due)&&(identical(other.estimate, estimate) || other.estimate == estimate)&&const DeepCollectionEquality().equals(other._checklistIds, _checklistIds)&&(identical(other.languageCode, languageCode) || other.languageCode == languageCode)&&(identical(other.languageSource, languageSource) || other.languageSource == languageSource)&&const DeepCollectionEquality().equals(other._aiSuppressedLabelIds, _aiSuppressedLabelIds)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.coverArtId, coverArtId) || other.coverArtId == coverArtId)&&(identical(other.coverArtCropX, coverArtCropX) || other.coverArtCropX == coverArtCropX)&&(identical(other.profileId, profileId) || other.profileId == profileId)&&const DeepCollectionEquality().equals(other._appliedChangeEffects, _appliedChangeEffects)&&(identical(other.tracksPullRequests, tracksPullRequests) || other.tracksPullRequests == tracksPullRequests));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,status,dateFrom,dateTo,const DeepCollectionEquality().hash(_statusHistory),title,due,estimate,const DeepCollectionEquality().hash(_checklistIds),languageCode,languageSource,const DeepCollectionEquality().hash(_aiSuppressedLabelIds),priority,coverArtId,coverArtCropX,profileId,const DeepCollectionEquality().hash(_appliedChangeEffects));
+int get hashCode => Object.hash(runtimeType,status,dateFrom,dateTo,const DeepCollectionEquality().hash(_statusHistory),title,due,estimate,const DeepCollectionEquality().hash(_checklistIds),languageCode,languageSource,const DeepCollectionEquality().hash(_aiSuppressedLabelIds),priority,coverArtId,coverArtCropX,profileId,const DeepCollectionEquality().hash(_appliedChangeEffects),tracksPullRequests);
 
 @override
 String toString() {
-  return 'TaskData(status: $status, dateFrom: $dateFrom, dateTo: $dateTo, statusHistory: $statusHistory, title: $title, due: $due, estimate: $estimate, checklistIds: $checklistIds, languageCode: $languageCode, languageSource: $languageSource, aiSuppressedLabelIds: $aiSuppressedLabelIds, priority: $priority, coverArtId: $coverArtId, coverArtCropX: $coverArtCropX, profileId: $profileId, appliedChangeEffects: $appliedChangeEffects)';
+  return 'TaskData(status: $status, dateFrom: $dateFrom, dateTo: $dateTo, statusHistory: $statusHistory, title: $title, due: $due, estimate: $estimate, checklistIds: $checklistIds, languageCode: $languageCode, languageSource: $languageSource, aiSuppressedLabelIds: $aiSuppressedLabelIds, priority: $priority, coverArtId: $coverArtId, coverArtCropX: $coverArtCropX, profileId: $profileId, appliedChangeEffects: $appliedChangeEffects, tracksPullRequests: $tracksPullRequests)';
 }
 
 
@@ -1304,7 +1316,7 @@ abstract mixin class _$TaskDataCopyWith<$Res> implements $TaskDataCopyWith<$Res>
   factory _$TaskDataCopyWith(_TaskData value, $Res Function(_TaskData) _then) = __$TaskDataCopyWithImpl;
 @override @useResult
 $Res call({
- TaskStatus status, DateTime dateFrom, DateTime dateTo, List<TaskStatus> statusHistory, String title, DateTime? due, Duration? estimate, List<String>? checklistIds, String? languageCode,@JsonKey(unknownEnumValue: ChangeSource.user) ChangeSource languageSource, Set<String>? aiSuppressedLabelIds, TaskPriority priority, String? coverArtId, double coverArtCropX, String? profileId, Set<String>? appliedChangeEffects
+ TaskStatus status, DateTime dateFrom, DateTime dateTo, List<TaskStatus> statusHistory, String title, DateTime? due, Duration? estimate, List<String>? checklistIds, String? languageCode,@JsonKey(unknownEnumValue: ChangeSource.user) ChangeSource languageSource, Set<String>? aiSuppressedLabelIds, TaskPriority priority, String? coverArtId, double coverArtCropX, String? profileId, Set<String>? appliedChangeEffects, bool tracksPullRequests
 });
 
 
@@ -1321,7 +1333,7 @@ class __$TaskDataCopyWithImpl<$Res>
 
 /// Create a copy of TaskData
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? status = null,Object? dateFrom = null,Object? dateTo = null,Object? statusHistory = null,Object? title = null,Object? due = freezed,Object? estimate = freezed,Object? checklistIds = freezed,Object? languageCode = freezed,Object? languageSource = null,Object? aiSuppressedLabelIds = freezed,Object? priority = null,Object? coverArtId = freezed,Object? coverArtCropX = null,Object? profileId = freezed,Object? appliedChangeEffects = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? status = null,Object? dateFrom = null,Object? dateTo = null,Object? statusHistory = null,Object? title = null,Object? due = freezed,Object? estimate = freezed,Object? checklistIds = freezed,Object? languageCode = freezed,Object? languageSource = null,Object? aiSuppressedLabelIds = freezed,Object? priority = null,Object? coverArtId = freezed,Object? coverArtCropX = null,Object? profileId = freezed,Object? appliedChangeEffects = freezed,Object? tracksPullRequests = null,}) {
   return _then(_TaskData(
 status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as TaskStatus,dateFrom: null == dateFrom ? _self.dateFrom : dateFrom // ignore: cast_nullable_to_non_nullable
@@ -1339,7 +1351,8 @@ as TaskPriority,coverArtId: freezed == coverArtId ? _self.coverArtId : coverArtI
 as String?,coverArtCropX: null == coverArtCropX ? _self.coverArtCropX : coverArtCropX // ignore: cast_nullable_to_non_nullable
 as double,profileId: freezed == profileId ? _self.profileId : profileId // ignore: cast_nullable_to_non_nullable
 as String?,appliedChangeEffects: freezed == appliedChangeEffects ? _self._appliedChangeEffects : appliedChangeEffects // ignore: cast_nullable_to_non_nullable
-as Set<String>?,
+as Set<String>?,tracksPullRequests: null == tracksPullRequests ? _self.tracksPullRequests : tracksPullRequests // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
