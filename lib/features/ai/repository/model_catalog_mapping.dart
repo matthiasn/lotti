@@ -5,7 +5,8 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 /// Shared helpers for mapping a provider's `/models` catalog response into the
 /// app's `KnownModel` shape.
 ///
-/// The dynamic-catalog repositories (Gemini, OpenAI, …) each fetch a provider
+/// The dynamic-catalog repositories (Gemini, OpenAI, Mistral, Melious, oMLX)
+/// each fetch a provider
 /// listing and translate it into installable model rows. The parsing and
 /// formatting primitives below are identical across providers, so they live
 /// here instead of being copied per repository.
@@ -30,6 +31,35 @@ abstract final class ModelCatalogMapping {
     if (value is num) return value != 0;
     if (value is String) return value.toLowerCase() == 'true';
     return false;
+  }
+
+  /// [value] when it is a JSON object, otherwise null — never a cast that
+  /// throws on a provider that sent a list, string or number instead.
+  static Map<String, dynamic>? asMap(Object? value) =>
+      value is Map<String, dynamic> ? value : null;
+
+  /// The modalities named by a JSON list such as `["text", "vision"]`, each
+  /// once, in first-seen order.
+  ///
+  /// Matching ignores case and surrounding whitespace; `speech` counts as
+  /// audio and `vision` as image. Unknown names, and anything that is not a
+  /// list, contribute nothing.
+  static List<Modality> modalitiesFrom(Object? raw) {
+    if (raw is! List) return <Modality>[];
+    final out = <Modality>[];
+    for (final value in raw) {
+      switch ('$value'.toLowerCase().trim()) {
+        case 'text':
+          addUniqueModality(out, Modality.text);
+        case 'audio':
+        case 'speech':
+          addUniqueModality(out, Modality.audio);
+        case 'image':
+        case 'vision':
+          addUniqueModality(out, Modality.image);
+      }
+    }
+    return out;
   }
 
   /// Loosely coerces a JSON value to an int, returning `null` when it cannot.
@@ -71,14 +101,15 @@ abstract final class ModelCatalogMapping {
   /// Extracts a human-readable message from a provider error [body].
   ///
   /// Understands the common `{error: {message}}`, `{error: "…"}` and
-  /// `{message}` shapes, and otherwise returns a clipped raw body (never more
-  /// than [maxLength] characters). Falls back to a status-only message when the
-  /// body is empty.
+  /// `{message}` shapes, and otherwise returns the raw body clipped to
+  /// [maxLength] characters, marked by [ellipsis]. Falls back to a status-only
+  /// message when the body is empty.
   static String extractErrorMessage(
     String body,
     int statusCode, {
     required String providerLabel,
     int maxLength = 160,
+    String ellipsis = '…',
   }) {
     final fallback = '$providerLabel API error (HTTP $statusCode)';
     if (body.isEmpty) return fallback;
@@ -97,6 +128,8 @@ abstract final class ModelCatalogMapping {
     } catch (_) {
       // Fall through to a clipped raw body.
     }
-    return body.length > maxLength ? '${body.substring(0, maxLength)}…' : body;
+    return body.length > maxLength
+        ? '${body.substring(0, maxLength)}$ellipsis'
+        : body;
   }
 }

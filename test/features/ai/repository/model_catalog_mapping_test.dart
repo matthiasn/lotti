@@ -139,5 +139,80 @@ void main() {
         'boom',
       );
     });
+
+    test('marks a clipped body with the given ellipsis', () {
+      expect(
+        ModelCatalogMapping.extractErrorMessage(
+          'x' * 300,
+          502,
+          providerLabel: 'Melious',
+          maxLength: 240,
+          ellipsis: '...',
+        ),
+        '${'x' * 240}...',
+      );
+    });
+
+    test('a body exactly at the limit is not clipped', () {
+      expect(
+        ModelCatalogMapping.extractErrorMessage(
+          'x' * 160,
+          502,
+          providerLabel: 'oMLX',
+        ),
+        'x' * 160,
+      );
+    });
+  });
+
+  group('ModelCatalogMapping.asMap', () {
+    test('passes a JSON object through unchanged', () {
+      final object = <String, dynamic>{'vision': true};
+      expect(ModelCatalogMapping.asMap(object), same(object));
+    });
+
+    test('is null for anything that is not a JSON object', () {
+      for (final value in <Object?>[
+        null,
+        'vision',
+        42,
+        true,
+        ['vision'],
+        <int, String>{1: 'vision'},
+      ]) {
+        expect(ModelCatalogMapping.asMap(value), isNull, reason: '$value');
+      }
+    });
+  });
+
+  group('ModelCatalogMapping.modalitiesFrom', () {
+    test('maps names and aliases, ignoring case and whitespace', () {
+      expect(
+        ModelCatalogMapping.modalitiesFrom([' TEXT ', 'Speech', 'vision']),
+        [Modality.text, Modality.audio, Modality.image],
+      );
+      expect(
+        ModelCatalogMapping.modalitiesFrom(['audio', 'image']),
+        [Modality.audio, Modality.image],
+      );
+    });
+
+    test('keeps each modality once, in first-seen order', () {
+      expect(
+        ModelCatalogMapping.modalitiesFrom([
+          'image',
+          'text',
+          'vision',
+          'TEXT',
+        ]),
+        [Modality.image, Modality.text],
+      );
+    });
+
+    test('ignores unknown names and non-list input', () {
+      expect(ModelCatalogMapping.modalitiesFrom(['video', 3, null]), isEmpty);
+      expect(ModelCatalogMapping.modalitiesFrom('text'), isEmpty);
+      expect(ModelCatalogMapping.modalitiesFrom(null), isEmpty);
+    });
   });
 }

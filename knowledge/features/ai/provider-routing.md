@@ -100,6 +100,22 @@ they have before scrolling to add more.
 **A failed live fetch renders an inline error banner with a retry control — there
 is no silent fall back to the curated list.**
 
+The five catalog repositories share their parsing and formatting primitives
+through
+[`ModelCatalogMapping`](../../../lib/features/ai/repository/model_catalog_mapping.dart):
+- loose JSON coercion (`truthy`, `integerValue`, `asMap`)
+- modality lists (`modalitiesFrom`, `addUniqueModality`)
+- display names (`humanizeModelId`, with each provider's own acronym set)
+- the log-safe `redactedEndpoint`
+- `extractErrorMessage`, which reads `{error: {message}}`, `{error: "…"}` and
+  `{message}`, and otherwise returns the raw body clipped to 160 characters
+  (240 for Melious and the temporary-MP3 transcription path)
+
+The Mistral OCR repository and the connection verifier use the same error
+extractor. What stays per provider is deliberate policy: the `_looksLike*`
+id heuristics, the payload-to-`KnownModel` mapping, and how each wraps a
+malformed base URL.
+
 ## Melious
 
 ```mermaid

@@ -412,7 +412,7 @@ void main() {
             isA<MistralOcrException>().having(
               (e) => e.message,
               'message',
-              'Mistral OCR error (HTTP 503)',
+              'Mistral OCR API error (HTTP 503)',
             ),
           ),
         );
