@@ -5,7 +5,7 @@ description: Pull requests linked to tasks as journal entries carrying a server-
 resource: ../../lib/features/github
 tags: [github, pull-requests, tasks, sync, agents, tla]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-10-03T06:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-03T08:00:00Z }
 stale_after: 2027-03-26
 sources:
   - id: spec
@@ -91,7 +91,9 @@ PullRequestSnapshot
   mergedAt?, closedAt?
   mergeability                 clean | conflicting | behind | blocked | unknown
   checks                       rollup passing | failing | pending | none,
-                               counts, the names of failing checks (capped)
+                               counts, the names of failing checks (capped),
+                               checkRunsHidden when the token may not read
+                               check runs (absent otherwise)
   review                       approved | changesRequested | pending | none,
                                approval and change-request counts
   additions?, deletions?, changedFiles?, commits?
@@ -185,8 +187,11 @@ the refresh is the app's, the unlink is the user's.
 
 # The token and the client
 
-- The token is a fine-grained or classic personal access token with read
-  access to pull requests, commit statuses and checks. It lives in
+- The token is a personal access token. A fine-grained one needs read-only
+  "Pull requests" and "Commit statuses" on the repositories worked in; GitHub
+  offers fine-grained tokens no permission for check runs, so on a private
+  repository it cannot read them (on a public one anyone can). A classic one
+  needs the `repo` scope for private repositories. It lives in
   `SecureStorage` under `github_token:<profile id>`, so a demo or guest world
   never reads the real one, next to the login it was checked against. It is
   never synced, logged or exported. Settings → Advanced Settings → GitHub
@@ -203,6 +208,16 @@ the refresh is the app's, the unlink is the user's.
 - A rate-limited device stops calling until the reset time; a context build
   never waits for it. Reads send `If-None-Match` with the last `ETag`, kept on
   the device: a 304 costs no rate limit and means the snapshot is unchanged.
+- A 403 on the check runs alone — the fine-grained token on a private
+  repository — is not a failed refresh: the rest of the pull request is read,
+  CI is counted from the commit statuses, and the snapshot records
+  `checkRunsHidden`. Without the check runs nothing reads as passing, since a
+  hidden run may be failing; failing and running statuses still show. The
+  card says CI may be incomplete, and the prompt context says the same. An
+  exhausted rate limit on the check runs still fails the refresh.
+  `checkRunsHidden` is left out of the JSON unless true, so the digest that
+  orders observations is unchanged for every other snapshot, on every
+  version.
 - Check runs, commit statuses and reviews are read page by page until a
   page comes back short, up to ten pages of a hundred. Reviews come oldest
   first, so stopping at the first page would drop the latest decisions.
