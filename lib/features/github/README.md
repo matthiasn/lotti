@@ -21,9 +21,9 @@ items are done.
 - **Grounds checklist suggestions** in a pull request that was just refreshed.
   The agent proposes them through the existing checklist tool and the user
   confirms each one.
-- **Summarises each pull request** in two tiers with the task agent's model:
-  a one-liner under its title in the task, and a TL;DR that the contexts and
-  its details show. Automatically where the task's category allows automatic
+- **Summarises each pull request** in two tiers with the task agent's model,
+  in the task's language: a one-liner under its title in the task, and a
+  TL;DR that the contexts and its details show — never in the journal feed. Automatically where the task's category allows automatic
   inference, and whenever the user asks. Merged and closed pull requests take
   only their outcome, size and TL;DR in the contexts; open ones keep every
   detail.

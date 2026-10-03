@@ -6972,6 +6972,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get githubSummarizing => 'Se scrie rezumatul';
 
   @override
+  String get githubSummaryAutomaticOff =>
+      'Rezumatele automate sunt dezactivate pentru categoria acestei sarcini. Atingeți Rezumați pentru a scrie unul.';
+
+  @override
   String get githubSummaryBusy => 'Un rezumat este deja în curs de scriere.';
 
   @override
@@ -6984,6 +6988,10 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get githubSummaryNoModel =>
       'Nu există niciun model configurat pentru agentul acestei sarcini, deci rezumatul nu poate fi scris.';
+
+  @override
+  String get githubSummaryOnNextRefresh =>
+      'Un rezumat va fi scris la următoarea actualizare a acestui pull request.';
 
   @override
   String get githubTokenHide => 'Ascundeți tokenul';

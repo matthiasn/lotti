@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/pull_request_data.dart';
@@ -34,7 +35,7 @@ void main() {
 
   late MockPullRequestRepository repository;
   late MockDomainLogger logger;
-  late Map<String, PullRequestSummaryCategory?> categories;
+  late Map<String, PullRequestSummaryTask> tasks;
   late Map<String, PullRequestSummaryModel> models;
   late List<Map<String, Object?>> asked;
   late List<Future<List<ChatCompletionMessageToolCall>> Function()> answers;
@@ -57,9 +58,17 @@ void main() {
   setUp(() {
     repository = MockPullRequestRepository();
     logger = MockDomainLogger();
-    categories = {
-      'task-a': (id: 'category-a', automaticInference: true),
-      'task-b': (id: 'category-b', automaticInference: true),
+    tasks = {
+      'task-a': (
+        categoryId: 'category-a',
+        automaticInference: true,
+        languageCode: 'de',
+      ),
+      'task-b': (
+        categoryId: 'category-b',
+        automaticInference: true,
+        languageCode: null,
+      ),
     };
     models = {
       'task-a': (modelId: 'model-a', provider: provider),
@@ -69,7 +78,7 @@ void main() {
     answers = [];
     summarizer = PullRequestSummarizer(
       repository: repository,
-      categoryOf: (taskId) async => categories[taskId],
+      taskOf: (taskId) async => tasks[taskId]!,
       modelFor: (taskId) async => models[taskId],
       generate:
           ({
@@ -140,7 +149,7 @@ void main() {
       expect(asked, [
         {
           'prompt': input,
-          'systemMessage': pullRequestSummarySystemMessage,
+          'systemMessage': pullRequestSummaryInstructions('de'),
           'model': 'model-a',
           'taskId': 'task-a',
           'categoryId': 'category-a',
@@ -151,7 +160,7 @@ void main() {
         stored(),
         AiResponseData(
           model: 'model-a',
-          systemMessage: pullRequestSummarySystemMessage,
+          systemMessage: pullRequestSummaryInstructions('de'),
           prompt: input,
           thoughts: '',
           response: tldr,
@@ -197,9 +206,17 @@ void main() {
       when(() => repository.summaryOf(entryId, input)).thenAnswer(
         (_) async => const PullRequestSummary(oneLiner: null, tldr: 'Done.'),
       );
-      categories = {
-        'task-a': (id: 'category-a', automaticInference: false),
-        'task-b': null,
+      tasks = {
+        'task-a': (
+          categoryId: 'category-a',
+          automaticInference: false,
+          languageCode: null,
+        ),
+        'task-b': (
+          categoryId: null,
+          automaticInference: false,
+          languageCode: null,
+        ),
       };
 
       expect(
@@ -229,7 +246,11 @@ void main() {
     'automatically, only a task whose category allows it, and that has a '
     'model, is summarised for',
     () async {
-      categories['task-a'] = (id: 'category-a', automaticInference: false);
+      tasks['task-a'] = (
+        categoryId: 'category-a',
+        automaticInference: false,
+        languageCode: 'de',
+      );
       expect(
         await summarizer.summarize(entryId),
         PullRequestSummaryOutcome.stored,
@@ -249,7 +270,13 @@ void main() {
         PullRequestSummaryOutcome.noModel,
       );
 
-      categories = {'task-a': null, 'task-b': null};
+      for (final id in ['task-a', 'task-b']) {
+        tasks[id] = (
+          categoryId: null,
+          automaticInference: false,
+          languageCode: null,
+        );
+      }
       expect(
         await summarizer.summarize(entryId),
         PullRequestSummaryOutcome.notAllowed,
@@ -339,7 +366,7 @@ void main() {
 
   test(
     'a failed request is logged and reported, never thrown — an error, not '
-    'only an exception — and the next request may ask again',
+    'only an exception — and the user may ask again at once',
     () async {
       answers = [() async => throw Exception('provider down')];
       expect(
@@ -349,7 +376,7 @@ void main() {
 
       when(() => repository.holdersOf(any())).thenThrow(TypeError());
       expect(
-        await summarizer.summarize(entryId),
+        await summarizer.summarize(entryId, manual: true),
         PullRequestSummaryOutcome.failed,
       );
       verify(
@@ -367,7 +394,7 @@ void main() {
         },
       );
       expect(
-        await summarizer.summarize(entryId),
+        await summarizer.summarize(entryId, manual: true),
         PullRequestSummaryOutcome.stored,
       );
     },
@@ -388,6 +415,224 @@ void main() {
 
       expect(await first, PullRequestSummaryOutcome.stored);
       expect(asked, hasLength(1));
+    },
+  );
+
+  group('the language', () {
+    test('is asked for by name, whatever the pull request is written in', () {
+      expect(
+        pullRequestSummaryInstructions('de'),
+        '$pullRequestSummarySystemMessage Write both the one-liner and the '
+        'TL;DR in German, whatever language the pull request is in.',
+      );
+      expect(
+        pullRequestSummaryInstructions('xx'),
+        endsWith(
+          'in the language with code `xx`, whatever language the pull '
+          'request is in.',
+        ),
+      );
+      for (final none in [null, '']) {
+        expect(
+          pullRequestSummaryInstructions(none),
+          pullRequestSummarySystemMessage,
+        );
+      }
+    });
+
+    test('a task with no language leaves it to the model', () async {
+      tasks['task-a'] = (
+        categoryId: 'category-a',
+        automaticInference: false,
+        languageCode: null,
+      );
+
+      await summarizer.summarize(entryId);
+
+      expect(asked.single['taskId'], 'task-b');
+      expect(asked.single['systemMessage'], pullRequestSummarySystemMessage);
+    });
+  });
+
+  group('after a failure', () {
+    final start = DateTime.utc(2026, 10, 4, 9);
+
+    test(
+      'the same content is not asked for again automatically until the '
+      'cool-down passes; the user may ask at once, and a success clears it',
+      () async {
+        await withClock(Clock.fixed(start), () async {
+          answers = [() async => [], () async => []];
+          expect(
+            await summarizer.summarize(entryId),
+            PullRequestSummaryOutcome.failed,
+          );
+          expect(
+            await summarizer.summarize(entryId),
+            PullRequestSummaryOutcome.coolingDown,
+          );
+          expect(asked, hasLength(2));
+        });
+
+        await withClock(
+          Clock.fixed(start.add(const Duration(minutes: 59))),
+          () async => expect(
+            await summarizer.summarize(entryId),
+            PullRequestSummaryOutcome.coolingDown,
+          ),
+        );
+        await withClock(
+          Clock.fixed(start.add(const Duration(minutes: 30))),
+          () async => expect(
+            await summarizer.summarize(entryId, manual: true),
+            PullRequestSummaryOutcome.stored,
+          ),
+        );
+        await withClock(
+          Clock.fixed(start.add(const Duration(minutes: 31))),
+          () async => expect(
+            await summarizer.automaticBlocker(entryId),
+            isNull,
+            reason: 'a success clears the cool-down',
+          ),
+        );
+      },
+    );
+
+    test(
+      'a failure the user asked for starts no cool-down: the next refresh '
+      'may still ask',
+      () async {
+        await withClock(Clock.fixed(start), () async {
+          answers = [() async => [], () async => []];
+          expect(
+            await summarizer.summarize(entryId, manual: true),
+            PullRequestSummaryOutcome.failed,
+          );
+          expect(summarizer.coolDownEnds(entryId), isNull);
+          expect(
+            await summarizer.summarize(entryId),
+            PullRequestSummaryOutcome.stored,
+          );
+        });
+      },
+    );
+
+    test('tells when the cool-down ends, and none once it has', () async {
+      await withClock(Clock.fixed(start), () async {
+        answers = [() async => [], () async => []];
+        await summarizer.summarize(entryId);
+        expect(
+          summarizer.coolDownEnds(entryId),
+          start.add(summarizer.retryAfter),
+        );
+      });
+      await withClock(
+        Clock.fixed(start.add(summarizer.retryAfter)),
+        () async => expect(summarizer.coolDownEnds(entryId), isNull),
+      );
+    });
+
+    test('the cool-down passes after an hour', () async {
+      await withClock(Clock.fixed(start), () async {
+        answers = [() async => throw Exception('provider down')];
+        expect(
+          await summarizer.summarize(entryId),
+          PullRequestSummaryOutcome.failed,
+        );
+      });
+      await withClock(
+        Clock.fixed(start.add(const Duration(hours: 1))),
+        () async => expect(
+          await summarizer.summarize(entryId),
+          PullRequestSummaryOutcome.stored,
+        ),
+      );
+    });
+
+    test('new content is asked for at once', () async {
+      await withClock(Clock.fixed(start), () async {
+        answers = [() async => [], () async => []];
+        await summarizer.summarize(entryId);
+
+        when(() => repository.liveEntry(entryId)).thenAnswer(
+          (_) async => merged.copyWith(
+            data: merged.data.copyWith(
+              snapshot: mergedSnapshot.copyWith(title: 'Retitled'),
+            ),
+          ),
+        );
+        expect(
+          await summarizer.summarize(entryId),
+          PullRequestSummaryOutcome.stored,
+        );
+      });
+    });
+  });
+
+  group('automaticBlocker', () {
+    test('is null when the next refresh would ask for a summary', () async {
+      expect(await summarizer.automaticBlocker(entryId), isNull);
+      expect(asked, isEmpty);
+    });
+
+    test('names the missing consent, model or entry', () async {
+      models.clear();
+      expect(
+        await summarizer.automaticBlocker(entryId),
+        PullRequestSummaryOutcome.noModel,
+      );
+
+      for (final id in ['task-a', 'task-b']) {
+        tasks[id] = (
+          categoryId: null,
+          automaticInference: false,
+          languageCode: null,
+        );
+      }
+      expect(
+        await summarizer.automaticBlocker(entryId),
+        PullRequestSummaryOutcome.notAllowed,
+      );
+
+      when(() => repository.liveEntry(entryId)).thenAnswer((_) async => null);
+      expect(
+        await summarizer.automaticBlocker(entryId),
+        PullRequestSummaryOutcome.missing,
+      );
+      expect(asked, isEmpty);
+    });
+
+    test('names a failure still cooling down', () async {
+      answers = [() async => [], () async => []];
+      await summarizer.summarize(entryId);
+
+      expect(
+        await summarizer.automaticBlocker(entryId),
+        PullRequestSummaryOutcome.coolingDown,
+      );
+    });
+  });
+
+  test(
+    'announces every attempt that ends, stored or not, and stops when '
+    'disposed',
+    () async {
+      final ended = <String>[];
+      final subscription = summarizer.attempts.listen(ended.add);
+      addTearDown(subscription.cancel);
+
+      await summarizer.summarize(entryId);
+      when(() => repository.liveEntry(entryId)).thenAnswer((_) async => null);
+      await summarizer.summarize(entryId);
+      await pumpEventQueue();
+      expect(ended, [entryId, entryId]);
+
+      await summarizer.dispose();
+      expect(
+        await summarizer.summarize(entryId),
+        PullRequestSummaryOutcome.missing,
+      );
     },
   );
 }

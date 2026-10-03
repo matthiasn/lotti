@@ -6880,6 +6880,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get githubSummarizing => 'Samenvatting wordt geschreven';
 
   @override
+  String get githubSummaryAutomaticOff =>
+      'Automatische samenvattingen staan uit voor de categorie van deze taak. Tik op Samenvatten om er een te schrijven.';
+
+  @override
   String get githubSummaryBusy => 'Er wordt al een samenvatting geschreven.';
 
   @override
@@ -6892,6 +6896,10 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get githubSummaryNoModel =>
       'Er is geen model ingesteld voor de agent van deze taak, dus niets kan de samenvatting schrijven.';
+
+  @override
+  String get githubSummaryOnNextRefresh =>
+      'Er wordt een samenvatting geschreven wanneer deze pull request de volgende keer wordt vernieuwd.';
 
   @override
   String get githubTokenHide => 'Token verbergen';

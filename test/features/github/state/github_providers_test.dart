@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:clock/clock.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
@@ -942,6 +943,7 @@ void main() {
       when(() => db.journalEntityById(taskId)).thenAnswer(
         (_) async => testTask.copyWith(
           meta: testTask.meta.copyWith(id: taskId, categoryId: 'colony'),
+          data: testTask.data.copyWith(languageCode: 'de'),
         ),
       );
       when(() => db.getCategoryById('colony')).thenAnswer(
@@ -1065,7 +1067,7 @@ void main() {
             temperature: 0.2,
             baseUrl: any(named: 'baseUrl'),
             apiKey: 'k-1',
-            systemMessage: pullRequestSummarySystemMessage,
+            systemMessage: pullRequestSummaryInstructions('de'),
             maxCompletionTokens: pullRequestSummaryMaxTokens,
             provider: any(named: 'provider'),
             tools: [pullRequestSummaryTool],
@@ -1216,6 +1218,131 @@ void main() {
       }
       verifyNever(() => entries.summaryOf(any(), any()));
     });
+  });
+
+  group('pullRequestAutomaticSummaryBlockerProvider', () {
+    final entry = prEntry(
+      clock: {'a': 1},
+      snapshot: prSnapshot(status: PullRequestStatus.merged),
+    );
+    final start = DateTime.utc(2026, 10, 4, 9);
+
+    late StreamController<Set<String>> updates;
+    late MockPullRequestRepository entries;
+    late bool automaticInference;
+    late List<ChatCompletionMessageToolCall> answer;
+
+    setUp(() async {
+      updates = StreamController<Set<String>>.broadcast();
+      addTearDown(updates.close);
+      final notifications = MockUpdateNotifications();
+      when(() => notifications.updateStream).thenAnswer((_) => updates.stream);
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..unregister<UpdateNotifications>()
+            ..registerSingleton<UpdateNotifications>(notifications);
+        },
+      );
+      addTearDown(tearDownTestGetIt);
+      entries = MockPullRequestRepository();
+      when(() => entries.liveEntry(entry.id)).thenAnswer((_) async => entry);
+      when(
+        () => entries.summaryOf(any(), any()),
+      ).thenAnswer((_) async => null);
+      when(() => entries.holdersOf(any())).thenAnswer(
+        (_) async => {
+          entry.data.ref.key: {'task-1'},
+        },
+      );
+      automaticInference = true;
+      answer = [];
+    });
+
+    /// The blockers the provider reports, in order, over a real summarizer
+    /// whose task's category allows it while [automaticInference].
+    (List<PullRequestSummaryOutcome?>, PullRequestSummarizer) watch() {
+      final summarizer = PullRequestSummarizer(
+        repository: entries,
+        taskOf: (_) async => (
+          categoryId: 'colony',
+          automaticInference: automaticInference,
+          languageCode: null,
+        ),
+        modelFor: (_) async => (
+          modelId: 'model',
+          provider: testInferenceProvider(apiKey: 'k-1'),
+        ),
+        generate:
+            ({
+              required prompt,
+              required systemMessage,
+              required model,
+              required taskId,
+              required categoryId,
+              required manual,
+            }) async => answer,
+      );
+      final c = ProviderContainer(
+        overrides: [
+          pullRequestSummarizerProvider.overrideWithValue(summarizer),
+        ],
+      );
+      addTearDown(c.dispose);
+      final seen = <PullRequestSummaryOutcome?>[];
+      c.listen(
+        pullRequestAutomaticSummaryBlockerProvider(entry.id),
+        (_, next) => next.whenData(seen.add),
+        fireImmediately: true,
+      );
+      return (seen, summarizer);
+    }
+
+    test(
+      'is asked again when the category or an agent changes, not for '
+      'unrelated changes',
+      () {
+        fakeAsync((async) {
+          final (seen, _) = watch();
+          async.flushMicrotasks();
+          expect(seen, [null]);
+
+          automaticInference = false;
+          updates.add({'unrelated'});
+          async.flushMicrotasks();
+          expect(seen, [null]);
+
+          updates.add({categoriesNotification});
+          async.flushMicrotasks();
+          expect(seen, [null, PullRequestSummaryOutcome.notAllowed]);
+
+          automaticInference = true;
+          updates.add({agentNotification});
+          async.flushMicrotasks();
+          expect(seen.last, isNull);
+        });
+      },
+    );
+
+    test(
+      'shows a failed attempt at once, and clears when its cool-down runs '
+      'out',
+      () {
+        fakeAsync((async) {
+          final (seen, summarizer) = watch();
+          async.flushMicrotasks();
+
+          unawaited(summarizer.summarize(entry.id));
+          async.flushMicrotasks();
+          expect(seen, [null, PullRequestSummaryOutcome.coolingDown]);
+
+          async
+            ..elapse(summarizer.retryAfter)
+            ..flushMicrotasks();
+          expect(seen, [null, PullRequestSummaryOutcome.coolingDown, null]);
+        }, initialTime: start);
+      },
+    );
   });
 
   group('PullRequestRefreshController', () {

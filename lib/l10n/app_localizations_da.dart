@@ -6852,6 +6852,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get githubSummarizing => 'Skriver opsummeringen';
 
   @override
+  String get githubSummaryAutomaticOff =>
+      'Automatiske opsummeringer er slået fra for denne opgaves kategori. Tryk på Opsummér for at skrive en.';
+
+  @override
   String get githubSummaryBusy =>
       'En opsummering er allerede ved at blive skrevet.';
 
@@ -6865,6 +6869,10 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get githubSummaryNoModel =>
       'Der er ingen model sat op til denne opgaves agent, så intet kan skrive opsummeringen.';
+
+  @override
+  String get githubSummaryOnNextRefresh =>
+      'En opsummering skrives, næste gang denne pull request opdateres.';
 
   @override
   String get githubTokenHide => 'Skjul token';

@@ -166,13 +166,9 @@ class PullRequestRepository {
   /// (`pullRequestSummaryInput`), or null when none was: the pull request
   /// was never summarised, or changed since.
   Future<PullRequestSummary?> summaryOf(String entryId, String input) async {
-    for (final linked in await _db.getLinkedEntities(entryId)) {
-      if (linked is! AiResponseEntry) continue;
-      final data = linked.data;
-      if (data.type != AiResponseType.pullRequestSummary ||
-          data.prompt != input) {
-        continue;
-      }
+    for (final summary in await _summariesOf(entryId)) {
+      final data = summary.data;
+      if (data.prompt != input) continue;
       final tldr = (data.tldr ?? data.response).trim();
       if (tldr.isEmpty) continue;
       final oneLiner = data.oneLiner?.trim();
@@ -187,22 +183,48 @@ class PullRequestRepository {
   /// Stores [data] as a summary of [entry], linked from it and in
   /// its category, so it syncs like any journal entry; returns whether it
   /// was stored.
+  ///
+  /// The summaries it supersedes are deleted, so they sync away too: every
+  /// one written before it, whatever content it was written from. One
+  /// written later stays, even of other content: it may come from another
+  /// device that read a newer snapshot this one has not synced yet, and
+  /// would have to be asked for again. Readers show only a summary of the
+  /// content they show, and the next summary deletes what this one leaves.
+  /// Deleting one notifies the pull request entry, never the task, so it
+  /// cannot wake the task agent.
   Future<bool> addSummary(
     PullRequestEntry entry,
     AiResponseData data, {
     required DateTime start,
-  }) async =>
-      await _persistence.createAiResponseEntry(
-        data: data,
-        dateFrom: start,
-        linkedId: entry.id,
-        categoryId: entry.meta.categoryId,
-      ) !=
-      null;
+  }) async {
+    final stored = await _persistence.createAiResponseEntry(
+      data: data,
+      dateFrom: start,
+      linkedId: entry.id,
+      categoryId: entry.meta.categoryId,
+    );
+    if (stored == null) return false;
+    for (final summary in await _summariesOf(entry.id)) {
+      if (summary.id != stored.id &&
+          summary.meta.dateFrom.isBefore(stored.meta.dateFrom)) {
+        await _journal.deleteJournalEntity(summary.id);
+      }
+    }
+    return true;
+  }
+
+  /// The live summaries linked from entry [entryId], newest first.
+  Future<List<AiResponseEntry>> _summariesOf(String entryId) async => [
+    for (final linked in await _db.getLinkedEntities(entryId))
+      if (linked is AiResponseEntry &&
+          linked.data.type == AiResponseType.pullRequestSummary)
+        linked,
+  ];
 
   /// Unlinks pull request [ref] from [taskId]: every live entry of it is
   /// deleted like any other entry, including a duplicate another device
-  /// created before the two synced, which would otherwise reappear.
+  /// created before the two synced, which would otherwise reappear — and
+  /// with each entry its summaries, which nothing reaches any more.
   Future<bool> unlink({
     required String taskId,
     required PullRequestRef ref,
@@ -210,6 +232,9 @@ class PullRequestRepository {
     var unlinked = false;
     for (final entry in await _linked(taskId)) {
       if (!entry.isDeleted && entry.data.key == ref.key) {
+        for (final summary in await _summariesOf(entry.id)) {
+          await _journal.deleteJournalEntity(summary.id);
+        }
         unlinked = await _journal.deleteJournalEntity(entry.id) || unlinked;
       }
     }

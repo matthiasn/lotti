@@ -6923,6 +6923,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get githubSummarizing => 'Escrevendo o resumo';
 
   @override
+  String get githubSummaryAutomaticOff =>
+      'Os resumos automáticos estão desativados para a categoria desta tarefa. Toque em Resumir para escrever um.';
+
+  @override
   String get githubSummaryBusy => 'Um resumo já está sendo escrito.';
 
   @override
@@ -6935,6 +6939,10 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get githubSummaryNoModel =>
       'Não há nenhum modelo configurado para o agente desta tarefa, então nada pode escrever o resumo.';
+
+  @override
+  String get githubSummaryOnNextRefresh =>
+      'Um resumo será escrito na próxima vez que este pull request for atualizado.';
 
   @override
   String get githubTokenHide => 'Ocultar token';

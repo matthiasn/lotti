@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/day_audio_context.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -13,6 +14,7 @@ import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/journal_update_result.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -430,6 +432,97 @@ void main() {
 
         expect(results.map((e) => e.meta.id), [taskEntry.meta.id]);
       });
+
+      test(
+        'every feed query leaves pull request summaries out, and keeps other '
+        'AI responses, typed or not',
+        () async {
+          final base = DateTime(2024, 7);
+          JournalEntity response(String id, AiResponseType? type, int minute) {
+            final at = base.add(Duration(minutes: minute));
+            return JournalEntity.aiResponse(
+              meta: Metadata(
+                id: id,
+                createdAt: at,
+                updatedAt: at,
+                dateFrom: at,
+                dateTo: at,
+                categoryId: 'category-1',
+              ),
+              data: AiResponseData(
+                model: 'model',
+                systemMessage: '',
+                prompt: '',
+                thoughts: '',
+                response: id,
+                type: type,
+              ),
+            );
+          }
+
+          for (final entry in [
+            response('pr-summary', AiResponseType.pullRequestSummary, 0),
+            response('audio-summary', AiResponseType.audioSummary, 1),
+            response('untyped', null, 2),
+          ]) {
+            await db!.upsertJournalDbEntity(toDbEntity(entry));
+          }
+
+          const all = [true, false];
+          final allFlags = [
+            EntryFlag.none.index,
+            EntryFlag.followUpNeeded.index,
+          ];
+          final noFlag = [EntryFlag.none.index];
+          // One call per query getJournalEntities chooses between.
+          final queries = {
+            'filteredJournal': (null, null, all, noFlag),
+            'filteredJournalFast': (null, null, const [false], allFlags),
+            'filteredJournalFastAllPrivate': (null, null, all, allFlags),
+            'filteredJournalByCategories': (
+              {'category-1'},
+              null,
+              all,
+              noFlag,
+            ),
+            'filteredJournalByCategoriesFast': (
+              {'category-1'},
+              null,
+              const [false],
+              allFlags,
+            ),
+            'filteredJournalByCategoriesFastAllPrivate': (
+              {'category-1'},
+              null,
+              all,
+              allFlags,
+            ),
+            'filteredJournalByIds': (
+              null,
+              const ['pr-summary', 'audio-summary', 'untyped'],
+              all,
+              allFlags,
+            ),
+          };
+          for (final MapEntry(key: query, value: params) in queries.entries) {
+            final (categories, ids, private, flags) = params;
+            final results = await fetchJournalEntities(
+              db!,
+              types: const ['AiResponse'],
+              starredStatuses: all,
+              privateStatuses: private,
+              flaggedStatuses: flags,
+              categoryIds: categories,
+              ids: ids,
+            );
+            expect(
+              results.map((e) => e.meta.id),
+              ['untyped', 'audio-summary'],
+              reason: query,
+            );
+          }
+        },
+      );
 
       test('getJournalEntities filters by starred status', () async {
         final base = DateTime(2024, 2);

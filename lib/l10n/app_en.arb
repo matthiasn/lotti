@@ -3886,6 +3886,10 @@
   "@githubSummarizing": {
     "description": "Accessibility label of the spinner while a pull request summary is written."
   },
+  "githubSummaryAutomaticOff": "Automatic summaries are off for this task's category. Tap Summarize to write one.",
+  "@githubSummaryAutomaticOff": {
+    "description": "Shown under the empty TL;DR in a pull request's details when the task's category has automatic inference switched off."
+  },
   "githubSummaryBusy": "A summary is already being written.",
   "@githubSummaryBusy": {
     "description": "Toast when a summary is asked for while one is being written."
@@ -3901,6 +3905,10 @@
   "githubSummaryNoModel": "There's no model set up for this task's agent, so nothing can write the summary.",
   "@githubSummaryNoModel": {
     "description": "Toast when a summary is asked for but no model resolves for the task agent."
+  },
+  "githubSummaryOnNextRefresh": "A summary is written the next time this pull request is refreshed.",
+  "@githubSummaryOnNextRefresh": {
+    "description": "Shown under the empty TL;DR in a pull request's details when a summary will be written automatically."
   },
   "githubTokenHide": "Hide token",
   "githubTokenIntro": "Lotti reads the pull requests you link to tasks with your own personal access token. Create a fine-grained token for the repositories you work in, with read-only access to \"Pull requests\" and \"Commit statuses\". GitHub does not let such a token read check runs in a private repository, so CI may be incomplete there; a classic token with the \"repo\" scope can read them.",

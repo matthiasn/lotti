@@ -6901,6 +6901,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get githubSummarizing => 'Zusammenfassung wird geschrieben';
 
   @override
+  String get githubSummaryAutomaticOff =>
+      'Automatische Zusammenfassungen sind für die Kategorie dieser Aufgabe aus. Tipp auf Zusammenfassen, um eine zu schreiben.';
+
+  @override
   String get githubSummaryBusy =>
       'Eine Zusammenfassung wird bereits geschrieben.';
 
@@ -6914,6 +6918,10 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get githubSummaryNoModel =>
       'Für den Agenten dieser Aufgabe ist kein Modell eingerichtet, also kann niemand die Zusammenfassung schreiben.';
+
+  @override
+  String get githubSummaryOnNextRefresh =>
+      'Eine Zusammenfassung wird beim nächsten Aktualisieren dieses Pull-Requests geschrieben.';
 
   @override
   String get githubTokenHide => 'Token verbergen';

@@ -642,15 +642,33 @@ So a summary is never stale on screen: a retitled, re-described, reviewed or
 merged pull request has a different input, and shows without one until a new
 one is written.
 
+Storing a summary deletes the ones it supersedes (`addSummary`): every one
+written before it, whatever content it was written from. One written later
+stays, even of other content: it may come from a device that read a newer
+snapshot this one has not synced yet, and would otherwise have to be asked
+for again. Readers show only a summary of the content they show, and the
+next summary deletes what this one leaves. Unlinking a pull
+request deletes its summaries with its entry. The deletions sync like any
+other, and notify the pull request entry, never the task.
+
+Summaries stay out of the journal feed. Every feed query
+(`filteredJournal*` in `database.drift`) leaves out an AI response whose
+`subtype` — the response type's enum name, which the row carries — is
+`pullRequestSummary`; the pull request's details are where one is read.
+Search, the calendar and the task's linked entries never listed them: they
+have no text to index, and hang off the pull request entry, not the task.
+
 ```mermaid
 stateDiagram-v2
     [*] --> Unsummarised: snapshot stored
     Unsummarised --> Asking: a refresh or link the category allows, or the user asks
     Asking --> Summarised: both tiers stored, the content still the same
-    Asking --> Unsummarised: no model, failed twice, unlinked, or the content changed meanwhile
+    Asking --> Unsummarised: no model, unlinked, or the content changed meanwhile
     Summarised --> Unsummarised: title, description, state, a review or the discussion band changes
     Summarised --> Summarised: restamp, checks or a comment within the band, a copy syncs in
     Summarised --> Asking: the user asks again
+    Asking --> CoolingDown: an automatic request failed
+    CoolingDown --> Asking: an hour later, new content, or the user asks
 ```
 
 **When it is asked for.** `PullRequestService` hands every link and every
@@ -664,13 +682,29 @@ category has automatic inference switched on — the same consent every
 automatic inference needs
 ([execution paths](ai/execution-paths.md#the-category-consent-gate)) — and
 whose agent's profile resolves (`resolveForSubject`) is the one it asks for.
+An automatic request that failed — the model gave nothing usable twice, or
+the call threw — is not repeated automatically for the same content for an
+hour
+(`retryAfter`), on that device and until it restarts: a provider that is
+down is not asked on every refresh. New content, or a success, ends the
+wait.
 
 The details' **Summarise** action asks as the user (`manual`): it needs no
-category consent — the tap is the consent — and summarises again even when
-a summary matches. Its outcome is told in a toast when nothing was stored: no
-model for the task's agent, a failure, or one already being written.
+category consent — the tap is the consent — summarises again even when a
+summary matches, and neither waits out a failed automatic request nor
+starts a cool-down of its own. Its outcome is told in a
+toast when nothing was stored: no model for the task's agent, a failure, or
+one already being written. While there is no summary, the details say why
+(`automaticBlocker`, which asks no model): automatic summaries are off for
+the task's category, no model is set up for its agent, the last attempt
+failed, or one is written at the next refresh.
 
-Either way the call goes to that profile's thinking model through
+Either way the call goes to that profile's thinking model, asked to write
+both tiers in the task's language (`TaskData.languageCode`, named through
+`SupportedLanguage`) whatever language the pull request is in — none when the
+task has none. The language is in the system message, not the content a
+summary is matched by, so changing a task's language does not redo every
+summary; Summarise again does. The call goes through
 `generateToolCalls`, offered only the `publish_pull_request_summary` tool,
 pinned where the model honours a pin, with at most 800 completion tokens and
 minimal reasoning. It is recorded in the consumption ledger as text
@@ -683,7 +717,8 @@ for the one-liner, 1200 for the TL;DR) is asked once more with the reason;
 a second bad call is a failure. One request per entry runs at a time on a
 device; another is told it is busy. Before storing, the entry is read again
 and nothing is stored if it was unlinked or its input changed. A failure is
-logged, never thrown, and stays unsummarised until a later refresh.
+logged, never thrown, and stays unsummarised until a refresh after the
+cool-down, or until the user asks.
 
 **No wake loop.** The summarizer writes only the new response entry, never the
 pull request entry, so no refresh or merge sees it. Creating it notifies the
@@ -696,7 +731,10 @@ properties depend on. It is derived, and checked against its source when it
 is read rather than kept in step with it: whatever order refreshes, syncs and
 summaries interleave in, a context shows a summary only of exactly the
 content it shows, and two devices writing one each leaves two equivalent
-entries, of which readers take the newest. It never writes the pull request
+entries, of which readers take the newest. Deleting superseded ones only
+removes what was written before the summary being stored, which never
+describes newer content than it, and a summary deleted by mistake is written
+again at the next refresh. It never writes the pull request
 entry, so `PullRequestSnapshot`'s write rule, ordering and merge are
 untouched; the snapshot gains only the two comment counts, omitted when
 unset and outside the digest, as `createdAt` is. What

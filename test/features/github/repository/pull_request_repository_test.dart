@@ -561,6 +561,101 @@ void main() {
       },
     );
 
+    Future<List<String>> liveSummaries(String entryId) async => [
+      for (final e in await journalDb.getLinkedEntities(entryId))
+        if (e is AiResponseEntry &&
+            e.data.type == AiResponseType.pullRequestSummary)
+          e.data.tldr!,
+    ];
+
+    test(
+      'a new summary keeps one of other content written after it: it may '
+      'describe a newer snapshot that has not synced here yet',
+      () async {
+        final entry = await linked(snapshot: prSnapshot());
+        await repository.addSummary(
+          entry,
+          summary('newer content', text: 'Of newer content.'),
+          start: prFixtureEpoch.add(const Duration(minutes: 5)),
+        );
+        await repository.addSummary(
+          entry,
+          summary('stored content', text: 'Of the stored content.'),
+          start: prFixtureEpoch.add(const Duration(minutes: 3)),
+        );
+
+        expect(await liveSummaries(entry.id), [
+          'Of newer content.',
+          'Of the stored content.',
+        ]);
+      },
+    );
+
+    test(
+      'a new summary deletes the ones it supersedes — other content, or '
+      'the same content written earlier — and keeps a later copy',
+      () async {
+        final entry = await linked(snapshot: prSnapshot());
+        Future<void> add(String input, String text, int minute) =>
+            repository.addSummary(
+              entry,
+              summary(input, text: text),
+              start: prFixtureEpoch.add(Duration(minutes: minute)),
+            );
+
+        await add('old content', 'Of the old content.', 0);
+        await add('new content', 'Written later elsewhere.', 9);
+        await add('new content', 'Written earlier.', 1);
+        expect(await liveSummaries(entry.id), [
+          'Written later elsewhere.',
+          'Written earlier.',
+        ]);
+
+        await add('new content', 'Newest.', 10);
+        expect(await liveSummaries(entry.id), ['Newest.']);
+      },
+    );
+
+    test(
+      'deleting a superseded summary notifies the pull request entry, never '
+      'the task',
+      () async {
+        final entry = await linked(snapshot: prSnapshot());
+        await repository.addSummary(
+          entry,
+          summary('old content'),
+          start: prFixtureEpoch,
+        );
+        clearInteractions(mockUpdateNotifications);
+
+        await repository.addSummary(
+          entry,
+          summary('new content'),
+          start: prFixtureEpoch.add(const Duration(minutes: 1)),
+        );
+
+        final notified = verify(
+          () => mockUpdateNotifications.notify(captureAny()),
+        ).captured.cast<Set<String>>().expand((ids) => ids).toSet();
+        expect(notified, contains(entry.id));
+        expect(notified, isNot(contains(taskId)));
+      },
+    );
+
+    test('unlinking a pull request deletes its summaries with it', () async {
+      final entry = await linked(snapshot: prSnapshot());
+      await repository.addSummary(
+        entry,
+        summary('input'),
+        start: prFixtureEpoch,
+      );
+      expect(await liveSummaries(entry.id), isNotEmpty);
+
+      await repository.unlink(taskId: taskId, ref: ref);
+
+      expect(await liveSummaries(entry.id), isEmpty);
+    });
+
     test(
       'a summary without a TL;DR is read from its response, and a blank '
       'one-liner as none',
