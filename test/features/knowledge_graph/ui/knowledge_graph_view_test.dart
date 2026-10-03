@@ -22,6 +22,7 @@ import 'package:lotti/features/knowledge_graph/ui/knowledge_graph_painter.dart';
 import 'package:lotti/features/knowledge_graph/ui/knowledge_graph_view.dart';
 import 'package:lotti/features/knowledge_graph/ui/node_inspector_panel.dart';
 import 'package:lotti/features/knowledge_graph/ui/topology_minimap.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/editor_state_service.dart';
@@ -31,6 +32,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
+import '../../../helpers/stub_audio_recorder_controller.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../test_utils/material_ui_finders.dart';
@@ -97,7 +99,15 @@ void main() {
           size: size,
           disableAnimations: disableAnimations,
         ),
-        overrides: extraOverrides,
+        overrides: [
+          // The detail sidebar embeds the entry page, whose action bar
+          // watches the recorder controller; the real one boots the platform
+          // recorder, which a widget test cannot host.
+          audioRecorderControllerProvider.overrideWith(
+            StubAudioRecorderController.new,
+          ),
+          ...extraOverrides,
+        ],
       ),
     );
     // Let the deferred image load (`_loadImages`) settle without animation.
