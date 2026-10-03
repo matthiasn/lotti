@@ -27,10 +27,12 @@ bool isGenerated(String path) =>
     path.endsWith('.freezed.dart') ||
     path.endsWith('.gr.dart');
 
-/// Counts calls to `dart:developer`'s `log` in [source].
+/// Counts references to `dart:developer`'s `log` in [source] — calls and
+/// tear-offs alike, so `final emit = developer.log;` counts too.
 ///
 /// The import decides the spelling: `import 'dart:developer' as dev;` makes it
-/// `dev.log(`, an unprefixed import makes it a bare `log(`. A `part` file has
+/// `dev.log`, an unprefixed import makes it a bare `log` (not a named
+/// argument's `log:` label). A `part` file has
 /// no imports of its own — pass its library's source as [librarySource] and
 /// its imports apply. Counting runs on the token stream, so comments and
 /// strings never count. A file whose library does not import
@@ -62,13 +64,12 @@ int countDeveloperLogs(String source, {String? librarySource}) {
     if (prefixes.contains(t.lexeme) &&
         !afterDot &&
         next?.type == TokenType.PERIOD &&
-        next?.next?.lexeme == 'log' &&
-        next?.next?.next?.type == TokenType.OPEN_PAREN) {
+        next?.next?.lexeme == 'log') {
       count++;
     } else if (bare &&
         t.lexeme == 'log' &&
         !afterDot &&
-        next?.type == TokenType.OPEN_PAREN) {
+        next?.type != TokenType.COLON) {
       count++;
     }
   }

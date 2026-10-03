@@ -55,6 +55,32 @@ void main() {
       );
     });
 
+    test('counts tear-offs, which can log just the same', () {
+      expect(
+        countDeveloperLogs(
+          "import 'dart:developer' as developer;\n"
+          "void f() { final emit = developer.log; emit('x'); }",
+        ),
+        1,
+      );
+      expect(
+        countDeveloperLogs(
+          "import 'dart:developer';\n"
+          "void f() { final emit = log; emit('x'); }",
+        ),
+        1,
+      );
+    });
+
+    test('a named argument called log is not the function', () {
+      expect(
+        countDeveloperLogs(
+          "import 'dart:developer';\nvoid f() { g(log: true); }",
+        ),
+        0,
+      );
+    });
+
     test('ignores comments, strings, other loggers and files without it', () {
       expect(
         countDeveloperLogs("""
