@@ -6552,6 +6552,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get generateCoverArtSubtitle => 'Vytvořit obrázek z hlasového popisu';
 
   @override
+  String get githubAlsoLinkedElsewhere => 'Propojeno i s jiným úkolem';
+
+  @override
   String githubChecksFailing(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6624,10 +6627,18 @@ class AppLocalizationsCs extends AppLocalizations {
   String get githubLinkButton => 'Propojit';
 
   @override
+  String get githubLinkedElsewhere =>
+      'Tento pull request už je propojený s jiným úkolem.';
+
+  @override
   String get githubLinkNotAPullRequest => 'To není pull request.';
 
   @override
   String get githubLinkNotGitHub => 'To není odkaz na github.com.';
+
+  @override
+  String get githubLinkNotStored =>
+      'Propojení se nepodařilo uložit. Zkus to znovu.';
 
   @override
   String get githubLinkPullRequestHint =>
@@ -6664,6 +6675,26 @@ class AppLocalizationsCs extends AppLocalizations {
   String get githubOpenOnGitHub => 'Otevřít na GitHubu';
 
   @override
+  String githubPickerEmpty(String repository) {
+    return 'V $repository už nezbývá žádný otevřený pull request k propojení.';
+  }
+
+  @override
+  String get githubPickerLinking => 'Propojuje se pull request';
+
+  @override
+  String get githubPickerLoading => 'Načítají se otevřené pull requesty';
+
+  @override
+  String get githubPickerNoRepository =>
+      'Přiřaď kategorii tohoto úkolu repozitář GitHubu a vybírej z jeho otevřených pull requestů.';
+
+  @override
+  String githubPickerOpenIn(String repository) {
+    return 'Otevřené v $repository';
+  }
+
+  @override
   String get githubPullRequestActions => 'Akce pull requestu';
 
   @override
@@ -6674,6 +6705,27 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get githubRefreshPullRequest => 'Aktualizovat pull request';
+
+  @override
+  String get githubRepositoryHelper =>
+      'vlastnik/repo, nebo odkaz repozitáře na github.com';
+
+  @override
+  String get githubRepositoryHint => 'vlastnik/repo';
+
+  @override
+  String get githubRepositoryInvalid =>
+      'Není to repozitář GitHubu. Napiš vlastnik/repo.';
+
+  @override
+  String get githubRepositoryLabel => 'Repozitář';
+
+  @override
+  String get githubRepositorySectionDescription =>
+      'Repozitář, ve kterém pracují úkoly této kategorie. Při propojování pull requestu s některým z nich se nabídnou jeho otevřené pull requesty.';
+
+  @override
+  String get githubRepositorySectionTitle => 'GitHub';
 
   @override
   String get githubReviewApproved => 'Schváleno';

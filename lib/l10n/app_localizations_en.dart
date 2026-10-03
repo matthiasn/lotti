@@ -6454,6 +6454,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get generateCoverArtSubtitle => 'Create image from voice description';
 
   @override
+  String get githubAlsoLinkedElsewhere => 'Also linked to another task';
+
+  @override
   String githubChecksFailing(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6525,10 +6528,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get githubLinkButton => 'Link';
 
   @override
+  String get githubLinkedElsewhere =>
+      'This pull request is already linked to another task.';
+
+  @override
   String get githubLinkNotAPullRequest => 'That is not a pull request.';
 
   @override
   String get githubLinkNotGitHub => 'That is not a link to github.com.';
+
+  @override
+  String get githubLinkNotStored => 'The link could not be saved. Try again.';
 
   @override
   String get githubLinkPullRequestHint =>
@@ -6565,6 +6575,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get githubOpenOnGitHub => 'Open on GitHub';
 
   @override
+  String githubPickerEmpty(String repository) {
+    return 'No open pull request in $repository is left to link.';
+  }
+
+  @override
+  String get githubPickerLinking => 'Linking pull request';
+
+  @override
+  String get githubPickerLoading => 'Loading open pull requests';
+
+  @override
+  String get githubPickerNoRepository =>
+      'Assign a GitHub repository to this task\'s category to pick from its open pull requests.';
+
+  @override
+  String githubPickerOpenIn(String repository) {
+    return 'Open in $repository';
+  }
+
+  @override
   String get githubPullRequestActions => 'Pull request actions';
 
   @override
@@ -6575,6 +6605,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get githubRefreshPullRequest => 'Refresh pull request';
+
+  @override
+  String get githubRepositoryHelper =>
+      'owner/repo, or the repository\'s link on github.com';
+
+  @override
+  String get githubRepositoryHint => 'owner/repo';
+
+  @override
+  String get githubRepositoryInvalid =>
+      'Not a GitHub repository. Write owner/repo.';
+
+  @override
+  String get githubRepositoryLabel => 'Repository';
+
+  @override
+  String get githubRepositorySectionDescription =>
+      'The repository this category\'s tasks work in. Linking a pull request to one of them offers its open pull requests.';
+
+  @override
+  String get githubRepositorySectionTitle => 'GitHub';
 
   @override
   String get githubReviewApproved => 'Approved';

@@ -1187,6 +1187,23 @@ SELECT * FROM linked_entries
   AND json_extract(serialized, '$.deletedAt') IS NULL
   ORDER BY created_at DESC;
 
+-- Which live task holds each live pull request entry keyed by one of [keys]
+-- (`owner/repo#number`): the "+" picker leaves a held pull request out, and
+-- linking refuses one (specs/tla/PullRequestAssignment.tla). Every task
+-- counts, private ones included: a pull request belongs to one task whatever
+-- its privacy.
+pullRequestAssignments:
+SELECT pr.subtype AS pr_key, pr.id AS entry_id, task.id AS task_id
+  FROM journal AS pr
+  INNER JOIN linked_entries ON linked_entries.to_id = pr.id
+  INNER JOIN journal AS task ON task.id = linked_entries.from_id
+  WHERE pr.type = 'PullRequest'
+  AND pr.subtype IN :keys
+  AND pr.deleted = false
+  AND json_extract(linked_entries.serialized, '$.deletedAt') IS NULL
+  AND task.deleted = false
+  AND task.task = true;
+
 linkedToJournalEntities:
 SELECT journal.* FROM linked_entries
   INNER JOIN journal ON journal.id = linked_entries.from_id

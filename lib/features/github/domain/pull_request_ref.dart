@@ -1,3 +1,4 @@
+import 'package:lotti/features/github/domain/github_repository.dart';
 import 'package:meta/meta.dart';
 
 /// A pull request's identity: `owner/repo#number`.
@@ -54,9 +55,6 @@ final class PullRequestRefRejected extends PullRequestRefParse {
   final PullRequestRefRejection reason;
 }
 
-// GitHub logins: alphanumerics and single inner hyphens, at most 39.
-final _owner = RegExp(r'^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$');
-final _repo = RegExp(r'^[A-Za-z0-9._-]{1,100}$');
 final _number = RegExp(r'^[1-9][0-9]{0,9}$');
 final _shorthand = RegExp(r'^([^/\s#]+)/([^/\s#]+)#([0-9]+)$');
 final _scheme = RegExp('^[A-Za-z][A-Za-z0-9+.-]*://');
@@ -102,10 +100,8 @@ PullRequestRefParse parsePullRequestRef(String input) {
 }
 
 PullRequestRefParse _validated(String owner, String repo, String number) {
-  if (!_owner.hasMatch(owner) ||
-      !_repo.hasMatch(repo) ||
-      repo == '.' ||
-      repo == '..' ||
+  if (!isGitHubOwner(owner) ||
+      !isGitHubRepoName(repo) ||
       !_number.hasMatch(number)) {
     return const PullRequestRefRejected(
       PullRequestRefRejection.notAPullRequest,

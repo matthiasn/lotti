@@ -2965,6 +2965,7 @@
   "geminiThinkingModeMinimalLabel": "Mínimo",
   "generateCoverArt": "Gerar capa",
   "generateCoverArtSubtitle": "Criar imagem a partir da descrição de voz",
+  "githubAlsoLinkedElsewhere": "Também vinculada a outra tarefa",
   "githubChecksFailing": "{count, plural, =1{1 verificação com falha} other{{count} verificações com falha}}",
   "@githubChecksFailing": {
     "description": "Status line part: how many CI checks of a pull request fail.",
@@ -3009,8 +3010,10 @@
   "githubFailureUnauthorized": "O GitHub recusou o token. Ele pode ter expirado ou sido revogado.",
   "githubLinkAlreadyLinked": "Esta pull request já está vinculada a esta tarefa.",
   "githubLinkButton": "Vincular",
+  "githubLinkedElsewhere": "Esta pull request já está vinculada a outra tarefa.",
   "githubLinkNotAPullRequest": "Isso não é uma pull request.",
   "githubLinkNotGitHub": "Isso não é um link para github.com.",
+  "githubLinkNotStored": "Não foi possível salvar o vínculo. Tente de novo.",
   "githubLinkPullRequestHint": "Acompanhe aqui as verificações, revisões e o status.",
   "githubLinkPullRequestTitle": "Vincular uma pull request",
   "githubLinkUrlHelper": "Ou escreva dono/repo#123.",
@@ -3022,10 +3025,39 @@
   "githubNotRefreshed": "Não foi possível atualizar",
   "githubNotRefreshedYet": "Ainda não atualizada",
   "githubOpenOnGitHub": "Abrir no GitHub",
+  "githubPickerEmpty": "Nenhuma pull request aberta em {repository} resta para vincular.",
+  "@githubPickerEmpty": {
+    "description": "The picker found no open pull request left to link.",
+    "placeholders": {
+      "repository": {
+        "type": "String",
+        "example": "penguin/colony"
+      }
+    }
+  },
+  "githubPickerLinking": "Vinculando pull request",
+  "githubPickerLoading": "Carregando pull requests abertas",
+  "githubPickerNoRepository": "Atribua um repositório do GitHub à categoria desta tarefa para escolher entre as pull requests abertas dele.",
+  "githubPickerOpenIn": "Abertas em {repository}",
+  "@githubPickerOpenIn": {
+    "description": "Heading over the open pull requests of a repository.",
+    "placeholders": {
+      "repository": {
+        "type": "String",
+        "example": "penguin/colony"
+      }
+    }
+  },
   "githubPullRequestActions": "Ações da pull request",
   "githubPullRequestsTitle": "Pull requests",
   "githubRefreshingPullRequest": "Atualizando pull request",
   "githubRefreshPullRequest": "Atualizar pull request",
+  "githubRepositoryHelper": "dono/repo, ou o link do repositório no github.com",
+  "githubRepositoryHint": "dono/repo",
+  "githubRepositoryInvalid": "Não é um repositório do GitHub. Escreva dono/repo.",
+  "githubRepositoryLabel": "Repositório",
+  "githubRepositorySectionDescription": "O repositório em que as tarefas desta categoria trabalham. Ao vincular uma pull request a uma delas, as pull requests abertas dele são oferecidas.",
+  "githubRepositorySectionTitle": "GitHub",
   "githubReviewApproved": "Aprovada",
   "githubReviewChangesRequested": "Alterações solicitadas",
   "githubReviewPending": "Revisão solicitada",

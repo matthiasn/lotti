@@ -2,7 +2,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/features/github/api/github_client.dart';
+import 'package:lotti/features/github/domain/github_repository.dart';
+import 'package:lotti/features/github/domain/open_pull_request.dart';
 import 'package:lotti/features/github/domain/pull_request_ref.dart';
+import 'package:lotti/features/github/repository/pull_request_repository.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -22,6 +25,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(ref);
+    registerFallbackValue(<PullRequestRef>[]);
     registerFallbackValue(prSnapshot());
   });
 
@@ -35,12 +39,8 @@ void main() {
       repository: repository,
     );
     when(tokens.readToken).thenAnswer((_) async => token);
-    when(
-      () => repository.isLinked(
-        taskId: taskId,
-        ref: any(named: 'ref'),
-      ),
-    ).thenAnswer((_) async => false);
+    // No task holds anything unless a case says so.
+    when(() => repository.holdersOf(any())).thenAnswer((_) async => {});
   });
 
   void answers(PullRequestSnapshot snapshot) => when(
@@ -63,7 +63,7 @@ void main() {
             ref: ref,
             snapshot: prSnapshot(),
           ),
-        ).thenAnswer((_) async => entry);
+        ).thenAnswer((_) async => PullRequestLinkAttempt(linked: entry));
 
         final result = await service.linkPasted(taskId: taskId, input: url);
 
@@ -88,9 +88,11 @@ void main() {
     });
 
     test('a pull request already on the task is not fetched again', () async {
-      when(
-        () => repository.isLinked(taskId: taskId, ref: ref),
-      ).thenAnswer((_) async => true);
+      when(() => repository.holdersOf(any())).thenAnswer(
+        (_) async => {
+          ref.key: {taskId},
+        },
+      );
 
       final result = await service.linkPasted(taskId: taskId, input: url);
 
@@ -98,7 +100,49 @@ void main() {
       verifyZeroInteractions(client);
     });
 
-    test('a link racing another is reported as already linked', () async {
+    test(
+      'a pull request another task holds is refused before GitHub is asked',
+      () async {
+        when(() => repository.holdersOf(any())).thenAnswer(
+          (_) async => {
+            ref.key: {'other-task'},
+          },
+        );
+
+        final result = await service.link(taskId: taskId, ref: ref);
+
+        expect((result as PullRequestLinkedElsewhere).taskIds, {'other-task'});
+        verifyZeroInteractions(client);
+      },
+    );
+
+    test(
+      'a link that loses the race says which task won: this one or another',
+      () async {
+        answers(prSnapshot());
+        void heldBy(Set<String> tasks) => when(
+          () => repository.link(
+            taskId: taskId,
+            ref: ref,
+            snapshot: any(named: 'snapshot'),
+          ),
+        ).thenAnswer((_) async => PullRequestLinkAttempt(heldBy: tasks));
+
+        heldBy({taskId});
+        expect(
+          await service.link(taskId: taskId, ref: ref),
+          isA<PullRequestAlreadyLinked>(),
+        );
+
+        heldBy({'other-task'});
+        expect(
+          await service.link(taskId: taskId, ref: ref),
+          isA<PullRequestLinkedElsewhere>(),
+        );
+      },
+    );
+
+    test('an entry that could not be stored is not reported linked', () async {
       answers(prSnapshot());
       when(
         () => repository.link(
@@ -106,11 +150,11 @@ void main() {
           ref: ref,
           snapshot: any(named: 'snapshot'),
         ),
-      ).thenAnswer((_) async => null);
+      ).thenAnswer((_) async => const PullRequestLinkAttempt());
 
       expect(
-        await service.linkPasted(taskId: taskId, input: url),
-        isA<PullRequestAlreadyLinked>(),
+        await service.link(taskId: taskId, ref: ref),
+        isA<PullRequestLinkNotStored>(),
       );
     });
 
@@ -140,6 +184,58 @@ void main() {
       final result = await service.linkPasted(taskId: taskId, input: url);
 
       expect((result as PullRequestLinkFailed).kind, GitHubFailureKind.noToken);
+      verifyZeroInteractions(client);
+    });
+  });
+
+  group('openPullRequests', () {
+    const repository_ = GitHubRepository(owner: 'matthiasn', repo: 'lotti');
+    OpenPullRequest open(int number) => OpenPullRequest(
+      ref: PullRequestRef(owner: 'matthiasn', repo: 'lotti', number: number),
+      title: 'PR $number',
+      updatedAt: DateTime.utc(2024, 3, 15),
+    );
+
+    test('lists the open pull requests no task holds', () async {
+      when(
+        () => client.listOpenPullRequests(repository_, token: token),
+      ).thenAnswer((_) async => [open(1), open(2), open(3)]);
+      when(() => repository.holdersOf(any())).thenAnswer(
+        (_) async => {
+          open(2).ref.key: {'some-task'},
+        },
+      );
+
+      final result = await service.openPullRequests(repository_);
+
+      expect(
+        (result as OpenPullRequestsListed).available.map((pr) => pr.ref.number),
+        [1, 3],
+      );
+    });
+
+    test('says why GitHub could not list them', () async {
+      when(
+        () => client.listOpenPullRequests(repository_, token: token),
+      ).thenThrow(const GitHubException(GitHubFailureKind.notFound));
+
+      final result = await service.openPullRequests(repository_);
+
+      expect(
+        (result as OpenPullRequestsFailed).kind,
+        GitHubFailureKind.notFound,
+      );
+    });
+
+    test('without a token GitHub is not asked', () async {
+      when(tokens.readToken).thenAnswer((_) async => null);
+
+      final result = await service.openPullRequests(repository_);
+
+      expect(
+        (result as OpenPullRequestsFailed).kind,
+        GitHubFailureKind.noToken,
+      );
       verifyZeroInteractions(client);
     });
   });

@@ -6481,6 +6481,9 @@ class AppLocalizationsDa extends AppLocalizations {
       'Opret billede ud fra stemmebeskrivelse';
 
   @override
+  String get githubAlsoLinkedElsewhere => 'Også knyttet til en anden opgave';
+
+  @override
   String githubChecksFailing(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6553,10 +6556,17 @@ class AppLocalizationsDa extends AppLocalizations {
   String get githubLinkButton => 'Knyt';
 
   @override
+  String get githubLinkedElsewhere =>
+      'Denne pull request er allerede knyttet til en anden opgave.';
+
+  @override
   String get githubLinkNotAPullRequest => 'Det er ikke en pull request.';
 
   @override
   String get githubLinkNotGitHub => 'Det er ikke et link til github.com.';
+
+  @override
+  String get githubLinkNotStored => 'Linket kunne ikke gemmes. Prøv igen.';
 
   @override
   String get githubLinkPullRequestHint =>
@@ -6593,6 +6603,26 @@ class AppLocalizationsDa extends AppLocalizations {
   String get githubOpenOnGitHub => 'Åbn på GitHub';
 
   @override
+  String githubPickerEmpty(String repository) {
+    return 'Der er ingen åben pull request i $repository tilbage at knytte.';
+  }
+
+  @override
+  String get githubPickerLinking => 'Knytter pull request';
+
+  @override
+  String get githubPickerLoading => 'Indlæser åbne pull requests';
+
+  @override
+  String get githubPickerNoRepository =>
+      'Tildel kategorien for denne opgave et GitHub-repository for at vælge blandt dets åbne pull requests.';
+
+  @override
+  String githubPickerOpenIn(String repository) {
+    return 'Åbne i $repository';
+  }
+
+  @override
   String get githubPullRequestActions => 'Handlinger for pull request';
 
   @override
@@ -6603,6 +6633,27 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get githubRefreshPullRequest => 'Opdater pull request';
+
+  @override
+  String get githubRepositoryHelper =>
+      'ejer/repo, eller repositoryets link på github.com';
+
+  @override
+  String get githubRepositoryHint => 'ejer/repo';
+
+  @override
+  String get githubRepositoryInvalid =>
+      'Ikke et GitHub-repository. Skriv ejer/repo.';
+
+  @override
+  String get githubRepositoryLabel => 'Repository';
+
+  @override
+  String get githubRepositorySectionDescription =>
+      'Det repository, som kategoriens opgaver arbejder i. Når du knytter en pull request til en af dem, tilbydes dets åbne pull requests.';
+
+  @override
+  String get githubRepositorySectionTitle => 'GitHub';
 
   @override
   String get githubReviewApproved => 'Godkendt';

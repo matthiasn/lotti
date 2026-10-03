@@ -3608,6 +3608,7 @@
   "geminiThinkingModeMinimalLabel": "Minimal",
   "generateCoverArt": "Generate Cover Art",
   "generateCoverArtSubtitle": "Create image from voice description",
+  "githubAlsoLinkedElsewhere": "Also linked to another task",
   "githubChecksFailing": "{count, plural, =1{1 check failing} other{{count} checks failing}}",
   "@githubChecksFailing": {
     "description": "Status line part: how many CI checks of a pull request fail.",
@@ -3652,8 +3653,10 @@
   "githubFailureUnauthorized": "GitHub rejected the token. It may have expired or been revoked.",
   "githubLinkAlreadyLinked": "This pull request is already linked to this task.",
   "githubLinkButton": "Link",
+  "githubLinkedElsewhere": "This pull request is already linked to another task.",
   "githubLinkNotAPullRequest": "That is not a pull request.",
   "githubLinkNotGitHub": "That is not a link to github.com.",
+  "githubLinkNotStored": "The link could not be saved. Try again.",
   "githubLinkPullRequestHint": "Follow its checks, reviews and status here.",
   "githubLinkPullRequestTitle": "Link a pull request",
   "githubLinkUrlHelper": "Or write owner/repo#123.",
@@ -3665,10 +3668,39 @@
   "githubNotRefreshed": "Could not refresh",
   "githubNotRefreshedYet": "Not refreshed yet",
   "githubOpenOnGitHub": "Open on GitHub",
+  "githubPickerEmpty": "No open pull request in {repository} is left to link.",
+  "@githubPickerEmpty": {
+    "description": "The picker found no open pull request left to link.",
+    "placeholders": {
+      "repository": {
+        "type": "String",
+        "example": "penguin/colony"
+      }
+    }
+  },
+  "githubPickerLinking": "Linking pull request",
+  "githubPickerLoading": "Loading open pull requests",
+  "githubPickerNoRepository": "Assign a GitHub repository to this task's category to pick from its open pull requests.",
+  "githubPickerOpenIn": "Open in {repository}",
+  "@githubPickerOpenIn": {
+    "description": "Heading over the open pull requests of a repository.",
+    "placeholders": {
+      "repository": {
+        "type": "String",
+        "example": "penguin/colony"
+      }
+    }
+  },
   "githubPullRequestActions": "Pull request actions",
   "githubPullRequestsTitle": "Pull requests",
   "githubRefreshingPullRequest": "Refreshing pull request",
   "githubRefreshPullRequest": "Refresh pull request",
+  "githubRepositoryHelper": "owner/repo, or the repository's link on github.com",
+  "githubRepositoryHint": "owner/repo",
+  "githubRepositoryInvalid": "Not a GitHub repository. Write owner/repo.",
+  "githubRepositoryLabel": "Repository",
+  "githubRepositorySectionDescription": "The repository this category's tasks work in. Linking a pull request to one of them offers its open pull requests.",
+  "githubRepositorySectionTitle": "GitHub",
   "githubReviewApproved": "Approved",
   "githubReviewChangesRequested": "Changes requested",
   "githubReviewPending": "Review requested",

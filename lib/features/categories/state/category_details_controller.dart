@@ -134,6 +134,8 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
         _pendingCategory!.defaultEventTemplateId !=
             _originalCategory!.defaultEventTemplateId ||
         _pendingCategory!.knowledgeBrief != _originalCategory!.knowledgeBrief ||
+        _pendingCategory!.githubRepository !=
+            _originalCategory!.githubRepository ||
         _hasListChanges(
           _pendingCategory!.speechDictionary,
           _originalCategory!.speechDictionary,
@@ -334,6 +336,12 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
     _updatePendingCategory(
       (c) => c.copyWith(knowledgeBrief: brief.trim().isEmpty ? null : brief),
     );
+  }
+
+  /// Replaces the pending GitHub repository (`owner/repo`, or null for
+  /// none). Not persisted until [saveChanges].
+  void updateGitHubRepository(String? repository) {
+    _updatePendingCategory((c) => c.copyWith(githubRepository: repository));
   }
 
   /// Replaces the pending speech-dictionary terms (empty list stored as

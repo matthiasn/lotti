@@ -215,6 +215,17 @@ extension _CategoryDetailsFormSections on _CategoryDetailsPageState {
     );
   }
 
+  Widget _buildGitHubRepository(CategoryDefinition category) {
+    final controller = ref.read(
+      categoryDetailsControllerProvider(widget.categoryId!).notifier,
+    );
+
+    return GitHubRepositoryField(
+      repository: category.githubRepository,
+      onChanged: controller.updateGitHubRepository,
+    );
+  }
+
   Widget _buildSpeechDictionary(CategoryDefinition category) {
     final controller = ref.read(
       categoryDetailsControllerProvider(widget.categoryId!).notifier,

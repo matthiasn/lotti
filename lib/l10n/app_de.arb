@@ -2709,6 +2709,7 @@
   "geminiThinkingModeMinimalLabel": "Minimal",
   "generateCoverArt": "Titelbild generieren",
   "generateCoverArtSubtitle": "Bild aus einer Beschreibung erstellen",
+  "githubAlsoLinkedElsewhere": "Auch mit einer anderen Aufgabe verknüpft",
   "githubChecksFailing": "{count, plural, =1{1 Check fehlgeschlagen} other{{count} Checks fehlgeschlagen}}",
   "@githubChecksFailing": {
     "description": "Status line part: how many CI checks of a pull request fail.",
@@ -2753,8 +2754,10 @@
   "githubFailureUnauthorized": "GitHub hat den Token abgelehnt. Er ist vielleicht abgelaufen oder wurde widerrufen.",
   "githubLinkAlreadyLinked": "Dieser Pull-Request ist schon mit dieser Aufgabe verknüpft.",
   "githubLinkButton": "Verknüpfen",
+  "githubLinkedElsewhere": "Dieser Pull-Request ist schon mit einer anderen Aufgabe verknüpft.",
   "githubLinkNotAPullRequest": "Das ist kein Pull-Request.",
   "githubLinkNotGitHub": "Das ist kein Link zu github.com.",
+  "githubLinkNotStored": "Die Verknüpfung konnte nicht gespeichert werden. Versuch es noch einmal.",
   "githubLinkPullRequestHint": "Verfolge hier seine Checks, Reviews und seinen Status.",
   "githubLinkPullRequestTitle": "Pull-Request verknüpfen",
   "githubLinkUrlHelper": "Oder schreib besitzer/repo#123.",
@@ -2766,10 +2769,39 @@
   "githubNotRefreshed": "Aktualisierung fehlgeschlagen",
   "githubNotRefreshedYet": "Noch nicht aktualisiert",
   "githubOpenOnGitHub": "Auf GitHub öffnen",
+  "githubPickerEmpty": "In {repository} ist kein offener Pull-Request mehr zum Verknüpfen übrig.",
+  "@githubPickerEmpty": {
+    "description": "The picker found no open pull request left to link.",
+    "placeholders": {
+      "repository": {
+        "type": "String",
+        "example": "penguin/colony"
+      }
+    }
+  },
+  "githubPickerLinking": "Pull-Request wird verknüpft",
+  "githubPickerLoading": "Offene Pull-Requests werden geladen",
+  "githubPickerNoRepository": "Weise der Kategorie dieser Aufgabe ein GitHub-Repository zu, um aus seinen offenen Pull-Requests zu wählen.",
+  "githubPickerOpenIn": "Offen in {repository}",
+  "@githubPickerOpenIn": {
+    "description": "Heading over the open pull requests of a repository.",
+    "placeholders": {
+      "repository": {
+        "type": "String",
+        "example": "penguin/colony"
+      }
+    }
+  },
   "githubPullRequestActions": "Aktionen für den Pull-Request",
   "githubPullRequestsTitle": "Pull-Requests",
   "githubRefreshingPullRequest": "Pull-Request wird aktualisiert",
   "githubRefreshPullRequest": "Pull-Request aktualisieren",
+  "githubRepositoryHelper": "besitzer/repo oder der Link des Repositorys auf github.com",
+  "githubRepositoryHint": "besitzer/repo",
+  "githubRepositoryInvalid": "Kein GitHub-Repository. Schreib besitzer/repo.",
+  "githubRepositoryLabel": "Repository",
+  "githubRepositorySectionDescription": "Das Repository, in dem die Aufgaben dieser Kategorie entstehen. Beim Verknüpfen eines Pull-Requests werden seine offenen Pull-Requests angeboten.",
+  "githubRepositorySectionTitle": "GitHub",
   "githubReviewApproved": "Freigegeben",
   "githubReviewChangesRequested": "Änderungen angefordert",
   "githubReviewPending": "Review angefragt",

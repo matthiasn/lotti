@@ -39,22 +39,39 @@ class PullRequestRepository {
     return entry is PullRequestEntry ? entry : null;
   }
 
-  /// Whether [ref] is already linked to [taskId].
-  Future<bool> isLinked({
-    required String taskId,
-    required PullRequestRef ref,
-  }) async => (await forTask(taskId)).any((e) => e.data.key == ref.key);
+  /// The tasks that hold each of [refs], by [PullRequestRef.key]; a pull
+  /// request no task holds is absent. A pull request belongs to one task, so
+  /// more than one holder means two devices linked it before they synced.
+  Future<Map<String, Set<String>>> holdersOf(
+    Iterable<PullRequestRef> refs,
+  ) async {
+    final keys = {for (final ref in refs) ref.key};
+    if (keys.isEmpty) return const {};
+    final rows = await _db.pullRequestAssignments(keys.toList()).get();
+    final holders = <String, Set<String>>{};
+    for (final row in rows) {
+      final key = row.prKey;
+      if (key != null) (holders[key] ??= {}).add(row.taskId);
+    }
+    return holders;
+  }
 
-  /// Links [ref] to [taskId] with what the link's first read observed.
+  /// Links [ref] to [taskId] with what the link's first read observed —
+  /// unless a task holds it already, this one or another.
   ///
-  /// Returns null when [ref] is already linked to the task: one entry per
-  /// task and pull request.
-  Future<PullRequestEntry?> link({
+  /// The check and the creation run as one step on this device (`Choose`
+  /// in `specs/tla/PullRequestAssignment.tla`): the picker's list can be
+  /// stale by the time the user picks, a paste lists nothing at all, and two
+  /// pickers open at once must not both link. Another device can still link
+  /// it to another task before the two sync; then both entries stay, and
+  /// every device shows the double assignment.
+  Future<PullRequestLinkAttempt> link({
     required String taskId,
     required PullRequestRef ref,
     PullRequestSnapshot? snapshot,
-  }) async {
-    if (await isLinked(taskId: taskId, ref: ref)) return null;
+  }) => _serially(() async {
+    final holders = (await holdersOf([ref]))[ref.key] ?? const <String>{};
+    if (holders.isNotEmpty) return PullRequestLinkAttempt(heldBy: holders);
 
     final now = clock.now();
     final entry = PullRequestEntry(
@@ -77,7 +94,16 @@ class PullRequestRepository {
       linkedId: taskId,
       shouldAddGeolocation: false,
     );
-    return (created ?? false) ? entry : null;
+    return PullRequestLinkAttempt(linked: (created ?? false) ? entry : null);
+  });
+
+  /// One link at a time on this device, whichever repository instance asks.
+  static Future<void> _tail = Future.value();
+
+  static Future<T> _serially<T>(Future<T> Function() body) {
+    final result = _tail.then((_) => body());
+    _tail = result.then<void>((_) {}, onError: (Object _) {});
+    return result;
   }
 
   /// Stores [observation] on entry [entryId] if it should replace what is
@@ -128,4 +154,14 @@ class PullRequestRepository {
     }
     return unlinked;
   }
+}
+
+/// What [PullRequestRepository.link] did: [linked] is the new entry, or
+/// [heldBy] names the tasks that hold the pull request already. Neither when
+/// the creation itself failed.
+class PullRequestLinkAttempt {
+  const PullRequestLinkAttempt({this.linked, this.heldBy = const {}});
+
+  final PullRequestEntry? linked;
+  final Set<String> heldBy;
 }

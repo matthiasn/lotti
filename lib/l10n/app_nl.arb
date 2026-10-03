@@ -2965,6 +2965,7 @@
   "geminiThinkingModeMinimalLabel": "Minimaal",
   "generateCoverArt": "Omslagkunst genereren",
   "generateCoverArtSubtitle": "Afbeelding aanmaken van spraakbeschrijving",
+  "githubAlsoLinkedElsewhere": "Ook aan een andere taak gekoppeld",
   "githubChecksFailing": "{count, plural, =1{1 check mislukt} other{{count} checks mislukt}}",
   "@githubChecksFailing": {
     "description": "Status line part: how many CI checks of a pull request fail.",
@@ -3009,8 +3010,10 @@
   "githubFailureUnauthorized": "GitHub heeft het token geweigerd. Het is misschien verlopen of ingetrokken.",
   "githubLinkAlreadyLinked": "Deze pull request is al aan deze taak gekoppeld.",
   "githubLinkButton": "Koppelen",
+  "githubLinkedElsewhere": "Deze pull request is al aan een andere taak gekoppeld.",
   "githubLinkNotAPullRequest": "Dat is geen pull request.",
   "githubLinkNotGitHub": "Dat is geen link naar github.com.",
+  "githubLinkNotStored": "De koppeling kon niet worden opgeslagen. Probeer het opnieuw.",
   "githubLinkPullRequestHint": "Volg hier de checks, reviews en status.",
   "githubLinkPullRequestTitle": "Pull request koppelen",
   "githubLinkUrlHelper": "Of schrijf eigenaar/repo#123.",
@@ -3022,10 +3025,39 @@
   "githubNotRefreshed": "Vernieuwen mislukt",
   "githubNotRefreshedYet": "Nog niet vernieuwd",
   "githubOpenOnGitHub": "Openen op GitHub",
+  "githubPickerEmpty": "Er is geen open pull request in {repository} meer om te koppelen.",
+  "@githubPickerEmpty": {
+    "description": "The picker found no open pull request left to link.",
+    "placeholders": {
+      "repository": {
+        "type": "String",
+        "example": "penguin/colony"
+      }
+    }
+  },
+  "githubPickerLinking": "Pull request wordt gekoppeld",
+  "githubPickerLoading": "Open pull requests worden geladen",
+  "githubPickerNoRepository": "Wijs de categorie van deze taak een GitHub-repository toe om uit de open pull requests te kiezen.",
+  "githubPickerOpenIn": "Open in {repository}",
+  "@githubPickerOpenIn": {
+    "description": "Heading over the open pull requests of a repository.",
+    "placeholders": {
+      "repository": {
+        "type": "String",
+        "example": "penguin/colony"
+      }
+    }
+  },
   "githubPullRequestActions": "Acties voor de pull request",
   "githubPullRequestsTitle": "Pull requests",
   "githubRefreshingPullRequest": "Pull request wordt vernieuwd",
   "githubRefreshPullRequest": "Pull request vernieuwen",
+  "githubRepositoryHelper": "eigenaar/repo, of de link van de repository op github.com",
+  "githubRepositoryHint": "eigenaar/repo",
+  "githubRepositoryInvalid": "Geen GitHub-repository. Schrijf eigenaar/repo.",
+  "githubRepositoryLabel": "Repository",
+  "githubRepositorySectionDescription": "De repository waarin de taken van deze categorie werken. Als je een pull request aan een ervan koppelt, worden de open pull requests aangeboden.",
+  "githubRepositorySectionTitle": "GitHub",
   "githubReviewApproved": "Goedgekeurd",
   "githubReviewChangesRequested": "Wijzigingen gevraagd",
   "githubReviewPending": "Review gevraagd",

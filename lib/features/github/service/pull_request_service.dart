@@ -1,6 +1,8 @@
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/features/github/api/github_client.dart';
+import 'package:lotti/features/github/domain/github_repository.dart';
+import 'package:lotti/features/github/domain/open_pull_request.dart';
 import 'package:lotti/features/github/domain/pull_request_ref.dart';
 import 'package:lotti/features/github/repository/github_token_storage.dart';
 import 'package:lotti/features/github/repository/pull_request_repository.dart';
@@ -44,9 +46,37 @@ final class PullRequestLinkRejected extends PullRequestLinkResult {
   final PullRequestRefRejection reason;
 }
 
+/// Another task holds the pull request: it belongs to one task.
+final class PullRequestLinkedElsewhere extends PullRequestLinkResult {
+  const PullRequestLinkedElsewhere(this.taskIds);
+  final Set<String> taskIds;
+}
+
+/// The entry could not be stored: nothing was linked.
+final class PullRequestLinkNotStored extends PullRequestLinkResult {
+  const PullRequestLinkNotStored();
+}
+
 /// GitHub could not be asked, or refused: nothing was linked.
 final class PullRequestLinkFailed extends PullRequestLinkResult {
   const PullRequestLinkFailed(this.kind, {this.retryAt});
+  final GitHubFailureKind kind;
+  final DateTime? retryAt;
+}
+
+/// What the picker may offer a task.
+sealed class OpenPullRequestsResult {
+  const OpenPullRequestsResult();
+}
+
+/// The repository's open pull requests that no task holds yet.
+final class OpenPullRequestsListed extends OpenPullRequestsResult {
+  const OpenPullRequestsListed(this.available);
+  final List<OpenPullRequest> available;
+}
+
+final class OpenPullRequestsFailed extends OpenPullRequestsResult {
+  const OpenPullRequestsFailed(this.kind, {this.retryAt});
   final GitHubFailureKind kind;
   final DateTime? retryAt;
 }
@@ -78,21 +108,60 @@ class PullRequestService {
       case PullRequestRefRejected(:final reason):
         return PullRequestLinkRejected(reason);
     }
-    if (await _entries.isLinked(taskId: taskId, ref: ref)) {
-      return const PullRequestAlreadyLinked();
-    }
+    return link(taskId: taskId, ref: ref);
+  }
+
+  /// Links [ref] to [taskId], picked or pasted. A pull request a task holds
+  /// already is refused before GitHub is asked; then it is read, so a pull
+  /// request the token cannot see links nothing; then the repository links
+  /// it, checking again (`specs/tla/PullRequestAssignment.tla`).
+  Future<PullRequestLinkResult> link({
+    required String taskId,
+    required PullRequestRef ref,
+  }) async {
+    final holders = (await _entries.holdersOf([ref]))[ref.key];
+    if (holders != null) return _held(taskId, holders);
     final observed = await _observe(ref);
     if (observed case PullRequestRefreshFailed(:final kind, :final retryAt)) {
       return PullRequestLinkFailed(kind, retryAt: retryAt);
     }
-    final entry = await _entries.link(
+    final attempt = await _entries.link(
       taskId: taskId,
       ref: ref,
       snapshot: (observed as PullRequestRefreshed).observation,
     );
-    return entry == null
-        ? const PullRequestAlreadyLinked()
-        : PullRequestLinked(entry);
+    final linked = attempt.linked;
+    if (linked != null) return PullRequestLinked(linked);
+    if (attempt.heldBy.isNotEmpty) return _held(taskId, attempt.heldBy);
+    return const PullRequestLinkNotStored();
+  }
+
+  static PullRequestLinkResult _held(String taskId, Set<String> holders) =>
+      holders.contains(taskId)
+      ? const PullRequestAlreadyLinked()
+      : PullRequestLinkedElsewhere(holders);
+
+  /// The open pull requests of [repository] that no task holds, for the
+  /// picker. What it shows can be stale by the time the user picks; [link]
+  /// decides.
+  Future<OpenPullRequestsResult> openPullRequests(
+    GitHubRepository repository,
+  ) async {
+    final token = await _tokens.readToken();
+    if (token == null || token.isEmpty) {
+      return const OpenPullRequestsFailed(GitHubFailureKind.noToken);
+    }
+    final List<OpenPullRequest> open;
+    try {
+      open = await _github.listOpenPullRequests(repository, token: token);
+    } on GitHubException catch (e) {
+      return OpenPullRequestsFailed(e.kind, retryAt: e.retryAt);
+    }
+    final held = await _entries.holdersOf(open.map((pr) => pr.ref));
+    return OpenPullRequestsListed([
+      for (final pr in open)
+        if (!held.containsKey(pr.ref.key)) pr,
+    ]);
   }
 
   /// Reads [entry]'s pull request from GitHub and stores the observation if
