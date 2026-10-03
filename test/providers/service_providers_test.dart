@@ -70,17 +70,24 @@ void main() {
       expect(container.read(domainLoggerProvider), same(registered));
     });
 
-    test('otherwise builds one over loggingServiceProvider', () async {
-      await getIt.reset();
-      final container = ProviderContainer(
-        overrides: [loggingServiceProvider.overrideWithValue(LoggingService())],
-      );
-      addTearDown(container.dispose);
+    test(
+      'otherwise needs no wiring: a standalone logger, no domain on',
+      () async {
+        await getIt.reset();
+        // Neither getIt nor loggingServiceProvider is set up, as in a widget
+        // test that never thought about logging.
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      final logger = container.read(domainLoggerProvider);
-      expect(logger, isA<DomainLogger>());
-      expect(container.read(domainLoggerProvider), same(logger));
-    });
+        final logger = container.read(domainLoggerProvider);
+        expect(logger.enabledDomains, isEmpty);
+        expect(container.read(domainLoggerProvider), same(logger));
+        expect(
+          () => logger.error(LogDomain.ai, StateError('logged, not thrown')),
+          returnsNormally,
+        );
+      },
+    );
 
     test('an override wins over getIt', () async {
       await getIt.reset();

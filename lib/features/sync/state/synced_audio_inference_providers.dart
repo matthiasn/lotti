@@ -10,9 +10,9 @@ import 'package:lotti/features/sync/repository/sync_node_profile_repository.dart
 import 'package:lotti/features/sync/services/synced_audio_inference_dispatcher.dart';
 import 'package:lotti/features/sync/services/synced_audio_inference_listener.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/providers/service_providers.dart'
+    show domainLoggerProvider, journalDbProvider;
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 
 /// Live, sorted list of known peer node profiles plus the local node's own
@@ -65,9 +65,7 @@ SyncedAudioInferenceDispatcher syncedAudioInferenceDispatcher(Ref ref) {
     skillInferenceRunner: ref.watch(skillInferenceRunnerProvider),
     taskAgentService: ref.watch(taskAgentServiceProvider),
     wakeOrchestrator: ref.watch(wakeOrchestratorProvider),
-    domainLogger: getIt.isRegistered<DomainLogger>()
-        ? getIt<DomainLogger>()
-        : null,
+    domainLogger: ref.watch(domainLoggerProvider),
   );
 }
 
@@ -86,9 +84,7 @@ SyncedAudioInferenceListener syncedAudioInferenceListener(Ref ref) {
   final listener = SyncedAudioInferenceListener(
     updateNotifications: getIt<UpdateNotifications>(),
     dispatcher: ref.watch(syncedAudioInferenceDispatcherProvider),
-    domainLogger: getIt.isRegistered<DomainLogger>()
-        ? getIt<DomainLogger>()
-        : null,
+    domainLogger: ref.watch(domainLoggerProvider),
   )..start();
   ref.onDispose(listener.dispose);
   return listener;

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/plaza/ui/plaza_palette.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// SettingsDb key for the sky the plaza is entered under.
@@ -19,10 +20,13 @@ const plazaSkyModeSettingsKey = 'PLAZA_SKY_MODE';
 /// the district was designed in — a failed write keeps the in-memory choice,
 /// and a still-in-flight initial load never clobbers a choice just made.
 class PlazaSkyModeController extends Notifier<PlazaSkyMode> {
+  late DomainLogger _logger;
+
   bool _chosen = false;
 
   @override
   PlazaSkyMode build() {
+    _logger = ref.watch(domainLoggerProvider);
     unawaited(_load());
     return PlazaSkyMode.night;
   }
@@ -64,8 +68,7 @@ class PlazaSkyModeController extends Notifier<PlazaSkyMode> {
   /// Both database paths run fire-and-forget, so a thrown error would
   /// surface as an unhandled asynchronous error; it is logged instead.
   void _report(String operation, Object error, StackTrace stackTrace) {
-    if (!getIt.isRegistered<DomainLogger>()) return;
-    getIt<DomainLogger>().error(
+    _logger.error(
       LogDomain.settings,
       error,
       stackTrace: stackTrace,

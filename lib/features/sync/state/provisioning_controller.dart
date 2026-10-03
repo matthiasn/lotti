@@ -54,8 +54,13 @@ class ProvisioningController extends Notifier<ProvisioningState> {
   SyncProvisioningBundle? _lastBundle;
   MatrixConfig? _lastCredentials;
 
+  late DomainLogger _logger;
+
   @override
-  ProvisioningState build() => const ProvisioningState.initial();
+  ProvisioningState build() {
+    _logger = ref.watch(domainLoggerProvider);
+    return const ProvisioningState.initial();
+  }
 
   /// Decodes a Base64-encoded provisioning bundle string.
   ///
@@ -150,7 +155,7 @@ class ProvisioningController extends Notifier<ProvisioningState> {
     // Riverpod to dispose the controller mid-operation.
     final link = ref.keepAlive();
     final matrixService = ref.read(matrixServiceProvider);
-    final loggingService = getIt<DomainLogger>();
+    final loggingService = _logger;
     final onboardingSyncService = rotatePassword
         ? null
         : _injectedOnboardingSyncService ?? getIt<OnboardingSyncService>();
@@ -259,7 +264,7 @@ class ProvisioningController extends Notifier<ProvisioningState> {
 
     final link = ref.keepAlive();
     final matrixService = ref.read(matrixServiceProvider);
-    final loggingService = getIt<DomainLogger>();
+    final loggingService = _logger;
 
     try {
       state = const ProvisioningState.loggingIn();

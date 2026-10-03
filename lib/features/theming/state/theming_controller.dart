@@ -11,6 +11,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/theming/constants/theming_settings_keys.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/theme.dart';
@@ -83,12 +84,15 @@ final themingControllerProvider =
     );
 
 class ThemingController extends Notifier<ThemingState> {
+  late DomainLogger _logger;
+
   StreamSubscription<Set<String>>? _settingsNotificationSub;
   bool _isApplyingSyncedChanges = false;
   final _debounceKey = 'theming.sync.${identityHashCode(Object())}';
 
   @override
   ThemingState build() {
+    _logger = ref.watch(domainLoggerProvider);
     ref.onDispose(() {
       _settingsNotificationSub?.cancel();
       EasyDebounce.cancel(_debounceKey);
@@ -112,7 +116,7 @@ class ThemingController extends Notifier<ThemingState> {
     try {
       await _loadThemeMode();
     } catch (e, st) {
-      getIt<DomainLogger>().error(
+      _logger.error(
         LogDomain.theming,
         e,
         stackTrace: st,
@@ -130,7 +134,7 @@ class ThemingController extends Notifier<ThemingState> {
           try {
             await _loadThemeMode();
           } catch (e, st) {
-            getIt<DomainLogger>().error(
+            _logger.error(
               LogDomain.theming,
               e,
               stackTrace: st,
@@ -184,7 +188,7 @@ class ThemingController extends Notifier<ThemingState> {
             ),
           );
         } catch (e, st) {
-          getIt<DomainLogger>().error(
+          _logger.error(
             LogDomain.theming,
             e,
             stackTrace: st,
@@ -221,7 +225,7 @@ class ThemingController extends Notifier<ThemingState> {
       );
       if (ref.mounted) _enqueueSyncMessage(saved);
     } catch (error, stackTrace) {
-      getIt<DomainLogger>().error(
+      _logger.error(
         LogDomain.theming,
         error,
         stackTrace: stackTrace,

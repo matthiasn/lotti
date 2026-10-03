@@ -12,7 +12,7 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// State object for unified AI inference
@@ -58,8 +58,14 @@ class UnifiedAiController extends Notifier<UnifiedAiState> {
 
   final UnifiedAiParams _params;
 
+  late DomainLogger _logger;
+
   @override
-  UnifiedAiState build() => const UnifiedAiState(message: '');
+  UnifiedAiState build() {
+    _logger = ref.watch(domainLoggerProvider);
+    return const UnifiedAiState(message: '');
+  }
+
   Future<void>? _activeInferenceFuture;
   String? _activeLinkedEntityId;
   int _runCounter = 0;
@@ -180,7 +186,7 @@ class UnifiedAiController extends Notifier<UnifiedAiState> {
   }
 
   Future<void> runInference({String? linkedEntityId}) async {
-    final loggingService = getIt<DomainLogger>();
+    final loggingService = _logger;
 
     if (_activeInferenceFuture != null) {
       loggingService.log(

@@ -53,11 +53,13 @@ final loggingServiceProvider = Provider<LoggingService>(
 /// `buildProviderOverrides` overrides it with the generation's instance, whose
 /// domain flags `DomainLogger.listenToDomainFlags` keeps current. A scope
 /// built without those overrides — a test — reads the getIt instance if one is
-/// registered, else a fresh logger over [loggingServiceProvider].
+/// registered, else a standalone logger: no domain is enabled on it, and its
+/// [LoggingService] writes nothing in a test environment, so code that only
+/// logs needs no wiring at all.
 final domainLoggerProvider = Provider<DomainLogger>(
   (ref) => getIt.isRegistered<DomainLogger>()
       ? getIt<DomainLogger>()
-      : DomainLogger(loggingService: ref.watch(loggingServiceProvider)),
+      : DomainLogger(loggingService: LoggingService()),
   name: 'domainLoggerProvider',
 );
 

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 
@@ -44,8 +43,11 @@ class PurgeController extends Notifier<PurgeState> {
 
   late final JournalDb _db;
 
+  late DomainLogger _logger;
+
   @override
   PurgeState build() {
+    _logger = ref.watch(domainLoggerProvider);
     _db = ref.watch(journalDbProvider);
     return const PurgeState();
   }
@@ -60,7 +62,7 @@ class PurgeController extends Notifier<PurgeState> {
         state = state.copyWith(progress: progress);
       }
     } catch (e, stackTrace) {
-      getIt<DomainLogger>().error(
+      _logger.error(
         LogDomain.database,
         e,
         stackTrace: stackTrace,

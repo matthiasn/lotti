@@ -18,6 +18,7 @@ import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
@@ -68,6 +69,8 @@ class OnboardingSettingsBody extends ConsumerStatefulWidget {
 
 class _OnboardingSettingsBodyState
     extends ConsumerState<OnboardingSettingsBody> {
+  late final DomainLogger _logger;
+
   late Future<bool> _reachedRealAha;
   DemoModeGateway? _gateway;
   var _gatewayResolved = false;
@@ -76,6 +79,7 @@ class _OnboardingSettingsBodyState
   @override
   void initState() {
     super.initState();
+    _logger = ref.read(domainLoggerProvider);
     _reachedRealAha = _loadReachedRealAha();
   }
 
@@ -145,14 +149,12 @@ class _OnboardingSettingsBodyState
     try {
       await gateway.deleteDemo();
     } catch (exception, stackTrace) {
-      if (getIt.isRegistered<DomainLogger>()) {
-        getIt<DomainLogger>().error(
-          LogDomain.general,
-          exception,
-          stackTrace: stackTrace,
-          subDomain: 'onboardingSettingsDeleteDemo',
-        );
-      }
+      _logger.error(
+        LogDomain.general,
+        exception,
+        stackTrace: stackTrace,
+        subDomain: 'onboardingSettingsDeleteDemo',
+      );
       if (mounted) {
         context.showToast(
           tone: DesignSystemToastTone.error,

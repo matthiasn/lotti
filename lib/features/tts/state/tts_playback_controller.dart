@@ -7,7 +7,7 @@ import 'package:lotti/features/tts/state/tts_audio_player.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/state/tts_model_repository.dart';
 import 'package:lotti/features/tts/state/tts_settings_controller.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// Language-agnostic synthesis mode; Supertonic infers from the text.
@@ -45,8 +45,7 @@ final ttsPlaybackControllerProvider =
     );
 
 class TtsPlaybackController extends Notifier<TtsPlaybackState> {
-  TtsPlaybackController({DomainLogger? logger})
-    : _logger = logger ?? getIt<DomainLogger>();
+  TtsPlaybackController({DomainLogger? logger}) : _injectedLogger = logger;
 
   StreamSubscription<void>? _completedSub;
   StreamSubscription<Duration>? _positionSub;
@@ -56,11 +55,14 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
   _PreparedSpeech? _prepared;
   File? _file;
   TtsAudioPlayer? _player;
-  // Cleanup can finish after provider disposal, when ref is no longer usable.
-  final DomainLogger _logger;
+  final DomainLogger? _injectedLogger;
+  // Captured in build: cleanup can finish after provider disposal, when ref is
+  // no longer usable.
+  late DomainLogger _logger;
 
   @override
   TtsPlaybackState build() {
+    _logger = _injectedLogger ?? ref.watch(domainLoggerProvider);
     ref.onDispose(() {
       _generation++;
       discardPrepared();

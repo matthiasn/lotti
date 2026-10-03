@@ -434,6 +434,8 @@ class AppScreen extends ConsumerStatefulWidget {
 }
 
 class _AppScreenState extends ConsumerState<AppScreen> {
+  late final DomainLogger _logger;
+
   final NavService navService = getIt<NavService>();
 
   /// Merged once: recreating the merge on every rebuild would make the
@@ -483,6 +485,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
   @override
   void initState() {
     super.initState();
+    _logger = ref.read(domainLoggerProvider);
     _routeChangeListenable.addListener(_closeMobileDrawerOnRouteChange);
   }
 
@@ -617,7 +620,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
       if (!armed) _dailyOsOnboardingShown = false;
     } catch (error, stack) {
       _dailyOsOnboardingShown = false;
-      getIt<DomainLogger>().error(
+      _logger.error(
         LogDomain.onboarding,
         error,
         stackTrace: stack,
@@ -691,7 +694,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           },
           loading: () {},
           error: (error, stack) {
-            getIt<DomainLogger>().error(
+            _logger.error(
               LogDomain.sync,
               error,
               stackTrace: stack,
@@ -714,7 +717,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           },
           loading: () {},
           error: (error, stack) {
-            getIt<DomainLogger>().error(
+            _logger.error(
               LogDomain.whatsNew,
               error,
               stackTrace: stack,
@@ -757,7 +760,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           },
           loading: () {},
           error: (error, stack) {
-            getIt<DomainLogger>().error(
+            _logger.error(
               LogDomain.onboarding,
               error,
               stackTrace: stack,
@@ -783,7 +786,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           },
           loading: () {},
           error: (error, stack) {
-            getIt<DomainLogger>().error(
+            _logger.error(
               LogDomain.onboarding,
               error,
               stackTrace: stack,
@@ -1771,12 +1774,15 @@ class MyBeamerApp extends ConsumerStatefulWidget {
 }
 
 class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
+  late final DomainLogger _logger;
+
   late final BeamerDelegate routerDelegate;
   late final NavService effectiveNavService;
 
   @override
   void initState() {
     super.initState();
+    _logger = ref.read(domainLoggerProvider);
     effectiveNavService = widget.navService ?? getIt<NavService>();
 
     routerDelegate = BeamerDelegate(
@@ -1807,7 +1813,7 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
     ref
       ..listen(agentInitializationProvider, (_, next) {
         if (next case AsyncError(:final error, :final stackTrace)) {
-          getIt<DomainLogger>().error(
+          _logger.error(
             LogDomain.agentRuntime,
             error,
             stackTrace: stackTrace,
@@ -1902,7 +1908,7 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
                   handlers: _globalCommandHandlers(),
                   onActivity: updateActivity,
                   onError: (id, error, stackTrace) {
-                    getIt<DomainLogger>().error(
+                    _logger.error(
                       LogDomain.general,
                       error,
                       stackTrace: stackTrace,

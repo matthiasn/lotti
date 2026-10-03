@@ -23,7 +23,8 @@ import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dar
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/device_messages.dart';
-import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/providers/service_providers.dart'
+    show domainLoggerProvider, journalDbProvider;
 import 'package:lotti/services/domain_logging.dart';
 
 /// Record type identifying an entity together with its optional parent task,
@@ -161,7 +162,7 @@ final triggerSkillProvider = FutureProvider.autoDispose
         // Keep alive until completion so fire-and-forget callers don't
         // cause the provider to be disposed mid-execution.
         final link = ref.keepAlive();
-        final loggingService = getIt<DomainLogger>();
+        final loggingService = ref.watch(domainLoggerProvider);
         try {
           developer.log(
             'triggerSkill: entityId=${params.entityId}, '
@@ -379,7 +380,7 @@ Future<void> recordTranscriptionDecline(
     skill: skill,
     reason: reason,
     message: message,
-    loggingService: getIt<DomainLogger>(),
+    loggingService: ref.read(domainLoggerProvider),
   );
 }
 

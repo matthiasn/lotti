@@ -9,9 +9,9 @@ import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/device_messages.dart';
-import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/providers/service_providers.dart'
+    show domainLoggerProvider, journalDbProvider;
 import 'package:lotti/services/domain_logging.dart';
 
 /// Helper class to handle automatic prompt triggering after audio recording.
@@ -249,6 +249,6 @@ class AutomaticPromptTrigger {
 final automaticPromptTriggerProvider = Provider<AutomaticPromptTrigger>((ref) {
   return AutomaticPromptTrigger(
     ref: ref,
-    loggingService: getIt<DomainLogger>(),
+    loggingService: ref.watch(domainLoggerProvider),
   );
 });

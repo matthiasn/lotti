@@ -12,7 +12,6 @@ import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_reauth_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal_sheet.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -56,6 +55,14 @@ class DeviceCard extends ConsumerStatefulWidget {
 }
 
 class _DeviceCardState extends ConsumerState<DeviceCard> {
+  late final DomainLogger _logger;
+
+  @override
+  void initState() {
+    super.initState();
+    _logger = ref.read(domainLoggerProvider);
+  }
+
   /// True while a deletion network call is in flight — the buttons show it
   /// instead of leaving a confirm-to-toast silence.
   bool _busy = false;
@@ -183,7 +190,7 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
   }
 
   void _logRemovalFailure(Object error, StackTrace stackTrace) {
-    getIt<DomainLogger>().error(
+    _logger.error(
       LogDomain.sync,
       error,
       stackTrace: stackTrace,

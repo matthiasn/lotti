@@ -23,6 +23,7 @@ import 'package:lotti/features/tasks/repository/shown_checklist_items.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -493,8 +494,6 @@ AiInputRepository aiInputRepository(Ref ref) {
     taskSummaryResolver: TaskSummaryResolver(agentRepository),
     projectRepository: ref.read(projectRepositoryProvider),
     agentRepository: agentRepository,
-    domainLogger: getIt.isRegistered<DomainLogger>()
-        ? getIt<DomainLogger>()
-        : null,
+    domainLogger: ref.watch(domainLoggerProvider),
   );
 }

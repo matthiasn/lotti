@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
 import 'package:lotti/features/whats_new/model/whats_new_state.dart';
 import 'package:lotti/features/whats_new/repository/whats_new_service.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
@@ -78,11 +77,14 @@ whatsNewControllerProvider =
     );
 
 class WhatsNewController extends AsyncNotifier<WhatsNewState> {
+  late DomainLogger _logger;
+
   /// Prefix for SharedPreferences keys tracking seen releases.
   static const String _seenKeyPrefix = 'whats_new_seen_';
 
   @override
   Future<WhatsNewState> build() async {
+    _logger = ref.watch(domainLoggerProvider);
     try {
       final service = ref.watch(whatsNewServiceProvider);
 
@@ -116,7 +118,7 @@ class WhatsNewController extends AsyncNotifier<WhatsNewState> {
 
       return WhatsNewState(unseenContent: unseenReleases);
     } catch (e, stackTrace) {
-      getIt<DomainLogger>().error(
+      _logger.error(
         LogDomain.whatsNew,
         e,
         stackTrace: stackTrace,
