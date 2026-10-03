@@ -294,10 +294,7 @@ String _renderDayParagraph({
 String _capNote(String text) {
   final note = collapseToSingleLine(text);
   if (note.length <= daySummaryMaxChars) return note;
-  var cut = daySummaryMaxChars;
-  final last = note.codeUnitAt(cut - 1);
-  if (last >= 0xD800 && last <= 0xDBFF) cut--;
-  return '${note.substring(0, cut)}…';
+  return '${surrogateSafePrefix(note, daySummaryMaxChars)}…';
 }
 
 /// Per-category clauses for categories with recorded time (planned-only

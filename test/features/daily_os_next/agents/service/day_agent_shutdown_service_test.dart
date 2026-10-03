@@ -8,6 +8,7 @@ import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_shutdown_service.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
@@ -710,6 +711,36 @@ void main() {
       },
     );
 
+    test('a refused triage leaves the task undecided', () async {
+      // An open task with no plan, due date or recorded time is not meant for
+      // the day. Triage refuses to write it (here: it left the planner's
+      // categories), so the decision must not be remembered either —
+      // otherwise Shutdown would list it as carrying forward.
+      final stray = _task('stray', 'Stray task');
+      when(
+        () => captureService.applyTriage(
+          agentId: any(named: 'agentId'),
+          taskId: 'stray',
+          action: any(named: 'action'),
+          deferTo: any(named: 'deferTo'),
+        ),
+      ).thenThrow(const DayAgentCaptureException('outside the categories'));
+      stubDay(withPlan: false);
+      entities['stray'] = stray;
+
+      await expectLater(
+        service.recordCarryoverDecision(
+          forDate: _day,
+          taskId: 'stray',
+          action: CarryoverAction.tomorrow,
+        ),
+        throwsA(isA<DayAgentCaptureException>()),
+      );
+      final day = await service.shutdownDay(_day);
+
+      expect(day.carryover.map((i) => i.taskId), isNot(contains('stray')));
+    });
+
     test('an unplanned task dropped that day reads as dropped', () async {
       stubDay(withPlan: false, closedSince: [gone]);
 
@@ -884,6 +915,17 @@ void main() {
       final note = await service.tomorrowNote(_day);
       expect(note.body.length, DayAgentShutdownService.tomorrowNoteMaxChars);
       expect(note.body, endsWith('…'));
+    });
+
+    test('the cut never splits a character in two', () async {
+      stubDay();
+      // The emoji's two code units straddle the cut at maxChars - 1: keeping
+      // only its first half would store a lone surrogate, which syncs and
+      // prompts as U+FFFD.
+      const max = DayAgentShutdownService.tomorrowNoteMaxChars;
+      modelAnswer = '${'x' * (max - 2)}\u{1F600}${'y' * 100}';
+      final note = await service.tomorrowNote(_day);
+      expect(note.body, '${'x' * (max - 2)}…');
     });
   });
 

@@ -158,6 +158,17 @@ String neutralizePromptTags(String input) {
 String collapseToSingleLine(String input) =>
     neutralizePromptTags(input.replaceAll(_whitespaceRun, ' ').trim());
 
+/// The first [length] UTF-16 code units of [text] — one fewer when the cut
+/// would land between the two halves of a surrogate pair, because a lone
+/// surrogate turns into U+FFFD on the wire and in a prompt. [text] itself when
+/// it is no longer than [length].
+String surrogateSafePrefix(String text, int length) {
+  if (text.length <= length) return text;
+  final last = text.codeUnitAt(length - 1);
+  final splitsPair = last >= 0xD800 && last <= 0xDBFF;
+  return text.substring(0, splitsPair ? length - 1 : length);
+}
+
 /// Accumulates ordered tagged plaintext sections, omitting information-free
 /// ones, and renders them blank-line separated. Stable→volatile ordering is
 /// the caller's responsibility (it adds sections in order).

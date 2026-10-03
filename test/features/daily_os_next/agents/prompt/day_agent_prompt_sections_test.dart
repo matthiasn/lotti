@@ -205,4 +205,26 @@ void main() {
       );
     }, tags: 'glados');
   });
+
+  group('surrogateSafePrefix', () {
+    // U+1F600 is one character but two UTF-16 code units.
+    const emoji = '\u{1F600}';
+
+    test('keeps a text no longer than the limit whole', () {
+      expect(surrogateSafePrefix('abc', 3), 'abc');
+      expect(surrogateSafePrefix('ab', 3), 'ab');
+      expect(surrogateSafePrefix('', 3), '');
+    });
+
+    test('cuts at the limit between whole characters', () {
+      expect(surrogateSafePrefix('abcdef', 4), 'abcd');
+      expect(surrogateSafePrefix('ab${emoji}cd', 4), 'ab$emoji');
+    });
+
+    test('backs off one unit rather than split a surrogate pair', () {
+      final cut = surrogateSafePrefix('ab${emoji}cd', 3);
+      expect(cut, 'ab');
+      expect(cut.runes, everyElement(lessThan(0xD800)));
+    });
+  });
 }

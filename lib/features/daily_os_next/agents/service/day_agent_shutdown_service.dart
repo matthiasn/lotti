@@ -22,6 +22,7 @@ import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
+import 'package:lotti/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_helpers.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
@@ -322,7 +323,6 @@ class DayAgentShutdownService {
   }) async {
     final planner = await _dayAgentService.getOrCreatePlannerAgent();
     final day = localDay(forDate);
-    _decidedTaskIds.putIfAbsent(dayAgentIdForDate(day), () => {}).add(taskId);
     switch (action) {
       case CarryoverAction.drop:
         await _captureService.applyTriage(
@@ -344,6 +344,10 @@ class DayAgentShutdownService {
           deferTo: target,
         );
     }
+    // Remembered only once triage returned, which is when the change is
+    // written: a refused triage leaves the task undecided, and remembering
+    // it anyway would let a later Shutdown list it as carrying forward.
+    _decidedTaskIds.putIfAbsent(dayAgentIdForDate(day), () => {}).add(taskId);
   }
 
   // ─────────────────────────── Reflection ──
@@ -479,7 +483,7 @@ class DayAgentShutdownService {
       );
     }
     final text = generated.length > tomorrowNoteMaxChars
-        ? '${generated.substring(0, tomorrowNoteMaxChars - 1).trimRight()}…'
+        ? '${surrogateSafePrefix(generated, tomorrowNoteMaxChars - 1).trimRight()}…'
         : generated;
     final now = clock.now();
     await _syncService.upsertEntity(
