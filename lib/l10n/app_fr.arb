@@ -3776,6 +3776,7 @@
   "maintenanceSyncDefinitions": "Synchroniser les mesurables, tableaux de bord, habitudes, catégories et paramètres IA",
   "maintenanceSyncDefinitionsDescription": "Synchroniser les mesurables, tableaux de bord, habitudes, catégories et paramètres IA",
   "manageLinks": "Gérer les liens…",
+  "markdownRemoteImageBlocked": "Image de {host} non chargée",
   "matrixStatsConflicts": "Conflits",
   "matrixStatsCopyDiagnostics": "Copier les diagnostics",
   "matrixStatsCopyDiagnosticsTooltip": "Copier les diagnostics de synchronisation dans le presse-papiers",

@@ -95,6 +95,7 @@ class AgentMarkdownView extends StatelessWidget {
             onLinkTap: onLinkTap ?? handleMarkdownLinkTap,
             styleSheet: markdownLinkStyleSheet(theme.colorScheme.primary),
             inlineLinkBuilder: buildFocusableMarkdownLink,
+            imageBuilder: buildBlockedMarkdownImage,
           ),
         ),
       ),

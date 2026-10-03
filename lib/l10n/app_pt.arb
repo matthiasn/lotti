@@ -4153,6 +4153,7 @@
   "maintenanceSyncDefinitions": "Sincronize mensuráveis, painéis, hábitos, categorias, configurações de IA",
   "maintenanceSyncDefinitionsDescription": "Sincronize mensuráveis, painéis, hábitos, categorias e configurações de IA",
   "manageLinks": "Gerenciar links…",
+  "markdownRemoteImageBlocked": "Imagem de {host} não carregada",
   "matrixStatsConflicts": "Conflitos",
   "matrixStatsCopyDiagnostics": "Copiar diagnósticos",
   "matrixStatsCopyDiagnosticsTooltip": "Copie os diagnósticos de sincronização para a área de transferência",

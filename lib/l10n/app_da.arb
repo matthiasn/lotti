@@ -4154,6 +4154,7 @@
   "maintenanceSyncDefinitions": "Synkroniser målbare ting, dashboards, vaner, kategorier, AI-indstillinger",
   "maintenanceSyncDefinitionsDescription": "Synkroniser målbare ting, dashboards, vaner, kategorier og AI-indstillinger",
   "manageLinks": "Administrer links…",
+  "markdownRemoteImageBlocked": "Billede fra {host} blev ikke indlæst",
   "matrixStatsConflicts": "Konflikter",
   "matrixStatsCopyDiagnostics": "Kopier Diagnostik",
   "matrixStatsCopyDiagnosticsTooltip": "Kopier synkroniseringsdiagnostik til udklipsholderen",

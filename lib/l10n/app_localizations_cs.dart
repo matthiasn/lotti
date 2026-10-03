@@ -9963,6 +9963,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get manageLinks => 'Spravovat propojení…';
 
   @override
+  String markdownRemoteImageBlocked(String host) {
+    return 'Obrázek z $host nebyl načten';
+  }
+
+  @override
   String get matrixStatsConflicts => 'Konflikty';
 
   @override

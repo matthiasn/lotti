@@ -3776,6 +3776,7 @@
   "maintenanceSyncDefinitions": "Sincronizați măsurabilele, tablourile de bord, obiceiurile, categoriile și setările AI",
   "maintenanceSyncDefinitionsDescription": "Sincronizați din nou măsurabilele, tablourile de bord, obiceiurile, categoriile și setările AI",
   "manageLinks": "Gestionați legăturile…",
+  "markdownRemoteImageBlocked": "Imaginea de la {host} nu a fost încărcată",
   "matrixStatsConflicts": "Conflicte",
   "matrixStatsCopyDiagnostics": "Copiați diagnosticarea",
   "matrixStatsCopyDiagnosticsTooltip": "Copiați diagnosticarea sincronizării în clipboard",

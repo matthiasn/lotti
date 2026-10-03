@@ -16585,6 +16585,12 @@ abstract class AppLocalizations {
   /// **'Manage links…'**
   String get manageLinks;
 
+  /// Shown in place of an image in AI or agent text: the app does not fetch remote images there, so a prompt-injected URL cannot leak data. host is where the image would have come from.
+  ///
+  /// In en, this message translates to:
+  /// **'Image from {host} not loaded'**
+  String markdownRemoteImageBlocked(String host);
+
   /// No description provided for @matrixStatsConflicts.
   ///
   /// In en, this message translates to:

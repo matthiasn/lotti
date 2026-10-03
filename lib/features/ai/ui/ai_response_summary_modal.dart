@@ -184,7 +184,10 @@ class AiResponseSummaryModalContent extends StatelessWidget {
                         const SizedBox(height: 8),
                         DefaultTextStyle(
                           style: TextStyle(color: Colors.grey[400]),
-                          child: GptMarkdown(aiResponse.data.systemMessage),
+                          child: GptMarkdown(
+                            aiResponse.data.systemMessage,
+                            imageBuilder: buildBlockedMarkdownImage,
+                          ),
                         ),
                       ],
                     ),
@@ -203,7 +206,10 @@ class AiResponseSummaryModalContent extends StatelessWidget {
                       clipboard?.write([item]);
                     },
                     child: SelectionArea(
-                      child: GptMarkdown(aiResponse.data.prompt),
+                      child: GptMarkdown(
+                        aiResponse.data.prompt,
+                        imageBuilder: buildBlockedMarkdownImage,
+                      ),
                     ),
                   ),
                 ),
@@ -212,7 +218,10 @@ class AiResponseSummaryModalContent extends StatelessWidget {
                 child: Padding(
                   padding: padding,
                   child: SelectionArea(
-                    child: GptMarkdown(aiResponse.data.thoughts),
+                    child: GptMarkdown(
+                      aiResponse.data.thoughts,
+                      imageBuilder: buildBlockedMarkdownImage,
+                    ),
                   ),
                 ),
               ),
@@ -223,6 +232,7 @@ class AiResponseSummaryModalContent extends StatelessWidget {
                     child: GptMarkdown(
                       aiResponse.data.response,
                       onLinkTap: handleMarkdownLinkTap,
+                      imageBuilder: buildBlockedMarkdownImage,
                     ),
                   ),
                 ),

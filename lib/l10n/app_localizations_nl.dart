@@ -9857,6 +9857,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get manageLinks => 'Links beheren…';
 
   @override
+  String markdownRemoteImageBlocked(String host) {
+    return 'Afbeelding van $host niet geladen';
+  }
+
+  @override
   String get matrixStatsConflicts => 'Conflicten';
 
   @override

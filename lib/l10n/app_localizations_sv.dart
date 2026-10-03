@@ -9845,6 +9845,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get manageLinks => 'Hantera länkar…';
 
   @override
+  String markdownRemoteImageBlocked(String host) {
+    return 'Bild från $host laddades inte';
+  }
+
+  @override
   String get matrixStatsConflicts => 'Konflikter';
 
   @override

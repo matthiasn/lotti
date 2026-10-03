@@ -4,6 +4,7 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/markdown_link_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Collapsible disclosure for a model's hidden reasoning ([thinking]).
@@ -97,7 +98,10 @@ class ThinkingDisclosureState extends State<ThinkingDisclosure> {
                   ),
                 ),
                 child: SelectionArea(
-                  child: GptMarkdown(widget.thinking),
+                  child: GptMarkdown(
+                    widget.thinking,
+                    imageBuilder: buildBlockedMarkdownImage,
+                  ),
                 ),
               ),
               Positioned(

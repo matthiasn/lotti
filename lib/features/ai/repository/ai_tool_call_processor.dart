@@ -57,12 +57,13 @@ class AiToolCallProcessor {
       name: 'UnifiedAiInferenceRepository',
     );
 
-    // Log all tool calls for debugging
+    // Names and sizes only: the arguments carry journal content, which
+    // diagnostics must never contain.
     for (var i = 0; i < toolCalls.length; i++) {
       final tc = toolCalls[i];
       developer.log(
         'Tool call [$i]: name=${tc.function.name}, '
-        'args=${tc.function.arguments.length > 200 ? '${tc.function.arguments.substring(0, 200)}...' : tc.function.arguments}',
+        'argsLength=${tc.function.arguments.length}',
         name: 'UnifiedAiInferenceRepository',
       );
     }

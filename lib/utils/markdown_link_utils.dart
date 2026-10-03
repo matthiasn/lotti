@@ -1,8 +1,15 @@
 import 'package:gpt_markdown/gpt_markdown.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+/// The only schemes a markdown link may hand to another app. Markdown here is
+/// written by models and synced from other devices, so an arbitrary scheme
+/// (`file:`, `intent:`, an app's custom handler) must not be one tap away.
+const _externalLinkSchemes = <String>{'https', 'http', 'mailto'};
 
 const _internalRouteRoots = <String>{
   '/calendar',
@@ -40,8 +47,9 @@ String? _internalRouteFromMarkdownUrl(String url) {
 /// Handles taps on links in markdown content.
 ///
 /// App-local routes such as `/tasks/<id>` route through [NavService].
-/// External URLs still launch via the platform URL launcher. Other relative
-/// URLs are ignored because they have no stable in-app destination.
+/// `https`, `http` and `mailto` links launch via the platform URL launcher;
+/// any other scheme, and relative URLs with no stable in-app destination, are
+/// ignored.
 Future<void> handleMarkdownLinkTap(String url, String title) async {
   if (url.isEmpty) return;
   final internalRoute = _internalRouteFromMarkdownUrl(url);
@@ -53,9 +61,52 @@ Future<void> handleMarkdownLinkTap(String url, String title) async {
   }
 
   final uri = Uri.tryParse(url);
-  if (uri != null && uri.hasScheme) {
+  if (uri != null && _externalLinkSchemes.contains(uri.scheme)) {
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
+}
+
+/// An image builder for `GptMarkdown.imageBuilder` that never fetches.
+///
+/// Markdown from a model or another device can carry an image URL built by a
+/// prompt injection; rendering it would request that URL — with whatever the
+/// URL encodes — the moment the text is shown, without a click. In its place
+/// this shows where the image would have come from.
+Widget buildBlockedMarkdownImage(
+  BuildContext context,
+  String imageUrl,
+  double? width,
+  double? height,
+) {
+  final tokens = context.designTokens;
+  final host = Uri.tryParse(imageUrl)?.host ?? '';
+  final label = context.messages.markdownRemoteImageBlocked(
+    host.isEmpty ? imageUrl : host,
+  );
+  final color = tokens.colors.text.lowEmphasis;
+  return Semantics(
+    label: label,
+    excludeSemantics: true,
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.image_not_supported_outlined,
+          size: tokens.spacing.step5,
+          color: color,
+        ),
+        SizedBox(width: tokens.spacing.step2),
+        Flexible(
+          child: Text(
+            label,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: color,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 /// Link styling for app markdown: [color] in the resting and hover states.

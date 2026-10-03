@@ -10004,6 +10004,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get manageLinks => 'Gérer les liens…';
 
   @override
+  String markdownRemoteImageBlocked(String host) {
+    return 'Image de $host non chargée';
+  }
+
+  @override
   String get matrixStatsConflicts => 'Conflits';
 
   @override

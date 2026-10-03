@@ -63,9 +63,6 @@ class GeminiInferenceRepository {
   // Configuration constants
   // -------------------------------------------------------------------------
 
-  /// Maximum characters to show in debug log previews and error messages.
-  static const int kPreviewLength = 200;
-
   /// Safety cap on total characters emitted during streaming (1 million).
   ///
   /// This prevents runaway responses from consuming excessive memory or
@@ -417,8 +414,9 @@ class GeminiInferenceRepository {
       } else {
         developer.log(
           'Gemini non-stream fallback failed: HTTP ${fallbackResp.statusCode} '
-          'for model "$model" at $nonStreamingEndpoint. '
-          'Body preview: ${fallbackResp.body.substring(0, fallbackResp.body.length > kPreviewLength ? kPreviewLength : fallbackResp.body.length)}. '
+          'for model "$model" at $nonStreamingEndpoint '
+          '(body: ${fallbackResp.body.length} chars, not logged — it can '
+          'echo the prompt). '
           'If this is a transient error or rate limit, please try again.',
           name: 'GeminiInferenceRepository',
         );

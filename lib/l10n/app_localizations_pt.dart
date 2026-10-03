@@ -9927,6 +9927,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get manageLinks => 'Gerenciar links…';
 
   @override
+  String markdownRemoteImageBlocked(String host) {
+    return 'Imagem de $host não carregada';
+  }
+
+  @override
   String get matrixStatsConflicts => 'Conflitos';
 
   @override

@@ -9832,6 +9832,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get manageLinks => 'Administrer links…';
 
   @override
+  String markdownRemoteImageBlocked(String host) {
+    return 'Billede fra $host blev ikke indlæst';
+  }
+
+  @override
   String get matrixStatsConflicts => 'Konflikter';
 
   @override

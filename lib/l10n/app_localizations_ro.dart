@@ -10035,6 +10035,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get manageLinks => 'Gestionați legăturile…';
 
   @override
+  String markdownRemoteImageBlocked(String host) {
+    return 'Imaginea de la $host nu a fost încărcată';
+  }
+
+  @override
   String get matrixStatsConflicts => 'Conflicte';
 
   @override

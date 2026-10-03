@@ -4153,6 +4153,7 @@
   "maintenanceSyncDefinitions": "Meetbare gegevens synchroniseren, dashboards, gewoonten, categorieën, AI-instellingen",
   "maintenanceSyncDefinitionsDescription": "Meetbare gegevens synchroniseren, dashboards, gewoonten, categorieën en AI-instellingen",
   "manageLinks": "Links beheren…",
+  "markdownRemoteImageBlocked": "Afbeelding van {host} niet geladen",
   "matrixStatsConflicts": "Conflicten",
   "matrixStatsCopyDiagnostics": "Diagnostiek kopiëren",
   "matrixStatsCopyDiagnosticsTooltip": "Sync diagnostics kopiëren naar het klembord",

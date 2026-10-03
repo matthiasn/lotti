@@ -684,7 +684,8 @@ class MistralInferenceRepository {
             } on FormatException catch (e) {
               parseErrorCount++;
               developer.log(
-                'Failed to parse SSE chunk ($parseErrorCount/$maxParseErrors): $data',
+                'Failed to parse SSE chunk ($parseErrorCount/$maxParseErrors, '
+                '${data.length} chars; content not logged)',
                 name: 'MistralInferenceRepository',
                 error: e,
               );

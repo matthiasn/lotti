@@ -42,8 +42,14 @@ Agent markdown renders through `AgentMarkdownView`, which wires
 `buildFocusableMarkdownLink` from `utils/markdown_link_utils`. Links render as
 focusable widgets rather than text spans, so a citation can be reached with Tab
 and activated with Enter. The shared tap handler beams app-local routes such as `/tasks/<id>` or
-`lotti://tasks/<id>` through `NavService`; external URLs use the platform
-launcher.
+`lotti://tasks/<id>` through `NavService`; only `https`, `http` and
+`mailto` links reach the platform launcher, and any other scheme is ignored.
+
+Markdown written by a model or synced from another device never fetches an
+image: `AgentMarkdownView`, the thinking disclosure and the AI response modal
+pass `buildBlockedMarkdownImage`, which shows the image's host in its place, so
+a prompt-injected image URL cannot leak data the moment the text is shown.
+What's New keeps loading images: they are the project's own release art.
 
 # `AiSummaryCard` — the task-details AI surface
 
