@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
@@ -6,6 +8,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/logic/persistence_update_ops.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../helpers/fallbacks.dart';
@@ -360,6 +363,76 @@ void main() {
         precondition: any(named: 'precondition'),
       ),
     );
+  });
+
+  group('updateTaskImpl flushes the task agent when the task becomes done', () {
+    final doneStatus = TaskStatus.done(
+      id: 'status-done',
+      createdAt: DateTime(2024, 3, 15, 10),
+      utcOffset: 0,
+    );
+    late List<Set<String>> notified;
+
+    setUp(() {
+      notified = [];
+      when(() => mocks.updateNotifications.notify(any())).thenAnswer((
+        invocation,
+      ) {
+        notified.add(invocation.positionalArguments.single as Set<String>);
+      });
+    });
+
+    Task storedWith(TaskStatus status) =>
+        testTask.copyWith(data: testTask.data.copyWith(status: status));
+
+    Future<void> markDone(Task stored) async {
+      when(
+        () => mocks.journalDb.journalEntityById(stored.meta.id),
+      ).thenAnswer((_) async => stored);
+      await ops.updateTaskImpl(
+        journalEntityId: stored.meta.id,
+        change: (data) => data.copyWith(status: doneStatus, title: 'renamed'),
+      );
+    }
+
+    test('an open task marked done flushes once', () async {
+      expect(testTask.data.status, isNot(isA<TaskDone>()));
+
+      await markDone(testTask);
+
+      expect(notified, [
+        {wakeFlushNotification(testTask.meta.id)},
+      ]);
+    });
+
+    test('a task that was already done does not flush again', () async {
+      await markDone(storedWith(doneStatus));
+
+      expect(notified, isEmpty);
+    });
+
+    test('an agent marking the task done does not wake itself', () async {
+      await runZoned(
+        () => markDone(testTask),
+        zoneValues: {agentExecutionZoneKey: true},
+      );
+
+      expect(notified, isEmpty);
+    });
+
+    test('a refused write flushes nothing', () async {
+      when(
+        () => mocks.journalDb.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => testTask);
+
+      await ops.updateTaskImpl(
+        journalEntityId: testTask.meta.id,
+        change: (data) => data.copyWith(status: doneStatus),
+        onlyIf: (_) => false,
+      );
+
+      expect(notified, isEmpty);
+    });
   });
 
   group('updateTaskImpl returns null', () {

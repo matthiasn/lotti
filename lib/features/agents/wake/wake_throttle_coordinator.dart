@@ -8,13 +8,14 @@ import 'package:lotti/services/domain_logging.dart';
 /// Manages throttle timing with deferred drains and deadlines.
 ///
 /// Ensures that subscription-triggered wakes for the same agent are spaced
-/// at least [throttleWindow] apart. Persists the `nextWakeAt` timestamp
-/// to the agent's state entity so the UI can show a countdown timer.
+/// at least that agent's window ([throttleWindowFor]) apart. Persists the
+/// `nextWakeAt` timestamp to the agent's state entity so the UI can show a
+/// countdown timer.
 class WakeThrottleCoordinator with AgentErrorLogging {
   WakeThrottleCoordinator({
     required this.repository,
     required this.onDrainRequested,
-    required this.throttleWindow,
+    required this.throttleWindowFor,
     this.onPersistedStateChanged,
     this.domainLogger,
   });
@@ -22,7 +23,10 @@ class WakeThrottleCoordinator with AgentErrorLogging {
   final AgentRepository repository;
   final Future<void> Function() onDrainRequested;
   final void Function(String agentId)? onPersistedStateChanged;
-  final Duration throttleWindow;
+
+  /// The coalescing window of an agent: its wake cadence's, or the standard
+  /// two minutes for an agent without one.
+  final Duration Function(String agentId) throttleWindowFor;
   @override
   final DomainLogger? domainLogger;
 
@@ -62,7 +66,7 @@ class WakeThrottleCoordinator with AgentErrorLogging {
   /// is scheduled first (synchronous), then the DB write is best-effort.
   ///
   /// [customDeadline], when non-null, overrides the default
-  /// `now + throttleWindow`. Used by the orchestrator to defer
+  /// `now + throttleWindowFor(agentId)`. Used by the orchestrator to defer
   /// propagated subscription matches (parent fan-out, link-side-effects)
   /// to the next 06:00 instead of the standard 120-second cooldown. A
   /// custom deadline that is in the past is silently ignored — the
@@ -73,7 +77,7 @@ class WakeThrottleCoordinator with AgentErrorLogging {
     if (customDeadline != null && !customDeadline.isAfter(now)) {
       return;
     }
-    final deadline = customDeadline ?? now.add(throttleWindow);
+    final deadline = customDeadline ?? now.add(throttleWindowFor(agentId));
     // A new deadline starts a new generation: a later clear must run after
     // its persistence, even if the previous generation is still clearing.
     unawaited(_pendingClears.remove(agentId));

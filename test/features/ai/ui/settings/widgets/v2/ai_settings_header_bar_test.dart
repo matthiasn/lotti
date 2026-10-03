@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agent_wake_cadence.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_search_bar.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_header_bar.dart';
@@ -25,6 +26,8 @@ void main() {
               onSearchClear: () {},
               agentWakeConcurrency: 3,
               onAgentWakeConcurrencyChanged: (_) {},
+              defaultWakeCadence: AgentWakeCadence.hourly,
+              onDefaultWakeCadenceChanged: (_) {},
               profiles: [
                 AiConfigInferenceProfile(
                   id: 'default-1',
@@ -71,13 +74,16 @@ void main() {
                 onSearchClear: () {},
                 agentWakeConcurrency: 3,
                 onAgentWakeConcurrencyChanged: (_) {},
+                defaultWakeCadence: AgentWakeCadence.hourly,
+                onDefaultWakeCadenceChanged: (_) {},
               ),
             ),
           ),
         );
         await tester.pump();
         expect(find.byType(AiSettingsSearchBar), findsOneWidget);
-        expect(find.byType(DesignSystemDropdown), findsOneWidget);
+        // Concurrency and the default wake cadence.
+        expect(find.byType(DesignSystemDropdown), findsNWidgets(2));
         final messages = tester
             .element(find.byType(AiSettingsHeaderBar))
             .messages;
@@ -115,6 +121,8 @@ void main() {
                 onSearchClear: () => clears++,
                 agentWakeConcurrency: 3,
                 onAgentWakeConcurrencyChanged: (_) {},
+                defaultWakeCadence: AgentWakeCadence.hourly,
+                onDefaultWakeCadenceChanged: (_) {},
               ),
             ),
           ),
@@ -136,6 +144,7 @@ void main() {
     testWidgets('selecting a concurrency value reports the chosen limit', (
       tester,
     ) async {
+      setTestSurfaceSize(tester, const Size(600, 900));
       final controller = TextEditingController();
       addTearDown(controller.dispose);
       int? selectedConcurrency;
@@ -150,6 +159,8 @@ void main() {
               onAgentWakeConcurrencyChanged: (value) {
                 selectedConcurrency = value;
               },
+              defaultWakeCadence: AgentWakeCadence.hourly,
+              onDefaultWakeCadenceChanged: (_) {},
             ),
           ),
         ),
@@ -163,5 +174,49 @@ void main() {
 
       expect(selectedConcurrency, 4);
     });
+
+    testWidgets(
+      'the default wake cadence offers every cadence and reports the choice',
+      (tester) async {
+        setTestSurfaceSize(tester, const Size(600, 900));
+        final controller = TextEditingController();
+        addTearDown(controller.dispose);
+        final chosen = <AgentWakeCadence>[];
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            AiSettingsHeaderBar(
+              searchController: controller,
+              onSearchClear: () {},
+              agentWakeConcurrency: 3,
+              onAgentWakeConcurrencyChanged: (_) {},
+              defaultWakeCadence: AgentWakeCadence.hourly,
+              onDefaultWakeCadenceChanged: chosen.add,
+            ),
+          ),
+        );
+        await tester.pump();
+        final messages = tester
+            .element(find.byType(AiSettingsHeaderBar))
+            .messages;
+        expect(
+          find.text(messages.aiSettingsDefaultWakeCadenceDescription),
+          findsOneWidget,
+        );
+
+        await tester.tap(
+          find.widgetWithText(InkWell, messages.agentWakeCadenceHourly),
+        );
+        await tester.pump();
+        // The app default has nothing above it to inherit from.
+        expect(
+          find.textContaining(messages.agentWakeCadenceFollowDefault('')),
+          findsNothing,
+        );
+        await tester.tap(find.text(messages.agentWakeCadenceLive).last);
+        await tester.pump();
+
+        expect(chosen, [AgentWakeCadence.live]);
+      },
+    );
   });
 }

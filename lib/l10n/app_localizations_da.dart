@@ -1329,6 +1329,28 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String agentWakeCadenceFollowCategory(String cadence) {
+    return 'Kategori: $cadence';
+  }
+
+  @override
+  String agentWakeCadenceFollowDefault(String cadence) {
+    return 'Appens standard: $cadence';
+  }
+
+  @override
+  String get agentWakeCadenceHourly => 'Højst hver time';
+
+  @override
+  String get agentWakeCadenceLabel => 'Opdateringsrytme';
+
+  @override
+  String get agentWakeCadenceLive => '2 minutter efter en ændring';
+
+  @override
+  String get agentWakeCadenceRecordingsOnly => 'Kun efter optagelser';
+
+  @override
   String get aggregationDailyAvg => 'Dagligt gennemsnit';
 
   @override
@@ -2350,6 +2372,10 @@ class AppLocalizationsDa extends AppLocalizations {
       'Reserveprofil til agenter uden en konfigureret model på denne enhed.';
 
   @override
+  String get aiSettingsDefaultWakeCadenceDescription =>
+      'Hvor ofte opgaveassistenter opdaterer sig selv, når hverken opgaven eller dens kategori bestemmer det. „Højst hver time“ opdaterer stadig med det samme efter en optagelse, en stoppet timer eller en opgave markeret som færdig, og inden for et minut efter et billede.';
+
+  @override
   String get aiSettingsEmptyDescription =>
       'Tilføj én for at låse op for transskription, billedgenkendelse, billedgenerering og semantisk søgning.';
 
@@ -3006,6 +3032,10 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get categoryActiveSwitchDescription => 'Kan vælges for nye bidrag';
+
+  @override
+  String get categoryAgentWakeCadenceDescription =>
+      'Bruges af alle opgaver i denne kategori uden egen rytme, også eksisterende opgaver.';
 
   @override
   String get categoryAiDefaultsDescription =>

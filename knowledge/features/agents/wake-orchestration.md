@@ -72,6 +72,10 @@ sources:
     resource: ../../../lib/features/agents/workflow/task_wake_input_fingerprint.dart
     title: Unchanged-input gate fingerprint
     last_modified: 2026-10-03
+  - id: wake-cadence
+    resource: ../../../lib/classes/agent_wake_cadence.dart
+    title: Task-agent wake cadence and its resolution
+    last_modified: 2026-10-04
   - id: tla-spec
     resource: ../../../specs/tla/WakeRuntime.tla
     title: TLA+ model of the wake runtime
@@ -198,7 +202,8 @@ null workspaces, so their behaviour is unchanged.
 `scheduled`, `transcriptionComplete`.
 
 **`transcriptionComplete` bypasses the throttle**, so a user who just finished
-speaking does not wait out the 120-second coalescing window. Both transcript
+speaking does not wait out the agent's coalescing window — whatever its
+[wake cadence](#task-agent-wake-cadence), including *recordings only*. Both transcript
 paths — the local `AutomaticPromptTrigger` and the synced
 `SyncedAudioInferenceDispatcher` — route through
 `WakeOrchestrator.requestContentWake`, which honours the automatic-updates
@@ -215,12 +220,77 @@ child-changed pairs (`taskId` + `PROPAGATED::taskId`) after persisting, for
 **every parent task of the image** (an image can be linked from several tasks;
 non-task parents are skipped since only task contexts render analyses), unioned
 with the resolved `linkedTaskId`. Each parent agent's normal `subscription` wake
-picks it up on the 120-second coalesced path, so it merges with the image-add
-wake instead of racing it.
+picks it up on its coalesced path, so it merges with the image-add wake instead
+of racing it. The batch also carries an `IMAGE_ANALYSIS::taskId` marker, which
+brings that coalesced wake to within a minute (see
+[task-agent wake cadence](#task-agent-wake-cadence)).
 
 # Throttling
 
-Subscription-driven wakes are throttled with a **120-second** window.
+Subscription-driven wakes are throttled with a coalescing window: **120 seconds**
+(`WakeOrchestrator.throttleWindow`) for every agent without a wake cadence, and
+the cadence's window for a task agent (next section).
+
+## Task-agent wake cadence
+
+A task agent whose automatic updates are on wakes at an `AgentWakeCadence`
+(`lib/classes/agent_wake_cadence.dart`). The on/off switch stays
+the consent gate — with it off nothing below applies, and the agent only runs
+when asked.
+
+| Cadence | A change runs after | Stopped timer, task done | Image analysis |
+|---------|--------------------|--------------------------|----------------|
+| `live` | 2 minutes | now | ≤ 1 minute |
+| `hourly` (default) | 1 hour | now | ≤ 1 minute |
+| `recordingsOnly` | never — marks the report stale | no effect | no effect |
+
+A finished transcript wakes every cadence at once (`requestContentWake`).
+
+**Resolution is live and most-specific-first**: the task's own
+`AgentConfig.wakeCadence`, else its category's
+`CategoryDefinition.agentWakeCadence`, else the device's
+`AiRuntimeSettings.defaultWakeCadence`, else `hourly`
+(`resolveAgentWakeCadence`). The orchestrator keeps only each task agent's own
+choice and category (`mirrorTaskWakeCadence`, from the identity's single
+`allowedCategoryIds` entry) and resolves through `taskWakeCadenceResolver` on
+every match, reading the category from `EntitiesCacheService` — so a changed
+category or device default applies to the next change without re-registering
+anything. A countdown already running keeps its deadline. Agents absent from
+that runtime map — every non-task kind — have no cadence and keep 120 seconds.
+
+`AgentConfig.wakeCadence` is deliberately **not** in the sync merge that
+overlays a peer's missing config keys: null is a real choice there ("follow the
+category"), so the incoming value always wins. An older client that does not
+know the field therefore resets a task to its category's cadence when it writes
+the identity.
+
+Two marker tokens (`lib/services/db_notification.dart`) carry the moments that
+should not wait:
+
+- **`WAKE_FLUSH::taskId`** — the user finished a piece of work: `EntryController`
+  stopping a timer started from the task, or `updateTaskImpl` moving the task
+  into DONE outside an agent wake. The router marks the agent's job
+  `drainImmediately`, clears its countdown and dispatches after the batch.
+- **`IMAGE_ANALYSIS::taskId`** — `SkillInferenceRunner.runImageAnalysis`
+  finished an analysis. The requested deadline becomes `now + 1 minute` when
+  that is sooner than the agent's window, and a running countdown is only ever
+  pulled forward, never extended — several images in a row share one run.
+
+Markers name the entity, so one arriving in a later batch than its write still
+reaches the agent watching it.
+
+```mermaid
+flowchart TD
+  M["Subscription match for a task agent"] --> Off{"Automatic updates off?"}
+  Off -->|yes| Stale["Mark report stale"]
+  Off -->|no| C{"Cadence"}
+  C -->|recordingsOnly| Stale
+  C -->|live or hourly| F{"WAKE_FLUSH marker?"}
+  F -->|yes| Now["Drain now; clear countdown"]
+  F -->|no| I{"IMAGE_ANALYSIS marker?"}
+  I -->|yes| Min["Deadline = min(running deadline, now + 1 min, now + window)"]
+  I -->|no| W["Deadline = running deadline, else now + window"]
+```
 
 A subscription can opt into daily-digest deferral for propagated-only matches;
 task-agent subscriptions opt out, so child-entry and task-context updates

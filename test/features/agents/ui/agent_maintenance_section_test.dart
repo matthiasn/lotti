@@ -1,13 +1,16 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agent_wake_cadence.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/agent_wake_cadence_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_maintenance_section.dart';
+import 'package:lotti/features/agents/ui/agent_wake_cadence_field.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -61,6 +64,7 @@ void main() {
     int? maxWakesPerDay,
     int? updateIntervalMinutes,
     DateTime? nextProjectUpdate,
+    AgentWakeCadence? wakeCadence,
   }) {
     return RiverpodWidgetTestBench(
       mediaQueryData: const MediaQueryData(size: Size(900, 800)),
@@ -71,8 +75,14 @@ void main() {
               automaticUpdatesEnabled: automaticUpdates,
               maxWakesPerDay: maxWakesPerDay,
               updateIntervalMinutes: updateIntervalMinutes,
+              wakeCadence: wakeCadence,
             ),
           ),
+        ),
+        // What the task's category resolves to, pinned so the picker's
+        // "Category: …" entry reads the same in every test.
+        inheritedTaskWakeCadenceProvider.overrideWith(
+          (ref, categoryId) => AgentWakeCadence.hourly,
         ),
         agentStateProvider.overrideWith((ref, id) async => state),
         projectNextUpdateProvider.overrideWith(
@@ -115,6 +125,76 @@ void main() {
   }
 
   group('AgentMaintenanceSection', () {
+    group('wake cadence', () {
+      testWidgets('a task with automatic updates on offers its cadence, '
+          'following the category until it chooses', (tester) async {
+        await tester.pumpWidget(build(automaticUpdates: true));
+        await tester.pumpAndSettle();
+
+        final field = tester.widget<AgentWakeCadenceField>(
+          find.byType(AgentWakeCadenceField),
+        );
+        expect(field.value, isNull);
+        expect(field.inheritance, AgentWakeCadenceInheritance.category);
+        expect(field.inheritedCadence, AgentWakeCadence.hourly);
+        expect(find.text('Category: At most hourly'), findsOneWidget);
+      });
+
+      testWidgets('a cadence of its own is shown as chosen', (tester) async {
+        await tester.pumpWidget(
+          build(
+            automaticUpdates: true,
+            wakeCadence: AgentWakeCadence.recordingsOnly,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Only after recordings'), findsOneWidget);
+      });
+
+      for (final (label, automatic, kind) in [
+        ('with automatic updates off', false, AgentMaintenanceKind.task),
+        ('on a project agent', true, AgentMaintenanceKind.project),
+      ]) {
+        testWidgets('is hidden $label', (tester) async {
+          await tester.pumpWidget(
+            build(automaticUpdates: automatic, kind: kind),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byType(AgentWakeCadenceField), findsNothing);
+        });
+      }
+
+      testWidgets('a choice is saved through the task agent service', (
+        tester,
+      ) async {
+        final service = MockTaskAgentService();
+        when(
+          () => service.updateWakeCadence(
+            agentId: any(named: 'agentId'),
+            cadence: any(named: 'cadence'),
+          ),
+        ).thenAnswer((_) async => true);
+        await tester.pumpWidget(
+          build(automaticUpdates: true, taskAgentService: service),
+        );
+        await tester.pumpAndSettle();
+
+        tester
+            .widget<AgentWakeCadenceField>(find.byType(AgentWakeCadenceField))
+            .onChanged(AgentWakeCadence.live);
+        await tester.pumpAndSettle();
+
+        verify(
+          () => service.updateWakeCadence(
+            agentId: agentId,
+            cadence: AgentWakeCadence.live,
+          ),
+        ).called(1);
+      });
+    });
+
     group('daily wake limit', () {
       final today = DateTime(2026, 10, 2, 9);
 

@@ -1339,6 +1339,28 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String agentWakeCadenceFollowCategory(String cadence) {
+    return 'Kategorie: $cadence';
+  }
+
+  @override
+  String agentWakeCadenceFollowDefault(String cadence) {
+    return 'Výchozí: $cadence';
+  }
+
+  @override
+  String get agentWakeCadenceHourly => 'Nejvýše každou hodinu';
+
+  @override
+  String get agentWakeCadenceLabel => 'Frekvence aktualizací';
+
+  @override
+  String get agentWakeCadenceLive => '2 minuty po změně';
+
+  @override
+  String get agentWakeCadenceRecordingsOnly => 'Jen po nahrávkách';
+
+  @override
   String get aggregationDailyAvg => 'Denní průměr';
 
   @override
@@ -2373,6 +2395,10 @@ class AppLocalizationsCs extends AppLocalizations {
       'Záložní profil pro agenty bez nastaveného modelu na tomto zařízení.';
 
   @override
+  String get aiSettingsDefaultWakeCadenceDescription =>
+      'Jak často se asistenti úkolů sami aktualizují, když to neurčuje úkol ani jeho kategorie. „Nejvýše každou hodinu“ se přesto aktualizuje hned po nahrávce, zastaveném časovači nebo dokončeném úkolu a do minuty po obrázku.';
+
+  @override
   String get aiSettingsEmptyDescription =>
       'Přidej jednoho a odemkni přepis, rozpoznávání obrázků, generování obrázků a sémantické vyhledávání.';
 
@@ -3042,6 +3068,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get categoryActiveSwitchDescription => 'Volitelné pro nové záznamy';
+
+  @override
+  String get categoryAgentWakeCadenceDescription =>
+      'Platí pro každý úkol v této kategorii, který nemá vlastní frekvenci, i pro existující úkoly.';
 
   @override
   String get categoryAiDefaultsDescription =>

@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/agent_wake_cadence.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -1705,6 +1706,13 @@ void main() {
         when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
 
         await service.restoreSubscriptions();
+
+        // Its cadence inputs follow it into the runtime; the other kind has
+        // no cadence and is never restored here.
+        verify(
+          () => mockOrchestrator.mirrorTaskWakeCadence(taskAgent),
+        ).called(1);
+        verifyNever(() => mockOrchestrator.mirrorTaskWakeCadence(otherAgent));
 
         // Verify addSubscription called twice (once per link)
         final captured = verify(
@@ -3448,6 +3456,83 @@ void main() {
           ),
           throwsStateError,
         );
+      });
+    });
+
+    group('updateWakeCadence', () {
+      late List<AgentDomainEntity> written;
+
+      setUp(() {
+        written = [];
+        when(() => mockSyncService.upsertEntity(any())).thenAnswer((inv) async {
+          written.add(inv.positionalArguments.single as AgentDomainEntity);
+        });
+      });
+
+      test('persists the choice, stamps the identity and mirrors it', () async {
+        final at = DateTime(2026, 10, 4, 9);
+
+        final found = await withClock(
+          Clock.fixed(at),
+          () => service.updateWakeCadence(
+            agentId: 'agent-1',
+            cadence: AgentWakeCadence.live,
+          ),
+        );
+
+        expect(found, isTrue);
+        final updated = written.single as AgentIdentityEntity;
+        expect(updated.config.wakeCadence, AgentWakeCadence.live);
+        expect(updated.updatedAt, at);
+        verify(() => mockOrchestrator.mirrorTaskWakeCadence(updated)).called(1);
+      });
+
+      test('null makes the task follow its category again', () async {
+        when(() => mockAgentService.getAgent('agent-1')).thenAnswer(
+          (_) async => makeIdentity(
+            config: const AgentConfig(wakeCadence: AgentWakeCadence.live),
+          ),
+        );
+
+        await service.updateWakeCadence(agentId: 'agent-1', cadence: null);
+
+        final updated = written.single as AgentIdentityEntity;
+        expect(updated.config.wakeCadence, isNull);
+      });
+
+      test('an unchanged choice writes nothing but still mirrors', () async {
+        final identity = makeIdentity(
+          config: const AgentConfig(wakeCadence: AgentWakeCadence.hourly),
+        );
+        when(
+          () => mockAgentService.getAgent('agent-1'),
+        ).thenAnswer((_) async => identity);
+
+        final found = await service.updateWakeCadence(
+          agentId: 'agent-1',
+          cadence: AgentWakeCadence.hourly,
+        );
+
+        expect(found, isTrue);
+        expect(written, isEmpty);
+        verify(
+          () => mockOrchestrator.mirrorTaskWakeCadence(identity),
+        ).called(1);
+      });
+
+      test('reports a missing agent and touches nothing', () async {
+        when(
+          () => mockAgentService.getAgent('gone'),
+        ).thenAnswer((_) async => null);
+
+        final found = await service.updateWakeCadence(
+          agentId: 'gone',
+          cadence: AgentWakeCadence.live,
+        );
+
+        expect(found, isFalse);
+        expect(written, isEmpty);
+        verifyNever(() => mockOrchestrator.mirrorTaskWakeCadence(any()));
       });
     });
   });

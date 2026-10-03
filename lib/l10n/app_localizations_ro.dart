@@ -1349,6 +1349,28 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String agentWakeCadenceFollowCategory(String cadence) {
+    return 'Categorie: $cadence';
+  }
+
+  @override
+  String agentWakeCadenceFollowDefault(String cadence) {
+    return 'Implicit: $cadence';
+  }
+
+  @override
+  String get agentWakeCadenceHourly => 'Cel mult o dată pe oră';
+
+  @override
+  String get agentWakeCadenceLabel => 'Ritmul actualizărilor';
+
+  @override
+  String get agentWakeCadenceLive => 'La 2 minute după o modificare';
+
+  @override
+  String get agentWakeCadenceRecordingsOnly => 'Doar după înregistrări';
+
+  @override
   String get aggregationDailyAvg => 'Medie zilnică';
 
   @override
@@ -2388,6 +2410,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Profil de rezervă pentru agenții fără un model configurat pe acest dispozitiv.';
 
   @override
+  String get aiSettingsDefaultWakeCadenceDescription =>
+      'Cât de des se actualizează singuri asistenții sarcinilor atunci când nici sarcina, nici categoria ei nu stabilesc acest lucru. „Cel mult o dată pe oră” se actualizează totuși imediat după o înregistrare, un cronometru oprit sau o sarcină marcată ca finalizată și în decurs de un minut după o imagine.';
+
+  @override
   String get aiSettingsEmptyDescription =>
       'Adăugați unul pentru a debloca transcrierea, recunoașterea de imagini, generarea de imagini și căutarea semantică.';
 
@@ -3058,6 +3084,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get categoryActiveSwitchDescription => 'Selectabil pentru intrări noi';
+
+  @override
+  String get categoryAgentWakeCadenceDescription =>
+      'Se aplică fiecărei sarcini din această categorie care nu are un ritm propriu, inclusiv sarcinilor existente.';
 
   @override
   String get categoryAiDefaultsDescription =>

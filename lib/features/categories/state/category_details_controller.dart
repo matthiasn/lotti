@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/classes/agent_wake_cadence.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
@@ -132,6 +133,8 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
             _originalCategory!.automaticInferenceEnabled ||
         _pendingCategory!.automaticAgentWakesEnabled !=
             _originalCategory!.automaticAgentWakesEnabled ||
+        _pendingCategory!.agentWakeCadence !=
+            _originalCategory!.agentWakeCadence ||
         _pendingCategory!.defaultTemplateId !=
             _originalCategory!.defaultTemplateId ||
         _pendingCategory!.defaultEventTemplateId !=
@@ -226,14 +229,24 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
   /// Sets whether task agents created in this category start out waking
   /// automatically when their task changes.
   ///
-  /// Seeds new agents only — the per-task switch on the AI summary card owns
-  /// the preference from then on, so this never reaches back into tasks that
-  /// already exist. Independent of [setAutomaticInferenceEnabled]: turning
-  /// wakes off leaves automatic transcription and image analysis running.
+  /// Seeds new agents only — the per-task switch in the agent's internals
+  /// panel owns the preference from then on, so this never reaches back into
+  /// tasks that already exist. Independent of [setAutomaticInferenceEnabled]:
+  /// turning wakes off leaves automatic transcription and image analysis
+  /// running.
   void setAutomaticAgentWakesEnabled({required bool enabled}) {
     _updatePendingCategory(
       (c) => c.copyWith(automaticAgentWakesEnabled: enabled),
     );
+  }
+
+  /// Sets how often task agents in this category wake on their own, or makes
+  /// the category follow the app default when [cadence] is null.
+  ///
+  /// Live, unlike [setAutomaticAgentWakesEnabled]: it reaches every task in
+  /// the category that has not chosen its own cadence, existing ones too.
+  void setAgentWakeCadence(AgentWakeCadence? cadence) {
+    _updatePendingCategory((c) => c.copyWith(agentWakeCadence: cadence));
   }
 
   /// Updates the default agent template for new tasks in this category.

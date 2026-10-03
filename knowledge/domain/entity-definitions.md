@@ -37,6 +37,7 @@ features read:
 | `correctionExamples` | Category-scoped AI guidance from user corrections |
 | `automaticInferenceEnabled` | **The consent gate for automatic inference** |
 | `automaticAgentWakesEnabled` | Seeds whether auto-created task agents wake on their own |
+| `agentWakeCadence` | How often enabled task agents here wake — live, for every task without its own cadence; an unknown name reads as unset |
 
 ## The consent flag
 

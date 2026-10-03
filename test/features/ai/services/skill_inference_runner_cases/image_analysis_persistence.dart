@@ -379,17 +379,20 @@ extension _ImageAnalysisPersistenceCases on _SkillInferenceTestSetup {
 
         // The same token pairs updateDbEntity emits when the image itself
         // is edited — for BOTH parent tasks, not just the resolved
-        // linkedTaskId: each parent's subscription picks it up on the
-        // normal throttled wake — deliberately NOT an immediate
-        // throttle-bypassing content wake.
+        // linkedTaskId: each parent's subscription picks it up on its
+        // normal deferred wake — deliberately NOT an immediate
+        // throttle-bypassing content wake. The image marker only brings
+        // that deferred wake to within a minute.
         final notifications =
             getIt<UpdateNotifications>() as MockUpdateNotifications;
         verify(
           () => notifications.notify({
             'task-1',
             propagatedNotification('task-1'),
+            imageAnalysisNotification('task-1'),
             'task-2',
             propagatedNotification('task-2'),
+            imageAnalysisNotification('task-2'),
           }),
         ).called(1);
       },
@@ -458,6 +461,7 @@ extension _ImageAnalysisPersistenceCases on _SkillInferenceTestSetup {
           () => notifications.notify({
             'task-1',
             propagatedNotification('task-1'),
+            imageAnalysisNotification('task-1'),
           }),
         ).called(1);
       },

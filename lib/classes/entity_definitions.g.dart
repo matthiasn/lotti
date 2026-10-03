@@ -356,6 +356,11 @@ CategoryDefinition _$CategoryDefinitionFromJson(Map<String, dynamic> json) =>
       automaticInferenceEnabled: json['automaticInferenceEnabled'] as bool?,
       defaultTemplateId: json['defaultTemplateId'] as String?,
       automaticAgentWakesEnabled: json['automaticAgentWakesEnabled'] as bool?,
+      agentWakeCadence: $enumDecodeNullable(
+        _$AgentWakeCadenceEnumMap,
+        json['agentWakeCadence'],
+        unknownValue: JsonKey.nullForUndefinedEnumValue,
+      ),
       defaultEventTemplateId: json['defaultEventTemplateId'] as String?,
       isAvailableForDayPlan: json['isAvailableForDayPlan'] as bool?,
       $type: json['runtimeType'] as String?,
@@ -384,10 +389,17 @@ Map<String, dynamic> _$CategoryDefinitionToJson(CategoryDefinition instance) =>
       'automaticInferenceEnabled': instance.automaticInferenceEnabled,
       'defaultTemplateId': instance.defaultTemplateId,
       'automaticAgentWakesEnabled': instance.automaticAgentWakesEnabled,
+      'agentWakeCadence': _$AgentWakeCadenceEnumMap[instance.agentWakeCadence],
       'defaultEventTemplateId': instance.defaultEventTemplateId,
       'isAvailableForDayPlan': instance.isAvailableForDayPlan,
       'runtimeType': instance.$type,
     };
+
+const _$AgentWakeCadenceEnumMap = {
+  AgentWakeCadence.live: 'live',
+  AgentWakeCadence.hourly: 'hourly',
+  AgentWakeCadence.recordingsOnly: 'recordingsOnly',
+};
 
 LabelDefinition _$LabelDefinitionFromJson(Map<String, dynamic> json) =>
     LabelDefinition(

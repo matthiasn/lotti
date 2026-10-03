@@ -405,7 +405,12 @@ class EntryController extends AsyncNotifier<EntryState?> {
         ),
       );
     } else {
-      final running = getIt<TimeService>().getCurrent();
+      final timeService = getIt<TimeService>();
+      final running = timeService.getCurrent();
+      // Captured before the stop clears it: the task this timer ran for.
+      final timedTask = stopRecording && running?.id == id
+          ? timeService.linkedFrom
+          : null;
 
       final entryText = entryTextFromController(controller);
       await _persistenceLogic.updateJournalEntityText(
@@ -413,6 +418,12 @@ class EntryController extends AsyncNotifier<EntryState?> {
         entryText,
         running?.id == id ? DateTime.now() : entry.meta.dateTo,
       );
+
+      // A finished stretch of work: the task's agent takes its pending
+      // changes now rather than at its next scheduled update.
+      if (timedTask is Task) {
+        _updateNotifications.notify({wakeFlushNotification(timedTask.id)});
+      }
 
       if (stopRecording) {
         await Future<void>.delayed(stopRecordingDelay).then((_) {

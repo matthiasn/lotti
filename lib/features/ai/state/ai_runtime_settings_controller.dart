@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/agent_wake_cadence.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_runtime_settings.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -51,7 +52,11 @@ final aiRuntimeSettingsControllerProvider =
 
 /// Loads, exposes, and persists the device-local AI runtime settings.
 class AiRuntimeSettingsController extends Notifier<AiRuntimeSettings> {
-  bool _userChanged = false;
+  /// Settings the user changed before the stored values loaded; the load
+  /// must not overwrite them.
+  final _userChangedKeys = <String>{};
+
+  SettingsDb get _settingsDb => getIt<SettingsDb>();
 
   @override
   AiRuntimeSettings build() {
@@ -61,11 +66,25 @@ class AiRuntimeSettingsController extends Notifier<AiRuntimeSettings> {
 
   Future<void> _load() async {
     try {
-      final raw = await getIt<SettingsDb>().itemByKey(
-        agentWakeConcurrencySettingsKey,
+      final (concurrency, cadence) = await (
+        _settingsDb.itemByKey(agentWakeConcurrencySettingsKey),
+        _settingsDb.itemByKey(defaultAgentWakeCadenceSettingsKey),
+      ).wait;
+      if (!ref.mounted) return;
+      final stored = AiRuntimeSettings.fromStored(
+        agentWakeConcurrency: concurrency,
+        defaultWakeCadence: cadence,
       );
-      if (!ref.mounted || _userChanged) return;
-      state = AiRuntimeSettings.fromStoredAgentWakeConcurrency(raw);
+      state = state.copyWith(
+        agentWakeConcurrency:
+            _userChangedKeys.contains(agentWakeConcurrencySettingsKey)
+            ? null
+            : stored.agentWakeConcurrency,
+        defaultWakeCadence:
+            _userChangedKeys.contains(defaultAgentWakeCadenceSettingsKey)
+            ? null
+            : stored.defaultWakeCadence,
+      );
     } on Object {
       // Keep defaults when settings storage is unavailable. Agent wakes must
       // remain functional even when a local preference read fails.
@@ -74,12 +93,25 @@ class AiRuntimeSettingsController extends Notifier<AiRuntimeSettings> {
 
   /// Updates and persists the maximum number of concurrent agent wakes.
   void setAgentWakeConcurrency(int value) {
-    _userChanged = true;
+    _userChangedKeys.add(agentWakeConcurrencySettingsKey);
     state = state.copyWith(agentWakeConcurrency: value);
     unawaited(
-      getIt<SettingsDb>().saveSettingsItem(
+      _settingsDb.saveSettingsItem(
         agentWakeConcurrencySettingsKey,
         state.agentWakeConcurrency.toString(),
+      ),
+    );
+  }
+
+  /// Updates and persists the wake cadence of task agents whose task and
+  /// category set none.
+  void setDefaultWakeCadence(AgentWakeCadence cadence) {
+    _userChangedKeys.add(defaultAgentWakeCadenceSettingsKey);
+    state = state.copyWith(defaultWakeCadence: cadence);
+    unawaited(
+      _settingsDb.saveSettingsItem(
+        defaultAgentWakeCadenceSettingsKey,
+        cadence.name,
       ),
     );
   }

@@ -168,9 +168,15 @@ filled from `CategoryDefinition.automaticAgentWakesEnabled`. It hardcoded `false
 before the category could express a preference, so **an absent category value
 still produces exactly that**.
 
-**Seeding sets the agent's *starting* preference only.** The per-task switch on
-the AI summary card owns it from then on, and a later category edit does not reach
-back into existing agents.
+**Seeding sets the agent's *starting* preference only.** The per-task switch in
+the agent's internals panel owns it from then on, and a later category edit does
+not reach back into existing agents.
+
+**How often an enabled agent wakes is a different, live setting** — its wake
+cadence: the task's own choice under that switch, else the category's, else the
+device default (*at most hourly*). Unlike the seed, a category's cadence reaches
+every task that has not chosen its own, existing ones too. See
+[task-agent wake cadence](wake-orchestration.md#task-agent-wake-cadence).
 
 **The seed is mirrored into the orchestrator, not just persisted.** Step 6 calls
 `enableAutomaticUpdatesRuntime` when it is on and

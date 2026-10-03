@@ -1335,6 +1335,28 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String agentWakeCadenceFollowCategory(String cadence) {
+    return 'Categorie: $cadence';
+  }
+
+  @override
+  String agentWakeCadenceFollowDefault(String cadence) {
+    return 'App-standaard: $cadence';
+  }
+
+  @override
+  String get agentWakeCadenceHourly => 'Hooguit elk uur';
+
+  @override
+  String get agentWakeCadenceLabel => 'Updateritme';
+
+  @override
+  String get agentWakeCadenceLive => '2 minuten na een wijziging';
+
+  @override
+  String get agentWakeCadenceRecordingsOnly => 'Alleen na opnames';
+
+  @override
   String get aggregationDailyAvg => 'Daggemiddelde';
 
   @override
@@ -2362,6 +2384,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Terugvalprofiel voor agents zonder ingesteld model op dit apparaat.';
 
   @override
+  String get aiSettingsDefaultWakeCadenceDescription =>
+      'Hoe vaak taakassistenten zichzelf bijwerken als de taak en haar categorie het niet bepalen. „Hooguit elk uur” werkt toch meteen bij na een opname, een gestopte timer of een taak die je als klaar markeert, en binnen een minuut na een afbeelding.';
+
+  @override
   String get aiSettingsEmptyDescription =>
       'Voeg er een toe om transcriptie, beeldherkenning, beeldgeneratie en semantische zoekopdrachten te ontgrendelen.';
 
@@ -3018,6 +3044,10 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get categoryActiveSwitchDescription =>
       'Selecteerbaar voor nieuwe items';
+
+  @override
+  String get categoryAgentWakeCadenceDescription =>
+      'Geldt voor elke taak in deze categorie zonder eigen ritme, ook voor bestaande taken.';
 
   @override
   String get categoryAiDefaultsDescription =>

@@ -1323,6 +1323,28 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String agentWakeCadenceFollowCategory(String cadence) {
+    return 'Category: $cadence';
+  }
+
+  @override
+  String agentWakeCadenceFollowDefault(String cadence) {
+    return 'App default: $cadence';
+  }
+
+  @override
+  String get agentWakeCadenceHourly => 'At most hourly';
+
+  @override
+  String get agentWakeCadenceLabel => 'Update cadence';
+
+  @override
+  String get agentWakeCadenceLive => '2 minutes after a change';
+
+  @override
+  String get agentWakeCadenceRecordingsOnly => 'Only after recordings';
+
+  @override
   String get aggregationDailyAvg => 'Daily average';
 
   @override
@@ -2342,6 +2364,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Fallback for agents without a configured inference route on this device.';
 
   @override
+  String get aiSettingsDefaultWakeCadenceDescription =>
+      'How often task assistants update on their own when neither the task nor its category sets it. “At most hourly” still updates right away after a recording, a stopped timer or a task marked done, and within a minute of an image.';
+
+  @override
   String get aiSettingsEmptyDescription =>
       'Add one to unlock transcription, image recognition, image generation, and semantic search.';
 
@@ -2994,6 +3020,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get categoryActiveSwitchDescription => 'Selectable for new entries';
+
+  @override
+  String get categoryAgentWakeCadenceDescription =>
+      'Used by every task in this category that has no cadence of its own, including existing tasks.';
 
   @override
   String get categoryAiDefaultsDescription =>

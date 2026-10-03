@@ -1337,6 +1337,28 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String agentWakeCadenceFollowCategory(String cadence) {
+    return 'Kategori: $cadence';
+  }
+
+  @override
+  String agentWakeCadenceFollowDefault(String cadence) {
+    return 'Appens standard: $cadence';
+  }
+
+  @override
+  String get agentWakeCadenceHourly => 'Högst varje timme';
+
+  @override
+  String get agentWakeCadenceLabel => 'Uppdateringsrytm';
+
+  @override
+  String get agentWakeCadenceLive => '2 minuter efter en ändring';
+
+  @override
+  String get agentWakeCadenceRecordingsOnly => 'Bara efter inspelningar';
+
+  @override
   String get aggregationDailyAvg => 'Dagligt genomsnitt';
 
   @override
@@ -2359,6 +2381,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Reservprofil för agenter utan en konfigurerad modell på den här enheten.';
 
   @override
+  String get aiSettingsDefaultWakeCadenceDescription =>
+      'Hur ofta uppgiftsassistenter uppdaterar sig själva när varken uppgiften eller dess kategori anger det. ”Högst varje timme” uppdaterar ändå direkt efter en inspelning, en stoppad timer eller en uppgift som markerats som klar, och inom en minut efter en bild.';
+
+  @override
   String get aiSettingsEmptyDescription =>
       'Lägg till en för att låsa upp transkription, bildigenkänning, bildgenerering och semantisk sökning.';
 
@@ -3015,6 +3041,10 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get categoryActiveSwitchDescription => 'Valbar för nya bidrag';
+
+  @override
+  String get categoryAgentWakeCadenceDescription =>
+      'Gäller varje uppgift i den här kategorin utan egen rytm, även befintliga uppgifter.';
 
   @override
   String get categoryAiDefaultsDescription =>

@@ -3,10 +3,12 @@ import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/agent_wake_cadence.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/agent_wake_cadence_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
@@ -14,6 +16,7 @@ import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/agent_model_sheet.dart';
 import 'package:lotti/features/agents/ui/agent_update_interval_row.dart';
 import 'package:lotti/features/agents/ui/agent_wake_budget_row.dart';
+import 'package:lotti/features/agents/ui/agent_wake_cadence_field.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/agents/ui/task_agent_identity_region.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
@@ -207,6 +210,31 @@ class _AgentMaintenanceSectionState
                   },
                 ),
               ),
+              // How soon a change reaches the task's assistant. Only shown
+              // while it wakes on its own: with automatic updates off it only
+              // runs when asked, whatever its cadence.
+              if (widget.scope.kind == AgentMaintenanceKind.task &&
+                  identity != null &&
+                  automaticUpdatesEnabled)
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: tokens.spacing.step2,
+                    vertical: tokens.spacing.step2,
+                  ),
+                  child: AgentWakeCadenceField(
+                    value: identity.config.wakeCadence,
+                    inheritance: AgentWakeCadenceInheritance.category,
+                    inheritedCadence: ref.watch(
+                      inheritedTaskWakeCadenceProvider(
+                        identity.allowedCategoryIds.length == 1
+                            ? identity.allowedCategoryIds.single
+                            : null,
+                      ),
+                    ),
+                    onChanged: (cadence) =>
+                        unawaited(_updateWakeCadence(cadence)),
+                  ),
+                ),
               // The daily limit is enforced for project agents, whose
               // digest-shaped wakes are the ones that ran away; it sits with
               // the schedule because it is part of "when does it update".
@@ -313,6 +341,15 @@ class _AgentMaintenanceSectionState
     } finally {
       if (mounted) setState(() => _automationBusy = false);
     }
+  }
+
+  Future<void> _updateWakeCadence(AgentWakeCadence? cadence) async {
+    await _guarded('Failed to update the wake cadence', () async {
+      await ref
+          .read(taskAgentServiceProvider)
+          .updateWakeCadence(agentId: widget.agentId, cadence: cadence);
+      ref.invalidate(agentIdentityProvider(widget.agentId));
+    });
   }
 
   Future<void> _updateUpdateInterval(int minutes) async {

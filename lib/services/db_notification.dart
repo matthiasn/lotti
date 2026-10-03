@@ -204,3 +204,23 @@ const propagatedNotificationPrefix = 'PROPAGATED::';
 /// emission. See [propagatedNotificationPrefix] for the intent.
 String propagatedNotification(String token) =>
     '$propagatedNotificationPrefix$token';
+
+/// Prefix of a token saying the user finished a piece of work on an entity —
+/// stopped its timer, marked it done — so the task agent watching it should
+/// run now instead of waiting for its cadence. See [wakeFlushNotification].
+const wakeFlushNotificationPrefix = 'WAKE_FLUSH::';
+
+/// Asks the agent watching [entityId] to run its pending update now. Emitted
+/// only for the user's own actions, never from an agent's wake.
+String wakeFlushNotification(String entityId) =>
+    '$wakeFlushNotificationPrefix$entityId';
+
+/// Prefix of a token saying an image analysis for an entity just finished.
+/// See [imageAnalysisNotification].
+const imageAnalysisNotificationPrefix = 'IMAGE_ANALYSIS::';
+
+/// Tells the agent watching [entityId] that an image analysis for it landed,
+/// so its next run moves to within a minute (never later than already
+/// planned).
+String imageAnalysisNotification(String entityId) =>
+    '$imageAnalysisNotificationPrefix$entityId';

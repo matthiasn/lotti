@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/classes/agent_wake_cadence.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
@@ -267,8 +268,8 @@ sealed class EntityDefinition with _$EntityDefinition {
     /// created in this category — whether their agent wakes automatically
     /// when the task changes, rather than only when asked.
     ///
-    /// This is a starting value, not a live gate: the per-task switch on the
-    /// AI summary card stays authoritative afterwards, so turning this on
+    /// This is a starting value, not a live gate: the per-task switch in the
+    /// agent's internals panel stays authoritative afterwards, so turning this on
     /// later does not reach back into tasks that already exist. Independent
     /// of `automaticInferenceEnabled` — switching wakes off leaves automatic
     /// transcription and image analysis running.
@@ -276,6 +277,14 @@ sealed class EntityDefinition with _$EntityDefinition {
     /// Nullable for JSON backward compatibility (absent key ⇒ `null` ⇒ off),
     /// which is the value `createTaskAgent` hardcoded before this existed.
     bool? automaticAgentWakesEnabled,
+
+    /// How often task agents in this category wake on their own, unless a
+    /// task chooses otherwise. Unlike `automaticAgentWakesEnabled` this is
+    /// live: changing it reaches every task that follows the category. Null
+    /// follows the app default — see `resolveAgentWakeCadence`. An unknown
+    /// name from a newer build reads as null.
+    @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)
+    AgentWakeCadence? agentWakeCadence,
 
     /// Default event-agent template ID for new events in this category.
     /// An event agent is auto-created from this template when an event is

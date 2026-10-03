@@ -6,6 +6,7 @@ import 'package:lotti/logic/persistence_collaborator_base.dart';
 import 'package:lotti/logic/persistence_logic.dart' show PersistenceLogic;
 import 'package:lotti/logic/persistence_logic_contract.dart';
 import 'package:lotti/logic/write_on_stored.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// Entry-update operations of [PersistenceLogic].
@@ -169,12 +170,14 @@ class PersistenceUpdateOps extends PersistenceCollaboratorBase {
   }) async {
     try {
       Task? result;
+      var becameDone = false;
       final stored = await writeOnStored(
         journalDb: journalDb,
         persistenceLogic: logic,
         id: journalEntityId,
         build: (stored) async {
           result = null;
+          becameDone = false;
           if (stored is! Task) {
             loggingService.error(
               LogDomain.persistence,
@@ -193,6 +196,8 @@ class PersistenceUpdateOps extends PersistenceCollaboratorBase {
             result = stored;
             return null;
           }
+          becameDone =
+              data.status is TaskDone && stored.data.status is! TaskDone;
           return result = stored.copyWith(
             meta: await logic.updateMetadata(stored.meta),
             entryText: text,
@@ -210,6 +215,11 @@ class PersistenceUpdateOps extends PersistenceCollaboratorBase {
               )
             : null,
       );
+      // Completing a task is finished work: its agent takes the pending
+      // changes now. An agent marking the task done must not wake itself.
+      if (stored && becameDone && !isAgentExecution) {
+        updateNotifications.notify({wakeFlushNotification(journalEntityId)});
+      }
       return stored ? result : null;
     } catch (exception, stackTrace) {
       loggingService.error(

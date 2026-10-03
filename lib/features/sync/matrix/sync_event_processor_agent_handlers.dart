@@ -275,6 +275,7 @@ extension _AgentHandlers on SyncEventProcessor {
               wakeOrchestrator!.haltAgent(appliedIdentity.agentId);
             }
           } else {
+            wakeOrchestrator!.mirrorTaskWakeCadence(appliedIdentity);
             if (appliedIdentity.config.automaticUpdatesEnabledEffective) {
               wakeOrchestrator!.enableAutomaticUpdatesRuntime(
                 appliedIdentity.agentId,
@@ -517,6 +518,7 @@ extension _AgentHandlers on SyncEventProcessor {
               agent.config.inferenceSetup?.mode !=
                   AgentInferenceSetupMode.disabled &&
               agent.kind == 'task_agent') {
+            wakeOrchestrator!.mirrorTaskWakeCadence(agent);
             if (agent.config.automaticUpdatesEnabledEffective) {
               wakeOrchestrator!.enableAutomaticUpdatesRuntime(agent.agentId);
             } else {

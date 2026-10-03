@@ -1346,6 +1346,28 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String agentWakeCadenceFollowCategory(String cadence) {
+    return 'Categoria: $cadence';
+  }
+
+  @override
+  String agentWakeCadenceFollowDefault(String cadence) {
+    return 'Predefinito: $cadence';
+  }
+
+  @override
+  String get agentWakeCadenceHourly => 'Al massimo ogni ora';
+
+  @override
+  String get agentWakeCadenceLabel => 'Frequenza di aggiornamento';
+
+  @override
+  String get agentWakeCadenceLive => '2 minuti dopo una modifica';
+
+  @override
+  String get agentWakeCadenceRecordingsOnly => 'Solo dopo le registrazioni';
+
+  @override
   String get aggregationDailyAvg => 'Media giornaliera';
 
   @override
@@ -2383,6 +2405,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Profilo di riserva per gli agenti senza un modello configurato su questo dispositivo.';
 
   @override
+  String get aiSettingsDefaultWakeCadenceDescription =>
+      'Quanto spesso gli assistenti delle attività si aggiornano da soli quando né l’attività né la sua categoria lo stabiliscono. «Al massimo ogni ora» si aggiorna comunque subito dopo una registrazione, un timer fermato o un’attività segnata come completata, ed entro un minuto da un’immagine.';
+
+  @override
   String get aiSettingsEmptyDescription =>
       'Aggiungere uno per sbloccare la trascrizione, il riconoscimento delle immagini, la generazione di immagini e la ricerca semantica.';
 
@@ -3046,6 +3072,10 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get categoryActiveSwitchDescription => 'Selezionabile per nuove voci';
+
+  @override
+  String get categoryAgentWakeCadenceDescription =>
+      'Vale per ogni attività di questa categoria senza una frequenza propria, anche per quelle esistenti.';
 
   @override
   String get categoryAiDefaultsDescription =>

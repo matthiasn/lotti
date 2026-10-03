@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agent_wake_cadence.dart';
 import 'package:lotti/features/ai/model/ai_runtime_settings.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
@@ -186,6 +187,88 @@ void main() {
     expect(
       container.read(aiRuntimeSettingsControllerProvider).agentWakeConcurrency,
       2,
+    );
+  });
+
+  test('loads the persisted default wake cadence', () async {
+    when(
+      () => mocks.settingsDb.itemByKey(defaultAgentWakeCadenceSettingsKey),
+    ).thenAnswer((_) async => 'live');
+
+    final container = makeContainer()
+      // Building the controller starts the load.
+      ..read(aiRuntimeSettingsControllerProvider);
+    await pumpEventQueue();
+
+    expect(
+      container.read(aiRuntimeSettingsControllerProvider).defaultWakeCadence,
+      AgentWakeCadence.live,
+    );
+  });
+
+  test('updates state and persists the default wake cadence by name', () {
+    final container = makeContainer();
+
+    container
+        .read(aiRuntimeSettingsControllerProvider.notifier)
+        .setDefaultWakeCadence(AgentWakeCadence.recordingsOnly);
+
+    expect(
+      container.read(aiRuntimeSettingsControllerProvider).defaultWakeCadence,
+      AgentWakeCadence.recordingsOnly,
+    );
+    verify(
+      () => mocks.settingsDb.saveSettingsItem(
+        defaultAgentWakeCadenceSettingsKey,
+        'recordingsOnly',
+      ),
+    ).called(1);
+  });
+
+  test(
+    'changing one setting during loading still loads the other one',
+    () async {
+      final concurrency = Completer<String?>();
+      when(
+        () => mocks.settingsDb.itemByKey(agentWakeConcurrencySettingsKey),
+      ).thenAnswer((_) => concurrency.future);
+      when(
+        () => mocks.settingsDb.itemByKey(defaultAgentWakeCadenceSettingsKey),
+      ).thenAnswer((_) async => 'live');
+
+      final container = makeContainer();
+      container
+          .read(aiRuntimeSettingsControllerProvider.notifier)
+          .setAgentWakeConcurrency(2);
+      concurrency.complete('4');
+      await pumpEventQueue();
+
+      expect(
+        container.read(aiRuntimeSettingsControllerProvider),
+        const AiRuntimeSettings(
+          agentWakeConcurrency: 2,
+          defaultWakeCadence: AgentWakeCadence.live,
+        ),
+      );
+    },
+  );
+
+  test('a cadence chosen during loading is not overwritten', () async {
+    final cadence = Completer<String?>();
+    when(
+      () => mocks.settingsDb.itemByKey(defaultAgentWakeCadenceSettingsKey),
+    ).thenAnswer((_) => cadence.future);
+
+    final container = makeContainer();
+    container
+        .read(aiRuntimeSettingsControllerProvider.notifier)
+        .setDefaultWakeCadence(AgentWakeCadence.recordingsOnly);
+    cadence.complete('live');
+    await pumpEventQueue();
+
+    expect(
+      container.read(aiRuntimeSettingsControllerProvider).defaultWakeCadence,
+      AgentWakeCadence.recordingsOnly,
     );
   });
 }

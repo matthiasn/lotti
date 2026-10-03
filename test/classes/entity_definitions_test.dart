@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/agent_wake_cadence.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
@@ -354,6 +355,33 @@ void main() {
         );
       });
     }
+
+    test('the wake cadence round-trips, and an unknown one reads as unset', () {
+      final json =
+          jsonDecode(
+                jsonEncode(
+                  makeCategory()
+                      .copyWith(
+                        agentWakeCadence: AgentWakeCadence.recordingsOnly,
+                      )
+                      .toJson(),
+                ),
+              )
+              as Map<String, dynamic>;
+      expect(json['agentWakeCadence'], 'recordingsOnly');
+      expect(
+        (EntityDefinition.fromJson(json) as CategoryDefinition)
+            .agentWakeCadence,
+        AgentWakeCadence.recordingsOnly,
+      );
+
+      json['agentWakeCadence'] = 'everyFortnight';
+      expect(
+        (EntityDefinition.fromJson(json) as CategoryDefinition)
+            .agentWakeCadence,
+        isNull,
+      );
+    });
 
     test('the two preferences are independent', () {
       final wakesOnly = makeCategory(automaticAgentWakesEnabled: true);

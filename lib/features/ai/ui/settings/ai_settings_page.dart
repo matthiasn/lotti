@@ -414,6 +414,10 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
                 onAgentWakeConcurrencyChanged: (value) => ref
                     .read(aiRuntimeSettingsControllerProvider.notifier)
                     .setAgentWakeConcurrency(value),
+                defaultWakeCadence: aiRuntimeSettings.defaultWakeCadence,
+                onDefaultWakeCadenceChanged: (cadence) => ref
+                    .read(aiRuntimeSettingsControllerProvider.notifier)
+                    .setDefaultWakeCadence(cadence),
               ),
             ),
           ),

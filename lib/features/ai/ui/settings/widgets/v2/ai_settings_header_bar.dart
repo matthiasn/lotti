@@ -1,3 +1,5 @@
+import 'package:lotti/classes/agent_wake_cadence.dart';
+import 'package:lotti/features/agents/ui/agent_wake_cadence_field.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_runtime_settings.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_search_bar.dart';
@@ -10,7 +12,9 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// The search field uses the same design-system search widget as the rest of
 /// the app. The concurrency dropdown edits the device-local bounded agent-wake
-/// capacity and applies to newly dispatched wakes immediately.
+/// capacity and applies to newly dispatched wakes immediately. The cadence
+/// dropdown edits the device-local default wake cadence of task agents whose
+/// task and category set none.
 ///
 /// The "Add" affordance lives in a per-tab
 /// `DesignSystemFloatingActionButton` on the page's
@@ -22,6 +26,8 @@ class AiSettingsHeaderBar extends StatelessWidget {
     required this.onSearchClear,
     required this.agentWakeConcurrency,
     required this.onAgentWakeConcurrencyChanged,
+    required this.defaultWakeCadence,
+    required this.onDefaultWakeCadenceChanged,
     this.profiles = const [],
     this.defaultProfileId,
     this.onDefaultProfileChanged,
@@ -32,6 +38,8 @@ class AiSettingsHeaderBar extends StatelessWidget {
   final VoidCallback onSearchClear;
   final int agentWakeConcurrency;
   final ValueChanged<int> onAgentWakeConcurrencyChanged;
+  final AgentWakeCadence defaultWakeCadence;
+  final ValueChanged<AgentWakeCadence> onDefaultWakeCadenceChanged;
   final List<AiConfigInferenceProfile> profiles;
   final String? defaultProfileId;
   final ValueChanged<String?>? onDefaultProfileChanged;
@@ -81,6 +89,16 @@ class AiSettingsHeaderBar extends StatelessWidget {
             style: tokens.typography.styles.body.bodySmall.copyWith(
               color: tokens.colors.text.mediumEmphasis,
             ),
+          ),
+          SizedBox(height: tokens.spacing.step4),
+          AgentWakeCadenceField(
+            value: defaultWakeCadence,
+            // The app default has no level above it to inherit from.
+            onChanged: (cadence) {
+              if (cadence != null) onDefaultWakeCadenceChanged(cadence);
+            },
+            description:
+                context.messages.aiSettingsDefaultWakeCadenceDescription,
           ),
           if (onDefaultProfileChanged != null) ...[
             SizedBox(height: tokens.spacing.step4),

@@ -179,6 +179,28 @@ extension _CategoryDetailsFormSections on _CategoryDetailsPageState {
     );
   }
 
+  /// How often task agents here wake on their own, for every task that has
+  /// not chosen its own cadence. Shown under the wake switch with the same
+  /// template gate; unlike the switch it is live, so existing tasks follow
+  /// it too.
+  Widget _buildAgentWakeCadencePicker(CategoryDefinition category) {
+    if (category.defaultTemplateId == null) return const SizedBox.shrink();
+
+    final controller = ref.read(
+      categoryDetailsControllerProvider(widget.categoryId!).notifier,
+    );
+
+    return AgentWakeCadenceField(
+      value: category.agentWakeCadence,
+      inheritance: AgentWakeCadenceInheritance.appDefault,
+      inheritedCadence: ref
+          .watch(aiRuntimeSettingsControllerProvider)
+          .defaultWakeCadence,
+      description: context.messages.categoryAgentWakeCadenceDescription,
+      onChanged: controller.setAgentWakeCadence,
+    );
+  }
+
   Widget _buildDefaultTemplatePicker(CategoryDefinition category) {
     final controller = ref.read(
       categoryDetailsControllerProvider(widget.categoryId!).notifier,
