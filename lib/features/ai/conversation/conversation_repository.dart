@@ -640,14 +640,14 @@ class ConversationRepository extends Notifier<void> {
     Object error,
     StackTrace stackTrace,
   ) {
-    final errorMessage = error.toString();
+    // The type only: a provider error can carry the response body, which
+    // may echo the conversation. The full message still reaches the UI.
     developer.log(
-      'Error during conversation turn:\n$errorMessage',
+      'Error during conversation turn (${error.runtimeType})',
       name: 'ConversationRepository',
-      error: error,
       stackTrace: stackTrace,
     );
-    manager.lastError = errorMessage;
+    manager.lastError = error.toString();
   }
 
   /// Delete a conversation
