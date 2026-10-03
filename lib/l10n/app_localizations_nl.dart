@@ -6520,6 +6520,10 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get githubChecksHidden =>
+      'CI is mogelijk onvolledig: het token kan geen checks lezen';
+
+  @override
   String get githubChecksPassing => 'Checks geslaagd';
 
   @override
@@ -6707,7 +6711,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get githubTokenIntro =>
-      'Lotti leest de pull requests die je aan taken koppelt met je eigen persoonlijke toegangstoken. Geef het leestoegang tot pull requests, commitstatussen en checks in de repository\'s waarin je werkt.';
+      'Lotti leest de pull requests die je aan taken koppelt met je eigen persoonlijke toegangstoken. Maak een fine-grained token voor de repository\'s waarin je werkt, met alleen-lezen toegang tot \"Pull requests\" en \"Commit statuses\". GitHub laat zo\'n token geen check runs lezen in een privérepository, dus daar kan CI onvolledig zijn; een klassiek token met de scope \"repo\" kan ze wel lezen.';
 
   @override
   String get githubTokenKeptOnDevice =>
@@ -14379,15 +14383,15 @@ class AppLocalizationsNl extends AppLocalizations {
       'Kies een subset aan de linkerkant.';
 
   @override
-  String get settingsTreeRootCrumb => 'Instellingen';
-
-  @override
   String get settingsTreeEmptyStateBody =>
       'Kies een sectie links om te beginnen.';
 
   @override
   String get settingsTreeResizeHandleLabel =>
       'Grootte-instellingen-boom wijzigen';
+
+  @override
+  String get settingsTreeRootCrumb => 'Instellingen';
 
   @override
   String get settingsWhatsNewSubtitle => 'Zie de laatste updates en functies';

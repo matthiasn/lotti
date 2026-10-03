@@ -3,7 +3,8 @@ import 'package:lotti/classes/pull_request_data.dart';
 /// Builds a [PullRequestSnapshot] from the REST responses one refresh reads.
 ///
 /// [pull] is `GET /repos/{o}/{r}/pulls/{n}`; [checkRuns] is
-/// `GET /repos/{o}/{r}/commits/{sha}/check-runs`; [combinedStatus] is
+/// `GET /repos/{o}/{r}/commits/{sha}/check-runs`, or null when the token may
+/// not read them; [combinedStatus] is
 /// `GET /repos/{o}/{r}/commits/{sha}/status`; [reviews] is
 /// `GET /repos/{o}/{r}/pulls/{n}/reviews`, oldest first as GitHub returns it.
 /// [observedAt] is the server time of the pull response.
@@ -13,7 +14,7 @@ import 'package:lotti/classes/pull_request_data.dart';
 /// snapshot with made-up defaults.
 PullRequestSnapshot pullRequestSnapshotFrom({
   required Map<String, dynamic> pull,
-  required Map<String, dynamic> checkRuns,
+  required Map<String, dynamic>? checkRuns,
   required Map<String, dynamic> combinedStatus,
   required List<dynamic> reviews,
   required DateTime observedAt,
@@ -79,24 +80,26 @@ enum _Outcome { passed, failed, pending }
 const _passingConclusions = {'success', 'neutral', 'skipped'};
 
 /// Every check run and commit status on the head commit, rolled up: any
-/// failure fails, else anything still running is pending.
+/// failure fails, else anything still running is pending. Without the check
+/// runs ([checkRuns] null) nothing passes: a hidden run may be failing.
 PullRequestChecks _checks(
-  Map<String, dynamic> checkRuns,
+  Map<String, dynamic>? checkRuns,
   Map<String, dynamic> combinedStatus,
 ) {
   final outcomes = <(String, _Outcome)>[
-    for (final run in _list(
-      checkRuns,
-      'check_runs',
-    ).cast<Map<String, dynamic>>())
-      (
-        _string(run, 'name'),
-        run['status'] != 'completed'
-            ? _Outcome.pending
-            : _passingConclusions.contains(run['conclusion'])
-            ? _Outcome.passed
-            : _Outcome.failed,
-      ),
+    if (checkRuns != null)
+      for (final run in _list(
+        checkRuns,
+        'check_runs',
+      ).cast<Map<String, dynamic>>())
+        (
+          _string(run, 'name'),
+          run['status'] != 'completed'
+              ? _Outcome.pending
+              : _passingConclusions.contains(run['conclusion'])
+              ? _Outcome.passed
+              : _Outcome.failed,
+        ),
     for (final status in _list(
       combinedStatus,
       'statuses',
@@ -119,7 +122,7 @@ PullRequestChecks _checks(
         ? PullRequestCheckRollup.failing
         : pending > 0
         ? PullRequestCheckRollup.pending
-        : passed > 0
+        : passed > 0 && checkRuns != null
         ? PullRequestCheckRollup.passing
         : PullRequestCheckRollup.none,
     total: outcomes.length,
@@ -131,6 +134,7 @@ PullRequestChecks _checks(
         .map((e) => e.$1)
         .take(PullRequestChecks.maxFailingNames)
         .toList(),
+    checkRunsHidden: checkRuns == null ? true : null,
   );
 }
 

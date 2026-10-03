@@ -78,6 +78,41 @@ void main() {
       ]);
     });
 
+    test(
+      'check runs the token cannot read are flagged on an open pull request, '
+      'and passing statuses alone never read as passing',
+      () {
+        const hidden = PullRequestChecks(
+          total: 1,
+          passed: 1,
+          checkRunsHidden: true,
+        );
+        final parts = pullRequestStatusParts(
+          messages,
+          snapshot: prSnapshot().copyWith(checks: hidden),
+          failure: null,
+          now: now,
+        );
+        expect(parts, [
+          ('Open', PullRequestTone.neutral),
+          ('3 min ago', PullRequestTone.neutral),
+          (
+            'CI may be incomplete: the token cannot read checks',
+            PullRequestTone.attention,
+          ),
+        ]);
+
+        final merged = prSnapshot().copyWith(
+          status: PullRequestStatus.merged,
+          checks: hidden,
+        );
+        expect(
+          words(merged),
+          isNot(contains('CI may be incomplete: the token cannot read checks')),
+        );
+      },
+    );
+
     test('a draft, with checks running, blocked, awaiting review', () {
       final snapshot = prSnapshot().copyWith(
         draft: true,

@@ -3619,6 +3619,7 @@
       }
     }
   },
+  "githubChecksHidden": "CI may be incomplete: the token cannot read checks",
   "githubChecksPassing": "Checks passing",
   "githubChecksPending": "Checks running",
   "githubConnectButton": "Connect",
@@ -3709,7 +3710,7 @@
   "githubStatusMerged": "Merged",
   "githubStatusOpen": "Open",
   "githubTokenHide": "Hide token",
-  "githubTokenIntro": "Lotti reads the pull requests you link to tasks with your own personal access token. Give it read access to pull requests, commit statuses and checks in the repositories you work in.",
+  "githubTokenIntro": "Lotti reads the pull requests you link to tasks with your own personal access token. Create a fine-grained token for the repositories you work in, with read-only access to \"Pull requests\" and \"Commit statuses\". GitHub does not let such a token read check runs in a private repository, so CI may be incomplete there; a classic token with the \"repo\" scope can read them.",
   "githubTokenKeptOnDevice": "The token stays on this device: it is never synced, and it is only ever sent to api.github.com.",
   "githubTokenLabel": "Personal access token",
   "githubTokenShow": "Show token",

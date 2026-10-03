@@ -2720,6 +2720,7 @@
       }
     }
   },
+  "githubChecksHidden": "CI peut-être incomplète : le jeton ne peut pas lire les vérifications",
   "githubChecksPassing": "Vérifications réussies",
   "githubChecksPending": "Vérifications en cours",
   "githubConnectButton": "Connecter",
@@ -2810,7 +2811,7 @@
   "githubStatusMerged": "Fusionnée",
   "githubStatusOpen": "Ouverte",
   "githubTokenHide": "Masquer le jeton",
-  "githubTokenIntro": "Lotti lit les pull requests que tu lies à tes tâches avec ton propre jeton d'accès personnel. Donne-lui un accès en lecture aux pull requests, aux statuts de commit et aux vérifications des dépôts sur lesquels tu travailles.",
+  "githubTokenIntro": "Lotti lit les pull requests que tu lies à tes tâches avec ton propre jeton d'accès personnel. Crée un jeton fine-grained pour les dépôts sur lesquels tu travailles, avec un accès en lecture seule à « Pull requests » et « Commit statuses ». GitHub ne laisse pas un tel jeton lire les check runs d'un dépôt privé, la CI peut donc y être incomplète ; un jeton classique avec le scope « repo » peut les lire.",
   "githubTokenKeptOnDevice": "Le jeton reste sur cet appareil : il n'est jamais synchronisé et n'est envoyé qu'à api.github.com.",
   "githubTokenLabel": "Jeton d'accès personnel",
   "githubTokenShow": "Afficher le jeton",

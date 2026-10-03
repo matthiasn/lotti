@@ -83,6 +83,8 @@ List<(String, PullRequestTone)> pullRequestStatusParts(
         ],
         PullRequestCheckRollup.none => const <(String, PullRequestTone)>[],
       },
+    if (open && (checks.checkRunsHidden ?? false))
+      (messages.githubChecksHidden, PullRequestTone.attention),
     if (open)
       ...switch (snapshot.mergeability) {
         PullRequestMergeability.conflicting => [

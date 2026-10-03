@@ -6609,6 +6609,10 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get githubChecksHidden =>
+      'CI poate fi incompletă: tokenul nu poate citi verificările';
+
+  @override
   String get githubChecksPassing => 'Verificări reușite';
 
   @override
@@ -6796,7 +6800,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get githubTokenIntro =>
-      'Lotti citește pull request-urile pe care le legați de sarcini cu propriul dvs. token de acces personal. Acordați-i acces de citire la pull request-uri, stări de commit și verificări în depozitele în care lucrați.';
+      'Lotti citește pull request-urile pe care le legați de sarcini cu propriul dvs. token de acces personal. Creați un token fine-grained pentru depozitele în care lucrați, cu acces doar de citire la „Pull requests” și „Commit statuses”. GitHub nu permite unui astfel de token să citească check run-urile dintr-un depozit privat, așa că acolo CI poate fi incompletă; un token clasic cu scope-ul „repo” le poate citi.';
 
   @override
   String get githubTokenKeptOnDevice =>
@@ -14624,15 +14628,15 @@ class AppLocalizationsRo extends AppLocalizations {
       'Selectați o sub-setare din stânga.';
 
   @override
-  String get settingsTreeRootCrumb => 'Setări';
-
-  @override
   String get settingsTreeEmptyStateBody =>
       'Alegeți o secțiune din stânga pentru a începe.';
 
   @override
   String get settingsTreeResizeHandleLabel =>
       'Redimensionați arborele de setări';
+
+  @override
+  String get settingsTreeRootCrumb => 'Setări';
 
   @override
   String get settingsWhatsNewSubtitle =>

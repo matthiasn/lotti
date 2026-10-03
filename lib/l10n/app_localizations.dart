@@ -11087,6 +11087,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 check failing} other{{count} checks failing}}'**
   String githubChecksFailing(int count);
 
+  /// No description provided for @githubChecksHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'CI may be incomplete: the token cannot read checks'**
+  String get githubChecksHidden;
+
   /// No description provided for @githubChecksPassing.
   ///
   /// In en, this message translates to:
@@ -11414,7 +11420,7 @@ abstract class AppLocalizations {
   /// No description provided for @githubTokenIntro.
   ///
   /// In en, this message translates to:
-  /// **'Lotti reads the pull requests you link to tasks with your own personal access token. Give it read access to pull requests, commit statuses and checks in the repositories you work in.'**
+  /// **'Lotti reads the pull requests you link to tasks with your own personal access token. Create a fine-grained token for the repositories you work in, with read-only access to \"Pull requests\" and \"Commit statuses\". GitHub does not let such a token read check runs in a private repository, so CI may be incomplete there; a classic token with the \"repo\" scope can read them.'**
   String get githubTokenIntro;
 
   /// No description provided for @githubTokenKeptOnDevice.
@@ -23867,12 +23873,6 @@ abstract class AppLocalizations {
   /// **'Pick a sub-setting on the left.'**
   String get settingsTreeCategoryEmptyBody;
 
-  /// No description provided for @settingsTreeRootCrumb.
-  ///
-  /// In en, this message translates to:
-  /// **'Settings'**
-  String get settingsTreeRootCrumb;
-
   /// No description provided for @settingsTreeEmptyStateBody.
   ///
   /// In en, this message translates to:
@@ -23884,6 +23884,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Resize settings tree'**
   String get settingsTreeResizeHandleLabel;
+
+  /// No description provided for @settingsTreeRootCrumb.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsTreeRootCrumb;
 
   /// No description provided for @settingsWhatsNewSubtitle.
   ///

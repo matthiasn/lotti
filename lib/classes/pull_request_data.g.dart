@@ -121,6 +121,7 @@ _PullRequestChecks _$PullRequestChecksFromJson(Map<String, dynamic> json) =>
               ?.map((e) => e as String)
               .toList() ??
           const <String>[],
+      checkRunsHidden: json['checkRunsHidden'] as bool?,
     );
 
 Map<String, dynamic> _$PullRequestChecksToJson(_PullRequestChecks instance) =>
@@ -131,6 +132,7 @@ Map<String, dynamic> _$PullRequestChecksToJson(_PullRequestChecks instance) =>
       'failed': instance.failed,
       'pending': instance.pending,
       'failingNames': instance.failingNames,
+      'checkRunsHidden': ?instance.checkRunsHidden,
     };
 
 const _$PullRequestCheckRollupEnumMap = {
