@@ -13,8 +13,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/workflow/prompt_log_wrap.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart'
-    hide aiConfigRepositoryProvider;
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/daily_os_next/agents/prompt/day_prompt_log_wraps.dart';
 import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maintenance.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_workflow_providers.dart';

@@ -14,7 +14,7 @@ import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
-    show AiConfigRepository;
+    show AiConfigRepository, aiConfigRepositoryProvider;
 import 'package:lotti/features/ai/speech/sherpa_installed_models_provider.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
@@ -27,7 +27,6 @@ import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/providers/service_providers.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 

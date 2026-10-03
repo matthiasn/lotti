@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -59,12 +58,4 @@ final outboxServiceProvider = Provider<OutboxService>(
 final outboxLoginGateStreamProvider = StreamProvider<void>(
   (ref) => ref.watch(outboxServiceProvider).notLoggedInGateStream,
   name: 'outboxLoginGateStreamProvider',
-);
-
-/// Provides the shared [AiConfigRepository]. Must be overridden in [ProviderScope].
-final aiConfigRepositoryProvider = Provider<AiConfigRepository>(
-  (ref) => throw UnimplementedError(
-    'aiConfigRepositoryProvider must be overridden before use.',
-  ),
-  name: 'aiConfigRepositoryProvider',
 );

@@ -41,8 +41,7 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart'
-    hide aiConfigRepositoryProvider;
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -64,7 +63,6 @@ import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/providers/service_providers.dart'
     show
-        aiConfigRepositoryProvider,
         journalDbProvider,
         loggingServiceProvider,
         maintenanceProvider,

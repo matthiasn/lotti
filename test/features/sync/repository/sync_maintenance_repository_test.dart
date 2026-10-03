@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
