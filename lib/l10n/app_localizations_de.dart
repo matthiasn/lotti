@@ -9933,6 +9933,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get manageLinks => 'Verknüpfungen verwalten…';
 
   @override
+  String markdownRemoteImageBlocked(String host) {
+    return 'Bild von $host nicht geladen';
+  }
+
+  @override
   String get matrixStatsConflicts => 'Konflikte';
 
   @override

@@ -4158,6 +4158,7 @@
   "maintenanceSyncDefinitions": "Sincronizzabili, cruscotti, abitudini, categorie, Impostazioni AI",
   "maintenanceSyncDefinitionsDescription": "Sincronizzabili, cruscotti, abitudini, categorie e impostazioni AI",
   "manageLinks": "Gestire i collegamenti…",
+  "markdownRemoteImageBlocked": "Immagine da {host} non caricata",
   "matrixStatsConflicts": "Conflitti",
   "matrixStatsCopyDiagnostics": "Diagnostica di copia",
   "matrixStatsCopyDiagnosticsTooltip": "Copia la diagnostica di sincronizzazione negli appunti",

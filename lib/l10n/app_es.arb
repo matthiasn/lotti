@@ -3780,6 +3780,7 @@
   "maintenanceSyncDefinitions": "Sincronizar valores medibles, paneles, hábitos, categorías y ajustes de IA",
   "maintenanceSyncDefinitionsDescription": "Sincronizar valores medibles, paneles, hábitos, categorías y ajustes de IA",
   "manageLinks": "Gestionar vínculos…",
+  "markdownRemoteImageBlocked": "Imagen de {host} no cargada",
   "matrixStatsConflicts": "Conflictos",
   "matrixStatsCopyDiagnostics": "Copiar diagnósticos",
   "matrixStatsCopyDiagnosticsTooltip": "Copiar los diagnósticos de sincronización al portapapeles",

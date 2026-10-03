@@ -3787,6 +3787,7 @@
   "maintenanceSyncDefinitions": "Synchronizovat měřitelné údaje, dashboardy, návyky, kategorie, AI nastavení",
   "maintenanceSyncDefinitionsDescription": "Synchronizovat měřitelné údaje, dashboardy, návyky, kategorie a AI nastavení",
   "manageLinks": "Spravovat propojení…",
+  "markdownRemoteImageBlocked": "Obrázek z {host} nebyl načten",
   "matrixStatsConflicts": "Konflikty",
   "matrixStatsCopyDiagnostics": "Kopírovat diagnostiku",
   "matrixStatsCopyDiagnosticsTooltip": "Kopírovat diagnostiku synchronizace do schránky",

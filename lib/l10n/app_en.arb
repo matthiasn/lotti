@@ -5839,6 +5839,15 @@
   "maintenanceSyncDefinitions": "Sync measurables, dashboards, habits, categories, AI settings",
   "maintenanceSyncDefinitionsDescription": "Sync measurables, dashboards, habits, categories, and AI settings",
   "manageLinks": "Manage links…",
+  "markdownRemoteImageBlocked": "Image from {host} not loaded",
+  "@markdownRemoteImageBlocked": {
+    "description": "Shown in place of an image in AI or agent text: the app does not fetch remote images there, so a prompt-injected URL cannot leak data. host is where the image would have come from.",
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
   "matrixStatsConflicts": "Conflicts",
   "matrixStatsCopyDiagnostics": "Copy Diagnostics",
   "matrixStatsCopyDiagnosticsTooltip": "Copy sync diagnostics to the clipboard",

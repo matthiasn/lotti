@@ -10004,6 +10004,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get manageLinks => 'Gestionar vínculos…';
 
   @override
+  String markdownRemoteImageBlocked(String host) {
+    return 'Imagen de $host no cargada';
+  }
+
+  @override
   String get matrixStatsConflicts => 'Conflictos';
 
   @override

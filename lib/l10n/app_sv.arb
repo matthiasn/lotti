@@ -4158,6 +4158,7 @@
   "maintenanceSyncDefinitions": "Synkronisera mätbara saker, instrumentpaneler, vanor, kategorier, AI-inställningar",
   "maintenanceSyncDefinitionsDescription": "Synkronisera mätbara saker, instrumentpaneler, vanor, kategorier och AI-inställningar",
   "manageLinks": "Hantera länkar…",
+  "markdownRemoteImageBlocked": "Bild från {host} laddades inte",
   "matrixStatsConflicts": "Konflikter",
   "matrixStatsCopyDiagnostics": "Kopiera diagnostik",
   "matrixStatsCopyDiagnosticsTooltip": "Kopiera synkdiagnostik till urklippet",

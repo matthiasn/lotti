@@ -3780,6 +3780,7 @@
   "maintenanceSyncDefinitions": "Messgrößen, Dashboards, Gewohnheiten, Kategorien, AI-Einstellungen synchronisieren",
   "maintenanceSyncDefinitionsDescription": "Messgrößen, Dashboards, Gewohnheiten, Kategorien und AI-Einstellungen synchronisieren",
   "manageLinks": "Verknüpfungen verwalten…",
+  "markdownRemoteImageBlocked": "Bild von {host} nicht geladen",
   "matrixStatsConflicts": "Konflikte",
   "matrixStatsCopyDiagnostics": "Diagnosen kopieren",
   "matrixStatsCopyDiagnosticsTooltip": "Synchronisierungsdiagnosen in die Zwischenablage kopieren",
