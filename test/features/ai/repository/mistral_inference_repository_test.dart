@@ -1939,7 +1939,8 @@ data: not valid json 5
         verify(
           () => mockDomainLogger.error(
             LogDomain.ai,
-            any<Object>(that: isA<FormatException>()),
+            // Only the type: a FormatException's text quotes the response.
+            'FormatException',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
             subDomain: 'parse_threshold_exceeded',
           ),
@@ -2559,7 +2560,7 @@ data: not valid json 5
         verify(
           () => mockDomainLogger.error(
             LogDomain.ai,
-            any<Object>(that: isA<StateError>()),
+            'StateError',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
             subDomain: 'unexpected',
           ),

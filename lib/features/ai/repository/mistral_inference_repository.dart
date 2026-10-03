@@ -65,6 +65,9 @@ class MistralInferenceRepository {
   }
 
   /// Safely log exception to LoggingService if available
+  /// Records [exception] by its type only. Its text is not content-free: a
+  /// `FormatException` from decoding a response quotes the malformed
+  /// response, which can echo the prompt.
   void _logException(
     Object exception, {
     required String subDomain,
@@ -73,7 +76,7 @@ class MistralInferenceRepository {
     if (getIt.isRegistered<DomainLogger>()) {
       getIt<DomainLogger>().error(
         LogDomain.ai,
-        exception,
+        '${exception.runtimeType}',
         stackTrace: stackTrace,
         subDomain: subDomain,
       );
