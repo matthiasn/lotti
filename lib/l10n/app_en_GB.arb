@@ -63,6 +63,7 @@
   "githubNoSummaryYet": "Not summarised yet.",
   "githubSummarize": "Summarise",
   "githubSummarizeAgain": "Summarise again",
+  "githubSummaryAutomaticOff": "Automatic summaries are off for this task's category. Tap Summarise to write one.",
   "goalAttainmentLabel": "{percent}% of target",
   "goalBannerSemanticLabel": "Goal banner for {goalTitle}",
   "goalCreateFailed": "Saving the goal failed — please try again.",

@@ -11645,6 +11645,12 @@ abstract class AppLocalizations {
   /// **'Writing the summary'**
   String get githubSummarizing;
 
+  /// Shown under the empty TL;DR in a pull request's details when the task's category has automatic inference switched off.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic summaries are off for this task\'s category. Tap Summarize to write one.'**
+  String get githubSummaryAutomaticOff;
+
   /// Toast when a summary is asked for while one is being written.
   ///
   /// In en, this message translates to:
@@ -11668,6 +11674,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'There\'s no model set up for this task\'s agent, so nothing can write the summary.'**
   String get githubSummaryNoModel;
+
+  /// Shown under the empty TL;DR in a pull request's details when a summary will be written automatically.
+  ///
+  /// In en, this message translates to:
+  /// **'A summary is written the next time this pull request is refreshed.'**
+  String get githubSummaryOnNextRefresh;
 
   /// No description provided for @githubTokenHide.
   ///

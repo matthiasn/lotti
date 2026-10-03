@@ -75,15 +75,18 @@ const pullRequestSummaryMaxTokens = 800;
 final pullRequestSummarizerProvider = Provider<PullRequestSummarizer>((ref) {
   return PullRequestSummarizer(
     repository: ref.watch(pullRequestRepositoryProvider),
-    categoryOf: (taskId) async {
+    taskOf: (taskId) async {
       final db = ref.read(journalDbProvider);
-      final categoryId = (await db.journalEntityById(taskId))?.meta.categoryId;
-      if (categoryId == null) return null;
-      final category = await db.getCategoryById(categoryId);
+      final task = await db.journalEntityById(taskId);
+      final categoryId = task?.meta.categoryId;
+      final category = categoryId == null
+          ? null
+          : await db.getCategoryById(categoryId);
       return (
-        id: categoryId,
+        categoryId: categoryId,
         automaticInference:
             category?.automaticInferenceEnabledEffective ?? false,
+        languageCode: task is Task ? task.data.languageCode : null,
       );
     },
     modelFor: (taskId) async {
@@ -347,6 +350,18 @@ pullRequestSummaryProvider = StreamProvider.autoDispose
         if (ids.contains(entryId)) yield await read();
       }
     }, name: 'pullRequestSummaryProvider');
+
+/// Why pull request entry `entryId` would not be summarised automatically
+/// now — no category consent, no model, or a recent failure — or null when
+/// its next refresh would ask for a summary. For telling the user why one
+/// is missing; asks no model.
+final FutureProviderFamily<PullRequestSummaryOutcome?, String>
+pullRequestAutomaticSummaryBlockerProvider = FutureProvider.autoDispose
+    .family<PullRequestSummaryOutcome?, String>(
+      (ref, entryId) =>
+          ref.watch(pullRequestSummarizerProvider).automaticBlocker(entryId),
+      name: 'pullRequestAutomaticSummaryBlockerProvider',
+    );
 
 /// The tasks that hold pull request [PullRequestRef.key], kept current as
 /// pull request entries and links change — including those sync brings in,

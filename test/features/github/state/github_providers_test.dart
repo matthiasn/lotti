@@ -943,6 +943,7 @@ void main() {
       when(() => db.journalEntityById(taskId)).thenAnswer(
         (_) async => testTask.copyWith(
           meta: testTask.meta.copyWith(id: taskId, categoryId: 'colony'),
+          data: testTask.data.copyWith(languageCode: 'de'),
         ),
       );
       when(() => db.getCategoryById('colony')).thenAnswer(
@@ -1066,7 +1067,7 @@ void main() {
             temperature: 0.2,
             baseUrl: any(named: 'baseUrl'),
             apiKey: 'k-1',
-            systemMessage: pullRequestSummarySystemMessage,
+            systemMessage: pullRequestSummaryInstructions('de'),
             maxCompletionTokens: pullRequestSummaryMaxTokens,
             provider: any(named: 'provider'),
             tools: [pullRequestSummaryTool],
@@ -1118,6 +1119,28 @@ void main() {
           await summarizer().summarize(merged.id, manual: true),
           PullRequestSummaryOutcome.noModel,
         );
+        verifyNever(generateCall);
+      },
+    );
+
+    test(
+      'the blocker tells why the next refresh would not summarise: the '
+      "category's switch",
+      () async {
+        Future<PullRequestSummaryOutcome?> blocker() async {
+          final c = world()
+            ..listen(
+              pullRequestAutomaticSummaryBlockerProvider(merged.id),
+              (_, _) {},
+            );
+          return c.read(
+            pullRequestAutomaticSummaryBlockerProvider(merged.id).future,
+          );
+        }
+
+        expect(await blocker(), isNull);
+        automaticInference = false;
+        expect(await blocker(), PullRequestSummaryOutcome.notAllowed);
         verifyNever(generateCall);
       },
     );

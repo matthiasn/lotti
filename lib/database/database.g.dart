@@ -6131,7 +6131,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     );
     $arrayStartIndex += flaggedStatuses.length;
     return customSelect(
-      'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND starred IN ($expandedstarredStatuses) AND private IN ($expandedprivateStatuses) AND flag IN ($expandedflaggedStatuses) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
+      'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND NOT(type = \'AiResponse\' AND COALESCE(subtype, \'\') = \'pullRequestSummary\')AND starred IN ($expandedstarredStatuses) AND private IN ($expandedprivateStatuses) AND flag IN ($expandedflaggedStatuses) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
       variables: [
         Variable<int>(limit),
         Variable<int>(offset),
@@ -6159,7 +6159,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     );
     $arrayStartIndex += privateStatuses.length;
     return customSelect(
-      'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND private IN ($expandedprivateStatuses) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
+      'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND NOT(type = \'AiResponse\' AND COALESCE(subtype, \'\') = \'pullRequestSummary\')AND private IN ($expandedprivateStatuses) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
       variables: [
         Variable<int>(limit),
         Variable<int>(offset),
@@ -6179,7 +6179,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedtypes = $expandVar($arrayStartIndex, types.length);
     $arrayStartIndex += types.length;
     return customSelect(
-      'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
+      'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND NOT(type = \'AiResponse\' AND COALESCE(subtype, \'\') = \'pullRequestSummary\')ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
       variables: [
         Variable<int>(limit),
         Variable<int>(offset),
@@ -6219,7 +6219,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedcategories = $expandVar($arrayStartIndex, categories.length);
     $arrayStartIndex += categories.length;
     return customSelect(
-      'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND starred IN ($expandedstarredStatuses) AND private IN ($expandedprivateStatuses) AND flag IN ($expandedflaggedStatuses) AND category IN ($expandedcategories) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
+      'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND NOT(type = \'AiResponse\' AND COALESCE(subtype, \'\') = \'pullRequestSummary\')AND starred IN ($expandedstarredStatuses) AND private IN ($expandedprivateStatuses) AND flag IN ($expandedflaggedStatuses) AND category IN ($expandedcategories) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
       variables: [
         Variable<int>(limit),
         Variable<int>(offset),
@@ -6251,7 +6251,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedcategories = $expandVar($arrayStartIndex, categories.length);
     $arrayStartIndex += categories.length;
     return customSelect(
-      'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND private IN ($expandedprivateStatuses) AND category IN ($expandedcategories) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
+      'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND NOT(type = \'AiResponse\' AND COALESCE(subtype, \'\') = \'pullRequestSummary\')AND private IN ($expandedprivateStatuses) AND category IN ($expandedcategories) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
       variables: [
         Variable<int>(limit),
         Variable<int>(offset),
@@ -6275,7 +6275,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedcategories = $expandVar($arrayStartIndex, categories.length);
     $arrayStartIndex += categories.length;
     return customSelect(
-      'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND category IN ($expandedcategories) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
+      'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND NOT(type = \'AiResponse\' AND COALESCE(subtype, \'\') = \'pullRequestSummary\')AND category IN ($expandedcategories) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
       variables: [
         Variable<int>(limit),
         Variable<int>(offset),
@@ -6316,7 +6316,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     );
     $arrayStartIndex += flaggedStatuses.length;
     return customSelect(
-      'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND id IN ($expandedids) AND starred IN ($expandedstarredStatuses) AND private IN ($expandedprivateStatuses) AND flag IN ($expandedflaggedStatuses) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
+      'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND NOT(type = \'AiResponse\' AND COALESCE(subtype, \'\') = \'pullRequestSummary\')AND id IN ($expandedids) AND starred IN ($expandedstarredStatuses) AND private IN ($expandedprivateStatuses) AND flag IN ($expandedflaggedStatuses) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
       variables: [
         Variable<int>(limit),
         Variable<int>(offset),

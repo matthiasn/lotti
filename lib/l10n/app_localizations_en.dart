@@ -6822,6 +6822,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get githubSummarizing => 'Writing the summary';
 
   @override
+  String get githubSummaryAutomaticOff =>
+      'Automatic summaries are off for this task\'s category. Tap Summarize to write one.';
+
+  @override
   String get githubSummaryBusy => 'A summary is already being written.';
 
   @override
@@ -6834,6 +6838,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get githubSummaryNoModel =>
       'There\'s no model set up for this task\'s agent, so nothing can write the summary.';
+
+  @override
+  String get githubSummaryOnNextRefresh =>
+      'A summary is written the next time this pull request is refreshed.';
 
   @override
   String get githubTokenHide => 'Hide token';
@@ -16730,6 +16738,10 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get githubSummarizeAgain => 'Summarise again';
+
+  @override
+  String get githubSummaryAutomaticOff =>
+      'Automatic summaries are off for this task\'s category. Tap Summarise to write one.';
 
   @override
   String goalAttainmentLabel(int percent) {

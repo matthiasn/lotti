@@ -6960,6 +6960,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get githubSummarizing => 'Rédaction du résumé';
 
   @override
+  String get githubSummaryAutomaticOff =>
+      'Les résumés automatiques sont désactivés pour la catégorie de cette tâche. Touche Résumer pour en rédiger un.';
+
+  @override
   String get githubSummaryBusy => 'Un résumé est déjà en cours de rédaction.';
 
   @override
@@ -6972,6 +6976,10 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get githubSummaryNoModel =>
       'Aucun modèle n\'est configuré pour l\'agent de cette tâche, donc rien ne peut rédiger le résumé.';
+
+  @override
+  String get githubSummaryOnNextRefresh =>
+      'Un résumé sera rédigé à la prochaine actualisation de cette pull request.';
 
   @override
   String get githubTokenHide => 'Masquer le jeton';

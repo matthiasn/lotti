@@ -6928,6 +6928,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get githubSummarizing => 'Píšu shrnutí';
 
   @override
+  String get githubSummaryAutomaticOff =>
+      'Automatická shrnutí jsou pro kategorii tohoto úkolu vypnutá. Klepni na Shrnout a napiš ho.';
+
+  @override
   String get githubSummaryBusy => 'Shrnutí se už píše.';
 
   @override
@@ -6940,6 +6944,10 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get githubSummaryNoModel =>
       'Agent tohoto úkolu nemá nastavený model, takže shrnutí nemá kdo napsat.';
+
+  @override
+  String get githubSummaryOnNextRefresh =>
+      'Shrnutí se napíše při příští aktualizaci tohoto pull requestu.';
 
   @override
   String get githubTokenHide => 'Skrýt token';

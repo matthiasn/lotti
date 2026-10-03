@@ -415,10 +415,16 @@ listConfigFlags:
 SELECT *
   FROM config_flags;
 
+-- The journal feed. A pull request summary (an AI response whose subtype is
+-- the enum name `AiResponseType.pullRequestSummary.name`) is left out of
+-- every one of these: it belongs to its pull request, whose details show it,
+-- and a stream of them would only crowd the feed. COALESCE keeps AI
+-- responses without a type, whose subtype is NULL.
 filteredJournal:
 SELECT * FROM journal
   WHERE type IN :types
   AND deleted = false
+  AND NOT (type = 'AiResponse' AND COALESCE(subtype, '') = 'pullRequestSummary')
   AND starred IN :starredStatuses
   AND private IN :privateStatuses
   AND flag IN :flaggedStatuses
@@ -430,6 +436,7 @@ filteredJournalFast:
 SELECT * FROM journal
   WHERE type IN :types
   AND deleted = false
+  AND NOT (type = 'AiResponse' AND COALESCE(subtype, '') = 'pullRequestSummary')
   AND private IN :privateStatuses
   ORDER BY date_from DESC
   LIMIT :limit
@@ -439,6 +446,7 @@ filteredJournalFastAllPrivate:
 SELECT * FROM journal
   WHERE type IN :types
   AND deleted = false
+  AND NOT (type = 'AiResponse' AND COALESCE(subtype, '') = 'pullRequestSummary')
   ORDER BY date_from DESC
   LIMIT :limit
   OFFSET :offset;
@@ -447,6 +455,7 @@ filteredJournalByCategories:
 SELECT * FROM journal
   WHERE type IN :types
   AND deleted = false
+  AND NOT (type = 'AiResponse' AND COALESCE(subtype, '') = 'pullRequestSummary')
   AND starred IN :starredStatuses
   AND private IN :privateStatuses
   AND flag IN :flaggedStatuses
@@ -459,6 +468,7 @@ filteredJournalByCategoriesFast:
 SELECT * FROM journal
   WHERE type IN :types
   AND deleted = false
+  AND NOT (type = 'AiResponse' AND COALESCE(subtype, '') = 'pullRequestSummary')
   AND private IN :privateStatuses
   AND category IN :categories
   ORDER BY date_from DESC
@@ -469,6 +479,7 @@ filteredJournalByCategoriesFastAllPrivate:
 SELECT * FROM journal
   WHERE type IN :types
   AND deleted = false
+  AND NOT (type = 'AiResponse' AND COALESCE(subtype, '') = 'pullRequestSummary')
   AND category IN :categories
   ORDER BY date_from DESC
   LIMIT :limit
@@ -478,6 +489,7 @@ filteredJournalByIds:
 SELECT * FROM journal
   WHERE type IN :types
   AND deleted = false
+  AND NOT (type = 'AiResponse' AND COALESCE(subtype, '') = 'pullRequestSummary')
   AND id IN :ids
   AND starred IN :starredStatuses
   AND private IN :privateStatuses

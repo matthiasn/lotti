@@ -6939,6 +6939,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get githubSummarizing => 'Sto scrivendo il riassunto';
 
   @override
+  String get githubSummaryAutomaticOff =>
+      'I riassunti automatici sono disattivati per la categoria di questa attività. Tocca Riassumi per scriverne uno.';
+
+  @override
   String get githubSummaryBusy => 'Un riassunto è già in fase di scrittura.';
 
   @override
@@ -6951,6 +6955,10 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get githubSummaryNoModel =>
       'Non c\'è nessun modello configurato per l\'agente di questa attività, quindi niente può scrivere il riassunto.';
+
+  @override
+  String get githubSummaryOnNextRefresh =>
+      'Un riassunto verrà scritto al prossimo aggiornamento di questa pull request.';
 
   @override
   String get githubTokenHide => 'Nascondi token';

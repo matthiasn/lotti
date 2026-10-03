@@ -45,6 +45,7 @@ void main() {
     WidgetTester tester, {
     PullRequestEntry? shown,
     PullRequestSummary? summarized = summary,
+    PullRequestSummaryOutcome? blocker,
   }) async {
     await withClock(Clock.fixed(now), () async {
       await tester.pumpWidget(
@@ -57,6 +58,9 @@ void main() {
               (ref, id) => Stream.value(summarized),
             ),
             pullRequestSummarizerProvider.overrideWithValue(summarizer),
+            pullRequestAutomaticSummaryBlockerProvider.overrideWith(
+              (ref, id) async => blocker,
+            ),
             pullRequestHoldersProvider.overrideWith(
               (ref, pr) => Stream.value(const {taskId}),
             ),
@@ -120,6 +124,60 @@ void main() {
       expect(find.text('Summarize'), findsOneWidget);
     },
   );
+
+  for (final (blocker, why) in [
+    (
+      PullRequestSummaryOutcome.notAllowed,
+      "Automatic summaries are off for this task's category. Tap Summarize "
+          'to write one.',
+    ),
+    (
+      PullRequestSummaryOutcome.noModel,
+      "There's no model set up for this task's agent, so nothing can write "
+          'the summary.',
+    ),
+    (
+      PullRequestSummaryOutcome.coolingDown,
+      "The summary couldn't be written. Try again.",
+    ),
+    (
+      null,
+      'A summary is written the next time this pull request is refreshed.',
+    ),
+  ]) {
+    testWidgets(
+      'without a summary it says why: ${blocker?.name ?? 'next refresh'}',
+      (tester) async {
+        await pump(tester, summarized: null, blocker: blocker);
+
+        expect(find.text('Not summarized yet.'), findsOneWidget);
+        expect(find.text(why), findsOneWidget);
+      },
+    );
+  }
+
+  testWidgets(
+    'with a summary there is no reason to give',
+    (tester) async {
+      await pump(tester, blocker: PullRequestSummaryOutcome.notAllowed);
+      expect(
+        find.textContaining('Automatic summaries are off'),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets('a pull request gone says only that it is not summarized', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      summarized: null,
+      blocker: PullRequestSummaryOutcome.missing,
+    );
+    expect(find.text('Not summarized yet.'), findsOneWidget);
+    expect(find.textContaining('summary'), findsNothing);
+  });
 
   for (final (outcome, toast) in [
     (PullRequestSummaryOutcome.stored, null),

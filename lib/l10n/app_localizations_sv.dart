@@ -6863,6 +6863,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get githubSummarizing => 'Skriver sammanfattningen';
 
   @override
+  String get githubSummaryAutomaticOff =>
+      'Automatiska sammanfattningar är avstängda för den här uppgiftens kategori. Tryck på Sammanfatta för att skriva en.';
+
+  @override
   String get githubSummaryBusy => 'En sammanfattning skrivs redan.';
 
   @override
@@ -6875,6 +6879,10 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get githubSummaryNoModel =>
       'Det finns ingen modell inställd för den här uppgiftens agent, så inget kan skriva sammanfattningen.';
+
+  @override
+  String get githubSummaryOnNextRefresh =>
+      'En sammanfattning skrivs nästa gång den här pull requesten uppdateras.';
 
   @override
   String get githubTokenHide => 'Dölj token';

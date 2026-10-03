@@ -111,11 +111,29 @@ class _PullRequestDetailsState extends ConsumerState<PullRequestDetails> {
   ) => switch (outcome) {
     PullRequestSummaryOutcome.stored ||
     PullRequestSummaryOutcome.upToDate ||
+    PullRequestSummaryOutcome.coolingDown ||
     PullRequestSummaryOutcome.missing => null,
     PullRequestSummaryOutcome.busy => messages.githubSummaryBusy,
     PullRequestSummaryOutcome.noModel ||
     PullRequestSummaryOutcome.notAllowed => messages.githubSummaryNoModel,
     PullRequestSummaryOutcome.failed => messages.githubSummaryFailed,
+  };
+
+  /// Why there is no summary yet, as [blocker] says; null when there is
+  /// nothing to tell.
+  static String? _whyNoSummary(
+    AppLocalizations messages,
+    PullRequestSummaryOutcome? blocker,
+  ) => switch (blocker) {
+    null => messages.githubSummaryOnNextRefresh,
+    PullRequestSummaryOutcome.notAllowed => messages.githubSummaryAutomaticOff,
+    PullRequestSummaryOutcome.noModel => messages.githubSummaryNoModel,
+    PullRequestSummaryOutcome.coolingDown => messages.githubSummaryFailed,
+    PullRequestSummaryOutcome.stored ||
+    PullRequestSummaryOutcome.upToDate ||
+    PullRequestSummaryOutcome.failed ||
+    PullRequestSummaryOutcome.busy ||
+    PullRequestSummaryOutcome.missing => null,
   };
 
   @override
@@ -179,8 +197,15 @@ class _PullRequestDetailsState extends ConsumerState<PullRequestDetails> {
         SizedBox(height: tokens.spacing.step2),
         if (summary != null)
           SelectableText(summary.tldr, style: body)
-        else
+        else ...[
           Text(messages.githubNoSummaryYet, style: quiet),
+          if (ref
+                  .watch(pullRequestAutomaticSummaryBlockerProvider(entry.id))
+                  .whenData((blocker) => _whyNoSummary(messages, blocker))
+                  .value
+              case final why?)
+            Text(why, style: quiet),
+        ],
         SizedBox(height: tokens.spacing.step3),
         DesignSystemButton(
           key: PullRequestDetailsKeys.summarize,
