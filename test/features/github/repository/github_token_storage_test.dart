@@ -1,9 +1,15 @@
+import 'dart:async';
 import 'dart:convert';
 
+import 'dart:io';
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/github/repository/github_token_storage.dart';
 
+import 'package:lotti/features/profiles/model/profile.dart';
+import 'package:lotti/features/profiles/model/profile_context.dart';
+import 'package:mocktail/mocktail.dart';
+import '../../../mocks/mocks.dart';
 import '../in_memory_keychain.dart';
 
 void main() {
@@ -36,6 +42,7 @@ void main() {
           'login': 'pingu',
           'updatedAt': stamp0,
           'verified': true,
+          'owed': true,
         });
         expect(record.updatedAt, stamp0);
         expect(await storage.readToken(), 'ghp_secret');
@@ -108,6 +115,62 @@ void main() {
         final held = await storage.read();
         expect(held!.token, 'ghp_new');
         expect(held.verified, isFalse);
+        // What was made here is superseded: nothing is owed any more.
+        expect(held.owed, isFalse);
+      },
+    );
+
+    test(
+      'never overwrites a newer change made here while it was being '
+      'compared (AtomicApply)',
+      () async {
+        // A keychain whose next read answers with what it held when asked,
+        // but only once the gate opens: an apply that read the old record
+        // is still deciding when the user disconnects.
+        final values = <String, String>{};
+        final gate = Completer<void>();
+        var holdNextRead = false;
+        final keystore = MockSecureStorage();
+        when(() => keystore.read(key: any(named: 'key'))).thenAnswer((
+          invocation,
+        ) async {
+          final value = values[invocation.namedArguments[#key] as String];
+          if (holdNextRead) {
+            holdNextRead = false;
+            await gate.future;
+          }
+          return value;
+        });
+        when(
+          () => keystore.write(
+            key: any(named: 'key'),
+            value: any(named: 'value'),
+          ),
+        ).thenAnswer((invocation) async {
+          values[invocation.namedArguments[#key] as String] =
+              invocation.namedArguments[#value] as String;
+        });
+        final device = GitHubTokenStorage(keystore, namespace: 'real');
+        await device.applyIfNewer(
+          GitHubAccountRecord(token: 'ghp_held', updatedAt: stamp0),
+        );
+
+        holdNextRead = true;
+        final applying = device.applyIfNewer(
+          GitHubAccountRecord(token: 'ghp_late', updatedAt: stamp0 + 1),
+        );
+        await pumpEventQueue();
+        final clearing = withClock(
+          Clock.fixed(t0.add(const Duration(minutes: 1))),
+          device.clear,
+        );
+        await pumpEventQueue();
+        gate.complete();
+        await Future.wait([applying, clearing]);
+
+        final held = await device.read();
+        expect(held!.connected, isFalse);
+        expect(held.updatedAt, stamp0 + 60000);
       },
     );
 
@@ -149,23 +212,51 @@ void main() {
       },
     );
 
-    test('becomes checked once GitHub accepts it here', () async {
+    test('becomes checked once GitHub accepts that version here', () async {
       await storage.applyIfNewer(
         GitHubAccountRecord(token: 'ghp_new', updatedAt: stamp0),
       );
 
-      await storage.markVerified('pingu');
+      final marked = await storage.markVerified(
+        token: 'ghp_new',
+        updatedAt: stamp0,
+        login: 'pingu',
+      );
 
+      expect(marked, isTrue);
       final held = await storage.read();
       expect(held!.verified, isTrue);
       expect(held.login, 'pingu');
       expect(held.updatedAt, stamp0);
     });
 
-    test('marking nothing verified changes nothing', () async {
-      await storage.markVerified('pingu');
-      expect(await storage.read(), isNull);
-    });
+    test(
+      'a check of another version marks nothing: a newer token that arrived '
+      'during the check is checked on its own (VerifyMatchesVersion)',
+      () async {
+        await storage.applyIfNewer(
+          GitHubAccountRecord(token: 'ghp_b', updatedAt: stamp0 + 1),
+        );
+
+        final marked = await storage.markVerified(
+          token: 'ghp_a',
+          updatedAt: stamp0,
+          login: 'someone-else',
+        );
+
+        expect(marked, isFalse);
+        final held = await storage.read();
+        expect(held!.verified, isFalse);
+        expect(held.login, isNull);
+        expect(
+          await GitHubTokenStorage(
+            inMemoryKeychain({}),
+            namespace: 'real',
+          ).markVerified(token: 'ghp_a', updatedAt: 1, login: 'pingu'),
+          isFalse,
+        );
+      },
+    );
   });
 
   test(
@@ -189,6 +280,73 @@ void main() {
         ),
         isTrue,
       );
+    },
+  );
+
+  group('owed to the other devices', () {
+    test('a change made here is owed until it is sent', () async {
+      final saved = await storage.save(token: 'ghp_secret', login: 'pingu');
+      expect(saved.owed, isTrue);
+
+      await storage.markSent(saved);
+      expect((await storage.read())!.owed, isFalse);
+
+      final cleared = await storage.clear();
+      expect(cleared.owed, isTrue);
+      expect((await storage.read())!.owed, isTrue);
+    });
+
+    test(
+      'sending an older version leaves a change made since still owed',
+      () async {
+        final first = await withClock(
+          Clock.fixed(t0),
+          () => storage.save(token: 'ghp_first', login: 'pingu'),
+        );
+        await withClock(
+          Clock.fixed(t0.add(const Duration(seconds: 1))),
+          storage.clear,
+        );
+
+        await storage.markSent(first);
+
+        expect((await storage.read())!.owed, isTrue);
+      },
+    );
+
+    test('a check keeps what is owed', () async {
+      final saved = await storage.save(token: 'ghp_secret', login: 'pingu');
+      await storage.markVerified(
+        token: 'ghp_secret',
+        updatedAt: saved.updatedAt,
+        login: 'pingu',
+      );
+      expect((await storage.read())!.owed, isTrue);
+    });
+  });
+
+  test(
+    "a profile's storage is namespaced by the profile's id, so a guest world "
+    'keeps its own',
+    () async {
+      final keychain = <String, String>{};
+      final guest = gitHubTokenStorageForProfile(
+        inMemoryKeychain(keychain),
+        ProfileContext.forProfile(
+          profile: Profile(
+            id: 'g1',
+            type: ProfileType.guest,
+            name: 'Penguin world',
+            dirName: 'guest_profiles/g1',
+            createdAt: DateTime(2026),
+          ),
+          root: Directory('/data/lotti'),
+        ),
+      );
+
+      await guest.save(token: 'ghp_guest', login: 'pingu');
+
+      expect(keychain.keys, ['github_account:g1']);
     },
   );
 

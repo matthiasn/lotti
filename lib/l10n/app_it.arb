@@ -2985,6 +2985,7 @@
   "generateCoverArtSubtitle": "Crea immagine dalla descrizione vocale",
   "githubAlsoLinkedElsewhere": "{count, plural, =1{Collegata anche a un'altra attività} other{Collegata anche ad altre {count} attività}}",
   "githubAlsoLinkedTo": "Collegata anche a «{title}»",
+  "githubChangeOwed": "Salvato su questo dispositivo. Non è stato ancora possibile inviarlo agli altri tuoi dispositivi; Lotti riproverà al prossimo avvio.",
   "githubCheckOtherDevices": "Controlla i miei altri dispositivi",
   "githubChecksFailing": "{count, plural, =1{1 controllo non riuscito} other{{count} controlli non riusciti}}",
   "@githubChecksFailing": {
@@ -3086,6 +3087,7 @@
   "githubReviewApproved": "Approvata",
   "githubReviewChangesRequested": "Modifiche richieste",
   "githubReviewPending": "Revisione richiesta",
+  "githubSendFailed": "Non è stato possibile inviarlo agli altri tuoi dispositivi. Riprova.",
   "githubSendToOtherDevices": "Invia ai miei altri dispositivi",
   "githubSentToOtherDevices": "Inviato. Gli altri tuoi dispositivi lo riceveranno alla prossima sincronizzazione.",
   "githubStatusClosed": "Chiusa",

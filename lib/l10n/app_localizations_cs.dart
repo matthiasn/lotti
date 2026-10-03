@@ -6642,6 +6642,10 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get githubChangeOwed =>
+      'Uloženo v tomto zařízení. Na tvá další zařízení se zatím nepodařilo odeslat; Lotti to zkusí znovu při příštím spuštění.';
+
+  @override
   String get githubCheckOtherDevices => 'Zkontrolovat má další zařízení';
 
   @override
@@ -6855,6 +6859,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get githubReviewPending => 'Vyžádána revize';
+
+  @override
+  String get githubSendFailed =>
+      'Nepodařilo se ho poslat na tvá další zařízení. Zkus to znovu.';
 
   @override
   String get githubSendToOtherDevices => 'Poslat na má další zařízení';

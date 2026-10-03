@@ -6568,6 +6568,10 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get githubChangeOwed =>
+      'Gemt på denne enhed. Det kunne ikke sendes til dine andre enheder endnu; Lotti prøver igen ved næste start.';
+
+  @override
   String get githubCheckOtherDevices => 'Tjek mine andre enheder';
 
   @override
@@ -6778,6 +6782,10 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get githubReviewPending => 'Review anmodet';
+
+  @override
+  String get githubSendFailed =>
+      'Det kunne ikke sendes til dine andre enheder. Prøv igen.';
 
   @override
   String get githubSendToOtherDevices => 'Send til mine andre enheder';

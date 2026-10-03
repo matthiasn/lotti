@@ -9,6 +9,21 @@ import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
+/// What the page last learned about the user's other devices.
+enum _SyncNote {
+  /// The token went to the outbox.
+  sent,
+
+  /// The outbox did not take it; the user may try again.
+  sendFailed,
+
+  /// A change made here is owed: it is sent at the next start.
+  owed,
+
+  /// Sync caught up and no token arrived — said only while there is none.
+  noToken,
+}
+
 /// Mobile / Beamer wrapper for the GitHub setting.
 class GitHubSettingsPage extends StatelessWidget {
   const GitHubSettingsPage({super.key});
@@ -40,7 +55,7 @@ class _GitHubSettingsBodyState extends ConsumerState<GitHubSettingsBody> {
 
   /// The other-devices action in flight, and what it last found.
   var _syncing = false;
-  String? _syncNote;
+  _SyncNote? _syncNote;
 
   @override
   void dispose() {
@@ -56,6 +71,7 @@ class _GitHubSettingsBodyState extends ConsumerState<GitHubSettingsBody> {
     final failure = await ref
         .read(gitHubAccountControllerProvider.notifier)
         .connect(_tokenController.text);
+    final owed = failure == null && await _changeOwed();
     if (!mounted) return;
     setState(() {
       _connecting = false;
@@ -63,8 +79,19 @@ class _GitHubSettingsBodyState extends ConsumerState<GitHubSettingsBody> {
           ? null
           : gitHubFailureMessage(context.messages, failure);
       if (failure == null) _tokenController.clear();
+      _syncNote = owed ? _SyncNote.owed : null;
     });
   }
+
+  Future<void> _disconnect() async {
+    await ref.read(gitHubAccountControllerProvider.notifier).disconnect();
+    final owed = await _changeOwed();
+    if (!mounted) return;
+    setState(() => _syncNote = owed ? _SyncNote.owed : null);
+  }
+
+  Future<bool> _changeOwed() =>
+      ref.read(gitHubAccountControllerProvider.notifier).changeOwed();
 
   Future<void> _sendToOtherDevices() async {
     setState(() {
@@ -77,7 +104,11 @@ class _GitHubSettingsBodyState extends ConsumerState<GitHubSettingsBody> {
     if (!mounted) return;
     setState(() {
       _syncing = false;
-      _syncNote = sent ? context.messages.githubSentToOtherDevices : null;
+      _syncNote = switch (sent) {
+        true => _SyncNote.sent,
+        false => _SyncNote.sendFailed,
+        null => null,
+      };
     });
   }
 
@@ -95,9 +126,7 @@ class _GitHubSettingsBodyState extends ConsumerState<GitHubSettingsBody> {
     if (!mounted) return;
     setState(() {
       _syncing = false;
-      _syncNote = ref.read(gitHubAccountControllerProvider).value == null
-          ? context.messages.githubNoTokenFromOtherDevices
-          : null;
+      _syncNote = _SyncNote.noToken;
     });
   }
 
@@ -149,9 +178,7 @@ class _GitHubSettingsBodyState extends ConsumerState<GitHubSettingsBody> {
               label: messages.githubDisconnectButton,
               variant: DesignSystemButtonVariant.secondary,
               leadingIcon: LottiIcons.signOut,
-              onPressed: () => ref
-                  .read(gitHubAccountControllerProvider.notifier)
-                  .disconnect(),
+              onPressed: _disconnect,
             ),
           ] else ...[
             Text(messages.githubTokenIntro, style: secondary),
@@ -202,7 +229,17 @@ class _GitHubSettingsBodyState extends ConsumerState<GitHubSettingsBody> {
                     : _checkOtherDevices,
               ),
             ),
-            if (_syncNote case final note?)
+            // Tied to the account as it is now: a token that arrives after
+            // the check leaves no stale "none arrived" beside it.
+            if (switch (_syncNote) {
+                  _SyncNote.sent => messages.githubSentToOtherDevices,
+                  _SyncNote.sendFailed => messages.githubSendFailed,
+                  _SyncNote.owed => messages.githubChangeOwed,
+                  _SyncNote.noToken when login == null =>
+                    messages.githubNoTokenFromOtherDevices,
+                  _ => null,
+                }
+                case final note?)
               Text(note, key: const Key('github_sync_note'), style: secondary),
           ],
           SizedBox(height: tokens.spacing.step5),

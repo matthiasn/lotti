@@ -23,6 +23,7 @@ void main() {
   late MockGitHubClient client;
   late GitHubTokenStorage storage;
   late List<SyncMessage> sent;
+  late bool outboxRefuses;
   late Future<void> Function() onRescan;
 
   const rejected =
@@ -33,6 +34,7 @@ void main() {
     client = MockGitHubClient();
     storage = GitHubTokenStorage(inMemoryKeychain({}), namespace: 'real');
     sent = [];
+    outboxRefuses = false;
     onRescan = () async {};
     final activity = MockUserActivityService();
     when(activity.updateActivity).thenReturn(null);
@@ -56,7 +58,11 @@ void main() {
           gitHubTokenStorageProvider.overrideWithValue(storage),
           gitHubAccountSyncProvider.overrideWithValue(
             GitHubAccountSync(
-              enqueue: (message) async => sent.add(message),
+              storage: storage,
+              enqueueOrThrow: (message) async {
+                if (outboxRefuses) throw Exception('no outbox row');
+                sent.add(message);
+              },
               rescan: syncs ? () => onRescan() : null,
             ),
           ),
@@ -236,6 +242,125 @@ void main() {
           find.text('Sent. Your other devices pick it up when they next sync.'),
           findsOneWidget,
         );
+      },
+    );
+
+    testWidgets(
+      'a token that arrives after the check found none clears the note',
+      (tester) async {
+        final updates = StreamController<Set<String>>.broadcast();
+        addTearDown(updates.close);
+        final notifications = MockUpdateNotifications();
+        when(
+          () => notifications.updateStream,
+        ).thenAnswer((_) => updates.stream);
+        getIt
+          ..unregister<UpdateNotifications>()
+          ..registerSingleton<UpdateNotifications>(notifications);
+        when(
+          () => client.fetchViewerLogin('ghp_synced'),
+        ).thenAnswer((_) async => 'pingu');
+        await pump(tester);
+        await tester.tap(find.byKey(otherDevices));
+        await tester.pump();
+        await tester.pump();
+        expect(find.byKey(const Key('github_sync_note')), findsOneWidget);
+
+        // The catch-up queued it; the inbound worker applies it later.
+        await received('ghp_synced');
+        updates.add({gitHubAccountNotification});
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('Connected as @pingu'), findsOneWidget);
+        expect(find.byKey(const Key('github_sync_note')), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'a connection the outbox refused says it is saved here and sent later',
+      (tester) async {
+        when(
+          () => client.fetchViewerLogin('ghp_secret'),
+        ).thenAnswer((_) async => 'pingu');
+        outboxRefuses = true;
+        await pump(tester);
+
+        await tester.enterText(
+          find.byKey(const Key('github_token')),
+          'ghp_secret',
+        );
+        await tester.pump();
+        await tester.tap(find.byKey(const Key('github_connect')));
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('Connected as @pingu'), findsOneWidget);
+        expect(
+          find.text(
+            'Saved on this device. It could not be sent to your other '
+            'devices yet; Lotti tries again when it next starts.',
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('a resend the outbox refused says to try again', (
+      tester,
+    ) async {
+      await storage.save(token: 'ghp_secret', login: 'pingu');
+      outboxRefuses = true;
+      await pump(tester);
+
+      await tester.tap(find.byKey(otherDevices));
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        find.text('Could not send it to your other devices. Try again.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'a token that arrives while checking but GitHub rejects shows the '
+      'rejection, not a connection',
+      (tester) async {
+        when(() => client.fetchViewerLogin('ghp_revoked')).thenThrow(
+          const GitHubException(GitHubFailureKind.unauthorized),
+        );
+        onRescan = () => received('ghp_revoked');
+        await pump(tester);
+
+        await tester.tap(find.byKey(otherDevices));
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('Connected as @pingu'), findsNothing);
+        expect(find.text(rejected), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'a resend after the token went away behind the page says nothing',
+      (tester) async {
+        await storage.save(token: 'ghp_secret', login: 'pingu');
+        await pump(tester);
+        // Disconnected by another device; this page has not heard yet.
+        await storage.applyIfNewer(
+          GitHubAccountRecord(updatedAt: DateTime(2100).millisecondsSinceEpoch),
+        );
+
+        await tester.tap(find.byKey(otherDevices));
+        await tester.pump();
+        await tester.pump();
+
+        expect(sent, isEmpty);
+        expect(find.byKey(const Key('github_sync_note')), findsNothing);
       },
     );
 

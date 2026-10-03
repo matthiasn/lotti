@@ -2728,6 +2728,7 @@
   "generateCoverArtSubtitle": "Bild aus einer Beschreibung erstellen",
   "githubAlsoLinkedElsewhere": "{count, plural, =1{Auch mit einer anderen Aufgabe verknüpft} other{Auch mit {count} anderen Aufgaben verknüpft}}",
   "githubAlsoLinkedTo": "Auch mit „{title}“ verknüpft",
+  "githubChangeOwed": "Auf diesem Gerät gespeichert. An deine anderen Geräte konnte es noch nicht gesendet werden; Lotti versucht es beim nächsten Start erneut.",
   "githubCheckOtherDevices": "Meine anderen Geräte prüfen",
   "githubChecksFailing": "{count, plural, =1{1 Check fehlgeschlagen} other{{count} Checks fehlgeschlagen}}",
   "@githubChecksFailing": {
@@ -2829,6 +2830,7 @@
   "githubReviewApproved": "Freigegeben",
   "githubReviewChangesRequested": "Änderungen angefordert",
   "githubReviewPending": "Review angefragt",
+  "githubSendFailed": "Konnte nicht an deine anderen Geräte gesendet werden. Versuch es noch einmal.",
   "githubSendToOtherDevices": "An meine anderen Geräte senden",
   "githubSentToOtherDevices": "Gesendet. Deine anderen Geräte übernehmen ihn bei der nächsten Synchronisierung.",
   "githubStatusClosed": "Geschlossen",

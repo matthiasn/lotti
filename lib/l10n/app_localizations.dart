@@ -11189,6 +11189,12 @@ abstract class AppLocalizations {
   /// **'Also linked to “{title}”'**
   String githubAlsoLinkedTo(String title);
 
+  /// No description provided for @githubChangeOwed.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved on this device. It could not be sent to your other devices yet; Lotti tries again when it next starts.'**
+  String get githubChangeOwed;
+
   /// No description provided for @githubCheckOtherDevices.
   ///
   /// In en, this message translates to:
@@ -11524,6 +11530,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Review requested'**
   String get githubReviewPending;
+
+  /// No description provided for @githubSendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send it to your other devices. Try again.'**
+  String get githubSendFailed;
 
   /// No description provided for @githubSendToOtherDevices.
   ///

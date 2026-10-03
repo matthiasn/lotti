@@ -2367,27 +2367,32 @@ retries and outbox claim/mark windows remain in their own models.
 
 ## `GitHubAccountSync` — the GitHub token, syncing between devices (a design model)
 
-**Written before the code's tests.** The user's read-only GitHub token syncs to
-their other devices the way an inference provider's key does: end-to-end
-encrypted, applied into the receiver's keychain. Each device holds one record —
-a token or none (a disconnection), the stamp of the change, and whether this
-device has checked the token with GitHub. A received record replaces the held
-one if it is newer: a later stamp, or the same stamp and the greater content.
+**Written before the code's tests, and revised with them.** The user's
+read-only GitHub token syncs to their other devices the way an inference
+provider's key does: end-to-end encrypted, applied into the receiver's
+keychain. Each device holds one record — a token or none (a disconnection),
+the stamp of the change, whether this device has checked the token with
+GitHub, and whether a change made here is still owed to the outbox. A
+received record replaces the held one if it is newer: a later stamp, or the
+same stamp and the greater content.
 [`SyncSettings`](#syncsettings--the-boundary-for-settings-without-sequence-recovery)
 models how one received value is applied; this model adds what that one leaves
 out — changes made on the devices themselves racing the ones that arrive, under
-disagreeing clocks, re-sends, and a value a device must check before it shows
-it. The concept is [GitHub pull requests](../../knowledge/features/github.md).
+disagreeing clocks, re-sends, an outbox that refuses a row, a received version
+compared and written in two steps, and a GitHub check that answers after the
+held version changed. The concept is
+[GitHub pull requests](../../knowledge/features/github.md).
 
 | Property | Kind | Says |
 |----------|------|------|
 | `ShownWasChecked` | invariant | a device shows a token as connected only once it checked that version with GitHub itself |
-| `Converged` | invariant | with nothing in flight, every device holds the same token, or none, at the same stamp |
+| `Converged` | invariant | with nothing in flight, owed or half-applied, every device holds the same token, or none, at the same stamp |
 | `LocalChangeOutranks` | action property | a change made on a device outranks the version it was made over |
+| `StampNeverGoesBack` | action property | what a device holds never goes back to an older version |
 
 | Configuration | Devices | Tokens | Clock bound | Distinct states |
 |---------------|--------:|-------:|------------:|----------------:|
-| `GitHubAccountSync` | 2 | 2 | 3 | 2,170,020 |
+| `GitHubAccountSync` | 2 | 2 | 3 | 9,934,868 |
 
 Each switch is the proposed design; set to `FALSE` (in a copy outside this
 directory) it has a counterexample:
@@ -2396,10 +2401,13 @@ directory) it has a counterexample:
 |--------|-------------|----------------|
 | `BumpStamp` | stamp a change with the device clock alone | `LocalChangeOutranks`, four states; and `Converged`, five: a device whose clock is behind disconnects after receiving a newer token, its disconnection is older, and the others keep the token for good |
 | `DeterministicTies` | let the held version win an equal stamp | `Converged`, five states: two devices connect different tokens in the same millisecond and each keeps its own |
-| `VerifyReceived` | trust a received token as the sender checked it | `ShownWasChecked`, three states: a token another device sent shows as connected here though GitHub was never asked here, and it may have been revoked |
+| `VerifyReceived` | trust a received token as the sender checked it | `ShownWasChecked`, four states: a token another device sent shows as connected here though GitHub was never asked here |
+| `VerifyMatchesVersion` | mark whatever is held when GitHub answers | `ShownWasChecked`, eight states: a newer token arrives while an older one is checked, and shows as connected under the older one's answer |
+| `AtomicApply` | read, compare and write a received version in separate steps | `StampNeverGoesBack`, six states: an older version read before a local disconnection is written after it |
+| `RetryOwed` | let a change the outbox refused go unsent | `Converged`, two states: a connection the outbox refused never reaches the other device |
 
 Left out, deliberately: the transport, which the sync models cover; GitHub's
-answer while a device is offline or rate limited, which only delays `Verify`;
+answer while a device is offline or rate limited, which only delays the check;
 and guest and demo worlds, which have no sync stack, so nothing reaches them.
 
 ## `SyncSettings` — the boundary for settings without sequence recovery

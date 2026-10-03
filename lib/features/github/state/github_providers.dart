@@ -172,7 +172,9 @@ final StreamProviderFamily<String?, String> pullRequestHolderTitleProvider =
 /// inert outbox and no catch-up.
 final gitHubAccountSyncProvider = Provider<GitHubAccountSync>(
   (ref) => GitHubAccountSync(
-    enqueue: (message) => getIt<OutboxService>().enqueueMessage(message),
+    storage: ref.watch(gitHubTokenStorageProvider),
+    enqueueOrThrow: (message) =>
+        getIt<OutboxService>().enqueueMessageOrThrow(message),
     rescan:
         ref.watch(syncFeatureAvailableProvider) &&
             getIt.isRegistered<MatrixService>()
@@ -210,23 +212,37 @@ class GitHubAccountController extends AsyncNotifier<String?> {
     ref.onDispose(changes.cancel);
 
     final storage = ref.watch(gitHubTokenStorageProvider);
-    final record = await storage.read();
-    if (record == null || !record.connected) return null;
-    if (record.verified) return record.login;
-    try {
-      final login = await ref
-          .read(gitHubClientProvider)
-          .fetchViewerLogin(record.token!);
-      await storage.markVerified(login);
-      return login;
-    } on GitHubException catch (e) {
-      if (e.kind == GitHubFailureKind.unauthorized ||
-          e.kind == GitHubFailureKind.forbidden) {
-        rethrow;
+    // A newer token can arrive while GitHub is checking one: the check marks
+    // only the version it checked, and the newer one is then checked too.
+    for (var attempt = 0; ; attempt++) {
+      final record = await storage.read();
+      if (record == null || !record.connected) return null;
+      if (record.verified) return record.login;
+      final String login;
+      try {
+        login = await ref
+            .read(gitHubClientProvider)
+            .fetchViewerLogin(record.token!);
+      } on GitHubException catch (e) {
+        if (e.kind == GitHubFailureKind.unauthorized ||
+            e.kind == GitHubFailureKind.forbidden) {
+          rethrow;
+        }
+        return record.login;
       }
-      return record.login;
+      final marked = await storage.markVerified(
+        token: record.token!,
+        updatedAt: record.updatedAt,
+        login: login,
+      );
+      if (marked || attempt >= 2) return marked ? login : null;
     }
   }
+
+  /// Whether a change made here has not reached the outbox yet; it is sent
+  /// again at the next start or the next change.
+  Future<bool> changeOwed() async =>
+      (await ref.read(gitHubTokenStorageProvider).read())?.owed ?? false;
 
   /// Checks [token] with GitHub, stores it only if GitHub accepts it, and
   /// sends it to the user's other devices. Returns why it was refused, or
@@ -238,11 +254,11 @@ class GitHubAccountController extends AsyncNotifier<String?> {
       final login = await ref
           .read(gitHubClientProvider)
           .fetchViewerLogin(trimmed);
-      final record = await ref
+      await ref
           .read(gitHubTokenStorageProvider)
           .save(token: trimmed, login: login);
       state = AsyncData(login);
-      await ref.read(gitHubAccountSyncProvider).publish(record);
+      await ref.read(gitHubAccountSyncProvider).flushOwed();
       return null;
     } on GitHubException catch (e) {
       return e.kind;
@@ -251,20 +267,16 @@ class GitHubAccountController extends AsyncNotifier<String?> {
 
   /// Forgets the token here and on the user's other devices.
   Future<void> disconnect() async {
-    final record = await ref.read(gitHubTokenStorageProvider).clear();
+    await ref.read(gitHubTokenStorageProvider).clear();
     state = const AsyncData(null);
-    await ref.read(gitHubAccountSyncProvider).publish(record);
+    await ref.read(gitHubAccountSyncProvider).flushOwed();
   }
 
   /// Sends the token held here to the user's other devices again — one
   /// connected before tokens synced, or that a device joining later missed.
-  /// Returns whether there was one to send.
-  Future<bool> sendToOtherDevices() async {
-    final record = await ref.read(gitHubTokenStorageProvider).read();
-    if (record == null || !record.connected) return false;
-    await ref.read(gitHubAccountSyncProvider).publish(record);
-    return true;
-  }
+  /// Returns whether the outbox took it, or null when there is none to send.
+  Future<bool?> sendToOtherDevices() =>
+      ref.read(gitHubAccountSyncProvider).resend();
 
   /// Asks sync to catch up, then reads the token again: on a device that
   /// has none, one sent from another device arrives this way.

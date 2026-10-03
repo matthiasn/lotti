@@ -206,14 +206,23 @@ the refresh is the app's, the unlink is the user's.
   inference provider's API key does: a `gitHubAccount` sync message, end-to-end
   encrypted, applied into the receiver's keychain, the later stamp winning
   (`specs/tla/GitHubAccountSync.tla`). Connecting sends it; disconnecting sends
-  a disconnection, so the token is forgotten everywhere. A change is stamped
-  past the version it was made over even when this device's clock is behind
-  (`BumpStamp`), and an equal stamp is decided by content, so every device
-  keeps the same one. A token that arrives from another device is checked here
-  with `GET /user` before the page says "Connected as"; GitHub rejecting it
-  shows the rejection and the field instead, and the account provider never
-  retries on its own. Guest and demo worlds have no sync stack, so nothing
-  reaches them.
+  a disconnection, so the token is forgotten everywhere. A change made here is
+  *owed* in the record until the outbox takes its row — through
+  `enqueueMessageOrThrow`, which reports a failure the plain enqueue would
+  swallow — so a refused row is sent again at the next start
+  (`GitHubAccountSync.flushOwed` in `get_it.dart`) or the next change, and the
+  page says the change is saved here and sent later (`RetryOwed`). A change is
+  stamped past the version it was made over even when this device's clock is
+  behind (`BumpStamp`), and an equal stamp is decided by content, so every
+  device keeps the same one. Every read-compare-write of the record runs one at
+  a time per record of a keystore, whichever instance asks, so a received
+  version never overwrites a newer one written meanwhile (`AtomicApply`). A
+  token that arrives from another device is checked here with `GET /user`
+  before the page says "Connected as", and the check marks only the version it
+  checked — a newer token that arrived during the check is checked on its own
+  (`VerifyMatchesVersion`); GitHub rejecting it shows the rejection and the
+  field instead, and the account provider never retries on its own. Guest and
+  demo worlds have no sync stack, so nothing reaches them.
 - Syncing is not tied to opening the page. The page has one small action: "Send
   to my other devices" when it holds a token — for one connected before tokens
   synced, or a device that joined later — and "Check my other devices" when it

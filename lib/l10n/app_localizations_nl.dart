@@ -6594,6 +6594,10 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get githubChangeOwed =>
+      'Op dit apparaat opgeslagen. Het kon nog niet naar je andere apparaten worden gestuurd; Lotti probeert het opnieuw bij de volgende start.';
+
+  @override
   String get githubCheckOtherDevices => 'Mijn andere apparaten controleren';
 
   @override
@@ -6805,6 +6809,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get githubReviewPending => 'Review gevraagd';
+
+  @override
+  String get githubSendFailed =>
+      'Kon niet naar je andere apparaten worden gestuurd. Probeer het opnieuw.';
 
   @override
   String get githubSendToOtherDevices => 'Naar mijn andere apparaten sturen';

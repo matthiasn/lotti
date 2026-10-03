@@ -2984,6 +2984,7 @@
   "generateCoverArtSubtitle": "Afbeelding aanmaken van spraakbeschrijving",
   "githubAlsoLinkedElsewhere": "{count, plural, =1{Ook aan een andere taak gekoppeld} other{Ook aan {count} andere taken gekoppeld}}",
   "githubAlsoLinkedTo": "Ook aan ‘{title}’ gekoppeld",
+  "githubChangeOwed": "Op dit apparaat opgeslagen. Het kon nog niet naar je andere apparaten worden gestuurd; Lotti probeert het opnieuw bij de volgende start.",
   "githubCheckOtherDevices": "Mijn andere apparaten controleren",
   "githubChecksFailing": "{count, plural, =1{1 check mislukt} other{{count} checks mislukt}}",
   "@githubChecksFailing": {
@@ -3085,6 +3086,7 @@
   "githubReviewApproved": "Goedgekeurd",
   "githubReviewChangesRequested": "Wijzigingen gevraagd",
   "githubReviewPending": "Review gevraagd",
+  "githubSendFailed": "Kon niet naar je andere apparaten worden gestuurd. Probeer het opnieuw.",
   "githubSendToOtherDevices": "Naar mijn andere apparaten sturen",
   "githubSentToOtherDevices": "Verstuurd. Je andere apparaten nemen het over bij de volgende synchronisatie.",
   "githubStatusClosed": "Gesloten",

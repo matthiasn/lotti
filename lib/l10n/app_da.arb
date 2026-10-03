@@ -2985,6 +2985,7 @@
   "generateCoverArtSubtitle": "Opret billede ud fra stemmebeskrivelse",
   "githubAlsoLinkedElsewhere": "{count, plural, =1{Også knyttet til en anden opgave} other{Også knyttet til {count} andre opgaver}}",
   "githubAlsoLinkedTo": "Også knyttet til “{title}”",
+  "githubChangeOwed": "Gemt på denne enhed. Det kunne ikke sendes til dine andre enheder endnu; Lotti prøver igen ved næste start.",
   "githubCheckOtherDevices": "Tjek mine andre enheder",
   "githubChecksFailing": "{count, plural, =1{1 tjek fejlede} other{{count} tjek fejlede}}",
   "@githubChecksFailing": {
@@ -3086,6 +3087,7 @@
   "githubReviewApproved": "Godkendt",
   "githubReviewChangesRequested": "Ændringer anmodet",
   "githubReviewPending": "Review anmodet",
+  "githubSendFailed": "Det kunne ikke sendes til dine andre enheder. Prøv igen.",
   "githubSendToOtherDevices": "Send til mine andre enheder",
   "githubSentToOtherDevices": "Sendt. Dine andre enheder henter det ved næste synkronisering.",
   "githubStatusClosed": "Lukket",

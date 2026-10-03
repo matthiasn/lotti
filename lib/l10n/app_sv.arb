@@ -2985,6 +2985,7 @@
   "generateCoverArtSubtitle": "Skapa bild från röstbeskrivning",
   "githubAlsoLinkedElsewhere": "{count, plural, =1{Kopplad även till en annan uppgift} other{Kopplad även till {count} andra uppgifter}}",
   "githubAlsoLinkedTo": "Kopplad även till ”{title}”",
+  "githubChangeOwed": "Sparat på den här enheten. Det gick inte att skicka till dina andra enheter än; Lotti försöker igen vid nästa start.",
   "githubCheckOtherDevices": "Kolla mina andra enheter",
   "githubChecksFailing": "{count, plural, =1{1 kontroll misslyckades} other{{count} kontroller misslyckades}}",
   "@githubChecksFailing": {
@@ -3086,6 +3087,7 @@
   "githubReviewApproved": "Godkänd",
   "githubReviewChangesRequested": "Ändringar begärda",
   "githubReviewPending": "Granskning begärd",
+  "githubSendFailed": "Det gick inte att skicka till dina andra enheter. Försök igen.",
   "githubSendToOtherDevices": "Skicka till mina andra enheter",
   "githubSentToOtherDevices": "Skickat. Dina andra enheter hämtar den vid nästa synkronisering.",
   "githubStatusClosed": "Stängd",

@@ -6645,6 +6645,10 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get githubChangeOwed =>
+      'Salvato su questo dispositivo. Non è stato ancora possibile inviarlo agli altri tuoi dispositivi; Lotti riproverà al prossimo avvio.';
+
+  @override
   String get githubCheckOtherDevices => 'Controlla i miei altri dispositivi';
 
   @override
@@ -6857,6 +6861,10 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get githubReviewPending => 'Revisione richiesta';
+
+  @override
+  String get githubSendFailed =>
+      'Non è stato possibile inviarlo agli altri tuoi dispositivi. Riprova.';
 
   @override
   String get githubSendToOtherDevices => 'Invia ai miei altri dispositivi';

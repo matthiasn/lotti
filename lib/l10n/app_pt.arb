@@ -2984,6 +2984,7 @@
   "generateCoverArtSubtitle": "Criar imagem a partir da descrição de voz",
   "githubAlsoLinkedElsewhere": "{count, plural, =1{Também vinculada a outra tarefa} other{Também vinculada a outras {count} tarefas}}",
   "githubAlsoLinkedTo": "Também vinculada a “{title}”",
+  "githubChangeOwed": "Salvo neste dispositivo. Ainda não foi possível enviar para seus outros dispositivos; o Lotti tenta de novo na próxima vez que iniciar.",
   "githubCheckOtherDevices": "Verificar meus outros dispositivos",
   "githubChecksFailing": "{count, plural, =1{1 verificação com falha} other{{count} verificações com falha}}",
   "@githubChecksFailing": {
@@ -3085,6 +3086,7 @@
   "githubReviewApproved": "Aprovada",
   "githubReviewChangesRequested": "Alterações solicitadas",
   "githubReviewPending": "Revisão solicitada",
+  "githubSendFailed": "Não foi possível enviar para seus outros dispositivos. Tente de novo.",
   "githubSendToOtherDevices": "Enviar para meus outros dispositivos",
   "githubSentToOtherDevices": "Enviado. Seus outros dispositivos vão recebê-lo na próxima sincronização.",
   "githubStatusClosed": "Fechada",

@@ -6576,6 +6576,10 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get githubChangeOwed =>
+      'Sparat på den här enheten. Det gick inte att skicka till dina andra enheter än; Lotti försöker igen vid nästa start.';
+
+  @override
   String get githubCheckOtherDevices => 'Kolla mina andra enheter';
 
   @override
@@ -6787,6 +6791,10 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get githubReviewPending => 'Granskning begärd';
+
+  @override
+  String get githubSendFailed =>
+      'Det gick inte att skicka till dina andra enheter. Försök igen.';
 
   @override
   String get githubSendToOtherDevices => 'Skicka till mina andra enheter';

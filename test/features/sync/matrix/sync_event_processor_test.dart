@@ -2073,6 +2073,48 @@ void main() {
     });
 
     test(
+      'a keychain that fails to write logs it and propagates, so the inbound '
+      'queue retries it',
+      () async {
+        final failing = MockSecureStorage();
+        when(
+          () => failing.read(key: any(named: 'key')),
+        ).thenAnswer((_) async => null);
+        when(
+          () => failing.write(
+            key: any(named: 'key'),
+            value: any(named: 'value'),
+          ),
+        ).thenThrow(Exception('keychain locked'));
+        processor = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          savedTaskFiltersRepository: savedTaskFiltersRepository,
+          settingsDb: settingsDb,
+          gitHubTokenStorage: GitHubTokenStorage(failing, namespace: 'real'),
+        );
+
+        await expectLater(
+          deliver(account(token: 'ghp_synced', updatedAt: 100)),
+          throwsA(isA<Exception>()),
+        );
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+        verifyNever(
+          () => updateNotifications.notify({
+            gitHubAccountNotification,
+          }, fromSync: true),
+        );
+      },
+    );
+
+    test(
       'without a keychain store it is acknowledged and dropped',
       () async {
         processor = SyncEventProcessor(

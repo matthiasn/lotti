@@ -6683,6 +6683,10 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get githubChangeOwed =>
+      'Salvat pe acest dispozitiv. Încă nu a putut fi trimis pe celelalte dispozitive ale dvs.; Lotti încearcă din nou la următoarea pornire.';
+
+  @override
   String get githubCheckOtherDevices =>
       'Verificați celelalte dispozitive ale mele';
 
@@ -6898,6 +6902,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get githubReviewPending => 'Revizuire solicitată';
+
+  @override
+  String get githubSendFailed =>
+      'Nu a putut fi trimis pe celelalte dispozitive ale dvs. Încercați din nou.';
 
   @override
   String get githubSendToOtherDevices =>

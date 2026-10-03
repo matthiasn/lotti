@@ -2735,6 +2735,7 @@
   "generateCoverArtSubtitle": "Vytvořit obrázek z hlasového popisu",
   "githubAlsoLinkedElsewhere": "{count, plural, =1{Propojeno i s jiným úkolem} few{Propojeno i s {count} dalšími úkoly} other{Propojeno i s {count} dalšími úkoly}}",
   "githubAlsoLinkedTo": "Propojeno i s „{title}“",
+  "githubChangeOwed": "Uloženo v tomto zařízení. Na tvá další zařízení se zatím nepodařilo odeslat; Lotti to zkusí znovu při příštím spuštění.",
   "githubCheckOtherDevices": "Zkontrolovat má další zařízení",
   "githubChecksFailing": "{count, plural, =1{1 kontrola selhala} few{{count} kontroly selhaly} other{{count} kontrol selhalo}}",
   "@githubChecksFailing": {
@@ -2836,6 +2837,7 @@
   "githubReviewApproved": "Schváleno",
   "githubReviewChangesRequested": "Vyžádány změny",
   "githubReviewPending": "Vyžádána revize",
+  "githubSendFailed": "Nepodařilo se ho poslat na tvá další zařízení. Zkus to znovu.",
   "githubSendToOtherDevices": "Poslat na má další zařízení",
   "githubSentToOtherDevices": "Odesláno. Tvá další zařízení si ho převezmou při příští synchronizaci.",
   "githubStatusClosed": "Uzavřený",

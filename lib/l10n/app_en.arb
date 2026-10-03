@@ -3695,6 +3695,7 @@
       }
     }
   },
+  "githubChangeOwed": "Saved on this device. It could not be sent to your other devices yet; Lotti tries again when it next starts.",
   "githubCheckOtherDevices": "Check my other devices",
   "githubChecksFailing": "{count, plural, =1{1 check failing} other{{count} checks failing}}",
   "@githubChecksFailing": {
@@ -3814,6 +3815,7 @@
   "githubReviewApproved": "Approved",
   "githubReviewChangesRequested": "Changes requested",
   "githubReviewPending": "Review requested",
+  "githubSendFailed": "Could not send it to your other devices. Try again.",
   "githubSendToOtherDevices": "Send to my other devices",
   "githubSentToOtherDevices": "Sent. Your other devices pick it up when they next sync.",
   "githubStatusClosed": "Closed",

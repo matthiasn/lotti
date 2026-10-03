@@ -2728,6 +2728,7 @@
   "generateCoverArtSubtitle": "Creează imagine din descrierea vocală",
   "githubAlsoLinkedElsewhere": "{count, plural, =1{Legat și de o altă sarcină} few{Legat și de alte {count} sarcini} other{Legat și de alte {count} de sarcini}}",
   "githubAlsoLinkedTo": "Legat și de „{title}”",
+  "githubChangeOwed": "Salvat pe acest dispozitiv. Încă nu a putut fi trimis pe celelalte dispozitive ale dvs.; Lotti încearcă din nou la următoarea pornire.",
   "githubCheckOtherDevices": "Verificați celelalte dispozitive ale mele",
   "githubChecksFailing": "{count, plural, =1{1 verificare eșuată} few{{count} verificări eșuate} other{{count} de verificări eșuate}}",
   "@githubChecksFailing": {
@@ -2829,6 +2830,7 @@
   "githubReviewApproved": "Aprobat",
   "githubReviewChangesRequested": "Modificări solicitate",
   "githubReviewPending": "Revizuire solicitată",
+  "githubSendFailed": "Nu a putut fi trimis pe celelalte dispozitive ale dvs. Încercați din nou.",
   "githubSendToOtherDevices": "Trimiteți pe celelalte dispozitive ale mele",
   "githubSentToOtherDevices": "Trimis. Celelalte dispozitive ale dvs. îl preiau la următoarea sincronizare.",
   "githubStatusClosed": "Închis",

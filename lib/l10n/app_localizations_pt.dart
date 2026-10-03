@@ -6633,6 +6633,10 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get githubChangeOwed =>
+      'Salvo neste dispositivo. Ainda não foi possível enviar para seus outros dispositivos; o Lotti tenta de novo na próxima vez que iniciar.';
+
+  @override
   String get githubCheckOtherDevices => 'Verificar meus outros dispositivos';
 
   @override
@@ -6844,6 +6848,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get githubReviewPending => 'Revisão solicitada';
+
+  @override
+  String get githubSendFailed =>
+      'Não foi possível enviar para seus outros dispositivos. Tente de novo.';
 
   @override
   String get githubSendToOtherDevices => 'Enviar para meus outros dispositivos';

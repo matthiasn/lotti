@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,8 +15,14 @@ import 'package:lotti/features/github/service/pull_request_service.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+import 'package:lotti/features/profiles/model/profile.dart';
+import 'package:lotti/features/profiles/model/profile_context.dart';
+import 'package:lotti/features/profiles/state/profile_providers.dart';
+import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_secret.dart';
+import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -62,9 +69,11 @@ void main() {
     late GitHubTokenStorage storage;
     late List<SyncMessage> sent;
     late int rescans;
+    late bool outboxRefuses;
     late StreamController<Set<String>> updates;
 
     setUp(() async {
+      outboxRefuses = false;
       keychain = {};
       storage = GitHubTokenStorage(
         inMemoryKeychain(keychain),
@@ -93,7 +102,11 @@ void main() {
           gitHubTokenStorageProvider.overrideWithValue(storage),
           gitHubAccountSyncProvider.overrideWithValue(
             GitHubAccountSync(
-              enqueue: (message) async => sent.add(message),
+              storage: storage,
+              enqueueOrThrow: (message) async {
+                if (outboxRefuses) throw Exception('no outbox row');
+                sent.add(message);
+              },
               rescan: () async => rescans++,
             ),
           ),
@@ -272,7 +285,7 @@ void main() {
       () async {
         final c = account();
         final notifier = c.read(gitHubAccountControllerProvider.notifier);
-        expect(await notifier.sendToOtherDevices(), isFalse);
+        expect(await notifier.sendToOtherDevices(), isNull);
         expect(sent, isEmpty);
 
         final held = await storage.save(token: 'ghp_secret', login: 'pingu');
@@ -281,6 +294,66 @@ void main() {
         final message = sent.single as SyncGitHubAccount;
         expect(message.updatedAt, held.updatedAt);
         expect(message.token, const SyncSecret('ghp_secret'));
+      },
+    );
+
+    test(
+      'a change the outbox refused stays owed, says so, and is sent by the '
+      'next flush (RetryOwed)',
+      () async {
+        when(
+          () => client.fetchViewerLogin('ghp_secret'),
+        ).thenAnswer((_) async => 'pingu');
+        outboxRefuses = true;
+        final c = account();
+        await c.read(gitHubAccountControllerProvider.future);
+        final notifier = c.read(gitHubAccountControllerProvider.notifier);
+
+        expect(await notifier.connect('ghp_secret'), isNull);
+        expect(c.read(gitHubAccountControllerProvider).value, 'pingu');
+        expect(sent, isEmpty);
+        expect(await notifier.changeOwed(), isTrue);
+
+        outboxRefuses = false;
+        await c.read(gitHubAccountSyncProvider).flushOwed();
+        expect(sent, hasLength(1));
+        expect(await notifier.changeOwed(), isFalse);
+      },
+    );
+
+    test(
+      'a token that arrives while another is being checked is checked on '
+      "its own, never shown under the first one's check "
+      '(VerifyMatchesVersion)',
+      () async {
+        await received('ghp_a');
+        final answerA = Completer<String>();
+        when(
+          () => client.fetchViewerLogin('ghp_a'),
+        ).thenAnswer((_) => answerA.future);
+        when(
+          () => client.fetchViewerLogin('ghp_b'),
+        ).thenAnswer((_) async => 'emperor');
+        final c = account();
+        final login = c.read(gitHubAccountControllerProvider.future);
+        await pumpEventQueue();
+
+        // ghp_b arrives while GitHub is still answering about ghp_a.
+        await storage.applyIfNewer(
+          const GitHubAccountRecord(
+            token: 'ghp_b',
+            login: 'emperor',
+            updatedAt: 2,
+          ),
+        );
+        answerA.complete('pingu');
+
+        expect(await login, 'emperor');
+        verify(() => client.fetchViewerLogin('ghp_b')).called(1);
+        final held = await storage.read();
+        expect(held!.token, 'ghp_b');
+        expect(held.login, 'emperor');
+        expect(held.verified, isTrue);
       },
     );
 
@@ -300,6 +373,92 @@ void main() {
 
         expect(rescans, 1);
         expect(c.read(gitHubAccountControllerProvider).value, 'pingu');
+      },
+    );
+  });
+
+  group('the default account providers', () {
+    late Map<String, String> keychain;
+    late MockOutboxService outbox;
+    late MockMatrixService matrix;
+
+    setUpAll(() {
+      registerFallbackValue(
+        const SyncMessage.gitHubAccount(
+          updatedAt: 0,
+          status: SyncEntryStatus.update,
+        ),
+      );
+    });
+
+    setUp(() async {
+      keychain = {};
+      outbox = MockOutboxService();
+      matrix = MockMatrixService();
+      when(() => outbox.enqueueMessageOrThrow(any())).thenAnswer((_) async {});
+      when(matrix.forceRescan).thenAnswer((_) async {});
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..registerSingleton<SecureStorage>(inMemoryKeychain(keychain))
+            ..registerSingleton<OutboxService>(outbox)
+            ..registerSingleton<MatrixService>(matrix);
+        },
+      );
+      addTearDown(tearDownTestGetIt);
+    });
+
+    ProviderContainer world(ProfileType type) {
+      final c = ProviderContainer(
+        overrides: [
+          profileContextProvider.overrideWithValue(
+            ProfileContext.forProfile(
+              profile: Profile(
+                id: type == ProfileType.real ? Profile.realProfileId : 'g1',
+                type: type,
+                name: 'world',
+                dirName: type == ProfileType.real ? '' : 'guest_profiles/g1',
+                createdAt: DateTime(2026),
+              ),
+              root: Directory('/data/lotti'),
+            ),
+          ),
+        ],
+      );
+      addTearDown(c.dispose);
+      return c;
+    }
+
+    test(
+      "the token lives under the profile's id, and an owed change goes to "
+      "the outbox's failure-reporting path",
+      () async {
+        final c = world(ProfileType.real);
+
+        await c
+            .read(gitHubTokenStorageProvider)
+            .save(token: 'ghp_secret', login: 'pingu');
+        expect(await c.read(gitHubAccountSyncProvider).flushOwed(), isTrue);
+
+        expect(keychain.keys, ['github_account:${Profile.realProfileId}']);
+        verify(() => outbox.enqueueMessageOrThrow(any())).called(1);
+      },
+    );
+
+    test(
+      'a syncing world can ask its other devices; a guest world cannot',
+      () async {
+        final real = world(ProfileType.real).read(gitHubAccountSyncProvider);
+        expect(real.canCheckOtherDevices, isTrue);
+        await real.checkOtherDevices();
+        verify(matrix.forceRescan).called(1);
+
+        expect(
+          world(
+            ProfileType.guest,
+          ).read(gitHubAccountSyncProvider).canCheckOtherDevices,
+          isFalse,
+        );
       },
     );
   });
