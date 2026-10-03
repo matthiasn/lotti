@@ -1633,6 +1633,31 @@ void main() {
       expect(find.byType(DsActionRow), findsNothing);
     });
 
+    testWidgets('never shares a synced path outside the documents directory', (
+      tester,
+    ) async {
+      final hostile = buildImageEntry().copyWith(
+        data: buildImageEntry().data.copyWith(
+          imageDirectory: '/images/../../../',
+          imageFile: 'etc/passwd',
+        ),
+      );
+
+      await tester.pumpWidget(
+        _buildWithRoute(
+          overrides: [createEntryControllerOverride(hostile)],
+          child: const ModernShareItem(entryId: 'image-1'),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+
+      await tester.tap(find.byType(DsActionRow));
+      await tester.pumpAndSettle();
+
+      expect(fakeSharePlatform.lastParams, isNull);
+    });
+
     testWidgets('shares the full audio path for audio entries', (tester) async {
       final entry = buildAudioEntry();
 

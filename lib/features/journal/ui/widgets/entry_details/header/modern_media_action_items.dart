@@ -7,6 +7,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/document_path_guard.dart';
@@ -160,6 +161,28 @@ class ModernShareItem extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
+    // Captured now: the tap runs after the sheet pops, maybe after this
+    // widget is gone.
+    final logger = ref.watch(domainLoggerProvider);
+
+    // The directory and file name arrive by sync: a path a peer pointed
+    // outside the documents directory is refused, never handed to the share
+    // sheet, which would send that file out of the app.
+    Future<void> share(String filePath) async {
+      if (!isInsideDocuments(getDocumentsDirectory().path, filePath)) {
+        logger.error(
+          LogDomain.persistence,
+          StateError(
+            'shared media path resolves outside the documents '
+            'directory',
+          ),
+          subDomain: 'ModernShareItem',
+        );
+        return;
+      }
+      await SharePlus.instance.share(ShareParams(files: [XFile(filePath)]));
+    }
+
     return DsActionRow(
       icon: LottiIcons.share,
       title: context.messages.journalShareHint,
@@ -172,12 +195,10 @@ class ModernShareItem extends ConsumerWidget {
         }
 
         if (entry is JournalImage) {
-          final filePath = getFullImagePath(entry);
-          await SharePlus.instance.share(ShareParams(files: [XFile(filePath)]));
+          await share(getFullImagePath(entry));
         }
         if (entry is JournalAudio) {
-          final filePath = await AudioUtils.getFullAudioPath(entry);
-          await SharePlus.instance.share(ShareParams(files: [XFile(filePath)]));
+          await share(await AudioUtils.getFullAudioPath(entry));
         }
       },
     );
