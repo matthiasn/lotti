@@ -751,6 +751,11 @@
   "aiModelPickerByProviderLabel": "Alegeți un furnizor",
   "aiModelPickerCurrentDefaultLabel": "Modelul implicit actual",
   "aiModelPickerProviderModelCount": "{count, plural, =1{1 model} few{{count} modele} other{{count} de modele}}",
+  "aiOllamaInstallButton": "Instalați",
+  "aiOllamaInstallCommandHint": "Pentru a-l instala, rulați această comandă în terminal:",
+  "aiOllamaInstallFailed": "Instalarea a eșuat: {error}",
+  "aiOllamaInstalling": "Se instalează modelul…",
+  "aiOllamaInstallQuestion": "Îl instalați acum din Lotti?",
   "aiOllamaModelInstalledSuccessfully": "Modelul „{modelName}” a fost instalat cu succes!",
   "@aiOllamaModelInstalledSuccessfully": {
     "placeholders": {
@@ -759,6 +764,9 @@
       }
     }
   },
+  "aiOllamaModelNotInstalledMessage": "Modelul „{model}” nu este instalat.",
+  "aiOllamaModelNotInstalledTitle": "Modelul nu este instalat",
+  "aiOllamaProviderMissing": "Nu este configurat niciun furnizor Ollama. Adăugați unul în setări.",
   "aiPickProviderBadgeDesktopOnly": "DOAR DESKTOP",
   "aiPickProviderBadgeNew": "NOU",
   "aiPickProviderBadgeRecommended": "RECOMANDAT",
@@ -3073,12 +3081,6 @@
   "goalReportSectionCoverage": "Acoperirea datelor",
   "goalReportSectionStanding": "Cum stați",
   "goalReportSectionWindow": "Fereastra mai largă",
-  "goalStatusAchieved": "Atins",
-  "goalStatusAtRisk": "În pericol",
-  "goalStatusInsufficientData": "Fără date",
-  "goalStatusOffTrack": "Deviat de la obiectiv",
-  "goalStatusOnTrack": "Pe drumul cel bun",
-  "goalStatusRecovering": "În revenire",
   "goalWatchingMetric": "Actualizări din sursa conectată · {windowLabel}",
   "goalWindowCalendarMonth": "lună calendaristică",
   "goalWindowCalendarWeek": "săptămână calendaristică",
@@ -4216,7 +4218,6 @@
       }
     }
   },
-  "projectLinkedTasks": "Sarcini asociate",
   "projectManageTooltip": "Gestionați proiectele",
   "projectNextStepAdded": "Adăugat",
   "projectNextStepCreateFailed": "Sarcina nu a putut fi creată. Actualizați acum pentru a încărca lista curentă sau reîncercați.",
@@ -4307,7 +4308,6 @@
       }
     }
   },
-  "projectNoLinkedTasks": "Nicio sarcină asociată încă",
   "projectNoProjects": "Niciun proiect încă",
   "projectNotFound": "Proiectul nu a fost găsit",
   "projectPickerLabel": "Proiect",

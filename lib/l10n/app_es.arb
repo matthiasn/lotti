@@ -751,6 +751,11 @@
   "aiModelPickerByProviderLabel": "Elige un proveedor",
   "aiModelPickerCurrentDefaultLabel": "Predeterminado actual",
   "aiModelPickerProviderModelCount": "{count, plural, =1{1 modelo} other{{count} modelos}}",
+  "aiOllamaInstallButton": "Instalar",
+  "aiOllamaInstallCommandHint": "Para instalarlo, ejecuta este comando en tu terminal:",
+  "aiOllamaInstallFailed": "La instalación falló: {error}",
+  "aiOllamaInstalling": "Instalando modelo…",
+  "aiOllamaInstallQuestion": "¿Instalarlo ahora desde Lotti?",
   "aiOllamaModelInstalledSuccessfully": "¡Modelo \"{modelName}\" instalado correctamente!",
   "@aiOllamaModelInstalledSuccessfully": {
     "placeholders": {
@@ -759,6 +764,9 @@
       }
     }
   },
+  "aiOllamaModelNotInstalledMessage": "El modelo \"{model}\" no está instalado.",
+  "aiOllamaModelNotInstalledTitle": "Modelo no instalado",
+  "aiOllamaProviderMissing": "No hay ningún proveedor de Ollama configurado. Añade uno en los ajustes.",
   "aiPickProviderBadgeDesktopOnly": "SOLO ESCRITORIO",
   "aiPickProviderBadgeNew": "NUEVO",
   "aiPickProviderBadgeRecommended": "RECOMENDADO",
@@ -3073,12 +3081,6 @@
   "goalReportSectionCoverage": "Cobertura de datos",
   "goalReportSectionStanding": "Cómo va",
   "goalReportSectionWindow": "La ventana más amplia",
-  "goalStatusAchieved": "Conseguido",
-  "goalStatusAtRisk": "En riesgo",
-  "goalStatusInsufficientData": "Sin datos",
-  "goalStatusOffTrack": "Fuera de rumbo",
-  "goalStatusOnTrack": "En camino",
-  "goalStatusRecovering": "Recuperándose",
   "goalWatchingMetric": "Actualizaciones desde su fuente vinculada · {windowLabel}",
   "goalWindowCalendarMonth": "mes natural",
   "goalWindowCalendarWeek": "semana natural",
@@ -4216,7 +4218,6 @@
       }
     }
   },
-  "projectLinkedTasks": "Tareas vinculadas",
   "projectManageTooltip": "Gestionar proyectos",
   "projectNextStepAdded": "Añadido",
   "projectNextStepCreateFailed": "No se pudo crear la tarea. Actualiza ahora para cargar la lista actual o vuelve a intentarlo.",
@@ -4307,7 +4308,6 @@
       }
     }
   },
-  "projectNoLinkedTasks": "Aún no hay tareas vinculadas",
   "projectNoProjects": "Aún no hay proyectos",
   "projectNotFound": "Proyecto no encontrado",
   "projectPickerLabel": "Proyecto",

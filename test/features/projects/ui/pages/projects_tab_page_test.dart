@@ -199,8 +199,8 @@ void main() {
         ).thenReturn(ValueNotifier<String?>(null));
         getIt.registerSingleton<NavService>(mockNavService);
 
-        // The create modal launched from the FAB renders a CategoryField,
-        // which resolves the selected category name through the cache.
+        // The create modal launched from the FAB resolves its selected
+        // category's name through the cache.
         // Default to "no category" so the form builds.
         final mockEntitiesCacheService = MockEntitiesCacheService();
         when(

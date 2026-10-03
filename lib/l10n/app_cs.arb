@@ -758,6 +758,11 @@
   "aiModelPickerByProviderLabel": "Vyber poskytovatele",
   "aiModelPickerCurrentDefaultLabel": "Aktuální výchozí",
   "aiModelPickerProviderModelCount": "{count, plural, =1{1 model} few{{count} modely} other{{count} modelů}}",
+  "aiOllamaInstallButton": "Nainstalovat",
+  "aiOllamaInstallCommandHint": "Pro instalaci spusť v terminálu tento příkaz:",
+  "aiOllamaInstallFailed": "Instalace selhala: {error}",
+  "aiOllamaInstalling": "Model se instaluje…",
+  "aiOllamaInstallQuestion": "Nainstalovat ho teď z Lotti?",
   "aiOllamaModelInstalledSuccessfully": "Model „{modelName}“ byl úspěšně nainstalován",
   "@aiOllamaModelInstalledSuccessfully": {
     "placeholders": {
@@ -766,6 +771,9 @@
       }
     }
   },
+  "aiOllamaModelNotInstalledMessage": "Model „{model}“ není nainstalovaný.",
+  "aiOllamaModelNotInstalledTitle": "Model není nainstalovaný",
+  "aiOllamaProviderMissing": "Není nastavený žádný poskytovatel Ollama. Přidej ho v nastavení.",
   "aiPickProviderBadgeDesktopOnly": "POUZE DESKTOP",
   "aiPickProviderBadgeNew": "NOVÉ",
   "aiPickProviderBadgeRecommended": "DOPORUČENO",
@@ -3080,12 +3088,6 @@
   "goalReportSectionCoverage": "Pokrytí dat",
   "goalReportSectionStanding": "Jak to vypadá",
   "goalReportSectionWindow": "Širší okno",
-  "goalStatusAchieved": "Splněno",
-  "goalStatusAtRisk": "Ohroženo",
-  "goalStatusInsufficientData": "Bez dat",
-  "goalStatusOffTrack": "Mimo kurz",
-  "goalStatusOnTrack": "Na dobré cestě",
-  "goalStatusRecovering": "Zotavuje se",
   "goalWatchingMetric": "Aktualizace z propojeného zdroje · {windowLabel}",
   "goalWindowCalendarMonth": "kalendářní měsíc",
   "goalWindowCalendarWeek": "kalendářní týden",
@@ -4223,7 +4225,6 @@
       }
     }
   },
-  "projectLinkedTasks": "Propojené úkoly",
   "projectManageTooltip": "Správa projektů",
   "projectNextStepAdded": "Přidáno",
   "projectNextStepCreateFailed": "Úkol se nepodařilo vytvořit. Aktualizuj teď, aby se načetl aktuální seznam, nebo to zkus znovu.",
@@ -4314,7 +4315,6 @@
       }
     }
   },
-  "projectNoLinkedTasks": "Zatím žádné propojené úkoly",
   "projectNoProjects": "Zatím žádné projekty",
   "projectNotFound": "Projekt nenalezen",
   "projectPickerLabel": "Projekt",

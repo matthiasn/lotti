@@ -8,6 +8,8 @@ import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.da
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -53,9 +55,12 @@ class OllamaModelInstallDialogState
           .firstOrNull;
 
       if (ollamaProvider == null) {
-        throw Exception(
-          'Ollama provider not found. Please configure Ollama in settings.',
-        );
+        if (!mounted) return;
+        setState(() {
+          _error = context.messages.aiOllamaProviderMissing;
+          _isInstalling = false;
+        });
+        return;
       }
 
       final cloudRepo = ref.read(cloudInferenceRepositoryProvider);
@@ -89,11 +94,9 @@ class OllamaModelInstallDialogState
         name: '_OllamaModelInstallDialogState',
       );
 
-      // The repository provides user-friendly error messages.
-      // We can use them directly instead of parsing the error string.
+      // The repository provides user-friendly error messages, so they are
+      // shown directly instead of being parsed.
       var errorMessage = e.toString();
-      // The repository provides user-friendly error messages.
-      // We can use them directly instead of parsing the error string.
       if (e is Exception) {
         errorMessage = errorMessage.replaceFirst('Exception: ', '');
       }
@@ -114,42 +117,59 @@ class OllamaModelInstallDialogState
       name: '_OllamaModelInstallDialogState',
     );
 
+    final tokens = context.designTokens;
+    final colors = tokens.colors;
+    final styles = tokens.typography.styles;
+    final messages = context.messages;
+
     return AlertDialog(
-      title: const Text('Model Not Installed'),
+      title: Text(messages.aiOllamaModelNotInstalledTitle),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('The model "${widget.modelName}" is not installed.'),
-          const SizedBox(height: 12),
+          Text(messages.aiOllamaModelNotInstalledMessage(widget.modelName)),
+          SizedBox(height: tokens.spacing.step4),
           if (!_isInstalling) ...[
-            const Text('To install it, run this command in your terminal:'),
-            const SizedBox(height: 8),
+            Text(messages.aiOllamaInstallCommandHint),
+            SizedBox(height: tokens.spacing.step3),
             SelectableText(
               command,
-              style: const TextStyle(fontFamily: 'monospace'),
+              style: monoMetaStyle(
+                tokens,
+                colors,
+                base: styles.body.bodyMedium,
+                color: colors.text.highEmphasis,
+              ),
             ),
-            const SizedBox(height: 16),
-            const Text('Would you like to install it now from Lotti?'),
+            SizedBox(height: tokens.spacing.step5),
+            Text(messages.aiOllamaInstallQuestion),
           ] else ...[
-            const Text('Installing model...'),
-            const SizedBox(height: 12),
+            Text(messages.aiOllamaInstalling),
+            SizedBox(height: tokens.spacing.step4),
             LinearProgressIndicator(
               value: _progress,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(tokens.radii.s),
             ),
-            const SizedBox(height: 8),
-            Text(_status, style: Theme.of(context).textTheme.bodySmall),
+            SizedBox(height: tokens.spacing.step3),
+            Text(
+              _status,
+              style: styles.body.bodySmall.copyWith(
+                color: colors.text.mediumEmphasis,
+              ),
+            ),
             if (_progress > 0) ...[
-              const SizedBox(height: 4),
+              SizedBox(height: tokens.spacing.step2),
               Text('${(_progress * 100).toStringAsFixed(1)}%'),
             ],
           ],
           if (_error != null) ...[
-            const SizedBox(height: 12),
+            SizedBox(height: tokens.spacing.step4),
             Text(
-              'Error: $_error',
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
+              messages.aiOllamaInstallFailed(_error!),
+              style: styles.body.bodySmall.copyWith(
+                color: colors.alert.error.defaultColor,
+              ),
             ),
           ],
         ],
@@ -157,15 +177,16 @@ class OllamaModelInstallDialogState
       actions: [
         if (!_isInstalling) ...[
           DesignSystemButton(
-            label: context.messages.cancelButton,
+            label: messages.cancelButton,
             onPressed: () => Navigator.of(context).pop(),
-            variant: DesignSystemButtonVariant.tertiary,
+            variant: DesignSystemButtonVariant.quiet,
             size: DesignSystemButtonSize.large,
           ),
           // After a failure this is the retry: the error shows above it.
-          ElevatedButton(
+          DesignSystemButton(
+            label: messages.aiOllamaInstallButton,
             onPressed: _installModel,
-            child: const Text('Install'),
+            size: DesignSystemButtonSize.large,
           ),
         ],
       ],

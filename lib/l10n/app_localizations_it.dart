@@ -1900,9 +1900,39 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get aiOllamaInstallButton => 'Installa';
+
+  @override
+  String get aiOllamaInstallCommandHint =>
+      'Per installarlo, esegui questo comando nel terminale:';
+
+  @override
+  String aiOllamaInstallFailed(String error) {
+    return 'Installazione non riuscita: $error';
+  }
+
+  @override
+  String get aiOllamaInstalling => 'Installazione del modello…';
+
+  @override
+  String get aiOllamaInstallQuestion => 'Installarlo ora da Lotti?';
+
+  @override
   String aiOllamaModelInstalledSuccessfully(String modelName) {
     return 'Modello \"$modelName\" installato con successo!';
   }
+
+  @override
+  String aiOllamaModelNotInstalledMessage(String model) {
+    return 'Il modello \"$model\" non è installato.';
+  }
+
+  @override
+  String get aiOllamaModelNotInstalledTitle => 'Modello non installato';
+
+  @override
+  String get aiOllamaProviderMissing =>
+      'Nessun provider Ollama configurato. Aggiungine uno nelle impostazioni.';
 
   @override
   String get aiPickProviderBadgeDesktopOnly => 'DESKTOP SOLO';
@@ -7835,24 +7865,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get goalReportSectionWindow => 'La finestra più ampia';
 
   @override
-  String get goalStatusAchieved => 'Raggiunto';
-
-  @override
-  String get goalStatusAtRisk => 'A rischio';
-
-  @override
-  String get goalStatusInsufficientData => 'Nessun dato';
-
-  @override
-  String get goalStatusOffTrack => 'Fuori rotta';
-
-  @override
-  String get goalStatusOnTrack => 'In linea';
-
-  @override
-  String get goalStatusRecovering => 'In ripresa';
-
-  @override
   String goalWatchingMetric(String windowLabel) {
     return 'Aggiornamenti dalla fonte collegata · $windowLabel';
   }
@@ -11243,9 +11255,6 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get projectLinkedTasks => 'Compiti collegati';
-
-  @override
   String get projectManageTooltip => 'Gestione dei progetti';
 
   @override
@@ -11371,9 +11380,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String projectNextStepsShowMore(int count) {
     return 'Mostra altri $count';
   }
-
-  @override
-  String get projectNoLinkedTasks => 'Nessun compito ancora collegato';
 
   @override
   String get projectNoProjects => 'Nessun progetto ancora';

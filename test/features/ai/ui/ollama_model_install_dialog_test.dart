@@ -181,9 +181,9 @@ void main() {
         providers: [testOllamaProvider],
       );
 
-      expect(find.text('Model Not Installed'), findsOneWidget);
+      expect(find.text('Model not installed'), findsOneWidget);
       expect(
-        find.text('The model "$testModelName" is not installed.'),
+        find.text('The model "$testModelName" isn\u2019t installed.'),
         findsOneWidget,
       );
       expect(
@@ -192,7 +192,7 @@ void main() {
       );
       expect(find.text('ollama pull $testModelName'), findsOneWidget);
       expect(
-        find.text('Would you like to install it now from Lotti?'),
+        find.text('Install it now from Lotti?'),
         findsOneWidget,
       );
       expect(find.text('Cancel'), findsOneWidget);
@@ -263,10 +263,10 @@ void main() {
 
       // Act - Press install button
       await tester.tap(find.text('Install'));
-      await pumpUntilFound(tester, find.text('Installing model...'));
+      await pumpUntilFound(tester, find.text('Installing model\u2026'));
 
       // Assert - Should show installation UI
-      expect(find.text('Installing model...'), findsOneWidget);
+      expect(find.text('Installing model\u2026'), findsOneWidget);
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
 
       progressController.addError(Exception('stop install'));
@@ -297,9 +297,9 @@ void main() {
 
         // Tap install – the "Installing model..." state is set first.
         await tester.tap(find.text('Install'));
-        await pumpUntilFound(tester, find.text('Installing model...'));
+        await pumpUntilFound(tester, find.text('Installing model\u2026'));
         // _isInstalling = true: the installing state is active.
-        expect(find.text('Installing model...'), findsOneWidget);
+        expect(find.text('Installing model\u2026'), findsOneWidget);
 
         // Drive the async chain: provider.future → installModel emits error
         // → catch strips 'Exception: ', sets _error, _isInstalling=false.
@@ -310,7 +310,7 @@ void main() {
         // After error: _isInstalling=false so Install button is back.
         expect(find.text('Install'), findsOneWidget);
         // "Installing model..." is gone
-        expect(find.text('Installing model...'), findsNothing);
+        expect(find.text('Installing model\u2026'), findsNothing);
       },
     );
 
@@ -344,10 +344,10 @@ void main() {
 
         // First install attempt
         await tester.tap(find.text('Install'));
-        await pumpUntilFound(tester, find.text('Installing model...'));
+        await pumpUntilFound(tester, find.text('Installing model\u2026'));
         // _isInstalling=true: Install button is hidden, "Installing model..." shows
         expect(find.text('Install'), findsNothing);
-        expect(find.text('Installing model...'), findsOneWidget);
+        expect(find.text('Installing model\u2026'), findsOneWidget);
 
         progressControllers.single.addError(Exception('fail'));
         await progressControllers.single.close();
@@ -357,9 +357,9 @@ void main() {
 
         // Second tap re-invokes _installModel (install button enables retry)
         await tester.tap(find.text('Install'));
-        await pumpUntilFound(tester, find.text('Installing model...'));
+        await pumpUntilFound(tester, find.text('Installing model\u2026'));
         // _isInstalling=true again: showing "Installing model..."
-        expect(find.text('Installing model...'), findsOneWidget);
+        expect(find.text('Installing model\u2026'), findsOneWidget);
         expect(progressControllers, hasLength(2));
 
         progressControllers.last.addError(Exception('fail again'));
@@ -452,10 +452,10 @@ void main() {
         // Bounded pumps until the installing UI shows: the provider .future
         // read and the stream subscription need a few event-loop turns.
         for (var i = 0; i < 20; i++) {
-          if (find.text('Installing model...').evaluate().isNotEmpty) break;
+          if (find.text('Installing model\u2026').evaluate().isNotEmpty) break;
           await tester.pump(const Duration(milliseconds: 50));
         }
-        expect(find.text('Installing model...'), findsOneWidget);
+        expect(find.text('Installing model\u2026'), findsOneWidget);
 
         // Manifest pull at progress 0: status renders, the bar is at 0, and
         // the percentage line is suppressed by the `_progress > 0` guard.
@@ -519,7 +519,7 @@ void main() {
     );
 
     testWidgets(
-      'no Ollama provider throws and renders the not-found error',
+      'no Ollama provider is explained without starting an install',
       (tester) async {
         // installModel must never be reached: firstOrNull is null because the
         // supplied providers contain no Ollama provider.
@@ -533,14 +533,17 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // The thrown Exception message ('Exception: ' prefix stripped).
+        // A localized explanation, not an exception's English text.
         expect(
-          find.textContaining('Ollama provider not found'),
+          find.text(
+            'Installation failed: No Ollama provider is set up. '
+            'Add one in settings.',
+          ),
           findsOneWidget,
         );
         // _isInstalling reset to false → Install button visible again.
         expect(find.text('Install'), findsOneWidget);
-        expect(find.text('Installing model...'), findsNothing);
+        expect(find.text('Installing model\u2026'), findsNothing);
         // installModel was never invoked because the provider lookup failed.
         verifyNever(() => mockCloudRepository.installModel(any(), any()));
       },
@@ -565,8 +568,8 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // "Exception: " prefix stripped → only "Error: boom" remains.
-        expect(find.text('Error: boom'), findsOneWidget);
+        // "Exception: " prefix stripped → only the provider's text remains.
+        expect(find.text('Installation failed: boom'), findsOneWidget);
         // Install button is back (catch sets _isInstalling = false).
         expect(find.text('Install'), findsOneWidget);
       },

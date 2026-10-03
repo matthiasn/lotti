@@ -1299,6 +1299,31 @@
       }
     }
   },
+  "aiOllamaInstallButton": "Install",
+  "@aiOllamaInstallButton": {
+    "description": "Button that starts installing the model."
+  },
+  "aiOllamaInstallCommandHint": "To install it, run this command in your terminal:",
+  "@aiOllamaInstallCommandHint": {
+    "description": "Introduces the terminal command that installs the model."
+  },
+  "aiOllamaInstallFailed": "Installation failed: {error}",
+  "@aiOllamaInstallFailed": {
+    "description": "Shown when the install fails; error is the provider’s message.",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "aiOllamaInstalling": "Installing model…",
+  "@aiOllamaInstalling": {
+    "description": "Shown above the progress bar while the model downloads."
+  },
+  "aiOllamaInstallQuestion": "Install it now from Lotti?",
+  "@aiOllamaInstallQuestion": {
+    "description": "Offers to install the model from inside the app."
+  },
   "aiOllamaModelInstalledSuccessfully": "Model \"{modelName}\" installed successfully!",
   "@aiOllamaModelInstalledSuccessfully": {
     "placeholders": {
@@ -1306,6 +1331,23 @@
         "type": "String"
       }
     }
+  },
+  "aiOllamaModelNotInstalledMessage": "The model \"{model}\" isn’t installed.",
+  "@aiOllamaModelNotInstalledMessage": {
+    "description": "First line of the dialog; model is the Ollama model name.",
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "aiOllamaModelNotInstalledTitle": "Model not installed",
+  "@aiOllamaModelNotInstalledTitle": {
+    "description": "Title of the dialog offering to install a missing Ollama model."
+  },
+  "aiOllamaProviderMissing": "No Ollama provider is set up. Add one in settings.",
+  "@aiOllamaProviderMissing": {
+    "description": "Shown when no Ollama provider is configured to install into."
   },
   "aiPickProviderBadgeDesktopOnly": "DESKTOP ONLY",
   "aiPickProviderBadgeNew": "NEW",
@@ -4675,30 +4717,6 @@
   "goalReportSectionCoverage": "Data coverage",
   "goalReportSectionStanding": "Where things stand",
   "goalReportSectionWindow": "The wider window",
-  "goalStatusAchieved": "Achieved",
-  "@goalStatusAchieved": {
-    "description": "Goal track status chip: target date passed with criteria met."
-  },
-  "goalStatusAtRisk": "At risk",
-  "@goalStatusAtRisk": {
-    "description": "Goal track status chip: behind but within grace."
-  },
-  "goalStatusInsufficientData": "No data",
-  "@goalStatusInsufficientData": {
-    "description": "Goal track status chip: tracker gap, no verdict."
-  },
-  "goalStatusOffTrack": "Off track",
-  "@goalStatusOffTrack": {
-    "description": "Goal track status chip: decisively behind."
-  },
-  "goalStatusOnTrack": "On track",
-  "@goalStatusOnTrack": {
-    "description": "Goal track status chip: criteria currently met."
-  },
-  "goalStatusRecovering": "Recovering",
-  "@goalStatusRecovering": {
-    "description": "Goal track status chip: climbing back after being behind."
-  },
   "goalWatchingMetric": "Updates from its linked source · {windowLabel}",
   "@goalWatchingMetric": {
     "placeholders": {
@@ -6532,7 +6550,6 @@
       }
     }
   },
-  "projectLinkedTasks": "Linked Tasks",
   "projectManageTooltip": "Manage projects",
   "projectNextStepAdded": "Added",
   "projectNextStepCreateFailed": "Couldn't create the task. Update now to load the current list, or retry.",
@@ -6623,7 +6640,6 @@
       }
     }
   },
-  "projectNoLinkedTasks": "No tasks linked yet",
   "projectNoProjects": "No projects yet",
   "projectNotFound": "Project not found",
   "projectPickerLabel": "Project",
