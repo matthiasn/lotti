@@ -310,6 +310,11 @@ extension _PromptGenerationInputCases on _SkillInferenceTestSetup {
         return captured.first as String;
       }
 
+      // The built-in coding prompt: only it carries pull requests.
+      AutomationResult codingPrompt() => makePromptGenerationResult(
+        skill: testPromptGenSkill.copyWith(id: skillPromptGenId),
+      );
+
       void stubLinkedPrompt() {
         when(() => mockAiInputRepo.getEntity('text-pr')).thenAnswer(
           (_) async => makeTextEntry(
@@ -367,7 +372,7 @@ extension _PromptGenerationInputCases on _SkillInferenceTestSetup {
 
           await runner.runPromptGeneration(
             entryId: 'text-pr',
-            automationResult: makePromptGenerationResult(),
+            automationResult: codingPrompt(),
             linkedTaskId: 'task-pr',
           );
 
@@ -401,7 +406,7 @@ extension _PromptGenerationInputCases on _SkillInferenceTestSetup {
 
           await runner.runPromptGeneration(
             entryId: 'text-pr',
-            automationResult: makePromptGenerationResult(),
+            automationResult: codingPrompt(),
             linkedTaskId: 'task-pr',
           );
 
@@ -417,12 +422,49 @@ extension _PromptGenerationInputCases on _SkillInferenceTestSetup {
         },
       );
 
+      test(
+        'the design and research prompts never ask, though they share the '
+        "coding prompt's skill type",
+        () async {
+          stubLinkedPrompt();
+
+          for (final id in [skillDesignPromptId, skillResearchPromptId]) {
+            await runner.runPromptGeneration(
+              entryId: 'text-pr',
+              automationResult: makePromptGenerationResult(
+                skill: testPromptGenSkill.copyWith(id: id),
+              ),
+              linkedTaskId: 'task-pr',
+            );
+          }
+
+          verifyZeroInteractions(mockPullRequestContext);
+          // Both prompts still went out, just without the block.
+          final captured = verify(
+            () => mockCloudRepo.generate(
+              captureAny(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).captured;
+          expect(captured, hasLength(2));
+          for (final message in captured.cast<String>()) {
+            expect(message, isNot(contains('Pull Requests')));
+          }
+        },
+      );
+
       test('an unlinked prompt asks for no pull requests', () async {
         stubLinkedPrompt();
 
         await runner.runPromptGeneration(
           entryId: 'text-pr',
-          automationResult: makePromptGenerationResult(),
+          automationResult: codingPrompt(),
         );
 
         verifyZeroInteractions(mockPullRequestContext);

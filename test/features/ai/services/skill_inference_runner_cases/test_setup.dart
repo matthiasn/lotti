@@ -93,6 +93,7 @@ class _SkillInferenceTestSetup {
           as AiConfigSkill;
 
   AutomationResult makePromptGenerationResult({
+    AiConfigSkill? skill,
     String? thinkingHighEndModelId,
     AiConfigInferenceProvider? thinkingHighEndProvider,
     AiConfigModel? thinkingModel,
@@ -109,7 +110,7 @@ class _SkillInferenceTestSetup {
         thinkingHighEndModelId: thinkingHighEndModelId,
         thinkingHighEndProvider: thinkingHighEndProvider,
       ),
-      skill: testPromptGenSkill,
+      skill: skill ?? testPromptGenSkill,
     );
   }
 

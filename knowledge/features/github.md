@@ -269,8 +269,9 @@ time, and the stored one may have been read before the request
 audience; each section opens with how to use what follows. Nothing is asked
 of GitHub while the flag is off.
 
-- **Coding prompt** (`SkillInferenceRunner.runPromptGeneration`, coding
-  skills only): a `**Pull Requests:**` block after `**Related Tasks:**` with
+- **Coding prompt** (`SkillInferenceRunner.runPromptGeneration`, the
+  coding-prompt skill only — the design and research prompts share its skill
+  type but not its subject): a `**Pull Requests:**` block after `**Related Tasks:**` with
   each pull request's state, branch, checks (failing ones by name),
   mergeability, reviews, size and description (cut at 4000 characters). A
   pull request that could not be refreshed shows its last known state,
