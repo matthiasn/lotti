@@ -32,7 +32,12 @@ void main() {
   final mergedSnapshot = prSnapshot(
     status: PullRequestStatus.merged,
   ).copyWith(body: 'Adds pull request tracking.');
-  final merged = prEntry(clock: {'a': 1}, snapshot: mergedSnapshot);
+  // In a category of its own: a pull request can serve tasks in several
+  // categories, and the call is the consenting task's, not the entry's.
+  final linked = prEntry(clock: {'a': 1}, snapshot: mergedSnapshot);
+  final merged = linked.copyWith(
+    meta: linked.meta.copyWith(categoryId: 'category-of-the-entry'),
+  );
   final input = pullRequestSummaryInput(ref, mergedSnapshot);
 
   late MockPullRequestRepository repository;
@@ -69,7 +74,8 @@ void main() {
     answer = () async => 'Tracks pull requests on tasks.';
     summarizer = PullRequestSummarizer(
       repository: repository,
-      automationAllowed: (taskId) async => allowedTasks.contains(taskId),
+      consentingCategory: (taskId) async =>
+          allowedTasks.contains(taskId) ? 'category-of-$taskId' : null,
       modelFor: (taskId) async => models[taskId],
       generate:
           ({
@@ -117,8 +123,8 @@ void main() {
 
   test(
     'a merged pull request with no summary is summarised from its content, '
-    'with the model of the first task that allows it, and the summary is '
-    'stored with that content as its prompt',
+    "with the model of the first task that allows it, in that task's "
+    'category, and the summary is stored with that content as its prompt',
     () async {
       expect(await summarizer.summarize(entryId), isTrue);
 
@@ -128,7 +134,7 @@ void main() {
           'systemMessage': pullRequestSummarySystemMessage,
           'model': 'model-a',
           'taskId': 'task-a',
-          'categoryId': merged.meta.categoryId,
+          'categoryId': 'category-of-task-a',
         },
       ]);
       expect(
@@ -179,6 +185,7 @@ void main() {
       expect(await summarizer.summarize(entryId), isTrue);
       expect(asked.single['taskId'], 'task-b');
       expect(asked.single['model'], 'model-b');
+      expect(asked.single['categoryId'], 'category-of-task-b');
 
       asked.clear();
       models.remove('task-b');
@@ -196,6 +203,22 @@ void main() {
     expect(await summarizer.summarize(entryId), isFalse);
     expect(asked, isEmpty);
   });
+
+  test(
+    'an answer that runs long is stored on one line, cut at the summary '
+    'limit, so neither the entry nor what syncs grows with it',
+    () async {
+      answer = () async => 'Line one.\n\n${'z' * pullRequestSummaryLimit}';
+
+      expect(await summarizer.summarize(entryId), isTrue);
+
+      final data = stored();
+      expect(data.tldr, hasLength(pullRequestSummaryLimit + 2));
+      expect(data.tldr, startsWith('Line one. zzz'));
+      expect(data.tldr, endsWith(' …'));
+      expect(data.response, data.tldr);
+    },
+  );
 
   test('an empty answer is not stored', () async {
     answer = () async => '';

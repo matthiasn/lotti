@@ -18,10 +18,6 @@ enum PullRequestContextAudience {
 /// How much of an open pull request's description a context carries.
 const pullRequestDescriptionLimit = 4000;
 
-/// How much of a merged or closed pull request's summary a context carries,
-/// should a model ignore the length it was asked for.
-const pullRequestSummaryLimit = 600;
-
 /// The task's pull requests as Markdown for [audience], opening with how to
 /// use them; empty when there are none. Prompt text, so English.
 String renderPullRequestContext(
@@ -100,7 +96,9 @@ String _renderItem(
       '- State: ${_state(snapshot)}${size == null ? '' : ' ($size)'}',
     );
     final summary = item.summary;
-    if (summary != null) out.writeln('- TL;DR: ${_brief(summary)}');
+    if (summary != null) {
+      out.writeln('- TL;DR: ${briefPullRequestSummary(summary)}');
+    }
     return out.toString();
   }
 
@@ -129,14 +127,6 @@ String _renderItem(
 }
 
 String _iso(DateTime t) => t.toUtc().toIso8601String();
-
-/// [summary] on one line, cut at [pullRequestSummaryLimit].
-String _brief(String summary) {
-  final line = summary.trim().replaceAll(RegExp(r'\s+'), ' ');
-  return line.length > pullRequestSummaryLimit
-      ? '${line.substring(0, pullRequestSummaryLimit)} …'
-      : line;
-}
 
 String _state(PullRequestSnapshot s) => switch (s.status) {
   PullRequestStatus.open => s.draft ? 'open, draft' : 'open',

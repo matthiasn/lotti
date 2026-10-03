@@ -9,6 +9,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
@@ -1045,7 +1046,11 @@ void main() {
             baseUrl: any(named: 'baseUrl'),
             apiKey: 'k-1',
             systemMessage: pullRequestSummarySystemMessage,
+            maxCompletionTokens: pullRequestSummaryMaxTokens,
             provider: any(named: 'provider'),
+            geminiThinkingMode: GeminiThinkingMode.minimal,
+            reasoningEffort: ReasoningEffort.minimal,
+            impactCollector: any(named: 'impactCollector'),
           ),
         ).called(1);
         final data =

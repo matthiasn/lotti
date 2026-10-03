@@ -4,6 +4,18 @@ import 'package:lotti/features/github/domain/pull_request_ref.dart';
 /// How much of a description a summary is asked to read.
 const pullRequestSummaryDescriptionLimit = 12000;
 
+/// How long a summary may be, stored or shown, should a model ignore the
+/// length it was asked for.
+const pullRequestSummaryLimit = 600;
+
+/// [summary] on one line, cut at [pullRequestSummaryLimit].
+String briefPullRequestSummary(String summary) {
+  final line = summary.trim().replaceAll(RegExp(r'\s+'), ' ');
+  return line.length > pullRequestSummaryLimit
+      ? '${line.substring(0, pullRequestSummaryLimit)} …'
+      : line;
+}
+
 /// Whether [snapshot]'s pull request is history — merged, or closed without
 /// merging — so a task context shows it as a short summary rather than in
 /// full. An open pull request, draft or not, is the work in progress.

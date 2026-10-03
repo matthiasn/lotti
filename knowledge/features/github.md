@@ -584,8 +584,9 @@ closed pull request (`isSettledPullRequest`) in brief:
 No branch, checks, mergeability, reviews or description. Until a summary
 exists the block is the same without its TL;DR line — the title, outcome and
 size — so a context never waits for one and never falls back to the full
-description. A summary is put on one line and cut at 600 characters, should a
-model ignore the length it was asked for. Both contexts are told what the
+description. A summary is stored on one line and cut at 600 characters
+(`briefPullRequestSummary`), should a model ignore the length it was asked
+for, and the renderer applies the same cut to one that synced in. Both contexts are told what the
 brief form means: a merged pull request is work done, one closed without
 merging is not; the coding prompt's mismatch instructions are unchanged. An
 open pull request, draft or not, keeps every detail. For a task with eight
@@ -628,8 +629,10 @@ pull request in order, and the first whose category has automatic inference
 switched on — the same consent every automatic inference needs
 ([execution paths](ai/execution-paths.md#the-category-consent-gate)) — and
 whose agent's profile resolves (`resolveForSubject`) is the one it asks for,
-with that profile's thinking model, through `generateText`, recorded in the
-consumption ledger as automatic text generation for that task. The prompt is
+with that profile's thinking model, through `generateText`, at most 400
+completion tokens with minimal reasoning, recorded in the consumption ledger
+as automatic text generation for that task and its category — not the pull
+request entry's, which may be another task's. The prompt is
 the input above: only what the pull request entry already holds. One request
 per entry runs at a time on a device; another is dropped and the next refresh
 asks again. Before storing, the entry is read again and nothing is stored if

@@ -15,14 +15,15 @@ typedef PullRequestSummaryModel = ({
 });
 
 /// Writes one completion of [prompt] under [systemMessage] with [model], for
-/// task [taskId]'s pull request; its text, trimmed.
+/// task [taskId]'s pull request, its cost attributed to [categoryId]; its
+/// text, trimmed.
 typedef PullRequestSummaryGenerate =
     Future<String> Function({
       required String prompt,
       required String systemMessage,
       required PullRequestSummaryModel model,
       required String taskId,
-      required String? categoryId,
+      required String categoryId,
     });
 
 /// What a summary is asked for. Prompt text, so English.
@@ -46,19 +47,21 @@ const pullRequestSummarySystemMessage =
 /// It asks only with the consent the rest of the app asks with: the task's
 /// category has automatic inference switched on. And only with the model of
 /// the task's own agent — the data it sends is what the pull request entry
-/// already holds.
+/// already holds — and the call is the task's, in that task's category.
 class PullRequestSummarizer {
   PullRequestSummarizer({
     required PullRequestRepository repository,
-    required Future<bool> Function(String taskId) automationAllowed,
+    required this._consentingCategory,
     required this._modelFor,
     required this._generate,
     this._logger,
-  }) : _entries = repository,
-       _allowed = automationAllowed;
+  }) : _entries = repository;
 
   final PullRequestRepository _entries;
-  final Future<bool> Function(String taskId) _allowed;
+
+  /// The category of the task it is given, if that category has automatic
+  /// inference switched on; otherwise null.
+  final Future<String?> Function(String taskId) _consentingCategory;
   final Future<PullRequestSummaryModel?> Function(String taskId) _modelFor;
   final PullRequestSummaryGenerate _generate;
   final DomainLogger? _logger;
@@ -104,16 +107,19 @@ class PullRequestSummarizer {
       ...?(await _entries.holdersOf([ref]))[ref.key],
     ]..sort();
     String? taskId;
+    String? categoryId;
     PullRequestSummaryModel? model;
     for (final holder in holders) {
-      if (!await _allowed(holder)) continue;
+      final category = await _consentingCategory(holder);
+      if (category == null) continue;
       model = await _modelFor(holder);
       if (model != null) {
         taskId = holder;
+        categoryId = category;
         break;
       }
     }
-    if (taskId == null || model == null) return false;
+    if (taskId == null || categoryId == null || model == null) return false;
 
     final start = clock.now();
     final text = await _generate(
@@ -121,9 +127,10 @@ class PullRequestSummarizer {
       systemMessage: pullRequestSummarySystemMessage,
       model: model,
       taskId: taskId,
-      categoryId: entry.meta.categoryId,
+      categoryId: categoryId,
     );
     if (text.isEmpty) return false;
+    final summary = briefPullRequestSummary(text);
 
     // Read again: the pull request may have been unlinked, or have changed,
     // while the model wrote.
@@ -141,9 +148,9 @@ class PullRequestSummarizer {
         systemMessage: pullRequestSummarySystemMessage,
         prompt: input,
         thoughts: '',
-        response: text,
+        response: summary,
         type: AiResponseType.pullRequestSummary,
-        tldr: text,
+        tldr: summary,
       ),
       start: start,
     );

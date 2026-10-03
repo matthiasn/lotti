@@ -7,6 +7,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/one_shot_text_generation.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
@@ -34,6 +35,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/notification_stream.dart';
+import 'package:openai_dart/openai_dart.dart' show ReasoningEffort;
 
 /// One client for the process: its ETag cache and its rate-limit block are
 /// per device, not per screen.
@@ -61,17 +63,22 @@ final pullRequestRepositoryProvider = Provider<PullRequestRepository>(
   name: 'pullRequestRepositoryProvider',
 );
 
+/// How many tokens one pull request summary may take.
+const pullRequestSummaryMaxTokens = 400;
+
 /// Summarises merged and closed pull requests with the task agent's model,
 /// where the task's category has automatic inference switched on.
 final pullRequestSummarizerProvider = Provider<PullRequestSummarizer>((ref) {
   return PullRequestSummarizer(
     repository: ref.watch(pullRequestRepositoryProvider),
-    automationAllowed: (taskId) async {
+    consentingCategory: (taskId) async {
       final db = ref.read(journalDbProvider);
       final categoryId = (await db.journalEntityById(taskId))?.meta.categoryId;
-      if (categoryId == null) return false;
+      if (categoryId == null) return null;
       final category = await db.getCategoryById(categoryId);
-      return category?.automaticInferenceEnabledEffective ?? false;
+      return (category?.automaticInferenceEnabledEffective ?? false)
+          ? categoryId
+          : null;
     },
     modelFor: (taskId) async {
       final profile = await ref
@@ -99,7 +106,11 @@ final pullRequestSummarizerProvider = Provider<PullRequestSummarizer>((ref) {
               model: model.modelId,
               provider: model.provider,
               temperature: 0.2,
-              maxCompletionTokens: null,
+              // A sentence or two; a model that runs past it is cut, not
+              // billed for pages. Reasoning stays minimal, so it fits.
+              maxCompletionTokens: pullRequestSummaryMaxTokens,
+              geminiThinkingMode: GeminiThinkingMode.minimal,
+              reasoningEffort: ReasoningEffort.minimal,
               attribution: OneShotGenerationAttribution(
                 workType: AiWorkType.textGeneration,
                 triggerType: AiTriggerType.automatic,
