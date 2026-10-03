@@ -1897,15 +1897,40 @@ class AppLocalizationsCs extends AppLocalizations {
       'Pro instalaci spusť v terminálu tento příkaz:';
 
   @override
+  String get aiOllamaInstallDiskFull =>
+      'Disk je plný. Uvolni místo a zkus to znovu.';
+
+  @override
   String aiOllamaInstallFailed(String error) {
     return 'Instalace selhala: $error';
   }
 
   @override
+  String get aiOllamaInstallGeneric =>
+      'Něco se pokazilo. Zkontroluj instalaci Ollamy a zkus to znovu.';
+
+  @override
   String get aiOllamaInstalling => 'Model se instaluje…';
 
   @override
+  String get aiOllamaInstallModelNotFound =>
+      'Model se v knihovně Ollama nenašel.';
+
+  @override
   String get aiOllamaInstallQuestion => 'Nainstalovat ho teď z Lotti?';
+
+  @override
+  String get aiOllamaInstallServerUnreachable =>
+      'Server Ollama není dostupný. Běží?';
+
+  @override
+  String aiOllamaInstallStartFailed(int status) {
+    return 'Ollama nemohla spustit stahování (HTTP $status).';
+  }
+
+  @override
+  String get aiOllamaInstallTimedOut =>
+      'Stahování trvalo příliš dlouho. Zkontroluj připojení a zkus to znovu.';
 
   @override
   String aiOllamaModelInstalledSuccessfully(String modelName) {

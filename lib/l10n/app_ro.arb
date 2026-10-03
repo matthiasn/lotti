@@ -753,9 +753,15 @@
   "aiModelPickerProviderModelCount": "{count, plural, =1{1 model} few{{count} modele} other{{count} de modele}}",
   "aiOllamaInstallButton": "Instalați",
   "aiOllamaInstallCommandHint": "Pentru a-l instala, rulați această comandă în terminal:",
+  "aiOllamaInstallDiskFull": "Discul este plin. Eliberați spațiu și încercați din nou.",
   "aiOllamaInstallFailed": "Instalarea a eșuat: {error}",
+  "aiOllamaInstallGeneric": "Ceva nu a funcționat. Verificați instalarea Ollama și încercați din nou.",
   "aiOllamaInstalling": "Se instalează modelul…",
+  "aiOllamaInstallModelNotFound": "Modelul nu a fost găsit în biblioteca Ollama.",
   "aiOllamaInstallQuestion": "Îl instalați acum din Lotti?",
+  "aiOllamaInstallServerUnreachable": "Serverul Ollama nu poate fi accesat. Rulează?",
+  "aiOllamaInstallStartFailed": "Ollama nu a putut porni descărcarea (HTTP {status}).",
+  "aiOllamaInstallTimedOut": "Descărcarea a durat prea mult. Verificați conexiunea și încercați din nou.",
   "aiOllamaModelInstalledSuccessfully": "Modelul „{modelName}” a fost instalat cu succes!",
   "@aiOllamaModelInstalledSuccessfully": {
     "placeholders": {

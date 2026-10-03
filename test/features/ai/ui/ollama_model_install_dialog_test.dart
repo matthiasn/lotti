@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
-import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
+import 'package:lotti/features/ai/repository/ollama_api_client.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart'
     show AiConfigByTypeController;
 import 'package:lotti/features/ai/ui/ollama_model_install_dialog.dart';
@@ -549,30 +549,76 @@ void main() {
       },
     );
 
+    Future<void> failInstallWith(WidgetTester tester, Object error) async {
+      when(() => mockCloudRepository.installModel(any(), any())).thenAnswer(
+        (_) => Stream<OllamaPullProgress>.error(error),
+      );
+      await pumpInstallDialog(
+        tester,
+        modelName: 'mistral',
+        providers: [makeOllama()],
+      );
+      await tester.tap(find.text('Install'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
     testWidgets(
-      'stream error is caught and rendered with stripped prefix',
+      'an unexpected error shows a generic message, never its own text',
       (tester) async {
-        // Finite error stream: the `await for` rethrows inside _installModel,
-        // hitting the catch block which strips the "Exception: " prefix.
-        when(() => mockCloudRepository.installModel(any(), any())).thenAnswer(
-          (_) => Stream<OllamaPullProgress>.error(Exception('boom')),
+        // Technical English from outside the repository must not reach a
+        // localized dialog.
+        await failInstallWith(tester, StateError('socket closed at 0x1f'));
+
+        expect(
+          find.text(
+            'Installation failed: Something went wrong. Check your Ollama '
+            'installation and try again.',
+          ),
+          findsOneWidget,
         );
-
-        await pumpInstallDialog(
-          tester,
-          modelName: 'mistral',
-          providers: [makeOllama()],
-        );
-
-        await tester.tap(find.text('Install'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // "Exception: " prefix stripped → only the provider's text remains.
-        expect(find.text('Installation failed: boom'), findsOneWidget);
+        expect(find.textContaining('socket closed'), findsNothing);
         // Install button is back (catch sets _isInstalling = false).
         expect(find.text('Install'), findsOneWidget);
       },
     );
+
+    for (final (error, sentence) in [
+      (
+        const OllamaInstallException(OllamaInstallFailure.modelNotFound),
+        'The model wasn\u2019t found in the Ollama library.',
+      ),
+      (
+        const OllamaInstallException(OllamaInstallFailure.diskFull),
+        'The disk is full. Free up some space and try again.',
+      ),
+      (
+        const OllamaInstallException(OllamaInstallFailure.serverUnreachable),
+        'The Ollama server can\u2019t be reached. Is it running?',
+      ),
+      (
+        const OllamaInstallException(OllamaInstallFailure.timedOut),
+        'The download took too long. Check your connection and try again.',
+      ),
+      (
+        const OllamaInstallException(
+          OllamaInstallFailure.startFailed,
+          statusCode: 503,
+        ),
+        'Ollama couldn\u2019t start the download (HTTP 503).',
+      ),
+      (
+        const OllamaInstallException(OllamaInstallFailure.failed),
+        'Something went wrong. Check your Ollama installation and try again.',
+      ),
+    ]) {
+      testWidgets('${error.failure.name} gets its own sentence', (
+        tester,
+      ) async {
+        await failInstallWith(tester, error);
+
+        expect(find.text('Installation failed: $sentence'), findsOneWidget);
+      });
+    }
   });
 }

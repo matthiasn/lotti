@@ -1307,6 +1307,10 @@
   "@aiOllamaInstallCommandHint": {
     "description": "Introduces the terminal command that installs the model."
   },
+  "aiOllamaInstallDiskFull": "The disk is full. Free up some space and try again.",
+  "@aiOllamaInstallDiskFull": {
+    "description": "Install failure: no disk space left for the download."
+  },
   "aiOllamaInstallFailed": "Installation failed: {error}",
   "@aiOllamaInstallFailed": {
     "description": "Shown when the install fails; error is the provider’s message.",
@@ -1316,13 +1320,38 @@
       }
     }
   },
+  "aiOllamaInstallGeneric": "Something went wrong. Check your Ollama installation and try again.",
+  "@aiOllamaInstallGeneric": {
+    "description": "Install failure with no more specific cause."
+  },
   "aiOllamaInstalling": "Installing model…",
   "@aiOllamaInstalling": {
     "description": "Shown above the progress bar while the model downloads."
   },
+  "aiOllamaInstallModelNotFound": "The model wasn’t found in the Ollama library.",
+  "@aiOllamaInstallModelNotFound": {
+    "description": "Install failure: the model name does not exist in the Ollama library."
+  },
   "aiOllamaInstallQuestion": "Install it now from Lotti?",
   "@aiOllamaInstallQuestion": {
     "description": "Offers to install the model from inside the app."
+  },
+  "aiOllamaInstallServerUnreachable": "The Ollama server can’t be reached. Is it running?",
+  "@aiOllamaInstallServerUnreachable": {
+    "description": "Install failure: the local Ollama server did not answer."
+  },
+  "aiOllamaInstallStartFailed": "Ollama couldn’t start the download (HTTP {status}).",
+  "@aiOllamaInstallStartFailed": {
+    "description": "Install failure: Ollama refused to start the download; status is the HTTP status code.",
+    "placeholders": {
+      "status": {
+        "type": "int"
+      }
+    }
+  },
+  "aiOllamaInstallTimedOut": "The download took too long. Check your connection and try again.",
+  "@aiOllamaInstallTimedOut": {
+    "description": "Install failure: the download timed out."
   },
   "aiOllamaModelInstalledSuccessfully": "Model \"{modelName}\" installed successfully!",
   "@aiOllamaModelInstalledSuccessfully": {

@@ -2212,25 +2212,6 @@ void main() {
       // Should not throw, handles malformed JSON gracefully
       expect(progressList, isNotEmpty);
     });
-
-    test('should handle HTTP error during model install', () async {
-      final mockResponse = MockStreamedResponse();
-      when(() => mockResponse.statusCode).thenReturn(500);
-      when(() => mockResponse.stream).thenAnswer(
-        (_) => http.ByteStream(Stream.value(utf8.encode('Server error'))),
-      );
-
-      when(
-        () => mockHttpClient.send(any()),
-      ).thenAnswer((_) async => mockResponse);
-
-      expect(
-        () => repository
-            .installModel('llama2', 'http://localhost:11434')
-            .toList(),
-        throwsA(isA<Exception>()),
-      );
-    });
   });
 
   group('shouldEnableThinking', () {
@@ -2945,7 +2926,7 @@ void main() {
     });
   });
 
-  group('installModel – specific error message branches (lines 765-774)', () {
+  group('installModel failures carry a kind, not a sentence', () {
     late OllamaInferenceRepository repo;
     late MockHttpClient mockClient;
 
@@ -2969,62 +2950,64 @@ void main() {
       ).thenAnswer((_) async => resp);
     }
 
-    test(
-      'throws "Disk is full" when error contains "disk full" (line 765-768)',
-      () async {
-        stubInstallStream('{"error":"disk full – cannot write more"}\n');
-
-        await expectLater(
-          repo.installModel('big-model', baseUrl).toList(),
-          throwsA(
-            isA<Exception>().having(
-              (e) => e.toString(),
-              'message',
-              contains('Disk is full'),
-            ),
-          ),
+    Matcher failsWith(OllamaInstallFailure failure, {int? statusCode}) =>
+        throwsA(
+          isA<OllamaInstallException>()
+              .having((e) => e.failure, 'failure', failure)
+              .having((e) => e.statusCode, 'statusCode', statusCode),
         );
-      },
-    );
 
-    test(
-      'throws "Connection refused" when error contains "connection refused" '
-      '(line 769-772)',
-      () async {
-        stubInstallStream(
-          '{"error":"connection refused to server"}\n',
-        );
+    for (final (error, failure) in [
+      ('model nope not found', OllamaInstallFailure.modelNotFound),
+      ('disk full – cannot write more', OllamaInstallFailure.diskFull),
+      ('connection refused to server', OllamaInstallFailure.serverUnreachable),
+      ('unexpected failure XYZ', OllamaInstallFailure.failed),
+    ]) {
+      test('"$error" in the pull stream is ${failure.name}', () async {
+        stubInstallStream('{"error":"$error"}\n');
 
         await expectLater(
           repo.installModel('some-model', baseUrl).toList(),
-          throwsA(
-            isA<Exception>().having(
-              (e) => e.toString(),
-              'message',
-              contains('Connection refused'),
-            ),
-          ),
+          failsWith(failure),
         );
-      },
-    );
+      });
+    }
 
-    test(
-      'throws generic installation error for unknown error message (line 774)',
-      () async {
-        stubInstallStream('{"error":"unexpected failure XYZ"}\n');
+    test('a refused start carries its HTTP status', () async {
+      final resp = MockStreamedResponse();
+      when(() => resp.statusCode).thenReturn(500);
+      when(() => resp.stream).thenAnswer(
+        (_) => http.ByteStream(Stream.value(utf8.encode('Server error'))),
+      );
+      when(() => mockClient.send(any())).thenAnswer((_) async => resp);
 
-        await expectLater(
-          repo.installModel('some-model', baseUrl).toList(),
-          throwsA(
-            isA<Exception>().having(
-              (e) => e.toString(),
-              'message',
-              contains('Model installation failed'),
-            ),
-          ),
-        );
-      },
-    );
+      await expectLater(
+        repo.installModel('llama2', baseUrl).toList(),
+        failsWith(OllamaInstallFailure.startFailed, statusCode: 500),
+      );
+    });
+
+    test('a server that never answers is unreachable', () async {
+      when(
+        () => mockClient.send(any()),
+      ).thenThrow(const SocketException('Connection failed'));
+
+      await expectLater(
+        repo.installModel('llama2', baseUrl).toList(),
+        failsWith(OllamaInstallFailure.serverUnreachable),
+      );
+    });
+
+    test('a download that keeps timing out is timedOut', () async {
+      when(
+        () => mockClient.send(any()),
+      ).thenThrow(TimeoutException('slow'));
+
+      await expectLater(
+        repo.installModel('llama2', baseUrl).toList(),
+        failsWith(OllamaInstallFailure.timedOut),
+      );
+    });
   });
 }
 

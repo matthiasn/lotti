@@ -1892,15 +1892,40 @@ class AppLocalizationsSv extends AppLocalizations {
       'Kör det här kommandot i terminalen för att installera den:';
 
   @override
+  String get aiOllamaInstallDiskFull =>
+      'Disken är full. Frigör lite utrymme och försök igen.';
+
+  @override
   String aiOllamaInstallFailed(String error) {
     return 'Installationen misslyckades: $error';
   }
 
   @override
+  String get aiOllamaInstallGeneric =>
+      'Något gick fel. Kontrollera din Ollama-installation och försök igen.';
+
+  @override
   String get aiOllamaInstalling => 'Installerar modellen…';
 
   @override
+  String get aiOllamaInstallModelNotFound =>
+      'Modellen hittades inte i Ollama-biblioteket.';
+
+  @override
   String get aiOllamaInstallQuestion => 'Installera den nu från Lotti?';
+
+  @override
+  String get aiOllamaInstallServerUnreachable =>
+      'Ollama-servern går inte att nå. Körs den?';
+
+  @override
+  String aiOllamaInstallStartFailed(int status) {
+    return 'Ollama kunde inte starta nedladdningen (HTTP $status).';
+  }
+
+  @override
+  String get aiOllamaInstallTimedOut =>
+      'Nedladdningen tog för lång tid. Kontrollera anslutningen och försök igen.';
 
   @override
   String aiOllamaModelInstalledSuccessfully(String modelName) {

@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/ollama_api_client.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -89,23 +90,39 @@ class OllamaModelInstallDialogState
         widget.onModelInstalled?.call();
       }
     } catch (e) {
+      // The type only: the text of an unexpected error is technical English
+      // and may carry details that do not belong in a log.
       developer.log(
-        'Model installation error: $e',
+        'Model installation failed (${e.runtimeType})',
         name: '_OllamaModelInstallDialogState',
       );
-
-      // The repository provides user-friendly error messages, so they are
-      // shown directly instead of being parsed.
-      var errorMessage = e.toString();
-      if (e is Exception) {
-        errorMessage = errorMessage.replaceFirst('Exception: ', '');
-      }
-
+      if (!mounted) return;
       setState(() {
-        _error = errorMessage;
+        _error = _installFailureMessage(e);
         _isInstalling = false;
       });
     }
+  }
+
+  /// Words for a failed install in the user's language: a known
+  /// [OllamaInstallFailure] gets its own sentence, anything else a generic one.
+  String _installFailureMessage(Object error) {
+    final messages = context.messages;
+    if (error is! OllamaInstallException) {
+      return messages.aiOllamaInstallGeneric;
+    }
+    return switch (error.failure) {
+      OllamaInstallFailure.startFailed => messages.aiOllamaInstallStartFailed(
+        error.statusCode ?? 0,
+      ),
+      OllamaInstallFailure.modelNotFound =>
+        messages.aiOllamaInstallModelNotFound,
+      OllamaInstallFailure.diskFull => messages.aiOllamaInstallDiskFull,
+      OllamaInstallFailure.serverUnreachable =>
+        messages.aiOllamaInstallServerUnreachable,
+      OllamaInstallFailure.timedOut => messages.aiOllamaInstallTimedOut,
+      OllamaInstallFailure.failed => messages.aiOllamaInstallGeneric,
+    };
   }
 
   @override

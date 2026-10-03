@@ -1901,15 +1901,40 @@ class AppLocalizationsEs extends AppLocalizations {
       'Para instalarlo, ejecuta este comando en tu terminal:';
 
   @override
+  String get aiOllamaInstallDiskFull =>
+      'El disco está lleno. Libera espacio y vuelve a intentarlo.';
+
+  @override
   String aiOllamaInstallFailed(String error) {
     return 'La instalación falló: $error';
   }
 
   @override
+  String get aiOllamaInstallGeneric =>
+      'Algo salió mal. Comprueba tu instalación de Ollama y vuelve a intentarlo.';
+
+  @override
   String get aiOllamaInstalling => 'Instalando modelo…';
 
   @override
+  String get aiOllamaInstallModelNotFound =>
+      'El modelo no se encontró en la biblioteca de Ollama.';
+
+  @override
   String get aiOllamaInstallQuestion => '¿Instalarlo ahora desde Lotti?';
+
+  @override
+  String get aiOllamaInstallServerUnreachable =>
+      'No se puede acceder al servidor de Ollama. ¿Está en marcha?';
+
+  @override
+  String aiOllamaInstallStartFailed(int status) {
+    return 'Ollama no pudo iniciar la descarga (HTTP $status).';
+  }
+
+  @override
+  String get aiOllamaInstallTimedOut =>
+      'La descarga tardó demasiado. Comprueba tu conexión y vuelve a intentarlo.';
 
   @override
   String aiOllamaModelInstalledSuccessfully(String modelName) {

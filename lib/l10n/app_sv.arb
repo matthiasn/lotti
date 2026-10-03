@@ -928,9 +928,15 @@
   },
   "aiOllamaInstallButton": "Installera",
   "aiOllamaInstallCommandHint": "Kör det här kommandot i terminalen för att installera den:",
+  "aiOllamaInstallDiskFull": "Disken är full. Frigör lite utrymme och försök igen.",
   "aiOllamaInstallFailed": "Installationen misslyckades: {error}",
+  "aiOllamaInstallGeneric": "Något gick fel. Kontrollera din Ollama-installation och försök igen.",
   "aiOllamaInstalling": "Installerar modellen…",
+  "aiOllamaInstallModelNotFound": "Modellen hittades inte i Ollama-biblioteket.",
   "aiOllamaInstallQuestion": "Installera den nu från Lotti?",
+  "aiOllamaInstallServerUnreachable": "Ollama-servern går inte att nå. Körs den?",
+  "aiOllamaInstallStartFailed": "Ollama kunde inte starta nedladdningen (HTTP {status}).",
+  "aiOllamaInstallTimedOut": "Nedladdningen tog för lång tid. Kontrollera anslutningen och försök igen.",
   "aiOllamaModelInstalledSuccessfully": "Modell \"{modelName}\" installerades framgångsrikt!",
   "@aiOllamaModelInstalledSuccessfully": {
     "placeholders": {

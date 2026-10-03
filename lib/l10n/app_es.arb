@@ -753,9 +753,15 @@
   "aiModelPickerProviderModelCount": "{count, plural, =1{1 modelo} other{{count} modelos}}",
   "aiOllamaInstallButton": "Instalar",
   "aiOllamaInstallCommandHint": "Para instalarlo, ejecuta este comando en tu terminal:",
+  "aiOllamaInstallDiskFull": "El disco está lleno. Libera espacio y vuelve a intentarlo.",
   "aiOllamaInstallFailed": "La instalación falló: {error}",
+  "aiOllamaInstallGeneric": "Algo salió mal. Comprueba tu instalación de Ollama y vuelve a intentarlo.",
   "aiOllamaInstalling": "Instalando modelo…",
+  "aiOllamaInstallModelNotFound": "El modelo no se encontró en la biblioteca de Ollama.",
   "aiOllamaInstallQuestion": "¿Instalarlo ahora desde Lotti?",
+  "aiOllamaInstallServerUnreachable": "No se puede acceder al servidor de Ollama. ¿Está en marcha?",
+  "aiOllamaInstallStartFailed": "Ollama no pudo iniciar la descarga (HTTP {status}).",
+  "aiOllamaInstallTimedOut": "La descarga tardó demasiado. Comprueba tu conexión y vuelve a intentarlo.",
   "aiOllamaModelInstalledSuccessfully": "¡Modelo \"{modelName}\" instalado correctamente!",
   "@aiOllamaModelInstalledSuccessfully": {
     "placeholders": {
