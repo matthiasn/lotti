@@ -2,14 +2,14 @@
 type: Feature Module
 title: Settings v2
 description: The single declarative settings tree and its two renderings, with real feature pages embedded as headerless bodies.
-resource: ../../lib/features/settings_v2
+resource: ../../lib/features/settings
 tags: [settings, navigation, tree, declarative]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-07-26T16:00:00Z }
 stale_after: 2027-03-08
 sources:
   - id: src
-    resource: ../../lib/features/settings_v2
+    resource: ../../lib/features/settings
     title: Settings v2 source
     last_modified: 2026-07-26
 ---
