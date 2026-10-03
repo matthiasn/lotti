@@ -6597,6 +6597,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get githubDescriptionHeading => 'Description';
+
+  @override
   String get githubDisconnectButton => 'Disconnect';
 
   @override
@@ -6701,6 +6704,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get githubMergeConflicts => 'Merge conflicts';
 
   @override
+  String get githubNoDescription => 'This pull request has no description.';
+
+  @override
+  String get githubNoSummaryYet => 'Not summarized yet.';
+
+  @override
   String get githubNoTokenFromOtherDevices =>
       'No token has arrived from your other devices yet. On a device that has one, use “Send to my other devices”.';
 
@@ -6735,6 +6744,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get githubPullRequestActions => 'Pull request actions';
+
+  @override
+  String githubPullRequestSize(int additions, int deletions) {
+    return '$additions lines added, $deletions removed';
+  }
 
   @override
   String get githubPullRequestsTitle => 'Pull requests';
@@ -6797,6 +6811,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get githubStatusOpen => 'Open';
+
+  @override
+  String get githubSummarize => 'Summarize';
+
+  @override
+  String get githubSummarizeAgain => 'Summarize again';
+
+  @override
+  String get githubSummarizing => 'Writing the summary';
+
+  @override
+  String get githubSummaryBusy => 'A summary is already being written.';
+
+  @override
+  String get githubSummaryFailed =>
+      'The summary couldn\'t be written. Try again.';
+
+  @override
+  String get githubSummaryHeading => 'TL;DR';
+
+  @override
+  String get githubSummaryNoModel =>
+      'There\'s no model set up for this task\'s agent, so nothing can write the summary.';
 
   @override
   String get githubTokenHide => 'Hide token';
@@ -16684,6 +16721,15 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get fileMenuTitle => 'File';
+
+  @override
+  String get githubNoSummaryYet => 'Not summarised yet.';
+
+  @override
+  String get githubSummarize => 'Summarise';
+
+  @override
+  String get githubSummarizeAgain => 'Summarise again';
 
   @override
   String goalAttainmentLabel(int percent) {

@@ -3016,6 +3016,7 @@
       }
     }
   },
+  "githubDescriptionHeading": "Beschrijving",
   "githubDisconnectButton": "Verbinding verbreken",
   "githubFailureForbidden": "Het token mag dit niet lezen. Controleer de rechten ervan.",
   "githubFailureInvalidResponse": "GitHub stuurde een antwoord dat Lotti niet kon lezen.",
@@ -3052,6 +3053,8 @@
   "githubMergeBehind": "Achter op de basisbranch",
   "githubMergeBlocked": "Geblokkeerd door branchregels",
   "githubMergeConflicts": "Mergeconflicten",
+  "githubNoDescription": "Deze pull request heeft geen beschrijving.",
+  "githubNoSummaryYet": "Nog niet samengevat.",
   "githubNoTokenFromOtherDevices": "Er is nog geen token van je andere apparaten binnengekomen. Gebruik op een apparaat dat er een heeft ‘Naar mijn andere apparaten sturen’.",
   "githubNotRefreshed": "Vernieuwen mislukt",
   "githubNotRefreshedYet": "Nog niet vernieuwd",
@@ -3080,6 +3083,7 @@
     }
   },
   "githubPullRequestActions": "Acties voor de pull request",
+  "githubPullRequestSize": "{additions} regels toegevoegd, {deletions} verwijderd",
   "githubPullRequestsTitle": "Pull requests",
   "githubRefreshingPullRequest": "Pull request wordt vernieuwd",
   "githubRefreshPullRequest": "Pull request vernieuwen",
@@ -3099,6 +3103,13 @@
   "githubStatusDraft": "Concept",
   "githubStatusMerged": "Samengevoegd",
   "githubStatusOpen": "Open",
+  "githubSummarize": "Samenvatten",
+  "githubSummarizeAgain": "Opnieuw samenvatten",
+  "githubSummarizing": "Samenvatting wordt geschreven",
+  "githubSummaryBusy": "Er wordt al een samenvatting geschreven.",
+  "githubSummaryFailed": "De samenvatting kon niet worden geschreven. Probeer het opnieuw.",
+  "githubSummaryHeading": "In het kort",
+  "githubSummaryNoModel": "Er is geen model ingesteld voor de agent van deze taak, dus niets kan de samenvatting schrijven.",
   "githubTokenHide": "Token verbergen",
   "githubTokenIntro": "Lotti leest de pull requests die je aan taken koppelt met je eigen persoonlijke toegangstoken. Maak een fine-grained token voor de repository's waarin je werkt, met alleen-lezen toegang tot \"Pull requests\" en \"Commit statuses\". GitHub laat zo'n token geen check runs lezen in een privérepository, dus daar kan CI onvolledig zijn; een klassiek token met de scope \"repo\" kan ze wel lezen.",
   "githubTokenLabel": "Persoonlijk toegangstoken",

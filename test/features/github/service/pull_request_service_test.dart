@@ -9,6 +9,7 @@ import 'package:lotti/features/github/domain/open_pull_request.dart';
 import 'package:lotti/features/github/domain/pull_request_ref.dart';
 import 'package:lotti/features/github/repository/pull_request_repository.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';
+import 'package:lotti/features/github/service/pull_request_summarizer.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -452,7 +453,9 @@ void main() {
 
     setUp(() {
       summarizer = MockPullRequestSummarizer();
-      when(() => summarizer.summarize(any())).thenAnswer((_) async => false);
+      when(
+        () => summarizer.summarize(any()),
+      ).thenAnswer((_) async => PullRequestSummaryOutcome.upToDate);
       service = PullRequestService(
         client: client,
         tokenStorage: tokens,
@@ -495,7 +498,7 @@ void main() {
       ).thenAnswer((_) async => true);
       when(
         () => summarizer.summarize(any()),
-      ).thenAnswer((_) => Completer<bool>().future);
+      ).thenAnswer((_) => Completer<PullRequestSummaryOutcome>().future);
 
       final result = await service.refresh(entry);
 

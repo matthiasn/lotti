@@ -6651,6 +6651,9 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get githubDescriptionHeading => 'Beschrijving';
+
+  @override
   String get githubDisconnectButton => 'Verbinding verbreken';
 
   @override
@@ -6757,6 +6760,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get githubMergeConflicts => 'Mergeconflicten';
 
   @override
+  String get githubNoDescription =>
+      'Deze pull request heeft geen beschrijving.';
+
+  @override
+  String get githubNoSummaryYet => 'Nog niet samengevat.';
+
+  @override
   String get githubNoTokenFromOtherDevices =>
       'Er is nog geen token van je andere apparaten binnengekomen. Gebruik op een apparaat dat er een heeft ‘Naar mijn andere apparaten sturen’.';
 
@@ -6791,6 +6801,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get githubPullRequestActions => 'Acties voor de pull request';
+
+  @override
+  String githubPullRequestSize(int additions, int deletions) {
+    return '$additions regels toegevoegd, $deletions verwijderd';
+  }
 
   @override
   String get githubPullRequestsTitle => 'Pull requests';
@@ -6853,6 +6868,29 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get githubStatusOpen => 'Open';
+
+  @override
+  String get githubSummarize => 'Samenvatten';
+
+  @override
+  String get githubSummarizeAgain => 'Opnieuw samenvatten';
+
+  @override
+  String get githubSummarizing => 'Samenvatting wordt geschreven';
+
+  @override
+  String get githubSummaryBusy => 'Er wordt al een samenvatting geschreven.';
+
+  @override
+  String get githubSummaryFailed =>
+      'De samenvatting kon niet worden geschreven. Probeer het opnieuw.';
+
+  @override
+  String get githubSummaryHeading => 'In het kort';
+
+  @override
+  String get githubSummaryNoModel =>
+      'Er is geen model ingesteld voor de agent van deze taak, dus niets kan de samenvatting schrijven.';
 
   @override
   String get githubTokenHide => 'Token verbergen';

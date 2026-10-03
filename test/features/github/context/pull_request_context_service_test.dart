@@ -7,7 +7,7 @@ import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/features/github/api/github_client.dart';
 import 'package:lotti/features/github/context/pull_request_context_renderer.dart';
 import 'package:lotti/features/github/context/pull_request_context_service.dart';
-import 'package:lotti/features/github/domain/pull_request_summary_input.dart';
+import 'package:lotti/features/github/domain/pull_request_summary.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -177,6 +177,10 @@ void main() {
   });
 
   group('summaries', () {
+    const tracks = PullRequestSummary(
+      oneLiner: 'Tracks pull requests.',
+      tldr: 'Tracks pull requests on tasks.',
+    );
     final merged = prSnapshot(
       second: 60,
       status: PullRequestStatus.merged,
@@ -191,21 +195,27 @@ void main() {
             stored.id,
             pullRequestSummaryInput(stored.data.ref, merged),
           ),
-        ).thenAnswer((_) async => 'Tracks pull requests.');
+        ).thenAnswer((_) async => tracks);
 
         final [item] = await subject().forTask(taskId);
 
-        expect(item.summary, 'Tracks pull requests.');
+        expect(item.summary, tracks);
       },
     );
 
-    test('an open pull request asks for no summary', () async {
-      refreshes(PullRequestRefreshed(prSnapshot(second: 60)));
+    test('an open pull request carries its summary too', () async {
+      final open = prSnapshot(second: 60);
+      refreshes(PullRequestRefreshed(open));
+      when(
+        () => repository.summaryOf(
+          stored.id,
+          pullRequestSummaryInput(stored.data.ref, open),
+        ),
+      ).thenAnswer((_) async => tracks);
 
       final [item] = await subject().forTask(taskId);
 
-      expect(item.summary, isNull);
-      verifyNever(() => repository.summaryOf(any(), any()));
+      expect(item.summary, tracks);
     });
 
     test(
@@ -223,12 +233,12 @@ void main() {
             stored.id,
             pullRequestSummaryInput(stored.data.ref, merged),
           ),
-        ).thenAnswer((_) async => 'Tracks pull requests.');
+        ).thenAnswer((_) async => tracks);
 
         final [item] = await subject().forTask(taskId);
 
         expect(item.current, isFalse);
-        expect(item.summary, 'Tracks pull requests.');
+        expect(item.summary, tracks);
       },
     );
 
@@ -236,14 +246,14 @@ void main() {
       refreshes(PullRequestRefreshed(merged));
       when(
         () => repository.summaryOf(any(), any()),
-      ).thenAnswer((_) async => 'Tracks pull requests.');
+      ).thenAnswer((_) async => tracks);
 
       final text = await subject().contextFor(
         taskId,
         audience: PullRequestContextAudience.taskAgent,
       );
 
-      expect(text, contains('- TL;DR: Tracks pull requests.'));
+      expect(text, contains('- TL;DR: Tracks pull requests on tasks.'));
       expect(text, isNot(contains('Adds tracking.')));
     });
   });

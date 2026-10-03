@@ -66,6 +66,8 @@ _PullRequestSnapshot _$PullRequestSnapshotFromJson(Map<String, dynamic> json) =>
       deletions: (json['deletions'] as num?)?.toInt(),
       changedFiles: (json['changedFiles'] as num?)?.toInt(),
       commits: (json['commits'] as num?)?.toInt(),
+      comments: (json['comments'] as num?)?.toInt(),
+      reviewComments: (json['reviewComments'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$PullRequestSnapshotToJson(
@@ -91,6 +93,8 @@ Map<String, dynamic> _$PullRequestSnapshotToJson(
   'deletions': instance.deletions,
   'changedFiles': instance.changedFiles,
   'commits': instance.commits,
+  'comments': ?instance.comments,
+  'reviewComments': ?instance.reviewComments,
 };
 
 const _$PullRequestStatusEnumMap = {

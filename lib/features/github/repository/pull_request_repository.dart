@@ -6,6 +6,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/github/domain/distinct_pull_requests.dart';
 import 'package:lotti/features/github/domain/pull_request_ref.dart';
+import 'package:lotti/features/github/domain/pull_request_summary.dart';
 import 'package:lotti/features/github/domain/pull_request_write_rule.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -164,7 +165,7 @@ class PullRequestRepository {
   /// The newest summary of entry [entryId] that was written from [input]
   /// (`pullRequestSummaryInput`), or null when none was: the pull request
   /// was never summarised, or changed since.
-  Future<String?> summaryOf(String entryId, String input) async {
+  Future<PullRequestSummary?> summaryOf(String entryId, String input) async {
     for (final linked in await _db.getLinkedEntities(entryId)) {
       if (linked is! AiResponseEntry) continue;
       final data = linked.data;
@@ -172,8 +173,13 @@ class PullRequestRepository {
           data.prompt != input) {
         continue;
       }
-      final text = (data.tldr ?? data.response).trim();
-      if (text.isNotEmpty) return text;
+      final tldr = (data.tldr ?? data.response).trim();
+      if (tldr.isEmpty) continue;
+      final oneLiner = data.oneLiner?.trim();
+      return PullRequestSummary(
+        oneLiner: oneLiner == null || oneLiner.isEmpty ? null : oneLiner,
+        tldr: tldr,
+      );
     }
     return null;
   }

@@ -6625,6 +6625,9 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get githubDescriptionHeading => 'Beskrivelse';
+
+  @override
   String get githubDisconnectButton => 'Afbryd forbindelsen';
 
   @override
@@ -6730,6 +6733,12 @@ class AppLocalizationsDa extends AppLocalizations {
   String get githubMergeConflicts => 'Flettekonflikter';
 
   @override
+  String get githubNoDescription => 'Denne pull request har ingen beskrivelse.';
+
+  @override
+  String get githubNoSummaryYet => 'Ikke opsummeret endnu.';
+
+  @override
   String get githubNoTokenFromOtherDevices =>
       'Der er endnu ikke kommet et token fra dine andre enheder. Brug “Send til mine andre enheder” på en enhed, der har et.';
 
@@ -6764,6 +6773,11 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get githubPullRequestActions => 'Handlinger for pull request';
+
+  @override
+  String githubPullRequestSize(int additions, int deletions) {
+    return '$additions linjer tilføjet, $deletions fjernet';
+  }
 
   @override
   String get githubPullRequestsTitle => 'Pull requests';
@@ -6826,6 +6840,30 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get githubStatusOpen => 'Åben';
+
+  @override
+  String get githubSummarize => 'Opsummér';
+
+  @override
+  String get githubSummarizeAgain => 'Opsummér igen';
+
+  @override
+  String get githubSummarizing => 'Skriver opsummeringen';
+
+  @override
+  String get githubSummaryBusy =>
+      'En opsummering er allerede ved at blive skrevet.';
+
+  @override
+  String get githubSummaryFailed =>
+      'Opsummeringen kunne ikke skrives. Prøv igen.';
+
+  @override
+  String get githubSummaryHeading => 'Kort fortalt';
+
+  @override
+  String get githubSummaryNoModel =>
+      'Der er ingen model sat op til denne opgaves agent, så intet kan skrive opsummeringen.';
 
   @override
   String get githubTokenHide => 'Skjul token';

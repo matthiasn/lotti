@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/tool_call_accumulator.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
@@ -35,7 +36,8 @@ class OneShotGenerationAttribution {
 }
 
 /// One prompt in, one block of text out — the shape every non-conversational
-/// text call in the app shares (summaries, digests, notes).
+/// text call in the app shares (summaries, digests, notes) — or one pinned
+/// tool call out, for an answer with typed parts.
 ///
 /// The call is recorded through [AiInteractionCapture] when it is registered,
 /// so its tokens and cost land in the consumption ledger under the given
@@ -55,6 +57,80 @@ extension OneShotTextGeneration on CloudInferenceRepository {
     GeminiThinkingMode? geminiThinkingMode,
     ReasoningEffort? reasoningEffort,
   }) async {
+    final buffer = StringBuffer();
+    await for (final response in _captured(
+      prompt: prompt,
+      systemMessage: systemMessage,
+      model: model,
+      provider: provider,
+      temperature: temperature,
+      maxCompletionTokens: maxCompletionTokens,
+      attribution: attribution,
+      geminiThinkingMode: geminiThinkingMode,
+      reasoningEffort: reasoningEffort,
+    )) {
+      final content = response.choices?.firstOrNull?.delta?.content;
+      if (content != null) buffer.write(content);
+    }
+    return buffer.toString().trim();
+  }
+
+  /// Streams one completion of [prompt] offered only [tools], pinned with
+  /// [toolChoice] where the model honours a pin, and returns the tool calls
+  /// it made with whatever text came alongside. Decoding and validating the
+  /// calls is the caller's; an empty list means the model answered in prose.
+  Future<({String content, List<ChatCompletionMessageToolCall> toolCalls})>
+  generateToolCalls({
+    required String prompt,
+    required String systemMessage,
+    required String model,
+    required AiConfigInferenceProvider provider,
+    required double temperature,
+    required int? maxCompletionTokens,
+    required OneShotGenerationAttribution attribution,
+    required List<ChatCompletionTool> tools,
+    ChatCompletionToolChoiceOption? toolChoice,
+    GeminiThinkingMode? geminiThinkingMode,
+    ReasoningEffort? reasoningEffort,
+  }) async {
+    final buffer = StringBuffer();
+    final calls = ToolCallAccumulator();
+    await for (final response in _captured(
+      prompt: prompt,
+      systemMessage: systemMessage,
+      model: model,
+      provider: provider,
+      temperature: temperature,
+      maxCompletionTokens: maxCompletionTokens,
+      attribution: attribution,
+      geminiThinkingMode: geminiThinkingMode,
+      reasoningEffort: reasoningEffort,
+      tools: tools,
+      toolChoice: toolChoice,
+    )) {
+      final delta = response.choices?.firstOrNull?.delta;
+      final content = delta?.content;
+      if (content != null) buffer.write(content);
+      calls.processChunk(delta);
+    }
+    return (content: buffer.toString().trim(), toolCalls: calls.toToolCalls());
+  }
+
+  /// The completion stream, recorded in the consumption ledger when the
+  /// capture is registered.
+  Stream<CreateChatCompletionStreamResponse> _captured({
+    required String prompt,
+    required String systemMessage,
+    required String model,
+    required AiConfigInferenceProvider provider,
+    required double temperature,
+    required int? maxCompletionTokens,
+    required OneShotGenerationAttribution attribution,
+    required GeminiThinkingMode? geminiThinkingMode,
+    required ReasoningEffort? reasoningEffort,
+    List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
+  }) {
     final capture = getIt.isRegistered<AiInteractionCapture>()
         ? getIt<AiInteractionCapture>()
         : null;
@@ -68,11 +144,13 @@ extension OneShotTextGeneration on CloudInferenceRepository {
       systemMessage: systemMessage,
       maxCompletionTokens: maxCompletionTokens,
       provider: provider,
+      tools: tools,
+      toolChoice: toolChoice,
       geminiThinkingMode: geminiThinkingMode,
       reasoningEffort: reasoningEffort,
       impactCollector: capture == null ? null : impactCollector,
     );
-    final stream = capture == null
+    return capture == null
         ? invoke()
         : capture.captureStream(
             workType: attribution.workType,
@@ -93,13 +171,6 @@ extension OneShotTextGeneration on CloudInferenceRepository {
             categoryId: attribution.categoryId,
             taskId: attribution.taskId,
           );
-
-    final buffer = StringBuffer();
-    await for (final response in stream) {
-      final content = response.choices?.firstOrNull?.delta?.content;
-      if (content != null) buffer.write(content);
-    }
-    return buffer.toString().trim();
   }
 }
 

@@ -175,7 +175,7 @@ exactly the behaviour the switch is meant to make explicit.
 One automatic path outside this service asks the same question: the GitHub
 feature's pull request summaries check the switch of the task that holds the
 pull request before resolving its agent's profile
-([GitHub pull requests](../github.md#merged-and-closed-pull-requests-in-brief)).
+([GitHub pull requests](../github.md#pull-request-summaries)).
 
 Because the fallback needs no profile, the settings switch is offered whenever
 *either* the selected profile carries automated skills *or* the fallback could

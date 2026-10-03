@@ -21,10 +21,14 @@ items are done.
 - **Grounds checklist suggestions** in a pull request that was just refreshed.
   The agent proposes them through the existing checklist tool and the user
   confirms each one.
-- **Shows merged and closed pull requests in brief** in those contexts: their
-  outcome, size and a TL;DR, which the task agent's model writes once, where
-  the task's category allows automatic inference. Open ones keep every
+- **Summarises each pull request** in two tiers with the task agent's model:
+  a one-liner under its title in the task, and a TL;DR that the contexts and
+  its details show. Automatically where the task's category allows automatic
+  inference, and whenever the user asks. Merged and closed pull requests take
+  only their outcome, size and TL;DR in the contexts; open ones keep every
   detail.
+- **Shows each pull request's details** on a tap: its status and size, the
+  summary, its own description, and the way to GitHub.
 
 ## What it owns, and what it delegates
 
@@ -59,11 +63,12 @@ lib/features/github/
   domain/open_pull_request.dart           what the picker lists
   domain/pull_request_order.dart          observation order, digest, concurrent merge
   domain/pull_request_write_rule.dart     when an observation is written
-  domain/pull_request_summary_input.dart  what a summary is written from, and matched by
+  domain/pull_request_summary.dart        a summary's tiers and limits, and what it is written from
   repository/github_token_storage.dart    the token in the keystore
   repository/pull_request_repository.dart link, unlink, track, persist an observation, summaries
   service/pull_request_service.dart       link a pasted pull request, refresh one
-  service/pull_request_summarizer.dart    the TL;DR of a merged or closed pull request
+  service/pull_request_summarizer.dart    the one-liner and TL;DR of a pull request
+  service/pull_request_summary_tool.dart  the tool a summary is published through
   state/github_providers.dart             providers, account, token status, refresh
   ui/                                     settings page, task card, row, link modal,
                                           the Add sheet's tracking row

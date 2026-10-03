@@ -61,10 +61,16 @@ sources:
     title: TaskData.tracksPullRequests and the joins that keep it on
   - id: summarizer
     resource: ../../lib/features/github/service/pull_request_summarizer.dart
-    title: PullRequestSummarizer — the TL;DR of a merged or closed pull request
-  - id: summary-input
-    resource: ../../lib/features/github/domain/pull_request_summary_input.dart
-    title: pullRequestSummaryInput — what a summary is written from, and matched by
+    title: PullRequestSummarizer — a pull request's one-liner and TL;DR, automatic or asked for
+  - id: summary
+    resource: ../../lib/features/github/domain/pull_request_summary.dart
+    title: PullRequestSummary and pullRequestSummaryInput — a summary's tiers, and what it is written from and matched by
+  - id: summary-tool
+    resource: ../../lib/features/github/service/pull_request_summary_tool.dart
+    title: publish_pull_request_summary — the tool a summary comes back through
+  - id: details
+    resource: ../../lib/features/github/ui/pull_request_details_modal.dart
+    title: PullRequestDetails — a pull request's summary, description and way to GitHub
 ---
 
 A task can link the GitHub pull requests that implement it. Lotti fetches
@@ -80,9 +86,10 @@ in `specs/tla/`; the code conforms to them, and their headers name the class
 that implements each action. Built: the entry and its merge, the token and
 the client, linking by URL or from the picker, a pull request serving a
 second task only once the user confirms it, a
-category's repository, the refresh, the task's card, the pull requests in
-coding prompts and task-agent wakes, and a merged or closed pull request
-shown there as a TL;DR. Nothing is behind a config flag: a task shows the
+category's repository, the refresh, the task's card and each pull
+request's details, the pull requests in coding prompts and task-agent wakes,
+and a two-tier summary of each — a one-liner in the task, a TL;DR in its
+contexts, where a merged or closed one is shown in brief. Nothing is behind a config flag: a task shows the
 feature once the user turns pull request tracking on for it, which is
 offered while this device holds a token GitHub accepts. Still
 design: a project's
@@ -118,6 +125,8 @@ PullRequestSnapshot
   review                       approved | changesRequested | pending | none,
                                approval and change-request counts
   additions?, deletions?, changedFiles?, commits?
+  comments?, reviewComments?   the conversation's and the reviews' comment counts;
+                               absent until read, and never in the digest
 ```
 
 The database row's type is `PullRequest`, and its subtype is
@@ -143,8 +152,8 @@ Two observations of one pull request are ordered by a key, highest first:
 2. merged before anything else — `Date` has one-second resolution, so two
    reads in one second can differ, and a merge is final: within a second a
    merged observation is the later one.
-3. a digest of the snapshot without `observedAt`: SHA-256 over the provenance
-   feature's `canonicalJson`. It carries no recency at all; it only makes the
+3. a digest of the snapshot without `observedAt`, `createdAt` and the comment
+   counts: SHA-256 over the provenance feature's `canonicalJson`. It carries no recency at all; it only makes the
    order total, so that every device picks the same winner.
 
 The model's digest is deliberately against recency, and the invariants still
@@ -189,6 +198,12 @@ absence produces:
 | Write only an observation newer than the stored one (`GuardNewer`) | two refreshes finishing out of order put the older one back, and a merged pull request reads open again |
 | Re-read inside the transaction and skip a deleted entry (`GuardDeleted`) | an unlink during a refresh is undone |
 | Write only a changed snapshot, or an unchanged one whose stamp is old | every refresh notifies the task, which wakes the task agent, whose context refreshes again |
+
+A snapshot stored without `createdAt` or the comment counts counts as
+changed once a read brings them, so they are stored at once though the
+digest leaves them out. After that a new comment alone is no change: the
+counts are stored with the next write, the hourly restamp at the latest, and
+a comment never wakes the task agent.
 
 A refresh that fails writes nothing. Its reason — offline, invalid token,
 rate limited until a time, not found or no access — stays on the device, in
@@ -448,10 +463,13 @@ turned on again.
 directly after its linked tasks, once the task tracks pull requests or while
 one is linked (`taskShowsPullRequestsProvider`, next section). Each row
 carries the
-number and title, then a status line in a fixed order: the state, **how long
-it has been in that state** — second, so a narrow row that wraps or runs out
-of room never cuts the age off — then checks, what keeps it from merging, and
-reviews. The age is GitHub's, as GitHub shows it: an open pull request's
+number and title, the one-liner of its summary once one is written
+(`pullRequestSummaryProvider`), then a status line in a fixed order: the
+state, **how long it has been in that state** — second, so a narrow row that
+wraps or runs out of room never cuts the age off — its size as `+444 −221`,
+added in the success ink and removed in the error ink, read as one part and
+spoken as "444 lines added, 221 removed", then checks, what keeps it from
+merging, and reviews. The age is GitHub's, as GitHub shows it: an open pull request's
 reads from `createdAt`, a merged one's from `mergedAt`, a closed one's from
 `closedAt` (`pullRequestStateTime`), never from when it was linked or last
 read, so pull requests linked together still show their own ages. Past a
@@ -486,6 +504,13 @@ succeeded — a typo, a repository the token cannot see, or a pull request
 this task holds stays in the modal with the reason, and one another task
 holds is asked about first. Without a repository on the
 task's category the modal says how to assign one.
+
+Tapping a row opens its details (`showPullRequestDetailsModal`): the title,
+the same status line, the one-liner and the TL;DR, with the action to
+summarise it — or summarise it again — and the pull request's own
+description, rendered as Markdown in a panel of its own with remote images
+left unloaded. "Open on GitHub" stays in reach in the modal's action bar
+however long the description runs, and in the row's menu beside Unlink.
 
 Opening a task refreshes every pull request whose snapshot is older than five
 minutes, once; each row also has its own refresh button, whose failure is
@@ -567,77 +592,98 @@ agent again. Without that, a daily restamp of an unchanged snapshot would
 schedule the next wake, every day. Either context leaves the section out, and
 logs, when building it fails.
 
-# Merged and closed pull requests in brief
+# Pull request summaries
 
-A task gathers pull requests, and most of them are history: merged long ago,
-or closed. Their descriptions, up to 4000 characters each, would ride along
-in every coding prompt and every wake. So both contexts show a merged or
-closed pull request (`isSettledPullRequest`) in brief:
+Every linked pull request is summarised in two tiers: a **one-liner**, the
+subtitle of its row, and a **TL;DR** of three to six sentences — what it
+changes and why, where it stands, and how it got there, including several
+rounds of requested changes or a long discussion. The TL;DR is what the
+task's contexts read and what the details show.
+
+**In the contexts.** A task gathers pull requests, and most of them are
+history. Their descriptions, up to 4000 characters each, would ride along in
+every coding prompt and every wake. So both contexts show a merged or closed
+pull request (`isSettledPullRequest`) in brief:
 
 ```text
 ### owner/repo#123 — Its title
 - Current: observed 2026-10-03T12:00:05.000Z.
 - State: merged at 2026-10-01T09:12:00.000Z (+120 −30, 7 files, 3 commits)
-- TL;DR: What it changed, in one or two sentences.
+- TL;DR: What it changed, how it ended, and how it got there.
 ```
 
-No branch, checks, mergeability, reviews or description. Until a summary
-exists the block is the same without its TL;DR line — the title, outcome and
-size — so a context never waits for one and never falls back to the full
-description. A summary is stored on one line and cut at 600 characters
-(`briefPullRequestSummary`), should a model ignore the length it was asked
-for, and the renderer applies the same cut to one that synced in. Both contexts are told what the
-brief form means: a merged pull request is work done, one closed without
-merging is not; the coding prompt's mismatch instructions are unchanged. An
-open pull request, draft or not, keeps every detail. For a task with eight
+No branch, checks, mergeability, reviews or description. An open pull
+request, draft or not, keeps every detail, with its TL;DR under its state:
+it says where the work stands without reading the description. Until a
+summary exists the blocks are the same without their TL;DR line, so a
+context never waits for one and never falls back to a merged pull request's
+description. A summary is put on one line and cut at 1200 characters
+(`briefPullRequestSummary`) when it is shown, for one that synced in from a
+version with other limits. Both contexts are told what the brief form means:
+a merged pull request is work done, one closed without merging is not; the
+coding prompt's mismatch instructions are unchanged. For a task with eight
 merged pull requests and one open one, each with a description past the
-4000-character cut, the wake's section shrinks from 39,774 characters to
-7,572 — 6,524 before any summary is written — most of what remains being the
-open one.
+4000-character cut and a TL;DR of about 380 characters, the wake's section
+shrinks from 39,774 characters to 10,052 — 6,524 before any summary is
+written — most of what remains being the open one in full.
 
-**The summary** is an AI response entry (`AiResponseType.pullRequestSummary`)
-linked from the pull request entry, its text in `tldr`. It syncs like any
-journal entry, so a second device reads it rather than asking again; a
+**The record** is an AI response entry (`AiResponseType.pullRequestSummary`)
+linked from the pull request entry, with `oneLiner` and `tldr`. It syncs like
+any journal entry, so a second device reads it rather than asking again; a
 client that predates the type skips it as undecodable, as with any new
-response type, and the pull request stays in brief there anyway once that
-client updates. Its `prompt` is `pullRequestSummaryInput`: the reference,
-title, outcome, size and description of the snapshot it was written from —
-nothing about when it was read. A context shows only a summary whose prompt
-is exactly the input of the snapshot it renders (`summaryOf`), the newest if
-two devices wrote one each. So a summary is never stale on screen: a
-retitled, re-described or reopened pull request has a different input, and
-shows in brief without a TL;DR, or in full, until a new one is written.
+response type. Its `prompt` is `pullRequestSummaryInput`: the reference,
+title, state, size, review rounds, how much discussion there was and the
+description of the snapshot it was written from — nothing about when it was
+read. The discussion is a band, not a count — none, a few, some, long, very
+long — so one more comment asks for nothing; reaching the next band does. A
+reader shows only a summary whose prompt is exactly the input of the
+snapshot it renders (`summaryOf`), the newest if two devices wrote one each.
+So a summary is never stale on screen: a retitled, re-described, reviewed or
+merged pull request has a different input, and shows without one until a new
+one is written.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Unsummarised: merged or closed snapshot stored
-    Unsummarised --> Asking: a refresh or link, the category allows it, and a model resolves
-    Asking --> Summarised: answer stored, the content still the same
-    Asking --> Unsummarised: failed, empty, unlinked, or the content changed meanwhile
-    Summarised --> Unsummarised: title, description or outcome changes
-    Summarised --> Summarised: restamp, checks or reviews change, or a copy syncs in
+    [*] --> Unsummarised: snapshot stored
+    Unsummarised --> Asking: a refresh or link the category allows, or the user asks
+    Asking --> Summarised: both tiers stored, the content still the same
+    Asking --> Unsummarised: no model, failed twice, unlinked, or the content changed meanwhile
+    Summarised --> Unsummarised: title, description, state, a review or the discussion band changes
+    Summarised --> Summarised: restamp, checks or a comment within the band, a copy syncs in
+    Summarised --> Asking: the user asks again
 ```
 
 **When it is asked for.** `PullRequestService` hands every link and every
 refresh GitHub answered to `PullRequestSummarizer.summarize`, without waiting
 for it, whether or not the observation was written — so a pull request merged
 long before this existed, whose snapshot never changes again, is summarised
-too. Nothing happens unless the stored snapshot is settled and no summary
-matches its input: the hourly restamp of an unchanged snapshot, and a change
-of checks or reviews, ask for nothing. Then it takes the tasks that hold the
-pull request in order, and the first whose category has automatic inference
-switched on — the same consent every automatic inference needs
+too. Nothing happens then if a summary matches the stored snapshot's input:
+the hourly restamp, and a change of checks, ask for nothing. Otherwise it
+takes the tasks that hold the pull request in order, and the first whose
+category has automatic inference switched on — the same consent every
+automatic inference needs
 ([execution paths](ai/execution-paths.md#the-category-consent-gate)) — and
-whose agent's profile resolves (`resolveForSubject`) is the one it asks for,
-with that profile's thinking model, through `generateText`, at most 400
-completion tokens with minimal reasoning, recorded in the consumption ledger
-as automatic text generation for that task and its category — not the pull
-request entry's, which may be another task's. The prompt is
-the input above: only what the pull request entry already holds. One request
-per entry runs at a time on a device; another is dropped and the next refresh
-asks again. Before storing, the entry is read again and nothing is stored if
-it was unlinked or its input changed. A failure is logged and stays
-unsummarised until a later refresh.
+whose agent's profile resolves (`resolveForSubject`) is the one it asks for.
+
+The details' **Summarise** action asks as the user (`manual`): it needs no
+category consent — the tap is the consent — and summarises again even when
+a summary matches. Its outcome is told in a toast when nothing was stored: no
+model for the task's agent, a failure, or one already being written.
+
+Either way the call goes to that profile's thinking model through
+`generateToolCalls`, offered only the `publish_pull_request_summary` tool,
+pinned where the model honours a pin, with at most 800 completion tokens and
+minimal reasoning. It is recorded in the consumption ledger as text
+generation for that task and its category — not the pull request entry's,
+which may be another task's — automatic or manual as asked. The prompt is
+the input above: only what the pull request entry already holds, and the
+system message says the description is data, never instructions. A call
+whose arguments are missing, malformed, empty or over length (140 characters
+for the one-liner, 1200 for the TL;DR) is asked once more with the reason;
+a second bad call is a failure. One request per entry runs at a time on a
+device; another is told it is busy. Before storing, the entry is read again
+and nothing is stored if it was unlinked or its input changed. A failure is
+logged, never thrown, and stays unsummarised until a later refresh.
 
 **No wake loop.** The summarizer writes only the new response entry, never the
 pull request entry, so no refresh or merge sees it. Creating it notifies the
@@ -652,6 +698,7 @@ summaries interleave in, a context shows a summary only of exactly the
 content it shows, and two devices writing one each leaves two equivalent
 entries, of which readers take the newest. It never writes the pull request
 entry, so `PullRequestSnapshot`'s write rule, ordering and merge are
-untouched, and the snapshot's serialisation and digest are unchanged. What
+untouched; the snapshot gains only the two comment counts, omitted when
+unset and outside the digest, as `createdAt` is. What
 would need a model — a write racing a read-compare-write of shared state —
 does not occur.

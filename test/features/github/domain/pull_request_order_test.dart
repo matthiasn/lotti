@@ -37,6 +37,43 @@ void main() {
     );
 
     test(
+      'ignores the comment counts, so a version that does not know them '
+      'orders observations the same way, and a new comment alone is no '
+      'change',
+      () {
+        final counted = prSnapshot().copyWith(comments: 7, reviewComments: 23);
+        expect(
+          pullRequestSnapshotDigest(counted),
+          pullRequestSnapshotDigest(prSnapshot()),
+        );
+        expect(
+          pullRequestSnapshotDigest(counted.copyWith(comments: 8)),
+          pullRequestSnapshotDigest(counted),
+        );
+      },
+    );
+
+    test(
+      'a snapshot stored before it carried the comment counts reads them as '
+      'unknown, and an unknown count is no field at all',
+      () {
+        Map<String, dynamic> stored(PullRequestSnapshot s) =>
+            jsonDecode(jsonEncode(s)) as Map<String, dynamic>;
+        final legacy = stored(prSnapshot());
+        expect(legacy.containsKey('comments'), isFalse);
+        expect(legacy.containsKey('reviewComments'), isFalse);
+        final read = PullRequestSnapshot.fromJson(legacy);
+        expect((read.comments, read.reviewComments), (null, null));
+
+        final counted = stored(
+          prSnapshot().copyWith(comments: 7, reviewComments: 23),
+        );
+        final readCounted = PullRequestSnapshot.fromJson(counted);
+        expect((readCounted.comments, readCounted.reviewComments), (7, 23));
+      },
+    );
+
+    test(
       'a snapshot stored before it carried the opening reads it as unknown, '
       'and writes no field for it',
       () {

@@ -4,7 +4,7 @@ import 'package:lotti/features/github/api/github_client.dart';
 import 'package:lotti/features/github/context/pull_request_context_renderer.dart';
 import 'package:lotti/features/github/context/pull_request_context_service.dart';
 import 'package:lotti/features/github/domain/pull_request_ref.dart';
-import 'package:lotti/features/github/domain/pull_request_summary_input.dart';
+import 'package:lotti/features/github/domain/pull_request_summary.dart';
 
 import '../pull_request_fixtures.dart';
 
@@ -169,6 +169,10 @@ void main() {
       mergedAt: DateTime.utc(2026, 3, 15, 11),
     );
     const tldr = 'Makes penguins waddle twice as fast on the ice shelf.';
+    const summary = PullRequestSummary(
+      oneLiner: 'Penguins waddle faster.',
+      tldr: tldr,
+    );
 
     test(
       'with its summary: outcome, size and TL;DR, no branch, checks or '
@@ -180,7 +184,7 @@ void main() {
               ref: ref,
               snapshot: merged,
               current: true,
-              summary: tldr,
+              summary: summary,
             ),
             audience: audience,
           );
@@ -222,7 +226,10 @@ void main() {
           ref: ref,
           snapshot: open.copyWith(status: PullRequestStatus.closed),
           current: true,
-          summary: 'Abandoned for a sled.',
+          summary: const PullRequestSummary(
+            oneLiner: null,
+            tldr: 'Abandoned for a sled.',
+          ),
         ),
         audience: PullRequestContextAudience.codingPrompt,
       );
@@ -237,22 +244,33 @@ void main() {
       expect(text, isNot(contains('- Description:')));
     });
 
-    test('an open or draft pull request keeps its full detail', () {
-      for (final snapshot in [open, open.copyWith(draft: true)]) {
-        final text = render(
-          PullRequestContextItem(
-            ref: ref,
-            snapshot: snapshot,
-            current: true,
-            summary: tldr,
-          ),
-        );
+    test(
+      'an open or draft pull request keeps its full detail, with its TL;DR '
+      'under its state',
+      () {
+        for (final snapshot in [open, open.copyWith(draft: true)]) {
+          final text = render(
+            PullRequestContextItem(
+              ref: ref,
+              snapshot: snapshot,
+              current: true,
+              summary: summary,
+            ),
+          );
 
-        expect(text, contains('- Checks: failing'));
-        expect(text, contains('- Description:'));
-        expect(text, isNot(contains('- TL;DR:')));
-      }
-    });
+          expect(
+            text,
+            contains(
+              '- State: ${snapshot.draft ? 'open, draft' : 'open'}\n'
+              '- TL;DR: $tldr\n'
+              '- Branch:',
+            ),
+          );
+          expect(text, contains('- Checks: failing'));
+          expect(text, contains('- Description:'));
+        }
+      },
+    );
 
     test(
       'the agent still sees only the name of one that was not refreshed '
@@ -264,7 +282,7 @@ void main() {
             snapshot: merged,
             current: false,
             failure: GitHubFailureKind.offline,
-            summary: tldr,
+            summary: summary,
           ),
         );
 
@@ -284,7 +302,7 @@ void main() {
           snapshot: merged,
           current: false,
           failure: GitHubFailureKind.offline,
-          summary: tldr,
+          summary: summary,
         ),
         audience: PullRequestContextAudience.codingPrompt,
       );
@@ -299,7 +317,10 @@ void main() {
           ref: ref,
           snapshot: merged,
           current: true,
-          summary: '  First line.\n\nSecond   line.  ',
+          summary: const PullRequestSummary(
+            oneLiner: null,
+            tldr: '  First line.\n\nSecond   line.  ',
+          ),
         ),
       );
       expect(text, endsWith('- TL;DR: First line. Second line.'));
@@ -309,10 +330,13 @@ void main() {
           ref: ref,
           snapshot: merged,
           current: true,
-          summary: 'y' * (pullRequestSummaryLimit + 10),
+          summary: PullRequestSummary(
+            oneLiner: null,
+            tldr: 'y' * (pullRequestTldrMaxChars + 10),
+          ),
         ),
       );
-      expect(long, endsWith('- TL;DR: ${'y' * pullRequestSummaryLimit} …'));
+      expect(long, endsWith('- TL;DR: ${'y' * pullRequestTldrMaxChars} …'));
     });
 
     test('both audiences are told what the brief form means', () {
@@ -343,7 +367,7 @@ void main() {
               ref: PullRequestRef(owner: 'penguin', repo: 'colony', number: n),
               snapshot: (n == 9 ? open : merged).copyWith(body: body),
               current: true,
-              summary: n == 9 ? null : tldr,
+              summary: n == 9 ? null : summary,
             ),
         ];
         final full = [

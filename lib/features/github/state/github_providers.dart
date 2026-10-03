@@ -18,11 +18,13 @@ import 'package:lotti/features/github/domain/distinct_pull_requests.dart';
 import 'package:lotti/features/github/domain/github_repository.dart';
 import 'package:lotti/features/github/domain/pull_request_order.dart';
 import 'package:lotti/features/github/domain/pull_request_ref.dart';
+import 'package:lotti/features/github/domain/pull_request_summary.dart';
 import 'package:lotti/features/github/repository/github_account_sync.dart';
 import 'package:lotti/features/github/repository/github_token_storage.dart';
 import 'package:lotti/features/github/repository/pull_request_repository.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';
 import 'package:lotti/features/github/service/pull_request_summarizer.dart';
+import 'package:lotti/features/github/service/pull_request_summary_tool.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
@@ -63,22 +65,26 @@ final pullRequestRepositoryProvider = Provider<PullRequestRepository>(
   name: 'pullRequestRepositoryProvider',
 );
 
-/// How many tokens one pull request summary may take.
-const pullRequestSummaryMaxTokens = 400;
+/// How many tokens one pull request summary may take: its two tiers, with
+/// room for a little reasoning.
+const pullRequestSummaryMaxTokens = 800;
 
-/// Summarises merged and closed pull requests with the task agent's model,
-/// where the task's category has automatic inference switched on.
+/// Summarises pull requests with the task agent's model — automatically
+/// where the task's category has automatic inference switched on, and
+/// whenever the user asks.
 final pullRequestSummarizerProvider = Provider<PullRequestSummarizer>((ref) {
   return PullRequestSummarizer(
     repository: ref.watch(pullRequestRepositoryProvider),
-    consentingCategory: (taskId) async {
+    categoryOf: (taskId) async {
       final db = ref.read(journalDbProvider);
       final categoryId = (await db.journalEntityById(taskId))?.meta.categoryId;
       if (categoryId == null) return null;
       final category = await db.getCategoryById(categoryId);
-      return (category?.automaticInferenceEnabledEffective ?? false)
-          ? categoryId
-          : null;
+      return (
+        id: categoryId,
+        automaticInference:
+            category?.automaticInferenceEnabledEffective ?? false,
+      );
     },
     modelFor: (taskId) async {
       final profile = await ref
@@ -98,26 +104,34 @@ final pullRequestSummarizerProvider = Provider<PullRequestSummarizer>((ref) {
           required model,
           required taskId,
           required categoryId,
-        }) => ref
-            .read(cloudInferenceRepositoryProvider)
-            .generateText(
-              prompt: prompt,
-              systemMessage: systemMessage,
-              model: model.modelId,
-              provider: model.provider,
-              temperature: 0.2,
-              // A sentence or two; a model that runs past it is cut, not
-              // billed for pages. Reasoning stays minimal, so it fits.
-              maxCompletionTokens: pullRequestSummaryMaxTokens,
-              geminiThinkingMode: GeminiThinkingMode.minimal,
-              reasoningEffort: ReasoningEffort.minimal,
-              attribution: OneShotGenerationAttribution(
-                workType: AiWorkType.textGeneration,
-                triggerType: AiTriggerType.automatic,
-                categoryId: categoryId,
-                taskId: taskId,
-              ),
-            ),
+          required manual,
+        }) async {
+          final answer = await ref
+              .read(cloudInferenceRepositoryProvider)
+              .generateToolCalls(
+                prompt: prompt,
+                systemMessage: systemMessage,
+                model: model.modelId,
+                provider: model.provider,
+                temperature: 0.2,
+                // Two tiers; a model that runs past them is cut, not billed
+                // for pages. Reasoning stays minimal, so they fit.
+                maxCompletionTokens: pullRequestSummaryMaxTokens,
+                geminiThinkingMode: GeminiThinkingMode.minimal,
+                reasoningEffort: ReasoningEffort.minimal,
+                tools: const [pullRequestSummaryTool],
+                toolChoice: pullRequestSummaryToolChoiceFor(model.modelId),
+                attribution: OneShotGenerationAttribution(
+                  workType: AiWorkType.textGeneration,
+                  triggerType: manual
+                      ? AiTriggerType.manual
+                      : AiTriggerType.automatic,
+                  categoryId: categoryId,
+                  taskId: taskId,
+                ),
+              );
+          return answer.toolCalls;
+        },
     logger: ref.watch(domainLoggerProvider),
   );
 }, name: 'pullRequestSummarizerProvider');
@@ -310,6 +324,29 @@ openPullRequestsProvider = FutureProvider.autoDispose
           ref.watch(pullRequestServiceProvider).openPullRequests(repository),
       name: 'openPullRequestsProvider',
     );
+
+/// The summary of pull request entry `entryId`'s current content, or null
+/// while none is written — kept current as the entry changes and as a
+/// summary of it is stored, here or on another device.
+final StreamProviderFamily<PullRequestSummary?, String>
+pullRequestSummaryProvider = StreamProvider.autoDispose
+    .family<PullRequestSummary?, String>((ref, entryId) async* {
+      final repository = ref.watch(pullRequestRepositoryProvider);
+      Future<PullRequestSummary?> read() async {
+        final entry = await repository.liveEntry(entryId);
+        final snapshot = entry?.data.snapshot;
+        if (entry == null || snapshot == null) return null;
+        return repository.summaryOf(
+          entryId,
+          pullRequestSummaryInput(entry.data.ref, snapshot),
+        );
+      }
+
+      yield await read();
+      await for (final ids in getIt<UpdateNotifications>().updateStream) {
+        if (ids.contains(entryId)) yield await read();
+      }
+    }, name: 'pullRequestSummaryProvider');
 
 /// The tasks that hold pull request [PullRequestRef.key], kept current as
 /// pull request entries and links change — including those sync brings in,

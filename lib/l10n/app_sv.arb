@@ -3017,6 +3017,7 @@
       }
     }
   },
+  "githubDescriptionHeading": "Beskrivning",
   "githubDisconnectButton": "Koppla från",
   "githubFailureForbidden": "Din token får inte läsa det här. Kontrollera dess behörigheter.",
   "githubFailureInvalidResponse": "GitHub skickade ett svar som Lotti inte kunde läsa.",
@@ -3053,6 +3054,8 @@
   "githubMergeBehind": "Efter basgrenen",
   "githubMergeBlocked": "Blockerad av grenregler",
   "githubMergeConflicts": "Sammanfogningskonflikter",
+  "githubNoDescription": "Den här pull requesten har ingen beskrivning.",
+  "githubNoSummaryYet": "Inte sammanfattad än.",
   "githubNoTokenFromOtherDevices": "Ingen token har kommit från dina andra enheter än. Använd ”Skicka till mina andra enheter” på en enhet som har en.",
   "githubNotRefreshed": "Kunde inte uppdatera",
   "githubNotRefreshedYet": "Inte uppdaterad än",
@@ -3081,6 +3084,7 @@
     }
   },
   "githubPullRequestActions": "Åtgärder för pull request",
+  "githubPullRequestSize": "{additions} rader tillagda, {deletions} borttagna",
   "githubPullRequestsTitle": "Pull requests",
   "githubRefreshingPullRequest": "Uppdaterar pull request",
   "githubRefreshPullRequest": "Uppdatera pull request",
@@ -3100,6 +3104,13 @@
   "githubStatusDraft": "Utkast",
   "githubStatusMerged": "Sammanfogad",
   "githubStatusOpen": "Öppen",
+  "githubSummarize": "Sammanfatta",
+  "githubSummarizeAgain": "Sammanfatta igen",
+  "githubSummarizing": "Skriver sammanfattningen",
+  "githubSummaryBusy": "En sammanfattning skrivs redan.",
+  "githubSummaryFailed": "Sammanfattningen kunde inte skrivas. Försök igen.",
+  "githubSummaryHeading": "Kort sagt",
+  "githubSummaryNoModel": "Det finns ingen modell inställd för den här uppgiftens agent, så inget kan skriva sammanfattningen.",
   "githubTokenHide": "Dölj token",
   "githubTokenIntro": "Lotti läser de pull requests du kopplar till uppgifter med din egen personliga åtkomsttoken. Skapa en fine-grained token för de repon du arbetar i, med läsbehörighet till \"Pull requests\" och \"Commit statuses\". GitHub låter inte en sådan token läsa check runs i ett privat repo, så där kan CI vara ofullständig; en klassisk token med scopet \"repo\" kan läsa dem.",
   "githubTokenLabel": "Personlig åtkomsttoken",

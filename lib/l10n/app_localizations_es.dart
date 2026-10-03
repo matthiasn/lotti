@@ -6709,6 +6709,9 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get githubDescriptionHeading => 'Descripción';
+
+  @override
   String get githubDisconnectButton => 'Desconectar';
 
   @override
@@ -6816,6 +6819,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get githubMergeConflicts => 'Conflictos de fusión';
 
   @override
+  String get githubNoDescription => 'Esta pull request no tiene descripción.';
+
+  @override
+  String get githubNoSummaryYet => 'Aún sin resumir.';
+
+  @override
   String get githubNoTokenFromOtherDevices =>
       'Todavía no ha llegado ningún token de tus otros dispositivos. En un dispositivo que tenga uno, usa «Enviar a mis otros dispositivos».';
 
@@ -6850,6 +6859,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get githubPullRequestActions => 'Acciones de la pull request';
+
+  @override
+  String githubPullRequestSize(int additions, int deletions) {
+    return '$additions líneas añadidas, $deletions eliminadas';
+  }
 
   @override
   String get githubPullRequestsTitle => 'Pull requests';
@@ -6912,6 +6926,29 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get githubStatusOpen => 'Abierta';
+
+  @override
+  String get githubSummarize => 'Resumir';
+
+  @override
+  String get githubSummarizeAgain => 'Volver a resumir';
+
+  @override
+  String get githubSummarizing => 'Escribiendo el resumen';
+
+  @override
+  String get githubSummaryBusy => 'Ya se está escribiendo un resumen.';
+
+  @override
+  String get githubSummaryFailed =>
+      'No se pudo escribir el resumen. Inténtalo de nuevo.';
+
+  @override
+  String get githubSummaryHeading => 'En resumen';
+
+  @override
+  String get githubSummaryNoModel =>
+      'No hay ningún modelo configurado para el agente de esta tarea, así que nada puede escribir el resumen.';
 
   @override
   String get githubTokenHide => 'Ocultar token';

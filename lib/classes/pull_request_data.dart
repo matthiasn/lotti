@@ -75,6 +75,17 @@ abstract class PullRequestSnapshot with _$PullRequestSnapshot {
     int? deletions,
     int? changedFiles,
     int? commits,
+
+    /// How many comments the conversation has (`comments`), and how many
+    /// were left on the changes in reviews (`review_comments`): how much
+    /// back and forth the pull request saw. Null in a snapshot stored before
+    /// they were read. Left out of the JSON when null, and out of the
+    /// observation digest always, as [createdAt] is: a version that does not
+    /// know them computes the same digest, and a new comment alone neither
+    /// writes the entry nor wakes the task — the counts are stored with the
+    /// next write, the hourly restamp at the latest.
+    @JsonKey(includeIfNull: false) int? comments,
+    @JsonKey(includeIfNull: false) int? reviewComments,
   }) = _PullRequestSnapshot;
 
   factory PullRequestSnapshot.fromJson(Map<String, dynamic> json) =>

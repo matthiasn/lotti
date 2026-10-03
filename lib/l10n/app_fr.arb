@@ -2759,6 +2759,7 @@
       }
     }
   },
+  "githubDescriptionHeading": "Description",
   "githubDisconnectButton": "Déconnecter",
   "githubFailureForbidden": "Le jeton n'a pas le droit de lire ceci. Vérifie ses autorisations.",
   "githubFailureInvalidResponse": "GitHub a envoyé une réponse que Lotti n'a pas pu lire.",
@@ -2795,6 +2796,8 @@
   "githubMergeBehind": "En retard sur la branche de base",
   "githubMergeBlocked": "Bloquée par les règles de branche",
   "githubMergeConflicts": "Conflits de fusion",
+  "githubNoDescription": "Cette pull request n'a pas de description.",
+  "githubNoSummaryYet": "Pas encore résumée.",
   "githubNoTokenFromOtherDevices": "Aucun jeton n'est encore arrivé de tes autres appareils. Sur un appareil qui en a un, utilise « Envoyer à mes autres appareils ».",
   "githubNotRefreshed": "Actualisation impossible",
   "githubNotRefreshedYet": "Pas encore actualisée",
@@ -2823,6 +2826,7 @@
     }
   },
   "githubPullRequestActions": "Actions de la pull request",
+  "githubPullRequestSize": "{additions} lignes ajoutées, {deletions} supprimées",
   "githubPullRequestsTitle": "Pull requests",
   "githubRefreshingPullRequest": "Actualisation de la pull request",
   "githubRefreshPullRequest": "Actualiser la pull request",
@@ -2842,6 +2846,13 @@
   "githubStatusDraft": "Brouillon",
   "githubStatusMerged": "Fusionnée",
   "githubStatusOpen": "Ouverte",
+  "githubSummarize": "Résumer",
+  "githubSummarizeAgain": "Résumer à nouveau",
+  "githubSummarizing": "Rédaction du résumé",
+  "githubSummaryBusy": "Un résumé est déjà en cours de rédaction.",
+  "githubSummaryFailed": "Le résumé n'a pas pu être rédigé. Réessaie.",
+  "githubSummaryHeading": "En bref",
+  "githubSummaryNoModel": "Aucun modèle n'est configuré pour l'agent de cette tâche, donc rien ne peut rédiger le résumé.",
   "githubTokenHide": "Masquer le jeton",
   "githubTokenIntro": "Lotti lit les pull requests que tu lies à tes tâches avec ton propre jeton d'accès personnel. Crée un jeton fine-grained pour les dépôts sur lesquels tu travailles, avec un accès en lecture seule à « Pull requests » et « Commit statuses ». GitHub ne laisse pas un tel jeton lire les check runs d'un dépôt privé, la CI peut donc y être incomplète ; un jeton classique avec le scope « repo » peut les lire.",
   "githubTokenLabel": "Jeton d'accès personnel",

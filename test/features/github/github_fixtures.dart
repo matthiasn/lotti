@@ -36,6 +36,8 @@ Map<String, dynamic> githubPullJson({
   'deletions': 2,
   'changed_files': 3,
   'commits': 4,
+  'comments': 7,
+  'review_comments': 23,
 };
 
 Map<String, dynamic> githubCheckRunsJson(List<Map<String, dynamic>> runs) => {

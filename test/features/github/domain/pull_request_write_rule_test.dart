@@ -78,6 +78,25 @@ void main() {
     },
   );
 
+  test(
+    'a read that brings the comment counts to a snapshot stored without '
+    'them is written at once; a new comment alone waits for the restamp',
+    () {
+      final counted = prSnapshot(second: 5).copyWith(
+        comments: 7,
+        reviewComments: 23,
+      );
+      expect(writes(stored: prSnapshot(), observation: counted), isTrue);
+      expect(
+        writes(
+          stored: prSnapshot().copyWith(comments: 6, reviewComments: 23),
+          observation: counted,
+        ),
+        isFalse,
+      );
+    },
+  );
+
   test('an older or equal observation is never written (GuardNewer)', () {
     final stored = prSnapshot(second: 10, status: PullRequestStatus.merged);
     expect(writes(stored: stored, observation: prSnapshot()), isFalse);

@@ -3,37 +3,29 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/pull_request_data.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/github/domain/pull_request_ref.dart';
-import 'package:lotti/features/github/domain/pull_request_summary_input.dart';
+import 'package:lotti/features/github/domain/pull_request_summary.dart';
 import 'package:lotti/features/github/service/pull_request_summarizer.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../agents/test_data/ai_config_factories.dart';
 import '../pull_request_fixtures.dart';
 
 void main() {
   const ref = PullRequestRef(owner: 'matthiasn', repo: 'lotti', number: 42);
   const entryId = 'pull-request-entry';
 
-  final provider =
-      AiConfig.inferenceProvider(
-            id: 'provider',
-            name: 'Cloud',
-            baseUrl: 'https://example.invalid',
-            inferenceProviderType: InferenceProviderType.openAi,
-            apiKey: 'key',
-            createdAt: DateTime(2026, 3, 15),
-          )
-          as AiConfigInferenceProvider;
+  final provider = testInferenceProvider(apiKey: 'k-1');
 
   final mergedSnapshot = prSnapshot(
     status: PullRequestStatus.merged,
   ).copyWith(body: 'Adds pull request tracking.');
   // In a category of its own: a pull request can serve tasks in several
-  // categories, and the call is the consenting task's, not the entry's.
+  // categories, and the call is the asking task's, not the entry's.
   final linked = prEntry(clock: {'a': 1}, snapshot: mergedSnapshot);
   final merged = linked.copyWith(
     meta: linked.meta.copyWith(categoryId: 'category-of-the-entry'),
@@ -42,10 +34,10 @@ void main() {
 
   late MockPullRequestRepository repository;
   late MockDomainLogger logger;
-  late Set<String> allowedTasks;
+  late Map<String, PullRequestSummaryCategory?> categories;
   late Map<String, PullRequestSummaryModel> models;
   late List<Map<String, Object?>> asked;
-  late Future<String> Function() answer;
+  late List<Future<List<ChatCompletionMessageToolCall>> Function()> answers;
   late PullRequestSummarizer summarizer;
 
   setUpAll(() {
@@ -65,17 +57,19 @@ void main() {
   setUp(() {
     repository = MockPullRequestRepository();
     logger = MockDomainLogger();
-    allowedTasks = {'task-a', 'task-b'};
+    categories = {
+      'task-a': (id: 'category-a', automaticInference: true),
+      'task-b': (id: 'category-b', automaticInference: true),
+    };
     models = {
       'task-a': (modelId: 'model-a', provider: provider),
       'task-b': (modelId: 'model-b', provider: provider),
     };
     asked = [];
-    answer = () async => 'Tracks pull requests on tasks.';
+    answers = [];
     summarizer = PullRequestSummarizer(
       repository: repository,
-      consentingCategory: (taskId) async =>
-          allowedTasks.contains(taskId) ? 'category-of-$taskId' : null,
+      categoryOf: (taskId) async => categories[taskId],
       modelFor: (taskId) async => models[taskId],
       generate:
           ({
@@ -84,6 +78,7 @@ void main() {
             required model,
             required taskId,
             required categoryId,
+            required manual,
           }) {
             asked.add({
               'prompt': prompt,
@@ -91,8 +86,11 @@ void main() {
               'model': model.modelId,
               'taskId': taskId,
               'categoryId': categoryId,
+              'manual': manual,
             });
-            return answer();
+            return answers.isEmpty
+                ? Future.value([summaryToolCall()])
+                : answers.removeAt(0)();
           },
       logger: logger,
     );
@@ -118,15 +116,26 @@ void main() {
               captureAny(),
               start: any(named: 'start'),
             ),
-          ).captured.single
+          ).captured.last
           as AiResponseData;
 
+  void neverStored() => verifyNever(
+    () => repository.addSummary(any(), any(), start: any(named: 'start')),
+  );
+
+  const tldr =
+      'Links pull requests to tasks and refreshes them from GitHub. Merged '
+      'after one round of requested changes.';
+
   test(
-    'a merged pull request with no summary is summarised from its content, '
-    "with the model of the first task that allows it, in that task's "
-    'category, and the summary is stored with that content as its prompt',
+    'a pull request with no summary is summarised from its content in two '
+    "tiers, with the first allowing task's model, in that task's category, "
+    'and stored with that content as its prompt',
     () async {
-      expect(await summarizer.summarize(entryId), isTrue);
+      expect(
+        await summarizer.summarize(entryId),
+        PullRequestSummaryOutcome.stored,
+      );
 
       expect(asked, [
         {
@@ -134,7 +143,8 @@ void main() {
           'systemMessage': pullRequestSummarySystemMessage,
           'model': 'model-a',
           'taskId': 'task-a',
-          'categoryId': 'category-of-task-a',
+          'categoryId': 'category-a',
+          'manual': false,
         },
       ]);
       expect(
@@ -144,99 +154,166 @@ void main() {
           systemMessage: pullRequestSummarySystemMessage,
           prompt: input,
           thoughts: '',
-          response: 'Tracks pull requests on tasks.',
+          response: tldr,
           type: AiResponseType.pullRequestSummary,
-          tldr: 'Tracks pull requests on tasks.',
+          oneLiner: 'Tracks pull requests on tasks.',
+          tldr: tldr,
         ),
       );
     },
   );
 
+  test('an open pull request is summarised too', () async {
+    final open = prEntry(clock: {'a': 1}, snapshot: prSnapshot());
+    when(() => repository.liveEntry(entryId)).thenAnswer((_) async => open);
+
+    expect(
+      await summarizer.summarize(entryId),
+      PullRequestSummaryOutcome.stored,
+    );
+    expect(asked.single['prompt'], contains('State: open'));
+  });
+
   test(
     'a summary of the same content is not asked for again — what a restamp '
     'or a change of checks leaves behind',
     () async {
-      when(
-        () => repository.summaryOf(entryId, input),
-      ).thenAnswer((_) async => 'Already summarised.');
+      when(() => repository.summaryOf(entryId, input)).thenAnswer(
+        (_) async => const PullRequestSummary(oneLiner: null, tldr: 'Done.'),
+      );
 
-      expect(await summarizer.summarize(entryId), isFalse);
+      expect(
+        await summarizer.summarize(entryId),
+        PullRequestSummaryOutcome.upToDate,
+      );
       expect(asked, isEmpty);
     },
   );
 
-  test('an open pull request, or none stored, is not summarised', () async {
+  test(
+    'asked by the user, it summarises again even then, with no category '
+    'consent, and the call is manual work',
+    () async {
+      when(() => repository.summaryOf(entryId, input)).thenAnswer(
+        (_) async => const PullRequestSummary(oneLiner: null, tldr: 'Done.'),
+      );
+      categories = {
+        'task-a': (id: 'category-a', automaticInference: false),
+        'task-b': null,
+      };
+
+      expect(
+        await summarizer.summarize(entryId, manual: true),
+        PullRequestSummaryOutcome.stored,
+      );
+      expect(asked.single['manual'], isTrue);
+      expect(asked.single['categoryId'], 'category-a');
+    },
+  );
+
+  test('a pull request unlinked, or never read, is missing', () async {
     for (final entry in [
-      prEntry(clock: {'a': 1}, snapshot: prSnapshot()),
       prEntry(clock: {'a': 1}),
       null,
     ]) {
       when(() => repository.liveEntry(entryId)).thenAnswer((_) async => entry);
-      expect(await summarizer.summarize(entryId), isFalse);
+      expect(
+        await summarizer.summarize(entryId),
+        PullRequestSummaryOutcome.missing,
+      );
     }
     expect(asked, isEmpty);
   });
 
   test(
-    'only a task whose category allows automatic inference, and that has '
-    'a model, is summarised for',
+    'automatically, only a task whose category allows it, and that has a '
+    'model, is summarised for',
     () async {
-      allowedTasks = {'task-b'};
-      expect(await summarizer.summarize(entryId), isTrue);
-      expect(asked.single['taskId'], 'task-b');
-      expect(asked.single['model'], 'model-b');
-      expect(asked.single['categoryId'], 'category-of-task-b');
+      categories['task-a'] = (id: 'category-a', automaticInference: false);
+      expect(
+        await summarizer.summarize(entryId),
+        PullRequestSummaryOutcome.stored,
+      );
+      expect(
+        (asked.single['taskId'], asked.single['model']),
+        (
+          'task-b',
+          'model-b',
+        ),
+      );
 
       asked.clear();
       models.remove('task-b');
-      expect(await summarizer.summarize(entryId), isFalse);
+      expect(
+        await summarizer.summarize(entryId),
+        PullRequestSummaryOutcome.noModel,
+      );
 
-      allowedTasks = {};
-      models['task-b'] = (modelId: 'model-b', provider: provider);
-      expect(await summarizer.summarize(entryId), isFalse);
+      categories = {'task-a': null, 'task-b': null};
+      expect(
+        await summarizer.summarize(entryId),
+        PullRequestSummaryOutcome.notAllowed,
+      );
       expect(asked, isEmpty);
     },
   );
 
   test('nothing is asked for a pull request no task holds', () async {
     when(() => repository.holdersOf(any())).thenAnswer((_) async => {});
-    expect(await summarizer.summarize(entryId), isFalse);
+    expect(
+      await summarizer.summarize(entryId),
+      PullRequestSummaryOutcome.notAllowed,
+    );
     expect(asked, isEmpty);
   });
 
   test(
-    'an answer that runs long is stored on one line, cut at the summary '
-    'limit, so neither the entry nor what syncs grows with it',
+    'a call it cannot use is asked once more, saying what was wrong, and '
+    'a second one gives up',
     () async {
-      answer = () async => 'Line one.\n\n${'z' * pullRequestSummaryLimit}';
-
-      expect(await summarizer.summarize(entryId), isTrue);
-
+      answers = [
+        () async => [summaryToolCall(arguments: 'not json')],
+        () async => [summaryToolCall(oneLiner: 'Second try.')],
+      ];
+      expect(
+        await summarizer.summarize(entryId),
+        PullRequestSummaryOutcome.stored,
+      );
+      expect(asked, hasLength(2));
+      expect(
+        asked.last['prompt'],
+        '$input\n\nYour previous answer was rejected: arguments are not '
+        'JSON. Call the publish_pull_request_summary tool with both '
+        'arguments and respond with nothing else.',
+      );
       final data = stored();
-      expect(data.tldr, hasLength(pullRequestSummaryLimit + 2));
-      expect(data.tldr, startsWith('Line one. zzz'));
-      expect(data.tldr, endsWith(' …'));
-      expect(data.response, data.tldr);
+      expect(data.oneLiner, 'Second try.');
+      expect(data.prompt, input);
+
+      asked.clear();
+      answers = [() async => [], () async => []];
+      clearInteractions(repository);
+      expect(
+        await summarizer.summarize(entryId),
+        PullRequestSummaryOutcome.failed,
+      );
+      expect(asked, hasLength(2));
+      neverStored();
     },
   );
-
-  test('an empty answer is not stored', () async {
-    answer = () async => '';
-    expect(await summarizer.summarize(entryId), isFalse);
-    verifyNever(
-      () => repository.addSummary(any(), any(), start: any(named: 'start')),
-    );
-  });
 
   test(
     'a pull request unlinked, or changed, while the model wrote is not '
     'given the summary',
     () async {
-      for (final after in [
-        null,
-        prEntry(
-          clock: {'a': 2},
-          snapshot: mergedSnapshot.copyWith(body: 'Rewritten after merge.'),
+      for (final (after, outcome) in [
+        (null, PullRequestSummaryOutcome.missing),
+        (
+          prEntry(
+            clock: {'a': 2},
+            snapshot: mergedSnapshot.copyWith(body: 'Rewritten after merge.'),
+          ),
+          PullRequestSummaryOutcome.failed,
         ),
       ]) {
         var reads = 0;
@@ -244,66 +321,72 @@ void main() {
           () => repository.liveEntry(entryId),
         ).thenAnswer((_) async => reads++ == 0 ? merged : after);
 
-        expect(await summarizer.summarize(entryId), isFalse);
+        expect(await summarizer.summarize(entryId), outcome);
       }
-      verifyNever(
-        () => repository.addSummary(any(), any(), start: any(named: 'start')),
+      neverStored();
+    },
+  );
+
+  test('a summary the repository did not store is a failure', () async {
+    when(
+      () => repository.addSummary(any(), any(), start: any(named: 'start')),
+    ).thenAnswer((_) async => false);
+    expect(
+      await summarizer.summarize(entryId),
+      PullRequestSummaryOutcome.failed,
+    );
+  });
+
+  test(
+    'a failed request is logged and reported, never thrown — an error, not '
+    'only an exception — and the next request may ask again',
+    () async {
+      answers = [() async => throw Exception('provider down')];
+      expect(
+        await summarizer.summarize(entryId),
+        PullRequestSummaryOutcome.failed,
+      );
+
+      when(() => repository.holdersOf(any())).thenThrow(TypeError());
+      expect(
+        await summarizer.summarize(entryId),
+        PullRequestSummaryOutcome.failed,
+      );
+      verify(
+        () => logger.error(
+          any(),
+          any(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'pullRequestSummary',
+        ),
+      ).called(2);
+
+      when(() => repository.holdersOf(any())).thenAnswer(
+        (_) async => {
+          ref.key: {'task-a'},
+        },
+      );
+      expect(
+        await summarizer.summarize(entryId),
+        PullRequestSummaryOutcome.stored,
       );
     },
   );
 
   test(
-    'a failed request is logged and reported, never thrown, and the next '
-    'refresh may ask again',
+    'a second request while one runs for the same pull request is busy',
     () async {
-      answer = () async => throw Exception('provider down');
-
-      expect(await summarizer.summarize(entryId), isFalse);
-      verify(
-        () => logger.error(
-          any(),
-          any(),
-          stackTrace: any(named: 'stackTrace'),
-          subDomain: 'pullRequestSummary',
-        ),
-      ).called(1);
-
-      answer = () async => 'Tracks pull requests on tasks.';
-      expect(await summarizer.summarize(entryId), isTrue);
-    },
-  );
-
-  test(
-    'an error, not only an exception, is logged rather than escaping the '
-    'refresh that did not wait for it',
-    () async {
-      when(
-        () => repository.holdersOf(any()),
-      ).thenThrow(TypeError());
-
-      expect(await summarizer.summarize(entryId), isFalse);
-      verify(
-        () => logger.error(
-          any(),
-          any(that: isA<TypeError>()),
-          stackTrace: any(named: 'stackTrace'),
-          subDomain: 'pullRequestSummary',
-        ),
-      ).called(1);
-    },
-  );
-
-  test(
-    'a second request while one runs for the same pull request is dropped',
-    () async {
-      final gate = Completer<String>();
-      answer = () => gate.future;
+      final gate = Completer<List<ChatCompletionMessageToolCall>>();
+      answers = [() => gate.future];
 
       final first = summarizer.summarize(entryId);
-      expect(await summarizer.summarize(entryId), isFalse);
-      gate.complete('Tracks pull requests on tasks.');
+      expect(
+        await summarizer.summarize(entryId, manual: true),
+        PullRequestSummaryOutcome.busy,
+      );
+      gate.complete([summaryToolCall()]);
 
-      expect(await first, isTrue);
+      expect(await first, PullRequestSummaryOutcome.stored);
       expect(asked, hasLength(1));
     },
   );

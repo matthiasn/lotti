@@ -2766,6 +2766,7 @@
       }
     }
   },
+  "githubDescriptionHeading": "Popis",
   "githubDisconnectButton": "Odpojit",
   "githubFailureForbidden": "Token nemá oprávnění tohle číst. Zkontroluj jeho oprávnění.",
   "githubFailureInvalidResponse": "GitHub poslal odpověď, kterou Lotti nedokázal přečíst.",
@@ -2802,6 +2803,8 @@
   "githubMergeBehind": "Za základní větví",
   "githubMergeBlocked": "Blokováno pravidly větve",
   "githubMergeConflicts": "Konflikty při slučování",
+  "githubNoDescription": "Tento pull request nemá popis.",
+  "githubNoSummaryYet": "Zatím bez shrnutí.",
   "githubNoTokenFromOtherDevices": "Z tvých dalších zařízení zatím žádný token nedorazil. Na zařízení, které ho má, použij „Poslat na má další zařízení“.",
   "githubNotRefreshed": "Aktualizace se nezdařila",
   "githubNotRefreshedYet": "Zatím neaktualizováno",
@@ -2830,6 +2833,7 @@
     }
   },
   "githubPullRequestActions": "Akce pull requestu",
+  "githubPullRequestSize": "Přidáno řádků: {additions}, odebráno: {deletions}",
   "githubPullRequestsTitle": "Pull requesty",
   "githubRefreshingPullRequest": "Pull request se aktualizuje",
   "githubRefreshPullRequest": "Aktualizovat pull request",
@@ -2849,6 +2853,13 @@
   "githubStatusDraft": "Koncept",
   "githubStatusMerged": "Sloučený",
   "githubStatusOpen": "Otevřený",
+  "githubSummarize": "Shrnout",
+  "githubSummarizeAgain": "Shrnout znovu",
+  "githubSummarizing": "Píšu shrnutí",
+  "githubSummaryBusy": "Shrnutí se už píše.",
+  "githubSummaryFailed": "Shrnutí se nepodařilo napsat. Zkus to znovu.",
+  "githubSummaryHeading": "Ve zkratce",
+  "githubSummaryNoModel": "Agent tohoto úkolu nemá nastavený model, takže shrnutí nemá kdo napsat.",
   "githubTokenHide": "Skrýt token",
   "githubTokenIntro": "Lotti čte pull requesty, které propojíš s úkoly, pomocí tvého vlastního osobního přístupového tokenu. Vytvoř fine-grained token pro repozitáře, ve kterých pracuješ, s přístupem jen ke čtení k \"Pull requests\" a \"Commit statuses\". GitHub takovému tokenu nedovolí číst check runs v soukromém repozitáři, takže tam může být CI neúplné; klasický token se scope \"repo\" je přečte.",
   "githubTokenLabel": "Osobní přístupový token",

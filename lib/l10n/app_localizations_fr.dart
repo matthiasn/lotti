@@ -6731,6 +6731,9 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get githubDescriptionHeading => 'Description';
+
+  @override
   String get githubDisconnectButton => 'Déconnecter';
 
   @override
@@ -6838,6 +6841,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get githubMergeConflicts => 'Conflits de fusion';
 
   @override
+  String get githubNoDescription =>
+      'Cette pull request n\'a pas de description.';
+
+  @override
+  String get githubNoSummaryYet => 'Pas encore résumée.';
+
+  @override
   String get githubNoTokenFromOtherDevices =>
       'Aucun jeton n\'est encore arrivé de tes autres appareils. Sur un appareil qui en a un, utilise « Envoyer à mes autres appareils ».';
 
@@ -6872,6 +6882,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get githubPullRequestActions => 'Actions de la pull request';
+
+  @override
+  String githubPullRequestSize(int additions, int deletions) {
+    return '$additions lignes ajoutées, $deletions supprimées';
+  }
 
   @override
   String get githubPullRequestsTitle => 'Pull requests';
@@ -6934,6 +6949,29 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get githubStatusOpen => 'Ouverte';
+
+  @override
+  String get githubSummarize => 'Résumer';
+
+  @override
+  String get githubSummarizeAgain => 'Résumer à nouveau';
+
+  @override
+  String get githubSummarizing => 'Rédaction du résumé';
+
+  @override
+  String get githubSummaryBusy => 'Un résumé est déjà en cours de rédaction.';
+
+  @override
+  String get githubSummaryFailed =>
+      'Le résumé n\'a pas pu être rédigé. Réessaie.';
+
+  @override
+  String get githubSummaryHeading => 'En bref';
+
+  @override
+  String get githubSummaryNoModel =>
+      'Aucun modèle n\'est configuré pour l\'agent de cette tâche, donc rien ne peut rédiger le résumé.';
 
   @override
   String get githubTokenHide => 'Masquer le jeton';

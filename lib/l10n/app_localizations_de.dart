@@ -6673,6 +6673,9 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get githubDescriptionHeading => 'Beschreibung';
+
+  @override
   String get githubDisconnectButton => 'Trennen';
 
   @override
@@ -6779,6 +6782,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get githubMergeConflicts => 'Merge-Konflikte';
 
   @override
+  String get githubNoDescription =>
+      'Dieser Pull-Request hat keine Beschreibung.';
+
+  @override
+  String get githubNoSummaryYet => 'Noch nicht zusammengefasst.';
+
+  @override
   String get githubNoTokenFromOtherDevices =>
       'Von deinen anderen Geräten ist noch kein Token angekommen. Nutze auf einem Gerät, das einen hat, „An meine anderen Geräte senden“.';
 
@@ -6813,6 +6823,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get githubPullRequestActions => 'Aktionen für den Pull-Request';
+
+  @override
+  String githubPullRequestSize(int additions, int deletions) {
+    return '$additions Zeilen hinzugefügt, $deletions entfernt';
+  }
 
   @override
   String get githubPullRequestsTitle => 'Pull-Requests';
@@ -6875,6 +6890,30 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get githubStatusOpen => 'Offen';
+
+  @override
+  String get githubSummarize => 'Zusammenfassen';
+
+  @override
+  String get githubSummarizeAgain => 'Neu zusammenfassen';
+
+  @override
+  String get githubSummarizing => 'Zusammenfassung wird geschrieben';
+
+  @override
+  String get githubSummaryBusy =>
+      'Eine Zusammenfassung wird bereits geschrieben.';
+
+  @override
+  String get githubSummaryFailed =>
+      'Die Zusammenfassung konnte nicht geschrieben werden. Versuch es noch einmal.';
+
+  @override
+  String get githubSummaryHeading => 'Kurz gesagt';
+
+  @override
+  String get githubSummaryNoModel =>
+      'Für den Agenten dieser Aufgabe ist kein Modell eingerichtet, also kann niemand die Zusammenfassung schreiben.';
 
   @override
   String get githubTokenHide => 'Token verbergen';

@@ -3749,6 +3749,10 @@
       }
     }
   },
+  "githubDescriptionHeading": "Description",
+  "@githubDescriptionHeading": {
+    "description": "Heading over a pull request's own description."
+  },
   "githubDisconnectButton": "Disconnect",
   "githubFailureForbidden": "The token is not allowed to read this. Check its permissions.",
   "githubFailureInvalidResponse": "GitHub sent a response Lotti could not read.",
@@ -3803,6 +3807,14 @@
   "githubMergeBehind": "Behind base branch",
   "githubMergeBlocked": "Blocked by branch rules",
   "githubMergeConflicts": "Merge conflicts",
+  "githubNoDescription": "This pull request has no description.",
+  "@githubNoDescription": {
+    "description": "Shown in the pull request details when it has no description."
+  },
+  "githubNoSummaryYet": "Not summarized yet.",
+  "@githubNoSummaryYet": {
+    "description": "Shown in the pull request details while no summary has been written."
+  },
   "githubNoTokenFromOtherDevices": "No token has arrived from your other devices yet. On a device that has one, use “Send to my other devices”.",
   "githubNotRefreshed": "Could not refresh",
   "githubNotRefreshedYet": "Not refreshed yet",
@@ -3831,6 +3843,18 @@
     }
   },
   "githubPullRequestActions": "Pull request actions",
+  "githubPullRequestSize": "{additions} lines added, {deletions} removed",
+  "@githubPullRequestSize": {
+    "description": "Accessibility label for a pull request size shown as +additions −deletions.",
+    "placeholders": {
+      "additions": {
+        "type": "int"
+      },
+      "deletions": {
+        "type": "int"
+      }
+    }
+  },
   "githubPullRequestsTitle": "Pull requests",
   "githubRefreshingPullRequest": "Refreshing pull request",
   "githubRefreshPullRequest": "Refresh pull request",
@@ -3850,6 +3874,34 @@
   "githubStatusDraft": "Draft",
   "githubStatusMerged": "Merged",
   "githubStatusOpen": "Open",
+  "githubSummarize": "Summarize",
+  "@githubSummarize": {
+    "description": "Button in the pull request details that asks the task agent's model for a summary."
+  },
+  "githubSummarizeAgain": "Summarize again",
+  "@githubSummarizeAgain": {
+    "description": "Button in the pull request details that asks for a new summary when one exists."
+  },
+  "githubSummarizing": "Writing the summary",
+  "@githubSummarizing": {
+    "description": "Accessibility label of the spinner while a pull request summary is written."
+  },
+  "githubSummaryBusy": "A summary is already being written.",
+  "@githubSummaryBusy": {
+    "description": "Toast when a summary is asked for while one is being written."
+  },
+  "githubSummaryFailed": "The summary couldn't be written. Try again.",
+  "@githubSummaryFailed": {
+    "description": "Toast when writing a pull request summary failed."
+  },
+  "githubSummaryHeading": "TL;DR",
+  "@githubSummaryHeading": {
+    "description": "Heading over the short paragraph summarising a pull request."
+  },
+  "githubSummaryNoModel": "There's no model set up for this task's agent, so nothing can write the summary.",
+  "@githubSummaryNoModel": {
+    "description": "Toast when a summary is asked for but no model resolves for the task agent."
+  },
   "githubTokenHide": "Hide token",
   "githubTokenIntro": "Lotti reads the pull requests you link to tasks with your own personal access token. Create a fine-grained token for the repositories you work in, with read-only access to \"Pull requests\" and \"Commit statuses\". GitHub does not let such a token read check runs in a private repository, so CI may be incomplete there; a classic token with the \"repo\" scope can read them.",
   "githubTokenLabel": "Personal access token",

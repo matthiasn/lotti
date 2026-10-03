@@ -1,7 +1,7 @@
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/features/github/api/github_client.dart';
 import 'package:lotti/features/github/context/pull_request_context_service.dart';
-import 'package:lotti/features/github/domain/pull_request_summary_input.dart';
+import 'package:lotti/features/github/domain/pull_request_summary.dart';
 
 /// Who reads a rendered pull request section.
 enum PullRequestContextAudience {
@@ -95,22 +95,18 @@ String _renderItem(
     out.writeln(
       '- State: ${_state(snapshot)}${size == null ? '' : ' ($size)'}',
     );
-    final summary = item.summary;
-    if (summary != null) {
-      out.writeln('- TL;DR: ${briefPullRequestSummary(summary)}');
-    }
+    _tldr(out, item.summary);
     return out.toString();
   }
 
+  out.writeln('- State: ${_state(snapshot)}');
+  _tldr(out, item.summary);
+  // Open, draft or not: the work in progress, in full.
   out
-    ..writeln('- State: ${_state(snapshot)}')
-    ..writeln('- Branch: ${snapshot.headRef} → ${snapshot.baseRef}');
-  if (snapshot.status == PullRequestStatus.open) {
-    out
-      ..writeln('- Checks: ${_checks(snapshot.checks)}')
-      ..writeln('- Merge: ${_mergeability(snapshot.mergeability)}')
-      ..writeln('- Reviews: ${_reviews(snapshot.reviews)}');
-  }
+    ..writeln('- Branch: ${snapshot.headRef} → ${snapshot.baseRef}')
+    ..writeln('- Checks: ${_checks(snapshot.checks)}')
+    ..writeln('- Merge: ${_mergeability(snapshot.mergeability)}')
+    ..writeln('- Reviews: ${_reviews(snapshot.reviews)}');
   if (size != null) out.writeln('- Size: $size');
   final body = snapshot.body?.trim();
   if (body != null && body.isNotEmpty) {
@@ -127,6 +123,12 @@ String _renderItem(
 }
 
 String _iso(DateTime t) => t.toUtc().toIso8601String();
+
+void _tldr(StringBuffer out, PullRequestSummary? summary) {
+  if (summary != null) {
+    out.writeln('- TL;DR: ${briefPullRequestSummary(summary.tldr)}');
+  }
+}
 
 String _state(PullRequestSnapshot s) => switch (s.status) {
   PullRequestStatus.open => s.draft ? 'open, draft' : 'open',

@@ -331,7 +331,15 @@ mixin _$PullRequestSnapshot {
 /// about which observation is later, and a version that does not know
 /// the field computes the same digest.
 @JsonKey(includeIfNull: false) DateTime? get createdAt;/// The description, Markdown; null when the pull request has none.
- String? get body; bool get draft; String? get authorLogin; DateTime? get mergedAt; DateTime? get closedAt;@JsonKey(unknownEnumValue: PullRequestMergeability.unknown) PullRequestMergeability get mergeability; PullRequestChecks get checks; PullRequestReviews get reviews; int? get additions; int? get deletions; int? get changedFiles; int? get commits;
+ String? get body; bool get draft; String? get authorLogin; DateTime? get mergedAt; DateTime? get closedAt;@JsonKey(unknownEnumValue: PullRequestMergeability.unknown) PullRequestMergeability get mergeability; PullRequestChecks get checks; PullRequestReviews get reviews; int? get additions; int? get deletions; int? get changedFiles; int? get commits;/// How many comments the conversation has (`comments`), and how many
+/// were left on the changes in reviews (`review_comments`): how much
+/// back and forth the pull request saw. Null in a snapshot stored before
+/// they were read. Left out of the JSON when null, and out of the
+/// observation digest always, as [createdAt] is: a version that does not
+/// know them computes the same digest, and a new comment alone neither
+/// writes the entry nor wakes the task — the counts are stored with the
+/// next write, the hourly restamp at the latest.
+@JsonKey(includeIfNull: false) int? get comments;@JsonKey(includeIfNull: false) int? get reviewComments;
 /// Create a copy of PullRequestSnapshot
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -344,16 +352,16 @@ $PullRequestSnapshotCopyWith<PullRequestSnapshot> get copyWith => _$PullRequestS
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PullRequestSnapshot&&(identical(other.observedAt, observedAt) || other.observedAt == observedAt)&&(identical(other.title, title) || other.title == title)&&(identical(other.status, status) || other.status == status)&&(identical(other.htmlUrl, htmlUrl) || other.htmlUrl == htmlUrl)&&(identical(other.headSha, headSha) || other.headSha == headSha)&&(identical(other.headRef, headRef) || other.headRef == headRef)&&(identical(other.baseRef, baseRef) || other.baseRef == baseRef)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.body, body) || other.body == body)&&(identical(other.draft, draft) || other.draft == draft)&&(identical(other.authorLogin, authorLogin) || other.authorLogin == authorLogin)&&(identical(other.mergedAt, mergedAt) || other.mergedAt == mergedAt)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt)&&(identical(other.mergeability, mergeability) || other.mergeability == mergeability)&&(identical(other.checks, checks) || other.checks == checks)&&(identical(other.reviews, reviews) || other.reviews == reviews)&&(identical(other.additions, additions) || other.additions == additions)&&(identical(other.deletions, deletions) || other.deletions == deletions)&&(identical(other.changedFiles, changedFiles) || other.changedFiles == changedFiles)&&(identical(other.commits, commits) || other.commits == commits));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PullRequestSnapshot&&(identical(other.observedAt, observedAt) || other.observedAt == observedAt)&&(identical(other.title, title) || other.title == title)&&(identical(other.status, status) || other.status == status)&&(identical(other.htmlUrl, htmlUrl) || other.htmlUrl == htmlUrl)&&(identical(other.headSha, headSha) || other.headSha == headSha)&&(identical(other.headRef, headRef) || other.headRef == headRef)&&(identical(other.baseRef, baseRef) || other.baseRef == baseRef)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.body, body) || other.body == body)&&(identical(other.draft, draft) || other.draft == draft)&&(identical(other.authorLogin, authorLogin) || other.authorLogin == authorLogin)&&(identical(other.mergedAt, mergedAt) || other.mergedAt == mergedAt)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt)&&(identical(other.mergeability, mergeability) || other.mergeability == mergeability)&&(identical(other.checks, checks) || other.checks == checks)&&(identical(other.reviews, reviews) || other.reviews == reviews)&&(identical(other.additions, additions) || other.additions == additions)&&(identical(other.deletions, deletions) || other.deletions == deletions)&&(identical(other.changedFiles, changedFiles) || other.changedFiles == changedFiles)&&(identical(other.commits, commits) || other.commits == commits)&&(identical(other.comments, comments) || other.comments == comments)&&(identical(other.reviewComments, reviewComments) || other.reviewComments == reviewComments));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,observedAt,title,status,htmlUrl,headSha,headRef,baseRef,createdAt,body,draft,authorLogin,mergedAt,closedAt,mergeability,checks,reviews,additions,deletions,changedFiles,commits]);
+int get hashCode => Object.hashAll([runtimeType,observedAt,title,status,htmlUrl,headSha,headRef,baseRef,createdAt,body,draft,authorLogin,mergedAt,closedAt,mergeability,checks,reviews,additions,deletions,changedFiles,commits,comments,reviewComments]);
 
 @override
 String toString() {
-  return 'PullRequestSnapshot(observedAt: $observedAt, title: $title, status: $status, htmlUrl: $htmlUrl, headSha: $headSha, headRef: $headRef, baseRef: $baseRef, createdAt: $createdAt, body: $body, draft: $draft, authorLogin: $authorLogin, mergedAt: $mergedAt, closedAt: $closedAt, mergeability: $mergeability, checks: $checks, reviews: $reviews, additions: $additions, deletions: $deletions, changedFiles: $changedFiles, commits: $commits)';
+  return 'PullRequestSnapshot(observedAt: $observedAt, title: $title, status: $status, htmlUrl: $htmlUrl, headSha: $headSha, headRef: $headRef, baseRef: $baseRef, createdAt: $createdAt, body: $body, draft: $draft, authorLogin: $authorLogin, mergedAt: $mergedAt, closedAt: $closedAt, mergeability: $mergeability, checks: $checks, reviews: $reviews, additions: $additions, deletions: $deletions, changedFiles: $changedFiles, commits: $commits, comments: $comments, reviewComments: $reviewComments)';
 }
 
 
@@ -364,7 +372,7 @@ abstract mixin class $PullRequestSnapshotCopyWith<$Res>  {
   factory $PullRequestSnapshotCopyWith(PullRequestSnapshot value, $Res Function(PullRequestSnapshot) _then) = _$PullRequestSnapshotCopyWithImpl;
 @useResult
 $Res call({
- DateTime observedAt, String title, PullRequestStatus status, String htmlUrl, String headSha, String headRef, String baseRef,@JsonKey(includeIfNull: false) DateTime? createdAt, String? body, bool draft, String? authorLogin, DateTime? mergedAt, DateTime? closedAt,@JsonKey(unknownEnumValue: PullRequestMergeability.unknown) PullRequestMergeability mergeability, PullRequestChecks checks, PullRequestReviews reviews, int? additions, int? deletions, int? changedFiles, int? commits
+ DateTime observedAt, String title, PullRequestStatus status, String htmlUrl, String headSha, String headRef, String baseRef,@JsonKey(includeIfNull: false) DateTime? createdAt, String? body, bool draft, String? authorLogin, DateTime? mergedAt, DateTime? closedAt,@JsonKey(unknownEnumValue: PullRequestMergeability.unknown) PullRequestMergeability mergeability, PullRequestChecks checks, PullRequestReviews reviews, int? additions, int? deletions, int? changedFiles, int? commits,@JsonKey(includeIfNull: false) int? comments,@JsonKey(includeIfNull: false) int? reviewComments
 });
 
 
@@ -381,7 +389,7 @@ class _$PullRequestSnapshotCopyWithImpl<$Res>
 
 /// Create a copy of PullRequestSnapshot
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? observedAt = null,Object? title = null,Object? status = null,Object? htmlUrl = null,Object? headSha = null,Object? headRef = null,Object? baseRef = null,Object? createdAt = freezed,Object? body = freezed,Object? draft = null,Object? authorLogin = freezed,Object? mergedAt = freezed,Object? closedAt = freezed,Object? mergeability = null,Object? checks = null,Object? reviews = null,Object? additions = freezed,Object? deletions = freezed,Object? changedFiles = freezed,Object? commits = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? observedAt = null,Object? title = null,Object? status = null,Object? htmlUrl = null,Object? headSha = null,Object? headRef = null,Object? baseRef = null,Object? createdAt = freezed,Object? body = freezed,Object? draft = null,Object? authorLogin = freezed,Object? mergedAt = freezed,Object? closedAt = freezed,Object? mergeability = null,Object? checks = null,Object? reviews = null,Object? additions = freezed,Object? deletions = freezed,Object? changedFiles = freezed,Object? commits = freezed,Object? comments = freezed,Object? reviewComments = freezed,}) {
   return _then(_self.copyWith(
 observedAt: null == observedAt ? _self.observedAt : observedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
@@ -403,6 +411,8 @@ as PullRequestReviews,additions: freezed == additions ? _self.additions : additi
 as int?,deletions: freezed == deletions ? _self.deletions : deletions // ignore: cast_nullable_to_non_nullable
 as int?,changedFiles: freezed == changedFiles ? _self.changedFiles : changedFiles // ignore: cast_nullable_to_non_nullable
 as int?,commits: freezed == commits ? _self.commits : commits // ignore: cast_nullable_to_non_nullable
+as int?,comments: freezed == comments ? _self.comments : comments // ignore: cast_nullable_to_non_nullable
+as int?,reviewComments: freezed == reviewComments ? _self.reviewComments : reviewComments // ignore: cast_nullable_to_non_nullable
 as int?,
   ));
 }
@@ -506,10 +516,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime observedAt,  String title,  PullRequestStatus status,  String htmlUrl,  String headSha,  String headRef,  String baseRef, @JsonKey(includeIfNull: false)  DateTime? createdAt,  String? body,  bool draft,  String? authorLogin,  DateTime? mergedAt,  DateTime? closedAt, @JsonKey(unknownEnumValue: PullRequestMergeability.unknown)  PullRequestMergeability mergeability,  PullRequestChecks checks,  PullRequestReviews reviews,  int? additions,  int? deletions,  int? changedFiles,  int? commits)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime observedAt,  String title,  PullRequestStatus status,  String htmlUrl,  String headSha,  String headRef,  String baseRef, @JsonKey(includeIfNull: false)  DateTime? createdAt,  String? body,  bool draft,  String? authorLogin,  DateTime? mergedAt,  DateTime? closedAt, @JsonKey(unknownEnumValue: PullRequestMergeability.unknown)  PullRequestMergeability mergeability,  PullRequestChecks checks,  PullRequestReviews reviews,  int? additions,  int? deletions,  int? changedFiles,  int? commits, @JsonKey(includeIfNull: false)  int? comments, @JsonKey(includeIfNull: false)  int? reviewComments)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PullRequestSnapshot() when $default != null:
-return $default(_that.observedAt,_that.title,_that.status,_that.htmlUrl,_that.headSha,_that.headRef,_that.baseRef,_that.createdAt,_that.body,_that.draft,_that.authorLogin,_that.mergedAt,_that.closedAt,_that.mergeability,_that.checks,_that.reviews,_that.additions,_that.deletions,_that.changedFiles,_that.commits);case _:
+return $default(_that.observedAt,_that.title,_that.status,_that.htmlUrl,_that.headSha,_that.headRef,_that.baseRef,_that.createdAt,_that.body,_that.draft,_that.authorLogin,_that.mergedAt,_that.closedAt,_that.mergeability,_that.checks,_that.reviews,_that.additions,_that.deletions,_that.changedFiles,_that.commits,_that.comments,_that.reviewComments);case _:
   return orElse();
 
 }
@@ -527,10 +537,10 @@ return $default(_that.observedAt,_that.title,_that.status,_that.htmlUrl,_that.he
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime observedAt,  String title,  PullRequestStatus status,  String htmlUrl,  String headSha,  String headRef,  String baseRef, @JsonKey(includeIfNull: false)  DateTime? createdAt,  String? body,  bool draft,  String? authorLogin,  DateTime? mergedAt,  DateTime? closedAt, @JsonKey(unknownEnumValue: PullRequestMergeability.unknown)  PullRequestMergeability mergeability,  PullRequestChecks checks,  PullRequestReviews reviews,  int? additions,  int? deletions,  int? changedFiles,  int? commits)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime observedAt,  String title,  PullRequestStatus status,  String htmlUrl,  String headSha,  String headRef,  String baseRef, @JsonKey(includeIfNull: false)  DateTime? createdAt,  String? body,  bool draft,  String? authorLogin,  DateTime? mergedAt,  DateTime? closedAt, @JsonKey(unknownEnumValue: PullRequestMergeability.unknown)  PullRequestMergeability mergeability,  PullRequestChecks checks,  PullRequestReviews reviews,  int? additions,  int? deletions,  int? changedFiles,  int? commits, @JsonKey(includeIfNull: false)  int? comments, @JsonKey(includeIfNull: false)  int? reviewComments)  $default,) {final _that = this;
 switch (_that) {
 case _PullRequestSnapshot():
-return $default(_that.observedAt,_that.title,_that.status,_that.htmlUrl,_that.headSha,_that.headRef,_that.baseRef,_that.createdAt,_that.body,_that.draft,_that.authorLogin,_that.mergedAt,_that.closedAt,_that.mergeability,_that.checks,_that.reviews,_that.additions,_that.deletions,_that.changedFiles,_that.commits);case _:
+return $default(_that.observedAt,_that.title,_that.status,_that.htmlUrl,_that.headSha,_that.headRef,_that.baseRef,_that.createdAt,_that.body,_that.draft,_that.authorLogin,_that.mergedAt,_that.closedAt,_that.mergeability,_that.checks,_that.reviews,_that.additions,_that.deletions,_that.changedFiles,_that.commits,_that.comments,_that.reviewComments);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -547,10 +557,10 @@ return $default(_that.observedAt,_that.title,_that.status,_that.htmlUrl,_that.he
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime observedAt,  String title,  PullRequestStatus status,  String htmlUrl,  String headSha,  String headRef,  String baseRef, @JsonKey(includeIfNull: false)  DateTime? createdAt,  String? body,  bool draft,  String? authorLogin,  DateTime? mergedAt,  DateTime? closedAt, @JsonKey(unknownEnumValue: PullRequestMergeability.unknown)  PullRequestMergeability mergeability,  PullRequestChecks checks,  PullRequestReviews reviews,  int? additions,  int? deletions,  int? changedFiles,  int? commits)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime observedAt,  String title,  PullRequestStatus status,  String htmlUrl,  String headSha,  String headRef,  String baseRef, @JsonKey(includeIfNull: false)  DateTime? createdAt,  String? body,  bool draft,  String? authorLogin,  DateTime? mergedAt,  DateTime? closedAt, @JsonKey(unknownEnumValue: PullRequestMergeability.unknown)  PullRequestMergeability mergeability,  PullRequestChecks checks,  PullRequestReviews reviews,  int? additions,  int? deletions,  int? changedFiles,  int? commits, @JsonKey(includeIfNull: false)  int? comments, @JsonKey(includeIfNull: false)  int? reviewComments)?  $default,) {final _that = this;
 switch (_that) {
 case _PullRequestSnapshot() when $default != null:
-return $default(_that.observedAt,_that.title,_that.status,_that.htmlUrl,_that.headSha,_that.headRef,_that.baseRef,_that.createdAt,_that.body,_that.draft,_that.authorLogin,_that.mergedAt,_that.closedAt,_that.mergeability,_that.checks,_that.reviews,_that.additions,_that.deletions,_that.changedFiles,_that.commits);case _:
+return $default(_that.observedAt,_that.title,_that.status,_that.htmlUrl,_that.headSha,_that.headRef,_that.baseRef,_that.createdAt,_that.body,_that.draft,_that.authorLogin,_that.mergedAt,_that.closedAt,_that.mergeability,_that.checks,_that.reviews,_that.additions,_that.deletions,_that.changedFiles,_that.commits,_that.comments,_that.reviewComments);case _:
   return null;
 
 }
@@ -562,7 +572,7 @@ return $default(_that.observedAt,_that.title,_that.status,_that.htmlUrl,_that.he
 @JsonSerializable()
 
 class _PullRequestSnapshot implements PullRequestSnapshot {
-  const _PullRequestSnapshot({required this.observedAt, required this.title, required this.status, required this.htmlUrl, required this.headSha, required this.headRef, required this.baseRef, @JsonKey(includeIfNull: false) this.createdAt, this.body, this.draft = false, this.authorLogin, this.mergedAt, this.closedAt, @JsonKey(unknownEnumValue: PullRequestMergeability.unknown) this.mergeability = PullRequestMergeability.unknown, this.checks = const PullRequestChecks(), this.reviews = const PullRequestReviews(), this.additions, this.deletions, this.changedFiles, this.commits});
+  const _PullRequestSnapshot({required this.observedAt, required this.title, required this.status, required this.htmlUrl, required this.headSha, required this.headRef, required this.baseRef, @JsonKey(includeIfNull: false) this.createdAt, this.body, this.draft = false, this.authorLogin, this.mergedAt, this.closedAt, @JsonKey(unknownEnumValue: PullRequestMergeability.unknown) this.mergeability = PullRequestMergeability.unknown, this.checks = const PullRequestChecks(), this.reviews = const PullRequestReviews(), this.additions, this.deletions, this.changedFiles, this.commits, @JsonKey(includeIfNull: false) this.comments, @JsonKey(includeIfNull: false) this.reviewComments});
   factory _PullRequestSnapshot.fromJson(Map<String, dynamic> json) => _$PullRequestSnapshotFromJson(json);
 
 /// When GitHub produced the response: its `Date` header, in UTC. The
@@ -597,6 +607,16 @@ class _PullRequestSnapshot implements PullRequestSnapshot {
 @override final  int? deletions;
 @override final  int? changedFiles;
 @override final  int? commits;
+/// How many comments the conversation has (`comments`), and how many
+/// were left on the changes in reviews (`review_comments`): how much
+/// back and forth the pull request saw. Null in a snapshot stored before
+/// they were read. Left out of the JSON when null, and out of the
+/// observation digest always, as [createdAt] is: a version that does not
+/// know them computes the same digest, and a new comment alone neither
+/// writes the entry nor wakes the task — the counts are stored with the
+/// next write, the hourly restamp at the latest.
+@override@JsonKey(includeIfNull: false) final  int? comments;
+@override@JsonKey(includeIfNull: false) final  int? reviewComments;
 
 /// Create a copy of PullRequestSnapshot
 /// with the given fields replaced by the non-null parameter values.
@@ -611,16 +631,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PullRequestSnapshot&&(identical(other.observedAt, observedAt) || other.observedAt == observedAt)&&(identical(other.title, title) || other.title == title)&&(identical(other.status, status) || other.status == status)&&(identical(other.htmlUrl, htmlUrl) || other.htmlUrl == htmlUrl)&&(identical(other.headSha, headSha) || other.headSha == headSha)&&(identical(other.headRef, headRef) || other.headRef == headRef)&&(identical(other.baseRef, baseRef) || other.baseRef == baseRef)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.body, body) || other.body == body)&&(identical(other.draft, draft) || other.draft == draft)&&(identical(other.authorLogin, authorLogin) || other.authorLogin == authorLogin)&&(identical(other.mergedAt, mergedAt) || other.mergedAt == mergedAt)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt)&&(identical(other.mergeability, mergeability) || other.mergeability == mergeability)&&(identical(other.checks, checks) || other.checks == checks)&&(identical(other.reviews, reviews) || other.reviews == reviews)&&(identical(other.additions, additions) || other.additions == additions)&&(identical(other.deletions, deletions) || other.deletions == deletions)&&(identical(other.changedFiles, changedFiles) || other.changedFiles == changedFiles)&&(identical(other.commits, commits) || other.commits == commits));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PullRequestSnapshot&&(identical(other.observedAt, observedAt) || other.observedAt == observedAt)&&(identical(other.title, title) || other.title == title)&&(identical(other.status, status) || other.status == status)&&(identical(other.htmlUrl, htmlUrl) || other.htmlUrl == htmlUrl)&&(identical(other.headSha, headSha) || other.headSha == headSha)&&(identical(other.headRef, headRef) || other.headRef == headRef)&&(identical(other.baseRef, baseRef) || other.baseRef == baseRef)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.body, body) || other.body == body)&&(identical(other.draft, draft) || other.draft == draft)&&(identical(other.authorLogin, authorLogin) || other.authorLogin == authorLogin)&&(identical(other.mergedAt, mergedAt) || other.mergedAt == mergedAt)&&(identical(other.closedAt, closedAt) || other.closedAt == closedAt)&&(identical(other.mergeability, mergeability) || other.mergeability == mergeability)&&(identical(other.checks, checks) || other.checks == checks)&&(identical(other.reviews, reviews) || other.reviews == reviews)&&(identical(other.additions, additions) || other.additions == additions)&&(identical(other.deletions, deletions) || other.deletions == deletions)&&(identical(other.changedFiles, changedFiles) || other.changedFiles == changedFiles)&&(identical(other.commits, commits) || other.commits == commits)&&(identical(other.comments, comments) || other.comments == comments)&&(identical(other.reviewComments, reviewComments) || other.reviewComments == reviewComments));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,observedAt,title,status,htmlUrl,headSha,headRef,baseRef,createdAt,body,draft,authorLogin,mergedAt,closedAt,mergeability,checks,reviews,additions,deletions,changedFiles,commits]);
+int get hashCode => Object.hashAll([runtimeType,observedAt,title,status,htmlUrl,headSha,headRef,baseRef,createdAt,body,draft,authorLogin,mergedAt,closedAt,mergeability,checks,reviews,additions,deletions,changedFiles,commits,comments,reviewComments]);
 
 @override
 String toString() {
-  return 'PullRequestSnapshot(observedAt: $observedAt, title: $title, status: $status, htmlUrl: $htmlUrl, headSha: $headSha, headRef: $headRef, baseRef: $baseRef, createdAt: $createdAt, body: $body, draft: $draft, authorLogin: $authorLogin, mergedAt: $mergedAt, closedAt: $closedAt, mergeability: $mergeability, checks: $checks, reviews: $reviews, additions: $additions, deletions: $deletions, changedFiles: $changedFiles, commits: $commits)';
+  return 'PullRequestSnapshot(observedAt: $observedAt, title: $title, status: $status, htmlUrl: $htmlUrl, headSha: $headSha, headRef: $headRef, baseRef: $baseRef, createdAt: $createdAt, body: $body, draft: $draft, authorLogin: $authorLogin, mergedAt: $mergedAt, closedAt: $closedAt, mergeability: $mergeability, checks: $checks, reviews: $reviews, additions: $additions, deletions: $deletions, changedFiles: $changedFiles, commits: $commits, comments: $comments, reviewComments: $reviewComments)';
 }
 
 
@@ -631,7 +651,7 @@ abstract mixin class _$PullRequestSnapshotCopyWith<$Res> implements $PullRequest
   factory _$PullRequestSnapshotCopyWith(_PullRequestSnapshot value, $Res Function(_PullRequestSnapshot) _then) = __$PullRequestSnapshotCopyWithImpl;
 @override @useResult
 $Res call({
- DateTime observedAt, String title, PullRequestStatus status, String htmlUrl, String headSha, String headRef, String baseRef,@JsonKey(includeIfNull: false) DateTime? createdAt, String? body, bool draft, String? authorLogin, DateTime? mergedAt, DateTime? closedAt,@JsonKey(unknownEnumValue: PullRequestMergeability.unknown) PullRequestMergeability mergeability, PullRequestChecks checks, PullRequestReviews reviews, int? additions, int? deletions, int? changedFiles, int? commits
+ DateTime observedAt, String title, PullRequestStatus status, String htmlUrl, String headSha, String headRef, String baseRef,@JsonKey(includeIfNull: false) DateTime? createdAt, String? body, bool draft, String? authorLogin, DateTime? mergedAt, DateTime? closedAt,@JsonKey(unknownEnumValue: PullRequestMergeability.unknown) PullRequestMergeability mergeability, PullRequestChecks checks, PullRequestReviews reviews, int? additions, int? deletions, int? changedFiles, int? commits,@JsonKey(includeIfNull: false) int? comments,@JsonKey(includeIfNull: false) int? reviewComments
 });
 
 
@@ -648,7 +668,7 @@ class __$PullRequestSnapshotCopyWithImpl<$Res>
 
 /// Create a copy of PullRequestSnapshot
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? observedAt = null,Object? title = null,Object? status = null,Object? htmlUrl = null,Object? headSha = null,Object? headRef = null,Object? baseRef = null,Object? createdAt = freezed,Object? body = freezed,Object? draft = null,Object? authorLogin = freezed,Object? mergedAt = freezed,Object? closedAt = freezed,Object? mergeability = null,Object? checks = null,Object? reviews = null,Object? additions = freezed,Object? deletions = freezed,Object? changedFiles = freezed,Object? commits = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? observedAt = null,Object? title = null,Object? status = null,Object? htmlUrl = null,Object? headSha = null,Object? headRef = null,Object? baseRef = null,Object? createdAt = freezed,Object? body = freezed,Object? draft = null,Object? authorLogin = freezed,Object? mergedAt = freezed,Object? closedAt = freezed,Object? mergeability = null,Object? checks = null,Object? reviews = null,Object? additions = freezed,Object? deletions = freezed,Object? changedFiles = freezed,Object? commits = freezed,Object? comments = freezed,Object? reviewComments = freezed,}) {
   return _then(_PullRequestSnapshot(
 observedAt: null == observedAt ? _self.observedAt : observedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
@@ -670,6 +690,8 @@ as PullRequestReviews,additions: freezed == additions ? _self.additions : additi
 as int?,deletions: freezed == deletions ? _self.deletions : deletions // ignore: cast_nullable_to_non_nullable
 as int?,changedFiles: freezed == changedFiles ? _self.changedFiles : changedFiles // ignore: cast_nullable_to_non_nullable
 as int?,commits: freezed == commits ? _self.commits : commits // ignore: cast_nullable_to_non_nullable
+as int?,comments: freezed == comments ? _self.comments : comments // ignore: cast_nullable_to_non_nullable
+as int?,reviewComments: freezed == reviewComments ? _self.reviewComments : reviewComments // ignore: cast_nullable_to_non_nullable
 as int?,
   ));
 }

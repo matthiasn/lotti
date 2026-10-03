@@ -3017,6 +3017,7 @@
       }
     }
   },
+  "githubDescriptionHeading": "Beskrivelse",
   "githubDisconnectButton": "Afbryd forbindelsen",
   "githubFailureForbidden": "Tokenet må ikke læse dette. Tjek dets tilladelser.",
   "githubFailureInvalidResponse": "GitHub sendte et svar, som Lotti ikke kunne læse.",
@@ -3053,6 +3054,8 @@
   "githubMergeBehind": "Bagud i forhold til basisgrenen",
   "githubMergeBlocked": "Blokeret af grenregler",
   "githubMergeConflicts": "Flettekonflikter",
+  "githubNoDescription": "Denne pull request har ingen beskrivelse.",
+  "githubNoSummaryYet": "Ikke opsummeret endnu.",
   "githubNoTokenFromOtherDevices": "Der er endnu ikke kommet et token fra dine andre enheder. Brug “Send til mine andre enheder” på en enhed, der har et.",
   "githubNotRefreshed": "Kunne ikke opdatere",
   "githubNotRefreshedYet": "Ikke opdateret endnu",
@@ -3081,6 +3084,7 @@
     }
   },
   "githubPullRequestActions": "Handlinger for pull request",
+  "githubPullRequestSize": "{additions} linjer tilføjet, {deletions} fjernet",
   "githubPullRequestsTitle": "Pull requests",
   "githubRefreshingPullRequest": "Opdaterer pull request",
   "githubRefreshPullRequest": "Opdater pull request",
@@ -3100,6 +3104,13 @@
   "githubStatusDraft": "Kladde",
   "githubStatusMerged": "Flettet",
   "githubStatusOpen": "Åben",
+  "githubSummarize": "Opsummér",
+  "githubSummarizeAgain": "Opsummér igen",
+  "githubSummarizing": "Skriver opsummeringen",
+  "githubSummaryBusy": "En opsummering er allerede ved at blive skrevet.",
+  "githubSummaryFailed": "Opsummeringen kunne ikke skrives. Prøv igen.",
+  "githubSummaryHeading": "Kort fortalt",
+  "githubSummaryNoModel": "Der er ingen model sat op til denne opgaves agent, så intet kan skrive opsummeringen.",
   "githubTokenHide": "Skjul token",
   "githubTokenIntro": "Lotti læser de pull requests, du knytter til opgaver, med dit eget personlige adgangstoken. Opret et fine-grained token til de repositories, du arbejder i, med skrivebeskyttet adgang til \"Pull requests\" og \"Commit statuses\". GitHub lader ikke sådan et token læse check runs i et privat repository, så CI kan være ufuldstændig dér; et klassisk token med scopet \"repo\" kan læse dem.",
   "githubTokenLabel": "Personligt adgangstoken",

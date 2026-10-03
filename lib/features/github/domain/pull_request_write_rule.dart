@@ -14,10 +14,11 @@ const pullRequestRestampAfter = Duration(hours: 1);
 /// [restampAfter] old. Every write notifies the task, so writing on every
 /// refresh would wake the task agent whose context asked for the refresh.
 ///
-/// A snapshot stored before it carried `createdAt` counts as changed once a
-/// read brings it: the digest leaves `createdAt` out, so without this the
-/// opening would stay unstored — the age and order shown only on the screen
-/// that refreshed — until the stamp grew an hour old.
+/// A snapshot stored before it carried `createdAt`, or the comment counts,
+/// counts as changed once a read brings them: the digest leaves them out, so
+/// without this the opening would stay unstored — the age and order shown
+/// only on the screen that refreshed — and the counts unknown to a summary,
+/// until the stamp grew an hour old.
 bool shouldWritePullRequestObservation(
   PullRequestEntry stored,
   PullRequestSnapshot observation, {
@@ -28,6 +29,7 @@ bool shouldWritePullRequestObservation(
   if (comparePullRequestObservations(observation, current) <= 0) return false;
   return current == null ||
       (current.createdAt == null && observation.createdAt != null) ||
+      (current.comments == null && observation.comments != null) ||
       pullRequestSnapshotDigest(current) !=
           pullRequestSnapshotDigest(observation) ||
       observation.observedAt.difference(current.observedAt) >= restampAfter;

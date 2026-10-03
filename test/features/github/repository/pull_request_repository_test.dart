@@ -10,6 +10,7 @@ import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/github/domain/pull_request_ref.dart';
+import 'package:lotti/features/github/domain/pull_request_summary.dart';
 import 'package:lotti/features/github/domain/pull_request_write_rule.dart';
 import 'package:lotti/features/github/repository/pull_request_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -465,6 +466,7 @@ void main() {
           thoughts: '',
           response: text,
           type: AiResponseType.pullRequestSummary,
+          oneLiner: 'One line.',
           tldr: text,
         );
 
@@ -495,7 +497,10 @@ void main() {
         expect(sent, contains(responses.single.meta.id));
         expect(
           await repository.summaryOf(entry.id, 'input'),
-          'Did the thing.',
+          const PullRequestSummary(
+            oneLiner: 'One line.',
+            tldr: 'Did the thing.',
+          ),
         );
         expect(await repository.summaryOf(entry.id, 'other input'), isNull);
       },
@@ -549,18 +554,32 @@ void main() {
           summary('input', text: 'Newer.'),
           start: prFixtureEpoch.add(const Duration(minutes: 1)),
         );
-        expect(await repository.summaryOf(entry.id, 'input'), 'Newer.');
+        expect(
+          (await repository.summaryOf(entry.id, 'input'))?.tldr,
+          'Newer.',
+        );
       },
     );
 
-    test('a summary without a TL;DR is read from its response', () async {
-      final entry = await linked(snapshot: prSnapshot());
-      await repository.addSummary(
-        entry,
-        summary('input').copyWith(tldr: null, response: 'From the body.'),
-        start: prFixtureEpoch,
-      );
-      expect(await repository.summaryOf(entry.id, 'input'), 'From the body.');
-    });
+    test(
+      'a summary without a TL;DR is read from its response, and a blank '
+      'one-liner as none',
+      () async {
+        final entry = await linked(snapshot: prSnapshot());
+        await repository.addSummary(
+          entry,
+          summary('input').copyWith(
+            tldr: null,
+            oneLiner: ' ',
+            response: 'From the body.',
+          ),
+          start: prFixtureEpoch,
+        );
+        expect(
+          await repository.summaryOf(entry.id, 'input'),
+          const PullRequestSummary(oneLiner: null, tldr: 'From the body.'),
+        );
+      },
+    );
   });
 }
