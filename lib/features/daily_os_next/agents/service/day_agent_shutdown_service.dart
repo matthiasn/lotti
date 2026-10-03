@@ -14,6 +14,7 @@ import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/ai/helpers/prompt_placeholder_formatting.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/one_shot_text_generation.dart';
@@ -93,6 +94,10 @@ class DayAgentShutdownService {
   final CategoryDefinition? Function(String id) _categoryById;
   final Future<bool> Function() _eventsEnabled;
 
+  /// Tasks the user decided in Shutdown this session, by day id, so the
+  /// closing note still reports a due-only task after its due date moved.
+  final Map<String, Set<String>> _decidedTaskIds = {};
+
   /// Completion cap for the note: one short paragraph.
   static const tomorrowNoteMaxTokens = 300;
 
@@ -152,7 +157,18 @@ class DayAgentShutdownService {
       categoryById: _categoryById,
       eventsEnabled: await _eventsEnabled(),
     );
-    final byDay = groupBy(blocks, (TimeBlock block) => localDay(block.start));
+    // A block belongs to the day it lies entirely inside — the rule the Day
+    // timeline's per-day query applies — so Shutdown never reports time the
+    // timeline does not show. A recording across midnight shows on neither.
+    final byDay = groupBy(
+      blocks.where((block) {
+        final start = localDay(block.start);
+        return !block.end.isAfter(
+          DateTime(start.year, start.month, start.day + 1),
+        );
+      }),
+      (TimeBlock block) => localDay(block.start),
+    );
     final dayBlocks = byDay[day] ?? const <TimeBlock>[];
     final priorDays = [
       for (var offset = 1; offset <= shutdownLookbackDays; offset++)
@@ -169,12 +185,17 @@ class DayAgentShutdownService {
 
     final plannedTaskIds = await _plannedTaskIds(day);
     final dueToday = await _journalDb.getTasksDueOn(day);
+    // Closed on or after the day: finds what was done or dropped that day
+    // even without recorded time, a plan block or a due date on it.
+    final closedSince = await _journalDb.getTasksClosedSince(day);
+    final decidedIds = _decidedTaskIds[dayAgentIdForDate(day)] ?? const {};
     final candidateIds = <String>{
       for (final block in dayBlocks) ?block.taskId,
       ...plannedTaskIds,
-      for (final task in dueToday) task.meta.id,
+      ...decidedIds,
     };
     final tasks = {
+      for (final task in [...dueToday, ...closedSince]) task.meta.id: task,
       for (final entity in await _journalDb.getJournalEntitiesForIdsUnordered(
         candidateIds,
       ))
@@ -190,12 +211,21 @@ class DayAgentShutdownService {
         ))
           _shutdownTask(task),
     ];
-    // Meant for the day: planned, or due on it. Still open, and not already
-    // re-placed past it — a decision made in an earlier visit.
+    // Meant for the day: planned, due on it, or decided in this Shutdown —
+    // a task that was only due that day is no longer due on it once moved or
+    // dropped, and the note must still say what happened to it. Open ones
+    // that were not re-placed past the day carry forward.
     final meantIds = <String>{
       ...plannedTaskIds,
       for (final task in dueToday.sortedBy((task) => task.data.title))
         task.meta.id,
+      ...decidedIds,
+      // Closed that day without being planned or due: only a drop matters
+      // here; a completion is already in doneToday.
+      for (final task in closedSince)
+        if (task.data.status is TaskRejected &&
+            inDay(task.data.status.createdAt))
+          task.meta.id,
     };
     final open = <ShutdownTask>[];
     final replaced = <(ShutdownTask, DateTime)>[];
@@ -284,6 +314,7 @@ class DayAgentShutdownService {
   }) async {
     final planner = await _dayAgentService.getOrCreatePlannerAgent();
     final day = localDay(forDate);
+    _decidedTaskIds.putIfAbsent(dayAgentIdForDate(day), () => {}).add(taskId);
     switch (action) {
       case CarryoverAction.drop:
         await _captureService.applyTriage(
@@ -371,13 +402,22 @@ class DayAgentShutdownService {
     );
   }
 
+  /// The day's reflection as the note reads it: the entry's own text, then
+  /// the transcripts of recordings linked under it, oldest first — a spoken
+  /// reflection lives on its audio entry, not in the reflection's text.
   Future<String?> _reflectionText(DateTime forDate) async {
-    final entry = await _journalDb.journalEntityById(
-      reflectionEntryId(forDate),
-    );
+    final id = reflectionEntryId(forDate);
+    final entry = await _journalDb.journalEntityById(id);
     if (entry == null || entry.meta.deletedAt != null) return null;
-    final text = entry.entryText?.plainText.trim();
-    return text == null || text.isEmpty ? null : text;
+    final recordings = [
+      for (final linked in await _journalDb.getLinkedEntities(id))
+        if (linked is JournalAudio && linked.meta.deletedAt == null) linked,
+    ]..sort((a, b) => a.meta.dateFrom.compareTo(b.meta.dateFrom));
+    final parts = [
+      resolveEntryText(entry),
+      for (final recording in recordings) resolveEntryText(recording),
+    ].where((part) => part.isNotEmpty);
+    return parts.isEmpty ? null : parts.join('\n\n');
   }
 
   // ──────────────────────────── Tomorrow ──

@@ -5062,8 +5062,8 @@ class AppLocalizationsDe extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count Einheiten',
-      one: '1 Einheit',
+      other: '$count Sitzungen',
+      one: '1 Sitzung',
     );
     return '$_temp0';
   }
@@ -5078,7 +5078,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dailyOsNextShutdownMetricEnergyNoRatings =>
-      'Bewerte Einheiten, um sie zu sehen';
+      'Bewerte Sitzungen, um deinen Energiewert zu sehen';
 
   @override
   String get dailyOsNextShutdownMetricFlow => 'FLOW-SITZUNGEN';

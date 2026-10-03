@@ -2368,7 +2368,7 @@
       }
     }
   },
-  "dailyOsNextShutdownMetricEnergyNoRatings": "Avalie as sessões para ver",
+  "dailyOsNextShutdownMetricEnergyNoRatings": "Avalie as sessões para ver a energia",
   "dailyOsNextShutdownMetricFlow": "SESSÕES DE FLUXO",
   "dailyOsNextShutdownMetricFocus": "TEMPO DE FOCO",
   "dailyOsNextShutdownMetricSwitches": "INTERRUPTORES DE CONTEXTO",

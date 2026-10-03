@@ -74,18 +74,26 @@ flowchart TD
 # The facts
 
 All computed in `shutdown_facts.dart` from the Actual lane's `TimeBlock`s, so the
-Shutdown screen and the Day timeline never disagree about what was recorded.
+Shutdown screen and the Day timeline never disagree about what was recorded. A
+block counts for the day it lies **entirely inside** — the containment rule of
+the timeline's own per-day query — so a recording across midnight appears on
+neither day, here as there.
 
 - **What you did** — the day's blocks grouped by task (untasked recordings by
   title within their category), minutes with overlaps counted once, the number of
   recordings, longest first. Tasks whose status history has a `TaskDone` on the
   day are marked *done today*; one done without recorded time still appears, with
-  no minutes.
+  no minutes. Candidates come from the day's blocks, the plan, the due query and
+  `JournalDb.getTasksClosedSince(day)` — tasks DONE or REJECTED whose row changed
+  since the day began — so an unplanned task finished that day is not missed.
 - **Carries forward** — tasks **meant for the day**: in the day plan (dropped
   blocks excluded, plan order) or due on it (by title). A task is left out once it
   is closed, or once its due date is already past the day — a decision taken in
   an earlier visit. Each row carries the minutes recorded against it and is
-  re-placed on the next day by default.
+  re-placed on the next day by default. Tasks decided in this session stay meant
+  for the day even when only their due date put them there, so the note still
+  reports them as moved or dropped; a task dropped that day without being
+  planned or due counts as dropped too.
 - **Metrics** (constants beside the functions):
   - *Focus* — recorded work minutes; calendar events are time spent, not focus.
   - *Flow sessions* — runs of work on one thing of at least `flowSessionMinimum`

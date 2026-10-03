@@ -5083,7 +5083,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dailyOsNextShutdownMetricEnergyNoRatings =>
-      'Avalie as sessões para ver';
+      'Avalie as sessões para ver a energia';
 
   @override
   String get dailyOsNextShutdownMetricFlow => 'SESSÕES DE FLUXO';

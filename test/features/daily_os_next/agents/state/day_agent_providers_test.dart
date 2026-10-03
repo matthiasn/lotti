@@ -469,6 +469,9 @@ void main() {
       when(() => journalDb.linksForEntryIds(any())).thenAnswer((_) async => []);
       when(() => journalDb.getTasksDueOn(any())).thenAnswer((_) async => []);
       when(
+        () => journalDb.getTasksClosedSince(any()),
+      ).thenAnswer((_) async => []);
+      when(
         () => journalDb.getJournalEntitiesForIdsUnordered(any()),
       ).thenAnswer((_) async => []);
       final container = buildContainer([

@@ -2160,7 +2160,7 @@
   "dailyOsNextShutdownCompletedDoneToday": "Hotovo dnes",
   "dailyOsNextShutdownCompletedEmpty": "Pro tento den zatím nic nezaznamenáno.",
   "dailyOsNextShutdownCompletedOverline": "CO JSI UDĚLAL",
-  "dailyOsNextShutdownCompletedSessions": "{count, plural, =1{1 blok} few{{count} bloky} other{{count} bloků}}",
+  "dailyOsNextShutdownCompletedSessions": "{count, plural, =1{1 relace} few{{count} relace} other{{count} relací}}",
   "dailyOsNextShutdownMetricEnergy": "ENERGIE",
   "dailyOsNextShutdownMetricEnergyDelta": "{delta} vs. týden",
   "@dailyOsNextShutdownMetricEnergyDelta": {
@@ -2171,7 +2171,7 @@
       }
     }
   },
-  "dailyOsNextShutdownMetricEnergyNoRatings": "Ohodnoť bloky, abys ji viděl",
+  "dailyOsNextShutdownMetricEnergyNoRatings": "Ohodnoť relace, abys viděl svou energii",
   "dailyOsNextShutdownMetricFlow": "FLOW RELACE",
   "dailyOsNextShutdownMetricFocus": "ČAS FOKUSU",
   "dailyOsNextShutdownMetricSwitches": "PŘEPÍNÁNÍ KONTEXTU",

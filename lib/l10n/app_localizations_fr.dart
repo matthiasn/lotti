@@ -5105,6 +5105,7 @@ class AppLocalizationsFr extends AppLocalizations {
       locale: localeName,
       other: '$count sessions',
       one: '1 session',
+      zero: '0 session',
     );
     return '$_temp0';
   }

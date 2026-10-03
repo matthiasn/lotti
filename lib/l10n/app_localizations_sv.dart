@@ -5006,7 +5006,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String dailyOsNextShutdownCarryoverStarted(int minutes) {
-    return 'Påbörjad — $minutes min registrerade';
+    return 'Påbörjad — $minutes min registrerad tid';
   }
 
   @override

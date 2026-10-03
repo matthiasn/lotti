@@ -2153,7 +2153,7 @@
   "dailyOsNextShutdownCompletedDoneToday": "Heute erledigt",
   "dailyOsNextShutdownCompletedEmpty": "Für diesen Tag ist noch nichts erfasst.",
   "dailyOsNextShutdownCompletedOverline": "WAS DU GESCHAFFT HAST",
-  "dailyOsNextShutdownCompletedSessions": "{count, plural, =1{1 Einheit} other{{count} Einheiten}}",
+  "dailyOsNextShutdownCompletedSessions": "{count, plural, =1{1 Sitzung} other{{count} Sitzungen}}",
   "dailyOsNextShutdownMetricEnergy": "ENERGIE",
   "dailyOsNextShutdownMetricEnergyDelta": "{delta} vs. Woche",
   "@dailyOsNextShutdownMetricEnergyDelta": {
@@ -2164,7 +2164,7 @@
       }
     }
   },
-  "dailyOsNextShutdownMetricEnergyNoRatings": "Bewerte Einheiten, um sie zu sehen",
+  "dailyOsNextShutdownMetricEnergyNoRatings": "Bewerte Sitzungen, um deinen Energiewert zu sehen",
   "dailyOsNextShutdownMetricFlow": "FLOW-SITZUNGEN",
   "dailyOsNextShutdownMetricFocus": "FOKUSZEIT",
   "dailyOsNextShutdownMetricSwitches": "KONTEXTWECHSEL",

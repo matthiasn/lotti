@@ -2153,7 +2153,7 @@
   "dailyOsNextShutdownCompletedDoneToday": "Terminé aujourd'hui",
   "dailyOsNextShutdownCompletedEmpty": "Rien d'enregistré pour ce jour pour l'instant.",
   "dailyOsNextShutdownCompletedOverline": "CE QUE TU AS FAIT",
-  "dailyOsNextShutdownCompletedSessions": "{count, plural, =1{1 session} other{{count} sessions}}",
+  "dailyOsNextShutdownCompletedSessions": "{count, plural, =0{0 session} =1{1 session} other{{count} sessions}}",
   "dailyOsNextShutdownMetricEnergy": "ÉNERGIE",
   "dailyOsNextShutdownMetricEnergyDelta": "{delta} vs. semaine",
   "@dailyOsNextShutdownMetricEnergyDelta": {

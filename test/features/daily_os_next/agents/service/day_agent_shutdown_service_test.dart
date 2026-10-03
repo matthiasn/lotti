@@ -177,7 +177,10 @@ void main() {
   void stubDay({
     bool withPlan = true,
     List<Task> dueToday = const [],
+    List<Task> closedSince = const [],
+    List<JournalEntity> extraEntries = const [],
     JournalEntity? reflection,
+    List<JournalEntity> reflectionLinks = const [],
   }) {
     entities = {
       for (final e in <JournalEntity>[
@@ -201,7 +204,9 @@ void main() {
         rangeStart: DateTime(2026, 9, 26),
         rangeEnd: _tomorrow,
       ),
-    ).thenAnswer((_) async => [lastWeek, morning, lateMorning]);
+    ).thenAnswer(
+      (_) async => [lastWeek, morning, lateMorning, ...extraEntries],
+    );
     when(() => journalDb.basicLinksForEntryIds(any())).thenAnswer(
       (_) async => [
         _basic('deck', 'e0'),
@@ -222,8 +227,14 @@ void main() {
       () => journalDb.getTasksDueOn(_day),
     ).thenAnswer((_) async => dueToday);
     when(
+      () => journalDb.getTasksClosedSince(_day),
+    ).thenAnswer((_) async => closedSince);
+    when(
       () => journalDb.journalEntityById(_reflectionId),
     ).thenAnswer((_) async => reflection);
+    when(
+      () => journalDb.getLinkedEntities(_reflectionId),
+    ).thenAnswer((_) async => reflectionLinks);
     when(
       () => dayAgentService.getDayAgentForDate(_day),
     ).thenAnswer((_) async => withPlan ? dayAgent : null);
@@ -346,6 +357,52 @@ void main() {
       expect(day.metrics.contextSwitchesWeekAvg, 0);
       expect(day.metrics.energyScore, closeTo(8, 1e-9));
       expect(day.metrics.energyDeltaVsWeek, closeTo(2, 1e-9));
+    });
+
+    test(
+      'a recording across midnight is left out, as on the timeline',
+      () async {
+        stubDay(
+          extraEntries: [_entry('late', DateTime(2026, 10, 2, 23, 30), 60)],
+        );
+
+        final day = await service.shutdownDay(_day);
+
+        expect(day.metrics.focusMinutes, 90);
+        expect(day.completed.map((i) => i.durationMinutes), [60, 30]);
+        // Nor is it credited to the day it started: that day keeps one run.
+        expect(day.metrics.contextSwitchesWeekAvg, 0);
+      },
+    );
+
+    test('finds a task done that day with no time, plan or due date', () async {
+      final adHoc = _task(
+        'adhoc',
+        'Ship the hotfix',
+        status: TaskStatus.done(
+          id: 'adhoc-done',
+          createdAt: DateTime(2026, 10, 3, 16),
+          utcOffset: 0,
+        ),
+        history: [
+          TaskStatus.done(
+            id: 'adhoc-done',
+            createdAt: DateTime(2026, 10, 3, 16),
+            utcOffset: 0,
+          ),
+        ],
+      );
+      stubDay(closedSince: [adHoc]);
+
+      final day = await service.shutdownDay(_day);
+
+      expect(
+        day.completed.last,
+        isA<CompletedItem>()
+            .having((i) => i.taskId, 'taskId', 'adhoc')
+            .having((i) => i.doneToday, 'done', true)
+            .having((i) => i.durationMinutes, 'minutes', 0),
+      );
     });
 
     test('without a day agent only the due tasks carry forward', () async {
@@ -577,6 +634,96 @@ void main() {
       expect(stored.text, 'Start with the invoices.');
       expect(stored.inputFingerprint, isNotEmpty);
     });
+
+    test(
+      'a due-only task moved in this session still reads as moved',
+      () async {
+        when(
+          () => captureService.applyTriage(
+            agentId: any(named: 'agentId'),
+            taskId: any(named: 'taskId'),
+            action: any(named: 'action'),
+            deferTo: any(named: 'deferTo'),
+          ),
+        ).thenAnswer((_) async => call);
+        final callMoved = _task('call', 'Call the bank', due: _tomorrow);
+        // After the decision the task is no longer due on the day, so the
+        // due query stops returning it.
+        stubDay(withPlan: false);
+        entities['call'] = callMoved;
+        await service.recordCarryoverDecision(
+          forDate: _day,
+          taskId: 'call',
+          action: CarryoverAction.tomorrow,
+        );
+
+        final day = await service.shutdownDay(_day);
+        await service.tomorrowNote(_day);
+
+        expect(day.carryover, isEmpty);
+        expect(
+          prompts.single,
+          contains('- Call the bank → dayplan-2026-10-04'),
+        );
+      },
+    );
+
+    test('an unplanned task dropped that day reads as dropped', () async {
+      stubDay(withPlan: false, closedSince: [gone]);
+
+      await service.tomorrowNote(_day);
+
+      expect(prompts.single, contains('Dropped by the user:\n- Gone'));
+    });
+
+    test(
+      'a spoken reflection reaches the note through its recordings',
+      () async {
+        JournalAudio recording(String id, int hour, String transcript) =>
+            JournalAudio(
+              meta: _meta(
+                id,
+                DateTime(2026, 10, 3, hour),
+                DateTime(2026, 10, 3, hour, 1),
+              ),
+              data: AudioData(
+                dateFrom: DateTime(2026, 10, 3, hour),
+                dateTo: DateTime(2026, 10, 3, hour, 1),
+                duration: const Duration(minutes: 1),
+                audioFile: '',
+                audioDirectory: '',
+                transcripts: [
+                  AudioTranscript(
+                    created: DateTime(2026, 10, 3, hour, 2),
+                    library: 'test',
+                    model: 'test',
+                    detectedLanguage: 'en',
+                    transcript: transcript,
+                  ),
+                ],
+              ),
+            );
+        stubDay(
+          reflection: _entry(_reflectionId, _day, 0, text: ''),
+          reflectionLinks: [
+            recording('later', 21, 'Mornings are best.'),
+            recording('earlier', 20, 'Calls drained me.'),
+            _entry('not-audio', _day, 5, text: 'Ignored link.'),
+          ],
+        );
+
+        await service.tomorrowNote(_day);
+
+        expect(
+          prompts.single,
+          contains(
+            "The user's reflection on the day:\n"
+            'Calls drained me.\n\nMornings are best.',
+          ),
+        );
+        expect(prompts.single, isNot(contains('Ignored link.')));
+      },
+    );
 
     test('the same facts reuse the stored note without a model call', () async {
       stubDay();

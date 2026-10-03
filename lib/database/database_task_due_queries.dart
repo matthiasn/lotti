@@ -33,6 +33,39 @@ mixin _JournalDbTaskDueQueries on _$JournalDb, _JournalDbConfigFlags {
     );
   }
 
+  /// Tasks now DONE or REJECTED whose row changed at or after [since] — the
+  /// candidates for "closed on a day" (Daily OS Shutdown). Each task's status
+  /// history decides when it actually closed; this read only narrows the set
+  /// through `idx_journal_task_status_private`, so it touches closed tasks
+  /// alone. A task closed that day and edited after it still qualifies,
+  /// because `updated_at` only moves forward.
+  Future<List<Task>> getTasksClosedSince(DateTime since) async {
+    final privateStatuses = await _visiblePrivateStatuses();
+    final variables = <Variable<Object>>[Variable<DateTime>(since)];
+    final buffer = StringBuffer()
+      ..write('SELECT * FROM journal ')
+      ..write("WHERE type = 'Task' ")
+      ..write('AND task = 1 ')
+      ..write('AND deleted = FALSE ')
+      ..write("AND task_status IN ('DONE', 'REJECTED') ")
+      ..write('AND updated_at >= ?1 ');
+    if (!_matchesAllPrivateStates(privateStatuses)) {
+      buffer.write('AND private IN (');
+      for (var i = 0; i < privateStatuses.length; i++) {
+        if (i > 0) buffer.write(', ');
+        variables.add(Variable<bool>(privateStatuses[i]));
+        buffer.write('?${variables.length}');
+      }
+      buffer.write(') ');
+    }
+    final rows = await customSelect(
+      buffer.toString(),
+      variables: variables,
+      readsFrom: {journal},
+    ).asyncMap(journal.mapFromRow).get();
+    return rows.map(fromDbEntity).whereType<Task>().toList(growable: false);
+  }
+
   /// Returns open task-corpus rows for Daily OS day-agent matching.
   ///
   /// The day-agent prompt embeds a bounded corpus snapshot, so this query

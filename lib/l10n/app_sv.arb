@@ -2352,7 +2352,7 @@
   "dailyOsNextShutdownCarryoverNotStarted": "Inte påbörjad",
   "dailyOsNextShutdownCarryoverOverline": "LÖPNINGAR FRAMÅT",
   "dailyOsNextShutdownCarryoverPickDate": "Välj ett datum",
-  "dailyOsNextShutdownCarryoverStarted": "Påbörjad — {minutes} min registrerade",
+  "dailyOsNextShutdownCarryoverStarted": "Påbörjad — {minutes} min registrerad tid",
   "dailyOsNextShutdownCarryoverTomorrow": "I morgon",
   "dailyOsNextShutdownCloseDay": "Avsluta dagen",
   "dailyOsNextShutdownCompletedDoneToday": "Klart i dag",

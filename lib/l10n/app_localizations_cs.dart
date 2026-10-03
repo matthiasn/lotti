@@ -5080,9 +5080,9 @@ class AppLocalizationsCs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count bloků',
-      few: '$count bloky',
-      one: '1 blok',
+      other: '$count relací',
+      few: '$count relace',
+      one: '1 relace',
     );
     return '$_temp0';
   }
@@ -5097,7 +5097,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextShutdownMetricEnergyNoRatings =>
-      'Ohodnoť bloky, abys ji viděl';
+      'Ohodnoť relace, abys viděl svou energii';
 
   @override
   String get dailyOsNextShutdownMetricFlow => 'FLOW RELACE';
