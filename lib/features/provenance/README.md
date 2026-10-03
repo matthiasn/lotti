@@ -10,8 +10,10 @@ who approved it.
 
 ## What exists today
 
-Phase 1 of the rollout: the cryptographic core, as a pure library. Nothing in
-the app calls it yet, so it changes no behaviour and needs no feature flag.
+Phase 1 of the rollout: the cryptographic core, as a pure library. No entry is
+signed or chained yet, so it changes no behaviour and needs no feature flag.
+GitHub pull request tracking reuses its canonical JSON to fingerprint a pull
+request snapshot; nothing else outside the feature calls it.
 
 - **Canonical JSON** (`crypto/canonical_json.dart`) — RFC 8785 for the values
   envelopes carry, and a strict parser that accepts only canonical bytes, so one

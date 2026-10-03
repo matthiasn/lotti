@@ -240,7 +240,7 @@ the refresh is the app's, the unlink is the user's.
   `github_token:`/`github_login:`, is moved into it once). It is never logged
   or exported. Settings → Advanced Settings → GitHub saves a token only after
   `GET /user` accepts it.
-- The token **syncs to the user's other devices** (ADR 0115), the way an
+- The token **syncs to the user's other devices** (ADR 0117), the way an
   inference provider's API key does: a `gitHubAccount` sync message, end-to-end
   encrypted, applied into the receiver's keychain, the later stamp winning
   (`specs/tla/GitHubAccountSync.tla`). Connecting sends it; disconnecting sends

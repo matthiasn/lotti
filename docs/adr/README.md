@@ -32,7 +32,10 @@ Every ADR is a file in this folder, and the zero-padded numbers keep
 `ls docs/adr` in order: that listing is the complete index. Do not add a line
 here for a new ADR. A list every pull request appends to made concurrent
 pull requests conflict over lines they do not share (the same reason release
-notes go in `changelog.d/`). The clusters below group ADRs that belong
+notes go in `changelog.d/`). Because the number is an ADR's identity, CI fails
+when two ADRs share one (`tool/ci/check_adr_numbers.dart`): if your pull request
+and another both took the next free number, renumber yours and update its
+citations. The clusters below group ADRs that belong
 together; add to them only when a decision joins one.
 
 ### Task graph decision cluster
