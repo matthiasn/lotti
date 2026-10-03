@@ -60,7 +60,13 @@ enum ImpactBreakdownView { both, category, model }
 /// and window switches never flash a loading shell over the established
 /// dashboard (the header/stepper always tracks the live selection).
 class ImpactAnalysisBody extends ConsumerStatefulWidget {
-  const ImpactAnalysisBody({super.key});
+  const ImpactAnalysisBody({this.showTitle = true, super.key});
+
+  /// Whether the body draws its own "AI Impact" page title. The dashboard
+  /// page has no app bar and needs it; the Settings detail pane already
+  /// names the panel in its breadcrumb, where a second title would repeat
+  /// it.
+  final bool showTitle;
 
   @override
   ConsumerState<ImpactAnalysisBody> createState() => _ImpactAnalysisBodyState();
@@ -159,6 +165,7 @@ class _ImpactAnalysisBodyState extends ConsumerState<ImpactAnalysisBody> {
         : null;
 
     return _DashboardContent(
+      showTitle: widget.showTitle,
       selection: selection,
       data: data,
       resolver: resolver,
@@ -252,6 +259,7 @@ String _previousPeriodLabel(
 
 class _DashboardContent extends StatelessWidget {
   const _DashboardContent({
+    required this.showTitle,
     required this.selection,
     required this.data,
     required this.resolver,
@@ -308,6 +316,9 @@ class _DashboardContent extends StatelessWidget {
 
   /// Which breakdown charts + tables to show (both / category / model).
   final ImpactBreakdownView breakdownView;
+
+  /// See [ImpactAnalysisBody.showTitle].
+  final bool showTitle;
 
   /// Whether a window load failed while the retained generation stays on
   /// screen — surfaced as a slim, non-blocking strip instead of an error
@@ -500,7 +511,8 @@ class _DashboardContent extends StatelessWidget {
         crossAxisAlignment: WrapCrossAlignment.center,
         runSpacing: tokens.spacing.step3,
         children: [
-          Text(messages.aiImpactTitle, style: calmPageTitleStyle(tokens)),
+          if (showTitle)
+            Text(messages.aiImpactTitle, style: calmPageTitleStyle(tokens)),
           // The stepper's segmented cluster + to-date pills are a fixed
           // intrinsic-width strip that cannot compress, so on panes
           // narrower than it (the phone-width Settings `ai-usage` panel)

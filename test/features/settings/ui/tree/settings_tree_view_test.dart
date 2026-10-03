@@ -1,0 +1,307 @@
+import 'dart:io';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/profiles/model/profile.dart';
+import 'package:lotti/features/profiles/model/profile_context.dart';
+import 'package:lotti/features/profiles/state/profile_providers.dart';
+import 'package:lotti/features/settings/state/settings_tree_controller.dart';
+import 'package:lotti/features/settings/ui/tree/settings_tree_node_widget.dart';
+import 'package:lotti/features/settings/ui/tree/settings_tree_row.dart';
+import 'package:lotti/features/settings/ui/tree/settings_tree_view.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/utils/consts.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../../widget_test_utils.dart';
+
+/// Stubs the feature flags the tree reads and pumps the view at a
+/// desktop-sized viewport.
+Future<void> _pumpView(
+  WidgetTester tester, {
+  Map<String, bool> flags = const {},
+  bool guestProfile = false,
+}) async {
+  tester.view.physicalSize = const Size(400, 900);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+
+  final mocks = await setUpTestGetIt();
+  addTearDown(tearDownTestGetIt);
+  when(() => mocks.journalDb.watchConfigFlag(any())).thenAnswer(
+    (invocation) {
+      final name = invocation.positionalArguments.first as String;
+      return Stream.value(flags[name] ?? false);
+    },
+  );
+
+  await tester.pumpWidget(
+    makeTestableWidgetNoScroll(
+      const Material(
+        child: SizedBox(
+          width: 400,
+          height: 900,
+          child: SettingsTreeView(),
+        ),
+      ),
+      overrides: [
+        journalDbProvider.overrideWithValue(mocks.journalDb),
+        if (guestProfile)
+          profileContextProvider.overrideWithValue(
+            ProfileContext.forProfile(
+              profile: Profile(
+                id: 'demo-guest',
+                type: ProfileType.guest,
+                name: 'Demo',
+                dirName: 'guest_profiles/demo-guest',
+                createdAt: DateTime(2026),
+              ),
+              root: Directory.systemTemp,
+            ),
+          ),
+      ],
+    ),
+  );
+  await tester.pump();
+}
+
+void main() {
+  group('SettingsTreeView — flag-off baseline', () {
+    testWidgets(
+      'renders every always-on top-level section (ai, definitions, '
+      'preferences, advanced)',
+      (tester) async {
+        await _pumpView(tester);
+        expect(find.text('AI Settings'), findsOneWidget);
+        expect(find.text('Definitions'), findsOneWidget);
+        expect(find.text('Preferences'), findsOneWidget);
+        expect(find.text('Advanced Settings'), findsOneWidget);
+        // Theming moved under Preferences. The branch is collapsed by
+        // default but its children stay mounted, so the row is still
+        // found — one level down, not at the root.
+        expect(find.text('Theming'), findsOneWidget);
+        expect(find.text('Manual'), findsOneWidget);
+        // Categories / Labels / Measurables / Config Flags moved off
+        // the root list — they now hang off the Definitions / Advanced
+        // branches. The branches are collapsed by default but the
+        // children are mounted (kept-alive for the expand/collapse
+        // animation), so `find.text` still locates them.
+        expect(find.text('Categories'), findsOneWidget);
+        expect(find.text('Labels'), findsOneWidget);
+        expect(find.text('Measurables'), findsOneWidget);
+        expect(find.text('Config Flags'), findsOneWidget);
+      },
+    );
+
+    testWidgets('does NOT render flag-gated sections when flags are off', (
+      tester,
+    ) async {
+      await _pumpView(tester);
+      expect(find.text("What's New"), findsNothing);
+      expect(find.text('Habits'), findsNothing);
+      expect(find.text('Dashboards'), findsNothing);
+      // Sync is gated all-or-nothing on enableMatrix: with the flag
+      // off, the whole Sync branch (and its conflicts leaf) is gone.
+      expect(find.text('Sync Settings'), findsNothing);
+    });
+  });
+
+  group('SettingsTreeView — flag-gated visibility', () {
+    testWidgets(
+      'enableMatrix on surfaces the entire Sync branch',
+      (tester) async {
+        await _pumpView(tester, flags: {enableMatrixFlag: true});
+        // Sync is all-or-nothing on the matrix flag.
+        expect(find.text('Sync Settings'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'guest world renders the sync-unavailable explainer instead of the '
+      'Sync branch — even with enableMatrix on — and throws nowhere',
+      (tester) async {
+        await _pumpView(
+          tester,
+          flags: {enableMatrixFlag: true},
+          guestProfile: true,
+        );
+        // The tile keeps the Sync title but carries the demo explainer
+        // and none of the branch children.
+        expect(find.text('Sync Settings'), findsOneWidget);
+        expect(
+          find.text('Sync is not available in the demo workspace'),
+          findsOneWidget,
+        );
+        expect(find.text('Sync health'), findsNothing);
+        expect(find.text('Sync Outbox'), findsNothing);
+        // Nothing in the tree resolved the absent MatrixService.
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('enableHabits on surfaces the Habits leaf', (tester) async {
+      await _pumpView(tester, flags: {enableHabitsPageFlag: true});
+      expect(find.text('Habits'), findsOneWidget);
+    });
+
+    testWidgets('enableDashboards on surfaces the Dashboards leaf', (
+      tester,
+    ) async {
+      await _pumpView(tester, flags: {enableDashboardsPageFlag: true});
+      expect(find.text('Dashboards'), findsOneWidget);
+    });
+
+    testWidgets("enableWhatsNew on surfaces the What's New leaf", (
+      tester,
+    ) async {
+      await _pumpView(tester, flags: {enableWhatsNewFlag: true});
+      expect(find.text("What's New"), findsOneWidget);
+    });
+  });
+
+  group('SettingsTreeView — root node widgets', () {
+    testWidgets(
+      'every root node renders through SettingsTreeNodeWidget (not raw rows)',
+      (tester) async {
+        // With every flag off the root list is the always-on set
+        // declared in `buildSettingsTree`: onboarding, sections, ai, agents,
+        // daily-os, definitions, preferences, advanced, manual. Sync is gated
+        // on enableMatrix so it drops out when the flag is off; onboarding and
+        // sections are unconditional (the welcome has no flag, and the page
+        // that turns features on cannot be gated behind one). A depth-0
+        // `SettingsTreeNodeWidget` per root proves every entry rendered
+        // through the widget, not a raw row.
+        await _pumpView(tester);
+        final rootNodeFinder = find.byWidgetPredicate(
+          (w) => w is SettingsTreeNodeWidget && w.depth == 0,
+        );
+        expect(rootNodeFinder, findsNWidgets(9));
+        for (final title in const [
+          'Sections',
+          'AI Settings',
+          'Agents',
+          'Daily OS',
+          'Definitions',
+          'Preferences',
+          'Advanced Settings',
+          'Manual',
+        ]) {
+          expect(
+            find.descendant(of: rootNodeFinder, matching: find.text(title)),
+            findsOneWidget,
+            reason: 'root node "$title" should render through the widget',
+          );
+        }
+      },
+    );
+
+    testWidgets(
+      'tapping a root leaf updates settingsTreePathProvider to its id',
+      (tester) async {
+        // Daily OS is the remaining leaf at the root level, so tapping
+        // its row sets a single-segment path. (Config Flags moved under
+        // Advanced, and Theming under Preferences — neither is reachable
+        // now without expanding its branch first.)
+        await _pumpView(tester);
+        final dailyOsRow = find.ancestor(
+          of: find.text('Daily OS'),
+          matching: find.byType(SettingsTreeRow),
+        );
+        await tester.tap(dailyOsRow);
+        await tester.pump();
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(SettingsTreeView)),
+          listen: false,
+        );
+        expect(container.read(settingsTreePathProvider), ['daily-os']);
+      },
+    );
+
+    testWidgets(
+      'expanding Preferences and tapping Theming selects it through the '
+      'branch',
+      (tester) async {
+        // Theming now lives one level down, so reaching it is two taps
+        // and its selection path is two segments. Getting the second
+        // segment wrong is what would leave the desktop sidebar
+        // highlighting nothing after a tap.
+        await _pumpView(tester);
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(SettingsTreeView)),
+          listen: false,
+        );
+
+        await tester.tap(
+          find.ancestor(
+            of: find.text('Preferences'),
+            matching: find.byType(SettingsTreeRow),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(container.read(settingsTreePathProvider), ['preferences']);
+
+        await tester.tap(
+          find.ancestor(
+            of: find.text('Theming'),
+            matching: find.byType(SettingsTreeRow),
+          ),
+        );
+        await tester.pump();
+        expect(container.read(settingsTreePathProvider), [
+          'preferences',
+          'preferences/theming',
+        ]);
+      },
+    );
+
+    testWidgets(
+      'the collapsed Preferences branch does not select its children',
+      (tester) async {
+        // Children stay mounted while the branch is collapsed (the
+        // expand animation keeps them alive), so a hit test at a child's
+        // nominal position must not reach it. Without this, "tap
+        // Theming" would silently land on whatever row occupies that
+        // pixel — which is exactly how the first draft of the test
+        // above selected Advanced instead.
+        await _pumpView(tester);
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(SettingsTreeView)),
+          listen: false,
+        );
+        expect(container.read(settingsTreePathProvider), isEmpty);
+        final themingRow = find.ancestor(
+          of: find.text('Theming'),
+          matching: find.byType(SettingsTreeRow),
+        );
+        // Mounted (so `find.text` locates it) but clipped away by the
+        // collapsed branch, hence unreachable by a pointer.
+        expect(themingRow, findsOneWidget);
+        expect(themingRow.hitTestable(), findsNothing);
+      },
+    );
+
+    testWidgets('separates the final Manual action with a tokenized gap', (
+      tester,
+    ) async {
+      await _pumpView(tester);
+
+      final advancedRow = find.ancestor(
+        of: find.text('Advanced Settings'),
+        matching: find.byType(SettingsTreeRow),
+      );
+      final manualRow = find.ancestor(
+        of: find.text('Manual'),
+        matching: find.byType(SettingsTreeRow),
+      );
+      final gap =
+          tester.getTopLeft(manualRow).dy -
+          tester.getBottomLeft(advancedRow).dy;
+      final context = tester.element(find.byType(SettingsTreeView));
+
+      expect(gap, context.designTokens.spacing.step6);
+    });
+  });
+}

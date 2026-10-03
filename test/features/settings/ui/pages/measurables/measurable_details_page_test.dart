@@ -56,7 +56,7 @@ void main() {
       () => mockPersistenceLogic.upsertEntityDefinition(any()),
     ).thenAnswer((_) async => 1);
 
-    // Back/cancel/save/delete beam to the list route (V2's desktop detail
+    // Back/cancel/save/delete beam to the list route (the desktop detail
     // surface mounts the page inline; there is no Navigator route to pop).
     beamedTo = null;
     beamToNamedOverride = (path) => beamedTo = path;

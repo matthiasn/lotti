@@ -121,9 +121,9 @@ pages that send the reader to a leaf that is switched off by default.
 Measurables all hang off **Settings → Definitions** rather than off the Settings
 root — though only three of the five are always present, see (b):
 
-- `lib/features/settings_v2/domain/settings_tree_data.dart:206-242` — the
+- `lib/features/settings/domain/settings_tree_data.dart:206-242` — the
   `definitions` branch and its five declared leaves.
-- `lib/features/settings_v2/domain/settings_tree_index.dart:36-61` — leaf ids
+- `lib/features/settings/domain/settings_tree_index.dart:36-61` — leaf ids
   are namespaced `definitions/…` while their deep-link URLs stay flat.
 
 | Page | Says | Actual |
@@ -138,9 +138,9 @@ root — though only three of the five are always present, see (b):
 **(b) Two of those leaves do not exist on a default install.** The Habits and
 Dashboards leaves are config-gated, and both flags ship **off**:
 
-- `lib/features/settings_v2/domain/settings_tree_data.dart:226`, `:232` —
+- `lib/features/settings/domain/settings_tree_data.dart:226`, `:232` —
   `if (enableHabits)` and `if (enableDashboards)` wrap the two leaves.
-- `lib/features/settings_v2/ui/settings_tree_builder.dart:22-25` — both are fed
+- `lib/features/settings/ui/settings_tree_builder.dart:22-25` — both are fed
   from `configFlagProvider(enableHabitsPageFlag)` /
   `configFlagProvider(enableDashboardsPageFlag)`.
 - `lib/database/journal_db/config_flags.dart:75-85` — both are seeded

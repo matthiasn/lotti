@@ -13,7 +13,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 /// Mobile / legacy wrapper. Keeps the `SliverBoxAdapterPage` chrome
 /// and delegates content to [AboutBody] so the same widget can be
-/// rendered inside the Settings V2 detail pane (plan step 7).
+/// rendered inside the desktop settings detail pane.
 class AboutPage extends StatelessWidget {
   const AboutPage({super.key});
 
@@ -29,7 +29,7 @@ class AboutPage extends StatelessWidget {
 
 /// Content body for the About page: gradient header with the app
 /// name + tagline, version info, and entry/task counts. Extracted
-/// from [AboutPage] so the V2 detail pane can host it.
+/// from [AboutPage] so the desktop detail pane can host it.
 class AboutBody extends StatefulWidget {
   const AboutBody({super.key});
 

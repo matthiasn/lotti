@@ -14258,19 +14258,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsThemingTitle => 'Theming';
 
   @override
-  String get settingsV2CategoryEmptyBody => 'Pick a sub-setting on the left.';
+  String get settingsTreeCategoryEmptyBody => 'Pick a sub-setting on the left.';
 
   @override
-  String get settingsV2DetailRootCrumb => 'Settings';
+  String get settingsTreeRootCrumb => 'Settings';
 
   @override
-  String get settingsV2EmptyStateBody => 'Pick a section on the left to begin.';
+  String get settingsTreeEmptyStateBody =>
+      'Pick a section on the left to begin.';
 
   @override
-  String get settingsV2ResizeHandleLabel => 'Resize settings tree';
-
-  @override
-  String get settingsV2UnimplementedTitle => 'Panel not yet implemented';
+  String get settingsTreeResizeHandleLabel => 'Resize settings tree';
 
   @override
   String get settingsWhatsNewSubtitle => 'See the latest updates and features';

@@ -16,35 +16,34 @@ import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_page.d
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/daily_os_settings_page.dart';
+import 'package:lotti/features/dashboards/ui/settings/create_dashboard_page.dart';
+import 'package:lotti/features/dashboards/ui/settings/dashboard_definition_page.dart';
+import 'package:lotti/features/dashboards/ui/settings/dashboard_settings_page.dart';
 import 'package:lotti/features/habits/ui/pages/habit_editor_page.dart';
+import 'package:lotti/features/habits/ui/pages/habit_settings_page.dart';
 import 'package:lotti/features/keyboard/ui/keyboard_shortcuts_page.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
+import 'package:lotti/features/notifications/ui/notification_settings_page.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_metrics_page.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_settings_panel.dart';
+import 'package:lotti/features/onboarding/ui/recording_style_settings_page.dart';
 import 'package:lotti/features/projects/ui/pages/project_detail_page.dart';
+import 'package:lotti/features/settings/routing/settings_routes.dart';
+import 'package:lotti/features/settings/ui/mobile/settings_mobile_branch_page.dart';
+import 'package:lotti/features/settings/ui/mobile/settings_mobile_root_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/celebration_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/manual_language_settings_page.dart';
-import 'package:lotti/features/settings/ui/pages/dashboards/create_dashboard_page.dart';
-import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
-import 'package:lotti/features/settings/ui/pages/dashboards/dashboards_page.dart';
 import 'package:lotti/features/settings/ui/pages/flags_page.dart';
-import 'package:lotti/features/settings/ui/pages/habits/habits_page.dart';
 import 'package:lotti/features/settings/ui/pages/health_import_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_create_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
-import 'package:lotti/features/settings/ui/pages/notification_settings_page.dart';
-import 'package:lotti/features/settings/ui/pages/recording_style_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/sections_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
-import 'package:lotti/features/settings/ui/pages/theming_page.dart';
-import 'package:lotti/features/settings_v2/domain/settings_tree_index.dart';
-import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_branch_page.dart';
-import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_root_page.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
 import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_route.dart';
@@ -55,6 +54,7 @@ import 'package:lotti/features/sync/ui/provisioned_sync_page.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_feature_gate.dart';
 import 'package:lotti/features/system_health/ui/system_health_page.dart';
+import 'package:lotti/features/theming/ui/theming_page.dart';
 import 'package:lotti/features/tts/ui/speech_settings_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -71,6 +71,27 @@ import '../../mocks/mocks.dart';
 const ValueKey<String> definitionsHubKey = ValueKey('settings-definitions');
 const ValueKey<String> preferencesHubKey = ValueKey('settings-preferences');
 const ValueKey<String> advancedHubKey = ValueKey('settings-advanced');
+
+/// The hub URLs and branch leaf URLs, read out of the route registry so a
+/// leaf added there is covered by every table below without an edit here.
+final String definitionsHubUrl = settingsRoutes.nodeUrls['definitions']!;
+final String preferencesHubUrl = settingsRoutes.nodeUrls['preferences']!;
+final String advancedHubUrl = settingsRoutes.nodeUrls['advanced']!;
+
+List<String> _leafUrlsOf(String branch) => [
+  for (final MapEntry(:key, :value) in settingsRoutes.nodeUrls.entries)
+    if (key.startsWith('$branch/')) value,
+];
+
+final List<String> definitionsLeafPaths = _leafUrlsOf('definitions');
+final List<String> preferencesLeafPaths = _leafUrlsOf('preferences');
+
+/// Advanced leaves whose URL does not nest under the hub's — the shape
+/// Beamer's one-segment default pop used to get wrong.
+final List<String> advancedFlatLeafPaths = [
+  for (final url in _leafUrlsOf('advanced'))
+    if (!url.startsWith('$advancedHubUrl/')) url,
+];
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -119,85 +140,98 @@ void main() {
       }
     });
 
-    test('pathPatterns are correct', () {
+    test('every settings URL that has shipped is still a route', () {
       final location = SettingsLocation(
         RouteInformation(uri: Uri.parse('/settings')),
       );
-      expect(location.pathPatterns, [
-        '/settings',
-        '/settings/onboarding',
-        '/settings/ai',
-        '/settings/ai/profiles',
-        // AI Settings detail surfaces — added in v4 so per-kind detail
-        // pages can be deep-linked / bookmarked / picked up by the
-        // desktop master/detail panel dispatcher.
-        '/settings/ai/provider/:providerId',
-        '/settings/ai/model/:modelId',
-        '/settings/ai/profile/:profileId',
-        '/settings/sync',
-        '/settings/sync/provisioned',
-        '/settings/sync/matrix/maintenance',
-        '/settings/sync/node-profile',
-        '/settings/sync/backfill',
-        '/settings/sync/stats',
-        '/settings/sync/outbox',
-        '/settings/categories',
-        '/settings/categories/:categoryId',
-        '/settings/categories/create',
-        '/settings/projects/:projectId',
-        '/settings/labels',
-        '/settings/labels/create',
-        '/settings/labels/:labelId',
-        '/settings/dashboards',
-        '/settings/dashboards/:dashboardId',
-        '/settings/dashboards/create',
-        '/settings/measurables',
-        '/settings/measurables/:measurableId',
-        '/settings/measurables/create',
-        '/settings/habits',
-        '/settings/habits/by_id/:habitId',
-        '/settings/habits/create',
-        '/settings/habits/search/:searchTerm',
-        '/settings/agents',
-        // Bare per-tab landings — Settings V2 tree leaves under
-        // `agents` canonicalize to these and the in-page tab bar
-        // beams here when the user switches tabs on desktop.
-        '/settings/agents/templates',
-        '/settings/agents/instances',
-        '/settings/agents/souls',
-        '/settings/agents/pending-wakes',
-        '/settings/agents/templates/create',
-        '/settings/agents/templates/:templateId',
-        '/settings/agents/templates/:templateId/review',
-        '/settings/agents/souls/create',
-        '/settings/agents/souls/:soulId',
-        '/settings/agents/souls/:soulId/review',
-        '/settings/agents/instances/:agentId',
-        '/settings/daily-os',
-        '/settings/sections',
-        '/settings/flags',
-        '/settings/notifications',
-        '/settings/recording-style',
-        '/settings/theming',
-        '/settings/keyboard-shortcuts',
-        '/settings/speech',
-        '/settings/definitions',
-        '/settings/preferences',
-        '/settings/advanced',
-        '/settings/advanced/animations',
-        '/settings/advanced/github',
-        '/settings/advanced/manual-language',
-        '/settings/advanced/logging_domains',
-        '/settings/advanced/system_health',
-        '/settings/advanced/conflicts/:conflictId',
-        '/settings/advanced/conflicts',
-        '/settings/advanced/maintenance',
-        '/settings/advanced/onboarding_metrics',
-        '/settings/health_import',
-        // Legacy alias kept so hand-edited bookmarks that hit the
-        // pattern advertised on `main` still render the MaintenancePage.
-        '/settings/maintenance',
-      ]);
+      // The patterns are derived from the route registry now; this list is
+      // the deep-link contract they must keep honouring. Removing a URL here
+      // breaks bookmarks, restored navigation state and manual links.
+      expect(
+        location.pathPatterns,
+        containsAll(<String>[
+          '/settings',
+          '/settings/onboarding',
+          '/settings/ai',
+          '/settings/ai/profiles',
+          // AI Settings detail surfaces — added in v4 so per-kind detail
+          // pages can be deep-linked / bookmarked / picked up by the
+          // desktop master/detail panel dispatcher.
+          '/settings/ai/provider/:providerId',
+          '/settings/ai/model/:modelId',
+          '/settings/ai/profile/:profileId',
+          '/settings/sync',
+          '/settings/sync/provisioned',
+          '/settings/sync/matrix/maintenance',
+          '/settings/sync/node-profile',
+          '/settings/sync/backfill',
+          '/settings/sync/stats',
+          '/settings/sync/outbox',
+          '/settings/categories',
+          '/settings/categories/:categoryId',
+          '/settings/categories/create',
+          '/settings/projects/:projectId',
+          '/settings/labels',
+          '/settings/labels/create',
+          '/settings/labels/:labelId',
+          '/settings/dashboards',
+          '/settings/dashboards/:dashboardId',
+          '/settings/dashboards/create',
+          '/settings/measurables',
+          '/settings/measurables/:measurableId',
+          '/settings/measurables/create',
+          '/settings/habits',
+          '/settings/habits/by_id/:habitId',
+          '/settings/habits/create',
+          '/settings/habits/search/:searchTerm',
+          '/settings/agents',
+          // Bare per-tab landings — settings tree leaves under
+          // `agents` canonicalize to these and the in-page tab bar
+          // beams here when the user switches tabs on desktop.
+          '/settings/agents/templates',
+          '/settings/agents/instances',
+          '/settings/agents/souls',
+          '/settings/agents/pending-wakes',
+          '/settings/agents/templates/create',
+          '/settings/agents/templates/:templateId',
+          '/settings/agents/templates/:templateId/review',
+          '/settings/agents/souls/create',
+          '/settings/agents/souls/:soulId',
+          '/settings/agents/souls/:soulId/review',
+          '/settings/agents/instances/:agentId',
+          '/settings/daily-os',
+          '/settings/sections',
+          '/settings/flags',
+          '/settings/notifications',
+          '/settings/recording-style',
+          '/settings/theming',
+          '/settings/keyboard-shortcuts',
+          '/settings/speech',
+          '/settings/definitions',
+          '/settings/preferences',
+          '/settings/advanced',
+          '/settings/advanced/animations',
+          '/settings/advanced/github',
+          '/settings/advanced/manual-language',
+          '/settings/advanced/logging_domains',
+          '/settings/advanced/system_health',
+          '/settings/advanced/conflicts/:conflictId',
+          '/settings/advanced/conflicts',
+          '/settings/advanced/maintenance',
+          '/settings/advanced/onboarding_metrics',
+          '/settings/health_import',
+          // Legacy alias kept so hand-edited bookmarks that hit the
+          // pattern advertised on `main` still render the MaintenancePage.
+          '/settings/maintenance',
+        ]),
+      );
+    });
+
+    test('the registry declares each pattern once', () {
+      final patterns = SettingsLocation(
+        RouteInformation(uri: Uri.parse('/settings')),
+      ).pathPatterns;
+      expect(patterns.toSet(), hasLength(patterns.length));
     });
 
     test(
@@ -209,11 +243,14 @@ void main() {
         final location = SettingsLocation(routeInformation);
         final beamState = BeamState.fromRouteInformation(routeInformation);
         final pages = location.buildPages(mockBuildContext, beamState);
-        // Settings root + MaintenancePage. The old URL never pushed an
-        // Advanced intermediate page, so the stack is 2 pages deep.
-        expect(pages.length, 2);
+        // The alias resolves to the canonical URL, so the bookmark gets the
+        // same stack — Advanced hub included — and a back tap walks up to
+        // the hub like it does from the real Maintenance URL.
+        expect(pages.length, 3);
         expect(pages[0].child, isA<SettingsMobileRootPage>());
-        expect(pages[1].child, isA<MaintenancePage>());
+        expect(pages[1].key, advancedHubKey);
+        expect(pages[2].child, isA<MaintenancePage>());
+        expect(pages[2].popToNamed, advancedHubUrl);
       },
     );
 
@@ -538,26 +575,24 @@ void main() {
       );
 
       testWidgets(
-        'the AI Settings list itself sets no popToNamed — it is one segment '
-        'deep, so Beamer default single-segment pop already lands on '
-        '/settings',
+        'the AI Settings list pops to the Settings root by name, like every '
+        'other page — no page relies on the one-segment default pop',
         (tester) async {
           final pages = await buildFor(tester, aiListUrl);
 
           expect(pages.last.child, isA<AiSettingsPage>());
-          expect(pages.last.popToNamed, isNull);
+          expect(pages.last.popToNamed, '/settings');
         },
       );
 
       testWidgets(
-        'the legacy /settings/ai/profiles leaf sets no popToNamed either — '
-        'it is one segment deep, and it now keeps the list beneath it so '
-        'the default pop reveals that page rather than swapping it',
+        'the legacy /settings/ai/profiles leaf pops to the AI list it keeps '
+        'beneath it, so the pop reveals that page rather than swapping it',
         (tester) async {
           final pages = await buildFor(tester, '/settings/ai/profiles');
 
           expect(pages.last.child, isA<InferenceProfilePage>());
-          expect(pages.last.popToNamed, isNull);
+          expect(pages.last.popToNamed, aiListUrl);
           expect(pages[1].key, const ValueKey('settings-ai'));
         },
       );
@@ -662,7 +697,7 @@ void main() {
           // it. A pushed `settings-ai` here would mean the leaf had been
           // swapped for a new list — the wrong-transition symptom.
           expect(observer.pushedKeys, isEmpty);
-          expect(observer.goneKeys, const [ValueKey('settings-ai-profiles')]);
+          expect(observer.goneKeys, const [ValueKey('settings-ai/profiles')]);
         },
       );
 
@@ -774,70 +809,6 @@ void main() {
       expect(advancedHubUrl, '/settings/advanced');
     });
 
-    group('settingsBranchHubOf names the hub a leaf returns to', () {
-      for (final (leaf, hub, _) in branchLeaves) {
-        test('$leaf -> $hub', () {
-          expect(settingsBranchHubOf(leaf), hub);
-        });
-      }
-
-      test(
-        'animations resolves to Preferences, not the Advanced hub its URL '
-        'sits under — the branch is a property of the leaf, not the path',
-        () {
-          expect(
-            settingsBranchHubOf('/settings/advanced/animations'),
-            preferencesHubUrl,
-          );
-          expect(
-            settingsBranchHubOf('/settings/advanced/maintenance'),
-            advancedHubUrl,
-          );
-        },
-      );
-
-      test(
-        'a detail URL under a leaf still names the hub, for the list page '
-        'sitting beneath it in the stack',
-        () {
-          expect(
-            settingsBranchHubOf('/settings/categories/cat-1'),
-            definitionsHubUrl,
-          );
-          expect(
-            settingsBranchHubOf('/settings/habits/by_id/h-1'),
-            definitionsHubUrl,
-          );
-        },
-      );
-
-      // A hub naming itself would make its own back tap a no-op, trapping
-      // the user on the hub.
-      for (final hub in [
-        definitionsHubUrl,
-        preferencesHubUrl,
-        advancedHubUrl,
-      ]) {
-        test('the $hub hub itself names no destination', () {
-          expect(settingsBranchHubOf(hub), isNull);
-        });
-      }
-
-      for (final outside in const [
-        '/settings',
-        '/settings/ai',
-        '/settings/ai/provider/gemini-1',
-        '/settings/sync/backfill',
-        '/settings/agents',
-        '/settings/onboarding',
-        '/settings/daily-os',
-      ]) {
-        test('$outside is not in a hub branch, so it names no destination', () {
-          expect(settingsBranchHubOf(outside), isNull);
-        });
-      }
-    });
-
     group('branch leaf pages declare their hub as popToNamed', () {
       List<BeamPage> buildFor(String uri) {
         final routeInformation = RouteInformation(uri: Uri.parse(uri));
@@ -858,8 +829,8 @@ void main() {
         preferencesHubUrl,
         advancedHubUrl,
       ]) {
-        test('the $hub hub sets none — its default pop reaches /settings', () {
-          expect(buildFor(hub).last.popToNamed, isNull);
+        test('the $hub hub pops to the Settings root', () {
+          expect(buildFor(hub).last.popToNamed, '/settings');
         });
       }
 
@@ -878,11 +849,12 @@ void main() {
           );
 
           expect(pages, hasLength(4));
-          expect(pages[2].key, const ValueKey('settings-categories'));
+          expect(
+            pages[2].key,
+            const ValueKey('settings-definitions/categories'),
+          );
           expect(pages[2].popToNamed, definitionsHubUrl);
-          // No destination of its own: the default single-segment pop from
-          // `/settings/categories/cat-1` already reaches the list.
-          expect(pages[3].popToNamed, isNull);
+          expect(pages[3].popToNamed, '/settings/categories');
         },
       );
     });
@@ -891,6 +863,22 @@ void main() {
     /// [Navigator] — the layer that actually consumes `popToNamed`. Children
     /// are placeholders ([_RoutingOnlySettingsLocation]); every routing input
     /// Beamer reads still comes from the production location.
+    /// Every Sync leaf whose URL nests under the Sync hub, read out of the
+    /// tree's own URL table so a new one is covered without touching this
+    /// file. Matrix maintenance is the one that is three segments deep —
+    /// `/settings/sync/matrix/maintenance` — and therefore the one Beamer's
+    /// one-segment default pop strands on `/settings/sync/matrix`.
+    final syncLeaves = [
+      for (final MapEntry(:key, :value) in settingsRoutes.nodeUrls.entries)
+        if (key.startsWith('sync/') && value.startsWith('/settings/sync/'))
+          value,
+    ];
+    const syncHubKey = ValueKey('settings-sync');
+
+    test('the sync leaf table includes the three-segment URL', () {
+      expect(syncLeaves, contains('/settings/sync/matrix/maintenance'));
+    });
+
     group('branch back navigation through a real Beamer navigator', () {
       late BeamerDelegate delegate;
       late _RouteRecordingObserver observer;
@@ -969,7 +957,10 @@ void main() {
           await tapBack(tester);
 
           expect(observer.pushedKeys, isEmpty);
-          expect(observer.goneKeys, const [ValueKey('settings-categories')]);
+          expect(
+            observer.goneKeys,
+            const [ValueKey('settings-definitions/categories')],
+          );
         },
       );
 
@@ -1045,6 +1036,36 @@ void main() {
           expect(pageKeys(), const [ValueKey('settings'), advancedHubKey]);
         },
       );
+
+      for (final leaf in syncLeaves) {
+        testWidgets(
+          'leaving $leaf takes two back taps: the Sync hub once, then the '
+          'Settings root — never the Sync hub a second time',
+          (tester) async {
+            await openLeaf(tester, '/settings/sync', leaf);
+            expect(delegate.currentPages, hasLength(3));
+
+            observer.reset();
+            await tapBack(tester);
+
+            expect(delegate.configuration.uri.path, '/settings/sync');
+            expect(pageKeys(), const [ValueKey('settings'), syncHubKey]);
+            expect(observer.pushedKeys, isEmpty);
+
+            observer.reset();
+            await tapBack(tester);
+
+            expect(delegate.configuration.uri.path, '/settings');
+            expect(pageKeys(), const [ValueKey('settings')]);
+            // The reported symptom: the second tap animated the hub out and
+            // pushed an identical hub straight back in, so Sync Settings
+            // slid in from the side a second time instead of the Settings
+            // root being revealed.
+            expect(observer.pushedKeys, isEmpty);
+            expect(observer.goneKeys, const [syncHubKey]);
+          },
+        );
+      }
     });
 
     test('buildPages builds the sync branch hub from the shared tree', () {
@@ -1333,7 +1354,7 @@ void main() {
       expect(pages[3].child, isA<CreateMeasurablePage>());
     });
 
-    test('buildPages builds HabitsPage', () {
+    test('buildPages builds HabitSettingsPage', () {
       final routeInformation = RouteInformation(
         uri: Uri.parse('/settings/habits'),
       );
@@ -1350,10 +1371,10 @@ void main() {
         (pages[1].child as SettingsMobileBranchPage).branchId,
         'definitions',
       );
-      expect(pages[2].child, isA<HabitsPage>());
+      expect(pages[2].child, isA<HabitSettingsPage>());
     });
 
-    test('buildPages builds HabitsPage with search term', () {
+    test('buildPages builds HabitSettingsPage with search term', () {
       final routeInformation = RouteInformation(
         uri: Uri.parse('/settings/habits/search/test'),
       );
@@ -1373,12 +1394,13 @@ void main() {
         (pages[1].child as SettingsMobileBranchPage).branchId,
         'definitions',
       );
-      expect(pages[2].child, isA<HabitsPage>());
-      final habitsPage = pages[2].child as HabitsPage;
+      expect(pages[2].child, isA<HabitSettingsPage>());
+      final habitsPage = pages[2].child as HabitSettingsPage;
       expect(habitsPage.initialSearchTerm, 'test');
-      // Beamer's default pop walks one URI segment at a time, which would
-      // strand the route on the dead `/settings/habits/search` URI.
-      expect(pages[2].popToNamed, '/settings/habits');
+      // The filtered list takes the list's place in the stack, so leaving it
+      // uncovers the hub beneath — never the dead `/settings/habits/search`
+      // URI, and never a second, unfiltered list pushed in on a back tap.
+      expect(pages[2].popToNamed, definitionsHubUrl);
     });
 
     test('buildPages builds the habit editor for an existing habit', () {
@@ -1401,7 +1423,7 @@ void main() {
         (pages[1].child as SettingsMobileBranchPage).branchId,
         'definitions',
       );
-      expect(pages[2].child, isA<HabitsPage>());
+      expect(pages[2].child, isA<HabitSettingsPage>());
       final editor = pages[3].child as HabitEditorPage;
       expect(editor.habitId, 'habit-123');
       expect(editor.isCreate, isFalse);
@@ -1431,7 +1453,7 @@ void main() {
         (pages[1].child as SettingsMobileBranchPage).branchId,
         'definitions',
       );
-      expect(pages[2].child, isA<HabitsPage>());
+      expect(pages[2].child, isA<HabitSettingsPage>());
       final editor = pages[3].child as HabitEditorPage;
       expect(editor.isCreate, isTrue);
       expect(editor.returnPath, '/settings/habits');
@@ -1775,10 +1797,10 @@ void main() {
     test(
       'the preferences hub does not leak into unrelated settings stacks',
       () {
-        // `_inPreferencesBranch` matches on explicit leaf URLs, so a
-        // route that merely *contains* one of those words — or that
-        // shares the `/settings/advanced/` prefix animations kept — must
-        // not push the hub.
+        // The hub comes from the tree path a URL resolves to, never from
+        // the URL's shape: a route that merely *contains* a preference word
+        // — or shares the `/settings/advanced/` prefix animations kept —
+        // must not push it.
         for (final url in const [
           '/settings/advanced',
           '/settings/advanced/maintenance',
@@ -1802,10 +1824,9 @@ void main() {
     test(
       'a preference URL with a trailing segment still stacks under the hub',
       () {
-        // `_inPreferencesBranch` matches `path.startsWith('<leaf>/')` as
-        // well as an exact hit, so a deep link that carries a
-        // panel-local suffix keeps the hub beneath it rather than
-        // dropping the user back at the Settings root on the way out.
+        // A trailing segment past a node URL is panel-local, so a deep link
+        // that carries one keeps the hub beneath it rather than dropping
+        // the user back at the Settings root on the way out.
         final routeInformation = RouteInformation(
           uri: Uri.parse('/settings/theming/anything'),
         );
@@ -2017,14 +2038,13 @@ void main() {
         mockBuildContext,
         beamState,
       );
+      // Conflicts hang under Sync in the tree; the URL kept its old
+      // `/settings/advanced/` spelling, but the hub beneath is the tree's.
       expect(pages.length, 3);
       expect(pages[0].child, isA<SettingsMobileRootPage>());
-      expect(pages[1].child, isA<SettingsMobileBranchPage>());
-      expect(
-        (pages[1].child as SettingsMobileBranchPage).branchId,
-        'advanced',
-      );
+      expect(pages[1].key, const ValueKey('settings-sync'));
       expect(pages[2].child, isA<ConflictsPage>());
+      expect(pages[2].popToNamed, '/settings/sync');
     });
 
     test('buildPages builds ConflictDetailRoute', () {
@@ -2042,13 +2062,10 @@ void main() {
       );
       expect(pages.length, 4);
       expect(pages[0].child, isA<SettingsMobileRootPage>());
-      expect(pages[1].child, isA<SettingsMobileBranchPage>());
-      expect(
-        (pages[1].child as SettingsMobileBranchPage).branchId,
-        'advanced',
-      );
+      expect(pages[1].key, const ValueKey('settings-sync'));
       expect(pages[2].child, isA<ConflictsPage>());
       expect(pages[3].child, isA<ConflictDetailRoute>());
+      expect(pages[3].popToNamed, '/settings/advanced/conflicts');
       expect((pages[3].child as ConflictDetailRoute).versionKey, isNull);
     });
 
@@ -2070,7 +2087,9 @@ void main() {
       expect(detail.versionKey, 'hA:1,hB:2');
       expect(
         pages.last.key,
-        const ValueKey('settings-conflict-conflict-123@hA:1,hB:2'),
+        const ValueKey(
+          'settings-sync/conflicts:conflict-123?version=hA%3A1%2ChB%3A2',
+        ),
       );
     });
 
@@ -2124,12 +2143,16 @@ void main() {
         mockBuildContext,
         beamState,
       );
-      expect(pages.length, 3);
+      // The review stacks above the soul it belongs to, exactly as a
+      // template's review does, so a back tap returns to that soul.
+      expect(pages.length, 4);
       expect(pages[0].child, isA<SettingsMobileRootPage>());
       expect(pages[1].child, isA<AgentSettingsPage>());
-      expect(pages[2].child, isA<SoulEvolutionReviewPage>());
-      final reviewPage = pages[2].child as SoulEvolutionReviewPage;
+      expect(pages[2].child, isA<AgentSoulDetailPage>());
+      expect(pages[3].child, isA<SoulEvolutionReviewPage>());
+      final reviewPage = pages[3].child as SoulEvolutionReviewPage;
       expect(reviewPage.soulId, 'soul-789');
+      expect(pages[3].popToNamed, '/settings/agents/souls/soul-789');
     });
 
     test('buildPages builds EvolutionReviewPage for template review', () {

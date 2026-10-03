@@ -1,0 +1,66 @@
+import 'package:flutter/foundation.dart';
+
+/// Shared visual constants for the settings tree views.
+///
+/// Every fixed dp / ms / alpha literal referenced from more than one
+/// widget — or pinned by the spec — lives here so widgets stay free of
+/// magic numbers and callers can trust a single source of truth. Not
+/// yet promoted into the generated design-token set.
+@immutable
+abstract final class SettingsTreeConstants {
+  /// Header height.
+  static const double headerHeight = 56;
+
+  /// Row height.
+  static const double rowHeight = 62;
+
+  /// Icon tile size.
+  static const double iconTileSize = 36;
+  static const double iconTileGlyphSize = 20;
+
+  /// Active rail.
+  static const double activeRailWidth = 3;
+  static const double activeRailHeight = 30;
+  static const double activeRailCornerRadius = 1.5;
+
+  /// Chevron glyph size.
+  static const double chevronSize = 18;
+
+  /// Nested-children indent rail.
+  static const double childrenRailWidth = 1.5;
+  static const double childrenRailAlpha = 0.28;
+
+  /// Row fill alpha when on the active path.
+  static const double activeRowFillAlpha = 0.08;
+
+  /// Icon tile fill alpha when on the active path.
+  static const double activeTileFillAlpha = 0.16;
+
+  /// Icon tile fill alpha for rows rendered with an always-accent
+  /// (teal) icon. Matches the legacy `SettingsIcon` tile treatment the
+  /// mobile Sync list used before it was folded into the shared tree, so
+  /// the Sync rows keep their teal-on-tinted-tile look.
+  static const double accentTileFillAlpha = 0.12;
+
+  /// Animation durations.
+  static const Duration rowFillTransition = Duration(milliseconds: 180);
+  static const Duration railTransition = Duration(milliseconds: 200);
+  static const Duration chevronRotation = Duration(milliseconds: 220);
+  static const Duration branchSizeAnimation = Duration(milliseconds: 260);
+  static const Duration branchOpacityAnimation = Duration(milliseconds: 200);
+
+  /// Resize-handle bar fade duration.
+  static const Duration resizeHandleFade = Duration(milliseconds: 150);
+
+  /// Resize-handle bar alpha on hover.
+  static const double resizeHandleHoverAlpha = 0.4;
+
+  /// Resize-handle hit-target width and the visible bar
+  /// width that fades in on hover / drag.
+  static const double resizeHandleHitWidth = 6;
+  static const double resizeHandleBarWidth = 2;
+
+  /// Icon size for the empty-state / unimplemented-panel glyph in
+  /// the detail placeholder.
+  static const double placeholderIconSize = 36;
+}

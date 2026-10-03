@@ -3,13 +3,13 @@
 /// sizes:
 ///
 /// - Desktop (1440x900) → `SettingsRootPage` forks (width >= 960) to the
-///   tree-nav master/detail `SettingsV2Page` (the "good" desktop UI).
+///   tree-nav master/detail `SettingsDesktopPage` (the "good" desktop UI).
 /// - Mobile/narrow (375x812) → the legacy single-page `SettingsPage` with
 ///   the collapsing `SliverBoxAdapterPage` header (the UI we want to
 ///   replace).
 ///
 /// It also captures the production Definitions branch: the focused shared
-/// tree branch on mobile and the complete V2 tree shell on desktop.
+/// tree branch on mobile and the complete settings tree shell on desktop.
 ///
 /// Captures dark + light for each surface and device (8 PNGs). PNGs land in
 /// `screenshots/settings_home/` (or `$LOTTI_SCREENSHOT_DIR`). Not a golden
@@ -25,10 +25,11 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/settings/routing/settings_routes.dart';
+import 'package:lotti/features/settings/state/settings_tree_controller.dart';
+import 'package:lotti/features/settings/ui/mobile/settings_mobile_branch_page.dart';
+import 'package:lotti/features/settings/ui/pages/settings_desktop_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
-import 'package:lotti/features/settings_v2/state/settings_tree_controller.dart';
-import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_branch_page.dart';
-import 'package:lotti/features/settings_v2/ui/pages/settings_v2_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -109,10 +110,10 @@ Future<void> _pumpScreen(
 }
 
 Future<void> _openDesktopDefinitions(WidgetTester tester) async {
-  final element = tester.element(find.byType(SettingsV2Page));
+  final element = tester.element(find.byType(SettingsDesktopPage));
   ProviderScope.containerOf(element, listen: false)
       .read(settingsTreePathProvider.notifier)
-      .syncFromUrl('/settings/definitions');
+      .syncFromPath(beamUrlToPath('/settings/definitions'));
   await settleFrames(tester);
 }
 
@@ -181,7 +182,7 @@ void main() {
   ];
 
   // -------------------------------------------------------------------------
-  // Desktop (1440x900) → SettingsV2Page tree-nav master/detail.
+  // Desktop (1440x900) → SettingsDesktopPage tree-nav master/detail.
   // -------------------------------------------------------------------------
 
   testWidgets('desktop settings root (tree) — dark', (tester) async {
@@ -191,7 +192,7 @@ void main() {
       overrides: baseOverrides(),
       home: const SettingsRootPage(),
     );
-    // Top-level tree leaves prove the V2 tree rendered.
+    // Top-level tree leaves prove the settings tree rendered.
     final messages = _messages(tester);
     expect(find.text(messages.settingsPreferencesTitle), findsOneWidget);
     expect(
@@ -287,7 +288,7 @@ void main() {
         device: desktopDevice,
         brightness: brightness,
         overrides: baseOverrides(),
-        home: const SettingsV2Page(beamToReplacementNamed: _ignoreBeam),
+        home: const SettingsDesktopPage(beamToReplacementNamed: _ignoreBeam),
       );
       await _openDesktopDefinitions(tester);
 

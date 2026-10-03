@@ -25,14 +25,14 @@ measurableDataTypesStreamProvider =
       ),
     );
 
-/// Embeddable body alias for the Settings V2 detail pane (plan
-/// step 8). See `CategoriesListBody` for the polish note about the
-/// duplicate header.
+/// The list as a desktop settings panel: no header of its own — the detail
+/// pane's breadcrumb names it — and the create button beside the search.
 class MeasurablesBody extends StatelessWidget {
   const MeasurablesBody({super.key});
 
   @override
-  Widget build(BuildContext context) => const MeasurablesPage();
+  Widget build(BuildContext context) =>
+      const MeasurablesPage(showHeader: false);
 }
 
 /// Settings list of all measurable data types.
@@ -41,12 +41,16 @@ class MeasurablesBody extends StatelessWidget {
 /// shared [DefinitionsListPage] shell; rows beam to the per-type editor and
 /// the create button to `/settings/measurables/create`.
 class MeasurablesPage extends ConsumerWidget {
-  const MeasurablesPage({super.key});
+  const MeasurablesPage({this.showHeader = true, super.key});
+
+  /// See [DefinitionsListPage.showHeader].
+  final bool showHeader;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final messages = context.messages;
     return DefinitionsListPage<MeasurableDataType>(
+      showHeader: showHeader,
       itemsAsync: ref.watch(measurableDataTypesStreamProvider),
       title: messages.settingsMeasurablesTitle,
       searchHint: messages.settingsMeasurablesSearchHint,

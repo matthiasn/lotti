@@ -271,4 +271,76 @@ final s = "import 'package:lotti/not/an/import.dart'";
       ]);
     });
   });
+
+  group('settings is one feature', () {
+    // `features/settings` and `features/settings_v2` used to be two halves of
+    // one feature that imported each other: the tree and its shells in one,
+    // most leaf pages in the other. They were folded together, and the
+    // retired directory must not come back as a second home for settings code.
+    test('nothing imports the retired features/settings_v2', () {
+      expect(
+        Directory('lib/features/settings_v2').existsSync(),
+        isFalse,
+        reason:
+            'Settings lives in lib/features/settings; a settings page that '
+            'belongs to another feature lives in that feature.',
+      );
+
+      final offenders = [
+        ..._offenders(from: '', to: 'features/settings_v2'),
+        for (final file in Directory('test').listSync(recursive: true))
+          if (file is File &&
+              file.path.endsWith('.dart') &&
+              _lottiImports(
+                file,
+              ).any((uri) => uri.startsWith('features/settings_v2/')))
+            file.path,
+      ];
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'features/settings_v2 was folded into features/settings.\n'
+            'Offending files:\n${offenders.join('\n')}',
+      );
+    });
+
+    // The tree (`domain/`) and its selection state (`state/`) are what the
+    // routing layer and both shells read. The route registry, in turn, imports
+    // every settings page, so a domain or state file reaching for it — or for
+    // a widget — would make the tree depend on every page it lists.
+    test('the settings tree and its state stay free of routing and UI', () {
+      final offenders = [
+        for (final layer in ['domain', 'state'])
+          for (final target in ['routing', 'ui'])
+            ..._offenders(
+              from: 'features/settings/$layer',
+              to: 'features/settings/$target',
+            ),
+      ];
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Resolve a URL to a tree path in the routing layer and hand the '
+            'path to the state layer, as SettingsTreeUrlSync does.\n'
+            'Offending files:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('detects the allowed direction, proving the scanner works', () {
+      expect(
+        _offenders(
+          from: 'features/settings/ui',
+          to: 'features/settings/routing',
+        ),
+        isNotEmpty,
+        reason:
+            'The settings UI reads the route registry; finding no such import '
+            'means the scanner has stopped detecting them.',
+      );
+    });
+  });
 }

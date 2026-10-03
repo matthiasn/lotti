@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_status_page.dart';
@@ -47,6 +48,7 @@ void main() {
     WidgetTester tester, {
     required bool enabled,
     bool configured = false,
+    Widget child = const ProvisionedSyncPage(),
   }) async {
     when(mockMatrixService.isLoggedIn).thenReturn(configured);
     when(
@@ -68,8 +70,10 @@ void main() {
       RiverpodWidgetTestBench(
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrixService),
+          // The desktop body reads the flag through `configFlagProvider`.
+          journalDbProvider.overrideWithValue(mocks.journalDb),
         ],
-        child: const ProvisionedSyncPage(),
+        child: child,
       ),
     );
     await tester.pump();
@@ -185,4 +189,64 @@ void main() {
       expect(find.byType(SyncSetupEmptyState), findsNothing);
     },
   );
+
+  group('ProvisionedSyncBody — the desktop Devices panel', () {
+    setUp(() {
+      // The roster header names the server it talks to.
+      when(() => mockClient.userID).thenReturn('@alice:example.com');
+      when(mockMatrixService.loadConfig).thenAnswer(
+        (_) async => const MatrixConfig(
+          homeServer: 'https://matrix.example.com',
+          user: '@alice:example.com',
+          password: 'pw',
+        ),
+      );
+    });
+
+    testWidgets('renders the roster inline once sync is configured', (
+      tester,
+    ) async {
+      // Hiding the roster behind a card that opens a modal added a tap and a
+      // second surface with the same name, and made every "open Settings → …
+      // → Devices" instruction in the pairing flow one step short.
+      await pump(
+        tester,
+        enabled: true,
+        configured: true,
+        child: const ProvisionedSyncBody(),
+      );
+
+      expect(
+        tester
+            .widget<ProvisionedStatusWidget>(
+              find.byType(ProvisionedStatusWidget),
+            )
+            .embedded,
+        isTrue,
+      );
+      expect(find.byType(SyncSetupEmptyState), findsNothing);
+    });
+
+    testWidgets('offers the setup card when sync is not configured yet', (
+      tester,
+    ) async {
+      await pump(tester, enabled: true, child: const ProvisionedSyncBody());
+
+      expect(find.byType(SyncSetupEmptyState), findsOneWidget);
+      expect(find.byType(ProvisionedStatusWidget), findsNothing);
+    });
+
+    testWidgets('renders nothing while the sync flag is off — no redirect, '
+        'unlike the page', (tester) async {
+      await pump(
+        tester,
+        enabled: false,
+        configured: true,
+        child: const ProvisionedSyncBody(),
+      );
+
+      expect(find.byType(ProvisionedStatusWidget), findsNothing);
+      expect(find.byType(SyncSetupEmptyState), findsNothing);
+    });
+  });
 }

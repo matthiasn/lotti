@@ -23861,35 +23861,29 @@ abstract class AppLocalizations {
   /// **'Theming'**
   String get settingsThemingTitle;
 
-  /// No description provided for @settingsV2CategoryEmptyBody.
+  /// No description provided for @settingsTreeCategoryEmptyBody.
   ///
   /// In en, this message translates to:
   /// **'Pick a sub-setting on the left.'**
-  String get settingsV2CategoryEmptyBody;
+  String get settingsTreeCategoryEmptyBody;
 
-  /// No description provided for @settingsV2DetailRootCrumb.
+  /// No description provided for @settingsTreeRootCrumb.
   ///
   /// In en, this message translates to:
   /// **'Settings'**
-  String get settingsV2DetailRootCrumb;
+  String get settingsTreeRootCrumb;
 
-  /// No description provided for @settingsV2EmptyStateBody.
+  /// No description provided for @settingsTreeEmptyStateBody.
   ///
   /// In en, this message translates to:
   /// **'Pick a section on the left to begin.'**
-  String get settingsV2EmptyStateBody;
+  String get settingsTreeEmptyStateBody;
 
-  /// No description provided for @settingsV2ResizeHandleLabel.
+  /// No description provided for @settingsTreeResizeHandleLabel.
   ///
   /// In en, this message translates to:
   /// **'Resize settings tree'**
-  String get settingsV2ResizeHandleLabel;
-
-  /// No description provided for @settingsV2UnimplementedTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Panel not yet implemented'**
-  String get settingsV2UnimplementedTitle;
+  String get settingsTreeResizeHandleLabel;
 
   /// No description provided for @settingsWhatsNewSubtitle.
   ///

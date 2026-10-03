@@ -37,7 +37,6 @@ import 'package:lotti/features/ai_consumption/service/attribution_carrier_projec
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_keys.dart';
 import 'package:lotti/features/notifications/preferences/notification_preference_effects.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
-import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_service.dart';
 import 'package:lotti/features/sync/matrix/journal_entity_dedup_cache.dart';
@@ -56,6 +55,7 @@ import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_repository.dart';
+import 'package:lotti/features/theming/constants/theming_settings_keys.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';

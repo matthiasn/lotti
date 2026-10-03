@@ -4,7 +4,7 @@
 /// provider, model, profile, picker, and usage views describe the same Project
 /// Waddle workspace as Tasks, Daily OS, categories, and dashboards.
 ///
-/// Desktop captures render the production Settings V2 tree/detail shell.
+/// Desktop captures render the production desktop settings tree/detail shell.
 /// Mobile captures render the production full-screen pages. Generated PNGs
 /// are staging inputs for the R2 manual catalog and are never committed to this repo.
 ///
@@ -40,8 +40,9 @@ import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
-import 'package:lotti/features/settings_v2/state/settings_tree_controller.dart';
-import 'package:lotti/features/settings_v2/ui/pages/settings_v2_page.dart';
+import 'package:lotti/features/settings/routing/settings_routes.dart';
+import 'package:lotti/features/settings/state/settings_tree_controller.dart';
+import 'package:lotti/features/settings/ui/pages/settings_desktop_page.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -237,11 +238,11 @@ Future<void> _selectDesktopSurface(
   required ValueNotifier<DesktopSettingsRoute?> route,
 }) async {
   final container = ProviderScope.containerOf(
-    tester.element(find.byType(SettingsV2Page)),
+    tester.element(find.byType(SettingsDesktopPage)),
     listen: false,
   );
   final tree = container.read(settingsTreePathProvider.notifier)
-    ..syncFromUrl('/settings/ai');
+    ..syncFromPath(beamUrlToPath('/settings/ai'));
 
   switch (surface) {
     case _AiSurface.providers:
@@ -273,7 +274,9 @@ Future<void> _selectDesktopSurface(
         queryParameters: const <String, String>{},
       );
     case _AiSurface.legacyProfiles:
-      throw StateError('Legacy profiles do not use the Settings V2 panel.');
+      throw StateError(
+        'Legacy profiles do not use the desktop settings panel.',
+      );
   }
   await settleFrames(tester, 8);
 }
@@ -420,7 +423,7 @@ void main() {
       _app(
         home: device.isPhone || directLegacy
             ? _mobilePage(surface)
-            : SettingsV2Page(beamToReplacementNamed: (_, _) {}),
+            : SettingsDesktopPage(beamToReplacementNamed: (_, _) {}),
         brightness: brightness,
         device: device,
         overrides: overrides(world),
@@ -749,7 +752,12 @@ void main() {
               world: world,
             );
             final messages = _messages(tester);
-            expect(find.text(messages.aiImpactTitle), findsOneWidget);
+            // The phone page draws its own title; on desktop the detail
+            // pane's breadcrumb names the panel instead.
+            expect(
+              find.text(messages.aiImpactTitle),
+              device.isPhone ? findsOneWidget : findsNothing,
+            );
             expect(find.text(formatCredits(1.2)), findsOneWidget);
             expect(
               find.text(messages.aiImpactBreakdownCategory),

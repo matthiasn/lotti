@@ -29,6 +29,7 @@ class SettingsPageHeader extends StatelessWidget {
     this.onBack,
     this.bottom,
     this.actions,
+    this.showTitleBar = true,
     super.key,
   });
 
@@ -36,6 +37,12 @@ class SettingsPageHeader extends StatelessWidget {
   final String? subtitle;
   final bool pinned;
   final bool showBackButton;
+
+  /// Whether the title bar (title, subtitle, back button, actions) shows.
+  /// Off, only the pinned [bottom] remains: for a page embedded in the
+  /// desktop settings detail pane, whose breadcrumb already names it, but
+  /// whose filter row still belongs pinned above its list.
+  final bool showTitleBar;
 
   /// Optional override for the back action; defaults to
   /// `NavService.beamBack()` (see `BackWidget`). Detail pages that mount
@@ -49,10 +56,12 @@ class SettingsPageHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final topInset = MediaQuery.of(context).padding.top;
     final bottomHeight = bottom?.preferredSize.height ?? 0.0;
-    final barHeight = settingsHeaderContentHeight(
-      context,
-      hasSubtitle: subtitle?.trim().isNotEmpty ?? false,
-    );
+    final barHeight = showTitleBar
+        ? settingsHeaderContentHeight(
+            context,
+            hasSubtitle: subtitle?.trim().isNotEmpty ?? false,
+          )
+        : 0.0;
     final extent = topInset + barHeight + bottomHeight;
     return SliverPersistentHeader(
       pinned: pinned,
@@ -108,16 +117,17 @@ class _SettingsHeaderDelegate extends SliverPersistentHeaderDelegate {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SizedBox(height: topInset),
-          SizedBox(
-            height: barHeight,
-            child: SettingsHeaderBar(
-              title: title,
-              subtitle: subtitle,
-              showBackButton: showBackButton,
-              onBack: onBack,
-              actions: actions,
+          if (barHeight > 0)
+            SizedBox(
+              height: barHeight,
+              child: SettingsHeaderBar(
+                title: title,
+                subtitle: subtitle,
+                showBackButton: showBackButton,
+                onBack: onBack,
+                actions: actions,
+              ),
             ),
-          ),
           if (accessory != null)
             SizedBox(height: accessory.preferredSize.height, child: accessory),
         ],

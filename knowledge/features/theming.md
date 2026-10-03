@@ -5,8 +5,8 @@ description: Stored preferences turned into ThemeData, and the one selection tha
 resource: ../../lib/features/theming
 tags: [theming, themes, sync]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-26T10:14:00Z }
-stale_after: 2027-03-08
+generated: { by: claude-code/opus-5.5, at: 2026-10-03T12:00:00Z }
+stale_after: 2027-04-03
 sources:
   - id: settings-db
     resource: ../../lib/database/settings_db.dart
@@ -78,5 +78,5 @@ the scheme or the text theme. The screenshot harness's `screenshotTheme`
 builds the identical composition, which is what keeps design verdicts made on
 captures transferable to the running app.
 
-The theming **UI** lives under [settings](settings.md); the state machine lives
-here.
+The theming **UI** (`lib/features/theming/ui/theming_page.dart`) and the state
+machine both live here; [settings](settings.md) only routes to the page.

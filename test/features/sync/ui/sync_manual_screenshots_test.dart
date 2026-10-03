@@ -1,7 +1,7 @@
 /// Deterministic manual screenshots for the production Sync surfaces.
 ///
 /// Mobile captures render the real routed pages. Desktop captures render the
-/// same surfaces inside the production Settings V2 master/detail shell. Demo
+/// same surfaces inside the production desktop settings master/detail shell. Demo
 /// data follows the Project Waddle world used by the task and Daily OS manual
 /// so operational states remain recognizable across chapters.
 ///
@@ -32,8 +32,8 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/settings/ui/mobile/settings_mobile_branch_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
-import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_branch_page.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';

@@ -5,12 +5,14 @@ import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_list_scaffold.dart';
+import 'package:lotti/features/sync/ui/widgets/sync_list_scaffold_widgets.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:lotti/widgets/app_bar/settings_header_bar.dart';
 import 'package:lotti/widgets/ui/empty_state_widget.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -75,6 +77,7 @@ Future<StreamController<List<_TestItem>>> _pumpScaffold(
   double viewportWidth = 390,
   double viewportHeight = 844,
   bool useViewSize = false,
+  bool showTitle = true,
 }) async {
   final controller = StreamController<List<_TestItem>>();
 
@@ -142,6 +145,7 @@ Future<StreamController<List<_TestItem>>> _pumpScaffold(
                     ctx.messages.syncListCountSummary(label, count),
                 initialFilter: initialFilter ?? _TestFilter.pending,
                 backButton: false,
+                showTitle: showTitle,
               ),
             ),
     ),
@@ -155,6 +159,29 @@ Future<StreamController<List<_TestItem>>> _pumpScaffold(
 // ---------------------------------------------------------------------------
 
 void main() {
+  group('embedded without its title (showTitle: false)', () {
+    testWidgets('drops the title bar and keeps the filter row and its counts', (
+      tester,
+    ) async {
+      final controller = await _pumpScaffold(tester, showTitle: false);
+      addTearDown(controller.close);
+      controller.add([
+        const _TestItem(label: 'first', hasError: false),
+      ]);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(SettingsHeaderBar), findsNothing);
+      expect(find.text('Sync UI'), findsNothing);
+      expect(find.text('Subtitle copy'), findsNothing);
+      expect(
+        find.byType(SyncHeaderBottom<_TestItem, _TestFilter>),
+        findsOneWidget,
+      );
+      expect(find.text('first'), findsOneWidget);
+    });
+  });
+
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(

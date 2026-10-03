@@ -78,6 +78,7 @@ void main() {
     Size surface = const Size(1280, 1100),
     UpdateNotifications? notifications,
     bool unboundedHost = false,
+    bool showTitle = true,
   }) async {
     tester.view
       ..physicalSize = surface
@@ -105,10 +106,12 @@ void main() {
           unboundedHost
               // The Settings ai-usage host: unbounded height, body
               // shrink-wraps and the host scrolls.
-              ? const Scaffold(
-                  body: SingleChildScrollView(child: ImpactAnalysisBody()),
+              ? Scaffold(
+                  body: SingleChildScrollView(
+                    child: ImpactAnalysisBody(showTitle: showTitle),
+                  ),
                 )
-              : const Scaffold(body: ImpactAnalysisBody()),
+              : Scaffold(body: ImpactAnalysisBody(showTitle: showTitle)),
         ),
       );
       await tester.pump();
@@ -779,5 +782,15 @@ void main() {
     // The model chart's title uses the Requests metric label.
     expect(find.text('Requests by model'), findsOneWidget);
     expect(find.text('Requests by category'), findsOneWidget);
+  });
+
+  testWidgets('in the settings pane the title is dropped — the breadcrumb '
+      'names it — and the period stepper stays', (tester) async {
+    stubRows(const []);
+    await pumpBody(tester, unboundedHost: true, showTitle: false);
+
+    expect(find.text('AI Impact'), findsNothing);
+    expect(find.byType(InsightsPeriodStepper), findsOneWidget);
+    expect(find.text('No AI usage in this range'), findsOneWidget);
   });
 }

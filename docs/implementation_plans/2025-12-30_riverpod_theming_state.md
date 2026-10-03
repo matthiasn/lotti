@@ -66,7 +66,7 @@ abstract class ThemingState with _$ThemingState {
 | Location | Usage |
 |----------|-------|
 | `lib/beamer/beamer_app.dart:329-334` | BlocProvider creation + BlocBuilder for MaterialApp theme |
-| `lib/features/settings/ui/pages/theming_page.dart:22,131` | BlocBuilder for theme selection UI |
+| `lib/features/theming/ui/theming_page.dart:22,131` | BlocBuilder for theme selection UI |
 
 ### Existing Tests
 
@@ -76,7 +76,7 @@ abstract class ThemingState with _$ThemingState {
 | `test/blocs/theming/theming_cubit_sync_test.dart` | Sync integration tests |
 | `test/blocs/theming/theming_cubit_sync_listener_test.dart` | Sync listener tests |
 | `test/blocs/theming/theming_cubit_error_handling_test.dart` | Error handling tests |
-| `test/features/settings/ui/pages/manual/theming_page_test.dart` | Widget tests |
+| `test/features/theming/ui/theming_page_test.dart` | Widget tests |
 
 ## Proposed Riverpod Implementation
 
@@ -189,7 +189,7 @@ Consumer(
 )
 ```
 
-**File:** `lib/features/settings/ui/pages/theming_page.dart`
+**File:** `lib/features/theming/ui/theming_page.dart`
 
 Convert to `ConsumerWidget`:
 ```dart
@@ -236,7 +236,7 @@ Check if `lib/blocs/theming/` directory becomes empty and delete if so.
 ## Files to Modify
 
 - `lib/beamer/beamer_app.dart` - Remove BlocProvider<ThemingCubit>, convert BlocBuilder
-- `lib/features/settings/ui/pages/theming_page.dart` - Convert to ConsumerWidget
+- `lib/features/theming/ui/theming_page.dart` - Convert to ConsumerWidget
 
 ## Files to Delete
 

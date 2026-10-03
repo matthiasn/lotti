@@ -5,8 +5,8 @@ description: Ten independent Beamer stacks behind one IndexedStack, how the acti
 resource: ../../lib/beamer
 tags: [architecture, navigation, beamer, routing, app-shell]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-29T12:00:00Z }
-stale_after: 2027-03-27
+generated: { by: claude-code/opus-5.5, at: 2026-10-03T12:00:00Z }
+stale_after: 2027-04-03
 sources:
   - id: route-mirror
     resource: ../../lib/beamer/locations/route_state_mirror.dart
@@ -42,8 +42,12 @@ sources:
     last_modified: 2026-09-22
   - id: settings-location
     resource: ../../lib/beamer/locations/settings_location.dart
-    title: SettingsLocation — the settings page stack and its pop targets
-    last_modified: 2026-07-27
+    title: SettingsLocation — the settings registry as Beamer pages
+    last_modified: 2026-10-03
+  - id: settings-routes
+    resource: ../../lib/features/settings/routing/settings_route.dart
+    title: SettingsRouteTable — settings page stacks and their pop targets
+    last_modified: 2026-10-03
   - id: beamer-delegates
     resource: ../../lib/beamer/beamer_delegates.dart
     title: Per-tab BeamerDelegate definitions
@@ -418,71 +422,25 @@ real parent, builds the same parent page again, and the user watches the list
 slide out and an identical list slide straight back in without going anywhere.
 
 Such a page must name its destination with `BeamPage.popToNamed`, so one tap is
-one level and the pop plays as a pop:
+one level and the pop plays as a pop. The habit editor reached from the Habits
+tab (`/habits/create`, `/habits/edit/:habitId`) names `/habits`.
 
-| Page | URL | `popToNamed` |
-|------|-----|--------------|
-| Habit editor (from the tab) | `/habits/create`, `/habits/edit/:habitId` | `/habits` |
-| Habit editor (from settings) | `/settings/habits/by_id/:habitId`, `/settings/habits/create` | `/settings/habits` |
-| Habit search | `/settings/habits/search/:searchTerm` | `/settings/habits` |
-| AI provider detail | `/settings/ai/provider/:providerId` | `/settings/ai` |
-| AI model edit | `/settings/ai/model/:modelId` | `/settings/ai` |
-| AI profile edit | `/settings/ai/profile/:profileId` | `/settings/ai` |
-| Every definition leaf | `/settings/categories`, `/settings/labels`, `/settings/habits`, `/settings/dashboards`, `/settings/measurables` | `/settings/definitions` |
-| Every preference leaf | `/settings/theming`, `/settings/notifications`, `/settings/recording-style`, `/settings/speech`, `/settings/keyboard-shortcuts`, `/settings/advanced/animations` | `/settings/preferences` |
-| Advanced's two flat leaves | `/settings/flags`, `/settings/health_import` | `/settings/advanced` |
+**Settings never relies on the default.** Its URLs are the worst case for a
+one-segment pop: detail routes sit two segments below their list, Matrix
+maintenance three below the Sync hub, and most branch leaves kept the flat URLs
+they shipped with, so `/settings/categories` does not nest under its hub at
+`/settings/definitions` at all. Each of those once stranded a back tap — the
+user saw the page they were leaving slide out and an identical one slide back
+in, or watched a hub bounce back to the Settings root.
 
-The AI rows all use `aiSettingsParentRoute`, the same constant the detail pages'
-own back affordance beams to (`popAiSettingsDetail`), so the gesture and the
-chevron cannot drift apart. The three branch rows are derived rather than
-written out, by
-[`settingsBranchHubOf`](../../lib/beamer/locations/settings_location.dart) —
-the same predicates that decide whether a hub is *in* the stack decide where
-its leaves pop to, so the two cannot disagree. The hub URLs themselves sit
-beside `aiSettingsParentRoute` in
-[`settings_tree_index.dart`](../../lib/features/settings_v2/domain/settings_tree_index.dart)
-and are read out of `settingsNodeUrls`, for the reason that constant documents:
-the tree tap, the hub page and the leaf's `popToNamed` all have to name one
-string, and the tree is where a settings URL is decided.
-
-A one-segment leaf like `/settings/daily-os` needs no `popToNamed`: the default
-pop already lands on its parent, the Settings root, which is where that leaf
-belongs.
-
-# A branch leaf pops to its hub, not to its URL's parent
-
-The rule above is about *depth*. The branch hubs add a second, independent way
-to strand a back tap: the leaf's URL is not under its hub's.
-
-Definitions, Preferences and Advanced are pure-navigation hubs that
-`buildPages` keeps beneath their leaves. Whether a hub stays there is decided
-by a path predicate (`_inDefinitionsBranch` and friends) evaluated against
-whatever URL the pop produces — and most branch leaves kept the flat URLs they
-shipped with. `/settings/categories` does not nest under
-`/settings/definitions`; `/settings/theming` does not nest under
-`/settings/preferences`; and `/settings/advanced/animations` nests under the
-*wrong* branch's hub, since Animations belongs to Preferences.
-
-So the single-segment pop lands on `/settings`, the hub predicate stops
-matching, and `buildPages` drops the hub along with the leaf: **one back tap
-left the branch entirely**. It read as a page bouncing back on its own, because
-the Navigator still uncovered the hub for the length of the pop animation
-before the route rebuild replaced it with the Settings root.
-
-Depth and branch membership are separate questions, and a page can need
-`popToNamed` for either. A nested leaf like `/settings/advanced/maintenance`
-needs none: it is one segment deep *and* its URL sits under its own hub's.
-
-But landing on the right URL is only half of it. The page the leaf pops *onto*
-must already be in the stack beneath it, on a stable key, or Navigator swaps
-the leaf for a freshly built parent instead of uncovering the one that was
-there — a push animation on a back gesture, the same thing the reader sees in
-the two-segment case. That is why `SettingsLocation` emits the AI Settings list
-under every `/settings/ai/*` URL and the Sync hub under every
-`/settings/sync/*` URL, each always on one key (`settings-ai`,
-`settings-sync`). A child URL that opts out of its parent page gets the wrong
-transition even when its URL is correct — which is what the legacy
-`/settings/ai/profiles` leaf used to do.
+So the settings route registry gives *every* page in a mobile settings stack an
+explicit pop target: the URL of the page beneath it, read from the same
+resolution that built the stack. The tree path decides which hub sits beneath a
+leaf — never the URL's shape — and each page keeps one key at every URL that
+shows it, so the pop uncovers the existing page instead of swapping in a fresh
+one. A test resolves every URL the registry answers on and checks that each
+page's pop target rebuilds exactly the stack beneath it. The mechanism is in
+[settings](../features/settings.md#how-a-url-becomes-a-page-stack).
 
 # Chrome rules are pure functions of router state
 
@@ -493,7 +451,7 @@ state decide what the bottom edge belongs to, following one product rule:
 | Predicate | Routes | Effect |
 | --- | --- | --- |
 | `isTaskDetailRoute` | `/tasks/<uuid>` | Bar **unmounted** — `TaskActionBar` replaces it outright |
-| `settingsRouteHidesBottomNav` | AI and Agents sections, sync/advanced leaves, entity editors | Bar **slides away** |
+| `settingsRouteHidesBottomNav` | AI and Agents sections, settings leaves (except Sections), entity editors | Bar **slides away** |
 | `projectsRouteHidesBottomNav` | `/projects/<id>` | Bar **slides away** |
 | `goalsRouteHidesBottomNav` | `/goals/create`, `/goals/details/<id>[/chat\|/edit]` | Bar **slides away** |
 
@@ -521,18 +479,23 @@ stateDiagram-v2
     BarVisible --> BarHidden: navigate to a terminal settings destination
     BarHidden --> BarVisible: navigate back to a menu or list
     note right of BarVisible
-      Settings root, menu hubs (advanced, sync,
-      definitions), entity list pages, conflicts list,
+      Settings root, menu hubs, entity list pages,
+      habit search, conflicts list, Sections,
       the Projects and Goals list roots
     end note
     note right of BarHidden
-      All of AI and Agents, every sync and advanced
+      All of AI and Agents, every other settings
       leaf, entity editors and create routes,
-      top-level leaves, conflict detail,
+      conflict detail,
       project details, a goal agent's detail, chat,
       create and edit pages
     end note
 ```
+
+For settings the rule is not a separate table: each settings route declares
+`keepsBottomNav`, and the predicate reads it off the page on top of the URL's
+resolved stack, so a new page decides it where it is declared. Sections is the
+one leaf that keeps the bar — its switches add and remove the bar's own tabs.
 
 Two consequences worth knowing before adding a settings page:
 

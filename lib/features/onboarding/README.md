@@ -23,8 +23,9 @@ behind a flag and off by default.
 ## What it owns
 
 The welcome and connect flow; the first-capture experience; the auto-show trigger
-and re-show cadence; the Settings replay entry; and the onboarding metrics store
-and its funnel derivations.
+and re-show cadence; the Settings replay entry; the recording-style preference
+page Settings routes to; and the onboarding metrics store and its funnel
+derivations.
 
 ## Where the code lives
 

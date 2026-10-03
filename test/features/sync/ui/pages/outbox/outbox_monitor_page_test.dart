@@ -10,6 +10,7 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/widgets/app_bar/settings_header_bar.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -273,7 +274,8 @@ void main() {
       expect(find.text(_l10n.outboxMonitorDeleteFailed), findsOneWidget);
     });
 
-    testWidgets('OutboxMonitorBody renders the monitor page', (tester) async {
+    testWidgets('OutboxMonitorBody renders the monitor without its title '
+        'bar', (tester) async {
       final mock = _prepareMock(items: const []);
       getIt.registerSingleton<SyncDatabase>(mock);
       await tester.pumpWidget(
@@ -292,6 +294,8 @@ void main() {
 
       expect(find.byType(OutboxMonitorPage), findsOneWidget);
       expect(find.text(_l10n.outboxMonitorEmptyTitle), findsOneWidget);
+      expect(find.byType(SettingsHeaderBar), findsNothing);
+      expect(find.text(_l10n.settingsSyncOutboxTitle), findsNothing);
     });
   });
 }

@@ -63,7 +63,8 @@ reads the default profile and the model catalog the AI feature maintains.
 - `state/` — `SystemHealthController` and the analyzer / default-model
   providers.
 - `ui/` — `SystemHealthPage` (mobile chrome) and `SystemHealthBody` (hosted by
-  the Settings V2 detail pane).
+  the desktop settings detail pane, through its entry in the settings route
+  registry).
 
 How the files are selected, what the digest keeps, and how the redaction and
 the size budget work are in

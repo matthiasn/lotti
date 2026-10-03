@@ -9,7 +9,7 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// `InferenceProfileForm` takes a fully-resolved [AiConfigInferenceProfile]
 /// because the legacy `Navigator.push` callers had the config in hand at
-/// the call site. URL-based routing (the Settings V2 master/detail panel
+/// the call site. URL-based routing (the desktop settings master/detail panel
 /// + the Beamer mobile stack) only carries the profile id, so this
 /// wrapper resolves the id via Riverpod and hands the loaded config
 /// down. Mirrors how `InferenceModelEditPage` already supports id-only

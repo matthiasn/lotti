@@ -16,7 +16,7 @@ import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Tabs available on [AgentSettingsPage]. Exposed as a public enum
-/// so Settings V2 leaf panels (plan step 9) can deep-link into a
+/// so desktop settings panels can deep-link into a
 /// specific tab via [AgentSettingsPage.initialTab].
 enum AgentSettingsTab {
   templates,
@@ -28,7 +28,7 @@ enum AgentSettingsTab {
 /// Landing page for Settings > Agents.
 ///
 /// Contains four tabs (mirrored by the `agents/<segment>` leaves in
-/// the Settings V2 tree):
+/// the settings tree):
 /// - **Templates**: inline list of agent templates (extracted from
 ///   the former `AgentTemplateListPage`).
 /// - **Instances**: filterable list of agent instances.
@@ -46,7 +46,7 @@ class AgentSettingsPage extends ConsumerStatefulWidget {
   ConsumerState<AgentSettingsPage> createState() => _AgentSettingsPageState();
 }
 
-/// Body alias for Settings V2: shows [AgentSettingsPage] with a
+/// Body for the desktop settings pane: shows [AgentSettingsPage] with a
 /// pre-selected tab so `agents/templates`, `agents/souls` and
 /// `agents/instances` each open on the right tab. Plan step 10
 /// will give the page a headerless embedded mode to drop the
@@ -99,7 +99,7 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
     }
   }
 
-  /// Whether the tab bar should beam URL changes (desktop V2) or
+  /// Whether the tab bar should beam URL changes (desktop) or
   /// keep the legacy local-`setState` behavior (mobile + tests).
   /// `NavService.isDesktopMode` is set by `AppScreen` based on
   /// breakpoint; tests can opt in by flipping it to `true`.
@@ -113,9 +113,8 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
   bool get _isUrlDriven => _navService?.isDesktopMode == true;
 
   /// Maps a settings URL onto the tab the body should show. Each
-  /// tab has its own tree leaf and URL under `/settings/agents/`
-  /// (see `settingsNodeUrls` and the per-tab patterns in
-  /// `SettingsLocation`); the bare `/settings/agents` landing falls
+  /// tab has its own tree leaf and URL under `/settings/agents/` (see the
+  /// agents entries in `settingsRoutes`); the bare `/settings/agents` landing falls
   /// through to Templates so the parent tree row stays clickable.
   AgentSettingsTab _resolveTabFromRoute(DesktopSettingsRoute? route) {
     if (route == null) return _localFallback;
@@ -123,8 +122,8 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
   }
 
   /// Shared tab-click handler. On desktop, beam to the URL that
-  /// represents the chosen tab so the V2 detail pane swaps to the
-  /// per-tab leaf with its working `DetailIdDispatch` (and FAB).
+  /// represents the chosen tab so the detail pane swaps to the per-tab
+  /// leaf, whose panel carries that tab's detail routes (and FAB).
   /// On mobile / tests, fall back to local `setState` so the legacy
   /// page-stack navigation isn't disturbed.
   void _onTabSelected(AgentSettingsTab tab) {
@@ -175,7 +174,7 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
       _ => context.messages.agentSettingsTitle,
     };
     return Scaffold(
-      // Desktop V2 already names the page via the breadcrumb in the
+      // The desktop pane already names the page via the breadcrumb in the
       // shell header; an AppBar here would just stack a second darker
       // chrome strip on top of it. Mobile / push-stack contexts keep
       // the AppBar so the back button and title stay reachable.
@@ -192,7 +191,7 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
             ),
       body: Column(
         children: [
-          // Hide the in-page tab strip on desktop V2 — every tab now
+          // Hide the in-page tab strip on desktop — every tab now
           // has its own tree leaf under `agents` in the sidebar, and
           // exposing both navigation surfaces caused two interlocked
           // bugs: (1) the URL → tree → URL feedback guard could leak

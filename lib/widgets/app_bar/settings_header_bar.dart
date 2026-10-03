@@ -5,7 +5,7 @@ import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Base height of every Settings header at standard text size (status-bar
-/// inset excluded). Matches the desktop Settings V2 header height so the
+/// inset excluded). Matches the desktop settings header height so the
 /// two form factors share one vertical rhythm.
 const double kSettingsHeaderHeight = 56;
 

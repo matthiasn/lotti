@@ -265,7 +265,7 @@ unless the user picked one in the shared `InferenceProviderModelPickerModal`.
 - The single-provider model picker titles its page with the provider's name,
   not the title passed to `show`.
 
-Related: [settings](settings.md) · [settings v2](settings_v2.md) ·
+Related: [settings](settings.md) ·
 [logging and diagnostics](../architecture/logging-and-diagnostics.md) ·
 [persistence (slow-query capture)](../architecture/persistence.md#slow-query-capture) ·
 [profile resolution](ai/profile-resolution.md)

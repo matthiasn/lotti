@@ -3,9 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
+import 'package:lotti/features/settings/ui/mobile/settings_mobile_root_page.dart';
+import 'package:lotti/features/settings/ui/pages/settings_desktop_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
-import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_root_page.dart';
-import 'package:lotti/features/settings_v2/ui/pages/settings_v2_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/features/whats_new/model/whats_new_state.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
@@ -98,10 +98,10 @@ void main() {
 
         expect(find.byType(SettingsMobileRootPage), findsOneWidget);
         expect(
-          find.byType(SettingsV2Page),
+          find.byType(SettingsDesktopPage),
           findsNothing,
           reason:
-              'Mobile renders the tree-driven drill-down; the V2 '
+              'Mobile renders the tree-driven drill-down; the '
               'master/detail layout is desktop-only.',
         );
       },
@@ -114,12 +114,12 @@ void main() {
 
         await pumpRoot(tester);
 
-        expect(find.byType(SettingsV2Page), findsOneWidget);
+        expect(find.byType(SettingsDesktopPage), findsOneWidget);
         expect(
           find.byType(SettingsMobileRootPage),
           findsNothing,
           reason:
-              'Desktop must mount only V2 — the mobile drill-down belongs '
+              'Desktop must mount only the tree layout — the mobile drill-down belongs '
               'to narrow viewports and would compete for the same space.',
         );
       },

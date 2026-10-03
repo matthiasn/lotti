@@ -99,7 +99,7 @@ class _AddProviderBreadcrumbs extends StatelessWidget {
       child: Wrap(
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          Text(messages.settingsV2DetailRootCrumb, style: caption),
+          Text(messages.settingsTreeRootCrumb, style: caption),
           separator,
           Text(messages.settingsAiTitle, style: caption),
           separator,

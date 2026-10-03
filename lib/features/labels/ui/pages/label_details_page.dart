@@ -30,7 +30,7 @@ import 'package:material_ui/material_ui.dart';
 /// mode (with optional [initialName] prefill) skips the stream. Both drive a
 /// [LabelEditorController] for name, description, color, privacy, and
 /// applicable categories. Save/delete navigate back to the list via
-/// `beamToNamed` rather than popping (the V2 desktop detail pane is inline).
+/// `beamToNamed` rather than popping (the desktop detail pane is inline).
 /// This is the routed counterpart to the modal `LabelEditorSheet`.
 class LabelDetailsPage extends ConsumerStatefulWidget {
   const LabelDetailsPage({
@@ -145,7 +145,7 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
           tone: DesignSystemToastTone.success,
           title: messages.saveSuccessful,
         );
-        // Beam back to the list rather than popping — V2's desktop
+        // Beam back to the list rather than popping — the desktop
         // detail surface is rendered inline (no Navigator route to
         // pop); the URL change still pops the detail page on mobile.
         beamToNamed('/settings/labels');
@@ -180,7 +180,7 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
                 await ref.read(labelsRepositoryProvider).deleteLabel(label.id);
                 if (!mounted || !pageContext.mounted) return;
                 // Beam back to the list rather than popping — see
-                // [handleSave] above for the V2-vs-mobile rationale.
+                // [handleSave] above for the desktop-vs-mobile rationale.
                 beamToNamed('/settings/labels');
                 if (!mounted || !pageContext.mounted) return;
                 pageContext.showToast(

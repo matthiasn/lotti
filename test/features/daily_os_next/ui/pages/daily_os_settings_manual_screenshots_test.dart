@@ -1,6 +1,6 @@
 /// Deterministic manual screenshots for the production Daily OS settings.
 ///
-/// Desktop captures use the real Settings V2 tree/detail shell; mobile uses
+/// Desktop captures use the real desktop settings tree/detail shell; mobile uses
 /// the real drill-down page. The configured route is the same Project Waddle
 /// inference stack used throughout the AI and Agents chapters.
 ///
@@ -23,7 +23,7 @@ import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.da
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/daily_os_settings_page.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
-import 'package:lotti/features/settings_v2/ui/pages/settings_v2_page.dart';
+import 'package:lotti/features/settings/ui/pages/settings_desktop_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -173,7 +173,7 @@ void main() {
             _app(
               home: deviceCase.device.isPhone
                   ? const DailyOsSettingsPage()
-                  : const SettingsV2Page(),
+                  : const SettingsDesktopPage(),
               brightness: brightness,
               size: deviceCase.device.size,
               overrides: overrides(),

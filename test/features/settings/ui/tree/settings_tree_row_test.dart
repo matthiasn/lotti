@@ -1,0 +1,308 @@
+import 'dart:ui';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/settings/domain/settings_node.dart';
+import 'package:lotti/features/settings/ui/settings_tree_constants.dart';
+import 'package:lotti/features/settings/ui/tree/settings_tree_row.dart';
+import 'package:material_ui/material_ui.dart';
+
+import '../../../../widget_test_utils.dart';
+
+SettingsNode _branch() => const SettingsNode(
+  id: 'sync',
+  icon: LottiIcons.sync,
+  title: 'Sync',
+  desc: 'Configure sync and view stats',
+  children: [
+    SettingsNode(
+      id: 'sync/backfill',
+      icon: LottiIcons.cloudDownload,
+      title: 'Backfill',
+      desc: 'Manage sync gap recovery',
+    ),
+  ],
+);
+
+SettingsNode _leaf({String desc = 'Feature flags'}) => SettingsNode(
+  id: 'flags',
+  icon: LottiIcons.flag,
+  title: 'Flags',
+  desc: desc,
+);
+
+Future<void> _pumpRow(
+  WidgetTester tester, {
+  required SettingsNode node,
+  bool onActivePath = false,
+  bool isExpanded = false,
+  bool showLeafChevron = false,
+  int descMaxLines = 1,
+  bool accentIcon = false,
+  Widget? trailing,
+  FocusNode? focusNode,
+  VoidCallback? onTap,
+}) async {
+  await tester.pumpWidget(
+    makeTestableWidgetNoScroll(
+      Material(
+        child: SizedBox(
+          width: 400,
+          child: SettingsTreeRow(
+            node: node,
+            onActivePath: onActivePath,
+            isExpanded: isExpanded,
+            showLeafChevron: showLeafChevron,
+            descMaxLines: descMaxLines,
+            accentIcon: accentIcon,
+            trailing: trailing,
+            focusNode: focusNode,
+            onTap: onTap ?? () {},
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+void main() {
+  group('SettingsTreeRow — content', () {
+    testWidgets('renders title and description', (tester) async {
+      await _pumpRow(tester, node: _leaf());
+      expect(find.text('Flags'), findsOneWidget);
+      expect(find.text('Feature flags'), findsOneWidget);
+    });
+
+    testWidgets('renders a supplied live trailing widget', (tester) async {
+      await _pumpRow(
+        tester,
+        node: _leaf(),
+        trailing: const Text('live-indicator', key: Key('trailing')),
+      );
+      expect(find.byKey(const Key('trailing')), findsOneWidget);
+    });
+
+    testWidgets('omits the trailing region when none is supplied', (
+      tester,
+    ) async {
+      await _pumpRow(tester, node: _leaf());
+      expect(find.byKey(const Key('trailing')), findsNothing);
+    });
+
+    testWidgets('renders the node icon', (tester) async {
+      await _pumpRow(tester, node: _leaf());
+      expect(find.byIcon(LottiIcons.flag), findsOneWidget);
+    });
+
+    testWidgets('icon glyph is grey (medium emphasis) when idle', (
+      tester,
+    ) async {
+      await _pumpRow(tester, node: _leaf());
+      final context = tester.element(find.byType(SettingsTreeRow));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.flag));
+      expect(icon.color, context.designTokens.colors.text.mediumEmphasis);
+    });
+
+    testWidgets('accentIcon paints the glyph in the teal accent', (
+      tester,
+    ) async {
+      await _pumpRow(tester, node: _leaf(), accentIcon: true);
+      final context = tester.element(find.byType(SettingsTreeRow));
+      final icon = tester.widget<Icon>(find.byIcon(LottiIcons.flag));
+      expect(icon.color, context.designTokens.colors.interactive.enabled);
+    });
+
+    testWidgets('description is omitted when the node desc is empty', (
+      tester,
+    ) async {
+      await _pumpRow(tester, node: _leaf(desc: ''));
+      // Title still present, and the title+desc inner Column collapses
+      // to a single Text child. We find that inner column (the one
+      // directly wrapping the title in an Expanded) and assert its
+      // child count so the "if desc.isNotEmpty" branch is exercised
+      // — `findsNothing` on text '' would match even if the widget
+      // shipped an empty Text placeholder.
+      expect(find.text('Flags'), findsOneWidget);
+      final titleColumn = tester.widget<Column>(
+        find
+            .ancestor(
+              of: find.text('Flags'),
+              matching: find.byType(Column),
+            )
+            .first,
+      );
+      expect(titleColumn.children, hasLength(1));
+    });
+  });
+
+  group('SettingsTreeRow — branch chevron', () {
+    testWidgets('renders a chevron for branches', (tester) async {
+      await _pumpRow(tester, node: _branch());
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
+    });
+
+    testWidgets('omits chevron for leaves', (tester) async {
+      await _pumpRow(tester, node: _leaf());
+      expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
+    });
+
+    testWidgets('chevron is rotated a quarter-turn when the branch is open', (
+      tester,
+    ) async {
+      await _pumpRow(tester, node: _branch(), isExpanded: true);
+      await tester.pump(const Duration(milliseconds: 300));
+      final rotation = tester.widget<AnimatedRotation>(
+        find.ancestor(
+          of: find.byIcon(LottiIcons.chevronRight),
+          matching: find.byType(AnimatedRotation),
+        ),
+      );
+      expect(rotation.turns, 0.25);
+    });
+
+    testWidgets('chevron is zero-turn when the branch is closed', (
+      tester,
+    ) async {
+      await _pumpRow(tester, node: _branch());
+      final rotation = tester.widget<AnimatedRotation>(
+        find.ancestor(
+          of: find.byIcon(LottiIcons.chevronRight),
+          matching: find.byType(AnimatedRotation),
+        ),
+      );
+      expect(rotation.turns, 0);
+    });
+  });
+
+  group('SettingsTreeRow — leaf chevron (mobile drill-down)', () {
+    testWidgets('leaf shows a static chevron when showLeafChevron is true', (
+      tester,
+    ) async {
+      await _pumpRow(tester, node: _leaf(), showLeafChevron: true);
+      expect(find.byIcon(LottiIcons.chevronRight), findsOneWidget);
+      final rotation = tester.widget<AnimatedRotation>(
+        find.ancestor(
+          of: find.byIcon(LottiIcons.chevronRight),
+          matching: find.byType(AnimatedRotation),
+        ),
+      );
+      // A leaf is never "expanded", so its chevron points right (0 turns)
+      // rather than rotating like a branch.
+      expect(rotation.turns, 0);
+    });
+
+    testWidgets('leaf still omits the chevron when showLeafChevron is false', (
+      tester,
+    ) async {
+      await _pumpRow(tester, node: _leaf());
+      expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
+    });
+  });
+
+  group('SettingsTreeRow — description lines & height', () {
+    testWidgets('description honours descMaxLines', (tester) async {
+      await _pumpRow(tester, node: _leaf(), descMaxLines: 2);
+      final descText = tester.widget<Text>(find.text('Feature flags'));
+      expect(descText.maxLines, 2);
+    });
+
+    testWidgets('row is at least the minimum row height', (tester) async {
+      await _pumpRow(tester, node: _leaf());
+      final size = tester.getSize(find.byType(SettingsTreeRow));
+      // Minimum (not fixed) height: a single-line row sits at the floor;
+      // a wrapped 2-line row would be taller, never clipped.
+      expect(
+        size.height,
+        greaterThanOrEqualTo(SettingsTreeConstants.rowHeight),
+      );
+    });
+  });
+
+  group('SettingsTreeRow — interaction', () {
+    testWidgets('tap invokes the onTap callback', (tester) async {
+      var taps = 0;
+      await _pumpRow(
+        tester,
+        node: _leaf(),
+        onTap: () => taps++,
+      );
+      await tester.tap(find.byType(SettingsTreeRow));
+      await tester.pump();
+      expect(taps, 1);
+    });
+
+    testWidgets('uses design-system hover and keyboard-focus fills', (
+      tester,
+    ) async {
+      final focusNode = FocusNode();
+      addTearDown(focusNode.dispose);
+      await _pumpRow(tester, node: _leaf(), focusNode: focusNode);
+
+      final context = tester.element(find.byType(SettingsTreeRow));
+      final inkWell = tester.widget<InkWell>(find.byType(InkWell));
+      expect(inkWell.hoverColor, context.designTokens.colors.surface.hover);
+      expect(
+        inkWell.focusColor,
+        context.designTokens.colors.surface.focusPressed,
+      );
+
+      focusNode.requestFocus();
+      await tester.pump();
+      expect(focusNode.hasFocus, isTrue);
+    });
+  });
+
+  group('SettingsTreeRow — semantics', () {
+    testWidgets('exposes button + selected + label for a selected leaf', (
+      tester,
+    ) async {
+      await _pumpRow(
+        tester,
+        node: _leaf(),
+        onActivePath: true,
+      );
+      final node = tester.getSemantics(find.byType(SettingsTreeRow));
+      final flags = node.getSemanticsData().flagsCollection;
+      expect(node.label, contains('Flags'));
+      expect(flags.isButton, isTrue);
+      expect(flags.isSelected, Tristate.isTrue);
+    });
+
+    testWidgets('branches with isExpanded=true expose Tristate.isTrue', (
+      tester,
+    ) async {
+      await _pumpRow(
+        tester,
+        node: _branch(),
+        isExpanded: true,
+      );
+      final flags = tester
+          .getSemantics(find.byType(SettingsTreeRow))
+          .getSemanticsData()
+          .flagsCollection;
+      expect(flags.isExpanded, Tristate.isTrue);
+    });
+
+    testWidgets('collapsed branches expose Tristate.isFalse for isExpanded', (
+      tester,
+    ) async {
+      await _pumpRow(tester, node: _branch());
+      final flags = tester
+          .getSemantics(find.byType(SettingsTreeRow))
+          .getSemanticsData()
+          .flagsCollection;
+      // Branch nodes always report an expanded state (true or false) —
+      // Tristate.none would mean "this isn't an expandable thing".
+      expect(flags.isExpanded, Tristate.isFalse);
+    });
+
+    testWidgets('leaves report Tristate.none for isExpanded', (tester) async {
+      await _pumpRow(tester, node: _leaf());
+      final flags = tester
+          .getSemantics(find.byType(SettingsTreeRow))
+          .getSemanticsData()
+          .flagsCollection;
+      expect(flags.isExpanded, Tristate.none);
+    });
+  });
+}

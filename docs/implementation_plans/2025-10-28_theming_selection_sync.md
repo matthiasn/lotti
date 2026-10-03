@@ -18,8 +18,8 @@
     `lib/blocs/theming/theming_cubit.dart:54`, `lib/blocs/theming/theming_cubit.dart:97`–
     `lib/blocs/theming/theming_cubit.dart:120`, `lib/blocs/theming/theming_cubit.dart:122`–
     `lib/blocs/theming/theming_cubit.dart:150`.
-  - Theming UI: `lib/features/settings/ui/pages/theming_page.dart:50`–
-    `lib/features/settings/ui/pages/theming_page.dart:107` (segmented ThemeMode, light/dark
+  - Theming UI: `lib/features/theming/ui/theming_page.dart:50`–
+    `lib/features/theming/ui/theming_page.dart:107` (segmented ThemeMode, light/dark
     pickers).
 - Sync message envelope and processing:
   - Freezed union for message types: `lib/features/sync/model/sync_message.dart:12`–
@@ -60,7 +60,7 @@
 - Add `updatedAt` (milliseconds since epoch, UTC) for deterministic tie‑breaking when multiple devices update around the same time.
 - Emit on `setLightTheme(...)`, `setDarkTheme(...)`, and `onThemeSelectionChanged(...)` so each change publishes the full triple to avoid partial divergence.
 - Receive in `SyncEventProcessor` and persist via `SettingsDb.saveSettingsItem(...)` using the same keys as ThemingCubit to ensure UI rebuilds reflect the new choices after state reloads.
-- Keys will live in `lib/features/settings/constants/theming_settings_keys.dart` to avoid cross‑importing UI code into sync paths and to match existing `features/*/constants` patterns.
+- Keys will live in `lib/features/theming/constants/theming_settings_keys.dart` to avoid cross‑importing UI code into sync paths and to match existing `features/*/constants` patterns.
 
 ## Changes by Component
 
@@ -71,7 +71,7 @@
 
 - Shared theming keys
   - Extract keys to a constants file for reuse across ThemingCubit and the sync processor:
-    - New: `lib/features/settings/constants/theming_settings_keys.dart` with:
+    - New: `lib/features/theming/constants/theming_settings_keys.dart` with:
       - `const lightSchemeNameKey = 'LIGHT_SCHEME';`
       - `const darkSchemeNameKey = 'DARK_SCHEMA';` (keep existing spelling)
       - `const darkSchemeNameKeyAlias = 'DARK_SCHEME';` (read‑compat alias only)
@@ -146,7 +146,7 @@
   - `lib/get_it.dart` — wire `SettingsDb` into `SyncEventProcessor` (new optional ctor param), or register and inject a new `ThemingSyncService` used by the processor for apply.
   - `lib/features/sync/matrix/sync_event_processor.dart` — update exhaustive `switch` to include the new `SyncThemingSelection` case.
 - Add
-  - `lib/features/settings/constants/theming_settings_keys.dart` — shared constants for keys and timestamp.
+  - `lib/features/theming/constants/theming_settings_keys.dart` — shared constants for keys and timestamp.
   - Tests under `test/` (see Test Strategy).
 
 ## Test Strategy

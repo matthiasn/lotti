@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_settings_back_nav.dart';
-import 'package:lotti/features/settings_v2/domain/settings_tree_index.dart';
+import 'package:lotti/features/settings/domain/settings_urls.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:material_ui/material_ui.dart';
@@ -10,7 +10,7 @@ import 'package:material_ui/material_ui.dart';
 /// simulates the mobile push behaviour. When [withOuterRoute] is `false`
 /// the page is the [MaterialApp.home] root, and `canPop` is `false` —
 /// this simulates the desktop master/detail panel slot where the page
-/// is rendered as a static child of `AiPanelDispatch`, not pushed onto
+/// is rendered as a static child of the settings panel host, not pushed onto
 /// any Navigator.
 Widget _buildHost({
   required Widget child,

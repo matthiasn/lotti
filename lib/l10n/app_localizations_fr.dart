@@ -14586,21 +14586,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsThemingTitle => 'Thème';
 
   @override
-  String get settingsV2CategoryEmptyBody => 'Choisis un sous-réglage à gauche.';
+  String get settingsTreeCategoryEmptyBody =>
+      'Choisis un sous-réglage à gauche.';
 
   @override
-  String get settingsV2DetailRootCrumb => 'Paramètres';
+  String get settingsTreeRootCrumb => 'Paramètres';
 
   @override
-  String get settingsV2EmptyStateBody =>
+  String get settingsTreeEmptyStateBody =>
       'Choisis une rubrique à gauche pour commencer.';
 
   @override
-  String get settingsV2ResizeHandleLabel =>
+  String get settingsTreeResizeHandleLabel =>
       'Redimensionner l\'arborescence des paramètres';
-
-  @override
-  String get settingsV2UnimplementedTitle => 'Volet non encore disponible';
 
   @override
   String get settingsWhatsNewSubtitle =>

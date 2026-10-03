@@ -1,29 +1,45 @@
 ---
 type: Feature Module
 title: Settings
-description: The settings shell — how a URL becomes pages, why desktop pushes one and mobile pushes a stack, which of the two flag pages a config flag belongs to, and the shared list/detail kit every definition editor reuses.
+description: One flag-gated tree says what settings exist; one route registry says where each one leads. How a URL becomes a mobile page stack or a desktop panel, why every page names its pop target, which of two pages a config flag belongs to, and the list/detail kit every definition editor reuses.
 resource: ../../lib/features/settings
-tags: [settings, navigation, tree, forms]
+tags: [settings, navigation, tree, routing, forms]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T10:00:00Z }
-stale_after: 2027-03-08
+generated: { by: claude-code/opus-5.5, at: 2026-10-03T12:00:00Z }
+stale_after: 2027-04-03
 sources:
   - id: settings
     resource: ../../lib/features/settings
     title: Settings feature source
-    last_modified: 2026-08-28
+    last_modified: 2026-10-03
   - id: tree
-    resource: ../../lib/features/settings_v2/domain/settings_tree_data.dart
-    title: buildSettingsTree — the single source of truth
-    last_modified: 2026-07-21
+    resource: ../../lib/features/settings/domain/settings_tree_data.dart
+    title: buildSettingsTree — what exists and which flags gate it
+    last_modified: 2026-10-03
+  - id: registry
+    resource: ../../lib/features/settings/routing/settings_routes.dart
+    title: settingsRoutes — every settings destination, declared once
+    last_modified: 2026-10-03
+  - id: route-model
+    resource: ../../lib/features/settings/routing/settings_route.dart
+    title: SettingsRouteTable — URL to tree path, page stack and pop targets
+    last_modified: 2026-10-03
   - id: location
     resource: ../../lib/beamer/locations/settings_location.dart
-    title: SettingsLocation route assembly
-    last_modified: 2026-07-21
+    title: SettingsLocation — the registry as Beamer pages
+    last_modified: 2026-10-03
+  - id: panel-host
+    resource: ../../lib/features/settings/ui/detail/settings_panel_host.dart
+    title: SettingsPanelHost — a node's panel or the detail below it
+    last_modified: 2026-10-03
   - id: detail-kit
     resource: ../../lib/widgets/settings/settings_detail_scaffold.dart
     title: Shared settings detail scaffold
     last_modified: 2026-07-15
+  - id: list-shell
+    resource: ../../lib/features/settings/ui/pages/definitions_list_page.dart
+    title: DefinitionsListPage — the shared definition list shell
+    last_modified: 2026-10-03
   - id: maintenance-page
     resource: ../../lib/features/settings/ui/pages/advanced/maintenance_page.dart
     title: Advanced maintenance actions
@@ -46,53 +62,129 @@ sources:
     last_modified: 2026-09-20
 ---
 
-# From one tree to two page stacks
+# Two declarations, two renderings
 
-This feature owns the **shell**: turning a `/settings/...` URL into pages, and
-giving every definition editor the same list/detail frame. The menu it renders is
-not its own — the landing list and the section hubs read the declarative tree
-defined in [`settings_v2`](settings_v2.md), which is also where the reason for
-having one lives.
+Settings is declared in two places and rendered in two shapes, and the four do
+not overlap:
 
-What this concept describes is what happens next: the same tree becomes two
-different page stacks.
+- **`buildSettingsTree`** decides *what exists*: every node, its icon and order,
+  how nodes group into branches, and which feature flags gate them. It knows
+  nothing about URLs or widgets.
+- **`settingsRoutes`** decides *where each node leads*: one `SettingsRoute` per
+  tree node id, carrying its URL, its mobile page, its headerless desktop panel
+  and the detail sub-routes below it (editors, create flows, reviews).
+
+From those two, the desktop tree-nav and the mobile drill-down are both derived,
+so they cannot disagree about which settings exist, how they are grouped, or
+where a row goes.
 
 ```mermaid
 flowchart TD
-  Route["Incoming /settings/... path"] --> Location["SettingsLocation.buildPages"]
-  Location --> Fork{"NavService.isDesktopMode?"}
-  Fork -->|desktop| Desktop["Single BeamPage: SettingsRootPage<br/>(renders SettingsV2Page tree nav)<br/>+ desktopSelectedSettingsRoute notifier"]
-  Fork -->|mobile| MobileStack["Beamer page stack:<br/>SettingsMobileRootPage → (branch hub) → leaf"]
+  Tree["buildSettingsTree<br/>what exists, flag-gated"] --> TreeView["Desktop: SettingsDesktopPage<br/>tree column + breadcrumb"]
+  Tree --> Hubs["Mobile: root page and branch hubs<br/>(SettingsMobileTreePage)"]
+  Registry["settingsRoutes<br/>URL · page · panel · sub-routes"] --> Location["SettingsLocation<br/>mobile page stack + pop targets"]
+  Registry --> Host["SettingsPanelHost<br/>desktop detail pane"]
+  Registry --> Sync["SettingsTreeUrlSync<br/>tree path ↔ URL"]
+  Registry --> Nav["settingsRouteHidesBottomNav<br/>keepsBottomNav"]
+  TreeView --> Host
+  Hubs --> Location
 ```
 
-**Desktop pushes exactly one page.** Instead of stacking, it stores the sub-route
-in `NavService.desktopSelectedSettingsRoute` and routes detail content into the
-right-hand pane through that `ValueNotifier`.
+**Desktop pushes exactly one page.** `SettingsLocation` keeps a single
+`SettingsRootPage` on the stack and publishes the URL — path, captured
+parameters and query — through `NavService.desktopSelectedSettingsRoute`. The
+tree, the breadcrumb and the detail pane all follow that notifier.
 
-**Mobile builds real stacks, not single pages.** Parent pages stay in the Beamer
-stack so a back tap walks up one level at a time. `SettingsMobileRootPage` is
-always first; for the four branches that are **pure navigation** —
-`definitions`, `preferences`, `advanced` and `sync` — a
-`SettingsMobileBranchPage` hub is also pushed and **stays beneath** the leaf,
-making it a true drill-down. The sync hub is the same page wrapped in
-`SyncFeatureGate`. AI and Agents are the exception:
-each has its own landing page (`AiSettingsPage` and its agents counterpart) and is
-opened directly.
+**Mobile builds real stacks.** The same URL resolves to the Settings root plus
+one page per tree level that has one, plus any detail above them, so a back
+gesture walks up one level at a time.
 
-Each hub lists its children from the shared tree, which is what replaced the
-hand-maintained `DefinitionsPage`, `AdvancedSettingsPage` and `SyncSettingsPage`
-item lists — entries, icons, copy, ordering and flag gating all come from
-`buildSettingsTree`.
+## Adding a page touches three places
 
-Tapping a node is routed by `handleSettingsNodeTap`: `whats-new` opens a modal,
-everything else beams to its canonical URL from `settingsNodeUrls`, and
-`SettingsLocation` rebuilds the stack from that URL.
+| Place | If you skip it |
+|-------|----------------|
+| A node in `buildSettingsTree` | The entry does not exist |
+| A `(title, desc)` case in `settingsTreeLabelsFor` | The row renders its **raw node id** as its title — deliberate, so the mistake shows instead of crashing |
+| An entry in `settingsRoutes` | The registry tests fail: every tree node must be an action or have a route, and every leaf but the deliberately phone-only ones must have a desktop panel |
+
+Every URL in the registry is a string literal, sub-routes included, because
+`docs-site/scripts/validate-manual.mjs` reads them out of that file to check the
+manual's route inventory — so a new URL also needs an entry in
+`docs-site/metadata/surface-inventory.json`, and the manual build says so.
+
+# How a URL becomes a page stack
+
+`SettingsRouteTable.resolve` is a pure function from a URL to a
+`SettingsRouteMatch`: the tree path, the mobile stack, the matched sub-route and
+the captured parameters.
+
+1. **Aliases first.** A retired URL maps to its canonical one —
+   `/settings/maintenance`, once advertised without a page behind it, opens
+   Advanced → Maintenance.
+2. **The node is a greedy longest-prefix match over node URLs**, not a parse of
+   the URL's shape. A node keeps its URL when it moves between branches, so the
+   tree path is read from the registry, never inferred from the segments.
+3. **One page per tree level that has one.** A node without a `page` — an AI or
+   Agents tab, which its section's page already shows — adds none, but its URL
+   still becomes the pop target of anything above it.
+4. **The deepest sub-route wins, and stacks above the sub-routes it extends.**
+   `/settings/agents/templates/<id>/review` stacks the review above the
+   template; `/settings/habits/search/<term>` (a `replacesParent` sub-route)
+   takes the list's own slot. A `:param` never captures the literal `create`,
+   so a stray `…/create` under a node with no create flow falls back to the
+   node instead of opening an editor for an entity called "create".
+
+```mermaid
+flowchart LR
+  URL["/settings/sync/matrix/maintenance"] --> Node["longest node-URL prefix<br/>→ sync/matrix-maintenance"]
+  Node --> Path["tree path<br/>[sync, sync/matrix-maintenance]"]
+  Path --> Stack["stack<br/>root → Sync hub → Matrix maintenance"]
+  Stack --> Pops["popToNamed<br/>hub: /settings<br/>leaf: /settings/sync"]
+```
+
+## Every page names its pop target
+
+Beamer's default pop strips **one** URL segment. That is right only when a
+page's URL nests directly under the one beneath it — and most settings URLs do
+not: definition and preference leaves kept the flat URLs they shipped with
+(`/settings/categories` under a hub at `/settings/definitions`), detail routes
+are two segments below their list, and Matrix maintenance is three segments
+under the Sync hub. Each of those, at one time or another, popped to a URL that
+rebuilt the very page being left, so a back tap animated it out and pushed an
+identical page straight back in.
+
+So no settings page uses the default: every `SettingsStackEntry` carries an
+explicit `popUrl`, the URL of the page beneath it, and `SettingsLocation` passes
+it as `BeamPage.popToNamed`. The invariant behind it is tested over **every**
+URL the registry answers on, sub-routes filled in: resolving a page's pop target
+must yield exactly the stack beneath that page. Then a back gesture can only
+ever uncover a page, never swap one in.
+
+The other half is the page key. A page keeps the same key (`settings-<node id>`,
+or `<owner>:<remainder>` for a detail) at every URL that shows it, which is what
+lets the Navigator uncover the existing page instead of replacing it.
+
+# The tree, not the URL, decides the hub
+
+Because the stack is read from the tree path, a leaf whose URL sits under
+another branch's prefix still stacks under its own branch:
+
+- **Conflicts** is listed under Sync and answers on `/settings/advanced/conflicts`
+  — it stacks above the **Sync** hub.
+- **Animations** belongs to Preferences and answers on
+  `/settings/advanced/animations` — it stacks above the **Preferences** hub.
+- **Config Flags** and **Health import** belong to Advanced and answer on
+  `/settings/flags` and `/settings/health_import`.
+
+A node id must stay one tree segment per level for the same reason:
+`sync/matrix-maintenance` keeps a hyphen where its URL has a slash, because
+`sync/matrix/maintenance` would name a `sync/matrix` parent that does not exist.
 
 # The runtime topology
 
 ```mermaid
 flowchart LR
-  Landing["/settings (tree root)"] --> WhatsNew["What's New — if enableWhatsNew"]
+  Landing["/settings (tree root)"] --> WhatsNew["What's New — action, if enableWhatsNew"]
   Landing --> Onboarding["Onboarding"]
   Landing --> Sections["Sections — the app-section toggles"]
   Landing --> AI["AI"]
@@ -102,7 +194,7 @@ flowchart LR
   Landing --> Definitions["Definitions"]
   Landing --> Preferences["Preferences"]
   Landing --> Advanced["Advanced"]
-  Landing --> Manual["Manual — opens the browser"]
+  Landing --> Manual["Manual — action, opens the browser"]
 
   AI --> AiProviders["Providers"]
   AI --> AiModels["Models"]
@@ -114,9 +206,9 @@ flowchart LR
   Agents --> AgentSouls["Souls"]
   Agents --> AgentWakes["Pending wakes"]
 
-  Sync --> Provisioned["Provisioned sync"]
+  Sync --> Provisioned["Devices"]
   Sync --> NodeProfile["This device"]
-  Sync --> Backfill["Backfill"]
+  Sync --> Backfill["Sync health"]
   Sync --> SyncStats["Stats"]
   Sync --> Outbox["Outbox"]
   Sync --> Conflicts["Conflicts — URL /settings/advanced/conflicts"]
@@ -127,41 +219,86 @@ flowchart LR
   Definitions --> Habits["Habits — if enableHabits"]
   Definitions --> Dashboards["Dashboards — if enableDashboards"]
   Definitions --> Measurables["Measurables"]
-  Categories --> Projects["Project detail — /settings/projects/:projectId"]
 
-  Preferences --> Theming["Theming — URL /settings/theming"]
+  Preferences --> Theming["Theming"]
   Preferences --> Animations["Animations — URL /settings/advanced/animations"]
-  Preferences --> RecordingStyle["Recording style — URL /settings/recording-style"]
-  Preferences --> Speech["Speech — if enableSpeechTts, URL /settings/speech"]
-  Preferences --> Keyboard["Keyboard shortcuts — URL /settings/keyboard-shortcuts"]
+  Preferences --> Notifications["Notifications"]
+  Preferences --> RecordingStyle["Recording style"]
+  Preferences --> Speech["Speech — if enableSpeechTts"]
+  Preferences --> Keyboard["Keyboard shortcuts"]
 
-  Advanced --> Flags["Config flags — preferences + diagnostics"]
+  Advanced --> Flags["Config flags — URL /settings/flags"]
+  Advanced --> GitHub["GitHub — if enableGitHubPullRequests"]
   Advanced --> ManualLanguage["Manual language"]
   Advanced --> Logging["Logging domains"]
-  Advanced --> HealthImport["Health import — if enableHealthImport, mobile only"]
+  Advanced --> SystemHealth["System health"]
+  Advanced --> HealthImport["Health import — phones only"]
   Advanced --> Maintenance["Maintenance"]
   Advanced --> OnboardingMetrics["Onboarding metrics"]
   Advanced --> About["About"]
 ```
 
-The agents children mirror the tab order inside `AgentSettingsBody`, so the tree
-shape matches what the right pane shows. `Manual` is not a panel at all — it
-carries `SettingsNodeAction.openManual` and leaves the app.
+In demo worlds, which have no Matrix stack, Sync collapses into a single inert
+explainer tile (`sync-unavailable`). A project opened from a category
+(`/settings/projects/:projectId`) belongs to no node and hangs off the root.
 
-**Two code-accurate wrinkles, both the same one:** a node's branch in the tree
-says nothing about its URL. Conflicts is a child of Sync but still answers on
-`/settings/advanced/conflicts`, and Animations is a child of Preferences but
-still answers on `/settings/advanced/animations` — `settingsNodeUrls` maps each
-node id to its legacy path so existing deep links keep resolving.
+AI and Agents have pages of their own on mobile whose tabs are the tree's
+children, so on a phone those children add no page; on desktop each child is a
+panel showing one tab. The two **action** leaves never become pages on either
+surface: `handleSettingsNodeAction` opens the Manual in the browser and What's
+New in its modal.
 
-The `definitions` and `preferences` branches run the same trick wholesale: every
-one of their leaves keeps the URL it had before the branch existed
-(`/settings/habits`, `/settings/theming`, …), so grouping the menu never
-invalidated a link. Animations is the case that makes the rule visible on
-mobile: `_inAdvancedBranch` would claim its URL by prefix, so it defers to
-`_inPreferencesBranch`, and the hub pushed beneath the page is the one the
-*tree* says, not the one the URL looks like. See
-[settings_v2](settings_v2.md#a-branch-can-be-added-without-moving-a-single-url).
+# The desktop detail pane
+
+`SettingsDetailPane` dispatches on the selected tree path:
+
+- nothing selected, or a leaf this platform has no panel for → `EmptyRoot`;
+- a branch without a panel → `CategoryEmpty`, the "pick a section" hint;
+- anything with a panel — including the `ai` and `agents` branches, which carry
+  one — → `LeafPanel`, which keeps every panel visited since the pane mounted
+  alive in an `IndexedStack`, so switching siblings keeps their scroll position
+  and filters.
+
+`LeafPanel` hosts each panel through `SettingsPanelHost`, which listens to the
+published route and shows either the node's panel body or, when the URL opens
+one of the node's sub-routes, that detail in the same slot. Detail surfaces are
+the same widgets on both platforms — a page stacked on mobile, the slot's
+content on desktop — so each is declared once.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Body
+    Body --> Detail: URL opens one of the node's sub-routes
+    Detail --> Detail: URL opens a different sub-route or id
+    Detail --> Body: URL returns to the node's own URL
+    Body --> Body: URL belongs to another node
+    note right of Detail
+      keyed by the stack key, so a new id
+      mounts a fresh page
+    end note
+```
+
+A panel body never draws its own title: the breadcrumb above the pane already
+names it. Where a feature page is also a phone page, its `*Body` turns the
+header off — `DefinitionsListPage(showHeader: false)` for the five definition
+lists, `SyncListScaffold(showTitle: false)` for Outbox and Conflicts (the pinned
+filter row stays), `ImpactAnalysisBody(showTitle: false)` for AI usage. Editors
+reached through sub-routes keep their own header, because its back button is
+the way back to the list.
+
+`SettingsTreeUrlSync` keeps tree path and URL in step both ways: a tree tap
+beams to the node's URL with replacement, and a URL change — a deep link, a
+detail opened from a list — resolves back to a tree path. A counter on each side
+suppresses the echo, so opening `/settings/categories/<id>` does not get
+canonicalised back to the list URL.
+
+# The bottom navigation follows the stack
+
+On a phone, `settingsRouteHidesBottomNav` reads the page on top of the resolved
+stack: menus and browse lists keep the bar (`keepsBottomNav` — the root, the
+branch hubs, the five definition lists, the conflicts list, habit search);
+leaves, editors and the AI and Agents sections hide it. Sections is the one leaf
+that keeps it, because its switches add and remove the bar's own tabs.
 
 # One flag set, two pages, one rule
 
@@ -206,7 +343,7 @@ flowchart TD
   Persist --> Store
 ```
 
-Two things keep that honest, and both are tests rather than review:
+Three things keep that honest:
 
 - **`database_config_flags_test.dart` partitions the set.** It reads the flags a
   real in-memory database ends up holding and asserts that `sectionFlags` and
@@ -216,8 +353,7 @@ Two things keep that honest, and both are tests rather than review:
 - **`nav_service_test.dart` pins the navigation correspondence.** `NavService`
   derives its watch list from `sectionFlags` rather than spelling the flags out,
   and the test records which names it asks for and asserts they are exactly that
-  list, in order. Re-hardcoding the list here — the regression that would make
-  the Sections page quietly wrong — fails there.
+  list, in order.
 - **`ConfigFlagToggleList` and `ConfigFlagLabels` are shared.** Both pages render
   the same row widget and resolve labels through the same catalog, so a flag that
   moves between them keeps its glyph, its wording and its tap behaviour without a
@@ -227,23 +363,22 @@ Two things keep that honest, and both are tests rather than review:
 
 # Ownership boundaries
 
-**Settings owns** the layout fork in `settings_root_page.dart`, route composition
-in `SettingsLocation`, the shared presentation widgets, the shared list/detail
-scaffolding, the two-step destructive/long-running modal wrapper, and utility
-pages: theming, sections, flags, logging, manual language, maintenance, about,
-health import, recording style.
+**Settings owns** the tree and its labels, the route registry, the desktop
+tree-nav page and detail pane, the mobile root and branch hubs, the shared
+presentation widgets, the shared list/detail scaffolding, the two-step
+destructive/long-running modal wrapper, and the utility pages that belong to no
+other feature: sections, flags, logging, manual language, maintenance, about,
+animations (completion celebrations), health import and the measurable editor.
 
-**Settings routes into other features** for AI, agents, categories, labels,
-projects and sync settings — those pages live in their own features.
-
-**Settings hosts pages that still depend on other feature logic**: habit editing
-UI lives here but save/delete state comes from the habits feature; theming UI
-lives here but the state machine is in the theming feature; health import lives
-here but the implementation is `lib/logic/health_import.dart`.
-
-**The menu surfaces themselves are no longer Settings-owned widgets** — the mobile
-landing and the Definitions/Preferences/Advanced hubs render from the shared tree
-in `settings_v2`.
+**A settings page that configures a feature lives in that feature** and is only
+referenced from the registry: AI and agents, categories, labels, projects and
+sync; dashboard definitions in `dashboards/ui/settings/`; the habit list in
+`habits`; theming in `theming`; notification settings in `notifications`;
+recording style in `onboarding`; speech in `tts`; keyboard shortcuts in
+`keyboard`; system health in `system_health`; GitHub in `github`. Nothing
+imports the retired `features/settings_v2` directory, and the settings tree and
+its state import neither the routing layer nor the UI — both rules are in
+`test/architecture/feature_import_direction_test.dart`.
 
 # The shared list/detail pattern
 
@@ -254,13 +389,15 @@ reuse one pattern:
    `AsyncValue<List<T>>` from a Riverpod stream provider.
 2. **The shell owns** search, sorted rendering, loading/empty/no-match/error
    states (each localized, with the empty state carrying an inline create
-   button), and the create affordance — a bottom-nav-cleared FAB on mobile, a
-   header button on desktop.
+   button on phones), and the create affordance — a bottom-nav-cleared FAB on a
+   phone, and in the desktop detail pane a button beside the search field,
+   reachable through empty, loading and error states alike.
 3. Rows lead with one shared 36 px rounded-square chip and keep a **stable
    subtitle semantic per page** — counts for categories and labels,
    description for measurables, habits and dashboards.
-4. Tapping a row beams to the detail editor; the desktop split pane dispatches
-   the same URLs inline.
+4. Tapping a row beams to the detail editor's URL — a sub-route of the list's
+   registry entry, stacked on a phone and swapped into the panel slot on
+   desktop.
 5. Saving or deleting goes through shared persistence or a feature-specific
    controller.
 
@@ -342,4 +479,4 @@ rather than an exemption for debug affordances, so do not read it as precedent.
 
 # Related
 
-* [Navigation and app shell](../architecture/navigation.md) - the chrome rules that decide which settings routes hide the bottom nav: menus keep the bar, terminal destinations take the bottom edge.
+* [Navigation and app shell](../architecture/navigation.md) - where the settings delegate sits among the tabs, why a Beamer pop walks one URL segment, and the chrome rules that decide which routes hide the bottom nav.

@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:lotti/features/settings_v2/domain/settings_tree_index.dart';
+import 'package:lotti/features/settings/domain/settings_urls.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
 
@@ -15,8 +15,8 @@ import 'package:lotti/services/nav_service.dart' as nav_service;
 /// and the AppBar arrow stay in lockstep, and we never bulldoze
 /// unsaved edits.
 ///
-/// On desktop master/detail the page is rendered as a child of
-/// `AiPanelDispatch` inside the Settings V2 panel slot — it was
+/// On desktop master/detail the page is rendered by the settings panel
+/// host inside the detail pane — it was
 /// **never pushed** onto the panel's Navigator, so `canPop` is false
 /// and `maybePop` would be a silent no-op (the user taps Back and
 /// nothing happens). In that case we fall back to beaming the parent

@@ -356,7 +356,7 @@ kind of alert decides whether the scheduler projects that kind's rows onto the
 OS channel. The flags are seeded **on** — a user who switches notifications on
 has asked for alerts, not for a second round of opting in — and are edited on
 the Notifications page under Settings → Preferences (`/settings/notifications`,
-`lib/features/settings/ui/pages/notification_settings_page.dart`), which also
+`lib/features/notifications/ui/notification_settings_page.dart`), which also
 carries the master switch. The Config Flags page no longer lists it.
 
 | flag | governs |

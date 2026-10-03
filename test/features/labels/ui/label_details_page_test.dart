@@ -498,7 +498,7 @@ void main() {
     });
 
     testWidgets(
-      'header back affordance beams to the labels list (V2 desktop has no '
+      'header back affordance beams to the labels list (the desktop pane has no '
       'Navigator.canPop fallback to auto-render the leading)',
       (tester) async {
         String? beamedTo;
@@ -562,7 +562,7 @@ void main() {
         await tester.pump();
 
         expect(saved, isFalse);
-        // Cancel beams back to the labels list (V2's detail surface
+        // Cancel beams back to the labels list (the desktop detail pane
         // mounts inline, so this is the only return path on desktop).
         expect(beamedTo, '/settings/labels');
       },

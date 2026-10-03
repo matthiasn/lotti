@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:lotti/widgets/app_bar/settings_header_bar.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -22,6 +23,7 @@ Future<void> _pumpHeader(
   double topPadding = 47,
   double contentHeight = 400,
   ThemeData? theme,
+  bool showTitleBar = true,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -45,6 +47,7 @@ Future<void> _pumpHeader(
                 showBackButton: showBackButton,
                 pinned: pinned,
                 bottom: bottom,
+                showTitleBar: showTitleBar,
               ),
               SliverToBoxAdapter(child: SizedBox(height: contentHeight)),
             ],
@@ -100,6 +103,32 @@ Future<void> _pumpThemeSwitchingHeader(
 }
 
 void main() {
+  group('without its title bar', () {
+    testWidgets('keeps the bottom row pinned, and only the bottom row — no '
+        'title, subtitle or back button, and no space reserved for them', (
+      tester,
+    ) async {
+      const bottom = _TestBottomBar(label: 'FILTERS', height: 56);
+      await _pumpHeader(
+        tester,
+        showTitleBar: false,
+        showBackButton: true,
+        bottom: bottom,
+        topPadding: 0,
+        contentHeight: 1000,
+      );
+
+      expect(find.byType(SettingsHeaderBar), findsNothing);
+      expect(find.text('Matrix Sync Maintenance'), findsNothing);
+      expect(find.text('FILTERS'), findsOneWidget);
+      expect(tester.getTopLeft(find.text('FILTERS')).dy, lessThan(56));
+
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -600));
+      await tester.pumpAndSettle();
+      expect(find.text('FILTERS'), findsOneWidget);
+    });
+  });
+
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('SettingsPageHeader', () {

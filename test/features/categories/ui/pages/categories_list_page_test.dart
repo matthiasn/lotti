@@ -12,6 +12,7 @@ import 'package:lotti/features/design_system/components/lists/design_system_list
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -654,10 +655,16 @@ void main() {
           await tester.pump();
           await tester.pumpAndSettle();
 
-          // The body alias delegates to the full page, so the page widget
-          // and its rendered category content are both present.
-          expect(find.byType(CategoriesListPage), findsOneWidget);
+          // The body renders the full list, minus the page header the
+          // detail pane's breadcrumb replaces.
           expect(find.text('Embedded'), findsOneWidget);
+          expect(
+            tester
+                .widget<CategoriesListPage>(find.byType(CategoriesListPage))
+                .showHeader,
+            isFalse,
+          );
+          expect(find.byType(SettingsPageHeader), findsNothing);
         },
       );
     });

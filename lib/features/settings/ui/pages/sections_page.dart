@@ -9,7 +9,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Mobile / drill-down wrapper for [SectionsBody] — supplies the page
-/// chrome (title, back button) that the Settings V2 detail pane provides
+/// chrome (title, back button) that the desktop settings detail pane provides
 /// itself. [SectionsBody] carries its own gutter, so this passes
 /// [EdgeInsets.zero].
 ///

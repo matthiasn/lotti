@@ -34,17 +34,17 @@ import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
 import 'package:lotti/features/dashboards/state/dashboards_page_controller.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboard_page.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboards_list_page.dart';
+import 'package:lotti/features/dashboards/ui/settings/dashboard_definition_page.dart';
+import 'package:lotti/features/dashboards/ui/settings/dashboard_settings_page.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_survey_chart.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/ui/pages/habit_editor_page.dart';
+import 'package:lotti/features/habits/ui/pages/habit_settings_page.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
-import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
-import 'package:lotti/features/settings/ui/pages/dashboards/dashboards_page.dart';
-import 'package:lotti/features/settings/ui/pages/habits/habits_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -1036,7 +1036,7 @@ void main() {
               (ref) => Stream.value(_allHabits),
             ),
           ],
-          home: const HabitsPage(),
+          home: const HabitSettingsPage(),
         );
         expect(
           find.text(

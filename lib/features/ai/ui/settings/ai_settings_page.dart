@@ -41,11 +41,11 @@ part 'ai_settings_tab_builders.dart';
 /// straight to the create form without first instantiating the modal.
 const String kAiPickProviderDismissedKey = 'AI_PICK_PROVIDER_DISMISSED';
 
-/// Embeddable body alias for the Settings V2 detail pane.
+/// The AI settings list as a desktop settings panel.
 ///
 /// Same widget tree as the standalone page in its default form. The
 /// optional [initialTab] + [hideTabBar] params drive the per-leaf
-/// embedded mode the master/detail panel registry uses on desktop:
+/// embedded mode the AI routes in `settingsRoutes` use on desktop:
 /// when a specific tab is pinned and the tab bar is hidden, the
 /// panel slot renders only that tab's body so the sidebar leaves
 /// (Providers / Models / Profiles) each map to one focused view —
@@ -121,8 +121,8 @@ class AiSettingsPage extends ConsumerStatefulWidget {
   /// already names the view.
   final bool hideTabBar;
 
-  /// Suppresses the in-pane `SettingsPageHeader`. Used by the v4
-  /// desktop panel registry — the master/detail chrome already
+  /// Suppresses the in-pane `SettingsPageHeader`. Used by the desktop
+  /// settings panels — the master/detail chrome already
   /// renders the breadcrumb so the duplicate title strip just
   /// crowded the search bar.
   final bool hideHeader;

@@ -5,8 +5,8 @@ description: Two record streams reconciled into "what should the user see now" â
 resource: ../../lib/features/habits
 tags: [habits, derivation, streaks, heatmap]
 status: stable
-generated: { by: claude-code/fable-5, at: 2026-09-25T12:00:00Z }
-stale_after: 2027-02-22
+generated: { by: claude-code/opus-5.5, at: 2026-10-03T12:00:00Z }
+stale_after: 2027-04-03
 sources:
   - id: src
     resource: ../../lib/features/habits
@@ -44,7 +44,7 @@ flowchart LR
   HeatCtl --> HeatFetch["Deep-history range fetch"]
   HeatCtl --> FilterListen["listens HabitsController.selectedCategoryIds"]
 
-  SettingsPage["HabitDetailsPage"] --> SettingsCtl["HabitSettingsController(habitId)"]
+  SettingsPage["HabitEditorPage"] --> SettingsCtl["HabitSettingsController(habitId)"]
   SettingsCtl --> Repo["HabitsRepository"]
   SettingsCtl --> Persist["PersistenceLogic.upsertEntityDefinition"]
   Persist --> Notifications["NotificationService.scheduleHabitNotification"]

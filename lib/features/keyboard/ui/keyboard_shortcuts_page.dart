@@ -25,7 +25,7 @@ class KeyboardShortcutsPage extends StatelessWidget {
   }
 }
 
-/// Headerless shortcut help body used by Settings V2.
+/// Headerless shortcut help body used by the desktop settings pane.
 class KeyboardShortcutsBody extends StatelessWidget {
   const KeyboardShortcutsBody({super.key});
 
