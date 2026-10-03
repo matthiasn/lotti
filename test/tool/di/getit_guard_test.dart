@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 
 // Relative import: the guard is a repo tool, not part of the `lotti` package.
 //
@@ -8,6 +9,10 @@ import 'package:flutter_test/flutter_test.dart';
 // guard exists to detect. A migration sweep that rewrites them would leave every
 // test here passing vacuously. Leave them as literals.
 import '../../../tool/di/getit_guard.dart';
+
+/// Wraps statements in a function, so the fixture is valid Dart: the guard
+/// counts on parsed source, and the analyzer gate guarantees real files parse.
+String body(String statements) => 'void f() { $statements }';
 
 /// Builds a throwaway tree with [files] laid out under `lib/` and scans it.
 GuardResult scanFixture(
@@ -66,11 +71,59 @@ final b = forgetIt<Bar>();
       expect(result.debt, isEmpty);
     });
 
+    test('ignores trailing comments, block comments and string literals', () {
+      expect(
+        countGetIt('''
+final a = 1; // getIt<A>()
+/* getIt<B>() and getIt.isRegistered<C>() */
+final s = 'getIt<D>()';
+final t = """getIt.get<E>()""";
+final r = r'GetIt.I';
+'''),
+        (lookups: 0, isRegistered: 0),
+      );
+    });
+
+    test('counts a lookup inside a string interpolation', () {
+      // Interpolated code runs; it is a real lookup.
+      expect(
+        countGetIt(r"final s = 'db: ${getIt<JournalDb>()}';"),
+        (lookups: 1, isRegistered: 0),
+      );
+    });
+
+    test('a member named getIt on another object is not the locator', () {
+      expect(
+        countGetIt('final a = locator.getIt<A>(); final b = x?.getIt<B>();'),
+        (lookups: 0, isRegistered: 0),
+      );
+    });
+
+    test('comment and string mentions never fail the ratchet', () {
+      const page = 'lib/features/a/ui/page.dart';
+      const mentions = '''
+final a = 1; // was getIt<A>()
+/* getIt<B>() */
+final s = 'getIt<C>()';
+''';
+      // At its baseline: the mentions add nothing on top of the one lookup.
+      final atBaseline = scanFixture(
+        {page: 'final x = getIt<X>();\n$mentions'},
+        baseline: {page: (lookups: 1, isRegistered: 0)},
+      );
+      expect(atBaseline.violations, isEmpty);
+
+      // A new file with only mentions carries no debt at all.
+      final fresh = scanFixture({'lib/features/b/ui/new_page.dart': mentions});
+      expect(fresh.debt, isEmpty);
+      expect(fresh.violations, isEmpty);
+    });
+
     test('skips the composition root and generated files', () {
       final result = scanFixture({
-        for (final path in compositionRoot) path: 'getIt<JournalDb>();',
-        'lib/features/a/state/c.g.dart': 'getIt<JournalDb>();',
-        'lib/features/a/state/c.freezed.dart': 'getIt<JournalDb>();',
+        for (final path in compositionRoot) path: body('getIt<JournalDb>();'),
+        'lib/features/a/state/c.g.dart': body('getIt<JournalDb>();'),
+        'lib/features/a/state/c.freezed.dart': body('getIt<JournalDb>();'),
       });
 
       expect(result.debt, isEmpty);
@@ -83,7 +136,7 @@ final b = forgetIt<Bar>();
 
     test('a file at its baseline passes', () {
       final result = scanFixture(
-        {page: 'getIt<A>(); getIt<B>(); getIt.isRegistered<C>();'},
+        {page: body('getIt<A>(); getIt<B>(); getIt.isRegistered<C>();')},
         baseline: {page: (lookups: 2, isRegistered: 1)},
       );
 
@@ -92,7 +145,7 @@ final b = forgetIt<Bar>();
 
     test('a file below its baseline passes and reports its smaller debt', () {
       final result = scanFixture(
-        {page: 'getIt<A>();'},
+        {page: body('getIt<A>();')},
         baseline: {page: (lookups: 3, isRegistered: 2)},
       );
 
@@ -101,7 +154,7 @@ final b = forgetIt<Bar>();
     });
 
     test('a new file may not introduce a lookup', () {
-      final result = scanFixture({page: 'getIt<JournalDb>();'});
+      final result = scanFixture({page: body('getIt<JournalDb>();')});
 
       expect(result.violations.single.path, page);
       expect(result.violations.single.message, contains('introduces 1'));
@@ -110,7 +163,11 @@ final b = forgetIt<Bar>();
     test('lookups and isRegistered checks are ratcheted independently', () {
       // Trading a lookup for an isRegistered check is still growth.
       final result = scanFixture(
-        {page: 'getIt<A>(); getIt.isRegistered<B>(); getIt.isRegistered<C>();'},
+        {
+          page: body(
+            'getIt<A>(); getIt.isRegistered<B>(); getIt.isRegistered<C>();',
+          ),
+        },
         baseline: {page: (lookups: 2, isRegistered: 1)},
       );
 
@@ -120,7 +177,7 @@ final b = forgetIt<Bar>();
 
     test('a migrating file that grows reports both counts', () {
       final result = scanFixture(
-        {page: 'getIt<A>(); getIt<B>(); getIt<C>();'},
+        {page: body('getIt<A>(); getIt<B>(); getIt<C>();')},
         baseline: {page: (lookups: 2, isRegistered: 0)},
       );
 
@@ -128,6 +185,39 @@ final b = forgetIt<Bar>();
         result.violations.single.message,
         contains('lookups grew from 2 to 3'),
       );
+    });
+  });
+
+  group('paths', () {
+    test('Windows paths become the same posix keys as everywhere else', () {
+      expect(
+        repoRelative(
+          r'C:\src\lotti\lib\features\a\ui\page.dart',
+          r'C:\src\lotti',
+          context: p.windows,
+        ),
+        'lib/features/a/ui/page.dart',
+      );
+      expect(
+        repoRelative(
+          r'C:\src\lotti\lib\get_it.dart',
+          r'C:\src\lotti\',
+          context: p.windows,
+        ),
+        'lib/get_it.dart',
+      );
+    });
+
+    test('every part of lib/get_it.dart belongs to the composition root', () {
+      // A part is the same library as get_it.dart; leaving one out would
+      // record composition-root code as debt to migrate away.
+      final parts = RegExp("^part '([^']+)';", multiLine: true)
+          .allMatches(File('lib/get_it.dart').readAsStringSync())
+          .map((m) => 'lib/${m.group(1)}')
+          .toList();
+
+      expect(parts, isNotEmpty);
+      expect(compositionRoot, containsAll(parts));
     });
   });
 

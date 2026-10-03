@@ -25,14 +25,9 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
-final RegExp _lookup = RegExp(
-  r'(?<![A-Za-z0-9_$])(?:getIt(?:\.get)?\s*<|GetIt\.(?:I|instance)\b)',
-);
-final RegExp _isRegistered = RegExp(r'(?<![A-Za-z0-9_$])getIt\.isRegistered\b');
-
-/// Whole-line `//` comments, doc comments included: prose that mentions
-/// `getIt<Foo>()` is not a lookup.
-final RegExp _lineComment = RegExp(r'^\s*//.*$', multiLine: true);
+import 'package:analyzer/dart/analysis/utilities.dart';
+import 'package:analyzer/dart/ast/token.dart';
+import 'package:path/path.dart' as p;
 
 /// The files that build a service generation, and so are allowed to read and
 /// register through GetIt.
@@ -40,6 +35,7 @@ const compositionRoot = <String>{
   'lib/app_bootstrap.dart',
   'lib/get_it.dart',
   'lib/get_it_helpers.dart',
+  'lib/get_it_maintenance.dart',
   'lib/get_it_sync.dart',
   'lib/main.dart',
 };
@@ -50,6 +46,42 @@ bool isGenerated(String path) =>
     path.endsWith('.g.dart') ||
     path.endsWith('.freezed.dart') ||
     path.endsWith('.gr.dart');
+
+/// Counts the GetIt lookups and `isRegistered` checks in [source].
+///
+/// Works on the token stream, so a `getIt<Foo>()` in a comment of any kind or
+/// inside a string literal is not counted, while one in a string
+/// interpolation is. `other.getIt<T>()` is a member of something else, not the
+/// global locator, and is not counted either. The source is parsed, so it
+/// must be valid Dart — which the analyzer gate guarantees for `lib/`.
+GetItDebt countGetIt(String source) {
+  final unit = parseString(content: source, throwIfDiagnostics: false).unit;
+  var lookups = 0;
+  var isRegistered = 0;
+  for (Token? t = unit.beginToken; t != null && !t.isEof; t = t.next) {
+    final previous = t.previous;
+    if (t.type != TokenType.IDENTIFIER ||
+        (previous != null &&
+            (previous.type == TokenType.PERIOD ||
+                previous.type == TokenType.QUESTION_PERIOD))) {
+      continue;
+    }
+    final n1 = t.next;
+    final n2 = n1?.next;
+    final member = n1?.type == TokenType.PERIOD ? n2?.lexeme : null;
+    if (t.lexeme == 'getIt') {
+      if (n1?.type == TokenType.LT ||
+          (member == 'get' && n2?.next?.type == TokenType.LT)) {
+        lookups++;
+      } else if (member == 'isRegistered') {
+        isRegistered++;
+      }
+    } else if (t.lexeme == 'GetIt' && (member == 'I' || member == 'instance')) {
+      lookups++;
+    }
+  }
+  return (lookups: lookups, isRegistered: isRegistered);
+}
 
 /// What one file still owes.
 typedef GetItDebt = ({int lookups, int isRegistered});
@@ -97,14 +129,10 @@ GuardResult scan({
         ..sort((a, b) => a.path.compareTo(b.path));
 
   for (final file in files) {
-    final rel = _relative(file.path, repoRoot);
+    final rel = repoRelative(file.path, repoRoot);
     if (isGenerated(rel) || compositionRoot.contains(rel)) continue;
 
-    final source = file.readAsStringSync().replaceAll(_lineComment, '');
-    final found = (
-      lookups: _lookup.allMatches(source).length,
-      isRegistered: _isRegistered.allMatches(source).length,
-    );
+    final found = countGetIt(file.readAsStringSync());
     if (found.lookups == 0 && found.isRegistered == 0) continue;
     debt[rel] = found;
 
@@ -141,11 +169,11 @@ GuardResult scan({
   return GuardResult(debt, violations);
 }
 
-String _relative(String path, String repoRoot) {
-  final normalizedRoot = repoRoot.endsWith('/') ? repoRoot : '$repoRoot/';
-  return path.startsWith(normalizedRoot)
-      ? path.substring(normalizedRoot.length)
-      : path;
+/// [path] relative to [repoRoot], always with `/` separators, so baseline keys
+/// and [compositionRoot] match on Windows too.
+String repoRelative(String path, String repoRoot, {p.Context? context}) {
+  final ctx = context ?? p.context;
+  return p.posix.joinAll(ctx.split(ctx.relative(path, from: repoRoot)));
 }
 
 /// Reads a baseline file, treating a missing one as "no debt is tolerated".
