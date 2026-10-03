@@ -5,7 +5,7 @@ description: Pull requests linked to tasks as journal entries carrying a server-
 resource: ../../lib/features/github
 tags: [github, pull-requests, tasks, sync, agents, tla]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-10-03T08:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-03T10:00:00Z }
 stale_after: 2027-03-26
 sources:
   - id: spec
@@ -85,6 +85,8 @@ PullRequestData
 
 PullRequestSnapshot
   observedAt                   server time of the read (the response's Date header), UTC
+  createdAt?                   when it was opened on GitHub, UTC; absent in snapshots
+                               stored before it was read, and never in the digest
   title, body                  the description, Markdown
   status                       open | closed | merged      (+ draft flag)
   htmlUrl, headSha, headRef, baseRef, authorLogin
@@ -279,16 +281,32 @@ until the unlink that preceded the move arrives.
 `TaskPullRequestsSection` shows the task's pull requests in their own card,
 directly after its linked tasks, while the flag is on. Each row carries the
 number and title, then a status line in a fixed order: the state, **how long
-ago it was observed** — second, so a narrow row that wraps or runs out of
-room never cuts the age off — then checks, mergeability and reviews. Every
-part is a word; colour only backs it up. The age ticks on its own timer, so a
-row left open never reads younger than its snapshot.
+it has been in that state** — second, so a narrow row that wraps or runs out
+of room never cuts the age off — then checks, what keeps it from merging, and
+reviews. The age is GitHub's, as GitHub shows it: an open pull request's
+reads from `createdAt`, a merged one's from `mergedAt`, a closed one's from
+`closedAt` (`pullRequestStateTime`), never from when it was linked or last
+read, so pull requests linked together still show their own ages. Past a
+week it names the weekday and date ("Sun, Sep 13"), with the year when it is
+not this one ("Tue, Dec 30, 2025"), as the picker does. A snapshot stored before it carried `createdAt` shows
+no age until its next refresh fills it in. Of mergeability only what someone
+can act on shows — merge conflicts, and a branch behind its base — not
+`blocked`, which says only that a required review or check, already on the
+line, is missing. Every part is a word; colour only backs it up. The age
+ticks on its own timer, so a row left open never reads younger than the
+state is.
+
+The rows are newest first, as GitHub lists pull requests: by `createdAt`, the
+latest at the top (`distinctPullRequests`). One whose opening is not known
+yet — never refreshed, or stored before the field — comes after them,
+highest number first.
 
 With nothing linked the card is one worded action; otherwise its header
 carries "+". Both open the link modal: a field for a pasted URL, and below it
-the open pull requests of the task's repository that no task holds, most
-recently updated first, each with its author, whether it is a draft and how
-long ago it changed. Tapping one links it; a pasted URL links on Link. Either
+the open pull requests of the task's repository that no task holds, newest
+first — GitHub is asked for them by creation, and the list is sorted again
+after the held ones are left out, by opening time and then number — each
+with its author, whether it is a draft and how long ago it was opened. Tapping one links it; a pasted URL links on Link. Either
 way the pull request is read from GitHub and linked only if that read
 succeeded — a typo, a repository the token cannot see, or a pull request a
 task holds stays in the modal with the reason. Without a repository on the
@@ -297,7 +315,7 @@ task's category the modal says how to assign one.
 Opening a task refreshes every pull request whose snapshot is older than five
 minutes, once; each row also has its own refresh button, whose failure is
 told in a toast. A refresh that GitHub answers but that need not be written
-still updates the age the row shows. The task's linked-entries history leaves
+still updates what the row shows. The task's linked-entries history leaves
 pull request entries out: they have their own card.
 
 ```mermaid
