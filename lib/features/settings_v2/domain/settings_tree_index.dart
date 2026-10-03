@@ -119,7 +119,7 @@ const String settingsRootUrl = '/settings';
 /// the header chevron cannot drift onto different destinations.
 const String aiSettingsParentRoute = '/settings/ai';
 
-/// The three pure-navigation branch hubs, by the same rule as
+/// The four pure-navigation branch hubs, by the same rule as
 /// [aiSettingsParentRoute]: the tree tap that opens a hub, the hub page
 /// `SettingsLocation` keeps beneath that branch's leaves, and the
 /// `popToNamed` those leaves pop back to all have to name one string.
@@ -131,6 +131,7 @@ const String aiSettingsParentRoute = '/settings/ai';
 final String definitionsHubUrl = settingsNodeUrls['definitions']!;
 final String preferencesHubUrl = settingsNodeUrls['preferences']!;
 final String advancedHubUrl = settingsNodeUrls['advanced']!;
+final String syncHubUrl = settingsNodeUrls['sync']!;
 
 /// Turns a tree path into a Beamer URL. The deepest node in the
 /// path wins — any ancestors are implicit in the URL structure.

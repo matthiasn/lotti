@@ -891,6 +891,22 @@ void main() {
     /// [Navigator] — the layer that actually consumes `popToNamed`. Children
     /// are placeholders ([_RoutingOnlySettingsLocation]); every routing input
     /// Beamer reads still comes from the production location.
+    /// Every Sync leaf whose URL nests under the Sync hub, read out of the
+    /// tree's own URL table so a new one is covered without touching this
+    /// file. Matrix maintenance is the one that is three segments deep —
+    /// `/settings/sync/matrix/maintenance` — and therefore the one Beamer's
+    /// one-segment default pop strands on `/settings/sync/matrix`.
+    final syncLeaves = [
+      for (final MapEntry(:key, :value) in settingsNodeUrls.entries)
+        if (key.startsWith('sync/') && value.startsWith('/settings/sync/'))
+          value,
+    ];
+    const syncHubKey = ValueKey('settings-sync');
+
+    test('the sync leaf table includes the three-segment URL', () {
+      expect(syncLeaves, contains('/settings/sync/matrix/maintenance'));
+    });
+
     group('branch back navigation through a real Beamer navigator', () {
       late BeamerDelegate delegate;
       late _RouteRecordingObserver observer;
@@ -1045,6 +1061,36 @@ void main() {
           expect(pageKeys(), const [ValueKey('settings'), advancedHubKey]);
         },
       );
+
+      for (final leaf in syncLeaves) {
+        testWidgets(
+          'leaving $leaf takes two back taps: the Sync hub once, then the '
+          'Settings root — never the Sync hub a second time',
+          (tester) async {
+            await openLeaf(tester, '/settings/sync', leaf);
+            expect(delegate.currentPages, hasLength(3));
+
+            observer.reset();
+            await tapBack(tester);
+
+            expect(delegate.configuration.uri.path, '/settings/sync');
+            expect(pageKeys(), const [ValueKey('settings'), syncHubKey]);
+            expect(observer.pushedKeys, isEmpty);
+
+            observer.reset();
+            await tapBack(tester);
+
+            expect(delegate.configuration.uri.path, '/settings');
+            expect(pageKeys(), const [ValueKey('settings')]);
+            // The reported symptom: the second tap animated the hub out and
+            // pushed an identical hub straight back in, so Sync Settings
+            // slid in from the side a second time instead of the Settings
+            // root being revealed.
+            expect(observer.pushedKeys, isEmpty);
+            expect(observer.goneKeys, const [syncHubKey]);
+          },
+        );
+      }
     });
 
     test('buildPages builds the sync branch hub from the shared tree', () {

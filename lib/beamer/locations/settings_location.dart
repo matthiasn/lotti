@@ -351,11 +351,18 @@ class SettingsLocation extends BeamLocation<BeamState> {
           child: ProvisionedSyncPage(),
         ),
 
+      // The one Sync leaf three segments deep. Beamer's default pop strips
+      // a single segment, which strands the route on the dead
+      // `/settings/sync/matrix`: that URI still builds the hub, so the first
+      // back tap looked right, and the second then popped to
+      // `/settings/sync` and rebuilt the very same hub — Sync Settings slid
+      // in a second time instead of the Settings root being revealed.
       if (path == '/settings/sync/matrix/maintenance')
-        const BeamPage(
-          key: ValueKey('settings-sync-matrix-maintenance'),
+        BeamPage(
+          key: const ValueKey('settings-sync-matrix-maintenance'),
           title: 'Matrix Sync Maintenance',
-          child: MatrixSyncMaintenancePage(),
+          popToNamed: syncHubUrl,
+          child: const MatrixSyncMaintenancePage(),
         ),
 
       // Node-profile and outbox pages carry no gate of their own (unlike
