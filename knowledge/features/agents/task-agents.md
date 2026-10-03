@@ -397,6 +397,7 @@ flowchart LR
   Task["Current task"] --> Wake
   Project["Parent project (oneLiner + tldr)"] --> Wake
   Linked["Linked tasks (compact oneLiner/tldr)"] --> Wake
+  PRs["Linked pull requests (refreshed from GitHub per wake)"] --> Wake
   Wake -.->|disabled today| Drill["get_related_task_details<br/>(enabled: false)"]
   Drill -.-> FullSibling["Full sibling task JSON + latest task-agent report"]
 ```
@@ -407,7 +408,7 @@ prior observations, linked-task context, pending change sets, active
 `getAttentionClaimsForTarget` so the prompt never scans the append-only source
 table), the active running timer, and editable historical time entries.
 
-Four context details are load-bearing:
+These context details are load-bearing:
 
 - **The category knowledge brief opens the stable prefix.** When the task's
   category carries a `knowledgeBrief`, the user message opens with a
@@ -421,6 +422,19 @@ Four context details are load-bearing:
   silently and is never something to restate or propose changes to. Blank or
   absent means no section at all — see
   [categories](../categories.md#the-knowledge-brief).
+- **Linked pull requests are refreshed for the wake and sit in the
+  volatile tail.** `TaskAgentWorkflow` asks `PullRequestContextService` for the
+  task's pull requests, which refreshes each from GitHub (at most eight seconds
+  each) and renders a `## Pull Requests` section right after `## Linked Tasks`
+  — GitHub changes it out-of-band, so it never enters the cached prefix. A pull
+  request whose refresh failed appears by name only, with no state, so the
+  agent cannot derive a checklist suggestion from stale data; the section's
+  own guidance tells it to propose completions from current pull requests
+  through `update_checklist_items`, naming the pull request in the reason. The
+  refresh runs inside the wake's agent-execution zone, so a changed snapshot it
+  stores notifies the UI only and cannot wake the agent again. No section
+  without the flag or without linked pull requests; a failure is logged and
+  leaves it out. See [GitHub pull requests](../github.md).
 - **Report existence is explicit on every wake.** A missing report requires an
   initial publication. With an existing report, the context asks for a new or
   corrected task fact before republishing: repeated status, different wording,

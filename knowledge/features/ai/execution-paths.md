@@ -517,6 +517,17 @@ and passes it as `categoryKnowledge`. Transcription and `taskSummary`-policy
 prompts never carry it, and a blank brief adds nothing. See
 [categories](../categories.md#the-knowledge-brief).
 
+A **coding prompt** (`SkillType.promptGeneration`) also carries the linked
+task's **pull requests**, as a `**Pull Requests:**` block after
+`**Related Tasks:**`. `runPromptGeneration` fetches it in the same parallel
+read through `PullRequestContextService`, which refreshes each pull request
+from GitHub first; a pull request that could not be refreshed shows its last
+known state, labelled with its age as possibly out of date. The block opens by
+telling the model to ask only for what remains and to list any mismatch
+between the pull requests, the checklist and the entry notes at the top of the
+prompt. Other text skills never ask for it, and a failure is logged and leaves
+the block out. See [GitHub pull requests](../github.md).
+
 `TaskSummaryResolver` is the shared summary lookup. For single-task prompt
 building it checks the current agent report first, then falls back to legacy
 `AiResponseType.taskSummary` entries. Bulk linked-task builders call

@@ -11,6 +11,7 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
@@ -90,6 +91,9 @@ void main() {
           taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
           projectRepositoryProvider.overrideWithValue(
             MockProjectRepository(),
+          ),
+          pullRequestContextServiceProvider.overrideWithValue(
+            MockPullRequestContextService(),
           ),
         ],
       );
