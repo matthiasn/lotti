@@ -8,11 +8,13 @@ import 'package:material_ui/material_ui.dart';
 /// Takes `owner/repo` or the repository's URL, and reports the repository as
 /// `owner/repo` — or null once the field is cleared. What does not read as a
 /// repository is flagged and not reported, so the stored value never changes
-/// to something the picker could not use.
+/// to something the picker could not use; [onValidityChanged] tells the form,
+/// so it cannot save the last valid value while the field shows other text.
 class GitHubRepositoryField extends StatefulWidget {
   const GitHubRepositoryField({
     required this.repository,
     required this.onChanged,
+    required this.onValidityChanged,
     super.key,
   });
 
@@ -20,6 +22,10 @@ class GitHubRepositoryField extends StatefulWidget {
   final String? repository;
 
   final ValueChanged<String?> onChanged;
+
+  /// Whether the text reads as a repository (or is empty), after every edit
+  /// and after an external change replaces the text.
+  final ValueChanged<bool> onValidityChanged;
 
   @override
   State<GitHubRepositoryField> createState() => _GitHubRepositoryFieldState();
@@ -41,7 +47,13 @@ class _GitHubRepositoryFieldState extends State<GitHubRepositoryField> {
     if (widget.repository != oldWidget.repository &&
         widget.repository != typed) {
       _controller.text = widget.repository ?? '';
-      _invalid = false;
+      if (_invalid) {
+        _invalid = false;
+        // Not during the parent's build: the form's state is a provider.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) widget.onValidityChanged(true);
+        });
+      }
     }
   }
 
@@ -54,11 +66,14 @@ class _GitHubRepositoryFieldState extends State<GitHubRepositoryField> {
   void _onChanged(String text) {
     if (text.trim().isEmpty) {
       setState(() => _invalid = false);
-      widget.onChanged(null);
+      widget
+        ..onValidityChanged(true)
+        ..onChanged(null);
       return;
     }
     final repository = parseGitHubRepository(text);
     setState(() => _invalid = repository == null);
+    widget.onValidityChanged(repository != null);
     if (repository != null) widget.onChanged(repository.toString());
   }
 

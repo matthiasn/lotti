@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$CategoryDetailsState {
 
- CategoryDefinition? get category; bool get isLoading; bool get isSaving; bool get hasChanges; String? get errorMessage;
+ CategoryDefinition? get category; bool get isLoading; bool get isSaving; bool get hasChanges; bool get hasInvalidInput; String? get errorMessage;
 /// Create a copy of CategoryDetailsState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $CategoryDetailsStateCopyWith<CategoryDetailsState> get copyWith => _$CategoryDe
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CategoryDetailsState&&const DeepCollectionEquality().equals(other.category, category)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isSaving, isSaving) || other.isSaving == isSaving)&&(identical(other.hasChanges, hasChanges) || other.hasChanges == hasChanges)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CategoryDetailsState&&const DeepCollectionEquality().equals(other.category, category)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isSaving, isSaving) || other.isSaving == isSaving)&&(identical(other.hasChanges, hasChanges) || other.hasChanges == hasChanges)&&(identical(other.hasInvalidInput, hasInvalidInput) || other.hasInvalidInput == hasInvalidInput)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(category),isLoading,isSaving,hasChanges,errorMessage);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(category),isLoading,isSaving,hasChanges,hasInvalidInput,errorMessage);
 
 @override
 String toString() {
-  return 'CategoryDetailsState(category: $category, isLoading: $isLoading, isSaving: $isSaving, hasChanges: $hasChanges, errorMessage: $errorMessage)';
+  return 'CategoryDetailsState(category: $category, isLoading: $isLoading, isSaving: $isSaving, hasChanges: $hasChanges, hasInvalidInput: $hasInvalidInput, errorMessage: $errorMessage)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $CategoryDetailsStateCopyWith<$Res>  {
   factory $CategoryDetailsStateCopyWith(CategoryDetailsState value, $Res Function(CategoryDetailsState) _then) = _$CategoryDetailsStateCopyWithImpl;
 @useResult
 $Res call({
- CategoryDefinition? category, bool isLoading, bool isSaving, bool hasChanges, String? errorMessage
+ CategoryDefinition? category, bool isLoading, bool isSaving, bool hasChanges, bool hasInvalidInput, String? errorMessage
 });
 
 
@@ -62,12 +62,13 @@ class _$CategoryDetailsStateCopyWithImpl<$Res>
 
 /// Create a copy of CategoryDetailsState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? category = freezed,Object? isLoading = null,Object? isSaving = null,Object? hasChanges = null,Object? errorMessage = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? category = freezed,Object? isLoading = null,Object? isSaving = null,Object? hasChanges = null,Object? hasInvalidInput = null,Object? errorMessage = freezed,}) {
   return _then(_self.copyWith(
 category: freezed == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
 as CategoryDefinition?,isLoading: null == isLoading ? _self.isLoading : isLoading // ignore: cast_nullable_to_non_nullable
 as bool,isSaving: null == isSaving ? _self.isSaving : isSaving // ignore: cast_nullable_to_non_nullable
 as bool,hasChanges: null == hasChanges ? _self.hasChanges : hasChanges // ignore: cast_nullable_to_non_nullable
+as bool,hasInvalidInput: null == hasInvalidInput ? _self.hasInvalidInput : hasInvalidInput // ignore: cast_nullable_to_non_nullable
 as bool,errorMessage: freezed == errorMessage ? _self.errorMessage : errorMessage // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
@@ -154,10 +155,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( CategoryDefinition? category,  bool isLoading,  bool isSaving,  bool hasChanges,  String? errorMessage)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( CategoryDefinition? category,  bool isLoading,  bool isSaving,  bool hasChanges,  bool hasInvalidInput,  String? errorMessage)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CategoryDetailsState() when $default != null:
-return $default(_that.category,_that.isLoading,_that.isSaving,_that.hasChanges,_that.errorMessage);case _:
+return $default(_that.category,_that.isLoading,_that.isSaving,_that.hasChanges,_that.hasInvalidInput,_that.errorMessage);case _:
   return orElse();
 
 }
@@ -175,10 +176,10 @@ return $default(_that.category,_that.isLoading,_that.isSaving,_that.hasChanges,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( CategoryDefinition? category,  bool isLoading,  bool isSaving,  bool hasChanges,  String? errorMessage)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( CategoryDefinition? category,  bool isLoading,  bool isSaving,  bool hasChanges,  bool hasInvalidInput,  String? errorMessage)  $default,) {final _that = this;
 switch (_that) {
 case _CategoryDetailsState():
-return $default(_that.category,_that.isLoading,_that.isSaving,_that.hasChanges,_that.errorMessage);case _:
+return $default(_that.category,_that.isLoading,_that.isSaving,_that.hasChanges,_that.hasInvalidInput,_that.errorMessage);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -195,10 +196,10 @@ return $default(_that.category,_that.isLoading,_that.isSaving,_that.hasChanges,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( CategoryDefinition? category,  bool isLoading,  bool isSaving,  bool hasChanges,  String? errorMessage)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( CategoryDefinition? category,  bool isLoading,  bool isSaving,  bool hasChanges,  bool hasInvalidInput,  String? errorMessage)?  $default,) {final _that = this;
 switch (_that) {
 case _CategoryDetailsState() when $default != null:
-return $default(_that.category,_that.isLoading,_that.isSaving,_that.hasChanges,_that.errorMessage);case _:
+return $default(_that.category,_that.isLoading,_that.isSaving,_that.hasChanges,_that.hasInvalidInput,_that.errorMessage);case _:
   return null;
 
 }
@@ -210,13 +211,14 @@ return $default(_that.category,_that.isLoading,_that.isSaving,_that.hasChanges,_
 
 
 class _CategoryDetailsState implements CategoryDetailsState {
-  const _CategoryDetailsState({required this.category, required this.isLoading, required this.isSaving, required this.hasChanges, this.errorMessage});
+  const _CategoryDetailsState({required this.category, required this.isLoading, required this.isSaving, required this.hasChanges, this.hasInvalidInput = false, this.errorMessage});
   
 
 @override final  CategoryDefinition? category;
 @override final  bool isLoading;
 @override final  bool isSaving;
 @override final  bool hasChanges;
+@override@JsonKey() final  bool hasInvalidInput;
 @override final  String? errorMessage;
 
 /// Create a copy of CategoryDetailsState
@@ -229,16 +231,16 @@ _$CategoryDetailsStateCopyWith<_CategoryDetailsState> get copyWith => __$Categor
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CategoryDetailsState&&const DeepCollectionEquality().equals(other.category, category)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isSaving, isSaving) || other.isSaving == isSaving)&&(identical(other.hasChanges, hasChanges) || other.hasChanges == hasChanges)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CategoryDetailsState&&const DeepCollectionEquality().equals(other.category, category)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isSaving, isSaving) || other.isSaving == isSaving)&&(identical(other.hasChanges, hasChanges) || other.hasChanges == hasChanges)&&(identical(other.hasInvalidInput, hasInvalidInput) || other.hasInvalidInput == hasInvalidInput)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(category),isLoading,isSaving,hasChanges,errorMessage);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(category),isLoading,isSaving,hasChanges,hasInvalidInput,errorMessage);
 
 @override
 String toString() {
-  return 'CategoryDetailsState(category: $category, isLoading: $isLoading, isSaving: $isSaving, hasChanges: $hasChanges, errorMessage: $errorMessage)';
+  return 'CategoryDetailsState(category: $category, isLoading: $isLoading, isSaving: $isSaving, hasChanges: $hasChanges, hasInvalidInput: $hasInvalidInput, errorMessage: $errorMessage)';
 }
 
 
@@ -249,7 +251,7 @@ abstract mixin class _$CategoryDetailsStateCopyWith<$Res> implements $CategoryDe
   factory _$CategoryDetailsStateCopyWith(_CategoryDetailsState value, $Res Function(_CategoryDetailsState) _then) = __$CategoryDetailsStateCopyWithImpl;
 @override @useResult
 $Res call({
- CategoryDefinition? category, bool isLoading, bool isSaving, bool hasChanges, String? errorMessage
+ CategoryDefinition? category, bool isLoading, bool isSaving, bool hasChanges, bool hasInvalidInput, String? errorMessage
 });
 
 
@@ -266,12 +268,13 @@ class __$CategoryDetailsStateCopyWithImpl<$Res>
 
 /// Create a copy of CategoryDetailsState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? category = freezed,Object? isLoading = null,Object? isSaving = null,Object? hasChanges = null,Object? errorMessage = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? category = freezed,Object? isLoading = null,Object? isSaving = null,Object? hasChanges = null,Object? hasInvalidInput = null,Object? errorMessage = freezed,}) {
   return _then(_CategoryDetailsState(
 category: freezed == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
 as CategoryDefinition?,isLoading: null == isLoading ? _self.isLoading : isLoading // ignore: cast_nullable_to_non_nullable
 as bool,isSaving: null == isSaving ? _self.isSaving : isSaving // ignore: cast_nullable_to_non_nullable
 as bool,hasChanges: null == hasChanges ? _self.hasChanges : hasChanges // ignore: cast_nullable_to_non_nullable
+as bool,hasInvalidInput: null == hasInvalidInput ? _self.hasInvalidInput : hasInvalidInput // ignore: cast_nullable_to_non_nullable
 as bool,errorMessage: freezed == errorMessage ? _self.errorMessage : errorMessage // ignore: cast_nullable_to_non_nullable
 as String?,
   ));

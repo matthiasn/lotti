@@ -245,7 +245,8 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       _syncFormWithCategory(category);
     }
 
-    final saveEnabled = !state.isSaving && state.hasChanges;
+    final saveEnabled =
+        !state.isSaving && state.hasChanges && !state.hasInvalidInput;
 
     return SettingsDetailScaffold(
       title: context.messages.settingsCategoriesDetailsLabel,

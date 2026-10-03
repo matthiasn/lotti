@@ -491,6 +491,45 @@ void main() {
       expect(state().hasChanges, isTrue);
     });
 
+    test(
+      'invalid repository text blocks saving the last valid value until the '
+      'field reads as a repository again',
+      () async {
+        when(
+          () => mockRepository.watchCategory(testCategoryId),
+        ).thenAnswer(
+          (_) => Stream.value(CategoryTestUtils.createTestCategory()),
+        );
+        when(
+          () => mockRepository.getCategoryById(testCategoryId),
+        ).thenAnswer((_) async => CategoryTestUtils.createTestCategory());
+        when(
+          () => mockRepository.updateCategory(any()),
+        ).thenAnswer(
+          (i) async => i.positionalArguments.first as CategoryDefinition,
+        );
+
+        final container = makeContainer();
+        final controller = await loadCategory(container);
+        CategoryDetailsState state() =>
+            container.read(categoryDetailsControllerProvider(testCategoryId));
+
+        controller
+          ..updateGitHubRepository('penguin/igloo')
+          ..setGitHubRepositoryValid(valid: false);
+        expect(state().hasChanges, isTrue);
+        expect(state().hasInvalidInput, isTrue);
+
+        await controller.saveChanges();
+        verifyNever(() => mockRepository.updateCategory(any()));
+
+        controller.setGitHubRepositoryValid(valid: true);
+        expect(state().hasInvalidInput, isFalse);
+        await controller.saveChanges();
+        verify(() => mockRepository.updateCategory(any())).called(1);
+      },
+    );
+
     test('no changes when setting same speech dictionary', () async {
       final category = CategoryTestUtils.createTestCategory(
         speechDictionary: ['term1', 'term2'],

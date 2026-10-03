@@ -223,6 +223,8 @@ extension _CategoryDetailsFormSections on _CategoryDetailsPageState {
     return GitHubRepositoryField(
       repository: category.githubRepository,
       onChanged: controller.updateGitHubRepository,
+      onValidityChanged: (valid) =>
+          controller.setGitHubRepositoryValid(valid: valid),
     );
   }
 

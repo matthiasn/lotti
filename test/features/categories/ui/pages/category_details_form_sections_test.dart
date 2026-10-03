@@ -617,7 +617,8 @@ void main() {
     });
 
     testWidgets(
-      'a repository typed as a URL is a change to save; nonsense is not',
+      'a repository typed as a URL is a change to save; nonsense is not, '
+      'even after a valid one',
       (tester) async {
         await pumpPage(tester, enabled: true);
 
@@ -630,6 +631,16 @@ void main() {
         expect(isPillEnabled(tester, 'Save'), isFalse);
 
         await tester.enterText(field, 'https://github.com/penguin/colony');
+        await tester.pump();
+        expect(isPillEnabled(tester, 'Save'), isTrue);
+
+        // The pending value is still penguin/colony, which must not be saved
+        // while the field shows something else.
+        await tester.enterText(field, 'https://github.com/penguin');
+        await tester.pump();
+        expect(isPillEnabled(tester, 'Save'), isFalse);
+
+        await tester.enterText(field, 'penguin/igloo');
         await tester.pump();
         expect(isPillEnabled(tester, 'Save'), isTrue);
       },
