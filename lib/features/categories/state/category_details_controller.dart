@@ -355,7 +355,8 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
   /// it does not, [saveChanges] is blocked, since the pending value is still
   /// the last valid one and not what the field shows.
   void setGitHubRepositoryValid({required bool valid}) {
-    if (state.hasInvalidInput == !valid) return;
+    // The field reports after a frame, by which time the page may be gone.
+    if (!ref.mounted || state.hasInvalidInput == !valid) return;
     state = state.copyWith(hasInvalidInput: !valid);
   }
 

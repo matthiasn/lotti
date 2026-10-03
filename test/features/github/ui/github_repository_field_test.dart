@@ -135,4 +135,52 @@ void main() {
       expect(reports, [false, true]);
     },
   );
+
+  testWidgets(
+    'a field removed while invalid reports valid, so the form is not left '
+    'unable to save with nothing on screen saying why',
+    (tester) async {
+      final reports = <bool>[];
+      Widget host({required bool shown}) => makeTestableWidgetWithScaffold(
+        shown
+            ? GitHubRepositoryField(
+                repository: null,
+                onChanged: (_) {},
+                onValidityChanged: reports.add,
+              )
+            : const SizedBox.shrink(),
+      );
+      await tester.pumpWidget(host(shown: true));
+      await tester.enterText(field, 'penguin');
+      await tester.pump();
+
+      await tester.pumpWidget(host(shown: false));
+      await tester.pump();
+
+      expect(reports, [false, true]);
+    },
+  );
+
+  testWidgets('a field removed while valid reports nothing more', (
+    tester,
+  ) async {
+    final reports = <bool>[];
+    Widget host({required bool shown}) => makeTestableWidgetWithScaffold(
+      shown
+          ? GitHubRepositoryField(
+              repository: null,
+              onChanged: (_) {},
+              onValidityChanged: reports.add,
+            )
+          : const SizedBox.shrink(),
+    );
+    await tester.pumpWidget(host(shown: true));
+    await tester.enterText(field, 'penguin/colony');
+    await tester.pump();
+
+    await tester.pumpWidget(host(shown: false));
+    await tester.pump();
+
+    expect(reports, [true]);
+  });
 }

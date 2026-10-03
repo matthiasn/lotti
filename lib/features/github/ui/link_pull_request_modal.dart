@@ -95,7 +95,14 @@ class _LinkPullRequestFormState extends ConsumerState<_LinkPullRequestForm> {
       _linking = what;
       _error = null;
     });
-    final result = await link();
+    PullRequestLinkResult result;
+    try {
+      result = await link();
+    } on Exception {
+      // A database failure while checking or storing: nothing was linked, and
+      // the modal must stay usable to try again.
+      result = const PullRequestLinkNotStored();
+    }
     if (!mounted) return;
     if (result is PullRequestLinked) {
       Navigator.of(context).pop();

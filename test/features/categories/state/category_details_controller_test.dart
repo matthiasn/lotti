@@ -530,6 +530,25 @@ void main() {
       },
     );
 
+    test(
+      'a validity report arriving after the page is gone is ignored',
+      () async {
+        when(
+          () => mockRepository.watchCategory(testCategoryId),
+        ).thenAnswer(
+          (_) => Stream.value(CategoryTestUtils.createTestCategory()),
+        );
+        final container = makeContainer();
+        final controller = await loadCategory(container);
+        container.dispose();
+
+        expect(
+          () => controller.setGitHubRepositoryValid(valid: true),
+          returnsNormally,
+        );
+      },
+    );
+
     test('no changes when setting same speech dictionary', () async {
       final category = CategoryTestUtils.createTestCategory(
         speechDictionary: ['term1', 'term2'],

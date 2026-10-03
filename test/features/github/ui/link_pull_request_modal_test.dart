@@ -183,7 +183,10 @@ void main() {
           ]),
         );
 
-        expect(find.text('Open in penguin/colony'), findsOneWidget);
+        expect(
+          find.text('Open pull requests in penguin/colony'),
+          findsOneWidget,
+        );
         expect(find.text('#12 Waddle 12'), findsOneWidget);
         expect(find.textContaining('@pingu · Draft'), findsOneWidget);
 
@@ -221,6 +224,39 @@ void main() {
           findsOneWidget,
         );
         expect(find.byKey(LinkPullRequestKeys.urlField), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'a link that throws says it was not saved and can be tried again',
+      (tester) async {
+        var calls = 0;
+        when(
+          () => service.link(taskId: taskId, ref: openPr(12).ref),
+        ).thenAnswer((_) async {
+          if (calls++ == 0) throw Exception('database is locked');
+          return PullRequestLinked(prEntry(clock: {'a': 1}));
+        });
+        await open(
+          tester,
+          repo: repository,
+          listing: () async => OpenPullRequestsListed([openPr(12)]),
+        );
+        final row = find.byKey(LinkPullRequestKeys.openPullRequest(12));
+
+        await tester.tap(row);
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        expect(
+          find.text('The link could not be saved. Try again.'),
+          findsOneWidget,
+        );
+
+        await tester.tap(row);
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        expect(calls, 2);
+        expect(find.byKey(LinkPullRequestKeys.urlField), findsNothing);
       },
     );
 

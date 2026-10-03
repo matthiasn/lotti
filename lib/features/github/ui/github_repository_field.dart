@@ -23,8 +23,9 @@ class GitHubRepositoryField extends StatefulWidget {
 
   final ValueChanged<String?> onChanged;
 
-  /// Whether the text reads as a repository (or is empty), after every edit
-  /// and after an external change replaces the text.
+  /// Whether the text reads as a repository (or is empty), after every edit,
+  /// after an external change replaces the text, and — valid — when the field
+  /// goes away while invalid.
   final ValueChanged<bool> onValidityChanged;
 
   @override
@@ -59,6 +60,12 @@ class _GitHubRepositoryFieldState extends State<GitHubRepositoryField> {
 
   @override
   void dispose() {
+    // A field removed while invalid (its section hidden) must not leave the
+    // form unable to save, with nothing on screen saying why.
+    if (_invalid) {
+      final report = widget.onValidityChanged;
+      WidgetsBinding.instance.addPostFrameCallback((_) => report(true));
+    }
     _controller.dispose();
     super.dispose();
   }
