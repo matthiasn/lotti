@@ -101,6 +101,15 @@ class MatrixPayloadSender {
       final fileBytes = bytes ?? await file.readAsBytes();
 
       final shouldCompress = relativePath.toLowerCase().endsWith('.json');
+      if (shouldCompress &&
+          fileBytes.length > SyncTuning.maxDecodedAttachmentBytes) {
+        // Every receiver would refuse to inflate it; the same file is the
+        // same size on every attempt, so this is permanent, not retryable.
+        throw SyncMessageTooLargeException(
+          'file $relativePath bytes=${fileBytes.length} '
+          'max=${SyncTuning.maxDecodedAttachmentBytes}',
+        );
+      }
       final uploadBytes = shouldCompress
           ? await gzipEncodeBytes(fileBytes)
           : fileBytes;
@@ -133,6 +142,9 @@ class MatrixPayloadSender {
 
       sentEventRegistry.register(eventId);
       return (eventId: eventId, succeeded: true);
+    } on SyncMessageTooLargeException {
+      // Permanent: the outbox drops it instead of retrying the same bytes.
+      rethrow;
     } catch (error, stackTrace) {
       _trace(
         'EXCEPTION sendFile path=$relativePath '
@@ -643,6 +655,16 @@ class MatrixPayloadSender {
       throw SyncMessageTooLargeException(
         '$label gzipped=${gzipped.length} '
         'max=${SyncTuning.outboxBundleMaxBytes} $detail',
+      );
+    }
+    // Receivers refuse to inflate past this limit, so a document that
+    // compresses under the wire cap but would inflate beyond it is just as
+    // undeliverable — the outbox falls back to its smaller parts.
+    final decodedLength = gzipDecodedLength(gzipped);
+    if (decodedLength > SyncTuning.maxDecodedAttachmentBytes) {
+      throw SyncMessageTooLargeException(
+        '$label decoded=$decodedLength '
+        'max=${SyncTuning.maxDecodedAttachmentBytes} $detail',
       );
     }
 

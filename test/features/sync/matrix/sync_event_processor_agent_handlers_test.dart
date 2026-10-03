@@ -20,6 +20,7 @@ import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
+import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -6956,6 +6957,30 @@ void main() {
 
             // Completes instead of throwing a retryable descriptor error:
             // prepare yields nothing, so the queue marks the row skipped.
+            expect(await processorWithIndex.prepare(event: event), isNull);
+
+            verify(descriptorEvent.downloadAndDecryptAttachment).called(1);
+            verifyNever(() => mockAgentRepo.upsertEntity(any()));
+          },
+        );
+
+        test(
+          'skips a descriptor that inflates past the limit instead of '
+          'retrying it',
+          () async {
+            // Each retry would re-run the decode a bomb makes expensive.
+            when(descriptorEvent.downloadAndDecryptAttachment).thenThrow(
+              const AttachmentTooLargeException(1024),
+            );
+
+            attachmentIndex.record(descriptorEvent);
+
+            const message = SyncMessage.agentEntity(
+              status: SyncEntryStatus.update,
+              jsonPath: '/agent_entities/agent-desc.json',
+            );
+            when(() => event.text).thenReturn(encodeMessage(message));
+
             expect(await processorWithIndex.prepare(event: event), isNull);
 
             verify(descriptorEvent.downloadAndDecryptAttachment).called(1);

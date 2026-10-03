@@ -166,6 +166,15 @@ void main() {
         expect(decoded, equals(original));
       });
 
+      test('gzipDecodedLength reads the size a stream declares', () {
+        final original = List<int>.generate(70000, (i) => i % 13);
+        expect(
+          gzipDecodedLength(Uint8List.fromList(gzip.encode(original))),
+          original.length,
+        );
+        expect(gzipDecodedLength(Uint8List(3)), 0, reason: 'too short');
+      });
+
       test('the default limit leaves headroom over the largest bundle', () {
         // Bundles are capped compressed; JSON inflates roughly 5-10x.
         expect(

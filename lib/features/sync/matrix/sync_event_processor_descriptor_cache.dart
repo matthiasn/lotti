@@ -230,6 +230,12 @@ extension _DescriptorCache on SyncEventProcessor {
       if (e is MatrixException && e.errcode == 'M_NOT_FOUND') {
         throw UnrecoverableSyncPayloadException(typeName);
       }
+      // The same bytes inflate past the limit on every attempt: retrying —
+      // every 30 s for a day as a pending descriptor — would only re-run the
+      // decode a bomb is designed to make expensive.
+      if (e is AttachmentTooLargeException) {
+        throw UnrecoverableSyncPayloadException(typeName);
+      }
       // Descriptor was found but download/decode failed — throw to prevent
       // falling back to potentially stale disk data. The pipeline will retry.
       throw _SyncDescriptorFetchException(

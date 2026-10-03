@@ -71,6 +71,18 @@ Future<Uint8List> decodeAttachmentBytes({
   return decoded;
 }
 
+/// The uncompressed length a gzip stream declares in its ISIZE trailer — its
+/// last four bytes, little-endian, the length modulo 2^32. Exact for anything
+/// under 4 GiB, which covers every payload this app builds, so a sender can
+/// hold a document to the receive limit without inflating it again.
+int gzipDecodedLength(Uint8List gzipped) {
+  if (gzipped.length < 4) return 0;
+  return ByteData.sublistView(
+    gzipped,
+    gzipped.length - 4,
+  ).getUint32(0, Endian.little);
+}
+
 /// A gzip attachment that inflates past the receive limit — a decompression
 /// bomb, or a payload no legitimate sender produces.
 class AttachmentTooLargeException extends FormatException {
