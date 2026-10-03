@@ -52,23 +52,27 @@ void main() {
     ),
   );
 
+  const automation = OneShotGenerationAttribution(
+    workType: AiWorkType.textGeneration,
+    triggerType: AiTriggerType.automatic,
+    automationId: 'automation:test',
+    automationDisplayName: 'Test',
+    interactionContext: AiCapturedContext(agentId: 'agent-1'),
+  );
+
   Future<String> run({
     GeminiThinkingMode? geminiThinkingMode,
     ReasoningEffort? reasoningEffort,
+    int? maxCompletionTokens = 64,
+    OneShotGenerationAttribution attribution = automation,
   }) => inference.generateText(
     prompt: 'facts',
     systemMessage: 'be brief',
     model: 'model-a',
     provider: provider,
     temperature: 0.2,
-    maxCompletionTokens: 64,
-    attribution: const OneShotGenerationAttribution(
-      workType: AiWorkType.textGeneration,
-      triggerType: AiTriggerType.automatic,
-      automationId: 'automation:test',
-      automationDisplayName: 'Test',
-      interactionContext: AiCapturedContext(agentId: 'agent-1'),
-    ),
+    maxCompletionTokens: maxCompletionTokens,
+    attribution: attribution,
     geminiThinkingMode: geminiThinkingMode,
     reasoningEffort: reasoningEffort,
   );
@@ -171,5 +175,51 @@ void main() {
     expect(event.cachedInputTokens, 5);
     expect(event.thoughtsTokens, 2);
     expect(event.totalTokens, 48);
+  });
+
+  test('attributes the call to the category and task it works for', () async {
+    final capture = AiInteractionCaptureTestBench.create()..register();
+    addTearDown(capture.unregister);
+    stubGenerate().thenAnswer((_) => Stream.value(_chunk('{}')));
+
+    await run(
+      attribution: const OneShotGenerationAttribution(
+        workType: AiWorkType.textGeneration,
+        categoryId: 'category-1',
+        taskId: 'task-1',
+      ),
+    );
+
+    final event =
+        verify(
+              () => capture.service.recordInteraction(
+                attributionId: any(named: 'attributionId'),
+                event: captureAny(named: 'event'),
+              ),
+            ).captured.single
+            as AiConsumptionEvent;
+    expect(event.categoryId, 'category-1');
+    expect(event.taskId, 'task-1');
+  });
+
+  test('a model without a token limit leaves it to the provider', () async {
+    stubGenerate().thenAnswer((_) => Stream.value(_chunk('ok')));
+
+    await run(maxCompletionTokens: null);
+
+    final named = verify(
+      () => inference.generate(
+        any(),
+        model: any(named: 'model'),
+        temperature: any(named: 'temperature'),
+        baseUrl: any(named: 'baseUrl'),
+        apiKey: any(named: 'apiKey'),
+        systemMessage: any(named: 'systemMessage'),
+        maxCompletionTokens: captureAny(named: 'maxCompletionTokens'),
+        provider: any(named: 'provider'),
+        impactCollector: any(named: 'impactCollector'),
+      ),
+    ).captured;
+    expect(named, [null]);
   });
 }

@@ -67,3 +67,19 @@ is resolving prevents provider invocation. Normal completion and failure retain
 their existing usage, digest and status accounting; no raw request or response
 is persisted. Query cancellation can therefore abort the buffered Melious HTTP
 request even when the accounting wrapper is installed.
+
+Non-conversational text calls (one prompt in, one block of text out) go
+through
+[`OneShotTextGeneration.generateText`](../../lib/features/ai/repository/one_shot_text_generation.dart)
+rather than wiring `captureStream` themselves. Its callers are:
+- the agent log summarizer
+- the goal check-in digest and compaction
+- onboarding task structuring
+- system-health findings
+- the Daily OS tomorrow note
+
+Each caller supplies only a `OneShotGenerationAttribution`: work type, trigger,
+automation, captured context and, when it has them, category and task. The
+helper supplies the usage mapping, the impact collector and the trimmed result.
+It passes no impact collector when no capture is registered, because a collector
+switches a Melious call to non-streaming.

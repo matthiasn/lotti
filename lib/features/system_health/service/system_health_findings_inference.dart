@@ -1,13 +1,9 @@
 import 'package:lotti/features/ai/constants/provider_config.dart';
-import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/one_shot_text_generation.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
-import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
-import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
-import 'package:lotti/get_it.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 /// Signature the analyzer uses to obtain findings from a model.
 ///
@@ -54,52 +50,17 @@ class SystemHealthFindingsInference {
       );
     }
 
-    final impactCollector = InferenceImpactCollector();
-    Stream<CreateChatCompletionStreamResponse> invoke() =>
-        inferenceRepository.generate(
-          prompt,
-          model: model.providerModelId,
-          temperature: _temperature,
-          baseUrl: provider.baseUrl,
-          apiKey: provider.apiKey,
-          systemMessage: systemMessage,
-          maxCompletionTokens: _maxCompletionTokens,
-          provider: provider,
-          geminiThinkingMode: model.geminiThinkingMode,
-          impactCollector: impactCollector,
-        );
-
-    final stream = getIt.isRegistered<AiInteractionCapture>()
-        ? getIt<AiInteractionCapture>().captureStream(
-            workType: AiWorkType.textGeneration,
-            interactionKind: AiInteractionKind.textGeneration,
-            responseType: AiConsumptionResponseType.textGeneration,
-            providerType: provider.inferenceProviderType,
-            modelId: model.providerModelId,
-            requestText: prompt,
-            invoke: invoke,
-            responseText: (chunk) =>
-                chunk.choices?.firstOrNull?.delta?.content ?? '',
-            usageForChunk: (chunk) {
-              final usage = chunk.usage;
-              if (usage == null) return null;
-              return AiCapturedUsage(
-                inputTokens: usage.promptTokens,
-                outputTokens: usage.completionTokens,
-                cachedInputTokens: usage.promptTokensDetails?.cachedTokens,
-                thoughtsTokens: usage.completionTokensDetails?.reasoningTokens,
-                totalTokens: usage.totalTokens,
-              );
-            },
-            impact: () => impactCollector.impact,
-          )
-        : invoke();
-
-    final buffer = StringBuffer();
-    await for (final response in stream) {
-      final content = response.choices?.firstOrNull?.delta?.content;
-      if (content != null) buffer.write(content);
-    }
-    return buffer.toString();
+    return inferenceRepository.generateText(
+      prompt: prompt,
+      systemMessage: systemMessage,
+      model: model.providerModelId,
+      provider: provider,
+      temperature: _temperature,
+      maxCompletionTokens: _maxCompletionTokens,
+      geminiThinkingMode: model.geminiThinkingMode,
+      attribution: const OneShotGenerationAttribution(
+        workType: AiWorkType.textGeneration,
+      ),
+    );
   }
 }
