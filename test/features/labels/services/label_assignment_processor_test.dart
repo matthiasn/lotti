@@ -405,6 +405,8 @@ void main() {
       mockDb = MockJournalDb();
       mockRepo = MockLabelsRepository();
       mockLogging = MockDomainLogger();
+      // The task read: not found, so no category and nothing suppressed.
+      when(() => mockDb.journalEntityById(any())).thenAnswer((_) async => null);
       when(
         () => mockRepo.addLabels(
           journalEntityId: any(named: 'journalEntityId'),
@@ -522,6 +524,10 @@ void main() {
       mockDbEdge = MockJournalDb();
       mockRepoEdge = MockLabelsRepository();
       mockLoggingEdge = MockDomainLogger();
+      // The task read: not found, so no category and nothing suppressed.
+      when(
+        () => mockDbEdge.journalEntityById(any()),
+      ).thenAnswer((_) async => null);
       processorEdge = LabelAssignmentProcessor(
         db: mockDbEdge,
         repository: mockRepoEdge,
@@ -819,53 +825,68 @@ void main() {
       getIt.allowReassignment = true;
     });
 
-    test(
-      'processAssignment handles DB error when fetching suppression',
-      () async {
-        final db = MockJournalDb();
-        final repo = MockLabelsRepository();
-        final log = MockDomainLogger();
+    // A failed task read leaves the suppressed set unknown. Treating it as
+    // empty would re-apply a label the user removed (ADR 0097), so the
+    // processor assigns nothing — whether or not the caller supplied the
+    // category, because the suppressed set only comes from the task.
+    for (final categoryId in [null, 'cat']) {
+      test(
+        'a failed task read assigns nothing (categoryId: $categoryId)',
+        () async {
+          final db = MockJournalDb();
+          final repo = MockLabelsRepository();
+          final log = MockDomainLogger();
 
-        // Valid global label 'S'
-        when(() => db.getLabelDefinitionById('S')).thenAnswer(
-          (_) async => LabelDefinition(
-            id: 'S',
-            name: 'S',
-            color: '#000',
-            createdAt: DateTime(2024, 3, 15, 10, 30),
-            updatedAt: DateTime(2024, 3, 15, 10, 30),
-            vectorClock: null,
-            private: false,
-          ),
-        );
-        // Suppression lookup fails
-        when(() => db.journalEntityById(any())).thenThrow(Exception('db'));
+          // 'S' is a valid global label: it would be assigned if the
+          // suppressed set were (wrongly) taken to be empty.
+          when(() => db.getLabelDefinitionById('S')).thenAnswer(
+            (_) async => LabelDefinition(
+              id: 'S',
+              name: 'S',
+              color: '#000',
+              createdAt: DateTime(2024, 3, 15, 10, 30),
+              updatedAt: DateTime(2024, 3, 15, 10, 30),
+              vectorClock: null,
+              private: false,
+            ),
+          );
+          when(() => db.journalEntityById(any())).thenThrow(Exception('db'));
 
-        when(
-          () => repo.addLabels(
-            journalEntityId: any<String>(named: 'journalEntityId'),
-            addedLabelIds: any<List<String>>(named: 'addedLabelIds'),
-          ),
-        ).thenAnswer((_) async => true);
+          final dbErrorProcessor = LabelAssignmentProcessor(
+            db: db,
+            repository: repo,
+            logging: log,
+            validator: LabelValidator(db: db),
+          );
 
-        final dbErrorProcessor = LabelAssignmentProcessor(
-          db: db,
-          repository: repo,
-          logging: log,
-          validator: LabelValidator(db: db),
-        );
+          final res = await dbErrorProcessor.processAssignment(
+            taskId: 't',
+            proposedIds: const ['S'],
+            existingIds: const [],
+            categoryId: categoryId,
+          );
 
-        final res = await dbErrorProcessor.processAssignment(
-          taskId: 't',
-          proposedIds: const ['S'],
-          existingIds: const [],
-          // omit categoryId (defaults to null)
-        );
-
-        // With suppression lookup failed, treat as not suppressed and assign
-        expect(res.assigned, equals(['S']));
-      },
-    );
+          expect(res.assigned, isEmpty);
+          expect(res.skipped, [
+            {'id': 'S', 'reason': 'suppression_unknown'},
+          ]);
+          verifyNever(
+            () => repo.addLabels(
+              journalEntityId: any<String>(named: 'journalEntityId'),
+              addedLabelIds: any<List<String>>(named: 'addedLabelIds'),
+            ),
+          );
+          verify(
+            () => log.error(
+              LogDomain.labels,
+              any(that: startsWith('label_assignment.task_lookup_failed')),
+              stackTrace: any(named: 'stackTrace'),
+              subDomain: 'processor',
+            ),
+          ).called(1);
+        },
+      );
+    }
   });
 
   // ---------------------------------------------------------------------------
@@ -888,6 +909,10 @@ void main() {
       mockDbTelemetry = MockJournalDb();
       mockRepoTelemetry = MockLabelsRepository();
       mockLoggingTelemetry = MockDomainLogger();
+      // The task read: not found, so no category and nothing suppressed.
+      when(
+        () => mockDbTelemetry.journalEntityById(any()),
+      ).thenAnswer((_) async => null);
 
       when(
         () => mockRepoTelemetry.addLabels(

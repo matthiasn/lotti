@@ -15,8 +15,9 @@ import 'package:lotti/services/domain_logging.dart';
 /// Partitions the proposed IDs into three buckets: [assigned] (persisted),
 /// [invalid] (unknown or soft-deleted definitions), and [skipped] — each a
 /// `{id, reason}` map where reason is one of `out_of_scope`, `suppressed`,
-/// `already_assigned`, `over_cap`, or `duplicate`. [toStructuredJson] renders
-/// this for return to the model.
+/// `already_assigned`, `over_cap`, `duplicate`, or `suppression_unknown` (the
+/// task could not be read, so nothing was assigned). [toStructuredJson]
+/// renders this for return to the model.
 class LabelAssignmentResult {
   LabelAssignmentResult({
     required this.assigned,
@@ -145,37 +146,35 @@ class LabelAssignmentProcessor {
     final invalid = <String>[];
     final skipped = <Map<String, String>>[];
     final sw = Stopwatch()..start();
-    // Determine category for category-scoped validation (Phase 1)
-    var effectiveCategoryId = categoryId;
-    if (effectiveCategoryId == null) {
-      try {
-        final db = _db ?? getIt<JournalDb>();
-        final entity = await db.journalEntityById(taskId);
-        effectiveCategoryId = entity?.meta.categoryId;
-      } catch (e, st) {
-        // fall back to treating only global labels as valid and log for diagnostics
-        _logging.error(
-          LogDomain.labels,
-          'label_assignment.category_lookup_failed: $e',
-          stackTrace: st,
-          subDomain: 'processor',
-        );
-        effectiveCategoryId = null;
-      }
-    }
-    // The task's suppressed set, read fresh. Callers filter on an earlier
-    // read, but this one is load-bearing: a label the user removed is
-    // suppressed, and a confirmed proposal applied late — the same item
-    // confirmed on another device before they synced — must not bring it
-    // back (ADR 0097).
-    var suppressedSet = const <String>{};
+    // The task, read fresh, for its category (unless the caller passed one)
+    // and its suppressed set. Callers filter on an earlier read, but this one
+    // is load-bearing: a label the user removed is suppressed, and a confirmed
+    // proposal applied late — the same item confirmed on another device before
+    // they synced — must not bring it back (ADR 0097). If the task cannot be
+    // read, which labels the user removed is unknown, so nothing is assigned.
+    final JournalEntity? entity;
     try {
-      final db = _db ?? getIt<JournalDb>();
-      final entity = await db.journalEntityById(taskId);
-      if (entity is Task) {
-        suppressedSet = entity.data.aiSuppressedLabelIds ?? const <String>{};
-      }
-    } catch (_) {}
+      entity = await (_db ?? getIt<JournalDb>()).journalEntityById(taskId);
+    } catch (e, st) {
+      _logging.error(
+        LogDomain.labels,
+        'label_assignment.task_lookup_failed: $e',
+        stackTrace: st,
+        subDomain: 'processor',
+      );
+      return LabelAssignmentResult(
+        assigned: const [],
+        invalid: const [],
+        skipped: [
+          for (final id in requested)
+            {'id': id, 'reason': 'suppression_unknown'},
+        ],
+      );
+    }
+    final effectiveCategoryId = categoryId ?? entity?.meta.categoryId;
+    final suppressedSet = entity is Task
+        ? entity.data.aiSuppressedLabelIds ?? const <String>{}
+        : const <String>{};
 
     final validation = await _validator.validateForTask(
       requested,

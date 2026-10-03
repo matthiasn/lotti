@@ -170,3 +170,7 @@ flowchart LR
 
 Validation and suppression run **before** anything is written, so an AI
 suggestion cannot resurrect a label the user already rejected for that task.
+The processor reads the task fresh for its suppressed set. If that read fails
+it **fails closed**: nothing is assigned, and every requested ID comes back as
+skipped with reason `suppression_unknown`. Reading an unreadable suppressed set
+as empty would do exactly the resurrecting this guard exists to prevent.
