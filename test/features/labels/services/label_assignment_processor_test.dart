@@ -933,6 +933,44 @@ void main() {
         );
       }
     }
+
+    test('a failed read keeps the reasons decided before it', () async {
+      final db = MockJournalDb();
+      final repo = MockLabelsRepository();
+      final log = MockDomainLogger();
+      when(() => db.journalEntityById(any())).thenThrow(Exception('db'));
+
+      // 'E' is already on the task; the last of the cap-plus-one new IDs is
+      // over the cap. Neither needed the task read to be ruled out.
+      final fresh = [for (var i = 0; i < kMaxLabelsPerAssignment; i++) 'L$i'];
+      final res =
+          await LabelAssignmentProcessor(
+            db: db,
+            repository: repo,
+            logging: log,
+            validator: LabelValidator(db: db),
+          ).processAssignment(
+            taskId: 'task-42',
+            proposedIds: ['E', ...fresh],
+            existingIds: const ['E'],
+          );
+
+      expect(res.assigned, isEmpty);
+      expect(res.skipped, [
+        {'id': 'E', 'reason': 'already_assigned'},
+        {'id': fresh.last, 'reason': 'over_cap'},
+        for (final id in fresh.take(kMaxLabelsPerAssignment - 1))
+          {'id': id, 'reason': 'suppression_unknown'},
+      ]);
+      verify(
+        () => log.error(
+          LogDomain.labels,
+          any(that: contains('taskId=task-42')),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'processor',
+        ),
+      ).called(1);
+    });
   });
 
   // ---------------------------------------------------------------------------

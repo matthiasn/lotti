@@ -156,16 +156,28 @@ class LabelAssignmentProcessor {
     LabelAssignmentResult suppressionUnknown(String reason, [StackTrace? st]) {
       _logging.error(
         LogDomain.labels,
-        'label_assignment.task_lookup_failed: $reason',
+        'label_assignment.task_lookup_failed taskId=$taskId: $reason',
         stackTrace: st,
         subDomain: 'processor',
       );
+      // IDs already ruled out before the read keep their reason; only those
+      // that would have been validated are unknown. A duplicate is also in
+      // [requested], so it is not listed a second time.
+      final skipReasons = <String, String>{
+        for (final id in alreadyAssigned) id: 'already_assigned',
+      };
+      for (final id in overCap) {
+        skipReasons.putIfAbsent(id, () => 'over_cap');
+      }
+      for (final id in requested) {
+        skipReasons.putIfAbsent(id, () => 'suppression_unknown');
+      }
       return LabelAssignmentResult(
         assigned: const [],
         invalid: const [],
         skipped: [
-          for (final id in requested)
-            {'id': id, 'reason': 'suppression_unknown'},
+          for (final MapEntry(key: id, value: reason) in skipReasons.entries)
+            {'id': id, 'reason': reason},
         ],
       );
     }
