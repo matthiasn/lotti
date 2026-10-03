@@ -114,6 +114,15 @@ class SyncTuning {
   /// own payload exceeds it is dropped (status `error`).
   static const int outboxBundleMaxBytes = 8 * 1024 * 1024;
 
+  /// Hard cap on what a gzip-encoded attachment may inflate to on receipt.
+  ///
+  /// Only `.json` payloads are gzipped, and the largest of them — an outbox
+  /// bundle manifest — is capped at [outboxBundleMaxBytes] compressed; JSON
+  /// inflates roughly 5–10×, so 16× that budget leaves wide headroom. What it
+  /// stops is a crafted few-kilobyte attachment inflating to gigabytes in
+  /// memory: decoding aborts as soon as the output crosses this line.
+  static const int maxDecodedAttachmentBytes = 16 * outboxBundleMaxBytes;
+
   /// Schema version for outbox bundle manifests. Bumped when the on-the-wire
   /// shape (envelope/payload record) changes incompatibly. Receivers reject
   /// unknown versions and rely on the surrounding outbox-row retry to

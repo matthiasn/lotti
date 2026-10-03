@@ -12,6 +12,7 @@ import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/matrix_payload_sender.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/model/sync_message_too_large_exception.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -184,6 +185,32 @@ void main() {
         verifyNever(() => room.getEventById(any()));
       });
     }
+
+    test('a json file larger than receivers will inflate is refused, not '
+        'uploaded or retried', () async {
+      await expectLater(
+        payloadSender.sendFile(
+          room: room,
+          fullPath: '${documentsDirectory.path}/huge.entry.json',
+          relativePath: '/journal/2026-10-03/huge.entry.json',
+          // Zero-filled, so allocating it costs nothing measurable.
+          bytes: Uint8List(SyncTuning.maxDecodedAttachmentBytes + 1),
+        ),
+        throwsA(
+          isA<SyncMessageTooLargeException>().having(
+            (e) => e.detail,
+            'detail',
+            contains('max=${SyncTuning.maxDecodedAttachmentBytes}'),
+          ),
+        ),
+      );
+      verifyNever(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      );
+    });
 
     for (final encrypted in [false, true]) {
       for (final scenario in <String, bool>{

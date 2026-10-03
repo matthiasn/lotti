@@ -3857,6 +3857,51 @@ void main() {
     );
 
     test(
+      'throws SyncMessageTooLargeException when the manifest would inflate '
+      'past what receivers accept, though it is small on the wire',
+      () async {
+        // A gzip stream declares its inflated size in its last four bytes
+        // (ISIZE); fake one just over the receive limit.
+        final declared = ByteData(16)
+          ..setUint32(
+            12,
+            SyncTuning.maxDecodedAttachmentBytes + 1,
+            Endian.little,
+          );
+        final bombSender = MatrixMessageSender(
+          loggingService: loggingService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          sentEventRegistry: sentEventRegistry,
+          gzipEncode: (_) async => declared.buffer.asUint8List(),
+        );
+
+        await expectLater(
+          bombSender.sendOutboxBundlePayloadForTesting(
+            room: room,
+            message: bundleWith(2),
+          ),
+          throwsA(
+            isA<SyncMessageTooLargeException>().having(
+              (e) => e.detail,
+              'detail',
+              allOf(
+                startsWith('outboxBundle decoded='),
+                contains('max=${SyncTuning.maxDecodedAttachmentBytes}'),
+              ),
+            ),
+          ),
+        );
+        verifyNever(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        );
+      },
+    );
+
+    test(
       'rejects an inbound jsonPath outside /outbox_bundles/ and falls '
       'back to a freshly minted UUID path — defence in depth against a '
       'tampered bundle envelope steering a write at an arbitrary '

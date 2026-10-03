@@ -290,6 +290,6 @@ unchanged by the encoding.
 
 | Direction | Rule |
 |-----------|------|
-| Receive | Decode the header unconditionally. |
-| Send | Gzip any attachment whose `relativePath` ends in `.json` — the sole gate is `relativePath.toLowerCase().endsWith('.json')` in `MatrixPayloadSender`. The upload name gains a `.gz` suffix and the event carries the header. |
+| Receive | Decode the header unconditionally, but never past `SyncTuning.maxDecodedAttachmentBytes` (128 MiB, 16× the bundle cap). Decoding streams through the inflater and aborts the moment its output crosses that line, throwing `AttachmentTooLargeException`, a `FormatException`, so every caller treats a decompression bomb like the corrupt gzip it effectively is: the queue skips it permanently, and the descriptor-recovery path classifies it `UnrecoverableSyncPayloadException` rather than parking it as a pending descriptor that would be decoded again every 30 s. |
+| Send | Gzip any attachment whose `relativePath` ends in `.json` — the sole gate is `relativePath.toLowerCase().endsWith('.json')` in `MatrixPayloadSender`. The upload name gains a `.gz` suffix and the event carries the header. A payload receivers would refuse is refused at the source with `SyncMessageTooLargeException`: a `.json` file over the decoded limit, or a gzipped document (bundle, backfill batch) whose ISIZE trailer declares more than it — so the outbox drops or splits it instead of sending what no peer will apply. |
 | Send (media) | Verbatim. Images and audio are already compressed and would not benefit; no header, no suffix. |

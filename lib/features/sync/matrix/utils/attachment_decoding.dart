@@ -33,17 +33,34 @@ const int _inlineGzipThreshold = 2 * 1024;
 /// treats the bytes as a concrete payload (JSON, media file, etc.), otherwise
 /// a gzipped `.json` attachment reaches `utf8.decode` as `0x1f 0x8b ...` and
 /// explodes with `FormatException: Unexpected extension byte`.
+///
+/// A payload that would inflate past [maxDecodedBytes] (by default
+/// [SyncTuning.maxDecodedAttachmentBytes]) throws
+/// [AttachmentTooLargeException] — a [FormatException], so every caller
+/// handles it exactly like the corrupt gzip it effectively is.
 Future<Uint8List> decodeAttachmentBytes({
   required Event event,
   required Uint8List downloadedBytes,
   required String relativePath,
   required DomainLogger logging,
+  int maxDecodedBytes = SyncTuning.maxDecodedAttachmentBytes,
 }) async {
   final encoding = event.content[attachmentEncodingKey];
   if (encoding != attachmentEncodingGzip) return downloadedBytes;
-  final decoded = downloadedBytes.length < _inlineGzipThreshold
-      ? _asUint8List(gzip.decode(downloadedBytes))
-      : await compute(_gzipDecodeWorker, downloadedBytes);
+  final Uint8List decoded;
+  try {
+    decoded = downloadedBytes.length < _inlineGzipThreshold
+        ? _cappedGzipDecode((downloadedBytes, maxDecodedBytes))
+        : await compute(_cappedGzipDecode, (downloadedBytes, maxDecodedBytes));
+  } on AttachmentTooLargeException {
+    logging.log(
+      LogDomain.sync,
+      'gzipRejected path=$relativePath compressed=${downloadedBytes.length} '
+      'limit=$maxDecodedBytes',
+      subDomain: 'attachment.decode',
+    );
+    rethrow;
+  }
   logging.log(
     LogDomain.sync,
     'gzipDecoded path=$relativePath '
@@ -54,8 +71,73 @@ Future<Uint8List> decodeAttachmentBytes({
   return decoded;
 }
 
-Uint8List _gzipDecodeWorker(Uint8List bytes) =>
-    _asUint8List(gzip.decode(bytes));
+/// The uncompressed length a gzip stream declares in its ISIZE trailer — its
+/// last four bytes, little-endian, the length modulo 2^32. Exact for anything
+/// under 4 GiB, which covers every payload this app builds, so a sender can
+/// hold a document to the receive limit without inflating it again.
+int gzipDecodedLength(Uint8List gzipped) {
+  if (gzipped.length < 4) return 0;
+  return ByteData.sublistView(
+    gzipped,
+    gzipped.length - 4,
+  ).getUint32(0, Endian.little);
+}
+
+/// A gzip attachment that inflates past the receive limit — a decompression
+/// bomb, or a payload no legitimate sender produces.
+class AttachmentTooLargeException extends FormatException {
+  const AttachmentTooLargeException(this.limitBytes)
+    : super('decoded attachment exceeds the receive limit');
+
+  /// The limit the output crossed, in bytes.
+  final int limitBytes;
+}
+
+/// Size of the input slices fed to the decoder: small enough that output is
+/// checked against the limit long before a bomb has inflated far past it.
+const int _decodeInputChunk = 64 * 1024;
+
+/// Gzip-decodes `args.$1`, aborting with [AttachmentTooLargeException] once
+/// the output exceeds `args.$2` bytes. One record argument so it can run
+/// through `compute` as well as inline.
+Uint8List _cappedGzipDecode((Uint8List, int) args) {
+  final (bytes, maxBytes) = args;
+  final output = _CappedByteSink(maxBytes);
+  final input = gzip.decoder.startChunkedConversion(output);
+  for (var start = 0; start < bytes.length; start += _decodeInputChunk) {
+    final end = start + _decodeInputChunk;
+    input.add(
+      Uint8List.sublistView(
+        bytes,
+        start,
+        end > bytes.length ? bytes.length : end,
+      ),
+    );
+  }
+  input.close();
+  return output.takeBytes();
+}
+
+/// Collects decoder output and throws as soon as it grows past [maxBytes].
+class _CappedByteSink extends ByteConversionSinkBase {
+  _CappedByteSink(this.maxBytes);
+
+  final int maxBytes;
+  final BytesBuilder _builder = BytesBuilder(copy: false);
+
+  @override
+  void add(List<int> chunk) {
+    if (_builder.length + chunk.length > maxBytes) {
+      throw AttachmentTooLargeException(maxBytes);
+    }
+    _builder.add(chunk);
+  }
+
+  @override
+  void close() {}
+
+  Uint8List takeBytes() => _builder.takeBytes();
+}
 
 /// Gzip-encodes [bytes], offloading to a worker isolate above
 /// [_inlineGzipThreshold] so a multi-KB JSON attachment does not stall the
