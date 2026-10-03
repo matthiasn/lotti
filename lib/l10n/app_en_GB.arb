@@ -116,8 +116,6 @@
   "maintenanceDeleteEditorDbDescription": "Delete editor drafts database",
   "maintenanceDeleteSyncDb": "Delete sync database",
   "maintenanceDeleteSyncDbDescription": "Delete sync database",
-  "maintenancePurgeAudioModels": "Purge audio models",
-  "maintenancePurgeAudioModelsDescription": "Purge all audio models",
   "maintenancePurgeDeleted": "Purge deleted items",
   "maintenancePurgeDeletedDescription": "Purge all deleted items permanently",
   "maintenanceRecreateFts5": "Recreate full-text index",
