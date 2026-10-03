@@ -121,6 +121,7 @@ import 'package:lotti/features/daily_os_next/services/day_processing_runtime.dar
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/github/api/github_client.dart';
+import 'package:lotti/features/github/context/pull_request_context_service.dart';
 import 'package:lotti/features/github/repository/github_token_storage.dart';
 import 'package:lotti/features/github/repository/pull_request_repository.dart';
 import 'package:lotti/features/github/service/pull_request_service.dart';
@@ -1941,3 +1942,6 @@ class MockGitHubTokenStorage extends Mock implements GitHubTokenStorage {}
 class MockPullRequestRepository extends Mock implements PullRequestRepository {}
 
 class MockPullRequestService extends Mock implements PullRequestService {}
+
+class MockPullRequestContextService extends Mock
+    implements PullRequestContextService {}

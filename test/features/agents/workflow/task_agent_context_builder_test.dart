@@ -515,6 +515,7 @@ void main() {
       Task? task,
       String? compactedTaskLog,
       String? categoryKnowledge,
+      String? pullRequestsContext,
       TaskStatusTransition? statusTransition,
     }) {
       return withClock(Clock.fixed(clockNow), () {
@@ -537,6 +538,7 @@ void main() {
           timeService: timeService,
           compactedTaskLog: compactedTaskLog,
           categoryKnowledge: categoryKnowledge,
+          pullRequestsContext: pullRequestsContext,
           statusTransition: statusTransition,
         );
       });
@@ -562,6 +564,46 @@ void main() {
       // append-only log, so it must not sit in the volatile tail.
       expect(heading, lessThan(result.text.indexOf('## Task Log')));
       expect(heading, lessThan(result.logStart!));
+    });
+
+    test(
+      'puts the pull requests in the volatile tail: after the compacted log, '
+      'never in the cached prefix',
+      () async {
+        const log = 'event A\nevent B';
+        const pullRequests =
+            'Pull requests linked to this task.\n\n'
+            '### penguin/colony#12 — Waddle faster';
+        final withPullRequests = await build(
+          compactedTaskLog: log,
+          linkedTasksJson: '{"linked_from":[{"id":"t2"}]}',
+          pullRequestsContext: pullRequests,
+        );
+        final without = await build(compactedTaskLog: log);
+
+        final text = withPullRequests.text;
+        expect(text, contains('## Pull Requests\n$pullRequests\n'));
+        expect(
+          text.indexOf('## Pull Requests'),
+          greaterThan(withPullRequests.logEnd!),
+        );
+        expect(
+          text.indexOf('## Pull Requests'),
+          greaterThan(text.indexOf('## Linked Tasks')),
+        );
+        // The prefix up to the end of the log is untouched by it.
+        expect(
+          text.substring(0, withPullRequests.logEnd),
+          without.text.substring(0, without.logEnd),
+        );
+      },
+    );
+
+    test('omits the pull requests section when there are none', () async {
+      for (final empty in [null, '']) {
+        final result = await build(pullRequestsContext: empty);
+        expect(result.text, isNot(contains('## Pull Requests')));
+      }
     });
 
     test('omits the category knowledge section when blank or absent', () async {

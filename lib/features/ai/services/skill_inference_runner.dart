@@ -39,6 +39,8 @@ import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
+import 'package:lotti/features/github/context/pull_request_context_renderer.dart';
+import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/speech/helpers/transcript_term_corrector.dart';
 import 'package:lotti/get_it.dart';
@@ -125,6 +127,29 @@ class SkillInferenceRunner {
   final DomainLogger _loggingService;
   final PromptBuilderHelper _promptBuilderHelper;
   final TaskSummaryResolver _taskSummaryResolver;
+
+  /// The task's pull requests for a coding prompt, refreshed now, or null
+  /// when there are none. A failure here never fails the prompt: it is
+  /// logged, and the prompt goes out without the section.
+  Future<String?> _pullRequestContext(String taskId) async {
+    try {
+      final text = await _ref
+          .read(pullRequestContextServiceProvider)
+          .contextFor(
+            taskId,
+            audience: PullRequestContextAudience.codingPrompt,
+          );
+      return text.isEmpty ? null : text;
+    } catch (error, stackTrace) {
+      _loggingService.error(
+        LogDomain.ai,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'runPromptGeneration.pullRequests',
+      );
+      return null;
+    }
+  }
 
   /// Formats pre-fetched speech dictionary terms into a prompt fragment.
   static String _formatSpeechDictionaryText(List<String> terms) {
@@ -1274,18 +1299,23 @@ class SkillInferenceRunner {
 
         // 3. Build task context (parallel for independent calls). The
         // category brief rides along so the coding prompt is framed by the
-        // same knowledge a task-agent wake is.
+        // same knowledge a task-agent wake is, and a coding prompt also gets
+        // the task's pull requests, refreshed from GitHub for it.
         final (
           String? taskContext,
           String? linkedTasks,
           String? categoryKnowledge,
+          String? pullRequests,
         ) = linkedTaskId != null
             ? await (
                 _aiInputRepository.buildTaskDetailsJson(id: linkedTaskId),
                 _aiInputRepository.buildLinkedTasksJson(linkedTaskId),
                 _aiInputRepository.buildCategoryKnowledge(linkedTaskId),
+                skill.skillType == SkillType.promptGeneration
+                    ? _pullRequestContext(linkedTaskId)
+                    : Future<String?>.value(),
               ).wait
-            : (null, null, null);
+            : (null, null, null, null);
 
         // 4. Build prompts via SkillPromptBuilder.
         const promptBuilder = SkillPromptBuilder();
@@ -1295,6 +1325,7 @@ class SkillInferenceRunner {
           taskContext: taskContext,
           linkedTasks: linkedTasks,
           categoryKnowledge: categoryKnowledge,
+          pullRequests: pullRequests,
         );
 
         // 5. Call inference, using the existing multimodal request path only

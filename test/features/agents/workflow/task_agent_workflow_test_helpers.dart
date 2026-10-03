@@ -19,6 +19,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
+import 'package:lotti/features/github/context/pull_request_context_renderer.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -499,6 +500,7 @@ typedef TaskAgentWorkflowTestBench = ({
   MockChecklistRepository mockChecklistRepository,
   MockLabelsRepository mockLabelsRepository,
   MockAgentTemplateService mockTemplateService,
+  MockPullRequestContextService mockPullRequestContextService,
   TaskAgentWorkflow workflow,
 });
 
@@ -667,6 +669,15 @@ TaskAgentWorkflowTestBench createTaskAgentWorkflowTestBench({
     () => mockTemplateService.getActiveVersion(testTemplate.id),
   ).thenAnswer((_) async => testTemplateVersion);
 
+  // A task without linked pull requests renders no section.
+  final mockPullRequestContextService = MockPullRequestContextService();
+  when(
+    () => mockPullRequestContextService.contextFor(
+      any(),
+      audience: PullRequestContextAudience.taskAgent,
+    ),
+  ).thenAnswer((_) async => '');
+
   final workflow = TaskAgentWorkflow(
     agentRepository: mockAgentRepository,
     conversationRepository: mockConversationRepository,
@@ -679,6 +690,7 @@ TaskAgentWorkflowTestBench createTaskAgentWorkflowTestBench({
     labelsRepository: mockLabelsRepository,
     syncService: mockSyncService,
     templateService: mockTemplateService,
+    pullRequestContextService: mockPullRequestContextService,
     narrowToolSurface: narrowToolSurface,
     domainLogger: DomainLogger(loggingService: LoggingService())
       ..enabledDomains.add(LogDomain.agentWorkflow),
@@ -697,6 +709,7 @@ TaskAgentWorkflowTestBench createTaskAgentWorkflowTestBench({
     mockChecklistRepository: mockChecklistRepository,
     mockLabelsRepository: mockLabelsRepository,
     mockTemplateService: mockTemplateService,
+    mockPullRequestContextService: mockPullRequestContextService,
     workflow: workflow,
   );
 }

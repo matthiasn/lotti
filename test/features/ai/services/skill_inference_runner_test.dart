@@ -33,6 +33,8 @@ import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
+import 'package:lotti/features/github/context/pull_request_context_renderer.dart';
+import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/service/image_path_migration_service.dart';
 import 'package:lotti/get_it.dart';
@@ -98,6 +100,7 @@ void main() {
         ..registerPromptGenerationAttribution()
         ..registerPromptGenerationNoteInputs()
         ..registerPromptGenerationCategoryKnowledge()
+        ..registerPromptGenerationPullRequests()
         ..registerPromptGenerationModelSelection()
         ..registerPromptGenerationPersistence()
         ..registerPromptGenerationTranscriptInputs()

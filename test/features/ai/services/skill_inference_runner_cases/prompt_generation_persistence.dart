@@ -319,6 +319,9 @@ extension _PromptGenerationPersistenceCases on _SkillInferenceTestSetup {
           linkedTaskId: 'task-img',
         );
 
+        // Pull requests are coding context: an image prompt never asks.
+        verifyZeroInteractions(mockPullRequestContext);
+
         // Only AiResponseType.promptGeneration (coding) re-targets to the
         // task; image-prompt generation stays linked to the source entry.
         final captured = verify(

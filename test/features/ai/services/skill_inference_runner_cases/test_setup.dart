@@ -49,6 +49,7 @@ class _SkillInferenceTestSetup {
   late MockPromptBuilderHelper mockPromptBuilderHelper;
   late MockTaskSummaryResolver mockTaskSummaryResolver;
   late MockAiConfigRepository mockAiConfigRepo;
+  late MockPullRequestContextService mockPullRequestContext;
   late SkillInferenceRunner runner;
   late Directory tempDir;
   late ProviderContainer container;
@@ -328,10 +329,21 @@ class _SkillInferenceTestSetup {
       mockPromptBuilderHelper = MockPromptBuilderHelper();
       mockTaskSummaryResolver = MockTaskSummaryResolver();
       mockAiConfigRepo = MockAiConfigRepository();
+      mockPullRequestContext = MockPullRequestContextService();
+      // No linked pull requests unless a case says otherwise.
+      when(
+        () => mockPullRequestContext.contextFor(
+          any(),
+          audience: PullRequestContextAudience.codingPrompt,
+        ),
+      ).thenAnswer((_) async => '');
 
       container = ProviderContainer(
         overrides: [
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
+          pullRequestContextServiceProvider.overrideWithValue(
+            mockPullRequestContext,
+          ),
         ],
       );
 

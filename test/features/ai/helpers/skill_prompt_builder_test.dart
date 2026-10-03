@@ -411,6 +411,51 @@ Cats in suits in a steampunk laboratory working at a whiteboard with brass machi
       });
     });
 
+    group('user message — pull requests', () {
+      test(
+        'a coding prompt carries the pull requests after the related tasks',
+        () {
+          final result = builder.build(
+            skill: makeSkill(
+              skillType: SkillType.promptGeneration,
+              contextPolicy: ContextPolicy.fullTask,
+            ),
+            taskContext: '{"id": "task-1"}',
+            linkedTasks: '{"linked_from": []}',
+            entryContent: 'Fix the login flow',
+            pullRequests: '### penguin/colony#12 — Waddle faster',
+          );
+
+          final message = result.userMessage;
+          expect(
+            message,
+            contains(
+              '**Pull Requests:**\n### penguin/colony#12 — Waddle faster',
+            ),
+          );
+          expect(
+            message.indexOf('**Pull Requests:**'),
+            greaterThan(message.indexOf('**Related Tasks:**')),
+          );
+          expect(result.systemMessage, isNot(contains('Pull Requests')));
+        },
+      );
+
+      test('is omitted when absent or empty', () {
+        for (final pullRequests in [null, '']) {
+          final result = builder.build(
+            skill: makeSkill(
+              skillType: SkillType.promptGeneration,
+              contextPolicy: ContextPolicy.fullTask,
+            ),
+            taskContext: '{"id": "task-1"}',
+            pullRequests: pullRequests,
+          );
+          expect(result.userMessage, isNot(contains('Pull Requests')));
+        }
+      });
+    });
+
     group('user message — category knowledge', () {
       test(
         'fullTask policy leads the task material with the category brief',

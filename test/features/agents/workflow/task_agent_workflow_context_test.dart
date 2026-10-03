@@ -18,6 +18,7 @@ import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
+import 'package:lotti/features/github/context/pull_request_context_renderer.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -35,6 +36,7 @@ void main() {
   late MockJournalDb mockJournalDb;
   late MockConversationManager mockConversationManager;
   late TaskAgentWorkflow workflow;
+  late MockPullRequestContextService mockPullRequestContextService;
 
   const agentId = taskAgentTestAgentId;
   const taskId = taskAgentTestTaskId;
@@ -58,6 +60,7 @@ void main() {
     mockAiConfigRepository = bench.mockAiConfigRepository;
     mockJournalDb = bench.mockJournalDb;
     mockConversationManager = bench.mockConversationManager;
+    mockPullRequestContextService = bench.mockPullRequestContextService;
     workflow = bench.workflow;
   });
 
@@ -330,6 +333,75 @@ void main() {
           verify(
             () => mockAiInputRepository.buildCategoryKnowledge(taskId),
           ).called(1);
+        },
+      );
+
+      test(
+        'puts the pull requests refreshed for this wake in the volatile '
+        'tail, after the linked tasks',
+        () async {
+          when(
+            () => mockPullRequestContextService.contextFor(
+              taskId,
+              audience: PullRequestContextAudience.taskAgent,
+            ),
+          ).thenAnswer(
+            (_) async =>
+                'Pull requests linked to this task.\n\n'
+                '### penguin/colony#12 — Waddle faster\n- State: merged',
+          );
+
+          final message = await executeAndCaptureMessage(
+            linkedTasksJson: jsonEncode({
+              'linked_from': [
+                {'id': 'other-task', 'title': 'Other task'},
+              ],
+            }),
+          );
+
+          expect(message, isNotNull);
+          expect(
+            message,
+            contains(
+              '## Pull Requests\nPull requests linked to this task.\n\n'
+              '### penguin/colony#12 — Waddle faster\n- State: merged',
+            ),
+          );
+          expect(
+            message!.indexOf('## Pull Requests'),
+            greaterThan(message.indexOf('## Linked Tasks')),
+          );
+          verify(
+            () => mockPullRequestContextService.contextFor(
+              taskId,
+              audience: PullRequestContextAudience.taskAgent,
+            ),
+          ).called(1);
+        },
+      );
+
+      test('a task without pull requests has no section', () async {
+        final message = await executeAndCaptureMessage();
+
+        expect(message, isNotNull);
+        expect(message, isNot(contains('## Pull Requests')));
+      });
+
+      test(
+        'a pull request context that fails leaves the section out, and the '
+        'wake goes on',
+        () async {
+          when(
+            () => mockPullRequestContextService.contextFor(
+              taskId,
+              audience: PullRequestContextAudience.taskAgent,
+            ),
+          ).thenThrow(StateError('GitHub exploded'));
+
+          final message = await executeAndCaptureMessage();
+
+          expect(message, isNotNull);
+          expect(message, isNot(contains('## Pull Requests')));
         },
       );
 

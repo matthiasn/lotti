@@ -545,6 +545,7 @@ class TaskAgentContextBuilder {
     TimeService? timeService,
     String? compactedTaskLog,
     String? categoryKnowledge,
+    String? pullRequestsContext,
     TaskStatusTransition? statusTransition,
   }) async {
     final buffer = StringBuffer();
@@ -658,6 +659,18 @@ class TaskAgentContextBuilder {
         ..writeln('```json')
         ..writeln(linkedTasksJson)
         ..writeln('```')
+        ..writeln();
+    }
+
+    // The task's pull requests, refreshed for this wake. Volatile like the
+    // linked-task summaries — GitHub changes them out-of-band — so they sit
+    // in the tail, never in the cached prefix. Their state is shown only
+    // when this wake's refresh succeeded, so a checklist suggestion is never
+    // derived from stale data.
+    if (pullRequestsContext != null && pullRequestsContext.isNotEmpty) {
+      buffer
+        ..writeln('## Pull Requests')
+        ..writeln(pullRequestsContext)
         ..writeln();
     }
 
