@@ -131,12 +131,16 @@ class SyncEventTrust {
       );
       return SyncEventTrustVerdict.untrustedDevice;
     }
-    if (_remembered.add(ledgerKey)) {
+    // Cache the sender only once the record is durable: a failed write must
+    // be retried by the next event rather than skipped, or a later logout
+    // would leave the sender's history without trust evidence.
+    if (!_remembered.contains(ledgerKey)) {
       await _syncDb.rememberTrustedSyncSender(
         userId: senderId,
         curve25519Key: senderKey,
         deviceId: device.deviceId ?? '',
       );
+      _remembered.add(ledgerKey);
     }
     return SyncEventTrustVerdict.trusted;
   }

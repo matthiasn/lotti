@@ -261,6 +261,28 @@ void main() {
       },
     );
 
+    test(
+      'a failed ledger write is retried by the next event, never skipped',
+      () async {
+        await syncDb.customStatement('''
+          CREATE TRIGGER fail_trusted_sender
+          BEFORE INSERT ON trusted_sync_senders
+          BEGIN
+            SELECT RAISE(ABORT, 'ledger write failed');
+          END
+        ''');
+        await expectLater(trust.evaluate(decrypted()), throwsA(anything));
+        expect(await peerRemembered(), isFalse);
+
+        await syncDb.customStatement('DROP TRIGGER fail_trusted_sender');
+        expect(
+          await trust.evaluate(decrypted()),
+          SyncEventTrustVerdict.trusted,
+        );
+        expect(await peerRemembered(), isTrue);
+      },
+    );
+
     test('an unverified or blocked device is rejected and forgotten', () async {
       await syncDb.rememberTrustedSyncSender(
         userId: _me,
