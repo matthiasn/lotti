@@ -49,6 +49,11 @@ const _ungatedNamedQueries = <String, String>{
       'the sleep repair sweep must cover hidden rows',
   // Numbers, not rows.
   'countJournalEntries': 'a count for maintenance progress',
+  // Ownership, not content: a pull request belongs to one task whatever
+  // that task's privacy, and the query returns ids only.
+  'pullRequestAssignments':
+      'which task holds a pull request, so the picker and the link enforce '
+      'one task per pull request across private tasks too; ids only',
 };
 
 /// Dart declarations (`lib/…/file.dart:name`) that read journal rows —
