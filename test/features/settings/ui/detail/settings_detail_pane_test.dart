@@ -9,17 +9,18 @@ import 'package:lotti/features/settings/domain/settings_node.dart';
 import 'package:lotti/features/settings/domain/settings_tree_index.dart';
 import 'package:lotti/features/settings/state/settings_tree_controller.dart';
 import 'package:lotti/features/settings/ui/detail/category_empty.dart';
-import 'package:lotti/features/settings/ui/detail/default_panel.dart';
 import 'package:lotti/features/settings/ui/detail/empty_root.dart';
 import 'package:lotti/features/settings/ui/detail/leaf_panel.dart';
 import 'package:lotti/features/settings/ui/detail/settings_detail_pane.dart';
 import 'package:lotti/features/settings/ui/settings_tree_scope.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../widget_test_utils.dart';
+import '../../routing/test_route_table.dart';
 
 Future<void> _pumpPane(
   WidgetTester tester, {
@@ -148,25 +149,84 @@ void main() {
     );
   });
 
-  group('SettingsDetailPane — leaf selection', () {
-    testWidgets(
-      'dispatches to LeafPanel with DefaultPanel fallback for a leaf '
-      'whose panel id is not yet registered',
-      (tester) async {
-        // `whats-new` is the only remaining tree leaf whose panel id
-        // is not in `kSettingsPanels` — it lands in a later polish
-        // step. Until then the dispatcher falls back through
-        // [DefaultPanel], which is exactly the contract under test.
-        await _pumpPane(
-          tester,
-          flags: {enableWhatsNewFlag: true},
-          initialPath: ['whats-new'],
+  group('SettingsDetailPane — panel dispatch from the route registry', () {
+    // A scope tree shaped like the fake route table, so the dispatch reads
+    // real registry entries without a real page's provider graph.
+    SettingsNode node(String id, {List<SettingsNode>? children}) =>
+        SettingsNode(
+          id: id,
+          icon: LottiIcons.star,
+          title: 'title:$id',
+          desc: '',
+          children: children,
         );
-        await tester.pump(const Duration(milliseconds: 200));
-        expect(find.byType(LeafPanel), findsOneWidget);
-        expect(find.byType(DefaultPanel), findsOneWidget);
-      },
-    );
+    final scopeTree = [
+      node('hub', children: [node('hub/list')]),
+      node('section', children: [node('section/tab')]),
+      node('inert'),
+    ];
+
+    Future<void> pumpAt(WidgetTester tester, List<String> path) async {
+      final mocks = await setUpTestGetIt();
+      addTearDown(tearDownTestGetIt);
+      when(
+        () => mocks.journalDb.watchConfigFlag(any()),
+      ).thenAnswer((_) => Stream.value(false));
+      final route = ValueNotifier<DesktopSettingsRoute?>(null);
+      addTearDown(route.dispose);
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Material(
+            child: SizedBox(
+              width: 1000,
+              height: 800,
+              child: SettingsTreeScope(
+                tree: scopeTree,
+                index: SettingsTreeIndex.build(scopeTree),
+                child: SettingsDetailPane(
+                  table: testRouteTable(),
+                  listenable: route,
+                ),
+              ),
+            ),
+          ),
+          overrides: [
+            journalDbProvider.overrideWithValue(mocks.journalDb),
+            settingsTreePathProvider.overrideWith(() => _SeededTreePath(path)),
+          ],
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+    }
+
+    testWidgets('a leaf with a panel mounts its body in a LeafPanel', (
+      tester,
+    ) async {
+      await pumpAt(tester, ['hub', 'hub/list']);
+      expect(find.byType(LeafPanel), findsOneWidget);
+      expect(find.text('panel:list:0'), findsOneWidget);
+    });
+
+    testWidgets('a branch with a landing panel shows that panel, not the '
+        '"pick a section" hint', (tester) async {
+      await pumpAt(tester, ['section']);
+      expect(find.text('panel:section'), findsOneWidget);
+      expect(find.byType(CategoryEmpty), findsNothing);
+    });
+
+    testWidgets('a branch without a panel shows the hint', (tester) async {
+      await pumpAt(tester, ['hub']);
+      expect(find.byType(CategoryEmpty), findsOneWidget);
+      expect(find.text('title:hub'), findsOneWidget);
+    });
+
+    testWidgets('a leaf with no panel on this platform shows the empty root '
+        'rather than a blank or placeholder body', (tester) async {
+      await pumpAt(tester, ['inert']);
+      expect(find.byType(EmptyRoot), findsOneWidget);
+      expect(find.byType(LeafPanel), findsNothing);
+    });
   });
 
   group('SettingsDetailPane — unknown id', () {
@@ -192,18 +252,14 @@ void main() {
       'consumes the index published by SettingsTreeScope rather than '
       'rebuilding a fallback from the gating flags',
       (tester) async {
-        // Build a deliberately-tiny tree the gating flags would never
-        // produce (single custom leaf, no real ids). If the dispatcher
-        // resolves the path against this scope-provided index, it will
-        // render LeafPanel for the custom id; if it ignored the scope
-        // and built its own fallback from the gating flags, the id
-        // would be unknown and the dispatcher would land on EmptyRoot.
+        // A deliberately tiny tree the gating flags would never produce.
+        // The registry-dispatch group above proves the scope's index is
+        // what resolves a path to a panel.
         const customLeaf = SettingsNode(
           id: 'custom-leaf',
           icon: LottiIcons.star,
           title: 'Custom',
           desc: '',
-          panel: 'custom-panel',
         );
         final scopeTree = <SettingsNode>[customLeaf];
         final scopeIndex = SettingsTreeIndex.build(scopeTree);
@@ -237,8 +293,11 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 200));
 
-        expect(find.byType(LeafPanel), findsOneWidget);
-        expect(find.byType(EmptyRoot), findsNothing);
+        // `custom-leaf` is in the scope's index but has no route, so the
+        // pane resolves it (no crash, no fallback tree) and shows the empty
+        // root for a leaf without a panel.
+        expect(find.byType(EmptyRoot), findsOneWidget);
+        expect(find.byType(LeafPanel), findsNothing);
       },
     );
   });

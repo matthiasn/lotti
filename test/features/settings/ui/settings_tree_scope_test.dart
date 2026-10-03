@@ -27,7 +27,6 @@ void main() {
             icon: LottiIcons.flag,
             title: 'Flags',
             desc: '',
-            panel: 'flags',
           ),
         ];
         final index = SettingsTreeIndex.build(tree);
@@ -125,7 +124,6 @@ void main() {
           icon: LottiIcons.flag,
           title: 'Flags',
           desc: '',
-          panel: 'flags',
         ),
       ];
       final indexA = SettingsTreeIndex.build(treeA);
@@ -246,7 +244,7 @@ void main() {
         expect(scope.index.findById('sync/outbox'), isNull);
         final tile = scope.index.findById('sync-unavailable');
         expect(tile, isNotNull);
-        expect(tile!.panel, isNull);
+        expect(tile!.action, isNull);
         expect(tile.action, isNull);
       },
     );

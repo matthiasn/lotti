@@ -56,12 +56,12 @@ Set<String> _ids(List<SettingsNode> nodes) {
 
 void main() {
   group('buildSettingsTree — enableSpeechTts', () {
-    test('adds the speech leaf (panel: speech) only when enabled', () {
+    test('adds the speech leaf only when enabled', () {
       expect(_ids(_tree()), isNot(contains('preferences/speech')));
 
       final enabled = _tree(enableSpeechTts: true);
       expect(_ids(enabled), contains('preferences/speech'));
-      expect(_find(enabled, 'preferences/speech')?.panel, 'speech');
+      expect(_find(enabled, 'preferences/speech')?.hasChildren, isFalse);
     });
 
     test('the speech leaf hangs off the preferences branch, not the root', () {
@@ -92,7 +92,7 @@ void main() {
           ids.indexOf('advanced/github'),
           ids.indexOf('advanced/flags') + 1,
         );
-        expect(_find(tree, 'advanced/github')?.panel, 'advanced-github');
+        expect(_find(tree, 'advanced/github')?.hasChildren, isFalse);
       },
     );
   });
@@ -101,11 +101,11 @@ void main() {
     // The onboarding replay entry is unconditional: it is the only way back
     // to the welcome once the auto-show budget is spent or the rollout
     // retired it for an already-configured install, so no flag may hide it.
-    test('always exposes a top-level onboarding leaf (panel: onboarding)', () {
+    test('always exposes a top-level onboarding leaf', () {
       final node = _find(_tree(), 'onboarding');
       expect(node, isNotNull);
       expect(node!.hasChildren, isFalse);
-      expect(node.panel, 'onboarding');
+      expect(node.action, isNull);
     });
 
     test('survives every other feature flag being off', () {
@@ -272,7 +272,6 @@ void main() {
         final tile = _find(tree, 'sync-unavailable');
         expect(tile, isNotNull);
         expect(tile!.hasChildren, isFalse);
-        expect(tile.panel, isNull);
         expect(tile.action, isNull);
 
         // It occupies the sync slot in the root order (below agents /
@@ -320,7 +319,9 @@ void main() {
 
     test('includes whats-new when on', () {
       final whatsNew = _tree().firstWhere((n) => n.id == 'whats-new');
-      expect(whatsNew.panel, 'whats-new');
+      // An action, not a page: on both surfaces a tap opens the
+      // release-notes modal over whatever is on screen.
+      expect(whatsNew.action, SettingsNodeAction.openWhatsNew);
     });
   });
 
@@ -348,14 +349,13 @@ void main() {
       expect(ids, contains('definitions/categories'));
     });
 
-    test('renders habits leaf under definitions with the habits panel', () {
+    test('renders the habits leaf under definitions', () {
       final habits = SettingsTreeIndexTestHelper.findInTree(
         _tree(),
         'definitions/habits',
       );
       expect(habits, isNotNull);
       expect(habits!.hasChildren, isFalse);
-      expect(habits.panel, 'habits');
     });
   });
 
@@ -371,7 +371,7 @@ void main() {
     );
 
     test(
-      'renders dashboards leaf under definitions with the dashboards panel',
+      'renders the dashboards leaf under definitions',
       () {
         final dashboards = SettingsTreeIndexTestHelper.findInTree(
           _tree(),
@@ -379,15 +379,13 @@ void main() {
         );
         expect(dashboards, isNotNull);
         expect(dashboards!.hasChildren, isFalse);
-        expect(dashboards.panel, 'dashboards');
       },
     );
   });
 
   group('buildSettingsTree — definitions branch', () {
-    test('definitions is a pure branch (no panel) with stable child order', () {
+    test('definitions is a branch with a stable child order', () {
       final definitions = _tree().firstWhere((n) => n.id == 'definitions');
-      expect(definitions.panel, isNull);
       expect(definitions.children!.map((n) => n.id).toList(), [
         'definitions/categories',
         'definitions/labels',
@@ -412,11 +410,10 @@ void main() {
   });
 
   group('buildSettingsTree — preferences branch', () {
-    test('is a pure branch (no panel) with a stable child order', () {
+    test('is a branch with a stable child order', () {
       final preferences = _tree(
         enableSpeechTts: true,
       ).firstWhere((n) => n.id == 'preferences');
-      expect(preferences.panel, isNull);
       expect(preferences.hasChildren, isTrue);
       expect(preferences.children!.map((n) => n.id).toList(), [
         'preferences/theming',
@@ -441,14 +438,10 @@ void main() {
       );
     });
 
-    test('animations declares the renamed preferences-animations panel', () {
-      // Panel ids carry no deep-link value, so unlike the URL this one was
-      // renamed with the node rather than left saying "advanced" about a
-      // page that is no longer in Advanced. `kSettingsPanels` has the
-      // matching key (asserted in panel_registry_test).
+    test('animations is a leaf of the preferences branch', () {
       final node = _find(_tree(), 'preferences/animations');
       expect(node, isNotNull);
-      expect(node!.panel, 'preferences-animations');
+      expect(node!.hasChildren, isFalse);
     });
 
     test('sits immediately above advanced at the root', () {
@@ -524,13 +517,13 @@ void main() {
       ]);
     });
 
-    test('advanced/flags carries the flags panel', () {
+    test('advanced/flags is a leaf', () {
       final flags = SettingsTreeIndexTestHelper.findInTree(
         _tree(),
         'advanced/flags',
       );
       expect(flags, isNotNull);
-      expect(flags!.panel, 'flags');
+      expect(flags!.hasChildren, isFalse);
     });
   });
 
@@ -565,109 +558,6 @@ void main() {
         ]);
       },
     );
-  });
-
-  group('buildSettingsTree — panel assignments', () {
-    test('every internal leaf registers the expected panel id', () {
-      final leafPanels = <String, String>{};
-      void walk(List<SettingsNode> nodes) {
-        for (final n in nodes) {
-          final c = n.children;
-          if (c == null) {
-            if (n.action != null) {
-              expect(
-                n.panel,
-                isNull,
-                reason: '${n.id} action leaf must not create a detail panel',
-              );
-              continue;
-            }
-            expect(n.panel, isNotNull, reason: '${n.id} leaf needs a panel');
-            leafPanels[n.id] = n.panel!;
-          } else {
-            walk(c);
-          }
-        }
-      }
-
-      walk(_tree());
-      expect(leafPanels, {
-        'whats-new': 'whats-new',
-        'onboarding': 'onboarding',
-        'sections': 'sections',
-        // AI Settings v4 added per-tab leaves under `ai` so the
-        // sidebar exposes Providers / Models / Profiles directly
-        // instead of forcing the user to drill into the AI landing
-        // and switch tabs from there.
-        'ai/providers': 'ai-providers',
-        'ai/models': 'ai-models',
-        'ai/profiles': 'ai-profiles',
-        'ai/usage': 'ai-usage',
-        'agents/templates': 'agents-templates',
-        'agents/instances': 'agents-instances',
-        'agents/souls': 'agents-souls',
-        'agents/pending-wakes': 'agents-pending-wakes',
-        'daily-os': 'daily-os',
-        'definitions/habits': 'habits',
-        'definitions/categories': 'categories',
-        'definitions/labels': 'labels',
-        'sync/provisioned': 'sync-provisioned',
-        'sync/node-profile': 'sync-node-profile',
-        'sync/backfill': 'sync-backfill',
-        'sync/stats': 'sync-stats',
-        'sync/outbox': 'sync-outbox',
-        'sync/conflicts': 'sync-conflicts',
-        'sync/matrix-maintenance': 'sync-matrix-maintenance',
-        'definitions/dashboards': 'dashboards',
-        'definitions/measurables': 'measurables',
-        // Reparenting under `preferences` left the four already-root
-        // panel keys alone — `kSettingsPanels` still dispatches on
-        // `theming`, `keyboard-shortcuts` and `recording-style`. Only
-        // animations was re-keyed, because its old name named the branch
-        // it left.
-        'preferences/theming': 'theming',
-        'preferences/animations': 'preferences-animations',
-        // Born under the branch, so its key names the leaf alone.
-        'preferences/notifications': 'notifications',
-        'preferences/recording-style': 'recording-style',
-        'preferences/keyboard-shortcuts': 'keyboard-shortcuts',
-        'advanced/flags': 'flags',
-        'advanced/manual-language': 'advanced-manual-language',
-        'advanced/logging': 'advanced-logging',
-        'advanced/system-health': 'advanced-system-health',
-        'advanced/maintenance': 'advanced-maintenance',
-        'advanced/onboarding-metrics': 'advanced-onboarding-metrics',
-        'advanced/about': 'advanced-about',
-      });
-    });
-
-    test('pure branch nodes have no panel', () {
-      // `advanced`, `definitions`, `preferences`, and `sync` are pure
-      // (landing-page-less) branches — selecting them leaves the detail
-      // pane empty. `ai` and `agents` carry their own landing panel
-      // (asserted separately below). Sync's provisioned-sync entry is a
-      // leaf (`sync/provisioned`) rather than a branch panel.
-      for (final id in ['advanced', 'definitions', 'preferences', 'sync']) {
-        final tree = _tree();
-        final node = SettingsTreeIndexTestHelper.findInTree(tree, id);
-        expect(node, isNotNull, reason: 'expected $id to be present');
-        expect(node!.panel, isNull, reason: '$id is a pure branch, no panel');
-      }
-    });
-
-    test('branches that carry a landing panel expose it', () {
-      // AI / Agents branches render their own detail panel when the
-      // user lands on the branch itself (not a descendant leaf). Sync
-      // no longer carries a landing panel — its ProvisionedSyncSettingsCard
-      // is the first leaf (`sync/provisioned`) instead.
-      const expected = {'ai': 'ai', 'agents': 'agents'};
-      for (final entry in expected.entries) {
-        final tree = _tree();
-        final node = SettingsTreeIndexTestHelper.findInTree(tree, entry.key);
-        expect(node, isNotNull, reason: 'expected ${entry.key} to be present');
-        expect(node!.panel, entry.value);
-      }
-    });
   });
 
   group('buildSettingsTree — child ordering', () {
@@ -765,12 +655,11 @@ void main() {
   });
 
   group('buildSettingsTree — Manual action', () {
-    test('is the separated final root action with no detail panel', () {
+    test('is the separated final root action', () {
       final manual = _tree().last;
 
       expect(manual.id, 'manual');
       expect(manual.action, SettingsNodeAction.openManual);
-      expect(manual.panel, isNull);
       expect(manual.sectionBreakBefore, isTrue);
     });
   });

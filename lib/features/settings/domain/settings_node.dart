@@ -1,13 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
-/// An immediate action a Settings tree row can perform without opening a
-/// settings detail panel.
-enum SettingsNodeAction { openManual }
+/// An immediate action a Settings tree row performs instead of opening a
+/// settings page: the Manual leaves the app for the browser, What's New opens
+/// its release-notes modal over whatever is on screen.
+enum SettingsNodeAction { openManual, openWhatsNew }
 
-/// One node in the Settings tree. Branch nodes carry [children]; internal
-/// leaves carry [panel] (the id of the widget to render in the detail pane),
-/// while immediate action leaves carry [action].
+/// One node in the Settings tree. Branch nodes carry [children]; action
+/// leaves carry [action]. What a navigable node shows — its URL, its mobile
+/// page, its desktop panel — is declared on its entry in `settingsRoutes`,
+/// keyed by [id].
 ///
 /// Every node has a stable [id] so [children] and ancestor lookups
 /// can address nodes without relying on object identity (tree data
@@ -21,7 +23,6 @@ class SettingsNode {
     required this.title,
     required this.desc,
     this.children,
-    this.panel,
     this.action,
     this.sectionBreakBefore = false,
   });
@@ -45,12 +46,8 @@ class SettingsNode {
   /// will render it as a leaf).
   final List<SettingsNode>? children;
 
-  /// Registry id for the widget shown in the detail pane. Internal leaves
-  /// should set this; action leaves and most branches leave it `null`.
-  final String? panel;
-
   /// Immediate behavior for a non-navigational leaf, such as opening an
-  /// external support resource. Action leaves intentionally have no panel.
+  /// external support resource. Action leaves have no route.
   final SettingsNodeAction? action;
 
   /// Whether the containing settings level inserts a design-system section
@@ -71,7 +68,6 @@ class SettingsNode {
           other.icon == icon &&
           other.title == title &&
           other.desc == desc &&
-          other.panel == panel &&
           other.action == action &&
           other.sectionBreakBefore == sectionBreakBefore &&
           listEquals(other.children, children);
@@ -82,7 +78,6 @@ class SettingsNode {
     icon,
     title,
     desc,
-    panel,
     action,
     sectionBreakBefore,
     children == null ? null : Object.hashAll(children!),

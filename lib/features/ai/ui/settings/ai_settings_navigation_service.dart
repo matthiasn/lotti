@@ -46,9 +46,8 @@ class AiSettingsNavigationService {
   /// invalid-key affordance.
   ///
   /// Using Beamer (instead of `Navigator.push`) is what makes desktop
-  /// master/detail work: the URL change drives the `AiPanelDispatch`
-  /// inside the AI panel registry entry, which swaps the right-pane
-  /// content in place. On mobile, Beamer pushes the detail page on
+  /// master/detail work: the URL change reaches the `ai` panel's host, which
+  /// swaps the matching detail route into the right pane in place. On mobile, Beamer pushes the detail page on
   /// top of the AI Settings page in the standard page stack so back
   /// navigation keeps working.
   ///

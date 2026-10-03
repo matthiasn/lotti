@@ -25,6 +25,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/settings/routing/settings_routes.dart';
 import 'package:lotti/features/settings/state/settings_tree_controller.dart';
 import 'package:lotti/features/settings/ui/mobile/settings_mobile_branch_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_desktop_page.dart';
@@ -112,7 +113,7 @@ Future<void> _openDesktopDefinitions(WidgetTester tester) async {
   final element = tester.element(find.byType(SettingsDesktopPage));
   ProviderScope.containerOf(element, listen: false)
       .read(settingsTreePathProvider.notifier)
-      .syncFromUrl('/settings/definitions');
+      .syncFromPath(beamUrlToPath('/settings/definitions'));
   await settleFrames(tester);
 }
 

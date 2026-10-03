@@ -4,11 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/settings/ui/mobile/settings_mobile_branch_page.dart';
 import 'package:lotti/features/settings/ui/mobile/settings_mobile_shell.dart';
-import 'package:lotti/features/settings/ui/mobile/settings_mobile_tree_page.dart';
 import 'package:lotti/features/settings/ui/tree/outbox_count_indicator.dart';
 import 'package:lotti/features/settings/ui/tree/settings_tree_row.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_sync_modal.dart';
-import 'package:lotti/features/tts/ui/speech_settings_body.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 
@@ -168,16 +166,6 @@ void main() {
     },
   );
 
-  testWidgets('preferences hub renders no landing-panel header', (
-    tester,
-  ) async {
-    // `preferences` is a pure branch: it carries no `panel`, so the hub
-    // must show rows only. A branch panel here would have to be
-    // scrollable: false-safe (see the assert the hub carries).
-    await _pump(tester, branchId: 'preferences', overrides: _flags());
-    expect(find.byType(SyncSetupEmptyState), findsNothing);
-  });
-
   testWidgets('advanced hub lists its tooling children', (tester) async {
     await _pump(tester, branchId: 'advanced', overrides: _flags());
     expect(find.text('Config Flags'), findsOneWidget);
@@ -192,23 +180,13 @@ void main() {
   });
 
   testWidgets(
-    'pure-navigation hubs render no landing-panel header',
-    (tester) async {
-      await _pump(tester, branchId: 'definitions', overrides: _flags());
-      // `definitions` has no `panel`, so no provisioned card leaks in.
-      expect(find.byType(SyncSetupEmptyState), findsNothing);
-    },
-  );
-
-  testWidgets(
-    'sync hub renders its children with no landing-panel header, in the '
-    'shared-tree order with Devices first',
+    'sync hub renders its children in the shared-tree order with Devices '
+    'first, and no provisioning card above them',
     (tester) async {
       await _pump(tester, branchId: 'sync', overrides: _flags());
 
-      // The `sync` branch no longer carries a landing panel, so the
-      // provisioned card is not rendered as a header here — it is reached
-      // via the `sync/provisioned` leaf row instead.
+      // The provisioning card is reached through the `sync/provisioned`
+      // row, not rendered above the list.
       expect(find.byType(SyncSetupEmptyState), findsNothing);
 
       // Children come straight from `buildSettingsTree`, so the mobile
@@ -271,49 +249,6 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('sync/conflicts')));
       await tester.pump();
       expect(beamed, '/settings/advanced/conflicts');
-    },
-  );
-
-  testWidgets(
-    'a node with a flat (scrollable) landing panel renders it as the header',
-    (tester) async {
-      // No branch carries a landing panel today; the speech leaf is the
-      // stand-in for the contract — a flat body registered with
-      // scrollable: true is dropped straight into the hub above the rows.
-      await setUpTestGetIt();
-      addTearDown(tearDownTestGetIt);
-
-      await _pump(
-        tester,
-        branchId: 'preferences/speech',
-        overrides: _flags(speechTts: true),
-      );
-
-      final header = tester
-          .widget<SettingsMobileTreePage>(
-            find.byType(SettingsMobileTreePage),
-          )
-          .header;
-      expect(header, isA<SpeechSettingsBody>());
-      expect(find.text('Reading speed'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    },
-  );
-
-  testWidgets(
-    'asserts when a node reuses a non-scrollable panel as a header',
-    (tester) async {
-      // `advanced/flags` resolves to the `flags` panel, which is
-      // registered with scrollable: false (it owns its own scroll view).
-      // Reusing such a body as a hub header would crash inside the hub
-      // ListView, so the guard must fire before that can happen.
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          const SettingsMobileBranchPage(branchId: 'advanced/flags'),
-          overrides: _flags(),
-        ),
-      );
-      expect(tester.takeException(), isA<AssertionError>());
     },
   );
 }

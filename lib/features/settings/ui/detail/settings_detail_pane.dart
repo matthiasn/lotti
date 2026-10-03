@@ -1,45 +1,53 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
-import 'package:lotti/features/profiles/state/profile_providers.dart';
-import 'package:lotti/features/settings/domain/settings_node.dart';
-import 'package:lotti/features/settings/domain/settings_tree_data.dart';
 import 'package:lotti/features/settings/domain/settings_tree_index.dart';
+import 'package:lotti/features/settings/routing/settings_route.dart';
+import 'package:lotti/features/settings/routing/settings_routes.dart';
 import 'package:lotti/features/settings/state/settings_tree_controller.dart';
 import 'package:lotti/features/settings/ui/detail/category_empty.dart';
 import 'package:lotti/features/settings/ui/detail/empty_root.dart';
 import 'package:lotti/features/settings/ui/detail/leaf_panel.dart';
-import 'package:lotti/features/settings/ui/labels/settings_tree_labels.dart';
+import 'package:lotti/features/settings/ui/settings_tree_builder.dart';
 import 'package:lotti/features/settings/ui/settings_tree_scope.dart';
-import 'package:lotti/utils/consts.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Cross-fade duration between detail-pane states (spec §7
-/// "Detail pane swap").
+/// Cross-fade duration between detail-pane states.
 const Duration kSettingsDetailPaneSwap = Duration(milliseconds: 180);
 
-/// Dispatches the right-hand detail surface of Settings V2 based on
-/// the current `settingsTreePathProvider` state:
+/// Dispatches the right-hand detail surface of the desktop settings page
+/// from the current `settingsTreePathProvider` state:
 ///
 /// - Empty path → [EmptyRoot] placeholder.
 /// - Path ends on a branch → [CategoryEmpty] hint.
-/// - Path ends on a leaf → [LeafPanel] with its registered panel,
-///   falling back to `DefaultPanel` when no panel is registered.
+/// - Path ends on a node with a panel → [LeafPanel] hosting it. A
+///   branch with a landing panel (`ai`, `agents`) renders it too, even
+///   while it has children.
 ///
 /// Consumes the shared tree + index published by [SettingsTreeScope]
 /// when present (the production path), and falls back to building a
 /// local copy from the same gating flags when pumped in isolation
 /// (the test path).
 class SettingsDetailPane extends ConsumerWidget {
-  const SettingsDetailPane({super.key});
+  const SettingsDetailPane({this.table, this.listenable, super.key});
+
+  /// Test-only overrides passed through to [LeafPanel].
+  @visibleForTesting
+  final SettingsRouteTable? table;
+  @visibleForTesting
+  final ValueListenable<DesktopSettingsRoute?>? listenable;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final path = ref.watch(settingsTreePathProvider);
     final index =
         SettingsTreeScope.maybeOf(context)?.index ??
-        _fallbackIndex(context, ref);
+        SettingsTreeIndex.build(watchSettingsTree(context, ref));
 
     final focused = path.isEmpty ? null : index.findById(path.last);
+    final hasPanel =
+        focused != null &&
+        (table ?? settingsRoutes).routes[focused.id]?.panel != null;
     final Widget child;
     // Stable per-mode keys: `'empty'`, `'branch:<id>'`, `'leaf'`. We
     // deliberately drop the leaf id from the key so sibling leaf
@@ -48,35 +56,21 @@ class SettingsDetailPane extends ConsumerWidget {
     // state). Empty and branch keys stay per-state because those
     // transitions are visual cross-fades the user expects to see.
     final String keyId;
-    if (focused == null) {
+    if (focused == null || (!focused.hasChildren && !hasPanel)) {
+      // Nothing selected, or a leaf this platform has no panel for — a
+      // mobile-only leaf reached through a desktop URL.
       child = const EmptyRoot();
       keyId = 'empty';
-    } else if (focused.hasChildren && focused.panel == null) {
-      // Branch without a landing panel → render the "pick a child"
-      // hint. Branches that carry their own panel id (e.g. `ai`,
-      // `agents`) fall through to the LeafPanel dispatch below so
-      // the landing page renders even while children exist.
+    } else if (!hasPanel) {
+      // Branch without a landing panel → the "pick a child" hint.
       child = CategoryEmpty(node: focused);
       keyId = 'branch:${focused.id}';
     } else {
-      final ancestorIds = index.ancestors(focused.id);
-      // `ancestors` returns null only for ids that aren't in the
-      // index — but we just resolved `focused` from it, so the entry
-      // must be present. The assert catches any future divergence.
-      assert(
-        ancestorIds != null,
-        'SettingsTreeIndex.ancestors returned null for an id that '
-        'findById just resolved',
+      child = LeafPanel(
+        nodeId: focused.id,
+        table: table,
+        listenable: listenable,
       );
-      final ancestorNodes = <SettingsNode>[
-        for (final id in ancestorIds ?? [focused.id])
-          // `index.findById(id)!` is safe by the same invariant: every
-          // ancestor id appears in `_byId` (see `SettingsTreeIndex.build`).
-          // Assert explicitly so a regression fails loud instead of
-          // silently rendering the leaf title at every depth.
-          _requireNode(index, id),
-      ];
-      child = LeafPanel(ancestors: ancestorNodes);
       keyId = 'leaf';
     }
 
@@ -87,30 +81,4 @@ class SettingsDetailPane extends ConsumerWidget {
       child: KeyedSubtree(key: ValueKey(keyId), child: child),
     );
   }
-
-  SettingsTreeIndex _fallbackIndex(BuildContext context, WidgetRef ref) {
-    final tree = buildSettingsTree(
-      labels: settingsTreeLabelsFor(context),
-      enableHabits:
-          ref.watch(configFlagProvider(enableHabitsPageFlag)).value ?? false,
-      enableDashboards:
-          ref.watch(configFlagProvider(enableDashboardsPageFlag)).value ??
-          false,
-      enableMatrix:
-          ref.watch(configFlagProvider(enableMatrixFlag)).value ?? false,
-      enableWhatsNew:
-          ref.watch(configFlagProvider(enableWhatsNewFlag)).value ?? false,
-      syncFeatureAvailable: ref.watch(syncFeatureAvailableProvider),
-    );
-    return SettingsTreeIndex.build(tree);
-  }
-}
-
-SettingsNode _requireNode(SettingsTreeIndex index, String id) {
-  final node = index.findById(id);
-  assert(
-    node != null,
-    'SettingsTreeIndex is missing an ancestor id it claims to know',
-  );
-  return node!;
 }

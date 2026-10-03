@@ -198,6 +198,31 @@ for (const entry of locationEntries) {
     }
   }
 }
+
+// Settings routes are not listed in `SettingsLocation.pathPatterns`: the
+// location derives them from the settings route registry, where every
+// deep-linkable URL is written out as a literal — node URLs (`url: '…'`),
+// sub-routes (`SettingsSubRoute('…'`) and retired aliases (`'…': '…'`).
+// Comments are stripped first so a route named in prose is not mistaken for
+// a declared one.
+const settingsRoutesRelativePath =
+  'lib/features/settings/routing/settings_routes.dart';
+const settingsRoutesName = 'settings_routes.dart';
+const settingsRoutesSource = (
+  await readFile(resolve(repositoryDirectory, settingsRoutesRelativePath), 'utf8')
+).replace(/^\s*\/\/.*$/gm, '');
+const settingsRouteLiteral =
+  /(?:url:\s*|SettingsSubRoute\(\s*)'(\/settings[^']*)'|'(\/settings[^']*)'\s*:\s*'\/settings/g;
+for (const routeMatch of settingsRoutesSource.matchAll(settingsRouteLiteral)) {
+  const route = routeMatch[1] ?? routeMatch[2];
+  const previousSource = discoveredRoutes.get(route);
+  if (previousSource) {
+    errors.push(
+      `Beamer route ${route} is declared by both ${previousSource} and ${settingsRoutesName}.`,
+    );
+  }
+  discoveredRoutes.set(route, settingsRoutesName);
+}
 for (const [route, source] of discoveredRoutes) {
   if (!inventoriedRoutes.has(route)) {
     errors.push(`Beamer route ${route} from ${source} is missing from the surface inventory.`);

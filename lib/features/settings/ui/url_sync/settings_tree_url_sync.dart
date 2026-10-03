@@ -2,7 +2,8 @@ import 'package:beamer/beamer.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/settings/domain/settings_tree_index.dart';
+import 'package:lotti/features/settings/domain/settings_urls.dart';
+import 'package:lotti/features/settings/routing/settings_routes.dart';
 import 'package:lotti/features/settings/state/settings_tree_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -25,7 +26,7 @@ void _defaultBeamTo(BuildContext context, String uri) {
 /// sync in both directions:
 ///
 /// - **URL → tree.** Listens to `NavService.desktopSelectedSettingsRoute`
-///   and calls `syncFromUrl` whenever it changes, so a deep-link
+///   and syncs the tree path from it whenever it changes, so a deep-link
 ///   into `/settings/sync/backfill` seeds
 ///   `['sync', 'sync/backfill']` on mount.
 /// - **Tree → URL.** `ref.listen`s the path provider; when the tree
@@ -74,7 +75,7 @@ class _SettingsTreeUrlSyncState extends ConsumerState<SettingsTreeUrlSync> {
   /// must NOT beam back to canonicalize the URL — that would erase
   /// panel-local trailing segments (`/create`, a detail UUID) that
   /// the user just navigated into. Bumped before
-  /// `SettingsTreePath.syncFromUrl` runs, decremented post-frame so
+  /// `SettingsTreePath.syncFromPath` runs, decremented post-frame so
   /// the suppression covers exactly the listener cascade triggered
   /// by that single URL update.
   int _urlDrivenSyncs = 0;
@@ -138,14 +139,16 @@ class _SettingsTreeUrlSyncState extends ConsumerState<SettingsTreeUrlSync> {
     // the URL back to `/settings/agents/templates` and kill the
     // `/create` segment before the panel dispatcher observes it).
     _urlDrivenSyncs++;
-    // syncFromUrl is already idempotent — it only mutates state when
+    // syncFromPath is already idempotent — it only mutates state when
     // the resolved path differs — so the extra early-out here is
     // purely a cycle-break belt. The `_onPathChanged` listener fires
     // synchronously inside this call when state changes, so the
     // increment above is what suppresses the beam-back; the
     // post-frame decrement just resets the guard for the next URL
     // change.
-    ref.read(settingsTreePathProvider.notifier).syncFromUrl(url);
+    ref
+        .read(settingsTreePathProvider.notifier)
+        .syncFromPath(beamUrlToPath(url));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (_urlDrivenSyncs > 0) _urlDrivenSyncs--;

@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/settings/domain/settings_tree_index.dart';
 
 /// Tree-nav state for Settings V2 per spec §3.
 ///
@@ -59,13 +58,12 @@ class SettingsTreePath extends Notifier<List<String>> {
     state = <String>[...current.sublist(0, safeDepth), nodeId];
   }
 
-  /// Called by the URL-sync bridge (plan §1) when Beamer's path
-  /// changes externally. Resolves [beamPath] to a tree path via
-  /// [beamUrlToPath] and installs it when it differs from the
-  /// current state — avoids emitting a redundant notification when
-  /// the URL update was triggered *by* a prior tree mutation.
-  void syncFromUrl(String beamPath) {
-    final next = beamUrlToPath(beamPath);
+  /// Called by the URL-sync bridge when Beamer's path changes externally,
+  /// with the tree path that URL resolves to. Installs it only when it
+  /// differs from the current state — avoids emitting a redundant
+  /// notification when the URL update was triggered *by* a prior tree
+  /// mutation.
+  void syncFromPath(List<String> next) {
     if (listEquals(next, state)) return;
     state = next;
   }

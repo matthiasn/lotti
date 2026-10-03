@@ -26,14 +26,12 @@ const _syncBranch = SettingsNode(
       icon: LottiIcons.cloudDownload,
       title: 'Backfill Sync',
       desc: '',
-      panel: 'sync-backfill',
     ),
     SettingsNode(
       id: 'sync/stats',
       icon: LottiIcons.chart,
       title: 'Sync Stats',
       desc: '',
-      panel: 'sync-stats',
     ),
   ],
 );
@@ -325,7 +323,6 @@ void main() {
           icon: LottiIcons.cloudDownload,
           title: longLeafTitle,
           desc: '',
-          panel: 'sync-backfill',
         ),
       ],
     );

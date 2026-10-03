@@ -27,17 +27,17 @@ SettingsNode _syncBranch() => const SettingsNode(
       icon: LottiIcons.cloudDownload,
       title: 'Backfill',
       desc: 'Recover sync gaps',
-      panel: 'sync-backfill',
     ),
   ],
 );
 
+// A real tree id: whether a leaf is selectable is decided by its
+// `settingsRoutes` entry having a desktop panel.
 SettingsNode _flagsLeaf() => const SettingsNode(
-  id: 'flags',
+  id: 'advanced/flags',
   icon: LottiIcons.flag,
   title: 'Flags',
   desc: 'Feature flags',
-  panel: 'flags',
 );
 
 SettingsNode _manualAction() => const SettingsNode(
@@ -68,21 +68,18 @@ SettingsNode _branchWithHiddenChildren() => const SettingsNode(
       icon: LottiIcons.cloudDownload,
       title: 'Backfill',
       desc: 'Recover sync gaps',
-      panel: 'sync-backfill',
     ),
     SettingsNode(
       id: 'sync/conflicts',
       icon: LottiIcons.warning,
       title: 'Conflicts',
       desc: 'Resolve conflicts',
-      panel: 'sync-conflicts',
     ),
     SettingsNode(
       id: 'sync/stats',
       icon: LottiIcons.insights,
       title: 'Stats',
       desc: 'Inspect sync statistics',
-      panel: 'sync-stats',
     ),
   ],
 );
@@ -169,7 +166,7 @@ void main() {
       await tester.tap(find.byType(SettingsTreeRow));
       await tester.pump();
       final path = _containerOf(tester).read(settingsTreePathProvider);
-      expect(path, ['flags']);
+      expect(path, ['advanced/flags']);
     });
 
     testWidgets(
@@ -289,7 +286,6 @@ void main() {
                         icon: LottiIcons.info,
                         title: 'About',
                         desc: 'About Lotti',
-                        panel: 'about',
                       ),
                       depth: 0,
                     ),
@@ -368,7 +364,7 @@ void main() {
 
           final focusedRow = FocusManager.instance.primaryFocus?.context
               ?.findAncestorWidgetOfExactType<SettingsTreeRow>();
-          expect(focusedRow?.node.id, 'flags');
+          expect(focusedRow?.node.id, 'advanced/flags');
 
           await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
           await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
@@ -380,7 +376,7 @@ void main() {
                 ?.findAncestorWidgetOfExactType<SettingsTreeRow>()
                 ?.node
                 .id,
-            'flags',
+            'advanced/flags',
           );
         } finally {
           debugDefaultTargetPlatformOverride = null;
@@ -430,13 +426,13 @@ void main() {
       (tester) async {
         await _pumpNode(tester, node: _flagsLeaf(), depth: 1);
         final container = _containerOf(tester);
-        // Place "flags" at depth 1 — i.e. `['other', 'flags']`.
+        // Place "flags" at depth 1 — i.e. `['other', 'advanced/flags']`.
         container
             .read(settingsTreePathProvider.notifier)
             .onNodeTap('other', depth: 0, hasChildren: true);
         container
             .read(settingsTreePathProvider.notifier)
-            .onNodeTap('flags', depth: 1, hasChildren: false);
+            .onNodeTap('advanced/flags', depth: 1, hasChildren: false);
         await tester.pump();
 
         final row = tester.widget<SettingsTreeRow>(
@@ -456,7 +452,7 @@ void main() {
             .onNodeTap('advanced', depth: 0, hasChildren: true);
         container
             .read(settingsTreePathProvider.notifier)
-            .onNodeTap('flags', depth: 1, hasChildren: false);
+            .onNodeTap('advanced/flags', depth: 1, hasChildren: false);
         await tester.pump();
 
         final row = tester.widget<SettingsTreeRow>(

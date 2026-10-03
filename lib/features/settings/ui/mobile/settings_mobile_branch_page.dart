@@ -2,26 +2,17 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/settings/domain/settings_node.dart';
 import 'package:lotti/features/settings/domain/settings_tree_index.dart';
-import 'package:lotti/features/settings/ui/detail/panel_registry.dart';
 import 'package:lotti/features/settings/ui/mobile/settings_mobile_nav.dart';
 import 'package:lotti/features/settings/ui/mobile/settings_mobile_tree_page.dart';
 import 'package:lotti/features/settings/ui/settings_tree_builder.dart';
 
-/// Mobile drill-down hub for a branch node — currently `definitions`,
-/// `advanced`, and `sync`.
+/// Mobile drill-down hub for a pure-navigation branch — `definitions`,
+/// `preferences`, `advanced` and `sync`.
 ///
-/// Lists the branch's children from the shared settings tree, so it
-/// replaces the hand-maintained `DefinitionsPage` / `AdvancedSettingsPage`
-/// / `SyncSettingsPage` item lists: the entries, icons, copy, ordering,
-/// and feature-flag gating all come from `buildSettingsTree` — one
-/// definition shared with desktop V2.
-///
-/// When the branch carries its own landing [SettingsNode.panel] (only
-/// `sync` today), that panel body is rendered as a header above the child
-/// rows, so the provisioned-sync QR card surfaces here exactly as it does
-/// in the desktop detail pane. AI / Agents keep their own rich mobile
-/// pages and are not rendered through this hub — tapping them beams
-/// straight to that page.
+/// Lists the branch's children from the shared settings tree: the entries,
+/// icons, copy, ordering and feature-flag gating all come from
+/// `buildSettingsTree`, the one definition the desktop tree-nav renders too.
+/// AI and Agents have pages of their own and are not rendered through here.
 class SettingsMobileBranchPage extends ConsumerWidget {
   const SettingsMobileBranchPage({required this.branchId, super.key});
 
@@ -32,26 +23,9 @@ class SettingsMobileBranchPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tree = watchSettingsTree(context, ref);
     final node = SettingsTreeIndex.build(tree).findById(branchId);
-    final panelSpec = panelSpecFor(node?.panel);
-    // The header is dropped into the hub's `ListView` directly, which gives
-    // its child an unbounded height. A self-scrolling panel body (its own
-    // `ListView` / `CustomScrollView` / `Scaffold`, registered with
-    // `scrollable: false`) would panic with the unbounded-height assertion
-    // here — unlike the desktop `LeafPanel`, the mobile path can't wrap it.
-    // So a branch landing panel reused as a mobile header must be a flat,
-    // non-self-scrolling body (`scrollable: true`). Today only `sync`
-    // qualifies; this guards the next contributor who adds a branch panel.
-    assert(
-      panelSpec == null || panelSpec.scrollable,
-      'Branch "$branchId" landing panel "${node?.panel}" is reused as a '
-      'mobile header but is registered with scrollable: false. A '
-      'self-scrolling body crashes inside the hub ListView — make it a flat '
-      '(non-self-scrolling) body or do not attach it to a navigable branch.',
-    );
     return SettingsMobileTreePage(
       title: node?.title ?? '',
       nodes: node?.children ?? const <SettingsNode>[],
-      header: panelSpec == null ? null : panelSpec.build(context),
       showBack: true,
       // Sync keeps the teal icon treatment its standalone page had before
       // it was folded into the shared tree (other branches stay grey).

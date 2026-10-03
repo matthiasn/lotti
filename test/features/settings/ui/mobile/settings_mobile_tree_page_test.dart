@@ -20,7 +20,6 @@ const _branch = SettingsNode(
       icon: LottiIcons.category,
       title: 'Categories',
       desc: 'Categories with AI settings',
-      panel: 'categories',
     ),
   ],
 );
@@ -30,7 +29,6 @@ const _leaf = SettingsNode(
   icon: LottiIcons.palette,
   title: 'Theming',
   desc: 'Customize app appearance',
-  panel: 'theming',
 );
 
 const _manual = SettingsNode(
@@ -47,7 +45,6 @@ Future<void> pump(
   required void Function(SettingsNode) onNodeTap,
   bool showBack = false,
   List<SettingsNode> nodes = const [_branch, _leaf],
-  Widget? header,
 }) async {
   await tester.pumpWidget(
     makeTestableWidgetNoScroll(
@@ -55,7 +52,6 @@ Future<void> pump(
         title: 'Settings',
         nodes: nodes,
         showBack: showBack,
-        header: header,
         onNodeTap: onNodeTap,
       ),
     ),
@@ -109,25 +105,6 @@ void main() {
       find.byType(SettingsMobileShell),
     );
     expect(shell.showBack, isTrue);
-  });
-
-  testWidgets('renders an optional header above the rows', (tester) async {
-    await pump(
-      tester,
-      onNodeTap: (_) {},
-      header: const Text('landing-panel-header'),
-    );
-    expect(find.text('landing-panel-header'), findsOneWidget);
-    // Header is the first list child, ahead of every node row.
-    final headerY = tester.getTopLeft(find.text('landing-panel-header')).dy;
-    final firstRowY = tester.getTopLeft(find.byType(SettingsTreeRow).first).dy;
-    expect(headerY, lessThan(firstRowY));
-  });
-
-  testWidgets('omits the header region when none is supplied', (tester) async {
-    await pump(tester, onNodeTap: (_) {});
-    expect(find.text('landing-panel-header'), findsNothing);
-    expect(find.byType(SettingsTreeRow), findsNWidgets(2));
   });
 
   testWidgets('separates the Manual action with a tokenized gap', (

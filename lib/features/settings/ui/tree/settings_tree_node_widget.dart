@@ -4,6 +4,7 @@ import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/settings/domain/settings_node.dart';
+import 'package:lotti/features/settings/routing/settings_routes.dart';
 import 'package:lotti/features/settings/state/settings_tree_controller.dart';
 import 'package:lotti/features/settings/ui/settings_node_action_handler.dart';
 import 'package:lotti/features/settings/ui/settings_tree_constants.dart';
@@ -73,13 +74,12 @@ class _SettingsTreeNodeWidgetState
     final isExpanded = selection.isExpanded;
 
     void handleTap() {
-      if (handleSettingsNodeAction(ref, node)) return;
-      // A leaf with neither a panel nor an action (the action case was
-      // handled above) is a pure explainer tile — e.g. `sync-unavailable`
-      // in demo worlds. Selecting it would only flash an empty detail
-      // pane, so the row is inert: the same contract the mobile
-      // drill-down applies to nodes without a registered URL.
-      if (!node.hasChildren && node.panel == null) {
+      if (handleSettingsNodeAction(context, ref, node)) return;
+      // A leaf with no desktop panel (the action case was handled above) is
+      // a pure explainer tile — `sync-unavailable` in demo worlds. Selecting
+      // it would only flash an empty detail pane, so the row is inert: the
+      // same contract the mobile drill-down applies to a node without a URL.
+      if (!node.hasChildren && settingsRoutes.routes[node.id]?.panel == null) {
         return;
       }
       ref

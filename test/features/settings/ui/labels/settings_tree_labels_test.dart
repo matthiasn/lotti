@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/settings/domain/settings_tree_data.dart';
-import 'package:lotti/features/settings/domain/settings_tree_index.dart';
+import 'package:lotti/features/settings/routing/settings_routes.dart';
 import 'package:lotti/features/settings/ui/labels/settings_tree_labels.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
@@ -32,19 +32,22 @@ Future<SettingsTreeLabelResolver> _buildResolver(WidgetTester tester) async {
 
 void main() {
   group('settingsTreeLabelsFor — resolves every registered node id', () {
-    testWidgets('every settingsNodeUrls key has non-empty title + desc', (
-      tester,
-    ) async {
-      final resolve = await _buildResolver(tester);
-      for (final id in settingsNodeUrls.keys) {
-        final label = resolve(id);
-        expect(label.title, isNotEmpty, reason: 'title for $id');
-        expect(label.desc, isNotEmpty, reason: 'desc for $id');
-      }
-    });
+    testWidgets(
+      'every settingsRoutes.nodeUrls key has non-empty title + desc',
+      (
+        tester,
+      ) async {
+        final resolve = await _buildResolver(tester);
+        for (final id in settingsRoutes.nodeUrls.keys) {
+          final label = resolve(id);
+          expect(label.title, isNotEmpty, reason: 'title for $id');
+          expect(label.desc, isNotEmpty, reason: 'desc for $id');
+        }
+      },
+    );
 
     testWidgets(
-      'resolves the in-pane whats-new node (not in settingsNodeUrls)',
+      'resolves the in-pane whats-new node (not in settingsRoutes.nodeUrls)',
       (tester) async {
         final resolve = await _buildResolver(tester);
         final label = resolve('whats-new');
@@ -55,7 +58,7 @@ void main() {
 
     testWidgets(
       'resolves the demo-world sync-unavailable tile '
-      '(inert, so not in settingsNodeUrls)',
+      '(inert, so not in settingsRoutes.nodeUrls)',
       (tester) async {
         final resolve = await _buildResolver(tester);
         final label = resolve('sync-unavailable');

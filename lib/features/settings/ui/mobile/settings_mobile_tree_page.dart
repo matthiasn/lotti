@@ -16,17 +16,11 @@ import 'package:material_ui/material_ui.dart';
 /// / back behaviour) for every level. Keeping it stateless and
 /// route-agnostic is what lets the same widget render the root and every
 /// branch hub, and makes it trivial to screenshot in isolation.
-///
-/// A branch that carries its own landing panel passes that panel body as
-/// [header] so its content renders above the child rows, mirroring the
-/// desktop detail pane. No branch attaches one today (Sync's provisioned
-/// card is a leaf row), so [header] is `null` and the bare row list shows.
 class SettingsMobileTreePage extends StatelessWidget {
   const SettingsMobileTreePage({
     required this.title,
     required this.nodes,
     required this.onNodeTap,
-    this.header,
     this.showBack = false,
     this.accentIcons = false,
     super.key,
@@ -36,9 +30,6 @@ class SettingsMobileTreePage extends StatelessWidget {
   final List<SettingsNode> nodes;
   final void Function(SettingsNode node) onNodeTap;
 
-  /// Optional content rendered above the row list — the branch's landing
-  /// panel body when it has one. `null` for pure-navigation branches.
-  final Widget? header;
   final bool showBack;
 
   /// When `true`, every row in this level paints its icon in the teal
@@ -76,7 +67,6 @@ class SettingsMobileTreePage extends StatelessWidget {
                 DesignSystemBottomNavigationBar.occupiedHeight(context),
           ),
           children: [
-            ?header,
             for (final node in nodes) ...[
               if (node.sectionBreakBefore)
                 SizedBox(height: tokens.spacing.step6),
@@ -93,7 +83,9 @@ class SettingsMobileTreePage extends StatelessWidget {
                     : settingsNodeIndicatorFor(node.id),
                 accentIcon: accentIcons,
                 showActiveRail: false,
-                showLeafChevron: node.action == null,
+                // The Manual leaves the app and shows an external-link
+                // glyph instead; What's New still opens in place.
+                showLeafChevron: node.action != SettingsNodeAction.openManual,
                 // 3 lines so even the longest section summary stays fully
                 // legible at large OS text sizes (at 1x descriptions fit in
                 // 1–2 lines, so this is just a higher ceiling, not extra

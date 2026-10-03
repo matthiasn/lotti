@@ -16,7 +16,6 @@ void main() {
             icon: LottiIcons.cloudDownload,
             title: 'Backfill',
             desc: 'desc',
-            panel: 'sync-backfill',
           ),
         ],
       );
@@ -42,7 +41,6 @@ void main() {
         icon: LottiIcons.label,
         title: 'Labels',
         desc: 'desc',
-        panel: 'labels',
       );
       expect(node.hasChildren, isFalse);
     });
@@ -54,7 +52,6 @@ void main() {
       icon: LottiIcons.cloudDownload,
       title: 'Backfill',
       desc: 'Fill gaps',
-      panel: 'sync-backfill',
     );
 
     test('structurally identical leaves compare equal', () {
@@ -68,7 +65,6 @@ void main() {
         icon: base().icon,
         title: base().title,
         desc: base().desc,
-        panel: base().panel,
       );
       expect(base(), isNot(equals(other)));
     });
@@ -79,7 +75,6 @@ void main() {
         icon: LottiIcons.bolt,
         title: base().title,
         desc: base().desc,
-        panel: base().panel,
       );
       expect(base(), isNot(equals(other)));
     });
@@ -90,7 +85,6 @@ void main() {
         icon: base().icon,
         title: 'Other',
         desc: base().desc,
-        panel: base().panel,
       );
       expect(base(), isNot(equals(other)));
     });
@@ -101,20 +95,20 @@ void main() {
         icon: base().icon,
         title: base().title,
         desc: 'Other desc',
-        panel: base().panel,
       );
       expect(base(), isNot(equals(other)));
     });
 
-    test('differing only in panel is not equal', () {
+    test('differing only in action is not equal', () {
       final other = SettingsNode(
         id: base().id,
         icon: base().icon,
         title: base().title,
         desc: base().desc,
-        panel: 'other-panel',
+        action: SettingsNodeAction.openWhatsNew,
       );
       expect(base(), isNot(equals(other)));
+      expect(base().hashCode, isNot(other.hashCode));
     });
 
     test(
@@ -143,14 +137,12 @@ void main() {
         icon: LottiIcons.tune,
         title: 'Profiles',
         desc: 'desc',
-        panel: 'ai-profiles',
       );
       const childB = SettingsNode(
         id: 'ai/other',
         icon: LottiIcons.tune,
         title: 'Other',
         desc: 'desc',
-        panel: 'other',
       );
       const branchA = SettingsNode(
         id: 'ai',

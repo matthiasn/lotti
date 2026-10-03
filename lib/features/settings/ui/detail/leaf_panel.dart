@@ -1,119 +1,81 @@
-import 'package:lotti/features/settings/domain/settings_node.dart';
-import 'package:lotti/features/settings/ui/detail/default_panel.dart';
-import 'package:lotti/features/settings/ui/detail/panel_registry.dart';
+import 'package:flutter/foundation.dart';
+import 'package:lotti/features/settings/routing/settings_route.dart';
+import 'package:lotti/features/settings/ui/detail/settings_panel_host.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Detail-pane wrapper for a selected leaf.
+/// Detail-pane wrapper for the selected node's panel.
 ///
-/// Responsibilities:
-/// - Resolve the panel body by looking the leaf's `panel` id up via
-///   [panelSpecFor]; falls back to [DefaultPanel] when the id isn't
-///   (yet) registered.
-/// - Keep previously-visited leaf bodies mounted via an
-///   [IndexedStack] so switching between siblings preserves their
-///   internal state (scroll position, filter, in-flight loaders).
-///   Without this, the `AnimatedSwitcher` above `SettingsDetailPane`
-///   would tear down each body on every leaf change.
+/// Hosts the panel through [SettingsPanelHost] and keeps every panel visited
+/// since the pane mounted alive in an [IndexedStack], so switching between
+/// siblings preserves their state — scroll position, a typed filter, loaders
+/// in flight. Without it, the `AnimatedSwitcher` above in
+/// `SettingsDetailPane` would tear a body down on every selection change.
 ///
-/// The body fills the full detail-pane width *and height* — there is
-/// no in-pane breadcrumb, page title, or outer gutter. The page-level
-/// breadcrumb in `SettingsDesktopPage._SettingsV2Header` is the sole source
-/// of "where am I" context, and the registered panels own their own
-/// padding (or wrap themselves in a `SingleChildScrollView` when
-/// `SettingsPanelSpec.scrollable` is true). Anything we add here
-/// would be subtracted from the panel's usable width — see
-/// `docs/design/settings/settings_v2_implementation_plan.md` and the
-/// related screenshot review for context.
-///
-/// Ancestor information is still passed in (rather than just the leaf
-/// itself) so callers stay consistent with `SettingsTreeIndex.ancestors`
-/// and so future adornments — e.g. a per-leaf affordance keyed off
-/// the parent branch — can be added without changing the prop shape.
+/// The body fills the whole pane: no breadcrumb, title or gutter is added
+/// here. The breadcrumb in the desktop page header is the only "where am I",
+/// and each panel owns its own padding; anything added here would come out of
+/// the panel's usable width.
 class LeafPanel extends StatefulWidget {
-  const LeafPanel({required this.ancestors, super.key});
+  const LeafPanel({
+    required this.nodeId,
+    this.table,
+    this.listenable,
+    super.key,
+  });
 
-  /// Root → self ancestor chain (inclusive), as emitted by
-  /// `SettingsTreeIndex.ancestors`. Must be non-empty; the last
-  /// element is the leaf to render.
-  final List<SettingsNode> ancestors;
+  /// Tree node id of the selected node.
+  final String nodeId;
+
+  /// Test-only overrides passed through to every [SettingsPanelHost].
+  @visibleForTesting
+  final SettingsRouteTable? table;
+  @visibleForTesting
+  final ValueListenable<DesktopSettingsRoute?>? listenable;
 
   @override
   State<LeafPanel> createState() => _LeafPanelState();
 }
 
 class _LeafPanelState extends State<LeafPanel> {
-  /// Insertion-ordered cache of leaf ids whose body widget has been
-  /// built at least once. The matching entry in [_bodies] is the
-  /// built widget; the position in this list is the IndexedStack
-  /// child index. [_cachedLeaves] holds the [SettingsNode] each cached
-  /// body was built from so a stale entry can be detected the next
-  /// time the leaf is visited.
+  /// Node ids in first-visit order; a node's position is its child index in
+  /// the [IndexedStack].
   final List<String> _visitedIds = <String>[];
-  final Map<String, Widget> _bodies = <String, Widget>{};
-  final Map<String, SettingsNode> _cachedLeaves = <String, SettingsNode>{};
-  int _currentIndex = 0;
+  int _current = 0;
 
   @override
   void initState() {
     super.initState();
-    assert(
-      widget.ancestors.isNotEmpty,
-      'LeafPanel needs a non-empty ancestor chain',
-    );
-    _currentIndex = _ensureCached(widget.ancestors.last);
+    _current = _visit(widget.nodeId);
   }
 
   @override
   void didUpdateWidget(LeafPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
-    assert(
-      widget.ancestors.isNotEmpty,
-      'LeafPanel needs a non-empty ancestor chain',
-    );
-    _currentIndex = _ensureCached(widget.ancestors.last);
+    _current = _visit(widget.nodeId);
   }
 
-  /// Inserts [leaf] into the cache on first visit and returns its
-  /// IndexedStack child index. Idempotent for repeat visits with the
-  /// same payload, but rebuilds the cached body when the incoming
-  /// [leaf] differs from the [SettingsNode] the slot was originally
-  /// built from — covers both the in-place edit case (leaf updates
-  /// while it's selected) and the off-screen edit case (a leaf
-  /// changes while a sibling is selected, then the user returns).
-  /// Called only from [initState] and [didUpdateWidget] so [build]
-  /// stays a pure function of state.
-  int _ensureCached(SettingsNode leaf) {
-    final existing = _visitedIds.indexOf(leaf.id);
-    if (existing != -1) {
-      if (_cachedLeaves[leaf.id] != leaf) {
-        _cachedLeaves[leaf.id] = leaf;
-        _bodies[leaf.id] = _buildBody(leaf);
-      }
-      return existing;
-    }
-    _visitedIds.add(leaf.id);
-    _cachedLeaves[leaf.id] = leaf;
-    _bodies[leaf.id] = _buildBody(leaf);
+  int _visit(String id) {
+    final index = _visitedIds.indexOf(id);
+    if (index != -1) return index;
+    _visitedIds.add(id);
     return _visitedIds.length - 1;
-  }
-
-  Widget _buildBody(SettingsNode leaf) {
-    final spec = panelSpecFor(leaf.panel);
-    if (spec == null) return DefaultPanel(node: leaf);
-    final body = Builder(builder: spec.build);
-    return spec.scrollable ? SingleChildScrollView(child: body) : body;
   }
 
   @override
   Widget build(BuildContext context) {
     return IndexedStack(
-      index: _currentIndex,
+      index: _current,
       sizing: StackFit.expand,
       children: [
         for (final id in _visitedIds)
           KeyedSubtree(
             key: ValueKey('leaf-body:$id'),
-            child: _bodies[id]!,
+            child: SettingsPanelHost(
+              nodeId: id,
+              table: widget.table,
+              listenable: widget.listenable,
+            ),
           ),
       ],
     );

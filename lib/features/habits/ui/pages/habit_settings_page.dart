@@ -22,10 +22,14 @@ final StreamProvider<List<HabitDefinition>> habitDefinitionsStreamProvider =
 /// step 8). See `CategoriesListBody` for the polish note about the
 /// duplicate header.
 class HabitSettingsBody extends StatelessWidget {
-  const HabitSettingsBody({super.key});
+  const HabitSettingsBody({this.initialSearchTerm, super.key});
+
+  /// See [HabitSettingsPage.initialSearchTerm].
+  final String? initialSearchTerm;
 
   @override
-  Widget build(BuildContext context) => const HabitSettingsPage();
+  Widget build(BuildContext context) =>
+      HabitSettingsPage(initialSearchTerm: initialSearchTerm);
 }
 
 /// Settings list of all habit definitions.

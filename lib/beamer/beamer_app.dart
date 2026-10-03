@@ -61,6 +61,7 @@ import 'package:lotti/features/recent_searches/domain/recent_search.dart';
 import 'package:lotti/features/recent_searches/ui/recent_search_opener.dart';
 import 'package:lotti/features/recent_searches/ui/recent_searches_section.dart';
 import 'package:lotti/features/relationships/ui/pages/relationships_page.dart';
+import 'package:lotti/features/settings/routing/settings_routes.dart';
 import 'package:lotti/features/settings/state/manual_language_controller.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
@@ -190,37 +191,12 @@ bool isEventDetailRoute(BeamLocation<dynamic>? location) {
 /// the mobile shell slides the bottom nav out of the way and the page owns
 /// the whole bottom edge. Pure function of router state.
 ///
-/// The split follows the settings tree: the pure navigation menus keep the
-/// bar, everything terminal hides it.
-///
-/// Keeps the bar (menus + browse lists that drill into their own editors):
-///   * the settings root `/settings`
-///   * the menu hubs `/settings/advanced`, `/settings/sync`,
-///     `/settings/definitions`, `/settings/preferences` — branch nodes with
-///     no page of their own
-///   * the entity **list** pages `/settings/{categories,labels,dashboards,
-///     measurables,habits}` (incl. the habits `search`/bare-`by_id` list
-///     variants)
-///   * the sync **conflicts list** `/settings/advanced/conflicts`
-///
-/// Hides the bar (terminal destinations):
-///   * the whole **AI** and **Agents** sections — they are real settings
-///     pages (their tree nodes carry a `panel`), and on mobile their tabs
-///     swap in place without changing the URL, so the bar hides across the
-///     entire section instead of flickering per tab
-///   * every **Sync** leaf (`provisioned`, `node-profile`, `backfill`,
-///     `stats`, `outbox`, `matrix/maintenance`)
-///   * every **Advanced** leaf (`flags` via its own top-level route,
-///     `logging_domains`, `maintenance`, `onboarding_metrics`, `about`,
-///     `health_import`) and the conflict **detail**
-///     `/settings/advanced/conflicts/<id>`
-///   * every **Preferences** leaf: `theming`, `recording-style`, `speech`
-///     and `keyboard-shortcuts` on their own flat top-level routes, plus
-///     `animations` on its legacy `/settings/advanced/animations` path —
-///     which is why the `advanced` arm below still hides it
-///   * the top-level leaves `daily-os` and `onboarding`
-///   * the entity **editors** (`.../<id>` or `.../create`) for categories,
-///     labels, dashboards, measurables, habits, and projects
+/// Read from the settings route registry: the page on top of the URL's
+/// mobile stack decides, through its `keepsBottomNav`. Menus (the root, the
+/// branch hubs), the browse lists that drill into their own editors, and
+/// Sections keep the bar; everything terminal — leaves, editors, the AI and
+/// Agents sections — hides it. A URL no node claims shows the root, and
+/// keeps it.
 ///
 /// Editor surfaces that are *pushed* on top of another settings route rather
 /// than being routes themselves (the AI provider connect form, the evolution
@@ -229,55 +205,9 @@ bool isEventDetailRoute(BeamLocation<dynamic>? location) {
 /// `bottomNavSafeNavigatorOf` instead.
 bool settingsRouteHidesBottomNav(BeamLocation<dynamic>? location) {
   if (location is! SettingsLocation) return false;
-  final segments = location.state.uri.pathSegments;
-  // The bare `/settings` root is the top-level menu — keep the bar.
-  if (segments.length < 2 || segments.first != 'settings') return false;
-  return switch (segments[1]) {
-    // AI and Agents are full settings pages, not menus: hide the bar across
-    // the entire section (landing, per-tab lists, and editors alike).
-    'ai' || 'agents' => true,
-    // Sync is a menu hub (`/settings/sync`, kept); every child is a terminal
-    // detail page (backfill, stats, outbox, node-profile, provisioned,
-    // matrix/maintenance) that hides the bar.
-    'sync' => segments.length >= 3,
-    // Advanced is a menu hub (kept). Its leaves hide, except the conflicts
-    // *list* — only a conflict detail hides the bar.
-    'advanced' =>
-      segments.length >= 3 &&
-          (segments[2] != 'conflicts' || segments.length >= 4),
-    // Entity-definition **list** pages are browse surfaces (kept); only the
-    // per-entity editor / `create` route hides.
-    'categories' ||
-    'labels' ||
-    'dashboards' ||
-    'measurables' => segments.length >= 3,
-    // `/settings/habits/search/<term>` is the list with a filter applied, and
-    // bare `/settings/habits/by_id` (a truncated deep link) renders the list
-    // — both keep the bar. Only `create` and a real `by_id/<id>` are editors.
-    'habits' =>
-      segments.length >= 3 &&
-          (segments[2] == 'create' ||
-              (segments[2] == 'by_id' && segments.length >= 4)),
-    // Projects has no list under settings — only `/settings/projects/<id>`
-    // editors. The reserved `create` slug is not routed (creation runs in a
-    // modal from the Projects tab), so it must not hide over the settings root.
-    'projects' => segments.length >= 3 && segments[2] != 'create',
-    // Top-level leaf pages — terminal destinations reached from a menu.
-    // `maintenance` is the legacy `/settings/maintenance` alias.
-    'flags' ||
-    'theming' ||
-    'notifications' ||
-    'recording-style' ||
-    'daily-os' ||
-    'speech' ||
-    'onboarding' ||
-    'health_import' ||
-    'keyboard-shortcuts' ||
-    'maintenance' => true,
-    // Everything else — notably the `/settings/definitions` and
-    // `/settings/preferences` menu hubs — keeps the bar.
-    _ => false,
-  };
+  final uri = location.state.uri;
+  if (uri.pathSegments.firstOrNull != 'settings') return false;
+  return !settingsRoutes.resolve(uri).keepsBottomNav;
 }
 
 /// True when the projects beamer location points at a project detail

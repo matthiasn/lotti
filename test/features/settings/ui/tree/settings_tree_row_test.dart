@@ -20,7 +20,6 @@ SettingsNode _branch() => const SettingsNode(
       icon: LottiIcons.cloudDownload,
       title: 'Backfill',
       desc: 'Manage sync gap recovery',
-      panel: 'sync-backfill',
     ),
   ],
 );
@@ -30,7 +29,6 @@ SettingsNode _leaf({String desc = 'Feature flags'}) => SettingsNode(
   icon: LottiIcons.flag,
   title: 'Flags',
   desc: desc,
-  panel: 'flags',
 );
 
 Future<void> _pumpRow(

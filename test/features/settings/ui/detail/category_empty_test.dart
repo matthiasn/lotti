@@ -17,7 +17,6 @@ SettingsNode _syncBranch({String desc = 'Configure sync'}) => SettingsNode(
       icon: LottiIcons.cloudDownload,
       title: 'Backfill',
       desc: '',
-      panel: 'sync-backfill',
     ),
   ],
 );

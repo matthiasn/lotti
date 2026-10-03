@@ -113,9 +113,8 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
   bool get _isUrlDriven => _navService?.isDesktopMode == true;
 
   /// Maps a settings URL onto the tab the body should show. Each
-  /// tab has its own tree leaf and URL under `/settings/agents/`
-  /// (see `settingsNodeUrls` and the per-tab patterns in
-  /// `SettingsLocation`); the bare `/settings/agents` landing falls
+  /// tab has its own tree leaf and URL under `/settings/agents/` (see the
+  /// agents entries in `settingsRoutes`); the bare `/settings/agents` landing falls
   /// through to Templates so the parent tree row stays clickable.
   AgentSettingsTab _resolveTabFromRoute(DesktopSettingsRoute? route) {
     if (route == null) return _localFallback;
@@ -123,8 +122,8 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
   }
 
   /// Shared tab-click handler. On desktop, beam to the URL that
-  /// represents the chosen tab so the V2 detail pane swaps to the
-  /// per-tab leaf with its working `DetailIdDispatch` (and FAB).
+  /// represents the chosen tab so the detail pane swaps to the per-tab
+  /// leaf, whose panel carries that tab's detail routes (and FAB).
   /// On mobile / tests, fall back to local `setState` so the legacy
   /// page-stack navigation isn't disturbed.
   void _onTabSelected(AgentSettingsTab tab) {

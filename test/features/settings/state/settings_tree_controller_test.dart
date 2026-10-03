@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/settings/routing/settings_routes.dart';
 import 'package:lotti/features/settings/state/settings_tree_controller.dart';
 
 SettingsTreePath _notifierFrom(ProviderContainer c) =>
@@ -212,32 +213,34 @@ void main() {
     });
   });
 
-  group('SettingsTreePath.syncFromUrl', () {
+  group('SettingsTreePath.syncFromPath', () {
     test('/settings → empty path', () {
       final c = ProviderContainer();
       addTearDown(c.dispose);
-      _notifierFrom(c).syncFromUrl('/settings');
+      _notifierFrom(c).syncFromPath(beamUrlToPath('/settings'));
       expect(c.read(settingsTreePathProvider), isEmpty);
     });
 
     test('/settings/sync/backfill → [sync, sync/backfill]', () {
       final c = ProviderContainer();
       addTearDown(c.dispose);
-      _notifierFrom(c).syncFromUrl('/settings/sync/backfill');
+      _notifierFrom(c).syncFromPath(beamUrlToPath('/settings/sync/backfill'));
       expect(c.read(settingsTreePathProvider), ['sync', 'sync/backfill']);
     });
 
     test('unknown URL falls back to empty path', () {
       final c = ProviderContainer();
       addTearDown(c.dispose);
-      _notifierFrom(c).syncFromUrl('/settings/nonsense/deeper');
+      _notifierFrom(c).syncFromPath(beamUrlToPath('/settings/nonsense/deeper'));
       expect(c.read(settingsTreePathProvider), isEmpty);
     });
 
     test('UUID segment is treated as panel-local', () {
       final c = ProviderContainer();
       addTearDown(c.dispose);
-      _notifierFrom(c).syncFromUrl('/settings/categories/abc-123');
+      _notifierFrom(
+        c,
+      ).syncFromPath(beamUrlToPath('/settings/categories/abc-123'));
       expect(c.read(settingsTreePathProvider), [
         'definitions',
         'definitions/categories',
@@ -247,17 +250,19 @@ void main() {
     test('idempotent: same URL twice does not notify listeners twice', () {
       final c = ProviderContainer();
       addTearDown(c.dispose);
-      _notifierFrom(c).syncFromUrl('/settings/advanced/about');
+      _notifierFrom(c).syncFromPath(beamUrlToPath('/settings/advanced/about'));
       final first = c.read(settingsTreePathProvider);
-      _notifierFrom(c).syncFromUrl('/settings/advanced/about');
+      _notifierFrom(c).syncFromPath(beamUrlToPath('/settings/advanced/about'));
       expect(identical(c.read(settingsTreePathProvider), first), isTrue);
     });
 
     test('changing URL moves to the new tree path', () {
       final c = ProviderContainer();
       addTearDown(c.dispose);
-      _notifierFrom(c).syncFromUrl('/settings/sync/backfill');
-      _notifierFrom(c).syncFromUrl('/settings/advanced/logging_domains');
+      _notifierFrom(c).syncFromPath(beamUrlToPath('/settings/sync/backfill'));
+      _notifierFrom(
+        c,
+      ).syncFromPath(beamUrlToPath('/settings/advanced/logging_domains'));
       expect(c.read(settingsTreePathProvider), [
         'advanced',
         'advanced/logging',

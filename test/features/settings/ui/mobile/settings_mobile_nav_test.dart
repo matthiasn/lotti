@@ -20,12 +20,11 @@ const _theming = SettingsNode(
   icon: LottiIcons.palette,
   title: 'Theming',
   desc: '',
-  panel: 'theming',
 );
 
-// A node whose id has no entry in `settingsNodeUrls` — e.g. the
-// `whats-new` leaf, which opens a modal instead of beaming. The inert
-// path is what guarantees a tap on it never triggers navigation.
+// A node whose id has no entry in `settingsRoutes.nodeUrls`, like the demo
+// world's sync explainer tile. The inert path is what guarantees a tap on it
+// never triggers navigation.
 const _unrouted = SettingsNode(
   id: 'no-such-node',
   icon: LottiIcons.help,
@@ -46,6 +45,7 @@ const _whatsNew = SettingsNode(
   icon: LottiIcons.verified,
   title: "What's new",
   desc: '',
+  action: SettingsNodeAction.openWhatsNew,
 );
 
 class _CaughtUpWhatsNewController extends WhatsNewController {
