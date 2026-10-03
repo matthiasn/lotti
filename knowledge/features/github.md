@@ -5,7 +5,7 @@ description: Pull requests linked to tasks as journal entries carrying a server-
 resource: ../../lib/features/github
 tags: [github, pull-requests, tasks, sync, agents, tla]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-10-03T10:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-03T13:00:00Z }
 stale_after: 2027-03-26
 sources:
   - id: spec
@@ -63,7 +63,8 @@ screenshots of the pull request page.
 [`PullRequestSnapshot` and `PullRequestAssignment`](../../specs/tla/README.md)
 in `specs/tla/`; the code conforms to them, and their headers name the class
 that implements each action. Built: the entry and its merge, the token and
-the client, linking by URL or from the picker, one task per pull request, a
+the client, linking by URL or from the picker, a pull request serving a
+second task only once the user confirms it, a
 category's repository, the refresh, the task's card, and the pull requests in
 coding prompts and task-agent wakes, all behind the
 `enable_github_pull_requests` config flag. Still design: a project's
@@ -241,40 +242,61 @@ an open picker follows a repository saved or synced meanwhile. A project's
 overriding it is still design. A pasted URL needs no repository, only a token
 that can read it.
 
-# One task per pull request
+# Pull requests serving more than one task
 
-A pull request belongs to one task (`specs/tla/PullRequestAssignment.tla`).
+A pull request can fulfil two tasks, so it may be linked to both — but only
+on purpose (`specs/tla/PullRequestAssignment.tla`).
 `PullRequestRepository.holdersOf` answers which tasks hold a pull request,
 from one indexed query (`pullRequestAssignments`: the live `PullRequest` rows
 by `owner/repo#number`, joined to the live links from live tasks, private ones
-included). The picker leaves held pull requests out, but its list can be stale
-by the time the user picks, and a paste lists nothing; so
+included). The picker leaves held pull requests out, so it never suggests
+one. A paste, or a pick whose list went stale, of a pull request another task
+holds is not refused and not linked silently: the service answers
+`PullRequestLinkedElsewhere`, and the modal asks whether to link it to this
+task as well, naming the other task when the viewer may see it. "Link here
+too" calls the link again with `alsoElsewhere`; cancel links nothing. A pull
+request this task holds is refused either way ("already linked").
 `PullRequestRepository.link` re-checks and creates the entry in one step, one
-link at a time on the device. A pull request held by this task reads "already
-linked", one held by another "already linked to another task".
+link at a time on the device — and the confirmed link re-checks too, since
+this task may have got the pull request while the question was open.
 
 ```mermaid
 flowchart LR
   Pick["Picked or pasted"] --> Held{"held by a task?"}
   Held -->|"this task"| Already["already linked"]
-  Held -->|"another task"| Elsewhere["linked to another task"]
-  Held -->|"no"| Read["read from GitHub"]
+  Held -->|"another task"| Ask["asked: link here too?"]
+  Ask -->|"cancel"| Kept["nothing linked"]
+  Ask -->|"link here too"| Read["read from GitHub"]
+  Held -->|"no"| Read
   Read -->|"fails"| Why["the reason"]
   Read --> Link["link: check again and create, one at a time"]
   Link -->|"held meanwhile"| Held
   Link --> Linked["linked"]
 ```
 
+Each link is an entry of its own, so unlinking a pull request from one task
+deletes that task's entry only; another task's link stays.
+
 Two devices that link the same pull request to different tasks before they
 sync cannot see each other. Sync keeps both entries — refusing the incoming
-one, the tempting way to enforce one task, would leave the devices disagreeing
-for good — so every device holds both, and a card whose pull request another
-task holds too says "Also linked to another task" first in its status line,
-until the user unlinks one. `pullRequestHoldersProvider` reads the holders
-again whenever a pull request entry or a link changes, so a conflict that
+one would leave the devices disagreeing for good — so every device holds
+both. Either way, deliberate or not, a card whose pull request another task
+holds too says so first in its status line, as something to look at rather
+than an error: "Also linked to “Teach the chicks”" when there is one other
+task and the viewer may see it, "Also linked to another task" or "… to 2
+other tasks" otherwise. The title comes from `pullRequestHolderTitleProvider`,
+which reads the task through the private-filtered read the linked tasks use,
+again when the task or private mode changes, so a private task's title never
+shows while private mode hides it. `pullRequestHoldersProvider` reads the
+holders again whenever a pull request entry or a link changes, so a link that
 syncs in shows at once. Sync does not deliver a device's entries in order, so
 a pull request moved from one task to another can show the flag for a moment
 until the unlink that preceded the move arrives.
+
+Two tasks' agents may both react to one pull request merging. Each suggests
+for its own task's checklist only, from a refreshed read, and the user
+confirms every suggestion, so that is each task being told about its own
+work, not a duplicate.
 
 # In the task
 
@@ -314,8 +336,9 @@ first — GitHub is asked for them by creation, and the list is sorted again
 after the held ones are left out, by opening time and then number — each
 with its author, whether it is a draft and how long ago it was opened. Tapping one links it; a pasted URL links on Link. Either
 way the pull request is read from GitHub and linked only if that read
-succeeded — a typo, a repository the token cannot see, or a pull request a
-task holds stays in the modal with the reason. Without a repository on the
+succeeded — a typo, a repository the token cannot see, or a pull request
+this task holds stays in the modal with the reason, and one another task
+holds is asked about first. Without a repository on the
 task's category the modal says how to assign one.
 
 Opening a task refreshes every pull request whose snapshot is older than five
