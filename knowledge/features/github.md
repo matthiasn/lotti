@@ -93,6 +93,14 @@ The database row's type is `PullRequest`, and its subtype is
 with an indexed lookup. One entry per task and pull request: linking the same
 pull request to two tasks makes two entries, which share nothing.
 
+Two devices that link the same pull request to a task before they sync each
+create an entry, and sync keeps both. `distinctPullRequests` decides which
+one every device shows and refreshes — the lowest id, the same everywhere —
+and unlinking deletes every live entry of that pull request on the task, so
+the hidden one cannot reappear. A deterministic id would merge the two
+instead, but would make a re-link revive an unlinked entry, which the model's
+`UnlinkIsFinal` rules out.
+
 # Ordering observations
 
 Two observations of one pull request are ordered by a key, highest first:
@@ -186,6 +194,11 @@ the refresh is the app's, the unlink is the user's.
 - A rate-limited device stops calling until the reset time; a context build
   never waits for it. Reads send `If-None-Match` with the last `ETag`, kept on
   the device: a 304 costs no rate limit and means the snapshot is unchanged.
+- Check runs, commit statuses and reviews are read page by page until a
+  page comes back short, up to ten pages of a hundred. Reviews come oldest
+  first, so stopping at the first page would drop the latest decisions.
+- A review requested only from a team counts as pending, like one requested
+  from a person: in an organisation that is often the only request.
 
 # Repositories
 

@@ -158,7 +158,7 @@ void main() {
       );
     }
     final gone = (await repository.forTask(taskId)).first;
-    await repository.unlink(gone.id);
+    await repository.unlink(taskId: taskId, ref: gone.data.ref);
 
     expect(
       (await repository.forTask(taskId)).map((e) => e.data.number),
@@ -166,6 +166,50 @@ void main() {
     );
     expect(await repository.forTask('another-task'), isEmpty);
   });
+
+  test(
+    'a duplicate another device created before the two synced is shown '
+    'once, the same one everywhere, and unlinking removes both',
+    () async {
+      final linkedHere = await linked(snapshot: prSnapshot());
+      // What sync delivers from a device that linked the same pull request
+      // before it saw this one: another entry, another id.
+      final fromPeer = prEntry(clock: {'peer': 1}, id: 'aaaa-from-peer');
+      await getIt<PersistenceLogic>().createDbEntity(
+        fromPeer,
+        linkedId: taskId,
+        shouldAddGeolocation: false,
+      );
+
+      final shown = await repository.forTask(taskId);
+      expect(shown.map((e) => e.id), [
+        [
+          linkedHere.id,
+          fromPeer.id,
+        ].reduce((a, b) => a.compareTo(b) < 0 ? a : b),
+      ]);
+
+      expect(await repository.unlink(taskId: taskId, ref: ref), isTrue);
+      expect(await repository.forTask(taskId), isEmpty);
+      expect((await stored(linkedHere.id))?.isDeleted, isTrue);
+      expect((await stored(fromPeer.id))?.isDeleted, isTrue);
+    },
+  );
+
+  test(
+    'unlinking a pull request the task does not hold unlinks nothing',
+    () async {
+      await linked();
+      expect(
+        await repository.unlink(
+          taskId: taskId,
+          ref: const PullRequestRef(owner: 'o', repo: 'r', number: 1),
+        ),
+        isFalse,
+      );
+      expect(await repository.forTask(taskId), hasLength(1));
+    },
+  );
 
   group('persistObservation', () {
     test('writes a newer, changed observation under a new clock', () async {
@@ -206,7 +250,7 @@ void main() {
       'flight',
       () async {
         final entry = await linked(snapshot: prSnapshot());
-        expect(await repository.unlink(entry.id), isTrue);
+        expect(await repository.unlink(taskId: taskId, ref: ref), isTrue);
 
         expect(
           await repository.persistObservation(

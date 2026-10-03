@@ -209,6 +209,17 @@ void main() {
     });
   });
 
+  test(
+    'a review requested only from a team is pending too: in an '
+    'organisation that is often the only request there is',
+    () {
+      final reviews = map(
+        pull: githubPullJson(requestedTeams: ['colony-elders']),
+      ).reviews;
+      expect(reviews.decision, PullRequestReviewDecision.pending);
+    },
+  );
+
   test('a response missing a required field is a format error', () {
     final pull = githubPullJson()..remove('head');
     expect(() => map(pull: pull), throwsFormatException);

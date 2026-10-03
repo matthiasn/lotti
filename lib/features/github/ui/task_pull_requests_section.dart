@@ -95,6 +95,7 @@ class TaskPullRequestsSection extends ConsumerWidget {
                   if (i > 0) const DesignSystemDivider(),
                   PullRequestRow(
                     key: ValueKey(entries[i].id),
+                    taskId: taskId,
                     entry: entries[i],
                   ),
                 ],

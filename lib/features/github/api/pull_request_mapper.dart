@@ -135,8 +135,9 @@ PullRequestChecks _checks(
 }
 
 /// Each reviewer's latest decisive review counts once; a dismissal clears
-/// it, and comments decide nothing. Requested reviewers who have not
-/// decided make the decision pending.
+/// it, and comments decide nothing. Requested reviewers or teams who have
+/// not decided make the decision pending: in an organisation the request
+/// often names only a team, and `requested_reviewers` is then empty.
 PullRequestReviews _reviews(List<dynamic> reviews, Map<String, dynamic> pull) {
   final latest = <String, String>{};
   for (final review in reviews.cast<Map<String, dynamic>>()) {
@@ -152,8 +153,8 @@ PullRequestReviews _reviews(List<dynamic> reviews, Map<String, dynamic> pull) {
   }
   final approvals = latest.values.where((s) => s == 'APPROVED').length;
   final changes = latest.values.where((s) => s == 'CHANGES_REQUESTED').length;
-  final requested =
-      (pull['requested_reviewers'] as List<dynamic>? ?? const []).isNotEmpty;
+  bool any(String key) => (pull[key] as List<dynamic>? ?? const []).isNotEmpty;
+  final requested = any('requested_reviewers') || any('requested_teams');
   return PullRequestReviews(
     decision: changes > 0
         ? PullRequestReviewDecision.changesRequested

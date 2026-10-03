@@ -111,8 +111,11 @@ List<(String, PullRequestTone)> pullRequestStatusParts(
 /// on its status line ticks on its own, so a snapshot never reads younger
 /// than it is.
 class PullRequestRow extends ConsumerStatefulWidget {
-  const PullRequestRow({required this.entry, super.key});
+  const PullRequestRow({required this.taskId, required this.entry, super.key});
 
+  /// The task the pull request is linked from, which unlinking removes it
+  /// from.
+  final String taskId;
   final PullRequestEntry entry;
 
   @override
@@ -209,9 +212,12 @@ class _PullRequestRowState extends ConsumerState<PullRequestRow> {
       failure: refresh.failure,
       now: clock.now(),
     );
+    // The list item's own subtitle style, recoloured per part: the spans keep
+    // its type and change only the ink.
+    final caption = tokens.typography.styles.others.caption;
     final separator = TextSpan(
       text: ' · ',
-      style: TextStyle(color: tokens.colors.text.lowEmphasis),
+      style: caption.copyWith(color: tokens.colors.text.lowEmphasis),
     );
     final title = snapshot == null
         ? entry.data.ref.toString()
@@ -227,7 +233,7 @@ class _PullRequestRowState extends ConsumerState<PullRequestRow> {
           if (i > 0) separator,
           TextSpan(
             text: parts[i].$1,
-            style: TextStyle(color: colorOf(parts[i].$2)),
+            style: caption.copyWith(color: colorOf(parts[i].$2)),
           ),
         ],
       ],
@@ -267,6 +273,9 @@ class _PullRequestRowState extends ConsumerState<PullRequestRow> {
           _PullRequestMenu(
             entryId: entry.id,
             onOpen: () => handleMarkdownLinkTap(_webUrl(snapshot), title),
+            onUnlink: () => ref
+                .read(pullRequestRepositoryProvider)
+                .unlink(taskId: widget.taskId, ref: entry.data.ref),
           ),
         ],
       ),
@@ -274,14 +283,19 @@ class _PullRequestRowState extends ConsumerState<PullRequestRow> {
   }
 }
 
-class _PullRequestMenu extends ConsumerWidget {
-  const _PullRequestMenu({required this.entryId, required this.onOpen});
+class _PullRequestMenu extends StatelessWidget {
+  const _PullRequestMenu({
+    required this.entryId,
+    required this.onOpen,
+    required this.onUnlink,
+  });
 
   final String entryId;
   final VoidCallback onOpen;
+  final Future<bool> Function() onUnlink;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
 
@@ -321,9 +335,7 @@ class _PullRequestMenu extends ConsumerWidget {
             case 'open':
               onOpen();
             case 'unlink':
-              unawaited(
-                ref.read(pullRequestRepositoryProvider).unlink(entryId),
-              );
+              unawaited(onUnlink());
           }
         },
         itemBuilder: (context) => [

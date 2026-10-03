@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/github/domain/distinct_pull_requests.dart';
 import 'package:lotti/features/github/domain/pull_request_ref.dart';
 import 'package:lotti/features/github/domain/pull_request_write_rule.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -24,15 +25,13 @@ class PullRequestRepository {
   final PersistenceLogic _persistence;
   final JournalRepository _journal;
 
-  /// The live pull requests linked from [taskId], oldest number first.
-  Future<List<PullRequestEntry>> forTask(String taskId) async {
-    final linked = await _db.getLinkedEntities(taskId);
-    return linked
-        .whereType<PullRequestEntry>()
-        .where((e) => !e.isDeleted)
-        .toList()
-      ..sort((a, b) => a.data.number.compareTo(b.data.number));
-  }
+  /// The live pull requests linked from [taskId], one per pull request
+  /// ([distinctPullRequests]), by number.
+  Future<List<PullRequestEntry>> forTask(String taskId) async =>
+      distinctPullRequests(await _linked(taskId));
+
+  Future<Iterable<PullRequestEntry>> _linked(String taskId) async =>
+      (await _db.getLinkedEntities(taskId)).whereType<PullRequestEntry>();
 
   /// Whether [ref] is already linked to [taskId].
   Future<bool> isLinked({
@@ -108,6 +107,19 @@ class PullRequestRepository {
     return stored && written;
   }
 
-  /// Unlinks the pull request: the entry is deleted like any other.
-  Future<bool> unlink(String entryId) => _journal.deleteJournalEntity(entryId);
+  /// Unlinks pull request [ref] from [taskId]: every live entry of it is
+  /// deleted like any other entry, including a duplicate another device
+  /// created before the two synced, which would otherwise reappear.
+  Future<bool> unlink({
+    required String taskId,
+    required PullRequestRef ref,
+  }) async {
+    var unlinked = false;
+    for (final entry in await _linked(taskId)) {
+      if (!entry.isDeleted && entry.data.key == ref.key) {
+        unlinked = await _journal.deleteJournalEntity(entry.id) || unlinked;
+      }
+    }
+    return unlinked;
+  }
 }

@@ -210,6 +210,19 @@ void main() {
     });
   });
 
+  test('taskPullRequestsProvider shows a duplicate pull request once', () {
+    final c = container(
+      linked: [
+        prEntry(clock: {'a': 1}, id: 'b-entry'),
+        prEntry(clock: {'b': 1}, id: 'a-entry'),
+      ],
+    );
+    expect(
+      c.read(taskPullRequestsProvider('task')).map((e) => e.id),
+      ['a-entry'],
+    );
+  });
+
   test('taskPullRequestsProvider lists only live pull requests, by number', () {
     PullRequestEntry pr(String id, int number, {bool deleted = false}) {
       final e = prEntry(clock: {'a': 1}, id: id, deleted: deleted);

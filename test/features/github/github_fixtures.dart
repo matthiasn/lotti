@@ -8,6 +8,7 @@ Map<String, dynamic> githubPullJson({
   bool? mergeable = true,
   String? mergeableState = 'clean',
   List<String> requestedReviewers = const [],
+  List<String> requestedTeams = const [],
   String headSha = 'abc1234',
 }) => {
   'number': 12,
@@ -26,6 +27,9 @@ Map<String, dynamic> githubPullJson({
   'mergeable_state': mergeableState,
   'requested_reviewers': [
     for (final login in requestedReviewers) {'login': login},
+  ],
+  'requested_teams': [
+    for (final slug in requestedTeams) {'slug': slug},
   ],
   'additions': 10,
   'deletions': 2,

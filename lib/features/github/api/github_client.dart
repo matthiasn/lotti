@@ -66,6 +66,12 @@ class GitHubClient {
 
   static const host = 'api.github.com';
   static const timeout = Duration(seconds: 10);
+
+  /// Items per page of a paginated list, GitHub's maximum.
+  static const pageSize = 100;
+
+  /// Pages read of one list at most.
+  static const maxPages = 10;
   static const _maxCached = 256;
 
   final http.Client _http;
@@ -95,22 +101,25 @@ class GitHubClient {
       {'sha': final String sha} => sha,
       _ => throw const GitHubException(GitHubFailureKind.invalidResponse),
     };
-    const page = {'per_page': '100'};
     // The first failure fails the refresh as it is, unwrapped.
     final [checkRuns, status, reviews] = await Future.wait(
       [
-        _get('$repo/commits/$sha/check-runs', token: token, query: page),
-        _get('$repo/commits/$sha/status', token: token, query: page),
-        _get('$repo/pulls/${ref.number}/reviews', token: token, query: page),
+        _getAll(
+          '$repo/commits/$sha/check-runs',
+          token: token,
+          listKey: 'check_runs',
+        ),
+        _getAll('$repo/commits/$sha/status', token: token, listKey: 'statuses'),
+        _getAll('$repo/pulls/${ref.number}/reviews', token: token),
       ],
       eagerError: true,
     );
     try {
       return pullRequestSnapshotFrom(
         pull: pullJson,
-        checkRuns: _object(checkRuns.json),
-        combinedStatus: _object(status.json),
-        reviews: switch (reviews.json) {
+        checkRuns: _object(checkRuns),
+        combinedStatus: _object(status),
+        reviews: switch (reviews) {
           final List<dynamic> list => list,
           _ => throw const FormatException('reviews is not a list'),
         },
@@ -122,6 +131,44 @@ class GitHubClient {
   }
 
   void close() => _http.close();
+
+  /// Every page of a paginated list, as one response of the first page's
+  /// shape: the list itself, or the object holding it under [listKey].
+  ///
+  /// A page shorter than [pageSize] is the last. Reviews come oldest first,
+  /// so stopping early would drop exactly the latest decisions; [maxPages]
+  /// only bounds a pathological pull request, at a thousand items.
+  Future<Object?> _getAll(
+    String path, {
+    required String token,
+    String? listKey,
+  }) async {
+    List<dynamic> itemsOf(Object? json) => switch ((json, listKey)) {
+      (final List<dynamic> list, null) => list,
+      (final Map<String, dynamic> map, final String key)
+          when map[key] is List<dynamic> =>
+        map[key] as List<dynamic>,
+      _ => throw const GitHubException(GitHubFailureKind.invalidResponse),
+    };
+
+    Future<Object?> page(int number) async => (await _get(
+      path,
+      token: token,
+      query: {'per_page': '$pageSize', 'page': '$number'},
+    )).json;
+
+    final first = await page(1);
+    final items = [...itemsOf(first)];
+    var last = items.length;
+    for (var number = 2; last == pageSize && number <= maxPages; number++) {
+      final more = itemsOf(await page(number));
+      items.addAll(more);
+      last = more.length;
+    }
+    return listKey == null
+        ? items
+        : {...first! as Map<String, dynamic>, listKey: items};
+  }
 
   Future<_Response> _get(
     String path, {

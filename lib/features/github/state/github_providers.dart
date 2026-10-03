@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
 import 'package:lotti/features/github/api/github_client.dart';
+import 'package:lotti/features/github/domain/distinct_pull_requests.dart';
 import 'package:lotti/features/github/domain/pull_request_order.dart';
 import 'package:lotti/features/github/repository/github_token_storage.dart';
 import 'package:lotti/features/github/repository/pull_request_repository.dart';
@@ -51,17 +52,16 @@ final pullRequestServiceProvider = Provider<PullRequestService>(
   name: 'pullRequestServiceProvider',
 );
 
-/// The live pull requests linked from a task, by number. Follows the task's
-/// links and every entry, so a refresh, a sync or an unlink shows at once.
+/// The live pull requests linked from a task, one per pull request
+/// ([distinctPullRequests]), by number. Follows the task's links and every
+/// entry, so a refresh, a sync or an unlink shows at once.
 final ProviderFamily<List<PullRequestEntry>, String> taskPullRequestsProvider =
     Provider.autoDispose.family<List<PullRequestEntry>, String>(
-      (ref, taskId) =>
-          ref
-              .watch(resolvedOutgoingLinkedEntriesProvider(taskId))
-              .whereType<PullRequestEntry>()
-              .where((e) => !e.isDeleted)
-              .toList()
-            ..sort((a, b) => a.data.number.compareTo(b.data.number)),
+      (ref, taskId) => distinctPullRequests(
+        ref
+            .watch(resolvedOutgoingLinkedEntriesProvider(taskId))
+            .whereType<PullRequestEntry>(),
+      ),
       name: 'taskPullRequestsProvider',
     );
 

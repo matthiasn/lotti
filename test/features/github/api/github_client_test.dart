@@ -168,6 +168,79 @@ void main() {
       },
     );
 
+    test(
+      'follows every page: a decision on the second page of reviews counts, '
+      'and a list shorter than a page is not asked again',
+      () async {
+        final firstPage = [
+          for (var i = 0; i < GitHubClient.pageSize; i++)
+            githubReviewJson('reviewer$i', 'APPROVED'),
+        ];
+        final client = clientWith((request) {
+          if (!request.url.path.endsWith('/reviews')) return github(request);
+          return switch (request.url.queryParameters['page']) {
+            '1' => json(firstPage),
+            '2' => json([githubReviewJson('reviewer0', 'CHANGES_REQUESTED')]),
+            final other => throw StateError('page $other'),
+          };
+        });
+
+        final snapshot = await client.fetchPullRequest(ref, token: token);
+
+        expect(
+          snapshot.reviews.decision,
+          PullRequestReviewDecision.changesRequested,
+        );
+        expect(snapshot.reviews.approvals, GitHubClient.pageSize - 1);
+        final reviewPages = requests
+            .where((r) => r.url.path.endsWith('/reviews'))
+            .map((r) => r.url.queryParameters['page']);
+        expect(reviewPages, ['1', '2']);
+        // Lists that fit one page are read once.
+        expect(
+          requests.where((r) => r.url.path.endsWith('/check-runs')),
+          hasLength(1),
+        );
+      },
+    );
+
+    test('check runs on a second page are counted', () async {
+      final client = clientWith((request) {
+        if (!request.url.path.endsWith('/check-runs')) return github(request);
+        return switch (request.url.queryParameters['page']) {
+          '1' => json(
+            githubCheckRunsJson([
+              for (var i = 0; i < GitHubClient.pageSize; i++)
+                githubCheckRunJson('shard $i', conclusion: 'success'),
+            ]),
+          ),
+          _ => json(
+            githubCheckRunsJson([
+              githubCheckRunJson('late', conclusion: 'failure'),
+            ]),
+          ),
+        };
+      });
+
+      final snapshot = await client.fetchPullRequest(ref, token: token);
+
+      expect(snapshot.checks.rollup, PullRequestCheckRollup.failing);
+      expect(snapshot.checks.total, GitHubClient.pageSize + 1);
+    });
+
+    test('a page that is not a list is an invalid response', () async {
+      final client = clientWith(
+        (request) => request.url.path.endsWith('/reviews')
+            ? json({'not': 'a list'})
+            : github(request),
+      );
+
+      expect(
+        await failureOf(client.fetchPullRequest(ref, token: token)),
+        GitHubFailureKind.invalidResponse,
+      );
+    });
+
     test('a failing sub-read fails the whole refresh, as itself', () async {
       final client = clientWith(
         (request) => request.url.path.endsWith('/check-runs')

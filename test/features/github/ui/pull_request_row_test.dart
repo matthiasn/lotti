@@ -145,7 +145,7 @@ void main() {
     Future<void> pump(WidgetTester tester, PullRequestEntry entry) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          PullRequestRow(entry: entry),
+          PullRequestRow(taskId: 'task-1', entry: entry),
           overrides: [
             pullRequestServiceProvider.overrideWithValue(service),
             pullRequestRepositoryProvider.overrideWithValue(repository),
@@ -240,7 +240,9 @@ void main() {
 
     testWidgets('unlink from the menu unlinks the entry', (tester) async {
       final entry = prEntry(clock: {'a': 1}, snapshot: prSnapshot());
-      when(() => repository.unlink(entry.id)).thenAnswer((_) async => true);
+      when(
+        () => repository.unlink(taskId: 'task-1', ref: entry.data.ref),
+      ).thenAnswer((_) async => true);
 
       await withClock(Clock.fixed(now), () async {
         await pump(tester, entry);
@@ -255,7 +257,9 @@ void main() {
         await tester.pump(const Duration(seconds: 1));
       });
 
-      verify(() => repository.unlink(entry.id)).called(1);
+      verify(
+        () => repository.unlink(taskId: 'task-1', ref: entry.data.ref),
+      ).called(1);
     });
 
     testWidgets(
