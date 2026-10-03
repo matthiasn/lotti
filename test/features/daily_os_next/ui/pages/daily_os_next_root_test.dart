@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
-import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
@@ -38,6 +37,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_utils/screenshot_harness.dart';
 import '../../../../widget_test_utils.dart';
+import '../../test_doubles/mock_day_agent.dart';
 
 final StreamProvider<int> _dailyOsRootReloadTickProvider = StreamProvider<int>(
   (ref) => const Stream<int>.empty(),

@@ -388,18 +388,6 @@ void main() {
         ['standard', 'nudge'],
       );
       expect(
-        TaskCorpusState.values.map((e) => e.name),
-        [
-          'all',
-          'inProgress',
-          'overdue',
-          'scheduled',
-          'recurring',
-          'backlog',
-          'done',
-        ],
-      );
-      expect(
         PendingItemReason.values.map((e) => e.name),
         ['overdue', 'inProgress', 'missedRecurring', 'dueToday'],
       );
@@ -411,7 +399,6 @@ void main() {
         CarryoverAction.values.map((e) => e.name),
         ['tomorrow', 'pickDate', 'drop'],
       );
-      expect(ReflectionSource.values.map((e) => e.name), ['typed', 'voice']);
     });
   });
 
@@ -511,22 +498,36 @@ void main() {
       expect(metrics.focusMinutes, 240);
       expect(metrics.energyDeltaVsWeek, 0.5);
 
+      // Unmeasured metrics stay null rather than defaulting to zero: zero
+      // energy would read as a measurement.
+      const unmeasured = ShutdownMetrics(
+        focusMinutes: 0,
+        flowSessions: 0,
+        contextSwitches: 0,
+      );
+      expect(unmeasured.contextSwitchesWeekAvg, isNull);
+      expect(unmeasured.energyScore, isNull);
+      expect(unmeasured.energyDeltaVsWeek, isNull);
+
       const completedItem = CompletedItem(
         title: 'Ship release',
         category: cat,
         durationMinutes: 90,
+        sessionCount: 2,
+        doneToday: true,
       );
-      expect(completedItem.note, isNull);
-      expect(completedItem.durationMinutes, 90);
+      expect(completedItem.taskId, isNull);
+      expect(completedItem.sessionCount, 2);
 
-      const carryover = CarryoverItem(
+      final carryover = CarryoverItem(
         taskId: 't2',
         title: 'Write docs',
         category: cat,
-        reason: 'Ran out of time — started, 40m in',
-        suggestedTarget: '→ tomorrow morning',
+        loggedMinutes: 40,
+        suggestedDate: DateTime(2026, 10, 4),
       );
-      expect(carryover.suggestedTarget, '→ tomorrow morning');
+      expect(carryover.loggedMinutes, 40);
+      expect(carryover.suggestedDate, DateTime(2026, 10, 4));
 
       const note = TomorrowNote(body: 'Start with the deck.');
       expect(note.body, isNotEmpty);

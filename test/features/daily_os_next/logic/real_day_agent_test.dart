@@ -14,7 +14,6 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
-import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/logic/real_day_agent.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
@@ -196,23 +195,23 @@ class _FakeOutboxState {
 
 /// Shared five-mock + adapter scaffolding used by every group in this file.
 class _TestBench {
-  _TestBench._({required this.fallback})
+  _TestBench._()
     : captureService = MockDayAgentCaptureService(),
       planService = MockDayAgentPlanService(),
       dayAgentService = MockDayAgentService(),
+      shutdownService = MockDayAgentShutdownService(),
       journalDb = MockJournalDb(),
       outbox = MockDayProcessingOutboxRepository() {
     fakeOutbox = _FakeOutboxState(outbox);
   }
 
-  factory _TestBench.create({MockDayAgent? fallback}) =>
-      _TestBench._(fallback: fallback ?? MockDayAgent());
+  factory _TestBench.create() => _TestBench._();
 
   final MockDayAgentCaptureService captureService;
   final MockDayAgentPlanService planService;
   final MockDayAgentService dayAgentService;
+  final MockDayAgentShutdownService shutdownService;
   final MockJournalDb journalDb;
-  final MockDayAgent fallback;
   final MockDayProcessingOutboxRepository outbox;
   late final _FakeOutboxState fakeOutbox;
   int nudgeCalls = 0;
@@ -222,7 +221,7 @@ class _TestBench {
     planService: planService,
     dayAgentService: dayAgentService,
     journalDb: journalDb,
-    mockFallback: fallback,
+    shutdownService: shutdownService,
     outbox: outbox,
     nudgeProcessing: () => nudgeCalls++,
   );
@@ -241,46 +240,6 @@ class _TestBench {
     String error = 'wake failed',
   }) async {
     fakeOutbox.failJob(jobId, failureClass: failureClass, error: error);
-  }
-}
-
-/// Records the arguments handed to the two void mocked tools so the
-/// delegation tests can prove the adapter forwards them verbatim to the
-/// fallback (the mock's own implementations are silent no-ops, so there is
-/// no return value to assert on).
-class _RecordingFallbackAgent extends MockDayAgent {
-  _RecordingFallbackAgent()
-    : super(
-        triageLatency: Duration.zero,
-        summarizeLatency: Duration.zero,
-        pendingLatency: Duration.zero,
-      );
-
-  ({DateTime forDate, String text, ReflectionSource source})? reflection;
-  ({String taskId, CarryoverAction action, DateTime? when})? carryover;
-
-  @override
-  Future<void> recordReflection({
-    required DateTime forDate,
-    required String text,
-    required ReflectionSource source,
-  }) async {
-    reflection = (forDate: forDate, text: text, source: source);
-    await super.recordReflection(forDate: forDate, text: text, source: source);
-  }
-
-  @override
-  Future<void> recordCarryoverDecision({
-    required String taskId,
-    required CarryoverAction action,
-    DateTime? when,
-  }) async {
-    carryover = (taskId: taskId, action: action, when: when);
-    await super.recordCarryoverDecision(
-      taskId: taskId,
-      action: action,
-      when: when,
-    );
   }
 }
 
@@ -2592,127 +2551,102 @@ void main() {
     });
   });
 
-  group('RealDayAgent helpers + mocked delegations', () {
+  group('RealDayAgent Shutdown delegation', () {
     late _TestBench bench;
 
-    setUp(
-      () => bench = _TestBench.create(
-        fallback: MockDayAgent(
-          parseLatency: Duration.zero,
-          pendingLatency: Duration.zero,
-          triageLatency: Duration.zero,
-          draftLatency: Duration.zero,
-          summarizeLatency: Duration.zero,
+    setUp(() => bench = _TestBench.create());
+
+    test('surfaceShutdownData returns the service facts for the day', () async {
+      final day = (
+        completed: const <CompletedItem>[],
+        carryover: <CarryoverItem>[],
+        metrics: const ShutdownMetrics(
+          focusMinutes: 95,
+          flowSessions: 1,
+          contextSwitches: 2,
         ),
-      ),
-    );
+      );
+      when(
+        () => bench.shutdownService.shutdownDay(_asOf),
+      ).thenAnswer((_) async => day);
 
-    // Each mocked tool gets its own focused delegation test. Asserting the
-    // *exact scripted payload* of the real `MockDayAgent` (not just the
-    // return type) is what proves the adapter forwarded to the genuine
-    // fallback rather than swallowing the call or returning a stub.
+      expect(
+        await bench.adapter.surfaceShutdownData(forDate: _asOf),
+        same(day),
+      );
+    });
 
-    test(
-      'surfaceShutdownData forwards to the fallback and returns its scripted '
-      'completed/carryover/metrics verbatim',
-      () async {
-        final shutdown = await bench.adapter.surfaceShutdownData(
+    test('generateTomorrowNote returns the service note', () async {
+      when(
+        () => bench.shutdownService.tomorrowNote(_asOf),
+      ).thenAnswer((_) async => const TomorrowNote(body: 'Invoices first.'));
+
+      expect(
+        (await bench.adapter.generateTomorrowNote(forDate: _asOf)).body,
+        'Invoices first.',
+      );
+    });
+
+    test('recordReflection forwards the day and text', () async {
+      when(
+        () => bench.shutdownService.recordReflection(
           forDate: _asOf,
-        );
+          text: 'sharp morning',
+        ),
+      ).thenAnswer((_) async {});
 
-        expect(
-          shutdown.completed.map((c) => c.title),
-          containsAll([
-            'Deck review — Q2 leadership update',
-            'Morning run · 5km',
-          ]),
-        );
-        expect(shutdown.completed.first.durationMinutes, 95);
-        expect(
-          shutdown.carryover.map((c) => c.taskId),
-          ['t_onboarding_doc', 't_invoices'],
-        );
-        expect(
-          shutdown.carryover.first.suggestedTarget,
-          '→ tomorrow morning',
-        );
-        expect(shutdown.metrics.focusMinutes, 215);
-        expect(shutdown.metrics.flowSessions, 3);
-        expect(shutdown.metrics.energyScore, 7.4);
-      },
-    );
+      await bench.adapter.recordReflection(
+        forDate: _asOf,
+        text: 'sharp morning',
+      );
 
-    test(
-      'generateTomorrowNote forwards to the fallback and returns its scripted '
-      'note verbatim',
-      () async {
-        final note = await bench.adapter.generateTomorrowNote(forDate: _asOf);
-
-        expect(note.body, contains('Onboarding doc'));
-        expect(note.body, startsWith('You started the Onboarding doc'));
-      },
-    );
-
-    test(
-      'surfaceTaskCorpus forwards the state filter to the fallback so only '
-      'matching scripted rows come back',
-      () async {
-        // Unfiltered call returns the full scripted corpus.
-        final all = await bench.adapter.surfaceTaskCorpus();
-        expect(all, hasLength(7));
-
-        // The filter argument must reach the fallback: an overdue filter
-        // narrows to the single scripted overdue row (the dentist task).
-        final overdue = await bench.adapter.surfaceTaskCorpus(
-          stateFilter: TaskCorpusState.overdue,
-        );
-        expect(overdue.single.title, 'Reschedule dentist');
-        expect(
-          overdue.every((i) => i.state == TaskCorpusState.overdue),
-          isTrue,
-        );
-      },
-    );
-
-    test(
-      'recordReflection forwards forDate/text/source verbatim to the fallback',
-      () async {
-        final recording = _RecordingFallbackAgent();
-        final adapter = _TestBench.create(fallback: recording).adapter;
-
-        await adapter.recordReflection(
+      verify(
+        () => bench.shutdownService.recordReflection(
           forDate: _asOf,
-          text: 'looked back on a sharp morning',
-          source: ReflectionSource.voice,
-        );
+          text: 'sharp morning',
+        ),
+      ).called(1);
+    });
 
-        expect(recording.reflection?.forDate, _asOf);
-        expect(recording.reflection?.text, 'looked back on a sharp morning');
-        expect(recording.reflection?.source, ReflectionSource.voice);
-        // The carryover sibling tool was not invoked by this call.
-        expect(recording.carryover, isNull);
-      },
-    );
+    test('ensureReflectionEntry returns the entry id', () async {
+      when(
+        () => bench.shutdownService.ensureReflectionEntry(_asOf),
+      ).thenAnswer((_) async => 'reflection-id');
+
+      expect(
+        await bench.adapter.ensureReflectionEntry(forDate: _asOf),
+        'reflection-id',
+      );
+    });
 
     test(
-      'recordCarryoverDecision forwards taskId/action/when verbatim to the '
-      'fallback',
+      'recordCarryoverDecision forwards day, task, action and date',
       () async {
-        final recording = _RecordingFallbackAgent();
-        final adapter = _TestBench.create(fallback: recording).adapter;
-        final when = DateTime(2026, 5, 27, 9);
+        final when_ = DateTime(2026, 5, 27);
+        when(
+          () => bench.shutdownService.recordCarryoverDecision(
+            forDate: _asOf,
+            taskId: 'task-x',
+            action: CarryoverAction.pickDate,
+            when: when_,
+          ),
+        ).thenAnswer((_) async {});
 
-        await adapter.recordCarryoverDecision(
+        await bench.adapter.recordCarryoverDecision(
+          forDate: _asOf,
           taskId: 'task-x',
           action: CarryoverAction.pickDate,
-          when: when,
+          when: when_,
         );
 
-        expect(recording.carryover?.taskId, 'task-x');
-        expect(recording.carryover?.action, CarryoverAction.pickDate);
-        expect(recording.carryover?.when, when);
-        // The reflection sibling tool was not invoked by this call.
-        expect(recording.reflection, isNull);
+        verify(
+          () => bench.shutdownService.recordCarryoverDecision(
+            forDate: _asOf,
+            taskId: 'task-x',
+            action: CarryoverAction.pickDate,
+            when: when_,
+          ),
+        ).called(1);
       },
     );
 

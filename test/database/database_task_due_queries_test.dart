@@ -116,6 +116,80 @@ void main() {
         },
       );
 
+      test(
+        'getTasksClosedSince returns tasks closed or rejected since a moment',
+        () async {
+          final day = DateTime(2024, 7, 5);
+          TaskStatus done(String id, DateTime at) =>
+              TaskStatus.done(id: id, createdAt: at, utcOffset: 0);
+          final entries = [
+            buildTaskEntry(
+              id: 'done-today',
+              timestamp: day.add(const Duration(hours: 10)),
+              status: done('s1', day.add(const Duration(hours: 10))),
+            ),
+            buildTaskEntry(
+              id: 'rejected-today',
+              timestamp: day.add(const Duration(hours: 11)),
+              status: TaskStatus.rejected(
+                id: 's2',
+                createdAt: day.add(const Duration(hours: 11)),
+                utcOffset: 0,
+              ),
+            ),
+            buildTaskEntry(
+              id: 'done-yesterday',
+              timestamp: day.subtract(const Duration(hours: 2)),
+              status: done('s3', day.subtract(const Duration(hours: 2))),
+            ),
+            buildTaskEntry(
+              id: 'open-today',
+              timestamp: day.add(const Duration(hours: 12)),
+              status: TaskStatus.open(
+                id: 's4',
+                createdAt: day.add(const Duration(hours: 12)),
+                utcOffset: 0,
+              ),
+            ),
+            buildTaskEntry(
+              id: 'done-private',
+              timestamp: day.add(const Duration(hours: 13)),
+              status: done('s5', day.add(const Duration(hours: 13))),
+              privateFlag: true,
+            ),
+          ];
+          for (final entry in entries) {
+            await db!.upsertJournalDbEntity(toDbEntity(entry));
+          }
+
+          await db!.upsertConfigFlag(
+            const ConfigFlag(
+              name: 'private',
+              description: 'Show private entries?',
+              status: false,
+            ),
+          );
+          final hidingPrivate = await db!.getTasksClosedSince(day);
+          expect(
+            hidingPrivate.map((task) => task.meta.id).toSet(),
+            {'done-today', 'rejected-today'},
+          );
+
+          await db!.upsertConfigFlag(
+            const ConfigFlag(
+              name: 'private',
+              description: 'Show private entries?',
+              status: true,
+            ),
+          );
+          final showingPrivate = await db!.getTasksClosedSince(day);
+          expect(
+            showingPrivate.map((task) => task.meta.id).toSet(),
+            {'done-today', 'rejected-today', 'done-private'},
+          );
+        },
+      );
+
       test('getInProgressTasks filters category and honors limit', () async {
         final base = DateTime(2024, 7, 4, 9);
         final older = buildTaskEntry(

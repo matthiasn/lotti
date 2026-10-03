@@ -5,7 +5,7 @@ description: The day-planning runtime — one coordinator plus per-day agents, a
 resource: ../../../lib/features/daily_os_next
 tags: [daily-os, planning, day-agent, calendar]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-02T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-03T18:00:00Z }
 stale_after: 2026-10-26
 sources:
   - id: src
@@ -176,7 +176,3 @@ Wiring the agent layer needs an explicit "constrained" marker first. The per-wak
 prompt derives its `touchedScopes` from attention claims and the baseline plan's
 categories instead.
 
-# Known gaps
-
-- **Shutdown is still mock-backed.** `ShutdownController` and its surfaces do not
-  read real data.

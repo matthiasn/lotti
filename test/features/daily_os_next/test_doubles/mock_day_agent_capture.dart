@@ -1,5 +1,5 @@
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
-import 'package:lotti/features/daily_os_next/logic/mock_day_agent_fixtures.dart';
+import 'mock_day_agent_fixtures.dart';
 
 /// Scripted capture/reconcile/draft half of `MockDayAgent`.
 ///

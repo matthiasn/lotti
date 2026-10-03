@@ -31,6 +31,12 @@ String dayAgentPlanEntityId(String dayId) => 'day_agent_plan:$dayId';
 /// latent identity-recreation hazard, precedented and accepted).
 String dayAgentSummaryEntityId(String dayId) => 'day_agent_summary:$dayId';
 
+/// Deterministic agent-entity ID for the Shutdown "For tomorrow" note keyed
+/// by [dayId] — one register per day, rewritten in place when the day's facts
+/// change.
+String dayAgentTomorrowNoteEntityId(String dayId) =>
+    'day_agent_tomorrow_note:$dayId';
+
 /// Deterministic agent-entity ID for the coordinator-issued day directive
 /// keyed by [dayId] (ADR 0032 phase 3).
 ///

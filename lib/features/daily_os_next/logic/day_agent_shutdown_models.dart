@@ -1,119 +1,103 @@
 import 'package:flutter/foundation.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_capture_models.dart';
 
-/// What completed during the day — surfaced in Shutdown's
-/// "What you did" column.
+/// One thing the day's recorded time went to, surfaced in Shutdown's
+/// "What you did" column: a task, or untasked recordings grouped by title.
 @immutable
 class CompletedItem {
   const CompletedItem({
     required this.title,
     required this.category,
     required this.durationMinutes,
-    this.note,
+    required this.sessionCount,
+    required this.doneToday,
+    this.taskId,
   });
 
+  final String? taskId;
   final String title;
   final DayAgentCategory category;
+
+  /// Recorded minutes, overlaps counted once.
   final int durationMinutes;
 
-  /// Optional context line ("Logged 3 sessions, 90m total.").
-  final String? note;
+  /// How many recordings the time came from.
+  final int sessionCount;
+
+  /// The task was marked done on the day — with or without recorded time.
+  final bool doneToday;
 }
 
-/// What did not finish — surfaced in Shutdown's "Carries forward"
-/// column with a primary suggested re-placement chip.
+/// A task meant for the day that is still open, surfaced in Shutdown's
+/// "Carries forward" column.
 @immutable
 class CarryoverItem {
   const CarryoverItem({
     required this.taskId,
     required this.title,
     required this.category,
-    required this.reason,
-    required this.suggestedTarget,
+    required this.loggedMinutes,
+    required this.suggestedDate,
   });
 
   final String taskId;
   final String title;
   final DayAgentCategory category;
 
-  /// One-line explanation ("Ran out of time — started, 40m in").
-  final String reason;
+  /// Minutes recorded against the task on the day; zero when it was not
+  /// started.
+  final int loggedMinutes;
 
-  /// Human-readable label for the agent's suggested re-placement
-  /// (e.g. "→ tomorrow morning", "→ Sunday"). Tapping it triggers
-  /// `record_carryover_decision` with the resolved date.
-  final String suggestedTarget;
+  /// Where the primary action re-places the task: the next day.
+  final DateTime suggestedDate;
 }
 
 /// Action the user takes on a carryover item.
 enum CarryoverAction {
-  /// Apply the agent's suggested re-placement (tomorrow / picked day).
+  /// Re-place the task on [CarryoverItem.suggestedDate].
   tomorrow,
 
-  /// Open a date picker — for the mock this falls through to
-  /// tomorrow + 7 days.
+  /// Re-place the task on a date the user picks.
   pickDate,
 
-  /// Drop the task (archive).
+  /// Drop the task (rejected).
   drop,
 }
 
-/// 2×2 metrics card shown in Shutdown.
+/// 2×2 metrics card shown in Shutdown, computed from recorded time and
+/// session ratings. The definitions live beside `shutdownMetrics`.
 @immutable
 class ShutdownMetrics {
   const ShutdownMetrics({
     required this.focusMinutes,
     required this.flowSessions,
     required this.contextSwitches,
-    required this.contextSwitchesWeekAvg,
-    required this.energyScore,
-    required this.energyDeltaVsWeek,
+    this.contextSwitchesWeekAvg,
+    this.energyScore,
+    this.energyDeltaVsWeek,
   });
 
   final int focusMinutes;
   final int flowSessions;
   final int contextSwitches;
-  final double contextSwitchesWeekAvg;
 
-  /// 1–10 scale; aligns with the user's energy bands.
-  final double energyScore;
+  /// Mean switches over the previous seven days that had recorded work;
+  /// null when none did.
+  final double? contextSwitchesWeekAvg;
 
-  /// Difference vs the rolling weekly average — positive means up.
-  final double energyDeltaVsWeek;
+  /// Mean session-rating energy on a 0–10 scale; null when no session of
+  /// the day was rated.
+  final double? energyScore;
+
+  /// [energyScore] minus the previous seven days' mean; null when either
+  /// side has no ratings.
+  final double? energyDeltaVsWeek;
 }
 
-/// One paragraph the agent puts together for the start of tomorrow.
+/// One paragraph the planner writes for the start of tomorrow.
 @immutable
 class TomorrowNote {
   const TomorrowNote({required this.body});
 
   final String body;
-}
-
-/// Source of the Shutdown reflection — typed in or spoken.
-enum ReflectionSource { typed, voice }
-
-/// Fields the user-facing corpus browser filters by.
-enum TaskCorpusState {
-  all,
-  inProgress,
-  overdue,
-  scheduled,
-  recurring,
-  backlog,
-  done,
-}
-
-/// One row in the Tasks corpus surface.
-@immutable
-class TaskCorpusItem {
-  const TaskCorpusItem({
-    required this.title,
-    required this.category,
-    required this.state,
-  });
-
-  final String title;
-  final DayAgentCategory category;
-  final TaskCorpusState state;
 }

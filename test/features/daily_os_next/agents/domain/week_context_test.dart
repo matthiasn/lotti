@@ -5,6 +5,8 @@ import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/week_context.dart';
 import 'package:lotti/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart';
 
+import '../../../agents/test_data/entity_factories.dart';
+
 const _agentId = 'daily_os_planner';
 
 /// Wednesday 2026-06-10 08:30 local — the worked example's "now".
@@ -66,6 +68,15 @@ DaySummaryEntity _summary(DateTime day, String text) {
       as DaySummaryEntity;
 }
 
+TomorrowNoteEntity _tomorrowNote(DateTime day, String text) =>
+    makeTestTomorrowNote(
+      agentId: _agentId,
+      dayId: dayPlanId(day),
+      text: text,
+      createdAt: day,
+      updatedAt: day,
+    );
+
 AttentionRequestEntity _claim({
   required String id,
   required String title,
@@ -103,6 +114,7 @@ WeekContext _build({
   List<AttentionRequestEntity> claims = const [],
   List<DayPlanEntity> dayPlans = const [],
   List<DaySummaryEntity> daySummaries = const [],
+  List<TomorrowNoteEntity> tomorrowNotes = const [],
   List<RecordedSpan> recordedSpans = const [],
   String? Function(String)? categoryName,
 }) {
@@ -112,6 +124,7 @@ WeekContext _build({
     claims: claims,
     dayPlans: dayPlans,
     daySummaries: daySummaries,
+    tomorrowNotes: tomorrowNotes,
     recordedSpans: recordedSpans,
     categoryName: categoryName ?? _names,
   );
@@ -832,6 +845,52 @@ Wed Jun 10 (today so far) — committed plan. Work: 1.5h recorded of 5h planned.
       expect(
         ctx.recentDays,
         contains("Missed: 'multi line 'quoted'' (30m, Work)."),
+      );
+    });
+
+    test(
+      "the user's closing note follows the agent note under its own day",
+      () {
+        final jun9 = DateTime(2026, 6, 9);
+        final ctx = _build(
+          daySummaries: [_summary(jun9, 'Long client call.')],
+          tomorrowNotes: [
+            _tomorrowNote(jun9, 'Start with the\ninvoices at 9.'),
+          ],
+        );
+        final lines = ctx.recentDays!
+            .split('\n\n')
+            .singleWhere((p) => p.startsWith('Tue Jun 9'))
+            .split('\n');
+        expect(lines.sublist(1), [
+          'Agent note: Long client call.',
+          'Note for the next day: Start with the invoices at 9.',
+        ]);
+      },
+    );
+
+    test('a closing note alone makes the lookback worth rendering', () {
+      final ctx = _build(
+        tomorrowNotes: [_tomorrowNote(DateTime(2026, 6, 9), 'Invoices first.')],
+      );
+      expect(
+        ctx.recentDays,
+        contains('Note for the next day: Invoices first.'),
+      );
+    });
+
+    test('an over-long closing note is capped like a summary', () {
+      final ctx = _build(
+        tomorrowNotes: [
+          _tomorrowNote(DateTime(2026, 6, 9), 'y' * (daySummaryMaxChars + 9)),
+        ],
+      );
+      final note = ctx.recentDays!
+          .split('\n')
+          .singleWhere((line) => line.startsWith('Note for the next day: '));
+      expect(
+        note.length,
+        'Note for the next day: '.length + daySummaryMaxChars + 1,
       );
     });
 

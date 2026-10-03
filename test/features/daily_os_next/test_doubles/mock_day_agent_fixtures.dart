@@ -64,45 +64,6 @@ double? scriptedProgress(String taskId) {
   return null;
 }
 
-/// Scripted task corpus surfaced by `surfaceTaskCorpus`.
-const scriptedTaskCorpus = <TaskCorpusItem>[
-  TaskCorpusItem(
-    title: 'Deck review — Q2 leadership update',
-    category: mockWorkCategory,
-    state: TaskCorpusState.inProgress,
-  ),
-  TaskCorpusItem(
-    title: 'Finish the Onboarding doc',
-    category: mockWorkCategory,
-    state: TaskCorpusState.inProgress,
-  ),
-  TaskCorpusItem(
-    title: 'Reschedule dentist',
-    category: mockHealthCategory,
-    state: TaskCorpusState.overdue,
-  ),
-  TaskCorpusItem(
-    title: 'Review outstanding invoices',
-    category: mockWorkCategory,
-    state: TaskCorpusState.scheduled,
-  ),
-  TaskCorpusItem(
-    title: 'Read 30 pages',
-    category: mockStudyCategory,
-    state: TaskCorpusState.recurring,
-  ),
-  TaskCorpusItem(
-    title: 'Call mom re: Sunday',
-    category: mockMealsCategory,
-    state: TaskCorpusState.backlog,
-  ),
-  TaskCorpusItem(
-    title: 'Morning run · 5km',
-    category: mockHealthCategory,
-    state: TaskCorpusState.done,
-  ),
-];
-
 /// Roll the placed blocks up into one [AgendaItem] per task. Blocks
 /// without a taskId (buffers, calendar events) are not surfaced on
 /// the Agenda — that screen is intent-first.

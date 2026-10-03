@@ -2069,6 +2069,7 @@ void main() {
           makeTestParsedItem(),
           makeTestDayPlan(),
           makeTestDaySummary(),
+          makeTestTomorrowNote(),
           makeTestDayDirective(),
           makeTestDayStatusEvent(),
           makeTestWeekRollup(),

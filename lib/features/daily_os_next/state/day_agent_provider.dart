@@ -8,7 +8,6 @@ import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart'
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
-import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/logic/real_day_agent.dart';
 import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -20,20 +19,18 @@ import 'package:lotti/services/db_notification.dart';
 /// agent layer, including the capture/reconcile tools
 /// (`submitCapture`, `parseCaptureToItems`, `surfacePendingDecisions`,
 /// `applyTriage`, `breakCaptureLink`), day-plan drafting/refinement/commit
-/// calls, and plan summary reads. Shutdown and task corpus methods still
-/// delegate to a held [MockDayAgent] fallback until their backend tools ship.
+/// calls, plan summary reads, and the Shutdown surface.
 ///
 /// Tests override this provider with their own implementation via
-/// `ProviderScope(overrides: [...])` (typically with a fresh
-/// [MockDayAgent] so they stay deterministic + don't touch the
-/// agent layer).
+/// `ProviderScope(overrides: [...])` — typically the scripted `MockDayAgent`
+/// under `test/`, so they stay deterministic and don't touch the agent layer.
 final dayAgentProvider = Provider<DayAgentInterface>((ref) {
   return RealDayAgent(
     captureService: ref.watch(dayAgentCaptureServiceProvider),
     planService: ref.watch(dayAgentPlanServiceProvider),
     dayAgentService: ref.watch(dayAgentServiceProvider),
     journalDb: ref.watch(journalDbProvider),
-    mockFallback: MockDayAgent(),
+    shutdownService: ref.watch(dayAgentShutdownServiceProvider),
     outbox: ref.watch(dayProcessingOutboxRepositoryProvider),
     nudgeProcessing: () => ref.read(dayProcessingRuntimeProvider).nudge(),
   );

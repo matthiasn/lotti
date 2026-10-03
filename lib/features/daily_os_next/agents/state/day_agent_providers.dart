@@ -7,17 +7,25 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_directive_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_knowledge_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_shutdown_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_week_context_service.dart';
+import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart'
+    hide aiConfigRepositoryProvider;
+import 'package:lotti/utils/consts.dart';
 
 /// The Daily OS day-agent service.
 final dayAgentServiceProvider = Provider<DayAgentService>(
@@ -127,6 +135,32 @@ DayAgentPlanService dayAgentPlanService(Ref ref) {
     journalDb: ref.watch(journalDbProvider),
     domainLogger: ref.watch(domainLoggerProvider),
     onPersistedStateChanged: persistedStateChangedNotifier(notifications),
+  );
+}
+
+/// The Daily OS Shutdown backend: day facts, reflection, carryover decisions
+/// and the tomorrow note.
+final dayAgentShutdownServiceProvider = Provider<DayAgentShutdownService>(
+  dayAgentShutdownService,
+  name: 'dayAgentShutdownServiceProvider',
+);
+DayAgentShutdownService dayAgentShutdownService(Ref ref) {
+  final journalDb = ref.watch(journalDbProvider);
+  return DayAgentShutdownService(
+    journalDb: journalDb,
+    persistenceLogic: getIt<PersistenceLogic>(),
+    dayAgentService: ref.watch(dayAgentServiceProvider),
+    planService: ref.watch(dayAgentPlanServiceProvider),
+    captureService: ref.watch(dayAgentCaptureServiceProvider),
+    agentRepository: ref.watch(agentRepositoryProvider),
+    syncService: ref.watch(agentSyncServiceProvider),
+    templateService: ref.watch(agentTemplateServiceProvider),
+    profileResolver: ProfileResolver(
+      aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
+    ),
+    inferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
+    categoryById: cachedCategoryById,
+    eventsEnabled: () => journalDb.getConfigFlag(enableEventsFlag),
   );
 }
 

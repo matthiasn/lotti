@@ -312,6 +312,30 @@ DaySummaryEntity makeTestDaySummary({
       as DaySummaryEntity;
 }
 
+TomorrowNoteEntity makeTestTomorrowNote({
+  String? id,
+  String agentId = kTestAgentId,
+  String dayId = 'dayplan-2026-05-25',
+  String text = 'Start with the invoices.',
+  String inputFingerprint = 'facts-fingerprint',
+  DateTime? createdAt,
+  DateTime? updatedAt,
+  DateTime? deletedAt,
+}) {
+  return AgentDomainEntity.tomorrowNote(
+        id: id ?? 'day_agent_tomorrow_note:$dayId',
+        agentId: agentId,
+        dayId: dayId,
+        text: text,
+        inputFingerprint: inputFingerprint,
+        createdAt: createdAt ?? kAgentTestDate,
+        updatedAt: updatedAt ?? kAgentTestDate,
+        vectorClock: null,
+        deletedAt: deletedAt,
+      )
+      as TomorrowNoteEntity;
+}
+
 DayDirectiveEntity makeTestDayDirective({
   String? id,
   String agentId = 'daily_os_planner',

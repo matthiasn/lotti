@@ -2,7 +2,6 @@ import 'package:clock/clock.dart';
 import 'package:collection/collection.dart';
 import 'package:lotti/classes/day_agent_identity.dart';
 import 'package:lotti/classes/day_plan.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -98,8 +97,9 @@ class DayAgentWeekContextService {
       final anchor = localDay(planDate);
       final today = localDay(now);
 
-      // The 21 deterministic ids — 13 plans (8 lookback + 5 lookahead) and
-      // 8 lookback summaries — fetched in ONE chunked getEntitiesByIds call.
+      // The 29 deterministic ids — 13 plans (8 lookback + 5 lookahead), 8
+      // lookback summaries and 8 lookback tomorrow notes — fetched in ONE
+      // chunked getEntitiesByIds call.
       // A per-id Future.wait fan-out is exactly the writer-lock pile-up the
       // repository's own doc comment documents as a production incident.
       final lookbackDays = <DateTime>[
@@ -114,6 +114,7 @@ class DayAgentWeekContextService {
         for (final day in lookbackDays) ...[
           dayAgentPlanEntityId(dayPlanId(day)),
           dayAgentSummaryEntityId(dayPlanId(day)),
+          dayAgentTomorrowNoteEntityId(dayPlanId(day)),
         ],
         for (final day in lookaheadDays) dayAgentPlanEntityId(dayPlanId(day)),
       };
@@ -136,6 +137,13 @@ class DayAgentWeekContextService {
               entity.deletedAt == null)
             entity,
       ];
+      final tomorrowNotes = <TomorrowNoteEntity>[
+        for (final entity in entitiesById.values)
+          if (entity is TomorrowNoteEntity &&
+              isDailyOsDayOwner(entity.agentId) &&
+              entity.deletedAt == null)
+            entity,
+      ];
 
       // Claim deadlines are anchored to the wall clock (today .. today+5).
       final claims = await agentRepository.getAttentionClaimsForWindow(
@@ -153,6 +161,7 @@ class DayAgentWeekContextService {
         claims: claims,
         dayPlans: dayPlans,
         daySummaries: daySummaries,
+        tomorrowNotes: tomorrowNotes,
         recordedSpans: await _recordedSpans(anchor: anchor, today: today),
         categoryName: _resolveCategoryName,
       );
@@ -207,28 +216,12 @@ class DayAgentWeekContextService {
     bool canonicalDurations = false,
   }) async {
     final eventsEnabled = await journalDb.getConfigFlag(enableEventsFlag);
-    final entries = await journalDb.sortedCalendarEntries(
+    final inputs = await loadRecordedTimeInputs(
+      journalDb,
       rangeStart: rangeStart,
       rangeEnd: rangeEnd,
     );
-    final links = [
-      ...await journalDb.basicLinksForEntryIds(
-        entries.map((entry) => entry.meta.id).toSet(),
-      ),
-      ...checkInOwnerLinks(entries),
-    ];
-    final linkedFromIds = links.map((link) => link.fromId).toSet();
-    final linkedFrom = linkedFromIds.isEmpty
-        ? const <JournalEntity>[]
-        : await journalDb.getJournalEntitiesForIdsUnordered(linkedFromIds);
-    final resolved = resolveTimeEntries(
-      entries: entries,
-      links: links,
-      linkedFromById: {
-        for (final entity in linkedFrom) entity.meta.id: entity,
-      },
-      eventsEnabled: eventsEnabled,
-    );
+    final resolved = inputs.resolve(eventsEnabled: eventsEnabled);
     return [
       for (final pair in resolved)
         RecordedSpan(

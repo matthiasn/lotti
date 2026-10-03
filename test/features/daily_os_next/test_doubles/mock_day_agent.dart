@@ -1,7 +1,7 @@
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
-import 'package:lotti/features/daily_os_next/logic/mock_day_agent_capture.dart';
-import 'package:lotti/features/daily_os_next/logic/mock_day_agent_planning.dart';
+import 'mock_day_agent_capture.dart';
+import 'mock_day_agent_planning.dart';
 
 /// Scripted [DayAgentInterface] for the Capture + Reconcile preview.
 ///
@@ -176,19 +176,20 @@ class MockDayAgent implements DayAgentInterface {
   Future<void> recordReflection({
     required DateTime forDate,
     required String text,
-    required ReflectionSource source,
-  }) => _planning.recordReflection(
-    forDate: forDate,
-    text: text,
-    source: source,
-  );
+  }) => _planning.recordReflection(forDate: forDate, text: text);
+
+  @override
+  Future<String> ensureReflectionEntry({required DateTime forDate}) =>
+      _planning.ensureReflectionEntry(forDate: forDate);
 
   @override
   Future<void> recordCarryoverDecision({
+    required DateTime forDate,
     required String taskId,
     required CarryoverAction action,
     DateTime? when,
   }) => _planning.recordCarryoverDecision(
+    forDate: forDate,
     taskId: taskId,
     action: action,
     when: when,
@@ -197,15 +198,4 @@ class MockDayAgent implements DayAgentInterface {
   @override
   Future<TomorrowNote> generateTomorrowNote({required DateTime forDate}) =>
       _planning.generateTomorrowNote(forDate: forDate);
-
-  @override
-  Future<List<TaskCorpusItem>> surfaceTaskCorpus({
-    TaskCorpusState stateFilter = TaskCorpusState.all,
-    String? categoryId,
-    String? query,
-  }) => _planning.surfaceTaskCorpus(
-    stateFilter: stateFilter,
-    categoryId: categoryId,
-    query: query,
-  );
 }

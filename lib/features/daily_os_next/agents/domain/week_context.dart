@@ -93,6 +93,7 @@ WeekContext buildWeekContext({
   required List<AttentionRequestEntity> claims,
   required List<DayPlanEntity> dayPlans,
   required List<DaySummaryEntity> daySummaries,
+  required List<TomorrowNoteEntity> tomorrowNotes,
   required List<RecordedSpan> recordedSpans,
   required String? Function(String categoryId) categoryName,
 }) {
@@ -109,6 +110,9 @@ WeekContext buildWeekContext({
   };
   final summariesByDayId = <String, DaySummaryEntity>{
     for (final summary in daySummaries) summary.dayId: summary,
+  };
+  final tomorrowNotesByDayId = <String, TomorrowNoteEntity>{
+    for (final note in tomorrowNotes) note.dayId: note,
   };
   final spansByDay = <String, List<RecordedSpan>>{};
   for (final span in recordedSpans) {
@@ -131,8 +135,12 @@ WeekContext buildWeekContext({
     final dayId = dayPlanId(day);
     final plan = plansByDayId[dayId];
     final summary = summariesByDayId[dayId];
+    final tomorrowNote = tomorrowNotesByDayId[dayId];
     final spans = spansByDay[dayId] ?? const [];
-    if (plan != null || summary != null || spans.isNotEmpty) {
+    if (plan != null ||
+        summary != null ||
+        tomorrowNote != null ||
+        spans.isNotEmpty) {
       hasAnyInformation = true;
     }
     paragraphs.add(
@@ -141,6 +149,7 @@ WeekContext buildWeekContext({
         today: today,
         plan: plan,
         summary: summary,
+        tomorrowNote: tomorrowNote,
         spans: spans,
         resolveCategory: resolveCategory,
       ),
@@ -181,6 +190,7 @@ String _renderDayParagraph({
   required DateTime today,
   required DayPlanEntity? plan,
   required DaySummaryEntity? summary,
+  required TomorrowNoteEntity? tomorrowNote,
   required List<RecordedSpan> spans,
   required String Function(String?) resolveCategory,
 }) {
@@ -267,18 +277,24 @@ String _renderDayParagraph({
       ? header.toString()
       : '$header ${clauses.join(' ')}';
 
-  if (summary == null) return factsLine;
-  var note = collapseToSingleLine(summary.text);
-  if (note.length > daySummaryMaxChars) {
-    // Defensive render-side cap (the write path enforces the budget, but
-    // foreign/legacy data may exceed it). Never split a surrogate pair at the
-    // cut — a lone surrogate becomes U+FFFD on the wire.
-    var cut = daySummaryMaxChars;
-    final last = note.codeUnitAt(cut - 1);
-    if (last >= 0xD800 && last <= 0xDBFF) cut--;
-    note = '${note.substring(0, cut)}…';
-  }
-  return '$factsLine\nAgent note: $note';
+  return [
+    factsLine,
+    if (summary != null) 'Agent note: ${_capNote(summary.text)}',
+    // Written when the user closed the day, from its facts and their
+    // reflection: what that day handed to the next one.
+    if (tomorrowNote != null)
+      'Note for the next day: ${_capNote(tomorrowNote.text)}',
+  ].join('\n');
+}
+
+/// One line of at most [daySummaryMaxChars]. A defensive render-side cap: the
+/// write paths enforce the budget, but foreign or legacy data may exceed it.
+/// Never splits a surrogate pair at the cut — a lone surrogate becomes U+FFFD
+/// on the wire.
+String _capNote(String text) {
+  final note = collapseToSingleLine(text);
+  if (note.length <= daySummaryMaxChars) return note;
+  return '${surrogateSafePrefix(note, daySummaryMaxChars)}…';
 }
 
 /// Per-category clauses for categories with recorded time (planned-only

@@ -232,6 +232,8 @@ plus the plan date:
    minutes per category (integer-tenths arithmetic, **never doubles**), named
    block-level misses, plan status, total.
 2. **Then the agent's own contemporaneous day summary** as an `Agent note:` line.
+3. **Then the note the user's Shutdown wrote for the next day**, if any, as a
+   `Note for the next day:` line ([Shutdown](shutdown.md)).
 
 Facts come exclusively from entities; the note is testimony rendered adjacent for
 self-auditing. **On contradiction the facts line wins.**
@@ -240,8 +242,8 @@ self-auditing. **On contradiction the facts line wins.**
 plus claim deadlines within `[today, today+5)`.
 
 All wording lives in **one** renderer (`agents/domain/week_context.dart`); the
-service assembles inputs — one chunked `getEntitiesByIds` for the 21
-deterministic plan/summary ids, recorded spans via the shared
+service assembles inputs — one chunked `getEntitiesByIds` for the 29
+deterministic plan/summary/tomorrow-note ids, recorded spans via the shared
 `logic/recorded_time.dart` core over an end-of-day-bounded calendar query, claims
 by visibility window — and is **fail-soft**: a load error logs and the wake
 proceeds without the sections.

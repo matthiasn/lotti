@@ -1,6 +1,11 @@
 # Knowledge Bundle Update Log
 
 ## 2026-10-03
+* **Addition**: [Daily OS Shutdown](features/daily_os_next/shutdown.md) —
+  closing a day from measured facts (recorded time, the plan, session
+  ratings), carryover decisions written through triage, the per-day reflection
+  entry, and the fingerprint-cached tomorrow note that the next day's draft
+  reads.
 * **Addition**: [GitHub pull requests](features/github.md) — pull requests
   linked to tasks as journal entries: the snapshot and its server-time order,
   the refresh and its write rules, the concurrent-version merge, the token

@@ -1,6 +1,7 @@
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 
 /// Shared recorded-time resolution for Daily OS consumers.
@@ -16,6 +17,61 @@ import 'package:lotti/features/journal/util/entry_tools.dart';
 /// and is never attributed to the task it may hang off.
 /// This module owns that resolution once; each consumer projects the resolved
 /// pairs into its own shape (UI `TimeBlock`s, prompt span buckets).
+
+/// The journal rows a recorded-time projection reads for one range: the
+/// calendar entries inside it, their basic links (plus the person → check-in
+/// owner links), and the entities those links come from.
+class RecordedTimeInputs {
+  /// Creates the inputs. Load them with [loadRecordedTimeInputs].
+  const RecordedTimeInputs({
+    required this.entries,
+    required this.links,
+    required this.linkedFromById,
+  });
+
+  final List<JournalEntity> entries;
+  final List<EntryLink> links;
+  final Map<String, JournalEntity> linkedFromById;
+
+  /// The entries that count as recorded time, with what they were recorded
+  /// against — see [resolveTimeEntries].
+  List<ResolvedTimeEntry> resolve({required bool eventsEnabled}) =>
+      resolveTimeEntries(
+        entries: entries,
+        links: links,
+        linkedFromById: linkedFromById,
+        eventsEnabled: eventsEnabled,
+      );
+}
+
+/// Loads the [RecordedTimeInputs] for entries inside
+/// [rangeStart]..[rangeEnd] — the one query recipe every recorded-time
+/// consumer shares.
+Future<RecordedTimeInputs> loadRecordedTimeInputs(
+  JournalDb db, {
+  required DateTime rangeStart,
+  required DateTime rangeEnd,
+}) async {
+  final entries = await db.sortedCalendarEntries(
+    rangeStart: rangeStart,
+    rangeEnd: rangeEnd,
+  );
+  final links = [
+    ...await db.basicLinksForEntryIds(
+      entries.map((entry) => entry.meta.id).toSet(),
+    ),
+    ...checkInOwnerLinks(entries),
+  ];
+  final linkedFromIds = links.map((link) => link.fromId).toSet();
+  final linkedFrom = linkedFromIds.isEmpty
+      ? const <JournalEntity>[]
+      : await db.getJournalEntitiesForIdsUnordered(linkedFromIds);
+  return RecordedTimeInputs(
+    entries: entries,
+    links: links,
+    linkedFromById: {for (final entity in linkedFrom) entity.meta.id: entity},
+  );
+}
 
 /// A journal entry that counts as recorded time, paired with the entity it was
 /// recorded against (if any).

@@ -23,7 +23,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
-import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/services/day_activity_repository.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
@@ -60,6 +59,7 @@ import '../../../../helpers/manual_demo_world.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../screenshot_harness.dart';
+import '../../test_doubles/mock_day_agent.dart';
 
 /// Mid-afternoon so the now-line sits inside the day and one recorded
 /// session can be in progress.
@@ -709,37 +709,34 @@ class _ManualDailyOsAgent extends MockDayAgent {
   surfaceShutdownData({required DateTime forDate}) async => (
     completed: [
       CompletedItem(
+        taskId: 'manual-habitat-inspection',
         title: _t(
           'Inspect orbital penguin habitat',
           'Pinguin-Habitat im Orbit inspizieren',
         ),
         category: _deepWork,
         durationMinutes: 93,
-        note: _t(
-          'Seals green; all 37 emperor penguins accounted for.',
-          'Dichtungen grün; alle 37 Kaiserpinguine sind vollzählig.',
-        ),
+        sessionCount: 2,
+        doneToday: true,
       ),
       CompletedItem(
+        taskId: 'manual-waddle-review',
         title: _t(
           'Project Waddle launch review',
           'Startprüfung für Project Waddle',
         ),
         category: _client,
         durationMinutes: 47,
-        note: _t(
-          'Mission Control approved the revised habitat checklist.',
-          'Die Missionskontrolle genehmigte die überarbeitete Habitat-Checkliste.',
-        ),
+        sessionCount: 1,
+        doneToday: true,
       ),
       CompletedItem(
+        taskId: 'manual-sardine-futures',
         title: _t('Negotiate sardine futures', 'Sardinen-Futures verhandeln'),
         category: _client,
         durationMinutes: 110,
-        note: _t(
-          'Q3 supply secured below the emergency fish ceiling.',
-          'Q3-Vorrat unter der Fisch-Notfallgrenze gesichert.',
-        ),
+        sessionCount: 3,
+        doneToday: false,
       ),
     ],
     carryover: [
@@ -747,11 +744,8 @@ class _ManualDailyOsAgent extends MockDayAgent {
         taskId: manualFishFeederTaskId,
         title: _t('Zero-gravity fish feeder', 'Schwerelos-Futterautomat'),
         category: _deepWork,
-        reason: _t(
-          'Prototype calibrated; live habitat demo still pending.',
-          'Prototyp kalibriert; Live-Demo des Habitats steht noch aus.',
-        ),
-        suggestedTarget: _t('→ tomorrow morning', '→ morgen Vormittag'),
+        loggedMinutes: 40,
+        suggestedDate: DateTime(forDate.year, forDate.month, forDate.day + 1),
       ),
       CarryoverItem(
         taskId: manualPenguinPassengerTaskId,
@@ -760,11 +754,8 @@ class _ManualDailyOsAgent extends MockDayAgent {
           'Rechtsfrage: Ist ein Pinguin ein Passagier?',
         ),
         category: _admin,
-        reason: _t(
-          'Mission Control review ran long.',
-          'Die Prüfung der Missionskontrolle dauerte länger.',
-        ),
-        suggestedTarget: _t('→ tomorrow afternoon', '→ morgen Nachmittag'),
+        loggedMinutes: 0,
+        suggestedDate: DateTime(forDate.year, forDate.month, forDate.day + 1),
       ),
     ],
     metrics: const ShutdownMetrics(

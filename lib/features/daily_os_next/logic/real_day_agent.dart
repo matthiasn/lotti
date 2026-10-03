@@ -13,6 +13,7 @@ import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_m
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_shutdown_service.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
@@ -33,22 +34,16 @@ part 'real_day_agent_projection.dart';
 /// `draftDayPlan`, `proposePlanDiff`, `acceptDiff`, `revertDiff`, `commitDay`,
 /// `currentPlanForDate`, `deletePlanForDate`.
 ///
-/// **Still mocked** — these methods still delegate to [mockFallback]
-/// because their agent-side tools have not shipped yet. Once each
-/// phase lands they graduate the same way (real calls + thrown
-/// errors): `surfaceShutdownData`, `recordReflection`,
-/// `recordCarryoverDecision`, `generateTomorrowNote` (Phase 6),
-/// `surfaceTaskCorpus` (Phase 7).
-///
-/// As those phases ship in the agent layer, methods graduate from
-/// `mockFallback` to direct service calls.
+/// **Shutdown** — `surfaceShutdownData`, `recordReflection`,
+/// `ensureReflectionEntry`, `recordCarryoverDecision` and
+/// `generateTomorrowNote` call [DayAgentShutdownService].
 class RealDayAgent implements DayAgentInterface {
   RealDayAgent({
     required this.captureService,
     required this.planService,
     required this.dayAgentService,
     required this.journalDb,
-    required this.mockFallback,
+    required this.shutdownService,
     required this.outbox,
     required this.nudgeProcessing,
   });
@@ -57,7 +52,7 @@ class RealDayAgent implements DayAgentInterface {
   final DayAgentPlanService planService;
   final DayAgentService dayAgentService;
   final JournalDb journalDb;
-  final DayAgentInterface mockFallback;
+  final DayAgentShutdownService shutdownService;
 
   /// Durable processing outbox (ADR 0032 phase 1): draft/refine requests are
   /// enqueued as jobs here instead of firing a wake directly, so the intent
@@ -446,25 +441,26 @@ class RealDayAgent implements DayAgentInterface {
     })
   >
   surfaceShutdownData({required DateTime forDate}) =>
-      mockFallback.surfaceShutdownData(forDate: forDate);
+      shutdownService.shutdownDay(forDate);
 
   @override
   Future<void> recordReflection({
     required DateTime forDate,
     required String text,
-    required ReflectionSource source,
-  }) => mockFallback.recordReflection(
-    forDate: forDate,
-    text: text,
-    source: source,
-  );
+  }) => shutdownService.recordReflection(forDate: forDate, text: text);
+
+  @override
+  Future<String> ensureReflectionEntry({required DateTime forDate}) =>
+      shutdownService.ensureReflectionEntry(forDate);
 
   @override
   Future<void> recordCarryoverDecision({
+    required DateTime forDate,
     required String taskId,
     required CarryoverAction action,
     DateTime? when,
-  }) => mockFallback.recordCarryoverDecision(
+  }) => shutdownService.recordCarryoverDecision(
+    forDate: forDate,
     taskId: taskId,
     action: action,
     when: when,
@@ -472,18 +468,7 @@ class RealDayAgent implements DayAgentInterface {
 
   @override
   Future<TomorrowNote> generateTomorrowNote({required DateTime forDate}) =>
-      mockFallback.generateTomorrowNote(forDate: forDate);
-
-  @override
-  Future<List<TaskCorpusItem>> surfaceTaskCorpus({
-    TaskCorpusState stateFilter = TaskCorpusState.all,
-    String? categoryId,
-    String? query,
-  }) => mockFallback.surfaceTaskCorpus(
-    stateFilter: stateFilter,
-    categoryId: categoryId,
-    query: query,
-  );
+      shutdownService.tomorrowNote(forDate);
 
   // ───────────────────────────── Helpers ──
 

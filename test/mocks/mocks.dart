@@ -109,11 +109,11 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_directive_
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_knowledge_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_shutdown_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_week_context_service.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
 import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
-import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/services/day_audio_transcript_writer.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_processor.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
@@ -261,6 +261,8 @@ import 'package:super_clipboard/super_clipboard.dart'
         SystemClipboard;
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
+
+import '../features/daily_os_next/test_doubles/mock_day_agent.dart';
 
 /// Generic mock for drift Selectable queries used in widget tests.
 class MockSelectable<T> extends Mock implements drift.Selectable<T> {
@@ -1693,6 +1695,9 @@ class MockDayAgentCaptureService extends Mock
     implements DayAgentCaptureService {}
 
 class MockDayAgentPlanService extends Mock implements DayAgentPlanService {}
+
+class MockDayAgentShutdownService extends Mock
+    implements DayAgentShutdownService {}
 
 class MockDayAgentDirectiveService extends Mock
     implements DayAgentDirectiveService {}

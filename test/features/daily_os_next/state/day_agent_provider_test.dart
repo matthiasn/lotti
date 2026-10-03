@@ -13,7 +13,6 @@ import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.da
     hide dayAgentProvider;
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
-import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/logic/real_day_agent.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
@@ -22,6 +21,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../agents/test_data/entity_factories.dart';
+import '../test_doubles/mock_day_agent.dart';
 
 void main() {
   // Default to an empty agent-update stream so providers that watch
@@ -37,6 +37,7 @@ void main() {
       MockDayAgentCaptureService captureService,
       MockDayAgentPlanService planService,
       MockDayAgentService dayAgentService,
+      MockDayAgentShutdownService shutdownService,
       MockJournalDb journalDb,
       MockDayProcessingOutboxRepository outbox,
       MockDayProcessingRuntime runtime,
@@ -45,6 +46,7 @@ void main() {
       final captureService = MockDayAgentCaptureService();
       final planService = MockDayAgentPlanService();
       final dayAgentService = MockDayAgentService();
+      final shutdownService = MockDayAgentShutdownService();
       final journalDb = MockJournalDb();
       final outbox = MockDayProcessingOutboxRepository();
       final runtime = MockDayProcessingRuntime();
@@ -53,6 +55,7 @@ void main() {
           dayAgentCaptureServiceProvider.overrideWithValue(captureService),
           dayAgentPlanServiceProvider.overrideWithValue(planService),
           dayAgentServiceProvider.overrideWithValue(dayAgentService),
+          dayAgentShutdownServiceProvider.overrideWithValue(shutdownService),
           journalDbProvider.overrideWithValue(journalDb),
           dayProcessingOutboxRepositoryProvider.overrideWithValue(outbox),
           dayProcessingRuntimeProvider.overrideWithValue(runtime),
@@ -66,6 +69,7 @@ void main() {
         captureService: captureService,
         planService: planService,
         dayAgentService: dayAgentService,
+        shutdownService: shutdownService,
         journalDb: journalDb,
         outbox: outbox,
         runtime: runtime,
@@ -81,7 +85,7 @@ void main() {
         expect(fixture.agent.planService, same(fixture.planService));
         expect(fixture.agent.dayAgentService, same(fixture.dayAgentService));
         expect(fixture.agent.journalDb, same(fixture.journalDb));
-        expect(fixture.agent.mockFallback, isA<MockDayAgent>());
+        expect(fixture.agent.shutdownService, same(fixture.shutdownService));
         expect(fixture.agent.outbox, same(fixture.outbox));
       },
     );

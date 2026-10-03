@@ -8,6 +8,11 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/daily_os_next/logic/recorded_time.dart';
+import 'package:mocktail/mocktail.dart' hide any;
+import 'package:mocktail/mocktail.dart' as mocktail show any;
+
+import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart';
 
 final _day = DateTime(2026, 6, 8);
 
@@ -179,6 +184,64 @@ extension _AnyRecordedEntry on Any {
 }
 
 void main() {
+  setUpAll(registerAllFallbackValues);
+
+  group('loadRecordedTimeInputs', () {
+    test(
+      'reads the range, its links and the entities they come from',
+      () async {
+        final db = MockJournalDb();
+        final entry = _entry(id: 'e1', startHour: 9, categoryId: 'own');
+        final task = _task(id: 't1', categoryId: 'work');
+        final rangeEnd = _day.add(const Duration(days: 1));
+        when(
+          () => db.sortedCalendarEntries(rangeStart: _day, rangeEnd: rangeEnd),
+        ).thenAnswer((_) async => [entry]);
+        when(
+          () => db.basicLinksForEntryIds({'e1'}),
+        ).thenAnswer((_) async => [_link(fromId: 't1', toId: 'e1')]);
+        when(
+          () => db.getJournalEntitiesForIdsUnordered({'t1'}),
+        ).thenAnswer((_) async => [task]);
+
+        final inputs = await loadRecordedTimeInputs(
+          db,
+          rangeStart: _day,
+          rangeEnd: rangeEnd,
+        );
+        final resolved = inputs.resolve(eventsEnabled: false).single;
+
+        expect(inputs.linkedFromById, {'t1': task});
+        expect(resolved.taskId, 't1');
+        // The linked task's category wins over the entry's own.
+        expect(resolved.categoryId, 'work');
+      },
+    );
+
+    test('a range without links never queries for linked entities', () async {
+      final db = MockJournalDb();
+      final rangeEnd = _day.add(const Duration(days: 1));
+      when(
+        () => db.sortedCalendarEntries(rangeStart: _day, rangeEnd: rangeEnd),
+      ).thenAnswer((_) async => [_entry(id: 'e1', startHour: 9)]);
+      when(
+        () => db.basicLinksForEntryIds(mocktail.any()),
+      ).thenAnswer((_) async => []);
+
+      final inputs = await loadRecordedTimeInputs(
+        db,
+        rangeStart: _day,
+        rangeEnd: rangeEnd,
+      );
+
+      expect(inputs.linkedFromById, isEmpty);
+      expect(inputs.resolve(eventsEnabled: false).single.taskId, isNull);
+      verifyNever(
+        () => db.getJournalEntitiesForIdsUnordered(mocktail.any()),
+      );
+    });
+  });
+
   group('checkInOwnerLinks', () {
     final at = DateTime(2026, 9, 6, 12);
     final note = JournalEntity.journalEntry(

@@ -17,14 +17,19 @@ import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/providers/service_providers.dart'
+    hide aiConfigRepositoryProvider;
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/entity_factories.dart';
@@ -420,6 +425,93 @@ void main() {
         ).called(1);
       },
     );
+  });
+
+  group('dayAgentShutdownServiceProvider', () {
+    test('wires the day, plan, triage and journal collaborators', () async {
+      final dayAgentService = MockDayAgentService();
+      final planService = MockDayAgentPlanService();
+      final captureService = MockDayAgentCaptureService();
+      final journalDb = MockJournalDb();
+      await setUpTestGetIt(
+        additionalSetup: () => getIt.registerSingleton<PersistenceLogic>(
+          MockPersistenceLogic(),
+        ),
+      );
+      addTearDown(tearDownTestGetIt);
+      final planner = makeTestIdentity(agentId: 'planner');
+      when(
+        dayAgentService.getOrCreatePlannerAgent,
+      ).thenAnswer((_) async => planner);
+      when(
+        () => dayAgentService.getDayAgentForDate(any()),
+      ).thenAnswer((_) async => null);
+      when(
+        () => captureService.applyTriage(
+          agentId: any(named: 'agentId'),
+          taskId: any(named: 'taskId'),
+          action: any(named: 'action'),
+          deferTo: any(named: 'deferTo'),
+        ),
+      ).thenAnswer((_) async => throw StateError('unused result'));
+      when(
+        () => journalDb.getConfigFlag(enableEventsFlag),
+      ).thenAnswer((_) async => true);
+      when(
+        () => journalDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => []);
+      when(() => journalDb.basicLinksForEntryIds(any())).thenAnswer(
+        (_) async => [],
+      );
+      when(() => journalDb.linksForEntryIds(any())).thenAnswer((_) async => []);
+      when(() => journalDb.getTasksDueOn(any())).thenAnswer((_) async => []);
+      when(
+        () => journalDb.getTasksClosedSince(any()),
+      ).thenAnswer((_) async => []);
+      when(
+        () => journalDb.getJournalEntitiesForIdsUnordered(any()),
+      ).thenAnswer((_) async => []);
+      final container = buildContainer([
+        dayAgentServiceProvider.overrideWithValue(dayAgentService),
+        dayAgentPlanServiceProvider.overrideWithValue(planService),
+        dayAgentCaptureServiceProvider.overrideWithValue(captureService),
+        agentRepositoryProvider.overrideWithValue(MockAgentRepository()),
+        agentSyncServiceProvider.overrideWithValue(MockAgentSyncService()),
+        agentTemplateServiceProvider.overrideWithValue(
+          MockAgentTemplateService(),
+        ),
+        aiConfigRepositoryProvider.overrideWithValue(MockAiConfigRepository()),
+        cloudInferenceRepositoryProvider.overrideWithValue(
+          MockCloudInferenceRepository(),
+        ),
+        journalDbProvider.overrideWithValue(journalDb),
+      ]);
+
+      final service = container.read(dayAgentShutdownServiceProvider);
+      await expectLater(
+        service.recordCarryoverDecision(
+          forDate: DateTime(2026, 10, 3),
+          taskId: 'task-1',
+          action: CarryoverAction.drop,
+        ),
+        throwsStateError,
+      );
+      final day = await service.shutdownDay(DateTime(2026, 10, 3));
+
+      verify(
+        () => captureService.applyTriage(
+          agentId: 'planner',
+          taskId: 'task-1',
+          action: 'drop',
+        ),
+      ).called(1);
+      // The events flag is read from the journal the provider was given.
+      verify(() => journalDb.getConfigFlag(enableEventsFlag)).called(1);
+      expect(day.completed, isEmpty);
+    });
   });
 
   group('dayAgentProvider', () {

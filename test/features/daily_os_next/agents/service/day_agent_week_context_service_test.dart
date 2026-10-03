@@ -97,7 +97,7 @@ void main() {
       withClock(Clock.fixed(now ?? _now), body);
 
   group('buildForDay', () {
-    test('fetches all 21 deterministic ids in ONE chunked call', () async {
+    test('fetches all 29 deterministic ids in ONE chunked call', () async {
       await withNow(
         () => service.buildForDay(
           planDate: DateTime(2026, 6, 10),
@@ -109,7 +109,7 @@ void main() {
       ).captured;
       expect(captured, hasLength(1), reason: 'exactly one batched call');
       final ids = (captured.single as Iterable<String>).toSet();
-      expect(ids, hasLength(21));
+      expect(ids, hasLength(29));
       // 13 plans: lookback Jun 3..10 + lookahead Jun 11..15.
       for (var d = 3; d <= 15; d++) {
         expect(
@@ -117,12 +117,11 @@ void main() {
           contains('day_agent_plan:dayplan-2026-06-${d < 10 ? '0$d' : d}'),
         );
       }
-      // 8 summaries: lookback only.
+      // 8 summaries and 8 tomorrow notes: lookback only.
       for (var d = 3; d <= 10; d++) {
-        expect(
-          ids,
-          contains('day_agent_summary:dayplan-2026-06-${d < 10 ? '0$d' : d}'),
-        );
+        final day = 'dayplan-2026-06-${d < 10 ? '0$d' : d}';
+        expect(ids, contains('day_agent_summary:$day'));
+        expect(ids, contains('day_agent_tomorrow_note:$day'));
       }
     });
 
@@ -221,6 +220,43 @@ void main() {
         ctx.recentDays,
         contains('Agent note: a contemporaneous note'),
       );
+    });
+
+    test("a day's closing note reaches the next day's draft", () async {
+      final note = makeTestTomorrowNote(
+        dayId: 'dayplan-2026-06-09',
+        agentId: _agentId,
+        text: 'Invoices first.',
+      );
+      final deletedNote = makeTestTomorrowNote(
+        dayId: 'dayplan-2026-06-08',
+        agentId: _agentId,
+        text: 'Withdrawn.',
+        deletedAt: DateTime(2026, 6, 9),
+      );
+      final foreignNote = makeTestTomorrowNote(
+        dayId: 'dayplan-2026-06-07',
+        agentId: 'someone-else',
+        text: 'Not ours.',
+      );
+      when(() => repository.getEntitiesByIds(any())).thenAnswer(
+        (_) async => {
+          note.id: note,
+          deletedNote.id: deletedNote,
+          foreignNote.id: foreignNote,
+        },
+      );
+
+      final ctx = await withNow(
+        () => service.buildForDay(planDate: DateTime(2026, 6, 10)),
+      );
+
+      expect(
+        ctx!.recentDays,
+        contains('Note for the next day: Invoices first.'),
+      );
+      expect(ctx.recentDays, isNot(contains('Withdrawn.')));
+      expect(ctx.recentDays, isNot(contains('Not ours.')));
     });
 
     test("filters out other agents' and deleted entities", () async {

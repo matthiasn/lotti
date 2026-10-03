@@ -2,11 +2,13 @@
 // and the for-tomorrow note. Split out of the shutdown_page library; the
 // page imports these and reuses the shared styling helpers.
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_shutdown_service.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/shutdown_controller.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -22,8 +24,9 @@ class MetricsCard extends StatelessWidget {
     final h = metrics.focusMinutes ~/ 60;
     final m = metrics.focusMinutes % 60;
     final focus = m == 0 ? '${h}h' : '${h}h ${m}m';
+    final switchesAvg = metrics.contextSwitchesWeekAvg;
+    final energy = metrics.energyScore;
     final energyDelta = metrics.energyDeltaVsWeek;
-    final deltaSign = energyDelta >= 0 ? '⬆' : '⬇';
     final textScaler = MediaQuery.textScalerOf(context);
     final metricTileHeight =
         textScaler.scale(tokens.typography.lineHeight.overline) * 2 +
@@ -58,16 +61,25 @@ class MetricsCard extends StatelessWidget {
           _MetricTile(
             label: messages.dailyOsNextShutdownMetricSwitches,
             value: '${metrics.contextSwitches}',
-            sub: messages.dailyOsNextShutdownMetricSwitchesAvg(
-              metrics.contextSwitchesWeekAvg.toStringAsFixed(1),
-            ),
+            sub: switchesAvg == null
+                ? null
+                : messages.dailyOsNextShutdownMetricSwitchesAvg(
+                    switchesAvg.toStringAsFixed(1),
+                  ),
           ),
           _MetricTile(
             label: messages.dailyOsNextShutdownMetricEnergy,
-            value: metrics.energyScore.toStringAsFixed(1),
-            sub: messages.dailyOsNextShutdownMetricEnergyDelta(
-              '$deltaSign ${energyDelta.abs().toStringAsFixed(1)}',
-            ),
+            // No session of the day was rated: there is no measured energy to
+            // show, and inventing one would be worse than a dash.
+            value: energy?.toStringAsFixed(1) ?? '—',
+            sub: energy == null
+                ? messages.dailyOsNextShutdownMetricEnergyNoRatings
+                : energyDelta == null
+                ? null
+                : messages.dailyOsNextShutdownMetricEnergyDelta(
+                    '${energyDelta >= 0 ? '⬆' : '⬇'} '
+                    '${energyDelta.abs().toStringAsFixed(1)}',
+                  ),
           ),
         ],
       ),
@@ -115,10 +127,21 @@ class _MetricTile extends StatelessWidget {
   }
 }
 
+/// Opens the recorder for a spoken reflection, linked under the day's
+/// reflection entry; returns the created audio entry's id, or null when the
+/// user cancelled.
+typedef ShutdownReflectionRecorder =
+    Future<String?> Function(BuildContext context, String reflectionEntryId);
+
 class ReflectionCard extends ConsumerStatefulWidget {
-  const ReflectionCard({required this.forDate, super.key});
+  const ReflectionCard({
+    required this.forDate,
+    this.recordVoice = openShutdownReflectionRecorder,
+    super.key,
+  });
 
   final DateTime forDate;
+  final ShutdownReflectionRecorder recordVoice;
 
   @override
   ConsumerState<ReflectionCard> createState() => _ReflectionCardState();
@@ -134,12 +157,35 @@ class _ReflectionCardState extends ConsumerState<ReflectionCard> {
     super.dispose();
   }
 
-  Future<void> _submit(ReflectionSource source) async {
-    if (_controller.text.trim().isEmpty) return;
-    await ref
-        .read(shutdownControllerProvider(widget.forDate).notifier)
-        .submitReflection(text: _controller.text.trim(), source: source);
+  ShutdownController get _notifier =>
+      ref.read(shutdownControllerProvider(widget.forDate).notifier);
+
+  Future<void> _save() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+    try {
+      await _notifier.submitReflection(text);
+    } on Object {
+      if (mounted) showShutdownActionFailed(context);
+      return;
+    }
     if (!mounted) return;
+    setState(() => _submitted = true);
+  }
+
+  /// Records a spoken reflection under the day's reflection entry, where its
+  /// transcript joins any typed text.
+  Future<void> _speak() async {
+    final String entryId;
+    try {
+      entryId = await _notifier.ensureReflectionEntry();
+    } on Object {
+      if (mounted) showShutdownActionFailed(context);
+      return;
+    }
+    if (!mounted) return;
+    final recordedId = await widget.recordVoice(context, entryId);
+    if (!mounted || recordedId == null) return;
     setState(() => _submitted = true);
   }
 
@@ -217,15 +263,15 @@ class _ReflectionCardState extends ConsumerState<ReflectionCard> {
                     ),
                     textStyle: tokens.typography.styles.body.bodySmall,
                   ),
-                  onPressed: () => _submit(ReflectionSource.voice),
+                  onPressed: _speak,
                 ),
                 SizedBox(width: tokens.spacing.step3),
                 TextButton(
-                  onPressed: () => _submit(ReflectionSource.typed),
+                  onPressed: _save,
                   style: TextButton.styleFrom(
                     foregroundColor: tokens.colors.text.mediumEmphasis,
                   ),
-                  child: Text(messages.dailyOsNextShutdownReflectionSubmit),
+                  child: Text(messages.dailyOsNextShutdownReflectionSave),
                 ),
               ],
             ),
@@ -236,14 +282,21 @@ class _ReflectionCardState extends ConsumerState<ReflectionCard> {
   }
 }
 
-class TomorrowNoteCard extends StatelessWidget {
-  const TomorrowNoteCard({required this.note, super.key});
+/// The "For tomorrow" note. Loads on its own, so the rest of Shutdown
+/// renders while it is being written or when it cannot be.
+class TomorrowNoteCard extends ConsumerWidget {
+  const TomorrowNoteCard({required this.forDate, super.key});
 
-  final TomorrowNote note;
+  final DateTime forDate;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
+    final messages = context.messages;
+    final note = ref.watch(shutdownTomorrowNoteProvider(forDate));
+    final bodyStyle = tokens.typography.styles.body.bodyMedium.copyWith(
+      color: tokens.colors.text.mediumEmphasis,
+    );
     return Container(
       padding: EdgeInsets.all(tokens.spacing.step5),
       decoration: BoxDecoration(
@@ -255,24 +308,92 @@ class TomorrowNoteCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            context.messages.dailyOsNextShutdownTomorrowOverline,
+            messages.dailyOsNextShutdownTomorrowOverline,
             style: calmEyebrowStyle(tokens),
           ),
           SizedBox(height: tokens.spacing.step3),
-          Text(
-            note.body,
-            style: tokens.typography.styles.body.bodyMedium.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
+          switch (note) {
+            AsyncValue(:final value?) => Text(value.body, style: bodyStyle),
+            AsyncValue(
+              error: TomorrowNoteUnavailableException(
+                failure: TomorrowNoteFailure.noInferenceProvider,
+              ),
+            ) =>
+              Text(
+                messages.dailyOsNextShutdownTomorrowNoProvider,
+                style: bodyStyle,
+              ),
+            AsyncValue(hasError: true) => Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    messages.dailyOsNextShutdownTomorrowError,
+                    style: bodyStyle,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () =>
+                      ref.invalidate(shutdownTomorrowNoteProvider(forDate)),
+                  child: Text(messages.dailyOsNextDraftingRetry),
+                ),
+              ],
             ),
-          ),
+            _ => const LinearProgressIndicator(),
+          },
         ],
       ),
     );
   }
 }
 
-class ShutdownFooter extends StatelessWidget {
-  const ShutdownFooter({super.key});
+/// Tells the user an action did not save, leaving the screen as it was.
+void showShutdownActionFailed(BuildContext context) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(context.messages.dailyOsNextGenericError)),
+  );
+}
+
+/// The real recorder: the standard audio recording sheet, linked under the
+/// reflection entry. Pure delegation, excluded like the goal check-in's.
+// coverage:ignore-start
+Future<String?> openShutdownReflectionRecorder(
+  BuildContext context,
+  String reflectionEntryId,
+) => AudioRecordingModal.show(
+  context,
+  linkedId: reflectionEntryId,
+  useRootNavigator: false,
+);
+// coverage:ignore-end
+
+class ShutdownFooter extends ConsumerStatefulWidget {
+  const ShutdownFooter({required this.forDate, super.key});
+
+  final DateTime forDate;
+
+  @override
+  ConsumerState<ShutdownFooter> createState() => _ShutdownFooterState();
+}
+
+class _ShutdownFooterState extends ConsumerState<ShutdownFooter> {
+  bool _closing = false;
+
+  /// Closing the day writes tomorrow's note from the final facts — after the
+  /// carryover decisions and the reflection — so tomorrow's draft reads the
+  /// day as it ended. A note that cannot be written does not keep the day
+  /// open: the card already says why.
+  Future<void> _closeDay() async {
+    setState(() => _closing = true);
+    final provider = shutdownTomorrowNoteProvider(widget.forDate);
+    ref.invalidate(provider);
+    try {
+      await ref.read(provider.future);
+    } on Object {
+      // Shown on the note card; closing goes ahead.
+    }
+    if (!mounted) return;
+    await Navigator.of(context).maybePop();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -304,7 +425,15 @@ class ShutdownFooter extends StatelessWidget {
         ),
       ],
       primary: FilledButton.icon(
-        icon: const Icon(LottiIcons.confirm, size: 14),
+        icon: _closing
+            ? SizedBox.square(
+                dimension: tokens.spacing.step4,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: tokens.colors.text.onInteractiveAlert,
+                ),
+              )
+            : const Icon(LottiIcons.confirm, size: 14),
         label: Text(messages.dailyOsNextShutdownCloseDay),
         style: FilledButton.styleFrom(
           backgroundColor: teal,
@@ -317,7 +446,7 @@ class ShutdownFooter extends StatelessWidget {
             borderRadius: BorderRadius.circular(tokens.radii.m),
           ),
         ),
-        onPressed: () => Navigator.of(context).maybePop(),
+        onPressed: _closing ? null : _closeDay,
       ),
     );
   }

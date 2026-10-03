@@ -1,6 +1,7 @@
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
-import 'package:lotti/features/daily_os_next/logic/mock_day_agent_fixtures.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
+
+import 'mock_day_agent_fixtures.dart';
 
 /// Scripted planning/refine/shutdown half of `MockDayAgent`.
 ///
@@ -387,31 +388,35 @@ class MockDayAgentPlanning {
     return (
       completed: const [
         CompletedItem(
+          taskId: 't_deck_review',
           title: 'Deck review — Q2 leadership update',
           category: mockWorkCategory,
           durationMinutes: 95,
-          note: 'Two focus sessions, draft sent to Sarah.',
+          sessionCount: 2,
+          doneToday: true,
         ),
         CompletedItem(
           title: 'Morning run · 5km',
           category: mockHealthCategory,
           durationMinutes: 28,
+          sessionCount: 1,
+          doneToday: false,
         ),
       ],
-      carryover: const [
+      carryover: [
         CarryoverItem(
           taskId: 't_onboarding_doc',
           title: 'Finish the Onboarding doc',
           category: mockWorkCategory,
-          reason: 'Ran out of time — started, 40m in.',
-          suggestedTarget: '→ tomorrow morning',
+          loggedMinutes: 40,
+          suggestedDate: DateTime(forDate.year, forDate.month, forDate.day + 1),
         ),
         CarryoverItem(
           taskId: 't_invoices',
           title: 'Review outstanding invoices',
           category: mockWorkCategory,
-          reason: 'Skipped — afternoon ran long.',
-          suggestedTarget: '→ tomorrow afternoon',
+          loggedMinutes: 0,
+          suggestedDate: DateTime(forDate.year, forDate.month, forDate.day + 1),
         ),
       ],
       metrics: const ShutdownMetrics(
@@ -429,13 +434,19 @@ class MockDayAgentPlanning {
   Future<void> recordReflection({
     required DateTime forDate,
     required String text,
-    required ReflectionSource source,
   }) async {
     await Future<void>.delayed(triageLatency);
   }
 
+  /// The scripted reflection entry id for [forDate].
+  Future<String> ensureReflectionEntry({required DateTime forDate}) async {
+    await Future<void>.delayed(triageLatency);
+    return 'reflection-${forDate.year}-${forDate.month}-${forDate.day}';
+  }
+
   /// Tool: `record_carryover_decision`.
   Future<void> recordCarryoverDecision({
+    required DateTime forDate,
     required String taskId,
     required CarryoverAction action,
     DateTime? when,
@@ -454,35 +465,5 @@ class MockDayAgentPlanning {
           'the draft with it placed in your morning, alongside the '
           'carryover, and ask if you want to keep that.',
     );
-  }
-
-  /// Tool: `surface_task_corpus`.
-  Future<List<TaskCorpusItem>> surfaceTaskCorpus({
-    TaskCorpusState stateFilter = TaskCorpusState.all,
-    String? categoryId,
-    String? query,
-  }) async {
-    await Future<void>.delayed(pendingLatency);
-    const all = scriptedTaskCorpus;
-    return [
-      for (final item in all)
-        if (matchesFilter(item, stateFilter, categoryId, query)) item,
-    ];
-  }
-
-  /// Pure corpus-filter predicate used by [surfaceTaskCorpus].
-  bool matchesFilter(
-    TaskCorpusItem item,
-    TaskCorpusState state,
-    String? categoryId,
-    String? query,
-  ) {
-    if (state != TaskCorpusState.all && item.state != state) return false;
-    if (categoryId != null && item.category.id != categoryId) return false;
-    if (query != null && query.trim().isNotEmpty) {
-      final q = query.trim().toLowerCase();
-      if (!item.title.toLowerCase().contains(q)) return false;
-    }
-    return true;
   }
 }

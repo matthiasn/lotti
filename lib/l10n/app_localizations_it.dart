@@ -5042,19 +5042,48 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dailyOsNextShutdownCarryoverDropped => 'Gocciato';
 
   @override
+  String get dailyOsNextShutdownCarryoverEmpty => 'Niente da rimandare.';
+
+  @override
+  String get dailyOsNextShutdownCarryoverNotStarted => 'Non iniziato';
+
+  @override
   String get dailyOsNextShutdownCarryoverOverline => 'CARRIE FORWARD';
 
   @override
   String get dailyOsNextShutdownCarryoverPickDate => 'Scegli un appuntamento';
 
   @override
-  String get dailyOsNextShutdownCarryoverScheduled => 'Programmato';
+  String dailyOsNextShutdownCarryoverStarted(int minutes) {
+    return 'Iniziato — $minutes min registrati';
+  }
+
+  @override
+  String get dailyOsNextShutdownCarryoverTomorrow => 'Domani';
 
   @override
   String get dailyOsNextShutdownCloseDay => 'Chiudere il giorno';
 
   @override
+  String get dailyOsNextShutdownCompletedDoneToday => 'Completato oggi';
+
+  @override
+  String get dailyOsNextShutdownCompletedEmpty =>
+      'Ancora niente di registrato per questo giorno.';
+
+  @override
   String get dailyOsNextShutdownCompletedOverline => 'Quello che hai fatto';
+
+  @override
+  String dailyOsNextShutdownCompletedSessions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sessioni',
+      one: '1 sessione',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get dailyOsNextShutdownMetricEnergy => 'ENERGIA';
@@ -5063,6 +5092,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String dailyOsNextShutdownMetricEnergyDelta(String delta) {
     return '$delta vs. settimana';
   }
+
+  @override
+  String get dailyOsNextShutdownMetricEnergyNoRatings =>
+      'Valuta le sessioni per vederla';
 
   @override
   String get dailyOsNextShutdownMetricFlow => 'SESSIONI FLOW';
@@ -5091,20 +5124,28 @@ class AppLocalizationsIt extends AppLocalizations {
       'Come è atterrato oggi? (Questo nutre il progetto di domani.)';
 
   @override
+  String get dailyOsNextShutdownReflectionSave => 'Salva';
+
+  @override
   String get dailyOsNextShutdownReflectionSpeak => 'Parla.';
 
   @override
-  String get dailyOsNextShutdownReflectionSubmit => 'Salta!';
-
-  @override
   String get dailyOsNextShutdownReflectionThanks =>
-      'Ce l\'ho, domani ci si nutre.';
+      'Salvato — finisce nella nota per domani.';
 
   @override
   String get dailyOsNextShutdownSaveAndClose => 'Salva e chiudi';
 
   @override
   String get dailyOsNextShutdownTitle => 'Chiudere il giorno';
+
+  @override
+  String get dailyOsNextShutdownTomorrowError =>
+      'Non è stato possibile scrivere la nota per domani.';
+
+  @override
+  String get dailyOsNextShutdownTomorrowNoProvider =>
+      'Configura un provider di IA per ricevere una nota per domani.';
 
   @override
   String get dailyOsNextShutdownTomorrowOverline =>
