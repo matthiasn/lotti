@@ -65,7 +65,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('2.3.4 (567)'), findsOneWidget);
-        // In a bounded host (the Settings V2 detail pane) the body wraps
+        // In a bounded host (the desktop settings detail pane) the body wraps
         // itself in a scroll view so the cards never overflow.
         expect(
           find.descendant(

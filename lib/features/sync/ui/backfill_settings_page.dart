@@ -27,7 +27,7 @@ export 'package:lotti/features/sync/ui/backfill_settings_recovery.dart';
 /// Mobile / Beamer wrapper. Adds the [SliverBoxAdapterPage] chrome
 /// + the [SyncFeatureGate] flag check and delegates content to
 /// [BackfillSettingsBody]. The same body is reused inside the
-/// Settings V2 detail pane via the panel registry — that host
+/// desktop settings detail pane via its `settingsRoutes` entry — that host
 /// renders its own header, so it embeds [BackfillSettingsBody]
 /// directly without this wrapper.
 class BackfillSettingsPage extends StatelessWidget {
@@ -69,7 +69,7 @@ class BackfillSettingsPage extends StatelessWidget {
 /// the page stutter while scrolling.
 ///
 /// The body owns no chrome (page title / scaffold) — both hosts
-/// (legacy [BackfillSettingsPage] and the Settings V2 detail pane)
+/// (legacy [BackfillSettingsPage] and the desktop settings detail pane)
 /// supply their own.
 class BackfillSettingsBody extends StatelessWidget {
   const BackfillSettingsBody({super.key});
@@ -86,7 +86,7 @@ class BackfillSettingsBody extends StatelessWidget {
       queue: coordinator?.queue,
       builder: (context, depth) {
         return Padding(
-          // Breathing room below the host's page title (V2 leaf panel
+          // Breathing room below the host's page title (desktop leaf panel
           // or legacy `SettingsPageHeader`) before the first card.
           padding: EdgeInsets.only(top: tokens.spacing.step4),
           child: Column(

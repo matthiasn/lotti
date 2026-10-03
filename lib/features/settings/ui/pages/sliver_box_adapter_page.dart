@@ -15,7 +15,7 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// Used by the `*Page` wrappers (`FlagsPage`, `ThemingPage`, `AboutPage`,
 /// `MaintenancePage`, `LoggingSettingsPage`, `HealthImportPage`) that pair
-/// chrome here with a chrome-free `*Body` embedded by settings_v2. See
+/// chrome here with a chrome-free `*Body` embedded by the desktop settings pane. See
 /// [fillRemaining] for the bounded vs. unbounded body-height modes.
 class SliverBoxAdapterPage extends StatefulWidget {
   const SliverBoxAdapterPage({

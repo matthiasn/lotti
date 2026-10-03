@@ -10,7 +10,7 @@ import 'package:material_ui/material_ui.dart';
 
 /// Mobile / legacy wrapper. Keeps the existing `SliverBoxAdapterPage`
 /// chrome and delegates content to [ThemingBody] so the same widget
-/// can render inside the Settings V2 detail pane (plan step 7).
+/// can render inside the desktop settings detail pane.
 class ThemingPage extends StatelessWidget {
   const ThemingPage({super.key});
 
@@ -27,8 +27,8 @@ class ThemingPage extends StatelessWidget {
 /// Content body for the theming page: the light/dark/system mode toggle.
 ///
 /// There is exactly one theme — the design system's — so mode selection is
-/// the only preference left. Extracted from [ThemingPage] so the V2 detail
-/// pane can host it without the sliver chrome.
+/// the only preference left. Extracted from [ThemingPage] so the desktop
+/// detail pane can host it without the sliver chrome.
 class ThemingBody extends ConsumerWidget {
   const ThemingBody({super.key});
 

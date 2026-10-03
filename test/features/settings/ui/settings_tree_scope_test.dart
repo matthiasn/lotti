@@ -205,7 +205,7 @@ void main() {
         // the gated tree (now namespaced under `definitions/`).
         expect(scope.index.findById('definitions/habits'), isNull);
         // Always-on entries stay regardless of flag state.
-        // `flags` reparented under `advanced` in the V2 tree, and
+        // `flags` reparented under `advanced` in the settings tree, and
         // categories now hangs off the `definitions` branch.
         expect(scope.index.findById('advanced/flags'), isNotNull);
         expect(scope.index.findById('definitions'), isNotNull);

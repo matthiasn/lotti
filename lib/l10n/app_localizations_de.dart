@@ -14440,21 +14440,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsThemingTitle => 'Farbschema';
 
   @override
-  String get settingsV2CategoryEmptyBody =>
+  String get settingsTreeCategoryEmptyBody =>
       'Wähle links eine Unter-Einstellung aus.';
 
   @override
-  String get settingsV2DetailRootCrumb => 'Einstellungen';
+  String get settingsTreeRootCrumb => 'Einstellungen';
 
   @override
-  String get settingsV2EmptyStateBody =>
+  String get settingsTreeEmptyStateBody =>
       'Wähle links einen Bereich aus, um zu beginnen.';
 
   @override
-  String get settingsV2ResizeHandleLabel => 'Einstellungsbaum anpassen';
-
-  @override
-  String get settingsV2UnimplementedTitle => 'Bereich noch nicht verfügbar';
+  String get settingsTreeResizeHandleLabel => 'Einstellungsbaum anpassen';
 
   @override
   String get settingsWhatsNewSubtitle =>

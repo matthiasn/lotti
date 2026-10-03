@@ -1341,9 +1341,9 @@ void main() {
     );
   });
 
-  /// Coverage for the constructor-level `initialTab` seed used by the v4
-  /// desktop panel registry (`_aiProvidersPanel` / `_aiModelsPanel` /
-  /// `_aiProfilesPanel`). Each panel mounts `AiSettingsBody` pinned to
+  /// Coverage for the constructor-level `initialTab` seed used by the
+  /// `ai/providers`, `ai/models` and `ai/profiles` desktop panels in
+  /// `settingsRoutes`. Each panel mounts `AiSettingsBody` pinned to
   /// a specific tab; without the seed branch the page would always
   /// open on Providers regardless of which sidebar leaf was clicked.
   group('AiSettingsPage — initialTab seeding', () {

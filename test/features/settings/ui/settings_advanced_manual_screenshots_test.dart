@@ -1,6 +1,6 @@
 /// Production screenshot harness for the Advanced Settings manual.
 ///
-/// Captures the real mobile route pages and the real desktop Settings V2
+/// Captures the real mobile route pages and the real desktop settings
 /// master/detail surface for the Advanced hub, flags, logging, maintenance,
 /// onboarding metrics, and About Lotti. Every case is rendered at mobile and
 /// desktop size in light and dark mode.

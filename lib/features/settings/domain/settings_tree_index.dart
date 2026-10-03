@@ -3,8 +3,8 @@ import 'package:lotti/features/settings/domain/settings_node.dart';
 
 /// O(1) lookup over a (flag-gated) settings tree.
 ///
-/// Pre-computed on tree change — the provider in the plan §1 rebuilds
-/// this whenever the flag set changes. Absent nodes (e.g. `sync` when
+/// Pre-computed on tree change — `SettingsTreeScopeHost` rebuilds it
+/// whenever the flag set changes. Absent nodes (e.g. `sync` when
 /// Matrix is off) resolve to `null` so the UI can gracefully fall
 /// back to the empty root.
 class SettingsTreeIndex {

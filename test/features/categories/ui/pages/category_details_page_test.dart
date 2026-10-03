@@ -489,7 +489,7 @@ void main() {
       });
 
       testWidgets(
-        'header back arrow beams to the categories list — works in V2 '
+        'header back arrow beams to the categories list — works on desktop '
         'desktop where the auto-leading would never appear',
         (tester) async {
           final category = CategoryTestUtils.createTestCategory();
@@ -525,8 +525,8 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        // Cancel beams back to the categories list — V2's detail
-        // surface mounts inline, so this is the only way the user
+        // Cancel beams back to the categories list — the desktop detail
+        // pane mounts the editor inline, so this is the only way the user
         // returns to the list pane on desktop.
         expect(beamedTo, '/settings/categories');
       });
@@ -614,7 +614,7 @@ void main() {
 
           verify(() => mockRepository.deleteCategory(testCategoryId)).called(1);
           // Beams to the list so the now-deleted detail isn't left
-          // mounted in V2's inline panel.
+          // mounted in the desktop detail pane.
           expect(beamedTo, '/settings/categories');
         },
       );

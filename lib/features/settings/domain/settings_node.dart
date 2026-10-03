@@ -33,10 +33,10 @@ class SettingsNode {
   /// Glyph rendered in the icon tile.
   final IconData icon;
 
-  /// Row title (Subtitle 2 per spec §3).
+  /// Row title (Subtitle 2).
   final String title;
 
-  /// Row description (Caption per spec §3).
+  /// Row description (Caption).
   final String desc;
 
   /// Ordered list of children. `null` marks this node as a leaf;

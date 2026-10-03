@@ -6,8 +6,7 @@ import 'package:lotti/features/settings/ui/settings_tree_constants.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Draggable handle that resizes the Settings tree-nav column per
-/// spec §3.1.
+/// Draggable handle that resizes the Settings tree-nav column.
 ///
 /// Behavior:
 /// - Horizontal drag → `SettingsTreeNavWidth.updateBy(delta)` (with
@@ -124,7 +123,7 @@ class _SettingsTreeResizeHandleState
           onHorizontalDragEnd: (_) => setState(() => _dragging = false),
           onHorizontalDragCancel: () => setState(() => _dragging = false),
           child: Semantics(
-            label: context.messages.settingsV2ResizeHandleLabel,
+            label: context.messages.settingsTreeResizeHandleLabel,
             slider: true,
             value: '${width.round()}',
             increasedValue:

@@ -9,8 +9,7 @@ import 'package:material_ui/material_ui.dart';
 
 /// Mobile / legacy wrapper. Keeps the `SliverBoxAdapterPage` chrome
 /// + `SyncFeatureGate` and delegates content to [SyncStatsBody] so
-/// the same widget can render inside the Settings V2 detail pane
-/// (plan step 7).
+/// the same widget can render inside the desktop settings detail pane.
 class SyncStatsPage extends StatelessWidget {
   const SyncStatsPage({super.key});
 

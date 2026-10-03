@@ -14620,21 +14620,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsThemingTitle => 'Tematică';
 
   @override
-  String get settingsV2CategoryEmptyBody =>
+  String get settingsTreeCategoryEmptyBody =>
       'Selectați o sub-setare din stânga.';
 
   @override
-  String get settingsV2DetailRootCrumb => 'Setări';
+  String get settingsTreeRootCrumb => 'Setări';
 
   @override
-  String get settingsV2EmptyStateBody =>
+  String get settingsTreeEmptyStateBody =>
       'Alegeți o secțiune din stânga pentru a începe.';
 
   @override
-  String get settingsV2ResizeHandleLabel => 'Redimensionați arborele de setări';
-
-  @override
-  String get settingsV2UnimplementedTitle => 'Panoul nu este încă implementat';
+  String get settingsTreeResizeHandleLabel =>
+      'Redimensionați arborele de setări';
 
   @override
   String get settingsWhatsNewSubtitle =>

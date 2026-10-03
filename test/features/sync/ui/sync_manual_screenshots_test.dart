@@ -1,7 +1,7 @@
 /// Deterministic manual screenshots for the production Sync surfaces.
 ///
 /// Mobile captures render the real routed pages. Desktop captures render the
-/// same surfaces inside the production Settings V2 master/detail shell. Demo
+/// same surfaces inside the production desktop settings master/detail shell. Demo
 /// data follows the Project Waddle world used by the task and Daily OS manual
 /// so operational states remain recognizable across chapters.
 ///

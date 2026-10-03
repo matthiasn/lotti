@@ -16,7 +16,7 @@ import 'package:material_ui/material_ui.dart';
 /// Mobile / legacy wrapper — keeps the `SliverBoxAdapterPage` chrome
 /// (title, back button, page-level padding) and delegates the
 /// content to [FlagsBody] so the same widget can be hosted inside the
-/// Settings V2 detail pane (plan step 7).
+/// desktop settings detail pane.
 ///
 /// Uses `fillRemaining: true` so the chrome gives the body a bounded
 /// height — the search field stays pinned while only the rows below
@@ -74,7 +74,7 @@ bool _flagMatchesQuery(
 }
 
 /// Content body for the feature-flags settings. Extracted from
-/// [FlagsPage] so it can be rendered inside the V2 detail pane
+/// [FlagsPage] so it can be rendered inside the desktop detail pane
 /// without the surrounding `SliverBoxAdapterPage` chrome. Hosts the
 /// keyword search bar plus the filtered, grouped flag list.
 class FlagsBody extends ConsumerStatefulWidget {

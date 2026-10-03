@@ -27,7 +27,7 @@ class CategoriesListBody extends StatelessWidget {
 /// the category name, task count subtitle, optional status icons (lock,
 /// visibility_off, star), and a
 /// chevron. The create FAB beams to the create page — the same
-/// list → full-page flow as every other definition type (the V2 desktop
+/// list → full-page flow as every other definition type (the desktop
 /// pane dispatches `/settings/categories/create` inline).
 class CategoriesListPage extends ConsumerWidget {
   const CategoriesListPage({this.showHeader = true, super.key});

@@ -114,7 +114,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
   Widget _buildCreateMode(BuildContext context) {
     return SettingsDetailScaffold(
       title: context.messages.createCategoryTitle,
-      // Beam to the list URL rather than `Navigator.pop`. V2's desktop
+      // Beam to the list URL rather than `Navigator.pop`. the desktop
       // detail surface mounts the page inline (no Navigator route was
       // pushed), so popping is a no-op there; on mobile the URL change
       // still pops the detail page off the Beamer stack.
@@ -170,7 +170,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
         // Land in the new category's editor: creation only captures
         // name/color/icon, everything else (privacy, language, AI
         // defaults) lives on the edit page. Beaming (not pushing) keeps
-        // V2's inline desktop pane in sync.
+        // the desktop detail pane in sync.
         beamToNamed('/settings/categories/${created.id}');
       }
     } catch (e) {
@@ -204,7 +204,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     }
 
     // Success — surface a toast and beam to the list. Beaming (rather
-    // than popping) keeps V2's desktop inline panel in sync; mobile's
+    // than popping) keeps the desktop detail pane in sync; mobile's
     // Beamer stack reduces to the list page automatically.
     context.showToast(
       tone: DesignSystemToastTone.success,

@@ -14350,22 +14350,18 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsThemingTitle => 'Tematisering';
 
   @override
-  String get settingsV2CategoryEmptyBody =>
+  String get settingsTreeCategoryEmptyBody =>
       'Välj en underinställning till vänster.';
 
   @override
-  String get settingsV2DetailRootCrumb => 'Inställningar';
+  String get settingsTreeRootCrumb => 'Inställningar';
 
   @override
-  String get settingsV2EmptyStateBody =>
+  String get settingsTreeEmptyStateBody =>
       'Välj en sektion till vänster för att börja.';
 
   @override
-  String get settingsV2ResizeHandleLabel => 'Ändra storleksinställningsträd';
-
-  @override
-  String get settingsV2UnimplementedTitle =>
-      'Panelen har ännu inte implementerats';
+  String get settingsTreeResizeHandleLabel => 'Ändra storleksinställningsträd';
 
   @override
   String get settingsWhatsNewSubtitle =>

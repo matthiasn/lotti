@@ -16,7 +16,7 @@ import 'package:material_ui/material_ui.dart';
 /// Mobile wrapper — keeps the existing `SliverBoxAdapterPage` chrome (title,
 /// back button, page-level padding) and delegates the actual content to
 /// [LoggingSettingsBody] so the same content widget can be hosted inside the
-/// Settings V2 detail pane.
+/// desktop settings detail pane.
 class LoggingSettingsPage extends StatelessWidget {
   const LoggingSettingsPage({super.key});
 

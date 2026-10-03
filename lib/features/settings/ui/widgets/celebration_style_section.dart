@@ -50,7 +50,7 @@ class _CelebrationStyleSectionState
   _CelebrationSurface _active = _CelebrationSurface.tasks;
 
   /// Opens the full-screen slider editor for [variant]. Pushed onto the local
-  /// navigator so it works the same on the mobile route and the Settings V2
+  /// navigator so it works the same on the mobile route and the desktop settings
   /// detail pane.
   void _openPlayground(CelebrationVariant variant) {
     Navigator.of(context).push(

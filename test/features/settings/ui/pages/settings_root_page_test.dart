@@ -101,7 +101,7 @@ void main() {
           find.byType(SettingsDesktopPage),
           findsNothing,
           reason:
-              'Mobile renders the tree-driven drill-down; the V2 '
+              'Mobile renders the tree-driven drill-down; the '
               'master/detail layout is desktop-only.',
         );
       },
@@ -119,7 +119,7 @@ void main() {
           find.byType(SettingsMobileRootPage),
           findsNothing,
           reason:
-              'Desktop must mount only V2 — the mobile drill-down belongs '
+              'Desktop must mount only the tree layout — the mobile drill-down belongs '
               'to narrow viewports and would compete for the same space.',
         );
       },

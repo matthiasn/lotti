@@ -102,7 +102,7 @@ void main() {
 
   // Pumps the body in isolation. Used for layout / state tests that
   // don't need the SyncFeatureGate. Wrapped in a [SingleChildScrollView]
-  // because production hosts (V2 panel registry + legacy
+  // because production hosts (settings route registry + legacy
   // SliverBoxAdapterPage) both supply scrolling — without it the
   // expanded recovery group overflows a fixed-height test viewport.
   Future<void> pumpBody(

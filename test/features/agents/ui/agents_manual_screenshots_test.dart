@@ -3,7 +3,7 @@
 /// The fixture extends the Intergalactic Penguin Logistics demo world with
 /// agent templates, personalities (souls), running instances, evolution
 /// rituals, token activity, and scheduled wakes. Desktop list captures use
-/// the real Settings V2 shell; mobile captures use the production tabbed
+/// the real desktop settings shell; mobile captures use the production tabbed
 /// settings page. Editors, ritual reviews, and instance details are the real
 /// routed pages at both sizes.
 ///
@@ -693,7 +693,7 @@ Future<void> _selectDesktopSurface(
         queryParameters: const <String, String>{},
       );
     case _AgentSurface.templateReview || _AgentSurface.soulReview:
-      throw StateError('Review pages do not use the Settings V2 panel.');
+      throw StateError('Review pages do not use the desktop settings panel.');
   }
   await settleFrames(tester, 8);
 }

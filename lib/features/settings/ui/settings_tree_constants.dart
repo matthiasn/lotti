@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-/// Shared visual constants for Settings V2.
+/// Shared visual constants for the settings tree views.
 ///
 /// Every fixed dp / ms / alpha literal referenced from more than one
 /// widget — or pinned by the spec — lives here so widgets stay free of
@@ -8,17 +8,17 @@ import 'package:flutter/foundation.dart';
 /// yet promoted into the generated design-token set.
 @immutable
 abstract final class SettingsTreeConstants {
-  /// Header height (spec §2).
+  /// Header height.
   static const double headerHeight = 56;
 
-  /// Row height (spec §3).
+  /// Row height.
   static const double rowHeight = 62;
 
-  /// Icon tile size (spec §3 "Row anatomy").
+  /// Icon tile size.
   static const double iconTileSize = 36;
   static const double iconTileGlyphSize = 20;
 
-  /// Active rail (spec §3: 3 dp teal bar, 30 dp tall when on path).
+  /// Active rail.
   static const double activeRailWidth = 3;
   static const double activeRailHeight = 30;
   static const double activeRailCornerRadius = 1.5;
@@ -42,7 +42,7 @@ abstract final class SettingsTreeConstants {
   /// the Sync rows keep their teal-on-tinted-tile look.
   static const double accentTileFillAlpha = 0.12;
 
-  /// Animation durations (spec §3 "Motion").
+  /// Animation durations.
   static const Duration rowFillTransition = Duration(milliseconds: 180);
   static const Duration railTransition = Duration(milliseconds: 200);
   static const Duration chevronRotation = Duration(milliseconds: 220);
@@ -55,7 +55,7 @@ abstract final class SettingsTreeConstants {
   /// Resize-handle bar alpha on hover.
   static const double resizeHandleHoverAlpha = 0.4;
 
-  /// Resize-handle hit-target width (spec §3.1) and the visible bar
+  /// Resize-handle hit-target width and the visible bar
   /// width that fades in on hover / drag.
   static const double resizeHandleHitWidth = 6;
   static const double resizeHandleBarWidth = 2;

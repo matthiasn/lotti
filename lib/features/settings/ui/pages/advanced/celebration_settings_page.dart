@@ -11,7 +11,7 @@ import 'package:material_ui/material_ui.dart';
 
 /// Mobile / Beamer wrapper: adds the [SliverBoxAdapterPage] chrome and delegates
 /// content to [CelebrationSettingsBody]. The same body is embedded directly in
-/// the Settings V2 detail pane via the panel registry — that host supplies its
+/// the desktop settings detail pane via its `settingsRoutes` entry — that host supplies its
 /// own header, so it uses [CelebrationSettingsBody] without this wrapper.
 class CelebrationSettingsPage extends StatelessWidget {
   const CelebrationSettingsPage({super.key});

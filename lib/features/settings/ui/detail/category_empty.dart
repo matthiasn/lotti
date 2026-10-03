@@ -5,7 +5,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Detail-pane content when a branch node is selected but no leaf
-/// has been picked yet (spec §4 "CategoryEmpty"). Uses the branch's
+/// has been picked yet. Uses the branch's
 /// own icon + title + description, followed by the "pick a sub-
 /// setting" helper line.
 class CategoryEmpty extends StatelessWidget {
@@ -50,7 +50,7 @@ class CategoryEmpty extends StatelessWidget {
             ],
             SizedBox(height: tokens.spacing.step3),
             Text(
-              context.messages.settingsV2CategoryEmptyBody,
+              context.messages.settingsTreeCategoryEmptyBody,
               style: tokens.typography.styles.others.caption.copyWith(
                 color: textLo,
               ),

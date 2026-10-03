@@ -185,7 +185,7 @@ void main() {
           '/settings/habits/create',
           '/settings/habits/search/:searchTerm',
           '/settings/agents',
-          // Bare per-tab landings — Settings V2 tree leaves under
+          // Bare per-tab landings — settings tree leaves under
           // `agents` canonicalize to these and the in-page tab bar
           // beams here when the user switches tabs on desktop.
           '/settings/agents/templates',

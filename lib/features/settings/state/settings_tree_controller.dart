@@ -1,18 +1,18 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Tree-nav state for Settings V2 per spec §3.
+/// Tree-nav state for the desktop settings page.
 ///
 /// Single source of truth: `List<String> path` — an ordered list of
 /// node ids from root to the current focus. Open branches, selected
 /// leaves, breadcrumbs, and the beam URL are all derivable from
 /// [state]; the UI must not keep its own open/closed booleans (see
-/// spec §10 "What NOT to do").
+/// "What NOT to do").
 class SettingsTreePath extends Notifier<List<String>> {
   @override
   List<String> build() => const <String>[];
 
-  /// Applies the four click rules from spec §3:
+  /// Applies the four click rules:
   ///
   /// 1. Row is on the active path AND has children (currently open)
   ///    → collapse. `path = path.sublist(0, depth)`.
@@ -52,7 +52,7 @@ class SettingsTreePath extends Notifier<List<String>> {
     }
 
     // Rules 2 + 3: replace everything at this depth and below with
-    // the tapped id. Keeps the spec §3 invariant "at most one node
+    // the tapped id. Keeps the invariant "at most one node
     // is open per depth" — opening a sibling automatically closes
     // the current open node and everything below it.
     state = <String>[...current.sublist(0, safeDepth), nodeId];
@@ -81,7 +81,7 @@ class SettingsTreePath extends Notifier<List<String>> {
   }
 }
 
-/// Single source of truth for Settings V2 selection: the root → focus
+/// Single source of truth for the desktop settings selection: the root → focus
 /// list of node ids. Every surface (tree view, detail pane, crumbs,
 /// URL sync) derives its state from this. See [SettingsTreePath].
 final settingsTreePathProvider =

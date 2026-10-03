@@ -311,7 +311,7 @@ void main() {
         expect(find.byType(AnimatedSwitcher), findsOneWidget);
         // FadeTransition is emitted by the switcher's default
         // transitionBuilder — asserting the widget type is a proxy
-        // for the "fade only, no slide" spec §10 rule.
+        // for the "fade only, no slide" rule.
         expect(find.byType(FadeTransition), findsWidgets);
       },
     );

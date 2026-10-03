@@ -5,7 +5,7 @@ import 'package:lotti/features/settings/ui/settings_tree_scope.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Crumb trail rendered in the Settings V2 page header.
+/// Crumb trail rendered in the desktop settings page header.
 ///
 /// Reads `settingsTreePathProvider` and resolves each id back to its
 /// localized title via the [SettingsTreeScope] index. Renders one
@@ -55,7 +55,7 @@ class SettingsTopCrumbs extends ConsumerWidget {
     final tokens = context.designTokens;
     final path = ref.watch(settingsTreePathProvider);
     final scope = SettingsTreeScope.maybeOf(context);
-    final rootLabel = context.messages.settingsV2DetailRootCrumb;
+    final rootLabel = context.messages.settingsTreeRootCrumb;
 
     // Resolve each id to its node title. Ids that aren't in the
     // current (flag-gated) tree are silently dropped — the visible

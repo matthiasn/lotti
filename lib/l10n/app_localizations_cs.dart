@@ -14524,19 +14524,18 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsThemingTitle => 'Vzhled';
 
   @override
-  String get settingsV2CategoryEmptyBody => 'Vyber pod-nastavení vlevo.';
+  String get settingsTreeCategoryEmptyBody => 'Vyber pod-nastavení vlevo.';
 
   @override
-  String get settingsV2DetailRootCrumb => 'Nastavení';
+  String get settingsTreeRootCrumb => 'Nastavení';
 
   @override
-  String get settingsV2EmptyStateBody => 'Vyber sekci vlevo, abys mohl začít.';
+  String get settingsTreeEmptyStateBody =>
+      'Vyber sekci vlevo, abys mohl začít.';
 
   @override
-  String get settingsV2ResizeHandleLabel => 'Změnit velikost stromu nastavení';
-
-  @override
-  String get settingsV2UnimplementedTitle => 'Panel zatím není k dispozici';
+  String get settingsTreeResizeHandleLabel =>
+      'Změnit velikost stromu nastavení';
 
   @override
   String get settingsWhatsNewSubtitle =>

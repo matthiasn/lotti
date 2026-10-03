@@ -18,7 +18,7 @@ import 'package:material_ui/material_ui.dart';
 /// Mobile / legacy wrapper. Keeps the `SliverBoxAdapterPage` chrome
 /// + `SyncFeatureGate` and delegates content to
 /// [MatrixSyncMaintenanceBody] so the same widget can render inside
-/// the Settings V2 detail pane (plan step 7).
+/// the desktop settings detail pane.
 class MatrixSyncMaintenancePage extends StatelessWidget {
   const MatrixSyncMaintenancePage({super.key});
 
@@ -40,7 +40,7 @@ class MatrixSyncMaintenancePage extends StatelessWidget {
 /// Content body for the Matrix-maintenance page — a grouped list of
 /// destructive / diagnostic actions: delete sync DB, re-sync
 /// definitions, force re-sync, populate sequence log. Extracted so
-/// the V2 detail pane can host the same list without the sliver
+/// the desktop detail pane can host the same list without the sliver
 /// chrome.
 /// Hovering a row fades the hairlines bracketing it, matching the
 /// Advanced → Maintenance list this page mirrors — see

@@ -3,8 +3,7 @@ import 'package:lotti/features/settings/ui/settings_tree_constants.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Detail-pane content when no tree node is selected (spec §4
-/// "EmptyRoot"). Centered gear glyph + "Settings" headline + the
+/// Detail-pane content when no tree node is selected. Centered gear glyph + "Settings" headline + the
 /// "pick a section" sub-copy.
 class EmptyRoot extends StatelessWidget {
   const EmptyRoot({super.key});
@@ -35,7 +34,7 @@ class EmptyRoot extends StatelessWidget {
             ),
             SizedBox(height: tokens.spacing.step3),
             Text(
-              context.messages.settingsV2EmptyStateBody,
+              context.messages.settingsTreeEmptyStateBody,
               style: tokens.typography.styles.body.bodyMedium.copyWith(
                 color: textMid,
               ),

@@ -15,7 +15,7 @@ class AiSettingsNavigationService {
 
   /// Navigates to the appropriate edit page based on the AI
   /// configuration type. Provider / model / profile rows all beam to
-  /// a per-kind URL so the Settings V2 desktop master/detail surface
+  /// a per-kind URL so the desktop settings master/detail surface
   /// swaps the right pane in place. Prompt and skill rows aren't
   /// editable through the settings UI today — they fall back to the
   /// legacy no-op slide route.

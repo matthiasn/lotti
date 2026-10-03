@@ -14375,22 +14375,19 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsThemingTitle => 'Thema';
 
   @override
-  String get settingsV2CategoryEmptyBody =>
+  String get settingsTreeCategoryEmptyBody =>
       'Kies een subset aan de linkerkant.';
 
   @override
-  String get settingsV2DetailRootCrumb => 'Instellingen';
+  String get settingsTreeRootCrumb => 'Instellingen';
 
   @override
-  String get settingsV2EmptyStateBody =>
+  String get settingsTreeEmptyStateBody =>
       'Kies een sectie links om te beginnen.';
 
   @override
-  String get settingsV2ResizeHandleLabel =>
+  String get settingsTreeResizeHandleLabel =>
       'Grootte-instellingen-boom wijzigen';
-
-  @override
-  String get settingsV2UnimplementedTitle => 'Panel nog niet geïmplementeerd';
 
   @override
   String get settingsWhatsNewSubtitle => 'Zie de laatste updates en functies';

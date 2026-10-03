@@ -172,7 +172,7 @@ void main() {
       ensureThemingServicesRegistered();
 
       // The page beams to `/settings/dashboards` after save / delete
-      // (V2's desktop detail surface mounts inline, so Navigator.pop
+      // (the desktop detail pane mounts inline, so Navigator.pop
       // would be a no-op). These tests don't register a NavService, so
       // install a no-op override.
       beamToNamedOverride = (_) {};

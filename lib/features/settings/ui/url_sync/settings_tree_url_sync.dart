@@ -21,7 +21,7 @@ void _defaultBeamTo(BuildContext context, String uri) {
   Beamer.of(context).beamToReplacementNamed(uri);
 }
 
-/// Invisible bridge (plan §1) that keeps the tree's
+/// Invisible bridge that keeps the tree's
 /// [settingsTreePathProvider] and the Beamer-owned settings URL in
 /// sync in both directions:
 ///

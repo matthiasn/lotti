@@ -9,7 +9,7 @@
 ///   replace).
 ///
 /// It also captures the production Definitions branch: the focused shared
-/// tree branch on mobile and the complete V2 tree shell on desktop.
+/// tree branch on mobile and the complete settings tree shell on desktop.
 ///
 /// Captures dark + light for each surface and device (8 PNGs). PNGs land in
 /// `screenshots/settings_home/` (or `$LOTTI_SCREENSHOT_DIR`). Not a golden
@@ -192,7 +192,7 @@ void main() {
       overrides: baseOverrides(),
       home: const SettingsRootPage(),
     );
-    // Top-level tree leaves prove the V2 tree rendered.
+    // Top-level tree leaves prove the settings tree rendered.
     final messages = _messages(tester);
     expect(find.text(messages.settingsPreferencesTitle), findsOneWidget);
     expect(

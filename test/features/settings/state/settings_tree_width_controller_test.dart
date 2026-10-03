@@ -251,7 +251,7 @@ void main() {
       expect(defaultSettingsTreeNavWidth, 340);
     });
 
-    test('keyboard steps match spec §3.1 (8 / 32 dp)', () {
+    test('keyboard steps match (8 / 32 dp)', () {
       expect(settingsTreeNavWidthArrowStep, 8);
       expect(settingsTreeNavWidthShiftArrowStep, 32);
     });

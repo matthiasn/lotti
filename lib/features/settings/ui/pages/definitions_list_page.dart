@@ -158,7 +158,7 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>>
     final desktop = isDesktopLayout(context);
 
     return Scaffold(
-      // Anchor on the token like settings_v2; the ambient
+      // Anchor on the token like the settings tree; the ambient
       // scaffoldBackgroundColor resolves near-black in the app theme.
       backgroundColor: context.designTokens.colors.background.level01,
       body: CustomScrollView(

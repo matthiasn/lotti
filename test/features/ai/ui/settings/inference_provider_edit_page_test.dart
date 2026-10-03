@@ -3885,7 +3885,7 @@ void main() {
         // root crumb must be absent so the build skips the wide-only
         // breadcrumb subtree.
         expect(
-          find.text(strings.settingsV2DetailRootCrumb),
+          find.text(strings.settingsTreeRootCrumb),
           findsNothing,
         );
       },

@@ -167,7 +167,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
   Widget build(BuildContext context) {
     // When pushed as a route (from the dashboard header's edit link) pop back
     // to where the user came from. Otherwise beam to the dashboards list: the
-    // page is rendered inline in V2's desktop detail surface (no Navigator
+    // page is rendered inline in the desktop detail pane (no Navigator
     // route to pop), and on mobile the URL change pops the detail page off the
     // Beamer stack.
     void backToList() {

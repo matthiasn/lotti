@@ -8,7 +8,7 @@ import 'package:lotti/features/settings/domain/settings_tree_index.dart';
 import 'package:lotti/features/settings/ui/labels/settings_tree_labels.dart';
 import 'package:lotti/utils/consts.dart';
 
-/// Shared tree + index for Settings V2.
+/// Shared tree + index for the settings tree views.
 ///
 /// `SettingsDesktopPage` hosts a [SettingsTreeScopeHost] that watches the
 /// gating feature flags once, calls [buildSettingsTree] with the

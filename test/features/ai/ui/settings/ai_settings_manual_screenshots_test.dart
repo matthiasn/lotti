@@ -4,7 +4,7 @@
 /// provider, model, profile, picker, and usage views describe the same Project
 /// Waddle workspace as Tasks, Daily OS, categories, and dashboards.
 ///
-/// Desktop captures render the production Settings V2 tree/detail shell.
+/// Desktop captures render the production desktop settings tree/detail shell.
 /// Mobile captures render the production full-screen pages. Generated PNGs
 /// are staging inputs for the R2 manual catalog and are never committed to this repo.
 ///
@@ -274,7 +274,9 @@ Future<void> _selectDesktopSurface(
         queryParameters: const <String, String>{},
       );
     case _AiSurface.legacyProfiles:
-      throw StateError('Legacy profiles do not use the Settings V2 panel.');
+      throw StateError(
+        'Legacy profiles do not use the desktop settings panel.',
+      );
   }
   await settleFrames(tester, 8);
 }

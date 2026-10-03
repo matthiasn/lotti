@@ -9,7 +9,7 @@ import 'package:material_ui/material_ui.dart';
 
 /// Mobile / Beamer wrapper: adds the [SliverBoxAdapterPage] chrome and
 /// delegates content to [RecordingStyleSettingsBody]. The same body is
-/// embedded directly in the Settings V2 detail pane via the panel registry —
+/// embedded directly in the desktop settings detail pane via its `settingsRoutes` entry —
 /// that host supplies its own header, so it uses
 /// [RecordingStyleSettingsBody] without this wrapper.
 class RecordingStyleSettingsPage extends StatelessWidget {

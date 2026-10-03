@@ -975,9 +975,9 @@ void main() {
 
     testWidgets(
       'updating initialTab on the same widget instance re-syncs the '
-      'selected tab (Settings V2 in-place rebuild path)',
+      'selected tab (desktop settings in-place rebuild path)',
       (tester) async {
-        // Settings V2 routes `agents/templates`, `agents/souls`,
+        // The settings route registry routes `agents/templates`, `agents/souls`,
         // `agents/instances` through the same `AgentSettingsPage`
         // type. When Flutter updates this widget in place across
         // those routes, only `initialTab` changes — without the
@@ -1039,7 +1039,7 @@ void main() {
 
     testWidgets(
       'AgentSettingsBody forwards initialTab to AgentSettingsPage so the '
-      'Settings V2 leaf opens on the requested tab',
+      'desktop settings leaf opens on the requested tab',
       (tester) async {
         await tester.pumpWidget(
           makeTestableWidgetNoScroll(

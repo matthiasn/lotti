@@ -30,7 +30,7 @@ import 'package:material_ui/material_ui.dart';
 
 /// Mobile / legacy wrapper — keeps the `SliverBoxAdapterPage` chrome
 /// and delegates content to [MaintenanceBody] so the same widget can
-/// render inside the Settings V2 detail pane (plan step 7).
+/// render inside the desktop settings detail pane.
 class MaintenancePage extends StatelessWidget {
   const MaintenancePage({super.key});
 
@@ -45,9 +45,9 @@ class MaintenancePage extends StatelessWidget {
 }
 
 /// Content body for the advanced-maintenance page: a grouped list of
-/// destructive / diagnostic actions. Extracted so the V2 detail pane
+/// destructive / diagnostic actions. Extracted so the desktop detail pane
 /// can host the same list without the surrounding sliver chrome.
-/// Owns its own vertical padding so both hosts (sliver page and V2
+/// Owns its own vertical padding so both hosts (sliver page and desktop pane
 /// detail pane) get the same chrome-independent spacing — matching
 /// the `LoggingSettingsBody` pattern.
 class MaintenanceBody extends ConsumerStatefulWidget {

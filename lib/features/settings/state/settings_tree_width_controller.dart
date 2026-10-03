@@ -12,12 +12,12 @@ import 'package:lotti/services/domain_logging.dart';
 /// §1 risk 5).
 const settingsTreeNavWidthKey = 'SETTINGS_TREE_NAV_WIDTH';
 
-/// Width constraints from spec §3 "Dimensions".
+/// Width constraints from "Dimensions".
 const defaultSettingsTreeNavWidth = 340.0;
 const minSettingsTreeNavWidth = 280.0;
 const maxSettingsTreeNavWidth = 480.0;
 
-/// Keyboard step sizes from spec §3.1.
+/// Keyboard step sizes for the resize handle.
 const settingsTreeNavWidthArrowStep = 8.0;
 const settingsTreeNavWidthShiftArrowStep = 32.0;
 

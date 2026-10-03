@@ -14525,21 +14525,18 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsThemingTitle => 'Temas';
 
   @override
-  String get settingsV2CategoryEmptyBody =>
+  String get settingsTreeCategoryEmptyBody =>
       'Elige un sub-ajuste a la izquierda.';
 
   @override
-  String get settingsV2DetailRootCrumb => 'Ajustes';
+  String get settingsTreeRootCrumb => 'Ajustes';
 
   @override
-  String get settingsV2EmptyStateBody =>
+  String get settingsTreeEmptyStateBody =>
       'Elige una sección a la izquierda para empezar.';
 
   @override
-  String get settingsV2ResizeHandleLabel => 'Redimensionar árbol de ajustes';
-
-  @override
-  String get settingsV2UnimplementedTitle => 'Panel aún no disponible';
+  String get settingsTreeResizeHandleLabel => 'Redimensionar árbol de ajustes';
 
   @override
   String get settingsWhatsNewSubtitle =>

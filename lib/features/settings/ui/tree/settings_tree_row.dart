@@ -3,7 +3,7 @@ import 'package:lotti/features/settings/domain/settings_node.dart';
 import 'package:lotti/features/settings/ui/settings_tree_constants.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Renders one tree row per spec §3 "Row anatomy": left active rail,
+/// Renders one tree row: left active rail,
 /// icon tile, title + description column, optional live indicator, chevron.
 ///
 /// Stateless on purpose — visibility of the rail + chevron rotation

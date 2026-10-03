@@ -24,7 +24,7 @@ void main() {
 
     test('is true for a branch with zero children (empty list)', () {
       // Empty-but-non-null children models a branch whose sub-nodes
-      // are all gated off — spec §3 keeps it addressable as a branch.
+      // are all gated off — keeps it addressable as a branch.
       const node = SettingsNode(
         id: 'agents',
         icon: LottiIcons.aiModel,

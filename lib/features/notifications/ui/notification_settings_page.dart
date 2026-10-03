@@ -11,8 +11,8 @@ import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Mobile / Beamer wrapper: adds the [SliverBoxAdapterPage] chrome and
-/// delegates content to [NotificationSettingsBody]. The Settings V2 detail
-/// pane embeds the body directly through the panel registry — that host
+/// delegates content to [NotificationSettingsBody]. The desktop settings detail
+/// pane embeds the body directly through its `settingsRoutes` entry — that host
 /// supplies its own header.
 class NotificationSettingsPage extends StatelessWidget {
   const NotificationSettingsPage({super.key});

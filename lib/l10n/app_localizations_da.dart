@@ -14338,21 +14338,19 @@ class AppLocalizationsDa extends AppLocalizations {
   String get settingsThemingTitle => 'Tematisering';
 
   @override
-  String get settingsV2CategoryEmptyBody =>
+  String get settingsTreeCategoryEmptyBody =>
       'Vælg en underindstilling til venstre.';
 
   @override
-  String get settingsV2DetailRootCrumb => 'Indstillinger';
+  String get settingsTreeRootCrumb => 'Indstillinger';
 
   @override
-  String get settingsV2EmptyStateBody =>
+  String get settingsTreeEmptyStateBody =>
       'Vælg et afsnit til venstre for at begynde.';
 
   @override
-  String get settingsV2ResizeHandleLabel => 'Ændr størrelsesindstillingstræet';
-
-  @override
-  String get settingsV2UnimplementedTitle => 'Panel endnu ikke implementeret';
+  String get settingsTreeResizeHandleLabel =>
+      'Ændr størrelsesindstillingstræet';
 
   @override
   String get settingsWhatsNewSubtitle =>

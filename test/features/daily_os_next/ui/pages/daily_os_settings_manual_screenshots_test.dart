@@ -1,6 +1,6 @@
 /// Deterministic manual screenshots for the production Daily OS settings.
 ///
-/// Desktop captures use the real Settings V2 tree/detail shell; mobile uses
+/// Desktop captures use the real desktop settings tree/detail shell; mobile uses
 /// the real drill-down page. The configured route is the same Project Waddle
 /// inference stack used throughout the AI and Agents chapters.
 ///

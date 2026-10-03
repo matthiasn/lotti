@@ -10,12 +10,12 @@ import 'package:lotti/features/settings/ui/widgets/settings_top_crumbs.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_tree_resize_handle.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Fixed height of the Settings V2 page header (spec §2). Kept as a
+/// Fixed height of the desktop settings page header. Kept as a
 /// top-level const so existing callers (and tests) can reference it
 /// without reaching into [SettingsTreeConstants].
 const double kSettingsDesktopHeaderHeight = SettingsTreeConstants.headerHeight;
 
-/// Root chrome for Settings V2 per spec §1-4: a 56 dp header above
+/// Root chrome for desktop settings: a 56 dp header above
 /// a two-column body (tree-nav on the left, detail pane on the
 /// right) separated by a 1 dp divider with a 6 dp draggable resize
 /// handle centered on it.
@@ -75,7 +75,7 @@ class SettingsDesktopPage extends ConsumerWidget {
                   ),
                   // Stack the 6 dp draggable handle on top of the 1 dp
                   // divider so the hit target is centered on the line
-                  // per spec §3. `clipBehavior: Clip.none` lets the
+                  // `clipBehavior: Clip.none` lets the
                   // handle overhang the divider column without
                   // hit-testing into the tree.
                   SizedBox(

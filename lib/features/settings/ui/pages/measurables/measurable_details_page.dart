@@ -34,7 +34,7 @@ import 'package:material_ui/material_ui.dart';
 /// affairs), and the choices are a list the form kit has no field for —
 /// and flip the same `dirty` flag. Navigation (back,
 /// cancel, after save/delete) beams to `/settings/measurables` rather
-/// than popping — V2's desktop detail surface mounts the page inline (no
+/// than popping — the desktop detail pane mounts the page inline (no
 /// Navigator route to pop); on mobile the URL change still pops the page
 /// off the Beamer stack.
 class MeasurableDetailsPage extends StatefulWidget {
@@ -139,7 +139,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
     final messages = context.messages;
 
     // Beam back to the measurables list rather than popping. The page
-    // is mounted inline inside V2's desktop detail surface (no
+    // is mounted inline inside the desktop detail pane (no
     // Navigator route to pop); on mobile the URL change still pops the
     // page off the Beamer stack.
     void backToList() => beamToNamed('/settings/measurables');

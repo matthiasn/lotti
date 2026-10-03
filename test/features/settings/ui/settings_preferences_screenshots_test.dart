@@ -2,7 +2,7 @@
 /// interaction: theming, recording style, speech, keyboard shortcuts, and
 /// completion celebrations.
 ///
-/// Desktop captures render the production Settings V2 tree/detail shell.
+/// Desktop captures render the production desktop settings tree/detail shell.
 /// Mobile captures render the production drill-down page wrapper for the same
 /// body. Every manual case therefore shows the UI users actually reach rather
 /// than a reconstructed documentation-only scaffold.

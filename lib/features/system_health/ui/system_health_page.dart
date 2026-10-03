@@ -29,7 +29,7 @@ import 'package:lotti/widgets/settings/settings_picker_field.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Mobile wrapper — `SliverBoxAdapterPage` chrome around [SystemHealthBody],
-/// which the Settings V2 detail pane hosts on its own.
+/// which the desktop settings detail pane hosts on its own.
 class SystemHealthPage extends StatelessWidget {
   const SystemHealthPage({super.key});
 
