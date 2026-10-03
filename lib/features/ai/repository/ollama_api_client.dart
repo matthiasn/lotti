@@ -359,9 +359,9 @@ class OllamaApiClient {
           }
         } catch (e) {
           developer.log(
+            // The type only: a FormatException's toString quotes the chunk.
             'Error parsing Ollama chat response chunk '
-            '(${chunk.length} chars)',
-            error: e,
+            '(${chunk.length} chars): ${e.runtimeType}',
             name: 'OllamaApiClient',
           );
         }

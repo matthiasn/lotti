@@ -367,9 +367,10 @@ class VoxtralInferenceRepository {
               }
             } on FormatException catch (e) {
               developer.log(
-                'Failed to parse SSE chunk (${data.length} chars)',
+                // Not the exception itself: its toString quotes the chunk.
+                'Failed to parse SSE chunk (${data.length} chars) '
+                'at offset ${e.offset}',
                 name: 'VoxtralInferenceRepository',
-                error: e,
               );
               // Continue processing other chunks
             }

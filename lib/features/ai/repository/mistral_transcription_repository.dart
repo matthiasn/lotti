@@ -257,9 +257,9 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
           );
         } on FormatException catch (e) {
           developer.log(
-            'Failed to parse response from $_providerName',
+            // Not the exception itself: its toString quotes the transcript.
+            'Failed to parse response from $_providerName at offset ${e.offset}',
             name: _providerName,
-            error: e,
           );
           throw TranscriptionException(
             'Invalid response format from transcription service',
