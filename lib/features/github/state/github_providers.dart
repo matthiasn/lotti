@@ -348,7 +348,8 @@ pullRequestSummaryProvider = StreamProvider.autoDispose
       }
 
       yield await read();
-      await for (final ids in getIt<UpdateNotifications>().updateStream) {
+      await for (final ids
+          in ref.watch(updateNotificationsProvider).updateStream) {
         if (ids.contains(entryId)) yield await read();
       }
     }, name: 'pullRequestSummaryProvider');
@@ -382,7 +383,9 @@ pullRequestAutomaticSummaryBlockerProvider = StreamProvider.autoDispose
 
       final subscriptions = [
         summarizer.attempts.where((id) => id == entryId).listen((_) => read()),
-        getIt<UpdateNotifications>().updateStream
+        ref
+            .watch(updateNotificationsProvider)
+            .updateStream
             .where(
               (ids) =>
                   ids.contains(entryId) ||
