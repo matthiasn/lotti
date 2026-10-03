@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
@@ -75,6 +76,104 @@ void main() {
         expect(decoded, same(payload));
       },
     );
+
+    group('decompression limit', () {
+      late MockDomainLogger logging;
+      late MockEvent event;
+
+      setUp(() {
+        logging = MockDomainLogger();
+        when(
+          () => logging.log(
+            any<LogDomain>(),
+            any<String>(),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) async {});
+        event = MockEvent();
+        when(() => event.content).thenReturn(<String, dynamic>{
+          attachmentEncodingKey: attachmentEncodingGzip,
+        });
+      });
+
+      Future<Uint8List> decode(Uint8List compressed, int limit) =>
+          decodeAttachmentBytes(
+            event: event,
+            downloadedBytes: compressed,
+            relativePath: '/agent_entities/bomb.json',
+            logging: logging,
+            maxDecodedBytes: limit,
+          );
+
+      // Zeros compress about a thousand to one: a bomb in miniature.
+      Uint8List bomb(int decodedBytes) =>
+          Uint8List.fromList(gzip.encode(List<int>.filled(decodedBytes, 0)));
+
+      test('a small bomb is rejected on the inline path', () async {
+        final compressed = bomb(1536 * 1024);
+        expect(compressed.length, lessThan(2 * 1024), reason: 'inline path');
+
+        await expectLater(
+          decode(compressed, 512 * 1024),
+          throwsA(
+            isA<AttachmentTooLargeException>()
+                .having((e) => e.limitBytes, 'limit', 512 * 1024)
+                // Callers handle it like the corrupt gzip it effectively is.
+                .having(
+                  (e) => e,
+                  'is a FormatException',
+                  isA<FormatException>(),
+                ),
+          ),
+        );
+
+        final line =
+            verify(
+                  () => logging.log(
+                    any<LogDomain>(),
+                    captureAny<String>(),
+                    subDomain: 'attachment.decode',
+                  ),
+                ).captured.single
+                as String;
+        expect(line, contains('gzipRejected'));
+        expect(line, contains('path=/agent_entities/bomb.json'));
+        expect(line, contains('limit=${512 * 1024}'));
+        expect(line, isNot(contains('gzipDecoded')));
+      });
+
+      test('a large bomb is rejected on the worker isolate too', () async {
+        final compressed = bomb(64 * 1024 * 1024);
+        expect(
+          compressed.length,
+          greaterThanOrEqualTo(2 * 1024),
+          reason: 'compute path',
+        );
+
+        await expectLater(
+          decode(compressed, 8 * 1024 * 1024),
+          throwsA(isA<AttachmentTooLargeException>()),
+        );
+      });
+
+      test('a payload exactly at the limit still decodes', () async {
+        final original = List<int>.generate(4096, (i) => i % 251);
+        final decoded = await decode(
+          Uint8List.fromList(gzip.encode(original)),
+          original.length,
+        );
+
+        expect(decoded, equals(original));
+      });
+
+      test('the default limit leaves headroom over the largest bundle', () {
+        // Bundles are capped compressed; JSON inflates roughly 5-10x.
+        expect(
+          SyncTuning.maxDecodedAttachmentBytes,
+          greaterThanOrEqualTo(10 * SyncTuning.outboxBundleMaxBytes),
+        );
+      });
+    });
 
     test(
       'decompresses a gzipped payload when encoding=gzip and logs ratio',

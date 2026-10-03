@@ -290,6 +290,6 @@ unchanged by the encoding.
 
 | Direction | Rule |
 |-----------|------|
-| Receive | Decode the header unconditionally. |
+| Receive | Decode the header unconditionally, but never past `SyncTuning.maxDecodedAttachmentBytes` (128 MiB, 16× the bundle cap). Decoding streams through the inflater and aborts the moment its output crosses that line, throwing `AttachmentTooLargeException`, a `FormatException`, so every caller treats a decompression bomb like the corrupt gzip it effectively is. |
 | Send | Gzip any attachment whose `relativePath` ends in `.json` — the sole gate is `relativePath.toLowerCase().endsWith('.json')` in `MatrixPayloadSender`. The upload name gains a `.gz` suffix and the event carries the header. |
 | Send (media) | Verbatim. Images and audio are already compressed and would not benefit; no header, no suffix. |
