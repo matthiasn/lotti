@@ -81,14 +81,18 @@ neither day, here as there.
 
 - **What you did** — the day's blocks grouped by task (untasked recordings by
   title within their category), minutes with overlaps counted once, the number of
-  recordings, longest first. Tasks whose status history has a `TaskDone` on the
-  day are marked *done today*; one done without recorded time still appears, with
-  no minutes. Candidates come from the day's blocks, the plan, the due query and
+  recordings, longest first. A task is *done today* when it was completed on
+  the day and still done when the day ended — the last entry of its
+  chronological status history before the day's end is a `TaskDone` within it.
+  One finished and reopened the same day is open work; one reopened only after
+  the day still counts as done on it. A task done without recorded time still
+  appears, with no minutes. Candidates come from the day's blocks, the plan, the due query and
   `JournalDb.getTasksClosedSince(day)` — tasks DONE or REJECTED whose row changed
   since the day began — so an unplanned task finished that day is not missed.
 - **Carries forward** — tasks **meant for the day**: in the day plan (dropped
   blocks excluded, plan order) or due on it (by title). A task is left out once it
-  is closed, or once its due date is already past the day — a decision taken in
+  is closed, once it was done when the day ended, or once its due date is already
+  past the day — a decision taken in
   an earlier visit. Each row carries the minutes recorded against it and is
   re-placed on the next day by default. Tasks decided in this session stay meant
   for the day even when only their due date put them there, so the note still

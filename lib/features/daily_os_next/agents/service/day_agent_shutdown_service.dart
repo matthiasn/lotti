@@ -204,11 +204,16 @@ class DayAgentShutdownService {
     };
 
     bool inDay(DateTime at) => !at.isBefore(day) && at.isBefore(dayEnd);
+    // Done that day: completed within it and still done when it ended. The
+    // history is chronological, so its last entry before the day's end is the
+    // status the day closed on — a task finished and reopened the same day is
+    // open work, not a completion.
     final doneToday = [
       for (final task in tasks.values)
-        if (task.data.statusHistory.any(
-          (status) => status is TaskDone && inDay(status.createdAt),
-        ))
+        if (task.data.statusHistory.lastWhereOrNull(
+              (status) => status.createdAt.isBefore(dayEnd),
+            )
+            case final TaskDone done when inDay(done.createdAt))
           _shutdownTask(task),
     ];
     // Meant for the day: planned, due on it, or decided in this Shutdown —
@@ -227,6 +232,7 @@ class DayAgentShutdownService {
             inDay(task.data.status.createdAt))
           task.meta.id,
     };
+    final doneIds = {for (final task in doneToday) task.taskId};
     final open = <ShutdownTask>[];
     final replaced = <(ShutdownTask, DateTime)>[];
     final dropped = <ShutdownTask>[];
@@ -237,7 +243,9 @@ class DayAgentShutdownService {
       if (task.data.status is TaskRejected &&
           inDay(task.data.status.createdAt)) {
         dropped.add(_shutdownTask(task));
-      } else if (isClosedTask(task)) {
+      } else if (isClosedTask(task) || doneIds.contains(id)) {
+        // Closed now, or done when the day ended and only reopened after it:
+        // either way the day owes it nothing.
         continue;
       } else if (due != null && localDay(due).isAfter(day)) {
         replaced.add((_shutdownTask(task), localDay(due)));

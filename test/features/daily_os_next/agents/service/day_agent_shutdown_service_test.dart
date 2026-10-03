@@ -405,6 +405,48 @@ void main() {
       );
     });
 
+    TaskStatus doneAt(String id, DateTime at) =>
+        TaskStatus.done(id: id, createdAt: at, utcOffset: 0);
+    TaskStatus openAt(String id, DateTime at) =>
+        TaskStatus.open(id: id, createdAt: at, utcOffset: 0);
+
+    test('a task done and reopened that day carries forward', () async {
+      final reopenedAt = openAt('call-reopen', DateTime(2026, 10, 3, 15));
+      final reopened = _task(
+        'call',
+        'Call the bank',
+        due: _day,
+        status: reopenedAt,
+        history: [doneAt('call-done', DateTime(2026, 10, 3, 11)), reopenedAt],
+      );
+      stubDay(withPlan: false, dueToday: [reopened]);
+
+      final day = await service.shutdownDay(_day);
+
+      expect(day.completed.where((i) => i.taskId == 'call'), isEmpty);
+      expect(day.carryover.map((i) => i.taskId), contains('call'));
+    });
+
+    test('a task reopened after the day still counts as done on it', () async {
+      final reopenedAt = openAt('adhoc-reopen', DateTime(2026, 10, 4, 9));
+      final adHoc = _task(
+        'adhoc',
+        'Ship the hotfix',
+        due: _day,
+        status: reopenedAt,
+        history: [doneAt('adhoc-done', DateTime(2026, 10, 3, 16)), reopenedAt],
+      );
+      stubDay(withPlan: false, dueToday: [adHoc]);
+
+      final day = await service.shutdownDay(_day);
+
+      expect(
+        day.completed.where((i) => i.taskId == 'adhoc').map((i) => i.doneToday),
+        [true],
+      );
+      expect(day.carryover.map((i) => i.taskId), isNot(contains('adhoc')));
+    });
+
     test('without a day agent only the due tasks carry forward', () async {
       stubDay(withPlan: false, dueToday: [call]);
 
