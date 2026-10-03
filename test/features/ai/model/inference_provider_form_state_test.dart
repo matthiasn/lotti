@@ -160,6 +160,23 @@ void main() {
       );
     });
 
+    test('toAiConfig stores the base URL trimmed, as it was validated', () {
+      // A pasted URL with surrounding space validates; clients then append
+      // paths to the stored value verbatim, so it must be stored trimmed.
+      const pasted = '  https://api.example.com/v1 \n';
+      expect(const BaseUrl.dirty(pasted).isValid, isTrue);
+
+      final config =
+          InferenceProviderFormState(
+                name: const ApiKeyName.dirty('Pasted'),
+                apiKey: const ApiKeyValue.dirty('sk'),
+                baseUrl: const BaseUrl.dirty(pasted),
+              ).toAiConfig()
+              as AiConfigInferenceProvider;
+
+      expect(config.baseUrl, 'https://api.example.com/v1');
+    });
+
     test('toAiConfig generates an id when the form has none', () {
       final config =
           InferenceProviderFormState(

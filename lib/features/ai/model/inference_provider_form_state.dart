@@ -124,13 +124,15 @@ class InferenceProviderFormState with FormzMixin {
 
   /// Materializes the form into an [AiConfigInferenceProvider]. Generates a
   /// fresh UUID when [id] is null (new provider) and stamps `createdAt` to now.
+  /// The base URL is stored trimmed, as [isWellFormedInferenceBaseUrl] judged
+  /// it: clients append paths to it verbatim.
   // Convert form state to AiConfig model
   AiConfig toAiConfig() {
     return AiConfig.inferenceProvider(
       id: id ?? uuid.v1(),
       name: name.value,
       apiKey: apiKey.value,
-      baseUrl: baseUrl.value,
+      baseUrl: baseUrl.value.trim(),
       description: description.value,
       createdAt: DateTime.now(),
       inferenceProviderType: inferenceProviderType,
