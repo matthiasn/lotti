@@ -125,6 +125,8 @@ void main() {
   test('assign_task_labels assigns valid labels and filters invalid', () async {
     // Existing labels on the task (group is ignored for exclusivity)
     final task = makeTask(labels: const ['l1']);
+    // The processor reads the task fresh for its suppressed set.
+    when(() => mockDb.journalEntityById(task.id)).thenAnswer((_) async => task);
     when(
       () => mockDb.getLabelDefinitionById('l1'),
     ).thenAnswer((_) async => makeLabel('l1', groupId: 'g1'));
@@ -161,6 +163,9 @@ void main() {
     () async {
       // Task belongs to cat; one high label is out-of-scope
       final task = makeTask(labels: const []);
+      when(
+        () => mockDb.journalEntityById(task.id),
+      ).thenAnswer((_) async => task);
 
       // very-high and high-1 in cat; high-2 in other cat (out-of-scope)
       final now = DateTime(2024, 3, 15, 10, 30);
