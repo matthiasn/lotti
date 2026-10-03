@@ -42,8 +42,7 @@ what it does for a user; these describe how it runs.
 
 # Shell, settings and look
 
-* [Settings](settings.md) - the settings shell: how a route becomes a page, desktop master/detail against mobile drill-down, and the shared editor kit.
-* [Settings v2](settings_v2.md) - where that tree is *defined*, and how feature pages are embedded into it as headerless bodies.
+* [Settings](settings.md) - one flag-gated tree for what exists, one route registry for where it leads: how a URL becomes a mobile page stack or a desktop panel, why every page names its pop target, and the shared editor kit.
 * [System health](system_health.md) - the on-demand log report: daily files in, redaction, a bucketed digest, and a model's top three findings out.
 * [Design system](design_system/) - tokens, theming, and the component contracts.
 * [Theming](theming.md) - theme selection and construction.

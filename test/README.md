@@ -105,6 +105,17 @@ every file after it — and the painting binding's `imageCache` carries
 whatever earlier files decoded, so assert a *delta* on its size, never an
 absolute.
 
+## Settings routing and panels
+
+The settings route registry, the desktop panel host, `LeafPanel` and
+`SettingsDetailPane` all take a `SettingsRouteTable`; tests hand them
+`testRouteTable()` from `features/settings/routing/test_route_table.dart`, a
+small registry shaped like the real one whose pages and panels are labelled
+`Text`s and a stateful `TestCounter`. That exercises resolution, pop targets and
+panel swaps without the provider graph behind a real settings page. The real
+registry's coverage and its every-URL back-navigation property are tested in
+`features/settings/routing/settings_routes_test.dart`.
+
 ## Model assessment
 
 LottiGym's offline orchestration checks run with

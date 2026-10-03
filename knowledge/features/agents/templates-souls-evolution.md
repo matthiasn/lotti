@@ -5,8 +5,8 @@ description: What an agent does (template skills) versus who it is (soul persona
 resource: ../../../lib/features/agents/workflow/template_evolution_workflow.dart
 tags: [agents, templates, souls, evolution, improver]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-25T09:00:00Z }
-stale_after: 2026-12-25
+generated: { by: claude-code/opus-5.5, at: 2026-10-03T12:00:00Z }
+stale_after: 2027-04-03
 sources:
   - id: seeding
     resource: ../../../lib/features/agents/service/agent_template_seeding.dart
@@ -274,20 +274,17 @@ rather than a transcript, and `EvolutionTypingIndicator` marks the agent
 composing — it animates perpetually, so a test that reaches either must `pump`
 rather than `pumpAndSettle`.
 
-**Both review pages hang off a `/review` sub-route that has to be declared
-twice.** The template detail page beams to
-`/settings/agents/templates/<templateId>/review` (souls use
-`/settings/agents/souls/<soulId>/review`). On mobile `SettingsLocation` matches
-that URL and pushes the review page onto the Beamer stack. On desktop
-`SettingsLocation.buildPages` short-circuits and returns only `SettingsRootPage`
-— the page stack is bypassed entirely and the URL is resolved by
-`DetailIdDispatch` inside the settings detail pane instead. Since Beamer binds
-`templateId` / `soulId` on the `/review` route as well, the dispatcher cannot
-tell it apart from the plain detail URL unless the trailing segment is
-registered in `detailSubRoutes` (`panel_registry.dart`); an unregistered
-sub-route silently renders the detail body and the one-on-one is unreachable.
-Any future sub-route below a settings detail URL needs the same pair of
-declarations.
+**Both review pages hang off a `/review` sub-route, declared once.** The
+template detail page beams to `/settings/agents/templates/<templateId>/review`
+(souls use `/settings/agents/souls/<soulId>/review`). Each is a
+`SettingsSubRoute` on the `agents/templates` / `agents/souls` entry in
+[`settings_routes.dart`](../../../lib/features/settings/routing/settings_routes.dart),
+beside the detail route it extends. On mobile `SettingsLocation` stacks the
+review above the detail page, so Back returns to the template or soul; on
+desktop the URL reaches the settings detail pane, whose panel host resolves it
+against the same entry. The resolver prefers the deeper `…/:templateId/review`
+match over `…/:templateId`, so the review can never be mistaken for the detail
+body.
 
 `EvolutionMessageInput` reuses the chat recorder controller for batch voice
 input. Successful transcripts populate the composer; failures render the

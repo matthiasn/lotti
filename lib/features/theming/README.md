@@ -18,9 +18,9 @@ preference rather than a machine setting.
 The theme-mode state and construction of the light and dark `ThemeData` — both
 `withOverrides(DesignSystemTheme…)` — plus the sync of the mode selection.
 
-The theming settings **page** lives under [settings](../settings/README.md); the
-design tokens it builds on come from
-[design_system](../design_system/README.md).
+The theming settings **page** lives here too (`ui/theming_page.dart`);
+[settings](../settings/README.md) only routes to it at `/settings/theming`. The
+design tokens it builds on come from [design_system](../design_system/README.md).
 
 ## Where the code lives
 

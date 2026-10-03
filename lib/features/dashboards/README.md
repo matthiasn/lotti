@@ -15,14 +15,15 @@ chosen and ordered by the user, grouped on one page.
   directly, so logging a value does not mean navigating away.
 - **Stays current.** Charts refresh when the underlying entries change.
 
-Dashboards are created and edited in Settings → Definitions → Dashboards; this
-feature renders them.
+Dashboards are created and edited from Settings → Definitions → Dashboards, with
+this feature's own definition pages; this feature also renders them.
 
 ## What it owns
 
 Listing and filtering dashboards; the single-dashboard page and its time-range
 control; routing each dashboard item to its chart widget; the measurement capture
-flow reachable from a chart; and the refresh model.
+flow reachable from a chart; the refresh model; and the dashboard definitions
+list and editor (create, edit, chart picker) that Settings routes to.
 
 The source data lives in the journal database and neighbouring features — this is
 a view layer, not a separate analytics store.
@@ -32,7 +33,7 @@ a view layer, not a separate analytics store.
 ```text
 lib/features/dashboards/
 ├── state/
-└── ui/{pages,widgets,charts}
+└── ui/{pages,settings,widgets}
 ```
 
 ## How it works

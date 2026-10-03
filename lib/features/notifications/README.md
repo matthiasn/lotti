@@ -47,7 +47,8 @@ re-arming them at startup; the sync of notifications and their lifecycle state;
 convergence when devices act in different orders; which surface a given alert
 leads to; the tap on the OS alert that takes the user there; which kinds the
 user has allowed onto the OS channel at all; and the one way an agent's LLM
-tier may touch an alert — re-wording it with its banner's copy.
+tier may touch an alert — re-wording it with its banner's copy. The
+Notifications settings page lives here too; Settings routes to it.
 
 It does **not** decide when an alert is warranted. Producers own that — the
 change-set builder for task suggestions, the relationship agent's deterministic

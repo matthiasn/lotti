@@ -5,8 +5,8 @@ description: A view layer over journal-backed data — definitions routed to cha
 resource: ../../lib/features/dashboards
 tags: [dashboards, charts, visualization]
 status: stable
-generated: { by: claude-code/fable-5, at: 2026-08-31T12:00:00Z }
-stale_after: 2027-02-22
+generated: { by: claude-code/opus-5.5, at: 2026-10-03T12:00:00Z }
+stale_after: 2027-04-03
 sources:
   - id: src
     resource: ../../lib/features/dashboards
@@ -31,14 +31,16 @@ capture flows directly.
 
 Listing active dashboards; locally filtering that list by category; the single
 dashboard page lifecycle and its time-range control; routing each item type to
-its chart widget; the measurement capture flow reachable from a chart; and the
+its chart widget; the measurement capture flow reachable from a chart; the
 refresh and caching model that keeps charts current without re-querying on every
-notification.
+notification; and the dashboard definitions list and editor under
+`ui/settings/`, which [settings](settings.md) routes to from Definitions.
 
 A `DashboardDefinition` is an `EntityDefinition` variant carrying its name,
 description, category, visibility flags and an ordered list of `DashboardItem`s.
 **The items are the definition** — reordering or removing a chart is an edit to
-that list, made in the [settings](settings.md) dashboard editor rather than here.
+that list, made in the dashboard editor (`EditDashboardPage`) rather than on the
+dashboard page.
 
 # Item rendering is a matrix
 

@@ -33,7 +33,8 @@ The habits tab and its derived sections; the summary card; the consistency
 heatmap; completion-rate chart state and the time-span switch; quick completion
 capture and the compact completion sheet that shows a habit's own signals with
 quick-record chips; the habit editor (create wizard and edit page) with its
-signal card, signal picker and composite picker; the settings state behind it;
+signal card, signal picker and composite picker; the habit list Settings routes
+to (`HabitSettingsPage`); the settings state behind it;
 and the auto-completion engine that checks a habit off when its recorded
 signals satisfy its rule. Opening the tab refreshes the platform-health signals
 watched by active habits so those rules evaluate against current imported data.
