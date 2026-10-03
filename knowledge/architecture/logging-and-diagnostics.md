@@ -153,10 +153,18 @@ a catch-up can produce thousands of lines in a second. Those events go to
 `sync-<date>.log` without burying the rest of the app's general telemetry.
 
 Flags are toggled in *Settings → Advanced → Logging Domains* and stored as
-config flags in `JournalDb`. `domainLoggerProvider` listens to each domain flag
-and updates the shared logger in place without restarting the agent runtime.
-`LoggingService.listenToConfigFlag()` separately tracks the general logging and
-slow-query flags, so these gates also update without a restart.
+config flags in `JournalDb`. The composition root calls
+`DomainLogger.listenToDomainFlags()` once per service generation, so each
+domain follows its flag from startup on. A toggle updates the shared logger's
+`enabledDomains` in place and rebuilds nothing, so the agent runtime never
+restarts for it. `LoggingService.listenToConfigFlag()` separately tracks the
+general logging and slow-query flags, so these gates also update without a
+restart.
+
+Riverpod code reads the logger through `domainLoggerProvider`
+(`lib/providers/service_providers.dart`). `buildProviderOverrides` overrides it
+with the generation's instance. The provider only hands the logger out; it
+does no flag wiring of its own.
 
 # File writing is batched
 

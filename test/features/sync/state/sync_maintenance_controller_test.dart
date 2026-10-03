@@ -4,12 +4,11 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-import '../../../widget_test_utils.dart';
 import 'sync_maintenance_controller_test_helpers.dart';
 
 void main() {
@@ -30,7 +29,7 @@ void main() {
     container = ProviderContainer(
       overrides: [
         syncMaintenanceRepositoryProvider.overrideWithValue(mockRepository),
-        syncLoggingServiceProvider.overrideWithValue(mockLoggingService),
+        domainLoggerProvider.overrideWithValue(mockLoggingService),
       ],
     );
     controller = container.read(syncControllerProvider.notifier);
@@ -491,19 +490,4 @@ void main() {
       expect(container.read(syncControllerProvider), const SyncState());
     });
   });
-
-  test(
-    'syncLoggingServiceProvider resolves the registered domain logger',
-    () async {
-      await setUpTestGetIt();
-      addTearDown(tearDownTestGetIt);
-      final unscoped = ProviderContainer();
-      addTearDown(unscoped.dispose);
-
-      expect(
-        unscoped.read(syncLoggingServiceProvider),
-        same(getIt<DomainLogger>()),
-      );
-    },
-  );
 }

@@ -39,6 +39,8 @@ import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/utils.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/service_disposer.dart';
 import 'package:lotti/services/startup_tasks.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -196,9 +198,19 @@ void main() {
         expect(getIt<OutboxService>(), isA<InertOutboxService>());
 
         // The provider bridge omits matrixServiceProvider in guest mode:
-        // 12 overrides instead of the real profile's 13. Which providers those
+        // 13 overrides instead of the real profile's 14. Which providers those
         // are is asserted in the 'agent runtime registrations' group below.
-        expect(buildProviderOverrides(context), hasLength(12));
+        expect(buildProviderOverrides(context), hasLength(13));
+        // The bridged logger is this generation's, the one whose domain
+        // flags the bootstrap wired.
+        final bridged = ProviderContainer(
+          overrides: buildProviderOverrides(context),
+        );
+        addTearDown(bridged.dispose);
+        expect(
+          bridged.read(domainLoggerProvider),
+          same(getIt<DomainLogger>()),
+        );
 
         // A representative write lands in the guest world only.
         final task = TestTaskFactory.create(id: 'guest-task-1');
@@ -261,7 +273,7 @@ void main() {
         isTrue,
       );
       // ...and the bridge carries the Matrix override too.
-      expect(buildProviderOverrides(context), hasLength(13));
+      expect(buildProviderOverrides(context), hasLength(14));
 
       // The startup node-profile broadcast reaches the outbox: real sync
       // wiring, end to end, without any network.

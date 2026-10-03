@@ -1,6 +1,6 @@
 {
   "_comment": "getIt lookups and isRegistered checks outside the composition root, still to be migrated to providers or constructor arguments. Regenerate with: dart run tool/di/validate.dart --update-baseline. These numbers only ever go down.",
-  "_total": {"lookups": 904, "isRegistered": 174},
+  "_total": {"lookups": 903, "isRegistered": 174},
   "files": {
     "lib/app_root.dart": {"lookups": 1},
     "lib/beamer/beamer_app.dart": {"lookups": 12, "isRegistered": 1},
@@ -20,7 +20,7 @@
     "lib/features/agents/query/query_audio_timing_service.dart": {"lookups": 1, "isRegistered": 1},
     "lib/features/agents/query/query_audio_timing_writer.dart": {"lookups": 1},
     "lib/features/agents/query/query_chat_providers.dart": {"lookups": 3, "isRegistered": 1},
-    "lib/features/agents/state/agent_providers.dart": {"lookups": 11, "isRegistered": 6},
+    "lib/features/agents/state/agent_providers.dart": {"lookups": 10, "isRegistered": 5},
     "lib/features/agents/state/agent_workflow_providers.dart": {"lookups": 3, "isRegistered": 3},
     "lib/features/agents/state/change_set_providers.dart": {"lookups": 9, "isRegistered": 1},
     "lib/features/agents/sync/agent_sync_service.dart": {"lookups": 3},
@@ -248,7 +248,6 @@
     "lib/features/sync/state/provisioning_controller.dart": {"lookups": 3},
     "lib/features/sync/state/purge_controller.dart": {"lookups": 1},
     "lib/features/sync/state/sequence_log_populate_controller.dart": {"lookups": 3},
-    "lib/features/sync/state/sync_maintenance_controller.dart": {"lookups": 1},
     "lib/features/sync/state/synced_audio_inference_providers.dart": {"lookups": 4, "isRegistered": 2},
     "lib/features/sync/ui/backfill_settings_page.dart": {"lookups": 1, "isRegistered": 1},
     "lib/features/sync/ui/matrix_sync_maintenance_page.dart": {"lookups": 1},
@@ -317,6 +316,7 @@
     "lib/logic/running_timer_persistence.dart": {"lookups": 3},
     "lib/logic/signals/health_signal_refresh_service.dart": {"lookups": 1, "isRegistered": 1},
     "lib/pages/create/create_measurement_dialog.dart": {"lookups": 1},
+    "lib/providers/service_providers.dart": {"lookups": 1, "isRegistered": 1},
     "lib/services/editor_state_service.dart": {"lookups": 2},
     "lib/services/ip_geolocation_service.dart": {"lookups": 3},
     "lib/services/link_service.dart": {"lookups": 1},

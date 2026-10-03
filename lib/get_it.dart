@@ -228,9 +228,11 @@ Future<void> registerSingletons({
   if (!getIt.isRegistered<DomainLogger>()) {
     getIt.registerSingleton<DomainLogger>(
       DomainLogger(loggingService: loggingService),
+      dispose: (logger) => logger.dispose(),
     );
   }
   final domainLogger = getIt<DomainLogger>();
+  await domainLogger.listenToDomainFlags(getIt<JournalDb>().watchConfigFlag);
 
   // FTUE measurement substrate. Recording the first-launch signal here (rather
   // than when the welcome UI shows) ensures pre-FTUE users upgrading into this

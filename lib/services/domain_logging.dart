@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 
@@ -57,11 +58,45 @@ class DomainLogger {
 
   /// Set of currently enabled domains.
   ///
-  /// Managed externally (e.g. via config flag watchers in
-  /// `domainLoggerProvider`). When a domain is absent, [log] is a no-op for it,
-  /// while [error] still logs. Mutated in place by `domainLoggerProvider` as
-  /// config flags toggle.
+  /// Kept in step with each domain's config flag by [listenToDomainFlags].
+  /// When a domain is absent, [log] is a no-op for it, while [error] still
+  /// logs. Mutated in place, so a toggle never rebuilds anything that holds
+  /// this logger.
   final Set<LogDomain> enabledDomains = <LogDomain>{};
+
+  final List<StreamSubscription<bool>> _flagSubscriptions = [];
+
+  /// Keeps [enabledDomains] in step with each [LogDomain]'s config flag, read
+  /// through [watchFlag] (`JournalDb.watchConfigFlag`).
+  ///
+  /// The composition root calls this once per service generation, so domain
+  /// logging follows its flags from startup on. A repeat call replaces the
+  /// previous subscriptions; [dispose] cancels them. A flag stream that errors
+  /// leaves its domain as it was.
+  Future<void> listenToDomainFlags(
+    Stream<bool> Function(String flagName) watchFlag,
+  ) async {
+    await dispose();
+    for (final domain in LogDomain.values) {
+      _flagSubscriptions.add(
+        watchFlag(domain.flagName).listen(
+          (enabled) => enabled
+              ? enabledDomains.add(domain)
+              : enabledDomains.remove(domain),
+          onError: (Object _) {},
+        ),
+      );
+    }
+  }
+
+  /// Cancels the flag subscriptions made by [listenToDomainFlags].
+  Future<void> dispose() async {
+    final subscriptions = List.of(_flagSubscriptions);
+    _flagSubscriptions.clear();
+    for (final subscription in subscriptions) {
+      await subscription.cancel();
+    }
+  }
 
   /// Log a domain-specific message at the given [level].
   ///

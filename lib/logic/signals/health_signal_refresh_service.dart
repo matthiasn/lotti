@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// Pulls journal-backed health signals forward from the platform health store.

@@ -11,7 +11,8 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/speech/sherpa_model_repository.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
-import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/providers/service_providers.dart'
+    show domainLoggerProvider, journalDbProvider;
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';

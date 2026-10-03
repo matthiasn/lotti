@@ -22,7 +22,8 @@ import 'package:lotti/features/notifications/repository/notification_repository.
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/providers/service_providers.dart'
+    show domainLoggerProvider, journalDbProvider;
 
 /// The template evolution workflow with all dependencies resolved.
 ///

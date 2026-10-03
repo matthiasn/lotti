@@ -1,7 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/logging_service.dart';
 
 void main() {
   final providers = <String, ProviderListenable<Object?>>{
@@ -53,4 +56,44 @@ void main() {
       expect(state.error.toString(), contains('UnimplementedError'));
     },
   );
+
+  group('domainLoggerProvider', () {
+    tearDown(getIt.reset);
+
+    test('reads the registered logger when there is one', () async {
+      await getIt.reset();
+      final registered = DomainLogger(loggingService: LoggingService());
+      getIt.registerSingleton<DomainLogger>(registered);
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      expect(container.read(domainLoggerProvider), same(registered));
+    });
+
+    test('otherwise builds one over loggingServiceProvider', () async {
+      await getIt.reset();
+      final container = ProviderContainer(
+        overrides: [loggingServiceProvider.overrideWithValue(LoggingService())],
+      );
+      addTearDown(container.dispose);
+
+      final logger = container.read(domainLoggerProvider);
+      expect(logger, isA<DomainLogger>());
+      expect(container.read(domainLoggerProvider), same(logger));
+    });
+
+    test('an override wins over getIt', () async {
+      await getIt.reset();
+      getIt.registerSingleton<DomainLogger>(
+        DomainLogger(loggingService: LoggingService()),
+      );
+      final generation = DomainLogger(loggingService: LoggingService());
+      final container = ProviderContainer(
+        overrides: [domainLoggerProvider.overrideWithValue(generation)],
+      );
+      addTearDown(container.dispose);
+
+      expect(container.read(domainLoggerProvider), same(generation));
+    });
+  });
 }

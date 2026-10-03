@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/service/project_agent_mutation_coordinator
 import 'package:lotti/features/agents/service/project_agent_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
+import 'package:lotti/providers/service_providers.dart';
 
 export 'package:lotti/features/agents/service/project_agent_mutation_coordinator.dart'
     show projectAgentMutationCoordinatorProvider;
